@@ -1,6 +1,6 @@
-import type { AmalgamFigure } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
 import type { MissingFlesh } from './fusedMassCarving.ts';
+import type { FusedMassFigure } from './fusedMassFigure.ts';
 import { type BodyShape, CONTACT_SKIN } from './physics.ts';
 import { BRICK_BITS, type BrickOut, brickHas, brickLayer, type SolidBricks } from './solidBricks.ts';
 
@@ -166,7 +166,7 @@ const parentLevel = (level: TreeLevel, tree: TreeNodes): TreeLevel => {
   return { nodes, dims };
 };
 
-const buildTree = (figure: AmalgamFigure, blockSize: number): ShapeTree => {
+const buildTree = (figure: FusedMassFigure, blockSize: number): ShapeTree => {
   const { dims, owner, size, origin } = figure.realized.voxels;
   const metres = size * figure.scale;
   const tree: TreeNodes = {
@@ -211,9 +211,9 @@ const buildTree = (figure: AmalgamFigure, blockSize: number): ShapeTree => {
   };
 };
 
-const trees = new WeakMap<AmalgamFigure, Map<number, ShapeTree>>();
+const trees = new WeakMap<FusedMassFigure, Map<number, ShapeTree>>();
 
-const treeFor = (figure: AmalgamFigure, blockSize: number): ShapeTree => {
+const treeFor = (figure: FusedMassFigure, blockSize: number): ShapeTree => {
   let bySize = trees.get(figure);
   if (!bySize) {
     bySize = new Map();
@@ -304,7 +304,7 @@ export class FusedMassShape implements BodyShape {
   private carved: readonly number[] | undefined;
   private severedCount = -1;
 
-  constructor(figure: AmalgamFigure, blockSize: number, terrain: SolidBricks) {
+  constructor(figure: FusedMassFigure, blockSize: number, terrain: SolidBricks) {
     this.tree = treeFor(figure, blockSize);
     this.terrain = terrain;
     this.masks = new Uint8Array(this.tree.nodeCount);

@@ -1,10 +1,10 @@
 import { expect, it } from 'vitest';
 import { actorPoseInputFor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import { amalgamFigureForType, amalgamStrikeOrigin } from '../src/core/amalgamFigure.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { worldMeleeBlocker, worldOpaque, worldSolid, worldSoundBlocking } from '../src/core/collision.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { fusedMassFigureForType, fusedMassStrikeOrigin } from '../src/core/fusedMassFigure.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ActorDef } from '../src/core/schema.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
@@ -202,7 +202,7 @@ it('admits the amalgam tentacle thrust only when its reach clears the wire thres
     const id = system.add(type, [0, 1, 0], [0, 0, 1]);
     const zombie = system.store.get(id)!;
     const reach = zombieAttackReachMetres(zombie);
-    const origin = amalgamStrikeOrigin(amalgamFigureForType(type, zombie.figureSeed), zombie.facing).map(
+    const origin = fusedMassStrikeOrigin(fusedMassFigureForType(type, zombie.figureSeed), zombie.facing).map(
       (value, axis) => value / 0.5 + zombie.body.pos[axis]!,
     ) as Vec3;
     playerPos = [origin[0], origin[1] - PLAYER_CHEST_METRES / 0.5, origin[2] + (reach * 0.9) / 0.5];

@@ -21,16 +21,16 @@ import { LOOK_AT_REST } from '@mobgen/mob/lookAt.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { actorFigure, amalgamTypeOf } from '../src/core/actorFigure.ts';
+import { actorFigure, fusedMassTypeOf } from '../src/core/actorFigure.ts';
 import { figureVariantOf } from '../src/core/actorModels.ts';
 import { actorPoseInputFor, flinchSideForId, HIT_FLINCH_DURATION } from '../src/core/actorPose.ts';
 import { humanoidRegionBoxes, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import { AMALGAM_FIGURE_SEED, amalgamFigureForType } from '../src/core/amalgamFigure.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { initialActorFootstepClock } from '../src/core/footsteps.ts';
 import { carveAround, missingFlesh } from '../src/core/fusedMassCarving.ts';
+import { FUSED_MASS_FIGURE_SEED, fusedMassFigureForType } from '../src/core/fusedMassFigure.ts';
 import { Rng } from '../src/core/random.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -1000,7 +1000,7 @@ describe('MobActorMeshes', () => {
     try {
       const store = new MapEntityStore<Zombie>();
       const entries = [...registry.zombies.values()].map((type, index) => {
-        const figureSeed = type.figureSeeds?.[0] ?? AMALGAM_FIGURE_SEED;
+        const figureSeed = type.figureSeeds?.[0] ?? FUSED_MASS_FIGURE_SEED;
         return { type, figureSeed, id: store.add(makeZombie([index * 3, 0, 0], [0, 0, -1], [], { type, figureSeed })) };
       });
       expect(entries.length).toBeGreaterThan(0);
@@ -1026,7 +1026,7 @@ describe('MobActorMeshes', () => {
         const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
         expect(materials.length).toBeGreaterThan(0);
         expect(materials.every((material) => material.visible)).toBe(true);
-        const isAmalgam = type === amalgamTypeOf(registry.zombies);
+        const isAmalgam = type === fusedMassTypeOf(registry.zombies);
         const matrix = renderer.boneMatrix(id, realized.body.bones[0]!.id);
         expect(matrix, type.id).toHaveLength(12);
         if (isAmalgam) {
@@ -1043,7 +1043,7 @@ describe('MobActorMeshes', () => {
     try {
       const store = new MapEntityStore<Zombie>();
       const entries = [...registry.zombies.values()].map((type, index) => {
-        const figureSeed = type.figureSeeds?.[0] ?? AMALGAM_FIGURE_SEED;
+        const figureSeed = type.figureSeeds?.[0] ?? FUSED_MASS_FIGURE_SEED;
         const zombie = makeZombie([index * 3, 0, 0], [0, 0, -1], [], { type, figureSeed });
         setOneHitParityPose(zombie, {
           name: 'attacking',
@@ -1080,7 +1080,7 @@ describe('MobActorMeshes', () => {
       renderer.sync(store, 0, 1);
       // What a light hit along +x takes: the first flesh cell of a grid row, whose neighbour further in is
       // flesh too, so the hole has a wall.
-      const figure = amalgamFigureForType(amalgam, zombie.figureSeed);
+      const figure = fusedMassFigureForType(amalgam, zombie.figureSeed);
       const { dims, owner } = figure.realized.voxels;
       const firstFlesh = (row: number): number => {
         const start = row * dims[0];
@@ -1767,7 +1767,7 @@ describe('MobActorMeshes dismemberment', () => {
       const store = new MapEntityStore<Zombie>();
       const zombie = makeZombie([0, 0, 0], [0, 0, -1], [], { type });
       const id = store.add(zombie);
-      const figure = amalgamFigureForType(type, zombie.figureSeed);
+      const figure = fusedMassFigureForType(type, zombie.figureSeed);
       const part = figure.manifest.parts.find((candidate) => candidate.severable)!;
       expect(part).toBeDefined();
       renderer.sync(store, 0, 1);

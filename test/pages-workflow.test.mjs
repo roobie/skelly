@@ -82,7 +82,7 @@ test('Pages project checks run in their PR workflows', () => {
 });
 
 test('Gungen filters include representative Deadvox and Mobgen import files', () => {
-  const importedFiles = ['packages/deadvox/src/core/amalgamFigure.ts', 'packages/mobgen/src/core/generate.ts'];
+  const importedFiles = ['packages/deadvox/src/core/fusedMassFigure.ts', 'packages/mobgen/src/core/generate.ts'];
   for (const event of ['push', 'pull_request']) {
     for (const file of importedFiles) {
       assert.ok(workflowIncludesPath(gungen, event, file), `Gungen ${event} filter includes ${file}`);

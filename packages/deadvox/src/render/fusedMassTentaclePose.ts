@@ -1,7 +1,7 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves through this package's aliases.
 import { type Mat3, mulMV, type Transform } from '@mobgen/core/math.ts';
-import type { AmalgamFigure } from '../core/amalgamFigure.ts';
 import type { Vec3 } from '../core/coords.ts';
+import type { FusedMassFigure } from '../core/fusedMassFigure.ts';
 
 export interface FusedMassTentaclePoseInput {
   readonly start: Vec3;
@@ -28,7 +28,7 @@ export const fusedMassCoreInteriorAnchor = ({
   position,
   hidden,
 }: {
-  readonly figure: AmalgamFigure;
+  readonly figure: FusedMassFigure;
   readonly transforms: ReadonlyMap<string, Transform>;
   readonly hidden: ReadonlySet<string>;
   readonly yaw: Mat3;

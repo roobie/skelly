@@ -3,10 +3,10 @@ import { quatToMat3 } from '@mobgen/core/math.ts';
 import { crawlerPose } from '@mobgen/mob/crawler.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { describe, expect, it } from 'vitest';
-import { actorFigure, amalgamTypeOf } from '../src/core/actorFigure.ts';
+import { actorFigure, fusedMassTypeOf } from '../src/core/actorFigure.ts';
 import { FIGURE_VARIANTS } from '../src/core/actorModels.ts';
-import { AMALGAM_FIGURE_SEED } from '../src/core/amalgamFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { FUSED_MASS_FIGURE_SEED } from '../src/core/fusedMassFigure.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { RagdollWorld, ragdollContent, ragdollGroups, ragdollMotion } from '../src/render/ragdoll.ts';
 import type RAPIER from '../src/render/ragdollRapier.ts';
@@ -25,8 +25,8 @@ describe('render ragdoll', () => {
       .filter(([, plan]) => ragdollContent.models.includes(plan.model))
       .map(([plan]) => plan),
   )('%s partitions every skeleton bone once with one limited link per non-root group', async (model) => {
-    const type = model === 'fused-mass' ? amalgamTypeOf(baseRegistry().zombies)! : { model };
-    const figure = actorFigure(type, model === 'fused-mass' ? AMALGAM_FIGURE_SEED : 17).realized;
+    const type = model === 'fused-mass' ? fusedMassTypeOf(baseRegistry().zombies)! : { model };
+    const figure = actorFigure(type, model === 'fused-mass' ? FUSED_MASS_FIGURE_SEED : 17).realized;
     const groups = ragdollGroups(figure.body.bones);
     const indices = groups.flatMap((group) => group.indices);
     expect(indices.length).toBe(figure.body.bones.length);

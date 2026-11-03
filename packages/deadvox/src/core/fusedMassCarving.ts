@@ -1,8 +1,8 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through this package's Vite and TypeScript aliases.
 import { cellIndex } from '@mobgen/core/voxelize.ts';
 import { type PosedBoneBox, posedBoxEntry } from './actorRegions.ts';
-import { type AmalgamFigure, amalgamSeveredBones } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
+import { type FusedMassFigure, fusedMassSeveredBones } from './fusedMassFigure.ts';
 import { raycast } from './raycast.ts';
 import type { ActorDef } from './schema.ts';
 
@@ -26,10 +26,10 @@ const applyTransposed = (r: readonly number[], p: Vec3): Vec3 => [
   r[2]! * p[0] + r[5]! * p[1] + r[8]! * p[2],
 ];
 
-const restBoxCenters = new WeakMap<AmalgamFigure, ReadonlyMap<string, readonly number[]>>();
+const restBoxCenters = new WeakMap<FusedMassFigure, ReadonlyMap<string, readonly number[]>>();
 
 /** Each bone's unposed box centre, in the figure's unscaled rest space. */
-const restBoxCenter = (figure: AmalgamFigure, bone: string): readonly number[] => {
+const restBoxCenter = (figure: FusedMassFigure, bone: string): readonly number[] => {
   let centers = restBoxCenters.get(figure);
   if (!centers) {
     centers = new Map(Object.values(figure.boxes).flatMap((boxes) => boxes.map((box) => [box.bone, box.center])));
@@ -48,7 +48,7 @@ const restBoxCenter = (figure: AmalgamFigure, bone: string): readonly number[] =
  * `point` and `box` are in block coordinates; `direction` is a unit vector.
  */
 const gridRayForHit = (
-  figure: AmalgamFigure,
+  figure: FusedMassFigure,
   box: PosedBoneBox,
   hit: { readonly point: Vec3; readonly direction: Vec3 },
   blockSize: number,
@@ -84,10 +84,10 @@ export interface MissingFlesh {
 }
 
 export const missingFlesh = (
-  figure: AmalgamFigure,
+  figure: FusedMassFigure,
   zombie: { readonly carved: readonly number[]; readonly severed: readonly string[] },
 ): MissingFlesh => {
-  const hidden = amalgamSeveredBones(figure, zombie.severed);
+  const hidden = fusedMassSeveredBones(figure, zombie.severed);
   return {
     carved: new Set(zombie.carved),
     severedOwners: new Set(
@@ -97,7 +97,7 @@ export const missingFlesh = (
 };
 
 /** The cell's index if it holds visible flesh that hasn't been carved, else undefined. */
-const fleshAt = (figure: AmalgamFigure, missing: MissingFlesh, [i, j, k]: Vec3): number | undefined => {
+const fleshAt = (figure: FusedMassFigure, missing: MissingFlesh, [i, j, k]: Vec3): number | undefined => {
   const { dims, owner } = figure.realized.voxels;
   const inside = i >= 0 && j >= 0 && k >= 0 && i < dims[0] && j < dims[1] && k < dims[2];
   const index = inside ? cellIndex(dims, i, j, k) : -1;
@@ -105,10 +105,10 @@ const fleshAt = (figure: AmalgamFigure, missing: MissingFlesh, [i, j, k]: Vec3):
   return bone > 0 && !missing.severedOwners.has(bone) && !missing.carved.has(index) ? index : undefined;
 };
 
-const boneOwners = new WeakMap<AmalgamFigure, ReadonlyMap<string, number>>();
+const boneOwners = new WeakMap<FusedMassFigure, ReadonlyMap<string, number>>();
 
 /** A bone's voxel owner value (bone index + 1). */
-const ownerOf = (figure: AmalgamFigure, bone: string): number => {
+const ownerOf = (figure: FusedMassFigure, bone: string): number => {
   let owners = boneOwners.get(figure);
   if (!owners) {
     owners = new Map(figure.realized.body.bones.map((entry, index) => [entry.id, index + 1]));
@@ -139,7 +139,7 @@ export const fleshHit = ({
   direction,
   blockSize,
 }: {
-  readonly figure: AmalgamFigure;
+  readonly figure: FusedMassFigure;
   readonly missing: MissingFlesh;
   readonly boxes: readonly PosedBoneBox[];
   readonly origin: Vec3;
@@ -187,13 +187,13 @@ const cellOf = (dims: readonly number[], index: number): Vec3 => [
   Math.floor(index / (dims[0]! * dims[1]!)),
 ];
 
-const protectedCells = new WeakMap<AmalgamFigure, number>();
+const protectedCells = new WeakMap<FusedMassFigure, number>();
 
 /**
  * The core cell nearest the core's interior point. It is never carved, so the core keeps flesh however
  * many hits land on it, and the tentacle's root (that same point) stays inside it.
  */
-export const protectedCoreCell = (figure: AmalgamFigure): number => {
+export const protectedCoreCell = (figure: FusedMassFigure): number => {
   const cached = protectedCells.get(figure);
   if (cached !== undefined) {
     return cached;
@@ -225,7 +225,7 @@ export const protectedCoreCell = (figure: AmalgamFigure): number => {
 };
 
 /** The struck cell nearest the mean of several: one shot's pellets make one hole. */
-export const centralCell = (figure: AmalgamFigure, cells: readonly number[]): number => {
+export const centralCell = (figure: FusedMassFigure, cells: readonly number[]): number => {
   const { dims } = figure.realized.voxels;
   const points = cells.map((cell) => cellOf(dims, cell));
   const mean = points
@@ -253,7 +253,7 @@ export const carveAround = ({
   struck,
   damage,
 }: {
-  readonly figure: AmalgamFigure;
+  readonly figure: FusedMassFigure;
   readonly carving: FusedMassCarving;
   readonly missing: MissingFlesh;
   readonly struck: number;

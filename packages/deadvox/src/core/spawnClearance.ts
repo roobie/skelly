@@ -1,5 +1,5 @@
-import { AMALGAM_FIGURE_SEED, amalgamCollisionEnvelope, amalgamFigureForType } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
+import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope, fusedMassFigureForType } from './fusedMassFigure.ts';
 import type { ActorDef } from './schema.ts';
 
 export interface SpawnBodyDimensions {
@@ -11,7 +11,7 @@ export interface SpawnBodyDimensions {
 /** Collision dimensions in voxel blocks, matching the bodies used by ZombieSystem. */
 export const actorBodyDimensions = (type: ActorDef, blockSize: number): SpawnBodyDimensions =>
   type.model === 'fused-mass'
-    ? amalgamCollisionEnvelope(amalgamFigureForType(type, AMALGAM_FIGURE_SEED), blockSize)
+    ? fusedMassCollisionEnvelope(fusedMassFigureForType(type, FUSED_MASS_FIGURE_SEED), blockSize)
     : { halfWidth: 0.28 / blockSize, height: 1.7 / blockSize };
 
 export const spawnOverlappingSolidBlock = (

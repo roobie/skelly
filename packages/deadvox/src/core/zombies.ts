@@ -16,17 +16,11 @@ import {
   type ActorRegions,
   type HumanoidHitRegion,
   type PosedBoneBox,
-  posedAmalgamRegionBoxes,
+  posedFusedMassRegionBoxes,
   posedHumanoidRegionBoxes,
   posedRegionHit,
   rayBoxEntry,
 } from './actorRegions.ts';
-import {
-  AMALGAM_FIGURE_SEED,
-  amalgamCollisionEnvelope,
-  amalgamFigureForType,
-  amalgamStrikeOrigin,
-} from './amalgamFigure.ts';
 import type { BodyRegion, DamageKind } from './body.ts';
 import type { MeleeBlocker } from './collision.ts';
 import type { ActorDef } from './content.ts';
@@ -43,6 +37,12 @@ import {
   missingFlesh,
   protectedCoreCell,
 } from './fusedMassCarving.ts';
+import {
+  FUSED_MASS_FIGURE_SEED,
+  fusedMassCollisionEnvelope,
+  fusedMassFigureForType,
+  fusedMassStrikeOrigin,
+} from './fusedMassFigure.ts';
 import { FusedMassShape } from './fusedMassShape.ts';
 import { HUMANOID_REGION_NAMES } from './humanoidRegionNames.ts';
 import { lightSenseRangeScale } from './lights.ts';
@@ -105,8 +105,8 @@ const requiredGrabBand = (type: ActorDef): number => {
   return type.attack.grabBandMetres;
 };
 
-export const zombieAttackReachForType = (type: ActorDef, figureSeed = AMALGAM_FIGURE_SEED): number =>
-  type.model === 'fused-mass' ? type.attack.reach * amalgamFigureForType(type, figureSeed).scale : type.attack.reach;
+export const zombieAttackReachForType = (type: ActorDef, figureSeed = FUSED_MASS_FIGURE_SEED): number =>
+  type.model === 'fused-mass' ? type.attack.reach * fusedMassFigureForType(type, figureSeed).scale : type.attack.reach;
 
 /**
  * Effective eye-to-hand reach in metres, including leaning into a swing; weapon reach extends beyond it.
@@ -143,7 +143,7 @@ const zombieRegionsFor = (type: ActorDef, seed: number): ActorRegions => {
   if (type.model !== 'fused-mass') {
     return Object.fromEntries(HUMANOID_REGION_NAMES.map((region) => [region, type.regions[region]!])) as ActorRegions;
   }
-  const figure = amalgamFigureForType(type, seed);
+  const figure = fusedMassFigureForType(type, seed);
   return Object.fromEntries(
     figure.manifest.regions.map((region) => {
       const health = maxZombieRegionHealth(type, region.id as ActorHitRegion);
@@ -224,7 +224,7 @@ export interface ZombieAim {
 }
 
 /** Where one hit struck an amalgam's flesh, before it is carved. */
-interface AmalgamStrike {
+interface FusedMassStrike {
   readonly cell: number;
   readonly damage: number;
   readonly hit: HitImpulse;
@@ -236,7 +236,7 @@ const strikeOf = (
   cell: number | undefined,
   damage: number,
   hit: HitImpulse,
-): AmalgamStrike | undefined => (cell === undefined || !zombie.type.carving ? undefined : { cell, damage, hit });
+): FusedMassStrike | undefined => (cell === undefined || !zombie.type.carving ? undefined : { cell, damage, hit });
 
 interface MeleeHitContext {
   readonly id: EntityId;
@@ -433,7 +433,7 @@ export const activeAmalgamMembers = (
     return [];
   }
   const severed = new Set(zombie.severed);
-  return amalgamFigureForType(zombie.type, zombie.figureSeed)
+  return fusedMassFigureForType(zombie.type, zombie.figureSeed)
     .manifest.parts.filter((part) => part.severable && !severed.has(part.id))
     .map((part) => ({ partId: part.id, rootBone: part.rootBone, regionIds: part.regionIds }));
 };
@@ -515,7 +515,7 @@ const validCarvedCells = (type: ActorDef, figureSeed: number, carved: readonly n
   if (!type.carving) {
     return carved.length === 0;
   }
-  const figure = amalgamFigureForType(type, figureSeed);
+  const figure = fusedMassFigureForType(type, figureSeed);
   const { owner } = figure.realized.voxels;
   const keep = protectedCoreCell(figure);
   return carved.every((cell) => cell < owner.length && owner[cell]! > 0 && cell !== keep);
@@ -714,7 +714,7 @@ const posedRegionsForZombie = ({
   }
   const poseInput = actorPoseInputFor(zombie, id, blockSize);
   const posed =
-    zombie.type.model === 'fused-mass' ? posedAmalgamRegionBoxes(poseInput) : posedHumanoidRegionBoxes(poseInput);
+    zombie.type.model === 'fused-mass' ? posedFusedMassRegionBoxes(poseInput) : posedHumanoidRegionBoxes(poseInput);
   poseCache?.set(id, posed);
   return posed;
 };
@@ -877,7 +877,7 @@ const strikeOrigin = (
   reachMetres: number,
   playerChest: Vec3,
 ): Vec3 | undefined => {
-  const offset = amalgamStrikeOrigin(amalgamFigureForType(zombie.type, zombie.figureSeed), zombie.facing);
+  const offset = fusedMassStrikeOrigin(fusedMassFigureForType(zombie.type, zombie.figureSeed), zombie.facing);
   const origin: Vec3 = [
     zombiePos[0] + offset[0] / blockSize,
     zombiePos[1] + offset[1] / blockSize,
@@ -1660,7 +1660,7 @@ const pushTurn = (body: Body, shape: FusedMassShape, turn: number): boolean => {
 };
 
 /** An amalgam body's exact shape, and the last facing it turned to clear of terrain. */
-interface AmalgamCollider {
+interface FusedMassCollider {
   readonly zombie: Zombie;
   readonly shape: FusedMassShape;
   facing: Vec3;
@@ -1688,7 +1688,7 @@ export class ZombieSystem {
   private frozen = false;
   private readonly solidBricks: SolidBricks;
   /** Per body: its amalgam's shape and the last facing it turned to without meeting terrain; null otherwise. */
-  private readonly shapes = new WeakMap<Body, AmalgamCollider | null>();
+  private readonly shapes = new WeakMap<Body, FusedMassCollider | null>();
   private readonly missing = new WeakMap<
     Zombie,
     { carved: readonly number[]; severed: number; missing: MissingFlesh }
@@ -1705,7 +1705,7 @@ export class ZombieSystem {
   /** The amalgam's flesh as its body's shape, turned to its facing; every other body moves as its box. */
   readonly shapeOf: ShapeOf = (body) => this.colliderOf(body)?.shape;
 
-  private colliderOf(body: Body): AmalgamCollider | undefined {
+  private colliderOf(body: Body): FusedMassCollider | undefined {
     let collider = this.shapes.get(body);
     if (collider === undefined) {
       const zombie = [...this.store.entries()].find(([, candidate]) => candidate.body === body)?.[1];
@@ -1714,7 +1714,7 @@ export class ZombieSystem {
           ? {
               zombie,
               shape: new FusedMassShape(
-                amalgamFigureForType(zombie.type, zombie.figureSeed),
+                fusedMassFigureForType(zombie.type, zombie.figureSeed),
                 this.options.blockSize,
                 this.solidBricks,
               ),
@@ -1738,7 +1738,7 @@ export class ZombieSystem {
     if (cached && cached.carved === zombie.carved && cached.severed === zombie.severed.length) {
       return cached.missing;
     }
-    const missing = missingFlesh(amalgamFigureForType(zombie.type, zombie.figureSeed), zombie);
+    const missing = missingFlesh(fusedMassFigureForType(zombie.type, zombie.figureSeed), zombie);
     this.missing.set(zombie, { carved: zombie.carved, severed: zombie.severed.length, missing });
     return missing;
   }
@@ -1928,7 +1928,7 @@ export class ZombieSystem {
         if (!type) {
           throw new Error(`Missing zombie type ${zombie.type}`);
         }
-        if (type.model === 'fused-mass' && zombie.figureSeed !== AMALGAM_FIGURE_SEED) {
+        if (type.model === 'fused-mass' && zombie.figureSeed !== FUSED_MASS_FIGURE_SEED) {
           throw new Error(`Invalid amalgam figure seed for entity ${id}`);
         }
         if (type.model !== 'fused-mass' && !requiredFigureSeeds(type).includes(zombie.figureSeed)) {
@@ -1947,8 +1947,8 @@ export class ZombieSystem {
           throw new Error(`Invalid zombie regions for entity ${id}`);
         }
         if (type.model === 'fused-mass') {
-          const envelope = amalgamCollisionEnvelope(
-            amalgamFigureForType(type, zombie.figureSeed),
+          const envelope = fusedMassCollisionEnvelope(
+            fusedMassFigureForType(type, zombie.figureSeed),
             this.options.blockSize,
           );
           if (
@@ -1959,7 +1959,7 @@ export class ZombieSystem {
             throw new Error(`Invalid amalgam collision envelope for entity ${id}`);
           }
           const validParts = new Set(
-            amalgamFigureForType(type, zombie.figureSeed)
+            fusedMassFigureForType(type, zombie.figureSeed)
               .manifest.parts.filter((part) => part.severable)
               .map((part) => part.id),
           );
@@ -2216,7 +2216,7 @@ export class ZombieSystem {
     const direction = unit(facing);
     const figureSeed =
       type.model === 'fused-mass'
-        ? AMALGAM_FIGURE_SEED
+        ? FUSED_MASS_FIGURE_SEED
         : requiredFigureSeeds(type)[
             Rng.stream(this.options.seed ?? 0, `zombie-figure:${this.store.nextId}`).int(
               0,
@@ -3839,7 +3839,7 @@ export class ZombieSystem {
     const { blockSize } = this.options;
     const posed = posedRegionsForZombie({ id, zombie, blockSize, poseCache });
     const figure =
-      zombie.type.model === 'fused-mass' ? amalgamFigureForType(zombie.type, zombie.figureSeed) : undefined;
+      zombie.type.model === 'fused-mass' ? fusedMassFigureForType(zombie.type, zombie.figureSeed) : undefined;
     let found = nearest;
     for (const regionId of Object.keys(zombie.regions)) {
       const region = regionId as ActorHitRegion;
@@ -3918,7 +3918,7 @@ export class ZombieSystem {
     };
     // One shot's pellets carve one hole per amalgam, struck against the flesh as it was before the shot's
     // holes, so pellets on one line can't tunnel through the body.
-    const strikes = new Map<EntityId, { zombie: Zombie; strikes: AmalgamStrike[] }>();
+    const strikes = new Map<EntityId, { zombie: Zombie; strikes: FusedMassStrike[] }>();
     for (const direction of shot.directions) {
       const aim = this.targetAt({
         origin: shot.origin,
@@ -4067,7 +4067,7 @@ export class ZombieSystem {
     damageType,
     projectile = false,
     damageOverride,
-  }: MeleeHitContext & { projectile?: boolean; damageOverride?: number }): AmalgamStrike | undefined {
+  }: MeleeHitContext & { projectile?: boolean; damageOverride?: number }): FusedMassStrike | undefined {
     const ray = unit(direction);
     const distance = distanceMetres / this.options.blockSize;
     const hit: HitImpulse = {
@@ -4117,12 +4117,12 @@ export class ZombieSystem {
   }
 
   /** Knocks out the flesh around one hole: the strikes' central cell, sized by their summed damage. */
-  private carve(id: EntityId, zombie: Zombie, strikes: readonly AmalgamStrike[]): void {
+  private carve(id: EntityId, zombie: Zombie, strikes: readonly FusedMassStrike[]): void {
     const { carving } = zombie.type;
     if (!carving || strikes.length === 0) {
       return;
     }
-    const figure = amalgamFigureForType(zombie.type, zombie.figureSeed);
+    const figure = fusedMassFigureForType(zombie.type, zombie.figureSeed);
     const struck = centralCell(
       figure,
       strikes.map((strike) => strike.cell),

@@ -1,20 +1,20 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through Deadvox's TypeScript alias.
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { describe, expect, it } from 'vitest';
-import { actorFigure, amalgamTypeOf } from '../src/core/actorFigure.ts';
+import { actorFigure, fusedMassTypeOf } from '../src/core/actorFigure.ts';
 import { actorPoseInputFor, posedActor } from '../src/core/actorPose.ts';
-import { posedAmalgamRegionBoxes } from '../src/core/actorRegions.ts';
+import { posedFusedMassRegionBoxes } from '../src/core/actorRegions.ts';
 import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
-import {
-  AMALGAM_FIGURE_SEED,
-  amalgamCollisionEnvelope,
-  amalgamFigure,
-  amalgamFigureForType,
-  amalgamStrikeOrigin,
-} from '../src/core/amalgamFigure.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { carveAround, missingFlesh, protectedCoreCell } from '../src/core/fusedMassCarving.ts';
+import {
+  FUSED_MASS_FIGURE_SEED,
+  fusedMassCollisionEnvelope,
+  fusedMassFigure,
+  fusedMassFigureForType,
+  fusedMassStrikeOrigin,
+} from '../src/core/fusedMassFigure.ts';
 import { FusedMassShape } from '../src/core/fusedMassShape.ts';
 import { pelletShotFromBasis, projectileShot } from '../src/core/pellets.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
@@ -84,7 +84,7 @@ const findRegionRay = ({
   simulation: ZombieSystem;
   id: number;
   regionId: string;
-  boxes: readonly ReturnType<typeof posedAmalgamRegionBoxes>[string][number][];
+  boxes: readonly ReturnType<typeof posedFusedMassRegionBoxes>[string][number][];
   distanceMetres?: number;
 }): { origin: Vec3; direction: Vec3 } | null => {
   const weapon = { type: 'blunt', damage: 0, reach: Math.max(4, distanceMetres), cooldown: 0, impulse: 0 };
@@ -106,7 +106,7 @@ const findRegionRay = ({
 
 const findMemberRay = (simulation: ZombieSystem, id: number, distanceMetres = 3) => {
   const zombie = simulation.store.get(id)!;
-  const regions = posedAmalgamRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
+  const regions = posedFusedMassRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
   for (const member of activeAmalgamMembers(zombie)) {
     for (const regionId of member.regionIds) {
       const ray = findRegionRay({ simulation, id, regionId, boxes: regions[regionId] ?? [], distanceMetres });
@@ -119,11 +119,11 @@ const findMemberRay = (simulation: ZombieSystem, id: number, distanceMetres = 3)
 };
 
 const poseInputForFigure = (
-  figure: ReturnType<typeof amalgamFigure>,
+  figure: ReturnType<typeof fusedMassFigure>,
   position: Vec3,
   facing: Vec3,
   severed: readonly string[] = [],
-): Parameters<typeof posedAmalgamRegionBoxes>[0] => ({
+): Parameters<typeof posedFusedMassRegionBoxes>[0] => ({
   model: 'fused-mass',
   seed: figure.seed,
   bodyScale: figure.scale,
@@ -140,7 +140,7 @@ const poseInputForFigure = (
 });
 
 const regionsInsideBounds = (
-  regions: ReturnType<typeof posedAmalgamRegionBoxes>,
+  regions: ReturnType<typeof posedFusedMassRegionBoxes>,
   minBounds: readonly number[],
   maxBounds: readonly number[],
 ): boolean => {
@@ -171,13 +171,13 @@ const stepHeadingAlignment = (before: Vec3, after: Vec3, target: Vec3): number |
 };
 
 it('selects the amalgam content type by its model, not its id', () => {
-  const amalgam = amalgamTypeOf(registry.zombies)!;
+  const amalgam = fusedMassTypeOf(registry.zombies)!;
   const renamed = new Map([...registry.zombies].map(([id, type]) => [id === amalgam.id ? 'renamed' : id, type]));
   expect(amalgam.model).toBe('fused-mass');
-  expect(amalgamTypeOf(renamed)).toBe(amalgam);
+  expect(fusedMassTypeOf(renamed)).toBe(amalgam);
 });
 
-const boundsOfPosedRegions = (regions: ReturnType<typeof posedAmalgamRegionBoxes>) => {
+const boundsOfPosedRegions = (regions: ReturnType<typeof posedFusedMassRegionBoxes>) => {
   const bounds = {
     min: [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY],
     max: [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY],
@@ -202,7 +202,7 @@ const boundsOfPosedRegions = (regions: ReturnType<typeof posedAmalgamRegionBoxes
  * The centre of each flesh voxel in the amalgam's own frame (facing -z, from its ground origin), and the voxel edge,
  * in blocks: the rest pose the rendered figure stands in.
  */
-const fleshVoxels = (figure: ReturnType<typeof amalgamFigure>): { voxel: number; centres: Vec3[] } => {
+const fleshVoxels = (figure: ReturnType<typeof fusedMassFigure>): { voxel: number; centres: Vec3[] } => {
   const { dims, owner, size, origin } = figure.realized.voxels;
   const metres = size * figure.scale;
   const centres: Vec3[] = [];
@@ -438,8 +438,8 @@ describe('amalgam body and combat seam', () => {
   it('derives a tight collision envelope and region boxes from the realized body manifest', () => {
     expect(registry.zombies.get('amalgam')?.authoredOnly).toBe(true);
     const amalgamType = registry.zombies.get('amalgam')!;
-    const figure = amalgamFigure(3, amalgamType.bodyScale!);
-    const envelope = amalgamCollisionEnvelope(figure, BLOCK_SIZE);
+    const figure = fusedMassFigure(3, amalgamType.bodyScale!);
+    const envelope = fusedMassCollisionEnvelope(figure, BLOCK_SIZE);
     const { bounds, originOffset } = figure;
     const localMin = [
       bounds.min[0] + originOffset[0],
@@ -461,7 +461,7 @@ describe('amalgam body and combat seam', () => {
     );
     expect(envelope.height * BLOCK_SIZE).toBeGreaterThanOrEqual(localMax[1]! - localMin[1]!);
 
-    const posed = posedAmalgamRegionBoxes(poseInputForFigure(figure, [0, 0, 0], [0, 0, -1]));
+    const posed = posedFusedMassRegionBoxes(poseInputForFigure(figure, [0, 0, 0], [0, 0, -1]));
     expect(regionsInsideBounds(posed, localMin, localMax)).toBe(true);
     const regionBounds = boundsOfPosedRegions(posed);
     const scaledVoxel = figure.realized.voxels.size * figure.scale;
@@ -480,7 +480,7 @@ describe('amalgam body and combat seam', () => {
 
   it('keeps Deadvox metre bounds aligned with the generated mobgen body', () => {
     const type = registry.zombies.get('amalgam')!;
-    const figure = amalgamFigure(3, type.bodyScale!);
+    const figure = fusedMassFigure(3, type.bodyScale!);
     const generatedBounds = voxelBounds(
       figure.realized.voxels,
       figure.realized.body.bones.map((_, index) => index),
@@ -554,8 +554,8 @@ describe('amalgam body and combat seam', () => {
     expect(hitFlinchTime).toBeGreaterThan(0);
 
     const memberRegion = activeAmalgamMembers(zombie)[0]!.regionIds[0]!;
-    const posedBoxes = posedAmalgamRegionBoxes(poseInput)[memberRegion] ?? [];
-    const unflinchedBoxes = posedAmalgamRegionBoxes(withoutFlinch)[memberRegion] ?? [];
+    const posedBoxes = posedFusedMassRegionBoxes(poseInput)[memberRegion] ?? [];
+    const unflinchedBoxes = posedFusedMassRegionBoxes(withoutFlinch)[memberRegion] ?? [];
     const aim = combatSystem.aimAt(ray.origin, ray.direction, FISTS_MELEE);
     expect(aim?.id).toBe(id);
     expect(aim?.region).toBe(memberRegion);
@@ -577,8 +577,8 @@ describe('amalgam body and combat seam', () => {
 
   it('walks through an opening its flesh fits but its old collision box does not', () => {
     const amalgam = registry.zombies.get('amalgam')!;
-    const figure = amalgamFigureForType(amalgam, AMALGAM_FIGURE_SEED);
-    const envelope = amalgamCollisionEnvelope(figure, BLOCK_SIZE);
+    const figure = fusedMassFigureForType(amalgam, FUSED_MASS_FIGURE_SEED);
+    const envelope = fusedMassCollisionEnvelope(figure, BLOCK_SIZE);
     const start: Vec3 = [0.5, 1, 8];
     // A wall at z = 0, open in each block row half a block beyond the flesh that crosses it facing -z (the
     // flesh above and below the row by that margin too, since the body stands a skin above the floor).
@@ -751,7 +751,7 @@ describe('amalgam body and combat seam', () => {
     const firearm = registry.items.get('pump_shotgun')!.firearm!;
     const fire = (origin: Vec3, basis: ReturnType<typeof aimBasis>, key: string): number =>
       simulation.firePellets(pelletShotFromBasis({ ammo, firearm, origin, basis, seed: 73, key })).hits;
-    const coreBoxes = posedAmalgamRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
+    const coreBoxes = posedFusedMassRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
     const coreCenter = coreBoxes['core.trunk']?.[0]?.voxelCentroid;
     expect(coreCenter).toBeDefined();
     const rangeMetres = 6;
@@ -841,7 +841,7 @@ describe('amalgam body and combat seam', () => {
       ...zombie,
       severed: [
         ...zombie.severed,
-        ...amalgamFigureForType(zombie.type, zombie.figureSeed)
+        ...fusedMassFigureForType(zombie.type, zombie.figureSeed)
           .manifest.parts.filter((part) => part.severable)
           .map((part) => part.id),
       ],
@@ -856,8 +856,8 @@ describe('amalgam body and combat seam', () => {
     const id = simulation.add(type, [0, 1, 0]);
     const state = structuredClone(simulation.snapshotState());
     const { zombie } = state.zombies.find((entry) => entry.id === id)!;
-    const unsupportedSeed = AMALGAM_FIGURE_SEED + 1;
-    const unsupportedFigure = amalgamFigureForType(type, unsupportedSeed);
+    const unsupportedSeed = FUSED_MASS_FIGURE_SEED + 1;
+    const unsupportedFigure = fusedMassFigureForType(type, unsupportedSeed);
     zombie.figureSeed = unsupportedSeed;
     zombie.regions = Object.fromEntries(
       unsupportedFigure.manifest.regions.map(({ id: region }) => {
@@ -865,7 +865,7 @@ describe('amalgam body and combat seam', () => {
         return [region, type.regions[healthKey]!];
       }),
     );
-    const envelope = amalgamCollisionEnvelope(unsupportedFigure, BLOCK_SIZE);
+    const envelope = fusedMassCollisionEnvelope(unsupportedFigure, BLOCK_SIZE);
     zombie.body.halfWidth = envelope.halfWidth;
     zombie.body.halfDepth = envelope.halfDepth;
     zombie.body.height = envelope.height;
@@ -922,7 +922,7 @@ describe('amalgam body and combat seam', () => {
       membersBefore.filter(({ partId }) => partId !== target.partId).map(({ partId }) => partId),
     );
 
-    const boxesAfter = posedAmalgamRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
+    const boxesAfter = posedFusedMassRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
     for (const region of target.regionIds) {
       expect(boxesAfter[region]).toHaveLength(0);
     }
@@ -969,7 +969,7 @@ const attackAlong = ({ typeId, elevation, reachShare, roof = false }: AttackLine
   const reachMetres = zombieAttackReachMetres(zombie);
   const offsetMetres =
     typeId === 'amalgam'
-      ? amalgamStrikeOrigin(amalgamFigureForType(zombie.type, zombie.figureSeed), zombie.facing)
+      ? fusedMassStrikeOrigin(fusedMassFigureForType(zombie.type, zombie.figureSeed), zombie.facing)
       : [0, PLAYER_CHEST_METRES, 0];
   const origin = feet.map((coordinate, axis) => coordinate + offsetMetres[axis]! / BLOCK_SIZE) as Vec3;
   const line = (reachMetres * reachShare) / BLOCK_SIZE;
@@ -1028,14 +1028,14 @@ describe('amalgam flesh carving', () => {
   const { carving: _ignored, ...uncarvedAmalgam } = amalgam;
   const buck = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
   const firearm = registry.items.get('pump_shotgun')!.firearm!;
-  const figure = amalgamFigureForType(amalgam, AMALGAM_FIGURE_SEED);
+  const figure = fusedMassFigureForType(amalgam, FUSED_MASS_FIGURE_SEED);
   const voxelMetres = figure.realized.voxels.size * figure.scale;
 
   /** One amalgam, and a straight line at its core from a few metres out. */
   const coreTarget = (simulation = system(), type: typeof amalgam = amalgam) => {
     const id = simulation.add(type, [0, 1, 0]);
     const zombie = simulation.store.get(id)!;
-    const core = posedAmalgamRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE))['core.trunk']![0]!.voxelCentroid;
+    const core = posedFusedMassRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE))['core.trunk']![0]!.voxelCentroid;
     const origin: Vec3 = [core[0], core[1], core[2] + 6 / BLOCK_SIZE];
     const direction: Vec3 = [0, 0, -1];
     const pellets = (count: number, damage: number) =>
@@ -1148,7 +1148,7 @@ describe('amalgam flesh carving', () => {
         point[1] < pos[1] + height
       );
     };
-    const boxes = posedAmalgamRegionBoxes(input)['core.trunk']!;
+    const boxes = posedFusedMassRegionBoxes(input)['core.trunk']!;
     /** Horizontal lines along one row, outward from a core box's centre: the first to miss after one that strikes. */
     const besideOnRow = (box: (typeof boxes)[number], direction: Vec3, row: number, sign: number): Vec3[] => {
       const side: Vec3 = [direction[2], 0, -direction[0]];
@@ -1220,7 +1220,7 @@ describe('amalgam flesh carving', () => {
     // posed figure turns: by its core box's turn from facing -z.
     const facing: Vec3 = [Math.sin(0.7), 0, -Math.cos(0.7)];
     const coreTurn = (toward: Vec3) =>
-      posedAmalgamRegionBoxes(poseInputForFigure(figure, [0, 0, 0], toward))['core.trunk']![0]!.rotation;
+      posedFusedMassRegionBoxes(poseInputForFigure(figure, [0, 0, 0], toward))['core.trunk']![0]!.rotation;
     const [turned, unturned] = [coreTurn(facing), coreTurn([0, 0, -1])];
     const turn = (row: number, column: number): number =>
       [0, 1, 2].reduce((sum, k) => sum + turned[row * 3 + k]! * unturned[column * 3 + k]!, 0);
@@ -1244,7 +1244,7 @@ describe('amalgam flesh carving', () => {
   it('opens a hole for every shot that hits the core after its members are severed', () => {
     const { simulation, zombie, input } = severedAmalgam();
     // A ring of light pellets at each core box; some lines cross where a lost member's voxels were.
-    const lines = posedAmalgamRegionBoxes(input)['core.trunk']!.flatMap((box) =>
+    const lines = posedFusedMassRegionBoxes(input)['core.trunk']!.flatMap((box) =>
       Array.from({ length: 16 }, (_, step) => (step / 16) * 2 * Math.PI).flatMap((angle) =>
         [-0.4, 0, 0.4].map((lift) => {
           const length = Math.hypot(1, lift);

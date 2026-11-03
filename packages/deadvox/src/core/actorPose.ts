@@ -16,8 +16,8 @@ import { LOOK_AT_PROFILES } from '@mobgen/mob/lookAtProfiles.ts';
 import { flinchClipFor, flinchPoseWithClip, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import type { ActorFigure } from './actorFigure.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
-import { amalgamFigure, amalgamSeveredBones } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
+import { fusedMassFigure, fusedMassSeveredBones } from './fusedMassFigure.ts';
 import type { Zombie } from './zombies.ts';
 
 export interface ActorPoseInput {
@@ -186,7 +186,7 @@ export const flinchSideForId = (id: number): number => {
   return (h % 2000) / 1000 - 1;
 };
 
-const amalgamHitFlinchPose = (pose: Pose, time: number, id: number): Pose => {
+const fusedMassHitFlinchPose = (pose: Pose, time: number, id: number): Pose => {
   const peak = HIT_FLINCH.keys[1]!;
   const chest = peak.rotations.chest!;
   const recovery = (HIT_FLINCH.duration - time) / (HIT_FLINCH.duration - peak.t);
@@ -271,11 +271,11 @@ export const advanceStanceWeight = (current: number, target: number, dt: number)
   return Math.abs(delta) <= maxDelta + 1e-12 ? target : current + Math.sign(delta) * maxDelta;
 };
 
-const posedAmalgam = (input: ActorPoseInput): PosedActor => {
+const posedFusedMass = (input: ActorPoseInput): PosedActor => {
   if (input.bodyScale === undefined) {
     throw new Error('Amalgam pose is missing its authored bodyScale');
   }
-  const figure = amalgamFigure(input.seed, input.bodyScale);
+  const figure = fusedMassFigure(input.seed, input.bodyScale);
   const { bones } = figure.realized.body;
   const basePose: Pose = {
     root: figure.originOffset.map((coordinate) => coordinate / figure.scale) as Vec3,
@@ -284,13 +284,13 @@ const posedAmalgam = (input: ActorPoseInput): PosedActor => {
   const pose =
     input.hitFlinchTime === undefined
       ? basePose
-      : amalgamHitFlinchPose(basePose, input.hitFlinchTime, input.id ?? input.seed);
+      : fusedMassHitFlinchPose(basePose, input.hitFlinchTime, input.id ?? input.seed);
   return {
     pose,
     transforms: boneTransforms(bones, pose),
     bones,
     figure,
-    hidden: amalgamSeveredBones(figure, input.severed),
+    hidden: fusedMassSeveredBones(figure, input.severed),
     yaw: rotY((Math.atan2(-input.facing[0], -input.facing[2]) * 180) / Math.PI),
     position: input.position,
     blockSize: input.blockSize,
@@ -380,7 +380,7 @@ export const posedMouth = (input: ActorPoseInput): Vec3 => {
 export const posedActor = (input: ActorPoseInput): PosedActor => {
   const model = bodyPlanModel(input.model ?? 'humanoid');
   if (model === 'amalgam') {
-    return posedAmalgam(input);
+    return posedFusedMass(input);
   }
   const figure = templateFigure(model, input.seed);
   if (model === 'acid') {

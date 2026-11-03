@@ -5,7 +5,7 @@ import type { Mat3 } from '@mobgen/core/math.ts';
 import { mulMM, transpose } from '@mobgen/core/math.ts';
 import type { boneTransforms } from '@mobgen/core/pose.ts';
 import { type BoneVoxelBox, humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
-import type { AmalgamFigure } from './amalgamFigure.ts';
+import type { FusedMassFigure } from './fusedMassFigure.ts';
 import { HUMANOID_REGION_NAMES } from './humanoidRegionNames.ts';
 import type { ActorHitRegion, HumanoidHitRegion } from './schema.ts';
 
@@ -79,7 +79,7 @@ interface BoneVoxelSummary {
   readonly count: number;
 }
 
-type PoseFigure = ReturnType<typeof humanoidFigure> | AmalgamFigure;
+type PoseFigure = ReturnType<typeof humanoidFigure> | FusedMassFigure;
 const voxelSummaries = new Map<string, ReadonlyMap<string, BoneVoxelSummary>>();
 const voxelSummaryFor = (key: string, figure: PoseFigure): ReadonlyMap<string, BoneVoxelSummary> => {
   let summary = voxelSummaries.get(key);
@@ -227,7 +227,7 @@ export const posedHumanoidRegionBoxes = (
 };
 
 /** Manifest-region boxes from the same posed transforms used by the living actor renderer. */
-export const posedAmalgamRegionBoxes = (input: ActorPoseInput): Readonly<Record<string, readonly PosedBoneBox[]>> => {
+export const posedFusedMassRegionBoxes = (input: ActorPoseInput): Readonly<Record<string, readonly PosedBoneBox[]>> => {
   const context = poseContextFor(input);
   if (input.model !== 'fused-mass' || !('manifest' in context.figure)) {
     throw new Error('Amalgam region boxes require an amalgam pose input');

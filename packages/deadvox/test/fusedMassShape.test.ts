@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { AMALGAM_FIGURE_SEED, amalgamFigure } from '../src/core/amalgamFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { FUSED_MASS_FIGURE_SEED, fusedMassFigure } from '../src/core/fusedMassFigure.ts';
 import { FusedMassShape } from '../src/core/fusedMassShape.ts';
 import { testedBricks } from '../src/core/solidBricks.ts';
 
-const source = amalgamFigure(AMALGAM_FIGURE_SEED, 1);
+const source = fusedMassFigure(FUSED_MASS_FIGURE_SEED, 1);
 const cube = {
   ...source,
   scale: 1,

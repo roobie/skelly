@@ -3,12 +3,12 @@ import { type Mat3, mulMV, rotX, rotY, transpose } from '@mobgen/core/math.ts';
 import { boneTransforms, type Pose } from '@mobgen/core/pose.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { describe, expect, it } from 'vitest';
-import { AMALGAM_FIGURE_SEED, amalgamFigure, amalgamStrikeOrigin } from '../src/core/amalgamFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { FUSED_MASS_FIGURE_SEED, fusedMassFigure, fusedMassStrikeOrigin } from '../src/core/fusedMassFigure.ts';
 import { fusedMassCoreInteriorAnchor, fusedMassTentaclePose } from '../src/render/fusedMassTentaclePose.ts';
 
 interface CoreVoxelPointInput {
-  readonly figure: ReturnType<typeof amalgamFigure>;
+  readonly figure: ReturnType<typeof fusedMassFigure>;
   readonly transforms: ReturnType<typeof boneTransforms>;
   readonly yaw: Mat3;
   readonly position: Vec3;
@@ -100,7 +100,7 @@ describe('fused-mass attack tentacle pose', () => {
   });
 
   it('anchors the tentacle root to the posed core after attack, flinch and member loss', () => {
-    const figure = amalgamFigure(AMALGAM_FIGURE_SEED, 1);
+    const figure = fusedMassFigure(FUSED_MASS_FIGURE_SEED, 1);
     const position: Vec3 = [13, 7, -4];
     const target: Vec3 = [position[0] + 2, position[1], position[2] - 3];
     const yaw = rotY(37);
@@ -170,7 +170,7 @@ describe('fused-mass attack tentacle pose', () => {
   });
 
   it('starts the rendered tentacle at rest where the simulation starts its strike line', () => {
-    const figure = amalgamFigure(AMALGAM_FIGURE_SEED, 4);
+    const figure = fusedMassFigure(FUSED_MASS_FIGURE_SEED, 4);
     const position: Vec3 = [13, 7, -4];
     const facing: Vec3 = [Math.sin(0.6), 0, -Math.cos(0.6)];
     const restPose: Pose = {
@@ -184,7 +184,7 @@ describe('fused-mass attack tentacle pose', () => {
       yaw: rotY((Math.atan2(-facing[0], -facing[2]) * 180) / Math.PI),
       position,
     });
-    const offset = amalgamStrikeOrigin(figure, facing);
+    const offset = fusedMassStrikeOrigin(figure, facing);
     const simulated: Vec3 = [position[0] + offset[0], position[1] + offset[1], position[2] + offset[2]];
     expect(Math.hypot(offset[0], offset[2])).toBeGreaterThan(0);
     expect(Math.hypot(rendered[0] - simulated[0], rendered[1] - simulated[1], rendered[2] - simulated[2])).toBeLessThan(

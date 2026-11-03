@@ -12,15 +12,15 @@ import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import type { BoneVoxelBox } from '@mobgen/mob/humanoidFigure.ts';
 import type { Vec3 } from './coords.ts';
 
-type AmalgamRealized = NonNullable<ReturnType<typeof generateValid>>['realized'];
-type AmalgamManifest = ReturnType<typeof amalgamManifest>;
+type FusedMassRealized = NonNullable<ReturnType<typeof generateValid>>['realized'];
+type FusedMassManifest = ReturnType<typeof amalgamManifest>;
 
-export interface AmalgamFigure {
+export interface FusedMassFigure {
   readonly seed: number;
   readonly scale: number;
   readonly genome: NonNullable<ReturnType<typeof generateValid>>['genome'];
-  readonly realized: AmalgamRealized;
-  readonly manifest: AmalgamManifest;
+  readonly realized: FusedMassRealized;
+  readonly manifest: FusedMassManifest;
   readonly boxes: Readonly<Record<string, readonly BoneVoxelBox[]>>;
   readonly voxelCentersByBone: ReadonlyMap<string, readonly (readonly [number, number, number])[]>;
   /** Rest-pose bounds include voxel faces, in Deadvox metres after the authored body scale. */
@@ -29,7 +29,7 @@ export interface AmalgamFigure {
   readonly originOffset: readonly [number, number, number];
   /** A point inside the core's voxels, in unscaled figure space: the tentacle's root. */
   readonly coreInteriorPoint: readonly [number, number, number];
-  /** That point at rest pose, in metres from the ground origin, facing -z (see `amalgamStrikeOrigin`). */
+  /** That point at rest pose, in metres from the ground origin, facing -z (see `fusedMassStrikeOrigin`). */
   readonly restStrikeOrigin: Vec3;
 }
 
@@ -63,17 +63,17 @@ const coreInteriorPoint = (centers: readonly VoxelPoint[], halfVoxel: number): V
 };
 
 /**
- * Where the amalgam's tentacle strike starts, in metres from its ground origin: the core's interior point at
+ * Where the fused mass's tentacle strike starts, in metres from its ground origin: the core's interior point at
  * rest pose, turned to `facing`. The simulation's attack line and the rendered tentacle both start there; the
  * render poses the core first, so the two part only during a hit flinch.
  */
-export const amalgamStrikeOrigin = (figure: AmalgamFigure, facing: Vec3): Vec3 => {
+export const fusedMassStrikeOrigin = (figure: FusedMassFigure, facing: Vec3): Vec3 => {
   const [x, y, z] = mulMV(rotY((Math.atan2(-facing[0], -facing[2]) * 180) / Math.PI), figure.restStrikeOrigin);
   return [x, y, z];
 };
 
 /** The bones that severing `severed` (manifest part ids) hides: each part's root bone and all below it. */
-export const amalgamSeveredBones = (figure: AmalgamFigure, severed: readonly string[]): ReadonlySet<string> => {
+export const fusedMassSeveredBones = (figure: FusedMassFigure, severed: readonly string[]): ReadonlySet<string> => {
   const partRoots = new Map(figure.manifest.parts.map((part) => [part.id, part.rootBone]));
   return severedBoneSet(
     figure.realized.body.bones,
@@ -86,9 +86,9 @@ interface Bounds {
   max: [number, number, number];
 }
 
-export const AMALGAM_FIGURE_SEED = 1;
+export const FUSED_MASS_FIGURE_SEED = 1;
 
-const cache = new Map<string, AmalgamFigure>();
+const cache = new Map<string, FusedMassFigure>();
 
 interface VoxelBounds {
   byBone: Map<string, Bounds>;
@@ -105,7 +105,7 @@ const addOwnedVoxel = ({
   j,
   k,
 }: {
-  realized: AmalgamRealized;
+  realized: FusedMassRealized;
   byBone: Map<string, Bounds>;
   voxelCentersByBone: Map<string, [number, number, number][]>;
   totalBounds: Bounds;
@@ -136,7 +136,7 @@ const addOwnedVoxel = ({
   byBone.set(bone.id, current);
 };
 
-const collectVoxelBounds = (realized: AmalgamRealized): VoxelBounds => {
+const collectVoxelBounds = (realized: FusedMassRealized): VoxelBounds => {
   const { voxels } = realized;
   const byBone = new Map<string, Bounds>();
   const voxelCentersByBone = new Map<string, [number, number, number][]>();
@@ -154,16 +154,16 @@ const collectVoxelBounds = (realized: AmalgamRealized): VoxelBounds => {
   return { byBone, voxelCentersByBone, totalBounds };
 };
 
-export interface AmalgamCollisionEnvelope {
+export interface FusedMassCollisionEnvelope {
   readonly halfWidth: number;
   readonly halfDepth: number;
   readonly height: number;
 }
 
 /** Axis-aligned collision extents are the realized voxel bounds translated to a ground-based origin. */
-export const amalgamCollisionEnvelope = (figure: AmalgamFigure, blockSize: number): AmalgamCollisionEnvelope => {
+export const fusedMassCollisionEnvelope = (figure: FusedMassFigure, blockSize: number): FusedMassCollisionEnvelope => {
   if (!(Number.isFinite(blockSize) && blockSize > 0)) {
-    throw new Error(`Invalid amalgam block size ${blockSize}`);
+    throw new Error(`Invalid fused-mass block size ${blockSize}`);
   }
   const { bounds, originOffset } = figure;
   return {
@@ -175,23 +175,23 @@ export const amalgamCollisionEnvelope = (figure: AmalgamFigure, blockSize: numbe
   };
 };
 
-/** Realizes and caches one gameplay amalgam from the persistent seed and authored body scale. */
-export const amalgamFigure = (seed: number, scale: number): AmalgamFigure => {
+/** Realizes and caches one fused-mass body from the persistent seed and authored body scale. */
+export const fusedMassFigure = (seed: number, scale: number): FusedMassFigure => {
   const key = `${seed}:${scale}`;
   const cached = cache.get(key);
   if (cached) {
     return cached;
   }
   if (!Number.isSafeInteger(seed)) {
-    throw new Error(`Invalid amalgam figure seed ${seed}`);
+    throw new Error(`Invalid fused-mass figure seed ${seed}`);
   }
   if (!(Number.isFinite(scale) && scale > 0)) {
-    throw new Error(`Invalid amalgam body scale ${scale}`);
+    throw new Error(`Invalid fused-mass body scale ${scale}`);
   }
   // Like `templateFigure`, a seed must be valid itself rather than fall through to another seed's body.
   const generated = generateValid(consumableTemplate('amalgam'), seed, { maxAttempts: 1 });
   if (!generated) {
-    throw new Error(`No valid amalgam realization from seed ${seed}`);
+    throw new Error(`No valid fused-mass realization from seed ${seed}`);
   }
   const { realized } = generated;
   const manifest = amalgamManifest(realized.body, realized.voxels);
@@ -228,7 +228,7 @@ export const amalgamFigure = (seed: number, scale: number): AmalgamFigure => {
   const originOffset: Vec3 = [-centerX * scale, -totalBounds.min[1] * scale, -centerZ * scale];
   const coreCenters = voxelCentersByBone.get('core');
   if (!coreCenters?.length) {
-    throw new Error(`Amalgam seed ${seed} has no core voxels`);
+    throw new Error(`Fused-mass seed ${seed} has no core voxels`);
   }
   const corePoint = coreInteriorPoint(coreCenters, realized.voxels.size / 2);
   const restCore = boneTransforms(realized.body.bones, {
@@ -236,7 +236,7 @@ export const amalgamFigure = (seed: number, scale: number): AmalgamFigure => {
     rotations: {},
   }).get('core')!;
   const restCorePoint = mulMV(restCore.r, corePoint.map((coordinate) => coordinate * scale) as Vec3);
-  const figure: AmalgamFigure = {
+  const figure: FusedMassFigure = {
     seed,
     scale,
     genome: generated.genome,
@@ -257,12 +257,12 @@ export const amalgamFigure = (seed: number, scale: number): AmalgamFigure => {
   return figure;
 };
 
-export const amalgamFigureForType = (
+export const fusedMassFigureForType = (
   type: { readonly id: string; readonly bodyScale?: number | undefined },
   seed: number,
 ) => {
   if (type.bodyScale === undefined) {
-    throw new Error(`Amalgam zombie type ${type.id} has no bodyScale`);
+    throw new Error(`Fused-mass actor type ${type.id} has no bodyScale`);
   }
-  return amalgamFigure(seed, type.bodyScale);
+  return fusedMassFigure(seed, type.bodyScale);
 };

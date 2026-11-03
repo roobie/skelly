@@ -3,10 +3,10 @@ import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
 import { amalgamTemplate } from '@mobgen/mob/amalgamTemplate.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { describe, expect, it } from 'vitest';
-import { actorFigure, amalgamTypeOf } from '../src/core/actorFigure.ts';
+import { actorFigure, fusedMassTypeOf } from '../src/core/actorFigure.ts';
 import { FIGURE_VARIANTS } from '../src/core/actorModels.ts';
-import { AMALGAM_FIGURE_SEED } from '../src/core/amalgamFigure.ts';
 import { validateContent } from '../src/core/content.ts';
+import { FUSED_MASS_FIGURE_SEED } from '../src/core/fusedMassFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
@@ -37,9 +37,9 @@ describe('actor models', () => {
   });
 
   it('realizes a figure for every model content can select', () => {
-    const amalgam = amalgamTypeOf(registry.zombies)!;
+    const amalgam = fusedMassTypeOf(registry.zombies)!;
     for (const model of Object.keys(FIGURE_VARIANTS)) {
-      const [type, seed] = model === 'fused-mass' ? [amalgam, AMALGAM_FIGURE_SEED] : [{ model }, FIXTURE_SEED];
+      const [type, seed] = model === 'fused-mass' ? [amalgam, FUSED_MASS_FIGURE_SEED] : [{ model }, FIXTURE_SEED];
       expect(() => actorFigure(type, seed), model).not.toThrow();
     }
   });
