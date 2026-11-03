@@ -4,10 +4,45 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { runInNewContext } from 'node:vm';
 import { install } from './perf-baseline-browser.mjs';
 import { watchPageErrors } from './perf-baseline-page.mjs';
 import { distribution, rankProfile, summarize } from './perf-baseline-stats.mjs';
 import { startTrace } from './perf-baseline-trace.mjs';
+
+const playStartupLiteral = /'[^'\n]*globalThis\.perfBaseline\.attach[^'\n]*'/;
+
+test('injected play startup attaches the live actor store before starting frames', async () => {
+  const source = await readFile(new URL('./perf-baseline.mjs', import.meta.url), 'utf8');
+  const literal = source.match(playStartupLiteral)?.[0];
+  assert.ok(literal, 'play startup instrumentation exists');
+  const injection = runInNewContext(literal);
+  const actorStore = { size: 1 };
+  let attached;
+  let started = false;
+  runInNewContext(injection, {
+    engine: {},
+    session: {},
+    input: {},
+    view: {},
+    worldLoading: {},
+    debugTools: {},
+    actorStore,
+    perfBaseline: {
+      attach: (runtime) => {
+        attached = runtime;
+      },
+      frame: () => undefined,
+    },
+    frame: () => undefined,
+    startRealFrames: (callback) => {
+      assert.equal(attached?.actorStore, actorStore);
+      assert.equal(typeof callback, 'function');
+      started = true;
+    },
+  });
+  assert.ok(started);
+});
 
 test('query-free scene draws retain actor evidence without opening GPU timers', () => {
   const previous = globalThis.perfBaseline;

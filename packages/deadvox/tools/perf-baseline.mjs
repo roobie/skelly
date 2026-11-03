@@ -116,7 +116,7 @@ await build({
           return once(
             code,
             '  startRealFrames(frame);',
-            '  globalThis.perfBaseline.attach({ engine, session, input, view, worldLoading, debug: debugTools, zombieStore });\n  startRealFrames((now) => globalThis.perfBaseline.frame(frame, now));',
+            '  globalThis.perfBaseline.attach({ engine, session, input, view, worldLoading, debug: debugTools, actorStore });\n  startRealFrames((now) => globalThis.perfBaseline.frame(frame, now));',
           );
         }
         if (id.endsWith('/src/debug/skyRoute.ts')) {
@@ -289,7 +289,7 @@ try {
           records: perf.records,
           visibility: document.visibilityState,
           position: perf.engine.camera.position.toArray(),
-          zombieCount: perf.zombieStore.size,
+          zombieCount: perf.actorStore.size,
           drawingBuffer: [perf.engine.renderer.domElement.width, perf.engine.renderer.domElement.height],
           renderScale: perf.engine.mood.renderScale,
           sky: document.querySelector('[data-sky-route] textarea')?.value,
