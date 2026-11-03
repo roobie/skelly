@@ -8,7 +8,7 @@ read_if:
   - you change the liquid-service demonstration's normal-mode boundary or the authored liquid-recovery look
   - you benchmark the test house at a different block scale
   - you change house supply, powered furnishings or player power controls
-  - you add a feature's test prop to the showroom, or maintain the static range, stock or catalogue
+  - you add a feature's test prop to the showroom, or change range staging, stock or catalogue admission
   - you use or change the focus URL parameter
   - you decide whether a temporary repair preview belongs in the showroom
 ---
@@ -25,7 +25,8 @@ explicitly selected debug scenario mod rather than a runtime overlay: no scenari
 or debug check may select it in game logic. Range geometry must be authored templates
 and building rows; catalogue furniture, rack items and garage stock must be hand-kept
 content rather than runtime synthesis. See `src/config/bundled/test-house-debug.jsonnet`,
-`layouts`, for the mod's authoring owner.
+`layouts`, for the garage stock owner. The pending range and catalogue boundary is in
+`docs/test-house.md`, "Normal and debug additions".
 
 The charging corner belongs to the same template and layout sources, rather than a
 separate runtime look-piece overlay, so furniture, fixture loot and power share one
@@ -74,7 +75,7 @@ later additions from the normal/debug decision below.
 ## Normal and debug additions
 
 The house must remain selectable without debug mode. Evaluation supplies must not become
-ordinary play rewards: their admission must require the debug scenario mod, not a debug
+ordinary play rewards: authored staging must require the debug scenario mod, not a debug
 profile check in runtime. Every addition must explicitly decide whether it belongs in the
 ordinary house or evaluation staging, and record its reason here. Re-evaluate that choice
 whenever the house gains something; an earlier prop grants no blanket permission.
@@ -88,15 +89,20 @@ setup. See `src/content/base/templates-test-house.jsonnet`, `test_house_showroom
 The liquid-recovery look also belongs in normal mode: authored instance state lets
 ordinary inventory choices be inspected without privileged setup. See
 `src/content/base/layouts-test-house.jsonnet`, `liquidRecoveryStock`.
-Evaluation stock and floors require explicit mod selection so repeatable system tests
-do not add ordinary rewards. Their saves require the same admitted mod; a URL must select
-it through `?mods=` rather than infer it from the scene or debug profile. See
-`src/config/bundled/test-house-debug.jsonnet`, `layouts`, and `DESIGN.md`, "Debug scenes".
+Garage evaluation stock requires explicit mod selection, and its saves require the same
+admitted mod. A URL selects it through `?mods=` rather than inferring it from the scene or
+debug profile. See `src/config/bundled/test-house-debug.jsonnet`, `layouts`.
 
-Keep rack contents in hand-authored rows. A new gun, magazine, ammunition package or mod
-item requires a list edit and is silently absent until listed. The maintenance cost is
-accepted rather than hidden behind runtime compatibility synthesis or an implied
-completeness checker.
+Until the range grading ruling and conversion in PR #1539, range and catalogue floors
+remain debug-only runtime overlays, catalogue furniture comes from the registry, and rack
+stock is synthesized from firearm compatibility. Those visits and saves need no staging
+mod. See `src/game/worldSetup.ts`, `DebugTestHouseSite`, `src/core/showroom.ts`,
+`ShowroomCatalogue`, and `src/game/testHouseRange.ts`, `testHouseRangeSupply`.
+
+For the authored rack, accept a list edit per new gun, magazine, ammunition package or mod
+item, and silent absence until listed. That maintenance cost is preferable to retaining
+runtime compatibility synthesis or implying a completeness checker. See `DESIGN.md`,
+"Debug scenes".
 
 Repair looks wait for the crafting requirements view in #1469 rather than keeping a
 temporary showroom preview. A preview that names this scenario in runtime would put
@@ -118,11 +124,12 @@ generator. See `src/content/base/templates-test-house.jsonnet`, `templates`, and
 The showroom pavilion and its slot row belong in normal mode. A look request must work
 in the profile BR plays without debug keys, and a slot holds ordinary furniture that a
 player meets in the world anyway; the demo rule keeps its fixture stock out of world
-supply. The catalogue belongs in the debug scenario mod: evaluation equipment must not
-turn the ordinary haven into a warehouse. Keep its furniture list by hand, accepting a list edit
-for each new piece and silent absence until that edit. Focus must work from the admitted
-props in either profile because it only chooses where a fresh session starts; scenario
-identity must not choose its reach.
+supply. The authored catalogue must join the debug scenario mod so evaluation equipment
+cannot turn the ordinary haven into a warehouse. Accept a hand edit per new furniture
+piece and silent absence until listed. Its conversion shares the range grading trigger
+on PR #1539; until then, catalogue focus follows the debug-only overlay. Authored focus
+must follow admitted props in either profile because it only chooses a fresh session's
+start; scenario identity must not choose its reach.
 
 The destruction slot stays in normal mode because its tool, stock and breakable deck
 exercise ordinary combat and furniture floor loss without privileged setup. See
@@ -156,9 +163,12 @@ staging overlay. Content owns the placement; see
 `src/content/base/layouts-test-house.jsonnet`, `showroom`; `src/core/schema/layouts.ts`,
 `ShowroomSchema`; and `src/core/showroom.ts`, `slotProps` and `slotPlacement`.
 
-The hand-kept catalogue needs no per-feature slot because it exposes evaluation pieces
-rather than staging a feature's supplies. Keep it beyond the startup ring to avoid
-delaying every fixture visit, and separate it from the haven to preserve the home's view.
+The catalogue needs no per-feature slot because it exposes evaluation pieces rather than
+staging a feature's supplies. Until the range grading ruling and conversion in PR #1539,
+`src/core/showroom.ts`, `ShowroomCatalogue`, derives its props from the registry; the
+hand-kept list remains part of that pending conversion. Keep it beyond the startup ring
+to avoid delaying every fixture visit, and separate it from the haven to preserve the
+home's view.
 Empty catalogue pieces must stay off the house grid so evaluation cannot change house
 supply. Item and vehicle looks still belong to a slot or their owning zone.
 

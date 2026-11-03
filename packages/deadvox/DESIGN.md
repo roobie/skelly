@@ -11,7 +11,7 @@ read_if:
   - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
   - you decide how realism should trade off against tedium
   - you change food exposure ownership or ambient catch-up
-  - you change the test-house normal or debug-only boundary, static range, stock or catalogue
+  - you change the test-house normal or debug-only boundary, stock, catalogue or pending range conversion
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
@@ -1187,11 +1187,17 @@ specific sites and their rewards.
 ### Debug scenes
 
 Author test-house evaluation staging in an explicitly selected debug scenario mod,
-not behind scenario-id or debug checks in runtime. Range geometry belongs in templates
-and building rows; rack stock and the furniture catalogue are hand-kept lists, not
-runtime synthesis. Accept an edit for each new gun, tool or furniture piece: an unlisted
-item is silently absent. Evaluation supplies must not become ordinary world rewards,
-and a resumed evaluation world requires the same admitted mod. See
+not behind scenario-id or debug checks in runtime, so evaluation supplies cannot become
+ordinary world rewards. Use templates and building rows for range geometry and hand-kept
+lists for rack stock and catalogue furniture. Accept an edit per new gun, tool or furniture
+piece, and silent absence until listed, rather than adding runtime synthesis or a
+completeness checker. Authored evaluation saves must require their admitted mod.
+
+Garage stock uses that mod boundary. Until the range grading ruling and conversion in
+PR #1539, the range and catalogue remain debug-only runtime overlays, the rack derives
+stock from content, and those range visits and saves do not require the staging mod.
+See `src/game/worldSetup.ts`, `DebugTestHouseSite`, and `src/game/testHouseRange.ts`,
+`testHouseRangeSupply`. The boundary and maintenance reasons belong in
 `docs/test-house.md`, "Normal and debug additions", and `docs/test-house.md`, "Garage".
 
 ### Loot
