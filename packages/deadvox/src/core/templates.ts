@@ -157,7 +157,7 @@ export interface GroundLootMarker {
 }
 
 export interface SpawnMarker extends SpawnTimeWindowField {
-  zombie: string;
+  actor: string;
   chance: number;
   pos: Vec3;
 }
@@ -227,7 +227,7 @@ const compileMarkers = (registry: Registry, template: TemplateDef) => {
       for (const pos of cellsOf(template.size)) {
         if (charAt(template, ...pos) === char) {
           spawns.push({
-            zombie: entry.spawn,
+            actor: entry.spawn,
             chance: entry.chance ?? 1,
             pos,
             ...(entry.window ? { window: entry.window } : {}),

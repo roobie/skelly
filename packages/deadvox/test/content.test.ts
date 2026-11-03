@@ -383,7 +383,7 @@ describe('content', () => {
     const soldier = baseRegistry.actors.get('military_shambler')!;
     const templateSpawns = [...baseRegistry.templates.values()].flatMap((template) =>
       compileTemplate(baseRegistry, template)
-        .spawns.filter(({ zombie: actor }) => actor === soldier.id)
+        .spawns.filter(({ actor }) => actor === soldier.id)
         .map(() => template.id),
     );
     const layoutSpawns = [...baseRegistry.layouts.values()].flatMap((layout) =>

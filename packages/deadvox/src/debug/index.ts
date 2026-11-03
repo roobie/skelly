@@ -805,7 +805,7 @@ export const createDebugActions = ({
         },
       },
       ...Array.from(actorTypes, (type) => ({
-        id: `debug.spawn-zombie.${type.id}`,
+        id: `debug.spawn-actor.${type.id}`,
         label: `Spawn ${type.name}`,
         group: 'shamblers' as const,
         run: () => spawnActor(type.id, 1),

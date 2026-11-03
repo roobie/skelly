@@ -419,6 +419,7 @@
       "notLoot": false,
       "size": [5, 5],
       "trap": {
+        "actorLegDamage": 60,
         "disarmSimSeconds": 6,
         "holdSimSeconds": 20,
         "playerInjury": {
@@ -426,8 +427,7 @@
           "kind": "pierce",
           "region": "leftLeg"
         },
-        "setSimSeconds": 4,
-        "zombieLegDamage": 60
+        "setSimSeconds": 4
       },
       "workInProgress": false
     },

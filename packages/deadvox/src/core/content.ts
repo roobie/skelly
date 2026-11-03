@@ -1908,12 +1908,12 @@ const checkEventRules = (registry: Registry, scenario: ScenarioDef, report: Repo
     }
     ids.add(rule.id);
     rule.effects.forEach((effect, effectIndex) => {
-      if (!registry.actors.has(effect.zombie)) {
+      if (!registry.actors.has(effect.actor)) {
         report(
           'scenarios',
           scenario.id,
-          `.eventRules[${index}].effects[${effectIndex}].zombie`,
-          `no zombie type "${effect.zombie}"`,
+          `.eventRules[${index}].effects[${effectIndex}].actor`,
+          `no zombie type "${effect.actor}"`,
         );
       }
     });

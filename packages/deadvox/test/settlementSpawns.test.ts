@@ -4,7 +4,7 @@ import { baseRegistry } from './baseRegistry.ts';
 
 it('applies type rarity to settlement markers and excludes zero-weight wanderers', () => {
   const road = { x0: 0, z0: 0, x1: 64, z1: 12 };
-  const marker = { zombie: 'runner', chance: 1, pos: [8, 1, 8] as [number, number, number] };
+  const marker = { actor: 'runner', chance: 1, pos: [8, 1, 8] as [number, number, number] };
   const spawn = (weight: number) =>
     settlementActorSpawns(baseRegistry(), 1, road, {
       markers: [marker],

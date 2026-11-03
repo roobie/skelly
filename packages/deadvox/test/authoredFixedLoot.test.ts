@@ -1732,7 +1732,7 @@ describe('authored fixed loot', () => {
     const templateIds = new Set(templates);
     const markers = site.placements
       .filter((placement) => templateIds.has(placement.template.id))
-      .flatMap((placement) => placedSpawns(placement).filter(({ zombie: actor }) => actor === kind));
+      .flatMap((placement) => placedSpawns(placement).filter(({ actor }) => actor === kind));
     const spawns = columnsFor(site, layout).flatMap(([cx, cz]) => site.actorsIn(cx, cz));
     const matchingSpawns = spawns.filter(({ type }) => type === kind);
 
@@ -1754,7 +1754,7 @@ describe('authored fixed loot', () => {
     for (const templateId of ['playtest_tool_shack', 'shed']) {
       const template = result.registry.templates.get(templateId)!;
       const { spawns } = compileTemplate(result.registry, template);
-      expect(spawns.some(({ zombie: actor, chance }) => actor === 'shambler' && chance < 1)).toBe(true);
+      expect(spawns.some(({ actor, chance }) => actor === 'shambler' && chance < 1)).toBe(true);
     }
 
     const inside = (templateId: string, spawn: SiteLayoutDef['shamblers'][number]): boolean => {

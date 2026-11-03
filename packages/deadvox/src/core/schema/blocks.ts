@@ -72,7 +72,7 @@ export const BlockSchema = strictObject({
   meleePass: optional(
     strictObject({
       motions: array(picklist(MELEE_MOTIONS)),
-      minimumZombieReachMetres: Positive,
+      minimumActorReachMetres: Positive,
     }),
   ),
   /** Poles stay inside the occupied cell, so they need no separate collision rule. */

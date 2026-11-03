@@ -304,7 +304,7 @@ const addTemplateSources = (registry: Registry, template: CompiledTemplate, sour
   addPieceSources(registry, template, sources);
   addGroundLootSources(template, sources);
   for (const marker of template.spawns.filter((spawn) => spawn.chance > 0)) {
-    sources.actorTypes.add(marker.zombie);
+    sources.actorTypes.add(marker.actor);
   }
 };
 

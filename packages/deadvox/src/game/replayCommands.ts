@@ -30,7 +30,7 @@ export type ReplayActionPayload =
   | { kind: 'charger.stop'; entityUid: number }
   | { kind: 'furniture.turn' }
   | { kind: 'furniture.tip' }
-  | { kind: 'zombie.downed'; zombieId: number; way: DownedBodyWay }
+  | { kind: 'actor.downed'; actorId: number; way: DownedBodyWay }
   | { kind: 'inventory.search'; entityUid: number }
   | ({ kind: 'inventory.work'; itemUid: number; operation: WorkOperation } & RecoveryChoices)
   | { kind: 'inventory.assign'; slot: number; itemUid: number }
@@ -242,8 +242,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
       return isSlidePayload(payload);
     case 'furniture.place':
       return isTriple(payload.pos, Number.isSafeInteger);
-    case 'zombie.downed':
-      return isUid(payload.zombieId) && isDownedBodyWay(payload.way);
+    case 'actor.downed':
+      return isUid(payload.actorId) && isDownedBodyWay(payload.way);
     case 'item.pickup':
       return (
         isUid(payload.itemUid) && (payload.mode === 'pocket' || payload.mode === 'wield') && isTriple(payload.feet)
@@ -401,8 +401,8 @@ export const applyReplayActionPayload = (
       return owners.turn();
     case 'furniture.tip':
       return owners.tip();
-    case 'zombie.downed':
-      return owners.clearDownedBody(payload.zombieId, payload.way);
+    case 'actor.downed':
+      return owners.clearDownedBody(payload.actorId, payload.way);
     case 'power.set':
       return owners.power?.(payload.entityUid, payload.enabled);
     case 'charger.start':

@@ -31,7 +31,7 @@ const waveRule = (at: Vec3, conditions: EventRuleDef['conditions'] = []): EventR
   id: 'fixture_wave',
   trigger: { kind: 'elapsed', afterGameHours: AFTER },
   conditions,
-  effects: [{ kind: 'releaseHorde', zombie: actor.id, count: 2, at }],
+  effects: [{ kind: 'releaseHorde', actor: actor.id, count: 2, at }],
 });
 
 const fixture = (rule: EventRuleDef, restore?: Readonly<SaveSnapshot>) => {
@@ -156,14 +156,14 @@ describe('scenario event rules', () => {
 
   it.each([
     ['an unadmitted trigger kind', { trigger: { kind: 'area' } }, '.trigger.kind', 'elapsed'],
-    ['a missing zombie type', {}, '.zombie', 'no zombie type'],
+    ['a missing zombie type', {}, '.actor', 'no zombie type'],
     ['a duplicate id', 'duplicate', '.id', 'duplicate event rule'],
   ] as const)('rejects a scenario whose rule has %s', (_label, change, pathEnd, message) => {
     const scenario = fixtureScenario();
     const rule = {
       id: 'fixture_rule',
       trigger: { kind: 'elapsed', afterGameHours: 1 },
-      effects: [{ kind: 'releaseHorde', zombie: 'missing_fixture_zombie', count: 1, at: [0, 1, 0] }],
+      effects: [{ kind: 'releaseHorde', actor: 'missing_fixture_zombie', count: 1, at: [0, 1, 0] }],
     };
     const rules = change === 'duplicate' ? [rule, rule] : [{ ...rule, ...change }];
     const sources = fixtureScenarioSources(scenario);

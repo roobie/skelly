@@ -50,7 +50,7 @@ export const ActionTextSchema = strictObject({
     grenade: Line,
     bearTrap: Line,
     /** A zombie that is gone by the time its hit lands, so its type's own cause can't be read. */
-    zombie: Line,
+    actor: Line,
   }),
   /** Refusals and notices of the play loop: resting, dropping, throwing, quickbar and fuses. */
   play: strictObject({
@@ -168,8 +168,8 @@ export const ActionTextSchema = strictObject({
   downedBody: strictObject({
     gone: Line,
     noTool: Template('quality'),
-    finishOff: Template('zombie'),
-    dismember: Template('zombie', 'tool'),
+    finishOff: Template('actor'),
+    dismember: Template('actor', 'tool'),
   }),
   rest: strictObject({ unusable: Line }),
   unpacking: strictObject({

@@ -784,7 +784,7 @@
       ]
     },
     {
-      "id": "debug.spawn-zombie.runner",
+      "id": "debug.spawn-actor.runner",
       "keys": [
         {
           "code": "Numpad1"
@@ -792,7 +792,7 @@
       ]
     },
     {
-      "id": "debug.spawn-zombie.crawler",
+      "id": "debug.spawn-actor.crawler",
       "keys": [
         {
           "code": "Numpad2"
@@ -800,7 +800,7 @@
       ]
     },
     {
-      "id": "debug.spawn-zombie.amalgam",
+      "id": "debug.spawn-actor.amalgam",
       "keys": [
         {
           "code": "Numpad4"
@@ -808,7 +808,7 @@
       ]
     },
     {
-      "id": "debug.spawn-zombie.acid_zombie",
+      "id": "debug.spawn-actor.acid_zombie",
       "keys": [
         {
           "code": "Numpad6"

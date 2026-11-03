@@ -365,7 +365,7 @@
       "id": "chain_link",
       "material": "metal",
       "meleePass": {
-        "minimumZombieReachMetres": 1,
+        "minimumActorReachMetres": 1,
         "motions": ["thrust"]
       },
       "name": "Chain-link fence",

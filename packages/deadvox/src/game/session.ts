@@ -1607,7 +1607,7 @@ export const createSession = (options: SessionOptions) => {
       playerCombat.cancelCharge();
       applyActorPlayerHit(sim, {
         damage,
-        cause: source?.type.cause ?? text.causes.zombie,
+        cause: source?.type.cause ?? text.causes.actor,
         regionRoll: sim.rng(`player-hit-region:${attacker}:${sim.time}`).next(),
         hitRegions,
         kind,
@@ -1807,7 +1807,7 @@ export const createSession = (options: SessionOptions) => {
     admitSound(spec.sound, at, sim.time, { player: true, sourceLabel: 'grenade' });
   };
   sim.scheduler.register({
-    id: 'zombies',
+    id: 'actors',
     rate: ACTIVE_ACTOR_RATE,
     tick: (dt, time) => {
       const lit = (item: Item): void => {
@@ -1842,7 +1842,7 @@ export const createSession = (options: SessionOptions) => {
     },
   });
   sim.scheduler.register({
-    id: 'zombie-background',
+    id: 'actor-background',
     rate: BACKGROUND_ACTOR_SLICE_RATE,
     tick: (_dt, time) => {
       const sliceIndex = backgroundSliceIndex;
@@ -2564,8 +2564,8 @@ export const createSession = (options: SessionOptions) => {
     spawner.restoreState(restored.world.spawned);
     sim.restoreState(restored.character.simulation);
     const schedulerState = sim.scheduler.snapshotState();
-    lastActorStep = schedulerState.systems.find(({ id }) => id === 'zombies')?.done ?? sim.time;
-    const backgroundState = schedulerState.systems.find(({ id }) => id === 'zombie-background');
+    lastActorStep = schedulerState.systems.find(({ id }) => id === 'actors')?.done ?? sim.time;
+    const backgroundState = schedulerState.systems.find(({ id }) => id === 'actor-background');
     lastBackgroundStep = backgroundState?.done ?? sim.time;
     backgroundSliceIndex = (backgroundState?.ticks ?? 0) % BACKGROUND_ACTOR_SLICE_COUNT;
     lastPlayerStep = schedulerState.systems.find(({ id }) => id === 'player')?.done ?? sim.time;

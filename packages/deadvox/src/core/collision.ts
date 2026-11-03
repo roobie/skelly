@@ -96,7 +96,7 @@ export const worldMeleeBlocker = (world: World, registry: Registry, options: Cha
     }
     return (
       !pass.motions.includes(attack.motion) ||
-      (attack.kind === 'actor' && attack.reachMetres < pass.minimumZombieReachMetres)
+      (attack.kind === 'actor' && attack.reachMetres < pass.minimumActorReachMetres)
     );
   };
 };

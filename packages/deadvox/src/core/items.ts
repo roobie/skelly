@@ -126,8 +126,8 @@ export interface ItemFields<Node> {
   work?: CraftWork<Node> | undefined;
 }
 
-/** Holding a zombie by id, or the player when `zombie` is absent. */
-export type TrapState = { state: 'armed' } | { state: 'holding'; zombie?: number; remainingSimSeconds: number };
+/** Holding an actor by id, or the player when `actor` is absent. */
+export type TrapState = { state: 'armed' } | { state: 'holding'; actor?: number; remainingSimSeconds: number };
 
 type ItemSlots<Node> = Record<string, Node>;
 
@@ -279,7 +279,7 @@ const assertSavedTrap = (def: ItemDef, state: ItemState): void => {
     (Number.isFinite(trap.remainingSimSeconds) &&
       trap.remainingSimSeconds > 0 &&
       trap.remainingSimSeconds <= (def.trap?.holdSimSeconds ?? 0) &&
-      (trap.zombie === undefined || Number.isSafeInteger(trap.zombie)));
+      (trap.actor === undefined || Number.isSafeInteger(trap.actor)));
   if (!(def.trap && state.count === 1 && holdValid)) {
     throw new Error('Invalid saved trap state');
   }

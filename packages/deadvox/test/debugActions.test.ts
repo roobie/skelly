@@ -30,7 +30,7 @@ describe('debug action dispatch', () => {
     const { actions } = makeActions();
     expect(actions.length).toBeGreaterThan(0);
     for (const action of actions) {
-      if (fixtureActorTypes.some((type) => action.id === `debug.spawn-zombie.${type.id}`)) {
+      if (fixtureActorTypes.some((type) => action.id === `debug.spawn-actor.${type.id}`)) {
         expect(action.key).toBe('');
         continue;
       }
@@ -137,7 +137,7 @@ describe('debug action dispatch', () => {
   it('offers and dispatches every supplied zombie type, including authored-only types', () => {
     const { actions, spawnRequests } = makeActions();
     for (const type of fixtureActorTypes) {
-      const id = `debug.spawn-zombie.${type.id}`;
+      const id = `debug.spawn-actor.${type.id}`;
       expect(actions.filter((action) => action.id === id)).toHaveLength(1);
       expect(dispatchDebugAction(actions, id)).toBe(true);
       expect(dispatchDebugAction(actions, id, true)).toBe(true);

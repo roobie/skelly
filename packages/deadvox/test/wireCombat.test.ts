@@ -23,7 +23,7 @@ const fixture = (reachMetres = 2.1, moves?: ActorDef['attack']['moves']) => {
   const fence = registry.blockIds.get('chain_link')!;
   registry.blocks[fence] = {
     ...registry.blocks[fence]!,
-    meleePass: { motions: ['thrust'], minimumZombieReachMetres: 2 },
+    meleePass: { motions: ['thrust'], minimumActorReachMetres: 2 },
   };
   const world = new World();
   const entities = new BlockEntities(registry);
@@ -211,7 +211,7 @@ it('admits the fused-mass tentacle thrust only when its reach clears the wire th
       ...registry.blocks[fence]!,
       meleePass: {
         motions: ['thrust'],
-        minimumZombieReachMetres: reach + (admits ? -0.1 : 0.1),
+        minimumActorReachMetres: reach + (admits ? -0.1 : 0.1),
       },
     };
     const plane = Math.floor((origin[2] + playerPos[2]) / 2);

@@ -164,7 +164,7 @@ export const scenarioCityPopulation = (site: CitySite, { id: scenarioId, populat
   const authored = authoredMarkers ? site.placements.filter((placement) => !ordinary.includes(placement)) : [];
   for (const marker of authored.flatMap(placedSpawns)) {
     if (Rng.stream(site.seed, `scenario:${scenarioId}:spawn:${marker.pos.join(',')}`).chance(marker.chance)) {
-      append(actors, { type: marker.zombie, pos: marker.pos, ...(marker.window ? { window: marker.window } : {}) });
+      append(actors, { type: marker.actor, pos: marker.pos, ...(marker.window ? { window: marker.window } : {}) });
     }
   }
   return { actors, hordes };

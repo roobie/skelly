@@ -18,10 +18,10 @@
           "viewUnavailable": "This thermal optic has no view yet"
         },
         "causes": {
+          "actor": "a zombie",
           "bearTrap": "a bear trap",
           "foodPoisoning": "food poisoning",
-          "grenade": "a grenade",
-          "zombie": "a zombie"
+          "grenade": "a grenade"
         },
         "common": {
           "busy": "My hands are busy",
@@ -46,8 +46,8 @@
           "unlockHint": "Unlock"
         },
         "downedBody": {
-          "dismember": "Dismember the {zombie} with the {tool}",
-          "finishOff": "Finish off the {zombie}",
+          "dismember": "Dismember the {actor} with the {tool}",
+          "finishOff": "Finish off the {actor}",
           "gone": "It isn't lying there any more",
           "noTool": "I have no {quality} tool up to it"
         },

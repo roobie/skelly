@@ -6,7 +6,7 @@ import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { bodyInReach, type ReachPlayer } from '../core/reach.ts';
 
-const DOWNED_BODY_ACTION = 'zombie.downed';
+const DOWNED_BODY_ACTION = 'actor.downed';
 const DOWNED_BODY_WAYS = ['finish-off', 'dismember'] as const;
 export type DownedBodyWay = (typeof DOWNED_BODY_WAYS)[number];
 
@@ -40,7 +40,7 @@ export const downedBodyPlan = (player: ReachPlayer, actor: Actor | undefined, wa
     return {
       ok: true,
       simSeconds: downed.finishOff.simSeconds,
-      label: fillText(text.downedBody.finishOff, { zombie: name }),
+      label: fillText(text.downedBody.finishOff, { actor: name }),
     };
   }
   const { quality, level, simSeconds } = downed.dismember;
@@ -51,7 +51,7 @@ export const downedBodyPlan = (player: ReachPlayer, actor: Actor | undefined, wa
   return {
     ok: true,
     simSeconds,
-    label: fillText(text.downedBody.dismember, { zombie: name, tool: player.inventory.name(tool).toLowerCase() }),
+    label: fillText(text.downedBody.dismember, { actor: name, tool: player.inventory.name(tool).toLowerCase() }),
   };
 };
 
@@ -62,7 +62,7 @@ export const queueDownedBody = (
   way: DownedBodyWay,
 ): string | undefined => {
   if (
-    queue.jobs.some((job) => job.kind === 'action' && job.jobType === DOWNED_BODY_ACTION && job.params.zombieId === id)
+    queue.jobs.some((job) => job.kind === 'action' && job.jobType === DOWNED_BODY_ACTION && job.params.actorId === id)
   ) {
     return undefined;
   }
@@ -70,7 +70,7 @@ export const queueDownedBody = (
   if (!plan.ok) {
     return plan.reason;
   }
-  queue.enqueueAction(DOWNED_BODY_ACTION, plan.label, plan.simSeconds, { zombieId: id, way });
+  queue.enqueueAction(DOWNED_BODY_ACTION, plan.label, plan.simSeconds, { actorId: id, way });
   return undefined;
 };
 
@@ -84,7 +84,7 @@ export const registerDownedBodyAction = ({
   player: ReachPlayer;
   actors: DownedActors;
 }): void => {
-  queue.registerAction(DOWNED_BODY_ACTION, ({ zombieId: actorId, way }) => {
+  queue.registerAction(DOWNED_BODY_ACTION, ({ actorId, way }) => {
     if (typeof actorId !== 'number' || !Number.isSafeInteger(actorId) || !isDownedBodyWay(way)) {
       throw new Error('Invalid downed body target');
     }

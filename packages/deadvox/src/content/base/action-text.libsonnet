@@ -13,7 +13,7 @@
     foodPoisoning: 'food poisoning',
     grenade: 'a grenade',
     bearTrap: 'a bear trap',
-    zombie: 'a zombie',
+    actor: 'a zombie',
   },
   play: {
     restRefused: "Can't rest: {reason}",
@@ -131,8 +131,8 @@
   downedBody: {
     gone: "It isn't lying there any more",
     noTool: 'I have no {quality} tool up to it',
-    finishOff: 'Finish off the {zombie}',
-    dismember: 'Dismember the {zombie} with the {tool}',
+    finishOff: 'Finish off the {actor}',
+    dismember: 'Dismember the {actor} with the {tool}',
   },
   rest: {
     unusable: "I can't use it for that",

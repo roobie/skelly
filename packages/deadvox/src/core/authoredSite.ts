@@ -469,7 +469,7 @@ export class AuthoredSite implements Site {
       },
     };
     const markers = this.placements.flatMap(placedSpawns).map((marker) => ({
-      type: marker.zombie,
+      type: marker.actor,
       pos: marker.pos,
       chance: marker.chance,
       ...(marker.window ? { window: marker.window } : {}),

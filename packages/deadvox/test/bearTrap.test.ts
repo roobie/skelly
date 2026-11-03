@@ -28,7 +28,7 @@ const trapDef: ItemDef = {
     disarmSimSeconds: simSeconds(2),
     holdSimSeconds: simSeconds(3),
     playerInjury: { region: 'leftLeg', damage: 5, kind: 'pierce' },
-    zombieLegDamage: 4,
+    actorLegDamage: 4,
   },
 };
 const walker: ActorDef = { ...base.actors.get('shambler')!, id: 'fixture_walker' };
@@ -115,7 +115,7 @@ describe('bear trap', () => {
     for (let step = 0; step < 600 && trap.trap?.state === 'armed'; step++) {
       h.run(FRAME);
     }
-    expect(trap.trap).toMatchObject({ state: 'holding', zombie: id });
+    expect(trap.trap).toMatchObject({ state: 'holding', actor: id });
     expect(Object.values(actor.regions).reduce((sum, health) => sum + health, 0)).toBeLessThan(legs);
     const held = [...actor.body.pos];
     h.run(trapDef.trap!.holdSimSeconds / 2);
@@ -127,7 +127,7 @@ describe('bear trap', () => {
     const trap = h.lay([0, 1, 0]);
     h.run(0.1);
     expect(trap.trap).toMatchObject({ state: 'holding' });
-    expect(trap.trap).not.toHaveProperty('zombie');
+    expect(trap.trap).not.toHaveProperty('actor');
     const { region, damage, kind } = trapDef.trap!.playerInjury;
     expect(h.hits).toHaveBeenCalledWith(damage, expect.any(String), region, { kind });
     const pos = [...h.session.body.pos];
@@ -180,22 +180,29 @@ describe('bear trap', () => {
     expect(traps.map(({ item }) => item)).toEqual([trap]);
   });
 
-  it('keeps a set trap armed and a held player restrained across save and load', async () => {
+  it('keeps trap states and their held bodies restrained across save and load', async () => {
     const original = runtime();
     const armed = original.lay([4, 1, 0]);
     const holding = original.lay([0, 1, 0]);
+    const actorTrap = original.lay([2, 1, 0]);
+    const actorId = original.session.actors.add(walker, [2.5, 1, 0.5], [-1, 0, 0]);
     original.run(0.1);
     expect(holding.trap?.state).toBe('holding');
+    expect(actorTrap.trap).toMatchObject({ state: 'holding', actor: actorId });
     const restored = runtime(
       await roundTrip(original.session.snapshot({ worldId: 'fixture_world', characterId: 'fixture_character' })),
     );
     const restoredTrap = (uid: number) => restored.session.inventory.itemByUid(uid)?.trap;
     expect(restoredTrap(armed.uid)).toEqual(armed.trap);
     expect(restoredTrap(holding.uid)).toEqual(holding.trap);
+    expect(restoredTrap(actorTrap.uid)).toEqual(actorTrap.trap);
+    const actor = restored.session.actorStore.get(actorId)!;
+    const held = [...actor.body.pos];
     const pos = [...restored.session.body.pos];
     restored.walk(true);
     restored.run(0.5);
     expect(restored.session.body.pos).toEqual(pos);
+    expect([actor.body.pos[0], actor.body.pos[2]]).toEqual([held[0], held[2]]);
   });
 });
 
@@ -221,6 +228,6 @@ describe('bear trap horizon', () => {
     expect(trap.trap).toEqual({ state: 'armed' });
     expect(injureActor).not.toHaveBeenCalled();
     traps.step(1, contacts([farX - 10, 1, 0.5]));
-    expect(trap.trap).toMatchObject({ state: 'holding', zombie: 7 });
+    expect(trap.trap).toMatchObject({ state: 'holding', actor: 7 });
   });
 });

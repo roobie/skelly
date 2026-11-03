@@ -204,7 +204,7 @@ local items = [
       disarmSimSeconds: 6,
       holdSimSeconds: 20,
       playerInjury: { region: 'leftLeg', damage: 25, kind: 'pierce' },
-      zombieLegDamage: 60,
+      actorLegDamage: 60,
     },
   },
   {

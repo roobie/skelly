@@ -62,7 +62,7 @@ export class BearTraps {
   /** Whether a shut trap holds the zombie with this id, or the player without one. */
   holds(actor?: EntityId): boolean {
     for (const { item } of this.lying()) {
-      if (item.trap?.state === 'holding' && item.trap.zombie === actor) {
+      if (item.trap?.state === 'holding' && item.trap.actor === actor) {
         return true;
       }
     }
@@ -82,7 +82,7 @@ export class BearTraps {
         continue;
       }
       trap.remainingSimSeconds -= dt;
-      if (trap.remainingSimSeconds <= 0 || (trap.zombie !== undefined && !contacts.alive(trap.zombie))) {
+      if (trap.remainingSimSeconds <= 0 || (trap.actor !== undefined && !contacts.alive(trap.actor))) {
         item.trap = undefined;
       }
     }
@@ -102,9 +102,9 @@ export class BearTraps {
       const caught = actors.find(([, cell]) => sameCell(cell, pos));
       if (caught) {
         const [actor] = caught;
-        item.trap = { state: 'holding', zombie: actor, remainingSimSeconds: def.holdSimSeconds };
+        item.trap = { state: 'holding', actor, remainingSimSeconds: def.holdSimSeconds };
         sprung.push({ item, pos, actor });
-        contacts.injureActor(actor, def.zombieLegDamage);
+        contacts.injureActor(actor, def.actorLegDamage);
       }
     }
     return sprung;

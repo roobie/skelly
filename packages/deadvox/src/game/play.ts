@@ -2875,7 +2875,7 @@ export const startPlay = (
       case 'item':
         return { kind: 'item.pickup', itemUid: target.item.uid, mode, feet: feet() };
       case 'body':
-        return { kind: 'zombie.downed', zombieId: target.id, way: mode === 'pocket' ? 'finish-off' : 'dismember' };
+        return { kind: 'actor.downed', actorId: target.id, way: mode === 'pocket' ? 'finish-off' : 'dismember' };
       default:
         return furniturePayload(target.entity, mode);
     }

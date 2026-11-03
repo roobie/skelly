@@ -136,12 +136,12 @@ const fixedLootLines = (building) =>
 function groupSpawns(spawns) {
   const groups = new Map();
   for (const spawn of spawns) {
-    const key = `${spawn.zombie}\u0000${spawn.chance}`;
-    const group = groups.get(key) ?? { zombie: spawn.zombie, chance: spawn.chance, count: 0 };
+    const key = `${spawn.actor}\u0000${spawn.chance}`;
+    const group = groups.get(key) ?? { actor: spawn.actor, chance: spawn.chance, count: 0 };
     group.count += 1;
     groups.set(key, group);
   }
-  return [...groups.values()].sort((a, b) => a.zombie.localeCompare(b.zombie) || a.chance - b.chance);
+  return [...groups.values()].sort((a, b) => a.actor.localeCompare(b.actor) || a.chance - b.chance);
 }
 
 const furnitureLootLines = (placement) => {
@@ -170,11 +170,11 @@ const templateZombieLines = (spawns) => {
   return [
     '    Template zombies:',
     ...spawns.map((spawn) => {
-      const zombie = registry.actors.get(spawn.zombie);
+      const zombie = registry.actors.get(spawn.actor);
       const chance = `${(spawn.chance * 100).toFixed(1)}%`;
       const markerWord = spawn.count === 1 ? 'marker' : 'markers';
       const drop = zombie?.loot === undefined ? 'no drop table' : `drops via \`${zombie.loot}\` (see Zombie drops)`;
-      return `    - ${zombie?.name ?? spawn.zombie}: ${spawn.count} ${markerWord}, ${chance} chance each; ${drop}`;
+      return `    - ${zombie?.name ?? spawn.actor}: ${spawn.count} ${markerWord}, ${chance} chance each; ${drop}`;
     }),
   ];
 };
@@ -210,7 +210,7 @@ for (const spawn of playtest.shamblers) {
 }
 for (const { spawns } of buildings) {
   for (const spawn of spawns) {
-    addSpawnCounts(sourceForZombie(spawn.zombie).templates, spawn.chance, spawn.count);
+    addSpawnCounts(sourceForZombie(spawn.actor).templates, spawn.chance, spawn.count);
   }
 }
 for (const _horde of playtest.hordes ?? []) {

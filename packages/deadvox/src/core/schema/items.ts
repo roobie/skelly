@@ -533,7 +533,7 @@ const TrapSchema = strictObject({
   /** The player's wound when it springs on them. */
   playerInjury: strictObject({ region: picklist(BODY_REGIONS), damage: Positive, kind: Id }),
   /** Health taken from a caught zombie's legs, shared between those not yet destroyed. */
-  zombieLegDamage: NonNegative,
+  actorLegDamage: NonNegative,
 });
 
 /** Tagged with its model's attachment kind, so each kind authors every effect it has and no other. */

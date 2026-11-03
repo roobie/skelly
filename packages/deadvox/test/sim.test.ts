@@ -508,7 +508,7 @@ describe('Simulation', () => {
         },
       });
       sim.scheduler.register({
-        id: 'zombies',
+        id: 'actors',
         rate: 20,
         tick: () => {
           ticks += 1;

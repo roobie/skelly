@@ -375,7 +375,7 @@ itemSchema = obj({
   trap: opt(
     union(
       obj({ state: enumeration(['armed']) }),
-      obj({ state: enumeration(['holding']), zombie: opt(positiveInt), remainingSimSeconds: positive }),
+      obj({ state: enumeration(['holding']), actor: opt(positiveInt), remainingSimSeconds: positive }),
     ),
   ),
   madeAtGameTimestamp: opt(nonNegative),

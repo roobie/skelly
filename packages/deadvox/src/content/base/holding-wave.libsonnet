@@ -4,6 +4,6 @@
     id: 'holding_wave',
     // Three elapsed scenario days: `SLICE-5.md`, "Settled event and playtest rules".
     trigger: { kind: 'elapsed', afterGameHours: 24 * 3 },
-    effects: [{ kind: 'releaseHorde', zombie: 'shambler', count: 8, at: at }],
+    effects: [{ kind: 'releaseHorde', actor: 'shambler', count: 8, at: at }],
   },
 }
