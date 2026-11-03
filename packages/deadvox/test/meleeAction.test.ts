@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { actorPoseInputFor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import type { Actor, MeleeWeapon } from '../src/core/actorSystem.ts';
+import type { Actor } from '../src/core/actorState.ts';
+import type { MeleeWeapon } from '../src/core/actorSystem.ts';
 import { Body } from '../src/core/body.ts';
 import type { ActorDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';

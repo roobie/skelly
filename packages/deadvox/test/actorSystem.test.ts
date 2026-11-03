@@ -16,8 +16,8 @@ import {
   posedRegionHitDistance,
 } from '../src/core/actorRegions.ts';
 import { ActorSpawner } from '../src/core/actorSpawns.ts';
+import type { Actor } from '../src/core/actorState.ts';
 import {
-  type Actor,
   type HitImpulse,
   hearPlayer,
   hearVocalNoise,
@@ -152,7 +152,7 @@ const spawnSite = (spawn: ActorSpawn): Site => ({
   furnitureIn: () => [],
   actorsIn: () => [spawn],
 });
-const nearestRegionDistance = (actor: import('../src/core/actorSystem.ts').Actor, origin: Vec3, direction: Vec3) => {
+const nearestRegionDistance = (actor: import('../src/core/actorState.ts').Actor, origin: Vec3, direction: Vec3) => {
   let nearest = Number.POSITIVE_INFINITY;
   const posed = posedHumanoidRegionBoxes(actorPoseInputFor(actor, 1, BLOCK_SIZE));
   for (const region of HUMANOID_REGION_NAMES) {

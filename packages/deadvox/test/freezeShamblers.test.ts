@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { type HumanoidHitRegion, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import type { Actor, MeleeResult } from '../src/core/actorSystem.ts';
+import type { Actor } from '../src/core/actorState.ts';
+import type { MeleeResult } from '../src/core/actorSystem.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { baseRegistry } from './baseRegistry.ts';

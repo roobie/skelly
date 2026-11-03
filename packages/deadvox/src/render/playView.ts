@@ -2,7 +2,8 @@
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
 import type { AcidGlobState } from '../core/acidGlob.ts';
 import type { AcidPuddleState } from '../core/acidPuddle.ts';
-import { type Actor, BACKGROUND_ACTOR_RATE } from '../core/actorSystem.ts';
+import type { Actor } from '../core/actorState.ts';
+import { BACKGROUND_ACTOR_RATE } from '../core/actorSystem.ts';
 import { adsCameraEye, guardAdsCamera } from '../core/adsView.ts';
 import type { BlockEntities } from '../core/blockEntities.ts';
 import { claimed } from '../core/capabilities.ts';

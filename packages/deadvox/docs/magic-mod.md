@@ -258,7 +258,7 @@ Each actor saves its active instances (effect, source, age, intensity), pruned w
 Aging is closed-form, so compressed and ticked time agree, as `src/core/pain.ts`,
 `fadeAcute`, and `DamageExposures` already do. Effects are actor-generic from the start:
 spells put fire, slowness and stuns on creatures, and a creature with no effects costs
-nothing. Creature stagger can later move onto effects; see `src/core/actorSystem.ts`, `staggerSimSeconds`.
+nothing. Creature stagger can later move onto effects; see `src/core/actorState.ts`, `staggerSimSeconds`.
 
 Analgesics are the first consumer: the mechanism must express painkillers before magic
 relies on it.
@@ -486,7 +486,7 @@ a declared name cannot manufacture an unsupported world reaction.
 
 Creature stats are content, but abilities and body models are closed code lists, and the
 AI targets only the player character; see `src/core/schema/actors.ts`, `ACTOR_ABILITIES`;
-`src/core/actorModels.ts`, `BODY_PLANS`; and `src/core/actorSystem.ts`, `AgentMode`.
+`src/core/actorModels.ts`, `BODY_PLANS`; and `src/core/actorState.ts`, `AgentMode`.
 Summons and raised dead need factions and target choice, the deepest change here, so it
 comes last.
 

@@ -6,7 +6,7 @@ import {
   posedHumanoidRegionBoxes,
   posedRegionHitDistance,
 } from '../src/core/actorRegions.ts';
-import { PLAYER_ARM_REACH_M } from '../src/core/actorSystem.ts';
+import { PLAYER_ARM_REACH_M } from '../src/core/actorState.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { baseRegistry } from './baseRegistry.ts';

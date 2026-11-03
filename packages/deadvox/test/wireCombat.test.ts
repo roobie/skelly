@@ -1,7 +1,8 @@
 import { expect, it } from 'vitest';
 import { actorPoseInputFor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import { actorAttackReachMetres, type MeleeWeapon, PLAYER_CHEST_METRES } from '../src/core/actorSystem.ts';
+import { actorAttackReachMetres } from '../src/core/actorState.ts';
+import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../src/core/actorSystem.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { worldMeleeBlocker, worldOpaque, worldSolid, worldSoundBlocking } from '../src/core/collision.ts';
 import type { Vec3 } from '../src/core/coords.ts';

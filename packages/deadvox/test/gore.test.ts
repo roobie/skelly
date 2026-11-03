@@ -1,6 +1,7 @@
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { Actor, HitImpulse } from '../src/core/actorSystem.ts';
+import type { Actor } from '../src/core/actorState.ts';
+import type { HitImpulse } from '../src/core/actorSystem.ts';
 import { BODY_REGIONS, type BodyRegion } from '../src/core/body.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';

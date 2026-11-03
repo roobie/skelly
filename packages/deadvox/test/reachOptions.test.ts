@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Actor } from '../src/core/actorSystem.ts';
+import type { Actor } from '../src/core/actorState.ts';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';

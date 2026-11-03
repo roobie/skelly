@@ -1,5 +1,6 @@
 import { placeShamblerRing } from '../bench/shamblerPlacement.ts';
-import { type ActorSystem, actorAttackReachForDef, actorBodyDimensions } from '../core/actorSystem.ts';
+import { actorAttackReachForDef, actorBodyDimensions } from '../core/actorState.ts';
+import type { ActorSystem } from '../core/actorSystem.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Body } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';

@@ -1,6 +1,7 @@
 import { BoxGeometry, DynamicDrawUsage, Group, InstancedMesh, MeshLambertMaterial, Object3D } from 'three';
 import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart, type HumanoidHitRegion } from '../core/actorRegions.ts';
-import { type Actor, BACKGROUND_ACTOR_RATE } from '../core/actorSystem.ts';
+import type { Actor } from '../core/actorState.ts';
+import { BACKGROUND_ACTOR_RATE } from '../core/actorSystem.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import type { ColumnReveal } from './columnReveal.ts';

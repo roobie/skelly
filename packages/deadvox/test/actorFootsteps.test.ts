@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { Actor, PlayerSense } from '../src/core/actorSystem.ts';
+import type { Actor } from '../src/core/actorState.ts';
+import type { PlayerSense } from '../src/core/actorSystem.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import {

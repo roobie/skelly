@@ -1,5 +1,6 @@
 import { actionText, fillText } from '../core/actionText.ts';
-import type { Actor, ActorSystem } from '../core/actorSystem.ts';
+import type { Actor } from '../core/actorState.ts';
+import type { ActorSystem } from '../core/actorSystem.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';

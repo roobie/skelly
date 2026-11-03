@@ -16,7 +16,7 @@ import { LOOK_AT_PROFILES } from '@mobgen/mob/lookAtProfiles.ts';
 import { flinchClipFor, flinchPoseWithClip, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import type { ActorFigure } from './actorFigure.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
-import type { Actor } from './actorSystem.ts';
+import type { Actor } from './actorState.ts';
 import type { Vec3 } from './coords.ts';
 import { fusedMassFigure, fusedMassSeveredBones } from './fusedMassFigure.ts';
 

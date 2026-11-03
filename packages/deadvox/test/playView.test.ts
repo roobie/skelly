@@ -13,7 +13,7 @@ import {
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
-import type { Actor } from '../src/core/actorSystem.ts';
+import type { Actor } from '../src/core/actorState.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';

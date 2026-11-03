@@ -1,7 +1,7 @@
 import { CircleGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, SphereGeometry } from 'three';
 import type { AcidGlobState } from '../core/acidGlob.ts';
 import type { AcidPuddleState } from '../core/acidPuddle.ts';
-import type { Actor } from '../core/actorSystem.ts';
+import type { Actor } from '../core/actorState.ts';
 import type { ActorDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { Rng } from '../core/random.ts';

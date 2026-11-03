@@ -15,7 +15,8 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
-import type { Actor, HitImpulse } from '../core/actorSystem.ts';
+import type { Actor } from '../core/actorState.ts';
+import type { HitImpulse } from '../core/actorSystem.ts';
 import { BODY_REGIONS, type BodyRegion } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';

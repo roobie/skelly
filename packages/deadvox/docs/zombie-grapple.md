@@ -10,7 +10,7 @@ read_if:
 
 The crawler's whole promise is to grab your legs, and armed humanoids read as things that clutch (`DESIGN.md`, "Types are data"). A landed melee move only deals damage, so nothing a zombie does lasts past the hit. A grapple is a lasting record of who holds whom by which body region, started by a landed melee move and ended by a short, learnable list of exits. Every effect of being held is applied on the player's side by region, never by grabber type, so a new grabbing type is content and a new region is one more effect. See `src/core/actorSystem.ts`, `ActorSystem`, and `src/core/schema/actors.ts`, `MeleeMovesSchema`.
 
-The code word is grapple. "Grab" already means the ladder grab, the pickup animation and the reach band (`src/core/actorSystem.ts`, `requiredGrabBand`), and "hold" already means tap-versus-hold on the use key, so either word in code would mislead. Player-facing text may still say "grabbed", because that is the word the character would use (`INTERFACE.md`, "Class 3: the character's voice").
+The code word is grapple. "Grab" already means the ladder grab, the pickup animation and the reach band (`src/core/actorState.ts`, `requiredGrabBand`), and "hold" already means tap-versus-hold on the use key, so either word in code would mislead. Player-facing text may still say "grabbed", because that is the word the character would use (`INTERFACE.md`, "Class 3: the character's voice").
 
 ## The rules
 

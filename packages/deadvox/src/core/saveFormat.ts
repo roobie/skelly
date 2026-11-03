@@ -1,5 +1,6 @@
 import { BODY_PLANS } from './actorModels.ts';
-import type { ActorState, ActorSystemState, HordeState } from './actorSystem.ts';
+import type { ActorState } from './actorState.ts';
+import type { ActorSystemState, HordeState } from './actorSystem.ts';
 import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState, assertBreathHoldState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
 import { BODY_REGIONS, TOUCHES } from './body.ts';

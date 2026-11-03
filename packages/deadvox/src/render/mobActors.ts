@@ -32,7 +32,7 @@
 // the slot. Corpses are render-only; incapacitated zombies remain simulation entities, fall once and lie in
 // their existing row, excluded from corpse eviction, until finishing one off makes it an ordinary corpse.
 //
-// Dismemberment (packages/mobgen/src/mob/dismember.ts): src/core/actorSystem.ts's Actor.severed (part names, e.g.
+// Dismemberment (packages/mobgen/src/mob/dismember.ts): src/core/actorState.ts's Actor.severed (part names, e.g.
 // "upperArm.L") is the *only* source of truth — this renderer never keeps its own copy for a live zombie,
 // just re-expands actor.severed via severedBoneSet every sync() (cheap, and it's what makes save/load
 // "just work": a restored zombie's severed list is already exactly right). A severed bone is hidden by
@@ -122,7 +122,8 @@ import {
 import { type ActorFigureType, actorFigure, fusedMassTypeOf } from '../core/actorFigure.ts';
 import { type ActorModel, bodyPlanModel, FIGURE_VARIANTS, figureVariantOf } from '../core/actorModels.ts';
 import { acidSpitWindupProgress, actorCrawls, actorPoseInputFor, posedActor } from '../core/actorPose.ts';
-import { type Actor, actorAttackReachMetres, BACKGROUND_ACTOR_RATE, type HitImpulse } from '../core/actorSystem.ts';
+import { type Actor, actorAttackReachMetres } from '../core/actorState.ts';
+import { BACKGROUND_ACTOR_RATE, type HitImpulse } from '../core/actorSystem.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import { FUSED_MASS_FIGURE_SEED, type FusedMassFigure } from '../core/fusedMassFigure.ts';

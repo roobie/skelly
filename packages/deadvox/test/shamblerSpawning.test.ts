@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bodyIsClear, placeShamblerRing } from '../src/bench/shamblerPlacement.ts';
-import { actorAttackReachForDef, actorAttackReachMetres, actorBodyDimensions } from '../src/core/actorSystem.ts';
+import { actorAttackReachForDef, actorAttackReachMetres, actorBodyDimensions } from '../src/core/actorState.ts';
 import { type Body, bodyOverlapsBlock } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { spawnActorType, spawnShamblers } from '../src/debug/shamblerSpawning.ts';

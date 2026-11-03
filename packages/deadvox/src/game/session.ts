@@ -8,9 +8,9 @@ import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { actionText, fillText } from '../core/actionText.ts';
 import { actorFigure, figureSeedPool } from '../core/actorFigure.ts';
 import { ActorSpawner } from '../core/actorSpawns.ts';
+import { type Actor, PLAYER_ARM_REACH_M } from '../core/actorState.ts';
 import {
   type AcidGroundImpact,
-  type Actor,
   ActorSystem,
   BACKGROUND_ACTOR_RATE,
   BACKGROUND_ACTOR_SLICE_COUNT,
@@ -19,7 +19,6 @@ import {
   loweredStanceTuning,
   type MeleeResult,
   type MeleeWeapon,
-  PLAYER_ARM_REACH_M,
   type PlayerMovement,
   type VocalNoise,
 } from '../core/actorSystem.ts';

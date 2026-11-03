@@ -9,7 +9,7 @@ import {
   targetStanceWeight,
 } from '../src/core/actorPose.ts';
 import { type HumanoidHitRegion, humanoidRegionBoxes, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import type { Actor } from '../src/core/actorSystem.ts';
+import type { Actor } from '../src/core/actorState.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { baseRegistry } from './baseRegistry.ts';

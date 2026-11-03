@@ -2,7 +2,7 @@ import { type LineBasicMaterial, Scene } from 'three';
 import { describe, expect, it } from 'vitest';
 import { actorPoseInputFor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import type { Actor } from '../src/core/actorSystem.ts';
+import type { Actor } from '../src/core/actorState.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { DebugAimOverlay } from '../src/debug/aimOverlay.ts';

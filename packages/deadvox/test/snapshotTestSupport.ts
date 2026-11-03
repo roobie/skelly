@@ -498,7 +498,7 @@ const IDLE_GROANER_DISTANCE = 20;
 export const prepareAudioContinuation = (runtime: Runtime): Runtime => {
   const playerPos = [...runtime.player.body.pos] as [number, number, number];
   const firstActor = runtime.zombies.store.entries().next().value as
-    | [number, import('../src/core/actorSystem.ts').Actor]
+    | [number, import('../src/core/actorState.ts').Actor]
     | undefined;
   if (!firstActor) {
     throw new Error('Snapshot continuation requires a live shambler');

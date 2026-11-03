@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { actionText } from '../src/core/actionText.ts';
 import { actorPoseInputFor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import type { Actor } from '../src/core/actorSystem.ts';
+import type { Actor } from '../src/core/actorState.ts';
 import { breathSteadying, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { practiceForNextLevel, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';

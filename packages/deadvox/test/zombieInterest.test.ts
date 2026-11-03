@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Actor, PlayerSense } from '../src/core/actorSystem.ts';
+import type { Actor } from '../src/core/actorState.ts';
+import type { PlayerSense } from '../src/core/actorSystem.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
