@@ -465,7 +465,7 @@ Closed lists to open:
 Elemental schools need new damage identities without new code enumerations.
 Declarations and class admission belong to `src/core/schema/damageKinds.ts`,
 `DamageKindSchema`, and `src/core/damageContent.ts`, `checkDamageKinds`. Actor
-resistance is keyed by kind and region; see `src/core/zombies.ts`, `damageToZombie`.
+resistance is keyed by kind and region; see `src/core/zombies.ts`, `damageToActor`.
 Naming an elemental kind is not enough to make every target support it. #1532 must
 settle target applicability before extending body or terrain response domains; see
 `docs/pack-split.md`, "Hard cases".

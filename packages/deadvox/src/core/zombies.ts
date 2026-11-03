@@ -277,10 +277,10 @@ const meleeDamageForContact = (
   } else if (regionClass !== 'torso') {
     multiplier = weapon.limbDamageMultiplier ?? 1;
   }
-  return damageToZombie(zombie.type, rolled * multiplier, damageType, regionClass);
+  return damageToActor(zombie.type, rolled * multiplier, damageType, regionClass);
 };
 
-export const damageToZombie = (
+export const damageToActor = (
   type: Pick<ActorDef, 'damageResistance'>,
   amount: number,
   kind: DamageKind,
@@ -3651,7 +3651,7 @@ export class ZombieSystem {
         if (zombie.regions[region]! <= 0) {
           continue;
         }
-        const burn = damageToZombie(zombie.type, damage / legs.length, kind, zombieRegionClass(region) as BodyRegion);
+        const burn = damageToActor(zombie.type, damage / legs.length, kind, zombieRegionClass(region) as BodyRegion);
         if (burn <= 0) {
           continue;
         }
@@ -3696,7 +3696,7 @@ export class ZombieSystem {
       });
     } else if (contact.kind === 'zombie') {
       const { id, zombie, region, cell } = contact.hit;
-      const damage = damageToZombie(
+      const damage = damageToActor(
         zombie.type,
         state.damage,
         move.damageKind,

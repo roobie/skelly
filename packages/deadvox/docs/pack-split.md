@@ -117,7 +117,7 @@ values without preemptively redesigning the ability's shape or name. See
 checks declarations and class compatibility, while content owns response tuning and
 actor resistance; see `src/core/schema/damageKinds.ts`, `DamageKindSchema`,
 `src/core/damageContent.ts`, `checkDamageKinds`, and `src/core/zombies.ts`,
-`damageToZombie`. A weapon's animation mechanism is a separate content selection, so
+`damageToActor`. A weapon's animation mechanism is a separate content selection, so
 adding a melee kind does not imply adding a pose; see `src/game/melee.ts`,
 `meleeProfileForWeapon`. Every declared kind works on both bodies and terrain:
 there must be no silent no-effect pair. Complete response maps make admission catch

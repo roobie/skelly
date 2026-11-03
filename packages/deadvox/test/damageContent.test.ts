@@ -3,7 +3,7 @@ import { bashBlock } from '../src/core/blockDamage.ts';
 import { BODY_REGIONS, Body, type BodyRegion } from '../src/core/body.ts';
 import { claimed } from '../src/core/capabilities.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { damageToZombie } from '../src/core/zombies.ts';
+import { damageToActor } from '../src/core/zombies.ts';
 import { baseSources } from '../src/game/bundledContent.ts';
 import { meleeProfileForWeapon } from '../src/game/melee.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -62,7 +62,7 @@ it('uses a content-only damage kind on bodies, actors and terrain with an existi
   body.impact(4, 'torso', { kind: selected });
   expect(body.health).toBeLessThan(100);
   expect(body.shock).toBeLessThan(100);
-  expect(damageToZombie(registry.zombies.get(actor.id)!, 4, selected, 'torso')).toBe(2);
+  expect(damageToActor(registry.zombies.get(actor.id)!, 4, selected, 'torso')).toBe(2);
   const material = [...registry.blockMaterials.values()][0]!;
   expect(bashBlock({ material: { ...material, minimumStrength: 0 }, damage: 0 }, { kind, strength: 4 }).damage).toBe(2);
 });
