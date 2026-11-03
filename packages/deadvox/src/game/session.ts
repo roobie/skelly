@@ -179,7 +179,7 @@ import { ZOMBIE_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
 import { ThrowCharge } from './throwCharge.ts';
 import { UNPACK_ACTION } from './unpacking.ts';
-import { applyZombiePlayerHit } from './zombiePlayerHit.ts';
+import { applyActorPlayerHit } from './actorPlayerHit.ts';
 
 export const PHYSICS_RATE = 60;
 export const HANDLING_RATE = 20;
@@ -1608,7 +1608,7 @@ export const createSession = (options: SessionOptions) => {
         return;
       }
       playerCombat.cancelCharge();
-      applyZombiePlayerHit(sim, {
+      applyActorPlayerHit(sim, {
         damage,
         cause: source?.type.cause ?? text.causes.zombie,
         regionRoll: sim.rng(`player-hit-region:${attacker}:${sim.time}`).next(),
@@ -1618,7 +1618,7 @@ export const createSession = (options: SessionOptions) => {
     },
     onAcidPlayerHit: (hit) => {
       playerCombat.cancelCharge();
-      applyZombiePlayerHit(sim, hit);
+      applyActorPlayerHit(sim, hit);
     },
     onPlayerExposure: (contact) => sim.expose(contact),
     onPlayerLeaveExposure: (source) => sim.leaveExposure(source),

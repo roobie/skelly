@@ -649,7 +649,7 @@ export interface ZombieSystemOptions {
   onSound?: (event: SoundId, position: Vec3, body?: Zombie, playerMelee?: boolean) => void;
   /** A spit left the mouth. No damage is applied here; the owner of the in-flight glob takes it from this. */
   onAcidSpit?: (release: AcidSpitRelease) => void;
-  onAcidPlayerHit?: (hit: ZombiePlayerHit) => void;
+  onAcidPlayerHit?: (hit: ActorPlayerHit) => void;
   onPlayerExposure?: (contact: ExposureContact) => void;
   onPlayerLeaveExposure?: (source: string) => void;
   onAcidImpact?: (position: Vec3, type: ActorDef) => void;
@@ -934,7 +934,7 @@ export interface AcidSpitRelease {
   moves: NonNullable<ActorDef['acidSpit']>['moves'];
 }
 
-export interface ZombiePlayerHit {
+export interface ActorPlayerHit {
   damage: number;
   kind: DamageKind;
   hitRegions: readonly ZombieHitRegionChoice[];
