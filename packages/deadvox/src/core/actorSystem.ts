@@ -41,7 +41,6 @@ import {
   type Actor,
   type ActorState,
   type ActorTier,
-  type AgentMode,
   actorBodyDimensions,
   copy,
   PLAYER_ARM_REACH_M,
@@ -349,7 +348,7 @@ export interface ActorSystemOptions {
   onAcidImpact?: (position: Vec3, type: ActorDef) => void;
   onAcidGroundImpact?: (impact: AcidGroundImpact) => void;
   /** Called for actual ground-travel footfalls of the nearest three moving shamblers. */
-  onFootstep?: (position: Vec3, id: EntityId, mode: AgentMode, body: Actor) => void;
+  onFootstep?: (position: Vec3, id: EntityId, body: Actor) => void;
   /** Presentation only: a hit that did damage, melee or pellet, after its damage is applied. Gore draws from
    * it; the system reads nothing back. */
   onWound?: (id: EntityId, actor: Actor, hit: HitImpulse, damage: number) => void;
@@ -1533,7 +1532,7 @@ export class ActorSystem {
         continue;
       }
       for (let step = 0; step < steps; step++) {
-        this.options.onFootstep?.(copy(actor.body.pos), id, actor.agent.mode, actor);
+        this.options.onFootstep?.(copy(actor.body.pos), id, actor);
       }
     }
   }

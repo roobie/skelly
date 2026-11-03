@@ -1642,7 +1642,7 @@ export const createSession = (options: SessionOptions) => {
           : {},
       );
     },
-    onFootstep: (position, id, mode, actor) => {
+    onFootstep: (position, id, actor) => {
       const family = actor.type.footstepSound;
       if (family === undefined) {
         return;
@@ -1655,7 +1655,7 @@ export const createSession = (options: SessionOptions) => {
         return;
       }
       playWorldSound(event, position, sim.time, {
-        sourceLabel: `${actor.type.name.toLowerCase()} #${id} · ${mode}`,
+        sourceLabel: `${actor.type.name.toLowerCase()} #${id} · ${actor.agent.mode}`,
         body: actorFigure(actor.type, actor.figureSeed).realized.body,
       });
     },
