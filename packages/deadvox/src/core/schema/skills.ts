@@ -1,4 +1,4 @@
-import { array, check, maxValue, optional, pipe, record, strictObject } from 'valibot';
+import { check, maxValue, optional, pipe, record, strictObject } from 'valibot';
 import { capabilityField } from './capability.ts';
 import { FirearmsEffectsSchema, MeleeEffectsSchema } from './combat.ts';
 import { Count, Fraction, Id, Name, NonNegative, NonNegativeSimRate, Positive, SkillLevel } from './primitives.ts';
@@ -29,8 +29,6 @@ export const SkillSchema = pipe(
         steadyingSkillHalfLifeLevels: Positive,
       }),
     ),
-    /** Recipes a new character knows from the start. */
-    startingRecipes: optional(array(Id)),
     training: optional(
       strictObject({
         craftingTierOffset: optional(Count),

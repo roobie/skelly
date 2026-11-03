@@ -105,7 +105,7 @@ it('a recipe role without a provider adds neither a skill gate nor an unlock req
 
 it('recipe gates and unlocks follow a renamed provider, not the role spelling as an id', () => {
   const base = baseRegistry();
-  const provider = { ...claimed(base.skills, 'crafting')!, id: 'fixture_provider', startingRecipes: [] };
+  const provider = { ...claimed(base.skills, 'crafting')!, id: 'fixture_provider' };
   const { registry, issues } = buildRegistry([
     ...sourcesWithoutSkills(),
     {

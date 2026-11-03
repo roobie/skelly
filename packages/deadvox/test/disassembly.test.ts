@@ -69,7 +69,7 @@ const fixtureBuild = buildRegistry([
   {
     source: 'recipes.json',
     data: {
-      skills: recipes.skills.filter(({ id }) => id === 'crafting').map(({ startingRecipes: _, ...skill }) => skill),
+      skills: recipes.skills.filter(({ id }) => id === 'crafting'),
     },
   },
 ]);

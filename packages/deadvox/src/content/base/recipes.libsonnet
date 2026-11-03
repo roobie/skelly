@@ -31,7 +31,6 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     {
       "id": "crafting", "capability": "crafting",
       "name": "Crafting",
-      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank", "door_bar", "make_rope"] + [recipe.id for recipe in sharpenRecipes],
       "training": { "craftingTierOffset": 1 },
     },
     { "id": "mechanics", "capability": "mechanics", "name": "Mechanics", "training": { "craftingTierOffset": 1 } },

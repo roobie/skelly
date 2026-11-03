@@ -34,6 +34,7 @@ interface Saved {
 }
 const make = (saved?: Saved) => {
   const character = new Character(registry);
+  character.initializeProgression({}, [RECIPE]);
   const inventory = saved
     ? Inventory.restoreState(registry, saved.inventory)
     : new Inventory(registry, undefined, undefined, character);

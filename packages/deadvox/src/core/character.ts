@@ -62,11 +62,6 @@ const validSkillPractice = (registry: Registry, level: number, practice: number 
   practice >= 0 &&
   (level === SKILL_LEVEL_LEGENDARY ? practice === 0 : practice < practiceForNextLevel(registry, level));
 
-/** Content validation guarantees each authored starting recipe exists. */
-export const startingKnownRecipes = (registry: Registry): string[] => [
-  ...new Set([...registry.skills.values()].flatMap((skill) => skill.startingRecipes ?? [])),
-];
-
 export class Character implements HandedCharacter {
   skillForCapability(capability: string): string | undefined {
     return claimed(this.registry.skills, capability)?.id;
@@ -91,7 +86,7 @@ export class Character implements HandedCharacter {
     this.registry = registry;
     this.skills = Object.fromEntries([...registry.skills.keys()].map((id) => [id, SKILL_LEVEL_MIN]));
     this.practice = Object.fromEntries([...registry.skills.keys()].map((id) => [id, 0]));
-    this.knownRecipes = new Set(startingKnownRecipes(registry));
+    this.knownRecipes = new Set();
     for (const recipe of registry.recipes.values()) {
       const unlock = recipe.skillUnlock;
       if (unlock && (!claimed(registry.skills, unlock.skill) || unlock.level === SKILL_LEVEL_MIN)) {

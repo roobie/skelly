@@ -1,7 +1,6 @@
 // Static type reachability, not an inventory/quantity/seed or whole-game solver.
 
 import { claimed } from './capabilities.ts';
-import { startingKnownRecipes } from './character.ts';
 import type { FurnitureDef, RecipeDef, Registry } from './content.ts';
 import { disassemblyOutputs } from './disassembly.ts';
 import { scenarioSources } from './scenarioComposition.ts';
@@ -362,7 +361,7 @@ const knowledgeIssues = (recipe: RecipeDef, knowledge: ReadonlySet<string>): Rec
         {
           recipe: recipe.id,
           path: recipe.skillUnlock ? '.skillUnlock' : '.knowledge',
-          message: `recipe "${recipe.id}" has no knowledge source: not in any skill's startingRecipes; no reachable book teaches it; ${
+          message: `recipe "${recipe.id}" has no knowledge source: not in the supplied starting recipe roots; no reachable book teaches it; ${
             recipe.skillUnlock
               ? `unlock at "${recipe.skillUnlock.skill}" level ${recipe.skillUnlock.level} has no reachable practice source for "${recipe.skillUnlock.skill}"`
               : 'recipe names no skill unlock'
@@ -530,7 +529,7 @@ const reachableKnowledgeAndSkills = ({
 
 export const checkReachability = (
   registry: Registry,
-  known: ReadonlySet<string> = new Set(startingKnownRecipes(registry)),
+  known: ReadonlySet<string> = new Set(),
   scope?: ReachabilityScope,
 ) => {
   const { found, placed, rolled, workstations, workstationQualities } = worldSources(registry, scope);

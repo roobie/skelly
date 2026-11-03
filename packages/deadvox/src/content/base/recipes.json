@@ -822,21 +822,6 @@
       },
       "id": "crafting",
       "name": "Crafting",
-      "startingRecipes": [
-        "torch",
-        "candle",
-        "repair_kit",
-        "repair_crowbar",
-        "sawn_plank",
-        "door_bar",
-        "make_rope",
-        "grind_kitchen_knife",
-        "hone_kitchen_knife",
-        "grind_kabar",
-        "hone_kabar",
-        "grind_machete",
-        "hone_machete"
-      ],
       "training": {
         "craftingTierOffset": 1
       }

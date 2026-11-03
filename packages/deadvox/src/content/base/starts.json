@@ -61,7 +61,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "lone_house",
       "skills": {},
@@ -130,7 +144,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "testHouse",
       "skills": {},
@@ -199,7 +227,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "playtest",
       "skills": {},
@@ -268,7 +310,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "cabins_demo",
       "skills": {},
@@ -337,7 +393,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "stair_demo",
       "skills": {},
@@ -406,7 +476,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "voice_size",
       "skills": {},
@@ -475,7 +559,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "lake_demo",
       "skills": {},
@@ -544,7 +642,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "tutorial",
       "skills": {},
@@ -613,7 +725,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "lock_test",
       "skills": {},
@@ -682,7 +808,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "hunting_cabins",
       "skills": {},
@@ -751,7 +891,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "crisis_hq",
       "skills": {},
@@ -820,7 +974,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "rural_medical_post_demo",
       "skills": {},
@@ -889,7 +1057,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "rural_police_spike",
       "skills": {},
@@ -958,7 +1140,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "rural_substation_demo",
       "skills": {},
@@ -1027,7 +1223,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "gauntlet",
       "skills": {},
@@ -1096,7 +1306,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "city",
       "skills": {},
@@ -1165,7 +1389,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "forest",
       "skills": {},
@@ -1235,7 +1473,21 @@
           "item": "bandage"
         }
       ],
-      "recipes": [],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
       "seed": 1,
       "site": "weatheringTest",
       "skills": {},

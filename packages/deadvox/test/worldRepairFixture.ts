@@ -20,7 +20,7 @@ export const worldRepairSources = () =>
     {
       source: 'world-repair-fixture',
       data: {
-        skills: [{ id: 'world_repair_skill', name: 'Fixture repair', startingRecipes: [RECIPE] }],
+        skills: [{ id: 'world_repair_skill', name: 'Fixture repair' }],
         items: [{ id: STOCK, name: 'Fixture stock', category: 'material', size: [1, 1], weight: 1 }],
         furniture: [PIECE, OTHER_PIECE].map((id) => ({
           id,
@@ -47,6 +47,7 @@ export const worldRepairSources = () =>
 
 export const worldRepairFixture = (registry: Registry) => {
   const character = new Character(registry);
+  character.initializeProgression({}, [RECIPE]);
   const inventory = new Inventory(registry, undefined, undefined, character);
   const sim = new Simulation({
     seed: 1,

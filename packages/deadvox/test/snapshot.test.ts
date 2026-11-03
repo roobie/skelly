@@ -249,10 +249,11 @@ describe('snapshot state components', () => {
     const actor = runtime.session.character;
     expect(Object.keys(actor.skills).sort()).toEqual([...registry.skills.keys()].sort());
     expect(Object.values(actor.skills).every((level) => level === 0)).toBe(true);
-    const removedRecipe = actor.knownRecipes.values().next().value;
+    const removedRecipe = [...registry.recipes.values()].find((recipe) => !recipe.skillUnlock)?.id;
     if (removedRecipe === undefined) {
-      throw new Error('starter character has no known recipe');
+      throw new Error('Snapshot fixture needs a recipe without a skill unlock');
     }
+    actor.initializeProgression({}, [removedRecipe]);
     const firstThreshold = practiceForNextLevel(registry, actor.skills.crafting!);
     const award = firstThreshold + practiceForNextLevel(registry, actor.skills.crafting! + 1) / 2;
     actor.awardPractice('crafting', award, SKILL_LEVEL_LEGENDARY);
@@ -772,6 +773,7 @@ describe('craft job codec and ownership', () => {
           }),
         ).toBe(true);
       }
+      runtime.session.character.initializeProgression({}, ['torch']);
       const planned = runtime.session.planCraft(registry.recipes.get('torch')!);
       if (!('plan' in planned)) {
         throw new Error(planned.missing.reason);
@@ -865,6 +867,7 @@ describe('craft job codec and ownership', () => {
       ).toBe(true);
     }
     const recipe = registry.recipes.get('repair_crowbar')!;
+    runtime.session.character.initializeProgression({}, [recipe.id]);
     const planned = runtime.session.planCraft(recipe);
     if (!('plan' in planned)) {
       throw new Error(planned.missing.reason);

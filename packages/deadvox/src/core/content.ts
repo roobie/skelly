@@ -2025,11 +2025,6 @@ const checkSkillAndUiReferences = (registry: Registry, report: Report): void => 
         `no steadiness tuning on role "${role}" provider`,
       );
     }
-    skill.startingRecipes?.forEach((id, index) => {
-      if (!registry.recipes.has(id)) {
-        report('skills', skill.id, `.startingRecipes[${index}]`, `no recipe "${id}"`);
-      }
-    });
   }
   for (const tuning of registry.ui.values()) {
     if (!registry.sounds.has(tuning.refusalSound)) {

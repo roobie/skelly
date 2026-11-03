@@ -70,6 +70,14 @@ export const startIssues = (registry: Registry): StartIssue[] => {
     if (!(scenario || registry.layouts.has(start.site) || GENERATED_SITES.has(start.site))) {
       fail('.site', `no scenario or layout "${start.site}"`);
     }
+    if (
+      start.defaultForSite &&
+      [...registry.starts.values()].some(
+        (other) => other.id !== start.id && other.defaultForSite && other.site === start.site,
+      )
+    ) {
+      fail('.defaultForSite', `site "${start.site}" has more than one default start`);
+    }
     kitIssues(registry, start, fail);
     for (const id of Object.keys(start.skills)) {
       if (!registry.skills.has(id)) {

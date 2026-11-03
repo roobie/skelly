@@ -2,6 +2,7 @@ import { claimed, claimedId } from '../core/capabilities.ts';
 import { parseTimeOfDay } from '../core/clock.ts';
 import { type Registry, requireDayCycle } from '../core/content.ts';
 import { CHUNK } from '../core/coords.ts';
+import { GENERATED_SITES } from '../core/generatedSites.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
 import type { WeatheringDef } from '../core/schema.ts';
@@ -201,9 +202,7 @@ export const siteFromUrl = (
   const debug = params.get('debug') === '1';
   return {
     site:
-      requested === 'city' ||
-      requested === 'forest' ||
-      (debug && requested === 'weatheringTest') ||
+      (requested !== null && GENERATED_SITES.has(requested) && (debug || requested !== 'weatheringTest')) ||
       (requested !== null && (registry.layouts.has(requested) || registry.scenarios.has(requested)))
         ? requested
         : fallback,
@@ -231,6 +230,9 @@ const applyStartConfig = (config: GameConfig, params: URLSearchParams): void => 
   const siteSelection = siteFromUrl(params, selected.site, content.registry);
   const start =
     requestedStart === null && params.has('site') ? startForSite(content, siteSelection.site, config.debug) : selected;
+  if (requestedStart !== null && params.has('site') && params.get('site') !== start.site) {
+    throw new Error(`Start "${start.id}" requires site "${start.site}"`);
+  }
   config.startId = start.id;
   config.site = siteSelection.site;
   config.seed = params.has('seed')

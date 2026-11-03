@@ -2274,7 +2274,7 @@ describe('content references', () => {
     source: 'reference-dependencies.json',
     data: {
       items: [{ id: 'fixture_non_battery', name: 'Not a battery', category: 'medical', weight: 1, size: [1, 1] }],
-      skills: baseContent('recipes.json').skills!.map(({ startingRecipes: _, ...skill }) => skill),
+      skills: baseContent('recipes.json').skills!,
       sounds: baseContent('sounds.json').sounds!.filter(({ id }) => Object.values(zombieSounds).includes(id)),
     },
   };
@@ -2667,14 +2667,14 @@ describe('content references', () => {
     ]);
   });
 
-  it('rejects a starting recipe that names no recipe instead of dropping it', () => {
+  it('rejects initial recipe policy on a skill instead of silently retaining it', () => {
     const { issues } = buildRegistry([
       {
         source: 'starting-recipe-fixture',
         data: { skills: [{ id: 'fixture_skill', name: 'Fixture', startingRecipes: ['fixture_missing'] }] },
       },
     ]);
-    expect(issues.map(({ path }) => path)).toEqual(['skills[0].startingRecipes[0]']);
+    expect(issues.map(({ path }) => path)).toEqual(['skills[0].startingRecipes']);
   });
 
   it('allows tables to hold candidates without becoming a second geography authority', () => {

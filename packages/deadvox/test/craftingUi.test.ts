@@ -46,7 +46,7 @@ const repairRegistry = baseRegistryWith(
           { id: STOCK, name: 'Fixture stock', category: 'material', size: [1, 1], weight: 1 },
         ],
         furniture: [{ id: FURNITURE, name: 'Fixture furniture', size: [1, 1, 1], color: '#777777' }],
-        skills: [{ id: 'fixture_repair_skill', name: 'Fixture repair', startingRecipes: [ENTITY_REPAIR, ITEM_REPAIR] }],
+        skills: [{ id: 'fixture_repair_skill', name: 'Fixture repair' }],
         recipes: [ENTITY_REPAIR, ITEM_REPAIR].map((id) => ({
           id,
           kind: 'repair',
@@ -68,6 +68,7 @@ const repairRegistry = baseRegistryWith(
 );
 const repairFixture = (withItem = true) => {
   const character = new Character(repairRegistry);
+  character.initializeProgression({}, [ENTITY_REPAIR, ITEM_REPAIR]);
   const inventory = new Inventory(repairRegistry);
   if (!inventory.add(inventory.create(STOCK), { kind: 'pile', pos: [0, 0, 0] })) {
     throw new Error('Fixture stock did not fit');
@@ -157,6 +158,7 @@ describe('crafting read-only presentation', () => {
   });
   it('shows raw material counts, best usable quality and skill gap without granting unknown recipes', () => {
     const character = new Character(registry);
+    character.initializeProgression({}, ['torch', 'candle']);
     const inventory = new Inventory(registry);
     character.knownRecipes.delete('candle');
     const broken = inventory.create('kitchen_knife');

@@ -75,6 +75,16 @@ it('admits authored starts without requiring starts in a lower-layer stack', () 
   expect(lower.registry.starts.size).toBe(0);
 });
 
+it('attributes conflicting site defaults to both authored rows at admission', () => {
+  const first = makeStart({ defaultForSite: true });
+  const second = { ...first, id: 'fixture_other_start' };
+  const result = buildRegistry([...sources(first), { source: 'fixture-other-start.json', data: { starts: [second] } }]);
+  expect(result.issues).toEqual([
+    expect.objectContaining({ source: 'fixture-start.json', path: 'starts[0].defaultForSite' }),
+    expect.objectContaining({ source: 'fixture-other-start.json', path: 'starts[0].defaultForSite' }),
+  ]);
+});
+
 it.each(['city', 'forest', 'weatheringTest'])('admits a start for the existing %s generator', (site) => {
   expect(buildRegistry(sources(makeStart({ site }))).issues).toEqual([]);
 });

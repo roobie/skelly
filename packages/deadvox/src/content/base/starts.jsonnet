@@ -14,7 +14,10 @@ local common = {
   ],
   wounds: [],
   skills: {},
-  recipes: [],
+  recipes: ['torch', 'candle', 'repair_kit', 'repair_crowbar', 'sawn_plank', 'door_bar', 'make_rope'] + [
+    recipe.id for recipe in (import 'recipes.libsonnet').recipes
+    if std.objectHas(recipe, 'activation') && recipe.activation == 'sharpen'
+  ],
   defaultForSite: true,
 };
 local layouts = std.flattenArrays([

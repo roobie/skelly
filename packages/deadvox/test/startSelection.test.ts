@@ -60,6 +60,13 @@ it('projects generated-site starts and gives explicit URL values precedence', ()
   expect(changed.start).toBe(11.5 * 60 * 60);
 });
 
+it('refuses a selected start paired with a different site', () => {
+  const supplied = fixture();
+  const row = startForSite(supplied, 'forest');
+  expect(() => configFromUrl(new URLSearchParams(`start=${row.id}&site=city`), supplied)).toThrow('requires site');
+  expect(configFromUrl(new URLSearchParams(`start=${row.id}&site=${row.site}`), supplied).site).toBe(row.site);
+});
+
 it('refuses a missing entry or requested start instead of synthesizing a kit', () => {
   const supplied = fixture();
   expect(() => makeConfig(8, 96, { ...supplied, defaultStart: undefined })).toThrow('entry default missing');

@@ -94,7 +94,10 @@ export const validate = (
   }
   const { registry, issues, origins } = buildRegistry(sources);
   issues.unshift(...admitted.issues, ...packStartIssues(admitted.packs, registry));
-  const reachable = checkReachability(registry);
+  const reachable = checkReachability(
+    registry,
+    new Set([...registry.starts.values()].flatMap((start) => start.recipes)),
+  );
   for (const issue of reachable.issues) {
     const origin = origins.get(`recipes:${issue.recipe}`)!;
     issues.push({ source: origin.source, path: origin.path + issue.path, message: issue.message });

@@ -1534,7 +1534,9 @@ describe('inventory screen Lit rendering', () => {
     ] as const) {
       inv.add(inv.create(type, count), { kind: 'pile', pos: [0, 0, 0] });
     }
-    const result = planCraft(registry.recipes.get('torch')!, hooks.reach(), new Character(registry));
+    const character = new Character(registry);
+    character.initializeProgression({}, ['torch']);
+    const result = planCraft(registry.recipes.get('torch')!, hooks.reach(), character);
     if (!('plan' in result)) {
       throw new Error(result.missing.reason);
     }

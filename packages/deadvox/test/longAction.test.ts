@@ -59,6 +59,7 @@ const readingFixtureRegistry = buildRegistry([
 ]).registry;
 const make = (
   saved?: {
+    character: ReturnType<Character['snapshotState']>;
     inventory: ReturnType<Inventory['snapshotState']>;
     simulation: ReturnType<Simulation['snapshotState']>;
     action: ReturnType<Simulation['actions']['snapshotState']>;
@@ -67,7 +68,7 @@ const make = (
 ) => {
   const inv = saved ? Inventory.restoreState(contentRegistry, saved.inventory) : new Inventory(contentRegistry);
   const sim = new Simulation({ seed: 1 });
-  const character = new Character(contentRegistry);
+  const character = saved ? Character.restoreState(contentRegistry, saved.character) : new Character(contentRegistry);
   const reach = bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK });
   sim.actions.craft = craftActionHooks(inv, character, reach, { feet: () => [0, 0, 0], calendar: () => sim.calendar });
   const light = { dark: false };
@@ -81,6 +82,7 @@ const make = (
 };
 const start = (contentRegistry: Registry = registry) => {
   const runtime = make(undefined, contentRegistry);
+  runtime.character.initializeProgression({}, ['torch']);
   for (const [type, count] of [
     ['stick', 1],
     ['rag', 2],
@@ -106,6 +108,7 @@ const start = (contentRegistry: Registry = registry) => {
   return { ...runtime, item, payload: item.work! };
 };
 const snapshot = (runtime: ReturnType<typeof make>) => ({
+  character: runtime.character.snapshotState(),
   inventory: runtime.inv.snapshotState(),
   simulation: runtime.sim.snapshotState(),
   action: runtime.sim.actions.snapshotState(),
@@ -114,6 +117,7 @@ const resultCount = (inv: Inventory) =>
   [...inv.items()].filter(({ item }) => item.type === 'torch').reduce((sum, { item }) => sum + item.count, 0);
 const startRepair = () => {
   const runtime = make();
+  runtime.character.initializeProgression({}, ['repair_crowbar']);
   const target = runtime.inv.create('crowbar');
   target.condition = 0.2;
   for (const [type, pos] of [

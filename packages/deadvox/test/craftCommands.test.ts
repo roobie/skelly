@@ -46,6 +46,7 @@ const [OTHER, LAST, TOOL] = ((stock) => [stock[0]![0], stock.at(-2)![0], stock.a
 const REPAIR = 'repair_crowbar';
 const make = (handedness?: HandSide) => {
   const character = new Character(registry, handedness ? { handedness } : {});
+  character.initializeProgression({}, [CRAFT, SECOND_CRAFT, REPAIR, 'door_bar']);
   const inventory = new Inventory(registry, undefined, undefined, character);
   const queue = new HandlingQueue(inventory);
   const sim = new Simulation({ seed: 1 });

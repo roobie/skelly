@@ -110,6 +110,9 @@ describe('held sharpening', () => {
 
   it('never offers sharpening in the craft list or admits it through craft commands', () => {
     const f = fixture();
+    const ordinary = [...f.registry.recipes.values()].find((recipe) => recipe.activation !== 'sharpen');
+    expect(ordinary).toBeDefined();
+    f.character.initializeProgression({}, [ordinary!.id]);
     const rows = craftRows({
       registry: f.registry,
       character: f.character,
