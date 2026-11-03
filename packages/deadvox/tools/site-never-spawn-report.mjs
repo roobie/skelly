@@ -1,7 +1,8 @@
 // biome-ignore-all lint/correctness/noNodejsModules: This report is a Node-only command-line tool.
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { buildRegistry } from '../src/core/content.ts';
 import { checkStartReachability } from '../src/core/reachability.ts';
@@ -33,8 +34,7 @@ const section = (lines, title, ids, registry) => {
   lines.push('');
 };
 
-const report = (siteId, startId) => {
-  const registry = registryFromBaseContent();
+const report = (registry, siteId, startId) => {
   const layout = registry.layouts.get(siteId);
   if (layout?.demo) {
     throw new Error(`Demo layout "${siteId}" is not a playable site`);
@@ -72,23 +72,33 @@ const report = (siteId, startId) => {
     siteReachability.unreachable.filter((id) => globallyUnreachable.has(id)),
     registry,
   );
-  process.stdout.write(`${lines.join('\n')}\n`);
+  return `${lines.join('\n')}\n`;
 };
 
-const { values, positionals } = parseArgs({
-  args: process.argv.slice(2),
-  options: { site: { type: 'string' }, start: { type: 'string' } },
-  allowPositionals: true,
-});
-const requestedSite = values.site ?? positionals[0];
-if (requestedSite === undefined || positionals.length > (values.site === undefined ? 1 : 0)) {
-  process.stderr.write('Usage: npm run report:never-spawn -- <site-id> [--start <start-id>]\n');
-  process.exitCode = 1;
-} else {
+export const runReport = (
+  args,
+  write = (text) => process.stdout.write(text),
+  fail = (text) => process.stderr.write(text),
+  readRegistry = registryFromBaseContent,
+) => {
   try {
-    report(requestedSite, values.start);
+    const { values, positionals } = parseArgs({
+      args,
+      options: { site: { type: 'string' }, start: { type: 'string' } },
+      allowPositionals: true,
+    });
+    const requestedSite = values.site ?? positionals[0];
+    if (requestedSite === undefined || positionals.length > (values.site === undefined ? 1 : 0)) {
+      throw new Error('Usage: npm run report:never-spawn -- <site-id> [--start <start-id>]');
+    }
+    write(report(readRegistry(), requestedSite, values.start));
+    return 0;
   } catch (error) {
-    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
-    process.exitCode = 1;
+    fail(`${error instanceof Error ? error.message : String(error)}\n`);
+    return 1;
   }
+};
+
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exitCode = runReport(process.argv.slice(2));
 }

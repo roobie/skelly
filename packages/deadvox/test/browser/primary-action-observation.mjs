@@ -48,6 +48,32 @@ export const observationPlugin = {
       });
       return JSON.stringify(data);
     }
+    if (id.endsWith('/src/content/base/starts.json')) {
+      const data = JSON.parse(code);
+      // Quickbar replay needs owned stock without borrowing the product's kit or an implicit debug bag.
+      data.items = [
+        {
+          id: 'replay_fixture_stock',
+          name: 'Replay stock',
+          category: 'material',
+          size: [1, 1],
+          weight: 1,
+          workInProgress: false,
+          notLoot: true,
+          economy: { usage: ['Residential'], tiers: ['Tier1'] },
+        },
+      ];
+      data.starts.push({
+        id: 'replay_fixture_start',
+        site: 'replay_fixture',
+        defaultForSite: true,
+        kit: [{ id: 'stock', item: 'replay_fixture_stock', destination: { kind: 'hand', role: 'dominant' } }],
+        wounds: [],
+        skills: {},
+        recipes: [],
+      });
+      return JSON.stringify(data);
+    }
     if (!id.endsWith('/src/game/play.ts')) {
       return;
     }
