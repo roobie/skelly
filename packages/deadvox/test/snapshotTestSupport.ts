@@ -226,7 +226,7 @@ export function createRuntime(
     wobbleFlatOverride: options.wobbleFlatOverride,
     wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
     ready: options.ready ?? (() => true),
-    ...(options.zombieReady ? { zombieReady: options.zombieReady } : {}),
+    ...(options.zombieReady ? { actorReady: options.zombieReady } : {}),
     controls: {
       active: () => options.active ?? Boolean(sampleAtPlayerTick),
       intent: options.intent ?? (() => view.intent),

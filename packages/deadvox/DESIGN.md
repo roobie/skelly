@@ -2808,7 +2808,7 @@ line about an unseen body would narrate what the character cannot know; see
 `INTERFACE.md`, "Text". Zombie drops search wider because they have no retained
 owner; player routes keep their ordinary candidates and refuse because they do
 have one. See `src/game/session.ts`, `placeActorDrop`;
-`src/core/furnitureMove.ts`, `spreadZombieDrop` and `spreadFrom`; and
+`src/core/furnitureMove.ts`, `spreadActorDrop` and `spreadFrom`; and
 `src/game/streamer.ts`, `Streamer.isReady`.
 
 See `src/core/inventory.ts`, `Inventory.landing` and `Inventory.dropLanding`;

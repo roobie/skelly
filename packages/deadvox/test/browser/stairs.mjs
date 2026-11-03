@@ -539,7 +539,7 @@ try {
         noclip,
         locked: input.locked,
         contentErrors: engine.contentErrors,
-        zombies: [...session.zombieStore.entries()].map(([id, z]) => ({
+        zombies: [...session.actorStore.entries()].map(([id, z]) => ({
           id,
           pos: [...z.body.pos],
           mode: z.mode,
@@ -1037,7 +1037,7 @@ try {
   const openResidentDoor = async (residentId) => {
     const approach = await page.evaluate((id) => {
       const { session, entities } = globalThis.stairsWitness;
-      const resident = session.zombieStore.get(id);
+      const resident = session.actorStore.get(id);
       if (!resident) {
         throw new Error('stairs_house resident is not streamed');
       }
@@ -1144,7 +1144,7 @@ try {
               targetColumnUnmeshed: engine.streamer.unmeshedColumns(destination[0], destination[2], 0),
               targetSupport: engine.isSolid(...targetSupport),
             },
-            residents: [...session.zombieStore.entries()].map(([, resident]) => ({
+            residents: [...session.actorStore.entries()].map(([, resident]) => ({
               position: [...resident.body.pos],
               mode: resident.mode,
             })),
@@ -1326,7 +1326,7 @@ try {
       page,
       ({ id, lowerLanding, upperLanding, from, seconds }) => {
         const { engine, session } = globalThis.stairsWitness;
-        const resident = session.zombieStore.get(id);
+        const resident = session.actorStore.get(id);
         const residentPosition = resident ? [...resident.body.pos] : null;
         const residentGroundedAtUpper = Boolean(
           resident?.body.onGround && Math.abs(resident.body.pos[1] - upperLanding[1]) < 0.01,
@@ -1387,7 +1387,7 @@ try {
         page,
         (id) => {
           const { body, session } = globalThis.stairsWitness;
-          const target = session.zombieStore.get(id)?.lastPerceived;
+          const target = session.actorStore.get(id)?.lastPerceived;
           const distance = target
             ? Math.hypot(target[0] - body.pos[0], target[1] - body.pos[1], target[2] - body.pos[2])
             : Number.POSITIVE_INFINITY;

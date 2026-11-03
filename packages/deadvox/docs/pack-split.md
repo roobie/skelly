@@ -103,7 +103,7 @@ retain those realizations without making actor identity select implementation. S
 `src/core/actorModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`, `figureVariantOf` and
 `bodyPlanModel`; `packages/mobgen/src/core/template.ts`, `Template.legCut`;
 `src/core/actorPose.ts`, `actorCrawls`; and `src/core/schema/actors.ts`, `ActorSchema`
-and `zombieRegionsMatchModel`.
+and `actorRegionsMatchModel`.
 Settlement population requests require their claimed providers only when that population
 is selected, so shared content needs no actor merely to validate; see
 `src/core/settlementSpawns.ts`, `settlementHordeSpawn` and `settlementActorSpawns`,

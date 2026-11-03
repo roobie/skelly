@@ -357,7 +357,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         player: playerBody,
         engine,
         registry: engine.registry,
-        zombies: actors,
+        actors,
       });
       const graphics = graphicsTuningOf(engine.registry);
       actorMeshes = new MobActorMeshes(s, shamblerCount, {

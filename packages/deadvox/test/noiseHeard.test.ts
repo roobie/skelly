@@ -618,7 +618,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     const shambler = registry.actors.get('shambler')!;
     const player = session.body.pos;
     const id = session.actors.add(shambler, [player[0], player[1], player[2] - 1], [0, 0, 1]);
-    state.actor = session.zombieStore.get(id)!;
+    state.actor = session.actorStore.get(id)!;
     const health = Object.values(state.actor.regions).reduce((sum, value) => sum + value, 0);
     state.intent = { ...IDLE, useDominant: true };
     advance(30);
@@ -665,7 +665,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     const { session, state, played, advance } = scenario;
     const player = session.body.pos;
     const id = session.actors.add(blockAttacker, [player[0], player[1], player[2] - 1], [0, 0, 1]);
-    state.actor = session.zombieStore.get(id)!;
+    state.actor = session.actorStore.get(id)!;
     state.blocking = true;
     const blockEvents = ['player_block_full', 'player_block_partial'];
     const blocked = () => blockEvents.every((event) => played.some(({ sound }) => sound.event === event));
@@ -808,7 +808,7 @@ it('lets a roller-door noise wake a nearby shambler through hearing', () => {
     { ...registry.actors.get('shambler')!, sight: Number.MIN_VALUE, nightSight: Number.MIN_VALUE },
     [8, 1, 0.5],
   );
-  const listener = session.zombieStore.get(listenerId)!;
+  const listener = session.actorStore.get(listenerId)!;
   expect(listener.mode).toBe('idle');
   const handling = registry.furniture.get('workshop_roller_door')!.door!.handlingSimSeconds;
   session.queue.enqueueAction(DOOR_ACTION, 'Open roller door', handling, { entityUid: door.uid, closing: false });
@@ -865,7 +865,7 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
     groundAt: () => scale.blockSize,
   } as unknown as Engine;
   expect(spawnUnawareShambler(debugEngine, session.body, session.actors)).toBe(true);
-  const [id, actor] = [...session.zombieStore.entries()][0]!;
+  const [id, actor] = [...session.actorStore.entries()][0]!;
   for (let frame = 0; frame < 3; frame++) {
     session.frame(1 / 60);
   }
@@ -898,7 +898,7 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
     camera.lookAt(2, 1, 0);
     camera.updateMatrixWorld(true);
     renderer.setCamera(camera);
-    renderer.sync(session.zombieStore, 1 / 20, 1, false, 1, session.sim.time);
+    renderer.sync(session.actorStore, 1 / 20, 1, false, 1, session.sim.time);
     const state = (renderer as unknown as { states: Map<number, { lookAtState: readonly number[] }> }).states.get(id)!;
     expect(state.lookAtState).not.toEqual([0, 0, 0, 1]);
   } finally {
@@ -940,7 +940,7 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
   }
   session.actors.addHorde('noise-fixture', shambler, [150, 1, 0], 5);
   session.frame(0.5);
-  const members = () => [...session.zombieStore.entries()].filter(([, actor]) => actor.hordeId === 'noise-fixture');
+  const members = () => [...session.actorStore.entries()].filter(([, actor]) => actor.hordeId === 'noise-fixture');
   const meanX = () => {
     const group = members();
     return group.reduce((total, [, actor]) => total + actor.body.pos[0] / group.length, 0);

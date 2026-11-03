@@ -90,7 +90,7 @@ export const firearmBoreRay = ({
 export interface FirearmBoreTarget {
   readonly point: Vec3;
   readonly distanceMetres?: number;
-  readonly zombie?: ActorAim;
+  readonly actor?: ActorAim;
 }
 
 const normalizeDirection = (direction: Vec3): Vec3 => {
@@ -106,7 +106,7 @@ export const firearmBoreTarget = ({
   eye,
   direction,
   surface,
-  zombies: actors,
+  actors,
   blockSize,
   rangeBlocks,
   weapon,
@@ -114,7 +114,7 @@ export const firearmBoreTarget = ({
   readonly eye: Vec3;
   readonly direction: Vec3;
   readonly surface: CrosshairTarget | undefined;
-  readonly zombies: ActorSystem;
+  readonly actors: ActorSystem;
   readonly blockSize: number;
   readonly rangeBlocks: number;
   /** Only its reach decides the aim's `inReach`; the bore ray itself is not a melee swing. */
@@ -134,6 +134,6 @@ export const firearmBoreTarget = ({
     ...(surface || (actor && actorDistanceBlocks! <= rangeBlocks)
       ? { distanceMetres: distanceBlocks * blockSize }
       : {}),
-    ...(actor ? { zombie: actor } : {}),
+    ...(actor ? { actor } : {}),
   };
 };

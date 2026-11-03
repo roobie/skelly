@@ -130,7 +130,7 @@ describe('rifle hits', () => {
      */
     const strike = (session: ReturnType<typeof runtime>, ammo: AmmoData, x: number, target: HumanoidHitRegion) => {
       const id = session.actors.add(shambler, [x, 0, -8]);
-      const actor = session.zombieStore.get(id)!;
+      const actor = session.actorStore.get(id)!;
       const [box] = [...posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK))[target]].sort(
         (a, b) => b.voxelCount - a.voxelCount,
       );
@@ -176,7 +176,7 @@ describe('rifle hits', () => {
         magazines: session.magazines,
       });
       const ammo = registry.items.get(rifle.firearm!.roundType!)!.ammo!;
-      const actor = session.zombieStore.get(session.actors.add(registry.actors.get('shambler')!, [0, 0, -6]))!;
+      const actor = session.actorStore.get(session.actors.add(registry.actors.get('shambler')!, [0, 0, -6]))!;
       const before = { ...actor.regions };
       expect(session.firearms.fire(shotInput(rifle))).toBe(true);
       const [region, ...others] = changedRegions(before, actor.regions);
@@ -192,7 +192,7 @@ describe('rifle hits', () => {
         rounds: 1,
         magazines: session.magazines,
       });
-      const actor = session.zombieStore.get(session.actors.add(registry.actors.get('shambler')!, [0, 0, -6]))!;
+      const actor = session.actorStore.get(session.actors.add(registry.actors.get('shambler')!, [0, 0, -6]))!;
       const before = { ...actor.regions };
       expect(session.firearms.fire(shotInput(rifle))).toBe(true);
       expect(changedRegions(before, actor.regions)).toHaveLength(1);
@@ -244,7 +244,7 @@ describe('rifle hits', () => {
         (_x, y, z) => y < 0 || z < wallZ,
       );
       const actor = withShambler
-        ? session.zombieStore.get(session.actors.add(registry.actors.get('shambler')!, [0, 0, -6]))!
+        ? session.actorStore.get(session.actors.add(registry.actors.get('shambler')!, [0, 0, -6]))!
         : undefined;
       const before = actor && { ...actor.regions };
       const { rifle } = chargedRifle(session.inventory, session.queue, session.firearms, {

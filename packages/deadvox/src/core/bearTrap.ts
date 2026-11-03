@@ -22,18 +22,18 @@ export interface TrapContacts {
   /** The player's feet, in blocks. */
   player: Readonly<Vec3>;
   /** Zombies' feet, in blocks, in the store's order. */
-  zombies: Iterable<readonly [EntityId, Readonly<Vec3>]>;
+  actors: Iterable<readonly [EntityId, Readonly<Vec3>]>;
   blockSize: number;
   alive: (id: EntityId) => boolean;
   hurtPlayer: (injury: TrapDef['playerInjury']) => void;
-  injureZombie: (id: EntityId, damage: number) => void;
+  injureActor: (id: EntityId, damage: number) => void;
 }
 
-/** A trap that sprung this step: on the player when `zombie` is absent. */
+/** A trap that sprung this step: on the player when `actor` is absent. */
 export interface Sprung {
   readonly item: Item;
   readonly pos: Readonly<Vec3>;
-  readonly zombie?: EntityId;
+  readonly actor?: EntityId;
 }
 
 /** The cell a body's feet stand in, as the player's drop cell is found. */
@@ -87,7 +87,7 @@ export class BearTraps {
       }
     }
     const player = cellOf(contacts.player);
-    const actors = [...contacts.zombies].map(([id, pos]) => [id, cellOf(pos)] as const);
+    const actors = [...contacts.actors].map(([id, pos]) => [id, cellOf(pos)] as const);
     const sprung: Sprung[] = [];
     for (const { item, pos, def } of traps) {
       if (item.trap?.state !== 'armed' || !inPlayerBlock(pos, contacts.player, contacts.blockSize)) {
@@ -103,8 +103,8 @@ export class BearTraps {
       if (caught) {
         const [actor] = caught;
         item.trap = { state: 'holding', zombie: actor, remainingSimSeconds: def.holdSimSeconds };
-        sprung.push({ item, pos, zombie: actor });
-        contacts.injureZombie(actor, def.zombieLegDamage);
+        sprung.push({ item, pos, actor });
+        contacts.injureActor(actor, def.zombieLegDamage);
       }
     }
     return sprung;

@@ -76,7 +76,7 @@ import {
   ruinFurniture,
   slideDestination,
   slideFurniture,
-  spreadZombieDrop,
+  spreadActorDrop,
   tipCarried,
   turnCarried,
 } from '../core/furnitureMove.ts';
@@ -513,7 +513,7 @@ export interface SessionOptions {
   /** Whether the world under (x, z), in blocks, is loaded enough to stand on. */
   ready: (x: number, z: number) => boolean;
   /** Optional replayed terrain readiness used only to classify zombie tiers. */
-  zombieReady?: ((x: number, z: number) => boolean) | undefined;
+  actorReady?: ((x: number, z: number) => boolean) | undefined;
   controls: SessionControls;
   audio: SessionAudio;
   /** A message that isn't an interruption, such as a completion notice. */
@@ -548,7 +548,7 @@ export interface SessionOptions {
   onAcidImpact?: (position: Vec3, type: Actor['type']) => void;
   onAcidGroundImpact?: (impact: AcidGroundImpact) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
-  zombieEffects?: {
+  actorEffects?: {
     /** A hit drew blood: where it struck, along which line, and how hard. */
     onWound?: (id: EntityId, actor: Actor, hit: HitImpulse, damage: number) => void;
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
@@ -741,7 +741,7 @@ const restorePlayerSessionLatches = (player: ReturnType<typeof restorePlayer> | 
   handlingPausedForKnockout: player?.handlingPausedForKnockout ?? false,
 });
 
-const actorReadinessFor = (options: SessionOptions) => options.zombieReady ?? options.ready;
+const actorReadinessFor = (options: SessionOptions) => options.actorReady ?? options.ready;
 
 /** Physical bricks share the parked-vehicle occupancy projection with the cell collision path. */
 const solidBricksFor = (world: World, registry: Registry, inventory: Inventory, blockSize: number): SolidBricks =>
@@ -1566,7 +1566,7 @@ export const createSession = (options: SessionOptions) => {
       const floor = inventory.landing(spot);
       return floor ? [floor] : [];
     });
-    for (const cell of spreadZombieDrop(inventory, physicalSolid, pos, landings)) {
+    for (const cell of spreadActorDrop(inventory, physicalSolid, pos, landings)) {
       const target = { kind: 'pile' as const, pos: cell };
       if (inventory.planAdd(item, target).ok) {
         inventory.add(item, target);
@@ -1668,12 +1668,12 @@ export const createSession = (options: SessionOptions) => {
         placeActorDrop(inventory.create(item!), pos);
       }
     },
-    onWound: (id, actor, hit, damage) => options.zombieEffects?.onWound?.(id, actor, hit, damage),
-    onSever: (id, actor, part, hit) => options.zombieEffects?.onSever?.(id, actor, part, hit),
-    onCarve: (id, actor, cells, hit) => options.zombieEffects?.onCarve?.(id, actor, cells, hit),
-    onIncapacitated: (id, actor) => options.zombieEffects?.onIncapacitated?.(id, actor),
-    ...(options.zombieEffects?.onMeleeResult ? { onMeleeResult: options.zombieEffects.onMeleeResult } : {}),
-    ...(options.zombieEffects?.onMeleeContact ? { onMeleeContact: options.zombieEffects.onMeleeContact } : {}),
+    onWound: (id, actor, hit, damage) => options.actorEffects?.onWound?.(id, actor, hit, damage),
+    onSever: (id, actor, part, hit) => options.actorEffects?.onSever?.(id, actor, part, hit),
+    onCarve: (id, actor, cells, hit) => options.actorEffects?.onCarve?.(id, actor, cells, hit),
+    onIncapacitated: (id, actor) => options.actorEffects?.onIncapacitated?.(id, actor),
+    ...(options.actorEffects?.onMeleeResult ? { onMeleeResult: options.actorEffects.onMeleeResult } : {}),
+    ...(options.actorEffects?.onMeleeContact ? { onMeleeContact: options.actorEffects.onMeleeContact } : {}),
     onDeath: (id, actor) => {
       const table = actor.type.loot;
       if (table) {
@@ -1682,7 +1682,7 @@ export const createSession = (options: SessionOptions) => {
           placeActorDrop(inventory.createRolled(drop), pos);
         }
       }
-      options.zombieEffects?.onDeath?.(id, actor);
+      options.actorEffects?.onDeath?.(id, actor);
     },
   });
   const playerCombat = new PlayerCombat(
@@ -1817,7 +1817,7 @@ export const createSession = (options: SessionOptions) => {
       for (const item of fuses.advance(dt, (live) => inventory.locate(live)?.kind === 'hand', lit)) {
         detonate(item);
       }
-      spawner.advance({ calendar: sim.calendar, registry, zombies: actorSystem });
+      spawner.advance({ calendar: sim.calendar, registry, actors: actorSystem });
       if (scenarioRun) {
         advanceEventRules({
           rules: options.scenario?.eventRules ?? [],
@@ -1826,17 +1826,17 @@ export const createSession = (options: SessionOptions) => {
           dayPhase: dayPhaseAt(dayCycle, sim.calendar).phase,
           player: body.pos,
           registry,
-          zombies: actorSystem,
+          actors: actorSystem,
         });
       }
       actorSystem.tickActive(dt, time, heldItemUids());
       traps.step(dt, {
         player: body.pos,
-        zombies: [...actorStore.entries()].map(([id, actor]) => [id, actor.body.pos] as const),
+        actors: [...actorStore.entries()].map(([id, actor]) => [id, actor.body.pos] as const),
         blockSize: s,
         alive: (id) => actorStore.get(id) !== undefined,
         hurtPlayer: ({ region, damage, kind }) => sim.hit(damage, text.causes.bearTrap, region, { kind }),
-        injureZombie: (id, damage) => actorSystem.injureLegs(id, damage),
+        injureActor: (id, damage) => actorSystem.injureLegs(id, damage),
       });
       lastActorStep = time;
     },
@@ -2483,7 +2483,7 @@ export const createSession = (options: SessionOptions) => {
     playWorldSound: playNoisyWorldSound,
     closeBlockedMessages: claimed(registry.ui, 'interface')!.doorCloseBlockedMessages,
   });
-  registerDownedBodyAction({ queue, player: reachPlayer, zombies: actorSystem });
+  registerDownedBodyAction({ queue, player: reachPlayer, actors: actorSystem });
   registerTrapActions({
     queue,
     inventory,
@@ -2733,13 +2733,13 @@ export const createSession = (options: SessionOptions) => {
     downedBodyPlan: (id: EntityId, way: DownedBodyWay) => downedBodyPlan(reachPlayer, actorStore.get(id), way),
     /** Queues finishing off or dismembering a downed body; returns why not. */
     clearDownedBody: (id: EntityId, way: DownedBodyWay) =>
-      queueDownedBody({ queue, player: reachPlayer, zombies: actorSystem }, id, way),
+      queueDownedBody({ queue, player: reachPlayer, actors: actorSystem }, id, way),
     crafting: new CraftCommands({ inventory, character, sim, queue, reach }),
     survival,
     rest,
     actors: actorSystem,
     playerCombat,
-    zombieStore: actorStore,
+    actorStore,
     spawner,
     body,
     /** Set when the session was restored: the view direction to hand back to the input. */
@@ -2779,7 +2779,7 @@ export const createSession = (options: SessionOptions) => {
     playWorldSound,
     playPlayerSound,
     /** Time of the last shambler step, for render interpolation. */
-    get lastZombieStep() {
+    get lastActorStep() {
       return lastActorStep;
     },
     get lastBackgroundStep() {
@@ -2830,7 +2830,7 @@ export const createSession = (options: SessionOptions) => {
     /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
     onColumn: (cx: number, cz: number, source: ColumnSource) => {
       columnSupply.arrive(cx, cz, source);
-      spawner.onColumn({ cx, cz, site: source, registry, zombies: actorSystem });
+      spawner.onColumn({ cx, cz, site: source, registry, actors: actorSystem });
     },
     onColumnUnload: (cx: number, cz: number): void => spawner.unloadColumn(cx, cz),
     /** Queues a search of a container, unless one is queued or done. */

@@ -360,9 +360,9 @@ describe('hand grenade', () => {
   it('hurts a nearer shambler more, and none beyond the blast radius', () => {
     const session = runtime();
     const origin: Vec3 = [0, 1, 0];
-    const near = session.zombieStore.get(session.actors.add(SHAMBLER, [2, 0, 0]))!;
-    const far = session.zombieStore.get(session.actors.add(SHAMBLER, [-6, 0, 0]))!;
-    const beyond = session.zombieStore.get(session.actors.add(SHAMBLER, [0, 0, 14]))!;
+    const near = session.actorStore.get(session.actors.add(SHAMBLER, [2, 0, 0]))!;
+    const far = session.actorStore.get(session.actors.add(SHAMBLER, [-6, 0, 0]))!;
+    const beyond = session.actorStore.get(session.actors.add(SHAMBLER, [0, 0, 14]))!;
     const before = [near, far, beyond].map(({ regions }) => ({ ...regions }));
     session.actors.detonate(detonation(origin, { damageKind: 'blunt', radiusMetres: 6, damage: 20, impulse: 1 }));
     const [nearLoss, farLoss, beyondLoss] = [near, far, beyond].map(({ regions }, i) =>
@@ -375,8 +375,8 @@ describe('hand grenade', () => {
 
   it('stops blast and fragments at a wall, while a shambler as close on the open side is hit', () => {
     const session = runtime(WALL_AT_X2);
-    const sheltered = session.zombieStore.get(session.actors.add(SHAMBLER, [6, 0, 0.5]))!;
-    const open = session.zombieStore.get(session.actors.add(SHAMBLER, [-5, 0, 0.5]))!;
+    const sheltered = session.actorStore.get(session.actors.add(SHAMBLER, [6, 0, 0.5]))!;
+    const open = session.actorStore.get(session.actors.add(SHAMBLER, [-5, 0, 0.5]))!;
     const before = [sheltered, open].map(({ regions }) => ({ ...regions }));
     session.actors.detonate(
       detonation([0.5, 1, 0.5], { damageKind: 'blunt', radiusMetres: 6, damage: 20, impulse: 1 }, 400),
@@ -394,7 +394,7 @@ describe('hand grenade', () => {
     };
     const id = session.actors.add(type, [1, 0, 0]);
     session.actors.detonate(detonation([0, 1, 0], { damageKind: 'blunt', radiusMetres: 6, damage: 1000, impulse: 1 }));
-    expect(session.zombieStore.get(id)).toBeUndefined();
+    expect(session.actorStore.get(id)).toBeUndefined();
     const dropped = [...session.inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item.type));
     const limbs = (['leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const)
       .map((region) => type.severedItems[region])

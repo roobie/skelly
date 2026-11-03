@@ -98,7 +98,7 @@ for (const count of counts) {
     player: playerBody,
     engine,
     registry,
-    zombies: system,
+    actors: system,
     tier: 'active',
   });
   if (backgroundCount > 0) {
@@ -108,7 +108,7 @@ for (const count of counts) {
       player: playerBody,
       engine,
       registry,
-      zombies: system,
+      actors: system,
       tier: 'background',
     });
   }

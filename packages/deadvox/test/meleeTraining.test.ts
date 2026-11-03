@@ -57,7 +57,7 @@ it('awards content-authored melee practice after a landed fist hit', () => {
     onRead: () => {
       throw new Error('Unexpected reading in melee training fixture');
     },
-    zombieEffects: {
+    actorEffects: {
       onMeleeResult: (result) => {
         landed = result.id !== undefined;
       },

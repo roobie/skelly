@@ -907,7 +907,7 @@ export const startPlay = (
     terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
     ...(options.restore ? { restore: options.restore } : {}),
     ready: (x, z) => streamer.isReady(x, z),
-    zombieReady: (x, z) => replayPlayer?.isReady(x, z) ?? streamer.isReady(x, z),
+    actorReady: (x, z) => replayPlayer?.isReady(x, z) ?? streamer.isReady(x, z),
     controls: debugGunPose.guard(
       spectator.guard({
         active: () => worldLoading.ready && (Boolean(options.replay) || (input.locked && !input.menuPointer)),
@@ -1076,7 +1076,7 @@ export const startPlay = (
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
     // corpse, and blood for every wound. Only MobActorMeshes implements the zombie hooks; ActorMeshes leaves
     // them undefined.
-    zombieEffects: {
+    actorEffects: {
       onWound: (id, _actor, hit, damage) => {
         actorMeshes.zombieWounded?.(id, hit);
         view.gore.spray(hit, damage);
@@ -1216,7 +1216,7 @@ export const startPlay = (
   if (!(options.saveController || options.restore)) {
     snapshotIds = { worldId: crypto.randomUUID(), characterId: crypto.randomUUID() };
   }
-  const { actors: actorSystem, playerCombat, zombieStore: actorStore } = session;
+  const { actors: actorSystem, playerCombat, actorStore } = session;
   if (!options.restore) {
     applyStartState(inventory, requireStart(config.content, config.startId, config.debug), {
       fresh: true,
@@ -2721,7 +2721,7 @@ export const startPlay = (
       vehicleParts: currentVehicleParts(),
       throughLadders: session.ladderHold.on,
       hasModel: (id) => view.models.has(id),
-      downedBodies: [...session.zombieStore.entries()]
+      downedBodies: [...session.actorStore.entries()]
         .filter(([, actor]) => actor.incapacitated)
         .map(([id, actor]) => ({ id, body: actor.body })),
     });
@@ -3908,7 +3908,7 @@ export const startPlay = (
       eye: bore.origin,
       direction: bore.direction,
       surface,
-      zombies: actorSystem,
+      actors: actorSystem,
       blockSize: s,
       weapon: unarmedMeleeWeapon(registry.meleeClasses),
       rangeBlocks,
@@ -4308,7 +4308,7 @@ export const startPlay = (
       time: sim.time,
       playerEye: eye().map((coordinate) => coordinate * s) as Vec3,
       playerChest: [body.pos[0] * s, body.pos[1] * s + PLAYER_CHEST_METRES, body.pos[2] * s],
-      lastZombieStep: session.lastZombieStep,
+      lastZombieStep: session.lastActorStep,
       acidGlobs: actorSystem.acidGlobs,
       acidPuddles: actorSystem.acidPuddles,
       lastBackgroundStep: session.lastBackgroundStep,

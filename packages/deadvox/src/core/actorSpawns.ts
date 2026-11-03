@@ -10,13 +10,13 @@ export interface ActorColumnLoad {
   cz: number;
   site: Pick<Site, 'actorsIn' | 'hordesIn'>;
   registry: Registry;
-  zombies: ActorSystem;
+  actors: ActorSystem;
 }
 
 export interface ActorSpawnAdvance {
   calendar: number;
   registry: Registry;
-  zombies: ActorSystem;
+  actors: ActorSystem;
 }
 
 interface PendingSpawn {
@@ -44,9 +44,9 @@ export class ActorSpawner {
     }
   }
 
-  onColumn({ cx, cz, site, registry, zombies: actors }: ActorColumnLoad): void {
+  onColumn({ cx, cz, site, registry, actors }: ActorColumnLoad): void {
     for (const spawn of site.actorsIn(cx, cz)) {
-      this.consider(spawn, { cx, cz, registry, zombies: actors });
+      this.consider(spawn, { cx, cz, registry, actors });
     }
     for (const horde of site.hordesIn?.(cx, cz) ?? []) {
       const type = registry.actors.get(horde.type);
@@ -59,7 +59,7 @@ export class ActorSpawner {
   }
 
   /** Reconsiders only markers in columns already loaded. */
-  advance({ calendar, registry, zombies: actors }: ActorSpawnAdvance): void {
+  advance({ calendar, registry, actors }: ActorSpawnAdvance): void {
     // Restore can load columns in another order; preserve marker-to-id and RNG assignment.
     const pending = [...this.pending].sort(([left], [right]) => {
       if (left === right) {
@@ -88,7 +88,7 @@ export class ActorSpawner {
 
   private consider(
     spawn: ActorSpawn,
-    { cx, cz, registry, zombies: actors }: Pick<ActorColumnLoad, 'cx' | 'cz' | 'registry' | 'zombies'>,
+    { cx, cz, registry, actors }: Pick<ActorColumnLoad, 'cx' | 'cz' | 'registry' | 'actors'>,
   ): void {
     const key = `${spawn.type}:${spawn.pos.join(',')}`;
     if (this.spawned.has(key)) {

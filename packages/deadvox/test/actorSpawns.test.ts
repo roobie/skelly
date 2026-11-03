@@ -57,7 +57,7 @@ const campAmalgams = () => {
 };
 
 const load = (spawner: ActorSpawner, spawned: Spawned[], cx: number, cz: number) => {
-  spawner.onColumn({ cx, cz, site, registry, zombies: actorSystemFor(spawned) });
+  spawner.onColumn({ cx, cz, site, registry, actors: actorSystemFor(spawned) });
 };
 
 describe('authored zombie spawn persistence', () => {
@@ -106,7 +106,7 @@ describe('authored zombie spawn persistence', () => {
         type === 'brute_shambler' && x >= x0 && x < x0 + width && z >= z0 && z < z0 + depth && y < grade;
       const loadAll = (spawner: ActorSpawner, spawned: Spawned[]) => {
         for (const [cx, cz] of columns.values()) {
-          spawner.onColumn({ cx, cz, site: city, registry, zombies: actorSystemFor(spawned) });
+          spawner.onColumn({ cx, cz, site: city, registry, actors: actorSystemFor(spawned) });
         }
       };
       const beforeSave = new ActorSpawner();

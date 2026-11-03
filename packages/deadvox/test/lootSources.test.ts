@@ -230,7 +230,7 @@ describe('loot source routing', () => {
       start: 0,
       spawn: [0, 0, 0],
       ready: () => !actorReady,
-      zombieReady: () => actorReady,
+      actorReady: () => actorReady,
       controls: {
         active: () => false,
         intent: () => IDLE,
@@ -292,7 +292,7 @@ describe('loot source routing', () => {
 
   it.each([false, true])('lands admitted death and severing drops (first landing full: %s)', (full) => {
     const { session, solid, id, severed, forbidden } = actorDropScene({ full });
-    expect(session.zombieStore.get(id)).toBeUndefined();
+    expect(session.actorStore.get(id)).toBeUndefined();
     const items = [...session.inventory.items()].map(({ item }) => item);
     const dropped = items.filter((item) => item.type === stock);
     expect(dropped.length).toBeGreaterThan(0);
@@ -402,7 +402,7 @@ describe('loot source routing', () => {
     for (const spot of dropSpots([4, 4, 0])) {
       expect(f.session.inventory.landing(spot)).toBeUndefined();
     }
-    expect(f.session.zombieStore.get(f.id)).toBeUndefined();
+    expect(f.session.actorStore.get(f.id)).toBeUndefined();
     expect(f.session.inventory.piles.size).toBe(0);
     expect([...f.session.inventory.items()]).toEqual([]);
     expect(f.notice).not.toHaveBeenCalled();

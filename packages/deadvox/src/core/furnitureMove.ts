@@ -404,7 +404,7 @@ const spreadFrom = (shadow: Shadow, cells: readonly Vec3[]): Iterable<Vec3> => {
 };
 
 /** Only generated neighbours of a ready body may participate; the boundary acts as a wall, not a new seed. */
-export const spreadZombieDrop = (
+export const spreadActorDrop = (
   inventory: Inventory,
   terrainSolid: SolidAt,
   body: Vec3,

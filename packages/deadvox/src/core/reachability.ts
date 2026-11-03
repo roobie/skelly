@@ -266,7 +266,7 @@ interface WorldSourceAccumulator {
   placed: Set<string>;
   workstations: Set<string>;
   workstationQualities: Map<string, number>;
-  zombieTypes: Set<string>;
+  actorTypes: Set<string>;
 }
 
 const addPieceSources = (registry: Registry, template: CompiledTemplate, sources: WorldSourceAccumulator): void => {
@@ -304,7 +304,7 @@ const addTemplateSources = (registry: Registry, template: CompiledTemplate, sour
   addPieceSources(registry, template, sources);
   addGroundLootSources(template, sources);
   for (const marker of template.spawns.filter((spawn) => spawn.chance > 0)) {
-    sources.zombieTypes.add(marker.zombie);
+    sources.actorTypes.add(marker.zombie);
   }
 };
 
@@ -321,7 +321,7 @@ const worldSources = (registry: Registry, scope: ReachabilityScope = {}) => {
     placed,
     workstations,
     workstationQualities,
-    zombieTypes: worldActorTypes(registry, authoredLayouts, scenarios),
+    actorTypes: worldActorTypes(registry, authoredLayouts, scenarios),
   };
   const authoredTemplates = authoredLayouts.flatMap((layout) => layout.buildings.map(({ template }) => template));
   const scenarioContent = scenarioSources(registry, scenarios);
@@ -329,7 +329,7 @@ const worldSources = (registry: Registry, scope: ReachabilityScope = {}) => {
   for (const template of sourceTemplates(registry, new Set([...authoredTemplates, ...scenarioContent.templates]))) {
     addTemplateSources(registry, template, sources);
   }
-  for (const id of sources.zombieTypes) {
+  for (const id of sources.actorTypes) {
     const loot = registry.actors.get(id)?.loot;
     if (loot !== undefined) {
       roots.add(loot);

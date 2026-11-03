@@ -41,7 +41,7 @@ export class ScenarioCitySite extends CitySite {
     );
     this.scenario = scenario;
     const population = scenarioCityPopulation(this, scenario);
-    this.population = population.zombies;
+    this.population = population.actors;
     this.hordes = population.hordes;
   }
 
@@ -167,5 +167,5 @@ export const scenarioCityPopulation = (site: CitySite, { id: scenarioId, populat
       append(actors, { type: marker.zombie, pos: marker.pos, ...(marker.window ? { window: marker.window } : {}) });
     }
   }
-  return { zombies: actors, hordes };
+  return { actors, hordes };
 };

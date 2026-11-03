@@ -1,6 +1,6 @@
 import { array, check, type InferOutput, optional, pipe, strictObject } from 'valibot';
 import { PowerDeviceSchema, PowerTuningSchema } from '../powerContent.ts';
-import { ActorSchema, zombieAcidSpitMatchesAbility, zombieRegionsMatchModel } from './actors.ts';
+import { ActorSchema, actorAcidSpitMatchesAbility, actorRegionsMatchModel } from './actors.ts';
 import { BlockMaterialSchema, BlockSchema } from './blocks.ts';
 import { BodyTuningSchema } from './body.ts';
 import { CombatPolicySchema, RangedTuningSchema } from './combat.ts';
@@ -81,11 +81,8 @@ const SECTION_DESCRIPTOR = {
             types.every((actor) => (actor.model === 'fused-mass') === (actor.attack.grabBandMetres === undefined)),
           'every type but fused-mass, which strikes from its core, must define attack.grabBandMetres',
         ),
-        check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
-        check(
-          (types) => types.every(zombieAcidSpitMatchesAbility),
-          'acidSpit tunables must match the acidSpit ability',
-        ),
+        check((types) => types.every(actorRegionsMatchModel), 'zombie region keys must match the model'),
+        check((types) => types.every(actorAcidSpitMatchesAbility), 'acidSpit tunables must match the acidSpit ability'),
         check(
           (types) => types.every((actor) => (actor.model === 'acid') === (actor.acidBody !== undefined)),
           'acidBody must be defined exactly for the acid model',

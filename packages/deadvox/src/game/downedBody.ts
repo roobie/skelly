@@ -57,7 +57,7 @@ export const downedBodyPlan = (player: ReachPlayer, actor: Actor | undefined, wa
 
 /** Queues clearing a downed body, unless it's queued already; returns why it can't be done now. */
 export const queueDownedBody = (
-  { queue, player, zombies: actors }: { queue: HandlingQueue; player: ReachPlayer; zombies: DownedActors },
+  { queue, player, actors }: { queue: HandlingQueue; player: ReachPlayer; actors: DownedActors },
   id: EntityId,
   way: DownedBodyWay,
 ): string | undefined => {
@@ -78,11 +78,11 @@ export const queueDownedBody = (
 export const registerDownedBodyAction = ({
   queue,
   player,
-  zombies: actors,
+  actors,
 }: {
   queue: HandlingQueue;
   player: ReachPlayer;
-  zombies: DownedActors;
+  actors: DownedActors;
 }): void => {
   queue.registerAction(DOWNED_BODY_ACTION, ({ zombieId: actorId, way }) => {
     if (typeof actorId !== 'number' || !Number.isSafeInteger(actorId) || !isDownedBodyWay(way)) {

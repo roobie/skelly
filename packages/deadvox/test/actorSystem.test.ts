@@ -2204,13 +2204,13 @@ describe('shambler scenarios', () => {
     expect(column).toBeDefined();
     const spawner = new ActorSpawner();
     const system = new ActorSystem(senses(() => player([1000, 2, 1000])));
-    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system });
+    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, actors: system });
     const state = system.snapshotState();
     const id = state.hordes[0]?.id;
     expect(id).toBeDefined();
     expect([...system.store.entries()].some(([, actor]) => actor.hordeId === id)).toBe(true);
     const { size } = system.store;
-    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system });
+    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, actors: system });
     expect(system.store.size).toBe(size);
     expect(system.snapshotState()).toEqual(state);
   });
@@ -2228,7 +2228,7 @@ describe('shambler scenarios', () => {
     expect(column).toBeDefined();
     const spawner = new ActorSpawner();
     const system = new ActorSystem(senses(() => player([1000, 2, 1000])));
-    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system });
+    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, actors: system });
     const initial = [...system.store.entries()];
     expect(initial.length).toBeGreaterThan(0);
     const [id, actor] = initial[0]!;
@@ -2238,7 +2238,7 @@ describe('shambler scenarios', () => {
       run(system, FISTS_MELEE.cooldown);
     }
     const survivors = system.store.size;
-    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system });
+    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, actors: system });
     expect(system.store.get(id)).toBeUndefined();
     expect(system.store.size).toBe(survivors);
   });
@@ -2252,13 +2252,13 @@ describe('shambler scenarios', () => {
     const site = spawnSite(spawn);
     const spawner = new ActorSpawner();
     const system = new ActorSystem(senses(() => player([1000, 2, 1000])));
-    const load = () => spawner.onColumn({ cx: 0, cz: 0, site, registry, zombies: system });
+    const load = () => spawner.onColumn({ cx: 0, cz: 0, site, registry, actors: system });
 
     load();
     expect(system.store.size).toBe(0);
-    spawner.advance({ calendar: DUSK - 1, registry, zombies: system });
+    spawner.advance({ calendar: DUSK - 1, registry, actors: system });
     expect(system.store.size).toBe(0);
-    spawner.advance({ calendar: DUSK, registry, zombies: system });
+    spawner.advance({ calendar: DUSK, registry, actors: system });
     expect(system.store.size).toBe(1);
     expect(spawner.snapshotState()).toContain('shambler:0,1,0');
   });
@@ -2277,10 +2277,10 @@ describe('shambler scenarios', () => {
           cz: 0,
           site: spawnSite(spawn),
           registry,
-          zombies: system,
+          actors: system,
         });
       });
-      spawner.advance({ calendar: DUSK, registry, zombies: system });
+      spawner.advance({ calendar: DUSK, registry, actors: system });
       return [...system.store.entries()].map(([id, actor]) => ({ id, home: actor.home }));
     };
 
@@ -2305,10 +2305,10 @@ describe('shambler scenarios', () => {
       cz: 0,
       site: spawnSite(spawn),
       registry,
-      zombies: system,
+      actors: system,
     });
     expect(system.store.size).toBe(0);
-    spawner.advance({ calendar: DUSK + 1, registry, zombies: system });
+    spawner.advance({ calendar: DUSK + 1, registry, actors: system });
     expect(system.store.size).toBe(1);
   });
 
@@ -2321,19 +2321,19 @@ describe('shambler scenarios', () => {
     const site = spawnSite(spawn);
     const system = new ActorSystem(senses(() => player([1000, 2, 1000])));
     const spawner = new ActorSpawner();
-    const load = () => spawner.onColumn({ cx: 0, cz: 0, site, registry, zombies: system });
+    const load = () => spawner.onColumn({ cx: 0, cz: 0, site, registry, actors: system });
     load();
     spawner.unloadColumn(0, 0);
-    spawner.advance({ calendar: DUSK + SECONDS_PER_DAY, registry, zombies: system });
+    spawner.advance({ calendar: DUSK + SECONDS_PER_DAY, registry, actors: system });
     expect(system.store.size).toBe(0);
 
     load();
-    spawner.advance({ calendar: DUSK + SECONDS_PER_DAY, registry, zombies: system });
+    spawner.advance({ calendar: DUSK + SECONDS_PER_DAY, registry, actors: system });
     expect(system.store.size).toBe(1);
     const [id] = system.store.entries().next().value!;
     system.store.remove(id);
     load();
-    spawner.advance({ calendar: DUSK + 2 * SECONDS_PER_DAY, registry, zombies: system });
+    spawner.advance({ calendar: DUSK + 2 * SECONDS_PER_DAY, registry, actors: system });
     expect(system.store.size).toBe(0);
     expect(spawner.snapshotState()).toContain('shambler:0,1,0');
 
@@ -2345,7 +2345,7 @@ describe('shambler scenarios', () => {
       cz: 0,
       site,
       registry,
-      zombies: afterRestore,
+      actors: afterRestore,
     });
     expect(afterRestore.store.size).toBe(0);
   });

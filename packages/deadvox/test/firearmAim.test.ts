@@ -35,7 +35,7 @@ it('chooses a bore-line zombie in front of a far wall', () => {
     eye,
     direction,
     surface,
-    zombies: system,
+    actors: system,
     blockSize,
     rangeBlocks: FIXTURE_RANGE_BLOCKS,
     weapon: FISTS_MELEE,
@@ -44,7 +44,7 @@ it('chooses a bore-line zombie in front of a far wall', () => {
 
   expect(result.point).toEqual(actorPoint);
   expect(result.distanceMetres).toBe(actor.distanceMetres);
-  expect(result.zombie).toEqual(actor);
+  expect(result.actor).toEqual(actor);
 });
 
 it('projects the shipped lowered bore below the raised firearm bore', () => {

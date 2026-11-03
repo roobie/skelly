@@ -176,7 +176,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       player: playerBody,
       engine,
       registry: engine.registry,
-      zombies: actors,
+      actors,
       tier: 'active',
     });
     if (backgroundCount > 0) {
@@ -186,7 +186,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
         player: playerBody,
         engine,
         registry: engine.registry,
-        zombies: actors,
+        actors,
         tier: 'background',
       });
     }
@@ -240,7 +240,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       seed: run.seed,
       actors: run.actors,
       frame: frameStats(frames),
-      zombieTick: sampleStats(actorTick),
+      actorTick: sampleStats(actorTick),
       backgroundTick: sampleStats(backgroundTick),
       renderSubmit: sampleStats(renderSubmit),
       actorSync: sampleStats(actorSync),

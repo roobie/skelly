@@ -981,11 +981,11 @@ describe('real pump ammunition', () => {
       diameterMm: 8.38,
       rangeMetres: 50,
     };
-    const before = structuredClone(open.zombieStore.get(a)!.regions);
+    const before = structuredClone(open.actorStore.get(a)!.regions);
     expect(open.actors.firePellets(shot).hits).toBe(1);
     expect(blocked.actors.firePellets(shot).hits).toBe(0);
-    expect(open.zombieStore.get(a)!.regions).not.toEqual(before);
-    expect(blocked.zombieStore.get(b)!.regions).toEqual(before);
+    expect(open.actorStore.get(a)!.regions).not.toEqual(before);
+    expect(blocked.actorStore.get(b)!.regions).toEqual(before);
     expect(open.playerCombat.activeMeleeAction).toBeUndefined();
   });
 });

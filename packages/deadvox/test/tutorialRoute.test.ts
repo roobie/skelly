@@ -95,7 +95,7 @@ it('the authored essentials and optional range paths can be walked with the ordi
   for (const [cx, cz] of columns) {
     session.onColumn(cx, cz, site);
   }
-  expect(session.zombieStore.size).toBeGreaterThan(0);
+  expect(session.actorStore.size).toBeGreaterThan(0);
   session.sim.paused = false;
   const { health } = session.sim.body;
   const walkPath = (path: readonly [number, number][]) => {

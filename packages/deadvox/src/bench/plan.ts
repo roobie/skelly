@@ -107,7 +107,7 @@ export interface ShamblerRunResult {
   /** Which renderer drew the zombies. */
   actors: ActorRenderMode;
   frame: FrameStats;
-  zombieTick: SampleStats;
+  actorTick: SampleStats;
   backgroundTick?: SampleStats;
   renderSubmit: SampleStats;
   /** CPU ms in the actor renderer's own sync() (pose + matrix/texture writes for 'detailed'; ActorMeshes'

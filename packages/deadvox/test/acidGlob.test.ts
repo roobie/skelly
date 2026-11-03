@@ -218,7 +218,7 @@ describe('acid glob', () => {
       const h = runtime();
       h.release();
       const id = h.session.actors.add(type, [2, 1, 0], [-1, 0, 0]);
-      const actor = h.session.zombieStore.get(id)!;
+      const actor = h.session.actorStore.get(id)!;
       const before = { ...actor.regions };
       h.land();
       expect(h.hits.mock.calls.filter(([, , , hit]) => hit?.kind === 'acid')).toHaveLength(0);
@@ -351,7 +351,7 @@ describe('acid puddle', () => {
       const trousers = h.session.inventory.create('jeans');
       expect(h.session.inventory.add(trousers, { kind: 'worn' })).toBe(true);
       const before = trousers.condition;
-      const actor = h.session.zombieStore.get(
+      const actor = h.session.actorStore.get(
         h.session.actors.add(shambler, [h.session.body.pos[0], h.session.body.pos[1], h.session.body.pos[2]]),
       )!;
       const beforeLeg = actor.regions.leftLeg!;
@@ -446,8 +446,8 @@ describe('acid puddle', () => {
   it('burns a shambler standing in it but not an acid-immune zombie', () => {
     const h = missedSpit();
     const { pos } = h.session.actors.acidPuddles[0]!;
-    const ordinary = h.session.zombieStore.get(h.session.actors.add(shambler, [...pos]))!;
-    const immune = h.session.zombieStore.get(h.session.actors.add(resistant, [...pos]))!;
+    const ordinary = h.session.actorStore.get(h.session.actors.add(shambler, [...pos]))!;
+    const immune = h.session.actorStore.get(h.session.actors.add(resistant, [...pos]))!;
     const before = { ...ordinary.regions };
     const immuneBefore = { ...immune.regions };
     h.frames(Math.floor(spitter.acidSpit!.puddle.lifetimeSimSeconds * 60));

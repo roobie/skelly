@@ -12,7 +12,7 @@ export const spawnShamblerRing = ({
   player,
   engine,
   registry,
-  zombies: actors,
+  actors,
   tier = 'active',
 }: {
   count: number;
@@ -20,7 +20,7 @@ export const spawnShamblerRing = ({
   player: Body;
   engine: ShamblerPlacementWorld;
   registry: Registry;
-  zombies: ActorSystem;
+  actors: ActorSystem;
   tier?: 'active' | 'background';
 }): void => {
   const type = registry.actors.get('shambler');

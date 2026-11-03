@@ -110,7 +110,7 @@ describe('bear trap', () => {
     const h = runtime();
     const trap = h.lay([3, 1, 0]);
     const id = h.session.actors.add(walker, [6.5, 1, 0.5], [-1, 0, 0]);
-    const actor = h.session.zombieStore.get(id)!;
+    const actor = h.session.actorStore.get(id)!;
     const legs = Object.values(actor.regions).reduce((sum, health) => sum + health, 0);
     for (let step = 0; step < 600 && trap.trap?.state === 'armed'; step++) {
       h.run(FRAME);
@@ -211,11 +211,11 @@ describe('bear trap horizon', () => {
     const injureActor = vi.fn();
     const contacts = (player: Vec3) => ({
       player,
-      zombies: [[7, [farX + 0.5, 1, 0.5]] as const],
+      actors: [[7, [farX + 0.5, 1, 0.5]] as const],
       blockSize: scale.blockSize,
       alive: () => true,
       hurtPlayer: vi.fn(),
-      injureZombie: injureActor,
+      injureActor,
     });
     expect(traps.step(1, contacts([0.5, 1, 0.5]))).toEqual([]);
     expect(trap.trap).toEqual({ state: 'armed' });

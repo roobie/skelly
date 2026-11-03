@@ -1482,7 +1482,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
             eye: ray.eye,
             direction: ray.dir,
             surface: target,
-            zombies: actors,
+            actors,
             blockSize: engine.config.scale.blockSize,
             rangeBlocks,
             weapon: unarmedMeleeWeapon(engine.registry.meleeClasses),
