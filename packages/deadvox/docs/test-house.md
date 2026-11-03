@@ -109,10 +109,11 @@ temporary showroom preview. A preview that names this scenario in runtime would 
 content identity back into game logic. Requirements keep their shared panel owner under
 `DESIGN.md`, "World repair selection".
 
-The ragdoll sample is opt-in and debug-only because staged deaths are evaluation fixtures,
-not residents of the haven. It uses the handling range rather than adding bodies or a
-floor to domestic space. See `src/debug/ragdollSweep.ts`, `stageRagdollSweep`, and
-`src/render/ragdollConfig.ts`, `sweepFromUrl`.
+The ragdoll sample requires explicit debug mod selection as well as debug tools because
+staged deaths are evaluation fixtures, not residents of the haven. Its viewer stands
+downrange of the authored rack so the sample stays out of domestic space. See
+`src/debug/ragdollSweep.ts`, `stageRagdollSweep`; `src/render/ragdollConfig.ts`, `sweepFromUrl`;
+and `packages/mobgen/src/mob/ragdoll.jsonnet`, `sweep`.
 
 House power and its controls belong in normal mode: mixed generation and storage,
 lighting, refrigeration demand and charging demonstrate ordinary home systems rather

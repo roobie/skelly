@@ -9,7 +9,7 @@ local ball(bones, flex, swing, twist) = { bones: bones, limits: [flex, twist, sw
     cuts: [[], ['head'], ['upperArm.L'], ['thigh.L', 'thigh.R'], []],
     spacingMetres: 3,
     startMetres: [0, -15],
-    viewer: { x: 24, z: 5.5, yawDegrees: -25 },
+    viewer: { x: 55.5, z: 5.5, yawDegrees: -25 },
     lieSeconds: 120,
     capacity: 64,
     finishSeconds: 12,

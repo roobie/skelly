@@ -191,7 +191,7 @@ try {
   await page.goto(
     browserStageUrl(
       'pump-handling',
-      `http://127.0.0.1:${address.port}/?debug=1&start=pump_handling_fixture_start&site=testHouse&time=12%3A00&seed=7&radius=64`,
+      `http://127.0.0.1:${address.port}/?debug=1&start=pump_handling_fixture_start&site=testHouse&mods=test-house-debug&time=12%3A00&seed=7&radius=64`,
     ),
     { waitUntil: 'domcontentloaded' },
   );
@@ -1223,8 +1223,39 @@ try {
   assert.equal(revolverReloaded.reached, true, 'native top-up clears the fired case');
   await page.evaluate(() => globalThis.pumpManualFrames.disable());
   assert.deepEqual(errors, []);
+  await page.goto(
+    browserStageUrl(
+      'pump-handling',
+      `http://127.0.0.1:${address.port}/?debug=1&site=testHouse&mods=test-house-debug&ragdollSweep=19&time=12%3A00&seed=7&radius=64`,
+    ),
+    { waitUntil: 'domcontentloaded' },
+  );
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  await page.locator('#go').click();
+  await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
+  const ragdollSample = await page.evaluate(() => {
+    const { engine, session } = globalThis.pumpHandlingTest;
+    const viewer = engine.config.debugStart;
+    const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
+    return {
+      seed: engine.config.ragdollSweep,
+      staged: [...session.zombies.store.entries()].some(([, zombie]) => zombie.incapacitated),
+      viewerDownrange:
+        viewer !== undefined &&
+        rack !== undefined &&
+        viewer.x >= rack.pos[0] * engine.config.scale.blockSize &&
+        Math.hypot(
+          viewer.x - rack.pos[0] * engine.config.scale.blockSize,
+          viewer.z - rack.pos[2] * engine.config.scale.blockSize,
+        ) < engine.config.radiusM,
+    };
+  });
+  assert.equal(ragdollSample.seed, 19, 'the explicit mod URL selects the requested ragdoll sample');
+  assert.equal(ragdollSample.staged, true, 'the fresh debug session stages downed sample actors');
+  assert.equal(ragdollSample.viewerDownrange, true, 'the sample viewer reaches the lane beyond the admitted rack');
+  assert.deepEqual(errors, []);
   process.stdout.write(
-    `${JSON.stringify({ cancelled, unpacked, tapped, released, loaded, racked, fired, decoded, doublePress, handlingWaits, revolverLoaded, revolverClosed, revolverFired, revolverReloaded, errors })}\n`,
+    `${JSON.stringify({ cancelled, unpacked, tapped, released, loaded, racked, fired, decoded, doublePress, handlingWaits, revolverLoaded, revolverClosed, revolverFired, revolverReloaded, ragdollSample, errors })}\n`,
   );
 } finally {
   await browser?.close();
