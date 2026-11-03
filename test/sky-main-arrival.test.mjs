@@ -10,6 +10,7 @@ import {
   adaptMainInteractionPick,
   adaptMainOpticLensPass,
   adaptMainSeedPool,
+  adaptMainSiteActors,
   baseOnlyWorkspacePlugin,
   mainArrivalGit,
   mainOverlayPath,
@@ -74,6 +75,31 @@ it('main picker callers supply both branch reach predicates without changing an 
   assert.equal(options.isSolid, physical);
   assert.equal(options.isOpaque, sight);
   assert.equal(adaptMainInteractionPick(adapted), adapted);
+});
+
+it('main world setup exposes and delegates the branch actor-column contract, including its empty debug site', () => {
+  const source = `class DebugSite {
+    zombiesIn() { return []; }
+  }
+  return {
+    debug: new DebugSite(),
+    site: { zombiesIn: (cx, cz) => built?.zombiesIn(cx, cz) ?? [] },
+  };`;
+  const spawn = { type: 'fixture_actor', pos: [1, 2, 3] };
+  const calls = [];
+  const adapted = adaptMainSiteActors(source);
+  const build = Function('built', adapted);
+  const result = build({
+    actorsIn: (...column) => {
+      calls.push(column);
+      return [spawn];
+    },
+  });
+  assert.deepEqual(result.site.actorsIn(2, 3), [spawn]);
+  assert.deepEqual(calls, [[2, 3]]);
+  assert.deepEqual(result.debug.actorsIn(), []);
+  assert.deepEqual(build(undefined).site.actorsIn(2, 3), []);
+  assert.equal(adaptMainSiteActors(adapted), adapted);
 });
 
 it('main Mood overlays pass graphics-owned optic-lens tuning to the branch renderer', () => {

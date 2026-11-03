@@ -88,6 +88,12 @@ export function adaptMainInteractionPick(source) {
   );
 }
 
+// Base world setup supplies a column-source wrapper to branch session/spawner code. Both the wrapper's
+// public method and its delegation must use the branch contract; export shims cannot rename object members.
+export function adaptMainSiteActors(source) {
+  return source.replaceAll('zombiesIn', 'actorsIn');
+}
+
 const SHARED_SEED_POOL = `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).map((seed) =>
       buildActorVariant(model, seed, amalgamType),
     ),`;
@@ -341,6 +347,7 @@ function assertOverlayBoundary(root, overlays, branchPaths) {
 const OVERLAY_ADAPTERS = {
   'render/playView.ts': contentLookView,
   'game/play.ts': adaptMainInteractionPick,
+  'game/worldSetup.ts': adaptMainSiteActors,
   'render/mobActors.ts': adaptMainSeedPool,
   'render/mood.ts': adaptMainOpticLensPass,
   'game/engine.ts': (source) =>
