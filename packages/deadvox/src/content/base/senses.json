@@ -1,6 +1,14 @@
 {
   "senses": [
     {
+      "actorVoice": {
+        "clampMultiplier": {
+          "max": 1.3,
+          "min": 0.5
+        },
+        "oldLawReferenceHeightMetres": 1.7,
+        "smallestAnchorMultiplier": 1.2
+      },
       "capability": "player",
       "chestEyeFraction": 0.62,
       "crouch": {
@@ -41,14 +49,6 @@
       "prone": {
         "hearingRangeScale": 0.5,
         "sightRangeScale": 0.5
-      },
-      "shamblerVoice": {
-        "clampMultiplier": {
-          "max": 1.3,
-          "min": 0.5
-        },
-        "oldLawReferenceHeightMetres": 1.7,
-        "smallestAnchorMultiplier": 1.2
       },
       "vocalNoiseLifetimeSimSeconds": 0.5,
       "wall": {

@@ -174,7 +174,7 @@ import {
 } from './player.ts';
 import { Quickbar } from './quickbar.ts';
 import { RestController } from './rest.ts';
-import { shamblerVoiceLaw } from './shamblerAudio.ts';
+import { actorVoiceLaw } from './actorAudio.ts';
 import { ZOMBIE_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
 import { ThrowCharge } from './throwCharge.ts';
@@ -826,9 +826,9 @@ export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const text = actionText(registry);
   const dayCycle = requireDayCycle(registry);
-  const shamblerVoice = shamblerVoiceLaw(
+  const actorVoice = actorVoiceLaw(
     figureSeedPool(registry.zombies),
-    claimed(registry.senses, 'player')!.shamblerVoice,
+    claimed(registry.senses, 'player')!.actorVoice,
   );
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
@@ -1015,7 +1015,7 @@ export const createSession = (options: SessionOptions) => {
       return false;
     }
     const definition = registry.sounds.get(event)!;
-    const bodyPitch = soundPitchMultiplier ?? (mobBody ? shamblerVoice.bodyPitch(mobBody) : 1);
+    const bodyPitch = soundPitchMultiplier ?? (mobBody ? actorVoice.bodyPitch(mobBody) : 1);
     const pitch = selected.pitch * bodyPitch;
     const pick = { ...selected, pitch };
     const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);

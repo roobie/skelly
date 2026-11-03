@@ -112,7 +112,7 @@ export const SIMULATION_EXCLUSIONS = [
   // Machine graphics preferences affect rendering only and must not invalidate simulation saves.
   'src/game/graphicsSettings.ts',
   'src/game/graphicsControls.ts',
-  'src/game/shamblerAudio.ts',
+  'src/game/actorAudio.ts',
   'src/game/damageFeedback.ts',
   // The pain cue's pulse runs on frame time; felt pain itself stays fingerprinted in core/pain.ts.
   'src/game/painCue.ts',

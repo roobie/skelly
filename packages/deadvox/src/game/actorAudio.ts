@@ -2,7 +2,7 @@ import type { Body } from '@mobgen/core/body.ts';
 import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import type { SenseDef } from '../core/schema.ts';
 
-export type ShamblerVoiceTuning = SenseDef['shamblerVoice'];
+export type ActorVoiceTuning = SenseDef['actorVoice'];
 
 const bodyHeight = (body: Body): number => {
   const y = body.bones.flatMap(({ head, tail }) => [head[1], tail[1]]);
@@ -30,7 +30,7 @@ const debugVoicePitch = (search: string, param: 'voicePitch' | 'voicePitchLarge'
  * a falling power law between its smallest and tallest bodies, clamped around the smallest body's old-law pitch.
  * The smallest body is pitched at its anchor multiple of the old law and the tallest keeps its old-law pitch.
  */
-export const shamblerVoiceLaw = (figureSeeds: readonly number[], tuning: ShamblerVoiceTuning) => {
+export const actorVoiceLaw = (figureSeeds: readonly number[], tuning: ActorVoiceTuning) => {
   if (figureSeeds.length === 0) {
     throw new Error('The shambler voice law needs at least one authored figure seed');
   }

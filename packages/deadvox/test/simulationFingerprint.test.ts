@@ -223,7 +223,7 @@ describe('simulation source fingerprint', () => {
   it('keeps handling sound selection and placement outside the actual simulation fingerprint', async () => {
     const host = await actualSimulationHost();
     const before = await actualSimulationFingerprint();
-    const voice = await mutateSimulationSource(host, 'src/game/shamblerAudio.ts');
+    const voice = await mutateSimulationSource(host, 'src/game/actorAudio.ts');
     expect(voice.included).toBe(false);
     expect(voice.value).toBe(before);
     const changed = await mutateSimulationSource(host, 'src/game/audioPresentation.ts');

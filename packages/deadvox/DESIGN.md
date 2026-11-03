@@ -3627,8 +3627,8 @@ decoration.
   height, so larger figures sound heavier and the runner/brute templates inherit
   the same law. It is calibrated on the whole authored figure pool and also
   pitches figures without seeds of their own, so its anchors and clamp are one
-  sense tuning rather than a zombie type's; see `src/game/shamblerAudio.ts`,
-  `shamblerVoiceLaw`. Body-size pitch tuning affects playback only, never
+  sense tuning rather than a zombie type's; see `src/game/actorAudio.ts`,
+  `actorVoiceLaw`. Body-size pitch tuning affects playback only, never
   hearing or simulation; the `voice_size` comparison site exposes its endpoints.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest

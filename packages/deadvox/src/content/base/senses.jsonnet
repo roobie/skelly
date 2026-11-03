@@ -32,7 +32,7 @@ local crouch = {
       },
       vocalNoiseLifetimeSimSeconds: 0.5,
       // The tiny end is pitched above the old law and the large end keeps its old-law pitch.
-      shamblerVoice: {
+      actorVoice: {
         oldLawReferenceHeightMetres: 1.7,
         smallestAnchorMultiplier: 1.2,
         clampMultiplier: { min: 0.5, max: 1.3 },

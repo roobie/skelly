@@ -18,7 +18,7 @@ const senseTuning = {
   wall: { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 },
   footsteps: BASE_SENSE_TUNING.footsteps,
   vocalNoiseLifetimeSimSeconds: BASE_SENSE_TUNING.vocalNoiseLifetimeSimSeconds,
-  shamblerVoice: BASE_SENSE_TUNING.shamblerVoice,
+  actorVoice: BASE_SENSE_TUNING.actorVoice,
   light: {
     playerDaySightScale: 0,
     lureRangeScale: 0,

@@ -34,7 +34,7 @@ export const SenseSchema = strictObject({
    * The shambler voice-pitch law (`DESIGN.md`, "Audio"), as multiples of the old law's pitch √(reference height ÷ body
    * height) at the smallest pooled body. One law covers the whole figure pool, so it lives here, not on a zombie type.
    */
-  shamblerVoice: strictObject({
+  actorVoice: strictObject({
     oldLawReferenceHeightMetres: Positive,
     smallestAnchorMultiplier: Positive,
     clampMultiplier: pipe(
