@@ -49,6 +49,6 @@ export const readingWorld = (registry: Registry, seed: number, scale: Scale): Si
           .map((spec) => ({ spec, loot: [] })),
         points.get(`${cx},${cz}`) ?? [],
       ),
-    zombiesIn: () => [],
+    actorsIn: () => [],
   };
 };

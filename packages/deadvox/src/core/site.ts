@@ -60,7 +60,7 @@ const rollWear = (registry: Registry, seed: number, spec: EntitySpec): number | 
   return range && Rng.stream(seed, `wear:${spec.type}:${spec.pos.join(',')}`).range(range.from, range.to);
 };
 
-export type ZombieSpawn = {
+export type ActorSpawn = {
   type: string;
   /** Feet position in world blocks. */
   pos: Vec3;
@@ -105,13 +105,13 @@ export interface Site {
   furnitureIn: (cx: number, cz: number) => FurnitureSpawn[];
   /** Source columns whose furniture or loot destinations intersect the block rectangle. */
   supplySourcesIn: (area: Rect) => readonly (readonly [number, number])[];
-  /** Zombie spawns anchored in the column, deterministic for the site seed. */
-  zombiesIn: (cx: number, cz: number) => ZombieSpawn[];
+  /** Actor spawns anchored in the column, deterministic for the site seed. */
+  actorsIn: (cx: number, cz: number) => ActorSpawn[];
   /** Optional group spawns anchored in a single column, deterministic for the site seed. */
   hordesIn?: ((cx: number, cz: number) => HordeSpawn[]) | undefined;
 }
 
-export type ColumnSource = Pick<Site, 'furnitureIn' | 'lootPointsIn' | 'supplySourcesIn' | 'zombiesIn' | 'hordesIn'>;
+export type ColumnSource = Pick<Site, 'furnitureIn' | 'lootPointsIn' | 'supplySourcesIn' | 'actorsIn' | 'hordesIn'>;
 
 /** Spatial source ownership is independent of which pieces have arrived or survived. */
 export class SupplyFootprints {

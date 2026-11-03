@@ -45,7 +45,7 @@ export const fixtureSite = new SnapshotSite(seed, registry, scale);
 export const fixtureColumns: [number, number][] = [];
 for (let cz = toChunk(fixtureSite.bounds.z0); cz <= toChunk(fixtureSite.bounds.z1 - 1); cz++) {
   for (let cx = toChunk(fixtureSite.bounds.x0); cx <= toChunk(fixtureSite.bounds.x1 - 1); cx++) {
-    if (fixtureSite.furnitureIn(cx, cz).length > 0 || fixtureSite.zombiesIn(cx, cz).length > 0) {
+    if (fixtureSite.furnitureIn(cx, cz).length > 0 || fixtureSite.actorsIn(cx, cz).length > 0) {
       fixtureColumns.push([cx, cz]);
     }
   }
@@ -64,7 +64,7 @@ const fixtureTerrain: Terrain = {
   surface: fixtureSite.surface,
   stamp: (chunk) => fixtureSite.stamp(chunk),
 };
-const foundZombieColumn = fixtureColumns.find(([cx, cz]) => fixtureSite.zombiesIn(cx, cz).length > 0);
+const foundZombieColumn = fixtureColumns.find(([cx, cz]) => fixtureSite.actorsIn(cx, cz).length > 0);
 if (!foundZombieColumn) {
   throw new Error('Snapshot fixture has no zombie column');
 }

@@ -9,6 +9,7 @@ import type { Scale } from './scale.ts';
 import { cityRowDepth } from './settlementPools.ts';
 import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import {
+  type ActorSpawn,
   type FurnitureSpawn,
   furnitureOf,
   lootSourcesOf,
@@ -16,7 +17,6 @@ import {
   rectDistance,
   type Site,
   SupplyFootprints,
-  type ZombieSpawn,
 } from './site.ts';
 import { sitePalette } from './sitePalette.ts';
 import { stampChunk } from './structure.ts';
@@ -171,7 +171,7 @@ export class CitySite implements Site {
     );
   }
 
-  zombiesIn(_cx: number, _cz: number): ZombieSpawn[] {
+  actorsIn(_cx: number, _cz: number): ActorSpawn[] {
     return [];
   }
 }

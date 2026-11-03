@@ -147,7 +147,7 @@ const fixture = (withFurniture = true, supply: 'table' | 'fixed' = 'table') => {
     supplySourcesIn: (area) => new SupplyFootprints(placedPieces(placement), [...points.values()].flat()).in(area),
     lootPointsIn: (cx, cz) => points.get(`${cx},${cz}`) ?? [],
     furnitureIn: (cx, cz) => furnitureOf({ registry, seed }, placement, [cx, cz], site.lootPointsIn(cx, cz)),
-    zombiesIn: () => [],
+    actorsIn: () => [],
   };
   const session = (restore?: Readonly<SaveSnapshot>) =>
     createSession({

@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { ActorSpawner } from '../src/core/actorSpawns.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import type { ActorDef, SiteLayoutDef } from '../src/core/schema.ts';
 import { footprint } from '../src/core/templates.ts';
-import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import type { ZombieSystem } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { sweepGroup } from './sweeps.ts';
@@ -40,7 +40,7 @@ const campAmalgams = () => {
     const [x, y, z] = position;
     const cx = toChunk(x / blockSize);
     const cz = toChunk(z / blockSize);
-    const spawns = site.zombiesIn(cx, cz).filter(({ type }) => type === MARKER_TYPE);
+    const spawns = site.actorsIn(cx, cz).filter(({ type }) => type === MARKER_TYPE);
     const markerSpawn = { type: MARKER_TYPE, pos: [x / blockSize, y / blockSize, z / blockSize] as Vec3 };
     return { cx, cz, markerSpawn, spawns };
   });
@@ -56,7 +56,7 @@ const campAmalgams = () => {
   return { locations, everyMarkerHasSpawn };
 };
 
-const load = (spawner: ZombieSpawner, spawned: Spawned[], cx: number, cz: number) => {
+const load = (spawner: ActorSpawner, spawned: Spawned[], cx: number, cz: number) => {
   spawner.onColumn({ cx, cz, site, registry, zombies: zombieSystemFor(spawned) });
 };
 
@@ -69,14 +69,14 @@ describe('authored zombie spawn persistence', () => {
         [cx + 1, cx, cx + 1],
         [cx, cx + 1, cx],
       ]) {
-        const spawner = new ZombieSpawner();
+        const spawner = new ActorSpawner();
         const spawned: Spawned[] = [];
         for (const column of order) {
           load(spawner, spawned, column, cz);
         }
         const expected = [...new Set(order)].flatMap((column) =>
           site
-            .zombiesIn(column, cz)
+            .actorsIn(column, cz)
             .filter(({ type }) => type === MARKER_TYPE)
             .map(({ type, pos }) => ({ type, pos })),
         );
@@ -104,17 +104,17 @@ describe('authored zombie spawn persistence', () => {
       }
       const sealed = ({ type, pos: [x, y, z] }: Spawned) =>
         type === 'brute_shambler' && x >= x0 && x < x0 + width && z >= z0 && z < z0 + depth && y < grade;
-      const loadAll = (spawner: ZombieSpawner, spawned: Spawned[]) => {
+      const loadAll = (spawner: ActorSpawner, spawned: Spawned[]) => {
         for (const [cx, cz] of columns.values()) {
           spawner.onColumn({ cx, cz, site: city, registry, zombies: zombieSystemFor(spawned) });
         }
       };
-      const beforeSave = new ZombieSpawner();
+      const beforeSave = new ActorSpawner();
       const saved: Spawned[] = [];
       loadAll(beforeSave, saved);
       expect(saved.filter(sealed)).toHaveLength(1);
       const ledger = JSON.parse(JSON.stringify(beforeSave.snapshotState())) as readonly string[];
-      const afterLoad = new ZombieSpawner();
+      const afterLoad = new ActorSpawner();
       afterLoad.restoreState(ledger);
       const restored = [...saved];
       loadAll(afterLoad, restored);
@@ -128,16 +128,16 @@ describe('authored zombie spawn persistence', () => {
     expect(everyMarkerHasSpawn).toBe(true);
     for (const { cx, cz } of locations) {
       const expected = site
-        .zombiesIn(cx, cz)
+        .actorsIn(cx, cz)
         .filter(({ type }) => type === MARKER_TYPE)
         .map(({ type, pos }) => ({ type, pos }));
-      const beforeSave = new ZombieSpawner();
+      const beforeSave = new ActorSpawner();
       const savedZombies: Spawned[] = [];
       load(beforeSave, savedZombies, cx, cz);
       expect(savedZombies.filter(({ type }) => type === MARKER_TYPE)).toEqual(expected);
       const savedLedger = JSON.parse(JSON.stringify(beforeSave.snapshotState())) as readonly string[];
 
-      const afterLoad = new ZombieSpawner();
+      const afterLoad = new ActorSpawner();
       afterLoad.restoreState(savedLedger);
       const restoredZombies = [...savedZombies];
       load(afterLoad, restoredZombies, cx, cz);

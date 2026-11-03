@@ -1,31 +1,31 @@
 import { type SpawnTimeWindow, spawnWindowOpen } from './clock.ts';
 import { type Registry, requireDayCycle } from './content.ts';
-import type { Site, ZombieSpawn } from './site.ts';
+import type { ActorSpawn, Site } from './site.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { ZombieSystem } from './zombies.ts';
 
 /** Chunk-driven spawns with session-lifetime de-duplication: killed shamblers stay gone. */
-export interface ZombieColumnLoad {
+export interface ActorColumnLoad {
   cx: number;
   cz: number;
-  site: Pick<Site, 'zombiesIn' | 'hordesIn'>;
+  site: Pick<Site, 'actorsIn' | 'hordesIn'>;
   registry: Registry;
   zombies: ZombieSystem;
 }
 
-export interface ZombieSpawnAdvance {
+export interface ActorSpawnAdvance {
   calendar: number;
   registry: Registry;
   zombies: ZombieSystem;
 }
 
 interface PendingSpawn {
-  spawn: ZombieSpawn & { window: SpawnTimeWindow };
+  spawn: ActorSpawn & { window: SpawnTimeWindow };
   cx: number;
   cz: number;
 }
 
-export class ZombieSpawner {
+export class ActorSpawner {
   private readonly spawned = new Set<string>();
   private readonly pending = new Map<string, PendingSpawn>();
 
@@ -44,8 +44,8 @@ export class ZombieSpawner {
     }
   }
 
-  onColumn({ cx, cz, site, registry, zombies }: ZombieColumnLoad): void {
-    for (const spawn of site.zombiesIn(cx, cz)) {
+  onColumn({ cx, cz, site, registry, zombies }: ActorColumnLoad): void {
+    for (const spawn of site.actorsIn(cx, cz)) {
       this.consider(spawn, { cx, cz, registry, zombies });
     }
     for (const horde of site.hordesIn?.(cx, cz) ?? []) {
@@ -59,7 +59,7 @@ export class ZombieSpawner {
   }
 
   /** Reconsiders only markers in columns already loaded. */
-  advance({ calendar, registry, zombies }: ZombieSpawnAdvance): void {
+  advance({ calendar, registry, zombies }: ActorSpawnAdvance): void {
     // Restore can load columns in another order; preserve marker-to-id and RNG assignment.
     const pending = [...this.pending].sort(([left], [right]) => {
       if (left === right) {
@@ -87,8 +87,8 @@ export class ZombieSpawner {
   }
 
   private consider(
-    spawn: ZombieSpawn,
-    { cx, cz, registry, zombies }: Pick<ZombieColumnLoad, 'cx' | 'cz' | 'registry' | 'zombies'>,
+    spawn: ActorSpawn,
+    { cx, cz, registry, zombies }: Pick<ActorColumnLoad, 'cx' | 'cz' | 'registry' | 'zombies'>,
   ): void {
     const key = `${spawn.type}:${spawn.pos.join(',')}`;
     if (this.spawned.has(key)) {
@@ -101,7 +101,7 @@ export class ZombieSpawner {
     this.spawnOnce(key, spawn, registry, zombies);
   }
 
-  private spawnOnce(key: string, spawn: ZombieSpawn, registry: Registry, zombies: ZombieSystem): void {
+  private spawnOnce(key: string, spawn: ActorSpawn, registry: Registry, zombies: ZombieSystem): void {
     const type = registry.zombies.get(spawn.type);
     if (type) {
       this.spawned.add(key);

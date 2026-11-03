@@ -82,7 +82,7 @@ export class DebugWeatheringTestSite implements Site {
     return [];
   }
 
-  zombiesIn(): ReturnType<Site['zombiesIn']> {
+  actorsIn(): ReturnType<Site['actorsIn']> {
     return [];
   }
 }

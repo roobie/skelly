@@ -32,6 +32,7 @@ import {
   yawToward,
 } from './showroom.ts';
 import {
+  type ActorSpawn,
   furnitureOf,
   grow,
   type HordeSpawn,
@@ -41,7 +42,6 @@ import {
   rectsOverlap,
   type Site,
   SupplyFootprints,
-  type ZombieSpawn,
 } from './site.ts';
 import { sitePalette } from './sitePalette.ts';
 import { type Placement, placedPieces, placedSpawns, stampPlacement } from './templates.ts';
@@ -149,7 +149,7 @@ export class AuthoredSite implements Site {
   get trees(): readonly TreePlacement[] {
     return this.treeIndex.trees;
   }
-  private readonly spawns: readonly ZombieSpawn[];
+  private readonly spawns: readonly ActorSpawn[];
   private readonly hordes: readonly HordeSpawn[];
   private treeIndex: TreeIndex;
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
@@ -505,7 +505,7 @@ export class AuthoredSite implements Site {
   furnitureIn(cx: number, cz: number) {
     return this.placements.flatMap((placement) => furnitureOf(this, placement, [cx, cz], this.lootPointsIn(cx, cz)));
   }
-  zombiesIn(cx: number, cz: number): ZombieSpawn[] {
+  actorsIn(cx: number, cz: number): ActorSpawn[] {
     return this.spawns.filter((spawn) => toChunk(spawn.pos[0]) === cx && toChunk(spawn.pos[2]) === cz);
   }
   hordesIn(cx: number, cz: number): HordeSpawn[] {

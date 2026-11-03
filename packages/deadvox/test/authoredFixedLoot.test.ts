@@ -1733,7 +1733,7 @@ describe('authored fixed loot', () => {
     const markers = site.placements
       .filter((placement) => templateIds.has(placement.template.id))
       .flatMap((placement) => placedSpawns(placement).filter(({ zombie }) => zombie === kind));
-    const spawns = columnsFor(site, layout).flatMap(([cx, cz]) => site.zombiesIn(cx, cz));
+    const spawns = columnsFor(site, layout).flatMap(([cx, cz]) => site.actorsIn(cx, cz));
     const matchingSpawns = spawns.filter(({ type }) => type === kind);
 
     expect(markers.length).toBeGreaterThan(0);

@@ -56,7 +56,7 @@ describe('zombie attack causes', () => {
 describe('fixture save/load continuation', () => {
   const oneColumn = [fixtureZombieColumn] as const;
   const soundColumn = fixtureColumns.find(([cx, cz]) =>
-    fixtureSite.zombiesIn(cx, cz).some(({ type }) => type === 'shambler'),
+    fixtureSite.actorsIn(cx, cz).some(({ type }) => type === 'shambler'),
   );
   if (!soundColumn) {
     throw new Error('Snapshot fixture has no shambler sound column');
@@ -72,7 +72,7 @@ describe('fixture save/load continuation', () => {
 
   it('continues horde noise response and night drift deterministically through a save', async () => {
     const [cx, cz] = fixtureZombieColumn;
-    const center = fixtureSite.zombiesIn(cx, cz)[0]?.pos;
+    const center = fixtureSite.actorsIn(cx, cz)[0]?.pos;
     if (!center) {
       throw new Error('Horde save fixture has no nearby terrain spawn');
     }
@@ -126,7 +126,7 @@ describe('fixture save/load continuation', () => {
       supplySourcesIn: () => [],
       lootPointsIn: () => [],
       furnitureIn: () => [],
-      zombiesIn: () => [marker],
+      actorsIn: () => [marker],
     } as Site;
     const original = createRuntime(undefined, false, [fixtureZombieColumn], { start });
     original.session.onColumn(cx, cz, timedSite);

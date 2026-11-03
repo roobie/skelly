@@ -899,7 +899,7 @@ carry more of the street pressure. This reuses population and spawn
 admission instead of inventing an enemy-density runtime. See `src/core/schema/scenarios.ts`,
 `ScenarioSchema`; `src/content/base/scenarios.jsonnet`; `src/core/scenarioCity.ts`,
 `scenarioCityPopulation`; `src/core/settlementSpawns.ts`, `settlementZombieSpawns`; and
-`src/core/zombieSpawns.ts`, `ZombieSpawner`.
+`src/core/actorSpawns.ts`, `ActorSpawner`.
 
 The route/save browser flow proves connectivity and persistence, not balance or
 combat. Its test-only admission omits settlement crowds and the lab's authored
@@ -2920,7 +2920,7 @@ threat. An open-ended window is eligible from the first occurrence of its
 boundary. A saved spawn ledger prevents a marker from returning after it has
 spawned. Windowless markers retain chunk-load behavior. Scenario beats that do
 not belong to a marker are event rules, under "Scenario events". See
-`ZombieSpawner` in `src/core/zombieSpawns.ts`.
+`src/core/actorSpawns.ts`, `ActorSpawner`.
 
 ### Scenario events
 

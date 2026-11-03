@@ -409,7 +409,7 @@ describe('authored layout acceptance', () => {
       const expected = placedSpawns(placement).find(({ window }) => window?.fromGameTimeOfDay === 'dusk')!;
       expect(expected.window).toEqual({ fromGameTimeOfDay: 'dusk' });
       const site = new AuthoredSite(1, result.registry, scale, admitted);
-      expect(site.zombiesIn(toChunk(expected.pos[0]), toChunk(expected.pos[2]))).toContainEqual({
+      expect(site.actorsIn(toChunk(expected.pos[0]), toChunk(expected.pos[2]))).toContainEqual({
         type: 'shambler',
         pos: expected.pos,
         window: { fromGameTimeOfDay: 'dusk' },
@@ -433,7 +433,7 @@ describe('authored layout acceptance', () => {
     const site = new AuthoredSite(1, registry, scale, admitted);
     const x = marker.position[0] / scale.blockSize;
     const z = marker.position[2] / scale.blockSize;
-    expect(site.zombiesIn(toChunk(x), toChunk(z))).toContainEqual({
+    expect(site.actorsIn(toChunk(x), toChunk(z))).toContainEqual({
       type: marker.type,
       pos: [x, marker.position[1] / scale.blockSize, z],
       window: { fromGameTimeOfDay: 'dusk' },
@@ -1105,7 +1105,7 @@ it('stamps the rotated multi-storey house deterministically with supported spawn
     );
   }
 
-  const spawns = columns.flatMap(([cx, cz]) => site.zombiesIn(cx, cz));
+  const spawns = columns.flatMap(([cx, cz]) => site.actorsIn(cx, cz));
   const hasFloorAndHeadroom = ({ pos }: (typeof spawns)[number]) =>
     registry.blocks[a.getBlock(pos[0], pos[1] - 1, pos[2])!]?.solid === true &&
     a.getBlock(pos[0], pos[1], pos[2]) === 0;
@@ -1131,5 +1131,5 @@ it('stamps the rotated multi-storey house deterministically with supported spawn
   };
   const optional = new AuthoredSite(1, registry, scale, optionalLayout);
   const optionalColumns = siteColumns(optional, optionalLayout);
-  expect(optionalColumns.flatMap(([cx, cz]) => optional.zombiesIn(cx, cz))).toEqual([]);
+  expect(optionalColumns.flatMap(([cx, cz]) => optional.actorsIn(cx, cz))).toEqual([]);
 });

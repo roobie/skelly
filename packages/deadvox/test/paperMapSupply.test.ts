@@ -81,7 +81,7 @@ describe('seeded regional map supply', () => {
       supplySourcesIn: () => [[0, 0] as const],
       furnitureIn: () => [],
       lootPointsIn: () => [point],
-      zombiesIn: () => [],
+      actorsIn: () => [],
     };
 
     session.onColumn(0, 0, site);

@@ -6,6 +6,7 @@
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { actionText, fillText } from '../core/actionText.ts';
+import { ActorSpawner } from '../core/actorSpawns.ts';
 import {
   AimController,
   type AimWobbleNoiseTuning,
@@ -128,7 +129,6 @@ import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
-import { ZombieSpawner } from '../core/zombieSpawns.ts';
 import {
   type AcidGroundImpact,
   BACKGROUND_ZOMBIE_RATE,
@@ -933,7 +933,7 @@ export const createSession = (options: SessionOptions) => {
     return sunExposureCache.isExposedAt(pos, hour, dayCycle);
   };
   const quickbar = new Quickbar();
-  const spawner = new ZombieSpawner();
+  const spawner = new ActorSpawner();
   const zombieStore = new MapEntityStore<Zombie>();
 
   /** The air block at the player's feet, where drops land. */

@@ -588,7 +588,7 @@ describe('one finished city plan', () => {
       const spawns: { pos: Vec3 }[] = [];
       for (let cz = toChunk(site.bounds.z0) - 2; cz <= toChunk(site.bounds.z1) + 2; cz++) {
         for (let cx = toChunk(site.bounds.x0) - 2; cx <= toChunk(site.bounds.x1) + 2; cx++) {
-          spawns.push(...site.zombiesIn(cx, cz), ...site.hordesIn(cx, cz));
+          spawns.push(...site.actorsIn(cx, cz), ...site.hordesIn(cx, cz));
         }
       }
       expect(spawns.length).toBeGreaterThan(0);

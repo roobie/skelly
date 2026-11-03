@@ -403,7 +403,7 @@ mechanisms, as `../../../PILLARS.md`, "Content forward compatibility" requires. 
 what a mod cannot safely or usefully restate: the body route oracle, the physical climb
 and reach certificates, spawn admission with its saved ledger, and the scenario run's win
 state. See `src/core/schema/scenarios.ts`, `ScenarioSchema`; `src/core/climbCertificate.ts`,
-`climbCertificate`; and `src/core/zombieSpawns.ts`, `ZombieSpawner`.
+`climbCertificate`; and `src/core/actorSpawns.ts`, `ActorSpawner`.
 
 - **Kind.** The row's `kind` selects the site mechanism through a dispatch table that owns
   its keys. A new scenario of an existing kind is content alone; a new kind is a code

@@ -165,7 +165,7 @@ const fixture = (
     lootPointsIn: (cx, cz) =>
       points.filter(({ position }) => toChunk(position[0]) === cx && toChunk(position[2]) === cz),
     supplySourcesIn: (area) => footprints.in(area),
-    zombiesIn: () => [],
+    actorsIn: () => [],
   };
   const session = createSession({
     registry,

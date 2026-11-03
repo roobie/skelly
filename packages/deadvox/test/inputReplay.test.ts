@@ -7,7 +7,7 @@ import type { Item } from '../src/core/items.ts';
 import { pocketGroundItem, stowTarget, toHands } from '../src/core/options.ts';
 import { encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
-import type { Site, ZombieSpawn } from '../src/core/site.ts';
+import type { ActorSpawn, Site } from '../src/core/site.ts';
 import { gameTimeOfDay, realSeconds as realDuration } from '../src/core/time.ts';
 import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
@@ -995,7 +995,7 @@ describe('input replay', () => {
 
   it('replays a same-tick column load and unload in order, preserving its marker and furniture', async () => {
     const [cx, cz] = fixtureColumns.find(([columnX, columnZ]) => fixtureSite.furnitureIn(columnX, columnZ).length > 0)!;
-    const marker: ZombieSpawn = {
+    const marker: ActorSpawn = {
       type: 'shambler',
       pos: [cx * CHUNK + 7.25, 1, cz * CHUNK + 7.25],
     };
@@ -1006,8 +1006,8 @@ describe('input replay', () => {
       supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),
-      zombiesIn: (columnX, columnZ) =>
-        columnX === cx && columnZ === cz ? [marker] : fixtureSite.zombiesIn(columnX, columnZ),
+      actorsIn: (columnX, columnZ) =>
+        columnX === cx && columnZ === cz ? [marker] : fixtureSite.actorsIn(columnX, columnZ),
       hordesIn: (columnX, columnZ) => fixtureSite.hordesIn(columnX, columnZ),
     };
     const initialColumns: ReplayGeneratedColumn[] = [[cx + 10, cz + 10]];
@@ -1272,7 +1272,7 @@ describe('input replay', () => {
         initialColumns.push([cx + dx, cz + dz]);
       }
     }
-    const marker: ZombieSpawn = {
+    const marker: ActorSpawn = {
       type: 'shambler',
       pos: [cx * CHUNK + 7.25, 1, cz * CHUNK + 7.25],
       window: { fromGameTimeOfDay: gameTimeOfDay(BASE_CLOCK.start + 1) },
@@ -1284,10 +1284,10 @@ describe('input replay', () => {
       supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),
-      zombiesIn: (columnX, columnZ) =>
+      actorsIn: (columnX, columnZ) =>
         columnX === cx && columnZ === cz
-          ? [...fixtureSite.zombiesIn(columnX, columnZ), marker]
-          : fixtureSite.zombiesIn(columnX, columnZ),
+          ? [...fixtureSite.actorsIn(columnX, columnZ), marker]
+          : fixtureSite.actorsIn(columnX, columnZ),
       hordesIn: (columnX, columnZ) => fixtureSite.hordesIn(columnX, columnZ),
     };
     const loadedSource = createRuntime(
@@ -1345,7 +1345,7 @@ describe('input replay', () => {
       }
     }
     const spawnColumn = generatedAroundZombie.find(
-      ([columnX, columnZ]) => (columnX !== cx || columnZ !== cz) && fixtureSite.zombiesIn(columnX, columnZ).length > 0,
+      ([columnX, columnZ]) => (columnX !== cx || columnZ !== cz) && fixtureSite.actorsIn(columnX, columnZ).length > 0,
     );
     const furnitureColumn = generatedAroundZombie.find(
       ([columnX, columnZ]) =>

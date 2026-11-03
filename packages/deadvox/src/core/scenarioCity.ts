@@ -6,14 +6,14 @@ import { hash3, Rng } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { ScenarioDef } from './schema.ts';
 import { ordinarySpawnWeights, settlementHordeSpawn, settlementZombieSpawns } from './settlementSpawns.ts';
-import { type HordeSpawn, rectDistance, type ZombieSpawn } from './site.ts';
+import { type ActorSpawn, type HordeSpawn, rectDistance } from './site.ts';
 import { terrainShapeOf } from './sitePalette.ts';
 import { footprint, type Placement, placedSpawns } from './templates.ts';
 import { terrainHeight } from './worldgen.ts';
 
 export class ScenarioCitySite extends CitySite {
   readonly scenario: ScenarioDef;
-  private readonly population = new Map<string, ZombieSpawn[]>();
+  private readonly population = new Map<string, ActorSpawn[]>();
   private readonly hordes = new Map<string, HordeSpawn[]>();
 
   constructor({
@@ -45,7 +45,7 @@ export class ScenarioCitySite extends CitySite {
     this.hordes = population.hordes;
   }
 
-  override zombiesIn(cx: number, cz: number): ZombieSpawn[] {
+  override actorsIn(cx: number, cz: number): ActorSpawn[] {
     return this.population.get(`${cx},${cz}`) ?? [];
   }
 
@@ -120,7 +120,7 @@ const hordeGroupStarts = (seed: number, starts: number[], population: ScenarioDe
 };
 
 export const scenarioCityPopulation = (site: CitySite, { id: scenarioId, population }: ScenarioDef) => {
-  const zombies = new Map<string, ZombieSpawn[]>();
+  const zombies = new Map<string, ActorSpawn[]>();
   const hordes = new Map<string, HordeSpawn[]>();
   const { grid, floor } = site.plan;
   const ordinary = ordinaryBuildings(site);

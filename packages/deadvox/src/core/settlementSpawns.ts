@@ -1,7 +1,7 @@
 import { claimedId } from './capabilities.ts';
 import type { Registry } from './content.ts';
 import { Rng } from './random.ts';
-import type { HordeSpawn, Rect, ZombieSpawn } from './site.ts';
+import type { ActorSpawn, HordeSpawn, Rect } from './site.ts';
 import type { SpawnMarker } from './templates.ts';
 
 export const TEMPLATE_BLOCK_SIZE = 0.5;
@@ -42,7 +42,7 @@ export const settlementZombieSpawns = (
     readonly roadsideOffset?: number;
     readonly extraWanderers?: number;
   },
-): ZombieSpawn[] => {
+): ActorSpawn[] => {
   const { roadHeightAt, markers } = options;
   const rng = Rng.stream(seed, 'settlement-zombies');
   const wanderer = claimedId(registry.zombies, 'settlementWanderer');

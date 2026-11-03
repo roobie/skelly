@@ -119,7 +119,7 @@ const fixture = ({
     furnitureIn: () => [],
     lootPointsIn: () => [],
     supplySourcesIn: () => [],
-    zombiesIn: () => [],
+    actorsIn: () => [],
   };
   const session = createSession({
     registry,

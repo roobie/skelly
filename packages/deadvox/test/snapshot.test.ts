@@ -933,7 +933,7 @@ describe('restored session world state', () => {
     const unseenSite = {
       lootPointsIn: () => [],
       furnitureIn: () => [{ spec: freshSpec, loot: fresh.loot }],
-      zombiesIn: () => [{ type: 'shambler', pos: freshSpawnPos }],
+      actorsIn: () => [{ type: 'shambler', pos: freshSpawnPos }],
     } as unknown as Site;
     loaded.session.onColumn(loaded.columns[0]![0] + 100, loaded.columns[0]![1], unseenSite);
     expect(loaded.entities.at(...freshSpec.pos)?.type).toBe(freshSpec.type);

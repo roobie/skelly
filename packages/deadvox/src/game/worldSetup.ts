@@ -180,7 +180,7 @@ export class DebugTestHouseSite implements Site {
     return spawns;
   }
 
-  zombiesIn(): ReturnType<Site['zombiesIn']> {
+  actorsIn(): ReturnType<Site['actorsIn']> {
     return [];
   }
 }
@@ -291,7 +291,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     lootPointsIn: (cx, cz) => built?.lootPointsIn(cx, cz) ?? [],
     furnitureIn: (cx, cz) => built?.furnitureIn(cx, cz) ?? [],
     supplySourcesIn: (area) => built?.supplySourcesIn(area) ?? [],
-    zombiesIn: (cx, cz) => built?.zombiesIn(cx, cz) ?? [],
+    actorsIn: (cx, cz) => built?.actorsIn(cx, cz) ?? [],
     hordesIn: (cx, cz) => built?.hordesIn?.(cx, cz) ?? [],
   };
 }

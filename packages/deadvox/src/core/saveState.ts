@@ -3,6 +3,7 @@
 
 import type { PlayerState } from '../game/player.ts';
 import type { Survival } from '../game/survival.ts';
+import type { ActorSpawner } from './actorSpawns.ts';
 import type { AimSnapshotState } from './aim.ts';
 import type { SavedBlockDamage } from './blockDamage.ts';
 import type { Character, CharacterState } from './character.ts';
@@ -20,7 +21,6 @@ import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundPickerState } from './soundPicker.ts';
 import type { VehicleInstancesState } from './vehicleInstances.ts';
 import type { SavedColumn, World } from './world.ts';
-import type { ZombieSpawner } from './zombieSpawns.ts';
 import type { VocalNoise, ZombieSystem, ZombieSystemState } from './zombies.ts';
 
 export interface SaveSnapshot {
@@ -77,7 +77,7 @@ export interface SnapshotSessionInput {
   quickbar: readonly (number | null)[];
   zombies: ZombieSystem;
   playerCombat: PlayerCombat;
-  spawner: ZombieSpawner;
+  spawner: ActorSpawner;
   rolledColumns: ReadonlySet<string>;
   handling: HandlingQueue;
   vocalNoiseId: number;

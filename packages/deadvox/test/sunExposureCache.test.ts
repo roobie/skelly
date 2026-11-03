@@ -43,7 +43,7 @@ it('matches vertical ray exposure above and below the top blocker in a column', 
 it('bounds daytime opacity queries to one column scan per source in a compressed frame', () => {
   const quietColumn = fixtureColumns.find(
     ([columnX, columnZ]) =>
-      fixtureSite.zombiesIn(columnX, columnZ).length === 0 &&
+      fixtureSite.actorsIn(columnX, columnZ).length === 0 &&
       (fixtureSite.hordesIn?.(columnX, columnZ).length ?? 0) === 0,
   );
   if (!quietColumn) {

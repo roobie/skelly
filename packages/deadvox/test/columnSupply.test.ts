@@ -76,7 +76,7 @@ const fixture = () => {
     furnitureIn: (cx, cz) => spawns.filter(({ spec }) => toChunk(spec.pos[0]) === cx && toChunk(spec.pos[2]) === cz),
     lootPointsIn: (cx, cz) => (toChunk(ground.destination[0]) === cx && cz === 0 ? [ground] : []),
     supplySourcesIn: (area) => footprints.in(area),
-    zombiesIn: () => [],
+    actorsIn: () => [],
   };
   return { registry, inventory, consumed, owner, source };
 };

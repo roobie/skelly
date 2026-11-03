@@ -3,6 +3,7 @@ import { mulMV, quatToMat3 } from '@mobgen/core/math.ts';
 import { crawlerGaitPose } from '@mobgen/mob/crawler.ts';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
+import { ActorSpawner } from '../src/core/actorSpawns.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { BodyRegion } from '../src/core/body.ts';
 import { resolveSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
@@ -17,7 +18,7 @@ import { raycast, type SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ActorDef, DoorLockDef } from '../src/core/schema.ts';
 import { Simulation } from '../src/core/sim.ts';
-import type { Site, ZombieSpawn } from '../src/core/site.ts';
+import type { ActorSpawn, Site } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
 import { gameTimeOfDay, simRate, simSeconds } from '../src/core/time.ts';
 import { figureSeedPool, zombieFigure } from '../src/core/zombieFigure.ts';
@@ -31,7 +32,6 @@ import {
   posedShamblerRegionBoxes,
   type ZombieRegion,
 } from '../src/core/zombieRegions.ts';
-import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import {
   type HitImpulse,
   hearPlayer,
@@ -142,14 +142,14 @@ const normalized = (v: Vec3): Vec3 => {
   const magnitude = Math.hypot(...v);
   return magnitude ? [v[0] / magnitude, v[1] / magnitude, v[2] / magnitude] : [0, 0, 0];
 };
-const spawnSite = (spawn: ZombieSpawn): Site => ({
+const spawnSite = (spawn: ActorSpawn): Site => ({
   surface: { height: (_x, _z, natural) => natural, top: () => undefined },
   spawn: { pos: [0, 0, 0], yaw: 0 },
   stamp: () => undefined,
   supplySourcesIn: () => [],
   lootPointsIn: () => [],
   furnitureIn: () => [],
-  zombiesIn: () => [spawn],
+  actorsIn: () => [spawn],
 });
 const nearestRegionDistance = (zombie: import('../src/core/zombies.ts').Zombie, origin: Vec3, direction: Vec3) => {
   let nearest = Number.POSITIVE_INFINITY;
@@ -2178,7 +2178,7 @@ describe('shambler scenarios', () => {
       }
     }
     expect(column).toBeDefined();
-    const spawner = new ZombieSpawner();
+    const spawner = new ActorSpawner();
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
     spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system });
     const state = system.snapshotState();
@@ -2196,13 +2196,13 @@ describe('shambler scenarios', () => {
     let column: [number, number] | undefined;
     for (let cz = -20; cz <= 20 && !column; cz++) {
       for (let cx = -20; cx <= 20 && !column; cx++) {
-        if (site.zombiesIn(cx, cz).length > 0) {
+        if (site.actorsIn(cx, cz).length > 0) {
           column = [cx, cz];
         }
       }
     }
     expect(column).toBeDefined();
-    const spawner = new ZombieSpawner();
+    const spawner = new ActorSpawner();
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
     spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system });
     const initial = [...system.store.entries()];
@@ -2220,13 +2220,13 @@ describe('shambler scenarios', () => {
   });
 
   it('waits for the game clock to enter a loaded spawn marker window', () => {
-    const spawn: ZombieSpawn = {
+    const spawn: ActorSpawn = {
       type: 'shambler',
       pos: [0, 1, 0],
       window: { fromGameTimeOfDay: gameTimeOfDay(DUSK) },
     };
     const site = spawnSite(spawn);
-    const spawner = new ZombieSpawner();
+    const spawner = new ActorSpawner();
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
     const load = () => spawner.onColumn({ cx: 0, cz: 0, site, registry, zombies: system });
 
@@ -2240,13 +2240,13 @@ describe('shambler scenarios', () => {
   });
 
   it('spawns same-tick pending markers in stable order regardless of column load order', () => {
-    const markers: ZombieSpawn[] = [
+    const markers: ActorSpawn[] = [
       { type: 'shambler', pos: [0, 1, 0], window: { fromGameTimeOfDay: gameTimeOfDay(DUSK) } },
       { type: 'shambler', pos: [32, 1, 0], window: { fromGameTimeOfDay: gameTimeOfDay(DUSK) } },
     ];
-    const spawnOrder = (order: readonly ZombieSpawn[]) => {
+    const spawnOrder = (order: readonly ActorSpawn[]) => {
       const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
-      const spawner = new ZombieSpawner();
+      const spawner = new ActorSpawner();
       order.forEach((spawn, cx) => {
         spawner.onColumn({
           cx,
@@ -2269,13 +2269,13 @@ describe('shambler scenarios', () => {
   });
 
   it('queues a windowed marker loaded inside its open interval until advance', () => {
-    const spawn: ZombieSpawn = {
+    const spawn: ActorSpawn = {
       type: 'shambler',
       pos: [0, 1, 0],
       window: { fromGameTimeOfDay: gameTimeOfDay(DUSK), toGameTimeOfDay: gameTimeOfDay(20 * 3600) },
     };
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
-    const spawner = new ZombieSpawner();
+    const spawner = new ActorSpawner();
     spawner.onColumn({
       cx: 0,
       cz: 0,
@@ -2289,14 +2289,14 @@ describe('shambler scenarios', () => {
   });
 
   it('drops pending markers on unload and retries a missed bounded window the next day', () => {
-    const spawn: ZombieSpawn = {
+    const spawn: ActorSpawn = {
       type: 'shambler',
       pos: [0, 1, 0],
       window: { fromGameTimeOfDay: gameTimeOfDay(DUSK), toGameTimeOfDay: gameTimeOfDay(20 * 3600) },
     };
     const site = spawnSite(spawn);
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
-    const spawner = new ZombieSpawner();
+    const spawner = new ActorSpawner();
     const load = () => spawner.onColumn({ cx: 0, cz: 0, site, registry, zombies: system });
     load();
     spawner.unloadColumn(0, 0);
@@ -2313,7 +2313,7 @@ describe('shambler scenarios', () => {
     expect(system.store.size).toBe(0);
     expect(spawner.snapshotState()).toContain('shambler:0,1,0');
 
-    const restored = new ZombieSpawner();
+    const restored = new ActorSpawner();
     restored.restoreState(spawner.snapshotState());
     const afterRestore = new ZombieSystem(senses(() => player([1000, 2, 1000])));
     restored.onColumn({

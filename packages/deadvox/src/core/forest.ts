@@ -58,7 +58,7 @@ export class Forest implements Site {
   furnitureIn() {
     return [];
   }
-  zombiesIn() {
+  actorsIn() {
     return [];
   }
 }
