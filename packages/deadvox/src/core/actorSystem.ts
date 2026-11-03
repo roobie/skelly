@@ -6,7 +6,6 @@ import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import {
   angleOf,
   approach,
-  approachAngle,
   clearLine,
   headingAt,
   horizontalDistance,
@@ -14,10 +13,8 @@ import {
   pickByWeight,
   pushTurn,
   steer,
-  stepChaseMotion,
   sub,
   type TerrainFloorAt,
-  turnToward,
   unit,
   withinAttackReach,
   wrapAngle,
@@ -687,8 +684,6 @@ export class ActorSystem {
     Actor,
     { carved: readonly number[]; severed: number; missing: MissingFlesh }
   >();
-  private idleSoundGrid = new Map<string, Actor[]>();
-  private idleSoundGridCellBlocks = 1;
 
   constructor(options: ActorSystemOptions) {
     this.options = options;
@@ -700,9 +695,9 @@ export class ActorSystem {
       options: this.options,
       tickScratch: this.tickScratch,
       store: this.store,
-      beginIdle: (actor) => this.beginIdle(actor),
-      beginSearch: (actor) => this.beginSearch(actor),
-      hordeTarget: (actor) => this.agentHorde.hordeTarget(actor),
+      agentHorde: this.agentHorde,
+      holdSpitGround,
+      reachableActorMoves: (actor, actorPos, playerPos) => this.reachableActorMoves(actor, actorPos, playerPos),
     });
   }
 
@@ -1049,122 +1044,6 @@ export class ActorSystem {
     }
   }
 
-  private tickLookAround(actor: Actor, dt: number): void {
-    const { type, behaviorRng: rng } = actor;
-    actor.lookTimer -= dt;
-    if (actor.lookTimer <= 0) {
-      actor.bodyLookTarget =
-        angleOf(actor.facing) +
-        rng.range(-type.wander.bodyLookArcDegrees, type.wander.bodyLookArcDegrees) * 0.5 * (Math.PI / 180);
-      actor.headYawTarget =
-        rng.range(-type.wander.headLookArcDegrees, type.wander.headLookArcDegrees) * 0.5 * (Math.PI / 180);
-      actor.lookTimer = inRange(rng, type.wander.lookIntervalSimSeconds);
-    }
-    actor.facing = turnToward(
-      actor.facing,
-      headingAt(actor.bodyLookTarget),
-      (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
-    );
-    actor.headYaw = approachAngle(
-      actor.headYaw,
-      actor.headYawTarget,
-      (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180,
-    );
-  }
-
-  private beginIdle(actor: Actor): void {
-    actor.mode = 'idle';
-    actor.investigationTier = undefined;
-    actor.searchAnchor = undefined;
-    actor.searchTimer = 0;
-    actor.searchStrolling = false;
-    actor.modeTimer = inRange(actor.behaviorRng, actor.type.wander.idleSimSeconds);
-    actor.lookTimer = 0;
-    actor.bodyLookTarget = angleOf(actor.facing);
-    actor.headYawTarget = 0;
-    actor.horizontalSpeed = 0;
-    actor.body.vel[0] = 0;
-    actor.body.vel[2] = 0;
-  }
-
-  private beginStroll(actor: Actor): void {
-    const { type, body, home, behaviorRng } = actor;
-    const duration = inRange(behaviorRng, type.wander.strollSimSeconds);
-    let heading = headingAt(behaviorRng.range(-Math.PI, Math.PI));
-    if (actor.leanTarget) {
-      const toward = unit(sub(actor.leanTarget, body.pos));
-      const weight = type.hearingModel.refusalLean;
-      heading = unit([
-        heading[0] * (1 - weight) + toward[0] * weight,
-        0,
-        heading[2] * (1 - weight) + toward[2] * weight,
-      ]);
-      actor.leanTarget = undefined;
-    }
-    const endpoint: Vec3 = [
-      body.pos[0] + (heading[0] * type.speed.wanderMetresPerSimSecond * duration) / this.options.blockSize,
-      body.pos[1],
-      body.pos[2] + (heading[2] * type.speed.wanderMetresPerSimSecond * duration) / this.options.blockSize,
-    ];
-    if (horizontalDistance(endpoint, home) * this.options.blockSize > type.wander.leashMetres) {
-      heading = unit([home[0] - body.pos[0], 0, home[2] - body.pos[2]]);
-    }
-    if (Math.hypot(...heading) === 0) {
-      heading = headingAt(behaviorRng.range(-Math.PI, Math.PI));
-    }
-    actor.mode = 'stroll';
-    actor.investigationTier = undefined;
-    actor.searchAnchor = undefined;
-    actor.searchTimer = 0;
-    actor.searchStrolling = false;
-    actor.modeTimer = duration;
-    actor.strollHeading = heading;
-    actor.bodyLookTarget = angleOf(heading);
-    actor.headYawTarget = 0;
-  }
-
-  private beginSearch(actor: Actor): void {
-    const { type, behaviorRng: rng } = actor;
-    actor.mode = 'search';
-    actor.investigationTier = undefined;
-    actor.searchAnchor = copy(actor.lastPerceived ?? actor.body.pos);
-    actor.searchTimer = inRange(rng, type.hearingModel.searchSimSeconds);
-    actor.searchStrolling = false;
-    actor.searchHeading = copy(actor.facing);
-    actor.modeTimer = inRange(rng, type.wander.idleSimSeconds);
-    actor.lookTimer = 0;
-    actor.bodyLookTarget = angleOf(actor.facing);
-    actor.headYawTarget = 0;
-    actor.horizontalSpeed = 0;
-    actor.body.vel[0] = 0;
-    actor.body.vel[2] = 0;
-  }
-
-  private beginSearchStroll(actor: Actor): void {
-    const { type, body, searchAnchor, behaviorRng: rng } = actor;
-    if (!searchAnchor) {
-      return;
-    }
-    const duration = Math.min(inRange(rng, type.hearingModel.searchStrollSimSeconds), actor.searchTimer);
-    let heading = headingAt(rng.range(-Math.PI, Math.PI));
-    const endpoint: Vec3 = [
-      body.pos[0] + (heading[0] * type.speed.wanderMetresPerSimSecond * duration) / this.options.blockSize,
-      body.pos[1],
-      body.pos[2] + (heading[2] * type.speed.wanderMetresPerSimSecond * duration) / this.options.blockSize,
-    ];
-    if (horizontalDistance(endpoint, searchAnchor) * this.options.blockSize > type.hearingModel.searchRadiusMetres) {
-      heading = unit([searchAnchor[0] - body.pos[0], 0, searchAnchor[2] - body.pos[2]]);
-    }
-    if (Math.hypot(...heading) === 0) {
-      heading = headingAt(rng.range(-Math.PI, Math.PI));
-    }
-    actor.searchStrolling = true;
-    actor.searchHeading = heading;
-    actor.modeTimer = duration;
-    actor.bodyLookTarget = angleOf(heading);
-    actor.headYawTarget = 0;
-  }
-
   add(type: ActorDef, position: Vec3, facing: Vec3 = [0, 0, -1]): EntityId {
     const direction = unit(facing);
     const figureSeed =
@@ -1248,7 +1127,7 @@ export class ActorSystem {
     actor.dismemberRng = Rng.stream(this.options.seed ?? 0, `actor-dismember:${id}`);
     actor.spitRng = Rng.stream(this.options.seed ?? 0, `actor-spit:${id}`);
     actor.idleSoundTimer = inRange(actor.soundRng, actor.type.idleSound.intervalSimSeconds);
-    this.beginIdle(actor);
+    this.agent.beginIdle(actor);
     return id;
   }
 
@@ -1352,7 +1231,7 @@ export class ActorSystem {
     const entries = [...this.store.entries()].filter(
       ([id, actor]) => actor.tier === 'background' && id % sliceCount === sliceIndex,
     );
-    this.indexIdleSoundDensity();
+    this.agent.indexIdleSoundDensity();
     for (const [id, actor] of entries) {
       this.captureRenderPrevious(actor, time);
       if (actor.incapacitated) {
@@ -1402,7 +1281,7 @@ export class ActorSystem {
           actor.facing = copy(direction);
         }
       } else {
-        this.selectMovementIntent();
+        this.agent.selectMovementIntent();
         const { direction: movementDirection, desiredSpeed } = scratch;
         direction = movementDirection;
         speed = desiredSpeed;
@@ -1431,7 +1310,7 @@ export class ActorSystem {
       const travelled = horizontalDistance(before, actor.body.pos) * blockSize;
       actor.gaitPhase += (travelled / actor.type.stepLength) * Math.PI;
       if (actor.mode === 'stroll' && actor.modeTimer <= 0 && actor.horizontalSpeed <= 0.01) {
-        this.beginIdle(actor);
+        this.agent.beginIdle(actor);
       }
     }
   }
@@ -1458,208 +1337,6 @@ export class ActorSystem {
     actor.attackWait = Math.max(0, actor.attackWait - dt);
     actor.spitWait = Math.max(0, actor.spitWait - dt);
     actor.staggerSimSeconds = Math.max(0, actor.staggerSimSeconds - dt);
-  }
-
-  private indexIdleSoundDensity(): void {
-    let widestRadiusBlocks = 0;
-    for (const [, actor] of this.store.entries()) {
-      if (!actor.incapacitated) {
-        widestRadiusBlocks = Math.max(
-          widestRadiusBlocks,
-          actor.type.idleSound.density.radiusMetres / this.options.blockSize,
-        );
-      }
-    }
-    this.idleSoundGridCellBlocks = Math.max(1, widestRadiusBlocks);
-    this.idleSoundGrid = new Map();
-    for (const [, actor] of this.store.entries()) {
-      if (actor.incapacitated) {
-        continue;
-      }
-      const key = this.idleSoundGridKey(actor.body.pos);
-      const cell = this.idleSoundGrid.get(key);
-      if (cell) {
-        cell.push(actor);
-      } else {
-        this.idleSoundGrid.set(key, [actor]);
-      }
-    }
-  }
-
-  private idleSoundGridKey(position: Vec3): string {
-    return `${Math.floor(position[0] / this.idleSoundGridCellBlocks)},${Math.floor(position[2] / this.idleSoundGridCellBlocks)}`;
-  }
-
-  private nextIdleSoundInterval(actor: Actor): number {
-    const { intervalSimSeconds, density } = actor.type.idleSound;
-    return (
-      inRange(actor.soundRng, intervalSimSeconds) *
-      (1 + (this.idleSoundDensity(actor) - 1) * density.penaltyPerNeighbour)
-    );
-  }
-
-  private idleSoundDensity(actor: Actor): number {
-    const radiusBlocks = actor.type.idleSound.density.radiusMetres / this.options.blockSize;
-    const cellRadius = Math.ceil(radiusBlocks / this.idleSoundGridCellBlocks);
-    const cellX = Math.floor(actor.body.pos[0] / this.idleSoundGridCellBlocks);
-    const cellZ = Math.floor(actor.body.pos[2] / this.idleSoundGridCellBlocks);
-    let density = 0;
-    for (let x = cellX - cellRadius; x <= cellX + cellRadius; x++) {
-      for (let z = cellZ - cellRadius; z <= cellZ + cellRadius; z++) {
-        for (const nearby of this.idleSoundGrid.get(`${x},${z}`) ?? []) {
-          if (horizontalDistance(actor.body.pos, nearby.body.pos) <= radiusBlocks) {
-            density += 1;
-          }
-        }
-      }
-    }
-    return density;
-  }
-
-  private updateIdleSound(): void {
-    const scratch = this.tickScratch;
-    const { actor, dt, pos } = scratch;
-    if (actor.mode !== 'idle' && actor.mode !== 'stroll') {
-      return;
-    }
-    actor.idleSoundTimer -= dt;
-    if (actor.idleSoundTimer <= 0) {
-      this.options.onSound?.(actor.type.sounds.idle, copy(pos), actor);
-      actor.idleSoundTimer = this.nextIdleSoundInterval(actor);
-    }
-  }
-
-  private selectMovementIntent(): void {
-    const scratch = this.tickScratch;
-    const { actor } = scratch;
-    scratch.target = actor.home;
-    scratch.direction = [0, 0, 0];
-    scratch.aimDirection = undefined;
-    scratch.desiredSpeed = 0;
-    scratch.returnArrived = false;
-    scratch.obstacleDirection = actor.obstacleWanderRemaining > 0 ? actor.obstacleWanderHeading : undefined;
-    scratch.stroll = actor.mode === 'stroll';
-    scratch.wanderingAtTickStart = actor.obstacleWanderRemaining > 0;
-    this.updateIdleSound();
-    switch (actor.mode) {
-      case 'hesitate': {
-        const bearing = angleOf(sub(actor.lastPerceived!, actor.body.pos));
-        actor.headYawTarget = bearing - angleOf(actor.facing);
-        actor.headYaw = approachAngle(
-          actor.headYaw,
-          actor.headYawTarget,
-          (actor.type.wander.headTurnDegreesPerSimSecond * Math.PI * scratch.dt) / 180,
-        );
-        return;
-      }
-      case 'idle':
-        this.selectIdleIntent();
-        return;
-      case 'stroll':
-        this.selectStrollIntent();
-        return;
-      case 'search':
-        this.selectSearchIntent();
-        return;
-      default:
-        this.selectTravelIntent();
-    }
-  }
-
-  private selectIdleIntent(): void {
-    const { actor, dt } = this.tickScratch;
-    actor.modeTimer -= dt;
-    this.tickLookAround(actor, dt);
-    if (actor.modeTimer <= 0) {
-      this.beginStroll(actor);
-    }
-  }
-
-  private selectStrollIntent(): void {
-    const scratch = this.tickScratch;
-    const { actor, type, dt, obstacleDirection } = scratch;
-    actor.modeTimer -= dt;
-    scratch.direction = obstacleDirection ?? actor.strollHeading;
-    scratch.aimDirection = scratch.direction;
-    scratch.desiredSpeed = obstacleDirection || actor.modeTimer > 0 ? type.speed.wanderMetresPerSimSecond : 0;
-    scratch.direction = steer(actor, scratch.direction, (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180);
-    actor.headYaw = approachAngle(actor.headYaw, 0, (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
-  }
-
-  private selectSearchIntent(): void {
-    const scratch = this.tickScratch;
-    const { actor, type, dt, obstacleDirection, pos } = scratch;
-    actor.searchTimer -= dt;
-    if (actor.searchTimer <= 0) {
-      actor.mode = 'return';
-      actor.searchAnchor = undefined;
-      actor.searchStrolling = false;
-      scratch.target = actor.home;
-      scratch.direction = obstacleDirection ?? unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
-      scratch.aimDirection = scratch.direction;
-      scratch.direction = steer(
-        actor,
-        scratch.direction,
-        (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
-      );
-      scratch.desiredSpeed = type.speed.wanderMetresPerSimSecond;
-    } else if (actor.searchStrolling) {
-      actor.modeTimer -= dt;
-      if (actor.modeTimer <= 0) {
-        actor.searchStrolling = false;
-        actor.modeTimer = inRange(scratch.rng, type.wander.idleSimSeconds);
-        this.tickLookAround(actor, dt);
-      } else {
-        scratch.direction = obstacleDirection ?? actor.searchHeading;
-        scratch.aimDirection = scratch.direction;
-        scratch.desiredSpeed = type.speed.wanderMetresPerSimSecond;
-        scratch.direction = steer(
-          actor,
-          scratch.direction,
-          (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
-        );
-        actor.headYaw = approachAngle(actor.headYaw, 0, (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
-      }
-    } else {
-      actor.modeTimer -= dt;
-      this.tickLookAround(actor, dt);
-      if (actor.modeTimer <= 0) {
-        this.beginSearchStroll(actor);
-      }
-    }
-  }
-
-  private selectTravelIntent(): void {
-    const scratch = this.tickScratch;
-    const { actor, type, player, blockSize, pos, obstacleDirection, dt } = scratch;
-    if (actor.mode === 'chase') {
-      scratch.target = player.pos;
-    } else if (actor.mode === 'investigate') {
-      scratch.target = actor.lastPerceived ?? actor.home;
-    }
-    scratch.metresToTarget = horizontalDistance(scratch.target, pos) * blockSize;
-    scratch.returnArrived = actor.mode === 'return' && scratch.metresToTarget < 0.4;
-    scratch.seeking = actor.mode === 'chase' || actor.mode === 'investigate';
-    scratch.inReach = actor.mode === 'chase' && this.reachableActorMoves(actor, pos, scratch.target).length > 0;
-    const toward = unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
-    scratch.direction = obstacleDirection ?? toward;
-    scratch.moving = scratch.seeking ? !scratch.inReach : scratch.returnArrived || scratch.metresToTarget > 0.25;
-    holdSpitGround(scratch, toward);
-    if (scratch.moving) {
-      scratch.aimDirection = scratch.direction;
-      if (scratch.seeking) {
-        const motion = stepChaseMotion(actor, dt);
-        scratch.direction = headingAt(angleOf(scratch.direction) + motion.sway);
-        scratch.desiredSpeed = type.speed.chaseMetresPerSimSecond * motion.speedFactor;
-      } else if (!scratch.returnArrived) {
-        scratch.desiredSpeed = type.speed.wanderMetresPerSimSecond;
-      }
-      const turnRadians = (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180;
-      scratch.direction = steer(actor, scratch.direction, turnRadians, toward);
-    } else {
-      scratch.direction = [0, 0, 0];
-    }
-    actor.headYaw = approachAngle(actor.headYaw, 0, (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
   }
 
   private updateMovementSpeed(): void {
@@ -1924,11 +1601,11 @@ export class ActorSystem {
     if (stroll && actor.mode === 'stroll' && actor.horizontalSpeed > 0.01) {
       const requested = actor.horizontalSpeed * dt;
       if (travelled + 1e-4 < requested * 0.1) {
-        this.beginIdle(actor);
+        this.agent.beginIdle(actor);
       }
     }
     if (stroll && actor.mode === 'stroll' && actor.modeTimer <= 0 && actor.horizontalSpeed <= 0.01) {
-      this.beginIdle(actor);
+      this.agent.beginIdle(actor);
     }
     if (actor.mode === 'search' && actor.searchStrolling && actor.horizontalSpeed > 0.01) {
       const requested = actor.horizontalSpeed * dt;
@@ -2047,7 +1724,7 @@ export class ActorSystem {
     const scratch = this.tickScratch;
     const { actor, returnArrived, blockSize, dt, id } = scratch;
     if (actor.mode === 'return' && returnArrived && actor.horizontalSpeed <= 0.01) {
-      this.beginIdle(actor);
+      this.agent.beginIdle(actor);
     }
     const poseInput = actorPoseInputFor(actor, id, blockSize);
     const stanceTarget = targetStanceWeight(poseInput);
@@ -2146,7 +1823,7 @@ export class ActorSystem {
     scratch.isSolid = isSolid;
     scratch.isOpaque = this.options.isOpaque;
     scratch.groundedAtTickStart = groundedAtTickStart;
-    this.indexIdleSoundDensity();
+    this.agent.indexIdleSoundDensity();
     for (const [id, actor] of entries) {
       groundedAtTickStart.set(actor, actor.body.onGround);
       this.captureRenderPrevious(actor, time);
@@ -2177,7 +1854,7 @@ export class ActorSystem {
       scratch.sees = actor.mode === 'chase';
       this.agent.checkInvestigationArrival();
 
-      this.selectMovementIntent();
+      this.agent.selectMovementIntent();
 
       this.updateMovementSpeed();
       this.applyObstacleSlide();
