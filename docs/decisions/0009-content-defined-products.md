@@ -4,6 +4,7 @@ read_if:
   - you classify mods, choose their ids or combine a theme with a product
   - you change remote mod intake, product save separation or the framework refactor gate
   - you name reusable mechanisms, actor body plans or content-selected providers
+  - you change scenario guidance, observations or staging
 ---
 
 # 9. Content-defined products on one composable framework
@@ -114,6 +115,11 @@ map and run. A scenario can provide several starts, and a mod can add another. T
 entry pack selects the default scenario and start. A player start picker is separate
 UI work, not a prerequisite for recording the content relationship. The start-state
 contract belongs to `packages/deadvox/docs/url-mods.md`, "Start state in mods".
+
+Scenario rows own guided steps, stage marks and attempt recording because a different
+run must not require runtime identity branches. Observation mechanisms do not stage
+or mutate the world; staging that needs another mechanism requires its own decision.
+See `packages/deadvox/src/core/stageMarks.ts`, `stageMarkArea` and `stageMarksAt`.
 
 Theme mods stand alone without wiring themselves into any product's distribution.
 A small, player-selected compatibility mod supplies that wiring: for example, magic

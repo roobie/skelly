@@ -22,6 +22,7 @@ import {
 import type { PublicCartographicFeature } from './publicCartography.ts';
 import { Rng } from './random.ts';
 import type { FixedLootItemDef, FixedLootOverrideDef, LightPracticeDef } from './schema.ts';
+import type { StageMark } from './stageMarks.ts';
 import { type Placement, placedGroundLoot, placedPieces } from './templates.ts';
 import type { Surface } from './worldgen.ts';
 
@@ -76,7 +77,7 @@ export interface HordeSpawn {
 /** Observation only: what the playtest metrics watch for. Nothing in the simulation reads it. */
 export interface PlaytestMarks {
   /** Beat areas, in blocks. */
-  readonly beats: readonly { readonly id: string; readonly area: Rect }[];
+  readonly beats: readonly StageMark[];
   /** Key fixed-loot item ids, keyed by their furniture's anchor block ("x,y,z"). */
   readonly keyLoot: ReadonlyMap<string, ReadonlySet<string>>;
 }
@@ -84,6 +85,7 @@ export interface PlaytestMarks {
 export interface Site {
   /** An authored practice site's optional light module. */
   readonly lightPractice?: LightPracticeDef;
+  readonly practiceExitMark?: string;
   /** Finished authored footprints eligible for world-derived sky transport. */
   readonly authoredPlacements?: readonly Placement[];
   /** An authored site's playtest beats and key fixed loot. */

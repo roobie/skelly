@@ -295,6 +295,9 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     check([area.x0, area.z0], `.beats[${i}].area`);
     check([area.x1, area.z1], `.beats[${i}].area`);
   });
+  if (layout.practice && !beatIds.has(layout.practice.exitMark)) {
+    issues.push(['.practice.exitMark', `no stage mark "${layout.practice.exitMark}"`]);
+  }
   return issues;
 };
 

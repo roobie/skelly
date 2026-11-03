@@ -522,6 +522,7 @@
         "position": [0, 0.5, 8]
       },
       "practice": {
+        "exitMark": "tutorial_exit",
         "light": {
           "battery": "aa_battery",
           "labels": {

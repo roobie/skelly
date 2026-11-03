@@ -51,6 +51,7 @@ import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import { soundVariantKey } from '../core/soundSynth.ts';
+import { stageMarkArea } from '../core/stageMarks.ts';
 import { fillText as fillScreenText } from '../core/textTemplate.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
 import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
@@ -693,15 +694,16 @@ const createPlayTutorial = (engine: Engine, enabled: boolean | undefined) => {
   if (!enabled) {
     return {};
   }
-  const exitBeat = engine.site?.playtestMarks?.beats.find((beat) => beat.id === 'tutorial_exit');
+  const marks = engine.site?.playtestMarks;
+  const exitMark = engine.site?.practiceExitMark;
   const lightKit = engine.site?.lightPractice;
-  if (!(exitBeat && lightKit)) {
+  if (!(marks && exitMark && lightKit)) {
     throw new Error('Practice requires an authored exit and light module content');
   }
   const tutorial = new Tutorial(
     engine.spawn.pos.map((coordinate) => coordinate / engine.config.scale.blockSize) as Vec3,
     engine.spawn.yaw,
-    exitBeat.area,
+    stageMarkArea(marks.beats, exitMark),
     lightKit,
   );
   const drawTutorial = mountTutorial(tutorial, screenTextOf(engine.registry).tutorial, leaveTutorial, () =>

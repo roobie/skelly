@@ -1,6 +1,7 @@
 import type { Vec3 } from '../core/coords.ts';
 import type { LightPracticeDef } from '../core/schema.ts';
 import type { Rect } from '../core/site.ts';
+import { insideStageArea } from '../core/stageMarks.ts';
 import { TutorialWeapons } from './tutorialWeapons.ts';
 
 export interface TutorialObservation {
@@ -88,13 +89,7 @@ export class Tutorial {
     this.lightWasOn ||= state.lightOn;
     remember('light', this.lightWasOn && !state.lightOn);
     remember('crouch', state.crouching);
-    remember(
-      'escape',
-      state.position[0] >= this.exit.x0 &&
-        state.position[0] < this.exit.x1 &&
-        state.position[2] >= this.exit.z0 &&
-        state.position[2] < this.exit.z1,
-    );
+    remember('escape', insideStageArea(this.exit, state.position));
     if (this.lightStarted && state.litType === this.lightKit.light) {
       this.achieved.add('light-on');
       // Lit after a swap: on again, whether it stayed on through the swap or was switched back on.

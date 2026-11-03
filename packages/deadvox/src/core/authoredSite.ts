@@ -156,6 +156,7 @@ export class AuthoredSite implements Site {
   private readonly supplyFootprints: SupplyFootprints;
   readonly playtestMarks: PlaytestMarks;
   readonly lightPractice?: LightPracticeDef;
+  readonly practiceExitMark?: string;
   readonly seed: number;
   readonly registry: Registry;
   readonly showroom: ShowroomDef | undefined;
@@ -206,6 +207,7 @@ export class AuthoredSite implements Site {
     };
     if (layout.practice) {
       this.lightPractice = layout.practice.light;
+      this.practiceExitMark = layout.practice.exitMark;
     }
     this.showroom = layout.showroom;
     this.slots = layout.showroom ? slotProps(registry, layout.showroom) : [];

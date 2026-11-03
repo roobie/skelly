@@ -24,6 +24,18 @@ const observation = {
   name: 'save-controller-game-ready',
   enforce: 'pre',
   transform(code, id) {
+    if (id.endsWith('/src/content/base/tutorial.json')) {
+      // An independently named mark must drive both live guide startup and the exit route.
+      const content = JSON.parse(code);
+      for (const layout of content.layouts) {
+        const previous = layout.practice.exitMark;
+        layout.practice.exitMark = 'fixture_guide_exit';
+        layout.beats = layout.beats.map((mark) =>
+          mark.id === previous ? { ...mark, id: layout.practice.exitMark } : mark,
+        );
+      }
+      return JSON.stringify(content);
+    }
     if (id.endsWith('/src/render/models.ts')) {
       return instrumentModelLoads(code);
     }
@@ -109,6 +121,11 @@ try {
       await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
       await page.click('#tutorial-start');
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
+      assert.equal(
+        await page.evaluate(() => globalThis.gauntletWitness.engine.site.practiceExitMark),
+        'fixture_guide_exit',
+        'the live guide uses the independently named content mark',
+      );
       assert.equal(
         await page.evaluate(() => Boolean(globalThis.saveControllerConstructed)),
         false,
@@ -436,7 +453,8 @@ try {
         const { mountTutorial } = await import('/src/ui/tutorial.ts');
         const { engine, session } = gauntletWitness;
         // A separate observer starts at this lesson; the playing session still owns movement and stance.
-        const exit = engine.site.playtestMarks.beats.find((beat) => beat.id === 'tutorial_exit').area;
+        const { stageMarkArea } = await import('/src/core/stageMarks.ts');
+        const exit = stageMarkArea(engine.site.playtestMarks.beats, engine.site.practiceExitMark);
         const tutorial = new Tutorial([0, 0, 0], 0, exit, engine.site.lightPractice);
         tutorial.opened('canned_beans');
         tutorial.consumed('beans');

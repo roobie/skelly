@@ -214,6 +214,7 @@ export const SiteLayoutSchema = strictObject({
   /** Practice's optional modules: the items each teaches and the labels its steps show. */
   practice: optional(
     strictObject({
+      exitMark: Id,
       light: strictObject({
         light: Id,
         battery: Id,

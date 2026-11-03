@@ -3,6 +3,7 @@ import { formatClock } from '../core/clock.ts';
 import type { CompletedMove, HandlingQueue, MoveJob, TickResult } from '../core/handling.ts';
 import type { Inventory, Location } from '../core/inventory.ts';
 import type { PlaytestMarks } from '../core/site.ts';
+import { stageMarksAt } from '../core/stageMarks.ts';
 import {
   measureSnapshots,
   type SessionMetrics,
@@ -146,9 +147,8 @@ export class PlaytestObserver {
     if (beats.length === 0) {
       return;
     }
-    const [x, , z] = session.body.pos;
-    for (const { id, area } of beats) {
-      if (!this.reachedBeats.has(id) && x >= area.x0 && x < area.x1 && z >= area.z0 && z < area.z1) {
+    for (const { id } of stageMarksAt(beats, session.body.pos)) {
+      if (!this.reachedBeats.has(id)) {
         this.reachedBeats.add(id);
         this.metrics.reachBeat(id, formatClock(session.sim.calendar));
       }
