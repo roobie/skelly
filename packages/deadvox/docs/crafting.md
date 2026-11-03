@@ -64,7 +64,7 @@ Cooking uses a lit station for recipes that require heat. Losing it stops the pl
 
 ## Reachability and tests
 
-A screen selection is not proof that its frame-owned panel has rendered. Browser proofs wait for the pinned target's visible panel rather than racing a synchronous visibility read against presentation; see `test/browser/world-repair-flow.mjs`, `worldRepairInGameFlow`, and `src/ui/craftController.ts`, `mountCraftPanel`.
+A screen selection is not proof that its frame-owned panel has rendered. Presentation checks must wait for the target's visible panel rather than racing a synchronous visibility read against presentation; see `src/ui/craftController.ts`, `mountCraftPanel`.
 
 The test-house repair stock demonstrates reachable plans rather than pinning a stock catalogue. Keep derivation separate from authored destinations so recipe changes do not require maintaining a second stock list: content names the building whose containers receive the stock, and game logic derives what goes in. A repair that needs a workstation is stocked only when that station stands in the building, so the stock never promises a repair the player cannot do there. See `src/game/testHouseRepair.ts`, `repairStockRecipes`, and `src/content/base/layouts-test-house.jsonnet`, `repairStock`.
 

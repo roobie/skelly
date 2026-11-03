@@ -191,7 +191,6 @@ import { createSession, type PlayerInputSample } from './session.ts';
 import { Sharpening } from './sharpening.ts';
 import { SpectatorCamera } from './spectatorCamera.ts';
 import { populateTestHouseRepairCorner } from './testHouseRepair.ts';
-import { faceRepairLookTarget, stageRepairLook } from './testHouseRepairLook.ts';
 import {
   isOrbitResetMovementAction,
   isPlayerFigureWhole,
@@ -784,8 +783,7 @@ export const startPlay = (
   /** The vehicle opened by interacting with it; presentation only, so it is neither saved nor replayed. */
   let openedVehicleId: number | undefined;
   const furnitureActionSelection = new FurnitureActionSelection(actionText(registry).itemActions.openCan);
-  const furnitureActions = (entity: BlockEntity): ItemAction[] =>
-    furnitureActionsFor(inventory, entity, s, config.debugRepairLook ? session.character.knownRecipes : undefined);
+  const furnitureActions = (entity: BlockEntity): ItemAction[] => furnitureActionsFor(inventory, entity, s);
   let audio: GameAudio;
   const playSessionSound = (sound: Readonly<SoundEmission>): void =>
     audio.play(sound, sound.position.map((v) => v * s) as Vec3);
@@ -1229,7 +1227,6 @@ export const startPlay = (
       source: engine.site,
     });
   }
-  const debugRepairTarget = stageRepairLook(inventory, engine.site, config, options.restore !== undefined);
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);
   const replayDriver = createInputReplayDriver(replayPlayer, {
     terrain: streamer,
@@ -2735,8 +2732,6 @@ export const startPlay = (
     const target = interactionTargetAt();
     return target?.kind === 'furniture' ? target.entity : undefined;
   };
-
-  faceRepairLookTarget(input, eye(), debugRepairTarget);
 
   /** The open cell in front of the surface in the crosshair, or at the end of reach when none is near. */
   const aimedCell = (): [number, number, number] => {
