@@ -34,7 +34,7 @@ import { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { createPlayerBody, PLAYER } from './playerFixture.ts';
+import { AIM, createPlayerBody } from './playerFixture.ts';
 import { rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
 const BASE = 'src/content/base';
@@ -397,7 +397,7 @@ it('keeps over-limit view pitch changes in ADS while the held pose takes the rec
   const { mechanics, gun, camera, heldFrame, dispose } = await heldGun(RIFLE);
   const tuning = firearmsCombatTuning(registry);
   const aim = new AimController({
-    tuning: PLAYER.aim,
+    tuning: AIM,
     wobbleLimitRadians: tuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: tuning.wobbleVerticalToHorizontalRatio,

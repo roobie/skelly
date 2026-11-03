@@ -818,7 +818,7 @@ describe('landing injuries', () => {
 });
 
 describe('session movement consequences', () => {
-  it('uses a player content override for body, directional pace, lowered stance and aim', () => {
+  it('uses shared player overrides for movement and product policy for aim feel', () => {
     const tuning = {
       ...PLAYER,
       halfWidth: 0.2,
@@ -827,9 +827,12 @@ describe('session movement consequences', () => {
       walk: 2.4,
       movement: { sidewaysSpeedScale: 0.3, backwardSpeedScale: 0.2 },
       crouch: { speedMetresPerSimSecond: 0.8, eyeDropMetres: 0.8, bodyHeightMetres: 1.1 },
-      aim: { ...PLAYER.aim, maxOffsetRadians: 0.03 },
     };
-    const content = baseRegistryWith([{ source: 'fixture-player', data: { player: [tuning] } }]);
+    const baselinePolicy = [...registry.combatPolicy.values()].find((entry) => entry.capability === 'player')!;
+    const policy = { ...baselinePolicy, aim: { ...baselinePolicy.aim!, maxOffsetRadians: 0.03 } };
+    const content = baseRegistryWith([
+      { source: 'fixture-player', data: { player: [tuning], combatPolicy: [policy] } },
+    ]);
     const runtime = makeRuntime({ content });
     const { session } = runtime;
     const { blockSize } = makeScale(0.5);
@@ -848,7 +851,7 @@ describe('session movement consequences', () => {
       tuning.crouch.speedMetresPerSimSecond * tuning.movement.sidewaysSpeedScale,
     );
     session.aim.recordShot(0, 0.2);
-    expect(Math.abs(session.aim.snapshotState().recoilYaw)).toBeCloseTo(tuning.aim.maxOffsetRadians);
+    expect(Math.abs(session.aim.snapshotState().recoilYaw)).toBeCloseTo(policy.aim.maxOffsetRadians);
     expect(session.aim.pendingViewPitchShift).toBeGreaterThan(0);
   });
 

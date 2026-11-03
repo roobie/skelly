@@ -50,6 +50,15 @@ export const RangedTuningSchema = strictObject({
 export const CombatPolicySchema = strictObject({
   id: Id,
   capability: capabilityField('combatPolicy'),
+  aim: optional(
+    strictObject({
+      moveYawPerSpeed: NonNegative,
+      lookLagPerRadian: NonNegative,
+      lookSettleSimSeconds: PositiveSimSeconds,
+      recoilRecoverySimSeconds: PositiveSimSeconds,
+      maxOffsetRadians: pipe(Positive, maxValue(Math.PI / 2)),
+    }),
+  ),
   firearms: optional(
     strictObject({
       raiseSimSeconds: PositiveSimSeconds,

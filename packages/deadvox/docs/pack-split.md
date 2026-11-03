@@ -180,12 +180,13 @@ valid return path. This shares the field-patch conflict rule in
 `docs/decisions/0007-typed-field-patches.md`, "Conflicts".
 
 **Combat policy is product content.** Engine mechanisms such as aiming, blocking and
-handling do not own a product's sway or penalty policy. Skills modify that policy;
-a product can use it without a skill system. Expert endpoints belong to skills because
+handling do not own a product's sway or penalty policy.
+Aim feel that applies to everyone is product policy, so each product sets its own; input and view controls stay shared.
+Skills modify that policy; a product can use it without a skill system. Expert endpoints belong to skills because
 those are what the skills reach; policy owns the unskilled baseline, so a product
 without skills needs no ceiling. See `src/core/skillTraining.ts`, `firearmsCombatTuning`
-and `meleeCombatTuning`. A core-only validation stack has no modifiers and does not
-imply a playable product.
+and `meleeCombatTuning`; `src/core/aim.ts`, `playerAimTuning`. A core-only validation
+stack has no modifiers and does not imply a playable product.
 
 **Zero skills preserve Body.** The skill list stays empty beside the body/injury
 panel, because hiding the Skills tab would hide health information. See
@@ -221,7 +222,7 @@ scenario identity; see `docs/decisions/0009-content-defined-products.md`,
 
 ## Core-alone validation
 
-Validate a stack of the selected core-tier topics without product skills, actors,
+Validate a stack of the selected core-tier topics without skills, actors,
 weapons or scenario content. It must report zero issues from both
 `src/core/content.ts`, `buildRegistry` and `requiredContentIssues`: registry
 construction can discard broken files, so a registry existing is not proof of

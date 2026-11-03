@@ -6,7 +6,14 @@
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { actionText, fillText } from '../core/actionText.ts';
-import { AimController, type AimWobbleNoiseTuning, aimDirection, breathSteadying, NEUTRAL_AIM } from '../core/aim.ts';
+import {
+  AimController,
+  type AimWobbleNoiseTuning,
+  aimDirection,
+  breathSteadying,
+  NEUTRAL_AIM,
+  playerAimTuning,
+} from '../core/aim.ts';
 import { BearTraps } from '../core/bearTrap.ts';
 import type { BlockBlow } from '../core/blockDamage.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
@@ -277,7 +284,7 @@ const advanceSnipingPractice = ({
 };
 
 const createSessionAim = ({
-  player,
+  registry,
   tuning,
   seed,
   restored,
@@ -285,7 +292,7 @@ const createSessionAim = ({
   wobbleFlatOverride,
   wobbleNoiseScaleOverride,
 }: {
-  player: ReturnType<typeof playerTuning>;
+  registry: Registry;
   tuning: FirearmsCombatTuning;
   seed: number;
   restored: SaveSnapshot | undefined;
@@ -296,7 +303,7 @@ const createSessionAim = ({
   const footstepClock = restored?.character.playerAudio.footstepClock ?? initialFootstepClock();
   const wobbleSeed = Rng.stream(restored?.character.simulation.seed ?? seed, 'player-aim-wobble').int(0, 0xff_ff_ff_ff);
   return new AimController({
-    tuning: player.aim,
+    tuning: playerAimTuning(registry),
     wobbleLimitRadians: tuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: wobbleFlatOverride ?? tuning.wobbleVerticalToHorizontalRatio,
@@ -893,7 +900,7 @@ export const createSession = (options: SessionOptions) => {
       (item) => item && registry.items.get(item.type)?.firearm,
     );
   const aim = createSessionAim({
-    player: Player,
+    registry,
     tuning: currentFirearmsCombatTuning(),
     seed,
     restored,

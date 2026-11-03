@@ -1,6 +1,13 @@
 {
   "combatPolicy": [
     {
+      "aim": {
+        "lookLagPerRadian": 0.035000000000000003,
+        "lookSettleSimSeconds": 0.22,
+        "maxOffsetRadians": 0.12,
+        "moveYawPerSpeed": 0.0044999999999999997,
+        "recoilRecoverySimSeconds": 0.34000000000000002
+      },
       "capability": "player",
       "firearms": {
         "adsAcquisitionMaximumSimSeconds": 0.55000000000000004,

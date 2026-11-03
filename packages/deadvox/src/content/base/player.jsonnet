@@ -26,13 +26,8 @@
     prone: { speedMetresPerSimSecond: 0.5, eyeDropMetres: 1.3, bodyHeightMetres: 0.6 },
     load: { light: 20000, heavy: 40000, slowest: 0.6, handlingScale: 0.5 },
     aim: {
-      moveYawPerSpeed: 0.0045,
       lookSensitivityRadiansPerPixel: 0.0022,
       freeLook: { yawLimitRadians: 1.4, pitchLimitRadians: 0.65, returnRadiansPerRealSecond: 5 },
-      lookLagPerRadian: 0.035,
-      lookSettleSimSeconds: 0.22,
-      recoilRecoverySimSeconds: 0.34,
-      maxOffsetRadians: 0.12,
     },
   }],
 }

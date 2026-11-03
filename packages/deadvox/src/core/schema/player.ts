@@ -49,16 +49,11 @@ export const PlayerSchema = strictObject({
     check(({ light, heavy }) => heavy > light, 'heavy load must exceed light load'),
   ),
   aim: strictObject({
-    moveYawPerSpeed: NonNegative,
     lookSensitivityRadiansPerPixel: Positive,
     freeLook: strictObject({
       yawLimitRadians: pipe(Positive, maxValue(Math.PI)),
       pitchLimitRadians: pipe(Positive, maxValue(Math.PI / 2)),
       returnRadiansPerRealSecond: Positive,
     }),
-    lookLagPerRadian: NonNegative,
-    lookSettleSimSeconds: PositiveSimSeconds,
-    recoilRecoverySimSeconds: PositiveSimSeconds,
-    maxOffsetRadians: pipe(Positive, maxValue(Math.PI / 2)),
   }),
 });

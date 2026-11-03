@@ -18,7 +18,7 @@ import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { PLAYER } from './playerFixture.ts';
+import { AIM, PLAYER } from './playerFixture.ts';
 
 const footstepTuning = BUNDLED_CONTENT.registry.senses.get('player')!.footsteps;
 const stanceTuning = skilledFirearmsTuning(BUNDLED_CONTENT.registry);
@@ -39,7 +39,7 @@ const createAim = (
   verticalToHorizontalRatio = stanceTuning.wobbleVerticalToHorizontalRatio,
 ) =>
   new AimController({
-    tuning: PLAYER.aim,
+    tuning: AIM,
     wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio,
@@ -53,7 +53,7 @@ const createAim = (
   });
 const createNoiseAim = (wobbleNoise: AimWobbleNoiseTuning, variance = 1) =>
   new AimController({
-    tuning: PLAYER.aim,
+    tuning: AIM,
     wobbleLimitRadians: stanceTuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: stanceTuning.wobbleVerticalToHorizontalRatio,
@@ -109,7 +109,7 @@ it('restores and advances saved look offsets at the geometric limit beyond core 
   };
   expect(() => assertAimState(state)).not.toThrow();
   const restored = new AimController({
-    tuning: PLAYER.aim,
+    tuning: AIM,
     state,
     wobbleLimitRadians: 0.2,
     wobbleShape: { verticalToHorizontalRatio: 0.5, archPower: 1, phaseOffsetRadians: 0 },
@@ -128,7 +128,7 @@ it.each(['lookYaw', 'lookPitch'] as const)('refuses impossible saved %s before r
   expect(
     () =>
       new AimController({
-        tuning: PLAYER.aim,
+        tuning: AIM,
         state,
         wobbleLimitRadians: 0.2,
         wobbleShape: { verticalToHorizontalRatio: 0.5, archPower: 1, phaseOffsetRadians: 0 },

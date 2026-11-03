@@ -16,7 +16,7 @@ import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
-import { type MoveIntent, PLAYER, type StanceToggle } from './playerFixture.ts';
+import { AIM, type MoveIntent, type StanceToggle } from './playerFixture.ts';
 
 const registry = baseRegistry();
 const firearmsTuning = skilledFirearmsTuning(registry);
@@ -31,7 +31,7 @@ const aimWith = (sigmaRadiansPerSqrtSecond: number) => {
     smoothingSimSeconds: firearmsTuning.wobbleNoiseSmoothingSimSeconds,
   };
   return new AimController({
-    tuning: PLAYER.aim,
+    tuning: AIM,
     wobbleLimitRadians: firearmsTuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: firearmsTuning.wobbleVerticalToHorizontalRatio,

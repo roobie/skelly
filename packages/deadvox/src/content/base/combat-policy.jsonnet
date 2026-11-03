@@ -2,6 +2,13 @@
   combatPolicy: [{
     id: 'deadvox',
     capability: 'player',
+    aim: {
+      moveYawPerSpeed: 0.0045,
+      lookLagPerRadian: 0.035,
+      lookSettleSimSeconds: 0.22,
+      recoilRecoverySimSeconds: 0.34,
+      maxOffsetRadians: 0.12,
+    },
     firearms: {
       raiseSimSeconds: 0.28 + 0.42,
       adsAcquisitionMaximumSimSeconds: 0.55,
