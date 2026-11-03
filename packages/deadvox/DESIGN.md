@@ -11,7 +11,7 @@ read_if:
   - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
   - you decide how realism should trade off against tedium
   - you change food exposure ownership or ambient catch-up
-  - you change the test-house normal or debug-only boundary, stock, catalogue or pending range conversion
+  - you change the test-house normal or debug-only boundary, range grading, stock or catalogue
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
@@ -1193,11 +1193,12 @@ lists for rack stock and catalogue furniture. Accept an edit per new gun, tool o
 piece, and silent absence until listed, rather than adding runtime synthesis or a
 completeness checker. Authored evaluation saves must require their admitted mod.
 
-Garage stock, rack stock and the furniture catalogue use that mod boundary. Until the
-range grading conversion in PR #1539, range geometry remains a debug-only runtime
-overlay; see `src/game/worldSetup.ts`, `DebugTestHouseSite`. Rack stock belongs to
-`src/config/bundled/test-house-rack.libsonnet`. The boundary and maintenance reasons belong in
-`docs/test-house.md`, "Normal and debug additions", and `docs/test-house.md`, "Garage".
+The range exists only with the debug mod. Its lane sits east of the hill so the
+foundation fits the normal 1 m limit, keeping one grading rule for every row without
+changing the haven's landscape. See `src/config/bundled/test-house-debug.jsonnet`, `layouts`,
+and `src/config/bundled/test-house-range.libsonnet`. The stock boundary and maintenance
+reasons belong in `docs/test-house.md`, "Normal and debug additions", and
+`docs/test-house.md`, "Garage".
 
 ### Loot
 

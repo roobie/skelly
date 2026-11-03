@@ -8,7 +8,7 @@ read_if:
   - you change the liquid-service demonstration's normal-mode boundary or the authored liquid-recovery look
   - you benchmark the test house at a different block scale
   - you change house supply, powered furnishings or player power controls
-  - you add a feature's test prop to the showroom, or change range staging, stock or catalogue admission
+  - you add a feature's test prop to the showroom, or change range grading, staging, stock or catalogue admission
   - you use or change the focus URL parameter
   - you decide whether a temporary repair preview belongs in the showroom
 ---
@@ -25,7 +25,7 @@ explicitly selected debug scenario mod rather than a runtime overlay: no scenari
 or debug check may select it in game logic. Range geometry must be authored templates
 and building rows; catalogue furniture, rack items and garage stock must be hand-kept
 content rather than runtime synthesis. See `src/config/bundled/test-house-debug.jsonnet`,
-`layouts`, for garage stock, rack stock and the hand-kept catalogue. The pending range boundary is in
+`layouts`, and `src/config/bundled/test-house-range.libsonnet`. The admission reason is in
 `docs/test-house.md`, "Normal and debug additions".
 
 The charging corner belongs to the same template and layout sources, rather than a
@@ -93,9 +93,12 @@ Garage evaluation stock requires explicit mod selection, and its saves require t
 admitted mod. A URL selects it through `?mods=` rather than inferring it from the scene or
 debug profile. See `src/config/bundled/test-house-debug.jsonnet`, `layouts`.
 
-Until the range grading conversion in PR #1539, range geometry remains a debug-only
-runtime overlay; the rack already requires the debug scenario mod. See
-`src/game/worldSetup.ts`, `DebugTestHouseSite`.
+The range exists only with the debug scenario mod because it is evaluation space, not
+an ordinary play reward. The lane sits east of the hill so its foundation fits the normal
+1 m limit, keeping one grading rule for every building row without changing the haven's
+landscape. Its authored lot also keeps trees out of the firing corridor. See
+`src/config/bundled/test-house-debug.jsonnet`, `layouts`, and
+`src/config/bundled/test-house-range.libsonnet`.
 
 For the authored rack, accept a list edit per new gun, magazine, ammunition package or mod
 item, and silent absence until listed. That maintenance cost is preferable to retaining
