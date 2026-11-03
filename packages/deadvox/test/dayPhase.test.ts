@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { HordeState } from '../src/core/actorSystem.ts';
+import type { HordeState } from '../src/core/agentHorde.ts';
 import { perceivePlayer } from '../src/core/agentPerception.ts';
 import { SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { requireDayCycle } from '../src/core/content.ts';

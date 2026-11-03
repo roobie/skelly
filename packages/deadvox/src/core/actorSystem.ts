@@ -50,7 +50,6 @@ import {
   actorBodyDimensions,
   copy,
   PLAYER_ARM_REACH_M,
-  projectSnapshot,
   requiredFigureSeeds,
   snapshotActor,
   validActorEventState,
@@ -66,13 +65,12 @@ import {
   validVec3State,
 } from './actorState.ts';
 import { type ActorTickScratch, createActorTickScratch } from './actorTickScratch.ts';
-import { hearVocalNoise } from './agentPerception.ts';
 import type { BodyRegion, DamageKind } from './body.ts';
 import type { MeleeBlocker } from './collision.ts';
 import type { ActorDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { ExposureContact } from './damageExposure.ts';
-import type { DayPhase, DayPhaseState } from './dayPhase.ts';
+import type { DayPhaseState } from './dayPhase.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { advanceActorFootsteps, initialActorFootstepClock } from './footsteps.ts';
 import { carveAround, centralCell, fleshHit, type MissingFlesh, missingFlesh } from './fusedMassCarving.ts';
@@ -93,7 +91,7 @@ import {
   stepBody,
   stepBodyHorizontal,
 } from './physics.ts';
-import { Rng, type RngState } from './random.ts';
+import { Rng } from './random.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { MeleeCharge, SenseDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -107,6 +105,7 @@ export const BACKGROUND_ACTOR_SLICE_RATE = BACKGROUND_ACTOR_RATE * BACKGROUND_AC
 
 import type { PlayerSense } from './actorSense.ts';
 import { AgentController } from './agent.ts';
+import { AgentHorde, type HordeState, snapshotHorde, validHordeSnapshotState } from './agentHorde.ts';
 import { blastShare, bodyCentre, type ExplosiveSpec, inSight } from './explosive.ts';
 import type { PelletShot } from './pellets.ts';
 
@@ -295,37 +294,6 @@ export interface HitImpulse {
 }
 /** At most these three nearest moving shamblers emit footsteps in a simulation tick. */
 const ACTOR_FOOTSTEP_VOICE_CAP = 3;
-
-export interface HordeState {
-  id: string;
-  type: string;
-  home: Vec3;
-  target: Vec3;
-  /** `release` heads for `target` without forgetting it, so an event's horde reaches where it was sent. */
-  mode: 'home' | 'roam' | 'noise' | 'release';
-  roamTimer: number;
-  stimulusAt?: number | undefined;
-  lastNoiseId: number;
-  rng: RngState;
-}
-
-const validHordeSnapshotState = (
-  horde: HordeState,
-  hasHorde: boolean,
-  resolveType: (id: string) => ActorDef | undefined,
-): boolean =>
-  horde.id.length > 0 &&
-  !hasHorde &&
-  resolveType(horde.type) !== undefined &&
-  validVec3State(horde.home) &&
-  validVec3State(horde.target) &&
-  ['home', 'roam', 'noise', 'release'].includes(horde.mode) &&
-  Number.isFinite(horde.roamTimer) &&
-  horde.roamTimer >= 0 &&
-  Number.isSafeInteger(horde.lastNoiseId) &&
-  horde.lastNoiseId >= 0 &&
-  (horde.stimulusAt === undefined || (Number.isFinite(horde.stimulusAt) && horde.stimulusAt >= 0)) &&
-  validRngState(horde.rng);
 
 export interface ActorSystemState {
   nextEntityId: number;
@@ -671,45 +639,6 @@ const canJumpObstacle = ({ body, direction, isSolid, physics, jumpSpeed, blockSi
   return true;
 };
 
-const hordeSnapshotFields = [
-  'id',
-  'type',
-  'home',
-  'target',
-  'mode',
-  'roamTimer',
-  'stimulusAt',
-  'lastNoiseId',
-  'rng',
-] as const satisfies readonly (keyof HordeState)[];
-type HordeSnapshotField = (typeof hordeSnapshotFields)[number];
-type HordeSnapshot = Pick<HordeState, HordeSnapshotField> &
-  Record<Exclude<keyof HordeState, HordeSnapshotField>, never>;
-
-interface HordeSnapshotInput {
-  readonly horde: Omit<HordeState, 'rng'>;
-  readonly rng: Rng;
-}
-
-type HordeSnapshotProjectors = {
-  [K in HordeSnapshotField]-?: (input: HordeSnapshotInput) => HordeSnapshot[K];
-} & Record<Exclude<keyof HordeState, HordeSnapshotField>, never>;
-
-const hordeSnapshotProjectors = {
-  id: ({ horde }) => horde.id,
-  type: ({ horde }) => horde.type,
-  home: ({ horde }) => [...horde.home],
-  target: ({ horde }) => [...horde.target],
-  mode: ({ horde }) => horde.mode,
-  roamTimer: ({ horde }) => horde.roamTimer,
-  stimulusAt: ({ horde }) => horde.stimulusAt,
-  lastNoiseId: ({ horde }) => horde.lastNoiseId,
-  rng: ({ rng }) => [...rng.state()] as RngState,
-} satisfies HordeSnapshotProjectors;
-
-const snapshotHorde = (horde: Omit<HordeState, 'rng'>, rng: Rng): HordeSnapshot =>
-  projectSnapshot({ horde, rng }, hordeSnapshotProjectors) as HordeSnapshot;
-
 /** The nearest region a ray strikes, and for an amalgam the flesh cell. */
 interface RegionHit {
   readonly id: EntityId;
@@ -732,6 +661,8 @@ interface FusedMassCollider {
 }
 
 export class ActorSystem {
+  private readonly agentHorde: AgentHorde;
+
   private readonly agent: AgentController;
 
   readonly store: EntityStore<Actor>;
@@ -748,7 +679,6 @@ export class ActorSystem {
     return this.globs.map(({ state }) => state);
   }
   private readonly tickScratch = createActorTickScratch();
-  private readonly hordes = new Map<string, { state: Omit<HordeState, 'rng'>; rng: Rng }>();
   private frozen = false;
   private readonly solidBricks: SolidBricks;
   /** Per body: its amalgam's shape and the last facing it turned to without meeting terrain; null otherwise. */
@@ -765,14 +695,15 @@ export class ActorSystem {
     this.store = options.store ?? new MapEntityStore<Actor>();
     this.solidBricks = options.solidBricks ?? testedBricks(options.isSolid);
 
-    this.agent = new AgentController(
-      this.options,
-      this.tickScratch,
-      this.store,
-      (actor) => this.beginIdle(actor),
-      (actor) => this.beginSearch(actor),
-      (actor) => this.hordeTarget(actor),
-    );
+    this.agentHorde = new AgentHorde(this.options, this.store);
+    this.agent = new AgentController({
+      options: this.options,
+      tickScratch: this.tickScratch,
+      store: this.store,
+      beginIdle: (actor) => this.beginIdle(actor),
+      beginSearch: (actor) => this.beginSearch(actor),
+      hordeTarget: (actor) => this.agentHorde.hordeTarget(actor),
+    });
   }
 
   /** The amalgam's flesh as its body's shape, turned to its facing; every other body moves as its box. */
@@ -912,7 +843,7 @@ export class ActorSystem {
       nextEntityId: this.store.nextId,
       nextPuddleId: this.nextPuddleId,
       actors: [...this.store.entries()].map(([id, actor]) => snapshotActor(id, actor)),
-      hordes: [...this.hordes.values()].map(({ state: horde, rng }) => snapshotHorde(horde, rng)),
+      hordes: [...this.agentHorde.hordes.values()].map(({ state: horde, rng }) => snapshotHorde(horde, rng)),
       acidGlobs: this.globs.map(({ state }) => ({ ...state, pos: [...state.pos], velocity: [...state.velocity] })),
       acidPuddles: this.puddles.map(({ state }) => ({ ...state, pos: [...state.pos] })),
     });
@@ -1089,12 +1020,12 @@ export class ActorSystem {
     this.globs = globs;
     this.puddles = puddles;
     this.nextPuddleId = state.nextPuddleId;
-    this.hordes.clear();
+    this.agentHorde.hordes.clear();
     for (const horde of state.hordes ?? []) {
-      if (!validHordeSnapshotState(horde, this.hordes.has(horde.id), resolveType)) {
+      if (!validHordeSnapshotState(horde, this.agentHorde.hordes.has(horde.id), resolveType)) {
         throw new Error(`Invalid horde state ${horde.id}`);
       }
-      this.hordes.set(horde.id, {
+      this.agentHorde.hordes.set(horde.id, {
         state: {
           id: horde.id,
           type: horde.type,
@@ -1110,7 +1041,7 @@ export class ActorSystem {
     }
     for (const [, actor] of this.store.entries()) {
       if (actor.hordeId !== undefined) {
-        const horde = this.hordes.get(actor.hordeId)?.state;
+        const horde = this.agentHorde.hordes.get(actor.hordeId)?.state;
         if (!horde || horde.type !== actor.type.id) {
           throw new Error(`Missing or mismatched horde ${actor.hordeId} for zombie`);
         }
@@ -1322,7 +1253,13 @@ export class ActorSystem {
   }
 
   addHorde(id: string, type: ActorDef, center: Vec3, count: number): void {
-    if (!id || this.hordes.has(id) || !Number.isSafeInteger(count) || count < 1 || !center.every(Number.isFinite)) {
+    if (
+      !id ||
+      this.agentHorde.hordes.has(id) ||
+      !Number.isSafeInteger(count) ||
+      count < 1 ||
+      !center.every(Number.isFinite)
+    ) {
       throw new Error(`Invalid or duplicate horde ${id}`);
     }
     const state = {
@@ -1335,7 +1272,7 @@ export class ActorSystem {
       lastNoiseId: 0,
     };
     const rng = Rng.stream(this.options.seed ?? 0, `horde:${id}`);
-    this.hordes.set(id, { state, rng });
+    this.agentHorde.hordes.set(id, { state, rng });
     const { innerMetres, stepMetres } = type.hordeSpacing;
     for (let index = 0; index < count; index++) {
       const angle = index * Math.PI * (3 - Math.sqrt(5));
@@ -1357,7 +1294,7 @@ export class ActorSystem {
   /** A horde sent from `center` to `target`, which also becomes its home once it arrives. */
   releaseHorde(id: string, type: ActorDef, { center, count, target }: { center: Vec3; count: number; target: Vec3 }) {
     this.addHorde(id, type, center, count);
-    const horde = this.hordes.get(id)!.state;
+    const horde = this.agentHorde.hordes.get(id)!.state;
     horde.home = copy(target);
     horde.target = copy(target);
     horde.mode = 'release';
@@ -1391,98 +1328,6 @@ export class ActorSystem {
     return entries;
   }
 
-  private hordeCenter(id: string): Vec3 | undefined {
-    const members = [...this.store.entries()].flatMap(([, actor]) => (actor.hordeId === id ? [actor] : []));
-    if (members.length === 0) {
-      return undefined;
-    }
-    return members.reduce<Vec3>(
-      (sum, actor) => [
-        sum[0] + actor.body.pos[0] / members.length,
-        sum[1] + actor.body.pos[1] / members.length,
-        sum[2] + actor.body.pos[2] / members.length,
-      ],
-      [0, 0, 0],
-    );
-  }
-
-  private hordeTarget(actor: Actor): Vec3 | undefined {
-    if (actor.hordeId === undefined || actor.hordeOffset === undefined) {
-      return undefined;
-    }
-    const horde = this.hordes.get(actor.hordeId)?.state;
-    return horde
-      ? [
-          horde.target[0] + actor.hordeOffset[0],
-          horde.target[1] + actor.hordeOffset[1],
-          horde.target[2] + actor.hordeOffset[2],
-        ]
-      : undefined;
-  }
-
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep ordered noise, arrival, and night-roam transitions together as one horde state machine.
-  private updateHordes(dt: number, time: number, player: PlayerSense, dayPhase: DayPhase): void {
-    const { blockSize } = this.options;
-    const isSolid = this.options.isSoundBlocking ?? this.options.isSolid;
-    for (const { state: horde, rng } of this.hordes.values()) {
-      const center = this.hordeCenter(horde.id);
-      const member = [...this.store.entries()].find(([, actor]) => actor.hordeId === horde.id)?.[1];
-      if (!(center && member)) {
-        continue;
-      }
-      const noise = player.vocalNoise;
-      if (noise && noise.id !== horde.lastNoiseId) {
-        horde.lastNoiseId = noise.id;
-        const heard = hearVocalNoise({
-          def: member.type,
-          from: center,
-          noise,
-          time,
-          blockSize,
-          isSolid,
-          rng,
-          tuning: this.options.tuning,
-        });
-        if (heard) {
-          horde.target = copy(heard.target);
-          horde.mode = 'noise';
-          horde.stimulusAt = time;
-        }
-      }
-      const night = dayPhase !== 'day';
-      const arrived = horizontalDistance(center, horde.target) * blockSize <= 3;
-      if (
-        horde.mode === 'noise' &&
-        horde.stimulusAt !== undefined &&
-        time - horde.stimulusAt >= member.type.stimulusMemorySimSeconds
-      ) {
-        horde.mode = night ? 'roam' : 'home';
-        horde.stimulusAt = undefined;
-        horde.roamTimer = 0;
-      }
-      if ((horde.mode === 'noise' || horde.mode === 'release') && arrived) {
-        horde.mode = night ? 'roam' : 'home';
-        horde.stimulusAt = undefined;
-        horde.roamTimer = 0;
-      }
-      const driven = horde.mode === 'noise' || horde.mode === 'release';
-      if (!(night || driven)) {
-        horde.mode = 'home';
-        horde.target = copy(horde.home);
-        horde.roamTimer = 0;
-      } else if (night && !driven) {
-        horde.roamTimer -= dt;
-        if (horde.mode !== 'roam' || horde.roamTimer <= 0 || arrived) {
-          const angle = rng.range(-Math.PI, Math.PI);
-          const distance = rng.range(12, 20) / blockSize;
-          horde.target = [center[0] + Math.cos(angle) * distance, center[1], center[2] + Math.sin(angle) * distance];
-          horde.mode = 'roam';
-          horde.roamTimer = rng.range(16, 28);
-        }
-      }
-    }
-  }
-
   /** Advances one deterministic slice of distant actors; scheduler ticks every slice, each actor every half-second. */
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep per-actor perception, target selection, and bounded collision step together.
   tickBackground(dt: number, time: number, sliceIndex = 0, sliceCount = 1): void {
@@ -1492,7 +1337,7 @@ export class ActorSystem {
     const player = this.options.player();
     const dayState = this.options.dayPhase();
     if (sliceIndex === 0) {
-      this.updateHordes(dt, time, player, dayState.phase);
+      this.agentHorde.updateHordes(dt, time, player, dayState.phase);
     }
     const { blockSize, isSolid } = this.options;
     const physics = { ...this.options.physics, obstacles: player.body ? [player.body] : [], shapeOf: this.shapeOf };
@@ -1534,7 +1379,7 @@ export class ActorSystem {
       scratch.pos = actor.body.pos;
       scratch.type = actor.type;
       scratch.rng = actor.behaviorRng;
-      let target = actor.mode === 'hesitate' ? undefined : (this.hordeTarget(actor) ?? actor.lastPerceived);
+      let target = actor.mode === 'hesitate' ? undefined : (this.agentHorde.hordeTarget(actor) ?? actor.lastPerceived);
       scratch.sees = actor.mode === 'chase';
       if (scratch.sees) {
         target = player.pos;

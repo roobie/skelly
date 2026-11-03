@@ -23,14 +23,21 @@ export class AgentController {
   private readonly beginIdle: (actor: Actor) => void;
   private readonly beginSearch: (actor: Actor) => void;
   private readonly hordeTarget: (actor: Actor) => Vec3 | undefined;
-  constructor(
-    options: AgentController['options'],
-    tickScratch: ActorTickScratch,
-    store: EntityStore<Actor>,
-    beginIdle: AgentController['beginIdle'],
-    beginSearch: AgentController['beginSearch'],
-    hordeTarget: AgentController['hordeTarget'],
-  ) {
+  constructor({
+    options,
+    tickScratch,
+    store,
+    beginIdle,
+    beginSearch,
+    hordeTarget,
+  }: {
+    options: AgentController['options'];
+    tickScratch: ActorTickScratch;
+    store: EntityStore<Actor>;
+    beginIdle: AgentController['beginIdle'];
+    beginSearch: AgentController['beginSearch'];
+    hordeTarget: AgentController['hordeTarget'];
+  }) {
     this.options = options;
     this.tickScratch = tickScratch;
     this.store = store;

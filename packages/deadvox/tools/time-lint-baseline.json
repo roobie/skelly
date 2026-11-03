@@ -170,13 +170,16 @@
       "lurchDuration": 1,
       "lurchElapsed": 1,
       "modeTimer": 1,
-      "roamTimer": 4,
+      "roamTimer": 2,
       "searchTimer": 1,
       "spitWindup": 1,
       "stumbleDuration": 1,
       "stumbleElapsed": 1,
       "swayDuration": 1,
       "swayElapsed": 1
+    },
+    "core/agentHorde.ts": {
+      "roamTimer": 2
     },
     "core/agentPerception.ts": {
       "time": 1

@@ -3039,6 +3039,11 @@ worse the world gets.
 
 ### Senses and AI
 
+Shared phase scratch lives apart from body primitives because its decision contracts
+must not pull decision imports into those primitives. Neutral player-sense contracts
+have their own leaf for the same reason. See `src/core/actorTickScratch.ts`,
+`ActorTickScratch`; `src/core/actorSense.ts`, `PlayerSense`; and `src/core/actorMotion.ts`, `steer`.
+
 Occlusion cannot make a target beyond the maximum detection range detectable.
 Reject those targets before querying terrain, rather than reducing AI cadence or
 changing attention rules to handle dense crowds. The bound must include far
@@ -3046,22 +3051,14 @@ hearing and carried-light reach; nearer targets still use ordinary occlusion and
 crouch rules. See `src/core/agentPerception.ts`, `hearingTier`, `hearVocalNoise` and
 `seesPlayer`.
 
-- **Senses:** sight (a view cone and range, blended smoothly from day range to
-  night range through twilight and reduced when you crouch), hearing (noise events)
-  and smell (a trail the player leaves, which rain washes out). The base pack's
-  day cycle applies to every site; its late-June, mid-latitude cycle with nautical
-  twilight gives long daylight without modeling seasonal change. The day cycle is
-  required content with no code default, so a pack without one fails to load rather
-  than silently playing under a hidden sun. See
-  `src/content/base/dayCycle.json`, `dayCycle`, for its authored settings, sky
-  looks and weather fog included (`docs/content.md`, "Day cycle"). Sky,
-  sight blending, horde roaming and named spawn windows follow solar boundaries
-  rather than fixed clock hours. Hordes roam from sunset through dawn
-  until sunrise, and spawn words resolve from those same boundaries. Terrain height
-  alone should not end a clear pursuit; sight over a rise is bounded by occlusion,
-  not by spending range on vertical distance.
-  See `src/core/dayPhase.ts`, `dayPhaseAt`; `src/core/agentPerception.ts`, `seesPlayer`
-  and `ActorSystem.updateHordes`; and `src/core/clock.ts`, `resolveSpawnTime`.
+- **Senses:** The base pack's late-June, mid-latitude day cycle gives long daylight
+  without modeling seasonal change. A missing day cycle must fail admission rather
+  than silently playing under a hidden sun. Solar boundaries, not fixed clock hours,
+  should govern sight, roaming and named spawn windows. Terrain height alone should
+  not end a clear pursuit: occlusion, not vertical range cost, bounds sight over a rise.
+  See `src/content/base/dayCycle.json`, `dayCycle`; `docs/content.md`, "Day cycle";
+  `src/core/dayPhase.ts`, `dayPhaseAt`; `src/core/agentPerception.ts`, `seesPlayer`;
+  `src/core/agentHorde.ts`, `AgentHorde.updateHordes`; and `src/core/clock.ts`, `resolveSpawnTime`.
 - Shamblers must keep approaching without route planning: ordinary collision, jumping and seeded obstacle reactions provide local movement rather than knowledge of a route. See `src/core/actorSystem.ts`, `ActorSystem.tick` and `openWanderHeadings`; tuning belongs to `src/content/base/zombies.jsonnet`.
 - Shamblers do not gain stair knowledge from an attention target on another floor.
 - For #281, visible prey suppresses obstacle wandering so local avoidance does not distract a shambler from an exposed target. See `src/core/agentPerception.ts`, `seesPlayer`; and `src/core/actorSystem.ts`, `ActorSystem.tick`.
@@ -3071,8 +3068,8 @@ crouch rules. See `src/core/agentPerception.ts`, `hearingTier`, `hearVocalNoise`
 - **Shared interest:** Searching and returning bodies already act on their own memory, so recruiting them would re-arm echoes. Sharing the target and its uncertainty keeps listeners interested in the stimulus rather than the caller. The cry cooldown limits cries rather than interest, preventing ping-pong without hop damping. Persisting the last cry prevents loading from restarting the echo. Draining calls before movement prevents entity order from delaying listeners, and pending calls must not enter saves. See `src/core/agent.ts`, `AgentController.cryAlert`, `AgentController.announcePursuit` and `AgentController.processChainStimuli`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
 - **Attention and attacks:** Sight and hearing remain the authorities for choosing targets, so interest chaining must not replace visible prey. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `src/core/agentPerception.ts`, `seesPlayer` and `farBearingTarget`; and `src/core/actorMotion.ts`, `withinAttackReach`.
 - **Background steps:** Background zombies beeline in big, cheap steps. Each type's content caps how far one step moves it, because that cap, not the chase speed, sets how fast a fast type closes in while unseen. The background tick rate stays in code: it is the scheduler's cadence, saved with its phase, so it is engine timing rather than tuning. See `src/core/schema/actors.ts`, `ActorSchema`, and `src/core/actorSystem.ts`, `ActorSystem.tickBackground`.
-- **Distant attention and noise persistence:** A horde retains a heard noise target until it arrives or forgets it; its sun-derived preference for home or roaming does not replace an active noise target. Once the target ends, the horde roams only from sunset to sunrise. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/actorSystem.ts`, `ActorSystem.updateHordes` and `ActorSystem.tickBackground`.
-- **Stimulus memory:** Individual zombies and hordes forget unreachable stimuli after the shared content duration. The stimulus timestamp is saved so loading does not restart the wait. Whether this duration should use real time or game time remains open for BR's decision; the current simulation-seconds behavior is not a settled design choice. A horde resumes the sun-derived roam or home behavior after forgetting. See `src/core/schema/actors.ts`, `ActorSchema`, and `src/core/actorSystem.ts`, `ActorSystem.updateHordes`.
+- **Distant attention and noise persistence:** Solar preference must not replace an active noise target. Distance alone must not make an unseen zombie pursue the player. See `src/core/agentHorde.ts`, `AgentHorde.updateHordes`; and `src/core/actorSystem.ts`, `ActorSystem.tickBackground`.
+- **Stimulus memory:** Unreachable stimuli must not hold attention forever, and loading must not restart the wait. The choice between real time and game time remains open for BR's decision. See `src/core/schema/actors.ts`, `ActorSchema`; `src/core/agent.ts`, `AgentController.forgetIndividualStimulus`; and `src/core/agentHorde.ts`, `AgentHorde.updateHordes`.
 - **Background cadence persistence:** Save/load resumes the background scheduler's actor phase so a mid-cycle save does not reorder attention and movement updates. See `zombie-background` in `src/game/session.ts`.
 
 - **Level of detail:**
