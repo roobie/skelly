@@ -3,7 +3,7 @@ read_if:
   - you change SkellyEngine's boundary, product entry packs or shared content ownership
   - you classify mods, choose their ids or combine a theme with a product
   - you change remote mod intake, product save separation or the framework refactor gate
-  - you name reusable mechanisms, descriptive actor body plans or content-selected providers
+  - you name reusable mechanisms, runtime storage and build contracts, descriptive actor body plans or content-selected providers
   - you change scenario guidance, observations, staging or authored start admission
   - you change attempt recording or snapshot diagnostics
 ---
@@ -166,6 +166,10 @@ and restricted CEL rules remain governed by `docs/decisions/0004-content-languag
 "Mod rules".
 
 ## Vocabulary
+
+Runtime storage, build contracts and diagnostic names use Skelly rather than a
+product's name so other products inherit no Deadvox vocabulary; renaming browser
+stores has no fallback or migration under `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility".
 
 Use Actor for a body and its state, and Agent only for the part that decides. A
 setting's name in engine code ties the engine to one product; these roles keep the

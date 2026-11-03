@@ -1,7 +1,7 @@
 ---
 read_if:
   - you change Deadvox browser CI partition, aggregate requirements, or browser launch source
-  - you investigate or reinstate a quarantined browser case
+  - you investigate or reinstate a quarantined browser case or rename its environment gate
   - you change how the Deadvox unit suite is split across CI jobs or the bound on a shard
 ---
 
@@ -47,7 +47,7 @@ snapshot on both sides of the stalling step, because a bare timeout cannot tell 
 discovery or write from a missing launcher. #749 (the gauntlet win checkpoint never reaches
 saved) reports this in the `save-other` shard. #670 (the second weathering page never
 enables `#go`) reports it only when the quarantined subflow runs with
-`DEADVOX_FIREFOX_UI_WEATHERING_TEST=1`, because no CI shard reaches it. Both issues stay
+`SKELLY_FIREFOX_UI_WEATHERING_TEST=1`, because no CI shard reaches it. Both issues stay
 open as the owners. See `packages/deadvox/test/browser/save-lock-diagnostics.mjs`,
 `saveLockSnapshot`.
 
