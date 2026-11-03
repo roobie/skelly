@@ -96,7 +96,7 @@ const buildRegionBoxes = (
   ) as unknown as Record<HumanoidHitRegion, readonly BoneVoxelBox[]>;
 
 /** Realizes a seeded mobgen template once; model and input seed are the persistent selection key. */
-export const actorFigure = (model: string, seed: number): HumanoidFigure => {
+export const templateFigure = (model: string, seed: number): HumanoidFigure => {
   const key = `${model}:${seed}`;
   const cached = cache.get(key);
   if (cached) {
@@ -128,4 +128,5 @@ export const actorFigure = (model: string, seed: number): HumanoidFigure => {
   return figure;
 };
 
-export const humanoidFigure = (seed: number): HumanoidFigure => actorFigure('humanoid', seed);
+/** Exact seeds are the known-valid baseline for fixtures and the renderer, so no seed substitution is allowed. */
+export const humanoidFigure = (seed: number): HumanoidFigure => templateFigure('humanoid', seed);

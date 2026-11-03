@@ -10,7 +10,7 @@ import { crawlerGaitPose, crawlerHitPose, groundCrawlerPose } from '@mobgen/mob/
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
-import { type HumanoidFigure, actorFigure as humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
+import { type HumanoidFigure, templateFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle.ts';
 import { LOOK_AT_PROFILES } from '@mobgen/mob/lookAtProfiles.ts';
 import { flinchClipFor, flinchPoseWithClip, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
@@ -73,7 +73,7 @@ export const zombieCrawls = (zombie: Zombie): boolean => {
   if (zombie.severed.length === 0) {
     return false;
   }
-  const { severableParts } = humanoidFigure(bodyPlanModel(figureVariantOf(zombie.type)), zombie.figureSeed);
+  const { severableParts } = templateFigure(bodyPlanModel(figureVariantOf(zombie.type)), zombie.figureSeed);
   return [...severableParts.leftLeg, ...severableParts.rightLeg].some((part) => zombie.severed.includes(part));
 };
 
@@ -157,7 +157,7 @@ const actorForSeed = (model: string, seed: number): SeededActor => {
   const key = `${model}:${seed}`;
   let actor = actorCache.get(key);
   if (!actor) {
-    actor = actorForFigure(humanoidFigure(model, seed));
+    actor = actorForFigure(templateFigure(model, seed));
     actorCache.set(key, actor);
   }
   return actor;
@@ -382,7 +382,7 @@ export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
   if (model === 'amalgam') {
     return posedAmalgam(input);
   }
-  const figure = humanoidFigure(model, input.seed);
+  const figure = templateFigure(model, input.seed);
   if (model === 'acid') {
     return posedAcid(input, figure);
   }

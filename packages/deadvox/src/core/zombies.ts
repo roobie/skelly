@@ -1,5 +1,5 @@
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
-import { actorFigure as humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
+import { templateFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { type AcidGlobState, advanceAcidGlob } from './acidGlob.ts';
 import { type AcidPuddleState, feetInAcidPuddle } from './acidPuddle.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
@@ -976,7 +976,7 @@ const holdSpitGround = (scratch: ZombieTickScratch, toward: Vec3): void => {
 // parts; a destroyed region cuts at its top part; the head has its own headOnKillChance roll.
 
 const cutsFor = (zombie: Zombie) => {
-  const figure = humanoidFigure(bodyPlanModel(figureVariantOf(zombie.type)), zombie.figureSeed);
+  const figure = templateFigure(bodyPlanModel(figureVariantOf(zombie.type)), zombie.figureSeed);
   return { parts: figure.severableParts, bones: figure.realized.body.bones };
 };
 

@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { cellIndex, worldPosition } from '../src/core/voxelize.ts';
 import { acidTemplate } from '../src/mob/acidTemplate.ts';
 import {
-  actorFigure,
   type BoneVoxelBox,
   type HumanoidFigure,
   type HumanoidHitRegion,
   humanoidFigure,
+  templateFigure,
 } from '../src/mob/humanoidFigure.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 
@@ -81,7 +81,7 @@ describe('shared humanoid hit-region figures', () => {
     )) {
       const realized = FIXTURE_SEEDS.flatMap((seed) => {
         try {
-          return [{ seed, figure: actorFigure(name, seed) }];
+          return [{ seed, figure: templateFigure(name, seed) }];
         } catch {
           return [];
         }

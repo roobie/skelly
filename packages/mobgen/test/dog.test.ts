@@ -10,7 +10,7 @@ import { crowdTextureLayout, isSeveredInMask, packSeveredMask } from '../src/mob
 import { severedBoneSet } from '../src/mob/dismember.ts';
 import { dogGaitPose, dogHitPose, dogPawBones, dogPose, dogStrideLength } from '../src/mob/dog.ts';
 import { dogTemplate } from '../src/mob/dogTemplate.ts';
-import { actorFigure } from '../src/mob/humanoidFigure.ts';
+import { templateFigure } from '../src/mob/humanoidFigure.ts';
 import { HIT_FLINCH } from '../src/mob/reactions.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 import { sweepGroup } from './sweeps.ts';
@@ -93,8 +93,8 @@ describe('dog shambler', () => {
   });
 
   it('is refused by the consumer that hands figures to deadvox', () => {
-    // The tag is what refuses it, not the model name: `actorFigure` is deadvox's selection boundary.
-    expect(() => actorFigure('dog', 1)).toThrowError('comparison-only');
+    // The tag is what refuses it, not the model name: `templateFigure` is deadvox's selection boundary.
+    expect(() => templateFigure('dog', 1)).toThrowError('comparison-only');
   });
 
   it('is refused by the export CLI before it can write a genome', () => {
