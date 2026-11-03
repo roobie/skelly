@@ -13,7 +13,6 @@ import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
-import { measureMainFirstMesh } from './sky-main-arrival.mjs';
 import { skySelectionProof } from './sky-selection.mjs';
 import { initializeSkyTiming, skyTimingPlugin, summarizeSkyTiming } from './sky-timing.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -172,17 +171,6 @@ try {
   );
   // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
   const viewport = isLightingMode ? { width: 1280, height: 800 } : { width: 640, height: 400 };
-  if (mode === 'camo') {
-    await timePhase('main-first-mesh-reference', () =>
-      measureMainFirstMesh(browser, {
-        root,
-        artifacts,
-        viewport,
-        fixtureTransform: vite.config.plugins.find((plugin) => plugin.name === 'stairs-test-observation').transform,
-        eventPath: process.env.GITHUB_EVENT_PATH,
-      }),
-    );
-  }
   page = await browser.newPage({ viewport });
   const errors = [];
   const states = [];
