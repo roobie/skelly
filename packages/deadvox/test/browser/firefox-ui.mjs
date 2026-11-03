@@ -308,8 +308,8 @@ try {
   const drawnModel = (typeId) => {
     const { session, view, figureVariantOf } = globalThis.firefoxUiTest;
     for (const [id, actor] of session.actors.store.entries()) {
-      const state = actor.type.id === typeId && view.zombieMeshes.states?.get(id);
-      const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
+      const state = actor.type.id === typeId && view.actorMeshes.states?.get(id);
+      const variant = state && view.actorMeshes.variants?.[state.variantIndex];
       if (variant?.model === figureVariantOf(actor.type) && variant.mesh.count > 0) {
         return variant.model;
       }
@@ -340,13 +340,13 @@ try {
       const [found] = [...session.actors.store.entries()]
         .filter(([, actor]) => actor.type.id === 'acid_zombie')
         .sort((a, b) => away(a) - away(b));
-      const state = found && view.zombieMeshes.states?.get(found[0]);
-      const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
+      const state = found && view.actorMeshes.states?.get(found[0]);
+      const variant = state && view.actorMeshes.variants?.[state.variantIndex];
       const body = found?.[1].type.acidBody;
       const lit = view.lightPool.lights.some(
         (light) => light.color.getHexString() === body?.color.slice(1) && light.distance === body?.light.radiusMetres,
       );
-      const sac = found && view.zombieMeshes.boneMatrix(found[0], 'sac.0');
+      const sac = found && view.actorMeshes.boneMatrix(found[0], 'sac.0');
       return variant?.model === 'acid' &&
         variant.mesh.count > 0 &&
         lit &&
@@ -397,7 +397,7 @@ try {
     (id) => {
       const { view } = globalThis.firefoxUiTest;
       return (
-        view.zombieMeshes.boneMatrix(id, 'sac.0')?.every((value) => value === 0) &&
+        view.actorMeshes.boneMatrix(id, 'sac.0')?.every((value) => value === 0) &&
         view.acidEffects.dropletCount() >=
           globalThis.firefoxUiTest.registry.actors.get('acid_zombie').acidBody.deathSplash.droplets
       );

@@ -395,7 +395,7 @@ const renderedHead = (renderer: MobActorMeshes, id: number): { readonly forward:
 
 describe('facing convention', () => {
   it('renders a +X-facing zombie with its local forward along +X in world', () => {
-    const renderer = new MobActorMeshes(0.5, 1, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 1, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
       const id = store.add(makeActor([0, 0, 0], [1, 0, 0]));
@@ -450,7 +450,7 @@ describe('MobActorMeshes', () => {
   it('queues exact pose texture contents through admission, offscreen movement, severing, death and row reuse', () => {
     const canvas = new EventTarget() as HTMLCanvasElement;
     const renderer = new MobActorMeshes(0.5, 3, {
-      zombies: registry.actors,
+      actors: registry.actors,
       poolSize: 1,
       canvas,
     });
@@ -505,9 +505,9 @@ describe('MobActorMeshes', () => {
       renderer.sync(store, 1 / 60);
       upload();
       expect(uploaded).not.toEqual(before);
-      renderer.zombieSevered(id, 'hand.L', undefined, actor);
+      renderer.actorSevered(id, 'hand.L', undefined, actor);
       expect(debris.size).toBeGreaterThan(0);
-      renderer.zombieDied(id, actor);
+      renderer.actorDied(id, actor);
       expect(corpses.has(id)).toBe(true);
       const releasedRows = new Set([...corpses.values(), ...debris.values()].map(({ globalRow }) => globalRow));
       store.remove(id);
@@ -538,7 +538,7 @@ describe('MobActorMeshes', () => {
   it('uses terrain reveal membership for detailed and box actors without removing their presentation state', () => {
     const terrain = new ChunkMeshes(0.5, registry);
     const renderer = new MobActorMeshes(0.5, 1, {
-      zombies: registry.actors,
+      actors: registry.actors,
       poolSize: 1,
       reveal: terrain,
     });
@@ -574,7 +574,7 @@ describe('MobActorMeshes', () => {
   });
 
   it('reposes a runner that reuses an offscreen variant slot before it can draw', () => {
-    const renderer = new MobActorMeshes(0.5, 1, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 1, { actors: registry.actors, poolSize: 1 });
     try {
       const camera = new PerspectiveCamera(55, 1, 0.01, 50);
       camera.position.set(0, 1.6, 0);
@@ -610,7 +610,7 @@ describe('MobActorMeshes', () => {
   });
 
   it('tracks the player with every live model without mutating zombie simulation state', () => {
-    const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 1 });
     try {
       const camera = new PerspectiveCamera(55, 1, 0.01, 50);
       camera.position.set(0.6, 1.6, 0);
@@ -661,7 +661,7 @@ describe('MobActorMeshes', () => {
     const effects = new AcidEffects(0.5, WORLD_GRAVITY, 1);
     const bursts: Vec3[] = [];
     const renderer = new MobActorMeshes(0.5, 2, {
-      zombies: registry.actors,
+      actors: registry.actors,
       poolSize: 1,
       onBurst: (position, actor) => {
         bursts.push(position);
@@ -682,7 +682,7 @@ describe('MobActorMeshes', () => {
       expect(dripped).toBeGreaterThan(0);
 
       store.remove(id);
-      renderer.zombieDied(id, actor);
+      renderer.actorDied(id, actor);
       expect(bursts).toHaveLength(1);
       const [x, y, z] = bursts[0]!;
       expect(Math.hypot(x - actor.body.pos[0] * 0.5, z - actor.body.pos[2] * 0.5)).toBeLessThan(1);
@@ -698,7 +698,7 @@ describe('MobActorMeshes', () => {
   });
 
   it('eases gaze back to the simulation pose when the zombie loses sight', () => {
-    const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 2, { actors: registry.actors, poolSize: 1 });
     try {
       const camera = new PerspectiveCamera(55, 1, 0.01, 50);
       camera.position.set(0.6, 1.6, 0);
@@ -733,7 +733,7 @@ describe('MobActorMeshes', () => {
   });
 
   it('aims at a recent near stimulus with deterministic jitter, then eases when two perception updates pass', () => {
-    const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 2, { actors: registry.actors, poolSize: 1 });
     try {
       const camera = new PerspectiveCamera(55, 1, 0.01, 50);
       camera.position.set(-2.5, 1.6, -2);
@@ -799,7 +799,7 @@ describe('MobActorMeshes', () => {
   });
 
   it('keeps far investigations and horde targets from driving gaze', () => {
-    const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 2, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
       const entries = [undefined, 'horde-test'].map((hordeId, index) => {
@@ -843,7 +843,7 @@ describe('MobActorMeshes', () => {
   });
 
   it('aims chase gaze at the simulated body eyes instead of a spectator camera', () => {
-    const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 2, { actors: registry.actors, poolSize: 1 });
     try {
       const camera = new PerspectiveCamera(55, 1, 0.01, 50);
       camera.position.set(-2.5, 1.6, -2);
@@ -899,7 +899,7 @@ describe('MobActorMeshes', () => {
   });
 
   it('does not track after the zombie dies', () => {
-    const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 2, { actors: registry.actors, poolSize: 1 });
     try {
       const camera = new PerspectiveCamera(55, 1, 0.01, 50);
       camera.position.set(0.6, 1.6, 0);
@@ -913,7 +913,7 @@ describe('MobActorMeshes', () => {
       const damage = incapacitate(actor);
       expect(damage.system.finishDowned(damage.id, true)).toBeUndefined();
       expect(actor.regions.head).toBe(0);
-      renderer.zombieDied(id, actor, [0, 0, 0]);
+      renderer.actorDied(id, actor, [0, 0, 0]);
       const corpse = (renderer as unknown as { corpses: Map<number, { basePose: unknown }> }).corpses.get(id)!;
       const frozenPose = structuredClone(corpse.basePose);
       camera.position.set(-2, 1.8, 1);
@@ -928,7 +928,7 @@ describe('MobActorMeshes', () => {
   });
 
   it('matches the simulation hit boxes to every renderer bone matrix within 1 mm across covering poses', () => {
-    const renderer = new MobActorMeshes(0.5, 8, { zombies: new Map([[SHAMBLER.id, SHAMBLER]]) });
+    const renderer = new MobActorMeshes(0.5, 8, { actors: new Map([[SHAMBLER.id, SHAMBLER]]) });
     try {
       const store = new MapEntityStore<Actor>();
       const entries = SHAMBLER_FIGURE_SEEDS.map((seed, index) => {
@@ -975,7 +975,7 @@ describe('MobActorMeshes', () => {
   it('draws the exact persisted figure seed, not an EntityId-derived variant', () => {
     const seeds = SHAMBLER_FIGURE_SEEDS;
     const type = { ...SHAMBLER, figureSeeds: seeds };
-    const renderer = new MobActorMeshes(0.5, 8, { zombies: new Map([[type.id, type]]) });
+    const renderer = new MobActorMeshes(0.5, 8, { actors: new Map([[type.id, type]]) });
     try {
       const store = new MapEntityStore<Actor>();
       const ids = seeds.map((seed, index) =>
@@ -996,7 +996,7 @@ describe('MobActorMeshes', () => {
   });
 
   it('draws every registry zombie type, visibly, with the figure its content model realizes', () => {
-    const renderer = new MobActorMeshes(0.5, registry.actors.size, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, registry.actors.size, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
       const entries = [...registry.actors.values()].map((type, index) => {
@@ -1039,7 +1039,7 @@ describe('MobActorMeshes', () => {
   });
 
   it('poses every registry zombie type through its attack wind-up while chasing and flinching', () => {
-    const renderer = new MobActorMeshes(0.5, registry.actors.size, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, registry.actors.size, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
       const entries = [...registry.actors.values()].map((type, index) => {
@@ -1072,7 +1072,7 @@ describe('MobActorMeshes', () => {
 
   it('draws a carved fused-mass body once, from a wound mesh with flesh walls, and drops it with the actor', () => {
     const amalgam = registry.actors.get('amalgam')!;
-    const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 2, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
       const actor = makeActor([0, 0, 0], [0, 0, -1], [], { type: amalgam });
@@ -1099,7 +1099,7 @@ describe('MobActorMeshes', () => {
         damage: 1,
       });
       actor.carved = cells;
-      renderer.zombieCarved(id, actor, cells, { point: [0, 2, 0], direction: [1, 0, 0], impulse: 0 });
+      renderer.actorCarved(id, actor, cells, { point: [0, 2, 0], direction: [1, 0, 0], impulse: 0 });
 
       const internals = renderer as unknown as {
         wounds: Map<number, { mesh: InstancedMesh }>;
@@ -1138,7 +1138,7 @@ describe('MobActorMeshes', () => {
   });
 
   it('generates its variant pool and syncs without throwing', () => {
-    const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 2 });
+    const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 2 });
     try {
       const store = new MapEntityStore<Actor>();
       store.add(makeActor([0, 0, 0]));
@@ -1151,7 +1151,7 @@ describe('MobActorMeshes', () => {
   });
 
   it('recycles a slot once its zombie is removed from the store', () => {
-    const renderer = new MobActorMeshes(0.5, 1, { zombies: registry.actors, poolSize: 1 }); // exactly one slot, total
+    const renderer = new MobActorMeshes(0.5, 1, { actors: registry.actors, poolSize: 1 }); // exactly one slot, total
     try {
       const store = new MapEntityStore<Actor>();
       const firstId = store.add(makeActor([0, 0, 0]));
@@ -1171,7 +1171,7 @@ describe('MobActorMeshes', () => {
   });
 
   it("doesn't render a zombie beyond its variant's capacity (documented overflow behaviour)", () => {
-    const renderer = new MobActorMeshes(0.5, 1, { zombies: registry.actors, poolSize: 1 }); // capacity 1, so a 2nd zombie always overflows
+    const renderer = new MobActorMeshes(0.5, 1, { actors: registry.actors, poolSize: 1 }); // capacity 1, so a 2nd zombie always overflows
     try {
       const store = new MapEntityStore<Actor>();
       const first = store.add(makeActor([0, 0, 0]));
@@ -1223,7 +1223,7 @@ describe('MobActorMeshes reactions', () => {
     expect(validateContent(source)).toEqual([]);
     const row = buildRegistry([source]).registry.graphics.get(graphics.id)!;
     const renderer = new RenderMobActorMeshes(0.5, 3, {
-      zombies: registry.actors,
+      actors: registry.actors,
       poolSize: 1,
       look: LOOK_FIXTURE.mobActors,
       maxCorpses: row.mobActors.maxCorpses,
@@ -1236,11 +1236,11 @@ describe('MobActorMeshes reactions', () => {
       const actor = makeActor([0, 0, 0]);
       const id = store.add(actor);
       renderer.sync(store, 0, 1);
-      gore.update(1, () => false, { zombies: store, listener: [0, 0, 0] });
+      gore.update(1, () => false, { actors: store, listener: [0, 0, 0] });
       expect(gore.activeDroplets).toBe(0);
-      renderer.zombieSevered(id, 'hand.L');
+      renderer.actorSevered(id, 'hand.L');
       expect(debrisEntries(renderer).size).toBe(0);
-      renderer.zombieDied(id, actor);
+      renderer.actorDied(id, actor);
       store.remove(id);
       expect(renderer.isTracked(id)).toBe(false);
       const downed = makeActor([0, 0, 0]);
@@ -1250,7 +1250,7 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(store, 0, 1);
       expect(renderer.isTracked(downedId)).toBe(true);
       damage.system.finishDowned(damage.id, false);
-      renderer.zombieDied(downedId, downed);
+      renderer.actorDied(downedId, downed);
       store.remove(downedId);
       expect(renderer.isTracked(downedId)).toBe(false);
     } finally {
@@ -1259,14 +1259,14 @@ describe('MobActorMeshes reactions', () => {
     }
   });
   it('keeps a corpse (its slot) until it has lain and sunk, then frees it — unlike a plain vanish', async () => {
-    const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 2, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
       const actor = makeActor([0, 0, 0]);
       const id = store.add(actor);
       renderer.sync(store, 1 / 60, 1);
       store.remove(id);
-      renderer.zombieDied(id, actor);
+      renderer.actorDied(id, actor);
       await renderer.whenCorpsesReady();
       expect(renderer.isTracked(id)).toBe(true); // still drawn, as a corpse
 
@@ -1287,7 +1287,7 @@ describe('MobActorMeshes reactions', () => {
   });
 
   it.each([false, true])('builds a ragdoll for torso incapacitation with frozen=%s', async (frozen) => {
-    const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 2, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
       const actor = makeActor([0, 0, 0]);
@@ -1313,16 +1313,16 @@ describe('MobActorMeshes reactions', () => {
   });
 
   it('finishing a downed ragdoll cuts physical subtrees into shared-world debris without leaking them', async () => {
-    const renderer = new MobActorMeshes(0.5, 8, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 8, { actors: registry.actors, poolSize: 1 });
     try {
       const { system, id } = incapacitate(makeActor([0, 0, 0]), false, {
         beforeDamage: (owner) => renderer.sync(owner.store, 0, 1),
         effects: {
-          onIncapacitated: (entity, actor) => renderer.zombieIncapacitated(entity, actor),
+          onIncapacitated: (entity, actor) => renderer.actorIncapacitated(entity, actor),
           onSever: (entity, actor, part, hit) => {
-            renderer.zombieSevered(entity, part, hit, actor);
+            renderer.actorSevered(entity, part, hit, actor);
           },
-          onDeath: (entity, actor) => renderer.zombieDied(entity, actor),
+          onDeath: (entity, actor) => renderer.actorDied(entity, actor),
         },
       });
       await renderer.whenCorpsesReady();
@@ -1367,8 +1367,8 @@ describe('MobActorMeshes reactions', () => {
     'hands $model leg loss back to crawling and releases its physics without mutating simulation',
     async ({ model, cuts }) => {
       const type = [...registry.actors.values()].find((candidate) => figureVariantOf(candidate) === model)!;
-      const renderer = new MobActorMeshes(0.5, 2, { zombies: new Map([[type.id, type]]), poolSize: 1 });
-      const reference = new MobActorMeshes(0.5, 2, { zombies: new Map([[type.id, type]]), poolSize: 1 });
+      const renderer = new MobActorMeshes(0.5, 2, { actors: new Map([[type.id, type]]), poolSize: 1 });
+      const reference = new MobActorMeshes(0.5, 2, { actors: new Map([[type.id, type]]), poolSize: 1 });
       const store = new MapEntityStore<Actor>();
       const seed = type.figureSeeds![0]!;
       const id = store.add(makeActor([0, 0, 0], [0, 0, -1], [], { type, figureSeed: seed }));
@@ -1378,7 +1378,7 @@ describe('MobActorMeshes reactions', () => {
         const crawling = makeActor([0, 0, 0], [0, 0, -1], cuts, { type, figureSeed: seed });
         store.replace(id, crawling);
         const before = structuredClone(crawling);
-        renderer.zombieWounded(id, { point: [0, 0, 0], direction: [1, 0, 0], impulse: 1 });
+        renderer.actorWounded(id, { point: [0, 0, 0], direction: [1, 0, 0], impulse: 1 });
         renderer.sync(store);
         expect(renderer.boneMatrix(id, 'chest')).toEqual(upright);
         await renderer.whenCorpsesReady();
@@ -1407,7 +1407,7 @@ describe('MobActorMeshes reactions', () => {
   );
 
   it('places a second cut on the drawn falling body', async () => {
-    const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 1 });
     const store = new MapEntityStore<Actor>();
     const actor = makeActor([0, 0, 0]);
     const id = store.add(actor);
@@ -1421,7 +1421,7 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(store, ragdollContent.timestep);
       const figure = actorFigure(crawling.type, crawling.figureSeed).realized;
       const before = renderer.boneMatrix(id, 'hand.L')!;
-      renderer.zombieSevered(id, 'hand.L', undefined, crawling);
+      renderer.actorSevered(id, 'hand.L', undefined, crawling);
       const debris = [
         ...(
           renderer as unknown as {
@@ -1449,7 +1449,7 @@ describe('MobActorMeshes reactions', () => {
       throw failure;
     });
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 2, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
       const actor = makeActor([0, 0, 0]);
@@ -1475,7 +1475,7 @@ describe('MobActorMeshes reactions', () => {
 
   it('keeps an incapacitated row lying beyond corpse lifetime and out of MAX_CORPSES eviction', async () => {
     const renderer = new MobActorMeshes(0.5, CORPSE_LIFECYCLE.maxCorpses + 2, {
-      zombies: registry.actors,
+      actors: registry.actors,
       poolSize: 1,
     });
     try {
@@ -1488,7 +1488,7 @@ describe('MobActorMeshes reactions', () => {
       incapacitate(incapacitated);
       renderer.sync(store, 0, 1);
       for (let i = 1; i < actors.length; i++) {
-        renderer.zombieDied(ids[i]!, actors[i]!);
+        renderer.actorDied(ids[i]!, actors[i]!);
         store.remove(ids[i]!);
       }
       expect(renderer.isTracked(ids[0]!)).toBe(true);
@@ -1517,7 +1517,7 @@ describe('MobActorMeshes reactions', () => {
   });
 
   it('lets an incapacitated row lie and sink once its zombie dies, as any corpse does', async () => {
-    const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 2, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
       const actor = makeActor([0, 0, 0]);
@@ -1532,7 +1532,7 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(store, CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1, 1);
       expect(damage.system.finishDowned(damage.id, false)).toBeUndefined();
       store.remove(id);
-      renderer.zombieDied(id, actor);
+      renderer.actorDied(id, actor);
       renderer.sync(store, 1, 1);
       expect(renderer.isTracked(id)).toBe(true); // still lies there, now as an ordinary corpse
 
@@ -1551,7 +1551,7 @@ describe('MobActorMeshes reactions', () => {
   });
 
   it('evicts the oldest corpse when its shared dead-thing budget is exceeded', () => {
-    const renderer = new MobActorMeshes(0.5, 64, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 64, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
       const ids: number[] = [];
@@ -1560,7 +1560,7 @@ describe('MobActorMeshes reactions', () => {
         const id = store.add(actor);
         renderer.sync(store, 1 / 60, 1);
         store.remove(id);
-        renderer.zombieDied(id, actor);
+        renderer.actorDied(id, actor);
         ids.push(id);
       }
       expect(ids.length).toBeGreaterThan(1);
@@ -1576,7 +1576,7 @@ describe('MobActorMeshes reactions', () => {
 
 describe('MobActorMeshes dismemberment', () => {
   it("hides a severed bone's whole subtree (zero matrices), leaving the other arm alone", () => {
-    const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 2 });
+    const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 2 });
     try {
       const store = new MapEntityStore<Actor>();
       const actor = makeActor([0, 0, 0]);
@@ -1596,7 +1596,7 @@ describe('MobActorMeshes dismemberment', () => {
   });
 
   it('re-derives hidden bones from zombie.severed every sync (source of truth, e.g. after a save/load)', () => {
-    const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 2 });
+    const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 2 });
     try {
       const store = new MapEntityStore<Actor>();
       const actor = makeActor([0, 0, 0]);
@@ -1613,13 +1613,13 @@ describe('MobActorMeshes dismemberment', () => {
   });
 
   it('continues corpse sinking while live zombie animation is frozen', async () => {
-    const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 2 });
+    const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 2 });
     try {
       const store = new MapEntityStore<Actor>();
       const actor = makeActor([0, 0, 0], [0, 0, -1], [], { figureSeed: 1 });
       const id = store.add(actor);
       renderer.sync(store, 0, 1);
-      renderer.zombieDied(id, actor);
+      renderer.actorDied(id, actor);
       store.remove(id);
 
       const step = 0.1;
@@ -1657,8 +1657,8 @@ describe('MobActorMeshes dismemberment', () => {
   });
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the lifecycle probe observes each debris state.
-  it('allocates a debris slot on zombieSevered and frees it after its lifetime', async () => {
-    const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 2 });
+  it('allocates a debris slot on actorSevered and frees it after its lifetime', async () => {
+    const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 2 });
     try {
       renderer.setWorld((_x, y, _z) => y === -1, 0.5);
       const store = new MapEntityStore<Actor>();
@@ -1666,7 +1666,7 @@ describe('MobActorMeshes dismemberment', () => {
       const id = store.add(actor);
       renderer.sync(store, 1 / 60, 1); // establishes render state (lastPos) to spawn debris from
 
-      renderer.zombieSevered(id, 'hand.L');
+      renderer.actorSevered(id, 'hand.L');
       expect(renderer.debrisCountFor(id)).toBe(1);
       await renderer.whenCorpsesReady();
 
@@ -1699,13 +1699,13 @@ describe('MobActorMeshes dismemberment', () => {
   });
 
   it('rests debris on the feet-height fallback plane when no world is supplied', async () => {
-    const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
       const actor = makeActor([0, 0, 0]);
       const id = store.add(actor);
       renderer.sync(store, 1 / 60, 1);
-      renderer.zombieSevered(id, 'hand.L', undefined, actor);
+      renderer.actorSevered(id, 'hand.L', undefined, actor);
       await renderer.whenCorpsesReady();
       for (
         let frame = 0;
@@ -1729,7 +1729,7 @@ describe('MobActorMeshes dismemberment', () => {
     }
   });
   it('preserves every carried bone world transform at the instant debris is created', () => {
-    const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
       const actor = makeActor([2, 0, -3], [1, 0, 0]);
@@ -1739,7 +1739,7 @@ describe('MobActorMeshes dismemberment', () => {
       const realized = realize(generateValid(template, 1)!.genome);
       const boneIds = [...severedBoneSet(realized.body.bones, ['forearm.L'])];
       const before = new Map(boneIds.map((bone) => [bone, renderer.boneMatrix(id, bone)!]));
-      renderer.zombieSevered(id, 'forearm.L', undefined, actor);
+      renderer.actorSevered(id, 'forearm.L', undefined, actor);
       renderer.sync(store, 0, 1); // packs without advancing the rigid body
       for (const [bone, matrix] of before) {
         const debrisMatrix = renderer.debrisBoneMatrix(id, 'forearm.L', bone);
@@ -1761,7 +1761,7 @@ describe('MobActorMeshes dismemberment', () => {
   });
   it('launches a manifest-owned fused-mass part with blood from its shared severing presentation', () => {
     const type = registry.actors.get('amalgam')!;
-    const renderer = new MobActorMeshes(0.5, 4, { zombies: new Map([[type.id, type]]), poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 4, { actors: new Map([[type.id, type]]), poolSize: 1 });
     const gore = new Gore(0.5, WORLD_GRAVITY, GORE_TUNING_FIXTURE);
     try {
       const store = new MapEntityStore<Actor>();
@@ -1773,7 +1773,7 @@ describe('MobActorMeshes dismemberment', () => {
       renderer.sync(store, 0, 1);
       const before = renderer.boneMatrix(id, part.rootBone)!;
       const hit = { point: [0, 1, 0] as Vec3, direction: [1, 0, 0] as Vec3, impulse: 10 };
-      const velocity = renderer.zombieSevered(id, part.id, hit, actor);
+      const velocity = renderer.actorSevered(id, part.id, hit, actor);
       gore.severed(hit, velocity, type.severedSpurt);
       expect.soft(velocity).toBeDefined();
       expect.soft(Math.hypot(...(velocity ?? [0, 0, 0]))).toBeGreaterThan(0);
@@ -1792,7 +1792,7 @@ describe('MobActorMeshes dismemberment', () => {
   });
 
   it('caches template-assigned mass for every severable variant part', () => {
-    const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 1 });
     try {
       const { variants } = renderer as unknown as {
         variants: readonly { rigidParts: ReadonlyMap<string, { mass: number }> }[];
@@ -1821,7 +1821,7 @@ describe('MobActorMeshes dismemberment', () => {
   it('debris OBB contains the posed limb at spawn', () => {
     const template = TEMPLATES.find((candidate) => candidate.name === 'humanoid')!;
     const { realized } = generateValid(template, 1)!;
-    const handRenderer = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 1 });
+    const handRenderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 1 });
     try {
       const handStore = new MapEntityStore<Actor>();
       const handActor = makeActor([0, 0, 0]);
@@ -1834,7 +1834,7 @@ describe('MobActorMeshes dismemberment', () => {
       handRenderer.sync(handStore, 0, 1);
       const handAttack = handRenderer.boneMatrix(handId, 'hand.L')!;
       expect(rotationAngleDeg(handRest, handAttack)).toBeGreaterThanOrEqual(30);
-      handRenderer.zombieSevered(handId, 'hand.L', undefined, handActor);
+      handRenderer.actorSevered(handId, 'hand.L', undefined, handActor);
       handRenderer.sync(handStore, 0, 1);
       const handContainment = partContainment({
         renderer: handRenderer,
@@ -1849,7 +1849,7 @@ describe('MobActorMeshes dismemberment', () => {
       handRenderer.dispose();
     }
 
-    const headRenderer = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 1 });
+    const headRenderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 1 });
     try {
       const headStore = new MapEntityStore<Actor>();
       const headActor = makeActor([0, 0, 0]);
@@ -1861,7 +1861,7 @@ describe('MobActorMeshes dismemberment', () => {
       headRenderer.sync(headStore, 0, 1);
       const headPose = headRenderer.boneMatrix(headId, 'head')!;
       expect(rotationAngleDeg(headRest, headPose)).toBeGreaterThanOrEqual(30);
-      headRenderer.zombieSevered(headId, 'head', undefined, headActor);
+      headRenderer.actorSevered(headId, 'head', undefined, headActor);
       headRenderer.sync(headStore, 0, 1);
       const headContainment = partContainment({
         renderer: headRenderer,
@@ -1878,8 +1878,8 @@ describe('MobActorMeshes dismemberment', () => {
   });
 
   it('severing a distant zombie uses its current simulation pose', () => {
-    const skipped = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 1 });
-    const reference = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 1 });
+    const skipped = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 1 });
+    const reference = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 1 });
     try {
       const camera = new PerspectiveCamera(60, 1, 0.1, 1000);
       camera.position.set(0, 0, 100);
@@ -1903,8 +1903,8 @@ describe('MobActorMeshes dismemberment', () => {
       referenceActor.renderPrevious.pos = [4, 0, 0];
       skipped.sync(skippedStore, 0, 1);
       reference.sync(referenceStore, 0, 1);
-      skipped.zombieSevered(skippedId, 'hand.L', undefined, skippedActor);
-      reference.zombieSevered(referenceId, 'hand.L', undefined, referenceActor);
+      skipped.actorSevered(skippedId, 'hand.L', undefined, skippedActor);
+      reference.actorSevered(referenceId, 'hand.L', undefined, referenceActor);
       const skippedCenter = [...debrisEntries(skipped).values()][0]!.initialCenter;
       const freshCenter = [...debrisEntries(reference).values()][0]!.initialCenter;
       for (const axis of [0, 1, 2]) {
@@ -1915,8 +1915,8 @@ describe('MobActorMeshes dismemberment', () => {
       reference.dispose();
     }
   });
-  it('does nothing for zombieSevered on an untracked id (over capacity)', () => {
-    const renderer = new MobActorMeshes(0.5, 1, { zombies: registry.actors, poolSize: 1 }); // capacity 1: a 2nd zombie always overflows
+  it('does nothing for actorSevered on an untracked id (over capacity)', () => {
+    const renderer = new MobActorMeshes(0.5, 1, { actors: registry.actors, poolSize: 1 }); // capacity 1: a 2nd zombie always overflows
     try {
       const store = new MapEntityStore<Actor>();
       store.add(makeActor([0, 0, 0]));
@@ -1924,7 +1924,7 @@ describe('MobActorMeshes dismemberment', () => {
       renderer.sync(store, 1 / 60, 1);
       expect(renderer.isTracked(second)).toBe(false);
 
-      expect(() => renderer.zombieSevered(second, 'hand.L')).not.toThrow();
+      expect(() => renderer.actorSevered(second, 'hand.L')).not.toThrow();
       expect(renderer.debrisCountFor(second)).toBe(0);
     } finally {
       renderer.dispose();
@@ -1935,7 +1935,7 @@ describe('MobActorMeshes dismemberment', () => {
     const population = CORPSE_LIFECYCLE.maxCorpses + 1;
     // Leave a live source row alongside every debris row so variant overflow cannot cause the eviction.
     const renderer = new MobActorMeshes(0.5, population + 1, {
-      zombies: registry.actors,
+      actors: registry.actors,
       poolSize: 1,
     });
     try {
@@ -1945,7 +1945,7 @@ describe('MobActorMeshes dismemberment', () => {
         const actor = makeActor([i, 0, 0]);
         const id = store.add(actor);
         renderer.sync(store, 1 / 60, 1);
-        renderer.zombieSevered(id, 'hand.L'); // debris, not a corpse — still counts toward MAX_CORPSES
+        renderer.actorSevered(id, 'hand.L'); // debris, not a corpse — still counts toward MAX_CORPSES
         store.remove(id);
         renderer.sync(store, 1 / 60, 1); // prunes the (now-vanished) live entry; the debris itself survives
         ids.push(id);
@@ -1962,7 +1962,7 @@ describe('MobActorMeshes dismemberment', () => {
 
 describe('MobActorMeshes stance', () => {
   it('never produces the bind pose (identity rotations) for a standing (speed 0) zombie — the whole point of this task', () => {
-    const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
       const actor = makeActor([0, 0, 0]); // idle, never moves — speed stays exactly 0
@@ -1981,7 +1981,7 @@ describe('MobActorMeshes stance', () => {
   });
 
   it('never produces the bind pose for a chasing (aggravated) zombie either, before or after its stance fully settles', () => {
-    const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.actors, poolSize: 1 });
+    const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
       const actor = makeActor([0, 0, 0]);

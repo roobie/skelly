@@ -52,7 +52,7 @@ export interface DebugHooks {
   /** The camera's current roll in radians (damage feedback; 0 otherwise). */
   readonly roll: () => number;
   readonly actors: () => ActorSystem | undefined;
-  readonly zombieRenderer: ActorRenderer;
+  readonly actorRenderer: ActorRenderer;
   readonly feet: () => Vec3;
   readonly showNotice: (text: string) => void;
   readonly strikeTerrainCell: Session['strikeTerrainCell'];
@@ -60,7 +60,7 @@ export interface DebugHooks {
   /** Fast-forwards through compression; real interruptions still end the skip. */
   readonly skipGameHours: (hours: number) => void;
   readonly setTimeOfDay: (hour: number, minute: number) => void;
-  readonly revealZombies: (enabled: boolean) => void;
+  readonly revealActors: (enabled: boolean) => void;
   readonly measureSnapshot: () => SnapshotMeasurement;
   readonly impactLaser: { enabled: () => boolean; toggle: () => void };
   readonly reviewMap: { isOpen: () => boolean; toggle: () => void };
@@ -115,7 +115,7 @@ export interface DebugReadout {
   readonly chunks: number;
   readonly pending: number;
   readonly holes: number;
-  readonly zombies: number;
+  readonly actors: number;
   readonly sounds: readonly HeardSound[];
   readonly simulationMs: number;
   readonly renderMs: number | null;
@@ -127,7 +127,7 @@ export interface DebugReadout {
   readonly snapshotLastMs: number;
   readonly snapshotP95Ms: number;
   readonly snapshotCount: number;
-  readonly revealedZombies: readonly string[];
+  readonly revealedActors: readonly string[];
 }
 
 export interface DebugRuntime {
@@ -155,7 +155,7 @@ export interface DebugRuntime {
   /** The whole simulation is stopped (M): the game combines this with the pause menu's pause. */
   readonly frozen: boolean;
   readonly spawnOpen: boolean;
-  readonly revealZombies: boolean;
+  readonly revealActors: boolean;
   handleAction: (action: string) => boolean;
   closeMenus: () => void;
   target: (eye: Vec3, dir: Vec3, active: boolean) => string;

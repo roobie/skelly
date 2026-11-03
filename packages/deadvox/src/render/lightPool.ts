@@ -44,7 +44,7 @@ export interface BodyGlow {
 /** The acid sacs' glows as drawn this frame. */
 export function acidGlows(anchors: Iterable<DrawnAnchors>): BodyGlow[] {
   const glows: BodyGlow[] = [];
-  for (const { zombie: actor, glow } of anchors) {
+  for (const { actor, glow } of anchors) {
     const body = actor.type.acidBody;
     if (body && glow) {
       glows.push({ position: glow, color: body.color, ...body.light });

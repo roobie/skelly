@@ -3880,13 +3880,13 @@ describe('dismemberment', () => {
         seed: 5,
         onSever: (sourceId, sourceActor, sourcePart, severHit) => {
           hit = severHit;
-          renderer.zombieSevered(sourceId, sourcePart, severHit, sourceActor);
+          renderer.actorSevered(sourceId, sourcePart, severHit, sourceActor);
         },
       });
       const id = system.add(type, [4, 1, 4], [0, 0, -1]);
       const actor = system.store.get(id)!;
       renderer = new MobActorMeshes(BLOCK_SIZE, 2, {
-        zombies: new Map([[type.id, { ...type, figureSeeds: [actor.figureSeed] }]]),
+        actors: new Map([[type.id, { ...type, figureSeeds: [actor.figureSeed] }]]),
       });
       renderer.setWorld((_x, y, _z) => y === -1, BLOCK_SIZE);
       renderer.sync(system.store, 0, 1);

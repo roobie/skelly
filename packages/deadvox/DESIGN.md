@@ -2553,7 +2553,7 @@ application rather than weapon-class special cases. See `src/core/schema/actors.
   not in the weapon's impulse, because that impulse also staggers and breaches doors,
   which are gameplay (`src/content/base/zombies.jsonnet`, `severedGore`;
   `src/core/actorSystem.ts`, `ActorSystem.sever`; `src/render/gore.ts`, `Gore.severed`).
-  See `src/render/mobActors.ts`, `MobActorMeshes.zombieSevered`, for the shared launch.
+  See `src/render/mobActors.ts`, `MobActorMeshes.actorSevered`, for the shared launch.
   Where a droplet lands it leaves a splat. Splats fade and are not
   saved, so a reload starts clean. Wounded bodies drip and wear blood stains,
   both derived from saved state (lost region health, severed parts, carved
@@ -2963,7 +2963,7 @@ A center-mass pump blast should not end the fight immediately, while focused fir
 
 The amalgam reuses `ActorSystem`'s perception, attention, movement and attack lifecycle: it wanders slowly until it notices the player, then takes a direct, heavy approach, telegraphing its more severe attack before damage resolves. Its pace and attack severity live in the zombie type data rather than a scripted phase or code default. A hit snaps the shared `core` pose so the fused body reacts as one while renderer and hit-region FK stay aligned. See `src/content/base/zombies.jsonnet`, the amalgam type; `src/core/actorSystem.ts`, `ActorSystem`; and `src/core/actorPose.ts`, `posedActor`.
 
-Debug spawn placement must leave room to observe an approach without embedding the body in solid geometry or changing its combat reach. See `src/debug/shamblerSpawning.ts`, `spawnZombieType`; `src/bench/shamblerPlacement.ts`, `placeShamblerRing`; and `src/core/actorSystem.ts`, `actorAttackReachForDef` and `actorBodyDimensions`.
+Debug spawn placement must leave room to observe an approach without embedding the body in solid geometry or changing its combat reach. See `src/debug/shamblerSpawning.ts`, `spawnActorType`; `src/bench/shamblerPlacement.ts`, `placeShamblerRing`; and `src/core/actorSystem.ts`, `actorAttackReachForDef` and `actorBodyDimensions`.
 
 A surviving amalgam attacks with a tentacle that strikes in a straight line from its core to the player's chest, at any height, within its usual reach; anything solid across the line blocks it. A creature with a long tentacle should be able to reach a player standing above it, on a roof for example, and not only one level with it. The reach stays the same, so height costs distance rather than adding range. Humanoid zombies keep their grab: horizontal reach within a band matching a standing player.
 
@@ -2996,7 +2996,7 @@ height-extents table: its upkeep costs more than the collision it avoids. See
 
 It keeps a shambler's decisions, the same senses, targets and modes, but steers its size round corners, door frames, pillars and wall ends, so it stays a threat instead of grinding against them. `ActorSystem.wallAhead` notices a wall by moving a body's shape the lookahead distance along its aim and testing that shape against terrain, so a block corner the centre line clears but the body catches still counts as contact. A shambler's body box and the amalgam's flesh both pass that shape-along-aim test, the amalgam's shape being its flesh. A shambler then slides off to a seeded side and sometimes wanders, while at a new contact the amalgam slides to the side its flesh can move to: met at a slant, that is the side the wall leads it along, and caught on a door frame, the side that frees it, where a random side could back it out of the doorway it is squeezing through. If both sides are open, or neither side is free as when snug in a doorway, it draws its side as a shambler does. This costs one shape test per moving tick and two more when a contact starts. See `src/core/schema/actors.ts`, `ActorSchema`; `src/content/base/zombies.jsonnet`, the amalgam type; and `src/core/actorSystem.ts`, `steer`, `ActorSystem.wallAhead` and `ActorSystem.openSide`.
 
-Carving must expose flesh-coloured hole walls from every side, and a corpse must retain its visible wounds. Flying flesh and landing splats are presentation, not extra simulation entities: they make the hit readable without burdening saves or combat with decorative debris. Keep flesh's presentation budget independent of bodies and severed limbs so carving cannot erase those visual witnesses. See `src/render/fusedMassFlesh.ts`, `buildCarvedGeometry` and `FleshChunks`, and `src/render/mobActors.ts`, `MobActorMeshes.zombieCarved`.
+Carving must expose flesh-coloured hole walls from every side, and a corpse must retain its visible wounds. Flying flesh and landing splats are presentation, not extra simulation entities: they make the hit readable without burdening saves or combat with decorative debris. Keep flesh's presentation budget independent of bodies and severed limbs so carving cannot erase those visual witnesses. See `src/render/fusedMassFlesh.ts`, `buildCarvedGeometry` and `FleshChunks`, and `src/render/mobActors.ts`, `MobActorMeshes.actorCarved`.
 
 The runner's threat comes from speed rather than stronger attacks; the crawler's
 low posture confines its bite to the legs. Keep their moves, hit regions, sounds and

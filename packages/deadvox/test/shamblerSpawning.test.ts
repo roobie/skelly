@@ -3,7 +3,7 @@ import { bodyIsClear, placeShamblerRing } from '../src/bench/shamblerPlacement.t
 import { actorAttackReachForDef, actorAttackReachMetres, actorBodyDimensions } from '../src/core/actorSystem.ts';
 import { type Body, bodyOverlapsBlock } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { spawnShamblers, spawnZombieType } from '../src/debug/shamblerSpawning.ts';
+import { spawnActorType, spawnShamblers } from '../src/debug/shamblerSpawning.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
@@ -98,7 +98,7 @@ describe('debug shambler spawning', () => {
     const engine = testEngine(solid, 73);
     const actors = actorsFor(body, solid);
 
-    expect(spawnZombieType(engine, body, actors, { typeId: largestType.id, count: 1 })).toBe(1);
+    expect(spawnActorType(engine, body, actors, { typeId: largestType.id, count: 1 })).toBe(1);
     const [id, actor] = [...actors.store.entries()][0]!;
     const initialDistance =
       Math.hypot(body.pos[0] - actor.body.pos[0], body.pos[2] - actor.body.pos[2]) * SCALE.blockSize;
@@ -160,7 +160,7 @@ describe('debug shambler spawning', () => {
     const engine = testEngine(solid, 73);
     const actors = actorsFor(body, solid);
 
-    expect(spawnZombieType(engine, body, actors, { typeId: type.id, count: 1 })).toBe(1);
+    expect(spawnActorType(engine, body, actors, { typeId: type.id, count: 1 })).toBe(1);
     expect(bodyIsClear([...actors.store.entries()][0]![1].body, solid)).toBe(true);
   });
 

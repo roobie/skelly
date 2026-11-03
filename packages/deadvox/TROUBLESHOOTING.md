@@ -51,7 +51,7 @@ Software-rendered browser contracts should exercise logic without paying rendere
 
 ## Debug spawning
 
-The zombie spawn catalogue follows loaded content, including authored-only types, so modded and site-specific actors can be inspected without making them ambient spawns. Keyboard shortcuts are optional; an unbound type remains available in the panel. See `src/debug/index.ts`, `createDebugActions`, and `src/debug/shamblerSpawning.ts`, `spawnZombieType`.
+The zombie spawn catalogue follows loaded content, including authored-only types, so modded and site-specific actors can be inspected without making them ambient spawns. Keyboard shortcuts are optional; an unbound type remains available in the panel. See `src/debug/index.ts`, `createDebugActions`, and `src/debug/shamblerSpawning.ts`, `spawnActorType`.
 
 ## Browser stages
 

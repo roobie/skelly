@@ -103,13 +103,13 @@ const createSeveredHit = (mode: CutMode) => {
   const system = new ActorSystem({
     ...senses(isSolid),
     seed: 5,
-    onSever: (entityId, source, cut, hit) => renderer?.zombieSevered(entityId, cut, hit, source),
-    onDeath: (entityId, source) => renderer?.zombieDied(entityId, source),
+    onSever: (entityId, source, cut, hit) => renderer?.actorSevered(entityId, cut, hit, source),
+    onDeath: (entityId, source) => renderer?.actorDied(entityId, source),
   });
   const id = system.add(actorTypeForCut(mode), [4, 1, 4], [0, 0, -1]);
   const actor = system.store.get(id)!;
   const actorMeshes = new MobActorMeshes(BLOCK, 16, {
-    zombies: new Map([[actor.type.id, actor.type]]),
+    actors: new Map([[actor.type.id, actor.type]]),
     poolSize: mobFigurePoolSizeThrough(figureSeedPool(new Map([[actor.type.id, actor.type]])), actor.figureSeed),
   });
   renderer = actorMeshes;
@@ -154,7 +154,7 @@ const createSeveredHit = (mode: CutMode) => {
     part = actor.severed[0] ?? '';
   } else {
     part = mode === 'head' ? 'head' : 'upperArm.L';
-    actorMeshes.zombieSevered(
+    actorMeshes.actorSevered(
       id,
       part,
       { point: targetBox.center, direction: target.direction, impulse: BAT.impulse! },

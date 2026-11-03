@@ -62,7 +62,7 @@ describe('Gore', () => {
     const dripPosition = (thirdPerson: boolean): Vector3 => {
       const gore = new Gore(BLOCK_SIZE, WORLD_GRAVITY, GORE_TUNING_FIXTURE);
       gore.update(1, floor, {
-        zombies: new MapEntityStore<Actor>(),
+        actors: new MapEntityStore<Actor>(),
         listener: playerPos,
         player: { pos: playerPos, yaw, drip, thirdPerson },
       });
@@ -103,7 +103,7 @@ describe('Gore', () => {
   it('stops player wound drips once the wound stops bleeding', () => {
     const gore = new Gore(1, WORLD_GRAVITY, GORE_TUNING_FIXTURE);
     const bodies: GoreBodies = {
-      zombies: new MapEntityStore<Actor>(),
+      actors: new MapEntityStore<Actor>(),
       listener: [0, 0, 0],
       player: {
         pos: [0, 0, 0],

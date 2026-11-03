@@ -71,7 +71,7 @@ const startTurnedAttack = () => {
 
 const rendererFor = (actor: Actor) =>
   new MobActorMeshes(BLOCK_SIZE, 4, {
-    zombies: new Map([[actor.type.id, { ...actor.type, figureSeeds: [actor.figureSeed] }]]),
+    actors: new Map([[actor.type.id, { ...actor.type, figureSeeds: [actor.figureSeed] }]]),
   });
 
 const offsetForBox = ({

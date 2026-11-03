@@ -47,18 +47,18 @@ export function stageRagdollSweep({
       actor.figureSeed = seeds[((seed % seeds.length) + seeds.length) % seeds.length]!;
       renderer.sync(system.store, 0, 1);
       const hit = { point: position, direction: [0, 0, -1] as Vec3, impulse: 1 };
-      renderer.zombieWounded?.(id, hit);
+      renderer.actorWounded?.(id, hit);
       for (const part of cuts) {
-        renderer.zombieSevered?.(id, part, hit, actor);
+        renderer.actorSevered?.(id, part, hit, actor);
         actor.severed.push(part);
       }
       if (column === tuning.cuts.length - 1) {
         actor.regions.torso = 0;
         actor.incapacitated = true;
-        renderer.zombieIncapacitated?.(id, actor);
+        renderer.actorIncapacitated?.(id, actor);
         downed.push(id);
       } else {
-        renderer.zombieDied?.(id, actor);
+        renderer.actorDied?.(id, actor);
         system.store.remove(id);
       }
     }
@@ -85,10 +85,10 @@ export function stageRagdollSweep({
         continue;
       }
       const hit = { point: actor.body.pos, direction: [0, 0, -1] as Vec3, impulse: 1 };
-      renderer.zombieWounded?.(id, hit);
+      renderer.actorWounded?.(id, hit);
       for (const part of cuts) {
         actor.severed.push(part);
-        renderer.zombieSevered?.(id, part, hit, actor);
+        renderer.actorSevered?.(id, part, hit, actor);
       }
     }
   };

@@ -40,7 +40,7 @@ test('query-free scene draws retain actor evidence without opening GPU timers', 
   try {
     install(engine);
     const perf = globalThis.perfBaseline;
-    perf.attach({ engine, view: { zombieMeshes: { group }, playerMeshes: { group: { userData: {} } } } });
+    perf.attach({ engine, view: { actorMeshes: { group }, playerMeshes: { group: { userData: {} } } } });
     perf.enabled = true;
     perf.mode = 'off';
     perf.frame(() => renderer.render(scene), 0);

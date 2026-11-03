@@ -1078,19 +1078,19 @@ export const startPlay = (
     // them undefined.
     actorEffects: {
       onWound: (id, _actor, hit, damage) => {
-        actorMeshes.zombieWounded?.(id, hit);
+        actorMeshes.actorWounded?.(id, hit);
         view.gore.spray(hit, damage);
       },
       onSever: (id, actor, part, hit) => {
-        const launchVelocity = actorMeshes.zombieSevered?.(id, part, hit, actor);
+        const launchVelocity = actorMeshes.actorSevered?.(id, part, hit, actor);
         view.gore.severed(hit, launchVelocity, actor.type.severedSpurt);
       },
       onCarve: (id, actor, cells, hit) => {
-        actorMeshes.zombieCarved?.(id, actor, cells, hit);
+        actorMeshes.actorCarved?.(id, actor, cells, hit);
         view.gore.carved(hit, cells.length);
       },
-      onIncapacitated: (id, actor) => actorMeshes.zombieIncapacitated?.(id, actor),
-      onDeath: (id, actor) => actorMeshes.zombieDied?.(id, actor, [...body.pos]),
+      onIncapacitated: (id, actor) => actorMeshes.actorIncapacitated?.(id, actor),
+      onDeath: (id, actor) => actorMeshes.actorDied?.(id, actor, [...body.pos]),
       ...(config.debug ? { onMeleeResult: (result) => debugTools?.recordMeleeResult(result) } : {}),
       onMeleeContact: (impulse) => view.recoil(impulse),
     },
@@ -1273,7 +1273,7 @@ export const startPlay = (
   input.setMouseLookOverride((movementX, movementY) =>
     thirdPersonOrbit.rotate(movementX, movementY, isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled)),
   );
-  const { weather, caseEffects, itemThrows, impactEffects, flashlight, zombieMeshes: actorMeshes } = view;
+  const { weather, caseEffects, itemThrows, impactEffects, flashlight, actorMeshes } = view;
   const damageEvents = sim.events.reader();
 
   // ---- UI ----
@@ -1724,7 +1724,7 @@ export const startPlay = (
     },
     roll: () => view.cameraRoll,
     actors: () => actorSystem,
-    zombieRenderer: actorMeshes,
+    actorRenderer: actorMeshes,
     spectatorCamera: {
       enabled: () => spectator.enabled,
       toggle: () => {
@@ -1760,7 +1760,7 @@ export const startPlay = (
       sim.setDebugCalendarTime(nextTimeOfDay(sim.calendar, timeOfDay));
       options.saveController?.rearmAutosaveAfterTimeSeek();
     },
-    revealZombies: (enabled) => {
+    revealActors: (enabled) => {
       revealActors = enabled;
     },
     measureSnapshot,
@@ -3772,7 +3772,7 @@ export const startPlay = (
           chunks: meshes.count,
           pending: streamer.pending,
           holes: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks),
-          zombies: actorStore.size,
+          actors: actorStore.size,
           sounds: audio.heardSounds,
           simulationMs,
           renderMs,
@@ -4127,7 +4127,7 @@ export const startPlay = (
   // Blood holds still while the game is paused.
   const updateGore = (dt: RealSeconds): void => {
     view.gore.update(sim.paused ? 0 : dt, session.physicalSolid, {
-      zombies: actorStore,
+      actors: actorStore,
       listener: body.pos,
       player: {
         pos: body.pos,
@@ -4308,13 +4308,13 @@ export const startPlay = (
       time: sim.time,
       playerEye: eye().map((coordinate) => coordinate * s) as Vec3,
       playerChest: [body.pos[0] * s, body.pos[1] * s + PLAYER_CHEST_METRES, body.pos[2] * s],
-      lastZombieStep: session.lastActorStep,
+      lastActorStep: session.lastActorStep,
       acidGlobs: actorSystem.acidGlobs,
       acidPuddles: actorSystem.acidPuddles,
       lastBackgroundStep: session.lastBackgroundStep,
       dt,
       entities,
-      zombies: actorStore,
+      actors: actorStore,
       frozen: debugTools !== undefined && (actorSystem.isFrozen || gameFrozen),
       perceptionLabels: perceptionLabelsEnabled,
     });

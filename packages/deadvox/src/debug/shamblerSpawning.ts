@@ -6,7 +6,7 @@ import { raycast } from '../core/raycast.ts';
 import type { Engine } from '../game/engine.ts';
 
 /** Places as many requested zombies as fit, clear of the player, each other, and solid world. */
-export const spawnZombieType = (
+export const spawnActorType = (
   engine: Engine,
   player: Body,
   actors: ActorSystem,
@@ -34,7 +34,7 @@ export const spawnZombieType = (
 };
 
 export const spawnShamblers = (engine: Engine, player: Body, actors: ActorSystem, count: number): number =>
-  spawnZombieType(engine, player, actors, { typeId: 'shambler', count });
+  spawnActorType(engine, player, actors, { typeId: 'shambler', count });
 
 /** Debug-only fixture: place one close shambler behind solid geometry so it starts unaware. */
 export const spawnUnawareShambler = (engine: Engine, player: Body, actors: ActorSystem): boolean => {

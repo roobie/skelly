@@ -194,7 +194,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
     actorMeshes =
       run.actors === 'detailed'
         ? new MobActorMeshes(s, count, {
-            zombies: engine.registry.actors,
+            actors: engine.registry.actors,
             look: lookDefaultsOf(engine.registry).mobActors,
             maxCorpses: graphics.mobActors.maxCorpses,
             handlingReachMetres: reachTuning(engine.registry).reachMetres,

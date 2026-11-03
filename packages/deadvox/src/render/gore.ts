@@ -65,7 +65,7 @@ interface Splat {
 
 /** One of the nearest wounded bodies, picked afresh each update. */
 interface Dripper {
-  zombie: Actor | undefined;
+  actor: Actor | undefined;
   distanceBlocks: number;
   severity: number;
 }
@@ -86,7 +86,7 @@ export interface GorePlayer {
 }
 
 export interface GoreBodies {
-  readonly zombies: Pick<EntityStore<Actor>, 'entries'>;
+  readonly actors: Pick<EntityStore<Actor>, 'entries'>;
   readonly listener: Vec3;
   readonly player?: GorePlayer;
 }
@@ -186,7 +186,7 @@ export class Gore {
     }));
     this.splats = Array.from({ length: tuning.splatCap }, () => ({ active: false, ageRealSeconds: 0 }));
     this.drippers = Array.from({ length: tuning.dripSourceCap }, () => ({
-      zombie: undefined,
+      actor: undefined,
       distanceBlocks: 0,
       severity: 0,
     }));
@@ -369,7 +369,7 @@ export class Gore {
     }
     const [lx, ly, lz] = bodies.listener;
     const rangeBlocks = DRIP_RANGE_M / this.blockSize;
-    for (const [, actor] of bodies.zombies.entries()) {
+    for (const [, actor] of bodies.actors.entries()) {
       const { pos } = actor.body;
       const distanceBlocks = Math.hypot(pos[0] - lx, pos[1] - ly, pos[2] - lz);
       const full = this.dripperCount === this.tuning.dripSourceCap;
@@ -395,7 +395,7 @@ export class Gore {
       this.drippers[index] = this.drippers[index - 1]!;
       index -= 1;
     }
-    slot.zombie = actor;
+    slot.actor = actor;
     slot.distanceBlocks = distanceBlocks;
     slot.severity = severity;
     this.drippers[index] = slot;
@@ -405,7 +405,7 @@ export class Gore {
   private drip(dt: number): void {
     const s = this.blockSize;
     for (let index = 0; index < this.dripperCount; index++) {
-      const { zombie: actor, severity } = this.drippers[index]!;
+      const { actor, severity } = this.drippers[index]!;
       if (!(actor && this.rng.chance(DRIPS_PER_SECOND * severity * dt))) {
         continue;
       }

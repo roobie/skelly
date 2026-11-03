@@ -59,9 +59,9 @@ import { stepNoclip } from './noclip.ts';
 import { stageRagdollSweep } from './ragdollSweep.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import {
+  spawnActorType,
   spawnShamblers,
   spawnUnawareShambler as spawnUnawareShamblerBehindWall,
-  spawnZombieType,
 } from './shamblerSpawning.ts';
 
 import { measureSessionSnapshot } from './snapshotMeasurement.ts';
@@ -151,8 +151,8 @@ const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult
   <span>chunks ${readout.chunks} · ${readout.pending} pending · ${readout.holes} holes · entities ${readout.entities}</span>
   <span>memory ≈ ${(readout.memoryBytes / (1024 * 1024)).toFixed(1)} MiB · ${readout.clock} · compression ×${readout.compression.toFixed(1)}</span>
   <span>snapshot ${readout.snapshotLastMs.toFixed(3)} ms last · ${readout.snapshotP95Ms.toFixed(3)} ms p95 / ${readout.snapshotCount}</span>
-  <span>shamblers ${readout.zombies}</span>
-  ${readout.revealedZombies.length > 0 ? html`<span class="debug-revealed-zombies">REVEALED: ${readout.revealedZombies.join(' · ')}</span>` : nothing}
+  <span>shamblers ${readout.actors}</span>
+  ${readout.revealedActors.length > 0 ? html`<span class="debug-revealed-zombies">REVEALED: ${readout.revealedActors.join(' · ')}</span>` : nothing}
 `;
 
 const f3OverlayTemplate = (readout: DebugReadout, visible: boolean, yaw: number, pitch: number): TemplateResult => html`
@@ -337,7 +337,7 @@ const panelTemplate = ({
   setTimeOfDay,
   snapshotStatus,
   snapshotCopyStatus,
-  revealZombies: revealActors,
+  revealActors,
   toggleReveal,
   measureSnapshot,
   keyTraceEnabled,
@@ -384,7 +384,7 @@ const panelTemplate = ({
   setTimeOfDay: (hour: number, minute: number) => void;
   snapshotStatus: string;
   snapshotCopyStatus: string;
-  revealZombies: boolean;
+  revealActors: boolean;
   toggleReveal: () => void;
   measureSnapshot: () => void;
   keyTraceEnabled: boolean;
@@ -574,7 +574,7 @@ const emptyReadout: DebugReadout = {
   snapshotLastMs: 0,
   snapshotP95Ms: 0,
   snapshotCount: 0,
-  revealedZombies: [],
+  revealedActors: [],
   seed: 0,
   radius: 0,
   movement: 'jogging',
@@ -582,7 +582,7 @@ const emptyReadout: DebugReadout = {
   chunks: 0,
   pending: 0,
   holes: 0,
-  zombies: 0,
+  actors: 0,
   sounds: [],
 };
 
@@ -596,8 +596,8 @@ interface ActionContext {
   spawnUnawareShambler: () => void;
   shamblerCount: () => number;
   spawnShambler: (count: number) => void;
-  spawnZombie: (typeId: string, count: number) => void;
-  zombieTypes: Iterable<Pick<ActorDef, 'id' | 'name'>>;
+  spawnActor: (typeId: string, count: number) => void;
+  actorTypes: Iterable<Pick<ActorDef, 'id' | 'name'>>;
   isAimEnabled: () => boolean;
   toggleAim: () => void;
   isFrozen: () => boolean;
@@ -651,8 +651,8 @@ export const createDebugActions = ({
   spawnUnawareShambler,
   shamblerCount,
   spawnShambler,
-  spawnZombie: spawnActor,
-  zombieTypes: actorTypes,
+  spawnActor,
+  actorTypes,
   isAimEnabled,
   toggleAim,
   isFrozen,
@@ -1124,7 +1124,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const s = hooks.engine.config.scale.blockSize;
   const advanceRagdollSweep = stageRagdollSweep({
     system: hooks.actors(),
-    renderer: hooks.zombieRenderer,
+    renderer: hooks.actorRenderer,
     registry: hooks.engine.registry,
     origin: hooks.body.pos,
     blockSize: s,
@@ -1312,7 +1312,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   // MenuPointer routes the wheel to the pane under the cursor, including this panel.
   const actions = createDebugActions({
     hooks,
-    zombieTypes: hooks.engine.registry.actors.values(),
+    actorTypes: hooks.engine.registry.actors.values(),
     impactLaser: hooks.impactLaser,
     interactionRay: {
       enabled: () => interactionRayEnabled,
@@ -1366,9 +1366,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
         hooks.showNotice(placed === 1 ? 'A shambler is approaching' : `${placed} shamblers are approaching`);
       }
     },
-    spawnZombie: (typeId, count) => {
+    spawnActor: (typeId, count) => {
       const actors = hooks.actors();
-      const placed = actors ? spawnZombieType(hooks.engine, hooks.body, actors, { typeId, count }) : 0;
+      const placed = actors ? spawnActorType(hooks.engine, hooks.body, actors, { typeId, count }) : 0;
       spawnStatus = `Placed ${placed} of ${count}`;
       if (placed > 0) {
         const name = hooks.engine.registry.actors.get(typeId)?.name ?? typeId;
@@ -1571,10 +1571,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           setTimeOfDay: hooks.setTimeOfDay,
           snapshotStatus,
           snapshotCopyStatus,
-          revealZombies: revealActors,
+          revealActors,
           toggleReveal: () => {
             revealActors = !revealActors;
-            hooks.revealZombies(revealActors);
+            hooks.revealActors(revealActors);
             shellKey = '';
             drawShell();
           },
@@ -1918,7 +1918,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     get spawnOpen() {
       return spawnMenu.isOpen;
     },
-    get revealZombies() {
+    get revealActors() {
       return revealActors;
     },
     handleAction,

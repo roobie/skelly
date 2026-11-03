@@ -39,7 +39,7 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
     chunks: 2,
     pending: 0,
     holes: 0,
-    zombies: 1,
+    actors: 1,
     sounds: [],
     simulationMs: 1,
     renderMs: 2,
@@ -68,7 +68,7 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
   );
   expect(view.position).toEqual(positionBlocks.map((coordinate) => coordinate * blockSize));
   expect(view.memoryBytes).toBe(chunks.reduce((sum, chunk) => sum + chunk.bytes, geometryBytes));
-  expect(view.revealedZombies).toEqual(
+  expect(view.revealedActors).toEqual(
     revealedPositions.map((position) => position.map((coordinate) => (coordinate * blockSize).toFixed(1)).join(',')),
   );
   expect(view.movement).toBe('walking');

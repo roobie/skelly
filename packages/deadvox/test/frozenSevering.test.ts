@@ -51,7 +51,7 @@ describe('melee while debug-frozen', () => {
       regions: { ...SHAMBLER.regions, rightArm: FISTS_MELEE.damage },
       dismember: { chance: 0, headOnKillChance: 0 },
     };
-    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { zombies: registry.actors, poolSize: 2 });
+    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { actors: registry.actors, poolSize: 2 });
     try {
       renderer.setWorld(FLOOR, BLOCK_SIZE);
       const severedParts: string[] = [];
@@ -73,7 +73,7 @@ describe('melee while debug-frozen', () => {
         hurtPlayer: () => undefined,
         onSever: (sourceId, sourceActor, part, hit) => {
           severedParts.push(part);
-          renderer.zombieSevered(sourceId, part, hit, sourceActor);
+          renderer.actorSevered(sourceId, part, hit, sourceActor);
         },
       });
       const id = system.add(armKill, [0, 1, 0], [0, 0, -1]);

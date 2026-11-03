@@ -85,7 +85,7 @@ export class AcidEffects {
 
   /** Acid dripping from each drawn acid mouth at its content rate. Presentation only. */
   private drip(anchors: Iterable<DrawnAnchors>, dt: number): void {
-    for (const { zombie: actor, mouth } of anchors) {
+    for (const { actor, mouth } of anchors) {
       const body = actor.type.acidBody;
       if (!(body && mouth)) {
         continue;

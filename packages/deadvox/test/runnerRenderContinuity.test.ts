@@ -20,7 +20,7 @@ const FLOOR = (_x: number, y: number): boolean => y === 0;
 let renderer!: MobActorMeshes;
 
 beforeAll(() => {
-  renderer = new MobActorMeshes(BLOCK_SIZE, 4, { zombies: registry.actors });
+  renderer = new MobActorMeshes(BLOCK_SIZE, 4, { actors: registry.actors });
 });
 
 afterAll(() => renderer.dispose());

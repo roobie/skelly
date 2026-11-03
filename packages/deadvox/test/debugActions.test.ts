@@ -282,7 +282,7 @@ const makeActions = (
   const replayCalls: string[] = [];
   const actions = createDebugActions({
     hooks,
-    zombieTypes: fixtureActorTypes,
+    actorTypes: fixtureActorTypes,
     look,
     build,
     spawnMenu,
@@ -298,7 +298,7 @@ const makeActions = (
     spawnShambler(count) {
       spawnCounts.push(count);
     },
-    spawnZombie(typeId, count) {
+    spawnActor(typeId, count) {
       spawnRequests.push({ typeId, count });
     },
     isAimEnabled: () => aimEnabled,

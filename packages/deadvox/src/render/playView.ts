@@ -127,11 +127,11 @@ export interface PlayWorldFrame {
   readonly playerEye: Vec3;
   /** Where zombie attacks aim, in metres (core/actorSystem.ts, `PLAYER_CHEST_METRES`). */
   readonly playerChest: Vec3;
-  readonly lastZombieStep: number;
+  readonly lastActorStep: number;
   readonly lastBackgroundStep: number;
   readonly dt: number;
   readonly entities: BlockEntities;
-  readonly zombies: EntityStore<Actor>;
+  readonly actors: EntityStore<Actor>;
   readonly acidGlobs: readonly Readonly<AcidGlobState>[];
   readonly acidPuddles: readonly Readonly<AcidPuddleState>[];
   readonly frozen: boolean;
@@ -351,7 +351,7 @@ export const createPlayView = (
           gravityMetresPerSimSecondSquared,
           canvas: engine.renderer?.domElement,
           reveal: meshes,
-          zombies: registry.actors,
+          actors: registry.actors,
           onBurst: (position, actor) => acidEffects.deathSplash(position, actor),
           onFleshLanded: (centre) => gore.landed(centre),
           bloodiness: (actor) => gore.severity(actor),
@@ -487,7 +487,7 @@ export const createPlayView = (
     held,
     flashlight,
     lightPool,
-    zombieMeshes: actorMeshes,
+    actorMeshes,
     weather,
     dispose,
     get cameraRoll() {
@@ -521,11 +521,11 @@ export const createPlayView = (
       time,
       playerEye,
       playerChest,
-      lastZombieStep: lastActorStep,
+      lastActorStep,
       lastBackgroundStep,
       dt,
       entities,
-      zombies: actors,
+      actors,
       acidGlobs,
       acidPuddles,
       frozen,

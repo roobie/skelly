@@ -9,9 +9,9 @@ import { castsAndReceives } from './shadowFlags.ts';
 import { StepOffset } from './stepOffset.ts';
 
 type Part = FigurePart;
-interface RenderZombie {
+interface RenderActor {
   id: EntityId;
-  zombie: Actor;
+  actor: Actor;
   position: Vec3;
   yaw: number;
   headYaw: number;
@@ -69,7 +69,7 @@ export class ActorMeshes {
     }
   }
 
-  private renderPose(id: EntityId, actor: Actor, blend: number, realDt: number): RenderZombie {
+  private renderPose(id: EntityId, actor: Actor, blend: number, realDt: number): RenderActor {
     const previous = actor.renderPrevious;
     const position: Vec3 = [
       previous.pos[0] + (actor.body.pos[0] - previous.pos[0]) * blend,
@@ -81,7 +81,7 @@ export class ActorMeshes {
     const yawDelta = Math.atan2(Math.sin(yawAfter - yawBefore), Math.cos(yawAfter - yawBefore));
     return {
       id,
-      zombie: actor,
+      actor,
       position,
       yaw: yawBefore + yawDelta * blend,
       headYaw: previous.headYaw + (actor.headYaw - previous.headYaw) * blend,
@@ -90,9 +90,9 @@ export class ActorMeshes {
     };
   }
 
-  private syncPart(part: Part, actors: RenderZombie[]): void {
+  private syncPart(part: Part, actors: RenderActor[]): void {
     const mesh = this.meshes.get(part)!;
-    const visible = actors.filter(({ zombie: actor }) =>
+    const visible = actors.filter(({ actor }) =>
       actor.type.model === 'fused-mass'
         ? part === 'body' && actor.regions['core.trunk']! > 0
         : actor.regions[REGION_FOR_PART[part]]! > 0,
@@ -100,7 +100,7 @@ export class ActorMeshes {
     mesh.count = Math.min(visible.length, mesh.instanceMatrix.count);
     const s = this.blockSize;
     for (let i = 0; i < mesh.count; i++) {
-      const { zombie: actor, position, yaw, headYaw, gaitPhase, verticalOffset } = visible[i]!;
+      const { actor, position, yaw, headYaw, gaitPhase, verticalOffset } = visible[i]!;
       const box =
         actor.type.model === 'fused-mass' && part === 'body'
           ? {

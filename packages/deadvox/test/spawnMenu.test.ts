@@ -125,7 +125,7 @@ describe('spawnMenuViewModel', () => {
     } as unknown as DebugHooks;
     const actions = createDebugActions({
       hooks,
-      zombieTypes: [],
+      actorTypes: [],
       look: new LookControls(
         { toneMapping: NoToneMapping, toneMappingExposure: 1 },
         {
@@ -152,7 +152,7 @@ describe('spawnMenuViewModel', () => {
       spawnUnawareShambler: () => undefined,
       shamblerCount: () => 1,
       spawnShambler: () => undefined,
-      spawnZombie: () => undefined,
+      spawnActor: () => undefined,
       isAimEnabled: () => true,
       toggleAim: () => undefined,
       isFrozen: () => false,
