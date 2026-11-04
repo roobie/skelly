@@ -107,6 +107,7 @@ try {
           data: {
             sounds: gather('sounds'),
             furnitureMaterials: gather('furnitureMaterials'),
+            powerDevices: gather('powerDevices'),
             furniture: [...plain, ...definitions],
           },
         },
