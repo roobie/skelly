@@ -12,7 +12,7 @@ import { toChunk } from '../src/core/coords.ts';
 import { isLongGun } from '../src/core/firearmFitting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { lootPointStream, rollLoot } from '../src/core/loot.ts';
-import { magazineSpec, magazineWellCalibre } from '../src/core/magazine.ts';
+import { magazineContentsReason, magazineSpec, magazineWellCalibre } from '../src/core/magazine.ts';
 import { doorOptions } from '../src/core/options.ts';
 import { Rng } from '../src/core/random.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
@@ -106,8 +106,20 @@ function* entryIndexTuples(entryCount: number, tupleLength: number): Generator<n
   }
 }
 
+/** Draws that load each rolled magazine full: its count, then its cartridge type when the calibre has several. */
+const fullMagazineDraws = (type: string, count: number): number[] => {
+  const spec = magazineSpec(result.registry, type);
+  if (spec === undefined) {
+    return [];
+  }
+  const rounds = [...result.registry.items.values()].filter(({ ammo }) => ammo?.calibre === spec.calibre).length;
+  const pieces = Math.ceil(count / (result.registry.items.get(type)?.stack ?? 1));
+  return Array.from({ length: pieces * (rounds > 1 ? 2 : 1) }, () => 0.999_999_999);
+};
+
 const maximumLootRoll = (table: LootTable, entryIndexes: readonly number[]) => {
   const values = [0.999_999_999];
+  const loads: number[] = [];
   for (const index of entryIndexes) {
     const entry = table.entries[index]!;
     values.push(entryDraw(table, index));
@@ -117,7 +129,11 @@ const maximumLootRoll = (table: LootTable, entryIndexes: readonly number[]) => {
     if (entry.item !== undefined && entry.condition !== undefined) {
       values.push(0.999_999_999);
     }
+    if (entry.item !== undefined) {
+      loads.push(...fullMagazineDraws(entry.item, entry.count?.[1] ?? 1));
+    }
   }
+  values.push(...loads);
   const rng = new Rng([0, 0, 0, 0]);
   rng.next = () => {
     const value = values.shift();
@@ -1057,7 +1073,9 @@ describe('authored fixed loot', () => {
     );
     const magazines = placedItems.filter(({ type }) => magazineSpec(result.registry, type) !== undefined);
     expect(magazines.length).toBeGreaterThan(0);
-    expect(magazines.every((magazine) => (magazine.cartridges ?? []).length === 0)).toBe(true);
+    for (const { type, cartridges } of magazines) {
+      expect(magazineContentsReason(result.registry, type, cartridges), type).toBeUndefined();
+    }
     expect(contents(forward)).toEqual(contents(reverse));
   });
 

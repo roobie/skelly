@@ -25,8 +25,8 @@ import {
   rolledFitIssue,
 } from './inventoryScale.ts';
 import { itemPresentationIssues } from './itemPresentation.ts';
-import { lootTypeIssue } from './loot.ts';
-import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
+import { lootTypeIssue, militaryLootItems } from './loot.ts';
+import { magazineWellCalibre } from './magazine.ts';
 import { mapKitIssues } from './mapKit.ts';
 import { type MaterialOperation, materialCycle } from './materialCycles.ts';
 import { modelBodyMassKg } from './modelMass.ts';

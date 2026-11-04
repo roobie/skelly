@@ -8,6 +8,7 @@ import {
   NonNegativeSimRate,
   Positive,
   PositiveSimSeconds,
+  range,
   SimSeconds,
 } from './primitives.ts';
 
@@ -45,6 +46,11 @@ export const RangedTuningSchema = strictObject({
     landingLiftMetres: NonNegative,
   }),
   shotTraceRangeBlocks: Positive,
+  /**
+   * Share of capacity loaded in a magazine placed as loot, inclusive; each whole count in the
+   * rounded range is equally likely. Absent, such magazines spawn empty.
+   */
+  lootMagazineLoad: optional(range(Fraction)),
 });
 
 export const CombatPolicySchema = strictObject({

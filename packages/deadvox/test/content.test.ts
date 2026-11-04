@@ -15,8 +15,7 @@ import {
   validateContent,
 } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { corpseLootPoint, lootTypeIssue } from '../src/core/loot.ts';
-import { militaryLootItems } from '../src/core/magazine.ts';
+import { corpseLootPoint, lootTypeIssue, militaryLootItems } from '../src/core/loot.ts';
 import { blockPatterns, blockWeatherability } from '../src/core/meshInput.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import {

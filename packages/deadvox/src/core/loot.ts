@@ -4,8 +4,10 @@
 // instances, so worldgen stays free of item uids.
 
 import { array, boolean, check, type InferOutput, literal, optional, picklist, pipe, strictObject } from 'valibot';
+import { claimed } from './capabilities.ts';
 import type { ItemDef, LootEntry, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
+import { magazineSpec } from './magazine.ts';
 import { type PaperMapCoverage, paperMapAt } from './paperMap.ts';
 import { Rng } from './random.ts';
 import { BLOCK_SIZE } from './scale.ts';
@@ -66,6 +68,9 @@ export const economyEligible = (economy: ItemEconomy, context: LootContext): boo
 
 export const militaryOnlyEconomy = (economy: ItemEconomy): boolean =>
   economy.usage.length === 1 && economy.usage[0] === 'Military';
+
+export const militaryLootItems = (registry: Registry): ReadonlySet<string> =>
+  new Set([...registry.itemEconomy.values()].filter(militaryOnlyEconomy).map((item) => item.id));
 
 type LootSupply =
   | { readonly kind: 'table'; readonly table: string }
@@ -235,6 +240,8 @@ export interface Rolled {
   charge?: number;
   craftedLiquids?: FixedLootItemDef['craftedLiquids'];
   liquidContents?: FixedLootItemDef['liquidContents'];
+  /** A magazine's loaded cartridge types, top round first. */
+  cartridges?: readonly string[];
 }
 
 const pick = <T extends { weight: number }>(entries: readonly T[], rng: Rng): T => {
@@ -250,6 +257,25 @@ const pick = <T extends { weight: number }>(entries: readonly T[], rng: Rng): T 
     }
   }
   return entries.at(-1)!;
+};
+
+/** A found magazine's load, from the ranged tuning's spread; undefined leaves it as created, empty. */
+const magazineLoad = (registry: Registry, type: string, rng: Rng): string[] | undefined => {
+  const spec = magazineSpec(registry, type);
+  const share = spec && claimed(registry.rangedTuning, 'ranged')?.lootMagazineLoad;
+  if (!(spec && share)) {
+    return undefined;
+  }
+  const rounds = [...registry.items.values()].filter((def) => def.ammo?.calibre === spec.calibre);
+  if (rounds.length === 0) {
+    return undefined;
+  }
+  const count = rng.int(Math.round(share[0] * spec.capacity), Math.round(share[1] * spec.capacity));
+  const round = pick(
+    rounds.map(({ id }) => ({ id, weight: 1 })),
+    rng,
+  ).id;
+  return Array.from({ length: count }, () => round);
 };
 
 /**
@@ -405,12 +431,11 @@ const rollTable = (registry: Registry, tableId: string, context: RollContext): R
   return out;
 };
 
-/** A point's loot, split into the fixed items it must deliver and what its table rolled. */
-export const rollLootParts = (
+const selectedLootParts = (
   registry: Registry,
   point: LootSpawnPoint,
   rng: Rng,
-  blockSize = BLOCK_SIZE,
+  blockSize: number,
 ): { fixed: Rolled[]; rolled: Rolled[] } => {
   const context = { point, rng, blockSize };
   switch (point.supply.kind) {
@@ -431,6 +456,24 @@ export const rollLootParts = (
     default:
       throw new Error('Unknown loot supply');
   }
+};
+
+/**
+ * A point's loot, split into the fixed items it must deliver and what its table rolled.
+ * Magazine loads draw after every item is chosen, so fixed stock never shifts the table's choices.
+ */
+export const rollLootParts = (
+  registry: Registry,
+  point: LootSpawnPoint,
+  rng: Rng,
+  blockSize = BLOCK_SIZE,
+): { fixed: Rolled[]; rolled: Rolled[] } => {
+  const { fixed, rolled } = selectedLootParts(registry, point, rng, blockSize);
+  const loaded = (item: Rolled): Rolled => {
+    const cartridges = magazineLoad(registry, item.type, rng);
+    return cartridges === undefined ? item : { ...item, cartridges };
+  };
+  return { fixed: fixed.map(loaded), rolled: rolled.map(loaded) };
 };
 
 export const rollLoot = (registry: Registry, point: LootSpawnPoint, rng: Rng, blockSize = BLOCK_SIZE): Rolled[] => {
