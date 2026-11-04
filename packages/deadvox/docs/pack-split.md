@@ -161,7 +161,13 @@ permission to invent resistance or injury responses.
 
 **Sounds.** A sound follows the entry selecting it: shared body/block sounds belong
 with their shared content, reusable weapon sounds with their theme, and zombie-specific
-sounds with the product. Mechanisms read selections from triggering entries;
+sounds with the product. A block names only the player's own footstep; other footsteps
+live in a product section keyed by family and block, because a core block cannot name a
+product's actor. Rows merge across mods, and a scenario's own blocks take their rows from
+that scenario's mod; every Deadvox row sits in `skelly.deadvox.residual` until #1532
+extracts those mods. See `src/core/footsteps.ts`, `footstepEventForBlock`, and
+`mods/skelly.deadvox.residual/footstep-sounds.jsonnet`, `footstepSounds`.
+Mechanisms read selections from triggering entries;
 `src/core/content.ts`, `checkActionSounds` and `referenceIssues` reject absent
 providers at those fields rather than requiring every product event. Optional
 presentation selections mean silence when omitted, never a borrowed sound. Door
