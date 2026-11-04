@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { claimed } from '../src/core/capabilities.ts';
 import { Character, practiceForNextLevel, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import { buildRegistry, requiredContentIssues, type Registry } from '../src/core/content.ts';
+import { buildRegistry, type Registry, requiredContentIssues } from '../src/core/content.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
 import { planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';

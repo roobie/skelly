@@ -441,10 +441,8 @@ const checkLiquidRecovery = (item: ItemDef, registry: Registry, qualities: Reado
       report('items', item.id, `${path}.toolModifier.quality`, `no tool quality "${quality}"`);
     }
   }
-  if (item.salvageLiquidRecovery) {
-    if (!item.salvage) {
-      report('items', item.id, '.salvageLiquidRecovery', 'salvage liquid recovery needs a salvage capability');
-    }
+  if (item.salvageLiquidRecovery && !item.salvage) {
+    report('items', item.id, '.salvageLiquidRecovery', 'salvage liquid recovery needs a salvage capability');
   }
 };
 
