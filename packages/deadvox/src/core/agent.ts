@@ -1,6 +1,6 @@
 import {
   angleOf,
-  canStillAttack,
+  canStartBodyAttack,
   faceActorDirection,
   haltActor,
   headingAt,
@@ -22,7 +22,7 @@ import {
   unit,
 } from './actorMotion.ts';
 import type { PlayerSense } from './actorSense.ts';
-import { type Actor, type AgentMode, activeFusedMassMembers, copy } from './actorState.ts';
+import { type Actor, type AgentMode, copy } from './actorState.ts';
 import type { ActorSystemOptions } from './actorSystem.ts';
 import type { ActorTickScratch } from './actorTickScratch.ts';
 import type { AgentHorde } from './agentHorde.ts';
@@ -854,7 +854,7 @@ export class AgentController {
       actor.staggerSimSeconds <= 0 &&
       actor.attackWait <= 0 &&
       actor.spitWindup <= 0 &&
-      (type.model === 'fused-mass' ? activeFusedMassMembers(actor).length > 0 : canStillAttack(actor)) &&
+      canStartBodyAttack(actor) &&
       reachableActorMoves(actor, pos, player.pos, this.options).length > 0
     ) {
       this.options.onSound?.(type.sounds.attack, copy(pos), actor);

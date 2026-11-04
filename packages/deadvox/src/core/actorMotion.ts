@@ -2,7 +2,7 @@ import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { templateFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import type { Actor } from './actorState.ts';
-import { actorAttackReachMetres, requiredGrabBand } from './actorState.ts';
+import { activeFusedMassMembers, actorAttackReachMetres, requiredGrabBand } from './actorState.ts';
 import type { MeleeBlocker } from './collision.ts';
 import type { Vec3 } from './coords.ts';
 import { fusedMassFigureForType, fusedMassStrikeOrigin } from './fusedMassFigure.ts';
@@ -255,7 +255,7 @@ export const cutsFor = (actor: Actor) => {
 const armDisabled = (arm: readonly string[], hidden: ReadonlySet<string>): boolean =>
   arm.length > 0 && hidden.has(arm[Math.max(0, arm.length - 2)]!);
 /** Both disabled arms leave nothing to grab or claw with; an already-started windup is not cancelled. */
-export const canStillAttack = (actor: Actor): boolean => {
+const canStillAttack = (actor: Actor): boolean => {
   if (actor.severed.length === 0) {
     return true;
   }
@@ -282,4 +282,7 @@ export function setActorAttackWindup(actor: Actor, windup: number): void {
 }
 export function faceActorDirection(actor: Actor, direction: Vec3): void {
   actor.facing = [direction[0], direction[1], direction[2]];
+}
+export function canStartBodyAttack(actor: Actor) {
+  return actor.type.model === 'fused-mass' ? activeFusedMassMembers(actor).length > 0 : canStillAttack(actor);
 }
