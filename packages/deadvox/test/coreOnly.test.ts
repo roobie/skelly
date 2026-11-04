@@ -1,46 +1,22 @@
-import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import { buildRegistry, requiredContentIssues } from '../src/core/content.ts';
+import { readBundledPacks } from '../tools/readBundledPacks.ts';
 import { CORE_ONLY_KNOWN_ISSUES } from './fixtures/coreOnlyKnownIssues.ts';
 
-const CORE_MODS = [
-  'skelly.saves',
-  'skelly.day-cycle',
-  'skelly.controls',
-  'skelly.graphics',
-  'skelly.ui',
-  'skelly.weathering',
-  'skelly.melee-classes',
-  'skelly.inventory',
-  'skelly.body',
-  'skelly.sound-families',
-  'skelly.senses',
-  'skelly.natural-world',
-  'skelly.materials',
-  'skelly.medicine',
-  'skelly.hand-tools',
-  'skelly.readables',
-  'skelly.structures',
-  'skelly.basic-foods',
-  'skelly.packaged-foods',
-  'skelly.wearables',
-];
+/** Every core-tier mod's content files, as its manifest lists them, so a new core mod cannot skip this check. */
+const coreSources = readBundledPacks('.')
+  .filter(({ manifest }) => manifest.tier === 'core')
+  .flatMap(({ manifest, files }) =>
+    manifest.files
+      .filter(({ kind }) => kind === 'content')
+      .map(({ path }) => ({
+        source: `core-only/${manifest.id}/${path}`,
+        data: files.find(({ source }) => source === path)!.data,
+      })),
+  );
 
-/** A core mod's content files, as its manifest lists them. */
-const coreModSources = (mod: string) => {
-  const manifest = JSON.parse(readFileSync(`../mods/${mod}/pack/manifest.json`, 'utf8')) as {
-    files: { path: string; kind: string }[];
-  };
-  return manifest.files
-    .filter(({ kind }) => kind === 'content')
-    .map(({ path }) => ({
-      source: `core-only/${mod}/${path}`,
-      data: JSON.parse(readFileSync(`../mods/${mod}/${path}`, 'utf8')) as unknown,
-    }));
-};
-
-it('validates selected core mods without booting or hiding unowned or stale issues', () => {
-  const { registry, issues } = buildRegistry(CORE_MODS.flatMap(coreModSources));
+it('validates the core-tier mods alone without booting or hiding unowned or stale issues', () => {
+  const { registry, issues } = buildRegistry(coreSources);
   const actual = [...issues, ...requiredContentIssues(registry)];
   expect(registry.compression.size).toBeGreaterThan(0);
   expect(registry.inventory.size).toBeGreaterThan(0);
