@@ -21,13 +21,11 @@ Phase 4 is complete when all of these hold:
 - A tool row a player holds either authors its handling datum against a named solid or takes
   Deadvox's default hold; a default judged wrong at a look in game gets an authored datum.
 
-To derive what remains, compare the rows of `packages/thing-authoring-tool/items.jsonnet`,
-`items`, with the model registrations in
-`packages/deadvox/mods/skelly.deadvox.residual/models-items.jsonnet`, `authored`, and
-`packages/mods/skelly.light-sources/models-light-sources.jsonnet`, `models`, and look for datum
-overrides in `packages/deadvox/mods/skelly.deadvox.residual/models-melee.jsonnet`, `models`, and in
-`authored`. The recipe, `packages/deadvox/mods/skelly.deadvox.residual/exports/things.jsonnet`, exports
-every row. See `test/things-deadvox-contract.test.mjs`,
+To derive what remains, compare each mod's model registrations with what its own recipe exports.
+A registration no recipe exports is a hand-made model, and a datum a registration adds over its
+export is an override. Recipes live beside their item rows in whichever mod owns them, in either
+mod root, so discovery finds them all and no central list can fall behind. See
+`tools/thing-recipes.ts`, `thingRecipeDirectories`, and `test/things-deadvox-contract.test.mjs`,
 "thing tool exports satisfy the Deadvox contract", for the check of each committed export.
 
 ## Exceptions
