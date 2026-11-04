@@ -9,6 +9,7 @@ import { magazineFits } from '../packages/deadvox/src/core/magazine.ts';
 import { ModelSchema } from '../packages/deadvox/src/core/schema.ts';
 import { ammoMatchesCalibre, spentCaseItemId } from '../packages/deadvox/src/game/firearmHandling.ts';
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
+import { readStackContentSources } from '../packages/deadvox/tools/readBundledPacks.ts';
 import { loadExportRecipe } from '../packages/gun-authoring-tool/src/cli/exportRecipe.ts';
 import { PART_CATALOGUE } from '../packages/gun-authoring-tool/src/gun/catalogue.ts';
 import { loadGunDesign } from '../packages/gun-authoring-tool/src/gun/designLoader.ts';
@@ -64,17 +65,13 @@ const exportedShape = (committed, exported) =>
   exported !== null && typeof exported === 'object' && !Array.isArray(exported)
     ? Object.fromEntries(Object.keys(exported).map((key) => [key, exportedShape(committed?.[key], exported[key])]))
     : committed;
+const BASE_SOURCES = readStackContentSources(join(ROOT, 'packages/deadvox'), 'skelly.deadvox');
 const committedModels = () =>
   new Map(
-    readdirSync(DEADVOX_BASE)
-      .filter((file) => MODELS_FILE.test(file))
-      .flatMap((file) => JSON.parse(readFileSync(join(DEADVOX_BASE, file), 'utf8')).models)
+    BASE_SOURCES.filter(({ source }) => MODELS_FILE.test(source))
+      .flatMap(({ data }) => data.models)
       .map((model) => [model.id, model]),
   );
-const BASE_SOURCES = readdirSync(DEADVOX_BASE)
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(DEADVOX_BASE, file), 'utf8')) }));
 const RECIPE_IDS = new Set(RECIPE.map(({ id }) => id));
 const modelOf = (registry, item) => (item.model === undefined ? undefined : registry.models.get(item.model));
 const certifiedAttachments = (model) =>

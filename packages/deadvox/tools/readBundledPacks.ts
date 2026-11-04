@@ -73,6 +73,20 @@ export const readBundledPacks = (packageRoot: string, stack?: string): PackInput
   return inputs.filter(({ manifest }) => selected.has(manifest.id));
 };
 
+/** A stack's content files, following its packs so a reader keeps seeing a row when its mod moves. */
+export const readStackContentFiles = (packageRoot: string, stack: string) =>
+  readBundledPacks(packageRoot, stack).flatMap(({ source: pack, manifest, files }) =>
+    manifest.files
+      .filter(({ kind }) => kind === 'content')
+      .map(({ path: file }) => ({ pack, file, data: files.find(({ source }) => source === file)!.data })),
+  );
+
+/** A stack's content as sources labelled by file name, in a stable order. */
+export const readStackContentSources = (packageRoot: string, stack: string) =>
+  readStackContentFiles(packageRoot, stack)
+    .map(({ file, data }) => ({ source: file, data }))
+    .sort((left, right) => left.source.localeCompare(right.source));
+
 const CONTENT_PACKS_DEFINE = '__SKELLY_CONTENT_PACKS__';
 const FILE_HASHES_DEFINE = '__SKELLY_FILE_HASHES__';
 

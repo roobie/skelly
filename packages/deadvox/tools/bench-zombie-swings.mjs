@@ -1,4 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createServer } from 'vite';
 
@@ -15,13 +14,8 @@ try {
   const { ActorSystem } = await server.ssrLoadModule('/src/core/actorSystem.ts');
   const { playerTuning, physicsFor } = await server.ssrLoadModule('/src/game/player.ts');
   const { makeScale } = await server.ssrLoadModule('/src/core/scale.ts');
-  const contentDirectory = resolve(projectRoot, 'mods/skelly.deadvox.residual');
-  const { registry } = buildRegistry(
-    readdirSync(contentDirectory)
-      .filter((file) => file.endsWith('.json'))
-      .sort()
-      .map((file) => ({ source: file, data: JSON.parse(readFileSync(resolve(contentDirectory, file), 'utf8')) })),
-  );
+  const { readStackContentSources } = await server.ssrLoadModule('/tools/readBundledPacks.ts');
+  const { registry } = buildRegistry(readStackContentSources(projectRoot, 'skelly.deadvox'));
   const PLAYER = playerTuning(registry);
   const type = { ...registry.actors.get('shambler'), dismember: { chance: 0, headOnKillChance: 0 } };
   const player = {

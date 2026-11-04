@@ -1,22 +1,17 @@
 // biome-ignore-all lint/correctness/noNodejsModules: This report is a Node-only command-line tool.
-import { readdirSync, readFileSync, realpathSync } from 'node:fs';
+import { realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { buildRegistry } from '../src/core/content.ts';
 import { checkStartReachability } from '../src/core/reachability.ts';
+import { readStackContentSources } from './readBundledPacks.ts';
 
 const projectRoot = resolve(import.meta.dirname, '..');
-const contentDirectory = resolve(projectRoot, 'mods/skelly.deadvox.residual');
-const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
 
 const registryFromBaseContent = () => {
-  const sources = readdirSync(contentDirectory)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: readJson(resolve(contentDirectory, file)) }));
-  const { registry, issues } = buildRegistry(sources);
+  const { registry, issues } = buildRegistry(readStackContentSources(projectRoot, 'skelly.deadvox'));
   if (issues.length > 0) {
     throw new Error(issues.map(({ source, path, message }) => `${source} ${path}: ${message}`).join('\n'));
   }

@@ -7,6 +7,7 @@ import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
 import { typeWeightGrams } from '../packages/deadvox/src/core/items.ts';
 import { ARM_SEGMENTS, LEG_SEGMENTS, ModelSchema } from '../packages/deadvox/src/core/schema.ts';
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
+import { readStackContentSources } from '../packages/deadvox/tools/readBundledPacks.ts';
 import { catalogue } from '../packages/thing-authoring-tool/src/catalogue.ts';
 import { loadThingRecipe } from '../packages/thing-authoring-tool/src/exports.ts';
 import { modelMassKg } from '../packages/thing-core/src/mass.ts';
@@ -21,9 +22,7 @@ const base = new URL('../packages/deadvox/mods/skelly.deadvox.residual/', import
 const recipe = loadThingRecipe(readThingRecipes().find((entry) => `${entry.base}/` === base).value);
 const exported = recipe.map((row) => ({ id: row.id, source: row.source, voxel: row.voxel, ...row.generate() }));
 const { registry, issues } = buildRegistry(
-  readdirSync(base)
-    .filter((file) => file.endsWith('.json'))
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
+  readStackContentSources(new URL('../packages/deadvox/', import.meta.url).pathname, 'skelly.deadvox'),
 );
 /** Each part a figure row names: its model, the anchors the row names on it and, for a limb, its rig's parts. */
 const figureParts = [...registry.figures.values()].flatMap((figure) => [

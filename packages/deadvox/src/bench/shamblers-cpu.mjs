@@ -1,7 +1,7 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { readStackContentSources } from '../../tools/readBundledPacks.ts';
 import { ActorSystem, BACKGROUND_ACTOR_RATE, BACKGROUND_ACTOR_SLICE_COUNT } from '../core/actorSystem.ts';
 import { claimed } from '../core/capabilities.ts';
 import { parseTimeOfDay } from '../core/clock.ts';
@@ -15,13 +15,7 @@ import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { createHeadlessShamblerWorld } from './shamblerWorld.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const base = resolve(root, 'mods/skelly.deadvox.residual');
-const { registry } = buildRegistry(
-  readdirSync(base)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
-);
+const { registry } = buildRegistry(readStackContentSources(root, 'skelly.deadvox'));
 const PLAYER = playerTuning(registry);
 const shambler = registry.actors.get('shambler');
 if (!shambler) {
