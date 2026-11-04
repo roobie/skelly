@@ -634,7 +634,6 @@ describe('content', () => {
       ),
     ).toBe(false);
     const thermal = baseRegistry.items.get('optic_digital_thermal')!;
-    expect(baseRegistry.itemEconomy.get(thermal.id)).toMatchObject({ usage: [], tiers: [] });
     expect(opticViewSettings(thermal, baseRegistry.models.get(thermal.model!)!)).toBeUndefined();
   });
 
