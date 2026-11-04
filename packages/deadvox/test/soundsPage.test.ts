@@ -37,12 +37,12 @@ describe('listening sheet', () => {
 
   it('lists every sound a base door selects, whichever mod holds it', () => {
     const { registry: page } = buildSoundsPageContent();
-    const selected = [...baseRegistry().furniture.values()].flatMap(({ door }) =>
-      door ? [door.openSound, door.closeSound, door.blockedCloseSound] : [],
-    );
+    const selected = [...baseRegistry().furniture.values()]
+      .flatMap(({ door }) => (door ? [door.openSound, door.closeSound, door.blockedCloseSound] : []))
+      .filter((id) => id !== undefined);
 
     expect(selected.length).toBeGreaterThan(0);
-    expect(selected.filter((id) => id !== undefined && !page.sounds.has(id))).toEqual([]);
+    expect(selected.filter((id) => !page.sounds.has(id))).toEqual([]);
   });
 
   it('previews a recorded variant from the bundled pack files', async () => {
