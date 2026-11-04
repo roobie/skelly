@@ -169,6 +169,11 @@ with a model, `skelly.body` too, loads inventory tuning and the work-in-progress
 vessel, so the two food mods share no edge. `skelly.basic-foods` never depends on hand tools.
 See `packages/mods/skelly.packaged-foods/pack/manifest.jsonnet`, `dependencies`.
 
+**Keys.** A key is content of whichever pack holds its lock-bearing door, not of core
+structures. Validation requires every key to name a lock some door in the same stack carries,
+so a core key whose door sits in a scenario template would fail the core stack alone. The core
+key box is a generic container and names no key. See `src/core/content.ts`, `checkKeys`.
+
 **Cursor.** The basic cursor is content presentation, not UI chrome, so it sits in
 `skelly.ui`, and a theme or product mod may replace it by data with a styled one. It has
 its own row because overrides replace whole rows: a swap restates one short row, not the UI
