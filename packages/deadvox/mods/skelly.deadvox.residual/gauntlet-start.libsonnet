@@ -156,7 +156,7 @@ local stairs = std.filter(function(p) p.id == 'gauntlet_city_stairs_east', kits.
     // Wide enough along its hinge for two fields and a third strap.
     door: {
       methods: {}, handlingSimSeconds: 0.8, hatch: true,
-      detail: (import 'door-detail.libsonnet').hatch + { fields: [1, 2], hinges: super.hinges + { count: 3 } },
+      detail: (import 'tools/jsonnet/lib/door-detail.libsonnet').hatch + { fields: [1, 2], hinges: super.hinges + { count: 3 } },
     },
   }],
   mapPieces: [

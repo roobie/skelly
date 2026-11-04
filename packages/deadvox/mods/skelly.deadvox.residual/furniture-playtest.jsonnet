@@ -1,8 +1,8 @@
-local shape = import 'furniture-shape.libsonnet';
+local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local cabinets = import 'cabinet-shapes.libsonnet';
 local vehicles = import 'vehicles.libsonnet';
-local detail = import 'door-detail.libsonnet';
+local detail = import 'tools/jsonnet/lib/door-detail.libsonnet';
 local plaque(id, name, color, readable) = {
   id: id,
   name: name,

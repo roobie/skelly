@@ -1,4 +1,4 @@
-local shape = import 'furniture-shape.libsonnet';
+local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local rows = import 'tools/jsonnet/lib/rows.libsonnet';
 local cabinets = import 'cabinet-shapes.libsonnet';

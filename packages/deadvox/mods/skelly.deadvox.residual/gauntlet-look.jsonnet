@@ -1,4 +1,4 @@
-local shape = import 'furniture-shape.libsonnet';
+local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
 local metal = '#707b7e';
