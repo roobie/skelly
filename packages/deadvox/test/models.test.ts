@@ -130,7 +130,7 @@ it('keeps every authored fuel fill inside its clear shell and resolves its origi
   expect(filled.length).toBeGreaterThan(0);
   await Promise.all(
     filled.map(async (model) => {
-      const { scene } = await parseGlb(readFileSync(`${BASE}/${model.file}`));
+      const { scene } = await parseGlb(readFileSync(modFile(model.file)));
       const { supply } = model.itemPresentation!;
       if (supply.kind !== 'fill') {
         throw new Error('Expected fill selector');
@@ -343,7 +343,7 @@ describe('piles with models', () => {
     expect(definition.model).toBeDefined();
     const modelDefinition = registry.models.get(definition.model!)!;
     expect(modelDefinition.emissiveMaterial).toBeDefined();
-    const { scene } = await parseGlb(readFileSync(`${BASE}/${modelDefinition.file}`));
+    const { scene } = await parseGlb(readFileSync(modFile(modelDefinition.file)));
     const { ground } = prepareModel(modelDefinition, scene);
     expect(new Box3().setFromObject(ground).isEmpty()).toBe(false);
     let authoredTube = false;
@@ -427,7 +427,7 @@ describe('piles with models', () => {
     expect(flameLights.length).toBeGreaterThan(0);
     const scenes = await Promise.all(
       flameLights.map(
-        async ({ model }) => (await parseGlb(readFileSync(`${BASE}/${registry.models.get(model!)!.file}`))).scene,
+        async ({ model }) => (await parseGlb(readFileSync(modFile(registry.models.get(model!)!.file)))).scene,
       ),
     );
     for (const [index, definition] of flameLights.entries()) {
