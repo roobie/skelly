@@ -19,6 +19,10 @@ const itemSource = (file: string, ids: readonly string[]) => {
     meleeClasses?: MeleeClassDef[];
   };
   data.items = data.items.filter(({ id }) => ids.includes(id));
+  const absent = ids.filter((id) => !data.items.some((item) => item.id === id));
+  if (ids.length === 0 || absent.length > 0) {
+    throw new Error(`${file} selects nothing or holds no ${absent.join(', ')}`);
+  }
   for (const item of data.items) {
     if (item.id === 'portable_radio') {
       item.salvage = undefined;
