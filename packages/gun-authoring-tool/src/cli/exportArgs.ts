@@ -3,7 +3,7 @@ import type { Cartridge } from '../ammo/cartridge.ts';
 import type { DeadvoxModelFile } from '../gun/exportGlb.ts';
 import { readCartridge } from './readCartridge.ts';
 
-export const EXPORT_USAGE =
+const EXPORT_USAGE =
   'usage: export <design-or-fixture.json> [--out <dir>] [--entry-out <dir>] [--id <model_id>] [--calibre <cartridge_id>]';
 
 /** Where the export CLI reads, what identity it exports under, and where it writes. */
