@@ -1,0 +1,10 @@
+{
+  "defaultStart": "gauntlet",
+  "dependencies": ["skelly.deadvox.residual"],
+  "files": [],
+  "id": "skelly.deadvox",
+  "overrides": [],
+  "product": true,
+  "tier": "product",
+  "version": "1"
+}

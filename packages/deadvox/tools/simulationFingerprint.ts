@@ -108,6 +108,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/publicCartography.ts',
   // WebAudio output/voice allocation and body-sized pitch law are presentation; admission and saved SoundPicker stay fingerprinted.
   'src/game/audio.ts',
+  // Bundled URL resolution is presentation; pack files have their own admitted identity.
+  'src/game/bundledAssets.ts',
   'src/game/audioPresentation.ts',
   // Machine graphics preferences affect rendering only and must not invalidate simulation saves.
   'src/game/graphicsSettings.ts',
@@ -196,8 +198,12 @@ const MODULE_QUERY_PATTERN = /[?#].*$/;
 const GLOB_REFERENCE = /\bimport\.meta\.glob\b/g;
 const GLOB_CALL = /\bimport\.meta\.glob(?:<[^>]*>)?\s*\(\s*(['"])(.*?)\1/g;
 const CONTENT_GLOB_PATTERNS = new Set([
-  '../../mods/skelly.deadvox.residual/*.json',
-  '../../mods/skelly.deadvox.residual/assets/audio/**/*.ogg',
+  '../../mods/*/*.json',
+  '../../../mods/*/*.json',
+  '../../mods/*/pack/manifest.json',
+  '../../../mods/*/pack/manifest.json',
+  '../../mods/*/assets/audio/**/*.ogg',
+  '../../../mods/*/assets/audio/**/*.ogg',
   '../config/bundled/*.json',
 ]);
 const REQUIRE_CALL = /\brequire\s*\(/;
@@ -283,7 +289,8 @@ function sourcePath(id: string): string | undefined {
 function sourceRelativePath(projectRoot: string, sourceRoot: string, file: string): string | undefined {
   const roots = [
     { root: sourceRoot, prefix: 'src/' },
-    { root: resolve(projectRoot, 'mods/skelly.deadvox.residual'), prefix: 'mods/skelly.deadvox.residual/' },
+    { root: resolve(projectRoot, 'mods'), prefix: 'mods/' },
+    { root: resolve(projectRoot, '../mods'), prefix: 'shared-mods/' },
     { root: resolve(projectRoot, '../mobgen/src'), prefix: 'mobgen/' },
     { root: resolve(projectRoot, '../thing-core/src'), prefix: 'thing-core/' },
     { root: resolve(projectRoot, '../../node_modules'), prefix: 'node_modules/' },
@@ -364,7 +371,7 @@ async function resolveTrackableModule(
   if (recordExcludedImport(relativePath, importer, context.excludedImportContext)) {
     return;
   }
-  if (relativePath.startsWith('mods/skelly.deadvox.residual/')) {
+  if (relativePath.startsWith('mods/') || relativePath.startsWith('shared-mods/')) {
     return;
   }
   const extension = extname(relativePath).toLowerCase();

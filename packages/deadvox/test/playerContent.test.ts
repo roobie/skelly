@@ -43,7 +43,7 @@ it('validate rejects every missing or negative player tuning field and a missing
       }),
     );
     const output: string[] = [];
-    const status = validate([], (line) => output.push(line), root);
+    const status = validate(['--stack', 'fixture.player'], (line) => output.push(line), root);
     return { status, output: output.join('\n') };
   };
   try {

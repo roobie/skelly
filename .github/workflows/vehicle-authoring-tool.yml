@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'packages/mods/**'
       - 'packages/vehicle-authoring-tool/**'
       - 'packages/deadvox/src/core/**'
       - 'packages/deadvox/src/game/**'
@@ -15,6 +16,7 @@ on:
       - '!**/*.md'
   pull_request:
     paths:
+      - 'packages/mods/**'
       - 'packages/vehicle-authoring-tool/**'
       - 'packages/deadvox/src/core/**'
       - 'packages/deadvox/src/game/**'

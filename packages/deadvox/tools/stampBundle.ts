@@ -15,7 +15,10 @@ export async function stampBundle(sources: readonly ContentSource[], proofHash: 
   return { sourceHash: await bundleSourceHash(sources), proofHash };
 }
 
-async function stampPacks(inputs: readonly PackInput[], proofHash: string): Promise<Record<string, BundleStamp>> {
+export async function stampPacks(
+  inputs: readonly PackInput[],
+  proofHash: string,
+): Promise<Record<string, BundleStamp>> {
   const admitted = admitPacks(inputs);
   if (admitted.issues.length > 0) {
     throw new Error(`Pack admission failed: ${JSON.stringify(admitted.issues)}`);

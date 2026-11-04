@@ -115,6 +115,12 @@ Compiled JSON under a pack root must be declared, so an omitted manifest entry c
 silently remove authored content from validation and the game. See
 `tools/readBundledPacks.ts`, `readBundledPacks`.
 
+Bundled asset keys combine pack identity and relative path so unrelated mods may
+own equal filenames without choosing a winner. Content resolves files within its
+owning pack; sharing content across packs requires a dependency rather than a flat
+asset namespace. See `src/game/bundledAssets.ts`, `bundledAssetFiles` and
+`bundledOriginAssetKey`.
+
 Each pack's identity covers its manifest and enumerated files, including exporter
 models, so changing a model cannot leave its world's content identity unchanged.
 Non-content JSON and binary assets contribute build-time digests rather than requiring

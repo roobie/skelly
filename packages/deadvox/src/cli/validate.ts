@@ -1,11 +1,3 @@
-// Validate content JSON from the command line (for base content and mods):
-//   npm run validate                      the base pack and its asset manifest
-//   npm run validate -- mods/foo/*.json   specific files, applied in order after the base pack;
-//                                         a file named manifest.json is checked as an asset manifest
-// A content file's pack is its folder, so a model's file is found next to it. A
-// manifest's pack is the folder above its assets directory, and every file in there must
-// come from a listed source.
-
 import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 import process from 'node:process';
@@ -26,7 +18,6 @@ import { checkStartReachability } from '../core/reachability.ts';
 import { CONTENT_SECTION_KEYS, CONTENT_SECTIONS } from '../core/schema.ts';
 import { controlIssues } from './controlIssues.ts';
 
-const BASE = 'mods/skelly.deadvox.residual';
 const CATALOGUE = 'src/config/bundled-mods.json';
 
 const presentationAssetIssues = (registry: Registry, root: string): ContentIssue[] =>
@@ -75,17 +66,31 @@ export const validate = (
   write: (line: string) => void = console.log,
   root = process.cwd(),
 ): number => {
+  const fragments = [...args];
+  const stackIndex = fragments.indexOf('--stack');
+  const stack = stackIndex < 0 ? 'skelly.deadvox' : fragments.splice(stackIndex, 2)[1];
+  if (!stack || stack.startsWith('--')) {
+    write('FAIL  --stack requires a pack id');
+    return 1;
+  }
   let admitted: ReturnType<typeof admitPacks>;
   try {
-    admitted = admitPacks(readBundledPacks(root).map((pack) => ({ ...pack, source: join('src/game', pack.source) })));
+    admitted = admitPacks(
+      readBundledPacks(root, stack).map((pack) => ({ ...pack, source: join('src/game', pack.source) })),
+    );
   } catch (error) {
     write(`FAIL  bundled packs: ${error instanceof Error ? error.message : String(error)}`);
     return 1;
   }
   const base = admitted.sources.map(({ source }) => source);
   const isManifest = (f: string) => basename(f) === 'manifest.json';
-  const files = [...base, ...args.filter((f) => !isManifest(f))];
-  const manifests = [join(BASE, MANIFEST_PATH), ...args.filter(isManifest)];
+  const files = [...base, ...fragments.filter((f) => !isManifest(f))];
+  const manifests = [
+    ...admitted.packs.flatMap((pack) =>
+      pack.manifest.files.some(({ path }) => path === MANIFEST_PATH) ? [join(pack.source, MANIFEST_PATH)] : [],
+    ),
+    ...fragments.filter(isManifest),
+  ];
 
   /** Every file under a pack's assets directory, as paths within the pack. */
   const assetFiles = (pack: string): string[] =>

@@ -54,6 +54,14 @@ Each product chooses its dependencies rather than inheriting one mandatory core 
 
 ## Definitions and distribution
 
+Shared topics live under `packages/mods`; product and scenario mods live under the
+product's own mod root so removing a product leaves shared definitions intact.
+The shared root is one workspace package, giving mod-wide scripts one home rather
+than a package per content topic; see `packages/mods/package.json`.
+A mod folder equals its full manifest id to keep paths and grep in step. The folder
+name has a path-budget cap checked by `packages/deadvox/test/shippedMods.test.ts`,
+so a short Windows checkout root leaves room inside mods under MAX_PATH.
+
 Cut reusable content by topic and consumer. A topic mod declares dependencies on
 other topics it uses, so a vehicle's fuel or a firearm's ammunition is not a hidden
 cross-pack reference. Reusable transport and parts belong in shared content;
@@ -63,8 +71,11 @@ product-specific vehicles belong in that product, classified entry by entry.
 appears through loot, shops, sites and other distribution; recipe availability is
 also distribution. Scarcity, placement and prices belong to that consumer, not to
 the generic object's definition. Player-facing lists, including spawn menus,
-encyclopedias and crafting books, filter to what the product uses. An exclusion
-mechanism or a parallel era axis would duplicate those choices.
+encyclopedias and crafting books, filter to what the product uses. Editing rows out
+of an included mod waits for #1544's typed patches and entry removal under
+`docs/decisions/0007-typed-field-patches.md`. Until then the row stays loaded:
+the product leaves it out of distribution and player lists filter to what the
+product uses. Distribution filters do not remove definitions from the registry.
 
 Reusable definitions start under their shared topic identity, rather than under a
 product name that must later be renamed. Content reused by two or more scenarios

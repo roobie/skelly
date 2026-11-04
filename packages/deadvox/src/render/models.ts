@@ -21,21 +21,24 @@ import { type GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { attachmentFrame } from '../core/attachmentFrame.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
+import { bundledAssetFiles, bundledOriginAssetKey } from '../game/bundledAssets.ts';
 import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
 import type { ItemLook, ItemLookSlot } from './itemLook.ts';
 import { fittedStateGroup } from './itemStateLook.ts';
 import { applyModelMaterials } from './modelMaterials.ts';
 
-/** The base pack's model files, by their path within the pack. */
-const PACK_FILES: Readonly<Record<string, string>> = Object.fromEntries(
-  Object.entries(
-    import.meta.glob<string>('../../mods/skelly.deadvox.residual/assets/**/*.glb', {
-      eager: true,
-      query: '?url',
-      import: 'default',
-    }),
-  ).map(([path, url]) => [path.replace('../../mods/skelly.deadvox.residual/', ''), url]),
-);
+const PACK_FILES = bundledAssetFiles({
+  ...import.meta.glob<string>('../../mods/*/assets/**/*.glb', {
+    eager: true,
+    query: '?url',
+    import: 'default',
+  }),
+  ...import.meta.glob<string>('../../../mods/*/assets/**/*.glb', {
+    eager: true,
+    query: '?url',
+    import: 'default',
+  }),
+});
 
 export interface GroundModelPart {
   readonly geometry: BufferGeometry;
@@ -267,7 +270,8 @@ export class ModelLibrary {
   ) {
     const loader = new GLTFLoader();
     this.pending = [...registry.models.values()].flatMap((def) => {
-      const url = (files ?? PACK_FILES)[def.file];
+      const key = bundledOriginAssetKey(registry.modelOrigins.get(def.id)?.source, def.file);
+      const url = files ? files[def.file] : PACK_FILES[key ?? ''];
       if (url === undefined) {
         queueMicrotask(() => report(`model "${def.id}": no file "${def.file}" in the pack`));
         return [];

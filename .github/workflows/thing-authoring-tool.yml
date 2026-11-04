@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'packages/mods/**'
       - 'packages/deadvox/mods/**'
       - 'packages/thing-authoring-tool/**'
       - 'packages/thing-core/**'
@@ -16,6 +17,7 @@ on:
       - '!**/*.md'
   pull_request:
     paths:
+      - 'packages/mods/**'
       - 'packages/deadvox/mods/**'
       - 'packages/thing-authoring-tool/**'
       - 'packages/thing-core/**'

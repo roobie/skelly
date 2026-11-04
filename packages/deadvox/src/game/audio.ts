@@ -14,6 +14,8 @@ import {
   playerHeartbeat,
 } from './audioPresentation.ts';
 
+import { bundledAssetFiles, bundledOriginAssetKey } from './bundledAssets.ts';
+
 const SETTINGS_KEY = 'skelly.audio.settings';
 const CATEGORIES = ['world', 'body', 'ui'] as const;
 type AudioCategory = (typeof CATEGORIES)[number];
@@ -54,15 +56,18 @@ const readVolumes = (defaults: Readonly<AudioVolumes>): AudioVolumes => {
   }
 };
 
-const PACK_FILES: Readonly<Record<string, string>> = Object.fromEntries(
-  Object.entries(
-    import.meta.glob<string>('../../mods/skelly.deadvox.residual/assets/audio/**/*.ogg', {
-      eager: true,
-      query: '?url',
-      import: 'default',
-    }),
-  ).map(([path, url]) => [path, url]),
-);
+const PACK_FILES = bundledAssetFiles({
+  ...import.meta.glob<string>('../../mods/*/assets/audio/**/*.ogg', {
+    eager: true,
+    query: '?url',
+    import: 'default',
+  }),
+  ...import.meta.glob<string>('../../../mods/*/assets/audio/**/*.ogg', {
+    eager: true,
+    query: '?url',
+    import: 'default',
+  }),
+});
 
 interface Nodes {
   master: GainNode;
@@ -507,8 +512,8 @@ export class GameAudio {
       return recipe;
     }
     const origin = this.registry.soundOrigins.get(event);
-    const packPath = origin?.source.slice(0, origin.source.lastIndexOf('/'));
-    return packPath ? PACK_FILES[`${packPath}/${file}`] : undefined;
+    const key = bundledOriginAssetKey(origin?.source, file);
+    return key ? PACK_FILES[key] : undefined;
   }
 
   private variantBuffer(

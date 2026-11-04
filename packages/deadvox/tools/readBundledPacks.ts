@@ -1,14 +1,29 @@
 // biome-ignore-all lint/correctness/noNodejsModules: bundled file provider for build tools and the CLI.
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync } from 'node:fs';
-import { resolve, sep } from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { relative, resolve, sep } from 'node:path';
 import { parse } from 'valibot';
 import { canonicalJson } from '../src/core/canonicalJson.ts';
 import { admitPacks, type PackInput, PackManifestSchema, packContentHash } from '../src/core/packAdmission.ts';
-import { bundledPacks } from '../src/game/bundledPacks.ts';
 
-export const readBundledPacks = (packageRoot: string): PackInput[] =>
-  bundledPacks.map(({ root }) => {
+export const readBundledPacks = (packageRoot: string, stack?: string): PackInput[] => {
+  const roots = ['mods', '../mods']
+    .flatMap((root) => {
+      const directory = resolve(packageRoot, root);
+      return existsSync(directory)
+        ? readdirSync(directory, { withFileTypes: true })
+            .filter(
+              (entry) =>
+                (entry.isDirectory() || entry.isSymbolicLink()) &&
+                existsSync(resolve(directory, entry.name, 'pack/manifest.json')),
+            )
+            .map((entry) =>
+              relative(resolve(packageRoot, 'src/game'), resolve(directory, entry.name)).split(sep).join('/'),
+            )
+        : [];
+    })
+    .sort();
+  const inputs = roots.map((root) => {
     const manifest = parse(
       PackManifestSchema,
       JSON.parse(readFileSync(resolve(packageRoot, 'src/game', root, 'pack/manifest.json'), 'utf8')),
@@ -39,6 +54,24 @@ export const readBundledPacks = (packageRoot: string): PackInput[] =>
       }),
     };
   });
+  if (stack === undefined) {
+    return inputs;
+  }
+  const selected = new Set<string>();
+  const visit = (id: string): void => {
+    if (selected.has(id)) {
+      return;
+    }
+    selected.add(id);
+    const pack = inputs.find(({ manifest }) => manifest.id === id);
+    if (!pack) {
+      throw new Error(`Unknown stack pack "${id}"`);
+    }
+    pack.manifest.dependencies.forEach(visit);
+  };
+  visit(stack);
+  return inputs.filter(({ manifest }) => selected.has(manifest.id));
+};
 
 const CONTENT_PACKS_DEFINE = '__SKELLY_CONTENT_PACKS__';
 const FILE_HASHES_DEFINE = '__SKELLY_FILE_HASHES__';

@@ -5,6 +5,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'packages/mods/**'
       - 'packages/deadvox/**'
       - 'packages/engine/**'
       - 'packages/tool-ui/**'
@@ -20,6 +21,7 @@ on:
       - 'test/browser-ci*.mjs'
   pull_request:
     paths:
+      - 'packages/mods/**'
       - 'packages/deadvox/**'
       - 'packages/engine/**'
       - 'packages/tool-ui/**'

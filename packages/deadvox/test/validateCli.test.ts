@@ -22,7 +22,7 @@ const makeMinimalPack = (...fixtureDirs: string[]): string => {
     writeFileSync(
       join(base, 'pack/manifest.json'),
       JSON.stringify({
-        id: 'fixture.base',
+        id: 'skelly.deadvox',
         version: '1',
         tier: 'product',
         product: true,
@@ -72,7 +72,7 @@ describe('validate CLI', () => {
       writeFileSync(join(directory, 'unlisted.json'), JSON.stringify({ items: [] }));
       const run = validateAt(root);
       expect(run.status).toBe(1);
-      expect(run.stdout).toContain('fixture.base');
+      expect(run.stdout).toContain('skelly.deadvox');
       expect(run.stdout).toContain('unlisted JSON file nested/unlisted.json');
     } finally {
       rmSync(root, { recursive: true, force: true });

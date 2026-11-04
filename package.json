@@ -12,7 +12,8 @@
     "packages/vehicle-authoring-tool",
     "packages/gun-authoring-tool",
     "packages/deadvox",
-    "packages/mobgen"
+    "packages/mobgen",
+    "packages/mods"
   ],
   "scripts": {
     "check": "biome check",

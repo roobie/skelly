@@ -15,6 +15,7 @@ on:
       - 'packages/thing-export/**'
       - 'packages/thing-authoring-tool/**'
       - 'packages/deadvox/**'
+      - 'packages/mods/**'
       - 'packages/mobgen/**'
       - 'packages/vehicle-authoring-tool/**'
       - 'package.json'

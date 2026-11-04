@@ -61,12 +61,18 @@ is guidance, not a permanent whitelist.
 belongs to a core or theme topic even when Deadvox first uses it. Loot, shops, sites,
 prices and recipe availability belong to a product or scenario. Topic definitions may
 mix eras; player-facing lists filter to the product's used content rather than exposing
-every definition. No exclusion mechanism or era axis duplicates distribution.
+every definition. Editing rows out of an included mod waits for #1544's typed
+patches and entry removal under `docs/decisions/0007-typed-field-patches.md`.
+Until then a row stays loaded while the product leaves it out of distribution and
+player lists filter to what the product uses; filtering is not registry removal.
 
 **References constrain placement.** A definition cannot sit below the content it
 references. Reclassifying the referenced content requires its own consumer justification,
 not a side effect of moving its referrer. A scenario's exclusive entries stay in its
 scenario mods; reuse by two or more scenarios moves them down to product topic mods.
+The shipped-mod dependency test enforces tier direction without granting the loader
+privilege; see `test/shippedMods.test.ts`. Outside mods remain unguarded by this
+repository-only check, an accepted trade-off for a privilege-free loader.
 
 **Skill entries are never core content.** Skills belong in theme topics. A product
 chooses available skills through its dependencies, as for any content: the registry

@@ -1,9 +1,12 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { expect, it } from 'vitest';
-import { packContentHash } from '../src/core/packAdmission.ts';
+import { validate } from '../src/cli/validate.ts';
+import { buildRegistry } from '../src/core/content.ts';
+import { admitPacks, packContentHash } from '../src/core/packAdmission.ts';
 import { bundledPackDefines, readBundledPacks } from '../tools/readBundledPacks.ts';
+import { stampPacks } from '../tools/stampBundle.ts';
 
 it('injects exporter JSON digests without model payloads while preserving runtime pack identity', async () => {
   const root = mkdtempSync(join(tmpdir(), 'pack-digests-'));
@@ -58,3 +61,106 @@ it('injects exporter JSON digests without model payloads while preserving runtim
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+const withMultiRootFixture = async (check: (root: string) => void | Promise<void>): Promise<void> => {
+  const temporary = mkdtempSync(join(tmpdir(), 'multi-root-mods-'));
+  const root = join(temporary, 'packages/deadvox');
+  const shared = join(temporary, 'packages/mods/fixture.shared');
+  const entry = join(root, 'mods/fixture.entry');
+  try {
+    mkdirSync(join(shared, 'pack'), { recursive: true });
+    mkdirSync(join(entry, 'pack'), { recursive: true });
+    mkdirSync(join(root, 'src/config'), { recursive: true });
+    const definitions = join(root, 'mods/fixture.definitions');
+    mkdirSync(join(definitions, 'pack'), { recursive: true });
+    const shipped = JSON.parse(readFileSync('mods/skelly.deadvox.residual/pack/manifest.json', 'utf8'));
+    const contentFiles = shipped.files.filter(
+      ({ path, kind }: { path: string; kind: string }) => kind === 'content' || path === 'assets/manifest.json',
+    );
+    writeFileSync(
+      join(definitions, 'pack/manifest.json'),
+      JSON.stringify({
+        ...shipped,
+        id: 'fixture.definitions',
+        files: contentFiles,
+      }),
+    );
+    for (const { path, kind } of contentFiles) {
+      if (kind === 'content') {
+        const data = JSON.parse(readFileSync(resolve('mods/skelly.deadvox.residual', path), 'utf8'));
+        if (data.scenarios) {
+          data.scenarios = [];
+        }
+        if (data.starts) {
+          data.starts = [];
+        }
+        writeFileSync(join(definitions, path), JSON.stringify(data));
+      }
+    }
+    symlinkSync(resolve('mods/skelly.deadvox.residual/assets'), join(definitions, 'assets'), 'dir');
+    writeFileSync(join(root, 'src/config/bundled-mods.json'), JSON.stringify({ mods: [] }));
+    const sharedManifest = {
+      id: 'fixture.shared',
+      version: '1',
+      tier: 'theme',
+      product: false,
+      dependencies: [],
+      overrides: [],
+      files: [{ path: 'rows.json', kind: 'content' }],
+    };
+    writeFileSync(join(shared, 'pack/manifest.json'), JSON.stringify(sharedManifest));
+    writeFileSync(join(shared, 'rows.json'), JSON.stringify({ soundFamilies: [{ id: 'fixture_family' }] }));
+    const entryManifest = {
+      id: 'fixture.entry',
+      version: '1',
+      tier: 'product',
+      product: true,
+      dependencies: ['fixture.definitions', sharedManifest.id],
+      overrides: [],
+      files: [] as { path: string; kind: string }[],
+    };
+    writeFileSync(join(entry, 'pack/manifest.json'), JSON.stringify(entryManifest));
+    await check(root);
+  } finally {
+    rmSync(temporary, { recursive: true, force: true });
+  }
+};
+
+it('loads a shared-root row through bundled intake and refuses an undeclared cross-root conflict', () =>
+  withMultiRootFixture((root) => {
+    const inputs = readBundledPacks(root, 'fixture.entry');
+    expect(inputs.some(({ source }) => source === '../../../mods/fixture.shared')).toBe(true);
+    const admitted = admitPacks(inputs);
+    expect(admitted.issues).toEqual([]);
+    const loaded = buildRegistry(admitted.sources);
+    expect(loaded.issues).toEqual([]);
+    expect(loaded.registry.soundFamilies.has('fixture_family')).toBe(true);
+    const entry = inputs.find(({ manifest }) => manifest.id === 'fixture.entry')!;
+    entry.manifest.files.push({ path: 'conflict.json', kind: 'content' });
+    entry.files.push({ source: 'conflict.json', data: { soundFamilies: [{ id: 'fixture_family' }] } });
+    const conflict = admitPacks(inputs);
+    expect(conflict.sources).toEqual([]);
+    expect(conflict.issues.some(({ message }) => message.includes('soundFamilies:fixture_family'))).toBe(true);
+  }));
+
+it('validates the requested multi-root stack and rejects missing stack arguments and ids', () =>
+  withMultiRootFixture((root) => {
+    const output: string[] = [];
+    expect(
+      validate(['--stack', 'fixture.entry'], (line) => output.push(line), root),
+      output.join('\n'),
+    ).toBe(0);
+    expect(validate(['--stack', 'fixture.absent'], (line) => output.push(line), root)).toBe(1);
+    expect(validate(['--stack'], (line) => output.push(line), root)).toBe(1);
+  }));
+
+it('stamps each pack in a multi-root stack with its own content identity', () =>
+  withMultiRootFixture(async (root) => {
+    const inputs = readBundledPacks(root, 'fixture.entry');
+    const stamps = await stampPacks(inputs, 'fixture-proof');
+    expect(Object.keys(stamps).sort()).toEqual(inputs.map(({ manifest }) => manifest.id).sort());
+    const hashes = await Promise.all(inputs.map(packContentHash));
+    inputs.forEach((input, index) => {
+      expect(stamps[input.manifest.id]!.sourceHash).toBe(hashes[index]);
+    });
+  }));

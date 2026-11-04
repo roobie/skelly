@@ -216,7 +216,11 @@ export default defineConfig({
     fs: {
       // The alias resolves outside this project's own root; Vite's dev server otherwise refuses to serve
       // files from outside it.
-      allow: [fileURLToPath(new URL('.', import.meta.url)), mobgenSrc],
+      allow: [
+        fileURLToPath(new URL('.', import.meta.url)),
+        fileURLToPath(new URL('../mods', import.meta.url)),
+        mobgenSrc,
+      ],
     },
   },
   build: {

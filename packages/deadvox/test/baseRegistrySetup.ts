@@ -34,7 +34,9 @@ function writeBaseRegistry(path: string, startupPath: string) {
   if (startup.issues.length > 0) {
     throw new Error(JSON.stringify(startup.issues));
   }
-  const manifest = JSON.parse(readFileSync(join(directory, 'pack/manifest.json'), 'utf8')) as { defaultStart: string };
+  const manifest = JSON.parse(readFileSync('mods/skelly.deadvox/pack/manifest.json', 'utf8')) as {
+    defaultStart: string;
+  };
   writeCached(startupPath, { ...startup, defaultStart: manifest.defaultStart });
 }
 
