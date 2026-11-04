@@ -99,8 +99,6 @@ export const statePixelFixture = async () => {
             name: 'Pixel',
             category: 'misc',
             workInProgress: false,
-            notLoot: false,
-            economy: { usage: [], tiers: [] },
             weight: 1,
             size: [1, 1],
             model: 'pixel',

@@ -97,9 +97,7 @@ it('a stale pack stamp falls back to reference checks rather than admitting a br
     id: 'fixture_lamp',
     name: 'Lamp',
     category: 'light',
-    economy: { usage: [], tiers: [] },
     workInProgress: false,
-    notLoot: false,
     weight: 400,
     size: [3, 1],
   };

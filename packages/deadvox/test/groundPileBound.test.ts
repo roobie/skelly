@@ -9,29 +9,35 @@ import type { CompiledTemplate } from '../src/core/templates.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 type LootDef = typeof base.loot extends Map<string, infer T> ? T : never;
+type ItemScarcity = typeof base.itemEconomy extends Map<string, infer T> ? T : never;
 
 const base = baseRegistry();
 const context: LootContext = { usage: ['Residential'], tier: 'Tier1' };
-const economy = { usage: ['Residential'], tiers: ['Tier1'] } as ItemDef['economy'];
 const cells = PILE_GRID.w * PILE_GRID.h;
 const STACK_LIMIT = 20;
 const CAP = 65_536;
 
 const item = (id: string, size: [number, number], stack?: number): ItemDef =>
-  ({ id, name: id, category: 'misc', weight: 1, size, economy, ...(stack === undefined ? {} : { stack }) }) as ItemDef;
+  ({ id, name: id, category: 'misc', weight: 1, size, ...(stack === undefined ? {} : { stack }) }) as ItemDef;
 const table = (id: string, rolls: [number, number], entries: LootDef['entries']): LootDef => ({ id, rolls, entries });
+
+const stocked = [
+  item('pile_fixture_unit', [1, 1]),
+  item('pile_fixture_wide', [2, 1]),
+  item('pile_fixture_tall', [1, 2]),
+  item('pile_fixture_block', [PILE_GRID.w, PILE_GRID.h]),
+  item('pile_fixture_stackable', [1, 1], STACK_LIMIT),
+];
 
 const registry: Registry = {
   ...base,
-  items: new Map([
-    ...base.items,
-    ...[
-      item('pile_fixture_unit', [1, 1]),
-      item('pile_fixture_wide', [2, 1]),
-      item('pile_fixture_tall', [1, 2]),
-      item('pile_fixture_block', [PILE_GRID.w, PILE_GRID.h]),
-      item('pile_fixture_stackable', [1, 1], STACK_LIMIT),
-    ].map((def): [string, ItemDef] => [def.id, def]),
+  items: new Map([...base.items, ...stocked.map((def): [string, ItemDef] => [def.id, def])]),
+  itemEconomy: new Map([
+    ...base.itemEconomy,
+    ...stocked.map(({ id }): [string, ItemScarcity] => [
+      id,
+      { id, usage: context.usage, tiers: [context.tier], notLoot: false },
+    ]),
   ]),
   loot: new Map([
     ...base.loot,
@@ -84,20 +90,20 @@ describe('ground pile bound', () => {
   });
 
   it('counts hand-placed fixed stock that never spawns, alone and beside a table roll', () => {
-    const never = { ...item('pile_fixture_never', [1, 1]), economy: { usage: [], tiers: [] } } as ItemDef;
+    const never = item('pile_fixture_never', [1, 1]);
     const withNever: Registry = { ...registry, items: new Map([...registry.items, [never.id, never]]) };
-    const stocked = (count: number, rolled?: string) =>
+    const placed = (count: number, rolled?: string) =>
       groundPileIssue(
         withNever,
         { kind: 'fixed', items: [{ item: never.id, count }], ...(rolled === undefined ? {} : { table: rolled }) },
         context,
         CAP,
       );
-    expect(stocked(cells)).toBeUndefined();
-    expect(stocked(cells + 1)).toContain('overfill');
+    expect(placed(cells)).toBeUndefined();
+    expect(placed(cells + 1)).toContain('overfill');
     // The table's three units no longer fit beside stock that already fills all but two cells.
-    expect(stocked(cells - 3, 'pile_fixture_few_units')).toBeUndefined();
-    expect(stocked(cells - 2, 'pile_fixture_few_units')).toContain('overfill');
+    expect(placed(cells - 3, 'pile_fixture_few_units')).toBeUndefined();
+    expect(placed(cells - 2, 'pile_fixture_few_units')).toContain('overfill');
   });
 
   it('reports an overfilling ground anchor through template validation', () => {

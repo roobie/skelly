@@ -92,9 +92,7 @@ describe('door locks', () => {
       placedRegistry.items.set(item.id, {
         ...item,
         category: 'tool',
-        economy: { usage: [], tiers: [] },
         workInProgress: false,
-        notLoot: true,
       });
     }
     const site = new AuthoredSite(73, placedRegistry, makeScale(0.5), layout);

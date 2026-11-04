@@ -15,8 +15,8 @@ const fixture = () => {
       category: 'material',
       weight: 1,
       size: [1, 1],
-      notLoot: false,
     });
+    registry.itemEconomy.set(id, { id, usage: [], tiers: [], notLoot: false });
   }
   const normal = {
     id: 'fixture_default',

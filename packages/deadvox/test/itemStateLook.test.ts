@@ -24,8 +24,6 @@ const fixture = () => {
     name: 'fixture',
     category: 'misc',
     workInProgress: false,
-    notLoot: false,
-    economy: { usage: [], tiers: [] },
     weight: 1,
     size: [1, 1],
   };

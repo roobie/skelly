@@ -43,9 +43,7 @@ const registryFixture = () => {
     category: 'material',
     size: [1, 1],
     weight: 1,
-    economy: { usage: [], tiers: [] },
     workInProgress: false,
-    notLoot: false,
   });
   registry.furniture.set(shelf.type, {
     id: shelf.type,

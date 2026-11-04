@@ -10,17 +10,14 @@ import { Survival } from '../src/game/survival.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
-import { buildFixtureRegistry, fixtureEconomy } from './economyFixtures.ts';
+import { buildFixtureRegistry } from './economyFixtures.ts';
 import { guidanceFixture } from './fixtures/guidance.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const fixture = (side: HandSide = 'right', quality = 2) => {
   const base = baseRegistry();
-  const economy = { usage: [], tiers: [] };
   const common = {
-    economy,
     workInProgress: false,
-    notLoot: false,
     category: 'food' as const,
     weight: 1,
     size: [1, 2] as [number, number],
@@ -73,10 +70,7 @@ const fixture = (side: HandSide = 'right', quality = 2) => {
 describe('held can opening', () => {
   it('rejects a serving with missing food or an incompatible empty vessel', () => {
     const { registry } = fixture();
-    const items = ['test_opened', 'test_food', 'test_empty'].map((id) => ({
-      ...registry.items.get(id)!,
-      economy: fixtureEconomy(),
-    }));
+    const items = ['test_opened', 'test_food', 'test_empty'].map((id) => registry.items.get(id)!);
     expect(buildFixtureRegistry([{ source: 'vessels', data: { items } }]).issues).toEqual([]);
     const invalid = items.map((item) =>
       item.id === 'test_opened'

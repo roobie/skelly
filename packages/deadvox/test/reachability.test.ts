@@ -11,6 +11,7 @@ const baseline = baseRegistry();
 const mutableSections = [
   'items',
   'furniture',
+  'itemEconomy',
   'loot',
   'actors',
   'templates',
@@ -38,8 +39,6 @@ const knowledgeFixture = (
     registry.items.set(item, {
       id: item,
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: item,
       category: 'material',
       weight: 1,
@@ -145,10 +144,12 @@ describe('static reachability', () => {
 
   it('excludes an authored non-loot type without excluding an ordinary unreachable type', () => {
     const registry = fresh();
-    const fixture = { ...registry.items.values().next().value!, id: 'fixture_not_loot', notLoot: true };
+    const fixture = { ...registry.items.values().next().value!, id: 'fixture_not_loot' };
     registry.items.set(fixture.id, fixture);
+    const row = { id: fixture.id, ...fixtureEconomy() };
+    registry.itemEconomy.set(fixture.id, { ...row, notLoot: true });
     expect(checkReachability(registry).unreachable).not.toContain(fixture.id);
-    registry.items.set(fixture.id, { ...fixture, notLoot: false });
+    registry.itemEconomy.set(fixture.id, { ...row, notLoot: false });
     expect(checkReachability(registry).unreachable).toContain(fixture.id);
   });
 
@@ -197,8 +198,6 @@ describe('static reachability', () => {
       registry.items.set(id, {
         id,
         workInProgress: false,
-        notLoot: false,
-        economy: fixtureEconomy(),
         name: id,
         category: 'material',
         weight: 1,
@@ -268,8 +267,6 @@ describe('static reachability', () => {
     registry.items.set('unlearned_tool', {
       id: 'unlearned_tool',
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: 'Unlearned tool',
       category: 'tool',
       weight: 1,
@@ -438,8 +435,6 @@ describe('static reachability', () => {
       registry.items.set(id, {
         id,
         workInProgress: false,
-        notLoot: false,
-        economy: fixtureEconomy(),
         name: id,
         category: 'material',
         weight: 1,
@@ -538,8 +533,6 @@ describe('static reachability', () => {
     registry.items.set('fixture_demo_fixed', {
       id: 'fixture_demo_fixed',
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: 'Fixture fixed item',
       category: 'material',
       weight: 1,
@@ -548,8 +541,6 @@ describe('static reachability', () => {
     registry.items.set('fixture_demo_table_item', {
       id: 'fixture_demo_table_item',
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: 'Fixture table item',
       category: 'material',
       weight: 1,
@@ -618,8 +609,6 @@ describe('static reachability', () => {
       registry.items.set(id, {
         id,
         workInProgress: false,
-        notLoot: false,
-        economy: fixtureEconomy(),
         name: id,
         category: 'material',
         weight: 1,
@@ -668,8 +657,6 @@ describe('static reachability', () => {
       registry.items.set(id, {
         id,
         workInProgress: false,
-        notLoot: false,
-        economy: fixtureEconomy(),
         name: id,
         category: 'material',
         weight: 1,
@@ -704,8 +691,6 @@ describe('static reachability', () => {
     registry.items.set('fixture_package_input', {
       id: 'fixture_package_input',
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: 'Fixture package input',
       category: 'material',
       weight: 1,
@@ -714,8 +699,6 @@ describe('static reachability', () => {
     registry.items.set('fixture_crafted_package', {
       id: 'fixture_crafted_package',
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: 'Fixture crafted package',
       category: 'material',
       weight: 1,
@@ -725,8 +708,6 @@ describe('static reachability', () => {
     registry.items.set('fixture_crafted_payload', {
       id: 'fixture_crafted_payload',
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: 'Fixture crafted payload',
       category: 'material',
       weight: 1,
@@ -763,8 +744,6 @@ describe('static reachability', () => {
     registry.items.set(source, {
       id: source,
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: source,
       category: 'material',
       weight: 1,
@@ -778,8 +757,6 @@ describe('static reachability', () => {
     registry.items.set(output, {
       id: output,
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: output,
       category: 'material',
       weight: 1,
@@ -824,8 +801,6 @@ describe('static reachability', () => {
       registry.items.set(id, {
         id,
         workInProgress: false,
-        notLoot: false,
-        economy: fixtureEconomy(),
         name: id,
         category: 'tool',
         weight: 1,
@@ -837,8 +812,6 @@ describe('static reachability', () => {
       registry.items.set(id, {
         id,
         workInProgress: false,
-        notLoot: false,
-        economy: fixtureEconomy(),
         name: id,
         category: 'material',
         weight: 1,

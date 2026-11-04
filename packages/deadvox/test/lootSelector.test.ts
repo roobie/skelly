@@ -9,17 +9,16 @@ import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const context = { usage: ['Medical'], tier: 'Tier2' } as const;
-const itemDefinition = (id: string, usage: string[], tiers: string[]) => ({
+const itemDefinition = (id: string) => ({
   id,
   name: id,
   category: 'misc',
   size: [1, 1],
   weight: 1,
   stack: 10,
-  economy: { usage, tiers },
   workInProgress: false,
-  notLoot: false,
 });
+const scarcity = (id: string, usage: string[], tiers: string[]) => ({ id, usage, tiers, notLoot: false });
 const fixture = () => {
   const result = buildRegistry([
     playerInventorySource(),
@@ -28,10 +27,11 @@ const fixture = () => {
       data: {
         furnitureMaterials: fixtureMaterials(),
         sounds: fixtureSounds(),
-        items: [
-          itemDefinition('stock', ['Medical'], ['Tier2']),
-          itemDefinition('wrong_usage', ['Military'], ['Tier2']),
-          itemDefinition('wrong_tier', ['Medical'], ['Tier1', 'Tier3']),
+        items: [itemDefinition('stock'), itemDefinition('wrong_usage'), itemDefinition('wrong_tier')],
+        itemEconomy: [
+          scarcity('stock', ['Medical'], ['Tier2']),
+          scarcity('wrong_usage', ['Military'], ['Tier2']),
+          scarcity('wrong_tier', ['Medical'], ['Tier1', 'Tier3']),
         ],
         furniture: [
           {
@@ -80,7 +80,7 @@ describe('central loot selection', () => {
     const rolled = rollLoot(registry, source, Rng.stream(19, 'selection'));
     expect(rolled).not.toHaveLength(0);
     for (const entry of rolled) {
-      const { economy } = registry.items.get(entry.type)!;
+      const economy = registry.itemEconomy.get(entry.type)!;
       expect(economy.usage.some((usage) => source.context.usage.includes(usage))).toBe(true);
       expect(economy.tiers).toContain(source.context.tier);
     }

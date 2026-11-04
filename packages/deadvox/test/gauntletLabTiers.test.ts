@@ -164,7 +164,7 @@ sweepGroup('gauntlet lab loot tiers by depth', () => {
     for (let seed = 1; seed <= 60; seed++) {
       const point = lootSpawnPoint(container);
       for (const { type } of rollLoot(registry, point, lootPointStream(seed, point))) {
-        const economy = registry.items.get(type)?.economy;
+        const economy = registry.itemEconomy.get(type);
         rolledMilitaryOnly += economy !== undefined && militaryOnlyEconomy(economy) ? 1 : 0;
       }
     }

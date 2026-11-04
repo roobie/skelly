@@ -35,8 +35,6 @@ const fixtureRegistry = (): Registry => {
     {
       id: 'fixture_inventory_bag',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture bag',
       category: 'misc',
       weight: 1,
@@ -47,8 +45,6 @@ const fixtureRegistry = (): Registry => {
     {
       id: 'fixture_inventory_item',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture item',
       category: 'misc',
       weight: 1,
@@ -57,8 +53,6 @@ const fixtureRegistry = (): Registry => {
     {
       id: 'fixture_inventory_magazine',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture magazine',
       category: 'misc',
       weight: 1,
@@ -68,8 +62,6 @@ const fixtureRegistry = (): Registry => {
     {
       id: 'fixture_round',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture round',
       category: 'ammo',
       weight: 0.01,

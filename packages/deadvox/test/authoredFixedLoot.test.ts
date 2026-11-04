@@ -1312,10 +1312,14 @@ describe('authored fixed loot', () => {
             category: 'material' as const,
             weight: 1,
             size: [1, 1] as [number, number],
-            economy: { usage: ['Military' as const], tiers: ['Tier1' as const] },
             workInProgress: false,
-            notLoot: false,
           },
+        ],
+      ]),
+      itemEconomy: new Map([
+        [
+          'fixture_gear',
+          { id: 'fixture_gear', usage: ['Military' as const], tiers: ['Tier1' as const], notLoot: false },
         ],
       ]),
     };

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { validateContent } from '../src/core/content.ts';
-import { fixtureEconomy } from './economyFixtures.ts';
 
 const validate = (wearable: unknown) =>
   validateContent({
@@ -13,9 +12,7 @@ const validate = (wearable: unknown) =>
           category: 'clothing',
           weight: 1,
           size: [1, 1],
-          economy: fixtureEconomy(),
           workInProgress: false,
-          notLoot: false,
           wearable,
         },
       ],

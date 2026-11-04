@@ -24,10 +24,8 @@ it('gets an assembly item stack weight from the sum of its physical parts', () =
           {
             id: 'mass_item',
             workInProgress: false,
-            notLoot: false,
             name: 'Fixture',
             category: 'misc',
-            economy: { usage: [], tiers: [] },
             size: [1, 1],
             stack: 5,
             model: model.id,
@@ -78,10 +76,8 @@ it('keeps each atom authored weight when several items share a visual model', ()
   const items = [2, 7].map((weight, index) => ({
     id: `atom_${index}`,
     workInProgress: false,
-    notLoot: false,
     name: `Atom ${index}`,
     category: 'misc',
-    economy: { usage: [], tiers: [] },
     weight,
     size: [1, 1],
     model: atom.id,
@@ -98,10 +94,8 @@ it('requires a model part that names an item to name a registered item of the sa
   const partItem = {
     id: 'fixture_part',
     workInProgress: false,
-    notLoot: false,
     name: 'Fixture part',
     category: 'misc',
-    economy: { usage: [], tiers: [] },
     size: [1, 1],
     weight: model.parts.body.massKg * 1000,
   };
@@ -132,10 +126,8 @@ it('requires exactly one authored mass source per item', () => {
               {
                 id: 'fixture_item',
                 workInProgress: false,
-                notLoot: false,
                 name: 'Fixture',
                 category: 'misc',
-                economy: { usage: [], tiers: [] },
                 size: [1, 1],
                 model: model.id,
                 ...(weight === undefined ? {} : { weight }),

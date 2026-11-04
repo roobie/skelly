@@ -78,9 +78,7 @@ const fixture = async (
         name: 'Fixture item',
         category: 'misc' as const,
         weight: 100,
-        economy: { usage: [], tiers: [] },
         workInProgress: false,
-        notLoot: false,
         size: [2, 2] as [number, number],
         twoHanded: true,
       };

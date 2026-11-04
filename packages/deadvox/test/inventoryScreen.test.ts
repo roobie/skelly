@@ -232,12 +232,10 @@ it('keeps a model-less item as a text tile when pictures are enabled', () => {
           {
             id: 'text_tile',
             workInProgress: false,
-            notLoot: false,
             name: 'Text tile',
             category: 'misc',
             weight: 1,
             size: [1, 1],
-            economy: { usage: [], tiers: [] },
           },
         ],
       },
@@ -346,8 +344,6 @@ describe('inventory screen Lit rendering', () => {
     items.set('fixture_floor_stack', {
       id: 'fixture_floor_stack',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture floor stack',
       category: 'material',
       weight: 1,
@@ -386,8 +382,6 @@ describe('inventory screen Lit rendering', () => {
     items.set('fixture_floor_dragged', {
       id: 'fixture_floor_dragged',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture dragged item',
       category: 'material',
       weight: 1,
@@ -396,8 +390,6 @@ describe('inventory screen Lit rendering', () => {
     items.set('fixture_floor_target', {
       id: 'fixture_floor_target',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture target item',
       category: 'material',
       weight: 1,
@@ -433,8 +425,6 @@ describe('inventory screen Lit rendering', () => {
     items.set('fixture_inventory_alpha', {
       id: 'fixture_inventory_alpha',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: alphaName,
       category: 'medical',
       weight: 1,
@@ -443,8 +433,6 @@ describe('inventory screen Lit rendering', () => {
     items.set('fixture_inventory_beta', {
       id: 'fixture_inventory_beta',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: betaName,
       category: 'medical',
       weight: 1,
@@ -587,8 +575,6 @@ describe('inventory screen Lit rendering', () => {
       items.set(fixture.id, {
         id: fixture.id,
         workInProgress: false,
-        notLoot: false,
-        economy: { usage: [], tiers: [] },
         name: fixture.name,
         category: 'misc',
         weight: 1,
@@ -1053,9 +1039,7 @@ describe('inventory screen Lit rendering', () => {
             category: 'tool',
             weight: 1,
             size: [1, 1],
-            economy: { usage: [], tiers: [] },
             workInProgress: false,
-            notLoot: false,
             ...(role === 'receiver'
               ? {
                   light: {
@@ -1648,12 +1632,10 @@ describe('inventory screen Lit rendering', () => {
             {
               id: 'take_all_like',
               workInProgress: false,
-              notLoot: false,
               name: 'Like item',
               category: 'misc',
               weight: 1,
               size: [1, 1],
-              economy: { usage: [], tiers: [] },
             },
           ],
         },

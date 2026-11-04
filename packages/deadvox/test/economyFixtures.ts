@@ -12,6 +12,9 @@ export const fixtureEconomy = (): ItemEconomy => ({
   usage: ['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military', 'Infected'],
   tiers: ['Tier1', 'Tier2', 'Tier3'],
 });
+/** Scarcity rows admitting `ids` in every fixture context; a fixture item without one never spawns randomly. */
+export const fixtureItemEconomy = (...ids: readonly string[]) =>
+  ids.map((id) => ({ id, ...fixtureEconomy(), notLoot: false }));
 export const fixtureLootContext = (): LootContext => ({ usage: ['Residential'], tier: 'Tier1' });
 /** A breach for fixture furniture whose strength no test reads; content needs one on every piece. */
 export const fixtureBreach = () => ({ minimumStrength: 1, durability: 1 });
@@ -92,9 +95,7 @@ const fixtureEntry = (entry: unknown, section: string): unknown => {
   }
   if (section === 'items') {
     return {
-      economy: fixtureEconomy(),
       workInProgress: false,
-      notLoot: false,
       ...entry,
       ...(object(entry.vehicle) ? { vehicle: { drops: { default: FIXTURE_BLOW_SOUND }, ...entry.vehicle } } : {}),
     };

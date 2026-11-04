@@ -3,8 +3,6 @@
     {
       "id": "fixture_trinket",
       "workInProgress": false,
-      "notLoot": false,
-      "economy": { "usage": [], "tiers": [] },
       "name": "Trinket",
       "category": "misc",
       "weight": 10,

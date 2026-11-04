@@ -40,7 +40,12 @@ import { WEATHERING_RANGES } from '../src/core/weather.ts';
 import { INPUT_BINDINGS, inputBindings } from '../src/game/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
-import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
+import {
+  buildFixtureRegistry as buildRegistry,
+  FIXTURE_MATERIAL,
+  fixtureBreach,
+  fixtureItemEconomy,
+} from './economyFixtures.ts';
 import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
 
 const BASE = 'mods/skelly.deadvox.residual';
@@ -77,11 +82,8 @@ describe('content-owned item and world policies', () => {
   it('requires explicit item policies, region drops and world liveness', () => {
     const item = structuredClone([...baseRegistry.items.values()][0]!) as Record<string, unknown>;
     expect(safeParse(ContentFileSchema, { items: [item] }).success).toBe(true);
-    for (const field of ['workInProgress', 'notLoot']) {
-      const missing = { ...item };
-      delete missing[field];
-      expect(safeParse(ContentFileSchema, { items: [missing] }).success).toBe(false);
-    }
+    const { workInProgress: _workInProgress, ...missing } = item;
+    expect(safeParse(ContentFileSchema, { items: [missing] }).success).toBe(false);
     const actor = { ...[...baseRegistry.actors.values()][0]! } as Record<string, unknown>;
     expect(safeParse(ContentFileSchema, { actors: [actor] }).success).toBe(true);
     actor.severedItems = undefined;
@@ -112,8 +114,6 @@ describe('content-owned item and world policies', () => {
           {
             id: 'fixture_blade',
             workInProgress: false,
-            notLoot: false,
-            economy: { usage: [], tiers: [] },
             name: 'Blade',
             category: 'tool',
             weight: 1,
@@ -634,7 +634,7 @@ describe('content', () => {
       ),
     ).toBe(false);
     const thermal = baseRegistry.items.get('optic_digital_thermal')!;
-    expect(thermal.economy).toEqual({ usage: [], tiers: [] });
+    expect(baseRegistry.itemEconomy.get(thermal.id)).toMatchObject({ usage: [], tiers: [] });
     expect(opticViewSettings(thermal, baseRegistry.models.get(thermal.model!)!)).toBeUndefined();
   });
 
@@ -748,7 +748,6 @@ describe('content', () => {
       items: [
         {
           id: 'fixture_suppressor',
-          economy: { usage: [], tiers: [] },
           name: 'Fixture suppressor',
           category: 'misc',
           weight: 1,
@@ -896,8 +895,6 @@ describe('content', () => {
     const item = {
       id: 'fixture_firearm',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture firearm',
       category: 'weapon',
       weight: 1,
@@ -919,7 +916,6 @@ describe('content', () => {
       items: [
         {
           id: 'fixture_gun',
-          economy: { usage: [], tiers: [] },
           name: 'Fixture gun',
           category: 'weapon',
           weight: 1,
@@ -936,7 +932,6 @@ describe('content', () => {
         },
         {
           id: 'fixture_suppressor',
-          economy: { usage: [], tiers: [] },
           name: 'Fixture suppressor',
           category: 'misc',
           weight: 1,
@@ -1158,8 +1153,6 @@ describe('content', () => {
         {
           id: 'fixture_input',
           workInProgress: false,
-          notLoot: false,
-          economy: { usage: [], tiers: [] },
           name: 'Input part',
           category: 'tool',
           weight: 1,
@@ -1173,8 +1166,6 @@ describe('content', () => {
         {
           id: 'fixture_output',
           workInProgress: false,
-          notLoot: false,
-          economy: { usage: [], tiers: [] },
           name: 'Output part',
           category: 'tool',
           weight: 1,
@@ -1242,8 +1233,6 @@ describe('content', () => {
         {
           id: 'book_reference_fixture',
           workInProgress: false,
-          notLoot: false,
-          economy: { usage: [], tiers: [] },
           name: 'Fixture manual',
           category: 'book',
           weight: 1,
@@ -1295,7 +1284,9 @@ describe('content', () => {
     const data = JSON.parse(readFileSync(source, 'utf8')) as ContentFile;
     // Valid admission on both sides isolates the container-shape contract.
     const { lootContext } = data.templates![0]!;
-    data.items![0]!.economy = { usage: lootContext.usage, tiers: [lootContext.tier] };
+    data.itemEconomy = [
+      { id: data.items![0]!.id, usage: lootContext.usage, tiers: [lootContext.tier], notLoot: false },
+    ];
     const rejected = buildRegistry([{ source, data }]);
     expect
       .soft(rejected.issues)
@@ -2443,7 +2434,6 @@ describe('content references', () => {
           items: [
             {
               id: item,
-              economy: { usage: ['Military'], tiers: ['Tier2'] },
               name: 'Fixture rifle',
               category: 'weapon',
               size: [1, 1],
@@ -2452,7 +2442,6 @@ describe('content references', () => {
             },
             {
               id: cartridge,
-              economy: { usage: ['Military'], tiers: ['Tier2'] },
               name: 'Fixture cartridge',
               category: 'material',
               weight: 1,
@@ -2460,6 +2449,7 @@ describe('content references', () => {
               ammo,
             },
           ],
+          itemEconomy: [item, cartridge].map((id) => ({ id, usage: ['Military'], tiers: ['Tier2'], notLoot: false })),
         },
       },
       {
@@ -2511,7 +2501,6 @@ describe('content references', () => {
             },
             {
               id: 'fixture_ammo_case',
-              economy: { usage: ['Military'], tiers: ['Tier2'] },
               name: 'Case',
               category: 'material',
               weight: 1,
@@ -2520,7 +2509,6 @@ describe('content references', () => {
             },
             {
               id: 'fixture_box',
-              economy: { usage: ['Military'], tiers: ['Tier2'] },
               name: 'Box',
               category: 'material',
               weight: 1,
@@ -2533,6 +2521,15 @@ describe('content references', () => {
               },
             },
             { id: 'fixture_rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
+          ],
+          itemEconomy: [
+            ...['fixture_ammo_case', 'fixture_box'].map((id) => ({
+              id,
+              usage: ['Military'],
+              tiers: ['Tier2'],
+              notLoot: false,
+            })),
+            ...fixtureItemEconomy('fixture_scrap', 'fixture_parts', 'fixture_rag'),
           ],
           recipes: [
             {
@@ -2562,7 +2559,6 @@ describe('content references', () => {
       category: 'material',
       weight: 1,
       size: [1, 1],
-      economy: { usage: ['Residential'], tiers: ['Tier1'] },
       salvageTimeGameMinutes: 1,
       salvage: [{ item: 'fixture_shared', count: 1 }],
     };
@@ -2572,7 +2568,6 @@ describe('content references', () => {
       category: 'material',
       weight: 1,
       size: [1, 1],
-      economy: { usage: ['Residential', 'Military'], tiers: ['Tier1'] },
       disassembly: {
         timeGameMinutes: 1,
         skill: 'crafting',
@@ -2584,6 +2579,10 @@ describe('content references', () => {
         source: 'shared-fixture',
         data: {
           items: [scrap, shared],
+          itemEconomy: [
+            { id: scrap.id, usage: ['Residential'], tiers: ['Tier1'], notLoot: false },
+            { id: shared.id, usage: ['Residential', 'Military'], tiers: ['Tier1'], notLoot: false },
+          ],
           recipes: [
             {
               id: 'fixture_recipe',
@@ -2663,7 +2662,6 @@ describe('content references', () => {
           items: [
             {
               id: 'fixture_military_item',
-              economy: { usage: ['Military'], tiers: ['Tier2'] },
               name: 'Fixture item',
               category: 'material',
               weight: 1,
@@ -2678,6 +2676,7 @@ describe('content references', () => {
               tool: { qualities: { [quality]: level } },
             },
           ],
+          itemEconomy: [{ id: 'fixture_military_item', usage: ['Military'], tiers: ['Tier2'], notLoot: false }],
           loot: [{ id: lootId, rolls: [1, 1], entries: [{ item: 'fixture_military_item', weight: 1 }] }],
           furniture: [furniture],
           templates: [template],
@@ -3232,8 +3231,6 @@ describe('content', () => {
     const items = ['watch', 'map'].map((heldDisplay, index) => ({
       id: `unrendered_display_${index}`,
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Unrendered display',
       category: 'material',
       weight: 1,
@@ -3401,9 +3398,7 @@ describe('content', () => {
       { ...model, id: 'fixture_seat', hands: { ...hands, seat: [-hands.seat[0], hands.seat[1], hands.seat[2]] } },
       { ...model, id: 'fixture_palm', hands: { ...hands, firing: { ...hands.firing, fingers: hands.firing.palm } } },
     ];
-    const items = [
-      { ...gun, id: 'fixture_no_hands_gun', name: 'Fixture gun', model: 'fixture_no_hands', notLoot: true },
-    ];
+    const items = [{ ...gun, id: 'fixture_no_hands_gun', name: 'Fixture gun', model: 'fixture_no_hands' }];
     // Map and site sections cost most of a full build and no hands check reads them, so the build leaves them out.
     // Keys then miss the doors those sections hold; the baseline build without the fixtures reports the same misses.
     const worldSections = new Set([

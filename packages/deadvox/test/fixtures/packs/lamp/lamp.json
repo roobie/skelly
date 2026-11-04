@@ -18,14 +18,9 @@
   "items": [
     {
       "category": "light",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "lamp",
       "model": "lamp",
       "name": "Lamp",
-      "notLoot": false,
       "size": [3, 1],
       "weight": 400,
       "workInProgress": false

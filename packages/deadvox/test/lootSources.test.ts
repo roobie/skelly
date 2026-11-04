@@ -25,6 +25,7 @@ const fixtureRegistry = (): Registry => {
   const registry = {
     ...base,
     items: new Map(base.items),
+    itemEconomy: new Map(base.itemEconomy),
     loot: new Map(base.loot),
     furniture: new Map(base.furniture),
     templates: new Map(base.templates),
@@ -35,10 +36,9 @@ const fixtureRegistry = (): Registry => {
     category: 'misc',
     size: [1, 1],
     weight: 1,
-    economy: fixtureEconomy(),
     workInProgress: false,
-    notLoot: false,
   });
+  registry.itemEconomy.set(stock, { id: stock, ...fixtureEconomy(), notLoot: false });
   for (const [id] of registry.loot) {
     registry.loot.set(id, { id, rolls: [1, 1], entries: [{ item: stock, weight: 1 }] });
   }
@@ -93,10 +93,7 @@ const expectRoutedColumn = (site: Site, placements: readonly Placement[]) => {
 describe('loot source routing', () => {
   it('keeps exact anchor tiers local and gives fixed-loot tiers precedence in rolls and admission', () => {
     const registry = fixtureRegistry();
-    registry.items.set(stock, {
-      ...registry.items.get(stock)!,
-      economy: { usage: ['Hunting'], tiers: ['Tier2'] },
-    });
+    registry.itemEconomy.set(stock, { id: stock, usage: ['Hunting'], tiers: ['Tier2'], notLoot: false });
     const template = compileTemplate(registry, {
       id: 'fixture_tiers',
       size: [3, 1, 1],
@@ -113,7 +110,7 @@ describe('loot source routing', () => {
     expect(sources.map(({ context }) => context.tier)).toEqual(['Tier2', 'Tier1', 'Tier3']);
     expect(sources[0]!.context.lowerTiers).toBeUndefined();
     expect(
-      sources.map((source) => selection.economyEligible(registry.items.get(stock)!.economy, source.context)),
+      sources.map((source) => selection.economyEligible(registry.itemEconomy.get(stock)!, source.context)),
     ).toEqual([true, false, false]);
     const override = {
       at: [2, 0, 0] as [number, number, number],
@@ -122,7 +119,7 @@ describe('loot source routing', () => {
     };
     const overridden = lootSourcesOf(registry, 'fixture_site', placement, [override]);
     expect(overridden[2]!.context).toEqual({ usage: ['Hunting'], tier: 'Tier2' });
-    expect(selection.economyEligible(registry.items.get(stock)!.economy, overridden[2]!.context)).toBe(true);
+    expect(selection.economyEligible(registry.itemEconomy.get(stock)!, overridden[2]!.context)).toBe(true);
     const input = { registry, context: template.lootContext };
     expect(placementLootIssues(input, template, [override], 'fixture')).toEqual([]);
     const { lootTier: _tier, ...withoutTier } = override;
@@ -197,14 +194,13 @@ describe('loot source routing', () => {
     const registry = fixtureRegistry();
     const severed = 'fixture_severed_item';
     registry.items.set(severed, { ...registry.items.get(stock)!, id: severed });
+    registry.itemEconomy.set(severed, { ...registry.itemEconomy.get(stock)!, id: severed });
     const bulk = 'fixture_bulk';
     registry.items.set(bulk, { ...registry.items.get(stock)!, id: bulk, size: [PILE_GRID.w, PILE_GRID.h] });
+    registry.itemEconomy.set(bulk, { ...registry.itemEconomy.get(stock)!, id: bulk });
     const forbidden = 'fixture_forbidden';
-    registry.items.set(forbidden, {
-      ...registry.items.get(stock)!,
-      id: forbidden,
-      economy: { usage: ['Military'], tiers: ['Tier2'] },
-    });
+    registry.items.set(forbidden, { ...registry.items.get(stock)!, id: forbidden });
+    registry.itemEconomy.set(forbidden, { id: forbidden, usage: ['Military'], tiers: ['Tier2'], notLoot: false });
     const table = 'fixture_corpse_supply';
     registry.loot.set(table, {
       id: table,

@@ -59,9 +59,7 @@ const fixtureRegistry = () => {
     category: 'material',
     size: [PILE_GRID.w, PILE_GRID.h],
     weight: 1,
-    economy: { usage: [], tiers: [] },
     workInProgress: false,
-    notLoot: false,
   });
   registry.furniture.set(shelfType, {
     id: shelfType,

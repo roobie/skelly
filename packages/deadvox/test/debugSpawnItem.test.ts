@@ -15,9 +15,7 @@ const fixture = (floor: boolean) => {
     category: 'misc',
     size: [1, 1],
     weight: 1,
-    economy: { usage: [], tiers: [] },
     workInProgress: false,
-    notLoot: false,
   });
   const inventory = new Inventory(registry);
   const world = new World();

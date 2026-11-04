@@ -48,9 +48,7 @@ const fixture = ({
       category: 'misc',
       size: [1, 1],
       weight: 1,
-      economy: { usage: [], tiers: [] },
       workInProgress: false,
-      notLoot: false,
     });
   }
   items.set('removal_filler', { ...items.get(ids.load)!, id: 'removal_filler', size: [PILE_GRID.w, PILE_GRID.h] });

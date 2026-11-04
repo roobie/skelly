@@ -203,8 +203,6 @@ it('recovery and door forcing follow their role provider, and a provider-less ro
   const partFixture = {
     id: 'fixture_part',
     workInProgress: false,
-    notLoot: false,
-    economy: { usage: [], tiers: [] },
     name: 'Fixture part',
     category: 'material',
     weight: 1,
@@ -213,8 +211,6 @@ it('recovery and door forcing follow their role provider, and a provider-less ro
   const takeApartFixture = {
     id: 'fixture_take_apart',
     workInProgress: false,
-    notLoot: false,
-    economy: { usage: [], tiers: [] },
     name: 'Fixture take apart',
     category: 'material',
     weight: 1,

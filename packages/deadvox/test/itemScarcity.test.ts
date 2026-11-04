@@ -41,13 +41,12 @@ describe('product item scarcity', () => {
       supply: { kind: 'table', table: stocked },
       required: false,
     };
-    const roll = (source: LootSpawnPoint) => rollLoot(registry, source, Rng.stream(1, 'fixture')).map(({ type }) => type);
+    const roll = (source: LootSpawnPoint) =>
+      rollLoot(registry, source, Rng.stream(1, 'fixture')).map(({ type }) => type);
     expect(roll(point)).toEqual([stocked]);
     expect(roll({ ...point, context: { usage: ['Residential'], tier: 'Tier2' } })).toEqual([]);
     expect(roll({ ...point, context: { usage: ['Medical'], tier: 'Tier1' } })).toEqual([]);
     expect(roll({ ...point, supply: { kind: 'table', table: placed } })).toEqual([]);
-    expect(
-      roll({ ...point, supply: { kind: 'fixed', items: [{ item: placed }] }, required: true }),
-    ).toEqual([placed]);
+    expect(roll({ ...point, supply: { kind: 'fixed', items: [{ item: placed }] }, required: true })).toEqual([placed]);
   });
 });

@@ -641,17 +641,16 @@ describe('authored layout acceptance', () => {
   it('rejects fixed container loot that fits no pocket of its furniture', () => {
     const { pockets } = registry.furniture.get(fixedLootContainer.furniture)!.container!;
     const factory = new ItemFactory();
-    const oversized = [...registry.items.values()].find(
-      (def) =>
-        def.economy !== undefined &&
-        lootTypeIssue(registry, def.id, { usage: def.economy.usage, tier: def.economy.tiers[0]! }) === undefined &&
-        !pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, factory.create(registry, def.id))),
+    const oversized = [...registry.itemEconomy.values()].find(
+      (row) =>
+        lootTypeIssue(registry, row.id, { usage: row.usage, tier: row.tiers[0]! }) === undefined &&
+        !pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, factory.create(registry, row.id))),
     );
-    if (oversized?.economy === undefined) {
+    if (oversized === undefined) {
       throw new Error('fixture needs an economy item larger than the container');
     }
     const fixed = withFixedLoot(fixedLootContainer.pos, oversized.id);
-    fixed.buildings[0]!.lootContext = { usage: oversized.economy.usage, tier: oversized.economy.tiers[0]! };
+    fixed.buildings[0]!.lootContext = { usage: oversized.usage, tier: oversized.tiers[0]! };
     invalidWithSharedRegistry(fixed, 'fits no pocket');
   });
   it('admits fixed stock by building context rather than its container table', () => {

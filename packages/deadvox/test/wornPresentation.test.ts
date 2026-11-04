@@ -60,8 +60,6 @@ const carriedItem: ItemDef = {
   weight: 1,
   size: [1, 1],
   workInProgress: false,
-  notLoot: false,
-  economy: fixtureItem.economy,
   figureModels: [segment],
 };
 const registry = {

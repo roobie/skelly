@@ -58,7 +58,6 @@ describe('spawnMenuViewModel', () => {
               id: 'fixture_work',
               name: 'Work in progress',
               workInProgress: true,
-              notLoot: true,
               category: 'tool',
               weight: 0,
               size: [2, 2],

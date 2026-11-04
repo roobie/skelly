@@ -9,9 +9,7 @@
   }],
   items: [{
     id: 'lamp',
-    economy: { usage: [], tiers: [] },
     workInProgress: false,
-    notLoot: false,
     name: 'Lamp',
     category: 'light',
     weight: 400,

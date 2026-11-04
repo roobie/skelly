@@ -89,8 +89,6 @@ export const observationPlugin = {
           size: [1, 1],
           weight: 1,
           workInProgress: false,
-          notLoot: true,
-          economy: { usage: ['Residential'], tiers: ['Tier1'] },
         },
       ];
       data.starts.push({
