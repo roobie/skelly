@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { buildRegistry } from '../src/core/content.ts';
 import { type LootSpawnPoint, rollLoot } from '../src/core/loot.ts';
 import { Rng } from '../src/core/random.ts';
 
 describe('product item scarcity', () => {
+  it('derives an empty not-loot row from the unavailable-view mark, for an item no scarcity list names', () => {
+    const { itemEconomy } = JSON.parse(
+      compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/unavailable-view-economy.jsonnet'),
+    ) as { itemEconomy: unknown };
+    expect(itemEconomy).toEqual([{ id: 'fixture_unavailable_view_optic', notLoot: true, usage: [], tiers: [] }]);
+  });
+
   it('rolls only the authored item row in its context while an item without a row still places by hand', () => {
     const stocked = 'fixture_stocked';
     const placed = 'fixture_hand_placed';
