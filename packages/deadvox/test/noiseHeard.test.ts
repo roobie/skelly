@@ -806,7 +806,10 @@ it('lets a roller-door noise wake a nearby shambler through hearing', () => {
   const doorOrigin: Vec3 = [0, 1, 0];
   const door = session.entities.add({ type: 'workshop_roller_door', pos: doorOrigin, size: [6, 5, 1], facing: 'n' })!;
   const listenerId = session.actors.add(
-    { ...registry.actors.get('shambler')!, sight: Number.MIN_VALUE, nightSight: Number.MIN_VALUE },
+    {
+      ...registry.actors.get('shambler')!,
+      agent: { ...registry.actors.get('shambler')!.agent, sight: Number.MIN_VALUE, nightSight: Number.MIN_VALUE },
+    },
     [8, 1, 0.5],
   );
   const listener = session.actorStore.get(listenerId)!;
@@ -951,7 +954,7 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
   expect(members().every(([, actor]) => actor.tier === 'background')).toBe(true);
   const before = meanX();
   const shotgun = registry.sounds.get('shotgun_blast')!;
-  const shotgunRadius = shotgun.noise.radiusMetres * shambler.hearing;
+  const shotgunRadius = shotgun.noise.radiusMetres * shambler.agent.hearing;
   const groupDistance = Math.max(
     ...members().map(
       ([, actor]) =>
@@ -1064,7 +1067,7 @@ it('applies attachment noise factors and far-tier cutoffs to suppressed AR shots
     expect(noise.radiusMetres).toBe(registry.sounds.get(event)!.noise.radiusMetres * noiseRadiusScale);
     expect(noise.radiusMetres / unsuppressedBase).toBe(attachmentNoiseFactor);
 
-    const farReachMetres = noise.radiusMetres * shambler.hearing * shambler.hearingModel.farMultiplier;
+    const farReachMetres = noise.radiusMetres * shambler.agent.hearing * shambler.agent.hearingModel.farMultiplier;
     const hearAtDistance = (distanceMetres: number) =>
       hearVocalNoise({
         def: shambler,

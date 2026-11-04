@@ -1400,9 +1400,9 @@ describe('content', () => {
   it('validates the shambler search-duration range', () => {
     const actorPack = base.find(({ source }) => source === 'enemies.json')!;
     const data = structuredClone(actorPack.data) as {
-      actors: Array<{ hearingModel: { searchSimSeconds: { min: number; max: number } } }>;
+      actors: Array<{ agent: { hearingModel: { searchSimSeconds: { min: number; max: number } } } }>;
     };
-    data.actors[0]!.hearingModel.searchSimSeconds = { min: 51, max: 50 };
+    data.actors[0]!.agent.hearingModel.searchSimSeconds = { min: 51, max: 50 };
     const issues = validateContent({ source: actorPack.source, data });
     expect(issues.map(({ message }) => message)).toContain('minimum search duration must not exceed maximum');
   });
@@ -1561,10 +1561,6 @@ describe('content', () => {
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
             stepLength: 0.6,
-            sight: 20,
-            nightSight: 10,
-            hearing: 1,
-            hearingRange: { walk: 3, jog: 8, sprint: 15 },
             attack: {
               reach: 1,
               cooldownSimSeconds: 1.5,
@@ -1581,11 +1577,12 @@ describe('content', () => {
             },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
+            agent: { sight: 20, nightSight: 10, hearing: 1, hearingRange: { walk: 3, jog: 8, sprint: 15 } },
           },
         ],
       },
     };
-    expect(validateContent(missingCone).map((issue) => issue.path)).toContain('actors[0].sightCone');
+    expect(validateContent(missingCone).map((issue) => issue.path)).toContain('actors[0].agent.sightCone');
   });
 
   it('requires stepLength on every zombie type', () => {
@@ -1598,11 +1595,6 @@ describe('content', () => {
             name: 'Missing step length',
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
-            sight: 20,
-            nightSight: 10,
-            sightCone: 60,
-            hearing: 1,
-            hearingRange: { walk: 3, jog: 8, sprint: 15 },
             attack: {
               reach: 1,
               cooldownSimSeconds: 1.5,
@@ -1619,6 +1611,13 @@ describe('content', () => {
             },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
+            agent: {
+              sight: 20,
+              nightSight: 10,
+              sightCone: 60,
+              hearing: 1,
+              hearingRange: { walk: 3, jog: 8, sprint: 15 },
+            },
           },
         ],
       },
@@ -2743,7 +2742,6 @@ describe('content references', () => {
             canJumpObstacles: true,
             jumpMetresPerSimSecond: 3,
             strength: 1,
-            idleSound: baseRegistry.actors.get('shambler')!.idleSound,
             sounds: actorSounds,
             severedItems: { head: null, torso: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null },
             severedImpulseScale: 1,
@@ -2755,52 +2753,9 @@ describe('content references', () => {
               partVelocityShare: 0,
             },
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
-            speed: {
-              ...baseRegistry.actors.get('shambler')!.speed,
-              wanderMetresPerSimSecond: 0.8,
-              chaseMetresPerSimSecond: 2.5,
-              backgroundStepMetres: 1,
-            },
             stepLength: 0.6,
-            wander: {
-              obstacleWanderChance: 0.25,
-              obstacleWanderDistanceMetres: 10,
-              wayAroundReachMetres: 1.5,
-              wayAroundMinGainFraction: 0.25,
-              idleSimSeconds: { min: 3, max: 10 },
-              strollSimSeconds: { min: 3, max: 12 },
-              leashMetres: 12,
-              lookIntervalSimSeconds: { min: 0.8, max: 1.8 },
-              bodyLookArcDegrees: 150,
-              headLookArcDegrees: 100,
-              bodyTurnDegreesPerSimSecond: 90,
-              headTurnDegreesPerSimSecond: 120,
-              movementAccelerationMetresPerSimSecondSquared: 4,
-            },
-            sight: 20,
-            nightSight: 10,
-            stimulusMemorySimSeconds: 1,
-            sightCone: 60,
             eyeHeightMetres: 1.3,
             earHeightMetres: 1.3,
-            hordeSpacing: { innerMetres: 0.35, stepMetres: 0.38 },
-            hearing: 1,
-            hearingRange: { walk: 3, jog: 8, sprint: 15 },
-            hearingModel: {
-              farMultiplier: 2,
-              bearingErrorRadians: 0.61,
-              investigationDistanceMetres: 8,
-              loudNoiseRadiusMetres: 10,
-              hesitationSimSeconds: { min: 1, max: 1 },
-              refusalSuspicionSimSeconds: 2,
-              refusalLean: 0.75,
-              alertCooldownSimSeconds: 10,
-              chainRadiusMetres: 4,
-              chainChance: 0.5,
-              searchSimSeconds: { min: 40, max: 50 },
-              searchRadiusMetres: 4,
-              searchStrollSimSeconds: { min: 1, max: 3 },
-            },
             chaseMotion: {
               swayDegrees: 25,
               swayIntervalSimSeconds: { min: 0.7, max: 1.1 },
@@ -2835,6 +2790,54 @@ describe('content references', () => {
             },
             abilities: [],
             loot: 'till',
+            speed: {
+              ...baseRegistry.actors.get('shambler')!.speed,
+              wanderMetresPerSimSecond: 0.8,
+              chaseMetresPerSimSecond: 2.5,
+            },
+            motion: {
+              bodyTurnDegreesPerSimSecond: 90,
+              headTurnDegreesPerSimSecond: 120,
+              movementAccelerationMetresPerSimSecondSquared: 4,
+            },
+            agent: {
+              idleSound: baseRegistry.actors.get('shambler')!.agent.idleSound,
+              sight: 20,
+              nightSight: 10,
+              stimulusMemorySimSeconds: 1,
+              sightCone: 60,
+              hordeSpacing: { innerMetres: 0.35, stepMetres: 0.38 },
+              hearing: 1,
+              hearingRange: { walk: 3, jog: 8, sprint: 15 },
+              hearingModel: {
+                farMultiplier: 2,
+                bearingErrorRadians: 0.61,
+                investigationDistanceMetres: 8,
+                loudNoiseRadiusMetres: 10,
+                hesitationSimSeconds: { min: 1, max: 1 },
+                refusalSuspicionSimSeconds: 2,
+                refusalLean: 0.75,
+                alertCooldownSimSeconds: 10,
+                chainRadiusMetres: 4,
+                chainChance: 0.5,
+                searchSimSeconds: { min: 40, max: 50 },
+                searchRadiusMetres: 4,
+                searchStrollSimSeconds: { min: 1, max: 3 },
+              },
+              wander: {
+                obstacleWanderChance: 0.25,
+                obstacleWanderDistanceMetres: 10,
+                wayAroundReachMetres: 1.5,
+                wayAroundMinGainFraction: 0.25,
+                idleSimSeconds: { min: 3, max: 10 },
+                strollSimSeconds: { min: 3, max: 12 },
+                leashMetres: 12,
+                lookIntervalSimSeconds: { min: 0.8, max: 1.8 },
+                bodyLookArcDegrees: 150,
+                headLookArcDegrees: 100,
+              },
+              speed: { backgroundStepMetres: 1 },
+            },
           },
         ],
         items: [

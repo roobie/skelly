@@ -359,7 +359,7 @@ describe('shared acid pose', () => {
   it('keeps a wandering head turn inside every framed joint limit without a hit reaction', () => {
     const acid = registry.actors.get('acid_zombie')!;
     // Just inside the half-arc a wandering acid zombie can pick for its head.
-    const reachable = ((acid.wander.headLookArcDegrees / 2 - 1) * Math.PI) / 180;
+    const reachable = ((acid.agent.wander.headLookArcDegrees / 2 - 1) * Math.PI) / 180;
     for (const headYaw of [reachable, -reachable]) {
       const posed = posedActor({
         seed: 1,

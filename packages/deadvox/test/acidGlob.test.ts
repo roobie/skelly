@@ -46,7 +46,6 @@ const shambler: ActorDef = {
     ...base.actors.get('shambler')!.speed,
     wanderMetresPerSimSecond: simRate(0),
     chaseMetresPerSimSecond: simRate(0),
-    backgroundStepMetres: 1,
   },
 };
 const resistant: ActorDef = {

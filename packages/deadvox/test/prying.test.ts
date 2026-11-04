@@ -322,7 +322,11 @@ it('a prying strike travels through the sound-hearing path and draws a shambler'
   const door = makeDoor(runtime);
   const crowbar = carryCrowbar(runtime);
   const shamblerType = registry.actors.get('shambler')!;
-  const id = runtime.zombies.add({ ...shamblerType, sight: 0, nightSight: 0 }, [0, 1, 5], [1, 0, 0]);
+  const id = runtime.zombies.add(
+    { ...shamblerType, agent: { ...shamblerType.agent, sight: 0, nightSight: 0 } },
+    [0, 1, 5],
+    [1, 0, 0],
+  );
   const shambler = runtime.zombies.store.get(id)!;
   expect(runtime.session.forceDoor(door, crowbar.uid)).toBeUndefined();
 
@@ -345,7 +349,11 @@ it('a sledgehammer forces a door by hammering and its blows reach the sound-hear
   const hammer = doorDef.door!.methods.hammer!;
   const sledgehammer = carryTool(runtime, 'sledgehammer');
   const shamblerType = registry.actors.get('shambler')!;
-  const id = runtime.zombies.add({ ...shamblerType, sight: 0, nightSight: 0 }, [0, 1, 5], [1, 0, 0]);
+  const id = runtime.zombies.add(
+    { ...shamblerType, agent: { ...shamblerType.agent, sight: 0, nightSight: 0 } },
+    [0, 1, 5],
+    [1, 0, 0],
+  );
   const shambler = runtime.zombies.store.get(id)!;
   expect(runtime.session.forceDoor(door, sledgehammer.uid)).toBeUndefined();
 

@@ -43,7 +43,7 @@ const noiseAtPlayer = (id: number, expiresAt: number): VocalNoise => ({
 const unreachableWall: SolidAt = (x, y) => y === 0 || (x === 100 && y > 0 && y < 5);
 
 describe('stimulus memory', () => {
-  const memorySeconds = SHAMBLER.stimulusMemorySimSeconds;
+  const memorySeconds = SHAMBLER.agent.stimulusMemorySimSeconds;
 
   it.each([
     { hour: 12, expected: 'home' },
@@ -94,7 +94,7 @@ describe('stimulus memory', () => {
   it('returns a blocked active investigator to its home behavior after stimulus memory expires', () => {
     const noise = noiseAtPlayer(1, 1);
     const target = () => ({ ...player([0, 1, 0]), vocalNoise: noise });
-    const type = { ...SHAMBLER, sight: 0.01, nightSight: 0.01 };
+    const type = { ...SHAMBLER, agent: { ...SHAMBLER.agent, sight: 0.01, nightSight: 0.01 } };
     const wall: SolidAt = (x, y) => y === 0 || (x === 10 && y > 0 && y < 5);
     const system = new ActorSystem({ ...senses(target, wall), seed: 113 });
     const actor = system.store.get(system.add(type, [20, 1, 0]))!;
@@ -110,7 +110,7 @@ describe('stimulus memory', () => {
     if (stimulusAt === undefined) {
       throw new Error('Active zombie did not record the heard sound time');
     }
-    const deadline = stimulusAt + type.stimulusMemorySimSeconds;
+    const deadline = stimulusAt + type.agent.stimulusMemorySimSeconds;
     const ticksBeforeExpiry = Math.ceil((deadline - time) / dt) - 1;
     for (let tick = 0; tick < ticksBeforeExpiry; tick++) {
       time += dt;
@@ -127,7 +127,7 @@ describe('stimulus memory', () => {
   it('round-trips forgotten zombie and horde state with a fresh zombie', () => {
     const noise = noiseAtPlayer(1, 1);
     const target = () => ({ ...player([0, 1, 0]), vocalNoise: noise });
-    const type = { ...SHAMBLER, sight: 0.01, nightSight: 0.01 };
+    const type = { ...SHAMBLER, agent: { ...SHAMBLER.agent, sight: 0.01, nightSight: 0.01 } };
     const wall: SolidAt = (x, y) => y === 0 || (x === 10 && y > 0 && y < 5);
     const options = { ...senses(target, wall), seed: 113 };
     const system = new ActorSystem(options);
@@ -144,7 +144,7 @@ describe('stimulus memory', () => {
     expect(actor.agent.investigationTier).toBeDefined();
     expect(system.snapshotState().hordes[0]?.stimulusAt).toBe(time);
     const stimulusAt = actor.agent.stimulusAt!;
-    const deadline = stimulusAt + type.stimulusMemorySimSeconds;
+    const deadline = stimulusAt + type.agent.stimulusMemorySimSeconds;
     while (time < deadline + dt) {
       time += dt;
       system.tickActive(dt, time);

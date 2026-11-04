@@ -26,7 +26,7 @@ describe('beginner bundled mod', () => {
     const factors = {
       damage: firstEasy.attack.moves[0]!.damage / firstPlain.attack.moves[0]!.damage,
       speed: firstEasy.speed.wanderMetresPerSimSecond / firstPlain.speed.wanderMetresPerSimSecond,
-      detection: firstEasy.sight / firstPlain.sight,
+      detection: firstEasy.agent.sight / firstPlain.agent.sight,
       health: firstEasy.regions.head! / firstPlain.regions.head!,
     };
     expect(beginner.content.registry.actors.size).toBe(base.actors.size);
@@ -39,9 +39,9 @@ describe('beginner bundled mod', () => {
       expect(easy.speed.wanderMetresPerSimSecond).toBeCloseTo(plain.speed.wanderMetresPerSimSecond * factors.speed, 9);
       expect(easy.speed.chaseMetresPerSimSecond).toBeCloseTo(plain.speed.chaseMetresPerSimSecond * factors.speed, 9);
       for (const key of ['sight', 'nightSight', 'hearing'] as const) {
-        expect(easy[key]).toBeCloseTo(plain[key] * factors.detection, 9);
+        expect(easy.agent[key]).toBeCloseTo(plain.agent[key] * factors.detection, 9);
       }
-      expect(easy.lightSightScale).toBeCloseTo((plain.lightSightScale ?? 1) * factors.detection, 9);
+      expect(easy.agent.lightSightScale).toBeCloseTo((plain.agent.lightSightScale ?? 1) * factors.detection, 9);
       for (const [region, health] of Object.entries(plain.regions)) {
         expect(easy.regions[region]).toBeCloseTo(health * factors.health, 9);
       }
@@ -121,8 +121,11 @@ describe('beginner mode light spotting', () => {
     for (const [id, plain] of base.actors) {
       const lightOnly = {
         ...beginner.content.registry.actors.get(id)!,
-        sight: plain.sight,
-        nightSight: plain.nightSight,
+        agent: {
+          ...beginner.content.registry.actors.get(id)!.agent,
+          sight: plain.agent.sight,
+          nightSight: plain.agent.nightSight,
+        },
       };
       expect(farthestSpotted(lightOnly), id).toBeLessThan(farthestSpotted(plain));
     }

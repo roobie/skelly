@@ -5,6 +5,7 @@ read_if:
   - you change default weathering selection or shared versus product weathering ownership
   - you classify creature, ranged, vehicle, sound or damage-kind content, including drop-sound receivers and item character
   - you separate actor body state from decision memory and its save representation
+  - you author actor content with or without decision tuning
   - you name body-plan mechanisms descriptively or separate anatomy, leg cuts and figure builds
   - you change settlement role claims or melee pose selection
   - you change skill providers, combat policy, starts or pack save identity
@@ -105,6 +106,9 @@ retain those realizations without making actor identity select implementation. S
 `bodyPlanModel`; `packages/mobgen/src/core/template.ts`, `Template.legCut`;
 `src/core/actorPose.ts`, `actorCrawls`; and `src/core/schema/actors.ts`, `ActorSchema`
 and `actorRegionsMatchModel`.
+Content declares whether a body has decision code. Body facts stay with the body so
+another controller can reuse them; a body without an Agent should not need unused
+decision values. See `src/core/schema/actors.ts`, `ActorSchema`.
 Decision memory is nested apart from body state in both the type and the save, so
 supporting an undriven body can mean omitting one field, and another kind of agent
 can bring its own memory. Pose inputs belong to the body so hit regions and stance

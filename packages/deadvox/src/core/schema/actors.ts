@@ -131,67 +131,12 @@ const AcidBodySchema = pipe(
   check(({ charge }) => charge.idle <= charge.charged, 'the sac must not dim during the wind-up'),
 );
 
-export const ActorSchema = strictObject({
-  id: Id,
-  capability: capabilityClaimsField('actors'),
-  name: Name,
-  /** How the death screen names this type as the cause, article included, because only the phrase knows its article. */
-  cause: Name,
-  model: BODY_PLAN,
-  figure: optional(picklist(Object.keys(FIGURE_VARIANTS) as ActorModel[])),
-  /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
-  bodyScale: optional(Positive),
-  /** Mobgen figure seeds an individual of this type is drawn from. Every model but fused-mass, whose figure seed is fixed, defines them. */
-  figureSeeds: optional(
-    pipe(
-      array(pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more'))),
-      minLength(1, 'needs at least one figure seed'),
-      check((seeds) => new Set(seeds).size === seeds.length, 'figure seeds must be distinct'),
-    ),
-  ),
-  /** Overrides body-height pitch scaling for this type's voice cues. */
-  soundPitchMultiplier: optional(Positive),
-  /** Health keyed by hit-region id; humanoid bodies use six anatomy keys, fused-mass bodies use manifest ids. */
-  regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
-  /** Explicitly null when this region leaves no item. */
-  severedItems: record(pipe(string(), nonEmpty('must not be empty')), nullable(Id)),
-  /** Relative chance that an ordinary settlement spawn chooses this type; 1 is the common baseline. */
-  spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
-  /** Excludes this kind from ordinary settlement selection while keeping authored/debug spawns available. */
-  authoredOnly: optional(vBoolean()),
-  /** Sound ids are content references, so a new voice needs content only; the registry checks each exists. */
-  sounds: strictObject({ idle: Id, alert: Id, attack: Id, hurt: Id }),
+const AgentSchema = strictObject({
   /** Idle voice cadence and its local-crowd thinning curve. */
   idleSound: strictObject({
     intervalSimSeconds: SimDurationRange,
     density: strictObject({ radiusMetres: Positive, penaltyPerNeighbour: NonNegative }),
   }),
-  damageResistance: optional(DamageResistanceSchema),
-  speed: strictObject({
-    wanderMetresPerSimSecond: SimRate,
-    chaseMetresPerSimSecond: SimRate,
-    crawlMetresPerSimSecond: SimRate,
-    /** The farthest one background-tier tick moves it toward its target. */
-    backgroundStepMetres: Positive,
-  }),
-  /** Metres advanced by one half-cycle of the leg gait. */
-  stepLength: Positive,
-  /** Surface-step sound family for grounded travel; omitted types do not emit footfalls. */
-  footstepSound: optional(Id),
-  /** Whether this type tries to jump low obstacles when grounded. */
-  canJumpObstacles: vBoolean(),
-  jumpMetresPerSimSecond: pipe(Positive, finite(), transform(simRate)),
-  /**
-   * Force of a bash against a closed door it is pressed against, in the N·s of a melee weapon's `impulse`, so a
-   * player's strike and a bash meet the same door gate. It bashes once per attack cooldown; 0 never damages a door.
-   */
-  strength: NonNegative,
-  /**
-   * How it moves relative to its facing: `forward` walks only along its facing, so it turns before it heads
-   * somewhere new; `omnidirectional` moves straight toward its goal whatever its facing, which still turns to
-   * the goal. Omitted is `forward`.
-   */
-  locomotion: optional(picklist(['forward', 'omnidirectional'])),
   /** Metres by day. */
   sight: Positive,
   /** Metres by night. */
@@ -202,13 +147,8 @@ export const ActorSchema = strictObject({
   stimulusMemorySimSeconds: Positive,
   /** Half-angle of the sight cone, in degrees. */
   sightCone: pipe(Positive, maxValue(180, 'must be at most 180')),
-  /** Height above its feet that it sees from. */
-  eyeHeightMetres: Positive,
-  /** Height above its feet that it hears at; a sound's occlusion line runs level from the source at this height. */
-  earHeightMetres: Positive,
   /** A horde of this type stands on a golden-angle spiral whose radius grows from `innerMetres` by `stepMetres` × √member. */
   hordeSpacing: strictObject({ innerMetres: NonNegative, stepMetres: Positive }),
-  /** Idle/stroll timing, home leash and eased look controls. */
   wander: strictObject({
     obstacleWanderChance: Fraction,
     obstacleWanderDistanceMetres: Positive,
@@ -228,9 +168,6 @@ export const ActorSchema = strictObject({
     lookIntervalSimSeconds: SimDurationRange,
     bodyLookArcDegrees: pipe(Positive, maxValue(360, 'must be at most 360')),
     headLookArcDegrees: pipe(Positive, maxValue(360, 'must be at most 360')),
-    bodyTurnDegreesPerSimSecond: SimRate,
-    headTurnDegreesPerSimSecond: SimRate,
-    movementAccelerationMetresPerSimSecondSquared: SimAcceleration,
   }),
   /** 1 is normal hearing. */
   hearing: NonNegative,
@@ -264,6 +201,70 @@ export const ActorSchema = strictObject({
       'minimum search stroll must not exceed maximum',
     ),
   ),
+  speed: strictObject({
+    /** The farthest one background-tier tick moves it toward its target. */
+    backgroundStepMetres: Positive,
+  }),
+});
+
+export const ActorSchema = strictObject({
+  id: Id,
+  capability: capabilityClaimsField('actors'),
+  name: Name,
+  /** How the death screen names this type as the cause, article included, because only the phrase knows its article. */
+  cause: Name,
+  model: BODY_PLAN,
+  figure: optional(picklist(Object.keys(FIGURE_VARIANTS) as ActorModel[])),
+  /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
+  bodyScale: optional(Positive),
+  /** Mobgen figure seeds an individual of this type is drawn from. Every model but fused-mass, whose figure seed is fixed, defines them. */
+  figureSeeds: optional(
+    pipe(
+      array(pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more'))),
+      minLength(1, 'needs at least one figure seed'),
+      check((seeds) => new Set(seeds).size === seeds.length, 'figure seeds must be distinct'),
+    ),
+  ),
+  /** Overrides body-height pitch scaling for this type's voice cues. */
+  soundPitchMultiplier: optional(Positive),
+  /** Health keyed by hit-region id; humanoid bodies use six anatomy keys, fused-mass bodies use manifest ids. */
+  regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
+  /** Explicitly null when this region leaves no item. */
+  severedItems: record(pipe(string(), nonEmpty('must not be empty')), nullable(Id)),
+  /** Relative chance that an ordinary settlement spawn chooses this type; 1 is the common baseline. */
+  spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
+  /** Excludes this kind from ordinary settlement selection while keeping authored/debug spawns available. */
+  authoredOnly: optional(vBoolean()),
+  /** Sound ids are content references, so a new voice needs content only; the registry checks each exists. */
+  sounds: strictObject({ idle: Id, alert: Id, attack: Id, hurt: Id }),
+  damageResistance: optional(DamageResistanceSchema),
+  speed: strictObject({
+    wanderMetresPerSimSecond: SimRate,
+    chaseMetresPerSimSecond: SimRate,
+    crawlMetresPerSimSecond: SimRate,
+  }),
+  /** Metres advanced by one half-cycle of the leg gait. */
+  stepLength: Positive,
+  /** Surface-step sound family for grounded travel; omitted types do not emit footfalls. */
+  footstepSound: optional(Id),
+  /** Whether this type tries to jump low obstacles when grounded. */
+  canJumpObstacles: vBoolean(),
+  jumpMetresPerSimSecond: pipe(Positive, finite(), transform(simRate)),
+  /**
+   * Force of a bash against a closed door it is pressed against, in the N·s of a melee weapon's `impulse`, so a
+   * player's strike and a bash meet the same door gate. It bashes once per attack cooldown; 0 never damages a door.
+   */
+  strength: NonNegative,
+  /**
+   * How it moves relative to its facing: `forward` walks only along its facing, so it turns before it heads
+   * somewhere new; `omnidirectional` moves straight toward its goal whatever its facing, which still turns to
+   * the goal. Omitted is `forward`.
+   */
+  locomotion: optional(picklist(['forward', 'omnidirectional'])),
+  /** Height above its feet that it sees from. */
+  eyeHeightMetres: Positive,
+  /** Height above its feet that it hears at; a sound's occlusion line runs level from the source at this height. */
+  earHeightMetres: Positive,
   chaseMotion: pipe(
     strictObject({
       swayDegrees: pipe(NonNegative, maxValue(90, 'must be at most 90')),
@@ -349,6 +350,12 @@ export const ActorSchema = strictObject({
   acidBody: optional(AcidBodySchema),
   /** What's in its pockets. */
   loot: optional(Id),
+  motion: strictObject({
+    bodyTurnDegreesPerSimSecond: SimRate,
+    headTurnDegreesPerSimSecond: SimRate,
+    movementAccelerationMetresPerSimSecondSquared: SimAcceleration,
+  }),
+  agent: AgentSchema,
 });
 
 export const actorAcidSpitMatchesAbility = (actor: InferOutput<typeof ActorSchema>): boolean =>

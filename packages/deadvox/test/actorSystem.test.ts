@@ -461,11 +461,14 @@ describe('shambler perception', () => {
   it('rejects unreachable senses before terrain queries without shortening far hearing or carried-light reach', () => {
     const type = {
       ...SHAMBLER,
-      sight: 5,
-      nightSight: 5,
-      hearing: 1,
-      hearingRange: { walk: 5, jog: 5, sprint: 5 },
-      hearingModel: { ...SHAMBLER.hearingModel, farMultiplier: 2 },
+      agent: {
+        ...SHAMBLER.agent,
+        sight: 5,
+        nightSight: 5,
+        hearing: 1,
+        hearingRange: { walk: 5, jog: 5, sprint: 5 },
+        hearingModel: { ...SHAMBLER.agent.hearingModel, farMultiplier: 2 },
+      },
     };
     let queries = 0;
     const clear = () => {
@@ -552,9 +555,9 @@ describe('shambler perception', () => {
     expect(sees([10, 2, 0], 12, false, (x, y, z) => x === 4 && y === 4 && z === 0)).toBe(false);
     const opaque = (x: number, y: number, _z: number) => x === 4 && y === 4;
     const muffledHearingEdge = (movement: 'jog' | 'sprint') =>
-      (SHAMBLER.hearingRange[movement] *
-        SHAMBLER.hearing *
-        SHAMBLER.hearingModel.farMultiplier *
+      (SHAMBLER.agent.hearingRange[movement] *
+        SHAMBLER.agent.hearing *
+        SHAMBLER.agent.hearingModel.farMultiplier *
         SENSE_TUNING.wall.hearingRangeScale) /
       BLOCK_SIZE;
     expect(sees([10, 2, 0], 12, false, opaque, 'jogging')).toBe(true);
@@ -564,7 +567,7 @@ describe('shambler perception', () => {
     expect(sees([muffledHearingEdge('sprint') + 1, 2, 0], 12, false, opaque, 'sprinting')).toBe(false);
     const hears = (at: Vec3, movement: PlayerSense['movement'], wall: SolidAt = () => false) =>
       perceivePlayer({
-        def: { ...SHAMBLER, sight: 1, nightSight: 1 },
+        def: { ...SHAMBLER, agent: { ...SHAMBLER.agent, sight: 1, nightSight: 1 } },
         from: [0, 2, 0],
         facing: [1, 0, 0],
         player: player(at, [-1, 0, 0], movement),
@@ -577,7 +580,8 @@ describe('shambler perception', () => {
     expect(hears([5, 2, 0], 'walking')).toBe(true);
     expect(hears([7, 2, 0], 'walking')).toBe(true);
     const walkingFarEdge =
-      (SHAMBLER.hearingRange.walk * SHAMBLER.hearing * SHAMBLER.hearingModel.farMultiplier) / BLOCK_SIZE;
+      (SHAMBLER.agent.hearingRange.walk * SHAMBLER.agent.hearing * SHAMBLER.agent.hearingModel.farMultiplier) /
+      BLOCK_SIZE;
     expect(hears([walkingFarEdge - 1, 2, 0], 'walking')).toBe(true);
     expect(hears([walkingFarEdge + 1, 2, 0], 'walking')).toBe(false);
     expect(hears([5, 2, 0], 'still')).toBe(false);
@@ -609,17 +613,17 @@ describe('shambler perception', () => {
         isSolid: FLOOR,
         tuning: SENSE_TUNING,
       });
-    const sightDistance = (SHAMBLER.sight * (1 + SENSE_TUNING.crouch.sightRangeScale)) / 2;
+    const sightDistance = (SHAMBLER.agent.sight * (1 + SENSE_TUNING.crouch.sightRangeScale)) / 2;
     const hearingDistance =
-      (SHAMBLER.hearingRange.walk *
-        SHAMBLER.hearing *
-        SHAMBLER.hearingModel.farMultiplier *
+      (SHAMBLER.agent.hearingRange.walk *
+        SHAMBLER.agent.hearing *
+        SHAMBLER.agent.hearingModel.farMultiplier *
         (1 + SENSE_TUNING.crouch.hearingRangeScale)) /
       2;
 
     expect(perceives({ distanceMetres: sightDistance, hour: 12, crouching: false, movement: 'still' })).toBe(true);
     expect(perceives({ distanceMetres: sightDistance, hour: 12, crouching: true, movement: 'still' })).toBe(false);
-    const hearingOnly = { ...SHAMBLER, sight: 0.01, nightSight: 0.01 };
+    const hearingOnly = { ...SHAMBLER, agent: { ...SHAMBLER.agent, sight: 0.01, nightSight: 0.01 } };
     expect(
       perceives({
         distanceMetres: hearingDistance,
@@ -642,7 +646,7 @@ describe('shambler perception', () => {
 
   it('uses local daylight exposure for carried-light and lure gates', () => {
     const source = player([0, 0, 0], [-1, 0, 0], 'still', true);
-    const baseline = Math.max(SHAMBLER.sight, SHAMBLER.nightSight);
+    const baseline = Math.max(SHAMBLER.agent.sight, SHAMBLER.agent.nightSight);
     const distanceMetres = (baseline + source.lightSeenFrom) / 2;
     const playerVisible = (hour: number, sunlit: boolean) =>
       perceivePlayer({
@@ -740,7 +744,7 @@ describe('shambler perception', () => {
     const visible = (crouching: boolean, blocked: boolean) => {
       const eyeHeightMetres = PLAYER.eye - (crouching ? eyeDropMetres : 0);
       return perceivePlayer({
-        def: { ...SHAMBLER, sight: 0.1, nightSight: 0.1 },
+        def: { ...SHAMBLER, agent: { ...SHAMBLER.agent, sight: 0.1, nightSight: 0.1 } },
         from: [0, 0, 0],
         facing: [1, 0, 0],
         player: {
@@ -843,7 +847,7 @@ describe('shambler scenarios', () => {
     let investigating = actor.agent.mode === 'investigate';
     let investigationEntries = Number(investigating);
     const observed = new Set([actor.agent.mode]);
-    const maxSearch = SHAMBLER.hearingModel.searchSimSeconds.max;
+    const maxSearch = SHAMBLER.agent.hearingModel.searchSimSeconds.max;
     const roundTripSeconds = (distanceMetres / SHAMBLER.speed.wanderMetresPerSimSecond) * 2;
     const frames = Math.ceil((maxSearch + roundTripSeconds + 10) * 60);
     for (let frame = 1; frame <= frames; frame++) {
@@ -868,7 +872,7 @@ describe('shambler scenarios', () => {
       vocalNoise: { id: 1, pos: [20, 1, 0], radiusMetres: 30, expiresAt: 1 },
     };
     const alerts: string[] = [];
-    const type = { ...SHAMBLER, sight: 8, nightSight: 0.01 };
+    const type = { ...SHAMBLER, agent: { ...SHAMBLER.agent, sight: 8, nightSight: 0.01 } };
     const system = new ActorSystem({
       ...senses(
         () => sensed,
@@ -898,7 +902,7 @@ describe('shambler scenarios', () => {
       [actor.body.pos[0] + facing[0] * 5, actor.body.pos[1], actor.body.pos[2] + facing[2] * 5],
       [-facing[0], 0, -facing[2]],
     );
-    system.tick(1 / 20, 0.05 + type.hearingModel.alertCooldownSimSeconds);
+    system.tick(1 / 20, 0.05 + type.agent.hearingModel.alertCooldownSimSeconds);
 
     expect(actor.agent.mode).toBe('chase');
     expect(alerts).toEqual([type.sounds.alert]);
@@ -1100,8 +1104,8 @@ describe('shambler scenarios', () => {
     const type = {
       ...SHAMBLER,
       speed: { ...SHAMBLER.speed, chaseMetresPerSimSecond: simRate(2) },
-      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
       chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, speedMultiplier: { min: 1, max: 1 } },
+      agent: { ...SHAMBLER.agent, hearingRange: { ...SHAMBLER.agent.hearingRange, sprint: 1000 } },
     };
     const system = new ActorSystem({
       ...senses(() => player([20, 1, 10], [-1, 0, 0], 'sprinting'), wall),
@@ -1127,13 +1131,16 @@ describe('shambler scenarios', () => {
     const type = {
       ...SHAMBLER,
       speed: { ...SHAMBLER.speed, chaseMetresPerSimSecond: simRate(2) },
-      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
-      wander: { ...SHAMBLER.wander, obstacleWanderChance: 0 },
       chaseMotion: {
         ...SHAMBLER.chaseMotion,
         swayDegrees: 0,
         speedMultiplier: { min: 1, max: 1 },
         stumbleChancePerSimSecond: simRate(0),
+      },
+      agent: {
+        ...SHAMBLER.agent,
+        hearingRange: { ...SHAMBLER.agent.hearingRange, sprint: 1000 },
+        wander: { ...SHAMBLER.agent.wander, obstacleWanderChance: 0 },
       },
     };
     for (const seed of [1, 2, 3, 7, 23]) {
@@ -1174,8 +1181,8 @@ describe('shambler scenarios', () => {
     const container: CornerBox = [2, 4, -2, 2, 2];
     const type = {
       ...SHAMBLER,
-      hearingRange: { ...SHAMBLER.hearingRange, sprint: 0 },
       chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSimSecond: simRate(0) },
+      agent: { ...SHAMBLER.agent, hearingRange: { ...SHAMBLER.agent.hearingRange, sprint: 0 } },
     };
     // Two starts at the #608 corner, where a wall meets a container: the shambler's centre line clears
     // the container corner its body catches, so it must slide round instead of grinding in place.
@@ -1208,11 +1215,14 @@ describe('shambler scenarios', () => {
     const target: Vec3 = [30, 1, 0];
     const type = {
       ...SHAMBLER,
-      sight: 100,
-      sightCone: 180,
-      wander: { ...SHAMBLER.wander, obstacleWanderChance: 1 },
-      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
       chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSimSecond: simRate(0) },
+      agent: {
+        ...SHAMBLER.agent,
+        sight: 100,
+        sightCone: 180,
+        wander: { ...SHAMBLER.agent.wander, obstacleWanderChance: 1 },
+        hearingRange: { ...SHAMBLER.agent.hearingRange, sprint: 1000 },
+      },
     };
     const system = new ActorSystem({
       ...senses(() => player(target, [-1, 0, 0], 'sprinting'), wall),
@@ -1235,11 +1245,14 @@ describe('shambler scenarios', () => {
     const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 4 && y >= 1 && y <= 5 && z >= -2 && z <= 2);
     const type = {
       ...SHAMBLER,
-      sight: 1,
-      nightSight: 1,
-      wander: { ...SHAMBLER.wander, obstacleWanderChance: 1 },
-      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
       chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSimSecond: simRate(0) },
+      agent: {
+        ...SHAMBLER.agent,
+        sight: 1,
+        nightSight: 1,
+        wander: { ...SHAMBLER.agent.wander, obstacleWanderChance: 1 },
+        hearingRange: { ...SHAMBLER.agent.hearingRange, sprint: 1000 },
+      },
     };
     const system = new ActorSystem({
       ...senses(() => player([30, 1, 0], [-1, 0, 0], 'sprinting'), wall),
@@ -1261,10 +1274,13 @@ describe('shambler scenarios', () => {
     const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 4 && y >= 1 && y <= 5);
     const type = {
       ...SHAMBLER,
-      sight: 100,
-      sightCone: 180,
-      wander: { ...SHAMBLER.wander, obstacleWanderChance: 1 },
-      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
+      agent: {
+        ...SHAMBLER.agent,
+        sight: 100,
+        sightCone: 180,
+        wander: { ...SHAMBLER.agent.wander, obstacleWanderChance: 1 },
+        hearingRange: { ...SHAMBLER.agent.hearingRange, sprint: 1000 },
+      },
     };
     const system = new ActorSystem({
       ...senses(() => target, wall),
@@ -1289,15 +1305,18 @@ describe('shambler scenarios', () => {
     const type = {
       ...SHAMBLER,
       speed: { ...SHAMBLER.speed, chaseMetresPerSimSecond: simRate(2) },
-      wander: { ...SHAMBLER.wander, obstacleWanderChance: 1 },
-      sight: 1,
-      nightSight: 1,
-      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
       chaseMotion: {
         ...SHAMBLER.chaseMotion,
         swayDegrees: 0,
         speedMultiplier: { min: 1, max: 1 },
         stumbleChancePerSimSecond: simRate(0),
+      },
+      agent: {
+        ...SHAMBLER.agent,
+        wander: { ...SHAMBLER.agent.wander, obstacleWanderChance: 1 },
+        sight: 1,
+        nightSight: 1,
+        hearingRange: { ...SHAMBLER.agent.hearingRange, sprint: 1000 },
       },
     };
     const system = new ActorSystem({
@@ -1338,10 +1357,13 @@ describe('shambler scenarios', () => {
       (y >= 1 && y <= 5 && (x === 4 || (barrier !== undefined && (barrier.axis === 0 ? x : z) === barrier.coordinate)));
     const type = {
       ...SHAMBLER,
-      sight: 1,
-      nightSight: 1,
-      wander: { ...SHAMBLER.wander, obstacleWanderChance: 1 },
-      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
+      agent: {
+        ...SHAMBLER.agent,
+        sight: 1,
+        nightSight: 1,
+        wander: { ...SHAMBLER.agent.wander, obstacleWanderChance: 1 },
+        hearingRange: { ...SHAMBLER.agent.hearingRange, sprint: 1000 },
+      },
     };
     const system = new ActorSystem({
       ...senses(() => player([300, 1, 0], [-1, 0, 0], 'sprinting'), wall),
@@ -2597,12 +2619,15 @@ describe('attention targets across terrain and changing blockers', () => {
     const source: Vec3 = [14, 9, 0];
     const type = {
       ...SHAMBLER,
-      hearingRange: { ...SHAMBLER.hearingRange, sprint: 4 },
-      hearingModel: {
-        ...SHAMBLER.hearingModel,
-        farMultiplier: 4,
-        investigationDistanceMetres: 4,
-        bearingErrorRadians: 0,
+      agent: {
+        ...SHAMBLER.agent,
+        hearingRange: { ...SHAMBLER.agent.hearingRange, sprint: 4 },
+        hearingModel: {
+          ...SHAMBLER.agent.hearingModel,
+          farMultiplier: 4,
+          investigationDistanceMetres: 4,
+          bearingErrorRadians: 0,
+        },
       },
     };
     const system = new ActorSystem({
@@ -2625,7 +2650,7 @@ describe('attention targets across terrain and changing blockers', () => {
     const terrainFloor = (x: number) => 1 + Math.max(0, Math.floor((x - 1) / 2));
     const solid: SolidAt = (x, y) => y < terrainFloor(x);
     const source: Vec3 = [1, terrainFloor(1), 0];
-    const targetX = source[0] + Math.floor(SHAMBLER.sight / BLOCK_SIZE) - 1;
+    const targetX = source[0] + Math.floor(SHAMBLER.agent.sight / BLOCK_SIZE) - 1;
     const highTarget: Vec3 = [targetX, terrainFloor(targetX), 0];
     const initialTarget: Vec3 = [source[0] + 2, terrainFloor(source[0] + 2), 0];
     const type = {
@@ -2653,8 +2678,8 @@ describe('attention targets across terrain and changing blockers', () => {
     const spatialDistance =
       Math.hypot(target[0] - actor.body.pos[0], target[1] - actor.body.pos[1], target[2] - actor.body.pos[2]) *
       BLOCK_SIZE;
-    expect(startDistance).toBeLessThanOrEqual(type.sight);
-    expect(spatialDistance).toBeGreaterThan(type.sight);
+    expect(startDistance).toBeLessThanOrEqual(type.agent.sight);
+    expect(spatialDistance).toBeGreaterThan(type.agent.sight);
 
     for (let tick = 2; tick <= 10; tick++) {
       system.tick(1 / 20, tick / 20);
@@ -2679,13 +2704,13 @@ describe('attention targets across terrain and changing blockers', () => {
     const type = {
       ...SHAMBLER,
       speed: speedRates(0, 2),
-      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
       chaseMotion: {
         ...SHAMBLER.chaseMotion,
         swayDegrees: 0,
         speedMultiplier: { min: 1, max: 1 },
         stumbleChancePerSimSecond: simRate(0),
       },
+      agent: { ...SHAMBLER.agent, hearingRange: { ...SHAMBLER.agent.hearingRange, sprint: 1000 } },
     };
     const system = new ActorSystem({
       ...senses(() => player(target, [-1, 0, 0], 'sprinting'), solid),
@@ -2707,15 +2732,14 @@ describe('attention targets across terrain and changing blockers', () => {
     const blockSize = 0.5;
     const type = {
       ...SHAMBLER,
-      sight: 1000,
       speed: speedRates(0, 2),
-      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
       chaseMotion: {
         ...SHAMBLER.chaseMotion,
         swayDegrees: 0,
         speedMultiplier: { min: 1, max: 1 },
         stumbleChancePerSimSecond: simRate(0),
       },
+      agent: { ...SHAMBLER.agent, sight: 1000, hearingRange: { ...SHAMBLER.agent.hearingRange, sprint: 1000 } },
     };
     const system = new ActorSystem({
       ...senses(() => player(target, [-1, 0, 0], 'sprinting')),
@@ -2738,7 +2762,6 @@ describe('attention targets across terrain and changing blockers', () => {
     let target: Vec3 = [startTargetX, 1, 1];
     const type = {
       ...SHAMBLER,
-      sight: 1000,
       speed: speedRates(0, 2),
       chaseMotion: {
         ...SHAMBLER.chaseMotion,
@@ -2746,6 +2769,7 @@ describe('attention targets across terrain and changing blockers', () => {
         speedMultiplier: { min: 1, max: 1 },
         stumbleChancePerSimSecond: simRate(0),
       },
+      agent: { ...SHAMBLER.agent, sight: 1000 },
     };
     const system = new ActorSystem({
       ...senses(() => player(target, [-1, 0, 0], 'still')),
@@ -2775,8 +2799,8 @@ describe('lurching chase', () => {
   it('eases each stumble into and out of a near-stop for at least 0.2 s', () => {
     const type = {
       ...SHAMBLER,
-      sight: 1000,
       chaseMotion: { ...SHAMBLER.chaseMotion, stumbleChancePerSimSecond: simRate(1) },
+      agent: { ...SHAMBLER.agent, sight: 1000 },
     };
     const system = new ActorSystem({ ...senses(() => player([20, 1, 0])), seed: 19 });
     const id = system.add(type, [0, 1, 0], [1, 0, 0]);
@@ -2842,9 +2866,9 @@ describe('lurching chase', () => {
       (15 -
         SHAMBLER.attack.reach -
         SHAMBLER.speed.chaseMetresPerSimSecond ** 2 /
-          (2 * SHAMBLER.wander.movementAccelerationMetresPerSimSecondSquared)) /
+          (2 * SHAMBLER.motion.movementAccelerationMetresPerSimSecondSquared)) /
         SHAMBLER.speed.chaseMetresPerSimSecond +
-      SHAMBLER.speed.chaseMetresPerSimSecond / SHAMBLER.wander.movementAccelerationMetresPerSimSecondSquared;
+      SHAMBLER.speed.chaseMetresPerSimSecond / SHAMBLER.motion.movementAccelerationMetresPerSimSecondSquared;
     expect(ticks / 20).toBeLessThanOrEqual(beelineSeconds * 1.6);
   });
 });
@@ -2854,7 +2878,7 @@ describe('facing-directed movement', () => {
   const createScenario = (mode: TravelMode) => {
     const distant = player([1000, 1, 1000]);
     let sensed = mode === 'stroll' ? distant : player([10, 1, 0], [-1, 0, 0], 'sprinting');
-    const type = { ...SHAMBLER, sight: 100, nightSight: 100, sightCone: 180 };
+    const type = { ...SHAMBLER, agent: { ...SHAMBLER.agent, sight: 100, nightSight: 100, sightCone: 180 } };
     const system = new ActorSystem({
       ...senses(() => sensed),
       isOpaque: () => mode === 'investigate',
@@ -2866,7 +2890,7 @@ describe('facing-directed movement', () => {
       sensed = distant;
     }
     for (let tick = 0; tick < 60 * 20 && actor.agent.mode !== mode; tick++) {
-      const time = mode === 'return' ? type.stimulusMemorySimSeconds + 3 + tick / 20 : tick / 20;
+      const time = mode === 'return' ? type.agent.stimulusMemorySimSeconds + 3 + tick / 20 : tick / 20;
       system.tick(1 / 20, time);
     }
     if (actor.agent.mode !== mode) {
@@ -2935,7 +2959,6 @@ describe('two-tier shambler hearing', () => {
 
   it('reports the exact near source and bounded, approximate far bearings over fifty seeds', () => {
     const from: Vec3 = [0, 1, 0];
-    expect(SHAMBLER.hearingModel.farMultiplier).toBe(2);
     const near = hearing(1, from, player([20, 1, 0], [-1, 0, 0], 'sprinting'));
     expect(near?.tier).toBe('near');
     expect(near?.target).toEqual([20, 1, 0]);
@@ -2950,18 +2973,26 @@ describe('two-tier shambler hearing', () => {
       const error = Math.abs(
         Math.atan2(Math.sin(guessedBearing - actualBearing), Math.cos(guessedBearing - actualBearing)),
       );
-      expect(error).toBeLessThanOrEqual(SHAMBLER.hearingModel.bearingErrorRadians);
+      expect(error).toBeLessThanOrEqual(SHAMBLER.agent.hearingModel.bearingErrorRadians);
     }
-    const sprintRange = SHAMBLER.hearingRange.sprint * SHAMBLER.hearing;
+    const sprintRange = SHAMBLER.agent.hearingRange.sprint * SHAMBLER.agent.hearing;
     const withinFarLimit = hearing(
       51,
       from,
-      player([(sprintRange * (SHAMBLER.hearingModel.farMultiplier - 0.1)) / BLOCK_SIZE, 1, 0], [-1, 0, 0], 'sprinting'),
+      player(
+        [(sprintRange * (SHAMBLER.agent.hearingModel.farMultiplier - 0.1)) / BLOCK_SIZE, 1, 0],
+        [-1, 0, 0],
+        'sprinting',
+      ),
     );
     const outsideFarLimit = hearing(
       52,
       from,
-      player([(sprintRange * (SHAMBLER.hearingModel.farMultiplier + 0.1)) / BLOCK_SIZE, 1, 0], [-1, 0, 0], 'sprinting'),
+      player(
+        [(sprintRange * (SHAMBLER.agent.hearingModel.farMultiplier + 0.1)) / BLOCK_SIZE, 1, 0],
+        [-1, 0, 0],
+        'sprinting',
+      ),
     );
     expect(withinFarLimit?.tier).toBe('far');
     expect(outsideFarLimit).toBeUndefined();
@@ -2995,9 +3026,12 @@ describe('two-tier shambler hearing', () => {
     const noise = { id: 44, pos: [12, 1, 0] as Vec3, radiusMetres: 6, expiresAt: 1 };
     const type = {
       ...SHAMBLER,
-      sight: 0.01,
-      nightSight: 0.01,
-      hearingModel: { ...SHAMBLER.hearingModel, loudNoiseRadiusMetres: noise.radiusMetres },
+      agent: {
+        ...SHAMBLER.agent,
+        sight: 0.01,
+        nightSight: 0.01,
+        hearingModel: { ...SHAMBLER.agent.hearingModel, loudNoiseRadiusMetres: noise.radiusMetres },
+      },
     };
     const target = { ...player(noise.pos), vocalNoise: noise };
     const heard: string[] = [];
@@ -3020,7 +3054,10 @@ describe('two-tier shambler hearing', () => {
     const distantNoise = { ...noise, id: 45, pos: [26, 1, 0] as Vec3 };
     const distantPlayer = { ...player(distantNoise.pos), vocalNoise: distantNoise };
     const distantSystem = new ActorSystem(senses(() => distantPlayer));
-    const distantId = distantSystem.add({ ...SHAMBLER, sight: 0.01, nightSight: 0.01 }, [0, 1, 0]);
+    const distantId = distantSystem.add(
+      { ...SHAMBLER, agent: { ...SHAMBLER.agent, sight: 0.01, nightSight: 0.01 } },
+      [0, 1, 0],
+    );
     distantSystem.tick(1 / 20, 0.05);
     expect(distantSystem.store.get(distantId)!.agent.mode).toBe('idle');
   });
@@ -3066,7 +3103,7 @@ describe('two-tier shambler hearing', () => {
   it('investigates near noises exactly but lets far rumours affect only idle or strolling bodies', () => {
     const nearPlayer = player([20, 1, 0], [-1, 0, 0], 'sprinting');
     const nearSystem = new ActorSystem({ ...senses(() => nearPlayer), seed: 17 });
-    const nearId = nearSystem.add({ ...SHAMBLER, sight: 1, nightSight: 1 }, [0, 1, 0]);
+    const nearId = nearSystem.add({ ...SHAMBLER, agent: { ...SHAMBLER.agent, sight: 1, nightSight: 1 } }, [0, 1, 0]);
     nearSystem.tick(1 / 20);
     const nearActor = nearSystem.store.get(nearId)!;
     expect(nearActor.agent.mode).toBe('investigate');
@@ -3075,7 +3112,7 @@ describe('two-tier shambler hearing', () => {
 
     const distant = player([35, 1, 0], [-1, 0, 0], 'sprinting');
     const farSystem = new ActorSystem({ ...senses(() => distant), seed: 17 });
-    const farId = farSystem.add({ ...SHAMBLER, sight: 1, nightSight: 1 }, [0, 1, 0]);
+    const farId = farSystem.add({ ...SHAMBLER, agent: { ...SHAMBLER.agent, sight: 1, nightSight: 1 } }, [0, 1, 0]);
     farSystem.tick(1 / 20);
     const curious = farSystem.store.get(farId)!;
     expect(curious.agent.mode).toBe('investigate');
@@ -3102,7 +3139,7 @@ describe('two-tier shambler hearing', () => {
   it('lets a far noise during search restart investigation from a new bearing', () => {
     const distant = player([50, 1, 0], [-1, 0, 0], 'sprinting');
     const system = new ActorSystem({ ...senses(() => distant), seed: 27 });
-    const id = system.add({ ...SHAMBLER, sight: 0.01, nightSight: 0.01 }, [0, 1, 0]);
+    const id = system.add({ ...SHAMBLER, agent: { ...SHAMBLER.agent, sight: 0.01, nightSight: 0.01 } }, [0, 1, 0]);
     const actor = system.store.get(id)!;
     settle(actor.body);
     actor.agent.mode = 'search';
@@ -3116,7 +3153,7 @@ describe('two-tier shambler hearing', () => {
     expect(actor.agent.investigationTier).toBe('far');
     expect(actor.agent.lastPerceived).not.toEqual(distant.pos);
     expect(metres(actor.agent.lastPerceived!, before)).toBeCloseTo(
-      SHAMBLER.hearingModel.investigationDistanceMetres,
+      SHAMBLER.agent.hearingModel.investigationDistanceMetres,
       5,
     );
   });
@@ -3166,7 +3203,7 @@ describe('two-tier shambler hearing', () => {
   it('searches around a near sound for its data duration and restarts around a second exact sound', () => {
     let noise = player([20, 1, 0], [-1, 0, 0], 'sprinting');
     const system = new ActorSystem({ ...senses(() => noise), seed: 113 });
-    const type = { ...SHAMBLER, sight: 0.01, nightSight: 0.01 };
+    const type = { ...SHAMBLER, agent: { ...SHAMBLER.agent, sight: 0.01, nightSight: 0.01 } };
     const actor = system.store.get(system.add(type, [0, 1, 0]))!;
     settle(actor.body);
     expect(advanceToMode(system, actor, 'investigate', 200)).toBe(true);
@@ -3186,17 +3223,17 @@ describe('two-tier shambler hearing', () => {
     noise = { ...noise, movement: 'still' };
     expect(advanceToMode(system, actor, 'search', 200)).toBe(true);
     expect(actor.agent.searchAnchor).toEqual([24, 1, 0]);
-    expect(actor.agent.searchTimer).toBeGreaterThanOrEqual(type.hearingModel.searchSimSeconds.min);
-    expect(actor.agent.searchTimer).toBeLessThanOrEqual(type.hearingModel.searchSimSeconds.max);
+    expect(actor.agent.searchTimer).toBeGreaterThanOrEqual(type.agent.hearingModel.searchSimSeconds.min);
+    expect(actor.agent.searchTimer).toBeLessThanOrEqual(type.agent.hearingModel.searchSimSeconds.max);
 
-    const minSearchTicks = Math.floor((type.hearingModel.searchSimSeconds.min - 0.1) * 20);
-    expect(stayInsideSearch(system, actor, minSearchTicks, type.hearingModel.searchRadiusMetres)).toBe(true);
+    const minSearchTicks = Math.floor((type.agent.hearingModel.searchSimSeconds.min - 0.1) * 20);
+    expect(stayInsideSearch(system, actor, minSearchTicks, type.agent.hearingModel.searchRadiusMetres)).toBe(true);
     expect(
       finishSearch(
         system,
         actor,
-        type.hearingModel.searchSimSeconds.max * 20 + 5,
-        type.hearingModel.searchRadiusMetres,
+        type.agent.hearingModel.searchSimSeconds.max * 20 + 5,
+        type.agent.hearingModel.searchRadiusMetres,
       ),
     ).toBe(true);
     expect(advanceToMode(system, actor, 'idle', 20 * 20)).toBe(true);
@@ -3386,10 +3423,10 @@ describe('idle and stroll shambling', () => {
     const tickSeconds = 1 / 20;
     const type = {
       ...SHAMBLER,
-      sightCone: 180,
       chaseMotion: { ...SHAMBLER.chaseMotion, stumbleChancePerSimSecond: simRate(0) },
+      agent: { ...SHAMBLER.agent, sightCone: 180 },
     };
-    const maxSpeedChange = type.wander.movementAccelerationMetresPerSimSecondSquared * tickSeconds;
+    const maxSpeedChange = type.motion.movementAccelerationMetresPerSimSecondSquared * tickSeconds;
     let target: Vec3 = [20, 1, 0];
     const system = new ActorSystem(senses(() => player(target)));
     const id = system.add(type, [0, 1, 0], [1, 0, 0]);
@@ -3620,7 +3657,9 @@ describe('attack windup', () => {
   });
 
   it('does not replay a live far vocal pulse after a searching zombie is restored', () => {
-    const { hearing, hearingModel } = SHAMBLER;
+    const {
+      agent: { hearing, hearingModel },
+    } = SHAMBLER;
     const { farMultiplier, investigationDistanceMetres } = hearingModel;
     const hearingRadius = (4 * investigationDistanceMetres) / (farMultiplier - 1);
     const radiusMetres = hearingRadius / hearing;
@@ -4168,12 +4207,15 @@ describe('dismemberment', () => {
   });
 
   it('thins idle cues per enemy in a local crowd without changing a lone enemy rate', () => {
-    const duration = simSeconds(SHAMBLER.idleSound.intervalSimSeconds.max * 12);
+    const duration = simSeconds(SHAMBLER.agent.idleSound.intervalSimSeconds.max * 12);
     const type = {
       ...SHAMBLER,
-      wander: {
-        ...SHAMBLER.wander,
-        idleSimSeconds: { min: simSeconds(duration + 1), max: simSeconds(duration + 1) },
+      agent: {
+        ...SHAMBLER.agent,
+        wander: {
+          ...SHAMBLER.agent.wander,
+          idleSimSeconds: { min: simSeconds(duration + 1), max: simSeconds(duration + 1) },
+        },
       },
     };
     const cueCounts = (positions: readonly Vec3[], candidate: ActorDef): number[] => {
@@ -4190,7 +4232,7 @@ describe('dismemberment', () => {
       run(system, duration);
       return ids.map((id) => cues.get(system.store.get(id)!) ?? 0);
     };
-    const radius = type.idleSound.density.radiusMetres / BLOCK_SIZE;
+    const radius = type.agent.idleSound.density.radiusMetres / BLOCK_SIZE;
     const lone = cueCounts([[0, 1, 0]], type);
     const crowded = cueCounts(
       [
@@ -4203,11 +4245,14 @@ describe('dismemberment', () => {
     );
     const strongerDensityCurve = {
       ...type,
-      idleSound: {
-        ...type.idleSound,
-        density: {
-          ...type.idleSound.density,
-          penaltyPerNeighbour: type.idleSound.density.penaltyPerNeighbour * 2,
+      agent: {
+        ...type.agent,
+        idleSound: {
+          ...type.agent.idleSound,
+          density: {
+            ...type.agent.idleSound.density,
+            penaltyPerNeighbour: type.agent.idleSound.density.penaltyPerNeighbour * 2,
+          },
         },
       },
     };

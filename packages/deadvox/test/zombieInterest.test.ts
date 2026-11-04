@@ -17,14 +17,17 @@ const base = registry.actors.get('shambler')!;
 const scale = makeScale(0.5);
 const type: ActorDef = {
   ...base,
-  sight: 0,
-  nightSight: 0,
-  hearingModel: {
-    ...base.hearingModel,
-    loudNoiseRadiusMetres: 10,
-    hesitationSimSeconds: { min: simSeconds(0.2), max: simSeconds(0.2) },
+  agent: {
+    ...base.agent,
+    sight: 0,
+    nightSight: 0,
+    hearingModel: {
+      ...base.agent.hearingModel,
+      loudNoiseRadiusMetres: 10,
+      hesitationSimSeconds: { min: simSeconds(0.2), max: simSeconds(0.2) },
+    },
+    wander: { ...base.agent.wander, idleSimSeconds: { min: simSeconds(0.1), max: simSeconds(0.1) } },
   },
-  wander: { ...base.wander, idleSimSeconds: { min: simSeconds(0.1), max: simSeconds(0.1) } },
 };
 const fixture = (radiusMetres = 4) => {
   const player: PlayerSense = {
@@ -75,7 +78,7 @@ describe('shambler interest', () => {
   });
 
   it('a loud sound at the threshold skips hesitation', () => {
-    const f = fixture(type.hearingModel.loudNoiseRadiusMetres);
+    const f = fixture(type.agent.hearingModel.loudNoiseRadiusMetres);
     const actor = f.add();
     f.step();
     expect(actor.agent.mode).toBe('investigate');
@@ -138,12 +141,15 @@ describe('shambler interest', () => {
     f.player.vocalNoise!.pos = [0, 1, 4];
     const callerType = {
       ...type,
-      hearingModel: {
-        ...type.hearingModel,
-        loudNoiseRadiusMetres: 2,
-        farMultiplier: 1,
-        chainRadiusMetres: 4,
-        chainChance: 1,
+      agent: {
+        ...type.agent,
+        hearingModel: {
+          ...type.agent.hearingModel,
+          loudNoiseRadiusMetres: 2,
+          farMultiplier: 1,
+          chainRadiusMetres: 4,
+          chainChance: 1,
+        },
       },
     };
     const caller = f.add([0, 1, 0], callerType);
@@ -166,15 +172,18 @@ describe('shambler interest', () => {
     f.player.vocalNoise!.pos = [0, 1, 4];
     const def: ActorDef = {
       ...type,
-      stimulusMemorySimSeconds: simSeconds(30),
       speed: { ...type.speed, chaseMetresPerSimSecond: simRate(1), wanderMetresPerSimSecond: simRate(1) },
-      hearingModel: {
-        ...type.hearingModel,
-        loudNoiseRadiusMetres: 2,
-        farMultiplier: 1,
-        chainRadiusMetres: 4,
-        chainChance: 1,
-        searchSimSeconds: { min: simSeconds(1), max: simSeconds(1) },
+      agent: {
+        ...type.agent,
+        stimulusMemorySimSeconds: simSeconds(30),
+        hearingModel: {
+          ...type.agent.hearingModel,
+          loudNoiseRadiusMetres: 2,
+          farMultiplier: 1,
+          chainRadiusMetres: 4,
+          chainChance: 1,
+          searchSimSeconds: { min: simSeconds(1), max: simSeconds(1) },
+        },
       },
     };
     const listener = f.add([0, 1, 0], def);
@@ -205,12 +214,15 @@ describe('shambler interest', () => {
     f.player.vocalNoise!.pos = [0, 1, 4];
     const def = {
       ...type,
-      hearingModel: {
-        ...type.hearingModel,
-        loudNoiseRadiusMetres: 2,
-        farMultiplier: 1,
-        chainRadiusMetres: 4,
-        chainChance: 1,
+      agent: {
+        ...type.agent,
+        hearingModel: {
+          ...type.agent.hearingModel,
+          loudNoiseRadiusMetres: 2,
+          farMultiplier: 1,
+          chainRadiusMetres: 4,
+          chainChance: 1,
+        },
       },
     };
     const listener = f.add([8, 1, 0], def);
@@ -225,12 +237,15 @@ describe('shambler interest', () => {
     f.player.vocalNoise!.pos = [0, 1, 4];
     const def = {
       ...type,
-      hearingModel: {
-        ...type.hearingModel,
-        loudNoiseRadiusMetres: 2,
-        farMultiplier: 1,
-        chainRadiusMetres: 4,
-        chainChance: 0,
+      agent: {
+        ...type.agent,
+        hearingModel: {
+          ...type.agent.hearingModel,
+          loudNoiseRadiusMetres: 2,
+          farMultiplier: 1,
+          chainRadiusMetres: 4,
+          chainChance: 0,
+        },
       },
     };
     f.add([0, 1, 0], def);
@@ -242,7 +257,10 @@ describe('shambler interest', () => {
   it('measures undamped spread across a dense yard from one local noise', () => {
     const f = fixture(0.5);
     f.player.vocalNoise!.pos = [0.5, 1, 0];
-    const def = { ...type, hearingModel: { ...type.hearingModel, loudNoiseRadiusMetres: 0.5 } };
+    const def = {
+      ...type,
+      agent: { ...type.agent, hearingModel: { ...type.agent.hearingModel, loudNoiseRadiusMetres: 0.5 } },
+    };
     const crowd = Array.from({ length: 100 }, (_, index) =>
       f.add([(index % 10) * 6, 1, Math.floor(index / 10) * 6], def),
     );
@@ -263,14 +281,17 @@ describe('shambler interest', () => {
     f.player.vocalNoise!.pos = [0.5, 1, 0];
     const def: ActorDef = {
       ...type,
-      stimulusMemorySimSeconds: simSeconds(0.5),
-      hearingModel: {
-        ...type.hearingModel,
-        loudNoiseRadiusMetres: 0.5,
-        farMultiplier: 1,
-        chainRadiusMetres: 100,
-        chainChance: 1,
-        searchSimSeconds: { min: simSeconds(0.1), max: simSeconds(0.1) },
+      agent: {
+        ...type.agent,
+        stimulusMemorySimSeconds: simSeconds(0.5),
+        hearingModel: {
+          ...type.agent.hearingModel,
+          loudNoiseRadiusMetres: 0.5,
+          farMultiplier: 1,
+          chainRadiusMetres: 100,
+          chainChance: 1,
+          searchSimSeconds: { min: simSeconds(0.1), max: simSeconds(0.1) },
+        },
       },
     };
     const crowd = [f.add([0, 1, 0], def), f.add([6, 1, 0], def), f.add([12, 1, 0], def)];
@@ -295,12 +316,12 @@ describe('shambler interest', () => {
     expect(counts()).toEqual(crowd.map(() => 1));
     const firstCryAt = f.time();
     settle();
-    expect(f.time() - firstCryAt).toBeLessThan(base.hearingModel.alertCooldownSimSeconds);
+    expect(f.time() - firstCryAt).toBeLessThan(base.agent.hearingModel.alertCooldownSimSeconds);
     stimulate(2);
     expect(crowd[0]!.agent.stimulusAt).toBe(f.time());
     expect(counts()).toEqual(crowd.map(() => 1));
     f.player.vocalNoise = undefined;
-    while (f.time() - firstCryAt < base.hearingModel.alertCooldownSimSeconds) {
+    while (f.time() - firstCryAt < base.agent.hearingModel.alertCooldownSimSeconds) {
       f.step();
     }
     expect(counts()).toEqual(crowd.map(() => 1));
@@ -313,14 +334,17 @@ describe('shambler interest', () => {
     f.player.vocalNoise!.pos = [0.5, 1, 0];
     const def: ActorDef = {
       ...type,
-      stimulusMemorySimSeconds: simSeconds(0.5),
-      hearingModel: {
-        ...type.hearingModel,
-        loudNoiseRadiusMetres: 0.5,
-        farMultiplier: 1,
-        chainRadiusMetres: 10,
-        chainChance: 1,
-        searchSimSeconds: { min: simSeconds(0.1), max: simSeconds(0.1) },
+      agent: {
+        ...type.agent,
+        stimulusMemorySimSeconds: simSeconds(0.5),
+        hearingModel: {
+          ...type.agent.hearingModel,
+          loudNoiseRadiusMetres: 0.5,
+          farMultiplier: 1,
+          chainRadiusMetres: 10,
+          chainChance: 1,
+          searchSimSeconds: { min: simSeconds(0.1), max: simSeconds(0.1) },
+        },
       },
     };
     const listener = f.add([0, 1, 0], def);

@@ -493,7 +493,7 @@ describe('fused-mass body and combat seam', () => {
     const noisyPlayer: PlayerSense = {
       ...player(),
       pos: [1000, 1, 1000],
-      vocalNoise: { id: 1, pos: [4, 1, 0], radiusMetres: type.hearingModel.loudNoiseRadiusMetres, expiresAt: 10 },
+      vocalNoise: { id: 1, pos: [4, 1, 0], radiusMetres: type.agent.hearingModel.loudNoiseRadiusMetres, expiresAt: 10 },
     };
     let heardBody = false;
     const hearingSystem = new ActorSystem({
@@ -690,8 +690,8 @@ describe('fused-mass body and combat seam', () => {
     const actor = simulation.store.get(simulation.add(amalgam, [atX, atY, atZ], facingPillar))!;
     const [fx, , fz] = actor.facing;
     const facingPlayer = (fx * 3 + fz * 10) / Math.hypot(3, 10);
-    expect(facingPlayer).toBeLessThan(Math.cos((actor.type.sightCone * Math.PI) / 180));
-    const halfTurnTicks = (180 / amalgam.wander.bodyTurnDegreesPerSimSecond) * 60;
+    expect(facingPlayer).toBeLessThan(Math.cos((actor.type.agent.sightCone * Math.PI) / 180));
+    const halfTurnTicks = (180 / amalgam.motion.bodyTurnDegreesPerSimSecond) * 60;
     let struck = false;
     for (let tick = 0; tick < 2 * halfTurnTicks && !struck; tick++) {
       simulation.tick(1 / 60);

@@ -210,11 +210,11 @@ export function turnActorBodyLook(actor: Actor, type: Actor['type'], dt: number,
   actor.facing = turnToward(
     actor.facing,
     headingAt(target),
-    (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
+    (type.motion.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
   );
 }
 export function turnActorHeadLook(actor: Actor, type: Actor['type'], dt: number, target: number) {
-  actor.headYaw = approachAngle(actor.headYaw, target, (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
+  actor.headYaw = approachAngle(actor.headYaw, target, (type.motion.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
 }
 export function reachableActorMoves(
   actor: Actor,

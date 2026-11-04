@@ -2,6 +2,80 @@
   "actors": [
     {
       "abilities": [],
+      "agent": {
+        "hearing": 1,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "nightSight": 10,
+        "sight": 25,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
       "attack": {
         "cooldownSimSeconds": 1.5,
         "grabBandMetres": 1.7,
@@ -167,56 +241,16 @@
       "eyeHeightMetres": 1.3,
       "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
       "footstepSound": "shambler",
-      "hearing": 1,
-      "hearingModel": {
-        "alertCooldownSimSeconds": 60,
-        "bearingErrorRadians": 0.60999999999999999,
-        "chainChance": 0.34999999999999998,
-        "chainRadiusMetres": 8,
-        "farMultiplier": 2,
-        "hesitationSimSeconds": {
-          "max": 5,
-          "min": 5
-        },
-        "investigationDistanceMetres": 8,
-        "loudNoiseRadiusMetres": 30,
-        "refusalLean": 0.75,
-        "refusalSuspicionSimSeconds": 20,
-        "searchRadiusMetres": 4,
-        "searchSimSeconds": {
-          "max": 50,
-          "min": 40
-        },
-        "searchStrollSimSeconds": {
-          "max": 3,
-          "min": 1
-        }
-      },
-      "hearingRange": {
-        "jog": 8,
-        "sprint": 15,
-        "walk": 3
-      },
-      "hordeSpacing": {
-        "innerMetres": 0.34999999999999998,
-        "stepMetres": 0.38
-      },
       "id": "shambler",
-      "idleSound": {
-        "density": {
-          "penaltyPerNeighbour": 0.25,
-          "radiusMetres": 8
-        },
-        "intervalSimSeconds": {
-          "max": 20,
-          "min": 8
-        }
-      },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "shambler_pockets",
       "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
       "name": "Shambler",
-      "nightSight": 10,
       "regions": {
         "head": 60,
         "leftArm": 24,
@@ -241,8 +275,6 @@
         "speedMetresPerRealSecond": 5,
         "spreadFraction": 1.5
       },
-      "sight": 25,
-      "sightCone": 60,
       "sounds": {
         "alert": "shambler_alert",
         "attack": "shambler_attack",
@@ -251,7 +283,6 @@
       },
       "spawnWeight": 1,
       "speed": {
-        "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.7999999999999998,
         "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
@@ -261,35 +292,84 @@
         "impulseThreshold": 12
       },
       "stepLength": 0.59999999999999998,
-      "stimulusMemorySimSeconds": 180,
-      "strength": 5,
-      "wander": {
-        "bodyLookArcDegrees": 150,
-        "bodyTurnDegreesPerSimSecond": 90,
-        "headLookArcDegrees": 100,
-        "headTurnDegreesPerSimSecond": 120,
-        "idleSimSeconds": {
-          "max": 10,
-          "min": 3
-        },
-        "leashMetres": 12,
-        "lookIntervalSimSeconds": {
-          "max": 1.8,
-          "min": 0.80000000000000004
-        },
-        "movementAccelerationMetresPerSimSecondSquared": 4,
-        "obstacleWanderChance": 0.25,
-        "obstacleWanderDistanceMetres": 10,
-        "strollSimSeconds": {
-          "max": 12,
-          "min": 3
-        },
-        "wayAroundMinGainFraction": 0.25,
-        "wayAroundReachMetres": 2
-      }
+      "strength": 5
     },
     {
       "abilities": [],
+      "agent": {
+        "hearing": 1,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "nightSight": 10,
+        "sight": 25,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
       "attack": {
         "cooldownSimSeconds": 1.5,
         "grabBandMetres": 1.7,
@@ -455,56 +535,16 @@
       "eyeHeightMetres": 1.3,
       "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
       "footstepSound": "shambler",
-      "hearing": 1,
-      "hearingModel": {
-        "alertCooldownSimSeconds": 60,
-        "bearingErrorRadians": 0.60999999999999999,
-        "chainChance": 0.34999999999999998,
-        "chainRadiusMetres": 8,
-        "farMultiplier": 2,
-        "hesitationSimSeconds": {
-          "max": 5,
-          "min": 5
-        },
-        "investigationDistanceMetres": 8,
-        "loudNoiseRadiusMetres": 30,
-        "refusalLean": 0.75,
-        "refusalSuspicionSimSeconds": 20,
-        "searchRadiusMetres": 4,
-        "searchSimSeconds": {
-          "max": 50,
-          "min": 40
-        },
-        "searchStrollSimSeconds": {
-          "max": 3,
-          "min": 1
-        }
-      },
-      "hearingRange": {
-        "jog": 8,
-        "sprint": 15,
-        "walk": 3
-      },
-      "hordeSpacing": {
-        "innerMetres": 0.34999999999999998,
-        "stepMetres": 0.38
-      },
       "id": "military_shambler",
-      "idleSound": {
-        "density": {
-          "penaltyPerNeighbour": 0.25,
-          "radiusMetres": 8
-        },
-        "intervalSimSeconds": {
-          "max": 20,
-          "min": 8
-        }
-      },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "soldier_pockets",
       "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
       "name": "Soldier",
-      "nightSight": 10,
       "regions": {
         "head": 60,
         "leftArm": 24,
@@ -529,8 +569,6 @@
         "speedMetresPerRealSecond": 5,
         "spreadFraction": 1.5
       },
-      "sight": 25,
-      "sightCone": 60,
       "sounds": {
         "alert": "shambler_alert",
         "attack": "shambler_attack",
@@ -539,7 +577,6 @@
       },
       "spawnWeight": 1,
       "speed": {
-        "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.7999999999999998,
         "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
@@ -549,35 +586,84 @@
         "impulseThreshold": 12
       },
       "stepLength": 0.59999999999999998,
-      "stimulusMemorySimSeconds": 180,
-      "strength": 5,
-      "wander": {
-        "bodyLookArcDegrees": 150,
-        "bodyTurnDegreesPerSimSecond": 90,
-        "headLookArcDegrees": 100,
-        "headTurnDegreesPerSimSecond": 120,
-        "idleSimSeconds": {
-          "max": 10,
-          "min": 3
-        },
-        "leashMetres": 12,
-        "lookIntervalSimSeconds": {
-          "max": 1.8,
-          "min": 0.80000000000000004
-        },
-        "movementAccelerationMetresPerSimSecondSquared": 4,
-        "obstacleWanderChance": 0.25,
-        "obstacleWanderDistanceMetres": 10,
-        "strollSimSeconds": {
-          "max": 12,
-          "min": 3
-        },
-        "wayAroundMinGainFraction": 0.25,
-        "wayAroundReachMetres": 2
-      }
+      "strength": 5
     },
     {
       "abilities": [],
+      "agent": {
+        "hearing": 1,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "nightSight": 10,
+        "sight": 25,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
       "attack": {
         "cooldownSimSeconds": 1.5,
         "grabBandMetres": 1.7,
@@ -743,56 +829,16 @@
       "eyeHeightMetres": 1.3,
       "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
       "footstepSound": "shambler",
-      "hearing": 1,
-      "hearingModel": {
-        "alertCooldownSimSeconds": 60,
-        "bearingErrorRadians": 0.60999999999999999,
-        "chainChance": 0.34999999999999998,
-        "chainRadiusMetres": 8,
-        "farMultiplier": 2,
-        "hesitationSimSeconds": {
-          "max": 5,
-          "min": 5
-        },
-        "investigationDistanceMetres": 8,
-        "loudNoiseRadiusMetres": 30,
-        "refusalLean": 0.75,
-        "refusalSuspicionSimSeconds": 20,
-        "searchRadiusMetres": 4,
-        "searchSimSeconds": {
-          "max": 50,
-          "min": 40
-        },
-        "searchStrollSimSeconds": {
-          "max": 3,
-          "min": 1
-        }
-      },
-      "hearingRange": {
-        "jog": 8,
-        "sprint": 15,
-        "walk": 3
-      },
-      "hordeSpacing": {
-        "innerMetres": 0.34999999999999998,
-        "stepMetres": 0.38
-      },
       "id": "farmer_shambler",
-      "idleSound": {
-        "density": {
-          "penaltyPerNeighbour": 0.25,
-          "radiusMetres": 8
-        },
-        "intervalSimSeconds": {
-          "max": 20,
-          "min": 8
-        }
-      },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "farmer_pockets",
       "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
       "name": "Farmer",
-      "nightSight": 10,
       "regions": {
         "head": 60,
         "leftArm": 24,
@@ -817,8 +863,6 @@
         "speedMetresPerRealSecond": 5,
         "spreadFraction": 1.5
       },
-      "sight": 25,
-      "sightCone": 60,
       "sounds": {
         "alert": "shambler_alert",
         "attack": "shambler_attack",
@@ -827,7 +871,6 @@
       },
       "spawnWeight": 1,
       "speed": {
-        "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.7999999999999998,
         "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
@@ -837,35 +880,84 @@
         "impulseThreshold": 12
       },
       "stepLength": 0.59999999999999998,
-      "stimulusMemorySimSeconds": 180,
-      "strength": 5,
-      "wander": {
-        "bodyLookArcDegrees": 150,
-        "bodyTurnDegreesPerSimSecond": 90,
-        "headLookArcDegrees": 100,
-        "headTurnDegreesPerSimSecond": 120,
-        "idleSimSeconds": {
-          "max": 10,
-          "min": 3
-        },
-        "leashMetres": 12,
-        "lookIntervalSimSeconds": {
-          "max": 1.8,
-          "min": 0.80000000000000004
-        },
-        "movementAccelerationMetresPerSimSecondSquared": 4,
-        "obstacleWanderChance": 0.25,
-        "obstacleWanderDistanceMetres": 10,
-        "strollSimSeconds": {
-          "max": 12,
-          "min": 3
-        },
-        "wayAroundMinGainFraction": 0.25,
-        "wayAroundReachMetres": 2
-      }
+      "strength": 5
     },
     {
       "abilities": [],
+      "agent": {
+        "hearing": 1,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "nightSight": 10,
+        "sight": 25,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
       "attack": {
         "cooldownSimSeconds": 1.5,
         "grabBandMetres": 1.7,
@@ -1031,56 +1123,16 @@
       "eyeHeightMetres": 1.3,
       "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
       "footstepSound": "shambler",
-      "hearing": 1,
-      "hearingModel": {
-        "alertCooldownSimSeconds": 60,
-        "bearingErrorRadians": 0.60999999999999999,
-        "chainChance": 0.34999999999999998,
-        "chainRadiusMetres": 8,
-        "farMultiplier": 2,
-        "hesitationSimSeconds": {
-          "max": 5,
-          "min": 5
-        },
-        "investigationDistanceMetres": 8,
-        "loudNoiseRadiusMetres": 30,
-        "refusalLean": 0.75,
-        "refusalSuspicionSimSeconds": 20,
-        "searchRadiusMetres": 4,
-        "searchSimSeconds": {
-          "max": 50,
-          "min": 40
-        },
-        "searchStrollSimSeconds": {
-          "max": 3,
-          "min": 1
-        }
-      },
-      "hearingRange": {
-        "jog": 8,
-        "sprint": 15,
-        "walk": 3
-      },
-      "hordeSpacing": {
-        "innerMetres": 0.34999999999999998,
-        "stepMetres": 0.38
-      },
       "id": "worker_shambler",
-      "idleSound": {
-        "density": {
-          "penaltyPerNeighbour": 0.25,
-          "radiusMetres": 8
-        },
-        "intervalSimSeconds": {
-          "max": 20,
-          "min": 8
-        }
-      },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "worker_pockets",
       "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
       "name": "Site worker",
-      "nightSight": 10,
       "regions": {
         "head": 60,
         "leftArm": 24,
@@ -1105,8 +1157,6 @@
         "speedMetresPerRealSecond": 5,
         "spreadFraction": 1.5
       },
-      "sight": 25,
-      "sightCone": 60,
       "sounds": {
         "alert": "shambler_alert",
         "attack": "shambler_attack",
@@ -1115,7 +1165,6 @@
       },
       "spawnWeight": 1,
       "speed": {
-        "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.7999999999999998,
         "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
@@ -1125,35 +1174,84 @@
         "impulseThreshold": 12
       },
       "stepLength": 0.59999999999999998,
-      "stimulusMemorySimSeconds": 180,
-      "strength": 5,
-      "wander": {
-        "bodyLookArcDegrees": 150,
-        "bodyTurnDegreesPerSimSecond": 90,
-        "headLookArcDegrees": 100,
-        "headTurnDegreesPerSimSecond": 120,
-        "idleSimSeconds": {
-          "max": 10,
-          "min": 3
-        },
-        "leashMetres": 12,
-        "lookIntervalSimSeconds": {
-          "max": 1.8,
-          "min": 0.80000000000000004
-        },
-        "movementAccelerationMetresPerSimSecondSquared": 4,
-        "obstacleWanderChance": 0.25,
-        "obstacleWanderDistanceMetres": 10,
-        "strollSimSeconds": {
-          "max": 12,
-          "min": 3
-        },
-        "wayAroundMinGainFraction": 0.25,
-        "wayAroundReachMetres": 2
-      }
+      "strength": 5
     },
     {
       "abilities": [],
+      "agent": {
+        "hearing": 1,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "nightSight": 10,
+        "sight": 25,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
       "attack": {
         "cooldownSimSeconds": 1.5,
         "grabBandMetres": 1.7,
@@ -1319,56 +1417,16 @@
       "eyeHeightMetres": 1.3,
       "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
       "footstepSound": "shambler",
-      "hearing": 1,
-      "hearingModel": {
-        "alertCooldownSimSeconds": 60,
-        "bearingErrorRadians": 0.60999999999999999,
-        "chainChance": 0.34999999999999998,
-        "chainRadiusMetres": 8,
-        "farMultiplier": 2,
-        "hesitationSimSeconds": {
-          "max": 5,
-          "min": 5
-        },
-        "investigationDistanceMetres": 8,
-        "loudNoiseRadiusMetres": 30,
-        "refusalLean": 0.75,
-        "refusalSuspicionSimSeconds": 20,
-        "searchRadiusMetres": 4,
-        "searchSimSeconds": {
-          "max": 50,
-          "min": 40
-        },
-        "searchStrollSimSeconds": {
-          "max": 3,
-          "min": 1
-        }
-      },
-      "hearingRange": {
-        "jog": 8,
-        "sprint": 15,
-        "walk": 3
-      },
-      "hordeSpacing": {
-        "innerMetres": 0.34999999999999998,
-        "stepMetres": 0.38
-      },
       "id": "medic_shambler",
-      "idleSound": {
-        "density": {
-          "penaltyPerNeighbour": 0.25,
-          "radiusMetres": 8
-        },
-        "intervalSimSeconds": {
-          "max": 20,
-          "min": 8
-        }
-      },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "medic_pockets",
       "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
       "name": "Medic",
-      "nightSight": 10,
       "regions": {
         "head": 60,
         "leftArm": 24,
@@ -1393,8 +1451,6 @@
         "speedMetresPerRealSecond": 5,
         "spreadFraction": 1.5
       },
-      "sight": 25,
-      "sightCone": 60,
       "sounds": {
         "alert": "shambler_alert",
         "attack": "shambler_attack",
@@ -1403,7 +1459,6 @@
       },
       "spawnWeight": 1,
       "speed": {
-        "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.7999999999999998,
         "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
@@ -1413,35 +1468,84 @@
         "impulseThreshold": 12
       },
       "stepLength": 0.59999999999999998,
-      "stimulusMemorySimSeconds": 180,
-      "strength": 5,
-      "wander": {
-        "bodyLookArcDegrees": 150,
-        "bodyTurnDegreesPerSimSecond": 90,
-        "headLookArcDegrees": 100,
-        "headTurnDegreesPerSimSecond": 120,
-        "idleSimSeconds": {
-          "max": 10,
-          "min": 3
-        },
-        "leashMetres": 12,
-        "lookIntervalSimSeconds": {
-          "max": 1.8,
-          "min": 0.80000000000000004
-        },
-        "movementAccelerationMetresPerSimSecondSquared": 4,
-        "obstacleWanderChance": 0.25,
-        "obstacleWanderDistanceMetres": 10,
-        "strollSimSeconds": {
-          "max": 12,
-          "min": 3
-        },
-        "wayAroundMinGainFraction": 0.25,
-        "wayAroundReachMetres": 2
-      }
+      "strength": 5
     },
     {
       "abilities": [],
+      "agent": {
+        "hearing": 1,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "nightSight": 10,
+        "sight": 25,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
       "attack": {
         "cooldownSimSeconds": 1.8,
         "grabBandMetres": 1.7,
@@ -1608,56 +1712,16 @@
       "figure": "broad-humanoid",
       "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
       "footstepSound": "shambler",
-      "hearing": 1,
-      "hearingModel": {
-        "alertCooldownSimSeconds": 60,
-        "bearingErrorRadians": 0.60999999999999999,
-        "chainChance": 0.34999999999999998,
-        "chainRadiusMetres": 8,
-        "farMultiplier": 2,
-        "hesitationSimSeconds": {
-          "max": 5,
-          "min": 5
-        },
-        "investigationDistanceMetres": 8,
-        "loudNoiseRadiusMetres": 30,
-        "refusalLean": 0.75,
-        "refusalSuspicionSimSeconds": 20,
-        "searchRadiusMetres": 4,
-        "searchSimSeconds": {
-          "max": 50,
-          "min": 40
-        },
-        "searchStrollSimSeconds": {
-          "max": 3,
-          "min": 1
-        }
-      },
-      "hearingRange": {
-        "jog": 8,
-        "sprint": 15,
-        "walk": 3
-      },
-      "hordeSpacing": {
-        "innerMetres": 0.34999999999999998,
-        "stepMetres": 0.38
-      },
       "id": "brute_shambler",
-      "idleSound": {
-        "density": {
-          "penaltyPerNeighbour": 0.25,
-          "radiusMetres": 8
-        },
-        "intervalSimSeconds": {
-          "max": 20,
-          "min": 8
-        }
-      },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "shambler_pockets",
       "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
       "name": "Brute",
-      "nightSight": 10,
       "regions": {
         "head": 120,
         "leftArm": 48,
@@ -1682,8 +1746,6 @@
         "speedMetresPerRealSecond": 5,
         "spreadFraction": 1.5
       },
-      "sight": 25,
-      "sightCone": 60,
       "sounds": {
         "alert": "shambler_alert",
         "attack": "shambler_attack",
@@ -1692,41 +1754,89 @@
       },
       "spawnWeight": 1,
       "speed": {
-        "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.3999999999999999,
         "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
       },
       "stepLength": 0.80000000000000004,
-      "stimulusMemorySimSeconds": 180,
-      "strength": 5,
-      "wander": {
-        "bodyLookArcDegrees": 150,
-        "bodyTurnDegreesPerSimSecond": 90,
-        "headLookArcDegrees": 100,
-        "headTurnDegreesPerSimSecond": 120,
-        "idleSimSeconds": {
-          "max": 10,
-          "min": 3
-        },
-        "leashMetres": 12,
-        "lookIntervalSimSeconds": {
-          "max": 1.8,
-          "min": 0.80000000000000004
-        },
-        "movementAccelerationMetresPerSimSecondSquared": 4,
-        "obstacleWanderChance": 0.25,
-        "obstacleWanderDistanceMetres": 10,
-        "strollSimSeconds": {
-          "max": 12,
-          "min": 3
-        },
-        "wayAroundMinGainFraction": 0.25,
-        "wayAroundReachMetres": 2
-      }
+      "strength": 5
     },
     {
       "abilities": [],
+      "agent": {
+        "hearing": 1,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "nightSight": 10,
+        "sight": 25,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
       "attack": {
         "cooldownSimSeconds": 1.3,
         "grabBandMetres": 1.7,
@@ -1891,56 +2001,16 @@
       "eyeHeightMetres": 1.3,
       "figure": "slim-humanoid",
       "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
-      "hearing": 1,
-      "hearingModel": {
-        "alertCooldownSimSeconds": 60,
-        "bearingErrorRadians": 0.60999999999999999,
-        "chainChance": 0.34999999999999998,
-        "chainRadiusMetres": 8,
-        "farMultiplier": 2,
-        "hesitationSimSeconds": {
-          "max": 5,
-          "min": 5
-        },
-        "investigationDistanceMetres": 8,
-        "loudNoiseRadiusMetres": 30,
-        "refusalLean": 0.75,
-        "refusalSuspicionSimSeconds": 20,
-        "searchRadiusMetres": 4,
-        "searchSimSeconds": {
-          "max": 50,
-          "min": 40
-        },
-        "searchStrollSimSeconds": {
-          "max": 3,
-          "min": 1
-        }
-      },
-      "hearingRange": {
-        "jog": 8,
-        "sprint": 15,
-        "walk": 3
-      },
-      "hordeSpacing": {
-        "innerMetres": 0.34999999999999998,
-        "stepMetres": 0.38
-      },
       "id": "runner",
-      "idleSound": {
-        "density": {
-          "penaltyPerNeighbour": 0.25,
-          "radiusMetres": 8
-        },
-        "intervalSimSeconds": {
-          "max": 20,
-          "min": 8
-        }
-      },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "shambler_pockets",
       "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
       "name": "Runner",
-      "nightSight": 10,
       "regions": {
         "head": 35,
         "leftArm": 18,
@@ -1965,8 +2035,6 @@
         "speedMetresPerRealSecond": 5,
         "spreadFraction": 1.5
       },
-      "sight": 25,
-      "sightCone": 60,
       "sounds": {
         "alert": "runner_alert",
         "attack": "runner_attack",
@@ -1975,41 +2043,89 @@
       },
       "spawnWeight": 0.12,
       "speed": {
-        "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 6.5,
         "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
       },
       "stepLength": 0.80000000000000004,
-      "stimulusMemorySimSeconds": 180,
-      "strength": 4,
-      "wander": {
-        "bodyLookArcDegrees": 150,
-        "bodyTurnDegreesPerSimSecond": 90,
-        "headLookArcDegrees": 100,
-        "headTurnDegreesPerSimSecond": 120,
-        "idleSimSeconds": {
-          "max": 10,
-          "min": 3
-        },
-        "leashMetres": 12,
-        "lookIntervalSimSeconds": {
-          "max": 1.8,
-          "min": 0.80000000000000004
-        },
-        "movementAccelerationMetresPerSimSecondSquared": 4,
-        "obstacleWanderChance": 0.25,
-        "obstacleWanderDistanceMetres": 10,
-        "strollSimSeconds": {
-          "max": 12,
-          "min": 3
-        },
-        "wayAroundMinGainFraction": 0.25,
-        "wayAroundReachMetres": 2
-      }
+      "strength": 4
     },
     {
       "abilities": [],
+      "agent": {
+        "hearing": 1,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 5,
+          "sprint": 9,
+          "walk": 2
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "nightSight": 7,
+        "sight": 16,
+        "sightCone": 55,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
       "attack": {
         "cooldownSimSeconds": 1.7,
         "grabBandMetres": 1.7,
@@ -2141,56 +2257,16 @@
       "eyeHeightMetres": 1.3,
       "figure": "legless-humanoid",
       "figureSeeds": [1, 2, 3, 5, 6, 7, 11],
-      "hearing": 1,
-      "hearingModel": {
-        "alertCooldownSimSeconds": 60,
-        "bearingErrorRadians": 0.60999999999999999,
-        "chainChance": 0.34999999999999998,
-        "chainRadiusMetres": 8,
-        "farMultiplier": 2,
-        "hesitationSimSeconds": {
-          "max": 5,
-          "min": 5
-        },
-        "investigationDistanceMetres": 8,
-        "loudNoiseRadiusMetres": 30,
-        "refusalLean": 0.75,
-        "refusalSuspicionSimSeconds": 20,
-        "searchRadiusMetres": 4,
-        "searchSimSeconds": {
-          "max": 50,
-          "min": 40
-        },
-        "searchStrollSimSeconds": {
-          "max": 3,
-          "min": 1
-        }
-      },
-      "hearingRange": {
-        "jog": 5,
-        "sprint": 9,
-        "walk": 2
-      },
-      "hordeSpacing": {
-        "innerMetres": 0.34999999999999998,
-        "stepMetres": 0.38
-      },
       "id": "crawler",
-      "idleSound": {
-        "density": {
-          "penaltyPerNeighbour": 0.25,
-          "radiusMetres": 8
-        },
-        "intervalSimSeconds": {
-          "max": 20,
-          "min": 8
-        }
-      },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "shambler_pockets",
       "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
       "name": "Crawler",
-      "nightSight": 7,
       "regions": {
         "head": 40,
         "leftArm": 18,
@@ -2215,8 +2291,6 @@
         "speedMetresPerRealSecond": 5,
         "spreadFraction": 1.5
       },
-      "sight": 16,
-      "sightCone": 55,
       "sounds": {
         "alert": "crawler_alert",
         "attack": "crawler_attack",
@@ -2225,41 +2299,89 @@
       },
       "spawnWeight": 0.080000000000000002,
       "speed": {
-        "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 1.1000000000000001,
         "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.34999999999999998
       },
       "stepLength": 0.45000000000000001,
-      "stimulusMemorySimSeconds": 180,
-      "strength": 3,
-      "wander": {
-        "bodyLookArcDegrees": 150,
-        "bodyTurnDegreesPerSimSecond": 90,
-        "headLookArcDegrees": 100,
-        "headTurnDegreesPerSimSecond": 120,
-        "idleSimSeconds": {
-          "max": 10,
-          "min": 3
-        },
-        "leashMetres": 12,
-        "lookIntervalSimSeconds": {
-          "max": 1.8,
-          "min": 0.80000000000000004
-        },
-        "movementAccelerationMetresPerSimSecondSquared": 4,
-        "obstacleWanderChance": 0.25,
-        "obstacleWanderDistanceMetres": 10,
-        "strollSimSeconds": {
-          "max": 12,
-          "min": 3
-        },
-        "wayAroundMinGainFraction": 0.25,
-        "wayAroundReachMetres": 2
-      }
+      "strength": 3
     },
     {
       "abilities": [],
+      "agent": {
+        "hearing": 1,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "nightSight": 10,
+        "sight": 25,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
       "attack": {
         "cooldownSimSeconds": 2.7999999999999998,
         "moves": [
@@ -2393,57 +2515,17 @@
       },
       "earHeightMetres": 1.3,
       "eyeHeightMetres": 1.3,
-      "hearing": 1,
-      "hearingModel": {
-        "alertCooldownSimSeconds": 60,
-        "bearingErrorRadians": 0.60999999999999999,
-        "chainChance": 0.34999999999999998,
-        "chainRadiusMetres": 8,
-        "farMultiplier": 2,
-        "hesitationSimSeconds": {
-          "max": 5,
-          "min": 5
-        },
-        "investigationDistanceMetres": 8,
-        "loudNoiseRadiusMetres": 30,
-        "refusalLean": 0.75,
-        "refusalSuspicionSimSeconds": 20,
-        "searchRadiusMetres": 4,
-        "searchSimSeconds": {
-          "max": 50,
-          "min": 40
-        },
-        "searchStrollSimSeconds": {
-          "max": 3,
-          "min": 1
-        }
-      },
-      "hearingRange": {
-        "jog": 8,
-        "sprint": 15,
-        "walk": 3
-      },
-      "hordeSpacing": {
-        "innerMetres": 0.34999999999999998,
-        "stepMetres": 0.38
-      },
       "id": "amalgam",
-      "idleSound": {
-        "density": {
-          "penaltyPerNeighbour": 0.25,
-          "radiusMetres": 8
-        },
-        "intervalSimSeconds": {
-          "max": 20,
-          "min": 8
-        }
-      },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "locomotion": "omnidirectional",
       "loot": "shambler_pockets",
       "model": "fused-mass",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
       "name": "Amalgam",
-      "nightSight": 10,
       "regions": {
         "core.trunk": 2400,
         "member.head": 60,
@@ -2470,8 +2552,6 @@
         "speedMetresPerRealSecond": 5,
         "spreadFraction": 1.5
       },
-      "sight": 25,
-      "sightCone": 60,
       "soundPitchMultiplier": 0.5,
       "sounds": {
         "alert": "amalgam_alert",
@@ -2481,38 +2561,12 @@
       },
       "spawnWeight": 1,
       "speed": {
-        "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 1.3999999999999999,
         "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.25
       },
       "stepLength": 0.59999999999999998,
-      "stimulusMemorySimSeconds": 180,
-      "strength": 0,
-      "wander": {
-        "bodyLookArcDegrees": 150,
-        "bodyTurnDegreesPerSimSecond": 90,
-        "headLookArcDegrees": 100,
-        "headTurnDegreesPerSimSecond": 120,
-        "idleSimSeconds": {
-          "max": 10,
-          "min": 3
-        },
-        "leashMetres": 12,
-        "lookIntervalSimSeconds": {
-          "max": 1.8,
-          "min": 0.80000000000000004
-        },
-        "movementAccelerationMetresPerSimSecondSquared": 4,
-        "obstacleWanderChance": 0.25,
-        "obstacleWanderDistanceMetres": 10,
-        "strollSimSeconds": {
-          "max": 12,
-          "min": 3
-        },
-        "wayAroundMinGainFraction": 0.25,
-        "wayAroundReachMetres": 2
-      }
+      "strength": 0
     },
     {
       "abilities": ["acidSpit"],
@@ -2585,6 +2639,80 @@
         },
         "spreadDegrees": 4,
         "windupSimSeconds": 1.2
+      },
+      "agent": {
+        "hearing": 1,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "nightSight": 10,
+        "sight": 25,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
       },
       "attack": {
         "cooldownSimSeconds": 1.5,
@@ -2751,56 +2879,16 @@
       "eyeHeightMetres": 1.3,
       "figureSeeds": [1, 2, 3, 4, 6, 8],
       "footstepSound": "shambler",
-      "hearing": 1,
-      "hearingModel": {
-        "alertCooldownSimSeconds": 60,
-        "bearingErrorRadians": 0.60999999999999999,
-        "chainChance": 0.34999999999999998,
-        "chainRadiusMetres": 8,
-        "farMultiplier": 2,
-        "hesitationSimSeconds": {
-          "max": 5,
-          "min": 5
-        },
-        "investigationDistanceMetres": 8,
-        "loudNoiseRadiusMetres": 30,
-        "refusalLean": 0.75,
-        "refusalSuspicionSimSeconds": 20,
-        "searchRadiusMetres": 4,
-        "searchSimSeconds": {
-          "max": 50,
-          "min": 40
-        },
-        "searchStrollSimSeconds": {
-          "max": 3,
-          "min": 1
-        }
-      },
-      "hearingRange": {
-        "jog": 8,
-        "sprint": 15,
-        "walk": 3
-      },
-      "hordeSpacing": {
-        "innerMetres": 0.34999999999999998,
-        "stepMetres": 0.38
-      },
       "id": "acid_zombie",
-      "idleSound": {
-        "density": {
-          "penaltyPerNeighbour": 0.25,
-          "radiusMetres": 8
-        },
-        "intervalSimSeconds": {
-          "max": 20,
-          "min": 8
-        }
-      },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "shambler_pockets",
       "model": "acid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
       "name": "Acid zombie",
-      "nightSight": 10,
       "regions": {
         "head": 60,
         "leftArm": 24,
@@ -2825,8 +2913,6 @@
         "speedMetresPerRealSecond": 5,
         "spreadFraction": 1.5
       },
-      "sight": 25,
-      "sightCone": 60,
       "sounds": {
         "alert": "acid_zombie_alert",
         "attack": "acid_zombie_attack",
@@ -2835,7 +2921,6 @@
       },
       "spawnWeight": 1,
       "speed": {
-        "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.7999999999999998,
         "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
@@ -2845,32 +2930,7 @@
         "impulseThreshold": 12
       },
       "stepLength": 0.59999999999999998,
-      "stimulusMemorySimSeconds": 180,
-      "strength": 5,
-      "wander": {
-        "bodyLookArcDegrees": 150,
-        "bodyTurnDegreesPerSimSecond": 90,
-        "headLookArcDegrees": 100,
-        "headTurnDegreesPerSimSecond": 120,
-        "idleSimSeconds": {
-          "max": 10,
-          "min": 3
-        },
-        "leashMetres": 12,
-        "lookIntervalSimSeconds": {
-          "max": 1.8,
-          "min": 0.80000000000000004
-        },
-        "movementAccelerationMetresPerSimSecondSquared": 4,
-        "obstacleWanderChance": 0.25,
-        "obstacleWanderDistanceMetres": 10,
-        "strollSimSeconds": {
-          "max": 12,
-          "min": 3
-        },
-        "wayAroundMinGainFraction": 0.25,
-        "wayAroundReachMetres": 2
-      }
+      "strength": 5
     }
   ]
 }

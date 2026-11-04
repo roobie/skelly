@@ -480,7 +480,7 @@ const holdSpitGround = (scratch: ActorTickScratch, toward: Vec3): void => {
     metresToTarget <= band.farMetres
   ) {
     scratch.moving = false;
-    steer(actor, toward, (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180);
+    steer(actor, toward, (type.motion.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180);
   }
 };
 
@@ -1058,7 +1058,7 @@ export class ActorSystem {
     actor.agent.soundRng = Rng.stream(this.options.seed ?? 0, `actor-sound:${id}`);
     actor.dismemberRng = Rng.stream(this.options.seed ?? 0, `actor-dismember:${id}`);
     actor.spitRng = Rng.stream(this.options.seed ?? 0, `actor-spit:${id}`);
-    actor.agent.idleSoundTimer = inRange(actor.agent.soundRng, actor.type.idleSound.intervalSimSeconds);
+    actor.agent.idleSoundTimer = inRange(actor.agent.soundRng, actor.type.agent.idleSound.intervalSimSeconds);
     this.agent.beginIdle(actor);
     return id;
   }
@@ -1084,7 +1084,7 @@ export class ActorSystem {
     };
     const rng = Rng.stream(this.options.seed ?? 0, `horde:${id}`);
     this.agentHorde.hordes.set(id, { state, rng });
-    const { innerMetres, stepMetres } = type.hordeSpacing;
+    const { innerMetres, stepMetres } = type.agent.hordeSpacing;
     for (let index = 0; index < count; index++) {
       const angle = index * Math.PI * (3 - Math.sqrt(5));
       const radiusMetres = innerMetres + stepMetres * Math.sqrt(index);
@@ -1262,7 +1262,7 @@ export class ActorSystem {
     const acceleration =
       actor.stumbleFactor < 1 && actor.horizontalSpeed > scratch.desiredSpeed
         ? type.chaseMotion.stumbleDecelerationMetresPerSimSecondSquared
-        : type.wander.movementAccelerationMetresPerSimSecondSquared;
+        : type.motion.movementAccelerationMetresPerSimSecondSquared;
     actor.horizontalSpeed = approach(actor.horizontalSpeed, scratch.desiredSpeed, acceleration * dt);
     this.agent.limitSearchStroll(scratch, actor, type, dt);
   }

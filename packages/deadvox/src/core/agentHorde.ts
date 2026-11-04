@@ -145,7 +145,7 @@ export class AgentHorde {
       if (
         horde.mode === 'noise' &&
         horde.stimulusAt !== undefined &&
-        time - horde.stimulusAt >= member.type.stimulusMemorySimSeconds
+        time - horde.stimulusAt >= member.type.agent.stimulusMemorySimSeconds
       ) {
         horde.mode = night ? 'roam' : 'home';
         horde.stimulusAt = undefined;
