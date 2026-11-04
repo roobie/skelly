@@ -33,10 +33,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/compression.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/controls.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/controls.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq-fixtures.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq-fixtures.json"
     },
@@ -563,6 +559,18 @@
     {
       "source": "packages/mobgen/src/mob/skeletonTemplate.jsonnet",
       "output": "packages/mobgen/src/mob/skeletonTemplate.json"
+    },
+    {
+      "source": "packages/mods/skelly.controls/controls.jsonnet",
+      "output": "packages/mods/skelly.controls/controls.json"
+    },
+    {
+      "source": "packages/mods/skelly.controls/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.controls/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.day-cycle/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.day-cycle/pack/manifest.json"
     },
     {
       "source": "packages/mods/skelly.saves/pack/manifest.jsonnet",

@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.saves"],
+  "dependencies": ["skelly.saves", "skelly.day-cycle", "skelly.controls"],
   "files": [
     {
       "kind": "content",
@@ -31,10 +31,6 @@
     },
     {
       "kind": "content",
-      "path": "controls.json"
-    },
-    {
-      "kind": "content",
       "path": "crisis-hq-fixtures.json"
     },
     {
@@ -44,10 +40,6 @@
     {
       "kind": "content",
       "path": "damage-kinds.json"
-    },
-    {
-      "kind": "content",
-      "path": "dayCycle.json"
     },
     {
       "kind": "content",

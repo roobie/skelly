@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: DOM code names retain their exact platform spelling.
 // biome-ignore-all lint/style/noExcessiveClassesPerFile: preferences and their single DOM resolver share the enforced keyboard boundary.
 
-import controlsFile from '../../mods/skelly.deadvox.residual/controls.json' with { type: 'json' };
+import controlsFile from '../../../mods/skelly.controls/controls.json' with { type: 'json' };
 
 import {
   type Binding,

@@ -10,7 +10,7 @@ import { buildRegistry, requiredContentIssues } from '../src/core/content.ts';
 import { bodySoundIds } from './fixtures/bodySounds.ts';
 import { CORE_ONLY_KNOWN_ISSUES } from './fixtures/coreOnlyKnownIssues.ts';
 
-const CORE_MODS = ['skelly.saves'];
+const CORE_MODS = ['skelly.saves', 'skelly.day-cycle', 'skelly.controls'];
 const CORE_TOPICS = [
   'body',
   'damage-kinds',
@@ -18,8 +18,6 @@ const CORE_TOPICS = [
   'figures-player',
   'inventory',
   'item-wear',
-  'dayCycle',
-  'controls',
   'ui',
   'graphics',
   'look',

@@ -29,7 +29,7 @@ The wheel is not a keyboard chord. Menus keep their scroll ownership so aiming c
 
 Bindings are origin-local browser-profile preferences, not saved-character or account state. Stored rows are untrusted and invalid entries are dropped rather than becoming controls. See `src/game/inputBindings.ts`, `BindingRegistry`.
 
-Default keys remain base-pack content while startup reads only that pack's defaults: accepting another pack's rows would promise behavior that gets ignored. Stored rebindings must win over defaults so content changes do not erase player preferences. Keep one shared action catalogue so authored references and replay agree without importing browser input handling; see `src/core/inputActions.ts`, `INPUT_ACTIONS`. Default-key validation uses the resolver's conflict policy at the CLI boundary rather than bringing browser dependencies into content admission. See `mods/skelly.deadvox.residual/controls.jsonnet`, `src/cli/controlIssues.ts`, `controlIssues`, and `src/game/inputBindings.ts`, `defaultKeySetIssues`.
+Default keys remain base-pack content while startup reads only that pack's defaults: accepting another pack's rows would promise behavior that gets ignored. Stored rebindings must win over defaults so content changes do not erase player preferences. Keep one shared action catalogue so authored references and replay agree without importing browser input handling; see `src/core/inputActions.ts`, `INPUT_ACTIONS`. Default-key validation uses the resolver's conflict policy at the CLI boundary rather than bringing browser dependencies into content admission. See `packages/mods/skelly.controls/controls.jsonnet`, `src/cli/controlIssues.ts`, `controlIssues`, and `src/game/inputBindings.ts`, `defaultKeySetIssues`.
 
 ## Settled controls
 

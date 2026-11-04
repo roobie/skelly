@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import coreDayCycle from '../mods/skelly.deadvox.residual/dayCycle.json' with { type: 'json' };
+import coreDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
 import { BODY_REGIONS } from '../src/core/body.ts';
 import {
   calendarAt,

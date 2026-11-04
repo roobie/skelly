@@ -1,4 +1,4 @@
-local day = (import 'dayCycle.json').dayCycle;
+local day = (import 'packages/mods/skelly.day-cycle/dayCycle.json').dayCycle;
 local common = {
   seed: 1,
   storeys: 1,

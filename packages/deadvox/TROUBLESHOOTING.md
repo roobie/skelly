@@ -34,7 +34,7 @@ Gun-pose diagnostics use the player's normal readiness and anatomical solver, no
 a mannequin copy, so the inspected pose represents play. Detached flight must not
 move or fire the avatar. Use live key labels because bindings remain rebindable.
 See `src/debug/index.ts`, `GUN_POSES`;
-`mods/skelly.deadvox.residual/controls.jsonnet`, `controls`; and
+`packages/mods/skelly.controls/controls.jsonnet`, `controls`; and
 `src/game/debugGunPose.ts`, `DebugGunPose`.
 
 Use transient world-space primitives for spatial diagnostics rather than a one-off visualizer or permanent scene objects. Keep producers behind a debug group. Primitives without a duration retire at the next rendered frame; durations use the same frame Real clock, so simulation speed and pause do not affect expiry. The draw owner copies caller coordinates and releases its scene resources on disposal. Its bounded queue drops the oldest entry and counts overload. See `src/debug/transientDraw.ts`, `TransientDebugDraw`.

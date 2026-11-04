@@ -3068,7 +3068,7 @@ crouch rules. See `src/core/agentPerception.ts`, `hearingTier`, `hearVocalNoise`
   than silently playing under a hidden sun. Solar boundaries, not fixed clock hours,
   should govern sight, roaming and named spawn windows. Terrain height alone should
   not end a clear pursuit: occlusion, not vertical range cost, bounds sight over a rise.
-  See `mods/skelly.deadvox.residual/dayCycle.json`, `dayCycle`; `docs/content.md`, "Day cycle";
+  See `packages/mods/skelly.day-cycle/dayCycle.json`, `dayCycle`; `docs/content.md`, "Day cycle";
   `src/core/dayPhase.ts`, `dayPhaseAt`; `src/core/agentPerception.ts`, `seesPlayer`;
   `src/core/agentHorde.ts`, `AgentHorde.updateHordes`; and `src/core/clock.ts`, `resolveSpawnTime`.
 - Shamblers must keep approaching without route planning: ordinary collision, jumping and seeded obstacle reactions provide local movement rather than knowledge of a route. See `src/core/actorSystem.ts`, `ActorSystem.tick`; and `src/core/agent.ts`, `openWanderHeadings`; tuning belongs to `mods/skelly.deadvox.residual/enemies.jsonnet`.
