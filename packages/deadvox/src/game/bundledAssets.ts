@@ -1,6 +1,6 @@
 import { bundledPacks } from './bundledPacks.ts';
 
-export const bundledAssetKey = (packId: string, path: string): string => `${packId}/${path}`;
+const bundledAssetKey = (packId: string, path: string): string => `${packId}/${path}`;
 
 export const bundledAssetFiles = (
   files: Readonly<Record<string, string>>,
