@@ -5,7 +5,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { deserialize, serialize } from 'node:v8';
 import type { TestProject } from 'vitest/node';
 import { buildRegistry } from '../src/core/content.ts';
-import { baseContentFiles, baseContentSources } from './baseContentFiles.ts';
+import { baseContentSources, startupContentSources } from './baseContentFiles.ts';
 
 /** A value the v8 round trip changes (a dropped class, function or undefined field) must not reach the tests. */
 function writeCached(path: string, value: unknown) {
@@ -22,11 +22,7 @@ function writeBaseRegistry(path: string, startupPath: string) {
     throw new Error(JSON.stringify(result.issues));
   }
   writeCached(path, result.registry);
-  const startup = buildRegistry(
-    baseContentFiles()
-      .map(({ pack, file, data }) => ({ source: `${pack}/${file}`, data }))
-      .sort((left, right) => left.source.localeCompare(right.source)),
-  );
+  const startup = buildRegistry(startupContentSources());
   if (startup.issues.length > 0) {
     throw new Error(JSON.stringify(startup.issues));
   }
