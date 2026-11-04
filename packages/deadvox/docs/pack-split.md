@@ -109,7 +109,8 @@ Decision memory is nested apart from body state in both the type and the save, s
 supporting an undriven body can mean omitting one field, and another kind of agent
 can bring its own memory. Pose inputs belong to the body so hit regions and stance
 can be driven without consulting decision memory; controllers supply those inputs
-at their decision transitions. See `src/core/actorState.ts`, `AgentState`, `Actor`
+at their decision transitions. Body writes belong in body primitives so different
+controllers can share body operations without taking ownership of body state. See `src/core/actorState.ts`, `AgentState`, `Actor`
 and `ActorState`; `src/core/actorMotion.ts`, `setActorChaseStance`,
 `turnActorBodyLook` and `turnActorHeadLook`; and `src/core/saveFormat.ts`,
 `wirePayloadSchema`.

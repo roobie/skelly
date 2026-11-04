@@ -1,14 +1,18 @@
 import {
   angleOf,
-  approachAngle,
   canStillAttack,
+  faceActorDirection,
   haltActor,
   headingAt,
   horizontalDistance,
   inRange,
+  limitActorHorizontalSpeed,
   onTerrainFloor,
   reachableActorMoves,
+  setActorAttackWait,
+  setActorAttackWindup,
   setActorChaseStance,
+  setActorObstacleContact,
   steer,
   stepChaseMotion,
   sub,
@@ -572,11 +576,7 @@ export class AgentController {
       case 'hesitate': {
         const bearing = angleOf(sub(actor.agent.lastPerceived!, actor.body.pos));
         actor.agent.headYawTarget = bearing - angleOf(actor.facing);
-        actor.headYaw = approachAngle(
-          actor.headYaw,
-          actor.agent.headYawTarget,
-          (actor.type.wander.headTurnDegreesPerSimSecond * Math.PI * scratch.dt) / 180,
-        );
+        turnActorHeadLook(actor, actor.type, scratch.dt, actor.agent.headYawTarget);
         return;
       }
       case 'idle':
@@ -610,7 +610,7 @@ export class AgentController {
     scratch.aimDirection = scratch.direction;
     scratch.desiredSpeed = obstacleDirection || actor.agent.modeTimer > 0 ? type.speed.wanderMetresPerSimSecond : 0;
     scratch.direction = steer(actor, scratch.direction, (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180);
-    actor.headYaw = approachAngle(actor.headYaw, 0, (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
+    turnActorHeadLook(actor, type, dt, 0);
   }
 
   private selectSearchIntent(): void {
@@ -646,7 +646,7 @@ export class AgentController {
           scratch.direction,
           (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
         );
-        actor.headYaw = approachAngle(actor.headYaw, 0, (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
+        turnActorHeadLook(actor, type, dt, 0);
       }
     } else {
       actor.agent.modeTimer -= dt;
@@ -688,7 +688,7 @@ export class AgentController {
     } else {
       scratch.direction = [0, 0, 0];
     }
-    actor.headYaw = approachAngle(actor.headYaw, 0, (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
+    turnActorHeadLook(actor, type, dt, 0);
   }
 
   limitSearchStroll(scratch: ActorTickScratch, actor: Actor, type: Actor['type'], dt: number): void {
@@ -700,7 +700,7 @@ export class AgentController {
     const outward = scratch.direction[0] * away[0] + scratch.direction[2] * away[2];
     if (outward > 0) {
       const remaining = Math.max(0, type.hearingModel.searchRadiusMetres - radius);
-      actor.horizontalSpeed = Math.min(actor.horizontalSpeed, remaining / (dt * outward));
+      limitActorHorizontalSpeed(actor, remaining / (dt * outward));
     }
   }
 
@@ -767,7 +767,7 @@ export class AgentController {
     }
     this.updateObstacleSlideSide(openSide);
     this.startObstacleWander();
-    actor.obstacleContact = obstacleContact;
+    setActorObstacleContact(actor, obstacleContact);
     this.bashObstacle(bodyAhead);
   }
 
@@ -804,7 +804,7 @@ export class AgentController {
     ) {
       return;
     }
-    actor.attackWait = type.attack.cooldownSimSeconds;
+    setActorAttackWait(actor, type.attack.cooldownSimSeconds);
     actor.agent.obstacleSlideSide = 0;
     actor.agent.obstacleWanderHeading = undefined;
     actor.agent.obstacleWanderRemaining = 0;
@@ -841,8 +841,8 @@ export class AgentController {
       reachableActorMoves(actor, pos, player.pos, this.options).length > 0
     ) {
       this.options.onSound?.(type.sounds.attack, copy(pos), actor);
-      actor.attackWindup = type.attack.windupSimSeconds;
-      actor.attackWait = type.attack.cooldownSimSeconds;
+      setActorAttackWindup(actor, type.attack.windupSimSeconds);
+      setActorAttackWait(actor, type.attack.cooldownSimSeconds);
     }
   }
 
@@ -869,7 +869,7 @@ export class AgentController {
             )
           : 0;
       if (direction[0] !== 0 || direction[2] !== 0) {
-        actor.facing = copy(direction);
+        faceActorDirection(actor, direction);
       }
     } else {
       this.selectMovementIntent();

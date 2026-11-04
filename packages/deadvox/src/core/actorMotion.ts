@@ -35,7 +35,7 @@ export const approach = (current: number, target: number, amount: number): numbe
   current < target ? Math.min(target, current + amount) : Math.max(target, current - amount);
 const smooth01 = (value: number): number => value * value * (3 - 2 * value);
 const lerp = (from: number, to: number, amount: number): number => from + (to - from) * amount;
-export const approachAngle = (current: number, target: number, amount: number): number =>
+const approachAngle = (current: number, target: number, amount: number): number =>
   current + Math.sign(wrapAngle(target - current)) * Math.min(Math.abs(wrapAngle(target - current)), amount);
 const turnToward = (current: Vec3, target: Vec3, radians: number): Vec3 =>
   headingAt(approachAngle(angleOf(current), angleOf(target), radians));
@@ -260,4 +260,20 @@ export const canStillAttack = (actor: Actor): boolean => {
 
 export function setActorChaseStance(actor: Actor, chasing: boolean): void {
   actor.chaseStance = chasing;
+}
+
+export function limitActorHorizontalSpeed(actor: Actor, maximum: number): void {
+  actor.horizontalSpeed = Math.min(actor.horizontalSpeed, maximum);
+}
+export function setActorObstacleContact(actor: Actor, contact: boolean): void {
+  actor.obstacleContact = contact;
+}
+export function setActorAttackWait(actor: Actor, wait: number): void {
+  actor.attackWait = wait;
+}
+export function setActorAttackWindup(actor: Actor, windup: number): void {
+  actor.attackWindup = windup;
+}
+export function faceActorDirection(actor: Actor, direction: Vec3): void {
+  actor.facing = [direction[0], direction[1], direction[2]];
 }
