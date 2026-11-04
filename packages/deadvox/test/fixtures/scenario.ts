@@ -115,7 +115,7 @@ export const fixtureScenarioSources = (
 ): ContentSource[] => {
   const {
     body: [body],
-  } = JSON.parse(readFileSync('mods/skelly.deadvox.residual/body.json', 'utf8'));
+  } = JSON.parse(readFileSync('../mods/skelly.body/body.json', 'utf8'));
   const { actors } = JSON.parse(readFileSync('mods/skelly.deadvox.residual/enemies.json', 'utf8'));
   const {
     footstepSound: _footstepSound,
@@ -125,10 +125,13 @@ export const fixtureScenarioSources = (
   const actor = { ...actorSource, id: 'fixture_settlement_actor' };
   actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
   const selectedSounds = new Set([...bodySoundIds(body), ...Object.values(actor.sounds)]);
-  const bodySounds = ['sounds', 'sounds-synth', 'sounds-block'].flatMap((name) =>
-    (JSON.parse(readFileSync(`mods/skelly.deadvox.residual/${name}.json`, 'utf8')).sounds as { id: string }[]).filter(
-      ({ id }) => selectedSounds.has(id),
-    ),
+  const bodySounds = [
+    'mods/skelly.deadvox.residual/sounds.json',
+    'mods/skelly.deadvox.residual/sounds-block.json',
+    '../mods/skelly.body/body-sounds.json',
+    '../mods/skelly.body/body-synth-sounds.json',
+  ].flatMap((file) =>
+    (JSON.parse(readFileSync(file, 'utf8')).sounds as { id: string }[]).filter(({ id }) => selectedSounds.has(id)),
   );
   const {
     compression: [compression],

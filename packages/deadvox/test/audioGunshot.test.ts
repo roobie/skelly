@@ -160,6 +160,10 @@ const setup = (solidAt: SolidAt = () => false, registryOverride?: Registry) => {
           source: '../../mods/skelly.deadvox.residual/sounds.json',
           data: JSON.parse(readFileSync('mods/skelly.deadvox.residual/sounds.json', 'utf8')) as unknown,
         },
+        {
+          source: '../../../mods/skelly.body/body-sounds.json',
+          data: JSON.parse(readFileSync('../mods/skelly.body/body-sounds.json', 'utf8')) as unknown,
+        },
       ]);
   const { issues } = soundRegistry;
   if (issues.length > 0) {

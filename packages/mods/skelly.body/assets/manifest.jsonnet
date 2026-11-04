@@ -1,0 +1,61 @@
+local things = import '../exports/things.jsonnet';
+local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
+{
+  sources: [
+    {
+      title: 'Thing tool authored models',
+      url: 'https://github.com/roobie/skelly/blob/main/packages/mods/skelly.body/exports/things.jsonnet',
+      author: 'Skelly contributors',
+      licence: 'CC0-1.0',
+      download: null,
+      files: exportFiles(things),
+      changes: 'Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.',
+    },
+    {
+      title: '15 vocal male strain/hurt/pain/jump sounds',
+      url: 'https://opengameart.org/content/15-vocal-male-strainhurtpainjump-sounds',
+      author: 'qubodup',
+      licence: 'CC0-1.0',
+      download: 'slightscreams.7z',
+      files: [
+        'assets/audio/player-hurt-light-01.ogg',
+        'assets/audio/player-hurt-light-03.ogg',
+        'assets/audio/player-hurt-light-06.ogg',
+        'assets/audio/player-hurt-heavy-02.ogg',
+        'assets/audio/player-hurt-heavy-05.ogg',
+        'assets/audio/player-hurt-heavy-08.ogg',
+        'assets/audio/player-strain-09.ogg',
+        'assets/audio/player-strain-12.ogg',
+        'assets/audio/player-strain-14.ogg',
+      ],
+      changes: 'Selected nine vocal variants; converted from FLAC to 24 kHz mono Opus in Ogg containers; unused source files excluded',
+    },
+    {
+      title: '100 CC0 SFX #2',
+      url: 'https://opengameart.org/content/100-cc0-sfx-2',
+      author: 'rubberduck',
+      licence: 'CC0-1.0',
+      download: 'sfx_100_v2.zip',
+      files: ['assets/audio/player-block-full-01.ogg'],
+      changes: 'Selected three wet-footstep variations (sfx100v2_footstep_wet_01–03.ogg); converted from stereo 48 kHz Vorbis to mono 48 kHz Opus in Ogg containers without loudness normalization; sfx100v2_misc_36.ogg kept byte-identical as received and renamed player-block-full-01.ogg; unused source effects excluded',
+    },
+    {
+      title: 'Jump Landing Sound',
+      url: 'https://opengameart.org/content/jump-landing-sound',
+      author: 'MentalSanityOff',
+      licence: 'CC0-1.0',
+      download: 'jumpland48000.mp3',
+      files: ['assets/audio/player-landing-hard-01.ogg'],
+      changes: 'Converted the 48 kHz MP3 source to mono Opus in an Ogg container',
+    },
+    {
+      title: 'Heartbeat Sounds',
+      url: 'https://opengameart.org/content/heartbeat-sounds',
+      author: 'bart',
+      licence: 'CC0-1.0',
+      download: null,
+      files: ['assets/audio/heartbeat-slow-beat.ogg', 'assets/audio/heartbeat-fast-beat.ogg'],
+      changes: 'Converted the dry slow and fast recordings to mono Opus in Ogg containers; excluded the reverb variants; peak-normalized the existing recordings with gain only (slow +10.9 dB, fast +11 dB) to about −1 dBFS',
+    },
+  ],
+}

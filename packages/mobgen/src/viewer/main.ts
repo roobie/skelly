@@ -15,8 +15,8 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import player from '../../../deadvox/mods/skelly.deadvox.residual/player.json' with { type: 'json' };
 import { type Ragdoll, RagdollWorld, ragdollContent } from '../../../deadvox/src/render/ragdoll.ts';
+import player from '../../../mods/skelly.body/player.json' with { type: 'json' };
 import { generate, generateValid, type Realized, realize, realizeLod } from '../core/generate.ts';
 import type { Pose } from '../core/pose.ts';
 import type { ValidationProfile } from '../core/rules.ts';

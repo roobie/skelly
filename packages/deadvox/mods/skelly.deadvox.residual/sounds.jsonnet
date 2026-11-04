@@ -98,30 +98,6 @@ local shellInsert = numbered('shotgun-insert', [1, 2]);
     ) + {
       debugHint: '?debug=1: use the spawn menu for a Hand grenade. Pull the pin, take the throwing stance, hold then release to throw, and step back.',
     },
-    sound(
-      'player_hurt_light', 'Take light damage.',
-      numbered('player-hurt-light', [1, 3, 6]), 0.72, [0.96, 1.04], [0.88, 1.12], 0.2, category='body', noise=heard(6),
-    ),
-    sound(
-      'player_hurt_heavy', 'Take heavy damage.',
-      numbered('player-hurt-heavy', [2, 5, 8]), 0.9, [0.94, 1.06], [0.88, 1.12], 0.35, category='body', noise=heard(6),
-    ) + { debugHint: "?debug=1: Use the debug panel's damage action to apply damage." },
-    sound(
-      'player_strain', 'Jump from the ground.',
-      numbered('player-strain', [9, 12, 14]), 0.5, [0.96, 1.05], [0.9, 1.1], 0.6, category='body', noise=heard(5),
-    ),
-    sound(
-      'player_heartbeat_slow', 'Sprint to lower stamina, then stop and listen as it recovers.',
-      audio(['heartbeat-slow-beat.ogg']), 1, [1, 1], [1, 1], 0, category='body',
-    ),
-    sound(
-      'player_heartbeat_fast', 'Sprint to lower stamina, then stop and listen as it recovers.',
-      audio(['heartbeat-fast-beat.ogg']), 1, [1, 1], [1, 1], 0, category='body',
-    ),
-    sound(
-      'player_landing_hard', 'Land after a long drop.',
-      numbered('player-landing-hard', [1]), 0.72, [0.94, 1.04], [0.88, 1.12], 0.6, category='body',
-    ) + { debugHint: "?debug=1: Use the debug panel's Noclip action to reach a ledge." },
     footstep('footstep_grass', 'grass', grassSand, 0.2),
     footstep('footstep_sand', 'sand', grassSand, 0.22),
     footstep('footstep_mud', 'dirt or mud', mud, 0.24, pitch=[0.94, 1.05]),

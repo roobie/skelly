@@ -18,9 +18,11 @@ const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json',
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
 const { Box3, Vector3 } = deadvoxRequire('three');
 const { safeParse } = deadvoxRequire('valibot');
-const base = new URL('../packages/deadvox/mods/skelly.deadvox.residual/', import.meta.url).pathname;
-const recipe = loadThingRecipe(readThingRecipes().find((entry) => `${entry.base}/` === base).value);
-const exported = recipe.map((row) => ({ id: row.id, source: row.source, voxel: row.voxel, ...row.generate() }));
+const recipes = readThingRecipes().map(({ base, value }) => ({ base, rows: loadThingRecipe(value) }));
+const recipe = recipes.flatMap(({ rows }) => rows);
+const exported = recipes.flatMap(({ base, rows }) =>
+  rows.map((row) => ({ base, id: row.id, source: row.source, voxel: row.voxel, ...row.generate() })),
+);
 const { registry, issues } = buildRegistry(
   readStackContentSources(new URL('../packages/deadvox/', import.meta.url).pathname, 'skelly.deadvox'),
 );
@@ -64,25 +66,27 @@ const figureModels = new Set([
 
 describe('thing tool exports satisfy the Deadvox contract', () => {
   it('validates and reproduces every recipe model without orphaned records', () => {
-    const ids = new Set(recipe.map(({ id }) => id));
     for (const out of exported) {
       const parsed = safeParse(ModelSchema, out.modelEntry);
       assert.ok(parsed.success, `${out.id}: ${JSON.stringify(parsed.issues)}`);
-      assertExportSynced(out, base, 'things');
+      assertExportSynced(out, out.base, 'things');
     }
-    assert.equal(
-      exportDifference(
-        JSON.parse(readFileSync(join(base, 'things/index.json'), 'utf8')),
-        exported.map(({ modelEntry }) => modelEntry),
-      ),
-      null,
-      'the registration index derives from the recipe',
-    );
-    for (const file of readdirSync(join(base, 'things')).filter((entry) => entry !== 'index.json')) {
-      assert.ok(
-        file.endsWith('.model.json') && ids.has(file.slice(0, -'.model.json'.length)),
-        `${file}: orphaned thing export`,
+    for (const { base, rows } of recipes) {
+      const ids = new Set(rows.map(({ id }) => id));
+      assert.equal(
+        exportDifference(
+          JSON.parse(readFileSync(join(base, 'things/index.json'), 'utf8')),
+          exported.filter((out) => out.base === base).map(({ modelEntry }) => modelEntry),
+        ),
+        null,
+        `${base}: the registration index derives from the recipe`,
       );
+      for (const file of readdirSync(join(base, 'things')).filter((entry) => entry !== 'index.json')) {
+        assert.ok(
+          file.endsWith('.model.json') && ids.has(file.slice(0, -'.model.json'.length)),
+          `${file}: orphaned thing export`,
+        );
+      }
     }
   });
   it('loads authored handling and anchors without consumer overrides', () => {
@@ -106,7 +110,9 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
     exported.forEach(assertVoxelized);
   });
   it('credits every consumed thing export', () => {
-    assertRecipeCredits(recipe, JSON.parse(readFileSync(join(base, 'assets/manifest.json'), 'utf8')));
+    for (const { base, rows } of recipes) {
+      assertRecipeCredits(rows, JSON.parse(readFileSync(join(base, 'assets/manifest.json'), 'utf8')));
+    }
   });
   it('builds the registry with one authoritative mass source for each item', () => {
     assert.deepEqual(issues, []);
@@ -161,7 +167,7 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
   });
   it('loads every part node through the Deadvox GLTF association', async () => {
     await Promise.all(
-      exported.map(async ({ modelEntry }) => {
+      exported.map(async ({ base, modelEntry }) => {
         const bytes = readFileSync(join(base, modelEntry.file));
         const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
         let hasMesh = false;
@@ -192,7 +198,7 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       'the slice must export a flame anchor',
     );
     await Promise.all(
-      lit.map(async ({ modelEntry }) => {
+      lit.map(async ({ base, modelEntry }) => {
         const bytes = readFileSync(join(base, modelEntry.file));
         const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
         const names = new Set();

@@ -194,7 +194,7 @@ current settings here. See `BLOCK_SIZE` in `src/core/scale.ts`.
 
 The player's own movement, load and aim tuning belongs in one content home,
 not split between sensory tuning and code, so mods can retune the player without
-changing mechanisms. See `mods/skelly.deadvox.residual/player.jsonnet`, `player`;
+changing mechanisms. See `packages/mods/skelly.body/player.jsonnet`, `player`;
 `src/core/schema/player.ts`, `PlayerSchema`; `src/game/player.ts`, `playerTuning`,
 `movementPace` and `steer`; and `src/core/aim.ts`, `AimController`.
 Saved look offsets must obey the geometric ceiling shared by all valid player
@@ -224,12 +224,12 @@ to act; arms at the sides read as a standing neutral pose laid flat. Aiming
 prone, the torso twists the opposite way to a standing aim, as a shooter lying
 along the ground does, and the twist and the lean are bounded together by the
 camera offset budget. See
-`mods/skelly.deadvox.residual/figures-player.jsonnet`, `stancePoses`.
+`packages/mods/skelly.body/figures-player.jsonnet`, `stancePoses`.
 
 The drawn pose must fit its collision height, so a head never pokes through a
 ceiling the body fits under. Visual blending hides the change of shape, but must
 not delay the eye used by sight and collision. See
-`mods/skelly.deadvox.residual/figures-player.jsonnet`, `stancePoses`, and
+`packages/mods/skelly.body/figures-player.jsonnet`, `stancePoses`, and
 `src/render/playerFigure.ts`, `PlayerMeshes`.
 
 The crouch must read as a crouch to anyone watching the avatar, not as sitting:
@@ -237,7 +237,7 @@ knees bent, feet flat on the ground under the body, torso leaning forward and
 head up looking ahead. The arms hold a guard for balance, elbows bent with the
 forearms raised and the hands in front, because arms hanging straight down read
 as a gorilla's. Jointed anatomy must support the pose rather than rotating an unbent standing limb. See
-`mods/skelly.deadvox.residual/figures-player.jsonnet`, `legRig`, and
+`packages/mods/skelly.body/figures-player.jsonnet`, `legRig`, and
 `test/playerFigure.test.ts`, "crouches on bent knees: feet flat behind the knees, knees below the hips, torso forward, head up, arms in guard".
 
 The FOB's east-wall passage is sized so a crouched player fits but a standing
@@ -374,7 +374,7 @@ arrives during onset, the alarm ends the action before sleep begins, preserving
 the chosen wake time as the authority over the sleep interval. See
 `RestController.start` in `src/game/rest.ts` and `LongActions.advanceJob` in
 `src/core/longAction.ts`; onset tuning is authored in
-`mods/skelly.deadvox.residual/body.jsonnet`, `sleepOnset`.
+`packages/mods/skelly.body/body.jsonnet`, `sleepOnset`.
 
 Moving items, reloading, and wielding are short handling actions: they take
 Real time while the world continues at normal pace. See [Items](#items-and-inventory).
@@ -515,7 +515,7 @@ Until corpse-owned equipment is drawn under #1366, role colours tint the corpse'
 non-lootable underwear base so dead police and soldiers remain readable. The tint is
 not lootable clothing and never applies to the player. Delete the tint path and its
 content palettes when #1366 merges, rather than keeping a second clothing appearance
-beside owned equipment. See `mods/skelly.deadvox.residual/figures-player.jsonnet`, `outfits`,
+beside owned equipment. See `packages/mods/skelly.body/figures-player.jsonnet`, `outfits`,
 `src/render/playerFigure.ts`, `dress`, and `src/render/corpseFigures.ts`, `CorpseFigures`.
 
 The body stays furniture so its gameplay identity does not depend on its drawing.
@@ -1450,7 +1450,7 @@ The off-hand state makes it clear whether the player is aiming with a free hand
 or still using what it holds. The rule is shared by first person, third person and
 the mannequin so other players and the third-person camera see the same hands. See
 `src/render/actorAnimator.ts`, `ActorAnimator.update`, and
-`mods/skelly.deadvox.residual/figures-player.jsonnet`, `holds`.
+`packages/mods/skelly.body/figures-player.jsonnet`, `holds`.
 
 **Held screens.** An item with a screen is held at a raised spot with the screen
 facing the eye and the palm on the item's back, the way a person holds a compass
@@ -1820,7 +1820,7 @@ Looking round cover is the purpose of lean, so performance must not depend on
 a still view or change which exposure clears cover.
 See `src/core/lean.ts`, `advanceLean` and `guardLean`;
 `src/core/leanGeometry.ts`, `prepareLeanGeometry`;
-`src/core/leanCollision.ts`, `playerLeanBoxes`; `mods/skelly.deadvox.residual/player.jsonnet`,
+`src/core/leanCollision.ts`, `playerLeanBoxes`; `packages/mods/skelly.body/player.jsonnet`,
 `lean`; `src/game/session.ts`, `preparePlayerStep`; and
 `src/game/inputReplay.ts`, `ReplayStartState`.
 
@@ -1861,7 +1861,7 @@ near clipping keeps the remaining limbs and held arms clear without moving the
 actor or gun. The firearm retains
 normal world depth, and external views and shadows retain the whole body. This
 exception is for an enclosing camera, not for hiding world obstructions. Content
-owns the masked body roles and clearance; see `mods/skelly.deadvox.residual/figures-player.jsonnet`,
+owns the masked body roles and clearance; see `packages/mods/skelly.body/figures-player.jsonnet`,
 `aimPose`; `src/render/playerFigure.ts`, `applySelfMask`; and
 `src/render/ownBodyClip.ts`, `OwnBodyClip`.
 
@@ -1893,7 +1893,7 @@ pose, so content cannot author those for it. Even there the support elbow
 hangs below its shoulder rather than on the ground, and looking up lifts both
 elbows. Scoped and iron-sighted long guns share the fit. The live camera takes
 the same bounded sight-line correction and wall guard as the other stances. See
-`mods/skelly.deadvox.residual/figures-player.jsonnet`, `proneAdsPose` and
+`packages/mods/skelly.body/figures-player.jsonnet`, `proneAdsPose` and
 `proneAdsElbowPole`; `mods/skelly.deadvox.residual/long-gun-hands.libsonnet`, `proneSupport`;
 and `src/core/playerLookPose.ts`, `figureStancePose`.
 
@@ -2006,7 +2006,7 @@ actors, corpses and loose objects read as parts of one world. Player takeoff spe
 keeps a modest obstacle-clearing apex rather than compensating for gravity with a
 higher jump. Longer airtime and horizontal carry are accepted consequences, not
 reasons to split body gravity from the world. See
-`mods/skelly.deadvox.residual/player.jsonnet`, `player`, and `src/game/player.ts`, `physicsFor`
+`packages/mods/skelly.body/player.jsonnet`, `player`, and `src/game/player.ts`, `physicsFor`
 and `steer`.
 
 Movement input steers only a body on the ground. A body in the air has nothing to push against, so input cannot
@@ -2042,7 +2042,7 @@ hurt-by-height curve under shared world gravity by tuning safe impact energy and
 damage scale together, without narrowing the spread: real gravity must not make
 roofs harmless or ordinary jumps injurious. Content owns that balance so it can
 change without changing the injury mechanism. See
-`mods/skelly.deadvox.residual/body.jsonnet`, `landing`, and `src/core/sim.ts`, `Simulation.land`.
+`packages/mods/skelly.body/body.jsonnet`, `landing`, and `src/core/sim.ts`, `Simulation.land`.
 
 ### Bleeding
 
@@ -2127,7 +2127,7 @@ One vest at a time makes the player pick pouches or protection. Whole-region
 coverage keeps layering simple rather than asking the player to judge uncovered
 fractions. Contact can meet a different layer because a puddle reaches boots
 before trousers and a grip reaches gloves before a sleeve. See `src/core/wear.ts`,
-`wornItemMet`; `mods/skelly.deadvox.residual/body.jsonnet`, `coverage` and `touchFirst`.
+`wornItemMet`; `packages/mods/skelly.body/body.jsonnet`, `coverage` and `touchFirst`.
 
 **Eyes slot.** Goggles take their own slot beside the head, so night-vision goggles
 stack with a helmet or a headlamp instead of making the player choose between seeing

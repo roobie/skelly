@@ -287,9 +287,6 @@
         "assets/models/fastener_pack.glb",
         "assets/models/taped_flashlight_mount.glb",
         "assets/models/scrap_foregrip.glb",
-        "assets/models/player_bust.glb",
-        "assets/models/player_arm.glb",
-        "assets/models/player_leg.glb",
         "assets/models/riot_helmet.glb",
         "assets/models/night_vision_goggles.glb",
         "assets/models/worn_jacket_body.glb",
@@ -449,25 +446,6 @@
       "url": "https://opengameart.org/content/gun-reload-sound-effects"
     },
     {
-      "author": "qubodup",
-      "changes": "Selected nine vocal variants; converted from FLAC to 24 kHz mono Opus in Ogg containers; unused source files excluded",
-      "download": "slightscreams.7z",
-      "files": [
-        "assets/audio/player-hurt-light-01.ogg",
-        "assets/audio/player-hurt-light-03.ogg",
-        "assets/audio/player-hurt-light-06.ogg",
-        "assets/audio/player-hurt-heavy-02.ogg",
-        "assets/audio/player-hurt-heavy-05.ogg",
-        "assets/audio/player-hurt-heavy-08.ogg",
-        "assets/audio/player-strain-09.ogg",
-        "assets/audio/player-strain-12.ogg",
-        "assets/audio/player-strain-14.ogg"
-      ],
-      "licence": "CC0-1.0",
-      "title": "15 vocal male strain/hurt/pain/jump sounds",
-      "url": "https://opengameart.org/content/15-vocal-male-strainhurtpainjump-sounds"
-    },
-    {
       "author": "rubberduck",
       "changes": "Selected one hurt variant (two more were removed as too high-pitched); converted to 24 kHz mono Opus in Ogg containers; unused source files excluded",
       "download": "80-CC0-creature-SFX.zip",
@@ -572,21 +550,11 @@
       "files": [
         "assets/audio/footstep-mud-02.ogg",
         "assets/audio/footstep-mud-03.ogg",
-        "assets/audio/footstep-mud-04.ogg",
-        "assets/audio/player-block-full-01.ogg"
+        "assets/audio/footstep-mud-04.ogg"
       ],
       "licence": "CC0-1.0",
       "title": "100 CC0 SFX #2",
       "url": "https://opengameart.org/content/100-cc0-sfx-2"
-    },
-    {
-      "author": "MentalSanityOff",
-      "changes": "Converted the 48 kHz MP3 source to mono Opus in an Ogg container",
-      "download": "jumpland48000.mp3",
-      "files": ["assets/audio/player-landing-hard-01.ogg"],
-      "licence": "CC0-1.0",
-      "title": "Jump Landing Sound",
-      "url": "https://opengameart.org/content/jump-landing-sound"
     },
     {
       "author": "Jordan Irwin (AntumDeluge)",
@@ -663,15 +631,6 @@
       "licence": "CC0-1.0",
       "title": "Project-built low-poly hand-tool and content stand-ins",
       "url": "https://github.com/roobie/skelly"
-    },
-    {
-      "author": "bart",
-      "changes": "Converted the dry slow and fast recordings to mono Opus in Ogg containers; excluded the reverb variants; peak-normalized the existing recordings with gain only (slow +10.9 dB, fast +11 dB) to about −1 dBFS",
-      "download": null,
-      "files": ["assets/audio/heartbeat-slow-beat.ogg", "assets/audio/heartbeat-fast-beat.ogg"],
-      "licence": "CC0-1.0",
-      "title": "Heartbeat Sounds",
-      "url": "https://opengameart.org/content/heartbeat-sounds"
     },
     {
       "author": "Skelly contributors",

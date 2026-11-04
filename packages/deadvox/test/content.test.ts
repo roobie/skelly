@@ -149,9 +149,7 @@ const baseSounds = {
   source: 'sounds.json',
   data: {
     soundFamilies: [...baseRegistry.soundFamilies.values()],
-    sounds: base
-      .filter(({ source }) => source.startsWith('sounds'))
-      .flatMap(({ data }) => (data as { sounds: unknown[] }).sounds),
+    sounds: [...baseRegistry.sounds.values()],
   },
 };
 const reachableLootItems = (root: string | undefined): { table: string; item: string }[] => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import player from '../../deadvox/mods/skelly.deadvox.residual/player.json' with { type: 'json' };
 import { RagdollWorld, ragdollContent } from '../../deadvox/src/render/ragdoll.ts';
+import player from '../../mods/skelly.body/player.json' with { type: 'json' };
 import { generateValid } from '../src/core/generate.ts';
 import { dogTemplate } from '../src/mob/dogTemplate.ts';
 import { createGaitCache, footRestExtents } from '../src/mob/gait.ts';

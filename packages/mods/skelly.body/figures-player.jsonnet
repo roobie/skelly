@@ -11,7 +11,7 @@ local segment(part, pivot) = { part: part, pivot: pivot };
 local frame(part, pivot=null) = {
   part: part, at: [0, 0, 0], turn: [0, 0, 0], insideView: false,
 } + if pivot == null then {} else { pivot: pivot };
-local bust = [model for model in (import 'models-items.jsonnet').models if model.id == 'player_bust'][0];
+local bust = [model for model in (import 'models-body.jsonnet').models if model.id == 'player_bust'][0];
 local torsoFrame = frame('body', 'spine') + { at: [0 - value for value in bust.anchors.spine] };
 local handPose(fingers, thumbAcross, thumbIn) = {
   fingersDegrees: fingers,

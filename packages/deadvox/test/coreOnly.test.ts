@@ -1,12 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
-import bodyContent from '../mods/skelly.deadvox.residual/body.json' with { type: 'json' };
 import sensesContent from '../mods/skelly.deadvox.residual/senses.json' with { type: 'json' };
 import soundContent from '../mods/skelly.deadvox.residual/sounds.json' with { type: 'json' };
-import blockSoundContent from '../mods/skelly.deadvox.residual/sounds-block.json' with { type: 'json' };
-import synthContent from '../mods/skelly.deadvox.residual/sounds-synth.json' with { type: 'json' };
 import { buildRegistry, requiredContentIssues } from '../src/core/content.ts';
-import { bodySoundIds } from './fixtures/bodySounds.ts';
 import { CORE_ONLY_KNOWN_ISSUES } from './fixtures/coreOnlyKnownIssues.ts';
 
 const CORE_MODS = [
@@ -18,8 +14,9 @@ const CORE_MODS = [
   'skelly.weathering',
   'skelly.melee-classes',
   'skelly.inventory',
+  'skelly.body',
 ];
-const CORE_TOPICS = ['body', 'figures-player', 'senses', 'player'];
+const CORE_TOPICS = ['senses'];
 
 /** A core mod's content files, as its manifest lists them. */
 const coreModSources = (mod: string) => {
@@ -42,15 +39,11 @@ it('validates selected core mods and topics without booting or hiding unowned or
       data: JSON.parse(readFileSync(`mods/skelly.deadvox.residual/${topic}.json`, 'utf8')) as unknown,
     })),
   ];
-  const selectedSounds = new Set(bodyContent.body.flatMap(bodySoundIds));
   sources.push({
     source: 'core-only/selected-sounds.json',
     data: {
       soundFamilies: soundContent.soundFamilies.filter(({ id }) =>
         sensesContent.senses.some((senses) => senses.footsteps.family === id),
-      ),
-      sounds: [...soundContent.sounds, ...synthContent.sounds, ...blockSoundContent.sounds].filter(({ id }) =>
-        selectedSounds.has(id),
       ),
     },
   });

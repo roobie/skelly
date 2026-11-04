@@ -10,6 +10,7 @@
     "skelly.deadvox.weathering",
     "skelly.melee-classes",
     "skelly.inventory",
+    "skelly.body",
     "skelly.deadvox.residual"
   ],
   "files": [],

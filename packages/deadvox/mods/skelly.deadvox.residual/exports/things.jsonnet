@@ -22,4 +22,5 @@ local gunGrained = std.set(['crowbar', 'hammer', 'sledgehammer', 'baseball_bat',
              + (if std.setMember(row.id, vehicleParts) then { collision: true } else {}),
   }
   for row in (import 'packages/thing-authoring-tool/items.jsonnet').items
+  if !std.member([recipe.source for recipe in import 'packages/mods/skelly.body/exports/things.jsonnet'], row.id)
 ]

@@ -1,4 +1,4 @@
-// The player's body (`DESIGN.md`, "Character"). Fatigue is sleep debt: 100 is what a normal sleep clears.
+// The player's body (`packages/deadvox/DESIGN.md`, "Character"). Fatigue is sleep debt: 100 is what a normal sleep clears.
 local normalSleepGameHours = 8;
 local normalSleep = 100 / normalSleepGameHours;
 local responses(blunt, cut, pierce, acid) = {
@@ -111,7 +111,7 @@ local responses(blunt, cut, pierce, acid) = {
         },
       ],
     },
-    // Pain (`DESIGN.md`, "Pain") is open-ended. knockoutAt is its balance point, where felt pain is meant to knock out;
+    // Pain (`packages/deadvox/DESIGN.md`, "Pain") is open-ended. knockoutAt is its balance point, where felt pain is meant to knock out;
     // only shock knocks out, so nothing happens there yet. Tiers are shares of it.
     pain: {
       knockoutAt: 100,

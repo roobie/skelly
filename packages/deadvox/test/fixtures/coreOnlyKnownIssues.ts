@@ -14,12 +14,14 @@ const missing = (owner: Owner, section: string, capability: string): KnownIssue 
 
 // #1532 removes this exact ledger; it must not derive expectations from the validator's dispatch tables.
 export const CORE_ONLY_KNOWN_ISSUES: readonly KnownIssue[] = [
-  known('core extraction', 'core-only/figures-player.json', 'figures[0].body.model', 'no model "player_bust"'),
-  known('core extraction', 'core-only/figures-player.json', 'figures[0].limbs.leftArm.model', 'no model "player_arm"'),
-  known('core extraction', 'core-only/figures-player.json', 'figures[0].limbs.rightArm.model', 'no model "player_arm"'),
-  known('core extraction', 'core-only/figures-player.json', 'figures[0].limbs.leftLeg.model', 'no model "player_leg"'),
-  known('core extraction', 'core-only/figures-player.json', 'figures[0].limbs.rightLeg.model', 'no model "player_leg"'),
-  missing('core extraction', 'figures', 'player'),
+  // Held: `player_block_partial` stays in the residual until its owning pack is ruled; the broken file drops its row.
+  known(
+    'sound selection',
+    'core-only/skelly.body/body.json',
+    'body[0].sounds.block.partial',
+    'no sound event "player_block_partial"',
+  ),
+  missing('sound selection', 'body', 'player'),
   missing('scenario starts', 'siteGeneration', 'authoredSite'),
   missing('theme extraction', 'powerTuning', 'power'),
 ];

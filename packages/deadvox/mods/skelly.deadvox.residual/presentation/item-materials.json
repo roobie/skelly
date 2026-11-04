@@ -226,11 +226,6 @@
   "assets/models/pistol_frame.glb": { "materials": ["steel-blued"] },
   "assets/models/pistol_service.glb": { "materials": ["steel-blued", "steel-blued", "steel-blued", "steel-blued"] },
   "assets/models/pistol_slide.glb": { "materials": ["steel-blued"] },
-  "assets/models/player_arm.glb": { "materials": ["body-skin-player"] },
-  "assets/models/player_bust.glb": {
-    "materials": ["body-skin-player", "body-hair", "body-eye", "body-mouth", "cloth-pants-player"]
-  },
-  "assets/models/player_leg.glb": { "materials": ["body-skin-player"] },
   "assets/models/portable_radio.glb": {
     "materials": ["polymer-od-green", "steel-grey", "paint-charcoal", "glass-grey", "plastic-red"]
   },
