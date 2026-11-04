@@ -21,7 +21,8 @@
     "skelly.basic-foods",
     "skelly.packaged-foods",
     "skelly.wearables",
-    "skelly.progression"
+    "skelly.progression",
+    "skelly.crafting"
   ],
   "files": [
     {

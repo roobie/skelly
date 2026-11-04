@@ -55,7 +55,7 @@ const soundSource = (sources: readonly ReturnType<typeof itemSource>[]) => {
     .filter(({ id }) => named.has(id));
   return { source: 'sounds.json', data: { sounds } };
 };
-const recipes = JSON.parse(readFileSync(join(base, 'recipes.json'), 'utf8')) as {
+const crafting = JSON.parse(readFileSync('../mods/skelly.crafting/crafting.json', 'utf8')) as {
   skills: { id: string; [key: string]: unknown }[];
 };
 const meleeMod = '../mods/skelly.melee-classes';
@@ -96,9 +96,9 @@ const fixtureBuild = buildRegistry([
     data: JSON.parse(readFileSync('../mods/skelly.materials/models-materials.json', 'utf8')) as unknown,
   },
   {
-    source: 'recipes.json',
+    source: 'crafting.json',
     data: {
-      skills: recipes.skills.filter(({ id }) => id === 'crafting'),
+      skills: crafting.skills.filter(({ id }) => id === 'crafting'),
     },
   },
 ]);

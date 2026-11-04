@@ -557,6 +557,14 @@
       "output": "packages/mods/skelly.controls/pack/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.crafting/crafting.jsonnet",
+      "output": "packages/mods/skelly.crafting/crafting.json"
+    },
+    {
+      "source": "packages/mods/skelly.crafting/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.crafting/pack/manifest.json"
+    },
+    {
       "source": "packages/mods/skelly.day-cycle/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.day-cycle/pack/manifest.json"
     },

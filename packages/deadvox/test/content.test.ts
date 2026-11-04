@@ -1900,21 +1900,21 @@ describe('content references', () => {
     ],
   };
 
-  // Skill tuning checks read only the recipe file's own skills.
-  const recipeFile = () => base.find(({ source }) => source === 'recipes.json')!;
+  // Skill tuning checks read only the given file's own skills.
+  const craftingFile = () => base.find(({ source }) => source === 'crafting.json')!;
   const progressionFile = () => base.find(({ source }) => source === 'progression.json')!;
 
   it('rejects craftable content when the single crafting tier offset is missing', () => {
-    const recipes = structuredClone(recipeFile().data) as {
+    const crafting = structuredClone(craftingFile().data) as {
       skills: { id: string; name: string; training?: unknown }[];
     };
-    recipes.skills = recipes.skills.map(({ training, ...skill }) =>
+    crafting.skills = crafting.skills.map(({ training, ...skill }) =>
       skill.id === 'crafting' ? skill : { ...skill, ...(training === undefined ? {} : { training }) },
     );
-    const { issues } = buildRegistry([{ source: 'recipes.json', data: recipes }]);
+    const { issues } = buildRegistry([{ source: 'crafting.json', data: crafting }]);
     expect(
       issues.some(
-        (issue) => issue.source === 'recipes.json' && issue.message.includes('missing required skill tuning'),
+        (issue) => issue.source === 'crafting.json' && issue.message.includes('missing required skill tuning'),
       ),
     ).toBe(true);
   });
