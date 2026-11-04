@@ -1,5 +1,13 @@
 {
-  "dependencies": ["skelly.saves", "skelly.day-cycle", "skelly.controls", "skelly.graphics", "skelly.ui"],
+  "dependencies": [
+    "skelly.saves",
+    "skelly.day-cycle",
+    "skelly.controls",
+    "skelly.graphics",
+    "skelly.ui",
+    "skelly.weathering",
+    "skelly.deadvox.weathering"
+  ],
   "files": [
     {
       "kind": "content",
@@ -336,10 +344,6 @@
     {
       "kind": "content",
       "path": "vehicles.json"
-    },
-    {
-      "kind": "content",
-      "path": "weathering.json"
     },
     {
       "kind": "content",

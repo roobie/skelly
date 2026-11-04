@@ -6,6 +6,8 @@
     "skelly.controls",
     "skelly.graphics",
     "skelly.ui",
+    "skelly.weathering",
+    "skelly.deadvox.weathering",
     "skelly.deadvox.residual"
   ],
   "files": [],

@@ -6,11 +6,8 @@ it('refuses startup rather than inventing a run when rejected content removes th
   // already transformed for other files, and its client dependency optimizer re-bundled the app whenever the
   // checkout's shared cache was stale, enough CPU to cross the default timeout on a loaded host.
   for (const file of readdirSync(new URL('../mods/skelly.deadvox.residual/', import.meta.url))) {
-    // Keep the content needed by config and the binding registry while isolating layout rejection.
-    if (
-      file.endsWith('.json') &&
-      !['dayCycle.json', 'controls.json', 'graphics.json', 'weathering.json'].includes(file)
-    ) {
+    // Shared mods keep the content config and the binding registry need while this isolates layout rejection.
+    if (file.endsWith('.json')) {
       vi.doMock(`../mods/skelly.deadvox.residual/${file}`, () => ({
         default: file === 'layouts.json' ? { layouts: {} } : {},
       }));

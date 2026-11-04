@@ -1,7 +1,8 @@
 import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import baseDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
-import baseWeathering from '../mods/skelly.deadvox.residual/weathering.json' with { type: 'json' };
+import baseWeathering from '../../mods/skelly.weathering/weathering.json' with { type: 'json' };
+import productWeathering from '../mods/skelly.deadvox.weathering/deadvox-weathering.json' with { type: 'json' };
 import { buildRegistry } from '../src/core/content.ts';
 import { resolveGraphics } from '../src/core/graphics.ts';
 import { configFromUrl } from '../src/game/config.ts';
@@ -43,6 +44,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
   const result = buildRegistry([
     { source: 'base/dayCycle.json', data: baseDayCycle },
     { source: 'base/weathering.json', data: baseWeathering },
+    { source: 'base/deadvox-weathering.json', data: productWeathering },
     {
       source: 'fixture',
       data: {

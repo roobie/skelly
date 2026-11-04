@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { expect, it } from 'vitest';
@@ -99,7 +99,8 @@ const withMultiRootFixture = async (check: (root: string) => void | Promise<void
     }
     symlinkSync(resolve('mods/skelly.deadvox.residual/assets'), join(definitions, 'assets'), 'dir');
     for (const dependency of shipped.dependencies as string[]) {
-      symlinkSync(resolve('../mods', dependency), join(temporary, 'packages/mods', dependency), 'dir');
+      const modRoot = existsSync(resolve('../mods', dependency)) ? '../mods' : 'mods';
+      symlinkSync(resolve(modRoot, dependency), join(root, modRoot, dependency), 'dir');
     }
     writeFileSync(join(root, 'src/config/bundled-mods.json'), JSON.stringify({ mods: [] }));
     const sharedManifest = {

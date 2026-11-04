@@ -15,7 +15,7 @@ local content = [
   'site-generation', 'starts', 'sounds-block', 'sounds-furniture', 'sounds-pump', 'sounds-revolver',
   'sounds-synth', 'sounds-weapons', 'sounds', 'templates-cabins', 'templates-medical',
   'templates-playtest', 'templates-stairs', 'templates-test-house', 'templates-workshop',
-  'templates', 'tutorial', 'vegetation', 'vehicles', 'weathering', 'enemies',
+  'templates', 'tutorial', 'vegetation', 'vehicles', 'enemies',
 ];
 local guns = [
   'ak_slant_compensator', 'barrel_ak_medium', 'barrel_ar_large_long', 'barrel_ar_large_medium',
@@ -47,7 +47,10 @@ local assets = import '../assets/manifest.json';
 manifest(
   id='skelly.deadvox.residual',
   tier='product',
-  dependencies=['skelly.saves', 'skelly.day-cycle', 'skelly.controls', 'skelly.graphics', 'skelly.ui'],
+  dependencies=[
+    'skelly.saves', 'skelly.day-cycle', 'skelly.controls', 'skelly.graphics', 'skelly.ui',
+    'skelly.weathering', 'skelly.deadvox.weathering',
+  ],
   content=content,
   guns=guns,
   things=things,

@@ -9,7 +9,14 @@ import { buildRegistry, requiredContentIssues } from '../src/core/content.ts';
 import { bodySoundIds } from './fixtures/bodySounds.ts';
 import { CORE_ONLY_KNOWN_ISSUES } from './fixtures/coreOnlyKnownIssues.ts';
 
-const CORE_MODS = ['skelly.saves', 'skelly.day-cycle', 'skelly.controls', 'skelly.graphics', 'skelly.ui'];
+const CORE_MODS = [
+  'skelly.saves',
+  'skelly.day-cycle',
+  'skelly.controls',
+  'skelly.graphics',
+  'skelly.ui',
+  'skelly.weathering',
+];
 const CORE_TOPICS = [
   'body',
   'damage-kinds',
@@ -42,13 +49,6 @@ it('validates selected core mods and topics without booting or hiding unowned or
       data: JSON.parse(readFileSync(`mods/skelly.deadvox.residual/${topic}.json`, 'utf8')) as unknown,
     })),
   ];
-  const weathering = JSON.parse(readFileSync('mods/skelly.deadvox.residual/weathering.json', 'utf8')) as {
-    weathering: { capability?: string }[];
-  };
-  sources.push({
-    source: 'core-only/weathering.json',
-    data: { weathering: weathering.weathering.filter((profile) => profile.capability === 'defaultWeathering') },
-  });
   const selectedSounds = new Set(bodyContent.body.flatMap(bodySoundIds));
   sources.push({
     source: 'core-only/selected-sounds.json',

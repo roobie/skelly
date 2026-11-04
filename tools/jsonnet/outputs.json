@@ -341,8 +341,12 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/vehicles.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/weathering.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/weathering.json"
+      "source": "packages/deadvox/mods/skelly.deadvox.weathering/deadvox-weathering.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.weathering/deadvox-weathering.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.weathering/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.weathering/pack/manifest.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox/pack/manifest.jsonnet",
@@ -595,6 +599,14 @@
     {
       "source": "packages/mods/skelly.ui/ui.jsonnet",
       "output": "packages/mods/skelly.ui/ui.json"
+    },
+    {
+      "source": "packages/mods/skelly.weathering/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.weathering/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.weathering/weathering.jsonnet",
+      "output": "packages/mods/skelly.weathering/weathering.json"
     },
     {
       "source": "packages/thing-authoring-tool/items.jsonnet",
