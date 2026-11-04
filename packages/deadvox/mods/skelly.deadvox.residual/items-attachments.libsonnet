@@ -1,4 +1,4 @@
-local lights = import 'lights.libsonnet';
+local lights = import 'tools/jsonnet/lib/lights.libsonnet';
 local opticZoom = { step: 1, rememberPerWeapon: true };
 
 {

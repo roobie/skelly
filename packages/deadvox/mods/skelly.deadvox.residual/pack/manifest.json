@@ -26,7 +26,8 @@
     "skelly.manufactured-blocks",
     "skelly.fuel",
     "skelly.containers",
-    "skelly.flame-tools"
+    "skelly.flame-tools",
+    "skelly.light-sources"
   ],
   "files": [
     {
@@ -731,18 +732,6 @@
     },
     {
       "kind": "json",
-      "path": "things/torch.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/candle.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/oil_lamp.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/dead_desk_lamp.model.json"
     },
     {
@@ -1112,14 +1101,6 @@
     {
       "kind": "json",
       "path": "things/flashlight.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/lighter.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/matches.model.json"
     },
     {
       "kind": "json",
@@ -1651,10 +1632,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/candle.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/car_battery.glb"
     },
     {
@@ -1820,10 +1797,6 @@
     {
       "kind": "asset",
       "path": "assets/models/glass_lens.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/glowstick.glb"
     },
     {
       "kind": "asset",
@@ -2107,10 +2080,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/lighter.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/lower_ak.glb"
     },
     {
@@ -2151,19 +2120,11 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/matches.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/mounting_plate.glb"
     },
     {
       "kind": "asset",
       "path": "assets/models/night_vision_goggles.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/oil_lamp.glb"
     },
     {
       "kind": "asset",
@@ -2424,10 +2385,6 @@
     {
       "kind": "asset",
       "path": "assets/models/taped_flashlight_mount.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/torch.glb"
     },
     {
       "kind": "asset",

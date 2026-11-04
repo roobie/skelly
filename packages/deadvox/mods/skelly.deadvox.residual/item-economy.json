@@ -1273,48 +1273,6 @@
       "usage": ["Military"]
     },
     {
-      "id": "torch",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
-      "id": "candle",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
-      "id": "oil_lamp",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
-      "id": "glowstick",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
-      "id": "road_flare",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
-      "id": "lighter",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
-      "id": "matches",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
       "id": "door_bar",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -1418,6 +1376,48 @@
     },
     {
       "id": "blowtorch",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "torch",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "candle",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "oil_lamp",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "glowstick",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "road_flare",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "lighter",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "matches",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]

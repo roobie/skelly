@@ -1,4 +1,3 @@
-local fill = import 'tools/jsonnet/lib/fuel-supply.libsonnet';
 (import 'tools/jsonnet/lib/item-presentation.libsonnet')(
   import 'presentation/item-materials.json',
   overrides={
@@ -11,11 +10,6 @@ local fill = import 'tools/jsonnet/lib/fuel-supply.libsonnet';
     glass_lens: ['glass', 'glass'],
     table_fan: ['metal', 'polymer', 'metal'],
     folded_note: ['paper', 'paper'],
-    glowstick: ['polymer', 'polymer'],
     baseball_cap: ['cloth', 'polymer'],
-  },
-  supplies={
-    lighter: fill('fuel_fill:fuel_fill'),
-    oil_lamp: fill('fuel_fill:fuel_fill'),
   },
 )

@@ -120,42 +120,6 @@
     }
   },
   {
-    "id": "torch",
-    "kind": "item",
-    "options": {
-      "mass": "inventory-atom"
-    },
-    "source": "torch",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
-    "id": "candle",
-    "kind": "item",
-    "options": {
-      "mass": "inventory-atom"
-    },
-    "source": "candle",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.002
-    }
-  },
-  {
-    "id": "oil_lamp",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "oil_lamp",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.002
-    }
-  },
-  {
     "id": "dead_desk_lamp",
     "kind": "item",
     "options": {
@@ -1269,30 +1233,6 @@
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
-    }
-  },
-  {
-    "id": "lighter",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "lighter",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.002
-    }
-  },
-  {
-    "id": "matches",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "matches",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
     }
   },
   {

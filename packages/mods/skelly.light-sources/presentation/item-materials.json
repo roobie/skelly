@@ -1,0 +1,8 @@
+{
+  "assets/models/candle.glb": { "materials": ["wax-ivory", "cloth-charred"] },
+  "assets/models/glowstick.glb": { "materials": ["chemical-light tube", "end caps"] },
+  "assets/models/lighter.glb": { "materials": ["fuel-amber", "plastic-clear-red", "steel-grey"] },
+  "assets/models/matches.glb": { "materials": ["paperboard-tan", "paint-terracotta", "paperboard-brown"] },
+  "assets/models/oil_lamp.glb": { "materials": ["steel-grey", "brass", "glass-clear", "fuel-amber"] },
+  "assets/models/torch.glb": { "materials": ["wood-birch", "cloth-charred"] }
+}

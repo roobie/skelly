@@ -69,43 +69,6 @@
   ],
   "recipes": [
     {
-      "category": "lighting",
-      "components": [
-        [
-          {
-            "count": 1,
-            "item": "stick"
-          }
-        ],
-        [
-          {
-            "count": 2,
-            "item": "rag"
-          }
-        ],
-        [
-          {
-            "count": 1,
-            "item": "wax"
-          }
-        ]
-      ],
-      "id": "torch",
-      "qualities": {
-        "cutting": 1
-      },
-      "result": {
-        "count": 1,
-        "item": "torch"
-      },
-      "searchTerms": [],
-      "skills": {
-        "crafting": 0
-      },
-      "tags": ["wood", "textile"],
-      "timeGameMinutes": 20
-    },
-    {
       "category": "supplies",
       "components": [
         [
@@ -270,38 +233,6 @@
       },
       "tags": ["textile"],
       "timeGameMinutes": 30
-    },
-    {
-      "category": "lighting",
-      "components": [
-        [
-          {
-            "count": 2,
-            "item": "wax"
-          }
-        ],
-        [
-          {
-            "count": 1,
-            "item": "rag"
-          }
-        ]
-      ],
-      "id": "candle",
-      "qualities": {
-        "cutting": 1
-      },
-      "result": {
-        "count": 1,
-        "item": "candle"
-      },
-      "searchTerms": [],
-      "skills": {
-        "crafting": 0
-      },
-      "tags": [],
-      "timeGameMinutes": 10,
-      "workstation": null
     },
     {
       "category": "tools",

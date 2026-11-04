@@ -293,7 +293,6 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
         "assets/models/broken_clock.glb",
         "assets/models/electrical_repair_kit.glb",
         "assets/models/glass_bulb.glb",
-        "assets/models/glowstick.glb",
         "assets/models/folded_note.glb"
       ],
       "changes": "Built from primitive meshes for readable ground-pile silhouettes; no external asset source or texture is used."

@@ -1,0 +1,78 @@
+{
+  "dependencies": ["skelly.crafting", "skelly.fuel", "skelly.inventory", "skelly.materials", "skelly.natural-world"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "light-sources-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-light-sources.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/torch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/candle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/oil_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/lighter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/matches.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "exports/things.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/candle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/glowstick.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/lighter.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/matches.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/oil_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/torch.glb"
+    }
+  ],
+  "id": "skelly.light-sources",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

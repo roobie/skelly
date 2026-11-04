@@ -24,7 +24,7 @@ Phase 4 is complete when all of these hold:
 To derive what remains, compare the rows of `packages/thing-authoring-tool/items.jsonnet`,
 `items`, with the model registrations in
 `packages/deadvox/mods/skelly.deadvox.residual/models-items.jsonnet`, `authored`, and
-`packages/deadvox/mods/skelly.deadvox.residual/items-tools.libsonnet`, `models`, and look for datum
+`packages/mods/skelly.light-sources/models-light-sources.jsonnet`, `models`, and look for datum
 overrides in `packages/deadvox/mods/skelly.deadvox.residual/models-melee.jsonnet`, `models`, and in
 `authored`. The recipe, `packages/deadvox/mods/skelly.deadvox.residual/exports/things.jsonnet`, exports
 every row. See `test/things-deadvox-contract.test.mjs`,

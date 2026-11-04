@@ -143,19 +143,6 @@ local skillCurve = import 'packages/mods/skelly.progression/skill-curve.libsonne
   ],
   "recipes": [
     {
-      "id": "torch",
-      category: "lighting", tags: ["wood", "textile"], searchTerms: [],
-      "result": { "item": "torch", "count": 1 },
-      "timeGameMinutes": 20,
-      "skills": { "crafting": 0 },
-      "qualities": { "cutting": 1 },
-      "components": [
-        [{ "item": "stick", "count": 1 }],
-        [{ "item": "rag", "count": 2 }],
-        [{ "item": "wax", "count": 1 }]
-      ]
-    },
-    {
       "id": "make_bandage",
       category: "supplies", tags: ["textile"], searchTerms: [],
       "result": { "item": "bandage", "count": 1 },
@@ -214,16 +201,6 @@ local skillCurve = import 'packages/mods/skelly.progression/skill-curve.libsonne
         [{ "item": "paperback", "count": 4 }],
         [{ "item": "duct_tape", "count": 2 }]
       ]
-    },
-    {
-      "id": "candle",
-      category: "lighting", tags: [], searchTerms: [],
-      "result": { "item": "candle", "count": 1 },
-      "timeGameMinutes": 10,
-      "skills": { "crafting": 0 },
-      "qualities": { "cutting": 1 },
-      "components": [[{ "item": "wax", "count": 2 }], [{ "item": "rag", "count": 1 }]],
-      "workstation": null
     },
     {
       "id": "repair_kit",

@@ -11,17 +11,8 @@ local lightSwing = weapon.lightSwing;
 local heavySwing = weapon.heavySwing;
 local metalRing = weapon.metalRing;
 
-local lights = import 'lights.libsonnet';
+local lights = import 'tools/jsonnet/lib/lights.libsonnet';
 local batteryBeam = lights.batteryBeam;
-
-local burns(ignition, douse, sprint, stow, drop, relight) = {
-  ignition: ignition,
-  douse: douse,
-  sprint: sprint,
-  stow: stow,
-  drop: drop,
-  relight: relight,
-};
 
 local items = [
   {
@@ -177,125 +168,6 @@ local items = [
     },
   },
   {
-    id: 'torch',
-    name: 'Torch',
-    category: 'light',
-    weight: 350,
-    size: [1, 4],
-    description: 'Rags and wax wrapped tightly around a stick.',
-    model: 'torch',
-    disassembly: disassembly(10, [yield('stick', 1), yield('rag', 2), yield('wax', 1)]),
-    light: {
-      radius: 6,
-      seenFrom: 60,
-      color: '#ffb36b',
-      intensity: 5,
-      emissive: 0.6,
-      flame: { heightMetres: 0.14, radiusMetres: 0.035 },
-      burnTimeGameHours: 4,
-      burning: burns('firestarter', douse=true, sprint='stay', stow='refuse', drop='stay', relight=true),
-    },
-  },
-  {
-    id: 'candle',
-    name: 'Candle',
-    category: 'light',
-    weight: 150,
-    size: [1, 1],
-    description: 'A wax candle with a rag wick.',
-    model: 'candle',
-    disassembly: disassembly(5, [yield('wax', 2), yield('rag', 1)]),
-    light: {
-      radius: 3,
-      seenFrom: 15,
-      color: '#ffd28a',
-      // Enough that the candle alone, held, lights a page at night (senses `illumination`, `readingThreshold`).
-      intensity: 3,
-      flame: { heightMetres: 0.03, radiusMetres: 0.007 },
-      burnTimeGameHours: 6,
-      burning: burns('firestarter', douse=true, sprint='douse', stow='douse', drop='stay', relight=true),
-    },
-  },
-  {
-    id: 'oil_lamp',
-    name: 'Oil lamp',
-    category: 'light',
-    size: [2, 3],
-    description: 'A table lamp that burns lamp oil. It keeps burning where it is set down.',
-    model: 'oil_lamp',
-    disassembly: disassembly(5, [yield('scrap_metal', 2)]) + {
-      liquidRecovery: { fractions: salvage, rounding: 'floor' },
-    },
-    vessel: {
-      capacityMicrolitres: 400000,
-      pour: { incrementMicrolitres: 10000, microlitresPerSimSecond: 50000 },
-      accepts: ['lamp_fuel'],
-      initialContents: { kind: 'filled', liquid: 'lamp_fuel', volumeMicrolitres: 400000 },
-    },
-    light: {
-      radius: 8,
-      seenFrom: 80,
-      color: '#ffc477',
-      intensity: 3,
-      flame: { heightMetres: 0.05, radiusMetres: 0.02 },
-      liquidFuel: { accepts: ['lamp_fuel'], microlitresPerGameSecond: 14 },
-      burning: burns('firestarter', douse=true, sprint='douse', stow='douse', drop='stay', relight=true),
-    },
-  },
-  {
-    id: 'glowstick',
-    name: 'Glowstick',
-    category: 'light',
-    weight: 30,
-    size: [1, 2],
-    description: 'A sealed chemical light.',
-    model: 'glowstick',
-    light: {
-      radius: 2,
-      seenFrom: 15,
-      color: '#62ff81',
-      intensity: 1,
-      emissive: 0.8,
-      burnTimeGameHours: 8,
-      burning: burns('snap', douse=false, sprint='stay', stow='stay', drop='stay', relight=false),
-    },
-  },
-  {
-    id: 'road_flare',
-    name: 'Road flare',
-    category: 'light',
-    weight: 200,
-    size: [1, 2],
-    description: 'A road flare. It burns red and bright until it is spent.',
-    model: 'road_flare',
-    light: {
-      radius: 4,
-      seenFrom: 40,
-      color: '#ff3b24',
-      intensity: 3,
-      emissive: 1,
-      burnTimeGameHours: 1,
-      burning: burns('snap', douse=false, sprint='stay', stow='stay', drop='stay', relight=false),
-    },
-  },
-  {
-    id: 'lighter',
-    name: 'Lighter',
-    category: 'light',
-    size: [1, 1],
-    light: { radius: 2, seenFrom: 10, color: '#ffd28a', intensity: 0.7, fuelPerGameHour: 10 },
-    igniter: { capacity: 100, perIgnition: 1 },
-    model: 'lighter',
-  },
-  {
-    id: 'matches',
-    name: 'Box of matches',
-    category: 'light',
-    size: [1, 1],
-    igniter: { capacity: 10, perIgnition: 1 },
-    model: 'matches',
-  },
-  {
     id: 'door_bar',
     name: 'Door bar',
     category: 'tool',
@@ -315,9 +187,5 @@ assert std.all([std.member(classIds, item.weapon.melee.type) for item in items i
        : 'every melee weapon must name a melee class in the shared mod';
 
 {
-  models: [
-    { id: 'glowstick', file: 'assets/models/glowstick.glb', emissiveMaterial: 'chemical-light tube' },
-    { id: 'road_flare', file: 'assets/models/glowstick.glb', emissiveMaterial: 'chemical-light tube' },
-  ],
   items: items,
 }
