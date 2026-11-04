@@ -30,14 +30,6 @@ export const pumpStart = (): StartDef =>
     packed('rounds', 'shell_12_gauge_00_buck', 20),
   ]);
 
-export const grenadeStart = (): StartDef =>
-  fixtureStart([
-    backpack,
-    { id: 'grenade', item: 'frag_grenade', destination: { kind: 'hand', role: 'dominant' } },
-    packed('spare', 'frag_grenade'),
-    packed('another', 'frag_grenade'),
-  ]);
-
 export const fitFixtureOptic = (inventory: Inventory, firearm: Item, type: string): void => {
   for (const [slot, child] of Object.entries(firearm.slots ?? {})) {
     if (

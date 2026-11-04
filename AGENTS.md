@@ -158,7 +158,7 @@ So:
   fingerprints, tuning numbers and UI wording. Assert the property instead (validate
   reports 0 issues; every tree stands on the surface), or leave it un-asserted and record
   it in `docs/deferred-assertions.md` with how to check it and when to pin it.
-- **Temporary core-only ledger exception:** the exact list in `packages/deadvox/test/fixtures/coreOnlyKnownIssues.ts`, `CORE_ONLY_KNOWN_ISSUES`, is a shrinking migration checklist, not drifting data; R9 of #1532 deletes this exception with the list.
+- **Temporary core-only ledger exception:** the exact list in `packages/deadvox/test/fixtures/coreOnlyKnownIssues.ts`, `CORE_ONLY_KNOWN_ISSUES`, is a shrinking migration checklist, not drifting data; when #1532 completes topic extraction it deletes this exception with the list (`packages/deadvox/docs/pack-split.md`, "Core-alone validation").
 - **Test hygiene is must-fix.** A test that does any of the following is fixed or removed
   in the same round, never deferred as a nit:
   - pins drifting data;

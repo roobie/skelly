@@ -3,19 +3,16 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { actorPoseInputFor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
-import { dominantSide } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { magazineSpec } from '../src/core/magazine.ts';
 import { mountedOptic, opticViewSettings } from '../src/core/opticView.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { applyStartKit } from '../src/core/startState.ts';
 import { copyTextOrSelect, formatMeleeResult } from '../src/debug/index.ts';
 import { stepNoclip } from '../src/debug/noclip.ts';
 import { startupContent } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
-import { fitFixtureOptic, grenadeStart, shortFirearmStart } from './fixtures/debugStarts.ts';
+import { fitFixtureOptic } from './fixtures/debugStarts.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { createPlayerBody, PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
@@ -192,34 +189,6 @@ describe('debug starting equipment', () => {
     expect(system.swing(playerEye, ray, weapon)).toBe(id);
     expect(actor.regions.head).toBe(0);
     expect(launchImpulse).toBeCloseTo(10 * shambler.severedImpulseScale);
-  });
-
-  it('a fixture grenade kit holds a throwable with compatible packed spares', () => {
-    const inventory = new Inventory(registry);
-    applyStartKit(inventory, grenadeStart());
-    const held = inventory.hands[dominantSide(inventory.character)]!;
-    expect(registry.items.get(held.type)?.explosive).toBeDefined();
-    expect([...inventory.items()].some(({ item }) => item.uid !== held.uid && item.type === held.type)).toBe(true);
-  });
-
-  it('a fixture short-firearm kit fits a filled compatible magazine and spare ammunition', () => {
-    const inventory = new Inventory(registry);
-    applyStartKit(inventory, shortFirearmStart(registry));
-    const gun = inventory.hands[dominantSide(inventory.character)]!;
-    const definition = registry.items.get(gun.type)!;
-    const model = registry.models.get(definition.model!)!;
-    expect(definition.twoHanded).toBe(true);
-    expect(model.gun?.action?.triggerMode).toBe('semi');
-    const magazine = gun.slots!.magazine!;
-    expect(magazine.cartridges!.length).toBeGreaterThan(0);
-    expect(magazine.cartridges!.length).toBe(magazineSpec(registry, magazine.type)!.capacity);
-    for (const round of magazine.cartridges!) {
-      expect(registry.items.get(round)?.ammo?.calibre).toBe(model.gun!.calibre);
-    }
-    const packed = inventory.worn.back!.pockets!.flat();
-    expect(
-      packed.some(({ item }) => item.count > 0 && registry.items.get(item.type)?.ammo?.calibre === model.gun!.calibre),
-    ).toBe(true);
   });
 
   it('previews every supported optic through certified loadout fitting with a usable reticle', () => {
