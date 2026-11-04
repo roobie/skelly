@@ -46,11 +46,9 @@ import {
   PLAYER_ARM_REACH_M,
   requiredFigureSeeds,
   snapshotActor,
-  validActorEventState,
+  validActorBodyEventState,
   validCarvedCells,
   validHitFlinchTime,
-  validHordeMemberState,
-  validObstacleWanderState,
   validRngState,
   validSpitTimers,
   validStaggerTime,
@@ -59,6 +57,7 @@ import {
   validVec3State,
 } from './actorState.ts';
 import { type ActorTickScratch, createActorTickScratch } from './actorTickScratch.ts';
+import { snapshotAgent, validActorEventState, validHordeMemberState, validObstacleWanderState } from './agentSave.ts';
 import type { BodyRegion, DamageKind } from './body.ts';
 import type { MeleeBlocker } from './collision.ts';
 import type { ActorDef } from './content.ts';
@@ -472,13 +471,7 @@ type GlobContact =
 const holdSpitGround = (scratch: ActorTickScratch, toward: Vec3, chasing: boolean): void => {
   const { actor, type, sees, metresToTarget, dt } = scratch;
   const band = type.acidSpit?.rangeBand;
-  if (
-    band &&
-    chasing &&
-    sees &&
-    metresToTarget >= band.nearMetres &&
-    metresToTarget <= band.farMetres
-  ) {
+  if (band && chasing && sees && metresToTarget >= band.nearMetres && metresToTarget <= band.farMetres) {
     scratch.moving = false;
     steer(actor, toward, (type.motion.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180);
   }
@@ -756,7 +749,7 @@ export class ActorSystem {
     return freezeSnapshot({
       nextEntityId: this.store.nextId,
       nextPuddleId: this.nextPuddleId,
-      actors: [...this.store.entries()].map(([id, actor]) => snapshotActor(id, actor)),
+      actors: [...this.store.entries()].map(([id, actor]) => snapshotActor(id, actor, snapshotAgent(actor))),
       hordes: [...this.agentHorde.hordes.values()].map(({ state: horde, rng }) => snapshotHorde(horde, rng)),
       acidGlobs: this.globs.map(({ state }) => ({ ...state, pos: [...state.pos], velocity: [...state.velocity] })),
       acidPuddles: this.puddles.map(({ state }) => ({ ...state, pos: [...state.pos] })),
@@ -834,6 +827,7 @@ export class ActorSystem {
           !validRngState(actor.spitRng) ||
           !validSpitTimers(actor) ||
           !validStaggerTime(actor) ||
+          !validActorBodyEventState(actor) ||
           !validActorEventState(actor) ||
           !validHordeMemberState(actor) ||
           !Number.isSafeInteger(actor.figureSeed) ||
