@@ -1,81 +1,6 @@
 {
   "blocks": [
     {
-      "color": "#5b8c3a",
-      "drops": {
-        "default": "item_drop_wood"
-      },
-      "footsteps": {
-        "player": "footstep_grass"
-      },
-      "id": "grass",
-      "material": "soil",
-      "name": "Grass",
-      "pattern": "noise",
-      "solid": true,
-      "weatherable": false
-    },
-    {
-      "color": "#7a5a3a",
-      "drops": {
-        "default": "item_drop_wood"
-      },
-      "footsteps": {
-        "player": "footstep_mud"
-      },
-      "id": "dirt",
-      "material": "soil",
-      "name": "Dirt",
-      "pattern": "noise",
-      "solid": true,
-      "weatherable": false
-    },
-    {
-      "color": "#8a8d91",
-      "drops": {
-        "default": "item_drop_wood"
-      },
-      "footsteps": {
-        "player": "footstep_stone"
-      },
-      "id": "stone",
-      "material": "masonry",
-      "name": "Stone",
-      "pattern": "rough",
-      "solid": true,
-      "weatherable": true
-    },
-    {
-      "color": "#8a8d91",
-      "drops": {
-        "default": "item_drop_wood"
-      },
-      "footsteps": {
-        "player": "footstep_stone"
-      },
-      "id": "rock",
-      "material": "masonry",
-      "name": "Natural stone",
-      "pattern": "rough",
-      "solid": true,
-      "weatherable": false
-    },
-    {
-      "color": "#d6c68f",
-      "drops": {
-        "default": "item_drop_wood"
-      },
-      "footsteps": {
-        "player": "footstep_sand"
-      },
-      "id": "sand",
-      "material": "soil",
-      "name": "Sand",
-      "pattern": "noise",
-      "solid": true,
-      "weatherable": false
-    },
-    {
       "color": "#3b3d40",
       "drops": {
         "default": "item_drop_wood"
@@ -385,22 +310,6 @@
       "patternWashout": 0.41999999999999998,
       "solid": true,
       "weatherable": true
-    },
-    {
-      "color": "#3b6e8f",
-      "drops": {
-        "default": "item_drop_wood"
-      },
-      "footsteps": {
-        "player": "footstep_mud"
-      },
-      "id": "water",
-      "liquid": true,
-      "material": "liquid",
-      "name": "Water",
-      "opaque": false,
-      "solid": false,
-      "weatherable": false
     }
   ]
 }

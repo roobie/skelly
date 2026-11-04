@@ -155,7 +155,7 @@ acid follows pierce except where cloth's acid vulnerability calls for its own re
 These values do not change play until an attack selects the added pair. Explicit
 neutral actor maps preserve the existing absence-of-resistance behavior, while the
 acid actor keeps its authored immunity. See `packages/mods/skelly.body/body.jsonnet`, `responses`,
-`mods/skelly.deadvox.residual/block-materials.jsonnet`, `materials`, and
+`packages/mods/skelly.natural-world/block-materials.jsonnet`, `materials`, and
 `mods/skelly.deadvox.residual/enemies.jsonnet`, `neutralDamageResistance`. Missing tuning is not
 permission to invent resistance or injury responses.
 

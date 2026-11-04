@@ -9,16 +9,15 @@
     "skelly.deadvox.weathering",
     "skelly.melee-classes",
     "skelly.inventory",
-    "skelly.body"
+    "skelly.body",
+    "skelly.sound-families",
+    "skelly.senses",
+    "skelly.natural-world"
   ],
   "files": [
     {
       "kind": "content",
       "path": "benchmark-city.json"
-    },
-    {
-      "kind": "content",
-      "path": "block-materials.json"
     },
     {
       "kind": "content",
@@ -242,19 +241,11 @@
     },
     {
       "kind": "content",
-      "path": "senses.json"
-    },
-    {
-      "kind": "content",
       "path": "site-generation.json"
     },
     {
       "kind": "content",
       "path": "starts.json"
-    },
-    {
-      "kind": "content",
-      "path": "sounds-furniture.json"
     },
     {
       "kind": "content",
@@ -307,10 +298,6 @@
     {
       "kind": "content",
       "path": "tutorial.json"
-    },
-    {
-      "kind": "content",
-      "path": "vegetation.json"
     },
     {
       "kind": "content",
@@ -1727,14 +1714,6 @@
     {
       "kind": "asset",
       "path": "assets/audio/gunshot-tikka-02.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/item_drop_wood-01.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/item_drop_wood-02.ogg"
     },
     {
       "kind": "asset",

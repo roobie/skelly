@@ -1,8 +1,9 @@
 import bodyFile from '../../mods/skelly.body/body.json' with { type: 'json' };
 import damageKindsFile from '../../mods/skelly.melee-classes/damage-kinds.json' with { type: 'json' };
+import sensesFile from '../../mods/skelly.senses/senses.json' with { type: 'json' };
+import soundFamiliesFile from '../../mods/skelly.sound-families/sound-families.json' with { type: 'json' };
 import cursorFile from '../../mods/skelly.ui/cursor.json' with { type: 'json' };
 import uiFile from '../../mods/skelly.ui/ui.json' with { type: 'json' };
-import sensesFile from '../mods/skelly.deadvox.residual/senses.json' with { type: 'json' };
 import { buildRegistry } from './core/content.ts';
 
 const soundFiles = import.meta.glob<unknown>(
@@ -12,6 +13,8 @@ const soundFiles = import.meta.glob<unknown>(
     '../../mods/skelly.melee-classes/melee-sounds.json',
     '../../mods/skelly.body/body-sounds.json',
     '../../mods/skelly.body/body-synth-sounds.json',
+    '../../mods/skelly.natural-world/natural-sounds.json',
+    '../../mods/skelly.natural-world/sounds-furniture.json',
   ],
   { eager: true, import: 'default' },
 );
@@ -30,5 +33,6 @@ export const buildSoundsPageContent = () =>
     { source: '../../../mods/skelly.ui/cursor.json', data: cursorFile },
     { source: '../../../mods/skelly.body/body.json', data: bodyFile },
     { source: '../../../mods/skelly.melee-classes/damage-kinds.json', data: damageKindsFile },
-    { source: '../../mods/skelly.deadvox.residual/senses.json', data: sensesFile },
+    { source: '../../../mods/skelly.sound-families/sound-families.json', data: soundFamiliesFile },
+    { source: '../../../mods/skelly.senses/senses.json', data: sensesFile },
   ]);

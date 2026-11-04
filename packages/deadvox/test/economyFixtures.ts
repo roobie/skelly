@@ -1,4 +1,6 @@
 import baseItemWear from '../../mods/skelly.inventory/item-wear.json' with { type: 'json' };
+import naturalSounds from '../../mods/skelly.natural-world/natural-sounds.json' with { type: 'json' };
+import playerFamilies from '../../mods/skelly.sound-families/sound-families.json' with { type: 'json' };
 import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
 import baseUiSounds from '../../mods/skelly.ui/ui-sounds.json' with { type: 'json' };
 import baseSounds from '../mods/skelly.deadvox.residual/sounds.json' with { type: 'json' };
@@ -57,10 +59,10 @@ export const fixtureMaterialSource = (): ContentSource => {
     source: 'fixture-materials.json',
     data: {
       ...fixtureDamageContent(),
-      soundFamilies: structuredClone(baseSounds.soundFamilies),
+      soundFamilies: structuredClone([...playerFamilies.soundFamilies, ...baseSounds.soundFamilies]),
       furnitureMaterials: fixtureMaterials(),
       itemWear: structuredClone(baseItemWear.itemWear),
-      sounds: [...fixtureSounds(), sound, baseSounds.sounds.find((entry) => entry.id === 'item_drop_wood')!],
+      sounds: [...fixtureSounds(), sound, naturalSounds.sounds.find((entry) => entry.id === 'item_drop_wood')!],
       ui,
       recipeCategories: [{ id: 'fixture_category', label: 'Fixture', order: 0 }],
     },

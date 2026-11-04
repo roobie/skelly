@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import playerFamilies from '../../mods/skelly.sound-families/sound-families.json' with { type: 'json' };
 import {
   advanceFootsteps,
   footstepEventAt,
@@ -19,10 +20,13 @@ const STEP_DISTANCE_METRES = {
   sprinting: stepDistanceMetres(tuning, 'sprinting'),
 };
 
-const soundsSource = {
-  source: 'sounds.json',
-  data: JSON.parse(readFileSync('mods/skelly.deadvox.residual/sounds.json', 'utf8')) as unknown,
-};
+const soundsSources = [
+  { source: 'sound-families.json', data: playerFamilies },
+  {
+    source: 'natural-sounds.json',
+    data: JSON.parse(readFileSync('../mods/skelly.natural-world/natural-sounds.json', 'utf8')) as unknown,
+  },
+];
 const FIXTURE_BLOCK = {
   id: 'fixture_moss',
   name: 'Moss',
@@ -38,7 +42,10 @@ const FIXTURE_PLANK = {
   footsteps: { player: 'footstep_wood' },
 };
 const fixtureRegistry = () =>
-  buildRegistry([soundsSource, { source: 'fixture-blocks.json', data: { blocks: [FIXTURE_BLOCK, FIXTURE_PLANK] } }]);
+  buildRegistry([
+    ...soundsSources,
+    { source: 'fixture-blocks.json', data: { blocks: [FIXTURE_BLOCK, FIXTURE_PLANK] } },
+  ]);
 
 describe('player footsteps', () => {
   it('resolves a new block id from its authored footstep selection without a code edit', () => {

@@ -1,6 +1,6 @@
 local manifest = import '../../../../../tools/jsonnet/lib/pack-manifest.libsonnet';
 local content = [
-  'benchmark-city', 'block-materials', 'blocks', 'camp', 'combat-policy',
+  'benchmark-city', 'blocks', 'camp', 'combat-policy',
   'crisis-hq-fixtures', 'crisis-hq', 'footstep-sounds', 'furniture-cabins',
   'furniture-hunting', 'furniture-playtest', 'furniture', 'gauntlet-look', 'gauntlet-start',
   'gauntlet', 'hunting-cabins', 'item-economy', 'items-ammunition',
@@ -11,11 +11,11 @@ local content = [
   'loot-workshop', 'loot', 'map-kits', 'models-attachments', 'models-firearms',
   'models-gun-parts', 'models-items', 'models-melee', 'power', 'readables',
   'ranged-tuning', 'recipes', 'rural-medical-fixtures', 'rural-medical', 'rural-police-fixtures', 'rural-police',
-  'rural-substation-fixtures', 'rural-substation', 'scenarios', 'senses',
-  'site-generation', 'starts', 'sounds-furniture', 'sounds-pump', 'sounds-revolver',
+  'rural-substation-fixtures', 'rural-substation', 'scenarios',
+  'site-generation', 'starts', 'sounds-pump', 'sounds-revolver',
   'sounds-synth', 'sounds-weapons', 'sounds', 'templates-cabins', 'templates-medical',
   'templates-playtest', 'templates-stairs', 'templates-test-house', 'templates-workshop',
-  'templates', 'tutorial', 'vegetation', 'vehicles', 'enemies',
+  'templates', 'tutorial', 'vehicles', 'enemies',
 ];
 local guns = [
   'ak_slant_compensator', 'barrel_ak_medium', 'barrel_ar_large_long', 'barrel_ar_large_medium',
@@ -50,6 +50,7 @@ manifest(
   dependencies=[
     'skelly.saves', 'skelly.day-cycle', 'skelly.controls', 'skelly.graphics', 'skelly.ui',
     'skelly.weathering', 'skelly.deadvox.weathering', 'skelly.melee-classes', 'skelly.inventory', 'skelly.body',
+    'skelly.sound-families', 'skelly.senses', 'skelly.natural-world',
   ],
   content=content,
   guns=guns,

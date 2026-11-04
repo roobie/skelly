@@ -11,6 +11,9 @@
     "skelly.melee-classes",
     "skelly.inventory",
     "skelly.body",
+    "skelly.sound-families",
+    "skelly.senses",
+    "skelly.natural-world",
     "skelly.deadvox.residual"
   ],
   "files": [],

@@ -1,23 +1,17 @@
 // Base terrain and construction blocks. Ground-contact events are authored per block even when several
 // blocks share a surface (`PILLARS.md`, "Content forward compatibility"); the compiled JSON spells each pair out.
 local footstepEvents = {
-  grass: { player: 'footstep_grass' },
-  mud: { player: 'footstep_mud' },
-  sand: { player: 'footstep_sand' },
   stone: { player: 'footstep_stone' },
   wood: { player: 'footstep_wood' },
   leaves: { player: 'footstep_leaves' },
-  // Wading borrows the mud events until the wading round gives water a sound of its own.
-  wade: { player: 'footstep_mud' },
 };
 
 local materials = {
-  grass: 'soil', dirt: 'soil', stone: 'masonry', rock: 'masonry', sand: 'soil',
   asphalt: 'masonry', concrete: 'masonry', planks: 'timber', brick: 'masonry',
   plaster: 'masonry', tiles: 'masonry', fabric: 'textile', roof: 'masonry',
   carpet: 'textile', window_frame: 'timber', siding_red: 'timber', siding_blue: 'timber',
   galvanized: 'metal', cobblestone_mossy: 'masonry', dressed_stone: 'masonry',
-  hazard_yellow: 'metal', chain_link: 'metal', sandbag: 'soil', camo_woodland: 'timber', water: 'liquid',
+  hazard_yellow: 'metal', chain_link: 'metal', sandbag: 'soil', camo_woodland: 'timber',
 };
 local block(id, name, color, surface, extra={}) =
   { id: id, material: materials[id], name: name, color: color, solid: true, drops: { default: 'item_drop_wood' }, footsteps: footstepEvents[surface] } + extra;
@@ -27,11 +21,6 @@ local paintedAsphalt = asphalt + { id: 'painted_asphalt', name: 'Painted asphalt
 
 {
   blocks: [
-    block('grass', 'Grass', '#5b8c3a', 'grass', { pattern: 'noise', weatherable: false }),
-    block('dirt', 'Dirt', '#7a5a3a', 'mud', { pattern: 'noise', weatherable: false }),
-    block('stone', 'Stone', '#8a8d91', 'stone', { pattern: 'rough', weatherable: true }),
-    block('rock', 'Natural stone', '#8a8d91', 'stone', { pattern: 'rough', weatherable: false }),
-    block('sand', 'Sand', '#d6c68f', 'sand', { pattern: 'noise', weatherable: false }),
     asphalt,
     paintedAsphalt,
     block('concrete', 'Concrete', '#b5b3ad', 'stone', { pattern: 'noise', weatherable: true }),
@@ -64,6 +53,5 @@ local paintedAsphalt = asphalt + { id: 'painted_asphalt', name: 'Painted asphalt
       patternPalette: ['#53694d', '#78634d', '#9b8a6b', '#3b4039'],
       patternWashout: 0.42,
     }),
-    block('water', 'Water', '#3b6e8f', 'wade', { solid: false, opaque: false, liquid: true, weatherable: false }),
   ],
 }

@@ -1,0 +1,14 @@
+{
+  "dependencies": ["skelly.sound-families"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "senses.json"
+    }
+  ],
+  "id": "skelly.senses",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

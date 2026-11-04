@@ -9,10 +9,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/benchmark-city.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/block-materials.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/block-materials.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/blocks.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/blocks.json"
     },
@@ -233,16 +229,8 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/scenarios.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/senses.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/senses.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/site-generation.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/site-generation.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds-furniture.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds-furniture.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds-pump.jsonnet",
@@ -299,10 +287,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/tutorial.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/tutorial.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/vegetation.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/vegetation.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/vehicles.jsonnet",
@@ -621,12 +605,60 @@
       "output": "packages/mods/skelly.melee-classes/pack/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.natural-world/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.natural-world/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.natural-world/block-materials.jsonnet",
+      "output": "packages/mods/skelly.natural-world/block-materials.json"
+    },
+    {
+      "source": "packages/mods/skelly.natural-world/furniture-materials.jsonnet",
+      "output": "packages/mods/skelly.natural-world/furniture-materials.json"
+    },
+    {
+      "source": "packages/mods/skelly.natural-world/natural-blocks.jsonnet",
+      "output": "packages/mods/skelly.natural-world/natural-blocks.json"
+    },
+    {
+      "source": "packages/mods/skelly.natural-world/natural-sounds.jsonnet",
+      "output": "packages/mods/skelly.natural-world/natural-sounds.json"
+    },
+    {
+      "source": "packages/mods/skelly.natural-world/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.natural-world/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.natural-world/sounds-furniture.jsonnet",
+      "output": "packages/mods/skelly.natural-world/sounds-furniture.json"
+    },
+    {
+      "source": "packages/mods/skelly.natural-world/vegetation.jsonnet",
+      "output": "packages/mods/skelly.natural-world/vegetation.json"
+    },
+    {
       "source": "packages/mods/skelly.saves/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.saves/pack/manifest.json"
     },
     {
       "source": "packages/mods/skelly.saves/saves.jsonnet",
       "output": "packages/mods/skelly.saves/saves.json"
+    },
+    {
+      "source": "packages/mods/skelly.senses/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.senses/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.senses/senses.jsonnet",
+      "output": "packages/mods/skelly.senses/senses.json"
+    },
+    {
+      "source": "packages/mods/skelly.sound-families/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.sound-families/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.sound-families/sound-families.jsonnet",
+      "output": "packages/mods/skelly.sound-families/sound-families.json"
     },
     {
       "source": "packages/mods/skelly.ui/assets/manifest.jsonnet",

@@ -1,0 +1,3 @@
+{
+  soundFamilies: [{ id: 'player' }],
+}

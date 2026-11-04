@@ -17,8 +17,6 @@ local mud = numbered('footstep-mud', std.range(1, 4));
 local stone = numbered('footstep-stone', std.range(1, 6));
 local wood = numbered('footstep-wood', std.range(1, 3));
 local leaves = numbered('footstep-leaves', [1]);
-local footstep(id, surface, variants, gain, pitch=[0.96, 1.04]) =
-  sound(id, 'Walk, jog or sprint over %s.' % surface, variants, gain, pitch, [0.86, 1.12], 0.2, category='body');
 
 local spawnShamblers = "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.";
 local shamblerStep(id, surface, variants) =
@@ -63,7 +61,7 @@ local rackBack = audio(['shotgun-rack-back.ogg']);
 local shellInsert = numbered('shotgun-insert', [1, 2]);
 
 {
-  soundFamilies: [{ id: 'player' }, { id: 'shambler' }],
+  soundFamilies: [{ id: 'shambler' }],
   sounds: [
     handling('shotgun_rack_back', 'Rack the held pump shotgun: its backward hand stroke.', rackBack, 0.65, [1, 1]),
     handling(
@@ -98,12 +96,6 @@ local shellInsert = numbered('shotgun-insert', [1, 2]);
     ) + {
       debugHint: '?debug=1: use the spawn menu for a Hand grenade. Pull the pin, take the throwing stance, hold then release to throw, and step back.',
     },
-    footstep('footstep_grass', 'grass', grassSand, 0.2),
-    footstep('footstep_sand', 'sand', grassSand, 0.22),
-    footstep('footstep_mud', 'dirt or mud', mud, 0.24, pitch=[0.94, 1.05]),
-    footstep('footstep_stone', 'a hard surface such as stone, concrete, brick or tile', stone, 0.24),
-    footstep('footstep_wood', 'planks', wood, 0.22),
-    footstep('footstep_leaves', 'fabric or carpet', leaves, 0.18),
     shamblerStep('shambler_step_grass', 'grass', grassSand),
     shamblerStep('shambler_step_mud', 'dirt or mud', mud),
     shamblerStep('shambler_step_sand', 'sand', grassSand),
@@ -126,10 +118,6 @@ local shellInsert = numbered('shotgun-insert', [1, 2]);
     firearm(
       'gunshot_m4_suppressed', 'Fire the AR-pattern rifle with a real suppressor fitted.',
       numbered('gunshot-m4-suppressed', [1]), [1, 1], 100,
-    ),
-    sound(
-      'item_drop_wood', 'Drop an item into a pile, or spill it onto the ground.',
-      numbered('item_drop_wood', [1, 2]), 0.55, [0.96, 1.04], [0.9, 1.1], 0.08,
     ),
     sound(
       'pouch_take', 'Take an item out of a pocket on a worn item.',

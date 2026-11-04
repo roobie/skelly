@@ -3627,7 +3627,7 @@ decoration.
   Larger figures should sound heavier regardless of their build or product
   identity, so humanoid voice-law tuning is shared rather than type-specific.
   Body-size pitch affects playback only, never hearing or simulation. See
-  `src/game/actorAudio.ts`, `actorVoiceLaw`, and `mods/skelly.deadvox.residual/senses.jsonnet`,
+  `src/game/actorAudio.ts`, `actorVoiceLaw`, and `packages/mods/skelly.senses/senses.jsonnet`,
   `actorVoice`.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest
