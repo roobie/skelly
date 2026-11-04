@@ -69,6 +69,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/hunting-cabins.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/hunting-cabins.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/item-economy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/item-economy.json"
     },
@@ -129,6 +133,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-cabins.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-playtest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-playtest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-stairs.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-stairs.json"
     },
@@ -143,6 +151,10 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-water.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-water.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/locks.jsonnet",
