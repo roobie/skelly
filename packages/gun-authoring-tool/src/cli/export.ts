@@ -6,46 +6,24 @@
 // deadvox expects the model; `--id` defaults to the input's file name with dashes turned to underscores.
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { dirname } from 'node:path';
 import process from 'node:process';
 import { modelEntryJson } from '@skelly/thing-export/files.ts';
-import type { DeadvoxModelFile } from '../gun/exportGlb.ts';
 import gunVoxel from '../gun/gunVoxel.json' with { type: 'json' };
+import { exportCliPlan } from './exportArgs.ts';
 import { exportFileText } from './exportFile.ts';
-import { readCartridge } from './readCartridge.ts';
-
-const USAGE =
-  'usage: export <design-or-fixture.json> [--out <dir>] [--entry-out <dir>] [--id <model_id>] [--calibre <cartridge_id>]';
-
-const flag = (args: string[], name: string): string | undefined => {
-  const at = args.indexOf(name);
-  return at >= 0 ? args[at + 1] : undefined;
-};
 
 const main = (): number => {
-  const args = process.argv.slice(2);
-  const input = args.find((a, i) => !(a.startsWith('--') || args[i - 1]?.startsWith('--')));
-  if (!input) {
-    console.error(USAGE);
+  const plan = exportCliPlan(process.argv.slice(2));
+  if (!plan.ok) {
+    console.error(plan.message);
     return 2;
   }
-  const out = flag(args, '--out') ?? '.';
-  const entryOut = flag(args, '--entry-out') ?? out;
-  const id = flag(args, '--id') ?? basename(input, '.json').replaceAll('-', '_');
-  const cartridgeResult = readCartridge(flag(args, '--calibre'));
-  if (!cartridgeResult.ok) {
-    console.error(`FAIL --calibre: ${cartridgeResult.message}`);
-    return 2;
-  }
-  const result = exportFileText(
-    readFileSync(input, 'utf8'),
-    {
-      id,
-      file: `assets/models/${id}.glb` as DeadvoxModelFile,
-    },
-    cartridgeResult.cartridge === undefined ? {} : { cartridge: cartridgeResult.cartridge },
-    { voxelGrain: gunVoxel.grain, voxelDetailGrain: gunVoxel.detailGrain },
-  );
+  const { input, glbPath, entryPath } = plan;
+  const result = exportFileText(readFileSync(input, 'utf8'), plan.asset, plan.metadata, {
+    voxelGrain: gunVoxel.grain,
+    voxelDetailGrain: gunVoxel.detailGrain,
+  });
   if (!result.ok) {
     console.error(`FAIL ${input}: ${result.message}`);
     return 1;
@@ -53,10 +31,8 @@ const main = (): number => {
   for (const warning of result.warnings) {
     console.warn(`WARN ${input}: ${warning}`);
   }
-  mkdirSync(out, { recursive: true });
-  mkdirSync(entryOut, { recursive: true });
-  const glbPath = join(out, `${id}.glb`);
-  const entryPath = join(entryOut, `${id}.model.json`);
+  mkdirSync(dirname(glbPath), { recursive: true });
+  mkdirSync(dirname(entryPath), { recursive: true });
   writeFileSync(glbPath, result.glb);
   writeFileSync(entryPath, modelEntryJson(result.modelEntry));
   console.log(`wrote ${glbPath} (${result.glb.byteLength} bytes)`);
