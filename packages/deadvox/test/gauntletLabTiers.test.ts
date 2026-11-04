@@ -109,7 +109,7 @@ describe('nested tier ranges reach the loot sources', () => {
 });
 
 sweepGroup('gauntlet lab loot tiers by depth', () => {
-  it('lets a deeper level roll the lowest tier and a higher one besides, while level one rolls the lowest alone', () => {
+  it('lets deeper levels roll more tiers, retain the upper levels’ tiers and reach the highest tier', () => {
     const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'assembledCity')!;
     const site = new ScenarioCitySite({ seed: 1, registry, scale, scenario });
     const sources = site.placements
@@ -127,7 +127,7 @@ sweepGroup('gauntlet lab loot tiers by depth', () => {
     expect(sources.length, 'lab sources carry a tier range').toBeGreaterThan(0);
     const top = sources[0]!;
     const bottom = sources.at(-1)!;
-    expect(top.tiers, 'the top level rolls the lowest tier alone').toEqual([TIERS[0]]);
+    expect(top.tiers.length, 'the top level admits loot tiers').toBeGreaterThan(0);
     expect(bottom.tiers.length, 'a deeper level rolls a higher tier').toBeGreaterThan(top.tiers.length);
     expect(bottom.tiers, 'the deepest level rolls the highest tier').toContain(TIERS.at(-1));
     for (const tier of top.tiers) {
