@@ -29,7 +29,11 @@ import { applyModelMaterials } from './modelMaterials.ts';
 /** The base pack's model files, by their path within the pack. */
 const PACK_FILES: Readonly<Record<string, string>> = Object.fromEntries(
   Object.entries(
-    import.meta.glob<string>('../../mods/skelly.deadvox.residual/assets/**/*.glb', { eager: true, query: '?url', import: 'default' }),
+    import.meta.glob<string>('../../mods/skelly.deadvox.residual/assets/**/*.glb', {
+      eager: true,
+      query: '?url',
+      import: 'default',
+    }),
   ).map(([path, url]) => [path.replace('../../mods/skelly.deadvox.residual/', ''), url]),
 );
 

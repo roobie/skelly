@@ -4,8 +4,8 @@ import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type 
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import { controlIssues } from '../src/cli/controlIssues.ts';
 import rawBaseDayCycle from '../mods/skelly.deadvox.residual/dayCycle.json' with { type: 'json' };
+import { controlIssues } from '../src/cli/controlIssues.ts';
 import { isBodyDoor } from '../src/core/blockEntities.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { parseTimeOfDay, resolveSpawnTime } from '../src/core/clock.ts';

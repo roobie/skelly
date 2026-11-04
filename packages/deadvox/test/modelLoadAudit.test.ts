@@ -33,7 +33,11 @@ const closeWith = async (records: object[]): Promise<void> => {
   await audit.close();
 };
 
-const modelAbort = { event: 'asset-error', model: 'machete', url: '/mods/skelly.deadvox.residual/assets/models/machete.glb' };
+const modelAbort = {
+  event: 'asset-error',
+  model: 'machete',
+  url: '/mods/skelly.deadvox.residual/assets/models/machete.glb',
+};
 
 describe('model load audit', () => {
   afterEach(() => vi.restoreAllMocks());

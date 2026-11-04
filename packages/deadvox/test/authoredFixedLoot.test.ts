@@ -40,7 +40,10 @@ import { PLAYER, physicsFor } from './playerFixture.ts';
 const sources = readdirSync('mods/skelly.deadvox.residual')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts') && file !== 'starts.json')
   .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown }));
+  .map((file) => ({
+    source: file,
+    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown,
+  }));
 const layout = (
   JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts-playtest.json', 'utf8')) as { layouts: SiteLayoutDef[] }
 ).layouts[0]!;

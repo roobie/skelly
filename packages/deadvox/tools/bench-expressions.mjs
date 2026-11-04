@@ -10,7 +10,9 @@ import { panelSchema, sleepSchema } from '../src/spikes/expressions/contract.ts'
 import { small } from '../src/spikes/expressions/small.ts';
 
 const rules = JSON.parse(readFileSync(new URL('../test/fixtures/mods/expression-spike.json', import.meta.url), 'utf8'));
-const [tuning] = JSON.parse(readFileSync(new URL('../mods/skelly.deadvox.residual/body.json', import.meta.url), 'utf8')).body;
+const [tuning] = JSON.parse(
+  readFileSync(new URL('../mods/skelly.deadvox.residual/body.json', import.meta.url), 'utf8'),
+).body;
 const ceiling = tuning.healthRecoveryFatigueCeiling.awake;
 const cases = [
   {

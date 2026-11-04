@@ -56,6 +56,9 @@ await Promise.all(
     ['riot_helmet_view', view],
   ].map(async ([id, model]) => {
     const bytes = await new GLTFExporter().parseAsync(model, { binary: true });
-    await writeFile(new URL(`../mods/skelly.deadvox.residual/assets/models/${id}.glb`, import.meta.url), Buffer.from(bytes));
+    await writeFile(
+      new URL(`../mods/skelly.deadvox.residual/assets/models/${id}.glb`, import.meta.url),
+      Buffer.from(bytes),
+    );
   }),
 );

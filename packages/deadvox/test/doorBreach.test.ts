@@ -38,7 +38,10 @@ const fixtureDoor = (id: string, barredFrom?: 'front' | 'back') => ({
 const base = readdirSync('mods/skelly.deadvox.residual')
   .filter((file) => file.endsWith('.json'))
   .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown }));
+  .map((file) => ({
+    source: file,
+    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown,
+  }));
 const { registry, issues } = buildFixtureRegistry([
   ...base,
   {

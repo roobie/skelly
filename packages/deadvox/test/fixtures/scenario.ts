@@ -126,8 +126,8 @@ export const fixtureScenarioSources = (
   actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
   const selectedSounds = new Set([...bodySoundIds(body), ...Object.values(actor.sounds)]);
   const bodySounds = ['sounds', 'sounds-synth', 'sounds-block'].flatMap((name) =>
-    (JSON.parse(readFileSync(`mods/skelly.deadvox.residual/${name}.json`, 'utf8')).sounds as { id: string }[]).filter(({ id }) =>
-      selectedSounds.has(id),
+    (JSON.parse(readFileSync(`mods/skelly.deadvox.residual/${name}.json`, 'utf8')).sounds as { id: string }[]).filter(
+      ({ id }) => selectedSounds.has(id),
     ),
   );
   const {

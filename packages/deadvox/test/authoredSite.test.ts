@@ -40,9 +40,13 @@ import { sweepGroup } from './sweeps.ts';
 const base = readdirSync('mods/skelly.deadvox.residual')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts') && file !== 'starts.json')
   .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown }));
-const layout = (JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts.json', 'utf8')) as { layouts: SiteLayoutDef[] })
-  .layouts[0]!;
+  .map((file) => ({
+    source: file,
+    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown,
+  }));
+const layout = (
+  JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts.json', 'utf8')) as { layouts: SiteLayoutDef[] }
+).layouts[0]!;
 const load = (data: unknown) => buildRegistry([...base, { source: 'layout-test.json', data: { layouts: [data] } }]);
 const { registry, issues } = load(layout);
 const baseLayoutIds = [...registry.layouts.keys()].filter((id) => id !== layout.id);

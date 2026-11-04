@@ -24,7 +24,9 @@ if (new Set(ids).size !== ids.length) {
   throw new Error('Tool recipes cannot own the same model identity');
 }
 for (const { directory, recipe, index } of jobs) {
-  writeRecipeExports(recipe, resolve(REPOSITORY_ROOT, 'packages/deadvox/mods/skelly.deadvox.residual'), directory, { index });
+  writeRecipeExports(recipe, resolve(REPOSITORY_ROOT, 'packages/deadvox/mods/skelly.deadvox.residual'), directory, {
+    index,
+  });
 }
 await import('../packages/deadvox/tools/item-fuel-models.mjs');
 await import('./item-model-metadata.mjs');

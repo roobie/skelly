@@ -21,7 +21,9 @@ const groups = ['flow', 'replays'];
 const [, , group] = process.argv;
 assert(groups.includes(group), `usage: primary-action.mjs <${groups.join('|')}>`);
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
-const authoredStarts = JSON.parse(await readFile(resolve(projectRoot, 'mods/skelly.deadvox.residual/starts.json'), 'utf8')).starts;
+const authoredStarts = JSON.parse(
+  await readFile(resolve(projectRoot, 'mods/skelly.deadvox.residual/starts.json'), 'utf8'),
+).starts;
 const houseStart = authoredStarts.find((row) => row.defaultForSite && row.site === 'testHouse');
 assert(houseStart, 'the product supplies an authored start for the existing house flow');
 const debugHouseStart = { id: 'primary_action_fixture_start' };

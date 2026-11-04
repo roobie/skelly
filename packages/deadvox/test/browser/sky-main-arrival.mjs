@@ -484,7 +484,10 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           if (overlays.has(relative)) {
             appliedSources.add(relative);
           }
-          if (relative === 'core/authoredSite.ts' || id.endsWith('/mods/skelly.deadvox.residual/templates-stairs.json')) {
+          if (
+            relative === 'core/authoredSite.ts' ||
+            id.endsWith('/mods/skelly.deadvox.residual/templates-stairs.json')
+          ) {
             source = fixtureTransform(source, id) ?? source;
           }
           return OVERLAY_ADAPTERS[relative]?.(source) ?? source;

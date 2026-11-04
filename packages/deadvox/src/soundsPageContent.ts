@@ -4,7 +4,10 @@ import sensesFile from '../mods/skelly.deadvox.residual/senses.json' with { type
 import uiFile from '../mods/skelly.deadvox.residual/ui.json' with { type: 'json' };
 import { buildRegistry } from './core/content.ts';
 
-const soundFiles = import.meta.glob<unknown>('../mods/skelly.deadvox.residual/sounds*.json', { eager: true, import: 'default' });
+const soundFiles = import.meta.glob<unknown>('../mods/skelly.deadvox.residual/sounds*.json', {
+  eager: true,
+  import: 'default',
+});
 
 /**
  * The listening sheet's content: every sound file, the UI tokens its style sheet is measured in, the default

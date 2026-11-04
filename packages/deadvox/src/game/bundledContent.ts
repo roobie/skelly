@@ -7,7 +7,10 @@ declare const __SKELLY_BUNDLE_STAMP__: Record<string, BundleStamp> | undefined;
 declare const __SKELLY_ADMISSION_FINGERPRINT__: string | undefined;
 declare const __SKELLY_FILE_HASHES__: Record<string, string>;
 
-const files = import.meta.glob<unknown>('../../mods/skelly.deadvox.residual/*.json', { eager: true, import: 'default' });
+const files = import.meta.glob<unknown>('../../mods/skelly.deadvox.residual/*.json', {
+  eager: true,
+  import: 'default',
+});
 const packs: PackInput[] = bundledPacks.map(({ root, manifest }) => ({
   source: root,
   manifest,

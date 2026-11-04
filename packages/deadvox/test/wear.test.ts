@@ -21,7 +21,10 @@ const armour = {
 const wearables = 'items-wearables.json';
 const hitBuild = buildRegistry([
   { source: 'wear-sounds', data: { sounds: [...registry.sounds.values()] } },
-  { source: wearables, data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', wearables), 'utf8')) as unknown },
+  {
+    source: wearables,
+    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', wearables), 'utf8')) as unknown,
+  },
   {
     source: 'models-items.json',
     data: JSON.parse(readFileSync('mods/skelly.deadvox.residual/models-items.json', 'utf8')) as unknown,

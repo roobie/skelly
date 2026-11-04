@@ -11,7 +11,9 @@ it('refuses startup rather than inventing a run when rejected content removes th
       file.endsWith('.json') &&
       !['dayCycle.json', 'controls.json', 'graphics.json', 'weathering.json'].includes(file)
     ) {
-      vi.doMock(`../mods/skelly.deadvox.residual/${file}`, () => ({ default: file === 'layouts.json' ? { layouts: {} } : {} }));
+      vi.doMock(`../mods/skelly.deadvox.residual/${file}`, () => ({
+        default: file === 'layouts.json' ? { layouts: {} } : {},
+      }));
     }
   }
   const { buildBundledContent } = await import('../src/game/bundledContent.ts');
