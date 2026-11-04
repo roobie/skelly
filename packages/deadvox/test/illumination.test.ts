@@ -4,6 +4,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { type IlluminationScene, litEnoughToRead } from '../src/core/illumination.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { chargeOf, drainLight, toggleLight } from '../src/core/lights.ts';
+import { reachTuning } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { DayCycleDef } from '../src/core/schema.ts';
 import { gameSeconds } from '../src/core/time.ts';
@@ -96,6 +97,18 @@ describe('illumination', () => {
     expect(toggleLight(base, candle, 0)).toBeUndefined();
     const page: Vec3 = [READER[0] + 1, READER[1], READER[2]];
     expect(litEnoughToRead({ ...sceneWith(inventory), cycle: baseCycle }, page)).toBe(true);
+  });
+
+  it('a lit worn headlamp reads a sign at full reach at night with base tuning', () => {
+    const inventory = new Inventory(base);
+    const headlamp = inventory.create('headlamp');
+    expect(inventory.add(headlamp, { kind: 'worn' })).toBe(true);
+    expect(toggleLight(base, headlamp, 0)).toBeUndefined();
+    const scene = { ...sceneWith(inventory), cycle: baseCycle };
+    // Reach admits a sign by its nearest face; the light is read at the sign's centre, half a block beyond.
+    const blocks = reachTuning(base).reachMetres / scene.blockSize + 0.5;
+    const sign: Vec3 = [READER[0] + blocks, READER[1], READER[2]];
+    expect(litEnoughToRead(scene, sign)).toBe(true);
   });
 
   it('open sky reads at noon and not at midnight', () => {
