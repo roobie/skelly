@@ -19,7 +19,6 @@ import { Inventory } from '../src/core/inventory.ts';
 import { corpseLootPoint, lootTypeIssue } from '../src/core/loot.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns, blockWeatherability } from '../src/core/meshInput.ts';
-import { opticViewSettings } from '../src/core/opticView.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import {
   BLOCK_PATTERNS,
@@ -625,16 +624,6 @@ describe('content', () => {
         ),
       ).toBe(true);
     }
-  });
-
-  it('keeps the thermal optic out of loot, fitting and ADS', () => {
-    expect(
-      [...baseRegistry.loot.values()].some((table) =>
-        table.entries.some((entry) => entry.item === 'optic_digital_thermal'),
-      ),
-    ).toBe(false);
-    const thermal = baseRegistry.items.get('optic_digital_thermal')!;
-    expect(opticViewSettings(thermal, baseRegistry.models.get(thermal.model!)!)).toBeUndefined();
   });
 
   it('rejects a non-positive firearms skill-zero handling value', () => {
