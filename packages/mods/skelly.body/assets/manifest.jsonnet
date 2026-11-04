@@ -46,7 +46,7 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       licence: 'CC0-1.0',
       download: 'brk.zip',
       files: ['assets/audio/melee_hit_fist-01.ogg'],
-      changes: 'Selected two wooden item-drop clips, a pouch-handling clip, and a placeholder fist hit; trimmed leading silence, faded tails, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report). The fist-hit placeholder is wired to the live and restored melee-action path when the fists profile is active.',
+      changes: 'Selected two wooden item-drop clips, a pouch-handling clip, and a placeholder fist hit; trimmed leading silence, faded tails, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting. The fist-hit placeholder is wired to the live and restored melee-action path when the fists profile is active.',
     },
     {
       title: 'Jump Landing Sound',

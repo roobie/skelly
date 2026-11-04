@@ -18,7 +18,7 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       licence: 'CC0-1.0',
       download: 'thwack.zip',
       files: ['assets/audio/door_blocked_close-01.ogg'],
-      changes: 'Converted the selected PCM WAV; trimmed leading silence, faded the tail, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report).',
+      changes: 'Converted the selected PCM WAV; trimmed leading silence, faded the tail, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting.',
     },
     {
       title: '80 CC0 RPG SFX',
