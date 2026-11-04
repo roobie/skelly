@@ -1,0 +1,113 @@
+{
+  "bodyMassKg": 110,
+  "bodyPlan": "leaper",
+  "budgets": {
+    "groups": {
+      "head": {
+        "bones": ["head", "jaw"],
+        "max": 1000000,
+        "maxFraction": 0.12,
+        "min": 1
+      },
+      "hindSprings": {
+        "bones": ["thigh.*", "shin.*", "foot.*"],
+        "max": 1000000,
+        "min": 1,
+        "minFraction": 0.38
+      }
+    },
+    "totalTriangles": {
+      "max": 7200,
+      "min": 3600
+    },
+    "totalVoxels": {
+      "max": 3200,
+      "min": 1500
+    }
+  },
+  "description": "Ambush predator: waits coiled on folded hind springs and covers ground in one pounce.",
+  "materialHsl": {
+    "bone": [40, 0.22, 0.78000000000000003],
+    "claw": [44, 0.35999999999999999, 0.68000000000000005],
+    "dorsal": ["dorsalHue", 0.17999999999999999, "dorsalLight"],
+    "eye": [52, 0.84999999999999998, 0.57999999999999996],
+    "maw": [350, 0.45000000000000001, 0.16],
+    "skin": ["skinHue", "skinSat", "skinLight"]
+  },
+  "materials": {
+    "bone": {
+      "color": [0, 0, 0],
+      "emissive": 0
+    },
+    "claw": {
+      "color": [0, 0, 0],
+      "emissive": 0
+    },
+    "dorsal": {
+      "color": [0, 0, 0],
+      "emissive": 0
+    },
+    "eye": {
+      "charged": true,
+      "color": [0, 0, 0],
+      "emissive": 0.69999999999999996
+    },
+    "maw": {
+      "color": [0, 0, 0],
+      "emissive": 0
+    },
+    "skin": {
+      "color": [0, 0, 0],
+      "emissive": 0
+    }
+  },
+  "name": "leaper",
+  "params": {
+    "dorsalHue": {
+      "max": 342,
+      "min": 318
+    },
+    "dorsalLight": {
+      "max": 0.40000000000000002,
+      "min": 0.33000000000000002
+    },
+    "haunch": {
+      "max": 1.1200000000000001,
+      "min": 0.92000000000000004
+    },
+    "hump": {
+      "max": 1.1499999999999999,
+      "min": 0.88
+    },
+    "reach": {
+      "max": 1.0800000000000001,
+      "min": 0.93999999999999995
+    },
+    "scale": {
+      "max": 1.05,
+      "min": 0.94999999999999996
+    },
+    "skinHue": {
+      "max": 22,
+      "min": 6
+    },
+    "skinLight": {
+      "max": 0.64000000000000001,
+      "min": 0.56000000000000005
+    },
+    "skinSat": {
+      "max": 0.26000000000000001,
+      "min": 0.16
+    },
+    "skull": {
+      "max": 1.1000000000000001,
+      "min": 0.92000000000000004
+    },
+    "splay": {
+      "max": 1.0800000000000001,
+      "min": 0.92000000000000004
+    }
+  },
+  "supportBones": ["foot.L", "foot.R", "hand.L", "hand.R"],
+  "voxelSize": 0.041666666666666664
+}

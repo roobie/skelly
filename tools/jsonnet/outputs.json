@@ -509,24 +509,12 @@
       "output": "packages/gun-authoring-tool/src/gun/unitScale.json"
     },
     {
-      "source": "packages/mobgen/src/mob/acidTemplate.jsonnet",
-      "output": "packages/mobgen/src/mob/acidTemplate.json"
-    },
-    {
-      "source": "packages/mobgen/src/mob/attackClips.jsonnet",
-      "output": "packages/mobgen/src/mob/attackClips.json"
-    },
-    {
-      "source": "packages/mobgen/src/mob/materialTemplates.jsonnet",
-      "output": "packages/mobgen/src/mob/materialTemplates.json"
+      "source": "packages/mobgen/src/mob/leaper/leaper.jsonnet",
+      "output": "packages/mobgen/src/mob/leaper/leaper.json"
     },
     {
       "source": "packages/mobgen/src/mob/ragdoll.jsonnet",
       "output": "packages/mobgen/src/mob/ragdoll.json"
-    },
-    {
-      "source": "packages/mobgen/src/mob/skeletonTemplate.jsonnet",
-      "output": "packages/mobgen/src/mob/skeletonTemplate.json"
     },
     {
       "source": "packages/thing-authoring-tool/exports/deadvox.jsonnet",
