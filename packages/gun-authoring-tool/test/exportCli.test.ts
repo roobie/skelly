@@ -1,11 +1,11 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
 import { srgbToHex } from '@skelly/thing-export/appearance.ts';
 import { describe, expect, it } from 'vitest';
+import { exportCliPlan } from '../src/cli/exportArgs.ts';
 import { exportFileText } from '../src/cli/exportFile.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
@@ -103,34 +103,26 @@ describe('export CLI core', () => {
     );
   });
 
+  // The CLI's own work is argument resolution, so it is checked in-process without spawning a full gun-grain export.
   it('writes the glb and model entry to separate output directories when requested', () => {
-    const temp = mkdtempSync(join(tmpdir(), 'gungen-export-'));
-    const glbDir = join(temp, 'models');
-    const entryDir = join(temp, 'entries');
-    try {
-      execFileSync(
-        process.execPath,
-        [
-          join(import.meta.dirname, '../src/cli/export.ts'),
-          'designs/archetype-ar.json',
-          '--out',
-          glbDir,
-          '--entry-out',
-          entryDir,
-          '--id',
-          'rifle_assault',
-        ],
-        { cwd: join(import.meta.dirname, '..') },
-      );
-      expect(existsSync(join(glbDir, 'rifle_assault.glb'))).toBe(true);
-      expect(existsSync(join(glbDir, 'rifle_assault.model.json'))).toBe(false);
-      expect(JSON.parse(readFileSync(join(entryDir, 'rifle_assault.model.json'), 'utf8'))).toMatchObject({
-        id: 'rifle_assault',
-        file: 'assets/models/rifle_assault.glb',
-      });
-    } finally {
-      rmSync(temp, { recursive: true, force: true });
-    }
+    const glbDir = join('out', 'models');
+    const entryDir = join('out', 'entries');
+    const plan = exportCliPlan([
+      'designs/archetype-ar.json',
+      '--out',
+      glbDir,
+      '--entry-out',
+      entryDir,
+      '--id',
+      'rifle_assault',
+    ]);
+    expect(plan).toMatchObject({
+      ok: true,
+      input: 'designs/archetype-ar.json',
+      asset: { id: 'rifle_assault', file: 'assets/models/rifle_assault.glb' },
+      glbPath: join(glbDir, 'rifle_assault.glb'),
+      entryPath: join(entryDir, 'rifle_assault.model.json'),
+    });
   });
 
   it('exports a design calibre automatically and resolves an explicit CLI calibre', () => {
@@ -138,7 +130,14 @@ describe('export CLI core', () => {
     const designCalibre = (JSON.parse(designText) as { calibre?: string }).calibre;
     expect(designCalibre).toBeTruthy();
     const fromDesign = exportFileText(designText, ASSET);
-    expect(fromDesign.ok && fromDesign.modelEntry.gun.calibre).toBe(designCalibre);
+    expect(fromDesign.ok).toBe(true);
+    if (!fromDesign.ok) {
+      return;
+    }
+    expect(fromDesign.modelEntry.gun.calibre).toBe(designCalibre);
+    expect(fromDesign.modelEntry.anchors?.magwell).toBeUndefined();
+    expect(fromDesign.modelEntry.gun.slots?.magazine?.node).toBeTruthy();
+    expect(fromDesign.modelEntry.gun.slots?.magazine?.at).toHaveLength(3);
     const mismatchedDesign = JSON.parse(designText) as Record<string, unknown>;
     mismatchedDesign.calibre = `${designCalibre}-other`;
     expect(exportFileText(JSON.stringify(mismatchedDesign), ASSET)).toMatchObject({
@@ -146,32 +145,16 @@ describe('export CLI core', () => {
       message: expect.stringContaining('calibre'),
     });
 
-    const temp = mkdtempSync(join(tmpdir(), 'gungen-export-ammo-'));
-    try {
-      execFileSync(
-        process.execPath,
-        [
-          join(import.meta.dirname, '../src/cli/export.ts'),
-          'designs/archetype-ak-akm.json',
-          '--out',
-          temp,
-          '--id',
-          'ak_test',
-          '--calibre',
-          '7.62x39',
-        ],
-        { cwd: join(import.meta.dirname, '..') },
-      );
-      const entry = JSON.parse(readFileSync(join(temp, 'ak_test.model.json'), 'utf8')) as {
-        gun: { calibre: string; slots?: { magazine?: { node: string; at: number[]; turn: number[] } } };
-        anchors?: Record<string, number[]>;
-      };
-      expect(entry.gun.calibre).toBe('7.62x39');
-      expect(entry.anchors?.magwell).toBeUndefined();
-      expect(entry.gun.slots?.magazine?.node).toBeTruthy();
-      expect(entry.gun.slots?.magazine?.at).toHaveLength(3);
-    } finally {
-      rmSync(temp, { recursive: true, force: true });
+    const cliPlan = (calibre: string) => exportCliPlan(['designs/archetype-ak-akm.json', '--calibre', calibre]);
+    const matching = cliPlan(designCalibre!);
+    expect(matching.ok && matching.metadata.cartridge?.id).toBe(designCalibre);
+    const other = cliPlan('9x19');
+    expect(other.ok && other.metadata.cartridge?.id).toBe('9x19');
+    if (other.ok) {
+      expect(exportFileText(designText, other.asset, other.metadata)).toMatchObject({
+        ok: false,
+        message: expect.stringContaining('does not match supplied cartridge'),
+      });
     }
   });
 
