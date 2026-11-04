@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { bundledModCatalogueIssues } from '../packages/deadvox/src/core/bundledModCatalogue.ts';
-import { tutorialRequested } from '../packages/deadvox/src/game/tutorialUrl.ts';
+import { practiceEntry } from '../packages/deadvox/src/game/tutorialUrl.ts';
 import { gitEnvironment, playtestRound, publishPlaytest } from '../packages/deadvox/tools/publish-playtest.mjs';
 import { loadPlaytestText } from '../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
@@ -361,15 +361,15 @@ describe('site launchers track the games’ URL parameters', () => {
     const offered = siteOfferedForTest();
     const defaults = launcherModelForTest().deadvox;
     assert.equal(
-      tutorialRequested(makeDeadvox({ ...defaults, site: 'tutorial' }).searchParams),
-      true,
-      'play composes a URL the game accepts as practice',
+      practiceEntry(makeDeadvox({ ...defaults, site: 'tutorial' }).searchParams).get('site'),
+      'tutorial',
+      'play composes a URL that selects the practice site',
     );
     assert.equal(offered(defaults, 'tutorial'), true, 'play offers the practice tutorial');
     for (const bench of ['1', 'shamblers', 'report']) {
       assert.equal(offered({ ...defaults, bench }, 'tutorial'), false, `bench ${bench} hides the practice tutorial`);
       assert.equal(
-        tutorialRequested(makeDeadvox({ ...defaults, site: 'tutorial', bench }).searchParams),
+        practiceEntry(makeDeadvox({ ...defaults, site: 'tutorial', bench }).searchParams).get('site') === 'tutorial',
         false,
         `bench ${bench} does not compose a practice URL`,
       );

@@ -52,8 +52,10 @@ graduation requirement, and lost supplies must not trap the learner. See
 `mods/skelly.deadvox.residual/tutorial.jsonnet`, `tutorial_range`.
 
 Practice must never touch the player's save: disposable learning must not share a
-normal world's persistence identity. See `src/game/tutorialUrl.ts`,
-`tutorialRequested`, and `src/game/play.ts`, `startPlay`.
+normal world's persistence identity. Authored guidance, not the URL, makes a site
+practice, so no start or site link can bind a save to a guided site. See
+`src/game/config.ts`, `practiceConfigFromUrl`, and `src/game/play.ts`,
+`assertPracticeIsolation`.
 
 Completion, death and voluntary exit return to the start choice rather than silently
 creating a world or transferring equipment. Finishing the essentials must not force
@@ -66,7 +68,7 @@ The launcher offers practice only as a play destination, so a benchmark cannot c
 an unsaved teaching place. Its URL contract stays independent of simulation and
 workspace packages because launcher checks run without a game installation. See
 `site/launcher.js`, `setPlayOnlySite`, and `src/game/tutorialUrl.ts`,
-`tutorialRequested`.
+`practiceEntry`.
 
 Five minutes is a nominal teaching target, not a timer or test assertion. Slower
 reading is allowed. Teachability, threat intensity and readability require a newcomer

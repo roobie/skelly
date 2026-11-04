@@ -10,7 +10,7 @@ const BUNDLED_CONTENT = startupContent();
 
 import { GuidedSteps as Tutorial, type GuidanceObservation as TutorialObservation } from '../src/game/guidedSteps.ts';
 import { Survival } from '../src/game/survival.ts';
-import { tutorialRequested, tutorialUrl } from '../src/game/tutorialUrl.ts';
+import { tutorialUrl } from '../src/game/tutorialUrl.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const observation = (): TutorialObservation => ({
@@ -210,10 +210,7 @@ describe('practice objectives', () => {
     }
   });
 
-  it('also isolates direct authored-site links and clears continuation and debug parameters on exit', () => {
-    expect(tutorialRequested(new URLSearchParams('site=tutorial'))).toBe(true);
-    expect(tutorialRequested(new URLSearchParams('tutorial=1'))).toBe(true);
-    expect(tutorialRequested(new URLSearchParams('site=gauntlet'))).toBe(false);
+  it('clears continuation and debug parameters on exit', () => {
     const start = new URL(
       tutorialUrl('https://example.org/deadvox/?tutorial=1&debug=1&save-backend=indexeddb#continue', false),
     );
