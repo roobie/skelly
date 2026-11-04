@@ -12,7 +12,7 @@ local content = [
   'models-gun-parts', 'models-items', 'models-melee', 'power', 'readables',
   'ranged-tuning', 'recipes', 'rural-medical-fixtures', 'rural-medical', 'rural-police-fixtures', 'rural-police',
   'rural-substation-fixtures', 'rural-substation', 'scenarios', 'senses',
-  'site-generation', 'starts', 'sounds-block', 'sounds-furniture', 'sounds-pump', 'sounds-revolver',
+  'site-generation', 'starts', 'sounds-furniture', 'sounds-pump', 'sounds-revolver',
   'sounds-synth', 'sounds-weapons', 'sounds', 'templates-cabins', 'templates-medical',
   'templates-playtest', 'templates-stairs', 'templates-test-house', 'templates-workshop',
   'templates', 'tutorial', 'vegetation', 'vehicles', 'enemies',

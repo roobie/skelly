@@ -254,10 +254,6 @@
     },
     {
       "kind": "content",
-      "path": "sounds-block.json"
-    },
-    {
-      "kind": "content",
       "path": "sounds-furniture.json"
     },
     {
@@ -1759,10 +1755,6 @@
     {
       "kind": "asset",
       "path": "assets/audio/melee-swing-03.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/melee_hit_fist-01.ogg"
     },
     {
       "kind": "asset",

@@ -185,6 +185,10 @@ scenario's own blocks take their rows from that scenario's mod; every Deadvox ro
 `skelly.deadvox.residual` until #1532 extracts those mods. See `src/core/footsteps.ts`,
 `footstepEventForBlock`; `src/core/content.ts`, `checkFootstepCoverage`; and
 `mods/skelly.deadvox.residual/footstep-sounds.jsonnet`, `footstepSounds`.
+A sound row's file lives in the row's own pack, copied with its credit when packs share it,
+so each mod loads with only its declared dependencies. The cost is duplicate bytes, and
+replacing a file in one pack leaves the other copies. See `src/core/assets.ts`,
+`soundFileIssues`.
 Mechanisms read selections from triggering entries;
 `src/core/content.ts`, `checkActionSounds` and `referenceIssues` reject absent
 providers at those fields rather than requiring every product event. Other optional

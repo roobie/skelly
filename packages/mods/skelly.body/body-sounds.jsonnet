@@ -38,5 +38,10 @@ local sound(id, description, variants, gain, pitch, gainJitter, interval, catego
       'Guard in en-garde with a melee weapon or fists, and fully block a zombie hit.',
       numbered('player-block-full', [1]), 0.9, [1, 1], [0.92, 1.08], 0.08, category='world', noise=heard(8),
     ),
+    sound(
+      'player_block_partial',
+      'Guard in en-garde, and take a zombie hit the block only partly absorbs.',
+      audio(['melee_hit_fist-01.ogg']), 0.8, [0.7, 0.8], [0.9, 1.1], 0.08, category='world', noise=heard(6),
+    ),
   ],
 }

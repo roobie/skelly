@@ -40,6 +40,15 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       changes: 'Selected three wet-footstep variations (sfx100v2_footstep_wet_01–03.ogg); converted from stereo 48 kHz Vorbis to mono 48 kHz Opus in Ogg containers without loudness normalization; sfx100v2_misc_36.ogg kept byte-identical as received and renamed player-block-full-01.ogg; unused source effects excluded',
     },
     {
+      title: '75 CC0 Breaking/Falling/Hit SFX',
+      url: 'https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx',
+      author: 'rubberduck',
+      licence: 'CC0-1.0',
+      download: 'brk.zip',
+      files: ['assets/audio/melee_hit_fist-01.ogg'],
+      changes: 'Selected two wooden item-drop clips, a pouch-handling clip, and a placeholder fist hit; trimmed leading silence, faded tails, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report). The fist-hit placeholder is wired to the live and restored melee-action path when the fists profile is active.',
+    },
+    {
       title: 'Jump Landing Sound',
       url: 'https://opengameart.org/content/jump-landing-sound',
       author: 'MentalSanityOff',

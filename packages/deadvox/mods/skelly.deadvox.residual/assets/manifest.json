@@ -572,8 +572,7 @@
       "files": [
         "assets/audio/item_drop_wood-01.ogg",
         "assets/audio/item_drop_wood-02.ogg",
-        "assets/audio/pouch_take-01.ogg",
-        "assets/audio/melee_hit_fist-01.ogg"
+        "assets/audio/pouch_take-01.ogg"
       ],
       "licence": "CC0-1.0",
       "title": "75 CC0 Breaking/Falling/Hit SFX",

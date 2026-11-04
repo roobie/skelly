@@ -63,6 +63,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/audio/melee_hit_fist-01.ogg"
+    },
+    {
+      "kind": "asset",
       "path": "assets/audio/player-block-full-01.ogg"
     },
     {

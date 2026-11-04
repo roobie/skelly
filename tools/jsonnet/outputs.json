@@ -241,10 +241,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/site-generation.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds-block.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds-block.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds-furniture.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds-furniture.json"
     },

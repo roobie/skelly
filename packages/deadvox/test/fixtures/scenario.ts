@@ -127,7 +127,6 @@ export const fixtureScenarioSources = (
   const selectedSounds = new Set([...bodySoundIds(body), ...Object.values(actor.sounds)]);
   const bodySounds = [
     'mods/skelly.deadvox.residual/sounds.json',
-    'mods/skelly.deadvox.residual/sounds-block.json',
     '../mods/skelly.body/body-sounds.json',
     '../mods/skelly.body/body-synth-sounds.json',
   ].flatMap((file) =>
