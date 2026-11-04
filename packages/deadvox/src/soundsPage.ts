@@ -17,8 +17,9 @@ const { manifest: credits } = bundledCredits();
 const guide = buildSoundGuide(
   [...registry.sounds.values()].filter(({ id }) => !heartbeatEvents.has(id)),
   credits,
+  registry.soundOrigins,
 );
-const heartbeat = buildHeartbeatSoundGuide(heartbeatTuning, registry.sounds, credits);
+const heartbeat = buildHeartbeatSoundGuide(heartbeatTuning, registry.sounds, credits, registry.soundOrigins);
 const errorRoot = document.createElement('p');
 errorRoot.className = 'sound-errors';
 errorRoot.setAttribute('role', 'status');

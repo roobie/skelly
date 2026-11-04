@@ -85,19 +85,34 @@ export const validateManifest = (source: string, data: unknown): { manifest: Man
   return { manifest: result.output, issues };
 };
 
-/** Checks each pack's manifest on its own, then lists every source: pack paths are unique only within a pack. */
+/** The compiled manifest's path within its pack. */
+export const MANIFEST_PATH = 'assets/manifest.json';
+
+/** The pack holding a content file, which sits at its pack's top level. */
+export const contentFilePack = (file: string): string => file.slice(0, Math.max(file.lastIndexOf('/'), 0));
+
+const manifestPack = (source: string): string =>
+  source.endsWith(`/${MANIFEST_PATH}`) ? source.slice(0, -MANIFEST_PATH.length - 1) : source;
+
+/** A manifest of several packs, whose sources keep their pack because a pack path is unique only within its pack. */
+export interface PackedManifest {
+  sources: (AssetSource & { pack: string })[];
+}
+
+/** Checks each pack's manifest on its own, then lists every source with its pack. */
 export const mergeManifests = (
   manifests: readonly { source: string; data: unknown }[],
-): { manifest: Manifest; issues: ContentIssue[] } => {
-  const checked = manifests.map(({ source, data }) => validateManifest(source, data));
+): { manifest: PackedManifest; issues: ContentIssue[] } => {
+  const checked = manifests.map(({ source, data }) => ({ source, ...validateManifest(source, data) }));
   return {
-    manifest: { sources: checked.flatMap(({ manifest }) => manifest.sources) },
+    manifest: {
+      sources: checked.flatMap(({ source, manifest }) =>
+        manifest.sources.map((asset) => ({ ...asset, pack: manifestPack(source) })),
+      ),
+    },
     issues: checked.flatMap(({ issues }) => issues),
   };
 };
-
-/** The compiled manifest's path within its pack. */
-export const MANIFEST_PATH = 'assets/manifest.json';
 
 /**
  * Checks a pack's files against its manifest: every file in the assets directory comes from a

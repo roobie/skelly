@@ -10,5 +10,6 @@ export const bundledCredits = () =>
   mergeManifests(
     Object.keys(manifests)
       .sort()
-      .map((source) => ({ source, data: manifests[source] })),
+      // Named as the game names them from src/game, so a sound's origin finds its own pack's credits.
+      .map((path) => ({ source: `../${path}`, data: manifests[path] })),
   );
