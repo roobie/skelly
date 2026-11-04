@@ -925,7 +925,7 @@ try {
   await action('debug.spawn-menu-toggle');
   const spawnFilter = await evaluate(`(() => {
     const { registry } = window.uiContractRuntime.inventory;
-    const entries = [...registry.items.values()];
+    const entries = [...registry.items.values()].filter((entry) => !entry.workInProgress);
     const words = [...new Set(entries.flatMap((entry) => entry.name.toLowerCase().split(/\\s+/)))];
     for (const word of words) {
       const matches = entries.filter((entry) =>
