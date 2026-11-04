@@ -105,9 +105,7 @@ local authorEconomy(item) =
     else { usage: usages, tiers: tiers };
 {
   itemEconomy(items):: [authorEconomy(item) for item in items],
-  itemPack(content):: content + (if std.objectHas(content, 'items') then {
-    items: [{ workInProgress: false } + item for item in content.items],
-  } else {}),
+  itemPack(content):: (import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack(content),
   pack(content):: self.itemPack(content)
     + (if std.objectHas(content, 'templates') then { templates: [authorTemplate(template) for template in content.templates] } else {})
     + (if std.objectHas(content, 'layouts') then {

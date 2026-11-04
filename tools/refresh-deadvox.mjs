@@ -2,7 +2,9 @@ import { relative, resolve } from 'node:path';
 import { writeRecipeExports } from '../packages/thing-export/src/files.ts';
 import { compileJsonnetSources } from './jsonnet/compile.mjs';
 import { REPOSITORY_ROOT } from './jsonnet/index.mjs';
-import { readThingRecipes, thingRecipeDirectories } from './thing-recipes.ts';
+import { modDirectories, readThingRecipes, thingRecipeDirectories } from './thing-recipes.ts';
+
+const within = (base, directory) => relative(REPOSITORY_ROOT, resolve(base, directory)).replaceAll('\\', '/');
 
 // Recipe evaluation precedes exporter imports because their catalogues are static JSON imports.
 compileJsonnetSources({
@@ -10,10 +12,8 @@ compileJsonnetSources({
     'packages/thing-core/src',
     'packages/thing-authoring-tool',
     'packages/gun-authoring-tool',
-    'packages/deadvox/mods/skelly.deadvox.residual/presentation',
-    ...thingRecipeDirectories().map((base) =>
-      relative(REPOSITORY_ROOT, resolve(base, 'exports')).replaceAll('\\', '/'),
-    ),
+    ...modDirectories().map((base) => within(base, 'presentation')),
+    ...thingRecipeDirectories().map((base) => within(base, 'exports')),
   ],
 });
 const { loadExportRecipe } = await import('../packages/gun-authoring-tool/src/cli/exportRecipe.ts');
@@ -43,6 +43,7 @@ for (const { base, directory, recipe, index } of jobs) {
   writeRecipeExports(recipe, base, directory, { index });
 }
 await import('../packages/deadvox/tools/item-fuel-models.mjs');
-await import('./item-model-metadata.mjs');
+const { syncItemModelMetadata } = await import('./item-model-metadata.mjs');
+syncItemModelMetadata();
 // Content Jsonnet imports the model files written above, so the full compile runs last.
 compileJsonnetSources();
