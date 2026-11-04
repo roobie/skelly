@@ -9,8 +9,8 @@ import { toChunk, type Vec3 } from './coords.ts';
 import { type PaperMapCoverage, paperMapAt } from './paperMap.ts';
 import { Rng } from './random.ts';
 import { BLOCK_SIZE } from './scale.ts';
-import type { FixedLootItemDef } from './schema.ts';
 import { Id } from './schema/primitives.ts';
+import type { FixedLootItemDef } from './schema.ts';
 
 const distinct = <T>(values: T[]): boolean => new Set(values).size === values.length;
 

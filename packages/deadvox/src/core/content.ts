@@ -1107,13 +1107,16 @@ const itemSupplyOutputs = (item: ItemDef): (readonly [string, string])[] => [
   ...(item.salvage ?? []).map((output, i) => [`.salvage[${i}].item`, output.item] as const),
 ];
 
-/** Military-only supply cannot be manufactured through an ordinary recipe or salvage source. */
-const checkMilitaryLoot = (registry: Registry, report: Report) => {
+const checkItemEconomyRows = (registry: Registry, report: Report) => {
   for (const row of registry.itemEconomy.values()) {
     if (!registry.items.has(row.id)) {
       report('itemEconomy', row.id, '.id', `no item "${row.id}"`);
     }
   }
+};
+
+/** Military-only supply cannot be manufactured through an ordinary recipe or salvage source. */
+const checkMilitaryLoot = (registry: Registry, report: Report) => {
   const military = militaryLootItems(registry);
   for (const item of registry.items.values()) {
     checkInstalledEconomy(registry, item, report);
@@ -2238,6 +2241,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkFigures(registry, report);
   checkHeldHands(registry, report);
   checkLoot(registry, report);
+  checkItemEconomyRows(registry, report);
   checkMilitaryLoot(registry, report);
   checkFurniture(registry, report);
   checkTemplates(registry, report);
