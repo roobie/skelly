@@ -8,7 +8,7 @@ import ts from './lit-check/node_modules/typescript/lib/typescript.js';
 
 const DEADVOX = resolve(dirname(new URL(import.meta.url).pathname), '..');
 const SOURCE = join(DEADVOX, 'src');
-const CONTENT = join(DEADVOX, 'mods', 'skelly.deadvox.residual');
+const CONTENT_ROOTS = [join(DEADVOX, 'mods'), join(DEADVOX, '..', 'mods')];
 const RUNTIME_BASELINE = join(DEADVOX, 'tools', 'time-lint-baseline.json');
 const ALLOW_REAL = new Set([join(SOURCE, 'game', 'frameDriver.ts')]);
 const CODE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs']);
@@ -396,7 +396,7 @@ const temporalFileMode = (file) => {
 };
 
 const authoredTemporalFindings = () => {
-  const contentFiles = walkFiles(CONTENT, (path) => extname(path) === '.json');
+  const contentFiles = CONTENT_ROOTS.flatMap((root) => walkFiles(root, (path) => extname(path) === '.json'));
   const catalogueFile = join(SOURCE, 'core', 'temporalFields.ts');
   const temporalFiles = [...contentFiles, join(SOURCE, 'core', 'schema.ts'), catalogueFile];
   const findings = [];
