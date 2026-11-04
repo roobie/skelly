@@ -16,7 +16,7 @@ function writeCached(path: string, value: unknown) {
 }
 
 function writeBaseRegistry(path: string, startupPath: string) {
-  const directory = 'src/content/base';
+  const directory = 'mods/skelly.deadvox.residual';
   const sources = readdirSync(directory)
     .filter((file) => file.endsWith('.json'))
     .sort()
@@ -28,7 +28,7 @@ function writeBaseRegistry(path: string, startupPath: string) {
   writeCached(path, result.registry);
   const startup = buildRegistry(
     sources
-      .map(({ source, data }) => ({ source: `../content/base/${source}`, data }))
+      .map(({ source, data }) => ({ source: `../../mods/skelly.deadvox.residual/${source}`, data }))
       .sort((left, right) => left.source.localeCompare(right.source)),
   );
   if (startup.issues.length > 0) {

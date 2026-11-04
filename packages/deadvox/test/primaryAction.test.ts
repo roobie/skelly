@@ -104,10 +104,10 @@ const capabilities = [
 const { registry, issues } = buildRegistry([
   playerInventorySource(),
   {
-    source: '../content/base/sounds.json',
-    data: JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown,
+    source: '../../mods/skelly.deadvox.residual/sounds.json',
+    data: JSON.parse(readFileSync('mods/skelly.deadvox.residual/sounds.json', 'utf8')) as unknown,
   },
-  { source: '../content/base/ui.json', data: JSON.parse(readFileSync('src/content/base/ui.json', 'utf8')) as unknown },
+  { source: '../../mods/skelly.deadvox.residual/ui.json', data: JSON.parse(readFileSync('mods/skelly.deadvox.residual/ui.json', 'utf8')) as unknown },
   {
     source: 'hand-action-fixture',
     data: {

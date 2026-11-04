@@ -19,12 +19,12 @@ import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
-const baseContent = readdirSync('src/content/base')
+const baseContent = readdirSync('mods/skelly.deadvox.residual')
   .filter((file) => file.endsWith('.json'))
   .sort()
   .map((file) => ({
     source: file,
-    data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
+    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown,
   }));
 const registry = baseRegistry();
 // Built once at load: a full registry build inside the test body pushed it past the test timeout under load.

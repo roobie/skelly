@@ -4,7 +4,7 @@ import { loadThingRecipe } from '../exports.ts';
 
 writeRecipeExports(
   loadThingRecipe(),
-  resolve(import.meta.dirname, '../../../../packages/deadvox/src/content/base'),
+  resolve(import.meta.dirname, '../../../../packages/deadvox/mods/skelly.deadvox.residual'),
   'things',
   { index: true },
 );

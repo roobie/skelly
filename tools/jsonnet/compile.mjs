@@ -11,7 +11,7 @@ const SOURCE_ROOTS = [
   'packages/thing-core/src',
   'packages/thing-authoring-tool',
   'packages/deadvox/maps',
-  'packages/deadvox/src/content/base',
+  'packages/deadvox/mods',
   'packages/deadvox/src/config',
   'packages/deadvox/test/fixtures/mods',
   'packages/deadvox/test/fixtures/content',

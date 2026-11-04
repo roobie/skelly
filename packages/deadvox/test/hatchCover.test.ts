@@ -295,7 +295,7 @@ describe('the content check for covers', () => {
   });
 });
 
-const BASE = 'src/content/base';
+const BASE = 'mods/skelly.deadvox.residual';
 
 interface Slotted {
   id: string;

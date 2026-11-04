@@ -15,7 +15,7 @@ try {
   const { ActorSystem } = await server.ssrLoadModule('/src/core/actorSystem.ts');
   const { playerTuning, physicsFor } = await server.ssrLoadModule('/src/game/player.ts');
   const { makeScale } = await server.ssrLoadModule('/src/core/scale.ts');
-  const contentDirectory = resolve(projectRoot, 'src/content/base');
+  const contentDirectory = resolve(projectRoot, 'mods/skelly.deadvox.residual');
   const { registry } = buildRegistry(
     readdirSync(contentDirectory)
       .filter((file) => file.endsWith('.json'))

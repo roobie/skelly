@@ -16,7 +16,7 @@ const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json',
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
 const { Box3, Vector3 } = deadvoxRequire('three');
 const { safeParse } = deadvoxRequire('valibot');
-const base = new URL('../packages/deadvox/src/content/base/', import.meta.url).pathname;
+const base = new URL('../packages/deadvox/mods/skelly.deadvox.residual/', import.meta.url).pathname;
 const recipe = loadThingRecipe();
 const exported = recipe.map((row) => ({ id: row.id, source: row.source, voxel: row.voxel, ...row.generate() }));
 const { registry, issues } = buildRegistry(

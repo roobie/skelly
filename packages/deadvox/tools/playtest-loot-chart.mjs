@@ -10,7 +10,7 @@ import { footprint } from '../src/core/templates.ts';
 
 const projectRoot = resolve(import.meta.dirname, '..');
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
-const contentDirectory = resolve(projectRoot, 'src/content/base');
+const contentDirectory = resolve(projectRoot, 'mods/skelly.deadvox.residual');
 const sources = readdirSync(contentDirectory)
   .filter((file) => file.endsWith('.json'))
   .sort()

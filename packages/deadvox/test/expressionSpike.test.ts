@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { parse } from 'valibot';
 import { describe, expect, it } from 'vitest';
-import bodyContent from '../src/content/base/body.json' with { type: 'json' };
+import bodyContent from '../mods/skelly.deadvox.residual/body.json' with { type: 'json' };
 import { Body } from '../src/core/body.ts';
 import { needsAllowRecovery, type RecoveryState } from '../src/core/needs.ts';
 import { ContentFileSchema } from '../src/core/schema.ts';

@@ -15,7 +15,7 @@ import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { createHeadlessShamblerWorld } from './shamblerWorld.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const base = resolve(root, 'src/content/base');
+const base = resolve(root, 'mods/skelly.deadvox.residual');
 const { registry } = buildRegistry(
   readdirSync(base)
     .filter((file) => file.endsWith('.json'))

@@ -21,7 +21,7 @@ const observation = {
   name: 'pump-handling-readonly-observation',
   enforce: 'pre',
   transform(code, id) {
-    if (id.endsWith('/src/content/base/starts.json')) {
+    if (id.endsWith('/mods/skelly.deadvox.residual/starts.json')) {
       const data = JSON.parse(code);
       const { defaultForSite: _default, ...start } = data.starts.find((row) => row.site === 'testHouse');
       data.starts.push({

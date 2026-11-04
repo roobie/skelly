@@ -1,6 +1,358 @@
 {
   "files": [
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/assets/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/assets/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/benchmark-city.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/benchmark-city.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/block-materials.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/block-materials.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/blocks.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/blocks.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/body.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/body.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/camp.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/camp.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/combat-policy.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/combat-policy.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/compression.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/compression.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/controls.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/controls.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq-fixtures.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq-fixtures.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/damage-kinds.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/damage-kinds.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/enemies.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/enemies.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/figures-player.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/figures-player.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/furniture-cabins.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/furniture-cabins.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/furniture-hunting.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/furniture-hunting.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/furniture-playtest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/furniture-playtest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/furniture.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/furniture.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet-look.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet-look.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet-start.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet-start.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/graphics.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/graphics.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/inventory.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/inventory.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/item-wear.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/item-wear.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-ammunition.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-ammunition.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-attachments.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-attachments.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-explosives.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-explosives.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-food.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-food.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-gun-parts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-gun-parts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-other.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-other.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-pistol.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-pistol.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-playtest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-playtest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-revolver.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-revolver.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-slice2-content.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-slice2-content.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-tools.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-tools.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-wearables.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-wearables.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/ladders.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/ladders.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-cabins.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-cabins.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-stairs.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-stairs.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-test-house.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-test-house.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-voice-size.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-voice-size.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-water.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-water.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/locks.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/locks.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/look.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/look.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/loot.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/loot.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/map-kits.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/map-kits.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/models-attachments.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/models-attachments.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/models-firearms.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/models-firearms.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/models-gun-parts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/models-gun-parts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/models-items.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/models-items.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/models-melee.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/models-melee.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/player.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/player.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/power.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/power.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/presentation/fuel-parts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/presentation/fuel-parts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/ranged-tuning.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/ranged-tuning.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/readables.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/readables.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/recipes.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/recipes.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/rural-medical-fixtures.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/rural-medical-fixtures.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/rural-medical.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/rural-medical.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/rural-police-fixtures.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/rural-police-fixtures.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/rural-police.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/rural-police.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/rural-substation-fixtures.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/rural-substation-fixtures.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/rural-substation.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/rural-substation.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/saves.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/saves.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/scenarios.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/scenarios.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/senses.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/senses.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/site-generation.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/site-generation.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds-block.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds-block.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds-furniture.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds-furniture.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds-pump.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds-pump.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds-revolver.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds-revolver.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds-synth.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds-synth.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds-weapons.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds-weapons.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-cabins.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-cabins.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-medical.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-medical.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-playtest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-playtest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-stairs.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-stairs.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-test-house.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-test-house.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-workshop.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-workshop.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/templates.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/templates.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/tutorial.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/tutorial.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/ui.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/ui.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/vegetation.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/vegetation.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/vehicles.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/vehicles.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/weathering.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/weathering.json"
+    },
+    {
       "source": "packages/deadvox/src/config/browser-mods.jsonnet",
       "output": "packages/deadvox/src/config/browser-mods.json"
     },
@@ -23,358 +375,6 @@
     {
       "source": "packages/deadvox/src/config/vehicleFeasibility.jsonnet",
       "output": "packages/deadvox/src/config/vehicleFeasibility.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/assets/manifest.jsonnet",
-      "output": "packages/deadvox/src/content/base/assets/manifest.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/benchmark-city.jsonnet",
-      "output": "packages/deadvox/src/content/base/benchmark-city.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/block-materials.jsonnet",
-      "output": "packages/deadvox/src/content/base/block-materials.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/blocks.jsonnet",
-      "output": "packages/deadvox/src/content/base/blocks.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/body.jsonnet",
-      "output": "packages/deadvox/src/content/base/body.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/camp.jsonnet",
-      "output": "packages/deadvox/src/content/base/camp.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/combat-policy.jsonnet",
-      "output": "packages/deadvox/src/content/base/combat-policy.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/compression.jsonnet",
-      "output": "packages/deadvox/src/content/base/compression.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/controls.jsonnet",
-      "output": "packages/deadvox/src/content/base/controls.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/crisis-hq-fixtures.jsonnet",
-      "output": "packages/deadvox/src/content/base/crisis-hq-fixtures.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/crisis-hq.jsonnet",
-      "output": "packages/deadvox/src/content/base/crisis-hq.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/damage-kinds.jsonnet",
-      "output": "packages/deadvox/src/content/base/damage-kinds.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/enemies.jsonnet",
-      "output": "packages/deadvox/src/content/base/enemies.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/figures-player.jsonnet",
-      "output": "packages/deadvox/src/content/base/figures-player.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/furniture-cabins.jsonnet",
-      "output": "packages/deadvox/src/content/base/furniture-cabins.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/furniture-hunting.jsonnet",
-      "output": "packages/deadvox/src/content/base/furniture-hunting.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/furniture-playtest.jsonnet",
-      "output": "packages/deadvox/src/content/base/furniture-playtest.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/furniture.jsonnet",
-      "output": "packages/deadvox/src/content/base/furniture.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/gauntlet-look.jsonnet",
-      "output": "packages/deadvox/src/content/base/gauntlet-look.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/gauntlet-start.jsonnet",
-      "output": "packages/deadvox/src/content/base/gauntlet-start.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/gauntlet.jsonnet",
-      "output": "packages/deadvox/src/content/base/gauntlet.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/graphics.jsonnet",
-      "output": "packages/deadvox/src/content/base/graphics.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/inventory.jsonnet",
-      "output": "packages/deadvox/src/content/base/inventory.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/item-wear.jsonnet",
-      "output": "packages/deadvox/src/content/base/item-wear.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/items-ammunition.jsonnet",
-      "output": "packages/deadvox/src/content/base/items-ammunition.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/items-attachments.jsonnet",
-      "output": "packages/deadvox/src/content/base/items-attachments.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/items-explosives.jsonnet",
-      "output": "packages/deadvox/src/content/base/items-explosives.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/items-food.jsonnet",
-      "output": "packages/deadvox/src/content/base/items-food.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/items-gun-parts.jsonnet",
-      "output": "packages/deadvox/src/content/base/items-gun-parts.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/items-other.jsonnet",
-      "output": "packages/deadvox/src/content/base/items-other.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/items-pistol.jsonnet",
-      "output": "packages/deadvox/src/content/base/items-pistol.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/items-playtest.jsonnet",
-      "output": "packages/deadvox/src/content/base/items-playtest.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/items-revolver.jsonnet",
-      "output": "packages/deadvox/src/content/base/items-revolver.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/items-slice2-content.jsonnet",
-      "output": "packages/deadvox/src/content/base/items-slice2-content.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/items-tools.jsonnet",
-      "output": "packages/deadvox/src/content/base/items-tools.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/items-wearables.jsonnet",
-      "output": "packages/deadvox/src/content/base/items-wearables.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/ladders.jsonnet",
-      "output": "packages/deadvox/src/content/base/ladders.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/layouts-cabins.jsonnet",
-      "output": "packages/deadvox/src/content/base/layouts-cabins.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/layouts-stairs.jsonnet",
-      "output": "packages/deadvox/src/content/base/layouts-stairs.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/layouts-test-house.jsonnet",
-      "output": "packages/deadvox/src/content/base/layouts-test-house.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/layouts-voice-size.jsonnet",
-      "output": "packages/deadvox/src/content/base/layouts-voice-size.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/layouts-water.jsonnet",
-      "output": "packages/deadvox/src/content/base/layouts-water.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/locks.jsonnet",
-      "output": "packages/deadvox/src/content/base/locks.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/look.jsonnet",
-      "output": "packages/deadvox/src/content/base/look.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/loot.jsonnet",
-      "output": "packages/deadvox/src/content/base/loot.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/map-kits.jsonnet",
-      "output": "packages/deadvox/src/content/base/map-kits.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/models-attachments.jsonnet",
-      "output": "packages/deadvox/src/content/base/models-attachments.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/models-firearms.jsonnet",
-      "output": "packages/deadvox/src/content/base/models-firearms.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/models-gun-parts.jsonnet",
-      "output": "packages/deadvox/src/content/base/models-gun-parts.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/models-items.jsonnet",
-      "output": "packages/deadvox/src/content/base/models-items.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/models-melee.jsonnet",
-      "output": "packages/deadvox/src/content/base/models-melee.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/pack/manifest.jsonnet",
-      "output": "packages/deadvox/src/content/base/pack/manifest.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/player.jsonnet",
-      "output": "packages/deadvox/src/content/base/player.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/power.jsonnet",
-      "output": "packages/deadvox/src/content/base/power.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/presentation/fuel-parts.jsonnet",
-      "output": "packages/deadvox/src/content/base/presentation/fuel-parts.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/ranged-tuning.jsonnet",
-      "output": "packages/deadvox/src/content/base/ranged-tuning.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/readables.jsonnet",
-      "output": "packages/deadvox/src/content/base/readables.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/recipes.jsonnet",
-      "output": "packages/deadvox/src/content/base/recipes.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/rural-medical-fixtures.jsonnet",
-      "output": "packages/deadvox/src/content/base/rural-medical-fixtures.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/rural-medical.jsonnet",
-      "output": "packages/deadvox/src/content/base/rural-medical.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/rural-police-fixtures.jsonnet",
-      "output": "packages/deadvox/src/content/base/rural-police-fixtures.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/rural-police.jsonnet",
-      "output": "packages/deadvox/src/content/base/rural-police.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/rural-substation-fixtures.jsonnet",
-      "output": "packages/deadvox/src/content/base/rural-substation-fixtures.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/rural-substation.jsonnet",
-      "output": "packages/deadvox/src/content/base/rural-substation.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/saves.jsonnet",
-      "output": "packages/deadvox/src/content/base/saves.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/scenarios.jsonnet",
-      "output": "packages/deadvox/src/content/base/scenarios.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/senses.jsonnet",
-      "output": "packages/deadvox/src/content/base/senses.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/site-generation.jsonnet",
-      "output": "packages/deadvox/src/content/base/site-generation.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/sounds-block.jsonnet",
-      "output": "packages/deadvox/src/content/base/sounds-block.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/sounds-furniture.jsonnet",
-      "output": "packages/deadvox/src/content/base/sounds-furniture.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/sounds-pump.jsonnet",
-      "output": "packages/deadvox/src/content/base/sounds-pump.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/sounds-revolver.jsonnet",
-      "output": "packages/deadvox/src/content/base/sounds-revolver.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/sounds-synth.jsonnet",
-      "output": "packages/deadvox/src/content/base/sounds-synth.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/sounds-weapons.jsonnet",
-      "output": "packages/deadvox/src/content/base/sounds-weapons.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/sounds.jsonnet",
-      "output": "packages/deadvox/src/content/base/sounds.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/starts.jsonnet",
-      "output": "packages/deadvox/src/content/base/starts.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/templates-cabins.jsonnet",
-      "output": "packages/deadvox/src/content/base/templates-cabins.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/templates-medical.jsonnet",
-      "output": "packages/deadvox/src/content/base/templates-medical.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/templates-playtest.jsonnet",
-      "output": "packages/deadvox/src/content/base/templates-playtest.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/templates-stairs.jsonnet",
-      "output": "packages/deadvox/src/content/base/templates-stairs.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/templates-test-house.jsonnet",
-      "output": "packages/deadvox/src/content/base/templates-test-house.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/templates-workshop.jsonnet",
-      "output": "packages/deadvox/src/content/base/templates-workshop.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/templates.jsonnet",
-      "output": "packages/deadvox/src/content/base/templates.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/tutorial.jsonnet",
-      "output": "packages/deadvox/src/content/base/tutorial.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/ui.jsonnet",
-      "output": "packages/deadvox/src/content/base/ui.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/vegetation.jsonnet",
-      "output": "packages/deadvox/src/content/base/vegetation.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/vehicles.jsonnet",
-      "output": "packages/deadvox/src/content/base/vehicles.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/weathering.jsonnet",
-      "output": "packages/deadvox/src/content/base/weathering.json"
     },
     {
       "source": "packages/deadvox/test/fixtures/content/reachability-unfound.jsonnet",

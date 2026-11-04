@@ -37,11 +37,11 @@ import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';
 import { sweepGroup } from './sweeps.ts';
 
-const base = readdirSync('src/content/base')
+const base = readdirSync('mods/skelly.deadvox.residual')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts') && file !== 'starts.json')
   .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown }));
-const layout = (JSON.parse(readFileSync('src/content/base/layouts.json', 'utf8')) as { layouts: SiteLayoutDef[] })
+  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown }));
+const layout = (JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts.json', 'utf8')) as { layouts: SiteLayoutDef[] })
   .layouts[0]!;
 const load = (data: unknown) => buildRegistry([...base, { source: 'layout-test.json', data: { layouts: [data] } }]);
 const { registry, issues } = load(layout);
@@ -365,7 +365,7 @@ const siteWorld = (site: AuthoredSite, columns: [number, number][], seed: number
 
 describe('authored layout acceptance', () => {
   it('keeps the fixed camp amalgam clear of authored vehicle routes', () => {
-    const playtest = JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as {
+    const playtest = JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts-playtest.json', 'utf8')) as {
       layouts: SiteLayoutDef[];
     };
     const camp = playtest.layouts[0]!;
@@ -900,7 +900,7 @@ it('keeps trees out of an authored building covered by woodland', () => {
 
 it('grounds the exported ridge lots, track and slope trees with order-independent overlapping profiles', () => {
   const ridge = (
-    JSON.parse(readFileSync('src/content/base/hunting-cabins.json', 'utf8')) as { layouts: SiteLayoutDef[] }
+    JSON.parse(readFileSync('mods/skelly.deadvox.residual/hunting-cabins.json', 'utf8')) as { layouts: SiteLayoutDef[] }
   ).layouts[0]!;
   for (const building of ridge.buildings) {
     expect(building.position[1]).toBe(

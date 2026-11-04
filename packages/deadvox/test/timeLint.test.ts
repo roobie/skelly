@@ -61,7 +61,7 @@ describe('time lint boundary and naming rules', () => {
   });
 
   it('recognizes authored inventory handling durations and rejects missing clocks', () => {
-    const source = readFileSync('src/content/base/inventory.json', 'utf8');
+    const source = readFileSync('mods/skelly.deadvox.residual/inventory.json', 'utf8');
     const data = JSON.parse(source) as { inventory: { handling: Record<string, number> }[] };
     const { handling } = data.inventory[0]!;
     expect(Object.keys(handling).length).toBeGreaterThan(0);

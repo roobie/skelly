@@ -20,7 +20,7 @@ const fixtureBody = new Body(BODY_TUNING_FIXTURE);
 const SPAWN_NEEDS: Needs = fixtureBody.spawnNeeds;
 const STAMINA = fixtureBody.staminaRules;
 const base = (file: string): ContentSource => {
-  const source = `src/content/base/${file}`;
+  const source = `mods/skelly.deadvox.residual/${file}`;
   const data = JSON.parse(readFileSync(source, 'utf8'));
   if (file === 'items-other.json') {
     data.items = data.items.filter(

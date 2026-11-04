@@ -147,9 +147,9 @@ another balance decision: force follows blunt, fragments follow pierce, and bloc
 acid follows pierce except where cloth's acid vulnerability calls for its own response.
 These values do not change play until an attack selects the added pair. Explicit
 neutral actor maps preserve the existing absence-of-resistance behavior, while the
-acid actor keeps its authored immunity. See `src/content/base/body.jsonnet`, `responses`,
-`src/content/base/block-materials.jsonnet`, `materials`, and
-`src/content/base/enemies.jsonnet`, `neutralDamageResistance`. Missing tuning is not
+acid actor keeps its authored immunity. See `mods/skelly.deadvox.residual/body.jsonnet`, `responses`,
+`mods/skelly.deadvox.residual/block-materials.jsonnet`, `materials`, and
+`mods/skelly.deadvox.residual/enemies.jsonnet`, `neutralDamageResistance`. Missing tuning is not
 permission to invent resistance or injury responses.
 
 **Sounds.** A sound follows the entry selecting it: shared body/block sounds belong

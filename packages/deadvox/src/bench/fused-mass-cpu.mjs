@@ -44,7 +44,7 @@ const { ActorSystem } = await import('../core/actorSystem.ts');
 if (args.length > 0 && !substituted) {
   throw new Error('The baseline shape was not loaded');
 }
-const base = resolve(dirname(fileURLToPath(import.meta.url)), '../content/base');
+const base = resolve(dirname(fileURLToPath(import.meta.url)), '../../mods/skelly.deadvox.residual');
 const { registry } = buildRegistry(
   readdirSync(base)
     .filter((file) => file.endsWith('.json'))

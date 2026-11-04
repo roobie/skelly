@@ -1,11 +1,11 @@
-local layout = (import '../../content/base/layouts-test-house.jsonnet').layouts[0];
+local layout = (import '../../../mods/skelly.deadvox.residual/layouts-test-house.jsonnet').layouts[0];
 {
   id: 'test-house-debug',
   version: '1',
   tier: 'scenario',
   product: false,
-  dependencies: ['base'],
-  overrides: [{ pack: 'base', entry: 'layouts:' + layout.id }],
+  dependencies: ['skelly.deadvox.residual'],
+  overrides: [{ pack: 'skelly.deadvox.residual', entry: 'layouts:' + layout.id }],
   templates: [import 'test-house-range.libsonnet'],
   layouts: [layout + {
     showroom: layout.showroom + {

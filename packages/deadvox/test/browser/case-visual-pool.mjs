@@ -19,7 +19,7 @@ import { CaseEffects, FLYING_CASE_CAP } from '/src/render/caseEffects.ts';
 import { PileMeshes } from '/src/render/piles.ts';
 import { ModelLibrary } from '/src/render/models.ts';
 import { SPENT_CASE_SCATTER_CAP } from '/src/core/scatterPile.ts';
-const raw = import.meta.glob('./src/content/base/*.json', { eager: true, import: 'default' });
+const raw = import.meta.glob('./mods/skelly.deadvox.residual/*.json', { eager: true, import: 'default' });
 const { registry, issues } = buildRegistry(Object.entries(raw).map(([source, data]) => ({ source, data })));
 if (issues.length) throw new Error(JSON.stringify(issues));
 const caseItem = [...registry.items.values()].find((item) => {

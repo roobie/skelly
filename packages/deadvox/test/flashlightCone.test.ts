@@ -267,7 +267,7 @@ describe('flashlight cone', () => {
   });
 
   it('no base beam ships with spill enabled', () => {
-    const base = 'src/content/base';
+    const base = 'mods/skelly.deadvox.residual';
     const beams = readdirSync(base)
       .filter((file) => file.endsWith('.json'))
       .flatMap((file) => {

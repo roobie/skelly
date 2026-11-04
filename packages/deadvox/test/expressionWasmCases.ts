@@ -1,6 +1,6 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: sequential calls are required to expose retained-state defects
 import { parse } from 'valibot';
-import bodyContent from '../src/content/base/body.json' with { type: 'json' };
+import bodyContent from '../mods/skelly.deadvox.residual/body.json' with { type: 'json' };
 import { Body } from '../src/core/body.ts';
 import { needsAllowRecovery } from '../src/core/needs.ts';
 import { ContentFileSchema } from '../src/core/schema.ts';

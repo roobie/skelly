@@ -3,7 +3,7 @@ import { BoxGeometry, Mesh, MeshStandardMaterial } from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const base = new URL('../src/content/base/', import.meta.url);
+const base = new URL('../mods/skelly.deadvox.residual/', import.meta.url);
 globalThis.FileReader = class {
   readAsArrayBuffer(blob) {
     blob.arrayBuffer().then((result) => {

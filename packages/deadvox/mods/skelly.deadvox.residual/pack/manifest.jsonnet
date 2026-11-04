@@ -44,7 +44,7 @@ local guns = [
 local things = import '../things/index.json';
 local assets = import '../assets/manifest.json';
 {
-  id: 'base',
+  id: 'skelly.deadvox.residual',
   version: '1',
   tier: 'product',
   product: true,

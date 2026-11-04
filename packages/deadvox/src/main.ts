@@ -6,7 +6,7 @@ import { applyBenchWeathering } from './bench/post.ts';
 import { showReport } from './bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
-import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
+import assetManifest from '../mods/skelly.deadvox.residual/assets/manifest.json' with { type: 'json' };
 import { validateManifest } from './core/assets.ts';
 import { getBuildRevision } from './core/buildInfo.ts';
 import { claimed } from './core/capabilities.ts';

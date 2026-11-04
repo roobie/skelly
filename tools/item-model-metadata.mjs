@@ -3,7 +3,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { formatJson } from './jsonnet/compile.mjs';
 
-const base = new URL('../packages/deadvox/src/content/base/', import.meta.url);
+const base = new URL('../packages/deadvox/mods/skelly.deadvox.residual/', import.meta.url);
 const metadata = {};
 for (const file of readdirSync(new URL('assets/models/', base)).sort()) {
   if (!file.endsWith('.glb')) {

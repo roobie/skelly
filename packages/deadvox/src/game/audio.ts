@@ -56,7 +56,7 @@ const readVolumes = (defaults: Readonly<AudioVolumes>): AudioVolumes => {
 
 const PACK_FILES: Readonly<Record<string, string>> = Object.fromEntries(
   Object.entries(
-    import.meta.glob<string>('../content/base/assets/audio/**/*.ogg', {
+    import.meta.glob<string>('../../mods/skelly.deadvox.residual/assets/audio/**/*.ogg', {
       eager: true,
       query: '?url',
       import: 'default',

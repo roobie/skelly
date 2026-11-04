@@ -21,7 +21,7 @@ export const loadFigureModels = async (
   const ids = [...new Set([figure.body.model, ...FIGURE_LIMBS.map((limb) => figure.limbs[limb].model), ...worn])];
   const parsed = await Promise.all(
     ids.map((id) => {
-      const bytes = readFileSync(new URL(`../src/content/base/${registry.models.get(id)!.file}`, import.meta.url));
+      const bytes = readFileSync(new URL(`../mods/skelly.deadvox.residual/${registry.models.get(id)!.file}`, import.meta.url));
       return loader.parseAsync(Uint8Array.from(bytes).buffer, '').then(indexModelMaterials);
     }),
   );

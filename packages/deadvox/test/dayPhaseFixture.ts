@@ -1,5 +1,5 @@
 import { parse } from 'valibot';
-import coreDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
+import coreDayCycle from '../mods/skelly.deadvox.residual/dayCycle.json' with { type: 'json' };
 import { type ClockSettings, parseTimeOfDay, SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { type DayCycle, type DayPhase, dayPhaseAt } from '../src/core/dayPhase.ts';
 import { type DayCycleDef, DayCycleSchema } from '../src/core/schema.ts';

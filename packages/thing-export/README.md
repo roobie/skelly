@@ -33,7 +33,7 @@ second list of models when content adds an export; see `src/files.ts`, `writeRec
 A caller asks for the index only where a consumer reads it, so no unread generated file is
 tracked; see `tools/refresh-deadvox.mjs`, `jobs`.
 Consumer-authored projections can still select gameplay-specific physical boundaries; see
-`packages/deadvox/src/content/base/models-items.jsonnet`, `authored`.
+`packages/deadvox/mods/skelly.deadvox.residual/models-items.jsonnet`, `authored`.
 
 ## Voxelized export
 

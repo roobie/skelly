@@ -5,13 +5,13 @@ it('refuses startup rather than inventing a run when rejected content removes th
   // Mocks rather than a second Vite server (#557): that server re-transformed the content graph Vitest has
   // already transformed for other files, and its client dependency optimizer re-bundled the app whenever the
   // checkout's shared cache was stale, enough CPU to cross the default timeout on a loaded host.
-  for (const file of readdirSync(new URL('../src/content/base/', import.meta.url))) {
+  for (const file of readdirSync(new URL('../mods/skelly.deadvox.residual/', import.meta.url))) {
     // Keep the content needed by config and the binding registry while isolating layout rejection.
     if (
       file.endsWith('.json') &&
       !['dayCycle.json', 'controls.json', 'graphics.json', 'weathering.json'].includes(file)
     ) {
-      vi.doMock(`../src/content/base/${file}`, () => ({ default: file === 'layouts.json' ? { layouts: {} } : {} }));
+      vi.doMock(`../mods/skelly.deadvox.residual/${file}`, () => ({ default: file === 'layouts.json' ? { layouts: {} } : {} }));
     }
   }
   const { buildBundledContent } = await import('../src/game/bundledContent.ts');

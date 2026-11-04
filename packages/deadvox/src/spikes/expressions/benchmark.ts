@@ -1,6 +1,6 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: sequential samples measure the binding boundary, not concurrent rule throughput
 import rules from '../../../test/fixtures/mods/expression-spike.json' with { type: 'json' };
-import bodyContent from '../../content/base/body.json' with { type: 'json' };
+import bodyContent from '../../../mods/skelly.deadvox.residual/body.json' with { type: 'json' };
 import { cel } from './cel.ts';
 import {
   type Candidate,

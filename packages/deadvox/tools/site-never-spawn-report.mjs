@@ -8,7 +8,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { checkStartReachability } from '../src/core/reachability.ts';
 
 const projectRoot = resolve(import.meta.dirname, '..');
-const contentDirectory = resolve(projectRoot, 'src/content/base');
+const contentDirectory = resolve(projectRoot, 'mods/skelly.deadvox.residual');
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
 
 const registryFromBaseContent = () => {

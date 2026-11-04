@@ -30,7 +30,7 @@ import { baseRegistry } from './baseRegistry.ts';
 import type { MoveIntent } from './playerFixture.ts';
 
 const registry = baseRegistry();
-const MODEL_ROOT = 'src/content/base';
+const MODEL_ROOT = 'mods/skelly.deadvox.residual';
 const BLOCK = 0.5;
 const GRENADE = 'frag_grenade';
 const FUSE = registry.items.get(GRENADE)!.explosive!.fuseSimSeconds;

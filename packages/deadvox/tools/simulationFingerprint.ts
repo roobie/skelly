@@ -196,8 +196,8 @@ const MODULE_QUERY_PATTERN = /[?#].*$/;
 const GLOB_REFERENCE = /\bimport\.meta\.glob\b/g;
 const GLOB_CALL = /\bimport\.meta\.glob(?:<[^>]*>)?\s*\(\s*(['"])(.*?)\1/g;
 const CONTENT_GLOB_PATTERNS = new Set([
-  '../content/base/*.json',
-  '../content/base/assets/audio/**/*.ogg',
+  '../../mods/skelly.deadvox.residual/*.json',
+  '../../mods/skelly.deadvox.residual/assets/audio/**/*.ogg',
   '../config/bundled/*.json',
 ]);
 const REQUIRE_CALL = /\brequire\s*\(/;
@@ -283,6 +283,7 @@ function sourcePath(id: string): string | undefined {
 function sourceRelativePath(projectRoot: string, sourceRoot: string, file: string): string | undefined {
   const roots = [
     { root: sourceRoot, prefix: 'src/' },
+    { root: resolve(projectRoot, 'mods/skelly.deadvox.residual'), prefix: 'mods/skelly.deadvox.residual/' },
     { root: resolve(projectRoot, '../mobgen/src'), prefix: 'mobgen/' },
     { root: resolve(projectRoot, '../thing-core/src'), prefix: 'thing-core/' },
     { root: resolve(projectRoot, '../../node_modules'), prefix: 'node_modules/' },
@@ -363,7 +364,7 @@ async function resolveTrackableModule(
   if (recordExcludedImport(relativePath, importer, context.excludedImportContext)) {
     return;
   }
-  if (relativePath.startsWith('src/content/base/')) {
+  if (relativePath.startsWith('mods/skelly.deadvox.residual/')) {
     return;
   }
   const extension = extname(relativePath).toLowerCase();

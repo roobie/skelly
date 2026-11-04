@@ -1,6 +1,6 @@
 import { Scene } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
+import graphicsFile from '../mods/skelly.deadvox.residual/graphics.json' with { type: 'json' };
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { Chunk } from '../src/core/chunk.ts';
 import { CHUNK } from '../src/core/coords.ts';

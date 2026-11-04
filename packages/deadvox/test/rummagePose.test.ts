@@ -28,7 +28,7 @@ import { chargedRifle } from './rifleFixture.ts';
 
 afterEach(() => vi.unstubAllGlobals());
 
-const base = 'src/content/base';
+const base = 'mods/skelly.deadvox.residual';
 const { registry, issues } = buildRegistry([
   ...readdirSync(base)
     .filter((file) => file.endsWith('.json'))

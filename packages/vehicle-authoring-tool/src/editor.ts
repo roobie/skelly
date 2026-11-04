@@ -121,7 +121,7 @@ export const renameFitting = (blueprint: VehicleBlueprintInput, id: string, to: 
 };
 
 /**
- * Replaces one unmirrored fitting with `<base>_near` and `<base>_far`, as `packages/deadvox/src/content/base/vehicles.jsonnet`, `pair` does.
+ * Replaces one unmirrored fitting with `<base>_near` and `<base>_far`, as `packages/deadvox/mods/skelly.deadvox.residual/vehicles.jsonnet`, `pair` does.
  * Every choice is the author's: nothing is inferred from names, and a missing choice refuses the operation.
  */
 export const createMirroredPair = (

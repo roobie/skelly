@@ -83,7 +83,7 @@ const vite = await createServer({
       name: 'stairs-test-observation',
       enforce: 'pre',
       transform(code, id) {
-        if (mode === 'camo' && id.endsWith('/src/content/base/templates-stairs.json')) {
+        if (mode === 'camo' && id.endsWith('/mods/skelly.deadvox.residual/templates-stairs.json')) {
           const content = JSON.parse(code);
           const floor = new Array(8).fill('########');
           const walls = ['########', ...new Array(6).fill('c......#'), '########'];
@@ -96,7 +96,7 @@ const vite = await createServer({
           });
           return JSON.stringify(content);
         }
-        if (mode === 'camo' && id.endsWith('/src/content/base/blocks.json')) {
+        if (mode === 'camo' && id.endsWith('/mods/skelly.deadvox.residual/blocks.json')) {
           const content = JSON.parse(code);
           const camo = content.blocks.find(({ pattern }) => pattern === 'camo');
           assert.ok(camo);

@@ -1,5 +1,5 @@
 import { html, render } from 'lit-html';
-import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
+import assetManifest from '../mods/skelly.deadvox.residual/assets/manifest.json' with { type: 'json' };
 import type { Manifest } from './core/assets.ts';
 import { claimed } from './core/capabilities.ts';
 import type { SoundId } from './core/soundEvents.ts';

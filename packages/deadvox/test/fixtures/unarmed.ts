@@ -4,7 +4,7 @@ import type { MeleeClassDef } from '../../src/core/content.ts';
 import { unarmedMeleeWeapon } from '../../src/game/melee.ts';
 
 const baseMeleeClasses = (): ReadonlyMap<string, MeleeClassDef> => {
-  const { meleeClasses } = JSON.parse(readFileSync('src/content/base/items-tools.json', 'utf8')) as {
+  const { meleeClasses } = JSON.parse(readFileSync('mods/skelly.deadvox.residual/items-tools.json', 'utf8')) as {
     meleeClasses: MeleeClassDef[];
   };
   return new Map(meleeClasses.map((meleeClass) => [meleeClass.id, meleeClass]));

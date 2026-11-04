@@ -157,8 +157,8 @@ const setup = (solidAt: SolidAt = () => false, registryOverride?: Registry) => {
     ? { registry: registryOverride, issues: [] }
     : buildRegistry([
         {
-          source: '../content/base/sounds.json',
-          data: JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown,
+          source: '../../mods/skelly.deadvox.residual/sounds.json',
+          data: JSON.parse(readFileSync('mods/skelly.deadvox.residual/sounds.json', 'utf8')) as unknown,
         },
       ]);
   const { issues } = soundRegistry;
@@ -216,7 +216,7 @@ describe('game audio playback', () => {
       noise: { enabled: false, radiusMetres: 1 },
     };
     const { registry, issues } = buildRegistry([
-      { source: '../content/base/fixture.json', data: { sounds: [profile] } },
+      { source: '../../mods/skelly.deadvox.residual/fixture.json', data: { sounds: [profile] } },
     ]);
     expect(issues).toEqual([]);
     const { play, context } = setup(() => false, registry);
@@ -251,7 +251,7 @@ describe('game audio playback', () => {
     const ringMod = { frequencyHz: 55, depth: 0.5 };
     const { registry, issues } = buildRegistry([
       {
-        source: '../content/base/fixture.json',
+        source: '../../mods/skelly.deadvox.residual/fixture.json',
         data: { sounds: [voice('fixture_scrambled', { ringMod }), voice('fixture_plain', {})] },
       },
     ]);

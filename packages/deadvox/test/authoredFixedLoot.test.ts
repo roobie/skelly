@@ -37,12 +37,12 @@ import { GLASS, keyVoxel } from '../src/vehicles/voxels.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
 
-const sources = readdirSync('src/content/base')
+const sources = readdirSync('mods/skelly.deadvox.residual')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts') && file !== 'starts.json')
   .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown }));
+  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown }));
 const layout = (
-  JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as { layouts: SiteLayoutDef[] }
+  JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts-playtest.json', 'utf8')) as { layouts: SiteLayoutDef[] }
 ).layouts[0]!;
 const result = buildRegistry([...sources, { source: 'playtest-layout-test.json', data: { layouts: [layout] } }]);
 const scale = makeScale(0.5);

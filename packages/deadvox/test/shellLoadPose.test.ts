@@ -18,7 +18,7 @@ const registry = baseRegistry();
 it('the firing hand follows the exported bolt knob rather than moving the support hand', async () => {
   const rifle = [...registry.items.values()].find((item) => item.firearm?.bolt)!;
   const model = registry.models.get(rifle.model!)!;
-  const bytes = readFileSync(`src/content/base/${model.file}`);
+  const bytes = readFileSync(`mods/skelly.deadvox.residual/${model.file}`);
   const gltf = await new GLTFLoader()
     .parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '')
     .then(indexModelMaterials);

@@ -13,7 +13,7 @@ import { browserStageUrl } from './stage-mode.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const magazineModel = JSON.parse(
-  readFileSync(resolve(root, 'src/content/base/gungen/magazine_stanag_30.model.json'), 'utf8'),
+  readFileSync(resolve(root, 'mods/skelly.deadvox.residual/gungen/magazine_stanag_30.model.json'), 'utf8'),
 );
 const anchors = new Map([
   ['src/game/play.ts', '  const onForwardPress = (e: MouseEvent) => {'],
@@ -43,7 +43,7 @@ const vite = await createServer({
       name: 'full-auto-observation',
       enforce: 'pre',
       transform(code, id) {
-        if (id.endsWith('/src/content/base/starts.json')) {
+        if (id.endsWith('/mods/skelly.deadvox.residual/starts.json')) {
           const data = JSON.parse(code);
           const { defaultForSite: _default, ...start } = data.starts.find((row) => row.site === 'testHouse');
           data.starts.push({

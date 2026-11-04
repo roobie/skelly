@@ -349,7 +349,7 @@ try {
   const uiTokens = await evaluate(`(async () => {
     const { buildRegistry } = await import('/src/core/content.ts');
     const { applyUiTokens } = await import('/src/ui/uiTokens.ts');
-    const { default: baseUi } = await import('/src/content/base/ui.json');
+    const { default: baseUi } = await import('/mods/skelly.deadvox.residual/ui.json');
     const frame = document.createElement('iframe');
     frame.style.cssText = 'position: fixed; left: 0; top: 0; width: 640px; height: 360px; visibility: hidden';
     frame.srcdoc = '<!doctype html><link rel="stylesheet" href="/src/ui/style.css"><button class="inv-option">Probe</button>';
@@ -658,7 +658,7 @@ try {
     'locked menu click changes the graphics preference',
   );
   const restoredGraphics = await evaluate(`Promise.all([
-    import('/src/game/graphicsSettings.ts'), import('/src/content/base/graphics.json')
+    import('/src/game/graphicsSettings.ts'), import('/mods/skelly.deadvox.residual/graphics.json')
   ]).then(([{ readGraphicsSettings }, { default: content }]) => readGraphicsSettings(content.graphics[0]))`);
   assert.equal(restoredGraphics.fastCamo, !initialCamo, 'fresh graphics settings read the persisted machine choice');
   await clickAt('[data-graphics-key="fastCamo"] button');

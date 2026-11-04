@@ -18,7 +18,7 @@ const check = (...sources: unknown[]) => validateManifest('manifest.json', { sou
 
 describe('asset manifest', () => {
   it('the base manifest has no issues', () => {
-    const data = JSON.parse(readFileSync('src/content/base/assets/manifest.json', 'utf8')) as unknown;
+    const data = JSON.parse(readFileSync('mods/skelly.deadvox.residual/assets/manifest.json', 'utf8')) as unknown;
     expect(validateManifest('base', data).issues).toEqual([]);
   });
 

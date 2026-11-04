@@ -1,4 +1,4 @@
-import playerContent from '../src/content/base/player.json' with { type: 'json' };
+import playerContent from '../mods/skelly.deadvox.residual/player.json' with { type: 'json' };
 import type { PlayerDef } from '../src/core/schema.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
 import {

@@ -1,5 +1,5 @@
 {
-  "dependencies": ["base"],
+  "dependencies": ["skelly.deadvox.residual"],
   "id": "test-house-debug",
   "layouts": [
     {
@@ -1191,7 +1191,7 @@
   "overrides": [
     {
       "entry": "layouts:testHouse",
-      "pack": "base"
+      "pack": "skelly.deadvox.residual"
     }
   ],
   "product": false,

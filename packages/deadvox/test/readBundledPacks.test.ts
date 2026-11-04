@@ -7,7 +7,7 @@ import { bundledPackDefines, readBundledPacks } from '../tools/readBundledPacks.
 
 it('injects exporter JSON digests without model payloads while preserving runtime pack identity', async () => {
   const root = mkdtempSync(join(tmpdir(), 'pack-digests-'));
-  const directory = join(root, 'src/content/base');
+  const directory = join(root, 'mods/skelly.deadvox.residual');
   try {
     mkdirSync(join(directory, 'pack'), { recursive: true });
     writeFileSync(

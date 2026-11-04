@@ -6,6 +6,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'packages/deadvox/mods/**'
       - 'packages/gun-authoring-tool/**'
       - 'packages/thing-core/**'
       - 'packages/thing-export/**'
@@ -20,6 +21,7 @@ on:
       - '.github/workflows/gungen.yml'
   pull_request:
     paths:
+      - 'packages/deadvox/mods/**'
       - 'packages/gun-authoring-tool/**'
       - 'packages/thing-core/**'
       - 'packages/thing-export/**'

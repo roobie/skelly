@@ -217,8 +217,8 @@ body.unconscious::after {
   margin: 0;
   background: #fff;
   mix-blend-mode: difference;
-  -webkit-mask: url("../content/base/assets/cursors/cursor.png") no-repeat 0 0 / 32px 56px;
-  mask: url("../content/base/assets/cursors/cursor.png") no-repeat 0 0 / 32px 56px;
+  -webkit-mask: url("../../mods/skelly.deadvox.residual/assets/cursors/cursor.png") no-repeat 0 0 / 32px 56px;
+  mask: url("../../mods/skelly.deadvox.residual/assets/cursors/cursor.png") no-repeat 0 0 / 32px 56px;
 }
 #game-cursor.hand {
   margin-left: -4px;

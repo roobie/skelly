@@ -1,13 +1,13 @@
-import body from '../../src/content/base/body.json' with { type: 'json' };
-import graphics from '../../src/content/base/graphics.json' with { type: 'json' };
-import melee from '../../src/content/base/items-tools.json' with { type: 'json' };
-import look from '../../src/content/base/look.json' with { type: 'json' };
-import power from '../../src/content/base/power.json' with { type: 'json' };
-import recipes from '../../src/content/base/recipes.json' with { type: 'json' };
-import saves from '../../src/content/base/saves.json' with { type: 'json' };
-import sites from '../../src/content/base/site-generation.json' with { type: 'json' };
-import ui from '../../src/content/base/ui.json' with { type: 'json' };
-import weathering from '../../src/content/base/weathering.json' with { type: 'json' };
+import body from '../../mods/skelly.deadvox.residual/body.json' with { type: 'json' };
+import graphics from '../../mods/skelly.deadvox.residual/graphics.json' with { type: 'json' };
+import melee from '../../mods/skelly.deadvox.residual/items-tools.json' with { type: 'json' };
+import look from '../../mods/skelly.deadvox.residual/look.json' with { type: 'json' };
+import power from '../../mods/skelly.deadvox.residual/power.json' with { type: 'json' };
+import recipes from '../../mods/skelly.deadvox.residual/recipes.json' with { type: 'json' };
+import saves from '../../mods/skelly.deadvox.residual/saves.json' with { type: 'json' };
+import sites from '../../mods/skelly.deadvox.residual/site-generation.json' with { type: 'json' };
+import ui from '../../mods/skelly.deadvox.residual/ui.json' with { type: 'json' };
+import weathering from '../../mods/skelly.deadvox.residual/weathering.json' with { type: 'json' };
 import { claimedId } from '../../src/core/capabilities.ts';
 
 const id = (rows: { id: string; capability?: string }[], capability: string): string =>

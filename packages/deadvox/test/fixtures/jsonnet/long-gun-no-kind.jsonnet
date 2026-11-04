@@ -1,5 +1,5 @@
 // A long gun export with neither a grip part nor a stock part: no firing hold fits it, so compiling must fail.
-local longGunHands = import 'packages/deadvox/src/content/base/long-gun-hands.libsonnet';
+local longGunHands = import 'packages/deadvox/mods/skelly.deadvox.residual/long-gun-hands.libsonnet';
 
 longGunHands(
   {

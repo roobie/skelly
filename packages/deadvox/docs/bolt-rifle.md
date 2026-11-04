@@ -21,6 +21,6 @@ The civilian cartridge is separate from military ammunition, and fitting the sco
 
 Debug rack stock requires the explicitly selected scenario mod. Accept a hand edit for each new rifle or ammunition type, and silent absence until listed, to keep evaluation supplies in content rather than runtime synthesis. See `src/config/bundled/test-house-rack.libsonnet` and `DESIGN.md`, "Debug scenes".
 
-Content owns handling and combat estimates so a mod can tune a rifle without changing mechanisms. The pump's insertion time uses the same content boundary rather than a shell-specific code constant. See `src/content/base/models-firearms.libsonnet`, `items`, and `src/core/schema/items.ts`, `FirearmSchema`.
+Content owns handling and combat estimates so a mod can tune a rifle without changing mechanisms. The pump's insertion time uses the same content boundary rather than a shell-specific code constant. See `mods/skelly.deadvox.residual/models-firearms.libsonnet`, `items`, and `src/core/schema/items.ts`, `FirearmSchema`.
 
 The exported pivot, turn and stroke own the motion. Unlock must precede extraction, and the firing hand follows the knob instead of borrowing the pump's support-hand rack. The loading round approaches the top mouth rather than the pump's underside. Rendering samples the existing job clock and never moves ammunition. See `src/render/firearmModel.ts`, `poseActionParts`, `src/render/actorAnimator.ts`, `poseBoltHand`, and `src/render/shellLoadPose.ts`, `shellLoadPose`. The export rationale is in `packages/gun-authoring-tool/docs/bolt-action-export.md`.

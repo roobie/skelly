@@ -9,12 +9,12 @@ import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, FIXTURE_MATERIAL } from './economyFixtures.ts';
 import { capture, createRuntime, encodeFixture, formatVersion, type Runtime } from './snapshotTestSupport.ts';
 
-const base = readdirSync('src/content/base')
+const base = readdirSync('mods/skelly.deadvox.residual')
   .filter((file) => file.endsWith('.json'))
   .sort()
   .map((file) => ({
     source: file,
-    data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
+    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown,
   }));
 const methodId = 'fixture_method';
 const qualityId = 'fixture_quality';

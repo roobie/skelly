@@ -1,7 +1,7 @@
 import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import baseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
-import baseWeathering from '../src/content/base/weathering.json' with { type: 'json' };
+import baseDayCycle from '../mods/skelly.deadvox.residual/dayCycle.json' with { type: 'json' };
+import baseWeathering from '../mods/skelly.deadvox.residual/weathering.json' with { type: 'json' };
 import { buildRegistry } from '../src/core/content.ts';
 import { resolveGraphics } from '../src/core/graphics.ts';
 import { configFromUrl } from '../src/game/config.ts';

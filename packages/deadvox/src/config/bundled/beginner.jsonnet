@@ -1,4 +1,4 @@
-local actors = (import '../../content/base/enemies.jsonnet').actors;
+local actors = (import '../../../mods/skelly.deadvox.residual/enemies.jsonnet').actors;
 local factors = { damage: 0.5, speed: 0.5, detection: 0.5, health: 0.5 };
 
 {
@@ -6,8 +6,8 @@ local factors = { damage: 0.5, speed: 0.5, detection: 0.5, health: 0.5 };
   version: '1',
   tier: 'product',
   product: false,
-  dependencies: ['base'],
-  overrides: [{ pack: 'base', entry: 'actors:' + zombie.id } for zombie in actors],
+  dependencies: ['skelly.deadvox.residual'],
+  overrides: [{ pack: 'skelly.deadvox.residual', entry: 'actors:' + zombie.id } for zombie in actors],
   actors: [
     zombie + {
       attack+: {

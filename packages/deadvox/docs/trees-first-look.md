@@ -6,7 +6,7 @@ read_if:
 
 # Forest behavior and workload
 
-Forest geometry, density and view distance are gameplay constraints, not performance knobs; do not reduce them to improve performance. Concealing foliage uses passable opaque blocks: movement, attacks and hearing follow solidity; sight and aim follow opacity. Leaf litter remains walkable. Furniture and doors keep their existing entity semantics. See `src/core/collision.ts`, `worldSolid` and `worldOpaque`, and `src/content/base/blocks.json`.
+Forest geometry, density and view distance are gameplay constraints, not performance knobs; do not reduce them to improve performance. Concealing foliage uses passable opaque blocks: movement, attacks and hearing follow solidity; sight and aim follow opacity. Leaf litter remains walkable. Furniture and doors keep their existing entity semantics. See `src/core/collision.ts`, `worldSolid` and `worldOpaque`, and `mods/skelly.deadvox.residual/blocks.json`.
 
 Brushing a body-overlap cell whose block admits rustling may emit a positioned rustle through the ordinary sound/hearing path. It is not emitted every frame, stillness produces none, and small contact correction is not meaningful movement. The bundled leaf-rustle asset is a placeholder, not a field recording. See `src/core/vegetation.ts` and `src/game/session.ts`, `SessionAudio`.
 

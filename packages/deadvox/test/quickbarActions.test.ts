@@ -14,7 +14,7 @@ import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { Simulation } from './simulationFixture.ts';
 
-const BASE = 'src/content/base';
+const BASE = 'mods/skelly.deadvox.residual';
 const { registry } = buildRegistry([
   ...readdirSync(BASE)
     .filter((file) => file.endsWith('.json'))

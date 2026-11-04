@@ -12,12 +12,12 @@ import { placedPieces } from '../src/core/templates.ts';
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
-const base = readdirSync('src/content/base')
+const base = readdirSync('mods/skelly.deadvox.residual')
   .filter((f) => f.endsWith('.json'))
   .sort()
   .map((f) => ({
     source: f,
-    data: JSON.parse(readFileSync(join('src/content/base', f), 'utf8')) as unknown,
+    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', f), 'utf8')) as unknown,
   }));
 const furniture = {
   id: 'lock_test_door',

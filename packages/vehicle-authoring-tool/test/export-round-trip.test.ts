@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import inventory from '../../deadvox/src/content/base/inventory.json' with { type: 'json' };
-import battery from '../../deadvox/src/content/base/things/car_battery.model.json' with { type: 'json' };
+import inventory from '../../deadvox/mods/skelly.deadvox.residual/inventory.json' with { type: 'json' };
+import battery from '../../deadvox/mods/skelly.deadvox.residual/things/car_battery.model.json' with { type: 'json' };
 import { buildRegistry, type ContentSource } from '../../deadvox/src/core/content.ts';
 import { loadVehicleBlueprint, vehicleContentIssues } from '../../deadvox/src/core/vehicleBlueprint.ts';
 import { exportVehicleBlueprint, type VehicleBlueprintInput } from '../src/export.ts';

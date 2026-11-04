@@ -120,7 +120,7 @@ it('warm-up stand-ins share a program with every material the pack models draw, 
     (parser as unknown as { textureLoader: Loader }).textureLoader = imageLoader as unknown as Loader;
     return { name: 'stub_images' };
   });
-  const assets = 'src/content/base/assets';
+  const assets = 'mods/skelly.deadvox.residual/assets';
   const files = readdirSync(assets, { recursive: true, encoding: 'utf8' }).filter((file) => file.endsWith('.glb'));
   expect(files).not.toHaveLength(0);
   const scenes = await Promise.all(

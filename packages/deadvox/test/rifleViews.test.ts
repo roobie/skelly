@@ -37,7 +37,7 @@ import { baseRegistry } from './baseRegistry.ts';
 import { AIM, createPlayerBody } from './playerFixture.ts';
 import { rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
-const BASE = 'src/content/base';
+const BASE = 'mods/skelly.deadvox.residual';
 const BLOCK = 0.5;
 const RIFLE = 'rifle_assault';
 const PUMP = 'pump_shotgun';

@@ -20,7 +20,7 @@ const threeFile = createRequire(import.meta.url)
   .replace(/three\.cjs$/, 'three.module.js');
 const threeUrl = `/@fs${threeFile}`;
 // Every base content file may hold detailed fixtures; the page function is serialised, so the list is made here.
-const contentDir = fileURLToPath(new URL('../src/content/base/', import.meta.url));
+const contentDir = fileURLToPath(new URL('../mods/skelly.deadvox.residual/', import.meta.url));
 const contentFiles = (await readdir(contentDir)).filter((file) => file.endsWith('.json')).sort();
 const server = await createServer({
   root: fileURLToPath(new URL('../', import.meta.url)),
@@ -55,7 +55,7 @@ try {
       const { FurnitureMeshes } = await import(new URL('/src/render/furniture.ts', location.href).href);
       const files = await Promise.all(
         contentNames.map(
-          async (file) => (await import(new URL(`/src/content/base/${file}`, location.href).href)).default,
+          async (file) => (await import(new URL(`/mods/skelly.deadvox.residual/${file}`, location.href).href)).default,
         ),
       );
       const gather = (key) => files.flatMap((file) => file[key] ?? []);

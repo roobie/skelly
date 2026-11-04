@@ -26,7 +26,7 @@ import { checkStartReachability } from '../core/reachability.ts';
 import { CONTENT_SECTION_KEYS, CONTENT_SECTIONS } from '../core/schema.ts';
 import { controlIssues } from './controlIssues.ts';
 
-const BASE = 'src/content/base';
+const BASE = 'mods/skelly.deadvox.residual';
 const CATALOGUE = 'src/config/bundled-mods.json';
 
 const presentationAssetIssues = (registry: Registry, root: string): ContentIssue[] =>

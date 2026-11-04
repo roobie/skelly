@@ -1,6 +1,6 @@
-import baseItemWear from '../src/content/base/item-wear.json' with { type: 'json' };
-import baseSounds from '../src/content/base/sounds.json' with { type: 'json' };
-import baseUi from '../src/content/base/ui.json' with { type: 'json' };
+import baseItemWear from '../mods/skelly.deadvox.residual/item-wear.json' with { type: 'json' };
+import baseSounds from '../mods/skelly.deadvox.residual/sounds.json' with { type: 'json' };
+import baseUi from '../mods/skelly.deadvox.residual/ui.json' with { type: 'json' };
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import type { ItemEconomy, LootContext, LootSpawnPoint } from '../src/core/loot.ts';
 import { simSeconds } from '../src/core/time.ts';

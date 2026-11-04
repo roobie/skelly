@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
-import bodyContent from '../src/content/base/body.json' with { type: 'json' };
-import sensesContent from '../src/content/base/senses.json' with { type: 'json' };
-import soundContent from '../src/content/base/sounds.json' with { type: 'json' };
-import blockSoundContent from '../src/content/base/sounds-block.json' with { type: 'json' };
-import synthContent from '../src/content/base/sounds-synth.json' with { type: 'json' };
-import uiContent from '../src/content/base/ui.json' with { type: 'json' };
+import bodyContent from '../mods/skelly.deadvox.residual/body.json' with { type: 'json' };
+import sensesContent from '../mods/skelly.deadvox.residual/senses.json' with { type: 'json' };
+import soundContent from '../mods/skelly.deadvox.residual/sounds.json' with { type: 'json' };
+import blockSoundContent from '../mods/skelly.deadvox.residual/sounds-block.json' with { type: 'json' };
+import synthContent from '../mods/skelly.deadvox.residual/sounds-synth.json' with { type: 'json' };
+import uiContent from '../mods/skelly.deadvox.residual/ui.json' with { type: 'json' };
 import { buildRegistry, requiredContentIssues } from '../src/core/content.ts';
 import { bodySoundIds } from './fixtures/bodySounds.ts';
 import { CORE_ONLY_KNOWN_ISSUES } from './fixtures/coreOnlyKnownIssues.ts';
@@ -30,9 +30,9 @@ const CORE_TOPICS = [
 it('validates selected core topics without booting or hiding unowned or stale issues', () => {
   const sources = CORE_TOPICS.map((topic) => ({
     source: `core-only/${topic}.json`,
-    data: JSON.parse(readFileSync(`src/content/base/${topic}.json`, 'utf8')) as unknown,
+    data: JSON.parse(readFileSync(`mods/skelly.deadvox.residual/${topic}.json`, 'utf8')) as unknown,
   }));
-  const weathering = JSON.parse(readFileSync('src/content/base/weathering.json', 'utf8')) as {
+  const weathering = JSON.parse(readFileSync('mods/skelly.deadvox.residual/weathering.json', 'utf8')) as {
     weathering: { capability?: string }[];
   };
   sources.push({

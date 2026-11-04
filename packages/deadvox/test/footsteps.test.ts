@@ -20,7 +20,7 @@ const STEP_DISTANCE_METRES = {
 
 const soundsSource = {
   source: 'sounds.json',
-  data: JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown,
+  data: JSON.parse(readFileSync('mods/skelly.deadvox.residual/sounds.json', 'utf8')) as unknown,
 };
 const FIXTURE_BLOCK = {
   id: 'fixture_moss',

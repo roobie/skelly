@@ -27,7 +27,7 @@ it('validate rejects every missing or negative player tuning field and a missing
   expect(valid.issues).toEqual([]);
   expect(valid.registry.player.get('player')).toEqual(PLAYER);
   const root = mkdtempSync(join(tmpdir(), 'deadvox-player-content-'));
-  const base = join(root, 'src/content/base');
+  const base = join(root, 'mods/skelly.deadvox.residual');
   mkdirSync(join(base, 'pack'), { recursive: true });
   const run = () => {
     writeFileSync(

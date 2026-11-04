@@ -18,7 +18,7 @@ import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const HOUR = simSecondsPerHour(BASE_CLOCK);
-const BASE = 'src/content/base';
+const BASE = 'mods/skelly.deadvox.residual';
 const BASE_SOURCES = readdirSync(BASE)
   .filter((f) => f.endsWith('.json'))
   .sort()

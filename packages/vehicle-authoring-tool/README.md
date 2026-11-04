@@ -36,7 +36,7 @@ downloads content Deadvox would drop.
 ## Pair choices are the author's
 
 The pair operation follows `pair` in
-`packages/deadvox/src/content/base/vehicles.jsonnet`. Deadvox cannot tell which
+`packages/deadvox/mods/skelly.deadvox.residual/vehicles.jsonnet`. Deadvox cannot tell which
 supports or dependents change sides, so every one is an explicit choice: the
 dialog starts with none made and
 `packages/vehicle-authoring-tool/src/editor.ts`, `pairChoicesFromForm`, refuses

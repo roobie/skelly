@@ -5,7 +5,7 @@ import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { controlIssues } from '../src/cli/controlIssues.ts';
-import rawBaseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
+import rawBaseDayCycle from '../mods/skelly.deadvox.residual/dayCycle.json' with { type: 'json' };
 import { isBodyDoor } from '../src/core/blockEntities.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { parseTimeOfDay, resolveSpawnTime } from '../src/core/clock.ts';
@@ -43,7 +43,7 @@ import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
 import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
 
-const BASE = 'src/content/base';
+const BASE = 'mods/skelly.deadvox.residual';
 const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
 const INPUT_GESTURE =
   /\b(?:hold|press|tap|click|double[ -]press|wield|activate|throw|scroll|wheel|drag|rotate|snap|spawn)\b/i;

@@ -11,7 +11,7 @@ import { gameMinutes } from '../src/core/time.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
-const base = 'src/content/base';
+const base = 'mods/skelly.deadvox.residual';
 const itemSource = (file: string, ids: readonly string[]) => {
   const data = JSON.parse(readFileSync(join(base, file), 'utf8')) as {
     items: { id: string; salvage?: unknown; salvageTimeGameMinutes?: unknown }[];

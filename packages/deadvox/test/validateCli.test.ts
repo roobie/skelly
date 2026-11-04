@@ -16,7 +16,7 @@ const validateAt = (root: string, ...files: string[]) => {
 const makeMinimalPack = (...fixtureDirs: string[]): string => {
   const root = mkdtempSync(join(tmpdir(), 'deadvox-validate-'));
   try {
-    const base = join(root, 'src/content/base');
+    const base = join(root, 'mods/skelly.deadvox.residual');
     mkdirSync(join(base, 'assets'), { recursive: true });
     mkdirSync(join(base, 'pack'), { recursive: true });
     writeFileSync(
@@ -67,7 +67,7 @@ describe('validate CLI', () => {
   it('rejects an unlisted JSON file anywhere under a bundled pack root', () => {
     const root = makeMinimalPack();
     try {
-      const directory = join(root, 'src/content/base/nested');
+      const directory = join(root, 'mods/skelly.deadvox.residual/nested');
       mkdirSync(directory);
       writeFileSync(join(directory, 'unlisted.json'), JSON.stringify({ items: [] }));
       const run = validateAt(root);

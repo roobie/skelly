@@ -32,7 +32,7 @@ const PAGES_ASSEMBLY_LOOP_PATTERN = /for P in ([^;]+); do/;
 const WHITESPACE_PATTERN = /\s+/;
 const HREF_PATTERN = /\bhref="([^"]+)"/;
 const LAYOUT_FILE_PATTERN = /^layouts.*\.json$/;
-const DEADVOX_CONTENT = 'packages/deadvox/src/content/base';
+const DEADVOX_CONTENT = 'packages/deadvox/mods/skelly.deadvox.residual';
 const RESOURCE_URL_PATTERNS = [
   /\b(?:href|src)\s*=\s*["']([^"']+)["']/g,
   /url\(\s*["']?([^"')\s]+)["']?\s*\)/g,
@@ -298,7 +298,7 @@ describe('site launchers track the games’ URL parameters', () => {
     const makeDeadvox = makeDeadvoxForTest();
     const defaults = launcherModelForTest().deadvox;
     const gauntlet = { ...defaults, ...launcherPresetsForTest().gauntlet };
-    const scenarioIds = JSON.parse(read('packages/deadvox/src/content/base/scenarios.json')).scenarios.map(
+    const scenarioIds = JSON.parse(read('packages/deadvox/mods/skelly.deadvox.residual/scenarios.json')).scenarios.map(
       (scenario) => scenario.id,
     );
     const play = makeDeadvox(gauntlet);

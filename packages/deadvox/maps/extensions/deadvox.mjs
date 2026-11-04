@@ -36,7 +36,7 @@ function writeJson(path, value) {
   file.commit(); // QSaveFile: close() without commit silently cancels the write.
 }
 function content() {
-  const base = `${root}/../src/content/base`;
+  const base = `${root}/../mods/skelly.deadvox.residual`;
   const templateFiles = [
     'templates.json',
     'templates-cabins.json',

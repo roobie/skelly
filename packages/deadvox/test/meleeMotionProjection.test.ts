@@ -13,7 +13,7 @@ import { loadFigureModels } from './figureModels.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { heldState } from './heldState.ts';
 
-const BASE = 'src/content/base';
+const BASE = 'mods/skelly.deadvox.residual';
 const registry = baseRegistry();
 const playerFigure = registry.figures.get('player')!;
 Object.defineProperty(globalThis, 'self', { configurable: true, value: globalThis });

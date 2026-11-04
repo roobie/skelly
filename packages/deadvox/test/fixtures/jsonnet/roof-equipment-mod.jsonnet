@@ -1,4 +1,4 @@
-local decor = import '../../../src/content/base/gauntlet-city-decor.libsonnet';
+local decor = import '../../../mods/skelly.deadvox.residual/gauntlet-city-decor.libsonnet';
 local pool = decor.mapPools[0];
 {
   mapPools: [pool + {

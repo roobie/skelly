@@ -3,7 +3,7 @@ import type { ContentSource } from '../../src/core/content.ts';
 import type { ContentFile } from '../../src/core/schema.ts';
 import { fixtureIds } from './capabilityIds.ts';
 
-const baseJson = (name: string) => JSON.parse(readFileSync(`src/content/base/${name}`, 'utf8')) as ContentFile;
+const baseJson = (name: string) => JSON.parse(readFileSync(`mods/skelly.deadvox.residual/${name}`, 'utf8')) as ContentFile;
 
 const baseSkill = (id: string) => {
   const skill = baseJson('recipes.json').skills?.find((candidate) => candidate.id === id);

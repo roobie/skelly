@@ -3,7 +3,7 @@ base + {
   sources+: [
     {
       title: 'Project asset manifest sources',
-      url: 'https://github.com/roobie/skelly/tree/main/packages/deadvox/src/content/base/assets',
+      url: 'https://github.com/roobie/skelly/tree/main/packages/deadvox/mods/skelly.deadvox.residual/assets',
       author: 'Skelly contributors',
       licence: 'CC0-1.0',
       download: null,

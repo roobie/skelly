@@ -920,7 +920,7 @@ const lakeSurfaceCheck = (chromium, port) =>
       await lake.addInitScript(fakePointerLock);
       // Start over the basin centre, so the small startup ring is the lake.
       const { layouts } = JSON.parse(
-        await readFile(resolve(projectRoot, 'src/content/base/layouts-water.json'), 'utf8'),
+        await readFile(resolve(projectRoot, 'mods/skelly.deadvox.residual/layouts-water.json'), 'utf8'),
       );
       const lakeLayout = layouts.find(({ id }) => id === 'lake_demo');
       const [centreX, centreZ] = lakeLayout.terrain[0].centre;

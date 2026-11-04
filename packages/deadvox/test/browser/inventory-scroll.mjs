@@ -33,10 +33,10 @@ assert.ok(['chromium', 'firefox'].includes(engine));
 const RACK_GRID = [5, 6];
 const {
   inventory: [baseInventoryRow],
-} = JSON.parse(readFileSync(resolve(root, 'src/content/base/inventory.json'), 'utf8'));
+} = JSON.parse(readFileSync(resolve(root, 'mods/skelly.deadvox.residual/inventory.json'), 'utf8'));
 // The fixture's material takes its blow sound from the shipped materials, with that sound's shipped definition, so a
 // newly required material or sound field is met by the content rather than by this file.
-const baseContent = (file) => JSON.parse(readFileSync(resolve(root, 'src/content/base', file), 'utf8'));
+const baseContent = (file) => JSON.parse(readFileSync(resolve(root, 'mods/skelly.deadvox.residual', file), 'utf8'));
 const { blowSound } = baseContent('furniture.json').furnitureMaterials[0];
 const blowSoundDefinition = baseContent('sounds-furniture.json').sounds.find(({ id }) => id === blowSound);
 if (!blowSoundDefinition) {
@@ -123,8 +123,8 @@ const content = [
 ];
 const fixture = `
 import '/src/ui/style.css';
-import uiFile from '/src/content/base/ui.json';
-import recipesFile from '/src/content/base/recipes.json';
+import uiFile from '/mods/skelly.deadvox.residual/ui.json';
+import recipesFile from '/mods/skelly.deadvox.residual/recipes.json';
 import { fixtureIds } from '/test/fixtures/capabilityIds.ts';
 import { buildRegistry } from '/src/core/content.ts';
 import { Inventory } from '/src/core/inventory.ts';

@@ -20,7 +20,7 @@ import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
-const BASE = 'src/content/base';
+const BASE = 'mods/skelly.deadvox.residual';
 const FIXTURE_FAMILY = 'fixture_steps';
 const registry = baseRegistry();
 const SHAMBLER = registry.actors.get('shambler')!;

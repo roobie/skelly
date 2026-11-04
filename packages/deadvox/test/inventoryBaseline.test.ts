@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import inventoryContent from '../src/content/base/inventory.json' with { type: 'json' };
+import inventoryContent from '../mods/skelly.deadvox.residual/inventory.json' with { type: 'json' };
 import { claimed } from '../src/core/capabilities.ts';
 import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';

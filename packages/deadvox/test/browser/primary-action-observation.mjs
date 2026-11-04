@@ -2,12 +2,12 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
-import graphicsFile from '../../src/content/base/graphics.json' with { type: 'json' };
+import graphicsFile from '../../mods/skelly.deadvox.residual/graphics.json' with { type: 'json' };
 import { CHUNK } from '../../src/core/coords.ts';
 import { BLOCK_SIZE, chunksFor, makeScale } from '../../src/core/scale.ts';
 
 const magazineModel = JSON.parse(
-  readFileSync(new URL('../../src/content/base/gungen/magazine_pistol_9.model.json', import.meta.url), 'utf8'),
+  readFileSync(new URL('../../mods/skelly.deadvox.residual/gungen/magazine_pistol_9.model.json', import.meta.url), 'utf8'),
 );
 export const cleanReplayRadiusM = 32;
 const columnMetres = CHUNK * BLOCK_SIZE;
@@ -35,7 +35,7 @@ export const observationPlugin = {
   enforce: 'pre',
   transform(code, id) {
     // A quiet test-owned site isolates replay's stream-edge witness from scenario population changes.
-    if (id.endsWith('/src/content/base/layouts.json')) {
+    if (id.endsWith('/mods/skelly.deadvox.residual/layouts.json')) {
       const data = JSON.parse(code);
       data.layouts.push({
         id: 'replay_fixture',
@@ -52,7 +52,7 @@ export const observationPlugin = {
       });
       return JSON.stringify(data);
     }
-    if (id.endsWith('/src/content/base/starts.json')) {
+    if (id.endsWith('/mods/skelly.deadvox.residual/starts.json')) {
       const data = JSON.parse(code);
       const { defaultForSite: _default, ...houseStart } = data.starts.find((row) => row.site === 'testHouse');
       data.starts.push({

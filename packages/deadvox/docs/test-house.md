@@ -19,8 +19,8 @@ read_if:
 
 The test house is both an evaluation bed and a personal haven. Its layout belongs to
 content so changing the place does not require changing game logic. Keep the authored
-house in `src/content/base/templates-test-house.jsonnet`, `templates`, and the lot in
-`src/content/base/layouts-test-house.jsonnet`, `layouts`. Keep evaluation staging in an
+house in `mods/skelly.deadvox.residual/templates-test-house.jsonnet`, `templates`, and the lot in
+`mods/skelly.deadvox.residual/layouts-test-house.jsonnet`, `layouts`. Keep evaluation staging in an
 explicitly selected debug scenario mod rather than a runtime overlay: no scenario id
 or debug check may select it in game logic. Range geometry must be authored templates
 and building rows; catalogue furniture, rack items and garage stock must be hand-kept
@@ -48,13 +48,13 @@ Separate kitchen, bedroom and lounge spaces make that boundary legible. The sout
 window and roof terrace give the lounge and the outdoor sitting space the same open
 view, rather than looking into a test yard. Warm powered light, plaster and timber
 make the interior welcoming without turning it into a weathering demonstration.
-See `src/content/base/templates-test-house.jsonnet`, `test_house_home`.
+See `mods/skelly.deadvox.residual/templates-test-house.jsonnet`, `test_house_home`.
 
 The land must feel like a real place to return to: rolling meadow leads south to a
 lake and distant hills, with woodland on one side rather than trees closing every
 sightline. The lake belongs beside the property, not around it; the home stands on
 land, not an island. Its scale must read as a lake rather than a garden pond. Values
-and placements belong to `src/content/base/layouts-test-house.jsonnet`, `layouts`;
+and placements belong to `mods/skelly.deadvox.residual/layouts-test-house.jsonnet`, `layouts`;
 water uses the shared mechanism in `DESIGN.md`, "Water". The woodland has no loot
 placements, because it is the haven's backdrop, not another supply catalogue.
 
@@ -85,10 +85,10 @@ they demonstrate ordinary interactions without a derived supply catalogue. Shari
 house supply makes charging respond to the same blackout as other appliances, while
 nearby portable equipment avoids debug inventory edits or travel. Liquid service shares
 the charging corner so the player can compare portable light sources without privileged
-setup. See `src/content/base/templates-test-house.jsonnet`, `test_house_showroom`.
+setup. See `mods/skelly.deadvox.residual/templates-test-house.jsonnet`, `test_house_showroom`.
 The liquid-recovery look also belongs in normal mode: authored instance state lets
 ordinary inventory choices be inspected without privileged setup. See
-`src/content/base/layouts-test-house.jsonnet`, `liquidRecoveryStock`.
+`mods/skelly.deadvox.residual/layouts-test-house.jsonnet`, `liquidRecoveryStock`.
 Garage evaluation stock requires explicit mod selection, and its saves require the same
 admitted mod. A URL selects it through `?mods=` rather than inferring it from the scene or
 debug profile. See `src/config/bundled/test-house-debug.jsonnet`, `layouts`.
@@ -122,7 +122,7 @@ House power and its controls belong in normal mode: mixed generation and storage
 lighting, refrigeration demand and charging demonstrate ordinary home systems rather
 than privileged test equipment. The generator switch saves fuel; the main breaker
 makes a blackout test possible without pretending solar and storage stop with the
-generator. See `src/content/base/templates-test-house.jsonnet`, `templates`, and
+generator. See `mods/skelly.deadvox.residual/templates-test-house.jsonnet`, `templates`, and
 `docs/electricity.md`, "Authored building wiring".
 
 The showroom pavilion and its slot row belong in normal mode. A look request must work
@@ -136,7 +136,7 @@ reach. See `src/core/authoredSite.ts`, `AuthoredSite`.
 
 The destruction slot stays in normal mode because its tool, stock and breakable deck
 exercise ordinary combat and furniture floor loss without privileged setup. See
-`src/content/base/layouts-test-house.jsonnet`, `showroom`.
+`mods/skelly.deadvox.residual/layouts-test-house.jsonnet`, `showroom`.
 
 The build-mode block-strike shortcuts are debug-only: bypassing weapon swings is an
 evaluation convenience, not a player ability. They use the session's ordinary terrain
@@ -148,8 +148,8 @@ delete remains separate and does not test destruction. See `src/debug/build.ts`,
 Mixed supply lets the same home demonstrate both direct generation and stored energy;
 a generator-only fixture would hide their independence. Electrical values belong to
 content so balancing the haven does not change its mechanisms. See
-`src/content/base/furniture.jsonnet`, `furniture`, and
-`src/content/base/power.jsonnet`, `powerDevices`.
+`mods/skelly.deadvox.residual/furniture.jsonnet`, `furniture`, and
+`mods/skelly.deadvox.residual/power.jsonnet`, `powerDevices`.
 
 ## Showroom
 
@@ -157,13 +157,13 @@ Keep feature looks in showroom slots at spawn, not in the home, garage or yard. 
 those zones needs a design round so an evaluation prop does not repurpose the haven.
 Retiring older slots keeps the display small enough to take in at a glance. The pavilion
 stays unlit because light tests need dark
-ground at night. See `src/content/base/templates-test-house.jsonnet`, `test_house_showroom`.
+ground at night. See `mods/skelly.deadvox.residual/templates-test-house.jsonnet`, `test_house_showroom`.
 
 Keep the shelf reachable behind the player's starting point instead of crowding
 their row. Its independent placement remains a showroom slot so fixture stock, focus,
 house power and deck validation retain their existing owners rather than gaining a runtime
 staging overlay. Content owns the placement; see
-`src/content/base/layouts-test-house.jsonnet`, `showroom`; `src/core/schema/layouts.ts`,
+`mods/skelly.deadvox.residual/layouts-test-house.jsonnet`, `showroom`; `src/core/schema/layouts.ts`,
 `ShowroomSchema`; and `src/core/showroom.ts`, `slotProps` and `slotPlacement`.
 
 The catalogue needs no per-feature slot because it exposes evaluation pieces rather than
@@ -191,11 +191,11 @@ start overrides. See `src/game/config.ts`, `focus`, and `src/game/worldSetup.ts`
 The garage gathers vehicle and repair work so one visit can evaluate both. Keep work
 space and drive-out routes clear rather than making the parked vehicle occupy every
 bay. Bays and parked placements share a content owner so moving a bay moves what stands
-in it. See `src/content/base/layouts-test-house.jsonnet`, `bays`.
+in it. See `mods/skelly.deadvox.residual/layouts-test-house.jsonnet`, `bays`.
 
 The building and its ordinary furnishings stay in normal mode. Shared house power makes
 its lighting part of the same home, and roof access must not cross a vehicle bay. See
-`src/content/base/templates-test-house.jsonnet`, `test_house_garage_ladder`.
+`mods/skelly.deadvox.residual/templates-test-house.jsonnet`, `test_house_garage_ladder`.
 
 Evaluation stock is hand-kept `buildings[].fixedLoot` in the debug scenario mod, not
 runtime synthesis. This keeps scenario identity and debug checks out of stock admission.
@@ -212,7 +212,7 @@ placement owner. Ordinary authored spawning owns arrival and restoration. See
 
 Keep floor-standing service equipment visible by the bays rather than hiding it in a
 shelf pocket. Hand placement of an item loot never rolls is allowed by `docs/content.md`.
-See `src/content/base/templates-test-house.jsonnet`, `test_house_garage`.
+See `mods/skelly.deadvox.residual/templates-test-house.jsonnet`, `test_house_garage`.
 
 ## Benchmark scale
 

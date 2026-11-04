@@ -3367,7 +3367,7 @@
       "path": "assets/models/wrench.glb"
     }
   ],
-  "id": "base",
+  "id": "skelly.deadvox.residual",
   "overrides": [],
   "product": true,
   "tier": "product",

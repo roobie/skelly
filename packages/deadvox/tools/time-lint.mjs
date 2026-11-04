@@ -8,7 +8,7 @@ import ts from './lit-check/node_modules/typescript/lib/typescript.js';
 
 const DEADVOX = resolve(dirname(new URL(import.meta.url).pathname), '..');
 const SOURCE = join(DEADVOX, 'src');
-const CONTENT = join(SOURCE, 'content', 'base');
+const CONTENT = join(DEADVOX, 'mods', 'skelly.deadvox.residual');
 const RUNTIME_BASELINE = join(DEADVOX, 'tools', 'time-lint-baseline.json');
 const ALLOW_REAL = new Set([join(SOURCE, 'game', 'frameDriver.ts')]);
 const CODE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs']);

@@ -48,7 +48,7 @@ Take-apart work snapshots its yield so stopping and resuming cannot change the p
 
 Repair addresses an existing owner, not a new result: its name must describe the selected piece rather than a recipe's item output. An explicit entity identity prevents mending a replacement at the same position or another matching piece. Inspection grants no reservation or future permission; a refused completion returns escrow rather than silently choosing a different target. Saved work and replay must retain that same ownership boundary. See `src/core/items.ts`, `WorkTarget`; `src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair` and `CraftCommands.repairEntity`; `src/core/craftWork.ts`, `entityRepairRefusal`; and `src/core/inventory.ts`, `Inventory.releaseWork`.
 
-Craft completion awards practice; take-apart work does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Practice is source-agnostic. A tiered activity trains a skill only up to its tier, and practice at or above that tier is dropped, so repeating easy work cannot carry a skill upward; see `src/core/character.ts`, `Character.awardPractice`, and `src/content/base/recipes.libsonnet`, `training`.
+Craft completion awards practice; take-apart work does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Practice is source-agnostic. A tiered activity trains a skill only up to its tier, and practice at or above that tier is dropped, so repeating easy work cannot carry a skill upward; see `src/core/character.ts`, `Character.awardPractice`, and `mods/skelly.deadvox.residual/recipes.libsonnet`, `training`.
 
 ## Long actions and interruptions
 

@@ -32,11 +32,11 @@ import {
 } from './snapshotTestSupport.ts';
 
 const baseContentFiles = () =>
-  readdirSync('src/content/base')
+  readdirSync('mods/skelly.deadvox.residual')
     .filter((name) => name.endsWith('.json'))
     .map((source) => ({
       source,
-      data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')),
+      data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', source), 'utf8')),
     }));
 
 const registryWithSleepScenario = (sleepCap: number) => {

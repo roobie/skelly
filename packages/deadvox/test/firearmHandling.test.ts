@@ -41,7 +41,7 @@ import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
 import { chargedRifle, settle } from './rifleFixture.ts';
 
-const BASE = 'src/content/base';
+const BASE = 'mods/skelly.deadvox.residual';
 const base = readdirSync(BASE)
   .filter((file) => file.endsWith('.json'))
   .sort()
