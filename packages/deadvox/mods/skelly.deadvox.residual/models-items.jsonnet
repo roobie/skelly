@@ -5,7 +5,6 @@ local authored = [
     import 'things/cartridge_box_357_h_magnum.model.json',
     import 'things/shotshell_box.model.json',
     import 'things/ammo_can.model.json',
-    import 'things/jerry_can.model.json',
     (import 'things/frag_grenade.model.json') + {
       lever: { piece: 'lever', launchMetresPerRealSecond: 3, spinDegreesPerRealSecond: 1080, lifetimeRealSeconds: 1.5 },
       pin: { piece: 'pin' },
@@ -14,7 +13,6 @@ local authored = [
     (import 'things/flashlight.model.json') + { grip: { at: [0.085, 0, 0] }, anchors: { lens: [0.199, 0, 0] } },
     import 'things/candle.model.json',
     import 'things/bear_trap.model.json',
-    { "id": "lamp_oil_bottle", "file": "assets/models/lamp_oil_bottle.glb" },
     { "id": "circuit_board", "file": "assets/models/circuit_board.glb" },
     { "id": "glass_lens", "file": "assets/models/glass_lens.glb" },
     import 'things/fuse.model.json',

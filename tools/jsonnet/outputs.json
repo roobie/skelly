@@ -173,10 +173,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/power.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/presentation/fuel-parts.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/presentation/fuel-parts.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/ranged-tuning.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/ranged-tuning.json"
     },
@@ -543,6 +539,30 @@
     {
       "source": "packages/mods/skelly.body/player.jsonnet",
       "output": "packages/mods/skelly.body/player.json"
+    },
+    {
+      "source": "packages/mods/skelly.containers/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.containers/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.containers/containers-items.jsonnet",
+      "output": "packages/mods/skelly.containers/containers-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.containers/exports/things.jsonnet",
+      "output": "packages/mods/skelly.containers/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.containers/models-containers.jsonnet",
+      "output": "packages/mods/skelly.containers/models-containers.json"
+    },
+    {
+      "source": "packages/mods/skelly.containers/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.containers/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.containers/presentation/fuel-parts.jsonnet",
+      "output": "packages/mods/skelly.containers/presentation/fuel-parts.json"
     },
     {
       "source": "packages/mods/skelly.controls/controls.jsonnet",

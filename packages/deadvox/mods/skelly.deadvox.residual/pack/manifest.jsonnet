@@ -53,14 +53,13 @@ manifest(
     'skelly.sound-families', 'skelly.senses', 'skelly.natural-world', 'skelly.materials', 'skelly.medicine',
     'skelly.hand-tools', 'skelly.readables', 'skelly.structures', 'skelly.basic-foods', 'skelly.packaged-foods',
     'skelly.wearables', 'skelly.progression', 'skelly.crafting', 'skelly.manufactured-blocks',
-    'skelly.fuel',
+    'skelly.fuel', 'skelly.containers',
   ],
   content=content,
   guns=guns,
   things=things,
   assets=assets,
   json=[
-    'things/index.json', 'assets/manifest.json', 'exports/things.json',
-    'presentation/fuel-parts.json', 'presentation/item-materials.json',
+    'things/index.json', 'assets/manifest.json', 'exports/things.json', 'presentation/item-materials.json',
   ],
 )

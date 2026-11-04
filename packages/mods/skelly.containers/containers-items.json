@@ -1,0 +1,49 @@
+{
+  "items": [
+    {
+      "category": "misc",
+      "description": "A fuel-filled can.",
+      "id": "jerry_can",
+      "model": "jerry_can",
+      "name": "Jerry can",
+      "size": [4, 5],
+      "vessel": {
+        "accepts": "any",
+        "capacityMicrolitres": 20000000,
+        "initialContents": {
+          "kind": "filled",
+          "liquid": "gasoline",
+          "volumeMicrolitres": 20000000
+        },
+        "pour": {
+          "incrementMicrolitres": 100000,
+          "microlitresPerSimSecond": 100000
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "description": "A small bottle for lamp oil.",
+      "id": "lamp_oil",
+      "model": "lamp_oil_bottle",
+      "name": "Oil bottle",
+      "size": [1, 2],
+      "vessel": {
+        "accepts": ["lamp_fuel"],
+        "capacityMicrolitres": 500000,
+        "initialContents": {
+          "kind": "filled",
+          "liquid": "lamp_fuel",
+          "volumeMicrolitres": 500000
+        },
+        "pour": {
+          "incrementMicrolitres": 10000,
+          "microlitresPerSimSecond": 50000
+        }
+      },
+      "weight": 100,
+      "workInProgress": false
+    }
+  ]
+}

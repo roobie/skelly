@@ -153,14 +153,6 @@ local spentCase(id, name, weight, description, model) = {
       salvageTimeGameMinutes: 5,
       salvage: [{ item: 'scrap_metal', count: 1 }, { item: 'aa_battery', count: 1 }],
     },
-    {
-      id: 'jerry_can',
-      name: 'Jerry can',
-      category: 'misc',
-      model: 'jerry_can',
-      size: [4, 5],
-      description: 'A fuel-filled can.',
-    },
     spentCase(
       'spent_case_5_d_56x45',
       'Spent 5.56×45 case',

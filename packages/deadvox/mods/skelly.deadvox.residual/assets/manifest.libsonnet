@@ -285,7 +285,6 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       "licence": "CC0-1.0",
       "download": null,
       "files": [
-        "assets/models/lamp_oil_bottle.glb",
         "assets/models/circuit_board.glb",
         "assets/models/glass_lens.glb",
         "assets/models/broken_toaster.glb",

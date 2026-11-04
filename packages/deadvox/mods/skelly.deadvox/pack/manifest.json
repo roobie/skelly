@@ -26,6 +26,7 @@
     "skelly.crafting",
     "skelly.manufactured-blocks",
     "skelly.fuel",
+    "skelly.containers",
     "skelly.deadvox.residual"
   ],
   "files": [],

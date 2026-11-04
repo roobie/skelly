@@ -3,21 +3,6 @@ local lights = import 'lights.libsonnet';
 {
   "items": [
     {
-      "id": "lamp_oil",
-      "name": "Oil bottle",
-      "category": "material",
-      "weight": 100,
-      "size": [1, 2],
-      "description": "A small bottle for lamp oil.",
-      "model": "lamp_oil_bottle",
-      vessel: {
-        capacityMicrolitres: 500000,
-        pour: { incrementMicrolitres: 10000, microlitresPerSimSecond: 50000 },
-        accepts: ['lamp_fuel'],
-        initialContents: { kind: 'filled', liquid: 'lamp_fuel', volumeMicrolitres: 500000 },
-      }
-    },
-    {
       "id": "circuit_board",
       "name": "Circuit board",
       "category": "material",

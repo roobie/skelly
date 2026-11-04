@@ -188,15 +188,6 @@
       "workInProgress": false
     },
     {
-      "category": "misc",
-      "description": "A fuel-filled can.",
-      "id": "jerry_can",
-      "model": "jerry_can",
-      "name": "Jerry can",
-      "size": [4, 5],
-      "workInProgress": false
-    },
-    {
       "category": "material",
       "description": "A fired 5.56×45 case.",
       "id": "spent_case_5_d_56x45",

@@ -24,7 +24,8 @@
     "skelly.progression",
     "skelly.crafting",
     "skelly.manufactured-blocks",
-    "skelly.fuel"
+    "skelly.fuel",
+    "skelly.containers"
   ],
   "files": [
     {
@@ -713,10 +714,6 @@
     },
     {
       "kind": "json",
-      "path": "things/jerry_can.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/aa_battery.model.json"
     },
     {
@@ -1202,10 +1199,6 @@
     {
       "kind": "json",
       "path": "exports/things.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/fuel-parts.json"
     },
     {
       "kind": "json",
@@ -2117,15 +2110,7 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/jerry_can.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/kabar.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/lamp_oil_bottle.glb"
     },
     {
       "kind": "asset",

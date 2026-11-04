@@ -117,7 +117,6 @@
         "assets/models/cartridge_box_357_h_magnum.glb",
         "assets/models/shotshell_box.glb",
         "assets/models/ammo_can.glb",
-        "assets/models/jerry_can.glb",
         "assets/models/aa_battery.glb",
         "assets/models/wooden_plank.glb",
         "assets/models/field_patch.glb",
@@ -503,7 +502,6 @@
       "changes": "Built from primitive meshes for readable ground-pile silhouettes; no external asset source or texture is used.",
       "download": null,
       "files": [
-        "assets/models/lamp_oil_bottle.glb",
         "assets/models/circuit_board.glb",
         "assets/models/glass_lens.glb",
         "assets/models/broken_toaster.glb",

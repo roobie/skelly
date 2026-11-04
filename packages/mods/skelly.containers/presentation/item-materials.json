@@ -1,0 +1,4 @@
+{
+  "assets/models/jerry_can.glb": { "materials": ["polymer-od-green", "paint-charcoal"] },
+  "assets/models/lamp_oil_bottle.glb": { "materials": [null, null, null, "fuel"] }
+}
