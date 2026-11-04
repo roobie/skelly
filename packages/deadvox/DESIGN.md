@@ -1490,8 +1490,8 @@ servings, not measured fuel, so liquid transfer does not mix them. See `src/core
 
 Can vessels are inventory atoms because opening and eating retain one vessel,
 not a disassemblable set of parts. Sharing filled-package geometry must not impose
-its mass on an empty vessel; shell and food tuning must remain independent. See `mods/skelly.deadvox.residual/models-items.jsonnet`, `models`,
-`mods/skelly.deadvox.residual/items-food.libsonnet`, `canShellGrams`,
+its mass on an empty vessel; shell and food tuning must remain independent. See `packages/mods/skelly.packaged-foods/models-packaged-foods.jsonnet`, `models`,
+`packages/mods/skelly.packaged-foods/packaged-foods-items.jsonnet`, `canShellGrams`,
 `packages/thing-authoring-tool/cans.libsonnet`, `shellMassKg`, and
 `src/core/items.ts`, `typeWeightGrams` and `weightOf`.
 
@@ -1649,7 +1649,7 @@ visual pack does not change dose counts or carried mass. See
 Food portions depict food rather than a second vessel, so a serving does not
 duplicate the can that owns it. See
 `packages/thing-authoring-tool/food-medical.libsonnet`, `atom`, and
-`mods/skelly.deadvox.residual/items-food.libsonnet`, `beansGrams` and `soupGrams`.
+`packages/mods/skelly.packaged-foods/packaged-foods-items.jsonnet`, `beansGrams` and `soupGrams`.
 
 Use one instance look and one state applier across world models, stills and the
 viewer, including each fitted part's own state. Otherwise inspection can claim

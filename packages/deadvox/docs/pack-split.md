@@ -164,6 +164,11 @@ because a mod of its own would add a dependency and narrow nothing that matters.
 with a model, `skelly.body` too, loads inventory tuning and the work-in-progress item. See
 `packages/mods/skelly.inventory/item-wear.jsonnet`, `classes`.
 
+**Food.** Packaged means any wrapped or canned food, and `skelly.packaged-foods` depends on
+`skelly.hand-tools` so a tool-opened can always finds an opener. Portions stay with their
+vessel, so the two food mods share no edge. `skelly.basic-foods` never depends on hand tools.
+See `packages/mods/skelly.packaged-foods/pack/manifest.jsonnet`, `dependencies`.
+
 **Cursor.** The basic cursor is content presentation, not UI chrome, so it sits in
 `skelly.ui`, and a theme or product mod may replace it by data with a styled one. It has
 its own row because overrides replace whole rows: a swap restates one short row, not the UI

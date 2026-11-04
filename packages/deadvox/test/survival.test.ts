@@ -44,7 +44,6 @@ const { registry } = buildRegistry(
     'sounds.json',
     'sounds-pump.json',
     'sounds-weapons.json',
-    'items-food.json',
     'items-other.json',
     'items-tools.json',
     'items-wearables.json',
@@ -71,6 +70,10 @@ const { registry } = buildRegistry(
         'skelly.materials/models-materials.json',
         'skelly.medicine/medicine-items.json',
         'skelly.medicine/models-medicine.json',
+        'skelly.basic-foods/basic-foods-items.json',
+        'skelly.basic-foods/models-basic-foods.json',
+        'skelly.packaged-foods/packaged-foods-items.json',
+        'skelly.packaged-foods/models-packaged-foods.json',
       ].map((file) => ({
         source: file,
         data: JSON.parse(readFileSync(`../mods/${file}`, 'utf8')),

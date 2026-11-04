@@ -16,7 +16,6 @@ local fill(piece) = { kind: 'fill', piece: piece, axis: 'y', bands: fuelBands };
     table_fan: ['metal', 'polymer', 'metal'],
     folded_note: ['paper', 'paper'],
     glowstick: ['polymer', 'polymer'],
-    apple: ['organic', 'wood', 'organic'], beans: ['organic', 'organic'], soup: ['organic', 'organic'],
     baseball_cap: ['cloth', 'polymer'], hoodie: ['cloth', 'polymer'],
     jacket: ['cloth', 'polymer'], jeans: ['cloth'], rubber_boots: ['polymer', 'polymer'],
     school_backpack: ['cloth', 'polymer'], school_backpack_worn: ['cloth', 'polymer', 'polymer'], school_backpack_worn_jacket: ['cloth', 'polymer', 'polymer'],

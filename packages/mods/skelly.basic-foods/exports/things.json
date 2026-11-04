@@ -1,0 +1,14 @@
+[
+  {
+    "id": "apple",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "apple",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  }
+]

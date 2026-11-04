@@ -763,9 +763,10 @@ describe('content', () => {
     const at = (root: unknown, keys: string[]): unknown =>
       keys.reduce<unknown>((node, key) => (node as Raw | undefined)?.[key], root);
     // A dropped field is reported at its own path, except a food's rot fields, which are checked together on `.food`.
+    // Rarest first, so a commoner field's drop cannot take the only item holding it.
     const drops: { field: string; reportedAt?: string }[] = [
-      { field: 'food.consumeSimSeconds' },
       { field: 'food.poisonHealth', reportedAt: '.food' },
+      { field: 'food.consumeSimSeconds' },
       { field: 'analgesic.takeSimSeconds' },
       { field: 'light.power.swapSimSeconds' },
       { field: 'unpack.simSeconds' },

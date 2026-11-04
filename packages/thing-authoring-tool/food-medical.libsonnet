@@ -1,5 +1,5 @@
 local params(values) = { [key]: std.toString(values[key]) for key in std.objectFields(values) };
-local inventoryItems = (import '../deadvox/mods/skelly.deadvox.residual/items-food.libsonnet').items + (import '../mods/skelly.medicine/medicine-items.jsonnet').items;
+local inventoryItems = (import '../mods/skelly.packaged-foods/packaged-foods-items.jsonnet').items + (import '../mods/skelly.medicine/medicine-items.jsonnet').items;
 local inventoryMass(id) = std.filter(function(item) item.id == id, inventoryItems)[0].weight / 1000;
 local atom(id, family, massKg, dimensions, finish, exportMass) = {
   id: id,

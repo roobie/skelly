@@ -17,7 +17,9 @@
     "skelly.medicine",
     "skelly.hand-tools",
     "skelly.readables",
-    "skelly.structures"
+    "skelly.structures",
+    "skelly.basic-foods",
+    "skelly.packaged-foods"
   ],
   "files": [
     {
@@ -95,10 +97,6 @@
     {
       "kind": "content",
       "path": "items-explosives.json"
-    },
-    {
-      "kind": "content",
-      "path": "items-food.json"
     },
     {
       "kind": "content",
@@ -694,38 +692,6 @@
     },
     {
       "kind": "json",
-      "path": "things/canned_beans.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/canned_soup.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/crackers.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/chocolate_bar.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/soda_can.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/empty_soda_can.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/water_bottle.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/juice_carton.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/cartridge_box_308_h_winchester.model.json"
     },
     {
@@ -758,22 +724,6 @@
     },
     {
       "kind": "json",
-      "path": "things/opened_beans.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/opened_soup.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/empty_can.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/opened_soda.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/aa_battery.model.json"
     },
     {
@@ -783,22 +733,6 @@
     {
       "kind": "json",
       "path": "things/field_patch.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/beans.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/soup.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/soda.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/apple.model.json"
     },
     {
       "kind": "json",
@@ -1766,10 +1700,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/apple.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/barrel_ak_medium.glb"
     },
     {
@@ -1803,10 +1733,6 @@
     {
       "kind": "asset",
       "path": "assets/models/baseball_cap.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/beans.glb"
     },
     {
       "kind": "asset",
@@ -1886,14 +1812,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/canned_beans.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/canned_soup.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/car_battery.glb"
     },
     {
@@ -1958,10 +1876,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/chocolate_bar.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/circuit_board.glb"
     },
     {
@@ -1971,10 +1885,6 @@
     {
       "kind": "asset",
       "path": "assets/models/cracked_phone.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/crackers.glb"
     },
     {
       "kind": "asset",
@@ -1991,14 +1901,6 @@
     {
       "kind": "asset",
       "path": "assets/models/electrical_repair_kit.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/empty_can.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/empty_soda_can.glb"
     },
     {
       "kind": "asset",
@@ -2406,10 +2308,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/juice_carton.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/kabar.glb"
     },
     {
@@ -2475,18 +2373,6 @@
     {
       "kind": "asset",
       "path": "assets/models/oil_lamp.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/opened_beans.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/opened_soda.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/opened_soup.glb"
     },
     {
       "kind": "asset",
@@ -2738,18 +2624,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/soda.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/soda_can.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/soup.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/stab_vest.glb"
     },
     {
@@ -2819,10 +2693,6 @@
     {
       "kind": "asset",
       "path": "assets/models/utility_vest_worn_jacket.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/water_bottle.glb"
     },
     {
       "kind": "asset",

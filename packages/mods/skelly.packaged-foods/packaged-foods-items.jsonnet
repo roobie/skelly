@@ -1,13 +1,13 @@
-// Eating takes longer than drinking; a rotting food spoils at its going-off fraction of life and poisons for its health cost.
-local eats(calories, water) = { calories: calories, water: water, consumeSimSeconds: 3 };
-local drinks(calories, water) = { calories: calories, water: water, consumeSimSeconds: 2 };
+local use = import 'tools/jsonnet/lib/food-use.libsonnet';
+local eats = use.eats;
+local drinks = use.drinks;
 local canShellGrams = (import 'packages/thing-authoring-tool/cans.libsonnet').shellMassKg * 1000;
 local sodaShellGrams = 15;
 local sodaDrinkGrams = 345;
 local beansGrams = 350;
 local soupGrams = 330;
 
-{
+(import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack({
   items: [
     {
       id: 'opened_beans', name: 'Opened can of beans', category: 'food',
@@ -66,14 +66,6 @@ local soupGrams = 330;
       model: 'crackers',
       size: [2, 2],
       food: eats(1100, 0),
-    },
-    {
-      id: 'apple',
-      name: 'Apple',
-      category: 'food',
-      model: 'apple',
-      size: [1, 1],
-      food: eats(95, 150) { rotsAfterGameHours: 240, goingOffFraction: 0.5, poisonHealth: 15 },
     },
     {
       id: 'chocolate_bar',
@@ -135,4 +127,4 @@ local soupGrams = 330;
       food: drinks(450, 900),
     },
   ],
-}
+})

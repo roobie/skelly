@@ -21,6 +21,8 @@ const CORE_MODS = [
   'skelly.hand-tools',
   'skelly.readables',
   'skelly.structures',
+  'skelly.basic-foods',
+  'skelly.packaged-foods',
 ];
 
 /** A core mod's content files, as its manifest lists them. */

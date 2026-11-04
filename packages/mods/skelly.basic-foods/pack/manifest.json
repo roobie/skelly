@@ -1,0 +1,42 @@
+{
+  "dependencies": ["skelly.inventory"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "basic-foods-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-basic-foods.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apple.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "exports/things.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apple.glb"
+    }
+  ],
+  "id": "skelly.basic-foods",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}
