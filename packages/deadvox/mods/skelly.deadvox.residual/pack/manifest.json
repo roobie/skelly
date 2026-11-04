@@ -27,7 +27,8 @@
     "skelly.fuel",
     "skelly.containers",
     "skelly.flame-tools",
-    "skelly.light-sources"
+    "skelly.light-sources",
+    "skelly.basic-recipes"
   ],
   "files": [
     {
@@ -716,10 +717,6 @@
     },
     {
       "kind": "json",
-      "path": "things/wooden_plank.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/field_patch.model.json"
     },
     {
@@ -1125,10 +1122,6 @@
     {
       "kind": "json",
       "path": "things/gauntlet_lab_entry_card.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/hand_saw.model.json"
     },
     {
       "kind": "json",
@@ -1808,10 +1801,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/hand_saw.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/handguard_ak.glb"
     },
     {
@@ -2401,10 +2390,6 @@
     {
       "kind": "asset",
       "path": "assets/models/wheel_205_55r16.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/wooden_plank.glb"
     }
   ],
   "id": "skelly.deadvox.residual",

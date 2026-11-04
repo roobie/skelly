@@ -162,16 +162,6 @@ local lights = import 'tools/jsonnet/lib/lights.libsonnet';
       "model": "glass_bulb"
     },
     {
-      "id": "hand_saw",
-      "name": "Hand saw",
-      "category": "tool",
-      "size": [2, 6],
-      "model": "hand_saw",
-      "tool": { "qualities": { "sawing": 1 } },
-      "salvageTimeGameMinutes": 5,
-      "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "wooden_plank", "count": 1 }]
-    },
-    {
       "id": "improvised_suppressor",
       "name": "Improvised suppressor",
       "category": "weapon",
@@ -195,36 +185,6 @@ local lights = import 'tools/jsonnet/lib/lights.libsonnet';
   ],
   "recipes": [
     {
-      "id": "rag_to_cloth_strip",
-      category: 'materials', tags: ['textile'], searchTerms: [],
-      "result": { "item": "cloth_strip", "count": 2 },
-      "timeGameMinutes": 4,
-      "skills": { "crafting": 0 },
-      "qualities": { "cutting": 1 },
-      "components": [[{ "item": "rag", "count": 1 }]]
-    },
-    {
-      "id": "sew_cloth_strip",
-      category: 'materials', tags: ['textile'], searchTerms: [],
-      "result": { "item": "rag", "count": 1 },
-      "timeGameMinutes": 10,
-      "skills": { "crafting": 0 },
-      "qualities": { "sewing": 1 },
-      "components": [
-        [{ "item": "cloth_strip", "count": 3 }],
-        [{ "item": "sewing_thread", "count": 1 }]
-      ]
-    },
-    {
-      "id": "make_rope",
-      category: 'materials', tags: ['textile'], searchTerms: [],
-      "result": { "item": "rope", "count": 1 },
-      "timeGameMinutes": 4,
-      "skills": { "crafting": 0 },
-      "qualities": {},
-      "components": [[{ "item": "cloth_strip", "count": 4 }]]
-    },
-    {
       "id": "make_weapon_sling",
       category: 'attachments', tags: ['textile'], searchTerms: [],
       "result": { "item": "weapon_sling", "count": 1 },
@@ -234,42 +194,6 @@ local lights = import 'tools/jsonnet/lib/lights.libsonnet';
       "components": [
         [{ "item": "rope", "count": 1 }, { "item": "nylon_cord", "count": 1 }],
         [{ "item": "fastener_pack", "count": 1 }]
-      ]
-    },
-    {
-      "id": "trim_wood_offcut",
-      category: 'materials', tags: ['wood'], searchTerms: [],
-      "result": { "item": "wood_offcut", "count": 2 },
-      "timeGameMinutes": 5,
-      "skills": { "crafting": 0 },
-      "qualities": { "sawing": 1 },
-      "components": [[{ "item": "wooden_plank", "count": 1 }]],
-      "workstation": "workbench"
-    },
-    {
-      "id": "make_sewing_kit",
-      category: 'tools', tags: ['textile'], searchTerms: [],
-      "result": { "item": "sewing_kit", "count": 1 },
-      "timeGameMinutes": 12,
-      "skills": { "crafting": 0 },
-      "qualities": { "cutting": 1 },
-      "components": [
-        [{ "item": "sewing_thread", "count": 1 }],
-        [{ "item": "cloth_strip", "count": 1 }],
-        [{ "item": "fastener_pack", "count": 1 }]
-      ]
-    },
-    {
-      "id": "make_sewing_repair_kit",
-      category: 'tools', tags: ['textile'], searchTerms: [],
-      "result": { "item": "sewing_repair_kit", "count": 1 },
-      "timeGameMinutes": 15,
-      "skills": { "crafting": 0 },
-      "qualities": { "sewing": 1 },
-      "components": [
-        [{ "item": "sewing_thread", "count": 1 }],
-        [{ "item": "cloth_strip", "count": 2 }],
-        [{ "item": "duct_tape", "count": 1 }]
       ]
     },
     {
@@ -285,29 +209,6 @@ local lights = import 'tools/jsonnet/lib/lights.libsonnet';
         [{ "item": "fuse", "count": 1 }]
       ],
       "workstation": "workbench"
-    },
-    {
-      "id": "make_wire_strippers",
-      category: 'tools', tags: ['metal', 'electrical'], searchTerms: [],
-      "result": { "item": "wire_strippers", "count": 1 },
-      "timeGameMinutes": 18,
-      "skills": { "mechanics": 0 },
-      "qualities": { "hammering": 1 },
-      "components": [
-        [{ "item": "scrap_metal", "count": 1 }],
-        [{ "item": "rubber_strip", "count": 1 }],
-        [{ "item": "fastener_pack", "count": 1 }]
-      ],
-      "workstation": "workbench"
-    },
-    {
-      "id": "assemble_fastener_pack",
-      category: 'materials', tags: ['metal'], searchTerms: [],
-      "result": { "item": "fastener_pack", "count": 2 },
-      "timeGameMinutes": 6,
-      "skills": { "crafting": 0 },
-      "qualities": { "hammering": 1 },
-      "components": [[{ "item": "nails", "count": 5 }], [{ "item": "scrap_metal", "count": 1 }]]
     },
     {
       "id": "make_improvised_suppressor",
@@ -354,17 +255,6 @@ local lights = import 'tools/jsonnet/lib/lights.libsonnet';
       "workstation": "workbench"
     },
     {
-      "id": "repair_hammer",
-      category: 'repair_tools', tags: ['metal'], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "hammer", "count": 1 },
-      "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 12,
-      "skills": { "mechanics": 0 },
-      "qualities": { "repairing": 1 },
-      "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
-    },
-    {
       "id": "repair_machete",
       category: 'repair_tools', tags: ['metal'], searchTerms: [],
       "kind": "repair",
@@ -407,105 +297,6 @@ local lights = import 'tools/jsonnet/lib/lights.libsonnet';
       "skills": { "mechanics": 0 },
       "qualities": { "repairing": 1 },
       "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
-    },
-    {
-      "id": "repair_jeans",
-      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "jeans", "count": 1 },
-      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 10,
-      "skills": { "crafting": 0 },
-      "qualities": { "sewing": 1 },
-      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "sewing_thread", "count": 1 }]]
-    },
-    {
-      "id": "repair_cargo_pants",
-      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "cargo_pants", "count": 1 },
-      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 12,
-      "skills": { "crafting": 0 },
-      "qualities": { "sewing": 1 },
-      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "sewing_thread", "count": 1 }]]
-    },
-    {
-      "id": "repair_hoodie",
-      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "hoodie", "count": 1 },
-      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 12,
-      "skills": { "crafting": 0 },
-      "qualities": { "sewing": 1 },
-      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "sewing_thread", "count": 1 }]]
-    },
-    {
-      "id": "repair_jacket",
-      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "jacket", "count": 1 },
-      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 15,
-      "skills": { "crafting": 0 },
-      "qualities": { "sewing": 1 },
-      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "sewing_thread", "count": 1 }]]
-    },
-    {
-      "id": "repair_utility_vest",
-      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "utility_vest", "count": 1 },
-      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 15,
-      "skills": { "crafting": 0 },
-      "qualities": { "sewing": 1 },
-      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "sewing_thread", "count": 1 }]]
-    },
-    {
-      "id": "repair_stab_vest",
-      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "stab_vest", "count": 1 },
-      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 15,
-      "skills": { "crafting": 0 },
-      "qualities": { "sewing": 1 },
-      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "sewing_thread", "count": 1 }]]
-    },
-    {
-      "id": "repair_riot_helmet",
-      category: 'repair_clothing', tags: [], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "riot_helmet", "count": 1 },
-      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 15,
-      "skills": { "crafting": 0 },
-      "qualities": {},
-      "components": [[{ "item": "duct_tape", "count": 1 }]]
-    },
-    {
-      "id": "repair_hiking_backpack",
-      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "hiking_backpack", "count": 1 },
-      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 16,
-      "skills": { "crafting": 0 },
-      "qualities": { "sewing": 1 },
-      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "nylon_cord", "count": 1 }]]
-    },
-    {
-      "id": "repair_fanny_pack",
-      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "fanny_pack", "count": 1 },
-      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 10,
-      "skills": { "crafting": 0 },
-      "qualities": { "sewing": 1 },
-      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "sewing_thread", "count": 1 }]]
     },
     {
       "id": "repair_flashlight",

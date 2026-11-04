@@ -501,6 +501,26 @@
       "output": "packages/mods/skelly.basic-foods/pack/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.basic-recipes/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.basic-recipes/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.basic-recipes/basic-recipes-items.jsonnet",
+      "output": "packages/mods/skelly.basic-recipes/basic-recipes-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.basic-recipes/exports/things.jsonnet",
+      "output": "packages/mods/skelly.basic-recipes/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.basic-recipes/models-basic-recipes.jsonnet",
+      "output": "packages/mods/skelly.basic-recipes/models-basic-recipes.json"
+    },
+    {
+      "source": "packages/mods/skelly.basic-recipes/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.basic-recipes/pack/manifest.json"
+    },
+    {
       "source": "packages/mods/skelly.body/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.body/assets/manifest.json"
     },

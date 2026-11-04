@@ -46,7 +46,7 @@ Escrow prevents other actions consuming inputs mid-craft. Lost tools or stations
 
 Disassembly promises its yield when work starts, so stopping, skill changes or tool changes must not alter it. Repair improves an existing target rather than supplying disassembly results. Craft completion earns practice; take-apart does not. Books and skill levels teach recipes independently, so a book can shortcut the skill grind without changing item ownership. Practice may come from any activity. See `src/core/disassembly.ts`, `planDisassembly`, and `src/core/character.ts`, `Character.awardPractice` and `Character.learnSkillRecipes`.
 
-Blades already dull with use, so each wearing blade has two sharpening repairs: a grind at a grinding wheel found in garages and workshops, and a weaker hone with a carried whetstone. A fixed wheel at a base and a weaker field stone make keeping an edge a trip-or-carry decision. See `src/core/wear.ts`, `wearMeleeWeaponOnHit`, and `mods/skelly.deadvox.residual/recipes.libsonnet`, `sharpenRecipes`.
+Blades already dull with use, so each wearing blade has two sharpening repairs: a grind at a grinding wheel found in garages and workshops, and a weaker hone with a carried whetstone. A fixed wheel at a base and a weaker field stone make keeping an edge a trip-or-carry decision. See `src/core/wear.ts`, `wearMeleeWeaponOnHit`, and `tools/jsonnet/lib/sharpen-recipes.libsonnet`, `sharpenRecipes`.
 
 Reading a recipe book progresses only while its page is open. Closing the page pauses work and preserves progress; movement closes it and passes through. Readable-only notes and signs do not create a timed job. See `src/core/bookReading.ts`, `bookReadingHooks`, and `src/game/play.ts`, `stopReadingOnClose`.
 

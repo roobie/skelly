@@ -1,0 +1,918 @@
+{
+  "items": [
+    {
+      "category": "material",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 4,
+        "yields": [
+          {
+            "count": 2,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "stick",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "id": "wooden_plank",
+      "model": "wooden_plank",
+      "name": "Wooden plank",
+      "size": [2, 4],
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "description": "A length of timber that drops across a shut door and bars it from the other side.",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 5,
+        "yields": [
+          {
+            "count": 2,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "wooden_plank",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "doorBar": {
+        "liftSimSeconds": 2,
+        "look": {
+          "color": "#7a5532",
+          "thickness": 0.089999999999999997
+        },
+        "setSimSeconds": 3
+      },
+      "id": "door_bar",
+      "name": "Door bar",
+      "size": [1, 6],
+      "twoHanded": true,
+      "weight": 3000,
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "id": "hand_saw",
+      "model": "hand_saw",
+      "name": "Hand saw",
+      "salvage": [
+        {
+          "count": 1,
+          "item": "scrap_metal"
+        },
+        {
+          "count": 1,
+          "item": "wooden_plank"
+        }
+      ],
+      "salvageTimeGameMinutes": 5,
+      "size": [2, 6],
+      "tool": {
+        "qualities": {
+          "sawing": 1
+        }
+      },
+      "workInProgress": false
+    }
+  ],
+  "recipes": [
+    {
+      "category": "materials",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "rag"
+          }
+        ]
+      ],
+      "id": "rag_to_cloth_strip",
+      "qualities": {
+        "cutting": 1
+      },
+      "result": {
+        "count": 2,
+        "item": "cloth_strip"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 4
+    },
+    {
+      "category": "materials",
+      "components": [
+        [
+          {
+            "count": 3,
+            "item": "cloth_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "sewing_thread"
+          }
+        ]
+      ],
+      "id": "sew_cloth_strip",
+      "qualities": {
+        "sewing": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "rag"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 10
+    },
+    {
+      "category": "materials",
+      "components": [
+        [
+          {
+            "count": 4,
+            "item": "cloth_strip"
+          }
+        ]
+      ],
+      "id": "make_rope",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "rope"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 4
+    },
+    {
+      "category": "materials",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "wooden_plank"
+          }
+        ]
+      ],
+      "id": "trim_wood_offcut",
+      "qualities": {
+        "sawing": 1
+      },
+      "result": {
+        "count": 2,
+        "item": "wood_offcut"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["wood"],
+      "timeGameMinutes": 5,
+      "workstation": "workbench"
+    },
+    {
+      "category": "tools",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "sewing_thread"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "cloth_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "fastener_pack"
+          }
+        ]
+      ],
+      "id": "make_sewing_kit",
+      "qualities": {
+        "cutting": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "sewing_kit"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 12
+    },
+    {
+      "category": "tools",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "sewing_thread"
+          }
+        ],
+        [
+          {
+            "count": 2,
+            "item": "cloth_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "duct_tape"
+          }
+        ]
+      ],
+      "id": "make_sewing_repair_kit",
+      "qualities": {
+        "sewing": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "sewing_repair_kit"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 15
+    },
+    {
+      "category": "tools",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "scrap_metal"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "rubber_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "fastener_pack"
+          }
+        ]
+      ],
+      "id": "make_wire_strippers",
+      "qualities": {
+        "hammering": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "wire_strippers"
+      },
+      "searchTerms": [],
+      "skills": {
+        "mechanics": 0
+      },
+      "tags": ["metal", "electrical"],
+      "timeGameMinutes": 18,
+      "workstation": "workbench"
+    },
+    {
+      "category": "materials",
+      "components": [
+        [
+          {
+            "count": 5,
+            "item": "nails"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "scrap_metal"
+          }
+        ]
+      ],
+      "id": "assemble_fastener_pack",
+      "qualities": {
+        "hammering": 1
+      },
+      "result": {
+        "count": 2,
+        "item": "fastener_pack"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["metal"],
+      "timeGameMinutes": 6
+    },
+    {
+      "category": "repair_tools",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "scrap_metal"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "duct_tape"
+          }
+        ]
+      ],
+      "id": "repair_hammer",
+      "kind": "repair",
+      "qualities": {
+        "repairing": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.10000000000000001,
+        "skill": "mechanics"
+      },
+      "result": {
+        "count": 1,
+        "item": "hammer"
+      },
+      "searchTerms": [],
+      "skills": {
+        "mechanics": 0
+      },
+      "tags": ["metal"],
+      "timeGameMinutes": 12
+    },
+    {
+      "category": "repair_clothing",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "cloth_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "sewing_thread"
+          }
+        ]
+      ],
+      "id": "repair_jeans",
+      "kind": "repair",
+      "qualities": {
+        "sewing": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.10000000000000001,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "jeans"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 10
+    },
+    {
+      "category": "repair_clothing",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "cloth_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "sewing_thread"
+          }
+        ]
+      ],
+      "id": "repair_cargo_pants",
+      "kind": "repair",
+      "qualities": {
+        "sewing": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.10000000000000001,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "cargo_pants"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 12
+    },
+    {
+      "category": "repair_clothing",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "cloth_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "sewing_thread"
+          }
+        ]
+      ],
+      "id": "repair_hoodie",
+      "kind": "repair",
+      "qualities": {
+        "sewing": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.10000000000000001,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "hoodie"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 12
+    },
+    {
+      "category": "repair_clothing",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "cloth_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "sewing_thread"
+          }
+        ]
+      ],
+      "id": "repair_jacket",
+      "kind": "repair",
+      "qualities": {
+        "sewing": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.10000000000000001,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "jacket"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 15
+    },
+    {
+      "category": "repair_clothing",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "cloth_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "sewing_thread"
+          }
+        ]
+      ],
+      "id": "repair_utility_vest",
+      "kind": "repair",
+      "qualities": {
+        "sewing": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.10000000000000001,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "utility_vest"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 15
+    },
+    {
+      "category": "repair_clothing",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "cloth_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "sewing_thread"
+          }
+        ]
+      ],
+      "id": "repair_stab_vest",
+      "kind": "repair",
+      "qualities": {
+        "sewing": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.10000000000000001,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "stab_vest"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 15
+    },
+    {
+      "category": "repair_clothing",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "duct_tape"
+          }
+        ]
+      ],
+      "id": "repair_riot_helmet",
+      "kind": "repair",
+      "qualities": {},
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.10000000000000001,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "riot_helmet"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": [],
+      "timeGameMinutes": 15
+    },
+    {
+      "category": "repair_clothing",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "cloth_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "nylon_cord"
+          }
+        ]
+      ],
+      "id": "repair_hiking_backpack",
+      "kind": "repair",
+      "qualities": {
+        "sewing": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.10000000000000001,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "hiking_backpack"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 16
+    },
+    {
+      "category": "repair_clothing",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "cloth_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "sewing_thread"
+          }
+        ]
+      ],
+      "id": "repair_fanny_pack",
+      "kind": "repair",
+      "qualities": {
+        "sewing": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.10000000000000001,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "fanny_pack"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 10
+    },
+    {
+      "category": "supplies",
+      "components": [
+        [
+          {
+            "count": 2,
+            "item": "cloth_strip"
+          }
+        ]
+      ],
+      "id": "make_bandage",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "bandage"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 5
+    },
+    {
+      "category": "supplies",
+      "components": [
+        [
+          {
+            "count": 4,
+            "item": "paperback"
+          }
+        ],
+        [
+          {
+            "count": 2,
+            "item": "duct_tape"
+          }
+        ]
+      ],
+      "id": "make_taped_armour",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "taped_armour"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 30
+    },
+    {
+      "category": "tools",
+      "components": [
+        [
+          {
+            "count": 2,
+            "item": "scrap_metal"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "duct_tape"
+          }
+        ],
+        [
+          {
+            "count": 2,
+            "item": "rag"
+          }
+        ]
+      ],
+      "id": "repair_kit",
+      "qualities": {
+        "hammering": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "repair_kit"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 1
+      },
+      "tags": ["metal", "textile"],
+      "timeGameMinutes": 30
+    },
+    {
+      "category": "repair_tools",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "scrap_metal"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "duct_tape"
+          }
+        ]
+      ],
+      "id": "repair_crowbar",
+      "kind": "repair",
+      "qualities": {
+        "repairing": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.10000000000000001,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "crowbar"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["metal"],
+      "timeGameMinutes": 15
+    },
+    {
+      "category": "materials",
+      "components": [
+        [
+          {
+            "count": 2,
+            "item": "stick"
+          }
+        ]
+      ],
+      "id": "sawn_plank",
+      "qualities": {
+        "sawing": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "wooden_plank"
+      },
+      "searchTerms": ["saw"],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["wood"],
+      "timeGameMinutes": 4,
+      "workstation": "workbench"
+    },
+    {
+      "category": "fixtures",
+      "components": [
+        [
+          {
+            "count": 2,
+            "item": "wooden_plank"
+          }
+        ]
+      ],
+      "id": "door_bar",
+      "qualities": {
+        "sawing": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "door_bar"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["wood"],
+      "timeGameMinutes": 10,
+      "workstation": "workbench"
+    },
+    {
+      "activation": "sharpen",
+      "category": "repair_tools",
+      "components": [],
+      "id": "grind_kitchen_knife",
+      "kind": "repair",
+      "qualities": {},
+      "repair": {
+        "amount": 0.5,
+        "perSkill": 0.050000000000000003,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "kitchen_knife"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["edge"],
+      "timeGameMinutes": 10,
+      "workstation": "grinding_wheel"
+    },
+    {
+      "activation": "sharpen",
+      "category": "repair_tools",
+      "components": [],
+      "id": "hone_kitchen_knife",
+      "kind": "repair",
+      "qualities": {
+        "sharpening": 1
+      },
+      "repair": {
+        "amount": 0.20000000000000001,
+        "perSkill": 0.050000000000000003,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "kitchen_knife"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["edge"],
+      "timeGameMinutes": 20,
+      "workstation": null
+    }
+  ]
+}

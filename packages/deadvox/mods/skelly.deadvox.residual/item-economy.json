@@ -1183,12 +1183,6 @@
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
     },
     {
-      "id": "hand_saw",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
       "id": "improvised_suppressor",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -1271,12 +1265,6 @@
       "notLoot": false,
       "tiers": ["Tier2", "Tier3"],
       "usage": ["Military"]
-    },
-    {
-      "id": "door_bar",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
     },
     {
       "id": "jeans",
@@ -1423,6 +1411,24 @@
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
     },
     {
+      "id": "wooden_plank",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "door_bar",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "hand_saw",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
       "id": "shed_key",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -1478,12 +1484,6 @@
     },
     {
       "id": "hinge_set",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
-      "id": "wooden_plank",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]

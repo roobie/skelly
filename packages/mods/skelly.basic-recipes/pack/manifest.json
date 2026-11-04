@@ -1,0 +1,60 @@
+{
+  "dependencies": [
+    "skelly.crafting",
+    "skelly.hand-tools",
+    "skelly.inventory",
+    "skelly.materials",
+    "skelly.medicine",
+    "skelly.natural-world",
+    "skelly.readables",
+    "skelly.structures",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "basic-recipes-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-basic-recipes.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wooden_plank.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hand_saw.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "exports/things.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hand_saw.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wooden_plank.glb"
+    }
+  ],
+  "id": "skelly.basic-recipes",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

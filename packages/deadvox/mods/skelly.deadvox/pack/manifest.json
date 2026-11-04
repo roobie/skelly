@@ -29,6 +29,7 @@
     "skelly.containers",
     "skelly.flame-tools",
     "skelly.light-sources",
+    "skelly.basic-recipes",
     "skelly.deadvox.residual"
   ],
   "files": [],

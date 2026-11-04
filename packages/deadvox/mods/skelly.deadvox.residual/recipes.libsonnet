@@ -1,30 +1,3 @@
-// Every wearing blade gets one repair per sharpening method: the wheel restores more in less time, so keeping an edge
-// is a choice between a trip to the wheel and a stone carried in the field.
-local sharpening = [
-  { prefix: "grind_", qualities: {}, workstation: "grinding_wheel", amount: 0.5, timeGameMinutes: 10 },
-  { prefix: "hone_", qualities: { sharpening: 1 }, workstation: null, amount: 0.2, timeGameMinutes: 20 },
-];
-local blades = [
-  item.id
-  for item in (import "packages/mods/skelly.hand-tools/hand-tools-items.jsonnet").items + (import "items-tools.libsonnet").items
-  if std.objectHas(item, "weapon") && item.weapon.melee.type == "cut" && std.objectHas(item.weapon.melee, "wearPerHit")
-];
-local sharpen(blade, method) = {
-  id: method.prefix + blade,
-  category: "repair_tools",
-  tags: ["edge"],
-  searchTerms: [],
-  kind: "repair",
-  activation: "sharpen",
-  result: { item: blade, count: 1 },
-  repair: { skill: "crafting", amount: method.amount, perSkill: 0.05 },
-  timeGameMinutes: method.timeGameMinutes,
-  skills: { crafting: 0 },
-  qualities: method.qualities,
-  components: [],
-  workstation: method.workstation,
-};
-local sharpenRecipes = [sharpen(blade, method) for blade in blades for method in sharpening];
 local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
 {
   "skills": [skill + { curve: skillCurve } for skill in [
@@ -102,18 +75,6 @@ local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
   ]],
   "items": [
     {
-      "id": "wooden_plank",
-      "name": "Wooden plank",
-      "category": "material",
-      "model": "wooden_plank",
-      "size": [2, 4],
-      "disassembly": {
-        "timeGameMinutes": 4,
-        "skill": "crafting",
-        "yields": [{ "item": "stick", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }]
-      }
-    },
-    {
       "id": "copper_wire",
       "name": "Salvaged wire",
       "category": "material",
@@ -142,15 +103,6 @@ local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
     }
   ],
   "recipes": [
-    {
-      "id": "make_bandage",
-      category: "supplies", tags: ["textile"], searchTerms: [],
-      "result": { "item": "bandage", "count": 1 },
-      "timeGameMinutes": 5,
-      "skills": { "crafting": 0 },
-      "qualities": {},
-      "components": [[{ "item": "cloth_strip", "count": 2 }]]
-    },
     {
       "id": "make_headlamp_strap",
       category: "lighting", tags: ["textile"], searchTerms: [],
@@ -191,31 +143,6 @@ local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
       ]
     },
     {
-      "id": "make_taped_armour",
-      category: "supplies", tags: ["textile"], searchTerms: [],
-      "result": { "item": "taped_armour", "count": 1 },
-      "timeGameMinutes": 30,
-      "skills": { "crafting": 0 },
-      "qualities": {},
-      "components": [
-        [{ "item": "paperback", "count": 4 }],
-        [{ "item": "duct_tape", "count": 2 }]
-      ]
-    },
-    {
-      "id": "repair_kit",
-      category: "tools", tags: ["metal", "textile"], searchTerms: [],
-      "result": { "item": "repair_kit", "count": 1 },
-      "timeGameMinutes": 30,
-      "skills": { "crafting": 1 },
-      "qualities": { "hammering": 1 },
-      "components": [
-        [{ "item": "scrap_metal", "count": 2 }],
-        [{ "item": "duct_tape", "count": 1 }],
-        [{ "item": "rag", "count": 2 }]
-      ]
-    },
-    {
       "id": "strip_wire",
       category: "materials", tags: ["electrical", "metal"], searchTerms: ["strip"],
       "result": { "item": "copper_wire", "count": 1 },
@@ -232,37 +159,6 @@ local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
       "skills": { "mechanics": 2 },
       "qualities": {},
       "components": [[{ "item": "copper_wire", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
-    },
-    {
-      "id": "repair_crowbar",
-      category: "repair_tools", tags: ["metal"], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "crowbar", "count": 1 },
-      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 15,
-      "skills": { "crafting": 0 },
-      "qualities": { "repairing": 1 },
-      "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
-    },
-    {
-      "id": "sawn_plank",
-      category: "materials", tags: ["wood"], searchTerms: ["saw"],
-      "result": { "item": "wooden_plank", "count": 1 },
-      "timeGameMinutes": 4,
-      "skills": { "crafting": 0 },
-      "qualities": { "sawing": 1 },
-      "components": [[{ "item": "stick", "count": 2 }]],
-      "workstation": "workbench"
-    },
-    {
-      "id": "door_bar",
-      category: "fixtures", tags: ["wood"], searchTerms: [],
-      "result": { "item": "door_bar", "count": 1 },
-      "timeGameMinutes": 10,
-      "skills": { "crafting": 0 },
-      "qualities": { "sawing": 1 },
-      "components": [[{ "item": "wooden_plank", "count": 2 }]],
-      "workstation": "workbench"
     }
-  ] + sharpenRecipes
+  ] + (import 'tools/jsonnet/lib/sharpen-recipes.libsonnet').sharpenRecipes((import 'items-tools.libsonnet').items)
 }

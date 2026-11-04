@@ -3,26 +3,6 @@
     {
       "category": "material",
       "disassembly": {
-        "skill": "crafting",
-        "timeGameMinutes": 4,
-        "yields": [
-          {
-            "count": 2,
-            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
-            "item": "stick",
-            "rounding": "floor"
-          }
-        ]
-      },
-      "id": "wooden_plank",
-      "model": "wooden_plank",
-      "name": "Wooden plank",
-      "size": [2, 4],
-      "workInProgress": false
-    },
-    {
-      "category": "material",
-      "disassembly": {
         "skill": "mechanics",
         "timeGameMinutes": 8,
         "yields": [
@@ -68,29 +48,6 @@
     }
   ],
   "recipes": [
-    {
-      "category": "supplies",
-      "components": [
-        [
-          {
-            "count": 2,
-            "item": "cloth_strip"
-          }
-        ]
-      ],
-      "id": "make_bandage",
-      "qualities": {},
-      "result": {
-        "count": 1,
-        "item": "bandage"
-      },
-      "searchTerms": [],
-      "skills": {
-        "crafting": 0
-      },
-      "tags": ["textile"],
-      "timeGameMinutes": 5
-    },
     {
       "category": "lighting",
       "components": [
@@ -206,72 +163,6 @@
       "timeGameMinutes": 20
     },
     {
-      "category": "supplies",
-      "components": [
-        [
-          {
-            "count": 4,
-            "item": "paperback"
-          }
-        ],
-        [
-          {
-            "count": 2,
-            "item": "duct_tape"
-          }
-        ]
-      ],
-      "id": "make_taped_armour",
-      "qualities": {},
-      "result": {
-        "count": 1,
-        "item": "taped_armour"
-      },
-      "searchTerms": [],
-      "skills": {
-        "crafting": 0
-      },
-      "tags": ["textile"],
-      "timeGameMinutes": 30
-    },
-    {
-      "category": "tools",
-      "components": [
-        [
-          {
-            "count": 2,
-            "item": "scrap_metal"
-          }
-        ],
-        [
-          {
-            "count": 1,
-            "item": "duct_tape"
-          }
-        ],
-        [
-          {
-            "count": 2,
-            "item": "rag"
-          }
-        ]
-      ],
-      "id": "repair_kit",
-      "qualities": {
-        "hammering": 1
-      },
-      "result": {
-        "count": 1,
-        "item": "repair_kit"
-      },
-      "searchTerms": [],
-      "skills": {
-        "crafting": 1
-      },
-      "tags": ["metal", "textile"],
-      "timeGameMinutes": 30
-    },
-    {
       "category": "materials",
       "components": [
         [
@@ -324,145 +215,6 @@
       },
       "tags": ["electrical"],
       "timeGameMinutes": 12
-    },
-    {
-      "category": "repair_tools",
-      "components": [
-        [
-          {
-            "count": 1,
-            "item": "scrap_metal"
-          }
-        ],
-        [
-          {
-            "count": 1,
-            "item": "duct_tape"
-          }
-        ]
-      ],
-      "id": "repair_crowbar",
-      "kind": "repair",
-      "qualities": {
-        "repairing": 1
-      },
-      "repair": {
-        "amount": 0.20000000000000001,
-        "perSkill": 0.10000000000000001,
-        "skill": "crafting"
-      },
-      "result": {
-        "count": 1,
-        "item": "crowbar"
-      },
-      "searchTerms": [],
-      "skills": {
-        "crafting": 0
-      },
-      "tags": ["metal"],
-      "timeGameMinutes": 15
-    },
-    {
-      "category": "materials",
-      "components": [
-        [
-          {
-            "count": 2,
-            "item": "stick"
-          }
-        ]
-      ],
-      "id": "sawn_plank",
-      "qualities": {
-        "sawing": 1
-      },
-      "result": {
-        "count": 1,
-        "item": "wooden_plank"
-      },
-      "searchTerms": ["saw"],
-      "skills": {
-        "crafting": 0
-      },
-      "tags": ["wood"],
-      "timeGameMinutes": 4,
-      "workstation": "workbench"
-    },
-    {
-      "category": "fixtures",
-      "components": [
-        [
-          {
-            "count": 2,
-            "item": "wooden_plank"
-          }
-        ]
-      ],
-      "id": "door_bar",
-      "qualities": {
-        "sawing": 1
-      },
-      "result": {
-        "count": 1,
-        "item": "door_bar"
-      },
-      "searchTerms": [],
-      "skills": {
-        "crafting": 0
-      },
-      "tags": ["wood"],
-      "timeGameMinutes": 10,
-      "workstation": "workbench"
-    },
-    {
-      "activation": "sharpen",
-      "category": "repair_tools",
-      "components": [],
-      "id": "grind_kitchen_knife",
-      "kind": "repair",
-      "qualities": {},
-      "repair": {
-        "amount": 0.5,
-        "perSkill": 0.050000000000000003,
-        "skill": "crafting"
-      },
-      "result": {
-        "count": 1,
-        "item": "kitchen_knife"
-      },
-      "searchTerms": [],
-      "skills": {
-        "crafting": 0
-      },
-      "tags": ["edge"],
-      "timeGameMinutes": 10,
-      "workstation": "grinding_wheel"
-    },
-    {
-      "activation": "sharpen",
-      "category": "repair_tools",
-      "components": [],
-      "id": "hone_kitchen_knife",
-      "kind": "repair",
-      "qualities": {
-        "sharpening": 1
-      },
-      "repair": {
-        "amount": 0.20000000000000001,
-        "perSkill": 0.050000000000000003,
-        "skill": "crafting"
-      },
-      "result": {
-        "count": 1,
-        "item": "kitchen_knife"
-      },
-      "searchTerms": [],
-      "skills": {
-        "crafting": 0
-      },
-      "tags": ["edge"],
-      "timeGameMinutes": 20,
-      "workstation": null
     },
     {
       "activation": "sharpen",

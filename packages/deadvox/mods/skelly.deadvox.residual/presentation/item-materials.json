@@ -73,7 +73,6 @@
   "assets/models/grip_ak.glb": { "materials": ["wood-walnut"] },
   "assets/models/grip_ar_long.glb": { "materials": ["polymer-black"] },
   "assets/models/grip_standard.glb": { "materials": ["polymer-black"] },
-  "assets/models/hand_saw.glb": { "materials": ["wood-walnut", "steel-grey"] },
   "assets/models/handguard_ak.glb": { "materials": ["wood-walnut", "steel-blued"] },
   "assets/models/handguard_ar_clamped.glb": { "materials": ["polymer-black"] },
   "assets/models/handguard_ar_large_clamped.glb": { "materials": ["polymer-black"] },
@@ -303,6 +302,5 @@
   "assets/models/weapon_sling.glb": { "materials": ["cord-olive", "steel-grey"] },
   "assets/models/weapon_sling_worn.glb": { "materials": ["cord-olive", "steel-grey"] },
   "assets/models/weapon_sling_worn_jacket.glb": { "materials": ["cord-olive", "steel-grey"] },
-  "assets/models/wheel_205_55r16.glb": { "materials": ["rubber-black", "steel-grey"] },
-  "assets/models/wooden_plank.glb": { "materials": ["wood-birch"] }
+  "assets/models/wheel_205_55r16.glb": { "materials": ["rubber-black", "steel-grey"] }
 }

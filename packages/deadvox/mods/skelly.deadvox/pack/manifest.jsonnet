@@ -11,6 +11,7 @@ manifest(
     'skelly.hand-tools', 'skelly.readables', 'skelly.structures', 'skelly.basic-foods', 'skelly.packaged-foods',
     'skelly.wearables', 'skelly.progression', 'skelly.crafting', 'skelly.manufactured-blocks',
     'skelly.fuel', 'skelly.containers', 'skelly.flame-tools', 'skelly.light-sources',
+    'skelly.basic-recipes',
     'skelly.deadvox.residual',
   ],
 )

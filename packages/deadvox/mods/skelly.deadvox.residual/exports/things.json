@@ -84,18 +84,6 @@
     }
   },
   {
-    "id": "wooden_plank",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "wooden_plank",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
     "id": "field_patch",
     "kind": "item",
     "options": {
@@ -1317,18 +1305,6 @@
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.01
-    }
-  },
-  {
-    "id": "hand_saw",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "hand_saw",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.0040000000000000001
     }
   },
   {
