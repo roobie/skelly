@@ -128,7 +128,7 @@ is selected, so shared content needs no actor merely to validate; see
 `src/core/settlementSpawns.ts`, `settlementHordeSpawn` and `settlementActorSpawns`,
 and `src/core/capabilities.ts`, `capabilityIssues`. Declared sound families let another
 actor reuse surface responses without pretending to be a particular creature; see
-`src/core/footsteps.ts`, `footstepEventForBlock`. Omission means silence.
+`src/core/footsteps.ts`, `footstepEventForBlock`.
 
 **Ability composition.** The wind-up, projectile and ground hazard behind acid spit
 are general mechanisms; acid presentation and type-specific resistance are content.
@@ -163,13 +163,16 @@ permission to invent resistance or injury responses.
 with their shared content, reusable weapon sounds with their theme, and zombie-specific
 sounds with the product. A block names only the player's own footstep; other footsteps
 live in a product section keyed by family and block, because a core block cannot name a
-product's actor. Rows merge across mods, and a scenario's own blocks take their rows from
-that scenario's mod; every Deadvox row sits in `skelly.deadvox.residual` until #1532
-extracts those mods. See `src/core/footsteps.ts`, `footstepEventForBlock`, and
+product's actor. A block-adding mod must add rows for every family a loaded actor walks
+with, because a silent footstep is a bug that must be refused at load; a block that authors
+no footsteps and a family no loaded actor uses need none. Rows merge across mods, and a
+scenario's own blocks take their rows from that scenario's mod; every Deadvox row sits in
+`skelly.deadvox.residual` until #1532 extracts those mods. See `src/core/footsteps.ts`,
+`footstepEventForBlock`; `src/core/content.ts`, `checkFootstepCoverage`; and
 `mods/skelly.deadvox.residual/footstep-sounds.jsonnet`, `footstepSounds`.
 Mechanisms read selections from triggering entries;
 `src/core/content.ts`, `checkActionSounds` and `referenceIssues` reject absent
-providers at those fields rather than requiring every product event. Optional
+providers at those fields rather than requiring every product event. Other optional
 presentation selections mean silence when omitted, never a borrowed sound. Door
 presentation need not alert hearing; forcing it to do so would change quiet doors
 merely because their former default became explicit. Search remains a hearing event;

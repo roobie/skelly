@@ -12,7 +12,7 @@ import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
 import { checkDamageKinds } from './damageContent.ts';
 import { checkDropSounds } from './dropSounds.ts';
-import { BLOCK_FOOTSTEP_FAMILY } from './footsteps.ts';
+import { BLOCK_FOOTSTEP_FAMILY, footstepEventForBlock } from './footsteps.ts';
 import { liftableFurniture } from './furnitureMove.ts';
 import { guidanceIssues } from './guidance.ts';
 import { visibleGridName } from './inventoryGridName.ts';
@@ -1990,6 +1990,29 @@ const checkFootstepSounds = (registry: Registry, report: Report): void => {
   }
 };
 
+/** A silent step is a content bug: reported at the block, so the issue's source names the mod that must add the row. */
+const checkFootstepCoverage = (registry: Registry, report: Report): void => {
+  const families = new Set(
+    [...registry.actors.values()].flatMap(({ footstepSound }) =>
+      footstepSound !== undefined && footstepSound !== BLOCK_FOOTSTEP_FAMILY && registry.soundFamilies.has(footstepSound)
+        ? [footstepSound]
+        : [],
+    ),
+  );
+  for (const family of families) {
+    for (const block of registry.blocks) {
+      if (block.footsteps && footstepEventForBlock(registry, block, family) === undefined) {
+        report(
+          'blocks',
+          block.id,
+          '.footsteps',
+          `no footstep row for family "${family}" on block "${block.id}"; the mod adding this block must add it`,
+        );
+      }
+    }
+  }
+};
+
 const checkCombatSkillRanges = (registry: Registry, report: Report): void => {
   const policy = claimed(registry.combatPolicy, 'player');
   for (const skill of registry.skills.values()) {
@@ -2243,6 +2266,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkCamoBlocks(registry, report);
   checkBlockFootsteps(registry, report);
   checkFootstepSounds(registry, report);
+  checkFootstepCoverage(registry, report);
   checkDropSounds(registry, report);
   checkBlockMaterials(registry, report);
   for (const block of registry.blocks) {

@@ -2,9 +2,12 @@ import { expect, it } from 'vitest';
 import { actorFigure } from '../src/core/actorFigure.ts';
 import { claimed } from '../src/core/capabilities.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
+import { footstepSoundId } from '../src/core/footsteps.ts';
 import { settlementActorSpawns, settlementHordeSpawn } from '../src/core/settlementSpawns.ts';
 import { baseSources } from '../src/game/bundledContent.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
+import { fixtureScenarioSources } from './fixtures/scenario.ts';
 
 it('admits an independent actor id selecting an existing body plan', () => {
   const source = [...baseRegistry().actors.values()].find((type) => type.figureSeeds?.length)!;
@@ -111,6 +114,49 @@ it('refuses competing actor role claims instead of choosing a spawn by load orde
   expect(issues.some(({ message }) => message.includes('competing claimants for capability "settlementHorde"'))).toBe(
     true,
   );
+});
+
+it('refuses a block that authors footsteps with no row for a family a loaded actor walks with', () => {
+  const family = 'fixture_steps';
+  const sources = fixtureScenarioSources();
+  const { actors, blocks } = sources[0]!.data as { actors: object[]; blocks: { footsteps?: object }[] };
+  // The stack's own solid block authors no footsteps, so it needs no row; the unused family needs none either.
+  expect(blocks.some(({ footsteps }) => footsteps)).toBe(false);
+  const fixtureBlock = {
+    ...blocks[0]!,
+    id: 'fixture_moss',
+    name: 'Fixture moss',
+    footsteps: { player: FIXTURE_BLOW_SOUND },
+  };
+  const build = (footstepSounds: unknown[]) =>
+    buildRegistry([
+      ...sources,
+      {
+        source: 'fixture-block-mod',
+        data: {
+          soundFamilies: [{ id: 'player' }, { id: family }, { id: 'fixture_unused_family' }],
+          sounds: fixtureSounds(),
+          actors: [{ ...actors[0]!, footstepSound: family }],
+          blocks: [fixtureBlock],
+          footstepSounds,
+        },
+      },
+    ]).issues;
+
+  const row = {
+    id: footstepSoundId(family, fixtureBlock.id),
+    family,
+    block: fixtureBlock.id,
+    sound: FIXTURE_BLOW_SOUND,
+  };
+  expect(build([])).toEqual([
+    {
+      source: 'fixture-block-mod',
+      path: 'blocks[0].footsteps',
+      message: `no footstep row for family "${family}" on block "${fixtureBlock.id}"; the mod adding this block must add it`,
+    },
+  ]);
+  expect(build([row])).toEqual([]);
 });
 
 it('rejects an actor selecting an undeclared footstep family', () => {
