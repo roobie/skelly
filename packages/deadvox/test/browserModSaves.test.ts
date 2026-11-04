@@ -24,9 +24,7 @@ test('a save round-trip preserves the admitted ordered browser mod identity', as
     decoded.versionIdentity.components.contentPacks.slice(0, packs.length).map(({ id, version }) => ({ id, version })),
   ).toEqual(packs.map(({ manifest: { id, version } }) => ({ id, version })));
   expect(
-    decoded.versionIdentity.components.contentPacks
-      .slice(packs.length)
-      .map(({ id, version }) => ({ id, version })),
+    decoded.versionIdentity.components.contentPacks.slice(packs.length).map(({ id, version }) => ({ id, version })),
   ).toEqual(mods.map(({ id, version }) => ({ id: `browser.${id}`, version })));
   expect(decoded.versionIdentity.digest).toBe(identity.digest);
 });
