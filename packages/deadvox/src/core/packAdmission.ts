@@ -173,19 +173,24 @@ const checkOverrides = (
   fail: Report,
 ): void => {
   for (const [entry, history] of entrySetters(packs)) {
-    const winner = history.at(-1)!;
-    for (const owner of history.slice(0, -1)) {
-      const declared = winner.manifest.overrides.some(
-        (override) => override.pack === owner.manifest.id && override.entry === entry,
-      );
-      if (!(dependencies.get(winner.manifest.id)!.has(owner.manifest.id) && declared)) {
-        fail(
-          winner,
-          'overrides',
-          `Pack ${winner.manifest.id}: entry ${entry} overrides pack ${owner.manifest.id}; declare the dependency and override`,
+    history.forEach((setter, index) => {
+      const winner = index === history.length - 1;
+      const reachable = dependencies.get(setter.manifest.id)!;
+      for (const owner of history.slice(0, index)) {
+        const depends = reachable.has(owner.manifest.id);
+        const declared = setter.manifest.overrides.some(
+          (override) => override.pack === owner.manifest.id && override.entry === entry,
         );
+        // Only the winner must settle an independent clash, but every dependent setter declares its own override.
+        if ((winner || depends) && !(depends && declared)) {
+          fail(
+            setter,
+            'overrides',
+            `Pack ${setter.manifest.id}: entry ${entry} overrides pack ${owner.manifest.id}; declare the dependency and override`,
+          );
+        }
       }
-    }
+    });
   }
 };
 

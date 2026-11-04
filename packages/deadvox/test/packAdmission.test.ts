@@ -81,6 +81,25 @@ it('a compatibility pack settles independent entry setters only by declaring bot
   expect(admitPacks([resolver, first, second]).sources).toEqual([]);
 });
 
+it('a later settling pack does not mask an intermediate undeclared dependency override', () => {
+  const owner = pack('fixture.owner');
+  const middle = pack('fixture.middle', [owner.manifest.id]);
+  const settler = pack('fixture.settler', [middle.manifest.id]);
+  for (const input of [owner, middle, settler]) {
+    input.files[0]!.data = { blocks: [{ id: 'fixture_block' }] };
+  }
+  settler.manifest.overrides = [owner, middle].map(({ manifest }) => ({
+    pack: manifest.id,
+    entry: 'blocks:fixture_block',
+  }));
+  const refused = admitPacks([owner, middle, settler]);
+  expect(refused.sources).toEqual([]);
+  expect(refused.issues).toEqual([expect.objectContaining({ source: middle.source, path: 'overrides' })]);
+  expect(refused.issues[0]!.message).toContain(owner.manifest.id);
+  middle.manifest.overrides.push({ pack: owner.manifest.id, entry: 'blocks:fixture_block' });
+  expect(admitPacks([owner, middle, settler]).issues).toEqual([]);
+});
+
 it('refuses a dependency cycle without admitting part of it', () => {
   const first = pack('fixture.first', ['fixture.second']);
   const second = pack('fixture.second', ['fixture.first']);
