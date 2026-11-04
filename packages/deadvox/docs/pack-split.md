@@ -284,8 +284,8 @@ scenario identity; see `docs/decisions/0009-content-defined-products.md`,
 
 ## Core-alone validation
 
-Validate a stack of every core-tier mod alone, without skills, actors,
-weapons or scenario content. It must report zero issues from both
+Validate a stack of every core-tier mod alone, without skills, actors or
+scenario content. It must report zero issues from both
 `src/core/content.ts`, `buildRegistry` and `requiredContentIssues`: registry
 construction can discard broken files, so a registry existing is not proof of
 validity. This check keeps upward references out of shared content.
@@ -293,7 +293,7 @@ validity. This check keeps upward references out of shared content.
 Do not boot or play the core-only stack. It intentionally lacks a scenario and start;
 adding them merely to test core would reintroduce consumer dependencies. Until
 #1532 completes topic extraction, `test/coreOnly.test.ts` checks the core-tier mods,
-chosen by manifest tier so a new one cannot skip the check, against
+chosen by manifest tier so a new one needs no test edit, against
 `test/fixtures/coreOnlyKnownIssues.ts`, `CORE_ONLY_KNOWN_ISSUES`.
 Every listed issue has an extraction owner; an unlisted issue or a stale exception
 fails, so partial validation cannot conceal an unrelated defect. The final stack
