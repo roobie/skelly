@@ -3,7 +3,6 @@
 // the same for its domain).
 
 import {
-  BoxGeometry,
   BufferAttribute,
   BufferGeometry,
   Color,
@@ -268,41 +267,4 @@ export const disposeActor = (actor: Actor): void => {
       m?.dispose();
     }
   });
-};
-
-// ---- The deadvox shambler, for scale comparison ----
-// Box sizes and colours copied from packages/deadvox/src/render/zombies.ts's BOXES constant (not imported:
-// subprojects don't share code across the repo boundary). Kept in metres, at the same scale as the
-// generated figure, placed 1 m to its right (+X).
-
-interface ShamblerBox {
-  readonly size: readonly [number, number, number];
-  readonly at: readonly [number, number, number];
-}
-
-const SHAMBLER_BOXES: Readonly<Record<string, ShamblerBox>> = {
-  body: { size: [0.42, 0.78, 0.28], at: [0, 1.02, 0] },
-  head: { size: [0.3, 0.32, 0.3], at: [0, 1.58, 0] },
-  leftArm: { size: [0.15, 0.68, 0.16], at: [-0.225, 1.02, 0] },
-  rightArm: { size: [0.15, 0.68, 0.16], at: [0.225, 1.02, 0] },
-  leftLeg: { size: [0.18, 0.62, 0.2], at: [-0.12, 0.62, 0] },
-  rightLeg: { size: [0.18, 0.62, 0.2], at: [0.12, 0.62, 0] },
-};
-const SHAMBLER_FLESH_COLOR = 0x87_96_78;
-const SHAMBLER_CLOTHES_COLOR = 0x68_6f_5e;
-const SHAMBLER_OFFSET_X = 1;
-
-export const buildShambler = (): Group => {
-  const group = new Group();
-  for (const [part, box] of Object.entries(SHAMBLER_BOXES)) {
-    const flesh = part === 'body' || part === 'head';
-    const mesh = new Mesh(
-      new BoxGeometry(...box.size),
-      new MeshStandardMaterial({ color: flesh ? SHAMBLER_FLESH_COLOR : SHAMBLER_CLOTHES_COLOR, flatShading: true }),
-    );
-    mesh.position.set(box.at[0] + SHAMBLER_OFFSET_X, box.at[1], box.at[2]);
-    mesh.userData = { boneId: `shambler ${part}` };
-    group.add(mesh);
-  }
-  return group;
 };

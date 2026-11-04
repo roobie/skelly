@@ -18,7 +18,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
-        stress: fileURLToPath(new URL('./stress.html', import.meta.url)),
       },
     },
   },

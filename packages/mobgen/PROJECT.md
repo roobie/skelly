@@ -46,51 +46,6 @@ Contact rather than a pose rule should settle an open jaw. Acid bodies burst ins
 
 Humanoid coarse builds intentionally omit forearm and hand flesh while retaining forced marrow for connectivity. Those bones explicitly declare a marrow material so this omission preserves their appearance without a core skin fallback. See `src/mob/humanoid.ts`, `buildBones`, and `src/core/body.ts`, `Bone`.
 
-## Recipe spike
-
-The closed, unmerged [recipe spike PR #1531](https://github.com/roobie/skelly/pull/1531) on branch `ccr-0ef98979-7ftt3n` retains its code. It found that ordered steps can modify a template's base body while its plan retains the rig; stable step ids keep streams independent, and the validator, not an operator, decides feasibility. Grafts remain outside the base hit regions, extra limbs have no motion, and a recipe cannot raise a validation budget.
-
-## Body-plan constraints
-
-The crawler is a distinct prone creature, not a humanoid gait variant: its arm-drag silhouette and trailing leg stumps define its identity. Other proposed forms need their own body plans. See `src/mob/crawler.ts`, `crawlerPose`, `crawlerGaitPose`, `crawlerHitPose`, and `test/crawler.test.ts`.
-
-The dog shambler is a quadruped: four paws, a hanging head and a limping diagonal gait whose opposite-corner pairs (fore-left with hind-right, fore-right with hind-left) define it, so it is its own body plan rather than a crouched humanoid. The four paws are the declared supports, and the template is `comparison-only` (`src/core/template.ts`, `TemplateStatus`): it is kept to compare gaits against other quadrupeds, is not fit for a player to meet, and so is never shipped. Consumers refuse it through `consumableTemplate` and the viewer labels it. See `src/mob/dog.ts`, `buildDog`, `dogPose`, `dogGaitPose`, `dogHitPose`, `src/mob/dogTemplate.ts`, `dogTemplate`, and `test/dog.test.ts`.
-
-The skeleton is its own body plan on the humanoid rig, so the shared humanoid poses drive it without a skeleton-specific animation path. Its thin parts are smaller than the sampling tolerance can preserve, so they snap to voxel rows and columns rather than vanishing or merging with a neighbour. It has no flesh, so its bones declare no marrow material, and its stance width is the template's explicit `stepWidth` rather than a girth-derived body width. It stays `comparison-only` until its game contracts are decided. See `src/mob/skeleton.ts`, `buildSkeleton`, `src/mob/skeletonTemplate.jsonnet`, `src/mob/gait.ts`, `stanceWidthTarget`, and `test/skeleton.test.ts`.
-
-The skeleton's look and attack follow these rulings, each with its reason:
-
-- **Swipe.** The skeleton attacks with a one-armed swipe, not the humanoids' two-armed grab, so it reads as a different threat. The swipe is authored on the shared rig and chosen through the template's `attackClip`, so it needs no skeleton-specific animation path, and a clip added to the content is selectable without a code change. See `src/mob/attackClips.jsonnet`, `src/mob/attack.ts`, `ATTACK_CLIPS`, `attackClipFor`.
-- **Middle skull.** The skull is sized between the merged oversized skull and a human-proportioned one. The intent is a compromise between the two proportions; the result still needs judging by eye. See `src/mob/skeleton.ts`, `buildSkull`, `skeletonLayout`.
-- **Orange eyes.** The eye sockets keep the merged orange. The colour is the one glowing cue on a pale body, and it is self-light, so it brightens the eyes and lights nothing around them. See `src/mob/skeletonTemplate.jsonnet`, `materials`.
-- **Four fingers plus a thumb.** Each hand has five digits so it reads as a hand. The digits are voxel geometry on the hand bone: the rig gets no extra digit bones and a digit cannot be severed on its own, because digit-level animation and loss are outside the dismemberment model. The hand bone stops near the palm and `handLength` sets how far the fingertips reach past it. See `src/mob/skeleton.ts`, `buildHand`, `skeletonLayout`.
-- **Five toes.** Each foot has five toes for the same read. The same boundary holds: no toe bones and no independent toe animation or loss, which stay separate scope. See `src/mob/skeleton.ts`, `buildFoot`.
-- **No girth, explicit step width.** The skeleton has no bulk to derive a width from, so its stance width is an authored input rather than a hidden code default.
-- **Clip choice by content.** Which clip a template plays is its own content choice, so adding an attack never adds a branch on body plan.
-
-### Dog gait
-
-The trot uses a withers-normalized stride rather than increasing cadence to compensate for a short,
-rigid leg sweep. Its scale is grounded in observed canine trotting proportions
-([biomechanical reference](https://doi.org/10.1371/journal.pone.0278665), including its treadmill-speed
-supplement), not a claim to reproduce a healthy dog's speed-dependent gait transitions. Keeping the
-cycle distance-driven avoids foot jumps when speed changes. Joint flex and footfall-linked torso
-motion must be solved around fixed ground targets, not layered onto planted legs afterwards. The
-impaired diagonal retains its relative shortening so increased stride does not erase the shambler's
-limp. See `src/mob/dog.ts`, `DOG_TROT`, `dogStepGeometry`, `dogStrideLength` and `dogGaitPose`.
-
-### Template readiness
-
-A template's readiness is a contract, not a naming convention: a comparison-only model may be generated, validated and viewed like any other, but it must not be spawned or exported. Every path that chooses a model for a consumer resolves it through `consumableTemplate`: the Deadvox spawn boundary (`src/mob/shamblerFigure.ts`, `zombieFigure`), the amalgam realization (`packages/deadvox/src/core/amalgamFigure.ts`, `amalgamFigure`) and the `generate` export CLI (`src/cli/generate.ts`). The tag therefore refuses a comparison-only model by itself rather than relying on its absence from a list. The viewer and the dev CLIs are not consumers: the viewer opts a comparison-only template into its own list and labels it so it stays available to compare, while the dev CLIs work from the shipped `TEMPLATES`. See `src/core/template.ts`, `TemplateStatus`, `consumableTemplate`, `src/viewer/main.ts`, `src/cli/stats.ts`, `src/cli/view.ts`, `src/cli/bench.ts`, and `test/dog.test.ts`.
-
-The playtest apex enemy must read as one grotesque fusion, not several unrelated actors. Complete shambler members remain severable subtrees beneath a non-severable shared core; members may hang or turn in any orientation, while support comes from actual ground contacts. The core's spreading lower mass should read as flesh rather than a platform or extra limbs. Its member count is a visual choice, not a budget ceiling. See `src/mob/amalgam.ts`, `amalgamManifest`, `src/core/generate.ts`, `resolveSupportBones`, and `test/amalgam.test.ts`.
+## Severing handoff
 
 A cut's surviving boundary needs the severed state of its neighbouring bone to show stump gore; every bone index in a body plan must therefore survive the crowd mask handoff. See `src/mob/crowd.ts`, `packSeveredMask` and `crowdBoneSevered`.
-
-Mobgen supplies the generated body used by Deadvox collision, hit regions and rendering; sharing that figure keeps gameplay contact tied to the visible anatomy. The amalgam template stays outside the ordinary `TEMPLATES` list so regular actor consumers opt into the boss explicitly. See `src/mob/amalgamTemplate.ts`, `VIEWER_TEMPLATES`, `packages/deadvox/src/core/amalgamFigure.ts`, `amalgamFigure`, and `packages/deadvox/test/simulationFingerprint.test.ts`.
-
-The Mobgen viewer keeps the amalgam static because arbitrarily oriented member heads have no single humanoid gaze target. Do not enable its gaze solver until it can resolve each member's head transform. See `src/viewer/main.ts`, `applyLiveFrame`, `src/mob/amalgam.ts`, and `src/mob/lookAt.ts`, `lookAtPose`.
-
-Issue #378 tracks the open visual-quality pass; the approved body remains a proposal for that judgment, not a fixed gameplay or encounter rule. The generated shape's movement cost is held to the budget in `packages/deadvox/DESIGN.md`, "Exact collision"; see `packages/deadvox/src/core/amalgamShape.ts`, `AmalgamShape`.
-
-Population-quality assertions belong in explicit sweeps because they measure distributions, not an individual actor's contract. See `test/sweeps.ts`, `sweepGroup`, `test/generate.test.ts` and `src/cli/stats.ts`.
