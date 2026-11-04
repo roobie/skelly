@@ -36,8 +36,8 @@ const {
 } = JSON.parse(readFileSync(resolve(root, '../mods/skelly.inventory/inventory.json'), 'utf8'));
 // The fixture's material takes its blow sound from the shipped materials, with that sound's shipped definition, so a
 // newly required material or sound field is met by the content rather than by this file.
-const baseContent = (file) => JSON.parse(readFileSync(resolve(root, 'mods/skelly.deadvox.residual', file), 'utf8'));
-const { blowSound } = baseContent('furniture.json').furnitureMaterials[0];
+const baseContent = (file) => JSON.parse(readFileSync(resolve(root, '../mods/skelly.natural-world', file), 'utf8'));
+const { blowSound } = baseContent('furniture-materials.json').furnitureMaterials[0];
 const blowSoundDefinition = baseContent('sounds-furniture.json').sounds.find(({ id }) => id === blowSound);
 if (!blowSoundDefinition) {
   throw new Error(`Base content lacks the blow sound ${blowSound}`);
