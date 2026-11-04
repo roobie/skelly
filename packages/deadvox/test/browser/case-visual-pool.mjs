@@ -19,10 +19,13 @@ import { CaseEffects, FLYING_CASE_CAP } from '/src/render/caseEffects.ts';
 import { PileMeshes } from '/src/render/piles.ts';
 import { ModelLibrary } from '/src/render/models.ts';
 import { SPENT_CASE_SCATTER_CAP } from '/src/core/scatterPile.ts';
-const raw = import.meta.glob('./mods/skelly.deadvox.residual/*.json', { eager: true, import: 'default' });
+const raw = {
+  ...import.meta.glob('./mods/*/*.json', { eager: true, import: 'default' }),
+  ...import.meta.glob('../mods/*/*.json', { eager: true, import: 'default' }),
+};
 const { registry, issues } = buildRegistry(Object.entries(raw).map(([source, data]) => ({
   // Asset ownership uses bundled intake's roots, not this root-level probe's module URL.
-  source: source.replace('./mods/', '../../mods/'),
+  source: source.startsWith('../') ? source.replace('../mods/', '../../../mods/') : source.replace('./mods/', '../../mods/'),
   data,
 })));
 if (issues.length) throw new Error(JSON.stringify(issues));
