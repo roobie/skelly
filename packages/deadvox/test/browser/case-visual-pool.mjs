@@ -20,7 +20,11 @@ import { PileMeshes } from '/src/render/piles.ts';
 import { ModelLibrary } from '/src/render/models.ts';
 import { SPENT_CASE_SCATTER_CAP } from '/src/core/scatterPile.ts';
 const raw = import.meta.glob('./mods/skelly.deadvox.residual/*.json', { eager: true, import: 'default' });
-const { registry, issues } = buildRegistry(Object.entries(raw).map(([source, data]) => ({ source, data })));
+const { registry, issues } = buildRegistry(Object.entries(raw).map(([source, data]) => ({
+  // Asset ownership uses bundled intake's roots, not this root-level probe's module URL.
+  source: source.replace('./mods/', '../../mods/'),
+  data,
+})));
 if (issues.length) throw new Error(JSON.stringify(issues));
 const caseItem = [...registry.items.values()].find((item) => {
   const model = registry.models.get(item.model);
@@ -219,7 +223,9 @@ const measure = async (launchedBrowser, address, mode) => {
       await page.waitForFunction(() => globalThis.__casePoolWaiting, undefined, { timeout: 20_000 });
       releaseRequest();
     }
-    await page.waitForFunction(() => globalThis.__casePoolResult, undefined, { timeout: 30_000 });
+    await page.waitForFunction(() => globalThis.__casePoolResult, undefined, { timeout: 30_000 }).catch((error) => {
+      throw new Error(`Case probe did not finish; browser errors: ${errors.join('; ')}`, { cause: error });
+    });
     const result = await page.evaluate(() => globalThis.__casePoolResult);
     process.stdout.write(`case visual pool (${mode}): ${JSON.stringify(result)}\n`);
     assert.deepEqual(errors, [], `browser errors: ${errors.join('; ')}`);
