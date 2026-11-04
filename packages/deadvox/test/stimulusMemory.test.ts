@@ -43,7 +43,7 @@ const noiseAtPlayer = (id: number, expiresAt: number): VocalNoise => ({
 const unreachableWall: SolidAt = (x, y) => y === 0 || (x === 100 && y > 0 && y < 5);
 
 describe('stimulus memory', () => {
-  const memorySeconds = SHAMBLER.agent.stimulusMemorySimSeconds;
+  const memorySeconds = SHAMBLER.agent!.stimulusMemorySimSeconds;
 
   it.each([
     { hour: 12, expected: 'home' },
@@ -94,7 +94,7 @@ describe('stimulus memory', () => {
   it('returns a blocked active investigator to its home behavior after stimulus memory expires', () => {
     const noise = noiseAtPlayer(1, 1);
     const target = () => ({ ...player([0, 1, 0]), vocalNoise: noise });
-    const type = { ...SHAMBLER, agent: { ...SHAMBLER.agent, sight: 0.01, nightSight: 0.01 } };
+    const type = { ...SHAMBLER, agent: { ...SHAMBLER.agent!, sight: 0.01, nightSight: 0.01 } };
     const wall: SolidAt = (x, y) => y === 0 || (x === 10 && y > 0 && y < 5);
     const system = new ActorSystem({ ...senses(target, wall), seed: 113 });
     const actor = system.store.get(system.add(type, [20, 1, 0]))!;
@@ -104,9 +104,9 @@ describe('stimulus memory', () => {
     // A blocked shambler slides along the wall, so it can drift past the active radius and out of
     // tickActive's selection during the 180 s wait; tick every tier to keep the memory timer under test.
     system.tick(dt, time);
-    expect(actor.agent.mode).toBe('investigate');
+    expect(actor.agent!.mode).toBe('investigate');
     expect(actor.body.pos[0]).toBeGreaterThan(10);
-    const { stimulusAt } = actor.agent;
+    const { stimulusAt } = actor.agent!;
     if (stimulusAt === undefined) {
       throw new Error('Active zombie did not record the heard sound time');
     }
@@ -116,18 +116,18 @@ describe('stimulus memory', () => {
       time += dt;
       system.tick(dt, time);
     }
-    expect(actor.agent.mode).toBe('investigate');
+    expect(actor.agent!.mode).toBe('investigate');
     expect(actor.body.pos[0]).toBeGreaterThan(10);
     time += dt;
     system.tick(dt, time);
-    expect(actor.agent.mode).toBe('return');
-    expect(actor.agent.lastPerceived).toBeUndefined();
+    expect(actor.agent!.mode).toBe('return');
+    expect(actor.agent!.lastPerceived).toBeUndefined();
   });
 
   it('round-trips forgotten zombie and horde state with a fresh zombie', () => {
     const noise = noiseAtPlayer(1, 1);
     const target = () => ({ ...player([0, 1, 0]), vocalNoise: noise });
-    const type = { ...SHAMBLER, agent: { ...SHAMBLER.agent, sight: 0.01, nightSight: 0.01 } };
+    const type = { ...SHAMBLER, agent: { ...SHAMBLER.agent!, sight: 0.01, nightSight: 0.01 } };
     const wall: SolidAt = (x, y) => y === 0 || (x === 10 && y > 0 && y < 5);
     const options = { ...senses(target, wall), seed: 113 };
     const system = new ActorSystem(options);
@@ -138,12 +138,12 @@ describe('stimulus memory', () => {
     let time = dt;
     system.tickActive(dt, time);
     system.tickBackground(dt, time);
-    expect(actor.agent.mode).toBe('investigate');
-    expect(actor.agent.stimulusAt).toBeDefined();
-    expect(actor.agent.lastPerceived).toBeDefined();
-    expect(actor.agent.investigationTier).toBeDefined();
+    expect(actor.agent!.mode).toBe('investigate');
+    expect(actor.agent!.stimulusAt).toBeDefined();
+    expect(actor.agent!.lastPerceived).toBeDefined();
+    expect(actor.agent!.investigationTier).toBeDefined();
     expect(system.snapshotState().hordes[0]?.stimulusAt).toBe(time);
-    const stimulusAt = actor.agent.stimulusAt!;
+    const stimulusAt = actor.agent!.stimulusAt!;
     const deadline = stimulusAt + type.agent.stimulusMemorySimSeconds;
     while (time < deadline + dt) {
       time += dt;
@@ -151,11 +151,11 @@ describe('stimulus memory', () => {
       system.tickBackground(dt, time);
     }
 
-    expect(actor.agent.mode).toBe('return');
-    expect(actor.agent.stimulusAt).toBeUndefined();
-    expect(actor.agent.lastPerceived).toBeUndefined();
-    expect(actor.agent.investigationTier).toBeUndefined();
-    expect(actor.agent.searchAnchor).toBeUndefined();
+    expect(actor.agent!.mode).toBe('return');
+    expect(actor.agent!.stimulusAt).toBeUndefined();
+    expect(actor.agent!.lastPerceived).toBeUndefined();
+    expect(actor.agent!.investigationTier).toBeUndefined();
+    expect(actor.agent!.searchAnchor).toBeUndefined();
     expect(system.snapshotState().hordes[0]?.stimulusAt).toBeUndefined();
 
     system.add(type, [40, 1, 0]);

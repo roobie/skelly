@@ -24,9 +24,9 @@ const posed = (actor: Actor) =>
     headYaw: actor.headYaw,
     gaitPhase: actor.gaitPhase,
     speed: actor.horizontalSpeed,
-    chasing: actor.agent.mode === 'chase',
+    chasing: actor.agent!.mode === 'chase',
     attackWindup: actor.attackWindup,
-    attackWindupSeconds: actor.type.attack.windupSimSeconds,
+    attackWindupSeconds: actor.type.attack!.windupSimSeconds,
     severed: actor.severed,
     blockSize: BLOCK_SIZE,
   });

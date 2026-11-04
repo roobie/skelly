@@ -265,46 +265,50 @@ export const ActorSchema = strictObject({
   eyeHeightMetres: Positive,
   /** Height above its feet that it hears at; a sound's occlusion line runs level from the source at this height. */
   earHeightMetres: Positive,
-  chaseMotion: pipe(
-    strictObject({
-      swayDegrees: pipe(NonNegative, maxValue(90, 'must be at most 90')),
-      swayIntervalSimSeconds: SimDurationRange,
-      speedMultiplier: strictObject({ min: Positive, max: Positive }),
-      lurchSimSeconds: PositiveSimSeconds,
-      stumbleChancePerSimSecond: pipe(NonNegative, maxValue(1, 'must be at most 1'), transform(simRate)),
-      stumbleDurationSimSeconds: SimDurationRange,
-      stumbleEaseSimSeconds: PositiveSimSeconds,
-      stumbleSpeedFraction: Fraction,
-      stumbleDecelerationMetresPerSimSecondSquared: SimAcceleration,
-    }),
-    check(
-      (motion) => motion.swayIntervalSimSeconds.min <= motion.swayIntervalSimSeconds.max,
-      'minimum sway interval must not exceed maximum',
-    ),
-    check(
-      (motion) => motion.speedMultiplier.min <= motion.speedMultiplier.max,
-      'minimum speed multiplier must not exceed maximum',
-    ),
-    check(
-      (motion) => motion.stumbleDurationSimSeconds.min <= motion.stumbleDurationSimSeconds.max,
-      'minimum stumble duration must not exceed maximum',
-    ),
-    check(
-      (motion) => motion.stumbleDurationSimSeconds.min >= 2 * motion.stumbleEaseSimSeconds,
-      'stumble duration must allow easing in and out',
+  chaseMotion: optional(
+    pipe(
+      strictObject({
+        swayDegrees: pipe(NonNegative, maxValue(90, 'must be at most 90')),
+        swayIntervalSimSeconds: SimDurationRange,
+        speedMultiplier: strictObject({ min: Positive, max: Positive }),
+        lurchSimSeconds: PositiveSimSeconds,
+        stumbleChancePerSimSecond: pipe(NonNegative, maxValue(1, 'must be at most 1'), transform(simRate)),
+        stumbleDurationSimSeconds: SimDurationRange,
+        stumbleEaseSimSeconds: PositiveSimSeconds,
+        stumbleSpeedFraction: Fraction,
+        stumbleDecelerationMetresPerSimSecondSquared: SimAcceleration,
+      }),
+      check(
+        (motion) => motion.swayIntervalSimSeconds.min <= motion.swayIntervalSimSeconds.max,
+        'minimum sway interval must not exceed maximum',
+      ),
+      check(
+        (motion) => motion.speedMultiplier.min <= motion.speedMultiplier.max,
+        'minimum speed multiplier must not exceed maximum',
+      ),
+      check(
+        (motion) => motion.stumbleDurationSimSeconds.min <= motion.stumbleDurationSimSeconds.max,
+        'minimum stumble duration must not exceed maximum',
+      ),
+      check(
+        (motion) => motion.stumbleDurationSimSeconds.min >= 2 * motion.stumbleEaseSimSeconds,
+        'stumble duration must allow easing in and out',
+      ),
     ),
   ),
-  attack: pipe(
-    strictObject({
-      reach: Positive,
-      cooldownSimSeconds: PositiveSimSeconds,
-      windupSimSeconds: PositiveSimSeconds,
-      /** A grab lands only while the player's feet are less than this far above or below its own. */
-      grabBandMetres: optional(Positive),
-      moves: MeleeMovesSchema,
-    }),
-    check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
-    check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'zombie move ids must be unique'),
+  attack: optional(
+    pipe(
+      strictObject({
+        reach: Positive,
+        cooldownSimSeconds: PositiveSimSeconds,
+        windupSimSeconds: PositiveSimSeconds,
+        /** A grab lands only while the player's feet are less than this far above or below its own. */
+        grabBandMetres: optional(Positive),
+        moves: MeleeMovesSchema,
+      }),
+      check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
+      check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'zombie move ids must be unique'),
+    ),
   ),
   /** A melee hit with at least this impulse holds the zombie still and spoils its attack (docs/stagger.md);
    * absent means it never staggers. */
@@ -355,7 +359,7 @@ export const ActorSchema = strictObject({
     headTurnDegreesPerSimSecond: SimRate,
     movementAccelerationMetresPerSimSecondSquared: SimAcceleration,
   }),
-  agent: AgentSchema,
+  agent: optional(AgentSchema),
 });
 
 export const actorAcidSpitMatchesAbility = (actor: InferOutput<typeof ActorSchema>): boolean =>

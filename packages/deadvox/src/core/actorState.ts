@@ -21,14 +21,20 @@ export const requiredFigureSeeds = (type: ActorDef): readonly number[] => {
 };
 
 export const requiredGrabBand = (type: ActorDef): number => {
-  if (type.attack.grabBandMetres === undefined) {
+  if (type.attack?.grabBandMetres === undefined) {
     throw new Error(`Zombie type ${type.id} is missing its authored attack.grabBandMetres`);
   }
   return type.attack.grabBandMetres;
 };
 
-export const actorAttackReachForDef = (type: ActorDef, figureSeed = FUSED_MASS_FIGURE_SEED): number =>
-  type.model === 'fused-mass' ? type.attack.reach * fusedMassFigureForType(type, figureSeed).scale : type.attack.reach;
+export const actorAttackReachForDef = (type: ActorDef, figureSeed = FUSED_MASS_FIGURE_SEED): number => {
+  if (!type.attack) {
+    return 0;
+  }
+  return type.model === 'fused-mass'
+    ? type.attack.reach * fusedMassFigureForType(type, figureSeed).scale
+    : type.attack.reach;
+};
 
 /**
  * Effective eye-to-hand reach in metres, including leaning into a swing; weapon reach extends beyond it.
@@ -76,7 +82,7 @@ export interface AgentState {
 }
 
 export interface Actor {
-  agent: AgentState;
+  agent?: AgentState;
   type: ActorDef;
   modifiers: Modifier[];
   /** Derived tier; a single entity moves between update schedules without duplicating ownership. */
@@ -168,7 +174,7 @@ export const activeFusedMassMembers = (
 /** Remaining manifest members share the authored attack reach; with none, the unseverable core cannot attack. */
 export const actorAttackReachMetres = (actor: Pick<Actor, 'type' | 'figureSeed' | 'severed'>): number => {
   if (actor.type.model !== 'fused-mass' || activeFusedMassMembers(actor).length === 0) {
-    return actor.type.model === 'fused-mass' ? 0 : actor.type.attack.reach;
+    return actor.type.model === 'fused-mass' ? 0 : (actor.type.attack?.reach ?? 0);
   }
   return actorAttackReachForDef(actor.type, actor.figureSeed);
 };
@@ -341,7 +347,7 @@ const agentSnapshotProjectors = {
   lastAlertAt: (actor) => actor.lastAlertAt,
 } satisfies { [K in keyof SavedAgentState]-?: (actor: AgentState) => SavedAgentState[K] };
 const actorSnapshotProjectors = {
-  agent: (actor) => projectSnapshot(actor.agent, agentSnapshotProjectors) as SavedAgentState,
+  agent: (actor) => projectSnapshot(actor.agent!, agentSnapshotProjectors) as SavedAgentState,
   type: (actor) => actor.type.id,
   body: (actor) => ({ ...actor.body, pos: [...actor.body.pos], vel: [...actor.body.vel] }),
   facing: (actor) => [...actor.facing],

@@ -20,7 +20,7 @@ import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
-const fixture = (reachMetres = 2.1, moves?: ActorDef['attack']['moves']) => {
+const fixture = (reachMetres = 2.1, moves?: NonNullable<ActorDef['attack']>['moves']) => {
   const registry = baseRegistry();
   const fence = registry.blockIds.get('chain_link')!;
   registry.blocks[fence] = {
@@ -68,11 +68,11 @@ const fixture = (reachMetres = 2.1, moves?: ActorDef['attack']['moves']) => {
   const type = {
     ...registry.actors.get('shambler')!,
     attack: {
-      ...registry.actors.get('shambler')!.attack,
+      ...registry.actors.get('shambler')!.attack!,
       reach: reachMetres,
       windupSimSeconds: simSeconds(0.2),
       moves: moves ?? [
-        { ...registry.actors.get('shambler')!.attack.moves[0]!, id: 'fixture_thrust', motion: 'thrust' },
+        { ...registry.actors.get('shambler')!.attack!.moves[0]!, id: 'fixture_thrust', motion: 'thrust' },
       ],
     },
   };
@@ -131,7 +131,7 @@ it('requires enough content-defined zombie reach to start and land a thrust thro
 });
 
 it('chooses only motion-clear moves at contact when a zombie also has a blocked high-weight move', () => {
-  const template = baseRegistry().actors.get('shambler')!.attack.moves[0]!;
+  const template = baseRegistry().actors.get('shambler')!.attack!.moves[0]!;
   const thrust = { ...template, id: 'fixture_thrust', motion: 'thrust' as const, damage: 1, weight: 1 };
   const wrestle = { ...template, id: 'fixture_wrestle', motion: 'wrestle' as const, damage: 5, weight: 1000 };
   const { system, actor, hits } = fixture(2.1, [wrestle, thrust]);
@@ -157,7 +157,7 @@ it('rechecks the blocker at zombie contact when a solid wall replaces the wire d
 });
 
 it('blocks the shambler swing and piercing bite through wire even when their reach is sufficient', () => {
-  const { moves } = baseRegistry().actors.get('shambler')!.attack;
+  const { moves } = baseRegistry().actors.get('shambler')!.attack!;
   expect(moves.length).toBeGreaterThan(0);
   for (const move of moves) {
     const { system, actor, hits, wire } = fixture(2.1, [move]);
@@ -224,7 +224,7 @@ it('admits the fused-mass tentacle thrust only when its reach clears the wire th
     }
     system.tick(1 / 60);
     expect(actor.attackWindup > 0).toBe(admits);
-    for (let tick = 0; tick <= Math.ceil(type.attack.windupSimSeconds * 60); tick++) {
+    for (let tick = 0; tick <= Math.ceil(type.attack!.windupSimSeconds * 60); tick++) {
       system.tick(1 / 60);
     }
     expect(hits.length > 0).toBe(admits);

@@ -540,14 +540,14 @@ describe('content', () => {
   it('keeps runner attack damage within the shambler damage ceilings', () => {
     const shambler = baseRegistry.actors.get('shambler')!;
     const runner = baseRegistry.actors.get('runner')!;
-    const highestShamblerDamage = Math.max(...shambler.attack.moves.map(({ damage }) => damage));
-    const weightedDamage = (moves: typeof shambler.attack.moves) =>
+    const highestShamblerDamage = Math.max(...shambler.attack!.moves.map(({ damage }) => damage));
+    const weightedDamage = (moves: NonNullable<typeof shambler.attack>['moves']) =>
       moves.reduce((total, { damage, weight }) => total + damage * weight, 0) /
       moves.reduce((total, { weight }) => total + weight, 0);
 
-    expect(runner.attack.moves.length).toBeGreaterThan(0);
-    expect(Math.max(...runner.attack.moves.map(({ damage }) => damage))).toBeLessThanOrEqual(highestShamblerDamage);
-    expect(weightedDamage(runner.attack.moves)).toBeLessThanOrEqual(weightedDamage(shambler.attack.moves));
+    expect(runner.attack!.moves.length).toBeGreaterThan(0);
+    expect(Math.max(...runner.attack!.moves.map(({ damage }) => damage))).toBeLessThanOrEqual(highestShamblerDamage);
+    expect(weightedDamage(runner.attack!.moves)).toBeLessThanOrEqual(weightedDamage(shambler.attack!.moves));
   });
 
   it('rejects negative and unknown bleeding region factors', () => {
@@ -2801,7 +2801,7 @@ describe('content references', () => {
               movementAccelerationMetresPerSimSecondSquared: 4,
             },
             agent: {
-              idleSound: baseRegistry.actors.get('shambler')!.agent.idleSound,
+              idleSound: baseRegistry.actors.get('shambler')!.agent!.idleSound,
               sight: 20,
               nightSight: 10,
               stimulusMemorySimSeconds: 1,

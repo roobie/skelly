@@ -80,16 +80,16 @@ export class AgentController {
   private readonly chainStimuli: { caller: Actor; origin: Vec3; target: Vec3 }[] = [];
 
   prepareDecisionRng(): void {
-    this.tickScratch.rng = this.tickScratch.actor.agent.behaviorRng;
+    this.tickScratch.rng = this.tickScratch.actor.agent!.behaviorRng;
   }
 
   prepareActiveMovement(): void {
     this.prepareDecisionRng();
-    this.tickScratch.sees = this.tickScratch.actor.agent.mode === 'chase';
+    this.tickScratch.sees = this.tickScratch.actor.agent!.mode === 'chase';
   }
 
   advancesWanderClock(): boolean {
-    const { mode } = this.tickScratch.actor.agent;
+    const { mode } = this.tickScratch.actor.agent!;
     return mode === 'idle' || mode === 'stroll';
   }
 
@@ -121,13 +121,13 @@ export class AgentController {
     });
     if (
       scratch.lightTarget &&
-      actor.agent.lastPerceived?.every((coordinate, axis) => coordinate === scratch.lightTarget![axis])
+      actor.agent!.lastPerceived?.every((coordinate, axis) => coordinate === scratch.lightTarget![axis])
     ) {
       scratch.lightTarget = undefined;
     }
-    if (scratch.sees && actor.agent.obstacleWanderRemaining > 0) {
-      actor.agent.obstacleWanderRemaining = 0;
-      actor.agent.obstacleWanderHeading = undefined;
+    if (scratch.sees && actor.agent!.obstacleWanderRemaining > 0) {
+      actor.agent!.obstacleWanderRemaining = 0;
+      actor.agent!.obstacleWanderHeading = undefined;
     }
     const hearing = scratch.hearingInput;
     hearing.def = type;
@@ -138,8 +138,8 @@ export class AgentController {
     hearing.rng = rng;
     hearing.tuning = this.options.tuning;
     scratch.vocal = undefined;
-    if (player.vocalNoise && actor.agent.lastVocalNoiseId !== player.vocalNoise.id) {
-      actor.agent.lastVocalNoiseId = player.vocalNoise.id;
+    if (player.vocalNoise && actor.agent!.lastVocalNoiseId !== player.vocalNoise.id) {
+      actor.agent!.lastVocalNoiseId = player.vocalNoise.id;
       scratch.vocal = hearVocalNoise({
         def: type,
         from: pos,
@@ -156,58 +156,58 @@ export class AgentController {
 
   private tickHesitation(): boolean {
     const { actor, time, sees, player, lightTarget, dt, vocal } = this.tickScratch;
-    const loud = vocal && player.vocalNoise!.radiusMetres >= actor.type.agent.hearingModel.loudNoiseRadiusMetres;
-    if (sees || loud || lightTarget || actor.agent.hordeId !== undefined) {
+    const loud = vocal && player.vocalNoise!.radiusMetres >= actor.type.agent!.hearingModel.loudNoiseRadiusMetres;
+    if (sees || loud || lightTarget || actor.agent!.hordeId !== undefined) {
       return false;
     }
-    actor.agent.modeTimer = Math.max(0, actor.agent.modeTimer - dt);
-    if (actor.agent.modeTimer > 0) {
+    actor.agent!.modeTimer = Math.max(0, actor.agent!.modeTimer - dt);
+    if (actor.agent!.modeTimer > 0) {
       return true;
     }
-    if (actor.agent.hesitationFrom === 'stroll') {
-      actor.agent.mode = 'investigate';
+    if (actor.agent!.hesitationFrom === 'stroll') {
+      actor.agent!.mode = 'investigate';
       setActorChaseStance(actor, false);
-      actor.agent.stimulusAt = time;
+      actor.agent!.stimulusAt = time;
     } else {
-      actor.agent.leanTarget = copy(actor.agent.lastPerceived!);
-      actor.agent.refusedAt = time;
-      actor.agent.lastPerceived = undefined;
-      actor.agent.stimulusAt = undefined;
+      actor.agent!.leanTarget = copy(actor.agent!.lastPerceived!);
+      actor.agent!.refusedAt = time;
+      actor.agent!.lastPerceived = undefined;
+      actor.agent!.stimulusAt = undefined;
       this.beginIdle(actor);
     }
-    actor.agent.hesitationFrom = undefined;
+    actor.agent!.hesitationFrom = undefined;
     this.announcePursuit('hesitate');
     return true;
   }
 
   updateAttention(): void {
     const { actor, time, sees, tier, player, lightTarget } = this.tickScratch;
-    const previous = actor.agent.mode;
+    const previous = actor.agent!.mode;
     if (previous === 'hesitate' && this.tickHesitation()) {
       return;
     }
     this.resolveAttention();
     const suspicious =
-      actor.agent.refusedAt !== undefined &&
-      time - actor.agent.refusedAt < actor.type.agent.hearingModel.refusalSuspicionSimSeconds;
+      actor.agent!.refusedAt !== undefined &&
+      time - actor.agent!.refusedAt < actor.type.agent!.hearingModel.refusalSuspicionSimSeconds;
     if (
       (previous === 'idle' || previous === 'stroll') &&
-      actor.agent.mode === 'investigate' &&
+      actor.agent!.mode === 'investigate' &&
       tier &&
       this.tickScratch.vocal &&
       !sees &&
       !lightTarget &&
-      actor.agent.hordeId === undefined &&
+      actor.agent!.hordeId === undefined &&
       !suspicious &&
-      player.vocalNoise!.radiusMetres < actor.type.agent.hearingModel.loudNoiseRadiusMetres
+      player.vocalNoise!.radiusMetres < actor.type.agent!.hearingModel.loudNoiseRadiusMetres
     ) {
-      actor.agent.hesitationFrom = previous;
-      actor.agent.mode = 'hesitate';
+      actor.agent!.hesitationFrom = previous;
+      actor.agent!.mode = 'hesitate';
       setActorChaseStance(actor, false);
-      actor.agent.modeTimer = inRange(actor.agent.behaviorRng, actor.type.agent.hearingModel.hesitationSimSeconds);
+      actor.agent!.modeTimer = inRange(actor.agent!.behaviorRng, actor.type.agent!.hearingModel.hesitationSimSeconds);
     }
-    if (actor.agent.mode !== 'hesitate') {
-      actor.agent.hesitationFrom = undefined;
+    if (actor.agent!.mode !== 'hesitate') {
+      actor.agent!.hesitationFrom = undefined;
     }
     this.announcePursuit(previous);
   }
@@ -215,34 +215,35 @@ export class AgentController {
   private announcePursuit(previous: AgentMode): void {
     const { actor, time } = this.tickScratch;
     if (
-      (actor.agent.mode === 'chase' || actor.agent.mode === 'investigate') &&
+      (actor.agent!.mode === 'chase' || actor.agent!.mode === 'investigate') &&
       previous !== 'chase' &&
       previous !== 'investigate'
     ) {
-      actor.agent.leanTarget = undefined;
+      actor.agent!.leanTarget = undefined;
       this.cryAlert(actor, time);
     }
   }
 
   private cryAlert(actor: Actor, time: number): void {
     if (
-      actor.agent.lastAlertAt !== undefined &&
-      time - actor.agent.lastAlertAt < actor.type.agent.hearingModel.alertCooldownSimSeconds
+      actor.agent!.lastAlertAt !== undefined &&
+      time - actor.agent!.lastAlertAt < actor.type.agent!.hearingModel.alertCooldownSimSeconds
     ) {
       return;
     }
-    actor.agent.lastAlertAt = time;
+    actor.agent!.lastAlertAt = time;
     this.options.onSound?.(actor.type.sounds.alert, copy(actor.body.pos), actor);
-    this.chainStimuli.push({ caller: actor, origin: copy(actor.body.pos), target: copy(actor.agent.lastPerceived!) });
+    this.chainStimuli.push({ caller: actor, origin: copy(actor.body.pos), target: copy(actor.agent!.lastPerceived!) });
   }
 
   processChainStimuli(time: number): void {
     // Drain to closure before movement so entity iteration cannot delay a later caller's listeners.
     for (const stimulus of this.chainStimuli) {
-      const { chainRadiusMetres, chainChance } = stimulus.caller.type.agent.hearingModel;
+      const { chainRadiusMetres, chainChance } = stimulus.caller.type.agent!.hearingModel;
       for (const [, actor] of this.store.entries()) {
         if (
           actor.incapacitated ||
+          !actor.agent ||
           (actor.agent.mode !== 'idle' && actor.agent.mode !== 'stroll' && actor.agent.mode !== 'hesitate') ||
           horizontalDistance(actor.body.pos, stimulus.origin) * this.options.blockSize > chainRadiusMetres ||
           actor.agent.soundRng.next() >= chainChance
@@ -270,43 +271,43 @@ export class AgentController {
     const scratch = this.tickScratch;
     const { actor, player, pos, tier, sees, vocal, blockSize, lightTarget } = scratch;
     if (sees) {
-      actor.agent.mode = 'chase';
+      actor.agent!.mode = 'chase';
       setActorChaseStance(actor, true);
-      actor.agent.investigationTier = undefined;
-      actor.agent.searchAnchor = undefined;
-      actor.agent.searchTimer = 0;
-      actor.agent.searchStrolling = false;
-      actor.agent.lastPerceived = copy(player.pos);
+      actor.agent!.investigationTier = undefined;
+      actor.agent!.searchAnchor = undefined;
+      actor.agent!.searchTimer = 0;
+      actor.agent!.searchStrolling = false;
+      actor.agent!.lastPerceived = copy(player.pos);
     } else if (tier === 'near') {
-      actor.agent.mode = 'investigate';
+      actor.agent!.mode = 'investigate';
       setActorChaseStance(actor, false);
-      actor.agent.investigationTier = 'near';
-      actor.agent.searchAnchor = undefined;
-      actor.agent.searchTimer = 0;
-      actor.agent.searchStrolling = false;
-      actor.agent.lastPerceived = copy(vocal?.tier === 'near' ? vocal.target : player.pos);
+      actor.agent!.investigationTier = 'near';
+      actor.agent!.searchAnchor = undefined;
+      actor.agent!.searchTimer = 0;
+      actor.agent!.searchStrolling = false;
+      actor.agent!.lastPerceived = copy(vocal?.tier === 'near' ? vocal.target : player.pos);
     } else if (lightTarget) {
-      actor.agent.mode = 'investigate';
+      actor.agent!.mode = 'investigate';
       setActorChaseStance(actor, false);
-      actor.agent.investigationTier = 'near';
-      actor.agent.searchAnchor = undefined;
-      actor.agent.searchTimer = 0;
-      actor.agent.searchStrolling = false;
-      actor.agent.lastPerceived = copy(lightTarget);
+      actor.agent!.investigationTier = 'near';
+      actor.agent!.searchAnchor = undefined;
+      actor.agent!.searchTimer = 0;
+      actor.agent!.searchStrolling = false;
+      actor.agent!.lastPerceived = copy(lightTarget);
     } else if (
       tier === 'far' &&
-      (actor.agent.mode === 'idle' ||
-        actor.agent.mode === 'stroll' ||
-        actor.agent.mode === 'search' ||
-        actor.agent.mode === 'hesitate')
+      (actor.agent!.mode === 'idle' ||
+        actor.agent!.mode === 'stroll' ||
+        actor.agent!.mode === 'search' ||
+        actor.agent!.mode === 'hesitate')
     ) {
-      actor.agent.mode = 'investigate';
+      actor.agent!.mode = 'investigate';
       setActorChaseStance(actor, false);
-      actor.agent.investigationTier = 'far';
-      actor.agent.searchAnchor = undefined;
-      actor.agent.searchTimer = 0;
-      actor.agent.searchStrolling = false;
-      actor.agent.lastPerceived =
+      actor.agent!.investigationTier = 'far';
+      actor.agent!.searchAnchor = undefined;
+      actor.agent!.searchTimer = 0;
+      actor.agent!.searchStrolling = false;
+      actor.agent!.lastPerceived =
         vocal?.tier === 'far'
           ? vocal.target
           : farBearingTarget({ def: actor.type, from: pos, source: player.pos, rng: scratch.rng, blockSize });
@@ -316,59 +317,59 @@ export class AgentController {
         halfDepth: actor.body.halfDepth ?? actor.body.halfWidth,
       };
       if (terrainFloor && onTerrainFloor(pos, terrainFloor, footprint)) {
-        actor.agent.lastPerceived[1] = terrainStance(
-          actor.agent.lastPerceived[0],
-          actor.agent.lastPerceived[2],
+        actor.agent!.lastPerceived[1] = terrainStance(
+          actor.agent!.lastPerceived[0],
+          actor.agent!.lastPerceived[2],
           terrainFloor,
           footprint,
         );
       }
-    } else if (actor.agent.mode === 'chase') {
-      actor.agent.mode = 'investigate';
+    } else if (actor.agent!.mode === 'chase') {
+      actor.agent!.mode = 'investigate';
       setActorChaseStance(actor, false);
-      actor.agent.investigationTier = 'near';
+      actor.agent!.investigationTier = 'near';
     }
     if (sees || tier || lightTarget) {
-      actor.agent.stimulusAt = scratch.time;
+      actor.agent!.stimulusAt = scratch.time;
     }
     const groupTarget = sees || tier ? undefined : this.agentHorde.hordeTarget(actor);
     if (groupTarget) {
-      actor.agent.mode = 'investigate';
+      actor.agent!.mode = 'investigate';
       setActorChaseStance(actor, false);
-      actor.agent.investigationTier = 'far';
-      actor.agent.searchAnchor = undefined;
-      actor.agent.searchTimer = 0;
-      actor.agent.searchStrolling = false;
-      actor.agent.lastPerceived = groupTarget;
+      actor.agent!.investigationTier = 'far';
+      actor.agent!.searchAnchor = undefined;
+      actor.agent!.searchTimer = 0;
+      actor.agent!.searchStrolling = false;
+      actor.agent!.lastPerceived = groupTarget;
     }
   }
 
   forgetIndividualStimulus(actor: Actor, time: number): void {
     if (
-      actor.agent.hordeId !== undefined ||
-      actor.agent.mode !== 'investigate' ||
-      actor.agent.stimulusAt === undefined ||
-      time - actor.agent.stimulusAt < actor.type.agent.stimulusMemorySimSeconds
+      actor.agent!.hordeId !== undefined ||
+      actor.agent!.mode !== 'investigate' ||
+      actor.agent!.stimulusAt === undefined ||
+      time - actor.agent!.stimulusAt < actor.type.agent!.stimulusMemorySimSeconds
     ) {
       return;
     }
-    actor.agent.stimulusAt = undefined;
-    actor.agent.lastPerceived = undefined;
-    actor.agent.investigationTier = undefined;
-    actor.agent.searchAnchor = undefined;
-    actor.agent.searchTimer = 0;
-    actor.agent.searchStrolling = false;
-    actor.agent.mode = 'return';
+    actor.agent!.stimulusAt = undefined;
+    actor.agent!.lastPerceived = undefined;
+    actor.agent!.investigationTier = undefined;
+    actor.agent!.searchAnchor = undefined;
+    actor.agent!.searchTimer = 0;
+    actor.agent!.searchStrolling = false;
+    actor.agent!.mode = 'return';
     setActorChaseStance(actor, false);
   }
 
   checkInvestigationArrival(): void {
     const scratch = this.tickScratch;
     const { actor, pos } = scratch;
-    if (actor.agent.mode !== 'investigate') {
+    if (actor.agent!.mode !== 'investigate') {
       return;
     }
-    const target = actor.agent.lastPerceived ?? actor.agent.home;
+    const target = actor.agent!.lastPerceived ?? actor.agent!.home;
     if (
       Math.hypot(...sub(target, pos)) * scratch.blockSize <= 1 &&
       sameInvestigationFloor(pos, target, this.options.terrainFloor, {
@@ -385,107 +386,101 @@ export class AgentController {
   private idleSoundGridCellBlocks = 1;
 
   private tickLookAround(actor: Actor, dt: number): void {
-    const {
-      type,
-      agent: { behaviorRng: rng },
-    } = actor;
-    actor.agent.lookTimer -= dt;
-    if (actor.agent.lookTimer <= 0) {
-      actor.agent.bodyLookTarget =
+    const { type } = actor;
+    const { behaviorRng: rng } = actor.agent!;
+    actor.agent!.lookTimer -= dt;
+    if (actor.agent!.lookTimer <= 0) {
+      actor.agent!.bodyLookTarget =
         angleOf(actor.facing) +
-        rng.range(-type.agent.wander.bodyLookArcDegrees, type.agent.wander.bodyLookArcDegrees) * 0.5 * (Math.PI / 180);
-      actor.agent.headYawTarget =
-        rng.range(-type.agent.wander.headLookArcDegrees, type.agent.wander.headLookArcDegrees) * 0.5 * (Math.PI / 180);
-      actor.agent.lookTimer = inRange(rng, type.agent.wander.lookIntervalSimSeconds);
+        rng.range(-type.agent!.wander.bodyLookArcDegrees, type.agent!.wander.bodyLookArcDegrees) *
+          0.5 *
+          (Math.PI / 180);
+      actor.agent!.headYawTarget =
+        rng.range(-type.agent!.wander.headLookArcDegrees, type.agent!.wander.headLookArcDegrees) *
+        0.5 *
+        (Math.PI / 180);
+      actor.agent!.lookTimer = inRange(rng, type.agent!.wander.lookIntervalSimSeconds);
     }
-    turnActorBodyLook(actor, type, dt, actor.agent.bodyLookTarget);
-    turnActorHeadLook(actor, type, dt, actor.agent.headYawTarget);
+    turnActorBodyLook(actor, type, dt, actor.agent!.bodyLookTarget);
+    turnActorHeadLook(actor, type, dt, actor.agent!.headYawTarget);
   }
 
   beginIdle(actor: Actor): void {
-    actor.agent.mode = 'idle';
+    actor.agent!.mode = 'idle';
     setActorChaseStance(actor, false);
-    actor.agent.investigationTier = undefined;
-    actor.agent.searchAnchor = undefined;
-    actor.agent.searchTimer = 0;
-    actor.agent.searchStrolling = false;
-    actor.agent.modeTimer = inRange(actor.agent.behaviorRng, actor.type.agent.wander.idleSimSeconds);
-    actor.agent.lookTimer = 0;
-    actor.agent.bodyLookTarget = angleOf(actor.facing);
-    actor.agent.headYawTarget = 0;
+    actor.agent!.investigationTier = undefined;
+    actor.agent!.searchAnchor = undefined;
+    actor.agent!.searchTimer = 0;
+    actor.agent!.searchStrolling = false;
+    actor.agent!.modeTimer = inRange(actor.agent!.behaviorRng, actor.type.agent!.wander.idleSimSeconds);
+    actor.agent!.lookTimer = 0;
+    actor.agent!.bodyLookTarget = angleOf(actor.facing);
+    actor.agent!.headYawTarget = 0;
     haltActor(actor);
   }
 
   private beginStroll(actor: Actor): void {
-    const {
-      type,
-      body,
-      agent: { home, behaviorRng },
-    } = actor;
-    const duration = inRange(behaviorRng, type.agent.wander.strollSimSeconds);
+    const { type, body } = actor;
+    const { home, behaviorRng } = actor.agent!;
+    const duration = inRange(behaviorRng, type.agent!.wander.strollSimSeconds);
     let heading = headingAt(behaviorRng.range(-Math.PI, Math.PI));
-    if (actor.agent.leanTarget) {
-      const toward = unit(sub(actor.agent.leanTarget, body.pos));
-      const weight = type.agent.hearingModel.refusalLean;
+    if (actor.agent!.leanTarget) {
+      const toward = unit(sub(actor.agent!.leanTarget, body.pos));
+      const weight = type.agent!.hearingModel.refusalLean;
       heading = unit([
         heading[0] * (1 - weight) + toward[0] * weight,
         0,
         heading[2] * (1 - weight) + toward[2] * weight,
       ]);
-      actor.agent.leanTarget = undefined;
+      actor.agent!.leanTarget = undefined;
     }
     const endpoint: Vec3 = [
       body.pos[0] + (heading[0] * type.speed.wanderMetresPerSimSecond * duration) / this.options.blockSize,
       body.pos[1],
       body.pos[2] + (heading[2] * type.speed.wanderMetresPerSimSecond * duration) / this.options.blockSize,
     ];
-    if (horizontalDistance(endpoint, home) * this.options.blockSize > type.agent.wander.leashMetres) {
+    if (horizontalDistance(endpoint, home) * this.options.blockSize > type.agent!.wander.leashMetres) {
       heading = unit([home[0] - body.pos[0], 0, home[2] - body.pos[2]]);
     }
     if (Math.hypot(...heading) === 0) {
       heading = headingAt(behaviorRng.range(-Math.PI, Math.PI));
     }
-    actor.agent.mode = 'stroll';
+    actor.agent!.mode = 'stroll';
     setActorChaseStance(actor, false);
-    actor.agent.investigationTier = undefined;
-    actor.agent.searchAnchor = undefined;
-    actor.agent.searchTimer = 0;
-    actor.agent.searchStrolling = false;
-    actor.agent.modeTimer = duration;
-    actor.agent.strollHeading = heading;
-    actor.agent.bodyLookTarget = angleOf(heading);
-    actor.agent.headYawTarget = 0;
+    actor.agent!.investigationTier = undefined;
+    actor.agent!.searchAnchor = undefined;
+    actor.agent!.searchTimer = 0;
+    actor.agent!.searchStrolling = false;
+    actor.agent!.modeTimer = duration;
+    actor.agent!.strollHeading = heading;
+    actor.agent!.bodyLookTarget = angleOf(heading);
+    actor.agent!.headYawTarget = 0;
   }
 
   private beginSearch(actor: Actor): void {
-    const {
-      type,
-      agent: { behaviorRng: rng },
-    } = actor;
-    actor.agent.mode = 'search';
+    const { type } = actor;
+    const { behaviorRng: rng } = actor.agent!;
+    actor.agent!.mode = 'search';
     setActorChaseStance(actor, false);
-    actor.agent.investigationTier = undefined;
-    actor.agent.searchAnchor = copy(actor.agent.lastPerceived ?? actor.body.pos);
-    actor.agent.searchTimer = inRange(rng, type.agent.hearingModel.searchSimSeconds);
-    actor.agent.searchStrolling = false;
-    actor.agent.searchHeading = copy(actor.facing);
-    actor.agent.modeTimer = inRange(rng, type.agent.wander.idleSimSeconds);
-    actor.agent.lookTimer = 0;
-    actor.agent.bodyLookTarget = angleOf(actor.facing);
-    actor.agent.headYawTarget = 0;
+    actor.agent!.investigationTier = undefined;
+    actor.agent!.searchAnchor = copy(actor.agent!.lastPerceived ?? actor.body.pos);
+    actor.agent!.searchTimer = inRange(rng, type.agent!.hearingModel.searchSimSeconds);
+    actor.agent!.searchStrolling = false;
+    actor.agent!.searchHeading = copy(actor.facing);
+    actor.agent!.modeTimer = inRange(rng, type.agent!.wander.idleSimSeconds);
+    actor.agent!.lookTimer = 0;
+    actor.agent!.bodyLookTarget = angleOf(actor.facing);
+    actor.agent!.headYawTarget = 0;
     haltActor(actor);
   }
 
   private beginSearchStroll(actor: Actor): void {
-    const {
-      type,
-      body,
-      agent: { behaviorRng: rng, searchAnchor },
-    } = actor;
+    const { type, body } = actor;
+    const { behaviorRng: rng, searchAnchor } = actor.agent!;
     if (!searchAnchor) {
       return;
     }
-    const duration = Math.min(inRange(rng, type.agent.hearingModel.searchStrollSimSeconds), actor.agent.searchTimer);
+    const duration = Math.min(inRange(rng, type.agent!.hearingModel.searchStrollSimSeconds), actor.agent!.searchTimer);
     let heading = headingAt(rng.range(-Math.PI, Math.PI));
     const endpoint: Vec3 = [
       body.pos[0] + (heading[0] * type.speed.wanderMetresPerSimSecond * duration) / this.options.blockSize,
@@ -494,34 +489,34 @@ export class AgentController {
     ];
     if (
       horizontalDistance(endpoint, searchAnchor) * this.options.blockSize >
-      type.agent.hearingModel.searchRadiusMetres
+      type.agent!.hearingModel.searchRadiusMetres
     ) {
       heading = unit([searchAnchor[0] - body.pos[0], 0, searchAnchor[2] - body.pos[2]]);
     }
     if (Math.hypot(...heading) === 0) {
       heading = headingAt(rng.range(-Math.PI, Math.PI));
     }
-    actor.agent.searchStrolling = true;
-    actor.agent.searchHeading = heading;
-    actor.agent.modeTimer = duration;
-    actor.agent.bodyLookTarget = angleOf(heading);
-    actor.agent.headYawTarget = 0;
+    actor.agent!.searchStrolling = true;
+    actor.agent!.searchHeading = heading;
+    actor.agent!.modeTimer = duration;
+    actor.agent!.bodyLookTarget = angleOf(heading);
+    actor.agent!.headYawTarget = 0;
   }
 
   indexIdleSoundDensity(): void {
     let widestRadiusBlocks = 0;
     for (const [, actor] of this.store.entries()) {
-      if (!actor.incapacitated) {
+      if (!actor.incapacitated && actor.agent) {
         widestRadiusBlocks = Math.max(
           widestRadiusBlocks,
-          actor.type.agent.idleSound.density.radiusMetres / this.options.blockSize,
+          actor.type.agent!.idleSound.density.radiusMetres / this.options.blockSize,
         );
       }
     }
     this.idleSoundGridCellBlocks = Math.max(1, widestRadiusBlocks);
     this.idleSoundGrid = new Map();
     for (const [, actor] of this.store.entries()) {
-      if (actor.incapacitated) {
+      if (actor.incapacitated || !actor.agent) {
         continue;
       }
       const key = this.idleSoundGridKey(actor.body.pos);
@@ -539,15 +534,15 @@ export class AgentController {
   }
 
   private nextIdleSoundInterval(actor: Actor): number {
-    const { intervalSimSeconds, density } = actor.type.agent.idleSound;
+    const { intervalSimSeconds, density } = actor.type.agent!.idleSound;
     return (
-      inRange(actor.agent.soundRng, intervalSimSeconds) *
+      inRange(actor.agent!.soundRng, intervalSimSeconds) *
       (1 + (this.idleSoundDensity(actor) - 1) * density.penaltyPerNeighbour)
     );
   }
 
   private idleSoundDensity(actor: Actor): number {
-    const radiusBlocks = actor.type.agent.idleSound.density.radiusMetres / this.options.blockSize;
+    const radiusBlocks = actor.type.agent!.idleSound.density.radiusMetres / this.options.blockSize;
     const cellRadius = Math.ceil(radiusBlocks / this.idleSoundGridCellBlocks);
     const cellX = Math.floor(actor.body.pos[0] / this.idleSoundGridCellBlocks);
     const cellZ = Math.floor(actor.body.pos[2] / this.idleSoundGridCellBlocks);
@@ -567,33 +562,34 @@ export class AgentController {
   private updateIdleSound(): void {
     const scratch = this.tickScratch;
     const { actor, dt, pos } = scratch;
-    if (actor.agent.mode !== 'idle' && actor.agent.mode !== 'stroll') {
+    if (actor.agent!.mode !== 'idle' && actor.agent!.mode !== 'stroll') {
       return;
     }
-    actor.agent.idleSoundTimer -= dt;
-    if (actor.agent.idleSoundTimer <= 0) {
+    actor.agent!.idleSoundTimer -= dt;
+    if (actor.agent!.idleSoundTimer <= 0) {
       this.options.onSound?.(actor.type.sounds.idle, copy(pos), actor);
-      actor.agent.idleSoundTimer = this.nextIdleSoundInterval(actor);
+      actor.agent!.idleSoundTimer = this.nextIdleSoundInterval(actor);
     }
   }
 
   selectMovementIntent(): void {
     const scratch = this.tickScratch;
     const { actor } = scratch;
-    scratch.target = actor.agent.home;
+    scratch.target = actor.agent!.home;
     scratch.direction = [0, 0, 0];
     scratch.aimDirection = undefined;
     scratch.desiredSpeed = 0;
     scratch.returnArrived = false;
-    scratch.obstacleDirection = actor.agent.obstacleWanderRemaining > 0 ? actor.agent.obstacleWanderHeading : undefined;
-    scratch.stroll = actor.agent.mode === 'stroll';
-    scratch.wanderingAtTickStart = actor.agent.obstacleWanderRemaining > 0;
+    scratch.obstacleDirection =
+      actor.agent!.obstacleWanderRemaining > 0 ? actor.agent!.obstacleWanderHeading : undefined;
+    scratch.stroll = actor.agent!.mode === 'stroll';
+    scratch.wanderingAtTickStart = actor.agent!.obstacleWanderRemaining > 0;
     this.updateIdleSound();
-    switch (actor.agent.mode) {
+    switch (actor.agent!.mode) {
       case 'hesitate': {
-        const bearing = angleOf(sub(actor.agent.lastPerceived!, actor.body.pos));
-        actor.agent.headYawTarget = bearing - angleOf(actor.facing);
-        turnActorHeadLook(actor, actor.type, scratch.dt, actor.agent.headYawTarget);
+        const bearing = angleOf(sub(actor.agent!.lastPerceived!, actor.body.pos));
+        actor.agent!.headYawTarget = bearing - angleOf(actor.facing);
+        turnActorHeadLook(actor, actor.type, scratch.dt, actor.agent!.headYawTarget);
         return;
       }
       case 'idle':
@@ -612,9 +608,9 @@ export class AgentController {
 
   private selectIdleIntent(): void {
     const { actor, dt } = this.tickScratch;
-    actor.agent.modeTimer -= dt;
+    actor.agent!.modeTimer -= dt;
     this.tickLookAround(actor, dt);
-    if (actor.agent.modeTimer <= 0) {
+    if (actor.agent!.modeTimer <= 0) {
       this.beginStroll(actor);
     }
   }
@@ -622,10 +618,10 @@ export class AgentController {
   private selectStrollIntent(): void {
     const scratch = this.tickScratch;
     const { actor, type, dt, obstacleDirection } = scratch;
-    actor.agent.modeTimer -= dt;
-    scratch.direction = obstacleDirection ?? actor.agent.strollHeading;
+    actor.agent!.modeTimer -= dt;
+    scratch.direction = obstacleDirection ?? actor.agent!.strollHeading;
     scratch.aimDirection = scratch.direction;
-    scratch.desiredSpeed = obstacleDirection || actor.agent.modeTimer > 0 ? type.speed.wanderMetresPerSimSecond : 0;
+    scratch.desiredSpeed = obstacleDirection || actor.agent!.modeTimer > 0 ? type.speed.wanderMetresPerSimSecond : 0;
     scratch.direction = steer(actor, scratch.direction, (type.motion.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180);
     turnActorHeadLook(actor, type, dt, 0);
   }
@@ -633,13 +629,13 @@ export class AgentController {
   private selectSearchIntent(): void {
     const scratch = this.tickScratch;
     const { actor, type, dt, obstacleDirection, pos } = scratch;
-    actor.agent.searchTimer -= dt;
-    if (actor.agent.searchTimer <= 0) {
-      actor.agent.mode = 'return';
+    actor.agent!.searchTimer -= dt;
+    if (actor.agent!.searchTimer <= 0) {
+      actor.agent!.mode = 'return';
       setActorChaseStance(actor, false);
-      actor.agent.searchAnchor = undefined;
-      actor.agent.searchStrolling = false;
-      scratch.target = actor.agent.home;
+      actor.agent!.searchAnchor = undefined;
+      actor.agent!.searchStrolling = false;
+      scratch.target = actor.agent!.home;
       scratch.direction = obstacleDirection ?? unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
       scratch.aimDirection = scratch.direction;
       scratch.direction = steer(
@@ -648,14 +644,14 @@ export class AgentController {
         (type.motion.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
       );
       scratch.desiredSpeed = type.speed.wanderMetresPerSimSecond;
-    } else if (actor.agent.searchStrolling) {
-      actor.agent.modeTimer -= dt;
-      if (actor.agent.modeTimer <= 0) {
-        actor.agent.searchStrolling = false;
-        actor.agent.modeTimer = inRange(scratch.rng, type.agent.wander.idleSimSeconds);
+    } else if (actor.agent!.searchStrolling) {
+      actor.agent!.modeTimer -= dt;
+      if (actor.agent!.modeTimer <= 0) {
+        actor.agent!.searchStrolling = false;
+        actor.agent!.modeTimer = inRange(scratch.rng, type.agent!.wander.idleSimSeconds);
         this.tickLookAround(actor, dt);
       } else {
-        scratch.direction = obstacleDirection ?? actor.agent.searchHeading;
+        scratch.direction = obstacleDirection ?? actor.agent!.searchHeading;
         scratch.aimDirection = scratch.direction;
         scratch.desiredSpeed = type.speed.wanderMetresPerSimSecond;
         scratch.direction = steer(
@@ -666,9 +662,9 @@ export class AgentController {
         turnActorHeadLook(actor, type, dt, 0);
       }
     } else {
-      actor.agent.modeTimer -= dt;
+      actor.agent!.modeTimer -= dt;
       this.tickLookAround(actor, dt);
-      if (actor.agent.modeTimer <= 0) {
+      if (actor.agent!.modeTimer <= 0) {
         this.beginSearchStroll(actor);
       }
     }
@@ -677,16 +673,16 @@ export class AgentController {
   private selectTravelIntent(): void {
     const scratch = this.tickScratch;
     const { actor, type, player, blockSize, pos, obstacleDirection, dt } = scratch;
-    if (actor.agent.mode === 'chase') {
+    if (actor.agent!.mode === 'chase') {
       scratch.target = player.pos;
-    } else if (actor.agent.mode === 'investigate') {
-      scratch.target = actor.agent.lastPerceived ?? actor.agent.home;
+    } else if (actor.agent!.mode === 'investigate') {
+      scratch.target = actor.agent!.lastPerceived ?? actor.agent!.home;
     }
     scratch.metresToTarget = horizontalDistance(scratch.target, pos) * blockSize;
-    scratch.returnArrived = actor.agent.mode === 'return' && scratch.metresToTarget < 0.4;
-    scratch.seeking = actor.agent.mode === 'chase' || actor.agent.mode === 'investigate';
+    scratch.returnArrived = actor.agent!.mode === 'return' && scratch.metresToTarget < 0.4;
+    scratch.seeking = actor.agent!.mode === 'chase' || actor.agent!.mode === 'investigate';
     scratch.inReach =
-      actor.agent.mode === 'chase' && reachableActorMoves(actor, pos, scratch.target, this.options).length > 0;
+      actor.agent!.mode === 'chase' && reachableActorMoves(actor, pos, scratch.target, this.options).length > 0;
     const toward = unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
     scratch.direction = obstacleDirection ?? toward;
     scratch.moving = scratch.seeking ? !scratch.inReach : scratch.returnArrived || scratch.metresToTarget > 0.25;
@@ -694,7 +690,7 @@ export class AgentController {
     if (scratch.moving) {
       scratch.aimDirection = scratch.direction;
       if (scratch.seeking) {
-        const motion = stepChaseMotion(actor, dt, actor.agent.behaviorRng);
+        const motion = stepChaseMotion(actor, dt, actor.agent!.behaviorRng);
         scratch.direction = headingAt(angleOf(scratch.direction) + motion.sway);
         scratch.desiredSpeed = type.speed.chaseMetresPerSimSecond * motion.speedFactor;
       } else if (!scratch.returnArrived) {
@@ -709,14 +705,18 @@ export class AgentController {
   }
 
   limitSearchStroll(scratch: ActorTickScratch, actor: Actor, type: Actor['type'], dt: number): void {
-    if (actor.agent.mode !== 'search' || !actor.agent.searchStrolling || !actor.agent.searchAnchor) {
+    if (actor.agent!.mode !== 'search' || !actor.agent!.searchStrolling || !actor.agent!.searchAnchor) {
       return;
     }
-    const radius = horizontalDistance(scratch.pos, actor.agent.searchAnchor) * scratch.blockSize;
-    const away = unit([scratch.pos[0] - actor.agent.searchAnchor[0], 0, scratch.pos[2] - actor.agent.searchAnchor[2]]);
+    const radius = horizontalDistance(scratch.pos, actor.agent!.searchAnchor) * scratch.blockSize;
+    const away = unit([
+      scratch.pos[0] - actor.agent!.searchAnchor[0],
+      0,
+      scratch.pos[2] - actor.agent!.searchAnchor[2],
+    ]);
     const outward = scratch.direction[0] * away[0] + scratch.direction[2] * away[2];
     if (outward > 0) {
-      const remaining = Math.max(0, type.agent.hearingModel.searchRadiusMetres - radius);
+      const remaining = Math.max(0, type.agent!.hearingModel.searchRadiusMetres - radius);
       limitActorHorizontalSpeed(actor, remaining / (dt * outward));
     }
   }
@@ -724,8 +724,8 @@ export class AgentController {
   applyObstacleSlide(): void {
     const scratch = this.tickScratch;
     const { actor, aimDirection, wanderingAtTickStart } = scratch;
-    if (!wanderingAtTickStart && actor.obstacleContact && actor.agent.obstacleSlideSide !== 0 && aimDirection) {
-      scratch.direction = headingAt(angleOf(aimDirection) + (actor.agent.obstacleSlideSide * Math.PI) / 2);
+    if (!wanderingAtTickStart && actor.obstacleContact && actor.agent!.obstacleSlideSide !== 0 && aimDirection) {
+      scratch.direction = headingAt(angleOf(aimDirection) + (actor.agent!.obstacleSlideSide * Math.PI) / 2);
     }
   }
 
@@ -737,7 +737,7 @@ export class AgentController {
       obstacleContact &&
       !wasObstacleContact &&
       aimDirection &&
-      rng.chance(actor.type.agent.wander.obstacleWanderChance)
+      rng.chance(actor.type.agent!.wander.obstacleWanderChance)
     ) {
       const physics = { ...this.options.physics, stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2 };
       const headings = openWanderHeadings({
@@ -748,8 +748,8 @@ export class AgentController {
         blockSize: scratch.blockSize,
       });
       if (headings.length > 0) {
-        actor.agent.obstacleWanderHeading = headings[rng.int(0, headings.length - 1)]!;
-        actor.agent.obstacleWanderRemaining = actor.type.agent.wander.obstacleWanderDistanceMetres;
+        actor.agent!.obstacleWanderHeading = headings[rng.int(0, headings.length - 1)]!;
+        actor.agent!.obstacleWanderRemaining = actor.type.agent!.wander.obstacleWanderDistanceMetres;
       }
     }
   }
@@ -758,12 +758,12 @@ export class AgentController {
     const scratch = this.tickScratch;
     const { actor, obstacleContact, wasObstacleContact, aimDirection, jumpAttempted, travelled, rng } = scratch;
     if (!obstacleContact) {
-      actor.agent.obstacleSlideSide = 0;
+      actor.agent!.obstacleSlideSide = 0;
     } else if (!wasObstacleContact && aimDirection && !jumpAttempted) {
       const side = rng.int(0, 1) === 0 ? -1 : 1;
-      actor.agent.obstacleSlideSide = openSide(aimDirection) ?? side;
-    } else if (actor.agent.obstacleSlideSide !== 0 && !jumpAttempted && travelled < 0.0001) {
-      actor.agent.obstacleSlideSide = actor.agent.obstacleSlideSide === -1 ? 1 : -1;
+      actor.agent!.obstacleSlideSide = openSide(aimDirection) ?? side;
+    } else if (actor.agent!.obstacleSlideSide !== 0 && !jumpAttempted && travelled < 0.0001) {
+      actor.agent!.obstacleSlideSide = actor.agent!.obstacleSlideSide === -1 ? 1 : -1;
     }
   }
 
@@ -773,12 +773,12 @@ export class AgentController {
     scratch.wasObstacleContact = actor.obstacleContact;
     if (wanderingAtTickStart) {
       if (obstacleContact) {
-        actor.agent.obstacleWanderRemaining = 0;
-        actor.agent.obstacleWanderHeading = undefined;
+        actor.agent!.obstacleWanderRemaining = 0;
+        actor.agent!.obstacleWanderHeading = undefined;
       } else {
-        actor.agent.obstacleWanderRemaining = Math.max(0, actor.agent.obstacleWanderRemaining - travelled);
-        if (actor.agent.obstacleWanderRemaining === 0) {
-          actor.agent.obstacleWanderHeading = undefined;
+        actor.agent!.obstacleWanderRemaining = Math.max(0, actor.agent!.obstacleWanderRemaining - travelled);
+        if (actor.agent!.obstacleWanderRemaining === 0) {
+          actor.agent!.obstacleWanderHeading = undefined;
         }
       }
     }
@@ -802,7 +802,7 @@ export class AgentController {
     if (
       !(bashObstacle && obstacleContact && aimDirection) ||
       type.strength <= 0 ||
-      (actor.agent.mode !== 'chase' && actor.agent.mode !== 'investigate') ||
+      (actor.agent!.mode !== 'chase' && actor.agent!.mode !== 'investigate') ||
       actor.attackWait > 0 ||
       actor.attackWindup > 0
     ) {
@@ -816,41 +816,41 @@ export class AgentController {
       blockSize: scratch.blockSize,
     };
     if (
-      hasWayAround(around, type.agent.wander.wayAroundReachMetres, type.agent.wander.wayAroundMinGainFraction) ||
+      hasWayAround(around, type.agent!.wander.wayAroundReachMetres, type.agent!.wander.wayAroundMinGainFraction) ||
       !bashObstacle(bodyAhead(aimDirection), type.strength)
     ) {
       return;
     }
-    setActorAttackWait(actor, type.attack.cooldownSimSeconds);
-    actor.agent.obstacleSlideSide = 0;
-    actor.agent.obstacleWanderHeading = undefined;
-    actor.agent.obstacleWanderRemaining = 0;
+    setActorAttackWait(actor, type.attack!.cooldownSimSeconds);
+    actor.agent!.obstacleSlideSide = 0;
+    actor.agent!.obstacleWanderHeading = undefined;
+    actor.agent!.obstacleWanderRemaining = 0;
   }
 
   updateMovementDecisionAfterStep(scratch: ActorTickScratch) {
     const { stroll, actor, dt, travelled } = scratch;
 
-    if (stroll && actor.agent.mode === 'stroll' && actor.horizontalSpeed > 0.01) {
+    if (stroll && actor.agent!.mode === 'stroll' && actor.horizontalSpeed > 0.01) {
       const requested = actor.horizontalSpeed * dt;
       if (travelled + 1e-4 < requested * 0.1) {
         this.beginIdle(actor);
       }
     }
-    if (stroll && actor.agent.mode === 'stroll' && actor.agent.modeTimer <= 0 && actor.horizontalSpeed <= 0.01) {
+    if (stroll && actor.agent!.mode === 'stroll' && actor.agent!.modeTimer <= 0 && actor.horizontalSpeed <= 0.01) {
       this.beginIdle(actor);
     }
-    if (actor.agent.mode === 'search' && actor.agent.searchStrolling && actor.horizontalSpeed > 0.01) {
+    if (actor.agent!.mode === 'search' && actor.agent!.searchStrolling && actor.horizontalSpeed > 0.01) {
       const requested = actor.horizontalSpeed * dt;
       if (travelled + 1e-4 < requested * 0.1) {
-        actor.agent.searchStrolling = false;
-        actor.agent.modeTimer = inRange(scratch.rng, actor.type.agent.wander.idleSimSeconds);
+        actor.agent!.searchStrolling = false;
+        actor.agent!.modeTimer = inRange(scratch.rng, actor.type.agent!.wander.idleSimSeconds);
       }
     }
   }
 
   startActorAttack(actor: Actor, type: Actor['type'], pos: Vec3, player: PlayerSense): void {
     if (
-      actor.agent.mode === 'chase' &&
+      actor.agent!.mode === 'chase' &&
       actor.staggerSimSeconds <= 0 &&
       actor.attackWait <= 0 &&
       actor.spitWindup <= 0 &&
@@ -858,16 +858,16 @@ export class AgentController {
       reachableActorMoves(actor, pos, player.pos, this.options).length > 0
     ) {
       this.options.onSound?.(type.sounds.attack, copy(pos), actor);
-      setActorAttackWindup(actor, type.attack.windupSimSeconds);
-      setActorAttackWait(actor, type.attack.cooldownSimSeconds);
+      setActorAttackWindup(actor, type.attack!.windupSimSeconds);
+      setActorAttackWait(actor, type.attack!.cooldownSimSeconds);
     }
   }
 
   backgroundIntent(scratch: ActorTickScratch): { direction: Vec3; speed: number } {
     const { actor, player, blockSize, dt } = scratch;
     let target =
-      actor.agent.mode === 'hesitate' ? undefined : (this.agentHorde.hordeTarget(actor) ?? actor.agent.lastPerceived);
-    scratch.sees = actor.agent.mode === 'chase';
+      actor.agent!.mode === 'hesitate' ? undefined : (this.agentHorde.hordeTarget(actor) ?? actor.agent!.lastPerceived);
+    scratch.sees = actor.agent!.mode === 'chase';
     if (scratch.sees) {
       target = player.pos;
     }
@@ -881,7 +881,7 @@ export class AgentController {
         distance > 0.5
           ? Math.min(
               actor.type.speed.chaseMetresPerSimSecond,
-              actor.type.agent.speed.backgroundStepMetres / dt,
+              actor.type.agent!.speed.backgroundStepMetres / dt,
               distance / dt,
             )
           : 0;
@@ -897,13 +897,13 @@ export class AgentController {
     return { direction, speed };
   }
   finishBackgroundStroll(actor: Actor): void {
-    if (actor.agent.mode === 'stroll' && actor.agent.modeTimer <= 0 && actor.horizontalSpeed <= 0.01) {
+    if (actor.agent!.mode === 'stroll' && actor.agent!.modeTimer <= 0 && actor.horizontalSpeed <= 0.01) {
       this.beginIdle(actor);
     }
   }
   finishMovementDecision(): void {
     const { actor, returnArrived } = this.tickScratch;
-    if (actor.agent.mode === 'return' && returnArrived && actor.horizontalSpeed <= 0.01) {
+    if (actor.agent!.mode === 'return' && returnArrived && actor.horizontalSpeed <= 0.01) {
       this.beginIdle(actor);
     }
   }

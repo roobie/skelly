@@ -134,7 +134,7 @@ const createSeveredHit = (mode: CutMode) => {
     speed: actor.horizontalSpeed,
     chasing: false,
     attackWindup: 0,
-    attackWindupSeconds: actor.type.attack.windupSimSeconds,
+    attackWindupSeconds: actor.type.attack!.windupSimSeconds,
     severed: [],
     blockSize: BLOCK,
   });

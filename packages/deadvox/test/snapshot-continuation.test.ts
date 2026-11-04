@@ -100,7 +100,7 @@ describe('fixture save/load continuation', () => {
     advance(loaded, continuationFrames);
     expect(loaded.zombies.snapshotState()).toEqual(source.zombies.snapshotState());
     expect(loaded.sim.scheduler.snapshotState()).toEqual(source.sim.scheduler.snapshotState());
-    const forgetAt = stimulusAt + registry.actors.get('shambler')!.agent.stimulusMemorySimSeconds;
+    const forgetAt = stimulusAt + registry.actors.get('shambler')!.agent!.stimulusMemorySimSeconds;
     loaded.zombies.tickBackground(0.5, forgetAt - 0.5, 0, BACKGROUND_ACTOR_SLICE_COUNT);
     expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('noise');
     loaded.zombies.tickBackground(0.5, forgetAt, 0, BACKGROUND_ACTOR_SLICE_COUNT);
@@ -136,7 +136,7 @@ describe('fixture save/load continuation', () => {
     const loaded = createRuntime(capture(original), false, [fixtureZombieColumn], { start });
     loaded.session.onColumn(cx, cz, timedSite);
     const atHome = () =>
-      [...loaded.zombies.store.entries()].filter(([, actor]) => actor.agent.home.every((v, i) => v === pos[i]));
+      [...loaded.zombies.store.entries()].filter(([, actor]) => actor.agent!.home.every((v, i) => v === pos[i]));
     expect(atHome()).toHaveLength(0);
     advance(loaded, 456);
     expect(loaded.sim.calendar).toBeGreaterThan(dusk);

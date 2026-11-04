@@ -83,7 +83,7 @@ export class AgentHorde {
   readonly hordes = new Map<string, { state: Omit<HordeState, 'rng'>; rng: Rng }>();
 
   private hordeCenter(id: string): Vec3 | undefined {
-    const members = [...this.store.entries()].flatMap(([, actor]) => (actor.agent.hordeId === id ? [actor] : []));
+    const members = [...this.store.entries()].flatMap(([, actor]) => (actor.agent?.hordeId === id ? [actor] : []));
     if (members.length === 0) {
       return undefined;
     }
@@ -98,7 +98,7 @@ export class AgentHorde {
   }
 
   hordeTarget(actor: Actor): Vec3 | undefined {
-    if (actor.agent.hordeId === undefined || actor.agent.hordeOffset === undefined) {
+    if (!actor.agent || actor.agent.hordeId === undefined || actor.agent.hordeOffset === undefined) {
       return undefined;
     }
     const horde = this.hordes.get(actor.agent.hordeId)?.state;
@@ -117,8 +117,8 @@ export class AgentHorde {
     const isSolid = this.options.isSoundBlocking ?? this.options.isSolid;
     for (const { state: horde, rng } of this.hordes.values()) {
       const center = this.hordeCenter(horde.id);
-      const member = [...this.store.entries()].find(([, actor]) => actor.agent.hordeId === horde.id)?.[1];
-      if (!(center && member)) {
+      const member = [...this.store.entries()].find(([, actor]) => actor.agent?.hordeId === horde.id)?.[1];
+      if (!(center && member?.type.agent)) {
         continue;
       }
       const noise = player.vocalNoise;

@@ -12,7 +12,7 @@ import { withoutCombatSkills } from './fixtures/withoutCombatSkills.ts';
 const registry = baseRegistry();
 const FLAT: SolidAt = (_x, y) => y === 0;
 const shambler = registry.actors.get('shambler')!;
-const move: ActorDef['attack']['moves'][number] = {
+const move: NonNullable<ActorDef['attack']>['moves'][number] = {
   id: 'fixture-hit',
   motion: 'swing',
   weight: 1,
@@ -20,7 +20,7 @@ const move: ActorDef['attack']['moves'][number] = {
   damageKind: 'blunt',
   hitRegions: [{ region: 'leftArm', weight: 1 }],
 };
-const attacker: ActorDef = { ...shambler, attack: { ...shambler.attack, moves: [move] } };
+const attacker: ActorDef = { ...shambler, attack: { ...shambler.attack!, moves: [move] } };
 const playerBody = registry.body.get('player')!;
 
 /** Pins the full-block roll's outcome by making the full-block chance 0 or 1 at every skill level. */
@@ -103,7 +103,7 @@ const strike = ({ content = registry, blocking = true, seed = 73 } = {}) => {
   session.sim.paused = false;
   session.actors.add(attacker, [1.2, 1, 0], [-1, 0, 0]);
   const hit = vi.spyOn(session.sim, 'hit');
-  const maxFrames = Math.ceil((attacker.attack.windupSimSeconds + 2) * 60);
+  const maxFrames = Math.ceil((attacker.attack!.windupSimSeconds + 2) * 60);
   for (let frame = 0; frame < maxFrames && hit.mock.calls.length === 0 && blocks.length === 0; frame++) {
     session.frame(1 / 60);
   }

@@ -61,6 +61,11 @@ const SECTION_DESCRIPTOR = {
       pipe(
         array(ActorSchema),
         check(
+          (types) =>
+            types.every((actor) => !actor.agent || (actor.attack !== undefined && actor.chaseMotion !== undefined)),
+          'agent requires attack and chaseMotion',
+        ),
+        check(
           (types) => types.every((actor) => actor.model !== 'fused-mass' || actor.bodyScale !== undefined),
           'fused-mass must define bodyScale',
         ),
@@ -78,7 +83,10 @@ const SECTION_DESCRIPTOR = {
         ),
         check(
           (types) =>
-            types.every((actor) => (actor.model === 'fused-mass') === (actor.attack.grabBandMetres === undefined)),
+            types.every(
+              (actor) =>
+                !actor.attack || (actor.model === 'fused-mass') === (actor.attack.grabBandMetres === undefined),
+            ),
           'every type but fused-mass, which strikes from its core, must define attack.grabBandMetres',
         ),
         check((types) => types.every(actorRegionsMatchModel), 'zombie region keys must match the model'),

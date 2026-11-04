@@ -694,7 +694,7 @@ describe('attacker modifiers', () => {
         ],
       ]),
     };
-    const move: ActorDef['attack']['moves'][number] = {
+    const move: NonNullable<ActorDef['attack']>['moves'][number] = {
       id: 'fixture-hit',
       motion: 'swing',
       weight: 1,
@@ -704,7 +704,7 @@ describe('attacker modifiers', () => {
     };
     const type: ActorDef = {
       ...shambler,
-      attack: { ...shambler.attack, moves: [move] },
+      attack: { ...shambler.attack!, moves: [move] },
     };
     const strike = (boost: boolean) => {
       const runtime = makeRuntime({ content });
@@ -716,7 +716,7 @@ describe('attacker modifiers', () => {
         actor.modifiers.push({ effect: 'attack.damage', multiply: 2, add: 4 });
       }
       const hit = vi.spyOn(session.sim, 'hit');
-      const maxFrames = Math.ceil((type.attack.windupSimSeconds + 2) * 60);
+      const maxFrames = Math.ceil((type.attack!.windupSimSeconds + 2) * 60);
       for (let frames = 0; frames < maxFrames && hit.mock.calls.length === 0; frames++) {
         runtime.advance(1);
       }

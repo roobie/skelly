@@ -110,7 +110,7 @@ describe('debug shambler spawning', () => {
     const remainingDistance =
       Math.hypot(body.pos[0] - actor.body.pos[0], body.pos[2] - actor.body.pos[2]) * SCALE.blockSize;
 
-    expect(actors.store.get(id)!.agent.mode).toBe('chase');
+    expect(actors.store.get(id)!.agent!.mode).toBe('chase');
     expect(remainingDistance).toBeLessThan(initialDistance);
   });
 

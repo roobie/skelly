@@ -73,7 +73,7 @@ const checkItem = (item: ItemDef, checker: Checker, registry: Registry): void =>
 
 const checkActor = (actor: ActorDef, checker: Checker): void => {
   checker.keys('.damageResistance', actor.damageResistance);
-  actor.attack.moves.forEach((move, i) => {
+  actor.attack?.moves.forEach((move, i) => {
     checker.selected(`.attack.moves[${i}].damageKind`, move.damageKind);
   });
   actor.acidSpit?.moves.forEach((move, i) => {

@@ -39,7 +39,7 @@ const actorFootstepEvents = new Set<SoundId | undefined>(
   ),
 );
 
-const blockBlow: ActorDef['attack']['moves'][number] = {
+const blockBlow: NonNullable<ActorDef['attack']>['moves'][number] = {
   id: 'fixture-blow',
   motion: 'swing',
   weight: 1,
@@ -48,7 +48,7 @@ const blockBlow: ActorDef['attack']['moves'][number] = {
   hitRegions: [{ region: 'leftArm', weight: 1 }],
 };
 const shamblerDef = registry.actors.get('shambler')!;
-const blockAttacker: ActorDef = { ...shamblerDef, attack: { ...shamblerDef.attack, moves: [blockBlow] } };
+const blockAttacker: ActorDef = { ...shamblerDef, attack: { ...shamblerDef.attack!, moves: [blockBlow] } };
 const meleeSkill = registry.skills.get(fixtureIds.meleeCombat)!;
 const playerBody = registry.body.get('player')!;
 /**
@@ -671,7 +671,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     const blockEvents = ['player_block_full', 'player_block_partial'];
     const blocked = () => blockEvents.every((event) => played.some(({ sound }) => sound.event === event));
     const twoBlowsFrames =
-      Math.ceil((blockAttacker.attack.windupSimSeconds + blockAttacker.attack.cooldownSimSeconds) * 2 * 60) + 120;
+      Math.ceil((blockAttacker.attack!.windupSimSeconds + blockAttacker.attack!.cooldownSimSeconds) * 2 * 60) + 120;
     for (let frame = 0; frame < twoBlowsFrames && !blocked(); frame++) {
       advance(1);
     }
@@ -808,12 +808,12 @@ it('lets a roller-door noise wake a nearby shambler through hearing', () => {
   const listenerId = session.actors.add(
     {
       ...registry.actors.get('shambler')!,
-      agent: { ...registry.actors.get('shambler')!.agent, sight: Number.MIN_VALUE, nightSight: Number.MIN_VALUE },
+      agent: { ...registry.actors.get('shambler')!.agent!, sight: Number.MIN_VALUE, nightSight: Number.MIN_VALUE },
     },
     [8, 1, 0.5],
   );
   const listener = session.actorStore.get(listenerId)!;
-  expect(listener.agent.mode).toBe('idle');
+  expect(listener.agent!.mode).toBe('idle');
   const handling = registry.furniture.get('workshop_roller_door')!.door!.handlingSimSeconds;
   session.queue.enqueueAction(DOOR_ACTION, 'Open roller door', handling, { entityUid: door.uid, closing: false });
   for (let frame = 0; frame < 120; frame++) {
@@ -824,10 +824,10 @@ it('lets a roller-door noise wake a nearby shambler through hearing', () => {
   if (!noise) {
     throw new Error('Roller-door opening did not commit its noise stimulus');
   }
-  expect(listener.agent.lastVocalNoiseId).toBe(noise.id);
-  expect(listener.agent.mode).toBe('investigate');
-  expect(listener.agent.investigationTier).toBe('near');
-  expect(listener.agent.lastPerceived).toEqual(noise.pos);
+  expect(listener.agent!.lastVocalNoiseId).toBe(noise.id);
+  expect(listener.agent!.mode).toBe('investigate');
+  expect(listener.agent!.investigationTier).toBe('near');
+  expect(listener.agent!.lastPerceived).toEqual(noise.pos);
 });
 
 it('debug test noise reaches a shambler behind a wall and starts its hearing gaze', () => {
@@ -873,8 +873,8 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
   for (let frame = 0; frame < 3; frame++) {
     session.frame(1 / 60);
   }
-  expect(actor.agent.mode).not.toBe('chase');
-  expect(actor.agent.lastPerceived).toBeUndefined();
+  expect(actor.agent!.mode).not.toBe('chase');
+  expect(actor.agent!.lastPerceived).toBeUndefined();
   const events = session.sim.events.reader();
   expect(session.playPlayerSound('player_hurt_light', session.sim.time, { sourceLabel: 'debug test noise' })).toBe(
     true,
@@ -889,9 +889,9 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
   for (let frame = 0; frame < 3; frame++) {
     session.frame(1 / 60);
   }
-  expect(actor.agent.mode).toBe('hesitate');
-  expect(actor.agent.investigationTier).toBe('near');
-  expect(actor.agent.lastPerceived).toEqual(noise.pos);
+  expect(actor.agent!.mode).toBe('hesitate');
+  expect(actor.agent!.investigationTier).toBe('near');
+  expect(actor.agent!.lastPerceived).toEqual(noise.pos);
 
   const renderer = new MobActorMeshes(scale.blockSize, 2, {
     actors: new Map([[actor.type.id, { ...actor.type, figureSeeds: [actor.figureSeed] }]]),
@@ -945,7 +945,7 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
   session.actors.addHorde('noise-fixture', shambler, [150, 1, 0], 5);
   session.frame(0.5);
   const members = () =>
-    [...session.actorStore.entries()].filter(([, actor]) => actor.agent.hordeId === 'noise-fixture');
+    [...session.actorStore.entries()].filter(([, actor]) => actor.agent!.hordeId === 'noise-fixture');
   const meanX = () => {
     const group = members();
     return group.reduce((total, [, actor]) => total + actor.body.pos[0] / group.length, 0);
@@ -954,7 +954,7 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
   expect(members().every(([, actor]) => actor.tier === 'background')).toBe(true);
   const before = meanX();
   const shotgun = registry.sounds.get('shotgun_blast')!;
-  const shotgunRadius = shotgun.noise.radiusMetres * shambler.agent.hearing;
+  const shotgunRadius = shotgun.noise.radiusMetres * shambler.agent!.hearing;
   const groupDistance = Math.max(
     ...members().map(
       ([, actor]) =>
@@ -974,7 +974,7 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
   }
 
   const horde = session.actors.snapshotState().hordes.find(({ id }) => id === 'noise-fixture');
-  expect(members().every(([, actor]) => actor.agent.lastVocalNoiseId === noise.id)).toBe(true);
+  expect(members().every(([, actor]) => actor.agent!.lastVocalNoiseId === noise.id)).toBe(true);
   expect(horde?.lastNoiseId).toBe(noise.id);
   expect(horde?.mode).toBe('noise');
   expect(horde?.target[0]).toBeLessThan(before);
@@ -1067,7 +1067,7 @@ it('applies attachment noise factors and far-tier cutoffs to suppressed AR shots
     expect(noise.radiusMetres).toBe(registry.sounds.get(event)!.noise.radiusMetres * noiseRadiusScale);
     expect(noise.radiusMetres / unsuppressedBase).toBe(attachmentNoiseFactor);
 
-    const farReachMetres = noise.radiusMetres * shambler.agent.hearing * shambler.agent.hearingModel.farMultiplier;
+    const farReachMetres = noise.radiusMetres * shambler.agent!.hearing * shambler.agent!.hearingModel.farMultiplier;
     const hearAtDistance = (distanceMetres: number) =>
       hearVocalNoise({
         def: shambler,

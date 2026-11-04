@@ -309,6 +309,9 @@ export const perceptionLabelFor = (
   playerEye: Vec3 | undefined,
   { blockSize, maxSpeed }: { blockSize: number; maxSpeed: number },
 ): PerceptionLabel => {
+  if (!actor.agent) {
+    return 'unaware';
+  }
   if (actor.agent.mode === 'chase') {
     return 'sees you';
   }
@@ -1182,9 +1185,9 @@ export class MobActorMeshes implements ActorRenderer {
       facing,
       reachMetres,
       attackWindupSimSeconds: actor.attackWindup,
-      attackWindupDurationSimSeconds: actor.type.attack.windupSimSeconds,
+      attackWindupDurationSimSeconds: actor.type.attack?.windupSimSeconds ?? 0,
       attackWaitSimSeconds: actor.attackWait,
-      attackCooldownDurationSimSeconds: actor.type.attack.cooldownSimSeconds,
+      attackCooldownDurationSimSeconds: actor.type.attack?.cooldownSimSeconds ?? 0,
     });
     const deltaX = pose.end[0] - pose.start[0];
     const deltaY = pose.end[1] - pose.start[1];
@@ -1974,6 +1977,9 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   private hasRecentNearStimulus(state: ActorRenderState, actor: Actor): boolean {
+    if (!actor.agent) {
+      return false;
+    }
     const { stimulusAt, mode, investigationTier } = actor.agent;
     return (
       (mode === 'hesitate' || mode === 'investigate') &&
@@ -2008,9 +2014,9 @@ export class MobActorMeshes implements ActorRenderer {
       const rootRotation = transpose(rotY((yaw * 180) / Math.PI));
       const eye = this.playerEyePosition ?? [this.cameraPosition.x, this.cameraPosition.y, this.cameraPosition.z];
       let target: readonly [number, number, number] | undefined;
-      if (actor.agent.mode === 'chase' && (this.playerEyePosition !== undefined || this.camera)) {
+      if (actor.agent?.mode === 'chase' && (this.playerEyePosition !== undefined || this.camera)) {
         target = mulMV(rootRotation, [eye[0] - worldPos[0], eye[1] - worldPos[1], eye[2] - worldPos[2]]);
-      } else if (this.hasRecentNearStimulus(state, actor) && actor.agent.lastPerceived) {
+      } else if (this.hasRecentNearStimulus(state, actor) && actor.agent?.lastPerceived) {
         target = hearingGazeTarget(
           mulMV(rootRotation, [
             actor.agent.lastPerceived[0] * this.blockSize - worldPos[0],

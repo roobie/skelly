@@ -137,6 +137,9 @@ export const pushTurn = (body: Body, shape: FusedMassShape, turn: number): boole
 
 export const stepChaseMotion = (actor: Actor, dt: number, rng: Rng): { sway: number; speedFactor: number } => {
   const { chaseMotion } = actor.type;
+  if (!chaseMotion) {
+    throw new Error(`Actor ${actor.type.id} has no chaseMotion`);
+  }
   if (actor.swayDuration === 0 || actor.swayElapsed >= actor.swayDuration) {
     actor.swayStart = actor.swayValue;
     actor.swayTarget = rng.range(-chaseMotion.swayDegrees, chaseMotion.swayDegrees);
@@ -221,7 +224,10 @@ export function reachableActorMoves(
   actorPos: Vec3,
   playerPos: Vec3,
   options: { blockSize: number; isSolid: SolidAt; meleeBlocker?: MeleeBlocker },
-): Actor['type']['attack']['moves'] {
+): NonNullable<Actor['type']['attack']>['moves'] {
+  if (!actor.type.attack) {
+    return [];
+  }
   return actor.type.attack.moves.filter((move) =>
     withinAttackReach({
       actor,

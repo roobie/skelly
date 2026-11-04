@@ -58,14 +58,14 @@ const makeSystem = (seed: number, pose: (typeof poses)[number], distanceMetres: 
   const id = system.add(registry.actors.get('shambler')!, [distanceMetres / BLOCK_SIZE, 1, 0], [-1, 0, 0]);
   const actor = system.store.get(id)!;
   actor.figureSeed = seed;
-  actor.agent.mode = pose.mode;
-  actor.chaseStance = actor.agent.mode === 'chase';
+  actor.agent!.mode = pose.mode;
+  actor.chaseStance = actor.agent!.mode === 'chase';
   actor.horizontalSpeed = pose.speed;
   actor.gaitPhase = pose.gaitPhase;
   actor.attackWindup = pose.attackWindup;
   actor.attackWait =
     pose.attackWindup > 0
-      ? actor.type.attack.cooldownSimSeconds - (actor.type.attack.windupSimSeconds - pose.attackWindup)
+      ? actor.type.attack!.cooldownSimSeconds - (actor.type.attack!.windupSimSeconds - pose.attackWindup)
       : 0;
   return { system, id, actor };
 };
@@ -235,7 +235,7 @@ describe('player melee reach at shambler attack distance', () => {
   });
 
   it('reaches visible posed head and torso voxels for every weapon, seed, and attack distance', () => {
-    const shamblerReach = registry.actors.get('shambler')!.attack.reach;
+    const shamblerReach = registry.actors.get('shambler')!.attack!.reach;
     const attackDistances = [shamblerReach * 0.9, shamblerReach];
     const scenarios = FIGURE_SEEDS.flatMap((seed) =>
       poses.flatMap((pose) =>

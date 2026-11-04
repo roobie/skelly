@@ -34,13 +34,13 @@ export const loweredStanceTuning = <T>(tuning: { crouch: T; prone: T }, stance: 
 
 const hearingRange = (actor: ActorDef, movement: PlayerMovement): number => {
   if (movement === 'sprinting') {
-    return actor.agent.hearingRange.sprint * actor.agent.hearing;
+    return actor.agent!.hearingRange.sprint * actor.agent!.hearing;
   }
   if (movement === 'jogging') {
-    return actor.agent.hearingRange.jog * actor.agent.hearing;
+    return actor.agent!.hearingRange.jog * actor.agent!.hearing;
   }
   if (movement === 'walking') {
-    return actor.agent.hearingRange.walk * actor.agent.hearing;
+    return actor.agent!.hearingRange.walk * actor.agent!.hearing;
   }
   return 0;
 };
@@ -59,7 +59,7 @@ export const hearingTier = ({
     return undefined;
   }
   const distance = Math.hypot(...sub(player.pos, from)) * blockSize;
-  if (distance > range * actor.agent.hearingModel.farMultiplier) {
+  if (distance > range * actor.agent!.hearingModel.farMultiplier) {
     return undefined;
   }
   const earOffset = actor.earHeightMetres / blockSize;
@@ -72,7 +72,7 @@ export const hearingTier = ({
   if (distance <= effectiveRange) {
     return 'near';
   }
-  if (distance <= effectiveRange * actor.agent.hearingModel.farMultiplier) {
+  if (distance <= effectiveRange * actor.agent!.hearingModel.farMultiplier) {
     return 'far';
   }
   return undefined;
@@ -92,9 +92,12 @@ export const farBearingTarget = ({
   rng: Rng;
 }): Vec3 => {
   const angle = Math.atan2(source[0] - from[0], source[2] - from[2]);
-  const error = rng.range(-actor.agent.hearingModel.bearingErrorRadians, actor.agent.hearingModel.bearingErrorRadians);
+  const error = rng.range(
+    -actor.agent!.hearingModel.bearingErrorRadians,
+    actor.agent!.hearingModel.bearingErrorRadians,
+  );
   const bearing = headingAt(angle + error);
-  const distance = actor.agent.hearingModel.investigationDistanceMetres / blockSize;
+  const distance = actor.agent!.hearingModel.investigationDistanceMetres / blockSize;
   return [from[0] + bearing[0] * distance, from[1], from[2] + bearing[2] * distance];
 };
 
@@ -136,7 +139,7 @@ export const hearVocalNoise = ({
     return undefined;
   }
   const distance = Math.hypot(...sub(noise.pos, from)) * blockSize;
-  if (distance > noise.radiusMetres * actor.agent.hearing * actor.agent.hearingModel.farMultiplier) {
+  if (distance > noise.radiusMetres * actor.agent!.hearing * actor.agent!.hearingModel.farMultiplier) {
     return undefined;
   }
   const earOffset = actor.earHeightMetres / blockSize;
@@ -145,11 +148,11 @@ export const hearVocalNoise = ({
   const wallScale = soundOcclusion({ listener: origin, source, isSolid, globalWall: tuning.wall }).occluded
     ? tuning.wall.hearingRangeScale
     : 1;
-  const hearingRadius = noise.radiusMetres * actor.agent.hearing * wallScale;
+  const hearingRadius = noise.radiusMetres * actor.agent!.hearing * wallScale;
   if (distance <= hearingRadius) {
     return { tier: 'near', target: copy(noise.pos) };
   }
-  if (distance <= hearingRadius * actor.agent.hearingModel.farMultiplier) {
+  if (distance <= hearingRadius * actor.agent!.hearingModel.farMultiplier) {
     return {
       tier: 'far',
       target: farBearingTarget({ def: actor, from, source: noise.pos, blockSize, rng }),
@@ -175,14 +178,14 @@ export const seesPlayer = ({
   const dir = unit(delta);
   const look = unit(facing);
   const dot = Math.max(-1, Math.min(1, look[0] * dir[0] + look[2] * dir[2]));
-  const inCone = dot >= Math.cos((actor.agent.sightCone * Math.PI) / 180);
+  const inCone = dot >= Math.cos((actor.agent!.sightCone * Math.PI) / 180);
   if (!inCone || metres <= 0) {
     return false;
   }
-  let sightRange = actor.agent.nightSight + (actor.agent.sight - actor.agent.nightSight) * sightBlend;
+  let sightRange = actor.agent!.nightSight + (actor.agent!.sight - actor.agent!.nightSight) * sightBlend;
   const playerSunlit = player.sunlit ?? isSunExposedAt?.(player.pos) ?? dayPhase === 'day';
   const playerLightScale = lightSenseRangeScale('carried', playerSunlit, tuning.light);
-  const lightSpotScale = actor.agent.lightSightScale ?? 1;
+  const lightSpotScale = actor.agent!.lightSightScale ?? 1;
   const maximumRange = Math.max(sightRange, player.lit ? player.lightSeenFrom * playerLightScale * lightSpotScale : 0);
   if (metres > maximumRange) {
     return false;
@@ -227,13 +230,13 @@ const canSeeLight = ({
   if (
     distance <= 0 ||
     distance >
-      source.seenFrom * lightSenseRangeScale(exposure, sunlit, tuning.light) * (actor.agent.lightSightScale ?? 1)
+      source.seenFrom * lightSenseRangeScale(exposure, sunlit, tuning.light) * (actor.agent!.lightSightScale ?? 1)
   ) {
     return undefined;
   }
   const direction = unit(delta);
   const dot = Math.max(-1, Math.min(1, look[0] * direction[0] + look[2] * direction[2]));
-  if (dot < Math.cos((actor.agent.sightCone * Math.PI) / 180)) {
+  if (dot < Math.cos((actor.agent!.sightCone * Math.PI) / 180)) {
     return undefined;
   }
   const origin: Vec3 = [from[0], from[1] + actor.eyeHeightMetres / blockSize, from[2]];

@@ -323,7 +323,7 @@ it('a prying strike travels through the sound-hearing path and draws a shambler'
   const crowbar = carryCrowbar(runtime);
   const shamblerType = registry.actors.get('shambler')!;
   const id = runtime.zombies.add(
-    { ...shamblerType, agent: { ...shamblerType.agent, sight: 0, nightSight: 0 } },
+    { ...shamblerType, agent: { ...shamblerType.agent!, sight: 0, nightSight: 0 } },
     [0, 1, 5],
     [1, 0, 0],
   );
@@ -340,7 +340,7 @@ it('a prying strike travels through the sound-hearing path and draws a shambler'
   expect(runtime.heardSounds.filter(({ event }) => event === 'lock_pry')).toHaveLength(
     Math.floor(action.elapsed / strikeInterval),
   );
-  expect(shambler.agent.mode).toBe('investigate');
+  expect(shambler.agent!.mode).toBe('investigate');
 });
 
 it('a sledgehammer forces a door by hammering and its blows reach the sound-hearing path', () => {
@@ -350,7 +350,7 @@ it('a sledgehammer forces a door by hammering and its blows reach the sound-hear
   const sledgehammer = carryTool(runtime, 'sledgehammer');
   const shamblerType = registry.actors.get('shambler')!;
   const id = runtime.zombies.add(
-    { ...shamblerType, agent: { ...shamblerType.agent, sight: 0, nightSight: 0 } },
+    { ...shamblerType, agent: { ...shamblerType.agent!, sight: 0, nightSight: 0 } },
     [0, 1, 5],
     [1, 0, 0],
   );
@@ -360,7 +360,7 @@ it('a sledgehammer forces a door by hammering and its blows reach the sound-hear
   runtime.sim.scheduler.advance(hammer.strikeIntervalSimSeconds + 2);
 
   expect(runtime.heardSounds.some(({ event }) => event === hammer.strikeSound)).toBe(true);
-  expect(shambler.agent.mode).toBe('investigate');
+  expect(shambler.agent!.mode).toBe('investigate');
 });
 
 it('a sledgehammer breaks a flimsy wood door faster than a wood door', () => {

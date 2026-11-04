@@ -341,7 +341,7 @@ const runObstacleCase = (
     startZ,
     reachedBarrier,
     stalled,
-    mode: simulation.store.get(id)!.agent.mode,
+    mode: simulation.store.get(id)!.agent!.mode,
   };
 };
 
@@ -350,9 +350,9 @@ describe('fused-mass body and combat seam', () => {
     const amalgam = registry.actors.get('amalgam')!;
     const shambler = registry.actors.get('shambler')!;
     expect(amalgam.speed.chaseMetresPerSimSecond).toBeLessThan(shambler.speed.chaseMetresPerSimSecond);
-    const heaviest = (type: typeof amalgam) => Math.max(...type.attack.moves.map((move) => move.damage));
+    const heaviest = (type: typeof amalgam) => Math.max(...type.attack!.moves.map((move) => move.damage));
     expect(heaviest(amalgam)).toBeGreaterThan(heaviest(shambler));
-    expect(amalgam.attack.windupSimSeconds).toBeGreaterThan(shambler.attack.windupSimSeconds);
+    expect(amalgam.attack!.windupSimSeconds).toBeGreaterThan(shambler.attack!.windupSimSeconds);
 
     const seenPlayer: PlayerSense = { ...player(), pos: [0, 1, 30] };
     const chase = (type: typeof amalgam, facing: Vec3 = [0, 0, 1]) => {
@@ -366,13 +366,13 @@ describe('fused-mass body and combat seam', () => {
         const chasing = simulation.store.get(id)!;
         const alignment = stepHeadingAlignment(before, chasing.body.pos, seenPlayer.pos);
         firstStepAlignment ??= alignment;
-        if (type.id === 'amalgam' && chasing.agent.mode === 'chase') {
+        if (type.id === 'amalgam' && chasing.agent!.mode === 'chase') {
           expect(alignment ?? 1).toBeGreaterThan(Math.cos(Math.PI / 180));
           checkedAmalgamHeading ||= alignment !== undefined;
         }
       }
       const actor = simulation.store.get(id)!;
-      expect(actor.agent.mode).toBe('chase');
+      expect(actor.agent!.mode).toBe('chase');
       if (type.id === 'amalgam') {
         expect(checkedAmalgamHeading).toBe(true);
       }
@@ -410,7 +410,7 @@ describe('fused-mass body and combat seam', () => {
       combat.tick(1 / 60);
     }
     expect(damage).toEqual([]);
-    const resolutionLimit = Math.ceil(actor.type.attack.windupSimSeconds * 60) + 60;
+    const resolutionLimit = Math.ceil(actor.type.attack!.windupSimSeconds * 60) + 60;
     let resolvedAfterWindup = false;
     for (let tick = 0; tick < resolutionLimit && damage.length === 0; tick++) {
       combat.tick(1 / 60);
@@ -493,7 +493,12 @@ describe('fused-mass body and combat seam', () => {
     const noisyPlayer: PlayerSense = {
       ...player(),
       pos: [1000, 1, 1000],
-      vocalNoise: { id: 1, pos: [4, 1, 0], radiusMetres: type.agent.hearingModel.loudNoiseRadiusMetres, expiresAt: 10 },
+      vocalNoise: {
+        id: 1,
+        pos: [4, 1, 0],
+        radiusMetres: type.agent!.hearingModel.loudNoiseRadiusMetres,
+        expiresAt: 10,
+      },
     };
     let heardBody = false;
     const hearingSystem = new ActorSystem({
@@ -690,7 +695,7 @@ describe('fused-mass body and combat seam', () => {
     const actor = simulation.store.get(simulation.add(amalgam, [atX, atY, atZ], facingPillar))!;
     const [fx, , fz] = actor.facing;
     const facingPlayer = (fx * 3 + fz * 10) / Math.hypot(3, 10);
-    expect(facingPlayer).toBeLessThan(Math.cos((actor.type.agent.sightCone * Math.PI) / 180));
+    expect(facingPlayer).toBeLessThan(Math.cos((actor.type.agent!.sightCone * Math.PI) / 180));
     const halfTurnTicks = (180 / amalgam.motion.bodyTurnDegreesPerSimSecond) * 60;
     let struck = false;
     for (let tick = 0; tick < 2 * halfTurnTicks && !struck; tick++) {
@@ -830,7 +835,7 @@ describe('fused-mass body and combat seam', () => {
     };
 
     expect(reach).toBeGreaterThan(0);
-    expect(reach).toBeCloseTo(actor.type.attack.reach * actor.type.bodyScale!);
+    expect(reach).toBeCloseTo(actor.type.attack!.reach * actor.type.bodyScale!);
     severOne();
     expect(activeFusedMassMembers(actor).length).toBeGreaterThan(0);
     expect(actorAttackReachMetres(actor)).toBe(reach);
@@ -977,7 +982,7 @@ const attackAlong = ({ typeId, elevation, reachShare, roof = false }: AttackLine
   }
   simulation.tick(1 / 60);
   const started = actor.attackWindup > 0;
-  for (let tick = 0; tick <= Math.ceil(actor.type.attack.windupSimSeconds * 60); tick++) {
+  for (let tick = 0; tick <= Math.ceil(actor.type.attack!.windupSimSeconds * 60); tick++) {
     simulation.tick(1 / 60);
   }
   return {

@@ -518,7 +518,7 @@ describe('game audio playback', () => {
     const actor: Vec3 = [0.5, 1.5, 0.5];
     const listener: Vec3 = [actor[0], actor[1] + 1.3, actor[2]];
     const radiusMetres = 12;
-    const distanceMetres = (radiusMetres * shambler.agent.hearing * (1 + senseTuning.wall.hearingRangeScale)) / 2;
+    const distanceMetres = (radiusMetres * shambler.agent!.hearing * (1 + senseTuning.wall.hearingRangeScale)) / 2;
     const source: Vec3 = [listener[0] + distanceMetres, listener[1], listener[2]];
     const noise = { id: 1, pos: [source[0], actor[1], source[2]] as Vec3, radiusMetres, expiresAt: 2 };
     const hear = (seed: number) =>

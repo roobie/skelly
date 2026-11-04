@@ -99,7 +99,7 @@ describe('acid spit', () => {
     const modes = new Set<string>();
     for (let frame = 0; frame < 300; frame++) {
       heard.system.tick(1 / 60);
-      modes.add(hearing.actor.agent.mode);
+      modes.add(hearing.actor.agent!.mode);
       expect(hearing.actor.spitWindup).toBe(0);
     }
     expect(modes).toContain('investigate');
@@ -243,7 +243,7 @@ describe('acid spit', () => {
     frames(h.system, 10);
     expect(actor.spitWindup).toBeGreaterThan(0);
 
-    playerX = actor.body.pos[0] - ACID.attack.reach / 2 / BLOCK_SIZE;
+    playerX = actor.body.pos[0] - ACID.attack!.reach / 2 / BLOCK_SIZE;
     for (let frame = 0; frame < WIND_FRAMES && h.releases.length === 0; frame++) {
       h.system.tick(1 / 60);
       expect(actor.attackWindup).toBe(0);
@@ -255,7 +255,7 @@ describe('acid spit', () => {
   });
 
   it('closes in to melee in the pocket inside the near edge and holds ground once back in the band', () => {
-    const pocketMetres = (SPIT.rangeBand.nearMetres + ACID.attack.reach) / 2;
+    const pocketMetres = (SPIT.rangeBand.nearMetres + ACID.attack!.reach) / 2;
     const pocket = harness(() => sensed(PLAYER_POS));
     const closing = spawn(pocket, pocketMetres / BLOCK_SIZE);
     const [before] = closing.actor.body.pos;

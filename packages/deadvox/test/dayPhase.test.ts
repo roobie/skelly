@@ -57,7 +57,7 @@ const hordeModeAt = (time: number): HordeState['mode'] => {
 
 describe('sun-owned day phases', () => {
   it('keeps sun exposure, sky, zombie sight, and spawn words on the authored solar phase', () => {
-    const actor = { ...shambler, agent: { ...shambler.agent, hearing: 0 } };
+    const actor = { ...shambler, agent: { ...shambler.agent!, hearing: 0 } };
     expect(actor.agent.sight).toBeGreaterThan(actor.agent.nightSight);
     const betweenRanges = (actor.agent.sight + actor.agent.nightSight) / 2;
     const target: Vec3 = [betweenRanges / scale.blockSize, 1, 0];
@@ -108,7 +108,7 @@ describe('sun-owned day phases', () => {
     }).filter(({ state }) => state.phase === 'dawn' || state.phase === 'dusk');
     const lowBlend = twilight.find(({ state }) => state.sightBlend > 0.3 && state.sightBlend < 0.5)!;
     const highBlend = twilight.find(({ state }) => state.sightBlend > 0.5 && state.sightBlend < 0.7)!;
-    const actor = { ...shambler, agent: { ...shambler.agent, hearing: 0 } };
+    const actor = { ...shambler, agent: { ...shambler.agent!, hearing: 0 } };
     const rangeAt = (fraction: number) =>
       actor.agent.nightSight + (actor.agent.sight - actor.agent.nightSight) * fraction;
     const seesAt = (distance: number, time: number) => {

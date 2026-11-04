@@ -1655,7 +1655,7 @@ export const createSession = (options: SessionOptions) => {
         return;
       }
       playWorldSound(event, position, sim.time, {
-        sourceLabel: `${actor.type.name.toLowerCase()} #${id} · ${actor.agent.mode}`,
+        sourceLabel: `${actor.type.name.toLowerCase()} #${id}${actor.agent ? ` · ${actor.agent.mode}` : ''}`,
         body: actorFigure(actor.type, actor.figureSeed).realized.body,
       });
     },

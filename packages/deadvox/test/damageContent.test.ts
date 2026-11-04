@@ -25,8 +25,8 @@ it('uses a content-only damage kind on bodies, actors and terrain with an existi
     id: 'fixture_sonic_actor',
     capability: undefined,
     attack: {
-      ...templateActor.attack,
-      moves: templateActor.attack.moves.map((move) => ({ ...move, damageKind: kind })),
+      ...templateActor.attack!,
+      moves: templateActor.attack!.moves.map((move) => ({ ...move, damageKind: kind })),
     },
     damageResistance: {
       [kind]: Object.fromEntries(BODY_REGIONS.map((region) => [region, 0.5])) as Record<BodyRegion, number>,

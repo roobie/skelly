@@ -56,9 +56,9 @@ const posedBoxes = (actor: Actor) =>
     headYaw: actor.headYaw,
     gaitPhase: actor.gaitPhase,
     speed: actor.horizontalSpeed,
-    chasing: actor.agent.mode === 'chase',
+    chasing: actor.agent!.mode === 'chase',
     attackWindup: actor.attackWindup,
-    attackWindupSeconds: actor.type.attack.windupSimSeconds,
+    attackWindupSeconds: actor.type.attack!.windupSimSeconds,
     severed: actor.severed,
     blockSize: BLOCK_SIZE,
   });
@@ -102,7 +102,7 @@ describe('debug shambler freeze', () => {
     run(system, 0.25);
     target = [0, 1, 3.2];
     run(system, 0.25);
-    expect(actor.agent.mode).toBe('chase');
+    expect(actor.agent!.mode).toBe('chase');
     expect(actor.stanceWeight).toBeCloseTo(0.5, 5);
     system.setFrozen(true);
     const midway = actor.stanceWeight;
@@ -121,7 +121,7 @@ describe('debug shambler freeze', () => {
     const id = system.add(SHAMBLER, [0, 1, 0], [0, 0, 1]);
     run(system, 0.15);
     const actor = system.store.get(id)!;
-    expect(actor.agent.mode).toBe('chase');
+    expect(actor.agent!.mode).toBe('chase');
     expect(actor.body.pos[2]).toBeGreaterThan(0);
     const healthBeforeFreeze = playerHealth;
     system.setFrozen(true);
@@ -171,9 +171,9 @@ describe('debug shambler freeze', () => {
     const actor = system.store.get(1)!;
     const before = [
       actor.attackWait,
-      actor.agent.idleSoundTimer,
-      actor.agent.modeTimer,
-      actor.agent.searchTimer,
+      actor.agent!.idleSoundTimer,
+      actor.agent!.modeTimer,
+      actor.agent!.searchTimer,
       actor.wanderClock,
       actor.stumbleFactor,
       actor.stumbleElapsed,
@@ -183,9 +183,9 @@ describe('debug shambler freeze', () => {
     run(system, 10);
     expect([
       actor.attackWait,
-      actor.agent.idleSoundTimer,
-      actor.agent.modeTimer,
-      actor.agent.searchTimer,
+      actor.agent!.idleSoundTimer,
+      actor.agent!.modeTimer,
+      actor.agent!.searchTimer,
       actor.wanderClock,
       actor.stumbleFactor,
       actor.stumbleElapsed,
@@ -202,7 +202,7 @@ describe('debug shambler freeze', () => {
     const frozenPosition = [...oldActor.body.pos];
     const spawnedId = system.add(SHAMBLER, [5, 1, 5], [0, 0, -1]);
     const spawned = system.store.get(spawnedId)!;
-    expect(spawned.agent.mode).toBe('idle');
+    expect(spawned.agent!.mode).toBe('idle');
     const spawnedState = system.snapshotState();
     run(system, 5);
     expect(oldActor.body.pos).toEqual(frozenPosition);

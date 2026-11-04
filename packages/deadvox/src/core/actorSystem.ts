@@ -142,7 +142,7 @@ const actorRegionsFor = (type: ActorDef, seed: number): ActorRegions => {
 };
 
 type MeleeDamageType = DamageKind;
-type ActorMove = ActorDef['attack']['moves'][number];
+type ActorMove = NonNullable<ActorDef['attack']>['moves'][number];
 type ActorHitRegionChoice = ActorMove['hitRegions'][number];
 
 /** The move of a landed hit, selected by its content weight. */
@@ -474,7 +474,7 @@ const holdSpitGround = (scratch: ActorTickScratch, toward: Vec3): void => {
   const band = type.acidSpit?.rangeBand;
   if (
     band &&
-    actor.agent.mode === 'chase' &&
+    actor.agent?.mode === 'chase' &&
     sees &&
     metresToTarget >= band.nearMetres &&
     metresToTarget <= band.farMetres
@@ -964,7 +964,7 @@ export class ActorSystem {
       });
     }
     for (const [, actor] of this.store.entries()) {
-      if (actor.agent.hordeId !== undefined) {
+      if (actor.agent?.hordeId !== undefined) {
         const horde = this.agentHorde.hordes.get(actor.agent.hordeId)?.state;
         if (!horde || horde.type !== actor.type.id) {
           throw new Error(`Missing or mismatched horde ${actor.agent.hordeId} for zombie`);
@@ -986,25 +986,29 @@ export class ActorSystem {
           ]!;
     const dimensions = actorBodyDimensions(type, this.options.blockSize);
     const actor: Actor = {
-      agent: {
-        home: copy(position),
-        mode: 'idle',
-        investigationTier: undefined,
-        behaviorRng: Rng.stream(this.options.seed ?? 0, `actor:${this.store.size + 1}`),
-        soundRng: Rng.stream(this.options.seed ?? 0, `actor-sound:${this.store.size + 1}`),
-        idleSoundTimer: 8,
-        modeTimer: 0,
-        searchAnchor: undefined,
-        searchTimer: 0,
-        searchStrolling: false,
-        searchHeading: copy(direction),
-        strollHeading: copy(direction),
-        obstacleWanderRemaining: 0,
-        obstacleSlideSide: 0,
-        bodyLookTarget: angleOf(direction),
-        headYawTarget: 0,
-        lookTimer: 0,
-      },
+      ...(type.agent
+        ? {
+            agent: {
+              home: copy(position),
+              mode: 'idle',
+              investigationTier: undefined,
+              behaviorRng: Rng.stream(this.options.seed ?? 0, `actor:${this.store.size + 1}`),
+              soundRng: Rng.stream(this.options.seed ?? 0, `actor-sound:${this.store.size + 1}`),
+              idleSoundTimer: 8,
+              modeTimer: 0,
+              searchAnchor: undefined,
+              searchTimer: 0,
+              searchStrolling: false,
+              searchHeading: copy(direction),
+              strollHeading: copy(direction),
+              obstacleWanderRemaining: 0,
+              obstacleSlideSide: 0,
+              bodyLookTarget: angleOf(direction),
+              headYawTarget: 0,
+              lookTimer: 0,
+            },
+          }
+        : {}),
       type,
       modifiers: [],
       tier: this.tierAt(position, this.options.player()),
@@ -1054,18 +1058,22 @@ export class ActorSystem {
     };
     const id = this.store.add(actor);
     // EntityStore ids are stable within the world's entity lifetime.
-    actor.agent.behaviorRng = Rng.stream(this.options.seed ?? 0, `actor:${id}`);
-    actor.agent.soundRng = Rng.stream(this.options.seed ?? 0, `actor-sound:${id}`);
+    if (actor.agent) {
+      actor.agent.behaviorRng = Rng.stream(this.options.seed ?? 0, `actor:${id}`);
+      actor.agent.soundRng = Rng.stream(this.options.seed ?? 0, `actor-sound:${id}`);
+    }
     actor.dismemberRng = Rng.stream(this.options.seed ?? 0, `actor-dismember:${id}`);
     actor.spitRng = Rng.stream(this.options.seed ?? 0, `actor-spit:${id}`);
-    actor.agent.idleSoundTimer = inRange(actor.agent.soundRng, actor.type.agent.idleSound.intervalSimSeconds);
-    this.agent.beginIdle(actor);
+    if (actor.agent && type.agent) {
+      actor.agent.idleSoundTimer = inRange(actor.agent.soundRng, type.agent.idleSound.intervalSimSeconds);
+      this.agent.beginIdle(actor);
+    }
     return id;
   }
 
   addHorde(id: string, type: ActorDef, center: Vec3, count: number): void {
     if (
-      !id ||
+      !(type.agent && id) ||
       this.agentHorde.hordes.has(id) ||
       !Number.isSafeInteger(count) ||
       count < 1 ||
@@ -1095,9 +1103,9 @@ export class ActorSystem {
       ];
       const position: Vec3 = [center[0] + offset[0], center[1], center[2] + offset[2]];
       const member = this.store.get(this.add(type, position, [center[0] - position[0], 0, center[2] - position[2]]))!;
-      member.agent.hordeId = id;
-      member.agent.hordeOffset = offset;
-      member.agent.home = copy(position);
+      member.agent!.hordeId = id;
+      member.agent!.hordeOffset = offset;
+      member.agent!.home = copy(position);
       member.body.onGround = true;
     }
   }
@@ -1174,8 +1182,13 @@ export class ActorSystem {
       scratch.actor = actor;
       scratch.pos = actor.body.pos;
       scratch.type = actor.type;
-      this.agent.prepareDecisionRng();
+      if (actor.agent) {
+        this.agent.prepareDecisionRng();
+      }
       this.updateActorTimers();
+      if (!actor.agent) {
+        continue;
+      }
       this.agent.updatePerception();
       this.agent.updateAttention();
       this.agent.forgetIndividualStimulus(actor, time);
@@ -1189,6 +1202,10 @@ export class ActorSystem {
       scratch.actor = actor;
       scratch.pos = actor.body.pos;
       scratch.type = actor.type;
+      if (!actor.agent) {
+        stepBody(actor.body, dt, isSolid, physics);
+        continue;
+      }
       this.agent.prepareDecisionRng();
       let { direction, speed } = this.agent.backgroundIntent(scratch);
       if (actorCrawls(actor)) {
@@ -1260,11 +1277,13 @@ export class ActorSystem {
       actor.horizontalSpeed = 0;
     }
     const acceleration =
-      actor.stumbleFactor < 1 && actor.horizontalSpeed > scratch.desiredSpeed
+      type.chaseMotion && actor.stumbleFactor < 1 && actor.horizontalSpeed > scratch.desiredSpeed
         ? type.chaseMotion.stumbleDecelerationMetresPerSimSecondSquared
         : type.motion.movementAccelerationMetresPerSimSecondSquared;
     actor.horizontalSpeed = approach(actor.horizontalSpeed, scratch.desiredSpeed, acceleration * dt);
-    this.agent.limitSearchStroll(scratch, actor, type, dt);
+    if (actor.agent) {
+      this.agent.limitSearchStroll(scratch, actor, type, dt);
+    }
   }
 
   private stepActorBody(): void {
@@ -1390,7 +1409,9 @@ export class ActorSystem {
     if (advanceWanderClock) {
       actor.wanderClock += dt;
     }
-    this.agent.updateMovementDecisionAfterStep(scratch);
+    if (actor.agent) {
+      this.agent.updateMovementDecisionAfterStep(scratch);
+    }
   }
 
   private resolveActorAttack(): void {
@@ -1405,7 +1426,7 @@ export class ActorSystem {
           this.options.hurtPlayer(move.damage, move.hitRegions, scratch.id, move.damageKind);
         }
       }
-    } else {
+    } else if (actor.agent) {
       this.agent.startActorAttack(actor, type, pos, player);
     }
     this.resolveAcidSpit();
@@ -1458,7 +1479,7 @@ export class ActorSystem {
     }
     const metres = horizontalDistance(player.pos, pos) * blockSize;
     if (
-      actor.agent.mode === 'chase' &&
+      actor.agent?.mode === 'chase' &&
       scratch.sees &&
       actor.staggerSimSeconds <= 0 &&
       actor.spitWait <= 0 &&
@@ -1474,7 +1495,9 @@ export class ActorSystem {
   private finishActorTick(): void {
     const scratch = this.tickScratch;
     const { actor, blockSize, dt, id } = scratch;
-    this.agent.finishMovementDecision();
+    if (actor.agent) {
+      this.agent.finishMovementDecision();
+    }
     const poseInput = actorPoseInputFor(actor, id, blockSize);
     const stanceTarget = targetStanceWeight(poseInput);
     actor.stanceWeight = advanceStanceWeight(actor.stanceWeight ?? stanceTarget, stanceTarget, dt);
@@ -1542,6 +1565,7 @@ export class ActorSystem {
   }
 
   /** Advances every selected zombie at a fixed caller-supplied simulation dt. */
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep body-only dispatch beside the ordered perception and movement passes.
   tick(
     dt: number,
     time = 0,
@@ -1584,8 +1608,13 @@ export class ActorSystem {
       scratch.actor = actor;
       scratch.pos = actor.body.pos;
       scratch.type = actor.type;
-      this.agent.prepareDecisionRng();
+      if (actor.agent) {
+        this.agent.prepareDecisionRng();
+      }
       this.updateActorTimers();
+      if (!actor.agent) {
+        continue;
+      }
       this.agent.updatePerception();
       this.agent.updateAttention();
       this.agent.forgetIndividualStimulus(actor, time);
@@ -1599,6 +1628,16 @@ export class ActorSystem {
       scratch.actor = actor;
       scratch.pos = actor.body.pos;
       scratch.type = actor.type;
+      if (!actor.agent) {
+        stepBody(actor.body, dt, isSolid, {
+          ...this.options.physics,
+          obstacles: player.body ? [player.body] : [],
+          shapeOf: this.shapeOf,
+        });
+        this.resolveActorAttack();
+        this.finishActorTick();
+        continue;
+      }
       this.agent.prepareActiveMovement();
       this.agent.checkInvestigationArrival();
 

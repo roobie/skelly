@@ -168,7 +168,7 @@ describe('rendered and hit shambler poses', () => {
       expect(actor.attackWindup).toBe(0);
       expect(actor.attackWait).toBe(wait);
       const frozen = system.snapshotState();
-      system.tick(SHAMBLER.attack.windupSimSeconds + SHAMBLER.attack.cooldownSimSeconds);
+      system.tick(SHAMBLER.attack!.windupSimSeconds + SHAMBLER.attack!.cooldownSimSeconds);
       expect(system.snapshotState()).toEqual(frozen);
       expect(damage()).toBe(0);
       renderer.sync(system.store, 0, 1, true);
@@ -188,7 +188,7 @@ describe('rendered and hit shambler poses', () => {
     for (let tick = 0; tick < 60 && actor.gaitPhase === 0; tick++) {
       system.tick(1 / 60);
     }
-    expect(actor.agent.mode).toBe('chase');
+    expect(actor.agent!.mode).toBe('chase');
     const head = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE)).head.find(
       (box) => box.bone === 'head',
     )!.center;
@@ -307,7 +307,7 @@ describe('rendered and hit shambler poses', () => {
     const freshActor = freshSystem.store.get(freshId)!;
     expect(freshActor.stanceWeight).toBeUndefined();
     freshSystem.tick(1 / 20);
-    expect(freshActor.agent.mode).toBe('chase');
+    expect(freshActor.agent!.mode).toBe('chase');
     expect(freshActor.stanceWeight).toBe(1);
   });
 
@@ -359,7 +359,7 @@ describe('shared acid pose', () => {
   it('keeps a wandering head turn inside every framed joint limit without a hit reaction', () => {
     const acid = registry.actors.get('acid_zombie')!;
     // Just inside the half-arc a wandering acid zombie can pick for its head.
-    const reachable = ((acid.agent.wander.headLookArcDegrees / 2 - 1) * Math.PI) / 180;
+    const reachable = ((acid.agent!.wander.headLookArcDegrees / 2 - 1) * Math.PI) / 180;
     for (const headYaw of [reachable, -reachable]) {
       const posed = posedActor({
         seed: 1,
@@ -371,7 +371,7 @@ describe('shared acid pose', () => {
         speed: 0,
         chasing: false,
         attackWindup: 0,
-        attackWindupSeconds: acid.attack.windupSimSeconds,
+        attackWindupSeconds: acid.attack!.windupSimSeconds,
         severed: [],
         blockSize: BLOCK_SIZE,
       });

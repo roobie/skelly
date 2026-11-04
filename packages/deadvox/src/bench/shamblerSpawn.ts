@@ -35,7 +35,11 @@ export const spawnShamblerRing = ({
       actors.store.get(id)!.body.onGround = true;
     }
     actors.tickActive(1 / 20);
-    if ([...actors.store.entries()].some(([, actor]) => actor.tier === 'active' && actor.agent.mode !== 'chase')) {
+    if (
+      [...actors.store.entries()].some(
+        ([, actor]) => actor.tier === 'active' && actor.agent !== undefined && actor.agent.mode !== 'chase',
+      )
+    ) {
       throw new Error('Cannot start shambler benchmark: not every active shambler can see the player.');
     }
     return;
