@@ -2462,7 +2462,8 @@ try {
       const { magazineWellCalibre } = await import(magazineUrl);
       const r = globalThis.primaryActionTest;
       const defs = [...r.inventory.registry.items.values()];
-      const light = defs.find((def) => def.light && !def.twoHanded);
+      // A battery light switches on any use and back off; a flame needs a held firestarter, whatever loads first.
+      const light = defs.find((def) => def.light?.power && !def.twoHanded);
       const tool = defs.find((def) => def.weapon && !def.twoHanded);
       const inert = defs.find(
         (def) =>
