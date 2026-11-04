@@ -148,7 +148,7 @@ Graphics defaults and allowed ranges or options belong to the core mod so mods c
 quality without changing engine mechanics. Reject an inverted range, a default outside
 its range, or toggle choices that exclude their default. Require the core policy row at
 playable-pack admission rather than inventing missing policy in a renderer. See
-`mods/skelly.deadvox.residual/graphics.jsonnet`, `src/core/graphics.ts`, `GraphicsOptionsSchema`, and
+`packages/mods/skelly.graphics/graphics.jsonnet`, `src/core/graphics.ts`, `GraphicsOptionsSchema`, and
 `src/core/content.ts`, `requiredContentIssues`.
 
 ## Inventory action tunables and labels

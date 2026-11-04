@@ -1,4 +1,4 @@
-import graphicsFile from '../../mods/skelly.deadvox.residual/graphics.json' with { type: 'json' };
+import graphicsFile from '../../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import siteGenerationFile from '../../mods/skelly.deadvox.residual/site-generation.json' with { type: 'json' };
 import { BlockEntities } from '../../src/core/blockEntities.ts';
 import { Chunk } from '../../src/core/chunk.ts';

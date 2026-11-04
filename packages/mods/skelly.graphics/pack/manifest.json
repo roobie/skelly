@@ -1,0 +1,18 @@
+{
+  "dependencies": [],
+  "files": [
+    {
+      "kind": "content",
+      "path": "graphics.json"
+    },
+    {
+      "kind": "content",
+      "path": "look.json"
+    }
+  ],
+  "id": "skelly.graphics",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

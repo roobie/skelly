@@ -157,9 +157,9 @@ place the authorities gave up on.
 
 ## Performance and scale
 
-Terrain goes on screen a whole column at a time and never beyond a column that isn't drawn yet, so no missing chunk shows what solid blocks hide. This lets play begin once a smaller ready ring is drawn while the remaining view fills in safely, without exposing sealed or buried rooms during loading or movement. Furniture, piles and actors share the terrain's reveal membership so their silhouettes and shadows cannot expose a hidden room before its walls arrive. Edits keep already drawn columns visible so replacement work does not create a gap. See `src/render/furniture.ts`, `FurnitureMeshes`, `src/render/piles.ts`, `PileMeshes`, `src/render/mobActors.ts`, `MobActorMeshes`, `src/render/actors.ts`, `ActorMeshes`, `src/render/chunks.ts`, `ChunkMeshes`, `src/render/columnReveal.ts`, `revealedColumns`, `src/game/streamer.ts`, `Streamer`, `src/game/worldLoading.ts`, `WorldLoading`, and `mods/skelly.deadvox.residual/graphics.jsonnet`, `readyRadiusM`.
+Terrain goes on screen a whole column at a time and never beyond a column that isn't drawn yet, so no missing chunk shows what solid blocks hide. This lets play begin once a smaller ready ring is drawn while the remaining view fills in safely, without exposing sealed or buried rooms during loading or movement. Furniture, piles and actors share the terrain's reveal membership so their silhouettes and shadows cannot expose a hidden room before its walls arrive. Edits keep already drawn columns visible so replacement work does not create a gap. See `src/render/furniture.ts`, `FurnitureMeshes`, `src/render/piles.ts`, `PileMeshes`, `src/render/mobActors.ts`, `MobActorMeshes`, `src/render/actors.ts`, `ActorMeshes`, `src/render/chunks.ts`, `ChunkMeshes`, `src/render/columnReveal.ts`, `revealedColumns`, `src/game/streamer.ts`, `Streamer`, `src/game/worldLoading.ts`, `WorldLoading`, and `packages/mods/skelly.graphics/graphics.jsonnet`, `readyRadiusM`.
 
-Terrain range should not extend farther diagonally than along an axis. Retention prevents repeated streaming work when the player crosses a column border. See `src/game/streamer.ts`, `Streamer`, and `mods/skelly.deadvox.residual/graphics.jsonnet`, `streamHysteresisM`. Fog goes by horizontal distance, not view depth, so turning in place does not change what is drawn. See `src/render/distanceFog.ts`, `withDistanceFog`.
+Terrain range should not extend farther diagonally than along an axis. Retention prevents repeated streaming work when the player crosses a column border. See `src/game/streamer.ts`, `Streamer`, and `packages/mods/skelly.graphics/graphics.jsonnet`, `streamHysteresisM`. Fog goes by horizontal distance, not view depth, so turning in place does not change what is drawn. See `src/render/distanceFog.ts`, `withDistanceFog`.
 
 Performance acceptance targets 60 fps on a portable reference-laptop class:
 Intel HD 530-class integrated graphics at a device pixel ratio of 1.5. The
@@ -180,7 +180,7 @@ post effects or reduce the readability of separate UI layers. Content must at le
 switch adaptation off and tune it, so a mod can choose a fixed scale or a
 different trade (`PILLARS.md`, "Content forward compatibility"). Explicit player
 choices retain ownership rather than being overwritten by adaptation. See
-`mods/skelly.deadvox.residual/graphics.jsonnet`, `src/render/adaptiveScale.ts`, `AdaptiveScale`,
+`packages/mods/skelly.graphics/graphics.jsonnet`, `src/render/adaptiveScale.ts`, `AdaptiveScale`,
 `src/render/mood.ts`, `Mood.setRenderScale`, and `src/render/screenScale.ts`, `ScreenScale`.
 Look changes made for performance
 follow `packages/deadvox/GRAPHICS.md`, "Look decisions".
@@ -1679,7 +1679,7 @@ See `packages/thing-authoring-tool/handhelds.libsonnet`, `carrier`,
 Model loading is bounded by content so an asset-heavy pack does not exhaust the
 browser's request capacity. A view that needs an unloaded model moves it ahead
 of background preload, so an equipped, visible or spawned item does not wait
-behind unrelated declarations. See `mods/skelly.deadvox.residual/graphics.jsonnet`,
+behind unrelated declarations. See `packages/mods/skelly.graphics/graphics.jsonnet`,
 `graphics`; `src/render/models.ts`, `ModelLibrary`; and `PILLARS.md`, "Content forward compatibility".
 
 ### Assets and credits
@@ -2653,7 +2653,7 @@ finishes. Give sky work its lead by growing the loaded terrain radius, not by
 shrinking the visible radius or making visible chunks wait for lighting. The
 extra residency trades memory for time to build the next field before it enters
 view; it must not expand mesh or reveal admission. See
-`mods/skelly.deadvox.residual/graphics.jsonnet`, `skyPreloadRings`,
+`packages/mods/skelly.graphics/graphics.jsonnet`, `skyPreloadRings`,
 `src/render/skylight.ts`, `prepare`, `src/game/streamer.ts`, `dispatchSky`
 and `onBeforeReveal`, and `src/core/skyField.ts`, `finishColumn`.
 
@@ -2664,7 +2664,7 @@ not substitute its incomplete answer for gameplay's current world-state answer.
 Keep an accepted result through edit revalidation and GPU eviction so a door edit
 cannot flash a dark room and re-entry cannot repeat transport. The retained result
 may briefly delay a visible edit; that latency is preferable to a false transient
-room. See `mods/skelly.deadvox.residual/graphics.jsonnet`, `unbuiltSkyCap`,
+room. See `packages/mods/skelly.graphics/graphics.jsonnet`, `unbuiltSkyCap`,
 `src/core/skyField.ts`, `SkyFields`, and `src/render/skylight.ts`, `Skylight`.
 
 Worker execution protects rendering from dense transport work, but copying, submission,
@@ -3514,7 +3514,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   through it can leave disconnected slivers above an otherwise complete composited disc. Both camera owners use
   authored near-plane policy supplied by the engine, rather than protecting only the optical adapter. See `src/core/schema/graphics.ts`,
   `GraphicsTuningSchema`; `src/game/engine.ts`, `createEngine`; and `src/render/hands.ts`, `HeldItems`.
-- **Optic presentation tuning is content:** the player view and lens-edge controls remain content-owned so look nudges do not require a code round. See `mods/skelly.deadvox.residual/graphics.jsonnet`, `graphics`; `src/core/schema/graphics.ts`, `GraphicsTuningSchema`; and `src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
+- **Optic presentation tuning is content:** the player view and lens-edge controls remain content-owned so look nudges do not require a code round. See `packages/mods/skelly.graphics/graphics.jsonnet`, `graphics`; `src/core/schema/graphics.ts`, `GraphicsTuningSchema`; and `src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
 - **Optic eye relief is authored per optic so imperfect alignment reads at 1x:** the dot marks the shot direction and drifts against the housing by the eye's lateral offset over the relief, so a long relief hides the sway that skill is meant to fade. See `packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`; and `src/render/hands.ts`, `HeldItems.poseOptic`.
 - **The optic window has no drawn border:** the optic's own housing already frames the view, and a second frame
   hides more of the scene. At unity a replacement image keeps nearby gun features, as a real 1× sight does, but

@@ -89,10 +89,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/graphics.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/graphics.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/inventory.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/inventory.json"
     },
@@ -179,10 +175,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/locks.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/locks.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/look.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/look.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/loot.jsonnet",
@@ -571,6 +563,18 @@
     {
       "source": "packages/mods/skelly.day-cycle/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.day-cycle/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.graphics/graphics.jsonnet",
+      "output": "packages/mods/skelly.graphics/graphics.json"
+    },
+    {
+      "source": "packages/mods/skelly.graphics/look.jsonnet",
+      "output": "packages/mods/skelly.graphics/look.json"
+    },
+    {
+      "source": "packages/mods/skelly.graphics/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.graphics/pack/manifest.json"
     },
     {
       "source": "packages/mods/skelly.saves/pack/manifest.jsonnet",

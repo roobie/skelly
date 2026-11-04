@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
-import graphicsFile from '../../mods/skelly.deadvox.residual/graphics.json' with { type: 'json' };
+import graphicsFile from '../../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import { CHUNK } from '../../src/core/coords.ts';
 import { BLOCK_SIZE, chunksFor, makeScale } from '../../src/core/scale.ts';
 

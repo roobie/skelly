@@ -45,10 +45,6 @@ const BASE = 'mods/skelly.deadvox.residual';
 const MODEL_FILE = /^assets\/models\/[a-z0-9_]+\.glb$/;
 const AXIS_INDEX = { x: 0, y: 1, z: 2 } as const;
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
-const base = (file: string): ContentSource => {
-  const source = `${BASE}/${file}`;
-  return { source, data: JSON.parse(readFileSync(source, 'utf8')) };
-};
 const imageLoader = {
   isImageBitmapLoader: true,
   load(_url: string, onLoad: (image: ImageBitmap) => void) {

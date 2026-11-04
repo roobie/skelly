@@ -12,7 +12,7 @@ import {
 import type { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { expect, it, vi } from 'vitest';
-import graphics from '../mods/skelly.deadvox.residual/graphics.json' with { type: 'json' };
+import graphics from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import { createBenchLightFixture } from '../src/bench/lightFixture.ts';
 import { benchDraw } from '../src/bench/post.ts';
 import type { NightVision } from '../src/core/schema.ts';

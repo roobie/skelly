@@ -57,7 +57,7 @@ Wide ambient occlusion darkens indirect light according to enclosure, while dire
 Keep graphics defaults and permitted choices in the core mod, while the player owns the
 choice for their machine: a content pack cannot know their GPU. Debug URL overrides must
 win over player choices, which must win over content defaults. Explicit false values are
-choices, not absence. See `mods/skelly.deadvox.residual/graphics.jsonnet`,
+choices, not absence. See `packages/mods/skelly.graphics/graphics.jsonnet`,
 `src/core/graphics.ts`, `resolveGraphics`, and `src/game/graphicsSettings.ts`.
 
 Benchmarks isolate machine preferences and debug graphics overrides so saved choices cannot

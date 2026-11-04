@@ -8,7 +8,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import type { Site } from '../src/core/site.ts';
-import { type RealSeconds, realSeconds, simSeconds } from '../src/core/time.ts';
+import { gameMinutes, type RealSeconds, realSeconds, simSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
@@ -41,8 +41,8 @@ const registryWithSleepScenario = (sleepCap: number) => {
     throw new Error('Missing scenario compression or body definition');
   }
   compression.caps.sleep = sleepCap;
-  body.sleepOnset.minGameMinutes = 0.001;
-  body.sleepOnset.maxGameMinutes = 0.001;
+  body.sleepOnset.minGameMinutes = gameMinutes(0.001);
+  body.sleepOnset.maxGameMinutes = gameMinutes(0.001);
   return buildRegistry(files);
 };
 

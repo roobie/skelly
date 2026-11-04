@@ -4,6 +4,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative CDP contract assertions
 
 import assert from 'node:assert/strict';
+import { resolve } from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { inspect } from 'node:util';
@@ -19,6 +20,8 @@ import { browserStageArgs, browserStageMode, browserStageUrl } from '../test/bro
 
 const graphicsArgument = /^--(?:disable-gpu|use-gl|use-angle|enable-unsafe-swiftshader)(?:=|$)/;
 const cwd = process.cwd();
+/** The dev server reaches the shared mods root only by absolute path. */
+const sharedModUrl = (path) => `/@fs${resolve(cwd, '../mods', path)}`;
 const renderMode = browserStageMode('ui-browser-contract');
 const launchExtraArgs = ['--disable-extensions', '--password-store=basic', '--window-size=1280,900'];
 const launchArgs = browserStageArgs('ui-browser-contract', launchExtraArgs);
@@ -658,7 +661,7 @@ try {
     'locked menu click changes the graphics preference',
   );
   const restoredGraphics = await evaluate(`Promise.all([
-    import('/src/game/graphicsSettings.ts'), import('/mods/skelly.deadvox.residual/graphics.json')
+    import('/src/game/graphicsSettings.ts'), import('${sharedModUrl('skelly.graphics/graphics.json')}')
   ]).then(([{ readGraphicsSettings }, { default: content }]) => readGraphicsSettings(content.graphics[0]))`);
   assert.equal(restoredGraphics.fastCamo, !initialCamo, 'fresh graphics settings read the persisted machine choice');
   await clickAt('[data-graphics-key="fastCamo"] button');

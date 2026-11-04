@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.saves", "skelly.day-cycle", "skelly.controls"],
+  "dependencies": ["skelly.saves", "skelly.day-cycle", "skelly.controls", "skelly.graphics"],
   "files": [
     {
       "kind": "content",
@@ -76,10 +76,6 @@
     {
       "kind": "content",
       "path": "gauntlet.json"
-    },
-    {
-      "kind": "content",
-      "path": "graphics.json"
     },
     {
       "kind": "content",
@@ -180,10 +176,6 @@
     {
       "kind": "content",
       "path": "locks.json"
-    },
-    {
-      "kind": "content",
-      "path": "look.json"
     },
     {
       "kind": "content",
