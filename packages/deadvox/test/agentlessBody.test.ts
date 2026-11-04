@@ -4,6 +4,7 @@ import { actorPoseInputFor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { ContentFileSchema } from '../src/core/schema.ts';
+import { siteGenerationOf } from '../src/core/sitePalette.ts';
 import { contentLookup as registryContentLookup } from '../src/ui/saveController.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { capture, createRuntime, encodeFixture, formatVersion, registry, scale } from './snapshotTestSupport.ts';
@@ -26,8 +27,19 @@ it('an agentless content body ticks, takes a hit and saves without decision stat
   expect(actor).not.toHaveProperty('agent');
   const [, height] = actor.body.pos;
   source.zombies.tickActive(1 / 60);
-  source.zombies.tickBackground(1 / 60, 1 / 60);
   expect(actor.body.pos[1]).toBeLessThan(height);
+  const farId = source.zombies.add(body, [
+    pos[0] + (siteGenerationOf(content).activeActorRadiusMetres + 1) / scale.blockSize,
+    pos[1] + 4,
+    pos[2],
+  ]);
+  const farActor = source.zombies.store.get(farId)!;
+  const [, farHeight] = farActor.body.pos;
+  source.zombies.tickActive(1 / 60);
+  expect(farActor.tier).toBe('background');
+  expect(farActor.body.pos[1]).toBe(farHeight);
+  source.zombies.tickBackground(1 / 60, 1 / 60);
+  expect(farActor.body.pos[1]).toBeLessThan(farHeight);
   const posed = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, scale.blockSize));
   const { center } = posed.leftArm[0]!;
   const health = () => Object.values(actor.regions).reduce((sum, value) => sum + value, 0);
@@ -57,6 +69,14 @@ it('an agentless content body ticks, takes a hit and saves without decision stat
   const drivenSource = createRuntime(undefined, false, undefined, { registry: withAgent });
   drivenSource.zombies.add(withAgent.actors.get(body.id)!, [pos[0] + 4, pos[1], pos[2]]);
   expect(() => createRuntime(capture(drivenSource), false, undefined, { registry: content })).toThrow('agent presence');
+
+  for (const state of [{ attackWindup: 1 }, { attackWait: 1 }, { chaseStance: true }]) {
+    const invalid = structuredClone(decoded.snapshot);
+    Object.assign(invalid.world.actors.actors.find((entry) => entry.id === id)!.actor, state);
+    expect
+      .soft(() => createRuntime(invalid, false, undefined, { registry: content }), JSON.stringify(state))
+      .toThrow('Invalid zombie state');
+  }
 
   const corrupt = structuredClone(decoded.snapshot);
   corrupt.world.actors.actors.find((entry) => entry.id === id)!.actor.footstepClock.distanceUntilStep = 0;

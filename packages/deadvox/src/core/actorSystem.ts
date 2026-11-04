@@ -853,6 +853,9 @@ export class ActorSystem {
         if ((actor.agent !== undefined) !== (type.agent !== undefined)) {
           throw new Error(`Invalid agent presence for entity ${id}`);
         }
+        if ((!type.attack && (actor.attackWindup > 0 || actor.attackWait > 0)) || (!type.agent && actor.chaseStance)) {
+          throw new Error(`Invalid zombie state for entity ${id}`);
+        }
         if (type.model === 'fused-mass' && actor.figureSeed !== FUSED_MASS_FIGURE_SEED) {
           throw new Error(`Invalid amalgam figure seed for entity ${id}`);
         }
