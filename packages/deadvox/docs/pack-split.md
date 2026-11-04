@@ -223,9 +223,11 @@ into one tier.
 a role such as aiming or handling. This replaces fixed skill ids without making every
 item name a skill or inventing a combination rule for several providers.
 
-**Competing providers fail closed.** A takeover requires a declared override and a
-direct or transitive dependency on the role owner. An unrelated second provider is a
-load error naming the role, both packs and the fix. Load order alone never decides.
+**Competing providers fail closed.** A takeover overrides the role owner's claiming
+entry by its id, so it requires a declared override and a direct or transitive dependency
+on the owner. A second claiming entry is a load error naming the role, both entries with
+their pack files and the fix; see `src/core/capabilities.ts`, `capabilityIssues`. Load
+order alone never decides.
 The replaced skill leaves the live skill list, gains no progression and has no saved
 state: restore under a different pack set is refused, so hidden state would have no
 valid return path. This shares the field-patch conflict rule in

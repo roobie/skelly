@@ -140,14 +140,14 @@ it('recipe gates and unlocks follow a renamed provider, not the role spelling as
   expect(character.skills).not.toHaveProperty('crafting');
 });
 
-it('rejects unrelated providers of the same optional skill role with the role named', () => {
+it('rejects unrelated providers of the same optional skill role with the role and both sources named', () => {
   const { issues } = buildRegistry([
     {
-      source: 'first',
+      source: 'fixture.alpha/skills.json',
       data: { skills: [{ id: 'first', name: 'First', capability: 'mechanics', training: { craftingTierOffset: 1 } }] },
     },
     {
-      source: 'second',
+      source: 'fixture.beta/skills.json',
       data: {
         skills: [{ id: 'second', name: 'Second', capability: 'mechanics', training: { craftingTierOffset: 1 } }],
       },
@@ -159,7 +159,9 @@ it('rejects unrelated providers of the same optional skill role with the role na
         message.includes('competing claimants') &&
         message.includes('"mechanics"') &&
         message.includes('first') &&
-        message.includes('second'),
+        message.includes('second') &&
+        message.includes('fixture.alpha/skills.json') &&
+        message.includes('fixture.beta/skills.json'),
     ),
   ).toBe(true);
 });
