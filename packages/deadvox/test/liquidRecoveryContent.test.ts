@@ -33,9 +33,9 @@ describe('liquid recovery content admission', () => {
     expect(issues).toHaveLength(1);
     expect(issues[0]!.path).toMatch(operation === 'disassembly' ? DISASSEMBLY_RECOVERY : SALVAGE_RECOVERY);
   });
-  it('validates the salvage skill independently of the disassembly skill', () => {
+  it('requires the salvage recovery field to name a declared mechanism role', () => {
     const { data, result } = pack();
-    result.salvageLiquidRecovery.skill = 'fixture_missing_skill';
+    result.salvageLiquidRecovery.skill = 'fixture_undeclared_role';
     const issues = issuesFor(data);
     expect(issues).toHaveLength(1);
     expect(issues[0]!.path).toMatch(SALVAGE_RECOVERY_SKILL);

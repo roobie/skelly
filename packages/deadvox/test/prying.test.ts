@@ -126,7 +126,15 @@ it('scales prying by the authored skill curve, not a code constant', () => {
       {
         source: 'steep-mechanics-curve.json',
         data: {
-          skills: [{ id: 'mechanics', name: 'Mechanics', curve: steepCurve }],
+          skills: [
+            {
+              id: 'mechanics',
+              capability: 'mechanics',
+              name: 'Mechanics',
+              curve: steepCurve,
+              training: { craftingTierOffset: 1 },
+            },
+          ],
         },
       },
     ]),

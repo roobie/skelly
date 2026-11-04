@@ -22,7 +22,7 @@ const fixture = (skill = 'crafting', level = 2, taughtRecipe = 'fixture_recipe')
             size: [1, 1],
             disassembly: {
               timeGameMinutes: 1,
-              skill: 'fixture_skill',
+              skill: 'crafting',
               yields: [{ item: 'fixture_material_item', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
             },
           },

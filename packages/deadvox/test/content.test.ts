@@ -1024,7 +1024,7 @@ describe('content', () => {
             size: [1, 1],
             disassembly: {
               timeGameMinutes: 1,
-              skill: 'fixture_skill',
+              skill: 'crafting',
               yields: [
                 {
                   item: 'rag',
@@ -1153,7 +1153,6 @@ describe('content', () => {
   it('rejects a disassembly yield of its own input while accepting a distinct output', () => {
     const source = 'self-yield-fixture.json';
     const data: ContentFile = {
-      skills: [{ id: 'fixture_reclaiming', name: 'Fixture reclaiming' }],
       items: [
         {
           id: 'fixture_input',
@@ -1166,7 +1165,7 @@ describe('content', () => {
           size: [1, 1],
           disassembly: {
             timeGameMinutes: gameMinutes(1),
-            skill: 'fixture_reclaiming',
+            skill: 'crafting',
             yields: [{ item: 'fixture_input', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
           },
         },
@@ -1201,7 +1200,6 @@ describe('content', () => {
       {
         source,
         data: {
-          skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
           items: [
             { id: 'fixture_output', name: 'Output', category: 'material', weight: 1, size: [1, 1] },
             {
@@ -1213,7 +1211,7 @@ describe('content', () => {
               tool: { qualities: { shaping: 1 } },
               disassembly: {
                 timeGameMinutes: 1,
-                skill: 'fixture_skill',
+                skill: 'crafting',
                 yields: [
                   {
                     item: 'fixture_output',
@@ -1882,7 +1880,7 @@ describe('content references', () => {
         tool: { qualities: Object.fromEntries([['custom_shaping', 1]]) },
         disassembly: {
           timeGameMinutes: 1,
-          skill: 'fixture_skill',
+          skill: 'crafting',
           yields: [{ item: 'rag', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
         },
       },
@@ -2044,7 +2042,7 @@ describe('content references', () => {
             size: [1, 1],
             disassembly: {
               timeGameMinutes: 1,
-              skill: 'fixture_crafting',
+              skill: 'crafting',
               yields: [{ item: 'fixture_fabric', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
             },
           },
@@ -2107,7 +2105,7 @@ describe('content references', () => {
               ? {
                   disassembly: {
                     timeGameMinutes: 1,
-                    skill: 'fixture_crafting',
+                    skill: 'crafting',
                     yields: yields.map((output) => ({ ...output, fractions: [0.5, 1], rounding: 'floor' })),
                   },
                 }
@@ -2506,7 +2504,7 @@ describe('content references', () => {
               size: [1, 1],
               disassembly: {
                 timeGameMinutes: gameMinutes(1),
-                skill: 'fixture_crafting',
+                skill: 'crafting',
                 yields: [{ item, count: 1, fractions: [0.5, 1], rounding: 'floor' }],
               },
             },
@@ -2529,7 +2527,7 @@ describe('content references', () => {
               unpack: { item: cartridge, count: 1, simSeconds: 1 },
               disassembly: {
                 timeGameMinutes: gameMinutes(1),
-                skill: 'fixture_crafting',
+                skill: 'crafting',
                 yields: [{ item: 'fixture_rag', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
               },
             },
@@ -2576,7 +2574,7 @@ describe('content references', () => {
       economy: { usage: ['Residential', 'Military'], tiers: ['Tier1'] },
       disassembly: {
         timeGameMinutes: 1,
-        skill: 'fixture_skill',
+        skill: 'crafting',
         yields: [{ item: scrap.id, count: 1, fractions: [0.5, 1], rounding: 'floor' }],
       },
     };
@@ -2585,7 +2583,6 @@ describe('content references', () => {
         source: 'shared-fixture',
         data: {
           items: [scrap, shared],
-          skills: [{ id: 'fixture_skill', name: 'Fixture' }],
           recipes: [
             {
               id: 'fixture_recipe',
@@ -2703,7 +2700,7 @@ describe('content references', () => {
     expect(military.filter((id) => !found.has(id))).toEqual([]);
   });
 
-  it('checks furniture, prying-skill, zombie and light references', () => {
+  it('checks furniture, zombie and light references', () => {
     const mod = {
       source: 'mod.json',
       data: {
@@ -2722,7 +2719,7 @@ describe('content references', () => {
                   quality: 'prying',
                   level: 1,
                   strikeSound: 'lock_pry',
-                  skill: 'missing_skill',
+                  skill: 'mechanics',
                   timeSimSeconds: 2,
                   fastestTimeSimSeconds: 1,
                   strikeIntervalSimSeconds: 1,
@@ -2861,7 +2858,6 @@ describe('content references', () => {
     expect(paths(buildRegistry([referenceDependencies, mod]).issues).sort()).toEqual([
       'actors[0].downed.dismember.quality',
       'actors[0].loot',
-      'furniture[1].door.methods.pry.skill',
       'furniture[1].door.methods.pry.strikeSound',
       'furniture[1].material',
       'items[0].light.power.battery',
