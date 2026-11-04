@@ -15,7 +15,7 @@ export const buildSoundsPageContent = () =>
     ...Object.entries(soundFiles)
       .sort(([a], [b]) => a.localeCompare(b))
       // Named as the game names them from src/game, so audio finds each sound's files beside its source.
-      .map(([path, data]) => ({ source: `.${path}`, data })),
+      .map(([path, data]) => ({ source: `../${path}`, data })),
     { source: '../../mods/skelly.deadvox.residual/ui.json', data: uiFile },
     { source: '../../mods/skelly.deadvox.residual/body.json', data: bodyFile },
     { source: '../../mods/skelly.deadvox.residual/damage-kinds.json', data: damageKindsFile },
