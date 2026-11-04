@@ -1174,7 +1174,7 @@ export class ActorSystem {
       scratch.actor = actor;
       scratch.pos = actor.body.pos;
       scratch.type = actor.type;
-      scratch.rng = actor.agent.behaviorRng;
+      this.agent.prepareDecisionRng();
       this.updateActorTimers();
       this.agent.updatePerception();
       this.agent.updateAttention();
@@ -1189,7 +1189,7 @@ export class ActorSystem {
       scratch.actor = actor;
       scratch.pos = actor.body.pos;
       scratch.type = actor.type;
-      scratch.rng = actor.agent.behaviorRng;
+      this.agent.prepareDecisionRng();
       let { direction, speed } = this.agent.backgroundIntent(scratch);
       if (actorCrawls(actor)) {
         speed = Math.min(speed, actor.type.speed.crawlMetresPerSimSecond);
@@ -1366,7 +1366,7 @@ export class ActorSystem {
     return left ? 1 : -1;
   }
 
-  private updateMovementAfterStep(): void {
+  private updateMovementAfterStep(advanceWanderClock: boolean): void {
     const scratch = this.tickScratch;
     const { actor, blockSize, dt, travelled, beforeStep, groundedAtTickStart } = scratch;
     scratch.stepHeightMetres = this.options.physics.stepHeight * blockSize;
@@ -1387,7 +1387,7 @@ export class ActorSystem {
     );
     actor.stepOffset = stepOffsetState.offset;
     actor.gaitPhase += (travelled / actor.type.stepLength) * Math.PI;
-    if (actor.agent.mode === 'idle' || actor.agent.mode === 'stroll') {
+    if (advanceWanderClock) {
       actor.wanderClock += dt;
     }
     this.agent.updateMovementDecisionAfterStep(scratch);
@@ -1584,7 +1584,7 @@ export class ActorSystem {
       scratch.actor = actor;
       scratch.pos = actor.body.pos;
       scratch.type = actor.type;
-      scratch.rng = actor.agent.behaviorRng;
+      this.agent.prepareDecisionRng();
       this.updateActorTimers();
       this.agent.updatePerception();
       this.agent.updateAttention();
@@ -1599,8 +1599,7 @@ export class ActorSystem {
       scratch.actor = actor;
       scratch.pos = actor.body.pos;
       scratch.type = actor.type;
-      scratch.rng = actor.agent.behaviorRng;
-      scratch.sees = actor.agent.mode === 'chase';
+      this.agent.prepareActiveMovement();
       this.agent.checkInvestigationArrival();
 
       this.agent.selectMovementIntent();
@@ -1609,7 +1608,7 @@ export class ActorSystem {
       this.agent.applyObstacleSlide();
       this.stepActorBody();
       this.agent.updateObstacleContact(this.boundOpenSide, this.boundBodyAhead);
-      this.updateMovementAfterStep();
+      this.updateMovementAfterStep(this.agent.advancesWanderClock());
       this.resolveActorAttack();
       this.finishActorTick();
     }

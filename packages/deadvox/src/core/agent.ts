@@ -79,6 +79,20 @@ export class AgentController {
 
   private readonly chainStimuli: { caller: Actor; origin: Vec3; target: Vec3 }[] = [];
 
+  prepareDecisionRng(): void {
+    this.tickScratch.rng = this.tickScratch.actor.agent.behaviorRng;
+  }
+
+  prepareActiveMovement(): void {
+    this.prepareDecisionRng();
+    this.tickScratch.sees = this.tickScratch.actor.agent.mode === 'chase';
+  }
+
+  advancesWanderClock(): boolean {
+    const { mode } = this.tickScratch.actor.agent;
+    return mode === 'idle' || mode === 'stroll';
+  }
+
   updatePerception(): void {
     const scratch = this.tickScratch;
     const { actor, type, pos, player, dayState, blockSize, isOpaque, time, rng, perception } = scratch;
