@@ -57,7 +57,7 @@ await Promise.all(
   ].map(async ([id, model]) => {
     const bytes = await new GLTFExporter().parseAsync(model, { binary: true });
     await writeFile(
-      new URL(`../mods/skelly.deadvox.residual/assets/models/${id}.glb`, import.meta.url),
+      new URL(`../../mods/skelly.wearables/assets/models/${id}.glb`, import.meta.url),
       Buffer.from(bytes),
     );
   }),

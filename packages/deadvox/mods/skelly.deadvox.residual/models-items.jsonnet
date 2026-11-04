@@ -18,8 +18,6 @@ local authored = [
     { "id": "lamp_oil_bottle", "file": "assets/models/lamp_oil_bottle.glb" },
     { "id": "circuit_board", "file": "assets/models/circuit_board.glb" },
     { "id": "glass_lens", "file": "assets/models/glass_lens.glb" },
-    { "id": "stab_vest", "file": "assets/models/stab_vest.glb" },
-    { "id": "riot_helmet_view", "file": "assets/models/riot_helmet_view.glb" },
     import 'things/fuse.model.json',
     { "id": "broken_toaster", "file": "assets/models/broken_toaster.glb" },
     import 'things/dead_desk_lamp.model.json',

@@ -31,12 +31,15 @@ const base = (file: string): ContentSource => {
         !['torch', 'candle', 'door_bar', 'oil_lamp', 'headlamp', 'nail_bat', 'spear'].includes(item.id),
     );
   }
-  if (file === 'items-wearables.json') {
-    data.items = data.items.filter((item: { id: string }) => item.id !== 'taped_armour');
-  }
   if (file === 'items-attachments.json') {
     data.items = data.items.filter((item: { id: string }) => item.id !== 'weapon_sling');
   }
+  return { source, data };
+};
+const wearablesWithoutArmourInputs = (): ContentSource => {
+  const source = 'skelly.wearables/wearables-items.json';
+  const data = JSON.parse(readFileSync(`../mods/${source}`, 'utf8'));
+  data.items = data.items.filter((item: { id: string }) => item.id !== 'taped_armour');
   return { source, data };
 };
 const { registry } = buildRegistry(
@@ -46,7 +49,6 @@ const { registry } = buildRegistry(
     'sounds-weapons.json',
     'items-other.json',
     'items-tools.json',
-    'items-wearables.json',
     'items-ammunition.json',
     'items-attachments.json',
     'items-gun-parts.json',
@@ -74,10 +76,14 @@ const { registry } = buildRegistry(
         'skelly.basic-foods/models-basic-foods.json',
         'skelly.packaged-foods/packaged-foods-items.json',
         'skelly.packaged-foods/models-packaged-foods.json',
-      ].map((file) => ({
-        source: file,
-        data: JSON.parse(readFileSync(`../mods/${file}`, 'utf8')),
-      })),
+        'skelly.wearables/wearables-sounds.json',
+        'skelly.wearables/models-wearables.json',
+      ]
+        .map((file) => ({
+          source: file,
+          data: JSON.parse(readFileSync(`../mods/${file}`, 'utf8')),
+        }))
+        .concat(wearablesWithoutArmourInputs()),
     ),
 );
 

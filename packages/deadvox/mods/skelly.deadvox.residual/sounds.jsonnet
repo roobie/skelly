@@ -118,10 +118,6 @@ local shellInsert = numbered('shotgun-insert', [1, 2]);
       'gunshot_m4_suppressed', 'Fire the AR-pattern rifle with a real suppressor fitted.',
       numbered('gunshot-m4-suppressed', [1]), [1, 1], 100,
     ),
-    sound(
-      'pouch_take', 'Take an item out of a pocket on a worn item.',
-      numbered('pouch_take', [1]), 0.3, [0.96, 1.04], [0.9, 1.1], 0.1,
-    ),
   ] + zombieVoices('shambler', {
     idle: 'A shambler idles or strolls within hearing range and groans now and then.',
     alert: 'A shambler notices you and starts investigating.',

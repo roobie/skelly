@@ -18,16 +18,17 @@ const armour = {
   size: [1, 1],
   wearable: { slot: 'vest', encumbrance: 0, wearPerDamage: 0.01, protects: { cut: 0.75, acid: 0.5 } },
 };
-const wearables = 'items-wearables.json';
+const wearables = 'wearables-items.json';
+const wearableModels = 'models-wearables.json';
 const hitBuild = buildRegistry([
   { source: 'wear-sounds', data: { sounds: [...registry.sounds.values()] } },
   {
     source: wearables,
-    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', wearables), 'utf8')) as unknown,
+    data: JSON.parse(readFileSync(join('../mods/skelly.wearables', wearables), 'utf8')) as unknown,
   },
   {
-    source: 'models-items.json',
-    data: JSON.parse(readFileSync('mods/skelly.deadvox.residual/models-items.json', 'utf8')) as unknown,
+    source: wearableModels,
+    data: JSON.parse(readFileSync(join('../mods/skelly.wearables', wearableModels), 'utf8')) as unknown,
   },
   {
     source: 'taped-armour-inputs.json',

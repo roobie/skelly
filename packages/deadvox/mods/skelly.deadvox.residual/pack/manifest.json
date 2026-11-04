@@ -19,7 +19,8 @@
     "skelly.readables",
     "skelly.structures",
     "skelly.basic-foods",
-    "skelly.packaged-foods"
+    "skelly.packaged-foods",
+    "skelly.wearables"
   ],
   "files": [
     {
@@ -125,10 +126,6 @@
     {
       "kind": "content",
       "path": "items-tools.json"
-    },
-    {
-      "kind": "content",
-      "path": "items-wearables.json"
     },
     {
       "kind": "content",
@@ -1076,46 +1073,6 @@
     },
     {
       "kind": "json",
-      "path": "things/jeans.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/rubber_boots.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/sneakers.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/cargo_pants.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/hoodie.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/jacket.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/utility_vest.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/fanny_pack.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/school_backpack.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/hiking_backpack.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/baseball_cap.model.json"
     },
     {
@@ -1220,103 +1177,11 @@
     },
     {
       "kind": "json",
-      "path": "things/riot_helmet.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/night_vision_goggles.model.json"
     },
     {
       "kind": "json",
-      "path": "things/worn_jacket_body.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/worn_jacket_upper.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/worn_jacket_fore.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/worn_hoodie_body.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/worn_hoodie_upper.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/worn_hoodie_fore.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/worn_trousers_pelvis.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/worn_trousers_thigh.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/worn_trousers_shin.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/worn_boot_shaft.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/worn_boot_foot.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/worn_sneaker_foot.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/utility_vest_worn.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/stab_vest_worn.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/school_backpack_worn.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/hiking_backpack_worn.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/fanny_pack_worn.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/weapon_sling_worn.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/utility_vest_worn_jacket.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/stab_vest_worn_jacket.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/school_backpack_worn_jacket.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/hiking_backpack_worn_jacket.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/fanny_pack_worn_jacket.model.json"
     },
     {
       "kind": "json",
@@ -1541,10 +1406,6 @@
     {
       "kind": "asset",
       "path": "assets/audio/melee-swing-03.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/pouch_take-01.ogg"
     },
     {
       "kind": "asset",
@@ -1820,10 +1681,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/cargo_pants.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/cargo_space.glb"
     },
     {
@@ -1905,18 +1762,6 @@
     {
       "kind": "asset",
       "path": "assets/models/engine_hoist.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/fanny_pack.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/fanny_pack_worn.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/fanny_pack_worn_jacket.glb"
     },
     {
       "kind": "asset",
@@ -2124,18 +1969,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/hiking_backpack.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/hiking_backpack_worn.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/hiking_backpack_worn_jacket.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/hoist_a_post.glb"
     },
     {
@@ -2284,23 +2117,11 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/hoodie.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/improvised_suppressor.glb"
     },
     {
       "kind": "asset",
       "path": "assets/models/integral_magazine.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/jacket.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/jeans.glb"
     },
     {
       "kind": "asset",
@@ -2528,14 +2349,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/riot_helmet.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/riot_helmet_view.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/round_12_h_gauge_h_00_h_buck.glb"
     },
     {
@@ -2557,22 +2370,6 @@
     {
       "kind": "asset",
       "path": "assets/models/round_9x19.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/rubber_boots.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/school_backpack.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/school_backpack_worn.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/school_backpack_worn_jacket.glb"
     },
     {
       "kind": "asset",
@@ -2617,22 +2414,6 @@
     {
       "kind": "asset",
       "path": "assets/models/shotshell_box.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/sneakers.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/stab_vest.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/stab_vest_worn.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/stab_vest_worn_jacket.glb"
     },
     {
       "kind": "asset",
@@ -2684,18 +2465,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/utility_vest.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/utility_vest_worn.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/utility_vest_worn_jacket.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/weapon_sling.glb"
     },
     {
@@ -2713,54 +2482,6 @@
     {
       "kind": "asset",
       "path": "assets/models/wooden_plank.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/worn_boot_foot.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/worn_boot_shaft.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/worn_hoodie_body.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/worn_hoodie_fore.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/worn_hoodie_upper.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/worn_jacket_body.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/worn_jacket_fore.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/worn_jacket_upper.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/worn_sneaker_foot.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/worn_trousers_pelvis.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/worn_trousers_shin.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/worn_trousers_thigh.glb"
     }
   ],
   "id": "skelly.deadvox.residual",

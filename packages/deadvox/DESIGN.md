@@ -2151,7 +2151,7 @@ The shares, burden, warmth and durability are content tuning, not armour rules.
 Later Vest-slot armour, such as plate carriers and ballistic vests, will carry
 strength in blunt and pierce because hard plates spread a blow and stop a point;
 that is why protection is per kind rather than one number. See
-`src/core/schema/items.ts`, `WearableSchema`; `mods/skelly.deadvox.residual/items-wearables.libsonnet`,
+`src/core/schema/items.ts`, `WearableSchema`; `packages/mods/skelly.wearables/wearables-items.libsonnet`,
 `items`.
 
 Armour wears by the whole blow because it took the whole blow. Protection holds

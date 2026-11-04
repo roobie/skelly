@@ -113,10 +113,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/items-tools.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-wearables.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-wearables.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/ladders.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/ladders.json"
     },
@@ -815,6 +811,30 @@
     {
       "source": "packages/mods/skelly.ui/ui.jsonnet",
       "output": "packages/mods/skelly.ui/ui.json"
+    },
+    {
+      "source": "packages/mods/skelly.wearables/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.wearables/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.wearables/exports/things.jsonnet",
+      "output": "packages/mods/skelly.wearables/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.wearables/models-wearables.jsonnet",
+      "output": "packages/mods/skelly.wearables/models-wearables.json"
+    },
+    {
+      "source": "packages/mods/skelly.wearables/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.wearables/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.wearables/wearables-items.jsonnet",
+      "output": "packages/mods/skelly.wearables/wearables-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.wearables/wearables-sounds.jsonnet",
+      "output": "packages/mods/skelly.wearables/wearables-sounds.json"
     },
     {
       "source": "packages/mods/skelly.weathering/pack/manifest.jsonnet",

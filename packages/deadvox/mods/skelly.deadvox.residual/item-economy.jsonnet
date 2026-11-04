@@ -18,7 +18,7 @@ local sources = [
   import 'items-revolver.jsonnet',
   import 'items-slice2-content.jsonnet',
   import 'items-tools.jsonnet',
-  import 'items-wearables.jsonnet',
+  import 'packages/mods/skelly.wearables/wearables-items.jsonnet',
   import 'locks.jsonnet',
   import 'models-firearms.jsonnet',
   import 'packages/mods/skelly.readables/readables.jsonnet',

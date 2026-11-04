@@ -1,0 +1,65 @@
+{
+  "sources": [
+    {
+      "author": "Skelly contributors",
+      "changes": "Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.",
+      "download": null,
+      "files": [
+        "assets/models/jeans.glb",
+        "assets/models/rubber_boots.glb",
+        "assets/models/sneakers.glb",
+        "assets/models/cargo_pants.glb",
+        "assets/models/hoodie.glb",
+        "assets/models/jacket.glb",
+        "assets/models/utility_vest.glb",
+        "assets/models/fanny_pack.glb",
+        "assets/models/school_backpack.glb",
+        "assets/models/hiking_backpack.glb",
+        "assets/models/riot_helmet.glb",
+        "assets/models/worn_jacket_body.glb",
+        "assets/models/worn_jacket_upper.glb",
+        "assets/models/worn_jacket_fore.glb",
+        "assets/models/worn_hoodie_body.glb",
+        "assets/models/worn_hoodie_upper.glb",
+        "assets/models/worn_hoodie_fore.glb",
+        "assets/models/worn_trousers_pelvis.glb",
+        "assets/models/worn_trousers_thigh.glb",
+        "assets/models/worn_trousers_shin.glb",
+        "assets/models/worn_boot_shaft.glb",
+        "assets/models/worn_boot_foot.glb",
+        "assets/models/worn_sneaker_foot.glb",
+        "assets/models/utility_vest_worn.glb",
+        "assets/models/stab_vest_worn.glb",
+        "assets/models/school_backpack_worn.glb",
+        "assets/models/hiking_backpack_worn.glb",
+        "assets/models/fanny_pack_worn.glb",
+        "assets/models/utility_vest_worn_jacket.glb",
+        "assets/models/stab_vest_worn_jacket.glb",
+        "assets/models/school_backpack_worn_jacket.glb",
+        "assets/models/hiking_backpack_worn_jacket.glb",
+        "assets/models/fanny_pack_worn_jacket.glb"
+      ],
+      "licence": "CC0-1.0",
+      "title": "Thing tool authored models",
+      "url": "https://github.com/roobie/skelly/blob/main/packages/mods/skelly.wearables/exports/things.jsonnet"
+    },
+    {
+      "author": "rubberduck",
+      "changes": "Selected two wooden item-drop clips, a pouch-handling clip, and a placeholder fist hit; trimmed leading silence, faded tails, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report). The fist-hit placeholder is wired to the live and restored melee-action path when the fists profile is active.",
+      "download": "brk.zip",
+      "files": ["assets/audio/pouch_take-01.ogg"],
+      "licence": "CC0-1.0",
+      "title": "75 CC0 Breaking/Falling/Hit SFX",
+      "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx"
+    },
+    {
+      "author": "Skelly contributors",
+      "changes": "Built from primitive meshes for readable ground-pile silhouettes; no external asset source or texture is used.",
+      "download": null,
+      "files": ["assets/models/stab_vest.glb", "assets/models/riot_helmet_view.glb"],
+      "licence": "CC0-1.0",
+      "title": "Project-built low-poly hand-tool and content stand-ins",
+      "url": "https://github.com/roobie/skelly"
+    }
+  ]
+}
