@@ -1708,7 +1708,8 @@ behind unrelated declarations. See `packages/mods/skelly.graphics/graphics.jsonn
   links its own recipe, so one entry keeps the list short and every link. The
   merged entry hides which mod ships it, which is accepted. Differing `changes`
   text keeps entries apart, because each changes note must stay shown with its
-  link; a rare double entry is accepted for that.- **Synthesised sounds.** A sound variant can be a jfxr preset in content
+  link; a rare double entry is accepted for that.
+- **Synthesised sounds.** A sound variant can be a jfxr preset in content
   instead of a recording. jfxr's editor is the design tool for BR and modders,
   and the jfxr library renders what the editor plays, so a preset pasted from
   the editor sounds the same in game and needs neither an asset file nor a

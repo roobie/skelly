@@ -53,95 +53,6 @@
       "workInProgress": false
     },
     {
-      "category": "tool",
-      "disassembly": {
-        "skill": "mechanics",
-        "timeGameMinutes": 8,
-        "yields": [
-          {
-            "count": 1,
-            "fractions": [0.5, 1],
-            "item": "scrap_metal",
-            "rounding": "floor"
-          },
-          {
-            "count": 1,
-            "fractions": [0.5, 1],
-            "item": "rubber_strip",
-            "rounding": "floor"
-          }
-        ]
-      },
-      "id": "wire_strippers",
-      "model": "wire_strippers",
-      "name": "Wire strippers",
-      "size": [1, 2],
-      "tool": {
-        "qualities": {
-          "cutting": 1,
-          "screwing": 1
-        }
-      },
-      "workInProgress": false
-    },
-    {
-      "category": "tool",
-      "id": "adjustable_pliers",
-      "model": "adjustable_pliers",
-      "name": "Adjustable pliers",
-      "salvage": [
-        {
-          "count": 1,
-          "item": "scrap_metal"
-        },
-        {
-          "count": 1,
-          "item": "rubber_strip"
-        }
-      ],
-      "salvageTimeGameMinutes": 5,
-      "size": [1, 2],
-      "tool": {
-        "qualities": {
-          "cutting": 1,
-          "wrenching": 1
-        }
-      },
-      "workInProgress": false
-    },
-    {
-      "category": "tool",
-      "disassembly": {
-        "skill": "crafting",
-        "timeGameMinutes": 6,
-        "yields": [
-          {
-            "count": 1,
-            "fractions": [0.5, 1],
-            "item": "sewing_thread",
-            "rounding": "floor"
-          },
-          {
-            "count": 1,
-            "fractions": [0.5, 1],
-            "item": "fastener_pack",
-            "rounding": "floor"
-          }
-        ]
-      },
-      "id": "sewing_kit",
-      "model": "sewing_kit",
-      "name": "Sewing kit",
-      "size": [2, 1],
-      "tool": {
-        "qualities": {
-          "sewing": 1
-        }
-      },
-      "weight": 220,
-      "workInProgress": false
-    },
-    {
       "category": "misc",
       "id": "broken_toaster",
       "model": "broken_toaster",
@@ -266,39 +177,6 @@
       "salvageTimeGameMinutes": 5,
       "size": [2, 2],
       "weight": 350,
-      "workInProgress": false
-    },
-    {
-      "category": "tool",
-      "description": "Thread, patches and needles for mending clothing.",
-      "disassembly": {
-        "skill": "crafting",
-        "timeGameMinutes": 8,
-        "yields": [
-          {
-            "count": 1,
-            "fractions": [0.5, 1],
-            "item": "sewing_thread",
-            "rounding": "floor"
-          },
-          {
-            "count": 1,
-            "fractions": [0.5, 1],
-            "item": "cloth_strip",
-            "rounding": "floor"
-          }
-        ]
-      },
-      "id": "sewing_repair_kit",
-      "model": "sewing_repair_kit",
-      "name": "Clothing repair kit",
-      "size": [2, 2],
-      "tool": {
-        "qualities": {
-          "repairing": 1,
-          "sewing": 1
-        }
-      },
       "workInProgress": false
     },
     {
@@ -469,46 +347,6 @@
       "tool": {
         "qualities": {
           "sawing": 1
-        }
-      },
-      "workInProgress": false
-    },
-    {
-      "category": "tool",
-      "id": "screwdriver",
-      "model": "screwdriver",
-      "name": "Screwdriver",
-      "salvage": [
-        {
-          "count": 1,
-          "item": "scrap_metal"
-        }
-      ],
-      "salvageTimeGameMinutes": 5,
-      "size": [1, 2],
-      "tool": {
-        "qualities": {
-          "screwing": 1
-        }
-      },
-      "workInProgress": false
-    },
-    {
-      "category": "tool",
-      "id": "wrench",
-      "model": "wrench",
-      "name": "Adjustable wrench",
-      "salvage": [
-        {
-          "count": 1,
-          "item": "scrap_metal"
-        }
-      ],
-      "salvageTimeGameMinutes": 5,
-      "size": [1, 3],
-      "tool": {
-        "qualities": {
-          "wrenching": 1
         }
       },
       "workInProgress": false

@@ -132,7 +132,10 @@ const holdInHand = (runtime: Runtime, type: string, side?: HandSide): Item => {
   return item;
 };
 const itemDefs = [...registry.items.values()];
-const twoHandedType = itemDefs.find((def) => def.twoHanded)!.id;
+// The smallest, so it fits the worn pocket a case carries it in.
+const twoHandedType = itemDefs
+  .filter((def) => def.twoHanded)
+  .sort((a, b) => a.size[0] * a.size[1] - b.size[0] * b.size[1])[0]!.id;
 const oneHandedFoodType = itemDefs.find((def) => def.food && !def.twoHanded)!.id;
 
 /**

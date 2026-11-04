@@ -12,7 +12,6 @@ local fill(piece) = { kind: 'fill', piece: piece, axis: 'y', bands: fuelBands };
     glass_lens: ['glass', 'glass'],
     lamp_oil_bottle: ['glass', 'metal', 'paper', 'fuel'],
     riot_helmet_view: ['glass', 'polymer'],
-    sewing_kit: ['polymer', 'cloth', 'metal', 'polymer'],
     stab_vest: ['cloth', 'cloth'],
     table_fan: ['metal', 'polymer', 'metal'],
     folded_note: ['paper', 'paper'], paper_sheet: ['paper', 'paper'], notebook: ['paper', 'paper'],

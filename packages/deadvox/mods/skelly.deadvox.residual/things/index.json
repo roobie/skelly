@@ -194,20 +194,6 @@
     "roll": 0
   },
   {
-    "id": "can_opener",
-    "file": "assets/models/can_opener.glb",
-    "parts": {
-      "body": {
-        "node": "body:handOpener",
-        "massKg": 0.1,
-        "centreOfMass": [-0.0263157894736842, 0.007807017543859648, 0.0011403508771929824]
-      }
-    },
-    "grip": { "at": [-0.08, 0.005, -0.015], "turn": [0, 0, 0] },
-    "hold": "upright",
-    "roll": 90
-  },
-  {
     "id": "aa_battery",
     "file": "assets/models/aa_battery.glb",
     "parts": {
@@ -232,20 +218,6 @@
       }
     },
     "grip": { "at": [0, 0.01, 0], "turn": [0, 0, 0] },
-    "hold": "upright",
-    "roll": 0
-  },
-  {
-    "id": "whetstone",
-    "file": "assets/models/whetstone.glb",
-    "parts": {
-      "material": {
-        "node": "material:cutStock",
-        "massKg": 0.25,
-        "centreOfMass": [0, 0.01478723404255319, -0.0015957446808510633]
-      }
-    },
-    "grip": { "at": [0, 0.015, 0], "turn": [0, 0, 0] },
     "hold": "upright",
     "roll": 0
   },
@@ -1951,62 +1923,6 @@
     "roll": 0
   },
   {
-    "id": "repair_kit",
-    "file": "assets/models/repair_kit.glb",
-    "parts": {
-      "equipment": {
-        "node": "equipment:repairKit",
-        "massKg": 1.25,
-        "centreOfMass": [-0.003906882591093118, 0.01373144399460189, -0.003326585695006748]
-      }
-    },
-    "grip": { "at": [-0.095, 0.015, -0.0050000000000000044], "turn": [0, 0, 0] },
-    "hold": "forward",
-    "roll": 0
-  },
-  {
-    "id": "wire_strippers",
-    "file": "assets/models/wire_strippers.glb",
-    "parts": {
-      "equipment": {
-        "node": "equipment:pliers",
-        "massKg": 0.18,
-        "centreOfMass": [0.1142079207920792, 0.0014356435643564356, -0.00014851485148514865]
-      }
-    },
-    "grip": { "at": [0.05, 0, -0.02], "turn": [0, 0, 0] },
-    "hold": "upright",
-    "roll": 0
-  },
-  {
-    "id": "adjustable_pliers",
-    "file": "assets/models/adjustable_pliers.glb",
-    "parts": {
-      "equipment": {
-        "node": "equipment:pliers",
-        "massKg": 0.3,
-        "centreOfMass": [0.10369565217391309, 0.001608695652173914, 0.00004347826086956406]
-      }
-    },
-    "grip": { "at": [0.060000000000000005, 0, -0.02], "turn": [0, 0, 0] },
-    "hold": "upright",
-    "roll": 0
-  },
-  {
-    "id": "sewing_repair_kit",
-    "file": "assets/models/sewing_repair_kit.glb",
-    "parts": {
-      "equipment": {
-        "node": "equipment:repairKit",
-        "massKg": 0.42,
-        "centreOfMass": [-0.0012921348314606743, 0.013258426966292139, -0.0026029962546816484]
-      }
-    },
-    "grip": { "at": [-0.08499999999999999, 0.015, -0.0049999999999999975], "turn": [0, 0, 0] },
-    "hold": "forward",
-    "roll": 0
-  },
-  {
     "id": "portable_radio",
     "file": "assets/models/portable_radio.glb",
     "parts": {
@@ -2054,55 +1970,6 @@
     }
   },
   {
-    "id": "crowbar",
-    "file": "assets/models/crowbar.glb",
-    "parts": {
-      "crowbar": {
-        "node": "crowbar:crowbar",
-        "massKg": 1.5,
-        "centreOfMass": [-0.07926048565121413, -0.011432671081677703, 0]
-      }
-    },
-    "grip": { "at": [-0.3000000000001, 0, 0], "turn": [0, 0, 0] },
-    "hold": "upright",
-    "roll": 90,
-    "anchors": { "claw": [0.10499999999996801, -0.129, 0], "strike": [0.230600000000024, 8.007483565108942e-15, 0] }
-  },
-  {
-    "id": "hammer",
-    "file": "assets/models/hammer.glb",
-    "parts": {
-      "hammer": {
-        "node": "hammer:hammer",
-        "massKg": 0.7,
-        "centreOfMass": [-0.004246817930271172, -0.007920468021187444, -0.0005342714839117716]
-      }
-    },
-    "grip": { "at": [-0.184999999999856, 0, 0], "turn": [0, 0, 0] },
-    "hold": "upright",
-    "roll": 90,
-    "anchors": {
-      "claw": [0.062000000000016, 0.1, 0],
-      "face": [0.047000000000024, -0.1, 2.0001361678012586e-14],
-      "strike": [0.092, -1.9997892231060632e-14, 0]
-    }
-  },
-  {
-    "id": "sledgehammer",
-    "file": "assets/models/sledgehammer.glb",
-    "parts": {
-      "sledgehammer": {
-        "node": "sledgehammer:sledgehammer",
-        "massKg": 4.5,
-        "centreOfMass": [-0.2129179552841525, -0.000028759972421944166, -0.00002304737516005115]
-      }
-    },
-    "grip": { "at": [-0.45000000000020796, 0, 0], "turn": [0, 0, 0] },
-    "hold": "upright",
-    "roll": 90,
-    "anchors": { "face": [0.033999999999984, -0.095000000000064, 0], "strike": [0.06, 0, 0] }
-  },
-  {
     "id": "baseball_bat",
     "file": "assets/models/baseball_bat.glb",
     "parts": {
@@ -2133,21 +2000,6 @@
     "anchors": { "strike": [0.22, 0, 0] }
   },
   {
-    "id": "kitchen_knife",
-    "file": "assets/models/kitchen_knife.glb",
-    "parts": {
-      "kitchen_knife": {
-        "node": "kitchen_knife:knife",
-        "massKg": 0.15,
-        "centreOfMass": [0.03870005058168944, -0.003254425897824988, -0.000023267577137076356]
-      }
-    },
-    "grip": { "at": [-0.054999999999996003, 0, 0], "turn": [0, 0, 0] },
-    "hold": "forward",
-    "roll": 0,
-    "anchors": { "strike": [0.2471, 1.599415044850616e-14, 0] }
-  },
-  {
     "id": "machete",
     "file": "assets/models/machete.glb",
     "parts": {
@@ -2161,21 +2013,6 @@
     "hold": "forward",
     "roll": 0,
     "anchors": { "edge": [0.200000000000044, -0.034, 0], "strike": [0.24400000000000002, -1.599415044850616e-14, 0] }
-  },
-  {
-    "id": "wrench",
-    "file": "assets/models/wrench.glb",
-    "parts": {
-      "wrench": {
-        "node": "wrench:wrench",
-        "massKg": 0.5,
-        "centreOfMass": [0.0033004926108374435, 0.00793103448275862, 0]
-      }
-    },
-    "grip": { "at": [-0.074999999999872, 0, 0], "turn": [0, 0, 0] },
-    "hold": "upright",
-    "roll": 90,
-    "anchors": { "strike": [0.10400000000000001, 0.012, 0] }
   },
   {
     "id": "steel_pipe",
@@ -2202,22 +2039,6 @@
         "centreOfMass": [0.11609390178089583, -0.00016945493793847795, -0.00013707501349163534]
       }
     }
-  },
-  {
-    "id": "compass",
-    "file": "assets/models/compass.glb",
-    "parts": {
-      "compass": {
-        "node": "compass:compass",
-        "massKg": 0.12,
-        "centreOfMass": [0, 0.0055882352941176465, -0.001764705882352941]
-      }
-    },
-    "grip": { "at": [0, 0.005, 0], "turn": [0, 0, -90] },
-    "hold": "upright",
-    "roll": 0,
-    "anchors": { "needle_mount": [0, 0.01, 0] },
-    "display": { "at": [0, 0.01, 0], "normal": [0, 1, 0], "up": [0, 0, -1], "size": [0.04, 0.04] }
   },
   {
     "id": "lighter",
@@ -2361,20 +2182,6 @@
       }
     },
     "grip": { "at": [0.014, 0, 0], "turn": [0, 0, 0] },
-    "hold": "upright",
-    "roll": 90
-  },
-  {
-    "id": "screwdriver",
-    "file": "assets/models/screwdriver.glb",
-    "parts": {
-      "screwdriver": {
-        "node": "screwdriver:compound",
-        "massKg": 0.16,
-        "centreOfMass": [0.06330532240545078, -0.000039399624765478433, -0.000031104966920114464]
-      }
-    },
-    "grip": { "at": [0.052000000000000005, 0, 0], "turn": [0, 0, 0] },
     "hold": "upright",
     "roll": 90
   },

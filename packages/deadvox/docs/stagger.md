@@ -12,7 +12,7 @@ Slice 5 defence needs hits that interrupt an approaching threat (`SLICE-5.md`, "
 
 ## The rules
 
-**Stagger rewards commitment.** A player commits by charging a strike or by carrying a heavy, slow weapon, and either can reach a type's threshold, the heavy weapon even on an ordinary swing. Light, quick ordinary swings stay below it, so stagger is a reward for commitment rather than a side effect of every swing. Where "heavy" starts is tuning, set by weapon impulse against each type's threshold in content. See `src/core/actorSystem.ts`, `stagger`, and `mods/skelly.deadvox.residual/items-tools.libsonnet`, `melee`.
+**Stagger rewards commitment.** A player commits by charging a strike or by carrying a heavy, slow weapon, and either can reach a type's threshold, the heavy weapon even on an ordinary swing. Light, quick ordinary swings stay below it, so stagger is a reward for commitment rather than a side effect of every swing. Where "heavy" starts is tuning, set by weapon impulse against each type's threshold in content. See `src/core/actorSystem.ts`, `stagger`, and `tools/jsonnet/lib/melee-weapon.libsonnet`, `melee`.
 
 **A threshold, per type.** Both the threshold and the duration are content, because sturdier types should shrug off what drops a shambler. See `src/core/schema/actors.ts`, `ActorSchema`.
 

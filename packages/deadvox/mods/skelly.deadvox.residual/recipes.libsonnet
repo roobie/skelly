@@ -6,7 +6,7 @@ local sharpening = [
 ];
 local blades = [
   item.id
-  for item in (import "items-tools.libsonnet").items
+  for item in (import "packages/mods/skelly.hand-tools/hand-tools-items.jsonnet").items + (import "items-tools.libsonnet").items
   if std.objectHas(item, "weapon") && item.weapon.melee.type == "cut" && std.objectHas(item.weapon.melee, "wearPerHit")
 ];
 local sharpen(blade, method) = {
@@ -147,24 +147,6 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
         "skill": "crafting",
         "yields": [{ "item": "stick", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }]
       }
-    },
-    {
-      "id": "repair_kit",
-      "name": "Repair kit",
-      "category": "tool",
-      "model": "repair_kit",
-      "size": [2, 2],
-      "description": "Metal patches, tape and rags for a makeshift repair.",
-      "disassembly": {
-        "timeGameMinutes": 15,
-        "skill": "crafting",
-        "yields": [
-          { "item": "scrap_metal", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
-          { "item": "duct_tape", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
-          { "item": "rag", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }
-        ]
-      },
-      "tool": { "qualities": { "repairing": 1 } }
     },
     {
       "id": "copper_wire",

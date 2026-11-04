@@ -14,7 +14,8 @@
     "skelly.senses",
     "skelly.natural-world",
     "skelly.materials",
-    "skelly.medicine"
+    "skelly.medicine",
+    "skelly.hand-tools"
   ],
   "files": [
     {
@@ -775,19 +776,11 @@
     },
     {
       "kind": "json",
-      "path": "things/can_opener.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/aa_battery.model.json"
     },
     {
       "kind": "json",
       "path": "things/wooden_plank.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/whetstone.model.json"
     },
     {
       "kind": "json",
@@ -1207,22 +1200,6 @@
     },
     {
       "kind": "json",
-      "path": "things/repair_kit.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/wire_strippers.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/adjustable_pliers.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/sewing_repair_kit.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/portable_radio.model.json"
     },
     {
@@ -1239,18 +1216,6 @@
     },
     {
       "kind": "json",
-      "path": "things/crowbar.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/hammer.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/sledgehammer.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/baseball_bat.model.json"
     },
     {
@@ -1259,15 +1224,7 @@
     },
     {
       "kind": "json",
-      "path": "things/kitchen_knife.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/machete.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/wrench.model.json"
     },
     {
       "kind": "json",
@@ -1276,10 +1233,6 @@
     {
       "kind": "json",
       "path": "things/flashlight.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/compass.model.json"
     },
     {
       "kind": "json",
@@ -1320,10 +1273,6 @@
     {
       "kind": "json",
       "path": "things/hand_saw.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/screwdriver.model.json"
     },
     {
       "kind": "json",
@@ -1819,10 +1768,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/adjustable_pliers.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/ak_slant_compensator.glb"
     },
     {
@@ -1947,10 +1892,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/can_opener.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/candle.glb"
     },
     {
@@ -2035,10 +1976,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/compass.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/copper_wire.glb"
     },
     {
@@ -2048,10 +1985,6 @@
     {
       "kind": "asset",
       "path": "assets/models/crackers.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/crowbar.glb"
     },
     {
       "kind": "asset",
@@ -2188,10 +2121,6 @@
     {
       "kind": "asset",
       "path": "assets/models/grip_standard.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/hammer.glb"
     },
     {
       "kind": "asset",
@@ -2499,10 +2428,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/kitchen_knife.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/lamp_oil_bottle.glb"
     },
     {
@@ -2691,10 +2616,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/repair_kit.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/revolver.glb"
     },
     {
@@ -2799,18 +2720,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/screwdriver.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/sewing_kit.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/sewing_repair_kit.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/shambler_head.glb"
     },
     {
@@ -2844,10 +2753,6 @@
     {
       "kind": "asset",
       "path": "assets/models/shotshell_box.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/sledgehammer.glb"
     },
     {
       "kind": "asset",
@@ -2959,14 +2864,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/whetstone.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/wire_strippers.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/wooden_plank.glb"
     },
     {
@@ -3016,10 +2913,6 @@
     {
       "kind": "asset",
       "path": "assets/models/worn_trousers_thigh.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/wrench.glb"
     }
   ],
   "id": "skelly.deadvox.residual",

@@ -45,49 +45,6 @@ local lights = import 'lights.libsonnet';
       "model": "fuse"
     },
     {
-      "id": "wire_strippers",
-      "name": "Wire strippers",
-      "category": "tool",
-      "size": [1, 2],
-      "model": "wire_strippers",
-      "tool": { "qualities": { "cutting": 1, "screwing": 1 } },
-      "disassembly": {
-        "timeGameMinutes": 8,
-        "skill": "mechanics",
-        "yields": [
-          { "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
-          { "item": "rubber_strip", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
-        ]
-      }
-    },
-    {
-      "id": "adjustable_pliers",
-      "name": "Adjustable pliers",
-      "category": "tool",
-      "size": [1, 2],
-      "model": "adjustable_pliers",
-      "tool": { "qualities": { "wrenching": 1, "cutting": 1 } },
-      "salvageTimeGameMinutes": 5,
-      "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "rubber_strip", "count": 1 }]
-    },
-    {
-      "id": "sewing_kit",
-      "name": "Sewing kit",
-      "category": "tool",
-      "weight": 220,
-      "size": [2, 1],
-      "model": "sewing_kit",
-      "tool": { "qualities": { "sewing": 1 } },
-      "disassembly": {
-        "timeGameMinutes": 6,
-        "skill": "crafting",
-        "yields": [
-          { "item": "sewing_thread", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
-          { "item": "fastener_pack", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
-        ]
-      }
-    },
-    {
       "id": "broken_toaster",
       "name": "Broken toaster",
       "category": "misc",
@@ -157,23 +114,6 @@ local lights = import 'lights.libsonnet';
         { "item": "circuit_board", "count": 1 },
         { "item": "fastener_pack", "count": 1 }
       ]
-    },
-    {
-      "id": "sewing_repair_kit",
-      "name": "Clothing repair kit",
-      "category": "tool",
-      "size": [2, 2],
-      "model": "sewing_repair_kit",
-      "description": "Thread, patches and needles for mending clothing.",
-      "tool": { "qualities": { "sewing": 1, "repairing": 1 } },
-      "disassembly": {
-        "timeGameMinutes": 8,
-        "skill": "crafting",
-        "yields": [
-          { "item": "sewing_thread", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
-          { "item": "cloth_strip", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
-        ]
-      }
     },
     {
       "id": "electrical_repair_kit",
@@ -255,26 +195,6 @@ local lights = import 'lights.libsonnet';
       "tool": { "qualities": { "sawing": 1 } },
       "salvageTimeGameMinutes": 5,
       "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "wooden_plank", "count": 1 }]
-    },
-    {
-      "id": "screwdriver",
-      "name": "Screwdriver",
-      "category": "tool",
-      "size": [1, 2],
-      "model": "screwdriver",
-      "tool": { "qualities": { "screwing": 1 } },
-      "salvageTimeGameMinutes": 5,
-      "salvage": [{ "item": "scrap_metal", "count": 1 }]
-    },
-    {
-      "id": "wrench",
-      "name": "Adjustable wrench",
-      "category": "tool",
-      "size": [1, 3],
-      "model": "wrench",
-      "tool": { "qualities": { "wrenching": 1 } },
-      "salvageTimeGameMinutes": 5,
-      "salvage": [{ "item": "scrap_metal", "count": 1 }]
     },
     {
       "id": "improvised_suppressor",
