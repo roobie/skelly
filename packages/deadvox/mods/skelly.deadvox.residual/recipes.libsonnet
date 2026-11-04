@@ -25,7 +25,7 @@ local sharpen(blade, method) = {
   workstation: method.workstation,
 };
 local sharpenRecipes = [sharpen(blade, method) for blade in blades for method in sharpening];
-local skillCurve = import 'packages/mods/skelly.progression/skill-curve.libsonnet';
+local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
 {
   "skills": [skill + { curve: skillCurve } for skill in [
     {

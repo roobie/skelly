@@ -9,7 +9,7 @@
         handlingFactorFloor: 0,
         handlingFactorHalfLifeLevels: 1.1,
       },
-      curve: import 'skill-curve.libsonnet',
+      curve: import 'tools/jsonnet/lib/skill-curve.libsonnet',
     },
   ],
   skillProgression: [{ id: 'core', capability: 'progression', practicePerLevel: 10 }],

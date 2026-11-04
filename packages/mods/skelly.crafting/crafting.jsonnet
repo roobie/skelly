@@ -1,4 +1,4 @@
-local skillCurve = import 'packages/mods/skelly.progression/skill-curve.libsonnet';
+local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
 {
   skills: [skill { curve: skillCurve } for skill in [
     { id: 'crafting', capability: 'crafting', name: 'Crafting', training: { craftingTierOffset: 1 } },
