@@ -26,11 +26,9 @@ const sourceFor = (blueprint: VehicleBlueprintInput): ContentSource => ({
         id: PART,
         name: 'VAT round-trip part',
         workInProgress: false,
-        notLoot: false,
         category: 'misc',
         model: PART,
         size: [1, 1],
-        economy: { usage: [], tiers: [] },
         vehicle: {
           drops: { default: DROP_SOUND.id },
           capabilities: ['structure'],

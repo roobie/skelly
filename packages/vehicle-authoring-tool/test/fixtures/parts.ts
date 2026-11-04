@@ -34,11 +34,9 @@ const part = (id: string, capabilities: string[], vehicle: object = {}) => ({
   id,
   name: id,
   workInProgress: false,
-  notLoot: false,
   category: 'misc',
   model: id,
   size: [1, 1],
-  economy: { usage: [], tiers: [] },
   vehicle: {
     drops: { default: DROP_SOUND.id },
     capabilities,
