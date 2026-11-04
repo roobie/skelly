@@ -165,8 +165,8 @@ describe('actor footsteps', () => {
           },
         },
       ]);
-    const soundOf = ({ registry }: ReturnType<typeof build>, { family, block }: (typeof pairs)[number]) =>
-      footstepEventForBlock(registry, registry.blocks[registry.blockIds.get(block)!]!, family);
+    const soundOf = ({ registry: built }: ReturnType<typeof build>, { family, block }: (typeof pairs)[number]) =>
+      footstepEventForBlock(built, built.blocks[built.blockIds.get(block)!]!, family);
 
     const one = build([pairs[0]!]);
     expect(one.issues).toEqual([]);
