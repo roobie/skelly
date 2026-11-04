@@ -25,7 +25,7 @@ The world-interaction action opens a sign through ordinary furniture reach and i
 
 The paper surface is one scrollable body, with no pages: page metadata, navigation, saved page state and repeated controls do not pay for the authored reading beats. It owns focus and scrolling while open. Gameplay, inventory and quickbar commands must not leak through. Closing it restores focus; closing a recipe book pauses its job and preserves progress, while movement closes the page and proceeds. The page shows its own progress endpoint because the player needs to know when reading is complete even with every HUD option disabled. See `src/ui/reading.ts`, `mountReading`, and `src/game/play.ts`, `stopReadingOnClose`.
 
-Prototype samples remain explicitly marked as placeholders and separate from authored playtest lore. The medical sampling log and notice are drafts; approved evacuation and hunter text belongs to the playtest scenes. See `mods/skelly.deadvox.residual/readables.json` and `mods/skelly.deadvox.residual/layouts-playtest.json`.
+Prototype samples remain explicitly marked as placeholders and separate from authored playtest lore. The medical sampling log and notice are drafts; approved evacuation and hunter text belongs to the playtest scenes. See `mods/skelly.deadvox.residual/readables.json` and `mods/skelly.deadvox.residual/layouts-playtest.jsonnet`.
 
 ## Reading needs light
 
