@@ -88,6 +88,17 @@ export class Compression {
     this.c = 1;
   }
 
+  /**
+   * Whether a player's key press acts now. A press during the ramp-down after a stop ends the ramp, since
+   * the player already chose to stop; a running action or a waiting prompt keeps the lock.
+   */
+  admitsKey(): boolean {
+    if (!this.active && this.interruption === undefined) {
+      this.snap();
+    }
+    return !this.locksInput;
+  }
+
   /** The player's inputs are locked while time runs faster or a prompt is waiting. */
   get locksInput(): boolean {
     return this.active || this.c > 1 || this.interruption !== undefined;

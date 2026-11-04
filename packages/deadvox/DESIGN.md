@@ -349,8 +349,10 @@ Bound each compressed simulation step so one frame does not become arbitrarily
 expensive. If the world is busy, fast-forward may slow rather than exceed the
 frame budget. After an action stops, compression ramps down within a bounded
 amount of Sim time; a fixed Real-time ramp would let the world run too far after
-the player chose to stop. See `longActionLimits` in `src/core/compression.ts`
-and `RAMP_DOWN_SIM_SECONDS` in `src/game/frameDriver.ts`.
+the player chose to stop. A key the player presses during that ramp ends it and
+acts at once: the player has already stopped, so holding the lock would only drop
+the key. See `longActionLimits` and `Compression.admitsKey` in
+`src/core/compression.ts`, and `RAMP_DOWN_SIM_SECONDS` in `src/game/frameDriver.ts`.
 
 Only an emitted event stops a long action, except that bleeding also refuses
 compression for player actions. Nearby or aware shamblers do not make the game
