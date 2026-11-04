@@ -209,7 +209,7 @@ if (bench === 'report') {
     practiceParams.set('site', 'tutorial');
     const practiceConfig = configFromUrl(practiceParams, content);
     const engine = createEngine(practiceConfig, view, undefined, { render: !renderFree });
-    startPlay(engine, undefined, { tutorial: true });
+    startPlay(engine);
     document.getElementById('new-character-options')!.hidden = true;
     document.getElementById('tutorial-start')!.hidden = true;
     document.getElementById('save-status')!.textContent = 'Unsaved practice';
