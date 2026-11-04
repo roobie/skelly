@@ -114,6 +114,9 @@ winner between packs. The tier grants no privilege. See `src/core/packAdmission.
 Compiled JSON under a pack root must be declared, so an omitted manifest entry cannot
 silently remove authored content from validation and the game. See
 `tools/readBundledPacks.ts`, `readBundledPacks`.
+The browser and the build read pack roots in one code-unit order, so the browser admits
+packs in the order the build stamps under any locale. See `src/core/packAdmission.ts`,
+`packRootOrder`.
 
 Bundled asset keys combine pack identity and relative path so unrelated mods may
 own equal filenames without choosing a winner. Content resolves files within its

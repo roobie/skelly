@@ -35,6 +35,8 @@ export interface PackInput {
   files: ContentSource[];
 }
 
+export const packRootOrder = (left: string, right: string): number => Number(left > right) - Number(left < right);
+
 export const packStartIssues = (packs: readonly PackInput[], registry: Registry): ContentIssue[] =>
   packs.flatMap((pack) => {
     const id = pack.manifest.defaultStart;
