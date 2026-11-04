@@ -174,6 +174,8 @@ structures. Validation requires every key to name a lock some door in the same s
 so a core key whose door sits in a scenario template would fail the core stack alone. The core
 key box is a generic container and names no key. See `src/core/content.ts`, `checkKeys`.
 
+**Liquid vessels.** A vessel lists the liquids it takes or takes any liquid the stack loads, so a general container needs no edge to every mod that adds a liquid and no list to maintain. A lamp keeps its list, because what it holds must burn. See `src/core/liquids.ts`, `vesselAccepts`.
+
 **Cursor.** The basic cursor is content presentation, not UI chrome, so it sits in
 `skelly.ui`, and a theme or product mod may replace it by data with a styled one. It has
 its own row because overrides replace whole rows: a swap restates one short row, not the UI

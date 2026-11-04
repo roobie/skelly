@@ -695,7 +695,7 @@ export const LiquidSchema = strictObject({ id: Id, name: Name, densityGramsPerMi
 
 const VesselSchema = strictObject({
   capacityMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
-  accepts: pipe(array(Id), nonEmpty()),
+  accepts: union([literal('any'), pipe(array(Id), nonEmpty())]),
   initialContents: LiquidContentsSchema,
   pour: optional(
     strictObject({

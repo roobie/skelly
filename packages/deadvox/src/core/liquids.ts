@@ -53,6 +53,10 @@ export type LiquidTransferPlan =
       receiverContents: LiquidContents;
     };
 
+/** The one acceptance rule. It does not check that the liquid is loaded: `'any'` means any liquid the stack loads. */
+export const vesselAccepts = (vessel: { readonly accepts: 'any' | readonly string[] }, liquid: string): boolean =>
+  vessel.accepts === 'any' || vessel.accepts.includes(liquid);
+
 const validContents = (registry: Registry, item: Item): boolean => {
   const vessel = registry.items.get(item.type)?.vessel;
   const contents = item.liquidContents;
@@ -61,7 +65,7 @@ const validContents = (registry: Registry, item: Item): boolean => {
       contents &&
       (contents.kind === 'empty' ||
         (registry.liquids.has(contents.liquid) &&
-          vessel.accepts.includes(contents.liquid) &&
+          vesselAccepts(vessel, contents.liquid) &&
           Number.isSafeInteger(contents.volumeMicrolitres) &&
           contents.volumeMicrolitres > 0 &&
           contents.volumeMicrolitres <= vessel.capacityMicrolitres)),
@@ -145,7 +149,7 @@ export const planLiquidReceive = (
     return { ok: false, reason: 'invalid-limit' };
   }
   const contents = receiver.liquidContents!;
-  if (!(registry.liquids.has(liquid) && vessel.accepts.includes(liquid) && sameKind(contents, liquid))) {
+  if (!(registry.liquids.has(liquid) && vesselAccepts(vessel, liquid) && sameKind(contents, liquid))) {
     return { ok: false, reason: 'incompatible-liquid' };
   }
   const volume = volumeOf(contents);
@@ -189,7 +193,7 @@ export const planLiquidTransfer = (
   if (contents.kind === 'empty') {
     return { ok: false, reason: 'empty-source' };
   }
-  if (!(receiverVessel.accepts.includes(contents.liquid) && sameKind(destination, contents.liquid))) {
+  if (!(vesselAccepts(receiverVessel, contents.liquid) && sameKind(destination, contents.liquid))) {
     return { ok: false, reason: 'incompatible-liquid' };
   }
   const receiverVolume = volumeOf(destination);

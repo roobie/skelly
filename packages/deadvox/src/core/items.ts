@@ -15,7 +15,7 @@ import {
   initialFoodExposure,
   projectFoodExposure,
 } from './food.ts';
-import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
+import { type LiquidAmount, type LiquidRecoveryChoices, vesselAccepts } from './liquids.ts';
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
@@ -377,7 +377,7 @@ export const assertSavedLiquidContents = (registry: Registry, state: ItemState):
       (contents.kind === 'filled' &&
         Object.keys(contents).length === 3 &&
         registry.liquids.has(contents.liquid) &&
-        vessel.accepts.includes(contents.liquid) &&
+        vesselAccepts(vessel, contents.liquid) &&
         Number.isSafeInteger(contents.volumeMicrolitres) &&
         contents.volumeMicrolitres > 0 &&
         contents.volumeMicrolitres <= vessel.capacityMicrolitres));

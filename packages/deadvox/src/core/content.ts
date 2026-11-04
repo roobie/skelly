@@ -25,6 +25,7 @@ import {
   rolledFitIssue,
 } from './inventoryScale.ts';
 import { itemPresentationIssues } from './itemPresentation.ts';
+import { vesselAccepts } from './liquids.ts';
 import { lootTypeIssue } from './loot.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import { mapKitIssues } from './mapKit.ts';
@@ -559,7 +560,7 @@ const checkLiquidFuel = (item: ItemDef, registry: Registry, report: Report): voi
     report('items', item.id, '.light.liquidFuel', 'liquid fuel requires a vessel and no other light fuel mechanism');
   }
   for (const liquid of light.liquidFuel.accepts) {
-    if (!(registry.liquids.has(liquid) && item.vessel?.accepts.includes(liquid))) {
+    if (!(registry.liquids.has(liquid) && item.vessel && vesselAccepts(item.vessel, liquid))) {
       report('items', item.id, '.light.liquidFuel.accepts', 'fuel must be registered and accepted by the vessel');
     }
   }
@@ -987,14 +988,14 @@ const checkVessel = (item: ItemDef, registry: Registry, report: Report): void =>
   ) {
     report('items', item.id, '.vessel', 'liquid vessels cannot declare another consumable balance or unpacking');
   }
-  for (const liquid of vessel.accepts) {
+  for (const liquid of vessel.accepts === 'any' ? [] : vessel.accepts) {
     if (!registry.liquids.has(liquid)) {
       report('items', item.id, '.vessel.accepts', `no liquid "${liquid}"`);
     }
   }
   const initial = vessel.initialContents;
   if (initial.kind === 'filled') {
-    if (!(vessel.accepts.includes(initial.liquid) && registry.liquids.has(initial.liquid))) {
+    if (!(vesselAccepts(vessel, initial.liquid) && registry.liquids.has(initial.liquid))) {
       report('items', item.id, '.vessel.initialContents', 'initial liquid must be registered and accepted');
     }
     if (initial.volumeMicrolitres > vessel.capacityMicrolitres) {
@@ -1669,7 +1670,9 @@ const checkRecipe = ({
       const path = `.components[${g}][${c}]`;
       if (!registry.liquids.has(component.liquid)) {
         report('recipes', recipe.id, `${path}.liquid`, `no liquid "${component.liquid}"`);
-      } else if (![...registry.items.values()].some((item) => item.vessel?.accepts.includes(component.liquid))) {
+      } else if (
+        ![...registry.items.values()].some(({ vessel }) => vessel && vesselAccepts(vessel, component.liquid))
+      ) {
         report('recipes', recipe.id, `${path}.liquid`, 'no vessel accepts this liquid');
       }
       if (component.volumeMicrolitres % recipe.result.count !== 0) {
