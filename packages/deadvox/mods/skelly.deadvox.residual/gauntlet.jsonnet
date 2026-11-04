@@ -1,5 +1,5 @@
 local shape = import 'furniture-shape.libsonnet';
-local breach = import 'furniture-breach.libsonnet';
+local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local look = import 'gauntlet-look.jsonnet';
 local city = import 'gauntlet-city.libsonnet';
 local kits = import 'gauntlet-city-kits.libsonnet';

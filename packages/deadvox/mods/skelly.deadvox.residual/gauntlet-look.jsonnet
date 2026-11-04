@@ -1,5 +1,5 @@
 local shape = import 'furniture-shape.libsonnet';
-local breach = import 'furniture-breach.libsonnet';
+local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
 local metal = '#707b7e';
 breach.breaking(shape.colliding({

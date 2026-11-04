@@ -1,5 +1,5 @@
 local shape = import 'furniture-shape.libsonnet';
-local breach = import 'furniture-breach.libsonnet';
+local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local box(position, size, color=null) = { position: position, size: size } + (if color == null then {} else { color: color });
 local lamp(x, color) = box([x, 3, 0], [0.15, 0.15, 0.06], color);
 breach.breaking(shape.colliding({

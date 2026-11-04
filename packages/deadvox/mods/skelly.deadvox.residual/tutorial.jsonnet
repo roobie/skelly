@@ -1,5 +1,5 @@
 local shape = import 'furniture-shape.libsonnet';
-local breach = import 'furniture-breach.libsonnet';
+local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local rows = import 'tools/jsonnet/lib/rows.libsonnet';
 local cabinets = import 'cabinet-shapes.libsonnet';
 local supplyPaint = '#8d986d';

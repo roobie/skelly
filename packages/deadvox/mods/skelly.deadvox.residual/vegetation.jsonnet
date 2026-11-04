@@ -5,7 +5,7 @@ local leaves = { player: 'footstep_leaves' };
 local rustle = { gentle: 'foliage_rustle', fast: 'foliage_rustle_fast' };
 local box(position, size) = { position: position, size: size };
 
-(import 'furniture-breach.libsonnet').breaking({
+(import 'tools/jsonnet/lib/furniture-breach.libsonnet').breaking({
   blocks: [
     {
       id: 'tree_trunk', material: 'timber',

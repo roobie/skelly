@@ -1,5 +1,5 @@
 local shape = import 'furniture-shape.libsonnet';
-local breach = import 'furniture-breach.libsonnet';
+local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local box(position, size) = { position: position, size: size };
 local cabinets = import 'cabinet-shapes.libsonnet';
 local weaponPaint = '#657063';

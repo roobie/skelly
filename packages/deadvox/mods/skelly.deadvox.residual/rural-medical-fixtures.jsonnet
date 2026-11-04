@@ -1,5 +1,5 @@
 local shape = import 'furniture-shape.libsonnet';
-local breach = import 'furniture-breach.libsonnet';
+local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local box(position, size) = { position: position, size: size };
 local pocket = { pockets: [{ grid: [6, 5], handlingSimSeconds: 1.2 }] };
 breach.breaking(shape.colliding({

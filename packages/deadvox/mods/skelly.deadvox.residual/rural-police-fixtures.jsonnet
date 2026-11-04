@@ -1,5 +1,5 @@
 local shape = import 'furniture-shape.libsonnet';
-local breach = import 'furniture-breach.libsonnet';
+local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local detail = import 'door-detail.libsonnet';
 local box(position, size) = { position: position, size: size };
 local pocket = { pockets: [{ grid: [6, 6], handlingSimSeconds: 1.2 }] };

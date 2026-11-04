@@ -1,5 +1,5 @@
 local shape = import 'furniture-shape.libsonnet';
-local breach = import 'furniture-breach.libsonnet';
+local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local cabinets = import 'cabinet-shapes.libsonnet';
 local police = { usage: ['Police'], tier: 'Tier1' };
 local yard = import 'rural-police-yard.libsonnet';
