@@ -13,7 +13,7 @@ local content = [
   'ranged-tuning', 'recipes', 'rural-medical-fixtures', 'rural-medical', 'rural-police-fixtures', 'rural-police',
   'rural-substation-fixtures', 'rural-substation', 'scenarios',
   'site-generation', 'starts', 'sounds-pump', 'sounds-revolver',
-  'sounds-synth', 'sounds-weapons', 'sounds', 'templates-cabins', 'templates-medical',
+  'sounds-weapons', 'sounds', 'templates-cabins', 'templates-medical',
   'templates-playtest', 'templates-stairs', 'templates-test-house', 'templates-workshop',
   'templates', 'tutorial', 'vehicles', 'enemies',
 ];

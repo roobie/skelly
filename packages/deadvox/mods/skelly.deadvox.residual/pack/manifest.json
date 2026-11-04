@@ -256,10 +256,6 @@
     },
     {
       "kind": "content",
-      "path": "sounds-synth.json"
-    },
-    {
-      "kind": "content",
       "path": "sounds-weapons.json"
     },
     {

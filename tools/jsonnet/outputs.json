@@ -221,10 +221,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds-revolver.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds-synth.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds-synth.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds-weapons.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds-weapons.json"
     },

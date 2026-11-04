@@ -201,6 +201,7 @@ A sound row's file lives in the row's own pack, copied with its credit when pack
 so each mod loads with only its declared dependencies. The cost is duplicate bytes, and
 replacing a file in one pack leaves the other copies. See `src/core/assets.ts`,
 `soundFileIssues`.
+A preview-only row that no entry selects goes with its topic, so a door preview sits with the door sounds. The cost is that a stack loading that topic carries a row no event plays.
 Mechanisms read selections from triggering entries;
 `src/core/content.ts`, `checkActionSounds` and `referenceIssues` reject absent
 providers at those fields rather than requiring every product event. Other optional
