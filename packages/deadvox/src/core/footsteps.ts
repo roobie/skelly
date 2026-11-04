@@ -29,8 +29,24 @@ export const initialFootstepClock = (): FootstepClock => ({
   stepIndex: 0,
 });
 
-export const footstepEventForBlock = (block: BlockDef, family: string): SoundEventId | undefined =>
-  block.footsteps?.[family];
+/** The one family a block names itself: a core block may name the player, never a product's actor. */
+export const BLOCK_FOOTSTEP_FAMILY = 'player';
+
+export const footstepSoundId = (family: string, block: string): string => `${family}__${block}`;
+
+export interface FootstepContent {
+  readonly blocks: readonly BlockDef[];
+  readonly footstepSounds: ReadonlyMap<string, { readonly sound: SoundEventId }>;
+}
+
+export const footstepEventForBlock = (
+  { footstepSounds }: Pick<FootstepContent, 'footstepSounds'>,
+  block: BlockDef,
+  family: string,
+): SoundEventId | undefined =>
+  family === BLOCK_FOOTSTEP_FAMILY
+    ? block.footsteps?.[BLOCK_FOOTSTEP_FAMILY]
+    : footstepSounds.get(footstepSoundId(family, block.id))?.sound;
 
 export interface FootstepAdvance {
   clock: FootstepClock;
@@ -149,10 +165,10 @@ export const footstepEventAt = (
   position: Vec3,
   footprint: Footprint,
   blockIdAt: (x: number, y: number, z: number) => number,
-  { blocks, family }: { readonly blocks: readonly BlockDef[]; readonly family: string },
+  { blocks, footstepSounds, family }: FootstepContent & { readonly family: string },
 ): SoundEventId | undefined => {
   for (const block of supportBlocks(position, footprint, blockIdAt, blocks)) {
-    const event = footstepEventForBlock(block, family);
+    const event = footstepEventForBlock({ footstepSounds }, block, family);
     if (event !== undefined) {
       return event;
     }

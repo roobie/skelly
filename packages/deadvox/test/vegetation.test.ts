@@ -347,9 +347,12 @@ describe('passable but opaque vegetation', () => {
 
     for (const name of ['tree_trunk', 'tree_branch']) {
       const block = registry.blocks[registry.blockIds.get(name)!]!;
-      expect(footstepEventForBlock(block, [...registry.senses.values()][0]!.footsteps.family)).toBe(playerWood);
+      expect(footstepEventForBlock(registry, block, [...registry.senses.values()][0]!.footsteps.family)).toBe(
+        playerWood,
+      );
       expect(
         footstepEventForBlock(
+          registry,
           block,
           [...registry.actors.values()].find((actor) => actor.footstepSound)!.footstepSound!,
         ),
@@ -357,9 +360,12 @@ describe('passable but opaque vegetation', () => {
     }
     for (const name of ['leaves', 'leaf_litter']) {
       const block = registry.blocks[registry.blockIds.get(name)!]!;
-      expect(footstepEventForBlock(block, [...registry.senses.values()][0]!.footsteps.family)).toBe(playerFoliage);
+      expect(footstepEventForBlock(registry, block, [...registry.senses.values()][0]!.footsteps.family)).toBe(
+        playerFoliage,
+      );
       expect(
         footstepEventForBlock(
+          registry,
           block,
           [...registry.actors.values()].find((actor) => actor.footstepSound)!.footstepSound!,
         ),

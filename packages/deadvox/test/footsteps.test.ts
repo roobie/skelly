@@ -4,6 +4,7 @@ import {
   advanceFootsteps,
   footstepEventAt,
   footstepEventForBlock,
+  footstepSoundId,
   initialFootstepClock,
   isHardLanding,
   stepDistanceMetres,
@@ -27,14 +28,14 @@ const FIXTURE_BLOCK = {
   name: 'Moss',
   color: '#3f6b2f',
   solid: true,
-  footsteps: { player: 'footstep_grass', shambler: 'shambler_step_grass' },
+  footsteps: { player: 'footstep_grass' },
 };
 const FIXTURE_PLANK = {
   id: 'fixture_plank',
   name: 'Plank',
   color: '#8a6a3f',
   solid: true,
-  footsteps: { player: 'footstep_wood', shambler: 'shambler_step_wood' },
+  footsteps: { player: 'footstep_wood' },
 };
 const fixtureRegistry = () =>
   buildRegistry([soundsSource, { source: 'fixture-blocks.json', data: { blocks: [FIXTURE_BLOCK, FIXTURE_PLANK] } }]);
@@ -47,6 +48,7 @@ describe('player footsteps', () => {
     expect(
       footstepEventAt([0.4, 1.2, 0.6], { halfWidth: 0.3 }, () => runtimeId, {
         blocks: registry.blocks,
+        footstepSounds: registry.footstepSounds,
         family: 'player',
       }),
     ).toBe('footstep_grass');
@@ -60,6 +62,7 @@ describe('player footsteps', () => {
     expect(
       footstepEventAt([0.9, 1, 0.5], { halfWidth: 0.6, halfDepth: 0.6 }, blockIdAt, {
         blocks: registry.blocks,
+        footstepSounds: registry.footstepSounds,
         family: 'player',
       }),
     ).toBe('footstep_wood');
@@ -72,19 +75,50 @@ describe('player footsteps', () => {
       path: 'blocks[0].footsteps.player',
       message: 'no sound event "footstep_grass"',
     });
-    expect(issues).toContainEqual({
-      source: 'fixture-blocks.json',
-      path: 'blocks[0].footsteps.shambler',
-      message: 'no sound event "shambler_step_grass"',
+  });
+
+  it('refuses a section row naming an absent family, block or sound, or claiming the block-owned family', () => {
+    const row = (family: string, block: string, sound: string) => ({
+      id: footstepSoundId(family, block),
+      family,
+      block,
+      sound,
     });
+    const { issues } = buildRegistry([
+      {
+        source: 'fixture-rows.json',
+        data: {
+          blocks: [FIXTURE_BLOCK],
+          footstepSounds: [
+            row('fixture_absent_family', FIXTURE_BLOCK.id, 'player_absent_sound'),
+            row('player', 'fixture_absent_block', 'player_absent_sound'),
+          ],
+        },
+      },
+    ]);
+    const messages = issues
+      .filter(({ path }) => path.startsWith('footstepSounds'))
+      .map(({ path, message }) => `${path}: ${message}`);
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        'footstepSounds[0].family: no sound family "fixture_absent_family"',
+        'footstepSounds[0].sound: no sound event "player_absent_sound"',
+        'footstepSounds[1].family: "player" footsteps belong on the block',
+        'footstepSounds[1].block: no block "fixture_absent_block"',
+      ]),
+    );
   });
 
   it('keeps air and an out-of-registry chunk id out of the authored selection contract', () => {
     const { registry } = buildRegistry([]);
     const air = registry.blocks[registry.blockIds.get('air')!]!;
-    expect(footstepEventForBlock(air, 'player')).toBeUndefined();
+    expect(footstepEventForBlock(registry, air, 'player')).toBeUndefined();
     expect(() =>
-      footstepEventAt([0, 1, 0], { halfWidth: 0.3 }, () => 999, { blocks: registry.blocks, family: 'player' }),
+      footstepEventAt([0, 1, 0], { halfWidth: 0.3 }, () => 999, {
+        blocks: registry.blocks,
+        footstepSounds: registry.footstepSounds,
+        family: 'player',
+      }),
     ).toThrow();
   });
 

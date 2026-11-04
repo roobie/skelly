@@ -1,7 +1,7 @@
 local manifest = import '../../../../../tools/jsonnet/lib/pack-manifest.libsonnet';
 local content = [
   'benchmark-city', 'block-materials', 'blocks', 'body', 'camp', 'combat-policy', 'compression', 'controls',
-  'crisis-hq-fixtures', 'crisis-hq', 'damage-kinds', 'dayCycle', 'figures-player', 'furniture-cabins',
+  'crisis-hq-fixtures', 'crisis-hq', 'damage-kinds', 'dayCycle', 'figures-player', 'footstep-sounds', 'furniture-cabins',
   'furniture-hunting', 'furniture-playtest', 'furniture', 'gauntlet-look', 'gauntlet-start',
   'gauntlet', 'graphics', 'hunting-cabins', 'inventory', 'item-economy', 'item-wear', 'items-ammunition',
   'items-attachments', 'items-explosives', 'items-food', 'items-gun-parts', 'items-other',

@@ -1,14 +1,14 @@
 // Base terrain and construction blocks. Ground-contact events are authored per block even when several
 // blocks share a surface (`PILLARS.md`, "Content forward compatibility"); the compiled JSON spells each pair out.
 local footstepEvents = {
-  grass: { player: 'footstep_grass', shambler: 'shambler_step_grass' },
-  mud: { player: 'footstep_mud', shambler: 'shambler_step_mud' },
-  sand: { player: 'footstep_sand', shambler: 'shambler_step_sand' },
-  stone: { player: 'footstep_stone', shambler: 'shambler_step_stone' },
-  wood: { player: 'footstep_wood', shambler: 'shambler_step_wood' },
-  leaves: { player: 'footstep_leaves', shambler: 'shambler_step_leaves' },
+  grass: { player: 'footstep_grass' },
+  mud: { player: 'footstep_mud' },
+  sand: { player: 'footstep_sand' },
+  stone: { player: 'footstep_stone' },
+  wood: { player: 'footstep_wood' },
+  leaves: { player: 'footstep_leaves' },
   // Wading borrows the mud events until the wading round gives water a sound of its own.
-  wade: { player: 'footstep_mud', shambler: 'shambler_step_mud' },
+  wade: { player: 'footstep_mud' },
 };
 
 local materials = {

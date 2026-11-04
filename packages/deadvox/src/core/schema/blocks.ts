@@ -13,6 +13,7 @@ import {
   tuple,
   boolean as vBoolean,
 } from 'valibot';
+import { footstepSoundId } from '../footsteps.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
 import { Color, Count, Fraction, Id, Name, NonNegative, Positive } from './primitives.ts';
 
@@ -91,7 +92,7 @@ export const BlockSchema = strictObject({
   ),
   /** Content-owned brushing events: gentle movement and fast movement. */
   rustle: optional(strictObject({ gentle: Id, fast: Id })),
-  footsteps: optional(record(Id, Id)),
+  footsteps: optional(strictObject({ player: Id })),
   drops: optional(record(Id, Id)),
   /** Surface pattern; `none` when omitted. */
   pattern: optional(picklist(BLOCK_PATTERNS)),
@@ -102,3 +103,9 @@ export const BlockSchema = strictObject({
   /** Washout amount in [0, 1], read only by the `camo` surface pattern. */
   patternWashout: optional(pipe(number(), minValue(0), maxValue(1))),
 });
+
+/** One row per family and block, so a mod adding a block adds its rows without restating a family's others. */
+export const FootstepSoundSchema = pipe(
+  strictObject({ id: Id, family: Id, block: Id, sound: Id }),
+  check(({ id, family, block }) => id === footstepSoundId(family, block), 'id must be <family>__<block>'),
+);

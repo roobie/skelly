@@ -35,7 +35,7 @@ const actorFootstepEvents = new Set<SoundId | undefined>(
   [...registry.actors.values()].flatMap((actor) =>
     actor.footstepSound === undefined
       ? []
-      : registry.blocks.map((block) => footstepEventForBlock(block, actor.footstepSound!)),
+      : registry.blocks.map((block) => footstepEventForBlock(registry, block, actor.footstepSound!)),
   ),
 );
 
@@ -283,7 +283,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     const surfaces = new Map<string, string>();
     for (const block of registry.blocks) {
       if (block.solid) {
-        const event = footstepEventForBlock(block, [...registry.senses.values()][0]!.footsteps.family);
+        const event = footstepEventForBlock(registry, block, [...registry.senses.values()][0]!.footsteps.family);
         if (event && registry.sounds.has(event) && !surfaces.has(event)) {
           surfaces.set(event, block.id);
         }

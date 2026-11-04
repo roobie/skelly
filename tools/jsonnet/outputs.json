@@ -61,6 +61,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/figures-player.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/footstep-sounds.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/footstep-sounds.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/furniture-cabins.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/furniture-cabins.json"
     },

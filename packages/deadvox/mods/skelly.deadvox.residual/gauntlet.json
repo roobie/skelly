@@ -6,8 +6,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "shop_blue",
       "material": "metal",
@@ -21,8 +20,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "shop_green",
       "material": "metal",
@@ -36,8 +34,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "shop_orange",
       "material": "metal",
@@ -51,8 +48,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "shop_yellow",
       "material": "metal",
@@ -66,8 +62,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "shop_red",
       "material": "metal",
@@ -81,8 +76,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "shop_white",
       "material": "metal",
@@ -96,8 +90,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "shop_produce",
       "material": "timber",
@@ -111,8 +104,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "shop_grille",
       "material": "metal",

@@ -2,7 +2,7 @@ import { array, check, type InferOutput, optional, pipe, strictObject } from 'va
 import { ItemScarcitySchema } from '../loot.ts';
 import { PowerDeviceSchema, PowerTuningSchema } from '../powerContent.ts';
 import { ActorSchema, actorAcidSpitMatchesAbility, actorRegionsMatchModel } from './actors.ts';
-import { BlockMaterialSchema, BlockSchema } from './blocks.ts';
+import { BlockMaterialSchema, BlockSchema, FootstepSoundSchema } from './blocks.ts';
 import { BodyTuningSchema } from './body.ts';
 import { CombatPolicySchema, RangedTuningSchema } from './combat.ts';
 import { CompressionTuningSchema } from './compression.ts';
@@ -50,6 +50,7 @@ import { WeatheringSchema } from './weathering.ts';
 const SECTION_DESCRIPTOR = {
   blocks: { schema: optional(array(BlockSchema)), label: 'blocks', order: 0 },
   blockMaterials: { schema: optional(array(BlockMaterialSchema)), label: 'block materials', order: 0.1 },
+  footstepSounds: { schema: optional(array(FootstepSoundSchema)), label: 'footstep sounds', order: 0.2 },
   items: { schema: optional(array(ItemSchema)), label: 'items', order: 1 },
   itemEconomy: { schema: optional(array(ItemScarcitySchema)), label: 'item scarcity', order: 1.1 },
   liquids: { schema: optional(array(LiquidSchema)), label: 'liquids', order: 34 },

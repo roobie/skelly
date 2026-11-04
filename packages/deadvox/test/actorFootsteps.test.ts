@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { PlayerSense } from '../src/core/actorSense.ts';
 import type { Actor } from '../src/core/actorState.ts';
@@ -9,18 +7,18 @@ import {
   advanceActorFootsteps,
   footstepEventAt,
   footstepEventForBlock,
+  footstepSoundId,
   initialActorFootstepClock,
 } from '../src/core/footsteps.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
-import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { buildFixtureRegistry as buildRegistry, FIXTURE_BLOW_SOUND } from './economyFixtures.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
-const BASE = 'mods/skelly.deadvox.residual';
 const FIXTURE_FAMILY = 'fixture_steps';
 const registry = baseRegistry();
 const SHAMBLER = registry.actors.get('shambler')!;
@@ -150,20 +148,24 @@ describe('actor footsteps', () => {
     expect(movedSteps('stroll', 3, silent)).toBe(0);
   });
 
-  it('selects an independently declared footstep family for a new block id and keeps air silent', () => {
-    const fixtureBlock = {
-      id: 'fixture_moss',
-      name: 'Moss',
-      color: '#3f6b2f',
-      solid: true,
-      footsteps: { player: 'footstep_grass', [FIXTURE_FAMILY]: 'shambler_step_grass' },
-    };
+  it('sounds a family with a section row on that block and leaves one with no row silent', () => {
+    const fixtureBlock = { id: 'fixture_moss', name: 'Moss', color: '#3f6b2f', solid: true };
     const fixture = buildRegistry([
       {
-        source: 'sounds.json',
-        data: JSON.parse(readFileSync(join(BASE, 'sounds.json'), 'utf8')) as unknown,
+        source: 'fixture-blocks.json',
+        data: {
+          soundFamilies: [{ id: FIXTURE_FAMILY }, { id: 'fixture_silent_steps' }],
+          blocks: [fixtureBlock],
+          footstepSounds: [
+            {
+              id: footstepSoundId(FIXTURE_FAMILY, fixtureBlock.id),
+              family: FIXTURE_FAMILY,
+              block: fixtureBlock.id,
+              sound: FIXTURE_BLOW_SOUND,
+            },
+          ],
+        },
       },
-      { source: 'fixture-blocks.json', data: { soundFamilies: [{ id: 'fixture_steps' }], blocks: [fixtureBlock] } },
     ]);
     expect(fixture.issues).toEqual([]);
     const runtimeId = fixture.registry.blockIds.get(fixtureBlock.id)!;
@@ -176,19 +178,25 @@ describe('actor footsteps', () => {
           sampledCell = [x, y, z];
           return runtimeId;
         },
-        { blocks: fixture.registry.blocks, family: 'fixture_steps' },
+        { ...fixture.registry, family: FIXTURE_FAMILY },
       ),
-    ).toBe('shambler_step_grass');
+    ).toBe(FIXTURE_BLOW_SOUND);
     expect(sampledCell).toEqual([2, 0, 3]);
-    // Centre over air, footprint on the mossy block: the supporting cell's contract still sounds.
+    // Centre over air, footprint on the mossy block: the supporting cell's row still sounds.
     expect(
       footstepEventAt([0.9, 1, 0.5], { halfWidth: 0.6, halfDepth: 0.6 }, (x) => (x === 1 ? runtimeId : 0), {
-        blocks: fixture.registry.blocks,
-        family: 'fixture_steps',
+        ...fixture.registry,
+        family: FIXTURE_FAMILY,
       }),
-    ).toBe('shambler_step_grass');
+    ).toBe(FIXTURE_BLOW_SOUND);
+    expect(
+      footstepEventAt([2.5, 1.3, 3.5], { halfWidth: 0.3 }, () => runtimeId, {
+        ...fixture.registry,
+        family: 'fixture_silent_steps',
+      }),
+    ).toBeUndefined();
     const air = fixture.registry.blocks[fixture.registry.blockIds.get('air')!]!;
-    expect(footstepEventForBlock(air, 'fixture_steps')).toBeUndefined();
+    expect(footstepEventForBlock(fixture.registry, air, FIXTURE_FAMILY)).toBeUndefined();
   });
 
   it('lets only the nearest three moving shamblers emit footsteps', () => {

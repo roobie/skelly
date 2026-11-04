@@ -24,14 +24,14 @@ local materials = [
     {
       id: row[0].id + '_rubble', material: row[0].id, name: row[1], color: row[2], solid: true,
       pattern: 'rough', weatherable: false, drops: { default: 'item_drop_wood' },
-      footsteps: { player: row[3], shambler: row[4] },
+      footsteps: { player: row[3] },
     }
     for row in [
-      [materials[0], 'Loose earth', '#685744', 'footstep_mud', 'shambler_step_mud'],
-      [materials[1], 'Masonry rubble', '#827b71', 'footstep_stone', 'shambler_step_stone'],
-      [materials[2], 'Broken timber', '#776144', 'footstep_wood', 'shambler_step_wood'],
-      [materials[3], 'Twisted metal', '#6e6965', 'footstep_stone', 'shambler_step_stone'],
-      [materials[4], 'Torn fabric', '#68604e', 'footstep_leaves', 'shambler_step_leaves'],
+      [materials[0], 'Loose earth', '#685744', 'footstep_mud'],
+      [materials[1], 'Masonry rubble', '#827b71', 'footstep_stone'],
+      [materials[2], 'Broken timber', '#776144', 'footstep_wood'],
+      [materials[3], 'Twisted metal', '#6e6965', 'footstep_stone'],
+      [materials[4], 'Torn fabric', '#68604e', 'footstep_leaves'],
     ]
   ],
 }

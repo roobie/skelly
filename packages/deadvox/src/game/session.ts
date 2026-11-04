@@ -1400,6 +1400,7 @@ export const createSession = (options: SessionOptions) => {
     for (let i = 0; i < footsteps.steps; i++) {
       const event = footstepEventAt(body.pos, body, (x, y, z) => world.getBlock(x, y, z), {
         blocks: registry.blocks,
+        footstepSounds: registry.footstepSounds,
         family: senseTuning.footsteps.family,
       });
       if (event) {
@@ -1649,6 +1650,7 @@ export const createSession = (options: SessionOptions) => {
       }
       const event = footstepEventAt(position, actor.body, (x, y, z) => world.getBlock(x, y, z), {
         blocks: registry.blocks,
+        footstepSounds: registry.footstepSounds,
         family,
       });
       if (!event) {

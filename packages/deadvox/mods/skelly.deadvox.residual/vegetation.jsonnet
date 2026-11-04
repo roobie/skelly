@@ -1,7 +1,7 @@
 // Vegetation blocks select their own ground-contact events (`PILLARS.md`, "Content forward compatibility");
 // branches and trunks share the wood surface, foliage and litter the leaves surface.
-local wood = { player: 'footstep_wood', shambler: 'shambler_step_wood' };
-local leaves = { player: 'footstep_leaves', shambler: 'shambler_step_leaves' };
+local wood = { player: 'footstep_wood' };
+local leaves = { player: 'footstep_leaves' };
 local rustle = { gentle: 'foliage_rustle', fast: 'foliage_rustle_fast' };
 local box(position, size) = { position: position, size: size };
 

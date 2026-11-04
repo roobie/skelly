@@ -55,6 +55,10 @@
     },
     {
       "kind": "content",
+      "path": "footstep-sounds.json"
+    },
+    {
+      "kind": "content",
       "path": "furniture-cabins.json"
     },
     {

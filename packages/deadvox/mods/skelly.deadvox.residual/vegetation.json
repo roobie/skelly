@@ -6,8 +6,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_wood",
-        "shambler": "shambler_step_wood"
+        "player": "footstep_wood"
       },
       "id": "tree_trunk",
       "material": "timber",
@@ -23,8 +22,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_wood",
-        "shambler": "shambler_step_wood"
+        "player": "footstep_wood"
       },
       "id": "tree_branch",
       "material": "timber",
@@ -37,8 +35,7 @@
     {
       "color": "#526b3d",
       "footsteps": {
-        "player": "footstep_leaves",
-        "shambler": "shambler_step_leaves"
+        "player": "footstep_leaves"
       },
       "id": "leaves",
       "material": "textile",
@@ -58,8 +55,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_leaves",
-        "shambler": "shambler_step_leaves"
+        "player": "footstep_leaves"
       },
       "id": "leaf_litter",
       "material": "soil",
@@ -72,8 +68,7 @@
     {
       "color": "#7b8444",
       "footsteps": {
-        "player": "footstep_leaves",
-        "shambler": "shambler_step_leaves"
+        "player": "footstep_leaves"
       },
       "id": "tall_grass",
       "material": "textile",

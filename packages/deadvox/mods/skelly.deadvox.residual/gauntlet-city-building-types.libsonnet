@@ -110,7 +110,7 @@ local building(id, context, shellId, roomId) = {
   anchors: { entry: { kind: 'standing', at: [8, 1, 6] }, stock: { kind: 'standing', at: [8, 1, 12] } },
   access: { ground: 'floor_0', entrance: [8, 1, 6], storeys: [{ id: 'floor_0', floor: 1 }], stairs: [] },
 };
-local stoneSteps = { player: 'footstep_stone', shambler: 'shambler_step_stone' };
+local stoneSteps = { player: 'footstep_stone' };
 local signBlock(id, name, color, extra={}) =
   { id: id, material: 'metal', name: name, color: color, solid: true, drops: { default: 'item_drop_wood' }, footsteps: stoneSteps, weatherable: false } + extra;
 local frontStyle(id, bindings) = { id: id, bindings: {

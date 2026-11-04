@@ -6,8 +6,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_grass",
-        "shambler": "shambler_step_grass"
+        "player": "footstep_grass"
       },
       "id": "grass",
       "material": "soil",
@@ -22,8 +21,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_mud",
-        "shambler": "shambler_step_mud"
+        "player": "footstep_mud"
       },
       "id": "dirt",
       "material": "soil",
@@ -38,8 +36,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "stone",
       "material": "masonry",
@@ -54,8 +51,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "rock",
       "material": "masonry",
@@ -70,8 +66,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_sand",
-        "shambler": "shambler_step_sand"
+        "player": "footstep_sand"
       },
       "id": "sand",
       "material": "soil",
@@ -86,8 +81,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "asphalt",
       "material": "masonry",
@@ -102,8 +96,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "painted_asphalt",
       "material": "masonry",
@@ -118,8 +111,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "concrete",
       "material": "masonry",
@@ -134,8 +126,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_wood",
-        "shambler": "shambler_step_wood"
+        "player": "footstep_wood"
       },
       "id": "planks",
       "material": "timber",
@@ -150,8 +141,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "brick",
       "material": "masonry",
@@ -166,8 +156,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "plaster",
       "material": "masonry",
@@ -182,8 +171,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "tiles",
       "material": "masonry",
@@ -198,8 +186,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_leaves",
-        "shambler": "shambler_step_leaves"
+        "player": "footstep_leaves"
       },
       "id": "fabric",
       "material": "textile",
@@ -213,8 +200,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "roof",
       "material": "masonry",
@@ -229,8 +215,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_leaves",
-        "shambler": "shambler_step_leaves"
+        "player": "footstep_leaves"
       },
       "id": "carpet",
       "material": "textile",
@@ -245,8 +230,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "window_frame",
       "material": "timber",
@@ -260,8 +244,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "siding_red",
       "material": "timber",
@@ -276,8 +259,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "siding_blue",
       "material": "timber",
@@ -292,8 +274,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "galvanized",
       "material": "metal",
@@ -308,8 +289,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "cobblestone_mossy",
       "material": "masonry",
@@ -324,8 +304,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "dressed_stone",
       "material": "masonry",
@@ -340,8 +319,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "hazard_yellow",
       "material": "metal",
@@ -359,8 +337,7 @@
         "widthBlocks": 0.12
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "chain_link",
       "material": "metal",
@@ -384,8 +361,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "sandbag",
       "material": "soil",
@@ -399,8 +375,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "camo_woodland",
       "material": "timber",
@@ -417,8 +392,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_mud",
-        "shambler": "shambler_step_mud"
+        "player": "footstep_mud"
       },
       "id": "water",
       "liquid": true,

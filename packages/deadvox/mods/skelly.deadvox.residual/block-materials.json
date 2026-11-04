@@ -224,8 +224,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_mud",
-        "shambler": "shambler_step_mud"
+        "player": "footstep_mud"
       },
       "id": "soil_rubble",
       "material": "soil",
@@ -240,8 +239,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "masonry_rubble",
       "material": "masonry",
@@ -256,8 +254,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_wood",
-        "shambler": "shambler_step_wood"
+        "player": "footstep_wood"
       },
       "id": "timber_rubble",
       "material": "timber",
@@ -272,8 +269,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_stone",
-        "shambler": "shambler_step_stone"
+        "player": "footstep_stone"
       },
       "id": "metal_rubble",
       "material": "metal",
@@ -288,8 +284,7 @@
         "default": "item_drop_wood"
       },
       "footsteps": {
-        "player": "footstep_leaves",
-        "shambler": "shambler_step_leaves"
+        "player": "footstep_leaves"
       },
       "id": "textile_rubble",
       "material": "textile",

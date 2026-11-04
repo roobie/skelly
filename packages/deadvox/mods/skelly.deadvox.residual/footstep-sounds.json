@@ -1,0 +1,268 @@
+{
+  "footstepSounds": [
+    {
+      "block": "grass",
+      "family": "shambler",
+      "id": "shambler__grass",
+      "sound": "shambler_step_grass"
+    },
+    {
+      "block": "textile_rubble",
+      "family": "shambler",
+      "id": "shambler__textile_rubble",
+      "sound": "shambler_step_leaves"
+    },
+    {
+      "block": "fabric",
+      "family": "shambler",
+      "id": "shambler__fabric",
+      "sound": "shambler_step_leaves"
+    },
+    {
+      "block": "carpet",
+      "family": "shambler",
+      "id": "shambler__carpet",
+      "sound": "shambler_step_leaves"
+    },
+    {
+      "block": "leaves",
+      "family": "shambler",
+      "id": "shambler__leaves",
+      "sound": "shambler_step_leaves"
+    },
+    {
+      "block": "leaf_litter",
+      "family": "shambler",
+      "id": "shambler__leaf_litter",
+      "sound": "shambler_step_leaves"
+    },
+    {
+      "block": "tall_grass",
+      "family": "shambler",
+      "id": "shambler__tall_grass",
+      "sound": "shambler_step_leaves"
+    },
+    {
+      "block": "soil_rubble",
+      "family": "shambler",
+      "id": "shambler__soil_rubble",
+      "sound": "shambler_step_mud"
+    },
+    {
+      "block": "dirt",
+      "family": "shambler",
+      "id": "shambler__dirt",
+      "sound": "shambler_step_mud"
+    },
+    {
+      "block": "water",
+      "family": "shambler",
+      "id": "shambler__water",
+      "sound": "shambler_step_mud"
+    },
+    {
+      "block": "sand",
+      "family": "shambler",
+      "id": "shambler__sand",
+      "sound": "shambler_step_sand"
+    },
+    {
+      "block": "masonry_rubble",
+      "family": "shambler",
+      "id": "shambler__masonry_rubble",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "metal_rubble",
+      "family": "shambler",
+      "id": "shambler__metal_rubble",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "stone",
+      "family": "shambler",
+      "id": "shambler__stone",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "rock",
+      "family": "shambler",
+      "id": "shambler__rock",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "asphalt",
+      "family": "shambler",
+      "id": "shambler__asphalt",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "painted_asphalt",
+      "family": "shambler",
+      "id": "shambler__painted_asphalt",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "concrete",
+      "family": "shambler",
+      "id": "shambler__concrete",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "brick",
+      "family": "shambler",
+      "id": "shambler__brick",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "plaster",
+      "family": "shambler",
+      "id": "shambler__plaster",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "tiles",
+      "family": "shambler",
+      "id": "shambler__tiles",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "roof",
+      "family": "shambler",
+      "id": "shambler__roof",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "window_frame",
+      "family": "shambler",
+      "id": "shambler__window_frame",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "siding_red",
+      "family": "shambler",
+      "id": "shambler__siding_red",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "siding_blue",
+      "family": "shambler",
+      "id": "shambler__siding_blue",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "galvanized",
+      "family": "shambler",
+      "id": "shambler__galvanized",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "cobblestone_mossy",
+      "family": "shambler",
+      "id": "shambler__cobblestone_mossy",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "dressed_stone",
+      "family": "shambler",
+      "id": "shambler__dressed_stone",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "hazard_yellow",
+      "family": "shambler",
+      "id": "shambler__hazard_yellow",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "chain_link",
+      "family": "shambler",
+      "id": "shambler__chain_link",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "sandbag",
+      "family": "shambler",
+      "id": "shambler__sandbag",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "camo_woodland",
+      "family": "shambler",
+      "id": "shambler__camo_woodland",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "shop_blue",
+      "family": "shambler",
+      "id": "shambler__shop_blue",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "shop_green",
+      "family": "shambler",
+      "id": "shambler__shop_green",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "shop_orange",
+      "family": "shambler",
+      "id": "shambler__shop_orange",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "shop_yellow",
+      "family": "shambler",
+      "id": "shambler__shop_yellow",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "shop_red",
+      "family": "shambler",
+      "id": "shambler__shop_red",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "shop_white",
+      "family": "shambler",
+      "id": "shambler__shop_white",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "shop_produce",
+      "family": "shambler",
+      "id": "shambler__shop_produce",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "shop_grille",
+      "family": "shambler",
+      "id": "shambler__shop_grille",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "timber_rubble",
+      "family": "shambler",
+      "id": "shambler__timber_rubble",
+      "sound": "shambler_step_wood"
+    },
+    {
+      "block": "planks",
+      "family": "shambler",
+      "id": "shambler__planks",
+      "sound": "shambler_step_wood"
+    },
+    {
+      "block": "tree_trunk",
+      "family": "shambler",
+      "id": "shambler__tree_trunk",
+      "sound": "shambler_step_wood"
+    },
+    {
+      "block": "tree_branch",
+      "family": "shambler",
+      "id": "shambler__tree_branch",
+      "sound": "shambler_step_wood"
+    }
+  ]
+}

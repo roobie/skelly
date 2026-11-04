@@ -12,6 +12,7 @@ import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
 import { checkDamageKinds } from './damageContent.ts';
 import { checkDropSounds } from './dropSounds.ts';
+import { BLOCK_FOOTSTEP_FAMILY } from './footsteps.ts';
 import { liftableFurniture } from './furnitureMove.ts';
 import { guidanceIssues } from './guidance.ts';
 import { visibleGridName } from './inventoryGridName.ts';
@@ -1972,6 +1973,23 @@ const checkBlockFootsteps = (registry: Registry, report: Report): void => {
   }
 };
 
+const checkFootstepSounds = (registry: Registry, report: Report): void => {
+  for (const { id, family, block, sound } of registry.footstepSounds.values()) {
+    if (family === BLOCK_FOOTSTEP_FAMILY) {
+      report('footstepSounds', id, '.family', `"${family}" footsteps belong on the block`);
+    }
+    if (!registry.soundFamilies.has(family)) {
+      report('footstepSounds', id, '.family', `no sound family "${family}"`);
+    }
+    if (!registry.blockIds.has(block)) {
+      report('footstepSounds', id, '.block', `no block "${block}"`);
+    }
+    if (!registry.sounds.has(sound)) {
+      report('footstepSounds', id, '.sound', `no sound event "${sound}"`);
+    }
+  }
+};
+
 const checkCombatSkillRanges = (registry: Registry, report: Report): void => {
   const policy = claimed(registry.combatPolicy, 'player');
   for (const skill of registry.skills.values()) {
@@ -2224,6 +2242,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkCamoBlocks(registry, report);
   checkBlockFootsteps(registry, report);
+  checkFootstepSounds(registry, report);
   checkDropSounds(registry, report);
   checkBlockMaterials(registry, report);
   for (const block of registry.blocks) {
