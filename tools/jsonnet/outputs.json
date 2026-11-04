@@ -29,10 +29,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/combat-policy.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/compression.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/compression.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq-fixtures.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq-fixtures.json"
     },
@@ -85,16 +81,8 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/inventory.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/inventory.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/item-economy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/item-economy.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/item-wear.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/item-wear.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/items-ammunition.jsonnet",
@@ -571,6 +559,26 @@
     {
       "source": "packages/mods/skelly.graphics/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.graphics/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.inventory/compression.jsonnet",
+      "output": "packages/mods/skelly.inventory/compression.json"
+    },
+    {
+      "source": "packages/mods/skelly.inventory/inventory-items.jsonnet",
+      "output": "packages/mods/skelly.inventory/inventory-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.inventory/inventory.jsonnet",
+      "output": "packages/mods/skelly.inventory/inventory.json"
+    },
+    {
+      "source": "packages/mods/skelly.inventory/item-wear.jsonnet",
+      "output": "packages/mods/skelly.inventory/item-wear.json"
+    },
+    {
+      "source": "packages/mods/skelly.inventory/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.inventory/pack/manifest.json"
     },
     {
       "source": "packages/mods/skelly.melee-classes/assets/manifest.jsonnet",

@@ -6,6 +6,6 @@ manifest(
   defaultStart='gauntlet',
   dependencies=[
     'skelly.saves', 'skelly.day-cycle', 'skelly.controls', 'skelly.graphics', 'skelly.ui',
-    'skelly.weathering', 'skelly.deadvox.weathering', 'skelly.melee-classes', 'skelly.deadvox.residual',
+    'skelly.weathering', 'skelly.deadvox.weathering', 'skelly.melee-classes', 'skelly.inventory', 'skelly.deadvox.residual',
   ],
 )

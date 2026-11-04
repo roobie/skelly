@@ -33,7 +33,7 @@ assert.ok(['chromium', 'firefox'].includes(engine));
 const RACK_GRID = [5, 6];
 const {
   inventory: [baseInventoryRow],
-} = JSON.parse(readFileSync(resolve(root, 'mods/skelly.deadvox.residual/inventory.json'), 'utf8'));
+} = JSON.parse(readFileSync(resolve(root, '../mods/skelly.inventory/inventory.json'), 'utf8'));
 // The fixture's material takes its blow sound from the shipped materials, with that sound's shipped definition, so a
 // newly required material or sound field is met by the content rather than by this file.
 const baseContent = (file) => JSON.parse(readFileSync(resolve(root, 'mods/skelly.deadvox.residual', file), 'utf8'));

@@ -1576,7 +1576,7 @@ The handling weights are content, authored beside the Inventory Management
 skill that scales them, so a mod can retune how long moving things takes. The
 schema requires them and no reader falls back to a code default, because a
 silent default would hide a mod that left one out. See `src/core/inventory.ts`,
-`handlingWeights`, and `mods/skelly.deadvox.residual/inventory.jsonnet`, `handling`.
+`handlingWeights`, and `packages/mods/skelly.inventory/inventory.jsonnet`, `handling`.
 
 ### Inventory screen
 
@@ -1662,7 +1662,7 @@ opaque vessel. Material-class wear distinguishes rust, fading and greying
 rather than treating every surface as the same substance. Content bands bound
 appearance variants and cold still renders without quantizing simulation state.
 See `src/core/lights.ts`, `supplyShare`, `tools/jsonnet/lib/item-presentation.libsonnet`,
-`decorate`, and `mods/skelly.deadvox.residual/item-wear.jsonnet`, `classes`.
+`decorate`, and `packages/mods/skelly.inventory/item-wear.jsonnet`, `classes`.
 
 Model material indices preserve coverage even for unnamed glTF materials. The
 export refresh owns asset metadata; validation rejects incomplete class coverage
@@ -2827,14 +2827,14 @@ flatter arc rather than extending flight to preserve curvature. Drag must not
 shorten range while presentation leaves an item floating through an undragged
 path. Replay records launch strength rather than a drag-adjusted distance so it
 can reproduce flight with the recorded aim. See
-`mods/skelly.deadvox.residual/inventory.jsonnet`, `throwFlightSimSeconds`, and
+`packages/mods/skelly.inventory/inventory.jsonnet`, `throwFlightSimSeconds`, and
 `src/core/itemThrow.ts`, `throwDistanceForItem`, `flightForItem` and
 `steppedItemFlight`.
 
 Drag derives from footprint and mass so items need no individual drag rows. The
 footprint is a cell-rounded outline, not the face that meets the air, so one
 coefficient stands in for shape and tumbling. See
-`mods/skelly.deadvox.residual/inventory.jsonnet`, `throwDrag`.
+`packages/mods/skelly.inventory/inventory.jsonnet`, `throwDrag`.
 
 ## Hand grenade
 

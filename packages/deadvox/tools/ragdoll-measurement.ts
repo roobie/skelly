@@ -2,7 +2,7 @@
 import { crawlPose } from '@mobgen/mob/crawl.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import graphics from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
-import inventory from '../mods/skelly.deadvox.residual/inventory.json' with { type: 'json' };
+import inventory from '../../mods/skelly.inventory/inventory.json' with { type: 'json' };
 import player from '../mods/skelly.deadvox.residual/player.json' with { type: 'json' };
 import { actorFigure } from '../src/core/actorFigure.ts';
 import { initializeRagdollPhysics, RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';

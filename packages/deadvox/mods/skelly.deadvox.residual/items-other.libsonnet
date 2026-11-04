@@ -47,15 +47,6 @@ local spentCase(id, name, weight, description, model) = {
       },
     },
     {
-      id: 'work_in_progress',
-      workInProgress: true,
-      name: 'Work in progress',
-      category: 'material',
-      weight: 0,
-      size: [2, 2],
-      twoHanded: true,
-    },
-    {
       id: 'rechargeable_aa_battery',
       name: 'Rechargeable AA battery',
       description: 'A rechargeable AA cell.',

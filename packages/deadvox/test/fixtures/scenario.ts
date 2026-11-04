@@ -132,7 +132,7 @@ export const fixtureScenarioSources = (
   );
   const {
     compression: [compression],
-  } = JSON.parse(readFileSync('mods/skelly.deadvox.residual/compression.json', 'utf8'));
+  } = JSON.parse(readFileSync('../mods/skelly.inventory/compression.json', 'utf8'));
   const {
     siteGeneration: [baseSite],
   } = JSON.parse(readFileSync('mods/skelly.deadvox.residual/site-generation.json', 'utf8'));

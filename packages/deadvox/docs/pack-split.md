@@ -159,6 +159,11 @@ acid actor keeps its authored immunity. See `mods/skelly.deadvox.residual/body.j
 `mods/skelly.deadvox.residual/enemies.jsonnet`, `neutralDamageResistance`. Missing tuning is not
 permission to invent resistance or injury responses.
 
+**Item wear.** The one wear row every presented model selects sits in `skelly.inventory`,
+because a mod of its own would add a dependency and narrow nothing that matters. So anything
+with a model, `skelly.body` too, loads inventory tuning and the work-in-progress item. See
+`packages/mods/skelly.inventory/item-wear.jsonnet`, `classes`.
+
 **Cursor.** The basic cursor image is content presentation, not UI chrome, so it sits in
 `skelly.ui`, and a theme or product mod may replace it with a styled one. The stylesheet
 names the image's path, so a stack without `skelly.ui` has a broken cursor and no data

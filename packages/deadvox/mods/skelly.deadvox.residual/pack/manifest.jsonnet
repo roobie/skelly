@@ -1,9 +1,9 @@
 local manifest = import '../../../../../tools/jsonnet/lib/pack-manifest.libsonnet';
 local content = [
-  'benchmark-city', 'block-materials', 'blocks', 'body', 'camp', 'combat-policy', 'compression',
+  'benchmark-city', 'block-materials', 'blocks', 'body', 'camp', 'combat-policy',
   'crisis-hq-fixtures', 'crisis-hq', 'figures-player', 'footstep-sounds', 'furniture-cabins',
   'furniture-hunting', 'furniture-playtest', 'furniture', 'gauntlet-look', 'gauntlet-start',
-  'gauntlet', 'hunting-cabins', 'inventory', 'item-economy', 'item-wear', 'items-ammunition',
+  'gauntlet', 'hunting-cabins', 'item-economy', 'items-ammunition',
   'items-attachments', 'items-explosives', 'items-food', 'items-gun-parts', 'items-other',
   'items-pistol', 'items-playtest', 'items-revolver', 'items-slice2-content', 'items-tools',
   'items-wearables', 'ladders', 'layouts-cabins', 'layouts-playtest', 'layouts-stairs',
@@ -49,7 +49,7 @@ manifest(
   tier='product',
   dependencies=[
     'skelly.saves', 'skelly.day-cycle', 'skelly.controls', 'skelly.graphics', 'skelly.ui',
-    'skelly.weathering', 'skelly.deadvox.weathering', 'skelly.melee-classes',
+    'skelly.weathering', 'skelly.deadvox.weathering', 'skelly.melee-classes', 'skelly.inventory',
   ],
   content=content,
   guns=guns,

@@ -1,6 +1,6 @@
-import inventory from '../../../deadvox/mods/skelly.deadvox.residual/inventory.json' with { type: 'json' };
 import battery from '../../../deadvox/mods/skelly.deadvox.residual/things/car_battery.model.json' with { type: 'json' };
 import { buildRegistry, type ContentSource } from '../../../deadvox/src/core/content.ts';
+import inventory from '../../../mods/skelly.inventory/inventory.json' with { type: 'json' };
 import type { VehicleBlueprintInput } from '../../src/export.ts';
 
 export const FRAME = 'vat_fx_frame';

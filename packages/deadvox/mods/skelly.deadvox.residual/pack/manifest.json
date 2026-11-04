@@ -7,7 +7,8 @@
     "skelly.ui",
     "skelly.weathering",
     "skelly.deadvox.weathering",
-    "skelly.melee-classes"
+    "skelly.melee-classes",
+    "skelly.inventory"
   ],
   "files": [
     {
@@ -33,10 +34,6 @@
     {
       "kind": "content",
       "path": "combat-policy.json"
-    },
-    {
-      "kind": "content",
-      "path": "compression.json"
     },
     {
       "kind": "content",
@@ -88,15 +85,7 @@
     },
     {
       "kind": "content",
-      "path": "inventory.json"
-    },
-    {
-      "kind": "content",
       "path": "item-economy.json"
-    },
-    {
-      "kind": "content",
-      "path": "item-wear.json"
     },
     {
       "kind": "content",

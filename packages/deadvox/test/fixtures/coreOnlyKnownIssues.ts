@@ -22,5 +22,4 @@ export const CORE_ONLY_KNOWN_ISSUES: readonly KnownIssue[] = [
   missing('core extraction', 'figures', 'player'),
   missing('scenario starts', 'siteGeneration', 'authoredSite'),
   missing('theme extraction', 'powerTuning', 'power'),
-  known('core extraction', 'core content', 'items', 'expected exactly one work-in-progress item definition'),
 ];

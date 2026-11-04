@@ -6,6 +6,7 @@ import { fixtureIds } from './capabilityIds.ts';
 const baseJson = (name: string) =>
   JSON.parse(readFileSync(`mods/skelly.deadvox.residual/${name}`, 'utf8')) as ContentFile;
 const uiJson = (name: string) => JSON.parse(readFileSync(`../mods/skelly.ui/${name}`, 'utf8')) as ContentFile;
+const inventoryJson = () => JSON.parse(readFileSync('../mods/skelly.inventory/inventory.json', 'utf8')) as ContentFile;
 
 const baseSkill = (id: string) => {
   const skill = baseJson('recipes.json').skills?.find((candidate) => candidate.id === id);
@@ -24,7 +25,7 @@ const fixtureUi = () => {
 /** Share authored tuning so fixtures do not pin product values. */
 export const playerInventorySource = (): ContentSource => ({
   source: 'player-inventory-fixture.json',
-  data: { ...baseJson('inventory.json'), ...fixtureUi(), skills: [baseSkill(fixtureIds.inventoryManagement)] },
+  data: { ...inventoryJson(), ...fixtureUi(), skills: [baseSkill(fixtureIds.inventoryManagement)] },
 });
 
 /** Rendering fixtures need baseline policy even when their skill set changes. */

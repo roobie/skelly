@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import inventoryContent from '../mods/skelly.deadvox.residual/inventory.json' with { type: 'json' };
+import inventoryContent from '../../mods/skelly.inventory/inventory.json' with { type: 'json' };
 import { Inventory } from '../src/core/inventory.ts';
 import { rollLoot } from '../src/core/loot.ts';
 import { Rng } from '../src/core/random.ts';

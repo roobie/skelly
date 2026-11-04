@@ -76,7 +76,10 @@ const fixtureBuild = buildRegistry([
   },
   ...items,
   soundSource(items),
-  { source: 'item-wear.json', data: JSON.parse(readFileSync(join(base, 'item-wear.json'), 'utf8')) as unknown },
+  {
+    source: 'item-wear.json',
+    data: JSON.parse(readFileSync('../mods/skelly.inventory/item-wear.json', 'utf8')) as unknown,
+  },
   { source: 'models-melee.json', data: JSON.parse(readFileSync(join(base, 'models-melee.json'), 'utf8')) as unknown },
   { source: 'models-items.json', data: JSON.parse(readFileSync(join(base, 'models-items.json'), 'utf8')) as unknown },
   {

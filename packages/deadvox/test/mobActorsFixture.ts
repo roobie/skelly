@@ -1,4 +1,4 @@
-import inventory from '../mods/skelly.deadvox.residual/inventory.json' with { type: 'json' };
+import inventory from '../../mods/skelly.inventory/inventory.json' with { type: 'json' };
 import player from '../mods/skelly.deadvox.residual/player.json' with { type: 'json' };
 import { type MobActorMeshesOptions, MobActorMeshes as RenderMobActorMeshes } from '../src/render/mobActors.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
