@@ -184,7 +184,7 @@ const templateIssues = (
 };
 
 /** Checks that need only the file itself: duplicate ids, the built-in air block, template sizes. */
-const fileIssues = (file: ContentFile, source: string): [string, string][] => {
+const fileIssues = (file: ContentFile): [string, string][] => {
   const out: [string, string][] = [];
   for (const section of SECTIONS) {
     const seen = new Set<string>();
@@ -215,13 +215,6 @@ const fileIssues = (file: ContentFile, source: string): [string, string][] => {
       ]);
     }
   });
-  if (source.endsWith('/models-melee.json') || source === 'models-melee.json') {
-    (file.models ?? []).forEach((model, i) => {
-      if (model.hold === undefined) {
-        out.push([`models[${i}].hold`, 'missing']);
-      }
-    });
-  }
   return out;
 };
 
@@ -238,7 +231,7 @@ const parseContent = ({ source, data }: ContentSource): { file?: ContentFile; is
   if (!result.success) {
     return { issues: schemaIssues(source, result.issues) };
   }
-  const issues = fileIssues(result.output, source).map(([path, message]) => ({ source, path, message }));
+  const issues = fileIssues(result.output).map(([path, message]) => ({ source, path, message }));
   return { file: result.output, issues };
 };
 
@@ -611,6 +604,13 @@ const checkFirearmSounds = (item: ItemDef, model: ModelDef | undefined, registry
       '.firearm.suppressedShotSound',
       'a suppressor-mountable firearm needs a suppressed shot sound',
     );
+  }
+};
+
+const checkMeleeModel = (item: ItemDef, registry: Registry, report: Report): void => {
+  const model = item.weapon?.melee && item.model !== undefined ? registry.models.get(item.model) : undefined;
+  if (model && model.hold === undefined) {
+    report('items', item.id, '.model', `melee model "${model.id}" has no hold pose`);
   }
 };
 
@@ -1024,6 +1024,7 @@ const checkItems = (registry: Registry, report: Report) => {
     checkItemLightModel(item, registry, report);
     checkItemHeldDisplay(item, registry, report);
     checkItemFirearm(item, registry, report);
+    checkMeleeModel(item, registry, report);
     checkMeleeSounds(item, registry, report);
     checkItemOptic(item, registry, obtainable, report);
     checkItemAttachmentEffects(item, registry, report);

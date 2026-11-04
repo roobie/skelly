@@ -794,12 +794,23 @@ describe('base pack melee', () => {
     }
   });
 
-  it('requires a hold pose for every melee model', () => {
-    const { hold, ...missingHold } = models[0]!;
-    expect(hold).toBeDefined();
-    const source = `${BASE}/models-melee.json`;
-    const { issues: found } = buildRegistry([{ source, data: { models: [missingHold] } }]);
-    expect(found).toContainEqual({ source, path: 'models[0].hold', message: 'missing' });
+  it('requires a hold pose on the model a melee weapon draws, whichever file holds it', () => {
+    const weapon = [...registry.items.values()].find((item) => item.weapon?.melee)!;
+    const source = 'fixture-any-name.json';
+    const issuesFor = (pose: object) =>
+      buildRegistry([
+        {
+          source,
+          data: {
+            items: [{ ...weapon, id: 'fixture_club', model: 'fixture_club' }],
+            models: [{ id: 'fixture_club', file: 'assets/models/fixture_club.glb', ...pose }],
+          },
+        },
+      ]).issues;
+    const missing = { source, path: 'items[0].model', message: 'melee model "fixture_club" has no hold pose' };
+
+    expect(issuesFor({})).toContainEqual(missing);
+    expect(issuesFor({ hold: models[0]!.hold })).not.toContainEqual(missing);
   });
 
   it.each(models.map((model) => [model.id, model] as const))(
