@@ -187,7 +187,7 @@ export type SavedAgentState = Omit<AgentState, 'behaviorRng' | 'soundRng' | 'las
 export type ActorState = Omit<
   Actor,
   'agent' | 'type' | 'tier' | 'dismemberRng' | 'spitRng' | 'renderPrevious' | 'modifiers'
-> & { agent: SavedAgentState; type: string; dismemberRng: RngState; spitRng: RngState };
+> & { agent?: SavedAgentState; type: string; dismemberRng: RngState; spitRng: RngState };
 
 export const validRngState = (state: unknown): state is RngState =>
   Array.isArray(state) && state.length === 4 && state.every((word) => Number.isSafeInteger(word));
@@ -196,36 +196,41 @@ export const validSpitTimers = (actor: ActorState): boolean =>
 export const validStaggerTime = (actor: ActorState): boolean =>
   Number.isFinite(actor.staggerSimSeconds) && actor.staggerSimSeconds >= 0;
 export const validObstacleWanderState = (actor: ActorState): boolean =>
-  Number.isFinite(actor.agent.obstacleWanderRemaining) &&
-  actor.agent.obstacleWanderRemaining >= 0 &&
-  actor.agent.obstacleWanderRemaining > 0 === (actor.agent.obstacleWanderHeading !== undefined) &&
-  (actor.agent.obstacleWanderHeading === undefined ||
-    (Array.isArray(actor.agent.obstacleWanderHeading) &&
-      actor.agent.obstacleWanderHeading.length === 3 &&
-      actor.agent.obstacleWanderHeading.every(Number.isFinite))) &&
   typeof actor.obstacleContact === 'boolean' &&
-  (actor.agent.obstacleSlideSide === -1 || actor.agent.obstacleSlideSide === 0 || actor.agent.obstacleSlideSide === 1);
+  (actor.agent === undefined ||
+    (Number.isFinite(actor.agent.obstacleWanderRemaining) &&
+      actor.agent.obstacleWanderRemaining >= 0 &&
+      actor.agent.obstacleWanderRemaining > 0 === (actor.agent.obstacleWanderHeading !== undefined) &&
+      (actor.agent.obstacleWanderHeading === undefined ||
+        (Array.isArray(actor.agent.obstacleWanderHeading) &&
+          actor.agent.obstacleWanderHeading.length === 3 &&
+          actor.agent.obstacleWanderHeading.every(Number.isFinite))) &&
+      (actor.agent.obstacleSlideSide === -1 ||
+        actor.agent.obstacleSlideSide === 0 ||
+        actor.agent.obstacleSlideSide === 1)));
 const validActorFootstepClock = (clock: ActorFootstepClock): boolean =>
   Boolean(clock) &&
   Number.isFinite(clock.distanceUntilStep) &&
   clock.distanceUntilStep > 0 &&
   typeof clock.nextLongStep === 'boolean';
 export const validActorEventState = (actor: ActorState): boolean =>
-  (actor.agent.hesitationFrom === undefined ||
-    actor.agent.hesitationFrom === 'idle' ||
-    actor.agent.hesitationFrom === 'stroll') &&
-  (actor.agent.mode !== 'hesitate' ||
-    (actor.agent.hesitationFrom !== undefined &&
-      Number.isFinite(actor.agent.modeTimer) &&
-      actor.agent.modeTimer >= 0 &&
-      validVec3State(actor.agent.lastPerceived!))) &&
-  (actor.agent.refusedAt === undefined || (Number.isFinite(actor.agent.refusedAt) && actor.agent.refusedAt >= 0)) &&
-  (actor.agent.leanTarget === undefined || validVec3State(actor.agent.leanTarget)) &&
-  (actor.agent.lastVocalNoiseId === null ||
-    (Number.isSafeInteger(actor.agent.lastVocalNoiseId) && actor.agent.lastVocalNoiseId >= 0)) &&
-  (actor.agent.stimulusAt === undefined || (Number.isFinite(actor.agent.stimulusAt) && actor.agent.stimulusAt >= 0)) &&
-  (actor.agent.lastAlertAt === undefined ||
-    (Number.isFinite(actor.agent.lastAlertAt) && actor.agent.lastAlertAt >= 0)) &&
+  (actor.agent === undefined ||
+    ((actor.agent.hesitationFrom === undefined ||
+      actor.agent.hesitationFrom === 'idle' ||
+      actor.agent.hesitationFrom === 'stroll') &&
+      (actor.agent.mode !== 'hesitate' ||
+        (actor.agent.hesitationFrom !== undefined &&
+          Number.isFinite(actor.agent.modeTimer) &&
+          actor.agent.modeTimer >= 0 &&
+          validVec3State(actor.agent.lastPerceived!))) &&
+      (actor.agent.refusedAt === undefined || (Number.isFinite(actor.agent.refusedAt) && actor.agent.refusedAt >= 0)) &&
+      (actor.agent.leanTarget === undefined || validVec3State(actor.agent.leanTarget)) &&
+      (actor.agent.lastVocalNoiseId === null ||
+        (Number.isSafeInteger(actor.agent.lastVocalNoiseId) && actor.agent.lastVocalNoiseId >= 0)) &&
+      (actor.agent.stimulusAt === undefined ||
+        (Number.isFinite(actor.agent.stimulusAt) && actor.agent.stimulusAt >= 0)) &&
+      (actor.agent.lastAlertAt === undefined ||
+        (Number.isFinite(actor.agent.lastAlertAt) && actor.agent.lastAlertAt >= 0)))) &&
   Array.isArray(actor.severed) &&
   actor.severed.every((part) => typeof part === 'string') &&
   Array.isArray(actor.carved) &&
@@ -244,6 +249,7 @@ export const validCarvedCells = (type: ActorDef, figureSeed: number, carved: rea
   return carved.every((cell) => cell < owner.length && owner[cell]! > 0 && cell !== keep);
 };
 export const validHordeMemberState = (actor: ActorState): boolean =>
+  actor.agent === undefined ||
   (actor.agent.hordeId === undefined && actor.agent.hordeOffset === undefined) ||
   (typeof actor.agent.hordeId === 'string' &&
     actor.agent.hordeId.length > 0 &&
@@ -347,7 +353,8 @@ const agentSnapshotProjectors = {
   lastAlertAt: (actor) => actor.lastAlertAt,
 } satisfies { [K in keyof SavedAgentState]-?: (actor: AgentState) => SavedAgentState[K] };
 const actorSnapshotProjectors = {
-  agent: (actor) => projectSnapshot(actor.agent!, agentSnapshotProjectors) as SavedAgentState,
+  agent: (actor) =>
+    actor.agent === undefined ? undefined : (projectSnapshot(actor.agent, agentSnapshotProjectors) as SavedAgentState),
   type: (actor) => actor.type.id,
   body: (actor) => ({ ...actor.body, pos: [...actor.body.pos], vel: [...actor.body.vel] }),
   facing: (actor) => [...actor.facing],

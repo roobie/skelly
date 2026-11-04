@@ -519,19 +519,19 @@ export const prepareAudioContinuation = (runtime: Runtime): Runtime => {
   listener.body.vel = [0, 0, 0];
   listener.body.onGround = true;
   listener.facing = [0, 0, 1];
-  listener.agent.mode = 'idle';
+  listener.agent!.mode = 'idle';
   listener.chaseStance = false;
-  listener.agent.modeTimer = 100;
-  listener.agent.idleSoundTimer = 100;
-  listener.agent.lastVocalNoiseId = 0;
+  listener.agent!.modeTimer = 100;
+  listener.agent!.idleSoundTimer = 100;
+  listener.agent!.lastVocalNoiseId = 0;
   saved.character.playerAudio.vocalNoise!.expiresAt = runtime.sim.time + 0.25;
   const idle = saved.world.actors.actors.find(({ id }) => id === groaner)!.actor;
   idle.body.onGround = true;
-  idle.agent.mode = 'idle';
+  idle.agent!.mode = 'idle';
   idle.chaseStance = false;
-  idle.agent.modeTimer = 100;
-  idle.agent.idleSoundTimer = 0.02;
-  idle.agent.lastVocalNoiseId = saved.character.playerAudio.vocalNoiseId;
+  idle.agent!.modeTimer = 100;
+  idle.agent!.idleSoundTimer = 0.02;
+  idle.agent!.lastVocalNoiseId = saved.character.playerAudio.vocalNoiseId;
   return createRuntime(saved, runtime.restAnchorUid !== undefined, runtime.columns);
 };
 

@@ -2015,7 +2015,7 @@ describe('shambler scenarios', () => {
         {
           type: actor.type,
           figureSeed: actor.figureSeed,
-          mode: actor.agent.mode,
+          mode: actor.agent!.mode,
           body: actor.body,
           gaitPhase: actor.gaitPhase,
         },

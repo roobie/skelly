@@ -427,13 +427,13 @@ describe('canonical save format', () => {
     const source = capture(createRuntime());
     const hesitation = structuredClone(source);
     const hesitating = hesitation.world.actors.actors[0]!.actor;
-    hesitating.agent.mode = 'hesitate';
+    hesitating.agent!.mode = 'hesitate';
     hesitating.chaseStance = false;
-    hesitating.agent.hesitationFrom = 'idle';
+    hesitating.agent!.hesitationFrom = 'idle';
     const refused = structuredClone(source);
     const refusing = refused.world.actors.actors[0]!.actor;
-    refusing.agent.refusedAt = 1;
-    refusing.agent.leanTarget = [1, 2, 3];
+    refusing.agent!.refusedAt = 1;
+    refusing.agent!.leanTarget = [1, 2, 3];
 
     const roundTrips = await Promise.all(
       [hesitation, refused].map(async (snapshot) => ({

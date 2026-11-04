@@ -823,14 +823,17 @@ export class ActorSystem {
         if (
           !Number.isSafeInteger(id) ||
           id < 1 ||
-          !validRngState(actor.agent.behaviorRng) ||
-          !validRngState(actor.agent.soundRng) ||
+          (actor.agent !== undefined &&
+            (!(
+              validRngState(actor.agent.behaviorRng) &&
+              validRngState(actor.agent.soundRng) &&
+              Number.isFinite(actor.agent.idleSoundTimer)
+            ) ||
+              actor.agent.idleSoundTimer < 0)) ||
           !validRngState(actor.dismemberRng) ||
           !validRngState(actor.spitRng) ||
           !validSpitTimers(actor) ||
           !validStaggerTime(actor) ||
-          !Number.isFinite(actor.agent.idleSoundTimer) ||
-          actor.agent.idleSoundTimer < 0 ||
           !validActorEventState(actor) ||
           !validHordeMemberState(actor) ||
           !Number.isSafeInteger(actor.figureSeed) ||
@@ -846,6 +849,9 @@ export class ActorSystem {
         const type = resolveType(actor.type);
         if (!type) {
           throw new Error(`Missing zombie type ${actor.type}`);
+        }
+        if ((actor.agent !== undefined) !== (type.agent !== undefined)) {
+          throw new Error(`Invalid agent presence for entity ${id}`);
         }
         if (type.model === 'fused-mass' && actor.figureSeed !== FUSED_MASS_FIGURE_SEED) {
           throw new Error(`Invalid amalgam figure seed for entity ${id}`);
@@ -895,29 +901,29 @@ export class ActorSystem {
         if (actor.spitWindup > 0 && type.acidSpit === undefined) {
           throw new Error(`Invalid acid spit state for entity ${id}`);
         }
-        const {
-          type: _type,
-          agent: { behaviorRng, soundRng, lastVocalNoiseId, ...agentFields },
-          dismemberRng,
-          spitRng,
-          ...fields
-        } = actor;
+        const { type: _type, agent: _savedAgent, dismemberRng, spitRng, ...fields } = actor;
         const restored: Actor = {
-          agent: {
-            ...agentFields,
-            behaviorRng: new Rng(behaviorRng),
-            soundRng: new Rng(soundRng),
-            lastVocalNoiseId: lastVocalNoiseId ?? undefined,
-            home: [...actor.agent.home],
-            ...(actor.agent.searchAnchor === undefined ? {} : { searchAnchor: [...actor.agent.searchAnchor] }),
-            searchHeading: [...actor.agent.searchHeading],
-            strollHeading: [...actor.agent.strollHeading],
-            ...(actor.agent.obstacleWanderHeading === undefined
-              ? {}
-              : { obstacleWanderHeading: [...actor.agent.obstacleWanderHeading] as Vec3 }),
-            ...(actor.agent.hordeOffset === undefined ? {} : { hordeOffset: [...actor.agent.hordeOffset] as Vec3 }),
-            ...(actor.agent.lastPerceived === undefined ? {} : { lastPerceived: [...actor.agent.lastPerceived] }),
-          },
+          ...(actor.agent === undefined
+            ? {}
+            : {
+                agent: {
+                  ...actor.agent,
+                  behaviorRng: new Rng(actor.agent.behaviorRng),
+                  soundRng: new Rng(actor.agent.soundRng),
+                  lastVocalNoiseId: actor.agent.lastVocalNoiseId ?? undefined,
+                  home: [...actor.agent.home],
+                  ...(actor.agent.searchAnchor === undefined ? {} : { searchAnchor: [...actor.agent.searchAnchor] }),
+                  searchHeading: [...actor.agent.searchHeading],
+                  strollHeading: [...actor.agent.strollHeading],
+                  ...(actor.agent.obstacleWanderHeading === undefined
+                    ? {}
+                    : { obstacleWanderHeading: [...actor.agent.obstacleWanderHeading] as Vec3 }),
+                  ...(actor.agent.hordeOffset === undefined
+                    ? {}
+                    : { hordeOffset: [...actor.agent.hordeOffset] as Vec3 }),
+                  ...(actor.agent.lastPerceived === undefined ? {} : { lastPerceived: [...actor.agent.lastPerceived] }),
+                },
+              }),
           ...fields,
           type,
           modifiers: [],

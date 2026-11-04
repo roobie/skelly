@@ -5,7 +5,7 @@ read_if:
   - you change default weathering selection or shared versus product weathering ownership
   - you classify creature, ranged, vehicle, sound or damage-kind content, including drop-sound receivers and item character
   - you separate actor body state from decision memory and its save representation
-  - you author actor content with or without decision tuning
+  - you author or persist actor bodies with or without decision tuning
   - you name body-plan mechanisms descriptively or separate anatomy, leg cuts and figure builds
   - you change settlement role claims or melee pose selection
   - you change skill providers, combat policy, starts or pack save identity
@@ -107,11 +107,11 @@ retain those realizations without making actor identity select implementation. S
 `src/core/actorPose.ts`, `actorCrawls`; and `src/core/schema/actors.ts`, `ActorSchema`
 and `actorRegionsMatchModel`.
 Content declares whether a body has decision code. Body facts stay with the body so
-another controller can reuse them; a body without an Agent should not need unused
-decision values. See `src/core/schema/actors.ts`, `ActorSchema`.
-Decision memory is nested apart from body state in both the type and the save, so
-supporting an undriven body can mean omitting one field, and another kind of agent
-can bring its own memory. Pose inputs belong to the body so hit regions and stance
+another controller can reuse them, and an undriven body needs no unused decision
+values. See `src/core/schema/actors.ts`, `ActorSchema`.
+Decision memory is separate from body state so an undriven body carries no decision
+state, while another kind of agent can bring its own memory. Saved presence must
+match content presence: otherwise restore would silently add or discard a controller. Pose inputs belong to the body so hit regions and stance
 can be driven without consulting decision memory; controllers supply those inputs
 at their decision transitions. Body writes belong in body primitives so different
 controllers can share body operations without taking ownership of body state. See `src/core/actorState.ts`, `AgentState`, `Actor`

@@ -371,7 +371,7 @@ describe('shambler interest', () => {
     expect(savedListener.agent!.stimulusAt).toBe(f.time() + 0.05);
     expect(savedListener.agent!.lastAlertAt).toBe(firstCryAt);
     const invalid = structuredClone(snapshot);
-    invalid.actors[0]!.actor.agent.lastAlertAt = -1;
+    invalid.actors[0]!.actor.agent!.lastAlertAt = -1;
     expect(() => new ActorSystem(f.options).restoreState(invalid, () => def)).toThrow('Invalid zombie state');
   });
 
@@ -386,12 +386,12 @@ describe('shambler interest', () => {
       expect(restored.snapshotState()).toEqual(snapshot);
       return snapshot;
     };
-    expect(restore().actors[0]!.actor.agent.mode).toBe('hesitate');
+    expect(restore().actors[0]!.actor.agent!.mode).toBe('hesitate');
     f.step(0.15);
     f.step(0.06);
     expect(actor.agent!.leanTarget).toBeDefined();
     const snapshot = structuredClone(restore());
-    snapshot.actors[0]!.actor.agent.refusedAt = -1;
+    snapshot.actors[0]!.actor.agent!.refusedAt = -1;
     expect(() => new ActorSystem(f.options).restoreState(snapshot, () => type)).toThrow('Invalid zombie state');
   });
 });
