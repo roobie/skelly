@@ -1,5 +1,5 @@
 // Core's refusals, notices and action labels are content, read by key, so rewording one can't change behaviour.
-// See `mods/skelly.deadvox.residual/ui-core-text.libsonnet` and `PILLARS.md`, "Content forward compatibility".
+// See `packages/mods/skelly.ui/ui-core-text.libsonnet` and `PILLARS.md`, "Content forward compatibility".
 
 import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';

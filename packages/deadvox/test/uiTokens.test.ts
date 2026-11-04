@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { expect, it } from 'vitest';
-import baseUi from '../mods/skelly.deadvox.residual/ui.json' with { type: 'json' };
+import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
 import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '../src/core/coreText.ts';
 import { applyUiTokens } from '../src/ui/uiTokens.ts';

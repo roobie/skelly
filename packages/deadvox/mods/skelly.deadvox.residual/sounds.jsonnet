@@ -103,10 +103,6 @@ local shellInsert = numbered('shotgun-insert', [1, 2]);
       numbered('player-hurt-light', [1, 3, 6]), 0.72, [0.96, 1.04], [0.88, 1.12], 0.2, category='body', noise=heard(6),
     ),
     sound(
-      'player_nope', 'Try an action the character cannot complete.',
-      numbered('player-nope', [1]), 0.5, [1, 1], [1, 1], 0.75, category='body',
-    ),
-    sound(
       'player_hurt_heavy', 'Take heavy damage.',
       numbered('player-hurt-heavy', [2, 5, 8]), 0.9, [0.94, 1.06], [0.88, 1.12], 0.35, category='body', noise=heard(6),
     ) + { debugHint: "?debug=1: Use the debug panel's damage action to apply damage." },

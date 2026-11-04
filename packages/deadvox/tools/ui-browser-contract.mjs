@@ -352,7 +352,7 @@ try {
   const uiTokens = await evaluate(`(async () => {
     const { buildRegistry } = await import('/src/core/content.ts');
     const { applyUiTokens } = await import('/src/ui/uiTokens.ts');
-    const { default: baseUi } = await import('/mods/skelly.deadvox.residual/ui.json');
+    const { default: baseUi } = await import('${sharedModUrl('skelly.ui/ui.json')}');
     const frame = document.createElement('iframe');
     frame.style.cssText = 'position: fixed; left: 0; top: 0; width: 640px; height: 360px; visibility: hidden';
     frame.srcdoc = '<!doctype html><link rel="stylesheet" href="/src/ui/style.css"><button class="inv-option">Probe</button>';

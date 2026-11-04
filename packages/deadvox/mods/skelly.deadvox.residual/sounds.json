@@ -159,20 +159,6 @@
     },
     {
       "category": "body",
-      "description": "Try an action the character cannot complete.",
-      "gain": 0.5,
-      "gainJitter": [1, 1],
-      "id": "player_nope",
-      "minIntervalSimSeconds": 0.75,
-      "noise": {
-        "enabled": false,
-        "radiusMetres": 1
-      },
-      "pitchJitter": [1, 1],
-      "variants": ["assets/audio/player-nope-01.ogg"]
-    },
-    {
-      "category": "body",
       "debugHint": "?debug=1: Use the debug panel's damage action to apply damage.",
       "description": "Take heavy damage.",
       "gain": 0.90000000000000002,

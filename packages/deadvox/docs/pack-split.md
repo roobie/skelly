@@ -159,6 +159,11 @@ acid actor keeps its authored immunity. See `mods/skelly.deadvox.residual/body.j
 `mods/skelly.deadvox.residual/enemies.jsonnet`, `neutralDamageResistance`. Missing tuning is not
 permission to invent resistance or injury responses.
 
+**Cursor.** The basic cursor image is content presentation, not UI chrome, so it sits in
+`skelly.ui`, and a theme or product mod may replace it with a styled one. See
+`src/ui/style.css`, `#game-cursor`: that rule names the image's path, so a stack without
+`skelly.ui` has a broken cursor and no data selection can swap the image yet.
+
 **Sounds.** A sound follows the entry selecting it: shared body/block sounds belong
 with their shared content, reusable weapon sounds with their theme, and zombie-specific
 sounds with the product. A block names only the player's own footstep; other footsteps

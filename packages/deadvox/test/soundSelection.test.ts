@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import uiContent from '../../mods/skelly.ui/ui.json' with { type: 'json' };
 import toolContent from '../mods/skelly.deadvox.residual/items-tools.json' with { type: 'json' };
-import uiContent from '../mods/skelly.deadvox.residual/ui.json' with { type: 'json' };
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { fixtureBodySounds } from './fixtures/bodySounds.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';

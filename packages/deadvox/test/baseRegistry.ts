@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { deserialize } from 'node:v8';
 import { safeParse } from 'valibot';
 import { inject } from 'vitest';
-import baseUi from '../mods/skelly.deadvox.residual/ui.json' with { type: 'json' };
+import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
 import { type ContentSource, type Registry, schemaIssues } from '../src/core/content.ts';
 import { CONTENT_SECTION_KEYS, ContentFileSchema, type ScreenText } from '../src/core/schema.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';

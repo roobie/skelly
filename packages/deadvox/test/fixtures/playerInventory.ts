@@ -5,6 +5,7 @@ import { fixtureIds } from './capabilityIds.ts';
 
 const baseJson = (name: string) =>
   JSON.parse(readFileSync(`mods/skelly.deadvox.residual/${name}`, 'utf8')) as ContentFile;
+const uiJson = (name: string) => JSON.parse(readFileSync(`../mods/skelly.ui/${name}`, 'utf8')) as ContentFile;
 
 const baseSkill = (id: string) => {
   const skill = baseJson('recipes.json').skills?.find((candidate) => candidate.id === id);
@@ -15,8 +16,8 @@ const baseSkill = (id: string) => {
 };
 
 const fixtureUi = () => {
-  const ui = baseJson('ui.json').ui!.filter(({ id }) => id === fixtureIds.ui);
-  const sounds = baseJson('sounds.json').sounds!.filter(({ id }) => ui.some((tuning) => tuning.refusalSound === id));
+  const ui = uiJson('ui.json').ui!.filter(({ id }) => id === fixtureIds.ui);
+  const sounds = uiJson('ui-sounds.json').sounds!.filter(({ id }) => ui.some((tuning) => tuning.refusalSound === id));
   return { ui, sounds };
 };
 

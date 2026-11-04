@@ -4,5 +4,5 @@ manifest(
   tier='product',
   product=true,
   defaultStart='gauntlet',
-  dependencies=['skelly.saves', 'skelly.day-cycle', 'skelly.controls', 'skelly.graphics', 'skelly.deadvox.residual'],
+  dependencies=['skelly.saves', 'skelly.day-cycle', 'skelly.controls', 'skelly.graphics', 'skelly.ui', 'skelly.deadvox.residual'],
 )

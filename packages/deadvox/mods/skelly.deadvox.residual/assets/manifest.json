@@ -633,15 +633,6 @@
       "url": "https://opengameart.org/content/jump-landing-sound"
     },
     {
-      "author": "Ivan Voirol",
-      "changes": "Kept the standard top-left pointer arrow and pointing-hand sprites from cursor.png; trimmed to their silhouettes for a white difference-blended game cursor",
-      "download": "cursor.png",
-      "files": ["assets/cursors/cursor.png"],
-      "licence": "CC0-1.0",
-      "title": "Cursor pack",
-      "url": "https://opengameart.org/content/cursor-pack"
-    },
-    {
       "author": "remaxim",
       "changes": "Selected the generic swing recording, derived from qubodup's Swish - bamboo stick weapon swishes; trimmed leading silence, faded the tail, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report).",
       "download": "melee.zip",
@@ -734,15 +725,6 @@
       "licence": "CC0-1.0",
       "title": "Heartbeat Sounds",
       "url": "https://opengameart.org/content/heartbeat-sounds"
-    },
-    {
-      "author": "BR",
-      "changes": "Recorded by BR for the project; converted from 48 kHz stereo PCM WAV to 48 kHz mono Opus in an Ogg container without gain processing.",
-      "download": null,
-      "files": ["assets/audio/player-nope-01.ogg"],
-      "licence": "CC0-1.0",
-      "title": "BR project-recorded nope voice",
-      "url": "https://github.com/roobie/skelly"
     },
     {
       "author": "Skelly contributors",

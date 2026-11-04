@@ -123,7 +123,7 @@ const content = [
 ];
 const fixture = `
 import '/src/ui/style.css';
-import uiFile from '/mods/skelly.deadvox.residual/ui.json';
+import uiFile from '/@fs${resolve(root, '../mods/skelly.ui/ui.json')}';
 import recipesFile from '/mods/skelly.deadvox.residual/recipes.json';
 import { fixtureIds } from '/test/fixtures/capabilityIds.ts';
 import { buildRegistry } from '/src/core/content.ts';

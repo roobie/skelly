@@ -166,7 +166,7 @@ inheriting a code default. Readers take the values from the registry. See
 What core says to the player, its refusals, notices and option labels, is mod content
 like any other text (#393, #456), so a mod can reword or translate it without a code
 change. It lives in the core ui row, in its own file so other text tables can grow beside
-it without touching the same lines. See `mods/skelly.deadvox.residual/ui-core-text.libsonnet`.
+it without touching the same lines. See `packages/mods/skelly.ui/ui-core-text.libsonnet`.
 
 - **Read by key.** Code names each message by a stable key and never compares or matches
   wording, so rewording a message cannot change what the game does. A rule that treats

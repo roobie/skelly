@@ -3722,7 +3722,7 @@ The repair entry stays debug-gated while #1469 settles input selection. The turn
 - **Core mods set the UI's spacing and size.** Content-owned density and HUD
   scale let players adapt the interface without making page zoom authoritative.
   Text-reserving space must remain legible as density changes. See
-  `mods/skelly.deadvox.residual/ui.jsonnet`, `ui`; `src/ui/uiTokens.ts`,
+  `packages/mods/skelly.ui/ui.jsonnet`, `ui`; `src/ui/uiTokens.ts`,
   `applyUiTokens`; and `src/core/content.ts`, `requiredContentIssues`.
 - **Action text is content.** What the character says when an action is
   refused, the handling labels, interaction hints, held-item details and the

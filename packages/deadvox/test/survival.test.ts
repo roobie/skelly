@@ -43,7 +43,6 @@ const base = (file: string): ContentSource => {
 };
 const { registry } = buildRegistry(
   [
-    'ui.json',
     'damage-kinds.json',
     'item-wear.json',
     'inventory.json',
@@ -62,7 +61,14 @@ const { registry } = buildRegistry(
     'models-melee.json',
     'models-firearms.json',
     'models-attachments.json',
-  ].map(base),
+  ]
+    .map(base)
+    .concat(
+      ['ui.json', 'ui-sounds.json'].map((file) => ({
+        source: file,
+        data: JSON.parse(readFileSync(`../mods/skelly.ui/${file}`, 'utf8')),
+      })),
+    ),
 );
 
 /** Steps needs every simulation second, as the needs system does at 1×. */

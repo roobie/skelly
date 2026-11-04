@@ -333,10 +333,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/tutorial.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/ui.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/ui.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/vegetation.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/vegetation.json"
     },
@@ -583,6 +579,22 @@
     {
       "source": "packages/mods/skelly.saves/saves.jsonnet",
       "output": "packages/mods/skelly.saves/saves.json"
+    },
+    {
+      "source": "packages/mods/skelly.ui/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.ui/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.ui/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.ui/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.ui/ui-sounds.jsonnet",
+      "output": "packages/mods/skelly.ui/ui-sounds.json"
+    },
+    {
+      "source": "packages/mods/skelly.ui/ui.jsonnet",
+      "output": "packages/mods/skelly.ui/ui.json"
     },
     {
       "source": "packages/thing-authoring-tool/items.jsonnet",

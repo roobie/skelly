@@ -329,15 +329,6 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       "changes": "Converted the 48 kHz MP3 source to mono Opus in an Ogg container"
     },
     {
-      "title": "Cursor pack",
-      "url": "https://opengameart.org/content/cursor-pack",
-      "author": "Ivan Voirol",
-      "licence": "CC0-1.0",
-      "download": "cursor.png",
-      "files": ["assets/cursors/cursor.png"],
-      "changes": "Kept the standard top-left pointer arrow and pointing-hand sprites from cursor.png; trimmed to their silhouettes for a white difference-blended game cursor"
-    },
-    {
       "title": "3 Melee Sounds",
       "url": "https://opengameart.org/content/3-melee-sounds",
       "author": "remaxim",
@@ -430,15 +421,6 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       "download": null,
       "files": ["assets/audio/heartbeat-slow-beat.ogg", "assets/audio/heartbeat-fast-beat.ogg"],
       "changes": "Converted the dry slow and fast recordings to mono Opus in Ogg containers; excluded the reverb variants; peak-normalized the existing recordings with gain only (slow +10.9 dB, fast +11 dB) to about −1 dBFS"
-    },
-    {
-      "title": "BR project-recorded nope voice",
-      "url": "https://github.com/roobie/skelly",
-      "author": "BR",
-      "licence": "CC0-1.0",
-      "download": null,
-      "files": ["assets/audio/player-nope-01.ogg"],
-      "changes": "Recorded by BR for the project; converted from 48 kHz stereo PCM WAV to 48 kHz mono Opus in an Ogg container without gain processing."
     }
   ]
 }

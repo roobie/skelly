@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.saves", "skelly.day-cycle", "skelly.controls", "skelly.graphics"],
+  "dependencies": ["skelly.saves", "skelly.day-cycle", "skelly.controls", "skelly.graphics", "skelly.ui"],
   "files": [
     {
       "kind": "content",
@@ -328,10 +328,6 @@
     {
       "kind": "content",
       "path": "tutorial.json"
-    },
-    {
-      "kind": "content",
-      "path": "ui.json"
     },
     {
       "kind": "content",
@@ -1891,10 +1887,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/audio/player-nope-01.ogg"
-    },
-    {
-      "kind": "asset",
       "path": "assets/audio/player-strain-09.ogg"
     },
     {
@@ -2040,10 +2032,6 @@
     {
       "kind": "asset",
       "path": "assets/audio/shotgun-rack-forward.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/cursors/cursor.png"
     },
     {
       "kind": "asset",
