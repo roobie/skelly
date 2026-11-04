@@ -3,14 +3,19 @@ import { actorFigure } from '../src/core/actorFigure.ts';
 import { claimed } from '../src/core/capabilities.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { footstepSoundId } from '../src/core/footsteps.ts';
+import type { ActorDef } from '../src/core/schema.ts';
 import { settlementActorSpawns, settlementHordeSpawn } from '../src/core/settlementSpawns.ts';
-import { baseSources } from '../src/game/bundledContent.ts';
-import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
 import { fixtureScenarioSources } from './fixtures/scenario.ts';
 
+// The small scenario stack, not the bundled content: these rules need only actor admission, and a build
+// of the bundled content runs every reference and spatial check over every bundled site.
+const stackActors = (): ActorDef[] => (fixtureScenarioSources()[0]!.data as { actors: ActorDef[] }).actors;
+const stackActor = (role: 'settlementHorde' | 'settlementWanderer'): ActorDef =>
+  claimed(new Map(stackActors().map((actor) => [actor.id, actor])), role)!;
+
 it('admits an independent actor id selecting an existing body plan', () => {
-  const source = [...baseRegistry().actors.values()].find((type) => type.figureSeeds?.length)!;
+  const source = stackActors().find((type) => type.figureSeeds?.length)!;
   const actor = {
     ...source,
     id: 'fixture_independent_actor',
@@ -18,7 +23,10 @@ it('admits an independent actor id selecting an existing body plan', () => {
     capability: undefined,
     authoredOnly: true,
   };
-  const { registry, issues } = buildRegistry([...baseSources, { source: 'fixture-actor', data: { actors: [actor] } }]);
+  const { registry, issues } = buildRegistry([
+    ...fixtureScenarioSources(),
+    { source: 'fixture-actor', data: { actors: [actor] } },
+  ]);
   expect(issues).toEqual([]);
   const admitted = registry.actors.get(actor.id)!;
   expect(admitted).toBeDefined();
@@ -28,7 +36,7 @@ it('admits an independent actor id selecting an existing body plan', () => {
 it.each(['slim-humanoid', 'legless-humanoid', 'broad-humanoid'] as const)(
   'admits a %s figure as a property of humanoid anatomy',
   (figure) => {
-    const source = claimed(baseRegistry().actors, 'settlementHorde')!;
+    const source = stackActor('settlementHorde');
     const actor = {
       ...source,
       id: 'fixture_humanoid_variant',
@@ -38,7 +46,7 @@ it.each(['slim-humanoid', 'legless-humanoid', 'broad-humanoid'] as const)(
       figureSeeds: [1],
     };
     const { registry, issues } = buildRegistry([
-      ...baseSources,
+      ...fixtureScenarioSources(),
       { source: 'fixture-variant', data: { actors: [actor] } },
     ]);
     expect(issues).toEqual([]);
@@ -56,9 +64,9 @@ it.each(['slim-humanoid', 'legless-humanoid', 'broad-humanoid'] as const)(
 );
 
 it('rejects a figure property whose anatomy differs from the selected body plan', () => {
-  const source = claimed(baseRegistry().actors, 'settlementHorde')!;
+  const source = stackActor('settlementHorde');
   const { issues } = buildRegistry([
-    ...baseSources,
+    ...fixtureScenarioSources(),
     {
       source: 'fixture-anatomy',
       data: { actors: [{ ...source, id: 'fixture_wrong_anatomy', capability: undefined, figure: 'fused-mass' }] },
@@ -70,11 +78,11 @@ it('rejects a figure property whose anatomy differs from the selected body plan'
 });
 
 it('uses independently named providers for horde and wanderer settlement roles', () => {
-  const template = claimed(baseRegistry().actors, 'settlementHorde')!;
+  const template = stackActor('settlementHorde');
   const horde = { ...template, id: 'fixture_horde_actor', capability: ['settlementHorde'] };
   const wanderer = { ...template, id: 'fixture_wanderer_actor', capability: ['settlementWanderer'] };
   const { registry, issues } = buildRegistry([
-    ...baseSources,
+    ...fixtureScenarioSources(),
     {
       source: 'fixture-roles',
       data: {
@@ -93,10 +101,10 @@ it('uses independently named providers for horde and wanderer settlement roles',
 it.each(['settlementHorde', 'settlementWanderer'] as const)(
   'refuses a population request with no %s provider',
   (role) => {
-    const provider = claimed(baseRegistry().actors, role)!;
+    const provider = stackActor(role);
     const capability = provider.capability!.filter((claim) => claim !== role);
     const { issues } = buildRegistry([
-      ...baseSources,
+      ...fixtureScenarioSources(),
       { source: 'fixture-missing-role', data: { actors: [{ ...provider, capability }] } },
     ]);
     expect(issues.some(({ path, message }) => path.includes('population.') && message.includes(`"${role}"`))).toBe(
@@ -106,9 +114,9 @@ it.each(['settlementHorde', 'settlementWanderer'] as const)(
 );
 
 it('refuses competing actor role claims instead of choosing a spawn by load order', () => {
-  const provider = claimed(baseRegistry().actors, 'settlementHorde')!;
+  const provider = stackActor('settlementHorde');
   const { issues } = buildRegistry([
-    ...baseSources,
+    ...fixtureScenarioSources(),
     { source: 'fixture-competing-role', data: { actors: [{ ...provider, id: 'fixture_competitor' }] } },
   ]);
   expect(issues.some(({ message }) => message.includes('competing claimants for capability "settlementHorde"'))).toBe(
@@ -160,9 +168,9 @@ it('refuses a block that authors footsteps with no row for a family a loaded act
 });
 
 it('rejects an actor selecting an undeclared footstep family', () => {
-  const source = claimed(baseRegistry().actors, 'settlementWanderer')!;
+  const source = stackActor('settlementWanderer');
   const { issues } = buildRegistry([
-    ...baseSources,
+    ...fixtureScenarioSources(),
     {
       source: 'fixture-missing-family',
       data: {
