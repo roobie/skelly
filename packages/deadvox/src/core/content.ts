@@ -1990,7 +1990,7 @@ const checkFootstepSounds = (registry: Registry, report: Report): void => {
   }
 };
 
-/** A silent step is a content bug: reported at the block, so the issue's source names the mod that must add the row. */
+/** A silent step is a content bug. Reported at the block, so the issue's source is the file authoring that block. */
 const checkFootstepCoverage = (registry: Registry, report: Report): void => {
   const families = new Set(
     [...registry.actors.values()].flatMap(({ footstepSound }) =>
@@ -2004,12 +2004,7 @@ const checkFootstepCoverage = (registry: Registry, report: Report): void => {
   for (const family of families) {
     for (const block of registry.blocks) {
       if (block.footsteps && footstepEventForBlock(registry, block, family) === undefined) {
-        report(
-          'blocks',
-          block.id,
-          '.footsteps',
-          `no footstep row for family "${family}" on block "${block.id}"; the mod adding this block must add it`,
-        );
+        report('blocks', block.id, '.footsteps', `no footstep row for family "${family}" on block "${block.id}"`);
       }
     }
   }

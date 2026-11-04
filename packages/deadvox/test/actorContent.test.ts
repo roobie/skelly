@@ -153,7 +153,7 @@ it('refuses a block that authors footsteps with no row for a family a loaded act
     {
       source: 'fixture-block-mod',
       path: 'blocks[0].footsteps',
-      message: `no footstep row for family "${family}" on block "${fixtureBlock.id}"; the mod adding this block must add it`,
+      message: `no footstep row for family "${family}" on block "${fixtureBlock.id}"`,
     },
   ]);
   expect(build([row])).toEqual([]);
