@@ -1661,7 +1661,7 @@ Fuel fill is visible only through authored clear geometry, never through an
 opaque vessel. Material-class wear distinguishes rust, fading and greying
 rather than treating every surface as the same substance. Content bands bound
 appearance variants and cold still renders without quantizing simulation state.
-See `src/core/lights.ts`, `supplyShare`, `mods/skelly.deadvox.residual/item-presentation.libsonnet`,
+See `src/core/lights.ts`, `supplyShare`, `tools/jsonnet/lib/item-presentation.libsonnet`,
 `decorate`, and `mods/skelly.deadvox.residual/item-wear.jsonnet`, `classes`.
 
 Model material indices preserve coverage even for unnamed glTF materials. The

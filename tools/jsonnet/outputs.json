@@ -269,10 +269,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/rural-substation.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/saves.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/saves.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/scenarios.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/scenarios.json"
     },
@@ -567,6 +563,14 @@
     {
       "source": "packages/mobgen/src/mob/skeletonTemplate.jsonnet",
       "output": "packages/mobgen/src/mob/skeletonTemplate.json"
+    },
+    {
+      "source": "packages/mods/skelly.saves/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.saves/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.saves/saves.jsonnet",
+      "output": "packages/mods/skelly.saves/saves.json"
     },
     {
       "source": "packages/thing-authoring-tool/items.jsonnet",

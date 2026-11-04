@@ -10,6 +10,7 @@ import { buildRegistry, requiredContentIssues } from '../src/core/content.ts';
 import { bodySoundIds } from './fixtures/bodySounds.ts';
 import { CORE_ONLY_KNOWN_ISSUES } from './fixtures/coreOnlyKnownIssues.ts';
 
+const CORE_MODS = ['skelly.saves'];
 const CORE_TOPICS = [
   'body',
   'damage-kinds',
@@ -17,7 +18,6 @@ const CORE_TOPICS = [
   'figures-player',
   'inventory',
   'item-wear',
-  'saves',
   'dayCycle',
   'controls',
   'ui',
@@ -27,11 +27,27 @@ const CORE_TOPICS = [
   'player',
 ];
 
-it('validates selected core topics without booting or hiding unowned or stale issues', () => {
-  const sources = CORE_TOPICS.map((topic) => ({
-    source: `core-only/${topic}.json`,
-    data: JSON.parse(readFileSync(`mods/skelly.deadvox.residual/${topic}.json`, 'utf8')) as unknown,
-  }));
+/** A core mod's content files, as its manifest lists them. */
+const coreModSources = (mod: string) => {
+  const manifest = JSON.parse(readFileSync(`../mods/${mod}/pack/manifest.json`, 'utf8')) as {
+    files: { path: string; kind: string }[];
+  };
+  return manifest.files
+    .filter(({ kind }) => kind === 'content')
+    .map(({ path }) => ({
+      source: `core-only/${mod}/${path}`,
+      data: JSON.parse(readFileSync(`../mods/${mod}/${path}`, 'utf8')) as unknown,
+    }));
+};
+
+it('validates selected core mods and topics without booting or hiding unowned or stale issues', () => {
+  const sources = [
+    ...CORE_MODS.flatMap(coreModSources),
+    ...CORE_TOPICS.map((topic) => ({
+      source: `core-only/${topic}.json`,
+      data: JSON.parse(readFileSync(`mods/skelly.deadvox.residual/${topic}.json`, 'utf8')) as unknown,
+    })),
+  ];
   const weathering = JSON.parse(readFileSync('mods/skelly.deadvox.residual/weathering.json', 'utf8')) as {
     weathering: { capability?: string }[];
   };

@@ -29,6 +29,10 @@ const escapesProject = (file: string, specifier: string): boolean => {
   }
   const target = normalize(join(file, '..', specifier));
   const fromProject = relative('.', target);
+  // Shared mods hold content this project loads, not sibling source.
+  if (fromProject.startsWith(`..${sep}mods${sep}`) && fromProject.endsWith('.json')) {
+    return false;
+  }
   return fromProject === '..' || fromProject.startsWith(`..${sep}`);
 };
 
@@ -60,5 +64,7 @@ describe('deadvox stays independent of its sibling projects', () => {
     expect(escapesProject('test/a.ts', '../src/core/x.ts')).toBe(false);
     expect(escapesProject('test/a.ts', '../../testTemp.ts')).toBe(true);
     expect(escapesProject('src/a.ts', 'three')).toBe(false);
+    expect(escapesProject('test/fixtures/a.ts', '../../../mods/fixture.mod/rows.json')).toBe(false);
+    expect(escapesProject('test/fixtures/a.ts', '../../../mods/fixture.mod/source.ts')).toBe(true);
   });
 });

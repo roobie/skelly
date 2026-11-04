@@ -1,9 +1,9 @@
 import { html, render } from 'lit-html';
+import { bundledCredits } from './bundledCredits.ts';
 import { claimed } from './core/capabilities.ts';
 import type { SoundId } from './core/soundEvents.ts';
 import { GameAudio } from './game/audio.ts';
 import { playerHeartbeat } from './game/audioPresentation.ts';
-import { bundledCredits } from './game/bundledCredits.ts';
 import { buildSoundsPageContent } from './soundsPageContent.ts';
 import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from './ui/soundGuide.ts';
 import { applyUiTokens } from './ui/uiTokens.ts';

@@ -6,10 +6,10 @@ import { applyBenchWeathering } from './bench/post.ts';
 import { showReport } from './bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
+import { bundledCredits } from './bundledCredits.ts';
 import { getBuildRevision } from './core/buildInfo.ts';
 import { claimed } from './core/capabilities.ts';
 import { parseTimeOfDay } from './core/clock.ts';
-import { bundledCredits } from './game/bundledCredits.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from './game/bundledMods.ts';
 import {
   applyWeatheringConfig,

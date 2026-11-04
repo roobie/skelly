@@ -1,5 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
@@ -39,6 +38,7 @@ import { WEATHERING_RANGES } from '../src/core/weather.ts';
 import { INPUT_BINDINGS, inputBindings } from '../src/game/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import {
   buildFixtureRegistry as buildRegistry,
   FIXTURE_MATERIAL,
@@ -47,17 +47,13 @@ import {
 } from './economyFixtures.ts';
 import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
 
-const BASE = 'mods/skelly.deadvox.residual';
 const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
 const INPUT_GESTURE =
   /\b(?:hold|press|tap|click|double[ -]press|wield|activate|throw|scroll|wheel|drag|rotate|snap|spawn)\b/i;
 const LMB_ALIAS = /\bLMB\b/i;
 const RMB_ALIAS = /\bRMB\b/i;
 const NO_FIRING_HOLD_KIND = /neither a grip part nor a stock part/;
-const base = readdirSync(BASE)
-  .filter((f) => f.endsWith('.json'))
-  .sort()
-  .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
+const base = baseContentSources();
 const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
 

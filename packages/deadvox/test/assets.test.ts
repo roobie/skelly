@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { bundledCredits } from '../src/bundledCredits.ts';
 import {
   assetFileIssues,
   type Manifest,
@@ -9,7 +10,6 @@ import {
   validateManifest,
 } from '../src/core/assets.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { bundledCredits } from '../src/game/bundledCredits.ts';
 
 const source = (fields: Record<string, unknown> = {}) => ({
   title: 'Torch',

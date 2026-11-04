@@ -11,7 +11,7 @@ local content = [
   'loot-workshop', 'loot', 'map-kits', 'models-attachments', 'models-firearms',
   'models-gun-parts', 'models-items', 'models-melee', 'player', 'power', 'readables',
   'ranged-tuning', 'recipes', 'rural-medical-fixtures', 'rural-medical', 'rural-police-fixtures', 'rural-police',
-  'rural-substation-fixtures', 'rural-substation', 'saves', 'scenarios', 'senses',
+  'rural-substation-fixtures', 'rural-substation', 'scenarios', 'senses',
   'site-generation', 'starts', 'sounds-block', 'sounds-furniture', 'sounds-pump', 'sounds-revolver',
   'sounds-synth', 'sounds-weapons', 'sounds', 'templates-cabins', 'templates-medical',
   'templates-playtest', 'templates-stairs', 'templates-test-house', 'templates-workshop',
@@ -47,6 +47,7 @@ local assets = import '../assets/manifest.json';
 manifest(
   id='skelly.deadvox.residual',
   tier='product',
+  dependencies=['skelly.saves'],
   content=content,
   guns=guns,
   things=things,

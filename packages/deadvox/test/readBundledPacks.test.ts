@@ -98,6 +98,9 @@ const withMultiRootFixture = async (check: (root: string) => void | Promise<void
       }
     }
     symlinkSync(resolve('mods/skelly.deadvox.residual/assets'), join(definitions, 'assets'), 'dir');
+    for (const dependency of shipped.dependencies as string[]) {
+      symlinkSync(resolve('../mods', dependency), join(temporary, 'packages/mods', dependency), 'dir');
+    }
     writeFileSync(join(root, 'src/config/bundled-mods.json'), JSON.stringify({ mods: [] }));
     const sharedManifest = {
       id: 'fixture.shared',

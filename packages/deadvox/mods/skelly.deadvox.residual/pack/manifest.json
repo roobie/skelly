@@ -1,5 +1,5 @@
 {
-  "dependencies": [],
+  "dependencies": ["skelly.saves"],
   "files": [
     {
       "kind": "content",
@@ -268,10 +268,6 @@
     {
       "kind": "content",
       "path": "rural-substation.json"
-    },
-    {
-      "kind": "content",
-      "path": "saves.json"
     },
     {
       "kind": "content",
