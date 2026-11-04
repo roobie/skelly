@@ -59,6 +59,7 @@ const makeSystem = (seed: number, pose: (typeof poses)[number], distanceMetres: 
   const actor = system.store.get(id)!;
   actor.figureSeed = seed;
   actor.agent.mode = pose.mode;
+  actor.chaseStance = actor.agent.mode === 'chase';
   actor.horizontalSpeed = pose.speed;
   actor.gaitPhase = pose.gaitPhase;
   actor.attackWindup = pose.attackWindup;

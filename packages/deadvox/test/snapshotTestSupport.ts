@@ -525,6 +525,7 @@ export const prepareAudioContinuation = (runtime: Runtime): Runtime => {
   listener.body.onGround = true;
   listener.facing = [0, 0, 1];
   listener.agent.mode = 'idle';
+  listener.chaseStance = false;
   listener.agent.modeTimer = 100;
   listener.agent.idleSoundTimer = 100;
   listener.agent.lastVocalNoiseId = 0;
@@ -532,6 +533,7 @@ export const prepareAudioContinuation = (runtime: Runtime): Runtime => {
   const idle = saved.world.actors.actors.find(({ id }) => id === groaner)!.actor;
   idle.body.onGround = true;
   idle.agent.mode = 'idle';
+  idle.chaseStance = false;
   idle.agent.modeTimer = 100;
   idle.agent.idleSoundTimer = 0.02;
   idle.agent.lastVocalNoiseId = saved.character.playerAudio.vocalNoiseId;

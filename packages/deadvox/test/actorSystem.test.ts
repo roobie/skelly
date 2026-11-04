@@ -1879,6 +1879,7 @@ describe('shambler scenarios', () => {
     const id = system.add(type, [1, 1, 0], [0, 0, -1]);
     const actor = system.store.get(id)!;
     actor.agent.mode = 'chase';
+    actor.chaseStance = true;
     const start: Vec3 = [...actor.body.pos];
     const { mode } = actor.agent;
     const behaviorRng = actor.agent.behaviorRng.state();
@@ -3082,12 +3083,14 @@ describe('two-tier shambler hearing', () => {
     expect(curious.agent.lastPerceived).not.toEqual(distant.pos);
 
     curious.agent.mode = 'chase';
+    curious.chaseStance = true;
     curious.agent.lastPerceived = [3, 1, 0];
     farSystem.tick(1 / 20);
     expect(curious.agent.mode).toBe('investigate');
     expect(curious.agent.investigationTier).toBe('near');
     expect(curious.agent.lastPerceived).toEqual([3, 1, 0]);
     curious.agent.mode = 'investigate';
+    curious.chaseStance = false;
     curious.agent.investigationTier = 'near';
     curious.agent.lastPerceived = [4, 1, 0];
     farSystem.tick(1 / 20);
@@ -3103,6 +3106,7 @@ describe('two-tier shambler hearing', () => {
     const actor = system.store.get(id)!;
     settle(actor.body);
     actor.agent.mode = 'search';
+    actor.chaseStance = false;
     actor.agent.searchAnchor = [0, 1, 0];
     actor.agent.searchTimer = 30;
     actor.agent.searchStrolling = false;
@@ -3447,6 +3451,7 @@ describe('idle and stroll shambling', () => {
     }
 
     idleActor.agent.mode = 'stroll';
+    idleActor.chaseStance = false;
     idleActor.agent.modeTimer = 100;
     idleActor.agent.strollHeading = [1, 0, 0];
     previousYaw = idlePose();

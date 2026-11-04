@@ -97,7 +97,7 @@ export const actorPoseInputFor = (
     headYaw: root?.headYaw ?? actor.headYaw,
     gaitPhase: actor.gaitPhase,
     speed: actor.horizontalSpeed,
-    chasing: actor.agent.mode === 'chase',
+    chasing: actor.chaseStance,
     attackWindup: actor.attackWindup,
     attackWindupSeconds: actor.type.attack.windupSimSeconds,
     attackWait: actor.attackWait,

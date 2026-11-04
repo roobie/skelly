@@ -8,6 +8,7 @@ import {
   inRange,
   onTerrainFloor,
   reachableActorMoves,
+  setActorChaseStance,
   steer,
   stepChaseMotion,
   sub,
@@ -147,6 +148,7 @@ export class AgentController {
     }
     if (actor.agent.hesitationFrom === 'stroll') {
       actor.agent.mode = 'investigate';
+      setActorChaseStance(actor, false);
       actor.agent.stimulusAt = time;
     } else {
       actor.agent.leanTarget = copy(actor.agent.lastPerceived!);
@@ -183,6 +185,7 @@ export class AgentController {
     ) {
       actor.agent.hesitationFrom = previous;
       actor.agent.mode = 'hesitate';
+      setActorChaseStance(actor, false);
       actor.agent.modeTimer = inRange(actor.agent.behaviorRng, actor.type.hearingModel.hesitationSimSeconds);
     }
     if (actor.agent.mode !== 'hesitate') {
@@ -229,6 +232,7 @@ export class AgentController {
           continue;
         }
         actor.agent.mode = 'investigate';
+        setActorChaseStance(actor, false);
         actor.agent.hesitationFrom = undefined;
         actor.agent.investigationTier = 'far';
         actor.agent.searchAnchor = undefined;
@@ -249,6 +253,7 @@ export class AgentController {
     const { actor, player, pos, tier, sees, vocal, blockSize, lightTarget } = scratch;
     if (sees) {
       actor.agent.mode = 'chase';
+      setActorChaseStance(actor, true);
       actor.agent.investigationTier = undefined;
       actor.agent.searchAnchor = undefined;
       actor.agent.searchTimer = 0;
@@ -256,6 +261,7 @@ export class AgentController {
       actor.agent.lastPerceived = copy(player.pos);
     } else if (tier === 'near') {
       actor.agent.mode = 'investigate';
+      setActorChaseStance(actor, false);
       actor.agent.investigationTier = 'near';
       actor.agent.searchAnchor = undefined;
       actor.agent.searchTimer = 0;
@@ -263,6 +269,7 @@ export class AgentController {
       actor.agent.lastPerceived = copy(vocal?.tier === 'near' ? vocal.target : player.pos);
     } else if (lightTarget) {
       actor.agent.mode = 'investigate';
+      setActorChaseStance(actor, false);
       actor.agent.investigationTier = 'near';
       actor.agent.searchAnchor = undefined;
       actor.agent.searchTimer = 0;
@@ -276,6 +283,7 @@ export class AgentController {
         actor.agent.mode === 'hesitate')
     ) {
       actor.agent.mode = 'investigate';
+      setActorChaseStance(actor, false);
       actor.agent.investigationTier = 'far';
       actor.agent.searchAnchor = undefined;
       actor.agent.searchTimer = 0;
@@ -299,6 +307,7 @@ export class AgentController {
       }
     } else if (actor.agent.mode === 'chase') {
       actor.agent.mode = 'investigate';
+      setActorChaseStance(actor, false);
       actor.agent.investigationTier = 'near';
     }
     if (sees || tier || lightTarget) {
@@ -307,6 +316,7 @@ export class AgentController {
     const groupTarget = sees || tier ? undefined : this.agentHorde.hordeTarget(actor);
     if (groupTarget) {
       actor.agent.mode = 'investigate';
+      setActorChaseStance(actor, false);
       actor.agent.investigationTier = 'far';
       actor.agent.searchAnchor = undefined;
       actor.agent.searchTimer = 0;
@@ -331,6 +341,7 @@ export class AgentController {
     actor.agent.searchTimer = 0;
     actor.agent.searchStrolling = false;
     actor.agent.mode = 'return';
+    setActorChaseStance(actor, false);
   }
 
   checkInvestigationArrival(): void {
@@ -369,12 +380,13 @@ export class AgentController {
         rng.range(-type.wander.headLookArcDegrees, type.wander.headLookArcDegrees) * 0.5 * (Math.PI / 180);
       actor.agent.lookTimer = inRange(rng, type.wander.lookIntervalSimSeconds);
     }
-    turnActorBodyLook(actor, type, dt);
-    turnActorHeadLook(actor, type, dt);
+    turnActorBodyLook(actor, type, dt, actor.agent.bodyLookTarget);
+    turnActorHeadLook(actor, type, dt, actor.agent.headYawTarget);
   }
 
   beginIdle(actor: Actor): void {
     actor.agent.mode = 'idle';
+    setActorChaseStance(actor, false);
     actor.agent.investigationTier = undefined;
     actor.agent.searchAnchor = undefined;
     actor.agent.searchTimer = 0;
@@ -416,6 +428,7 @@ export class AgentController {
       heading = headingAt(behaviorRng.range(-Math.PI, Math.PI));
     }
     actor.agent.mode = 'stroll';
+    setActorChaseStance(actor, false);
     actor.agent.investigationTier = undefined;
     actor.agent.searchAnchor = undefined;
     actor.agent.searchTimer = 0;
@@ -432,6 +445,7 @@ export class AgentController {
       agent: { behaviorRng: rng },
     } = actor;
     actor.agent.mode = 'search';
+    setActorChaseStance(actor, false);
     actor.agent.investigationTier = undefined;
     actor.agent.searchAnchor = copy(actor.agent.lastPerceived ?? actor.body.pos);
     actor.agent.searchTimer = inRange(rng, type.hearingModel.searchSimSeconds);
@@ -605,6 +619,7 @@ export class AgentController {
     actor.agent.searchTimer -= dt;
     if (actor.agent.searchTimer <= 0) {
       actor.agent.mode = 'return';
+      setActorChaseStance(actor, false);
       actor.agent.searchAnchor = undefined;
       actor.agent.searchStrolling = false;
       scratch.target = actor.agent.home;
@@ -662,7 +677,7 @@ export class AgentController {
     if (scratch.moving) {
       scratch.aimDirection = scratch.direction;
       if (scratch.seeking) {
-        const motion = stepChaseMotion(actor, dt);
+        const motion = stepChaseMotion(actor, dt, actor.agent.behaviorRng);
         scratch.direction = headingAt(angleOf(scratch.direction) + motion.sway);
         scratch.desiredSpeed = type.speed.chaseMetresPerSimSecond * motion.speedFactor;
       } else if (!scratch.returnArrived) {
@@ -866,6 +881,12 @@ export class AgentController {
   }
   finishBackgroundStroll(actor: Actor): void {
     if (actor.agent.mode === 'stroll' && actor.agent.modeTimer <= 0 && actor.horizontalSpeed <= 0.01) {
+      this.beginIdle(actor);
+    }
+  }
+  finishMovementDecision(): void {
+    const { actor, returnArrived } = this.tickScratch;
+    if (actor.agent.mode === 'return' && returnArrived && actor.horizontalSpeed <= 0.01) {
       this.beginIdle(actor);
     }
   }

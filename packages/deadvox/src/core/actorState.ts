@@ -90,6 +90,7 @@ export interface Actor {
   horizontalSpeed: number;
   obstacleContact: boolean;
   headYaw: number;
+  chaseStance: boolean;
   swayValue: number;
   swayStart: number;
   swayTarget: number;
@@ -288,6 +289,7 @@ const actorSnapshotFields = [
   'severed',
   'carved',
   'agent',
+  'chaseStance',
 ] as const satisfies readonly (keyof ActorState)[];
 type ActorSnapshotField = (typeof actorSnapshotFields)[number];
 type ActorSnapshot = Pick<ActorState, ActorSnapshotField> &
@@ -377,6 +379,7 @@ const actorSnapshotProjectors = {
   hitFlinchTime: (actor) => actor.hitFlinchTime,
   severed: (actor) => [...actor.severed],
   carved: (actor) => [...actor.carved],
+  chaseStance: (actor) => actor.chaseStance,
 } satisfies ActorSnapshotProjectors;
 
 export const snapshotActor = (id: number, actor: Actor): { id: number; actor: ActorSnapshot } => ({

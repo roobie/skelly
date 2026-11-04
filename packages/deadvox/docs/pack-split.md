@@ -107,8 +107,12 @@ retain those realizations without making actor identity select implementation. S
 and `actorRegionsMatchModel`.
 Decision memory is nested apart from body state in both the type and the save, so
 supporting an undriven body can mean omitting one field, and another kind of agent
-can bring its own memory. See `src/core/actorState.ts`, `AgentState`, `Actor` and
-`ActorState`, and `src/core/saveFormat.ts`, `wirePayloadSchema`.
+can bring its own memory. Pose inputs belong to the body so hit regions and stance
+can be driven without consulting decision memory; controllers supply those inputs
+at their decision transitions. See `src/core/actorState.ts`, `AgentState`, `Actor`
+and `ActorState`; `src/core/actorMotion.ts`, `setActorChaseStance`,
+`turnActorBodyLook` and `turnActorHeadLook`; and `src/core/saveFormat.ts`,
+`wirePayloadSchema`.
 
 Settlement population requests require their claimed providers only when that population
 is selected, so shared content needs no actor merely to validate; see

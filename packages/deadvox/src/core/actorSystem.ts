@@ -836,6 +836,7 @@ export class ActorSystem {
           !Number.isSafeInteger(actor.figureSeed) ||
           !validHitFlinchTime(actor.hitFlinchTime) ||
           !validStanceWeight(actor.stanceWeight) ||
+          typeof actor.chaseStance !== 'boolean' ||
           !validStepOffset(actor.stepOffset) ||
           !validObstacleWanderState(actor) ||
           typeof actor.incapacitated !== 'boolean'
@@ -1021,6 +1022,7 @@ export class ActorSystem {
       horizontalSpeed: 0,
       obstacleContact: false,
       headYaw: 0,
+      chaseStance: false,
       swayValue: 0,
       swayStart: 0,
       swayTarget: 0,
@@ -1471,10 +1473,8 @@ export class ActorSystem {
 
   private finishActorTick(): void {
     const scratch = this.tickScratch;
-    const { actor, returnArrived, blockSize, dt, id } = scratch;
-    if (actor.agent.mode === 'return' && returnArrived && actor.horizontalSpeed <= 0.01) {
-      this.agent.beginIdle(actor);
-    }
+    const { actor, blockSize, dt, id } = scratch;
+    this.agent.finishMovementDecision();
     const poseInput = actorPoseInputFor(actor, id, blockSize);
     const stanceTarget = targetStanceWeight(poseInput);
     actor.stanceWeight = advanceStanceWeight(actor.stanceWeight ?? stanceTarget, stanceTarget, dt);

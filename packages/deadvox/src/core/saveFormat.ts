@@ -726,6 +726,7 @@ const actor = obj({
   severed: arr(str()),
   /** Fused-mass voxel-grid cells knocked out by hits, ascending; see Actor.carved. */
   carved: arr(nonNegativeInt),
+  chaseStance: bool,
 });
 const playerState = obj({
   body,

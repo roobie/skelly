@@ -73,6 +73,7 @@ const addWalker = ({
   const actor = store.get(id)!;
   actor.body.onGround = true;
   actor.agent.mode = mode;
+  actor.chaseStance = actor.agent.mode === 'chase';
   actor.agent.modeTimer = 100;
   actor.agent.lastPerceived = [40, position[1], position[2]];
   actor.agent.strollHeading = [1, 0, 0];
@@ -110,6 +111,7 @@ describe('actor footsteps', () => {
 
     const walker = store.get(actor)!;
     walker.agent.mode = 'stroll';
+    walker.chaseStance = false;
     walker.agent.modeTimer = 100;
     walker.agent.strollHeading = [1, 0, 0];
     walker.horizontalSpeed = SHAMBLER.speed.wanderMetresPerSimSecond;
@@ -118,6 +120,7 @@ describe('actor footsteps', () => {
     expect(strollSteps).toBeGreaterThan(0);
     const stopped = store.get(actor)!;
     stopped.agent.mode = 'idle';
+    stopped.chaseStance = false;
     stopped.horizontalSpeed = 0;
     stopped.body.vel[0] = 0;
     stopped.body.vel[2] = 0;

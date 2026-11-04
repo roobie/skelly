@@ -428,6 +428,7 @@ describe('canonical save format', () => {
     const hesitation = structuredClone(source);
     const hesitating = hesitation.world.actors.actors[0]!.actor;
     hesitating.agent.mode = 'hesitate';
+    hesitating.chaseStance = false;
     hesitating.agent.hesitationFrom = 'idle';
     const refused = structuredClone(source);
     const refusing = refused.world.actors.actors[0]!.actor;

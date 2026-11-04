@@ -135,9 +135,8 @@ export const pushTurn = (body: Body, shape: FusedMassShape, turn: number): boole
   return true;
 };
 
-export const stepChaseMotion = (actor: Actor, dt: number): { sway: number; speedFactor: number } => {
+export const stepChaseMotion = (actor: Actor, dt: number, rng: Rng): { sway: number; speedFactor: number } => {
   const { chaseMotion } = actor.type;
-  const rng = actor.agent.behaviorRng;
   if (actor.swayDuration === 0 || actor.swayElapsed >= actor.swayDuration) {
     actor.swayStart = actor.swayValue;
     actor.swayTarget = rng.range(-chaseMotion.swayDegrees, chaseMotion.swayDegrees);
@@ -207,19 +206,15 @@ export function haltActor(actor: Actor) {
   actor.body.vel[0] = 0;
   actor.body.vel[2] = 0;
 }
-export function turnActorBodyLook(actor: Actor, type: Actor['type'], dt: number) {
+export function turnActorBodyLook(actor: Actor, type: Actor['type'], dt: number, target: number) {
   actor.facing = turnToward(
     actor.facing,
-    headingAt(actor.agent.bodyLookTarget),
+    headingAt(target),
     (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
   );
 }
-export function turnActorHeadLook(actor: Actor, type: Actor['type'], dt: number) {
-  actor.headYaw = approachAngle(
-    actor.headYaw,
-    actor.agent.headYawTarget,
-    (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180,
-  );
+export function turnActorHeadLook(actor: Actor, type: Actor['type'], dt: number, target: number) {
+  actor.headYaw = approachAngle(actor.headYaw, target, (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
 }
 export function reachableActorMoves(
   actor: Actor,
@@ -262,3 +257,7 @@ export const canStillAttack = (actor: Actor): boolean => {
   const hidden = severedBoneSet(bones, actor.severed);
   return !(armDisabled(parts.leftArm, hidden) && armDisabled(parts.rightArm, hidden));
 };
+
+export function setActorChaseStance(actor: Actor, chasing: boolean): void {
+  actor.chaseStance = chasing;
+}

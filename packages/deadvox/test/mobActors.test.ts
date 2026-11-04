@@ -100,8 +100,10 @@ interface HitParityEntry {
 }
 const setOneHitParityPose = (actor: Actor, pose: HitParityPose): void => {
   actor.agent.mode = pose.chase ? 'chase' : 'idle';
+  actor.chaseStance = actor.agent.mode === 'chase';
   if (!pose.chase && pose.speed > 0) {
     actor.agent.mode = 'stroll';
+    actor.chaseStance = false;
   }
   actor.facing = [-Math.sin(pose.yaw ?? 0), 0, -Math.cos(pose.yaw ?? 0)];
   actor.horizontalSpeed = pose.speed;
@@ -300,6 +302,7 @@ const makeActor = (
     horizontalSpeed: 0,
     obstacleContact: false,
     headYaw: 0,
+    chaseStance: ('idle' as AgentMode) === 'chase',
     swayValue: 0,
     swayStart: 0,
     swayTarget: 0,
@@ -624,6 +627,7 @@ describe('MobActorMeshes', () => {
       const entries = [SHAMBLER, RUNNER, CRAWLER].map((type) => {
         const actor = makeActor([0, 0, -4], [0, 0, 1], [], { type });
         actor.agent.mode = 'chase';
+        actor.chaseStance = true;
         return { actor, id: store.add(actor) };
       });
       const before = entries.map(({ actor }) => ({
@@ -710,6 +714,7 @@ describe('MobActorMeshes', () => {
       renderer.setCamera(camera);
       const actor = makeActor([0, 0, -4], [0, 0, 1]);
       actor.agent.mode = 'investigate';
+      actor.chaseStance = false;
       const store = new MapEntityStore<Actor>();
       const id = store.add(actor);
       renderer.sync(store, 1 / 30, 1);
@@ -719,6 +724,7 @@ describe('MobActorMeshes', () => {
       expect(state.lookAtState).toEqual(LOOK_AT_REST);
 
       actor.agent.mode = 'chase';
+      actor.chaseStance = true;
       for (let frame = 0; frame < 10; frame++) {
         renderer.sync(store, 1 / 30, 1);
       }
@@ -726,6 +732,7 @@ describe('MobActorMeshes', () => {
       expect(Math.abs(before[3]!)).toBeLessThan(1);
 
       actor.agent.mode = 'investigate';
+      actor.chaseStance = false;
       renderer.sync(store, 1 / 30, 1);
 
       expect(state.lookAtState).not.toEqual(LOOK_AT_REST);
@@ -745,6 +752,7 @@ describe('MobActorMeshes', () => {
       renderer.setCamera(camera);
       const actor = makeActor([0, 0, 0]);
       actor.agent.mode = 'investigate';
+      actor.chaseStance = false;
       actor.agent.investigationTier = 'near';
       actor.agent.lastPerceived = [4, 0, -4];
       const store = new MapEntityStore<Actor>();
@@ -808,6 +816,7 @@ describe('MobActorMeshes', () => {
       const entries = [undefined, 'horde-test'].map((hordeId, index) => {
         const actor = makeActor([index * 4, 0, 0]);
         actor.agent.mode = 'investigate';
+        actor.chaseStance = false;
         actor.agent.investigationTier = 'far';
         actor.agent.lastPerceived = [8, 0, -8];
         actor.agent.stimulusAt = 1;
@@ -856,6 +865,7 @@ describe('MobActorMeshes', () => {
       renderer.setPlayerEyePosition([2, 0, -2], PLAYER.sprint);
       const actor = makeActor([0, 0, -4]);
       actor.agent.mode = 'chase';
+      actor.chaseStance = true;
       const store = new MapEntityStore<Actor>();
       const id = store.add(actor);
       for (let frame = 0; frame < 20; frame++) {
@@ -877,8 +887,10 @@ describe('MobActorMeshes', () => {
     const blockSize = 0.5;
     const playerEye: Vec3 = [1.5, 1.6, -2];
     actor.agent.mode = 'chase';
+    actor.chaseStance = true;
     const chase = perceptionLabelFor(actor, false, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
     actor.agent.mode = 'investigate';
+    actor.chaseStance = false;
     actor.agent.investigationTier = 'near';
     actor.agent.lastPerceived = [playerEye[0] / blockSize, 0, playerEye[2] / blockSize];
     const playerNoise = perceptionLabelFor(actor, true, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
@@ -895,6 +907,7 @@ describe('MobActorMeshes', () => {
     const lure = perceptionLabelFor(actor, true, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
     const stale = perceptionLabelFor(actor, false, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
     actor.agent.mode = 'idle';
+    actor.chaseStance = false;
     actor.agent.investigationTier = undefined;
     actor.agent.lastPerceived = undefined;
     const unaware = perceptionLabelFor(actor, false, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
@@ -1832,6 +1845,7 @@ describe('MobActorMeshes dismemberment', () => {
       handRenderer.sync(handStore, 0, 1);
       const handRest = handRenderer.boneMatrix(handId, 'hand.L')!;
       handActor.agent.mode = 'chase';
+      handActor.chaseStance = true;
       handActor.attackWait = handActor.type.attack.cooldownSimSeconds - 0.35;
       handActor.attackWindup = 0;
       handRenderer.sync(handStore, 0, 1);
@@ -1989,6 +2003,7 @@ describe('MobActorMeshes stance', () => {
       const store = new MapEntityStore<Actor>();
       const actor = makeActor([0, 0, 0]);
       actor.agent.mode = 'chase';
+      actor.chaseStance = true;
       const id = store.add(actor);
       renderer.sync(store, 1 / 60, 1); // partway through the cross-fade
       for (const boneId of ['spine', 'chest', 'head']) {
