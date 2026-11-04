@@ -24,20 +24,28 @@
           </select>
         </label>
       </fieldset>
-      <fieldset id="pose">
-        <legend>Pose</legend>
+      <fieldset id="motion">
+        <legend>Motion</legend>
         <label class="field">
-          Stance
-          <select id="stance">
-            <option value="coiled">Coiled (rest)</option>
-            <option value="reared">Reared</option>
-          </select>
+          Clip
+          <select id="clip"></select>
+        </label>
+        <label class="field">
+          Cut
+          <select id="cut"></select>
+        </label>
+        <p id="clip-note" class="hint"></p>
+        <label><input id="play" type="checkbox" checked /> Play</label>
+        <label class="field">
+          Time
+          <input id="time" type="range" min="0" max="1" step="0.001" value="0" />
         </label>
         <div class="row">
           <button type="button" data-view="front">Front</button>
           <button type="button" data-view="side">Side</button>
           <button type="button" data-view="three-quarter">3/4</button>
         </div>
+        <p id="frame" class="hint"></p>
       </fieldset>
       <p id="description"></p>
       <div id="status"></div>

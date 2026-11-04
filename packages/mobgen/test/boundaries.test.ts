@@ -22,6 +22,11 @@ const specifiers = (file: string): string[] =>
 const srcFiles = walk(join(ROOT, 'src'));
 const files = [...srcFiles, ...walk(join(ROOT, 'test'))];
 const coreFiles = srcFiles.filter((f) => relative(ROOT, f).startsWith('src/core/'));
+const LEAPER = join(ROOT, 'src/mob/leaper');
+/** Shared mob plumbing the leaper may build on; everything else outside core is another mob's. */
+const SHARED_PLUMBING = ['dismember.ts', 'crowd.ts', 'materials.ts', 'ragdoll.json'].map((name) =>
+  join(ROOT, 'src/mob', name),
+);
 
 describe('import boundaries', () => {
   it('finds the files it is meant to police', () => {
@@ -55,6 +60,22 @@ describe('import boundaries', () => {
         expect(spec === 'three' || spec.startsWith('three/'), at).toBe(false);
         expect(spec.startsWith('node:'), at).toBe(false);
         expect(DOMAIN_DIR.test(spec), at).toBe(false);
+      }
+    }
+  });
+
+  it('keeps the leaper standalone: core, shared mob plumbing and its own files only', () => {
+    const leaperFiles = srcFiles.filter((file) => file.startsWith(`${LEAPER}/`));
+    expect(leaperFiles.length).toBeGreaterThan(0);
+    for (const file of leaperFiles) {
+      for (const spec of specifiers(file)) {
+        const target = resolve(file, '..', spec);
+        const allowed =
+          spec.startsWith('.') &&
+          (target.startsWith(join(ROOT, 'src/core/')) ||
+            target.startsWith(`${LEAPER}/`) ||
+            SHARED_PLUMBING.includes(target));
+        expect(allowed, `${relative(REPO, file)} -> ${spec}`).toBe(true);
       }
     }
   });

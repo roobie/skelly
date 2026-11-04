@@ -6,6 +6,8 @@ local range(min, max) = { min: min, max: max };
 local hsl = {
   // Pallid, faintly warm flesh: the sickly base read.
   skin: ['skinHue', 'skinSat', 'skinLight'],
+  // The same flesh on the limbs, kept apart so the back's countershading stays on the trunk.
+  limb: self.skin,
   // Countershading: a bruised dark back over a pale belly, the ambusher's camouflage.
   dorsal: ['dorsalHue', 0.18, 'dorsalLight'],
   // Inside of the maw.
@@ -53,7 +55,7 @@ local charged = { eye: true };
     totalTriangles: range(3600, 7200),
     groups: {
       hindSprings: { bones: ['thigh.*', 'shin.*', 'foot.*'], min: 1, max: 1e6, minFraction: 0.38 },
-      head: { bones: ['head', 'jaw'], min: 1, max: 1e6, maxFraction: 0.12 },
+      head: { bones: ['head', 'jaw'], min: 1, max: 1e6, maxFraction: 0.14 },
     },
   },
 }

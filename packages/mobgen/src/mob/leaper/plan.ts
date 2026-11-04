@@ -1,11 +1,24 @@
 // The leaper body plan: an ambush predator built around folded hind springs. The rest pose is its
-// everyday coiled crouch, so validation judges the body it spends its life in; rearing is a pose
-// (see poses.ts). Values a look change would tune live in leaper.jsonnet; proportions that the
-// supports, the coil and the region contract depend on live here.
+// everyday coiled crouch, so validation judges the body it spends its life in; every other stance is a
+// clip on this rig (see motion.ts). Values a look change would tune live in leaper.jsonnet; proportions
+// and joint ranges that the supports, the coil, the clips and the region contract depend on live here.
 
 import type { Body, BodyRegion, Bone, Feature, Material } from '../../core/body.ts';
 import { registerBodyPlan, sampleParams } from '../../core/generate.ts';
-import { add, clamp, dot, length, lerp3, mulMV, normalize, rotX, scale, sub, type Vec3 } from '../../core/math.ts';
+import {
+  add,
+  clamp,
+  cross,
+  dot,
+  length,
+  lerp3,
+  mulMV,
+  normalize,
+  rotX,
+  scale,
+  sub,
+  type Vec3,
+} from '../../core/math.ts';
 import type { Budgets } from '../../core/rules.ts';
 import type { Shape } from '../../core/sdf.ts';
 import { type Genome, registerTemplate, type Template } from '../../core/template.ts';
@@ -45,6 +58,96 @@ const LEAPER_REGION_BONES: Readonly<Record<BodyRegion, readonly string[]>> = {
   leftLeg: ['thigh.L', 'shin.L', 'foot.L'],
   rightLeg: ['thigh.R', 'shin.R', 'foot.R'],
 };
+
+type Range = readonly [number, number];
+/** Joint ranges in degrees, as [flex, abduct, twist]; positive flex is the joint's working direction (see
+ * jointFrames). The waist, chest and neckless head stay narrow: one bone owns each voxel, so a wide bend
+ * there opens a crack through the trunk (seams.ts, jointCracks), and rearing pivots at the pelvis root
+ * and the hips instead. */
+const JOINT_LIMITS: Readonly<Record<string, readonly [Range, Range, Range]>> = {
+  pelvis: [
+    [-30, 80],
+    [-15, 15],
+    [-25, 25],
+  ],
+  spine: [
+    [-8, 8],
+    [-6, 6],
+    [-8, 8],
+  ],
+  chest: [
+    [-8, 8],
+    [-6, 6],
+    [-8, 8],
+  ],
+  head: [
+    [-12, 12],
+    [-12, 12],
+    [-10, 10],
+  ],
+  jaw: [
+    [0, 40],
+    [0, 0],
+    [0, 0],
+  ],
+  upperArm: [
+    [-60, 130],
+    [-35, 45],
+    [-35, 35],
+  ],
+  forearm: [
+    [-70, 65],
+    [-10, 10],
+    [-20, 20],
+  ],
+  hand: [
+    [-45, 70],
+    [-15, 15],
+    [-20, 20],
+  ],
+  thigh: [
+    [-45, 170],
+    [-25, 30],
+    [-25, 25],
+  ],
+  shin: [
+    [-25, 150],
+    [-5, 5],
+    [-10, 10],
+  ],
+  foot: [
+    [-40, 90],
+    [-10, 10],
+    [-10, 10],
+  ],
+};
+
+/** A joint frame whose x is exactly the flex axis and whose y follows the bone as closely as stays square
+ * to it (see core/joints.ts, jointRotation). */
+const frameAbout = (bone: Bone, flexAxis: Vec3): NonNullable<Bone['frame']> => {
+  const x = normalize(flexAxis);
+  const along = sub(bone.tail, bone.head);
+  const y = normalize(sub(along, scale(x, dot(along, x))));
+  return { x, y, z: cross(x, y) };
+};
+
+/** Gives every bone its frame and range. Every joint flexes about the body's right axis, so the coil and
+ * the jump stay in the line of travel however wide the limbs splay. Positive flex is each joint's working
+ * direction: a trunk or shoulder bone pitches its far end up and back (a positive pelvis rears); the knee,
+ * foot and elbow open, and the thigh swings down and back, the launch's directions; the jaw and wrist
+ * open the mouth and curl the claws. Mirrored sides share flex angles; twist and abduct mirror. */
+const REVERSED_FLEX = new Set(['jaw', 'hand', 'forearm', 'shin', 'foot']);
+const jointFrames = (bones: readonly Bone[]): Bone[] =>
+  bones.map((bone) => {
+    const name = bone.id.split('.')[0]!;
+    const limits = JOINT_LIMITS[name];
+    if (!limits) {
+      throw new Error(`leaper bone "${bone.id}" has no joint range`);
+    }
+    const [flex, abduct, twist] = limits;
+    const axis: Vec3 = REVERSED_FLEX.has(name) ? [-1, 0, 0] : [1, 0, 0];
+    return { ...bone, frame: frameAbout(bone, axis), limits: { flex, abduct, twist } };
+  });
 
 /** Segments whose flesh thickness decides the validation profile; hands and feet carry thin claws and toes. */
 const LIMB_BONES = SIDES.flatMap(([s]) => [`upperArm.${s}`, `forearm.${s}`, `thigh.${s}`, `shin.${s}`]);
@@ -90,6 +193,9 @@ const ellipsoid = (center: Vec3, radii: Vec3): Shape => ({ kind: 'ellipsoid', ce
 const SPUR: Look = { material: 'claw', blend: 0.01 };
 const TIP: Look = { material: 'claw', blend: 0.005 };
 const EYE: Look = { material: 'eye', blend: 0.005 };
+/** Limb flesh is its own material, coloured like the skin, so the trunk's countershading cannot reach it:
+ * limbs swing through every stance, and a band baked for the crouch would land on the front of a leg. */
+const LIMB: Look = { material: 'limb' };
 
 const buildLeaper = (genome: Genome, template: Template): Body => {
   const p = genome.params as Params;
@@ -161,7 +267,7 @@ const buildLeaper = (genome: Genome, template: Template): Body => {
       shape: {
         kind: 'box',
         center: add(lerp3(hip, nape, 0.5), scale(mulMV(rotX(pitch), [0, 1, 0]), r(0.17))),
-        half: [r(0.3), band, r(0.5)],
+        half: [r(0.2), band, r(0.5)],
         round: 0,
         rot: rotX(pitch),
       },
@@ -169,7 +275,11 @@ const buildLeaper = (genome: Genome, template: Template): Body => {
       onto: ['skin'],
     });
   }
-  return { bones: rig.bones, features: rig.features, materials: resolveMaterials(template, genome.params) };
+  return {
+    bones: jointFrames(rig.bones),
+    features: rig.features,
+    materials: resolveMaterials(template, genome.params),
+  };
 };
 
 interface Limb {
@@ -181,6 +291,7 @@ interface Limb {
 /** Long forelimbs planted ahead as props, elbows swept out and back, the hands well forward of the
  * shoulders: the reach the melee strikes with, kept inside the knee points from the front. */
 const buildForelimb = (rig: Rig, side: Side, x: number, { at, r, p }: Limb): void => {
+  const limb = (bone: string, shape: Shape): void => flesh(rig, bone, shape, LIMB);
   const shoulder = at(0.22 * x, 0.64, -0.2);
   const wrist = at(0.28 * p.splay * x, 0.13, -0.62 - 0.25 * (p.reach - 1));
   const elbow = bentJoint(shoulder, wrist, [r(0.38 * p.reach), r(0.4 * p.reach)], [0.6 * x, 0.2, 0.8]);
@@ -190,15 +301,15 @@ const buildForelimb = (rig: Rig, side: Side, x: number, { at, r, p }: Limb): voi
     { id: `forearm.${side}`, parent: `upperArm.${side}`, head: elbow, tail: wrist },
     { id: `hand.${side}`, parent: `forearm.${side}`, head: wrist, tail: tip },
   );
-  flesh(rig, `upperArm.${side}`, ellipsoid(shoulder, [r(0.08), r(0.08), r(0.08)]));
-  flesh(rig, `upperArm.${side}`, capsule(shoulder, elbow, r(0.07), r(0.05)));
-  flesh(rig, `forearm.${side}`, capsule(elbow, wrist, r(0.05), r(0.04)));
+  limb(`upperArm.${side}`, ellipsoid(shoulder, [r(0.08), r(0.08), r(0.08)]));
+  limb(`upperArm.${side}`, capsule(shoulder, elbow, r(0.07), r(0.05)));
+  limb(`forearm.${side}`, capsule(elbow, wrist, r(0.05), r(0.04)));
   accent(rig, `forearm.${side}`, ellipsoid(add(elbow, at(0, 0.02, 0.07)), [r(0.036), r(0.036), r(0.07)]), SPUR);
   const palm = lerp3(wrist, tip, 0.3);
-  flesh(rig, `hand.${side}`, ellipsoid(palm, [r(0.06), r(0.04), r(0.06)]));
+  limb(`hand.${side}`, ellipsoid(palm, [r(0.06), r(0.04), r(0.06)]));
   // A knuckle pad under the claw roots keeps every claw tip joined to the hand where it meets the ground.
   const pad = lerp3(palm, tip, 0.65);
-  flesh(rig, `hand.${side}`, ellipsoid([pad[0], r(0.032), pad[2]], [r(0.065), r(0.026), r(0.06)]));
+  limb(`hand.${side}`, ellipsoid([pad[0], r(0.032), pad[2]], [r(0.065), r(0.026), r(0.06)]));
   for (const spread of [-0.05, 0, 0.05]) {
     accent(
       rig,
@@ -215,6 +326,8 @@ const buildForelimb = (rig: Rig, side: Side, x: number, { at, r, p }: Limb): voi
  * The foot is one bone from hock to ball with the toes as its flesh: at far LOD every bone costs a closed
  * block of triangles, and the hock alone carries the launch lever. */
 const buildHindlimb = (rig: Rig, side: Side, x: number, { at, r, p }: Limb): void => {
+  const limb = (bone: string, shape: Shape, blend?: number): void =>
+    flesh(rig, bone, shape, blend === undefined ? LIMB : { ...LIMB, blend });
   const hip = at(0.16 * x, 0.36, 0.24);
   const knee = at(0.38 * p.splay * x, 0.88, 0.38);
   const hock = at(0.42 * x, 0.32, 0.46);
@@ -226,18 +339,16 @@ const buildHindlimb = (rig: Rig, side: Side, x: number, { at, r, p }: Limb): voi
     { id: `foot.${side}`, parent: `shin.${side}`, head: hock, tail: ball },
   );
   const h = p.haunch;
-  flesh(rig, `thigh.${side}`, capsule(hip, knee, r(0.13 * h), r(0.065)));
-  flesh(rig, `thigh.${side}`, ellipsoid(lerp3(hip, knee, 0.28), [r(0.12 * h), r(0.13 * h), r(0.13 * h)]), {
-    blend: 0.05,
-  });
-  flesh(rig, `shin.${side}`, ellipsoid(knee, [r(0.065), r(0.065), r(0.065)]));
+  limb(`thigh.${side}`, capsule(hip, knee, r(0.13 * h), r(0.065)));
+  limb(`thigh.${side}`, ellipsoid(lerp3(hip, knee, 0.28), [r(0.12 * h), r(0.13 * h), r(0.13 * h)]), 0.05);
+  limb(`shin.${side}`, ellipsoid(knee, [r(0.065), r(0.065), r(0.065)]));
   // A bony cap makes the knee read as the sharp apex of the spring, not another hump.
   accent(rig, `shin.${side}`, ellipsoid(add(knee, at(0.01 * x, 0.05, 0.03)), [r(0.04), r(0.06), r(0.045)]), SPUR);
-  flesh(rig, `shin.${side}`, capsule(knee, hock, r(0.07), r(0.045)));
-  flesh(rig, `foot.${side}`, capsule(hock, ball, r(0.045), r(0.035)));
+  limb(`shin.${side}`, capsule(knee, hock, r(0.07), r(0.045)));
+  limb(`foot.${side}`, capsule(hock, ball, r(0.045), r(0.035)));
   accent(rig, `foot.${side}`, ellipsoid(add(hock, at(0, 0.03, 0.07)), [r(0.036), r(0.05), r(0.07)]), SPUR);
   for (const spread of [-0.05, 0, 0.05]) {
-    flesh(rig, `foot.${side}`, capsule(ball, add(tip, at(spread, 0, 0)), r(0.035), r(0.02)));
+    limb(`foot.${side}`, capsule(ball, add(tip, at(spread, 0, 0)), r(0.035), r(0.02)));
     accent(rig, `foot.${side}`, ellipsoid(add(tip, at(spread, 0.005, -0.02)), [r(0.02), r(0.02), r(0.03)]), TIP);
   }
 };
