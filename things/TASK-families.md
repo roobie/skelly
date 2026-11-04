@@ -26,7 +26,7 @@ To derive what remains, compare the rows of `packages/thing-authoring-tool/items
 `packages/deadvox/mods/skelly.deadvox.residual/models-items.jsonnet`, `authored`, and
 `packages/deadvox/mods/skelly.deadvox.residual/items-tools.libsonnet`, `models`, and look for datum
 overrides in `packages/deadvox/mods/skelly.deadvox.residual/models-melee.jsonnet`, `models`, and in
-`authored`. The recipe, `packages/thing-authoring-tool/exports/deadvox.jsonnet`, exports
+`authored`. The recipe, `packages/deadvox/mods/skelly.deadvox.residual/exports/things.jsonnet`, exports
 every row. See `test/things-deadvox-contract.test.mjs`,
 "thing tool exports satisfy the Deadvox contract", for the check of each committed export.
 

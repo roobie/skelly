@@ -53,6 +53,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/enemies.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/exports/things.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/exports/things.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/figures-player.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/figures-player.json"
     },
@@ -555,10 +559,6 @@
     {
       "source": "packages/mobgen/src/mob/skeletonTemplate.jsonnet",
       "output": "packages/mobgen/src/mob/skeletonTemplate.json"
-    },
-    {
-      "source": "packages/thing-authoring-tool/exports/deadvox.jsonnet",
-      "output": "packages/thing-authoring-tool/exports/deadvox.json"
     },
     {
       "source": "packages/thing-authoring-tool/items.jsonnet",

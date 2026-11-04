@@ -72,11 +72,10 @@ The preview draws the same engine report the exporter consumes, so visual inspec
 not a second model implementation. See `src/main.ts` and `packages/tool-ui/src/scene.ts`,
 `buildLayers`. The page is `index.html`; the deployed viewer path is `/thing-authoring-tool/`.
 
-The recipe is the consumption boundary, not a list inferred from item relationships.
-It exports every catalogue row, so a new row cannot be left out by a hand-kept list, and
-renames only the older rows deadvox already knows by another id.
-Separate recipes keep tools independent while shared validation and file writing prevent
-parallel formats; see `exports/deadvox.jsonnet`, `src/exports.ts`, `loadThingRecipe`, and
+Mod-owned recipes are the consumption boundary, not a list inferred from item relationships.
+Keeping a recipe with its item row lets ownership move without a second target list, while
+shared validation and file writing prevent parallel formats. See `src/exports.ts`,
+`loadThingRecipe`, `src/cli/export.ts`, `exportThingRecipes`, and
 `packages/thing-export/README.md`, "Recipe ownership". The root refresh command is owned by
 `tools/refresh-deadvox.mjs`.
 

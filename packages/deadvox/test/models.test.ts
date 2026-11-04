@@ -86,7 +86,7 @@ const playerFigure = registry.figures.get('player')!;
 const figureModels = await loadFigureModels(registry);
 
 it('prepares every thing recipe export for ground and held drawing with its grip at the hand origin', async () => {
-  const recipe: { id: string }[] = JSON.parse(readFileSync('../thing-authoring-tool/exports/deadvox.json', 'utf8'));
+  const recipe: { id: string }[] = JSON.parse(readFileSync('mods/skelly.deadvox.residual/exports/things.json', 'utf8'));
   expect(recipe.length).toBeGreaterThan(0);
   await Promise.all(
     recipe.map(async ({ id }) => {

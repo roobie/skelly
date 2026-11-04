@@ -52,7 +52,7 @@ manifest(
   things=things,
   assets=assets,
   json=[
-    'things/index.json', 'assets/manifest.json',
+    'things/index.json', 'assets/manifest.json', 'exports/things.json',
     'presentation/fuel-parts.json', 'presentation/item-materials.json',
   ],
 )

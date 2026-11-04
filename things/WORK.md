@@ -167,7 +167,7 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
    can gain parts, and that non-gun parts carry summed mass and a weighted centre without
    a competing item weight. The remaining-families phase then starts on an exercised path.
    Reproducible source ownership keeps the shipped binaries from silently diverging; see
-   `packages/thing-authoring-tool/exports/deadvox.jsonnet` and
+   `packages/deadvox/mods/skelly.deadvox.residual/exports/things.jsonnet` and
    `test/things-deadvox-contract.test.mjs`.
 4. **Thing tool, remaining families.** Family by family, each with source, GLB, entry and
    load test together. The compass keeps its dedicated display renderer.

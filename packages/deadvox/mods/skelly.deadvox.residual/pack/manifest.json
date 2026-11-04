@@ -1595,6 +1595,10 @@
     },
     {
       "kind": "json",
+      "path": "exports/things.json"
+    },
+    {
+      "kind": "json",
       "path": "presentation/fuel-parts.json"
     },
     {

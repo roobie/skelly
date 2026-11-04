@@ -4,6 +4,7 @@ read_if:
   - you add an authoring tool that exports neutral models
   - you change physical inputs or interpret exported mass and centres of mass
   - you share export recipes or file writing between authoring tools
+  - you move thing recipes between mods or change per-mod export discovery
   - you change or judge voxelized export
   - you give an item, attachment or round its own voxel grain
 ---
@@ -23,15 +24,19 @@ See `packages/engine/src/assembly/template.ts`, `Template.variantParams`, and
 
 ## Recipe ownership
 
-Tools own separate consumption recipes so retiring one cannot delete another tool's inputs.
+Thing recipes live at exports/things.jsonnet inside the mod that owns their item rows.
+Ownership is stated once, beside the item, so a recipe moves with its row between mods.
+Discovery rather than a central target list makes uneven mod sizes irrelevant and gives
+third-party mods the same path. See `tools/thing-recipes.ts`, `thingRecipeDirectories`, and
+`packages/thing-authoring-tool/src/cli/export.ts`, `exportThingRecipes`.
+Shared authoring helpers stay in the tool and recipes import them by path.
+
 The row contract, dispatch validation and output identity are shared to keep unsupported
 selections from becoming silent omissions; see `src/recipe.ts`, `loadRecipe`. Node-only
 file writing is separate from browser-safe geometry and preview code; see `src/files.ts`,
-`writeRecipeExports`. Credits derive their file set from the same recipes through
-`tools/jsonnet/lib/export-files.libsonnet`. The recipe-derived registration index avoids a
-second list of models when content adds an export; see `src/files.ts`, `writeRecipeExports`.
-A caller asks for the index only where a consumer reads it, so no unread generated file is
-tracked; see `tools/refresh-deadvox.mjs`, `jobs`.
+`writeRecipeExports`. Each owning mod receives its own recipe-derived registration index,
+so content needs no second model list. Credits derive their file set from the same recipes
+through `tools/jsonnet/lib/export-files.libsonnet`.
 Consumer-authored projections can still select gameplay-specific physical boundaries; see
 `packages/deadvox/mods/skelly.deadvox.residual/models-items.jsonnet`, `authored`.
 
@@ -62,7 +67,7 @@ is smaller than a few item voxels. The item's own definition names it, beside a 
 reason, because that definition is where the item's look is authored; a recipe holds no
 list of exceptions. The recipe compiles the resolved grain into each row, so the exporter
 and the contract tests read one explicit value. See `tools/jsonnet/lib/voxel-grains.libsonnet`,
-`of`, and the recipes `packages/thing-authoring-tool/exports/deadvox.jsonnet` and
+`of`, and the recipes `packages/deadvox/mods/skelly.deadvox.residual/exports/things.jsonnet` and
 `packages/gun-authoring-tool/exports/deadvox.jsonnet`.
 
 A part asks for the finest grain by carrying a tag in its definition, so the choice sits

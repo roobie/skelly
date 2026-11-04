@@ -10,6 +10,7 @@ import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
 import { catalogue } from '../packages/thing-authoring-tool/src/catalogue.ts';
 import { loadThingRecipe } from '../packages/thing-authoring-tool/src/exports.ts';
 import { modelMassKg } from '../packages/thing-core/src/mass.ts';
+import { readThingRecipes } from '../tools/thing-recipes.ts';
 import { assertExportSynced, assertRecipeCredits, assertVoxelized, exportDifference } from './model-export-sync.mjs';
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
@@ -17,7 +18,7 @@ const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders
 const { Box3, Vector3 } = deadvoxRequire('three');
 const { safeParse } = deadvoxRequire('valibot');
 const base = new URL('../packages/deadvox/mods/skelly.deadvox.residual/', import.meta.url).pathname;
-const recipe = loadThingRecipe();
+const recipe = loadThingRecipe(readThingRecipes().find((entry) => `${entry.base}/` === base).value);
 const exported = recipe.map((row) => ({ id: row.id, source: row.source, voxel: row.voxel, ...row.generate() }));
 const { registry, issues } = buildRegistry(
   readdirSync(base)
