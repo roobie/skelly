@@ -15,6 +15,7 @@ const soundFiles = import.meta.glob<unknown>(
     '../../mods/skelly.body/body-synth-sounds.json',
     '../../mods/skelly.natural-world/natural-sounds.json',
     '../../mods/skelly.natural-world/sounds-furniture.json',
+    '../../mods/skelly.structures/structures-sounds.json',
   ],
   { eager: true, import: 'default' },
 );

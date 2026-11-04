@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { soundVariantKey } from '../src/core/soundSynth.ts';
 import { GameAudio } from '../src/game/audio.ts';
 import { buildSoundsPageContent } from '../src/soundsPageContent.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 
@@ -32,6 +33,16 @@ describe('listening sheet', () => {
     const { registry } = buildSoundsPageContent();
 
     expect(registry.senses.get(fixtureIds.player)).toBeDefined();
+  });
+
+  it('lists every sound a base door selects, whichever mod holds it', () => {
+    const { registry: page } = buildSoundsPageContent();
+    const selected = [...baseRegistry().furniture.values()].flatMap(({ door }) =>
+      door ? [door.openSound, door.closeSound, door.blockedCloseSound] : [],
+    );
+
+    expect(selected.length).toBeGreaterThan(0);
+    expect(selected.filter((id) => id !== undefined && !page.sounds.has(id))).toEqual([]);
   });
 
   it('previews a recorded variant from the bundled pack files', async () => {
