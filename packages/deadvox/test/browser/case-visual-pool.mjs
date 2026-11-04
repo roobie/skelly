@@ -223,9 +223,11 @@ const measure = async (launchedBrowser, address, mode) => {
       await page.waitForFunction(() => globalThis.__casePoolWaiting, undefined, { timeout: 20_000 });
       releaseRequest();
     }
-    await page.waitForFunction(() => globalThis.__casePoolResult, undefined, { timeout: 30_000 }).catch((error) => {
-      throw new Error(`Case probe did not finish; browser errors: ${errors.join('; ')}`, { cause: error });
-    });
+    await page
+      .waitForFunction(() => globalThis.__casePoolResult, undefined, { timeout: 30_000 })
+      .catch((error) => {
+        throw new Error(`Case probe did not finish; browser errors: ${errors.join('; ')}`, { cause: error });
+      });
     const result = await page.evaluate(() => globalThis.__casePoolResult);
     process.stdout.write(`case visual pool (${mode}): ${JSON.stringify(result)}\n`);
     assert.deepEqual(errors, [], `browser errors: ${errors.join('; ')}`);
