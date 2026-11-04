@@ -107,5 +107,5 @@ export const BlockSchema = strictObject({
 /** One row per family and block, so a mod adding a block adds its rows without restating a family's others. */
 export const FootstepSoundSchema = pipe(
   strictObject({ id: Id, family: Id, block: Id, sound: Id }),
-  check(({ id, family, block }) => id === footstepSoundId(family, block), 'id must be <family>__<block>'),
+  check(({ id, family, block }) => id === footstepSoundId(family, block), 'id must be <family length>_<family>_<block>'),
 );

@@ -14,7 +14,7 @@ import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
-import { buildFixtureRegistry as buildRegistry, FIXTURE_BLOW_SOUND } from './economyFixtures.ts';
+import { buildFixtureRegistry as buildRegistry, FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
@@ -146,6 +146,37 @@ describe('actor footsteps', () => {
   it('keeps a type with no authored footstep family silent while it travels', () => {
     const silent = { ...SHAMBLER, id: 'fixture_crawler', footstepSound: undefined };
     expect(movedSteps('stroll', 3, silent)).toBe(0);
+  });
+
+  it('keeps two family and block pairs apart when their ids contain the same underscores', () => {
+    const pairs = [
+      { family: 'fixture_a__b', block: 'fixture_c', sound: FIXTURE_BLOW_SOUND },
+      { family: 'fixture_a', block: 'b__fixture_c', sound: 'fixture_other_step' },
+    ];
+    const build = (authored: typeof pairs) =>
+      buildRegistry([
+        {
+          source: 'fixture-pairs.json',
+          data: {
+            soundFamilies: pairs.map(({ family }) => ({ id: family })),
+            sounds: [{ ...fixtureSounds()[0]!, id: 'fixture_other_step' }],
+            blocks: pairs.map(({ block }) => ({ id: block, name: block, color: '#3f6b2f', solid: true })),
+            footstepSounds: authored.map((pair) => ({ id: footstepSoundId(pair.family, pair.block), ...pair })),
+          },
+        },
+      ]);
+    const soundOf = ({ registry }: ReturnType<typeof build>, { family, block }: (typeof pairs)[number]) =>
+      footstepEventForBlock(registry, registry.blocks[registry.blockIds.get(block)!]!, family);
+
+    const one = build([pairs[0]!]);
+    expect(one.issues).toEqual([]);
+    expect(soundOf(one, pairs[0]!)).toBe(pairs[0]!.sound);
+    expect(soundOf(one, pairs[1]!)).toBeUndefined();
+
+    const both = build(pairs);
+    expect(both.issues).toEqual([]);
+    expect(soundOf(both, pairs[0]!)).toBe(pairs[0]!.sound);
+    expect(soundOf(both, pairs[1]!)).toBe(pairs[1]!.sound);
   });
 
   it('sounds a family with a section row on that block and leaves one with no row silent', () => {

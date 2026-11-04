@@ -1,6 +1,6 @@
 // Which sound the product's actors make on which block; a core or theme block names only the player's own step.
 local rows(family, blocksBySound) = [
-  { id: family + '__' + block, family: family, block: block, sound: sound }
+  { id: std.length(family) + '_' + family + '_' + block, family: family, block: block, sound: sound }
   for sound in std.objectFields(blocksBySound)
   for block in blocksBySound[sound]
 ];
