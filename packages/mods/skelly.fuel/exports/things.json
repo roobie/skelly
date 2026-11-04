@@ -1,0 +1,14 @@
+[
+  {
+    "id": "gas_canister",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "gas_canister",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  }
+]

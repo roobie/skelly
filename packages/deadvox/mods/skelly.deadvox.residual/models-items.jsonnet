@@ -6,7 +6,6 @@ local authored = [
     import 'things/shotshell_box.model.json',
     import 'things/ammo_can.model.json',
     import 'things/jerry_can.model.json',
-    import 'things/gas_canister.model.json',
     (import 'things/frag_grenade.model.json') + {
       lever: { piece: 'lever', launchMetresPerRealSecond: 3, spinDegreesPerRealSecond: 1080, lifetimeRealSeconds: 1.5 },
       pin: { piece: 'pin' },

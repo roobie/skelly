@@ -78,6 +78,8 @@ const { registry } = buildRegistry(
         'skelly.packaged-foods/models-packaged-foods.json',
         'skelly.wearables/wearables-sounds.json',
         'skelly.wearables/models-wearables.json',
+        'skelly.fuel/fuel-items.json',
+        'skelly.fuel/models-fuel.json',
       ]
         .map((file) => ({
           source: file,

@@ -61,19 +61,6 @@
       "workInProgress": false
     },
     {
-      "canister": {
-        "capacity": 3
-      },
-      "category": "misc",
-      "description": "Fuel for a blowtorch.",
-      "id": "gas_canister",
-      "model": "gas_canister",
-      "name": "Gas cartridge",
-      "size": [1, 2],
-      "stack": 2,
-      "workInProgress": false
-    },
-    {
       "category": "tool",
       "id": "kabar",
       "model": "kabar",

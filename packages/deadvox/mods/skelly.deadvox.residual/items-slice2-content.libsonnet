@@ -1,7 +1,6 @@
 local lights = import 'lights.libsonnet';
 
 {
-  liquids: [{ id: 'lamp_fuel', name: 'Lamp oil', densityGramsPerMillilitre: 0.8 }],
   "items": [
     {
       "id": "lamp_oil",

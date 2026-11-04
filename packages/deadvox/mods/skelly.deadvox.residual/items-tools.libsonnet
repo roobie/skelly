@@ -61,16 +61,6 @@ local items = [
     tool: { qualities: { jacking: 3 } },
   },
   {
-    id: 'gas_canister',
-    name: 'Gas cartridge',
-    category: 'misc',
-    model: 'gas_canister',
-    size: [1, 2],
-    stack: 2,
-    description: 'Fuel for a blowtorch.',
-    canister: { capacity: 3 },
-  },
-  {
     id: 'kabar',
     name: 'Kabar',
     category: 'tool',

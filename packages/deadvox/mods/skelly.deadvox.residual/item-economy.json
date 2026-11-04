@@ -1231,12 +1231,6 @@
       "usage": []
     },
     {
-      "id": "gas_canister",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
       "id": "kabar",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -1418,6 +1412,12 @@
     },
     {
       "id": "hiking_backpack",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "gas_canister",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]

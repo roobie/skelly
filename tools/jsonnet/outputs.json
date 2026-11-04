@@ -565,6 +565,26 @@
       "output": "packages/mods/skelly.day-cycle/pack/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.fuel/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.fuel/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.fuel/exports/things.jsonnet",
+      "output": "packages/mods/skelly.fuel/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.fuel/fuel-items.jsonnet",
+      "output": "packages/mods/skelly.fuel/fuel-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.fuel/models-fuel.jsonnet",
+      "output": "packages/mods/skelly.fuel/models-fuel.json"
+    },
+    {
+      "source": "packages/mods/skelly.fuel/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.fuel/pack/manifest.json"
+    },
+    {
       "source": "packages/mods/skelly.graphics/graphics.jsonnet",
       "output": "packages/mods/skelly.graphics/graphics.json"
     },

@@ -66,7 +66,6 @@
   "assets/models/front_sight_sporter.glb": { "materials": ["steel-blued"] },
   "assets/models/fuse.glb": { "materials": ["glass-grey", "steel-grey"] },
   "assets/models/gas_block_ak.glb": { "materials": ["steel-blued"] },
-  "assets/models/gas_canister.glb": { "materials": ["steel-grey", "plastic-blue"] },
   "assets/models/gas_cylinder_ak.glb": { "materials": ["steel-blued"] },
   "assets/models/gauntlet_lab_entry_card.glb": { "materials": ["plastic-white", "plastic-blue"] },
   "assets/models/gauntlet_police_armoury_key.glb": { "materials": ["steel-blued"] },

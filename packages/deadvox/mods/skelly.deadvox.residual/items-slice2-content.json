@@ -362,13 +362,6 @@
       "workInProgress": false
     }
   ],
-  "liquids": [
-    {
-      "densityGramsPerMillilitre": 0.80000000000000004,
-      "id": "lamp_fuel",
-      "name": "Lamp oil"
-    }
-  ],
   "recipes": [
     {
       "category": "materials",
