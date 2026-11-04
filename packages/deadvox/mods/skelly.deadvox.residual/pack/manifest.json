@@ -12,7 +12,9 @@
     "skelly.body",
     "skelly.sound-families",
     "skelly.senses",
-    "skelly.natural-world"
+    "skelly.natural-world",
+    "skelly.materials",
+    "skelly.medicine"
   ],
   "files": [
     {
@@ -781,30 +783,6 @@
     },
     {
       "kind": "json",
-      "path": "things/rag.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/duct_tape.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/nails.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/scrap_metal.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/stick.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/wax.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/wooden_plank.model.json"
     },
     {
@@ -830,30 +808,6 @@
     {
       "kind": "json",
       "path": "things/apple.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/bandage.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/antiseptic.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/antibiotics.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/painkillers.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/codeine.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/morphine.model.json"
     },
     {
       "kind": "json",
@@ -1377,15 +1331,7 @@
     },
     {
       "kind": "json",
-      "path": "things/small_spring.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/hinge_set.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/fastener_pack.model.json"
     },
     {
       "kind": "json",
@@ -1498,18 +1444,6 @@
     {
       "kind": "json",
       "path": "things/weapon_sling_worn_jacket.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/tape_roll.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/thread_spool.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/cord_coil.model.json"
     },
     {
       "kind": "json",
@@ -1897,19 +1831,7 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/antibiotics.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/antiseptic.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/apple.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/bandage.glb"
     },
     {
       "kind": "asset",
@@ -2113,23 +2035,11 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/cloth_bundle.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/codeine.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/compass.glb"
     },
     {
       "kind": "asset",
       "path": "assets/models/copper_wire.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/cord_coil.glb"
     },
     {
       "kind": "asset",
@@ -2154,10 +2064,6 @@
     {
       "kind": "asset",
       "path": "assets/models/door_mirror.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/duct_tape.glb"
     },
     {
       "kind": "asset",
@@ -2186,10 +2092,6 @@
     {
       "kind": "asset",
       "path": "assets/models/fanny_pack_worn_jacket.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/fastener_pack.glb"
     },
     {
       "kind": "asset",
@@ -2270,10 +2172,6 @@
     {
       "kind": "asset",
       "path": "assets/models/glass_lens.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/glass_shards.glb"
     },
     {
       "kind": "asset",
@@ -2657,15 +2555,7 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/morphine.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/mounting_plate.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/nails.glb"
     },
     {
       "kind": "asset",
@@ -2725,10 +2615,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/painkillers.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/paper_sheet.glb"
     },
     {
@@ -2766,10 +2652,6 @@
     {
       "kind": "asset",
       "path": "assets/models/portable_radio.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/rag.glb"
     },
     {
       "kind": "asset",
@@ -2897,10 +2779,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/rubber_strip.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/school_backpack.glb"
     },
     {
@@ -2918,10 +2796,6 @@
     {
       "kind": "asset",
       "path": "assets/models/scrap_foregrip.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/scrap_metal.glb"
     },
     {
       "kind": "asset",
@@ -2977,10 +2851,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/small_spring.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/sneakers.glb"
     },
     {
@@ -3017,10 +2887,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/stick.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/stock_ak_long.glb"
     },
     {
@@ -3049,15 +2915,7 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/tape_roll.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/taped_flashlight_mount.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/thread_spool.glb"
     },
     {
       "kind": "asset",
@@ -3085,10 +2943,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/wax.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/weapon_sling.glb"
     },
     {
@@ -3110,10 +2964,6 @@
     {
       "kind": "asset",
       "path": "assets/models/wire_strippers.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/wood_offcut.glb"
     },
     {
       "kind": "asset",

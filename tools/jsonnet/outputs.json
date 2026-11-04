@@ -585,6 +585,46 @@
       "output": "packages/mods/skelly.inventory/pack/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.materials/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.materials/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.materials/exports/things.jsonnet",
+      "output": "packages/mods/skelly.materials/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.materials/materials-items.jsonnet",
+      "output": "packages/mods/skelly.materials/materials-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.materials/models-materials.jsonnet",
+      "output": "packages/mods/skelly.materials/models-materials.json"
+    },
+    {
+      "source": "packages/mods/skelly.materials/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.materials/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.medicine/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.medicine/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.medicine/exports/things.jsonnet",
+      "output": "packages/mods/skelly.medicine/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.medicine/medicine-items.jsonnet",
+      "output": "packages/mods/skelly.medicine/medicine-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.medicine/models-medicine.jsonnet",
+      "output": "packages/mods/skelly.medicine/models-medicine.json"
+    },
+    {
+      "source": "packages/mods/skelly.medicine/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.medicine/pack/manifest.json"
+    },
+    {
       "source": "packages/mods/skelly.melee-classes/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.melee-classes/assets/manifest.json"
     },

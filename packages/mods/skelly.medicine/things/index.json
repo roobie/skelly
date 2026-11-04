@@ -1,0 +1,51 @@
+[
+  {
+    "id": "bandage",
+    "file": "assets/models/bandage.glb",
+    "parts": {
+      "body": {
+        "node": "body:woundRoll",
+        "massKg": 0.02,
+        "centreOfMass": [0.0017763157894736838, 0.030263157894736832, 0]
+      }
+    },
+    "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "antiseptic",
+    "file": "assets/models/antiseptic.glb",
+    "grip": { "at": [0, 0.045, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "antibiotics",
+    "file": "assets/models/antibiotics.glb",
+    "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "painkillers",
+    "file": "assets/models/painkillers.glb",
+    "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "codeine",
+    "file": "assets/models/codeine.glb",
+    "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
+    "id": "morphine",
+    "file": "assets/models/morphine.glb",
+    "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  }
+]

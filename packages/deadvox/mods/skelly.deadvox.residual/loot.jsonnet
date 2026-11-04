@@ -2,7 +2,7 @@
 // Bandages and infection treatment stay rare outside medical tables, so wounds cost something to treat; the common
 // analgesic stays common.
 
-local pillPack = (import 'items-other.jsonnet').pillPack;
+local pillPack = (import 'packages/mods/skelly.medicine/medicine-items.jsonnet').pillPack;
 
 local item(id, weight, count=null, condition=null) =
   { item: id, weight: weight }

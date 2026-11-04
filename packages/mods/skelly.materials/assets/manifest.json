@@ -1,0 +1,39 @@
+{
+  "sources": [
+    {
+      "author": "Skelly contributors",
+      "changes": "Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.",
+      "download": null,
+      "files": [
+        "assets/models/rag.glb",
+        "assets/models/duct_tape.glb",
+        "assets/models/nails.glb",
+        "assets/models/scrap_metal.glb",
+        "assets/models/stick.glb",
+        "assets/models/wax.glb",
+        "assets/models/small_spring.glb",
+        "assets/models/fastener_pack.glb",
+        "assets/models/tape_roll.glb",
+        "assets/models/thread_spool.glb",
+        "assets/models/cord_coil.glb"
+      ],
+      "licence": "CC0-1.0",
+      "title": "Thing tool authored models",
+      "url": "https://github.com/roobie/skelly/blob/main/packages/mods/skelly.materials/exports/things.jsonnet"
+    },
+    {
+      "author": "Skelly contributors",
+      "changes": "Built from primitive meshes for readable ground-pile silhouettes; no external asset source or texture is used.",
+      "download": null,
+      "files": [
+        "assets/models/glass_shards.glb",
+        "assets/models/wood_offcut.glb",
+        "assets/models/rubber_strip.glb",
+        "assets/models/cloth_bundle.glb"
+      ],
+      "licence": "CC0-1.0",
+      "title": "Project-built low-poly hand-tool and content stand-ins",
+      "url": "https://github.com/roobie/skelly"
+    }
+  ]
+}

@@ -7,6 +7,7 @@ manifest(
   dependencies=[
     'skelly.saves', 'skelly.day-cycle', 'skelly.controls', 'skelly.graphics', 'skelly.ui',
     'skelly.weathering', 'skelly.deadvox.weathering', 'skelly.melee-classes', 'skelly.inventory', 'skelly.body',
-    'skelly.sound-families', 'skelly.senses', 'skelly.natural-world', 'skelly.deadvox.residual',
+    'skelly.sound-families', 'skelly.senses', 'skelly.natural-world', 'skelly.materials', 'skelly.medicine',
+    'skelly.deadvox.residual',
   ],
 )

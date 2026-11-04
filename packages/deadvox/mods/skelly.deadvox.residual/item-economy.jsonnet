@@ -1,6 +1,8 @@
 local economy = import 'economy.libsonnet';
 local sources = [
   import 'packages/mods/skelly.inventory/inventory-items.jsonnet',
+  import 'packages/mods/skelly.materials/materials-items.jsonnet',
+  import 'packages/mods/skelly.medicine/medicine-items.jsonnet',
   import 'camp.jsonnet',
   import 'gauntlet.jsonnet',
   import 'items-ammunition.jsonnet',

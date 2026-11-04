@@ -1644,7 +1644,7 @@ Pill medicines show a blister strip or bottle regardless of stack size, includin
 when one item is one pill. A pack is easier to see and reads as medicine; the
 visual pack does not change dose counts or carried mass. See
 `packages/thing-authoring-tool/food-medical.libsonnet`, `bottle`, and
-`mods/skelly.deadvox.residual/items-other.libsonnet`, `pillPack`.
+`packages/mods/skelly.medicine/medicine-items.jsonnet`, `pillPack`.
 
 Food portions depict food rather than a second vessel, so a serving does not
 duplicate the can that owns it. See
@@ -1706,8 +1706,7 @@ behind unrelated declarations. See `packages/mods/skelly.graphics/graphics.jsonn
   asks for. Entries that differ in nothing but their link appear once, listing
   each distinct link: packs split from one another share sources, and each pack
   links its own recipe, so one entry keeps the list short and every link. The
-  merged entry hides which mod ships it, which is accepted.
-- **Synthesised sounds.** A sound variant can be a jfxr preset in content
+  merged entry hides which mod ships it, which is accepted.- **Synthesised sounds.** A sound variant can be a jfxr preset in content
   instead of a recording. jfxr's editor is the design tool for BR and modders,
   and the jfxr library renders what the editor plays, so a preset pasted from
   the editor sounds the same in game and needs neither an asset file nor a

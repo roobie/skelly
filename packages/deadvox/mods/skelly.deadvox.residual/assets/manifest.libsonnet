@@ -304,12 +304,8 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       "download": null,
       "files": [
         "assets/models/lamp_oil_bottle.glb",
-        "assets/models/glass_shards.glb",
-        "assets/models/wood_offcut.glb",
-        "assets/models/rubber_strip.glb",
         "assets/models/circuit_board.glb",
         "assets/models/glass_lens.glb",
-        "assets/models/cloth_bundle.glb",
         "assets/models/stab_vest.glb",
         "assets/models/riot_helmet_view.glb",
         "assets/models/sewing_kit.glb",

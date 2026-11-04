@@ -16,6 +16,8 @@ const CORE_MODS = [
   'skelly.sound-families',
   'skelly.senses',
   'skelly.natural-world',
+  'skelly.materials',
+  'skelly.medicine',
 ];
 
 /** A core mod's content files, as its manifest lists them. */

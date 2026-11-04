@@ -23,9 +23,7 @@ const base = (file: string): ContentSource => {
   const source = `mods/skelly.deadvox.residual/${file}`;
   const data = JSON.parse(readFileSync(source, 'utf8'));
   if (file === 'items-other.json') {
-    data.items = data.items.filter(
-      (item: { id: string; category: string }) => item.id !== 'bandage' && item.category !== 'book',
-    );
+    data.items = data.items.filter((item: { category: string }) => item.category !== 'book');
   }
   if (file === 'items-tools.json') {
     data.items = data.items.filter(
@@ -69,6 +67,10 @@ const { registry } = buildRegistry(
         'skelly.melee-classes/melee-sounds.json',
         'skelly.inventory/item-wear.json',
         'skelly.inventory/inventory.json',
+        'skelly.materials/materials-items.json',
+        'skelly.materials/models-materials.json',
+        'skelly.medicine/medicine-items.json',
+        'skelly.medicine/models-medicine.json',
       ].map((file) => ({
         source: file,
         data: JSON.parse(readFileSync(`../mods/${file}`, 'utf8')),

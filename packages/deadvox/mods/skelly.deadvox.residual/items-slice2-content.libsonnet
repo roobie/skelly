@@ -19,62 +19,6 @@ local lights = import 'lights.libsonnet';
       }
     },
     {
-      "id": "glass_shards",
-      "name": "Glass shards",
-      "category": "material",
-      "weight": 80,
-      "size": [1, 1],
-      "stack": 6,
-      "model": "glass_shards"
-    },
-    {
-      "id": "electrical_tape",
-      "name": "Electrical tape",
-      "category": "material",
-      "size": [1, 1],
-      "stack": 6,
-      "model": "tape_roll"
-    },
-    {
-      "id": "fastener_pack",
-      "name": "Mixed fasteners",
-      "category": "material",
-      "size": [1, 1],
-      "stack": 5,
-      "model": "fastener_pack",
-      "disassembly": {
-        "timeGameMinutes": 5,
-        "skill": "crafting",
-        "yields": [
-          { "item": "nails", "count": 2, "fractions": [0.5, 1], "rounding": "floor" },
-          { "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
-        ]
-      }
-    },
-    {
-      "id": "wood_offcut",
-      "name": "Wood offcut",
-      "category": "material",
-      "weight": 250,
-      "size": [1, 2],
-      "stack": 4,
-      "model": "wood_offcut",
-      "disassembly": {
-        "timeGameMinutes": 3,
-        "skill": "crafting",
-        "yields": [{ "item": "stick", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
-      }
-    },
-    {
-      "id": "rubber_strip",
-      "name": "Rubber strip",
-      "category": "material",
-      "weight": 45,
-      "size": [1, 1],
-      "stack": 6,
-      "model": "rubber_strip"
-    },
-    {
       "id": "circuit_board",
       "name": "Circuit board",
       "category": "material",
@@ -93,59 +37,12 @@ local lights = import 'lights.libsonnet';
       "model": "glass_lens"
     },
     {
-      "id": "small_spring",
-      "name": "Small spring",
-      "category": "material",
-      "size": [1, 1],
-      "stack": 8,
-      "model": "small_spring"
-    },
-    {
-      "id": "cloth_strip",
-      "name": "Cloth strip",
-      "category": "material",
-      "weight": 25,
-      "size": [1, 1],
-      "stack": 8,
-      "model": "cloth_bundle"
-    },
-    {
-      "id": "sewing_thread",
-      "name": "Sewing thread",
-      "category": "material",
-      "size": [1, 1],
-      "stack": 6,
-      "model": "thread_spool"
-    },
-    {
       "id": "fuse",
       "name": "Glass fuse",
       "category": "material",
       "size": [1, 1],
       "stack": 10,
       "model": "fuse"
-    },
-    {
-      "id": "nylon_cord",
-      "name": "Nylon cord",
-      "category": "material",
-      "size": [1, 2],
-      "stack": 5,
-      "model": "cord_coil"
-    },
-    {
-      "id": "rope",
-      "name": "Rope",
-      "category": "material",
-      "size": [1, 2],
-      "stack": 5,
-      "model": "cord_coil",
-      "description": "A coil of sturdy braided cord.",
-      "disassembly": {
-        "timeGameMinutes": 4,
-        "skill": "crafting",
-        "yields": [{ "item": "cloth_strip", "count": 4, "fractions": [0.5, 1], "rounding": "floor" }]
-      }
     },
     {
       "id": "wire_strippers",

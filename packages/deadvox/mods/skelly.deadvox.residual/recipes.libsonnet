@@ -136,8 +136,6 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
   ],
   "skillProgression": [{ "id": "core", "capability": "progression", "practicePerLevel": 10 }],
   "items": [
-    { "id": "stick", "name": "Stick", "category": "material", "model": "stick", "size": [1, 4], "stack": 6 },
-    { "id": "wax", "name": "Wax lump", "category": "material", "model": "wax", "size": [1, 1], "stack": 10 },
     {
       "id": "wooden_plank",
       "name": "Wooden plank",

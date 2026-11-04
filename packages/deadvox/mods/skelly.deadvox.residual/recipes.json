@@ -2,24 +2,6 @@
   "items": [
     {
       "category": "material",
-      "id": "stick",
-      "model": "stick",
-      "name": "Stick",
-      "size": [1, 4],
-      "stack": 6,
-      "workInProgress": false
-    },
-    {
-      "category": "material",
-      "id": "wax",
-      "model": "wax",
-      "name": "Wax lump",
-      "size": [1, 1],
-      "stack": 10,
-      "workInProgress": false
-    },
-    {
-      "category": "material",
       "disassembly": {
         "skill": "crafting",
         "timeGameMinutes": 4,

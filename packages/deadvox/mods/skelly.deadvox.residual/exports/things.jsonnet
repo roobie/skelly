@@ -1,5 +1,3 @@
-// Every catalogue row exports under its own id, except older rows deadvox already names differently.
-local renamed = { electrical_tape: 'tape_roll', sewing_thread: 'thread_spool', nylon_cord: 'cord_coil' };
 // Vehicle parts carry baked collision because a fitting places it on the vehicle.
 local vehicleParts = std.set([part.id for part in import 'packages/thing-authoring-tool/vehicle-parts.libsonnet']);
 // A vehicle part takes the vehicle class, so it matches the vehicle it sits on; a hand-held item takes the gun class;
@@ -7,9 +5,15 @@ local vehicleParts = std.set([part.id for part in import 'packages/thing-authori
 local voxel = import 'tools/jsonnet/lib/voxel-grains.libsonnet';
 // Hand-held items take the gun grain, so a long thin shape keeps its taper, hook and edge.
 local gunGrained = std.set(['crowbar', 'hammer', 'sledgehammer', 'baseball_bat', 'kabar', 'kitchen_knife', 'machete', 'wrench', 'steel_pipe', 'flashlight']);
+local moved = std.set([
+  recipe.source
+  for recipe in (import 'packages/mods/skelly.body/exports/things.jsonnet')
+                + (import 'packages/mods/skelly.materials/exports/things.jsonnet')
+                + (import 'packages/mods/skelly.medicine/exports/things.jsonnet')
+]);
 [
   {
-    id: std.get(renamed, row.id, row.id),
+    id: row.id,
     kind: 'item',
     source: row.id,
     voxel: voxel.of(
@@ -22,5 +26,5 @@ local gunGrained = std.set(['crowbar', 'hammer', 'sledgehammer', 'baseball_bat',
              + (if std.setMember(row.id, vehicleParts) then { collision: true } else {}),
   }
   for row in (import 'packages/thing-authoring-tool/items.jsonnet').items
-  if !std.member([recipe.source for recipe in import 'packages/mods/skelly.body/exports/things.jsonnet'], row.id)
+  if !std.setMember(row.id, moved)
 ]
