@@ -1,0 +1,31 @@
+{
+  "sources": [
+    {
+      "author": "Skelly contributors",
+      "changes": "Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.",
+      "download": null,
+      "files": ["assets/models/hinge_set.glb"],
+      "licence": "CC0-1.0",
+      "title": "Thing tool authored models",
+      "url": "https://github.com/roobie/skelly/blob/main/packages/mods/skelly.structures/exports/things.jsonnet"
+    },
+    {
+      "author": "Jordan Irwin (AntumDeluge)",
+      "changes": "Converted the selected PCM WAV; trimmed leading silence, faded the tail, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report).",
+      "download": "thwack.zip",
+      "files": ["assets/audio/door_blocked_close-01.ogg"],
+      "licence": "CC0-1.0",
+      "title": "Thwack Sounds",
+      "url": "https://opengameart.org/content/thwack-sounds"
+    },
+    {
+      "author": "rubberduck",
+      "changes": "Selected three blade, three wood and three metal variants; converted to 24 kHz mono Opus in Ogg containers; unused source files excluded",
+      "download": "80-CC0-RPG-SFX.zip",
+      "files": ["assets/audio/door-open-03.ogg"],
+      "licence": "CC0-1.0",
+      "title": "80 CC0 RPG SFX",
+      "url": "https://opengameart.org/content/80-cc0-rpg-sfx"
+    }
+  ]
+}

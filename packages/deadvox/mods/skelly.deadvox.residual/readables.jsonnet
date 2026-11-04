@@ -1,1 +1,0 @@
-(import 'economy.libsonnet').pack((import 'tools/jsonnet/lib/furniture-breach.libsonnet').breaking((import 'tools/jsonnet/lib/furniture-shape.libsonnet').colliding(import 'readables.libsonnet')))

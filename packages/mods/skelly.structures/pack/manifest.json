@@ -1,0 +1,58 @@
+{
+  "dependencies": ["skelly.natural-world", "skelly.materials", "skelly.inventory"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "structures-furniture.json"
+    },
+    {
+      "kind": "content",
+      "path": "structures-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "structures-sounds.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-structures.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hinge_set.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "exports/things.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door-open-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door_blocked_close-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hinge_set.glb"
+    }
+  ],
+  "id": "skelly.structures",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

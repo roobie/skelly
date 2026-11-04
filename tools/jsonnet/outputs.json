@@ -193,10 +193,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/ranged-tuning.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/readables.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/readables.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/recipes.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/recipes.json"
     },
@@ -697,6 +693,22 @@
       "output": "packages/mods/skelly.natural-world/vegetation.json"
     },
     {
+      "source": "packages/mods/skelly.readables/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.readables/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.readables/models-readables.jsonnet",
+      "output": "packages/mods/skelly.readables/models-readables.json"
+    },
+    {
+      "source": "packages/mods/skelly.readables/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.readables/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.readables/readables.jsonnet",
+      "output": "packages/mods/skelly.readables/readables.json"
+    },
+    {
       "source": "packages/mods/skelly.saves/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.saves/pack/manifest.json"
     },
@@ -719,6 +731,34 @@
     {
       "source": "packages/mods/skelly.sound-families/sound-families.jsonnet",
       "output": "packages/mods/skelly.sound-families/sound-families.json"
+    },
+    {
+      "source": "packages/mods/skelly.structures/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.structures/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.structures/exports/things.jsonnet",
+      "output": "packages/mods/skelly.structures/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.structures/models-structures.jsonnet",
+      "output": "packages/mods/skelly.structures/models-structures.json"
+    },
+    {
+      "source": "packages/mods/skelly.structures/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.structures/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.structures/structures-furniture.jsonnet",
+      "output": "packages/mods/skelly.structures/structures-furniture.json"
+    },
+    {
+      "source": "packages/mods/skelly.structures/structures-items.jsonnet",
+      "output": "packages/mods/skelly.structures/structures-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.structures/structures-sounds.jsonnet",
+      "output": "packages/mods/skelly.structures/structures-sounds.json"
     },
     {
       "source": "packages/mods/skelly.ui/assets/manifest.jsonnet",

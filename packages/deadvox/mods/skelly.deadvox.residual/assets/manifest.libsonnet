@@ -256,15 +256,6 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       "changes": "Selected three wet-footstep variations (sfx100v2_footstep_wet_01–03.ogg); converted from stereo 48 kHz Vorbis to mono 48 kHz Opus in Ogg containers without loudness normalization; sfx100v2_misc_36.ogg kept byte-identical as received and renamed player-block-full-01.ogg; unused source effects excluded"
     },
     {
-      "title": "Thwack Sounds",
-      "url": "https://opengameart.org/content/thwack-sounds",
-      "author": "Jordan Irwin (AntumDeluge)",
-      "licence": "CC0-1.0",
-      "download": "thwack.zip",
-      "files": ["assets/audio/door_blocked_close-01.ogg"],
-      "changes": "Converted the selected PCM WAV; trimmed leading silence, faded the tail, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report)."
-    },
-    {
       "title": "75 CC0 Breaking/Falling/Hit SFX",
       "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx",
       "author": "rubberduck",
@@ -315,9 +306,7 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
         "assets/models/electrical_repair_kit.glb",
         "assets/models/glass_bulb.glb",
         "assets/models/glowstick.glb",
-        "assets/models/paper_sheet.glb",
-        "assets/models/folded_note.glb",
-        "assets/models/notebook.glb"
+        "assets/models/folded_note.glb"
       ],
       "changes": "Built from primitive meshes for readable ground-pile silhouettes; no external asset source or texture is used."
     }

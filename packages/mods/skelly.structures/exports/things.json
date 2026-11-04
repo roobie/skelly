@@ -1,0 +1,14 @@
+[
+  {
+    "id": "hinge_set",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "hinge_set",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.002
+    }
+  }
+]

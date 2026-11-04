@@ -2346,7 +2346,7 @@ describe('content references', () => {
   });
 
   it('requires search action noise to select a sound event with hearing noise', () => {
-    const doorOpen = (base.find(({ source }) => source === 'sounds.json')!.data as ContentFile).sounds!.find(
+    const doorOpen = (base.find(({ source }) => source === 'structures-sounds.json')!.data as ContentFile).sounds!.find(
       ({ id }) => id === 'door_open',
     )!;
     const quietDoorOpen = { ...doorOpen, noise: { ...doorOpen.noise, enabled: false } };

@@ -17,6 +17,8 @@
     "skelly.materials",
     "skelly.medicine",
     "skelly.hand-tools",
+    "skelly.readables",
+    "skelly.structures",
     "skelly.deadvox.residual"
   ],
   "files": [],

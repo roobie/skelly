@@ -805,30 +805,8 @@
       }
     },
     {
-      "file": "assets/models/paper_sheet.glb",
-      "id": "paper_sheet",
-      "itemPresentation": {
-        "materials": ["paper", "paper"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      }
-    },
-    {
       "file": "assets/models/folded_note.glb",
       "id": "folded_note",
-      "itemPresentation": {
-        "materials": ["paper", "paper"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      }
-    },
-    {
-      "file": "assets/models/notebook.glb",
-      "id": "notebook",
       "itemPresentation": {
         "materials": ["paper", "paper"],
         "supply": {
@@ -4512,24 +4490,6 @@
           "centreOfMass": [-4.4618395303326685e-5, 0.027850489236790604, -9.1585127201565604e-5],
           "massKg": 0.080000000000000002,
           "node": "copper_wire:spool"
-        }
-      }
-    },
-    {
-      "file": "assets/models/hinge_set.glb",
-      "id": "hinge_set",
-      "itemPresentation": {
-        "materials": ["metal", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "hinge_set": {
-          "centreOfMass": [0, 0.0016666666666666668, 9.0699628569410935e-19],
-          "massKg": 0.35999999999999999,
-          "node": "hinge_set:compound"
         }
       }
     },

@@ -1,35 +1,4 @@
 {
-  "furniture": [
-    {
-      "appearance": {
-        "kind": "door",
-        "surface": "painted-metal"
-      },
-      "breach": {
-        "durability": 60,
-        "minimumStrength": 3.5
-      },
-      "color": "#666666",
-      "container": {
-        "pockets": [
-          {
-            "grid": [2, 1],
-            "handlingSimSeconds": 0.20000000000000001,
-            "name": "Inside"
-          }
-        ]
-      },
-      "id": "key_box",
-      "massKg": 5,
-      "material": "steel",
-      "moveSounds": {
-        "drag": "furniture_drag",
-        "lift": "furniture_scrape"
-      },
-      "name": "Key box",
-      "size": [1, 1, 1]
-    }
-  ],
   "items": [
     {
       "category": "tool",

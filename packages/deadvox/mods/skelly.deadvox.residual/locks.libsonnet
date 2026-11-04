@@ -34,14 +34,6 @@ local content = {
     model: 'shed_key',
     description: "A small key for the shed's door.",
   }],
-  furniture: [{
-    id: 'key_box',
-    name: 'Key box',
-    size: [1, 1, 1],
-    color: '#666666',
-    appearance: { kind: 'door', surface: 'painted-metal' },
-    container: { pockets: [{ name: 'Inside', grid: [2, 1], handlingSimSeconds: 0.2 }] },
-  }],
   loot: [{
     id: 'shed_key_nearby',
     rolls: [1, 1],
@@ -63,7 +55,6 @@ local content = {
   }],
 };
 
-assert std.length([f.id for f in content.furniture if f.id == lockedShed.palette.K.furniture]) == 1 : 'K must reference a furniture id';
 assert std.length([entry.id for entry in content.loot if entry.id == lockedShed.palette.K.loot]) == 1 : 'K must reference a loot id';
 assert lockedShed.size[1] == std.length(lockedShed.layers) : 'template layer count must match size';
 content

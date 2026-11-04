@@ -144,15 +144,6 @@ local spentCase(id, name, weight, description, model) = {
       'Handwritten notes on careful repairs and using salvaged wire.',
     ),
     {
-      id: 'paperback',
-      name: 'Paperback novel',
-      category: 'book',
-      weight: 300,
-      size: [2, 2],
-      model: 'notebook',
-      description: 'Water-stained. Someone underlined things.',
-    },
-    {
       id: 'portable_radio',
       name: 'Portable radio',
       category: 'misc',

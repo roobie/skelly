@@ -300,25 +300,6 @@
     },
     {
       "category": "material",
-      "id": "hinge_set",
-      "model": "hinge_set",
-      "name": "Small hinge set",
-      "salvage": [
-        {
-          "count": 1,
-          "item": "scrap_metal"
-        },
-        {
-          "count": 1,
-          "item": "fastener_pack"
-        }
-      ],
-      "salvageTimeGameMinutes": 5,
-      "size": [2, 1],
-      "workInProgress": false
-    },
-    {
-      "category": "material",
       "id": "glass_bulb",
       "model": "glass_bulb",
       "name": "Small light bulb",

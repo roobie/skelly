@@ -14,7 +14,7 @@ local fill(piece) = { kind: 'fill', piece: piece, axis: 'y', bands: fuelBands };
     riot_helmet_view: ['glass', 'polymer'],
     stab_vest: ['cloth', 'cloth'],
     table_fan: ['metal', 'polymer', 'metal'],
-    folded_note: ['paper', 'paper'], paper_sheet: ['paper', 'paper'], notebook: ['paper', 'paper'],
+    folded_note: ['paper', 'paper'],
     glowstick: ['polymer', 'polymer'],
     apple: ['organic', 'wood', 'organic'], beans: ['organic', 'organic'], soup: ['organic', 'organic'],
     baseball_cap: ['cloth', 'polymer'], hoodie: ['cloth', 'polymer'],

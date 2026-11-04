@@ -60,6 +60,16 @@
       "size": [1, 1],
       "weight": 5,
       "workInProgress": false
+    },
+    {
+      "category": "book",
+      "description": "Water-stained. Someone underlined things.",
+      "id": "paperback",
+      "model": "notebook",
+      "name": "Paperback novel",
+      "size": [2, 2],
+      "weight": 300,
+      "workInProgress": false
     }
   ]
 }

@@ -257,7 +257,6 @@
         "assets/models/gauntlet_lab_entry_card.glb",
         "assets/models/hand_saw.glb",
         "assets/models/copper_wire.glb",
-        "assets/models/hinge_set.glb",
         "assets/models/taped_flashlight_mount.glb",
         "assets/models/scrap_foregrip.glb",
         "assets/models/riot_helmet.glb",
@@ -527,15 +526,6 @@
       "url": "https://opengameart.org/content/100-cc0-sfx-2"
     },
     {
-      "author": "Jordan Irwin (AntumDeluge)",
-      "changes": "Converted the selected PCM WAV; trimmed leading silence, faded the tail, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report).",
-      "download": "thwack.zip",
-      "files": ["assets/audio/door_blocked_close-01.ogg"],
-      "licence": "CC0-1.0",
-      "title": "Thwack Sounds",
-      "url": "https://opengameart.org/content/thwack-sounds"
-    },
-    {
       "author": "rubberduck",
       "changes": "Selected two wooden item-drop clips, a pouch-handling clip, and a placeholder fist hit; trimmed leading silence, faded tails, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report). The fist-hit placeholder is wired to the live and restored melee-action path when the fists profile is active.",
       "download": "brk.zip",
@@ -584,9 +574,7 @@
         "assets/models/electrical_repair_kit.glb",
         "assets/models/glass_bulb.glb",
         "assets/models/glowstick.glb",
-        "assets/models/paper_sheet.glb",
-        "assets/models/folded_note.glb",
-        "assets/models/notebook.glb"
+        "assets/models/folded_note.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Project-built low-poly hand-tool and content stand-ins",

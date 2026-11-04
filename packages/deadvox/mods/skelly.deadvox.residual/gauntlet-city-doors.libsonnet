@@ -4,7 +4,7 @@
 // cannot host it. The variants are alternatives for that one slot. See
 // `packages/deadvox/docs/content.md`, "Curated kits" and `packages/deadvox/docs/aftermath.md`, "Door variants".
 local context = { usage: ['Residential'], tier: 'Tier1' };
-local leaf = std.filter(function(f) f.id == 'wood_door', (import 'furniture.jsonnet').furniture)[0];
+local leaf = std.filter(function(f) f.id == 'wood_door', (import 'packages/mods/skelly.structures/structures-furniture.jsonnet').furniture)[0];
 local door(id, palette, rows, claim) = {
   id: id,
   size: [2, 4, 1], style: 'brick_townhouse',

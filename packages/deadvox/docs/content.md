@@ -364,7 +364,7 @@ and `packages/deadvox/docs/aftermath.md`, "Door variants".
 
 ### City building types
 
-Flimsy and burglary-safe doors are content choices per building, so a building's intended resistance need not change the forcing mechanism. See `mods/skelly.deadvox.residual/furniture.jsonnet`, `woodDoor`, and `src/core/schema/furniture.ts`, `FurnitureSchema`.
+Flimsy and burglary-safe doors are content choices per building, so a building's intended resistance need not change the forcing mechanism. See `packages/mods/skelly.structures/structures-furniture.jsonnet`, `woodDoor`, and `src/core/schema/furniture.ts`, `FurnitureSchema`.
 
 An authored collection owns prevalence and guarantees; each building owns its fit. Keeping those policies separate lets a mod tune prevalence without changing geometry and prevents collection membership from forcing an unsuitable building into a settlement. Eligibility uses content-named settlement kinds, not engine enums, and reuses the building's authored footprint for plot fit rather than maintaining a second size that can disagree with its geometry. Templates and assemblies follow the same admission rule. See `src/core/schema/templates.ts`, `BuildingEligibilitySchema`, `TemplateSchema`, `MapAssemblySchema` and `MapPoolSchema`, `src/core/settlementPools.ts`, `eligibilityExclusion`, and `src/core/cityPlan.ts`, `cityGridOf`.
 

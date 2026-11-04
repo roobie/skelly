@@ -21,6 +21,15 @@
       "weight": 5,
       "size": [1, 1],
       "paperMap": true
+    },
+    {
+      "id": "paperback",
+      "name": "Paperback novel",
+      "category": "book",
+      "weight": 300,
+      "size": [2, 2],
+      "model": "notebook",
+      "description": "Water-stained. Someone underlined things."
     }
   ],
   "furniture": [

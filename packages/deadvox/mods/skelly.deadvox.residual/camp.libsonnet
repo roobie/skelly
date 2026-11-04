@@ -1,5 +1,5 @@
 local spawnMarker = function(type, chance) { spawn: type, chance: chance };
-local ordinaryDesk = std.filter(function(piece) piece.id == 'desk', (import 'furniture.jsonnet').furniture)[0];
+local ordinaryDesk = std.filter(function(piece) piece.id == 'desk', (import 'packages/mods/skelly.structures/structures-furniture.jsonnet').furniture)[0];
 local players = import "packages/mods/skelly.body/player.jsonnet";
 local player = [entry for entry in players.player if entry.id == "player"][0];
 local blockSizeMetres = 0.5; // Must match src/core/scale.ts, BLOCK_SIZE.

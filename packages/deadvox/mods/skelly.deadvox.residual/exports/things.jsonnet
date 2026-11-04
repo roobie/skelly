@@ -11,6 +11,7 @@ local moved = std.set([
                 + (import 'packages/mods/skelly.materials/exports/things.jsonnet')
                 + (import 'packages/mods/skelly.medicine/exports/things.jsonnet')
                 + (import 'packages/mods/skelly.hand-tools/exports/things.jsonnet')
+                + (import 'packages/mods/skelly.structures/exports/things.jsonnet')
 ]);
 [
   {

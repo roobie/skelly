@@ -1,4 +1,4 @@
-local crate = [entry for entry in (import 'furniture.jsonnet').furniture if entry.id == 'crate'][0];
+local crate = [entry for entry in (import 'packages/mods/skelly.structures/structures-furniture.jsonnet').furniture if entry.id == 'crate'][0];
 {
   furniture: [crate + {
     id: 'hunting_crate',

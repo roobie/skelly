@@ -15,7 +15,9 @@
     "skelly.natural-world",
     "skelly.materials",
     "skelly.medicine",
-    "skelly.hand-tools"
+    "skelly.hand-tools",
+    "skelly.readables",
+    "skelly.structures"
   ],
   "files": [
     {
@@ -201,10 +203,6 @@
     {
       "kind": "content",
       "path": "power.json"
-    },
-    {
-      "kind": "content",
-      "path": "readables.json"
     },
     {
       "kind": "content",
@@ -1280,10 +1278,6 @@
     },
     {
       "kind": "json",
-      "path": "things/hinge_set.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/taped_flashlight_mount.model.json"
     },
     {
@@ -1445,10 +1439,6 @@
     {
       "kind": "asset",
       "path": "assets/audio/door-open-03.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/door_blocked_close-01.ogg"
     },
     {
       "kind": "asset",
@@ -2244,10 +2234,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/hinge_set.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/hoist_a_post.glb"
     },
     {
@@ -2488,10 +2474,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/notebook.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/oil_lamp.glb"
     },
     {
@@ -2537,10 +2519,6 @@
     {
       "kind": "asset",
       "path": "assets/models/optic_tube_dot.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/paper_sheet.glb"
     },
     {
       "kind": "asset",
