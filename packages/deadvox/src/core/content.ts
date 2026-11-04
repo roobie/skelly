@@ -1994,7 +1994,9 @@ const checkFootstepSounds = (registry: Registry, report: Report): void => {
 const checkFootstepCoverage = (registry: Registry, report: Report): void => {
   const families = new Set(
     [...registry.actors.values()].flatMap(({ footstepSound }) =>
-      footstepSound !== undefined && footstepSound !== BLOCK_FOOTSTEP_FAMILY && registry.soundFamilies.has(footstepSound)
+      footstepSound !== undefined &&
+      footstepSound !== BLOCK_FOOTSTEP_FAMILY &&
+      registry.soundFamilies.has(footstepSound)
         ? [footstepSound]
         : [],
     ),
