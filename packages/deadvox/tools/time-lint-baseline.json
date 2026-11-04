@@ -149,12 +149,12 @@
     "core/actorState.ts": {
       "attackWindup": 2,
       "hitFlinchTime": 2,
-      "idleSoundTimer": 2,
-      "lookTimer": 2,
+      "idleSoundTimer": 1,
+      "lookTimer": 1,
       "lurchDuration": 2,
       "lurchElapsed": 2,
-      "modeTimer": 2,
-      "searchTimer": 2,
+      "modeTimer": 1,
+      "searchTimer": 1,
       "spitWindup": 2,
       "stumbleDuration": 2,
       "stumbleElapsed": 2,
@@ -183,6 +183,12 @@
     },
     "core/agentPerception.ts": {
       "time": 1
+    },
+    "core/agentSave.ts": {
+      "idleSoundTimer": 1,
+      "lookTimer": 1,
+      "modeTimer": 1,
+      "searchTimer": 1
     },
     "debug/index.ts": {
       "gameTime": 1,

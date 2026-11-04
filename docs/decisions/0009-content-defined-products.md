@@ -4,6 +4,7 @@ read_if:
   - you classify mods, choose their ids or combine a theme with a product
   - you change remote mod intake, product save separation or the framework refactor gate
   - you name reusable mechanisms, runtime storage and build contracts, descriptive actor body plans or content-selected providers
+  - you separate actor bodies from agent decisions, memory and save ownership
   - you change scenario guidance, observations, staging or authored start admission
   - you change attempt recording or snapshot diagnostics
 ---
@@ -175,6 +176,8 @@ Use Actor for a body and its state, and Agent only for the part that decides. A
 setting's name in engine code ties the engine to one product; these roles keep the
 body and decision mechanisms independent of that setting. See `GLOSSARY.md`, "Actor roles".
 Whether a ship is an actor is not decided by those words.
+
+An actor's body is described in content and works with no Agent at all, so it can stand undriven or be driven by something other than this decision code, such as a player, without carrying that code or its memory. The Agent is a separate layer on top: simulation body code takes no value import from it and reads none of its state, and its memory lives apart from the body, in the save as well. An Agent acts only through the body's own means and limits, so injury and reach bind whatever drives the body. It never branches on body plan, so a new body plan or a new decision mechanism needs no edit to the other, and a product can reuse either alone.
 
 Body-plan mechanisms use descriptive anatomy names: humanoid rather than shambler,
 fused-mass rather than amalgam, and shape names for other forms. Product content ids

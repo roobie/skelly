@@ -106,18 +106,15 @@ retain those realizations without making actor identity select implementation. S
 `bodyPlanModel`; `packages/mobgen/src/core/template.ts`, `Template.legCut`;
 `src/core/actorPose.ts`, `actorCrawls`; and `src/core/schema/actors.ts`, `ActorSchema`
 and `actorRegionsMatchModel`.
-Content declares whether a body has decision code. Body facts stay with the body so
-another controller can reuse them, and an undriven body needs no unused decision
-values. See `src/core/schema/actors.ts`, `ActorSchema`.
-Decision memory is separate from body state so an undriven body carries no decision
-state, while another kind of agent can bring its own memory. Saved presence must
-match content presence: otherwise restore would silently add or discard a controller. Pose inputs belong to the body so hit regions and stance
-can be driven without consulting decision memory; controllers supply those inputs
-at their decision transitions. Body writes belong in body primitives so different
-controllers can share body operations without taking ownership of body state. See `src/core/actorState.ts`, `AgentState`, `Actor`
-and `ActorState`; `src/core/actorMotion.ts`, `setActorChaseStance`,
-`turnActorBodyLook` and `turnActorHeadLook`; and `src/core/saveFormat.ts`,
-`wirePayloadSchema`.
+The body/Agent ownership rule belongs to
+`docs/decisions/0009-content-defined-products.md`, "Vocabulary". See
+`src/core/schema/actors.ts`, `ActorSchema`; `src/core/actorState.ts`, `Actor`,
+`ActorState` and `snapshotActor`; `src/core/agentSave.ts`, `snapshotAgent`; and
+`src/core/actorMotion.ts`, `canStartBodyAttack`, `setActorChaseStance`,
+`turnActorBodyLook` and `turnActorHeadLook`.
+Saved presence must match content presence: otherwise restore would silently add
+or discard a controller. See `src/core/actorSystem.ts`, `ActorSystem.restoreState`, and
+`src/core/saveFormat.ts`, `wirePayloadSchema`.
 
 Settlement population requests require their claimed providers only when that population
 is selected, so shared content needs no actor merely to validate; see
