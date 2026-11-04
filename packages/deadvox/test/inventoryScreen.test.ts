@@ -963,6 +963,24 @@ describe('inventory screen Lit rendering', () => {
     expect(needs()).toContain('fatigue 130');
   });
 
+  it('lists skills by name whatever order they load in', () => {
+    const skill = { id: 'fixture_skill_first', name: '!Fixture sorts first' };
+    const content = baseRegistryWith([{ source: 'fixture-order', data: { skills: [skill] } }]);
+    const panelOrder = (registry: typeof content) => {
+      const { screen, root } = setup(registry);
+      screen.selectTab('skills');
+      return [...root.querySelectorAll<HTMLElement>('[data-skill]')].map(({ dataset }) => dataset.skill!);
+    };
+    const loaded = [...content.skills.keys()];
+    const shown = panelOrder(content);
+    expect(shown).not.toEqual(loaded);
+    expect(shown.map((id) => content.skills.get(id)!.name)).toEqual(
+      [...content.skills.values()].map(({ name }) => name).sort((left, right) => left.localeCompare(right)),
+    );
+    const reversed = { ...content, skills: new Map([...content.skills].reverse()) };
+    expect(panelOrder(reversed)).toEqual(shown);
+  });
+
   it('exposes authored skill effects on a focusable label and its tooltip', () => {
     const skill = { id: 'fixture_skill_detail', name: 'Fixture skill', detail: 'Fixture effect.' };
     const content = baseRegistryWith([{ source: 'fixture-detail', data: { skills: [skill] } }]);

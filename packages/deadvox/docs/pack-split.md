@@ -254,8 +254,9 @@ and `meleeCombatTuning`; `src/core/aim.ts`, `playerAimTuning`. A core-only valid
 stack has no modifiers and does not imply a playable product.
 
 **Zero skills preserve Body.** The skill list stays empty beside the body/injury
-panel, because hiding the Skills tab would hide health information. See
-`src/ui/inventoryScreen.ts`, `InventoryScreen`.
+panel, because hiding the Skills tab would hide health information. The panel
+sorts skills by name, not load order, so the order stays stable as skills move
+between mods. See `src/ui/inventoryScreen.ts`, `InventoryScreen`.
 
 ## Capabilities, not ids
 

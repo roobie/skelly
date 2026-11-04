@@ -1763,20 +1763,22 @@ export class InventoryScreen {
       };
     });
     const vehicle = this.vehicleViewModel();
-    const skills = [...this.inv.registry.skills.values()].map((definition): SkillViewModel => {
-      const level = character.skills[definition.id] ?? 0;
-      const practice = character.practice[definition.id] ?? 0;
-      const nextLevelPractice = practiceForNextLevel(this.inv.registry, level);
-      return {
-        id: definition.id,
-        name: definition.name,
-        detail: definition.detail,
-        level,
-        practice,
-        nextLevelPractice,
-        progress: Number.isFinite(nextLevelPractice) ? (practice / nextLevelPractice) * 100 : 100,
-      };
-    });
+    const skills = [...this.inv.registry.skills.values()]
+      .sort((left, right) => left.name.localeCompare(right.name))
+      .map((definition): SkillViewModel => {
+        const level = character.skills[definition.id] ?? 0;
+        const practice = character.practice[definition.id] ?? 0;
+        const nextLevelPractice = practiceForNextLevel(this.inv.registry, level);
+        return {
+          id: definition.id,
+          name: definition.name,
+          detail: definition.detail,
+          level,
+          practice,
+          nextLevelPractice,
+          progress: Number.isFinite(nextLevelPractice) ? (practice / nextLevelPractice) * 100 : 100,
+        };
+      });
     return {
       body: bodyView,
       skills,
