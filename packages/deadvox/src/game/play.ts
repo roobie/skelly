@@ -1353,7 +1353,7 @@ export const startPlay = (
       return;
     }
     if (!already) {
-      if (compression.locksInput) {
+      if (!compression.admitsKey()) {
         return;
       }
       queue.cancel();
@@ -2341,7 +2341,7 @@ export const startPlay = (
     if (!tab) {
       return false;
     }
-    if (compression.locksInput) {
+    if (!compression.admitsKey()) {
       return true;
     }
     openInventory(tab);
@@ -2363,7 +2363,7 @@ export const startPlay = (
         return true;
       },
       toggleInventory: () => {
-        if (!compression.locksInput) {
+        if (compression.admitsKey()) {
           toggleInventory();
         }
       },
@@ -2374,7 +2374,7 @@ export const startPlay = (
       interruptionCommand: timeKeys,
     });
   const withUnlockedInput = (action: () => void): void => {
-    if (!(replaySample?.inputLocked ?? compression.locksInput)) {
+    if (replaySample ? !replaySample.inputLocked : compression.admitsKey()) {
       action();
     }
   };
@@ -2385,8 +2385,9 @@ export const startPlay = (
       stopAction();
     }
   };
+  const reloadKeyBinding = (): ReloadBinding | undefined => (compression.admitsKey() ? reloadBinding() : undefined);
   const assignQuickbarIfUnlocked = (slot: number | undefined, at: number): void => {
-    if (slot !== undefined && !compression.locksInput) {
+    if (slot !== undefined && compression.admitsKey()) {
       quickbarInput.keyDown(slot, at);
     }
   };
@@ -2422,7 +2423,7 @@ export const startPlay = (
         }
         break;
       case 'firearm.reload':
-        input.reload.keyDown(at, reloadBinding());
+        input.reload.keyDown(at, reloadKeyBinding());
         break;
       case 'world.interact':
         withUnlockedInput(() => {
@@ -3509,7 +3510,7 @@ export const startPlay = (
     if (!(isForwardButton(e) && forwardPress.accept(e.timeStamp))) {
       return;
     }
-    if (!input.locked || input.menuPointer || compression.locksInput || spectator.enabled || debugTools?.buildOn) {
+    if (!input.locked || input.menuPointer || spectator.enabled || debugTools?.buildOn || !compression.admitsKey()) {
       return;
     }
     if (refusePrimaryUseWhileHandling()) {
@@ -3520,7 +3521,7 @@ export const startPlay = (
   document.addEventListener('pointerdown', onForwardPress, true);
   document.addEventListener('mousedown', onForwardPress, true);
   inputTarget.addEventListener('mousedown', (e) => {
-    if (!input.locked || input.menuPointer || compression.locksInput || spectator.enabled || !debugTools?.buildOn) {
+    if (!input.locked || input.menuPointer || spectator.enabled || !debugTools?.buildOn || !compression.admitsKey()) {
       return;
     }
     debugTools.click(e.button, eye(), lookDir());

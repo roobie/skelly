@@ -64,6 +64,26 @@ describe('outer frame time planning', () => {
     expect(afterStop).toBeLessThanOrEqual(RAMP_DOWN_SIM_SECONDS);
   });
 
+  it('a key pressed during the ramp-down after a stop ends the ramp and acts; a running action or prompt still locks it', () => {
+    const compression = new Compression(longActionLimits(COMPRESSION_CAPS_FIXTURE.wait));
+    compression.start(undefined, 'long-action');
+    planRealFrame(compression, realSeconds(0.5));
+    expect(compression.admitsKey()).toBe(false);
+    compression.interrupt('test interruption');
+    expect(compression.admitsKey()).toBe(false);
+
+    compression.start(undefined, 'long-action');
+    for (let frame = 0; frame < 600 && compression.c < compression.limits.cap; frame++) {
+      planRealFrame(compression, realSeconds(1 / 60));
+    }
+    compression.stop();
+    planRealFrame(compression, realSeconds(0.001));
+    expect(compression.locksInput).toBe(true);
+
+    expect(compression.admitsKey()).toBe(true);
+    expect(compression.c).toBe(1);
+  });
+
   it('sizes a live frame after a between-frame interruption drops active compression', () => {
     const sim = new Simulation({ seed: 1, bodyTuning: BODY_TUNING_FIXTURE });
     expect(sim.actions.startRest('sleep', -10, 1)).toBeUndefined();
