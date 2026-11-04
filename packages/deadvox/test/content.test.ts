@@ -3238,7 +3238,7 @@ describe('content', () => {
   it('feeds registry camo overrides into the compiled chunk shader uniforms', () => {
     expect(() => camoShaderConfig([])).not.toThrow();
     const camo = baseRegistry.blocks.find(({ pattern }) => pattern === 'camo')!;
-    const baseBlocks = base.find(({ source }) => source === 'blocks.json')!;
+    const baseBlocks = base.find(({ source }) => source === 'manufactured-blocks.json')!;
     const palette = ['#123456', '#234567', '#345678', '#456789'] as const;
     const { registry, issues } = buildRegistry([
       baseBlocks,
@@ -3274,7 +3274,7 @@ describe('content', () => {
     const noPalette = { ...withoutPalette, id: 'test_camo_no_palette' };
     const { patternWashout: _washout, ...withoutWashout } = camo;
     const noWashout = { ...withoutWashout, id: 'test_camo_no_washout' };
-    const baseBlocks = base.find(({ source }) => source === 'blocks.json')!;
+    const baseBlocks = base.find(({ source }) => source === 'manufactured-blocks.json')!;
     const issues = buildRegistry([
       baseBlocks,
       base.find(({ source }) => source === 'block-materials.json')!,
@@ -3497,7 +3497,7 @@ describe('content', () => {
     // Camo also needs shader settings, which the camo tests above cover.
     const authored = BLOCK_PATTERNS.filter((pattern) => pattern !== 'camo');
     const { registry, issues } = buildRegistry([
-      base.find(({ source }) => source === 'blocks.json')!,
+      base.find(({ source }) => source === 'manufactured-blocks.json')!,
       base.find(({ source }) => source === 'block-materials.json')!,
       baseSounds,
       {

@@ -22,16 +22,13 @@
     "skelly.packaged-foods",
     "skelly.wearables",
     "skelly.progression",
-    "skelly.crafting"
+    "skelly.crafting",
+    "skelly.manufactured-blocks"
   ],
   "files": [
     {
       "kind": "content",
       "path": "benchmark-city.json"
-    },
-    {
-      "kind": "content",
-      "path": "blocks.json"
     },
     {
       "kind": "content",

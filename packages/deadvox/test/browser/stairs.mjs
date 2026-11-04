@@ -96,7 +96,7 @@ const vite = await createServer({
           });
           return JSON.stringify(content);
         }
-        if (mode === 'camo' && id.endsWith('/mods/skelly.deadvox.residual/blocks.json')) {
+        if (mode === 'camo' && id.endsWith('/mods/skelly.manufactured-blocks/manufactured-blocks.json')) {
           const content = JSON.parse(code);
           const camo = content.blocks.find(({ pattern }) => pattern === 'camo');
           assert.ok(camo);

@@ -1,4 +1,4 @@
-// Base terrain and construction blocks. Ground-contact events are authored per block even when several
+// Built surfaces and construction blocks. Ground-contact events are authored per block even when several
 // blocks share a surface (`PILLARS.md`, "Content forward compatibility"); the compiled JSON spells each pair out.
 local footstepEvents = {
   stone: { player: 'footstep_stone' },

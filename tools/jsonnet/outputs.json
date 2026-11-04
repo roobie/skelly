@@ -9,10 +9,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/benchmark-city.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/blocks.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/blocks.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/camp.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/camp.json"
     },
@@ -619,6 +615,14 @@
     {
       "source": "packages/mods/skelly.inventory/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.inventory/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.manufactured-blocks/manufactured-blocks.jsonnet",
+      "output": "packages/mods/skelly.manufactured-blocks/manufactured-blocks.json"
+    },
+    {
+      "source": "packages/mods/skelly.manufactured-blocks/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.manufactured-blocks/pack/manifest.json"
     },
     {
       "source": "packages/mods/skelly.materials/assets/manifest.jsonnet",

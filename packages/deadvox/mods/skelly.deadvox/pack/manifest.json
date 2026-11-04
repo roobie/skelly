@@ -24,6 +24,7 @@
     "skelly.wearables",
     "skelly.progression",
     "skelly.crafting",
+    "skelly.manufactured-blocks",
     "skelly.deadvox.residual"
   ],
   "files": [],
