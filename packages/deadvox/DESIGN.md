@@ -1703,9 +1703,10 @@ behind unrelated declarations. See `packages/mods/skelly.graphics/graphics.jsonn
 - **The credits screen** lists every source, CC0 included: the title linked to
   its page, the author, the licence linked to its text, and what we changed. It
   opens from the start and pause card, and it's how we give the credit CC BY
-  asks for. Entries that read the same appear once: packs split from one
-  another share sources, so one entry per pack would repeat a source to the
-  player. The merged entry hides which mod ships it, which is accepted.
+  asks for. Entries that differ in nothing but their link appear once, listing
+  each distinct link: packs split from one another share sources, and each pack
+  links its own recipe, so one entry keeps the list short and every link. The
+  merged entry hides which mod ships it, which is accepted.
 - **Synthesised sounds.** A sound variant can be a jfxr preset in content
   instead of a recording. jfxr's editor is the design tool for BR and modders,
   and the jfxr library renders what the editor plays, so a preset pasted from

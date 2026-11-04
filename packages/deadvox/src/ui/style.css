@@ -1688,6 +1688,7 @@ body:has(#handling:not([hidden])) #prompt {
 }
 #overlay .credits li {
   margin: 0 0 calc(var(--ui-spacing) * 0.5rem);
+  overflow-wrap: anywhere;
 }
 
 /* ---- spawn menu (debug) ---- */
