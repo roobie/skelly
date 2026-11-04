@@ -161,10 +161,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/models-items.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/models-melee.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/models-melee.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/pack/manifest.json"
     },
@@ -779,6 +775,26 @@
     {
       "source": "packages/mods/skelly.melee-classes/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.melee-classes/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.melee/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.melee/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.melee/exports/things.jsonnet",
+      "output": "packages/mods/skelly.melee/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.melee/melee-items.jsonnet",
+      "output": "packages/mods/skelly.melee/melee-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.melee/models-melee.jsonnet",
+      "output": "packages/mods/skelly.melee/models-melee.json"
+    },
+    {
+      "source": "packages/mods/skelly.melee/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.melee/pack/manifest.json"
     },
     {
       "source": "packages/mods/skelly.natural-world/assets/manifest.jsonnet",

@@ -4,7 +4,7 @@ local vehicleParts = std.set([part.id for part in import 'packages/thing-authori
 // every other catalogue row is an item. A catalogue row may name its own grain in place of its class's.
 local voxel = import 'tools/jsonnet/lib/voxel-grains.libsonnet';
 // Hand-held items take the gun grain, so a long thin shape keeps its taper, hook and edge.
-local gunGrained = std.set(['baseball_bat', 'kabar', 'machete', 'steel_pipe', 'flashlight']);
+local gunGrained = std.set(['flashlight']);
 local moved = std.set([
   recipe.source
   for recipe in (import 'packages/mods/skelly.body/exports/things.jsonnet')
@@ -20,6 +20,7 @@ local moved = std.set([
                 + (import 'packages/mods/skelly.flame-tools/exports/things.jsonnet')
                 + (import 'packages/mods/skelly.light-sources/exports/things.jsonnet')
                 + (import 'packages/mods/skelly.basic-recipes/exports/things.jsonnet')
+                + (import 'packages/mods/skelly.melee/exports/things.jsonnet')
 ]);
 [
   {

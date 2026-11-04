@@ -34,6 +34,6 @@ local authored = [
   models: authored + [
     model
     for model in import 'things/index.json'
-    if !std.member([entry.id for entry in authored + (import 'models-melee.jsonnet').models], model.id)
+    if !std.member([entry.id for entry in authored], model.id)
   ],
 })

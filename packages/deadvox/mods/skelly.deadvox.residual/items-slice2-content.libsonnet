@@ -255,50 +255,6 @@ local lights = import 'tools/jsonnet/lib/lights.libsonnet';
       "workstation": "workbench"
     },
     {
-      "id": "repair_machete",
-      category: 'repair_tools', tags: ['metal'], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "machete", "count": 1 },
-      "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 15,
-      "skills": { "mechanics": 0 },
-      "qualities": { "repairing": 1 },
-      "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
-    },
-    {
-      "id": "repair_kabar",
-      category: 'repair_tools', tags: ['metal'], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "kabar", "count": 1 },
-      "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 12,
-      "skills": { "mechanics": 0 },
-      "qualities": { "repairing": 1 },
-      "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
-    },
-    {
-      "id": "repair_baseball_bat",
-      category: 'repair_tools', tags: ['wood'], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "baseball_bat", "count": 1 },
-      "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 14,
-      "skills": { "mechanics": 0 },
-      "qualities": { "repairing": 1, "hammering": 1 },
-      "components": [[{ "item": "wood_offcut", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
-    },
-    {
-      "id": "repair_steel_pipe",
-      category: 'repair_tools', tags: ['metal'], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "steel_pipe", "count": 1 },
-      "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 14,
-      "skills": { "mechanics": 0 },
-      "qualities": { "repairing": 1 },
-      "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
-    },
-    {
       "id": "repair_flashlight",
       category: 'repair_electrical', tags: ['electrical'], searchTerms: [],
       "kind": "repair",

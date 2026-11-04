@@ -2275,7 +2275,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   the player can see the hit was deflected. Content owns every block number. See
   `src/core/meleeCombat.ts`, `meleeBlock` and `blockJolt`;
   `src/render/playView.ts`, `createPlayView`; `src/game/session.ts`,
-  `blockedDamage`; and `mods/skelly.deadvox.residual/recipes.libsonnet`, `melee_combat`.
+  `blockedDamage`; and `packages/mods/skelly.melee/melee-items.jsonnet`, `melee_combat`.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
   capacity, handling and noise. Ammunition and magazines are items; a magazine holds its
   cartridges and fits a rifle's magazine slot (see "Magazines" and "Rifles" below). The

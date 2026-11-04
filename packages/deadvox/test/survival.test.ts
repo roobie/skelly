@@ -28,7 +28,7 @@ const base = (file: string): ContentSource => {
   if (file === 'items-tools.json') {
     data.items = data.items.filter(
       (item: { id: string }) =>
-        !['torch', 'candle', 'door_bar', 'oil_lamp', 'headlamp', 'nail_bat', 'spear'].includes(item.id),
+        !['torch', 'candle', 'oil_lamp', 'headlamp'].includes(item.id),
     );
   }
   if (file === 'items-attachments.json') {
@@ -54,7 +54,6 @@ const { registry } = buildRegistry(
     'items-gun-parts.json',
     'models-items.json',
     'models-gun-parts.json',
-    'models-melee.json',
     'models-firearms.json',
     'models-attachments.json',
   ]

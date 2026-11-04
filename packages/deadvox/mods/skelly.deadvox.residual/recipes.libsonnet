@@ -52,26 +52,6 @@ local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
         "hit": { "practice": 1, "tier": 5 },
       } },
     },
-    {
-      "id": "melee_combat", "capability": "meleeCombat",
-      "name": "Melee Combat (MC)",
-      "training": {
-        "activities": {
-          "block": { "practice": 0.2, "tier": 5 },
-          "hit": { "practice": 1, "tier": 5 }
-        }
-      },
-      "combat": {
-        "melee": {
-          "blockChanceRange": 0.45,
-          "blockChanceHalfLifeLevels": 4,
-          "mitigationRange": 0.55,
-          "mitigationHalfLifeLevels": 3,
-          "staminaCostFloor": 0.35,
-          "staminaCostHalfLifeLevels": 3
-        }
-      }
-    }
   ]],
   "items": [
     {
@@ -118,31 +98,6 @@ local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
       ]
     },
     {
-      "id": "make_nail_bat",
-      category: "tools", tags: ["wood", "metal"], searchTerms: [],
-      "result": { "item": "nail_bat", "count": 1 },
-      "timeGameMinutes": 15,
-      "skills": { "crafting": 0 },
-      "qualities": { "hammering": 1 },
-      "components": [
-        [{ "item": "baseball_bat", "count": 1 }],
-        [{ "item": "nails", "count": 12 }]
-      ]
-    },
-    {
-      "id": "make_spear",
-      category: "tools", tags: ["wood", "textile"], searchTerms: [],
-      "result": { "item": "spear", "count": 1 },
-      "timeGameMinutes": 20,
-      "skills": { "crafting": 0 },
-      "qualities": {},
-      "components": [
-        [{ "item": "stick", "count": 1 }, { "item": "wooden_plank", "count": 1 }],
-        [{ "item": "kitchen_knife", "count": 1 }, { "item": "glass_shards", "count": 2 }],
-        [{ "item": "nylon_cord", "count": 1 }, { "item": "duct_tape", "count": 1 }]
-      ]
-    },
-    {
       "id": "strip_wire",
       category: "materials", tags: ["electrical", "metal"], searchTerms: ["strip"],
       "result": { "item": "copper_wire", "count": 1 },
@@ -160,5 +115,5 @@ local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
       "qualities": {},
       "components": [[{ "item": "copper_wire", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
     }
-  ] + (import 'tools/jsonnet/lib/sharpen-recipes.libsonnet').sharpenRecipes((import 'items-tools.libsonnet').items)
+  ]
 }

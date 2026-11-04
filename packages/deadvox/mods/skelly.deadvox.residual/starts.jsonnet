@@ -17,7 +17,7 @@ local common = {
   recipes: ['torch', 'candle', 'repair_kit', 'repair_crowbar', 'sawn_plank', 'door_bar', 'make_rope'] + [
     recipe.id
     for recipe in (import 'packages/mods/skelly.basic-recipes/basic-recipes-items.jsonnet').recipes
-                  + (import 'recipes.libsonnet').recipes
+                  + (import 'packages/mods/skelly.melee/melee-items.jsonnet').recipes
     if std.objectHas(recipe, 'activation') && recipe.activation == 'sharpen'
   ],
   defaultForSite: true,

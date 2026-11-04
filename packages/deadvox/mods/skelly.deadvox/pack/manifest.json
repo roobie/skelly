@@ -30,6 +30,7 @@
     "skelly.flame-tools",
     "skelly.light-sources",
     "skelly.basic-recipes",
+    "skelly.melee",
     "skelly.deadvox.residual"
   ],
   "files": [],

@@ -28,7 +28,8 @@
     "skelly.containers",
     "skelly.flame-tools",
     "skelly.light-sources",
-    "skelly.basic-recipes"
+    "skelly.basic-recipes",
+    "skelly.melee"
   ],
   "files": [
     {
@@ -194,10 +195,6 @@
     {
       "kind": "content",
       "path": "models-items.json"
-    },
-    {
-      "kind": "content",
-      "path": "models-melee.json"
     },
     {
       "kind": "content",
@@ -1077,22 +1074,6 @@
     },
     {
       "kind": "json",
-      "path": "things/baseball_bat.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/kabar.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/machete.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/steel_pipe.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/flashlight.model.json"
     },
     {
@@ -1542,10 +1523,6 @@
     {
       "kind": "asset",
       "path": "assets/models/barrel_sporter_long.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/baseball_bat.glb"
     },
     {
       "kind": "asset",
@@ -2061,10 +2038,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/kabar.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/lower_ak.glb"
     },
     {
@@ -2082,10 +2055,6 @@
     {
       "kind": "asset",
       "path": "assets/models/lower_sporter.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/machete.glb"
     },
     {
       "kind": "asset",
@@ -2330,10 +2299,6 @@
     {
       "kind": "asset",
       "path": "assets/models/shotshell_box.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/steel_pipe.glb"
     },
     {
       "kind": "asset",

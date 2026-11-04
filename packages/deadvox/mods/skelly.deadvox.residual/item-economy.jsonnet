@@ -24,6 +24,7 @@ local sources = [
   import 'packages/mods/skelly.flame-tools/flame-tools-items.jsonnet',
   import 'packages/mods/skelly.light-sources/light-sources-items.jsonnet',
   import 'packages/mods/skelly.basic-recipes/basic-recipes-items.jsonnet',
+  import 'packages/mods/skelly.melee/melee-items.jsonnet',
   import 'locks.jsonnet',
   import 'models-firearms.jsonnet',
   import 'packages/mods/skelly.readables/readables.jsonnet',

@@ -759,7 +759,7 @@ describe('base pack melee', () => {
     }
   }
   const melee = buildRegistry([
-    read(`${BASE}/models-melee.json`),
+    read('../mods/skelly.melee/models-melee.json'),
     {
       source: 'models-hand-tools.json',
       data: { models: handTools.models.filter(({ id }) => handToolMelee.includes(id)) },
