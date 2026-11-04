@@ -151,7 +151,7 @@ const { registry, issues } = buildRegistry([
   { source: 'inventory-skill-fixture', data: { skills: handlingSkills, skillProgression: recipesFile.skillProgression } },
 ]);
 if (issues.length) throw Error('Invalid scroll fixture: ' + JSON.stringify(issues));
-applyUiTokens(registry, document.documentElement);
+applyUiTokens(registry, document.documentElement, { report: (message) => { throw Error(message); } });
 const inventory = new Inventory(registry);
 const body = new Body({
   id: 'scroll-fixture',
@@ -274,7 +274,7 @@ globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu,
       { source: 'ui-tuning-fixture', data: { ui: [{ ...BUNDLED_CONTENT.registry.ui.get('core'), refusalSound: 'player_nope', ...tuning }] } },
     ]);
     if (ui.issues.length) throw Error('Invalid UI tuning fixture: ' + JSON.stringify(ui.issues));
-    applyUiTokens(ui.registry, document.documentElement);
+    applyUiTokens(ui.registry, document.documentElement, { report: (message) => { throw Error(message); } });
     screen.update();
   },
   addCapRack() {

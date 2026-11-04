@@ -14,28 +14,39 @@ const CURSOR_FILES = bundledAssetFiles({
 
 /** Installs the stack's UI tuning and cursor once, before game startup. */
 export const applyUiTokens = (
-  registry: Pick<Registry, 'ui' | 'cursors' | 'contentOrigins'>,
+  registry: Pick<Registry, 'ui' | 'cursors' | 'cursorStack'>,
   root: HTMLElement,
-  { files = CURSOR_FILES, packs }: { files?: Readonly<Record<string, string>>; packs?: typeof bundledPacks } = {},
+  {
+    report,
+    files = CURSOR_FILES,
+    packs,
+  }: {
+    report: (message: string) => void;
+    files?: Readonly<Record<string, string>>;
+    packs?: typeof bundledPacks;
+  },
 ): void => {
   const tuning = claimed(registry.ui, 'interface');
   if (!tuning) {
     throw new Error('missing required capability "interface"');
   }
-  const cursor = claimed(registry.cursors, 'gameCursor');
-  if (!cursor) {
+  if (!claimed(registry.cursors, 'gameCursor')) {
     throw new Error('missing required capability "gameCursor"');
-  }
-  const origin = registry.contentOrigins.get(`cursors:${cursor.id}`);
-  const key = bundledOriginAssetKey(origin?.source, cursor.image, packs);
-  const image = key ? files[key] : undefined;
-  if (!image) {
-    throw new Error(`cursor image "${cursor.image}" is not bundled`);
   }
   root.style.setProperty('--ui-spacing', String(tuning.spacing));
   root.style.setProperty('--ui-scale', String(tuning.hudScale));
-  root.style.setProperty('--cursor-image', `url("${image}")`);
-  root.style.setProperty('--cursor-frame-width', `${cursor.frameWidthPx}px`);
-  root.style.setProperty('--cursor-frame-height', `${cursor.frameHeightPx}px`);
-  root.style.setProperty('--cursor-hand-offset', `${cursor.handOffsetPx}px`);
+  const rows = registry.cursorStack.filter(({ cursor }) => cursor.capability === 'gameCursor').reverse();
+  for (const { cursor, source } of rows) {
+    const key = bundledOriginAssetKey(source, cursor.image, packs);
+    const image = key ? files[key] : undefined;
+    if (image) {
+      root.style.setProperty('--cursor-image', `url("${image}")`);
+      root.style.setProperty('--cursor-frame-width', `${cursor.frameWidthPx}px`);
+      root.style.setProperty('--cursor-frame-height', `${cursor.frameHeightPx}px`);
+      root.style.setProperty('--cursor-hand-offset', `${cursor.handOffsetPx}px`);
+      return;
+    }
+    report(`cursor image "${cursor.image}" from ${source} is not bundled`);
+  }
+  throw new Error('no cursor row in the stack has a bundled image');
 };

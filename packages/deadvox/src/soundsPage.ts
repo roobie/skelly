@@ -9,8 +9,6 @@ import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } 
 import { applyUiTokens } from './ui/uiTokens.ts';
 
 const { registry, issues } = buildSoundsPageContent();
-// The page shares the game's style sheet, which is measured in these tokens.
-applyUiTokens(registry, document.documentElement);
 const heartbeatTuning = playerHeartbeat(registry);
 const heartbeatEvents = new Set<SoundId>(Object.values(heartbeatTuning.sounds));
 const { manifest: credits } = bundledCredits();
@@ -23,15 +21,18 @@ const heartbeat = buildHeartbeatSoundGuide(heartbeatTuning, registry.sounds, cre
 const errorRoot = document.createElement('p');
 errorRoot.className = 'sound-errors';
 errorRoot.setAttribute('role', 'status');
+const report = (message: string) => {
+  errorRoot.textContent = message;
+};
+// The page shares the game's style sheet, which is measured in these tokens.
+applyUiTokens(registry, document.documentElement, { report });
 
 const audio = new GameAudio({
   registry,
   blockSize: 1,
   isSolid: () => false,
   tuning: claimed(registry.senses, 'player')!,
-  report: (message) => {
-    errorRoot.textContent = message;
-  },
+  report,
 });
 audio.updateListener([0, 0, 0], [0, 0, -1]);
 

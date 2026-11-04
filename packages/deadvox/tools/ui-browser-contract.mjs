@@ -369,7 +369,7 @@ try {
         { source: 'ui-probe.json', data: { ui: [{ ...baseUi.ui.find((row) => row.id === 'core'), refusalSound: sound.id, ...tuning }] } },
       ]);
       if (issues.length) throw new Error('Invalid UI probe fixture: ' + JSON.stringify(issues));
-      applyUiTokens(registry, frame.contentDocument.documentElement);
+      applyUiTokens(registry, frame.contentDocument.documentElement, { report: (message) => { throw new Error(message); } });
       const style = frame.contentWindow.getComputedStyle(probe);
       return { padding: Number.parseFloat(style.paddingLeft), fontSize: Number.parseFloat(style.fontSize) };
     };

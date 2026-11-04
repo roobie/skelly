@@ -169,8 +169,10 @@ with a model, `skelly.body` too, loads inventory tuning and the work-in-progress
 its own row because overrides replace whole rows: a swap restates one short row, not the UI
 text row (`PILLARS.md`, "Moddability"). The row carries the layout as well as the image, so
 a styled cursor can be any size; the sheet stacks the arrow frame above the hand frame. A
-stack without the row fails validation. See `src/core/schema/cursors.ts`, `CursorSchema`,
-and `src/ui/uiTokens.ts`, `applyUiTokens`.
+stack without the row fails validation. A winning row whose image cannot be loaded falls
+back to the nearest earlier row that can: an unloadable mod cursor should not stop the game,
+so the player keeps a working cursor and the log names the mod. See
+`src/core/schema/cursors.ts`, `CursorSchema`, and `src/ui/uiTokens.ts`, `applyUiTokens`.
 
 **Sounds.** A sound follows the entry selecting it: shared body/block sounds belong
 with their shared content, reusable weapon sounds with their theme, and zombie-specific

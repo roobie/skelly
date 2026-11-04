@@ -104,6 +104,8 @@ export interface Registry extends RegistryMaps {
   modelOrigins: Map<string, { source: string; path: string }>;
   /** Where each sound event was defined; variant paths are relative to this content file's pack. */
   soundOrigins: Map<string, { source: string; path: string }>;
+  /** Every cursor row with its content file, in stack order, so an unloadable winner can fall back to an earlier row. */
+  cursorStack: { cursor: NonNullable<ContentFile['cursors']>[number]; source: string }[];
   dayCycle: DayCycleDef | undefined;
   contentOrigins: Map<string, { source: string; path: string }>;
 }
@@ -268,6 +270,7 @@ const emptyRegistry = (): Registry => ({
   blockIds: new Map([[AIR.id, 0]]),
   modelOrigins: new Map(),
   soundOrigins: new Map(),
+  cursorStack: [],
   dayCycle: undefined,
   contentOrigins: new Map(),
 });
@@ -314,6 +317,9 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
     (file.sounds ?? []).forEach((sound, i) => {
       registry.soundOrigins.set(sound.id, { source, path: `sounds[${i}]` });
     });
+    for (const cursor of file.cursors ?? []) {
+      registry.cursorStack.push({ cursor, source });
+    }
   }
   return { registry, origins };
 };

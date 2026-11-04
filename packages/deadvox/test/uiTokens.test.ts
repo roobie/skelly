@@ -106,6 +106,10 @@ const cursorAssets = {
     cursorPacks,
   ),
 };
+const failOnReport = (message: string) => {
+  throw new Error(message);
+};
+const report = () => undefined;
 const uiSources = (ui: object) => [
   { source: 'ui-fixture.json', data: { ui: [{ ...tuning, ...ui }] } },
   { source: 'ui-sounds.json', data: { sounds: [refusalSound] } },
@@ -119,7 +123,7 @@ it('applies validated core-mod UI tuning to document-root CSS properties', () =>
   expect(issues).toEqual([]);
 
   const root = document.createElement('html');
-  applyUiTokens(registry, root, cursorAssets);
+  applyUiTokens(registry, root, { ...cursorAssets, report: failOnReport });
 
   expect(root.style.getPropertyValue('--ui-spacing')).toBe('0.75');
   expect(root.style.getPropertyValue('--ui-scale')).toBe('1.25');
@@ -137,7 +141,7 @@ it("draws the cursor from the later stack entry's row, with its image found in t
   expect(issues).toEqual([]);
 
   const root = document.createElement('html');
-  applyUiTokens(registry, root, cursorAssets);
+  applyUiTokens(registry, root, { ...cursorAssets, report: failOnReport });
 
   expect(root.style.getPropertyValue('--cursor-image')).toContain('/url1.png');
   expect(root.style.getPropertyValue('--cursor-frame-width')).toBe('11px');
@@ -148,16 +152,44 @@ it("draws the cursor from the later stack entry's row, with its image found in t
   expect(rule).not.toContain('url(');
 });
 
-it('refuses a cursor missing from the stack, or whose image is not bundled, rather than drawing a broken one', () => {
+it('reports a winning cursor whose image is not bundled and draws the nearest earlier row that is', () => {
+  const { registry } = buildRegistry([
+    ...uiSources({}),
+    { source: `${cursorPacks[0]!.root}/cursor.json`, data: { cursors: [cursor] } },
+    {
+      source: 'elsewhere-a/cursor.json',
+      data: { cursors: [{ ...cursor, frameWidthPx: 11 }] },
+    },
+    {
+      source: 'elsewhere-b/cursor.json',
+      data: { cursors: [{ ...cursor, frameWidthPx: 12 }] },
+    },
+  ]);
+  const reported: string[] = [];
+  const root = document.createElement('html');
+  applyUiTokens(registry, root, { ...cursorAssets, report: (message) => reported.push(message) });
+
+  expect(root.style.getPropertyValue('--cursor-image')).toContain('/url0.png');
+  expect(root.style.getPropertyValue('--cursor-frame-width')).toBe(`${cursor.frameWidthPx}px`);
+  expect(reported).toHaveLength(2);
+  expect(reported[0]).toContain('elsewhere-b/cursor.json');
+  expect(reported[1]).toContain('elsewhere-a/cursor.json');
+});
+
+it('refuses a stack with no cursor row or with no bundled cursor image, rather than drawing a broken one', () => {
   const { registry } = buildRegistry(uiSources({}));
   expect(requiredContentIssues(registry).some(({ path }) => path === 'cursors')).toBe(true);
-  expect(() => applyUiTokens(registry, document.createElement('html'), cursorAssets)).toThrow('"gameCursor"');
+  expect(() => applyUiTokens(registry, document.createElement('html'), { ...cursorAssets, report })).toThrow(
+    '"gameCursor"',
+  );
 
   const unbundled = buildRegistry([
     ...uiSources({}),
     { source: 'elsewhere/cursor.json', data: { cursors: [cursor] } },
   ]).registry;
-  expect(() => applyUiTokens(unbundled, document.createElement('html'), cursorAssets)).toThrow('not bundled');
+  expect(() => applyUiTokens(unbundled, document.createElement('html'), { ...cursorAssets, report })).toThrow(
+    'no cursor row',
+  );
 });
 
 it('rejects non-positive UI spacing and scale', () => {

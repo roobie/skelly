@@ -82,7 +82,11 @@ const browserSelection = showMods
   : undefined;
 const content = browserSelection?.content ?? bundled.content;
 startupScreen.hidden = false;
-applyUiTokens(content.registry, document.documentElement);
+const reportError = (message: string) => {
+  const errors = document.getElementById('errors')!;
+  errors.textContent = [errors.textContent, message].filter(Boolean).join('\n');
+};
+applyUiTokens(content.registry, document.documentElement, { report: reportError });
 const { screenText } = claimed(content.registry.ui, 'interface')!;
 inputBindings.setPointerLabels(screenText.pointerButtonLabels);
 const menuCard = document.querySelector<HTMLElement>('#overlay .card');
@@ -114,9 +118,9 @@ const bench = params.get('bench');
 const renderFree = renderFreeFromUrl(params, import.meta.env.DEV);
 if (bench === null) {
   const credits = bundledCredits();
-  document.getElementById('errors')!.textContent = credits.issues
-    .map((issue) => `${issue.source} ${issue.path}: ${issue.message}`)
-    .join('\n');
+  for (const issue of credits.issues) {
+    reportError(`${issue.source} ${issue.path}: ${issue.message}`);
+  }
   mountCredits(
     {
       about: document.getElementById('about')!,
@@ -152,8 +156,7 @@ if (bench === 'report') {
     pendingReplay = pendingInputReplay();
   } catch (error) {
     clearPendingInputReplay();
-    document.getElementById('errors')!.textContent =
-      `Replay rejected: ${error instanceof Error ? error.message : String(error)}`;
+    reportError(`Replay rejected: ${error instanceof Error ? error.message : String(error)}`);
   }
   if (pendingReplay) {
     config.debug = true;
