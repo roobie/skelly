@@ -1,5 +1,12 @@
 {
-  "dependencies": ["skelly.crafting", "skelly.fuel", "skelly.inventory", "skelly.materials", "skelly.natural-world"],
+  "dependencies": [
+    "skelly.crafting",
+    "skelly.fuel",
+    "skelly.hand-tools",
+    "skelly.inventory",
+    "skelly.materials",
+    "skelly.natural-world"
+  ],
   "files": [
     {
       "kind": "content",

@@ -8,5 +8,5 @@ manifest(
   things=things,
   assets=assets,
   json=['things/index.json', 'assets/manifest.json', 'exports/things.json', 'presentation/item-materials.json'],
-  dependencies=['skelly.crafting', 'skelly.fuel', 'skelly.inventory', 'skelly.materials', 'skelly.natural-world'],
+  dependencies=['skelly.crafting', 'skelly.fuel', 'skelly.hand-tools', 'skelly.inventory', 'skelly.materials', 'skelly.natural-world'],
 )
