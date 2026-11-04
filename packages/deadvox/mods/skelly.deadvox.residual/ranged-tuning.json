@@ -8,6 +8,7 @@
         "speedMetresPerSimSecond": 3.5
       },
       "id": "ranged",
+      "lootMagazineLoad": [0, 1],
       "shotTraceRangeBlocks": 240
     }
   ]

@@ -663,11 +663,24 @@ export class Inventory {
     return entity;
   }
 
-  createRolled({ type, count, condition, paperMap, fitted, charge, craftedLiquids, liquidContents }: Rolled): Item {
+  createRolled({
+    type,
+    count,
+    condition,
+    paperMap,
+    fitted,
+    charge,
+    craftedLiquids,
+    liquidContents,
+    cartridges,
+  }: Rolled): Item {
     const item = this.factory.create(this.registry, type, count, {
       condition,
       ...(paperMap === undefined ? {} : { paperMap }),
     });
+    if (cartridges !== undefined) {
+      item.cartridges = [...cartridges];
+    }
     if (craftedLiquids !== undefined) {
       item.craftedLiquids = craftedLiquids.map((amount) => ({ ...amount }));
     }

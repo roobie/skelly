@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry, type Registry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { chargeShare } from '../src/core/lights.ts';
 import { corpseLootPoint, type LootSpawnPoint, rollLoot, selectLootType } from '../src/core/loot.ts';
+import { magazineContentsReason, magazineSpec } from '../src/core/magazine.ts';
 import { Rng } from '../src/core/random.ts';
 import { gamePerHour, simSeconds } from '../src/core/time.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
@@ -166,5 +168,54 @@ describe('central loot selection', () => {
     };
     const [rolled] = rollLoot(registry, source, Rng.stream(1, 'charge'));
     expect(chargeShare(registry, inventory.createRolled(rolled!))).toBe(0.25);
+  });
+});
+
+describe('found magazine loads', () => {
+  const magazinesOf = (registry: Registry) =>
+    [...registry.items.keys()].filter((type) => magazineSpec(registry, type) !== undefined);
+  /** Every magazine type placed as loot, several of each, made into items. */
+  const spawned = (registry: Registry, seed: number) => {
+    const inventory = new Inventory(registry);
+    const source: LootSpawnPoint = {
+      ...point('magazine-point'),
+      supply: { kind: 'fixed', items: magazinesOf(registry).map((item) => ({ item, count: 6 })) },
+      fixture: true,
+    };
+    return rollLoot(registry, source, Rng.stream(seed, 'magazines')).map((rolled) => inventory.createRolled(rolled));
+  };
+
+  it('loads each magazine placed as loot with 0 to capacity cartridges of its calibre, reproducibly per seed', () => {
+    const registry = baseRegistry();
+    for (const seed of [1, 2, 3]) {
+      const magazines = spawned(registry, seed);
+      expect(magazines.length).toBeGreaterThan(0);
+      for (const { type, cartridges } of magazines) {
+        expect(cartridges).toBeDefined();
+        expect(magazineContentsReason(registry, type, cartridges), type).toBeUndefined();
+      }
+      expect(spawned(registry, seed).map(({ cartridges }) => cartridges)).toEqual(
+        magazines.map(({ cartridges }) => cartridges),
+      );
+    }
+  });
+
+  it('takes the load from the ranged tuning spread, and spawns magazines empty without one', () => {
+    const withLoad = (load: [number, number] | undefined) => {
+      const registry = baseRegistry();
+      for (const [id, row] of registry.rangedTuning) {
+        const { lootMagazineLoad: _, ...rest } = row;
+        registry.rangedTuning.set(id, load === undefined ? rest : { ...rest, lootMagazineLoad: load });
+      }
+      return registry;
+    };
+    const full = withLoad([1, 1]);
+    const loads = spawned(full, 1).map(({ type, cartridges }) => [
+      cartridges?.length,
+      magazineSpec(full, type)?.capacity,
+    ]);
+    expect(loads.length).toBeGreaterThan(0);
+    expect(loads.every(([held, capacity]) => held === capacity)).toBe(true);
+    expect(spawned(withLoad(undefined), 1).every(({ cartridges }) => cartridges?.length === 0)).toBe(true);
   });
 });
