@@ -59,6 +59,11 @@ export const claimedId = <T extends Claimant>(entries: ReadonlyMap<string, T>, c
 const requiredForStack = (registry: Registry, section: string, requirement: string): boolean =>
   requirement === 'required' || (section === 'skillProgression' && registry.skills.size > 0);
 
+const claimantText = (registry: Registry, section: string, id: string): string => {
+  const origin = registry.contentOrigins.get(`${section}:${id}`);
+  return origin ? `${id} in ${origin.source}` : id;
+};
+
 export const capabilityIssues = (registry: Registry, requireAll = true): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   for (const [section, capabilities] of Object.entries(CONTENT_CAPABILITIES)) {
@@ -75,7 +80,9 @@ export const capabilityIssues = (registry: Registry, requireAll = true): Content
           message:
             providers.length === 0
               ? `missing required capability "${capability}"`
-              : `competing claimants for capability "${capability}": ${providers.map(({ id }) => id).join(', ')}`,
+              : `competing claimants for capability "${capability}": ${providers
+                  .map(({ id }) => claimantText(registry, section, id))
+                  .join(', ')}; remove one claim, or override the other entry by its id from a pack that depends on it`,
         });
       }
     }

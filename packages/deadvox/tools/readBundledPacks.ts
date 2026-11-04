@@ -4,7 +4,13 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { relative, resolve, sep } from 'node:path';
 import { parse } from 'valibot';
 import { canonicalJson } from '../src/core/canonicalJson.ts';
-import { admitPacks, type PackInput, PackManifestSchema, packContentHash } from '../src/core/packAdmission.ts';
+import {
+  admitPacks,
+  type PackInput,
+  PackManifestSchema,
+  packContentHash,
+  packRootOrder,
+} from '../src/core/packAdmission.ts';
 
 export const readBundledPacks = (packageRoot: string, stack?: string): PackInput[] => {
   const roots = ['mods', '../mods']
@@ -22,7 +28,7 @@ export const readBundledPacks = (packageRoot: string, stack?: string): PackInput
             )
         : [];
     })
-    .sort();
+    .sort(packRootOrder);
   const inputs = roots.map((root) => {
     const manifest = parse(
       PackManifestSchema,
