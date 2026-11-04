@@ -157,9 +157,9 @@ place the authorities gave up on.
 
 ## Performance and scale
 
-Terrain goes on screen a whole column at a time and never beyond a column that isn't drawn yet, so no missing chunk shows what solid blocks hide. This lets play begin once a smaller ready ring is drawn while the remaining view fills in safely, without exposing sealed or buried rooms during loading or movement. Furniture, piles and actors share the terrain's reveal membership so their silhouettes and shadows cannot expose a hidden room before its walls arrive. Edits keep already drawn columns visible so replacement work does not create a gap. See `src/render/furniture.ts`, `FurnitureMeshes`, `src/render/piles.ts`, `PileMeshes`, `src/render/mobActors.ts`, `MobActorMeshes`, `src/render/actors.ts`, `ActorMeshes`, `src/render/chunks.ts`, `ChunkMeshes`, `src/render/columnReveal.ts`, `revealedColumns`, `src/game/streamer.ts`, `Streamer`, `src/game/worldLoading.ts`, `WorldLoading`, and `src/content/base/graphics.jsonnet`, `readyRadiusM`.
+Terrain goes on screen a whole column at a time and never beyond a column that isn't drawn yet, so no missing chunk shows what solid blocks hide. This lets play begin once a smaller ready ring is drawn while the remaining view fills in safely, without exposing sealed or buried rooms during loading or movement. Furniture, piles and actors share the terrain's reveal membership so their silhouettes and shadows cannot expose a hidden room before its walls arrive. Edits keep already drawn columns visible so replacement work does not create a gap. See `src/render/furniture.ts`, `FurnitureMeshes`, `src/render/piles.ts`, `PileMeshes`, `src/render/mobActors.ts`, `MobActorMeshes`, `src/render/actors.ts`, `ActorMeshes`, `src/render/chunks.ts`, `ChunkMeshes`, `src/render/columnReveal.ts`, `revealedColumns`, `src/game/streamer.ts`, `Streamer`, `src/game/worldLoading.ts`, `WorldLoading`, and `mods/skelly.deadvox.residual/graphics.jsonnet`, `readyRadiusM`.
 
-Terrain range should not extend farther diagonally than along an axis. Retention prevents repeated streaming work when the player crosses a column border. See `src/game/streamer.ts`, `Streamer`, and `src/content/base/graphics.jsonnet`, `streamHysteresisM`. Fog goes by horizontal distance, not view depth, so turning in place does not change what is drawn. See `src/render/distanceFog.ts`, `withDistanceFog`.
+Terrain range should not extend farther diagonally than along an axis. Retention prevents repeated streaming work when the player crosses a column border. See `src/game/streamer.ts`, `Streamer`, and `mods/skelly.deadvox.residual/graphics.jsonnet`, `streamHysteresisM`. Fog goes by horizontal distance, not view depth, so turning in place does not change what is drawn. See `src/render/distanceFog.ts`, `withDistanceFog`.
 
 Performance acceptance targets 60 fps on a portable reference-laptop class:
 Intel HD 530-class integrated graphics at a device pixel ratio of 1.5. The
@@ -180,7 +180,7 @@ post effects or reduce the readability of separate UI layers. Content must at le
 switch adaptation off and tune it, so a mod can choose a fixed scale or a
 different trade (`PILLARS.md`, "Content forward compatibility"). Explicit player
 choices retain ownership rather than being overwritten by adaptation. See
-`src/content/base/graphics.jsonnet`, `src/render/adaptiveScale.ts`, `AdaptiveScale`,
+`mods/skelly.deadvox.residual/graphics.jsonnet`, `src/render/adaptiveScale.ts`, `AdaptiveScale`,
 `src/render/mood.ts`, `Mood.setRenderScale`, and `src/render/screenScale.ts`, `ScreenScale`.
 Look changes made for performance
 follow `packages/deadvox/GRAPHICS.md`, "Look decisions".
@@ -194,7 +194,7 @@ current settings here. See `BLOCK_SIZE` in `src/core/scale.ts`.
 
 The player's own movement, load and aim tuning belongs in one content home,
 not split between sensory tuning and code, so mods can retune the player without
-changing mechanisms. See `src/content/base/player.jsonnet`, `player`;
+changing mechanisms. See `mods/skelly.deadvox.residual/player.jsonnet`, `player`;
 `src/core/schema/player.ts`, `PlayerSchema`; `src/game/player.ts`, `playerTuning`,
 `movementPace` and `steer`; and `src/core/aim.ts`, `AimController`.
 Saved look offsets must obey the geometric ceiling shared by all valid player
@@ -224,22 +224,20 @@ to act; arms at the sides read as a standing neutral pose laid flat. Aiming
 prone, the torso twists the opposite way to a standing aim, as a shooter lying
 along the ground does, and the twist and the lean are bounded together by the
 camera offset budget. See
-`src/content/base/figures-player.jsonnet`, `stancePoses`.
+`mods/skelly.deadvox.residual/figures-player.jsonnet`, `stancePoses`.
 
 The drawn pose must fit its collision height, so a head never pokes through a
 ceiling the body fits under. Visual blending hides the change of shape, but must
 not delay the eye used by sight and collision. See
-`src/content/base/figures-player.jsonnet`, `stancePoses`, and
+`mods/skelly.deadvox.residual/figures-player.jsonnet`, `stancePoses`, and
 `src/render/playerFigure.ts`, `PlayerMeshes`.
 
 The crouch must read as a crouch to anyone watching the avatar, not as sitting:
 knees bent, feet flat on the ground under the body, torso leaning forward and
 head up looking ahead. The arms hold a guard for balance, elbows bent with the
 forearms raised and the hands in front, because arms hanging straight down read
-as a gorilla's. A leg swung forward whole cannot do that, so the leg model is
-split at the knee and ankle, the bust at the neck, and the body arm bends at the
-elbow on the arm rig's parts; each stance pose turns those joints. See
-`src/content/base/figures-player.jsonnet`, `legRig`, and
+as a gorilla's. Jointed anatomy must support the pose rather than rotating an unbent standing limb. See
+`mods/skelly.deadvox.residual/figures-player.jsonnet`, `legRig`, and
 `test/playerFigure.test.ts`, "crouches on bent knees: feet flat behind the knees, knees below the hips, torso forward, head up, arms in guard".
 
 The FOB's east-wall passage is sized so a crouched player fits but a standing
@@ -255,7 +253,7 @@ A restored stance must take its height from admitted content rather than saved
 body dimensions. See `src/core/saveFormat.ts`, `decodeSave`;
 `src/game/session.ts`, `setStanceHeight`; `src/core/schema/player.ts`, `PlayerSchema`
 and `SenseSchema`; `src/core/agentPerception.ts`, `loweredStanceTuning`;
-`src/content/base/camp.libsonnet`, `camp_wall_run_crouch_hole`; and
+`mods/skelly.deadvox.residual/camp.libsonnet`, `camp_wall_run_crouch_hole`; and
 `src/core/spawnClearance.ts`, `actorBodyDimensions`.
 
 ### Block shapes
@@ -376,7 +374,7 @@ arrives during onset, the alarm ends the action before sleep begins, preserving
 the chosen wake time as the authority over the sleep interval. See
 `RestController.start` in `src/game/rest.ts` and `LongActions.advanceJob` in
 `src/core/longAction.ts`; onset tuning is authored in
-`src/content/base/body.jsonnet`, `sleepOnset`.
+`mods/skelly.deadvox.residual/body.jsonnet`, `sleepOnset`.
 
 Moving items, reloading, and wielding are short handling actions: they take
 Real time while the world continues at normal pace. See [Items](#items-and-inventory).
@@ -517,7 +515,7 @@ Until corpse-owned equipment is drawn under #1366, role colours tint the corpse'
 non-lootable underwear base so dead police and soldiers remain readable. The tint is
 not lootable clothing and never applies to the player. Delete the tint path and its
 content palettes when #1366 merges, rather than keeping a second clothing appearance
-beside owned equipment. See `src/content/base/figures-player.jsonnet`, `outfits`,
+beside owned equipment. See `mods/skelly.deadvox.residual/figures-player.jsonnet`, `outfits`,
 `src/render/playerFigure.ts`, `dress`, and `src/render/corpseFigures.ts`, `CorpseFigures`.
 
 The body stays furniture so its gameplay identity does not depend on its drawing.
@@ -777,7 +775,7 @@ large. Adding a point of interest is the trigger to expand those bounds, not a r
 to reserve empty city in advance. Reserving the service campus makes its street approach
 constructible; knowing a clue never grants access. Independent notes in separate civic
 buildings give alternate ways to infer the destination. See
-`src/content/base/gauntlet-layout.libsonnet`, `lots` and `paving`, and
+`mods/skelly.deadvox.residual/gauntlet-layout.libsonnet`, `lots` and `paving`, and
 `src/core/cityLots.ts`, `placeCityLots`.
 
 The play area is closed by physical voxels, not an invisible wall: a continuous
@@ -803,7 +801,7 @@ and stamping cannot diverge. Playable upper floors use authored stairs rather th
 benchmark stacking. Elevated routes reward getting onto structures and traversing
 away from default ground; not every structure must provide one, and existing
 movement remains the only authority. See `src/core/cityPlan.ts`, `buildCityPlan`;
-`src/core/citySite.ts`, `CitySite`; and `src/content/base/gauntlet-city.libsonnet`,
+`src/core/citySite.ts`, `CitySite`; and `mods/skelly.deadvox.residual/gauntlet-city.libsonnet`,
 `templates`.
 
 The start tower guarantees a melee weapon, a revolver and revolver ammunition
@@ -811,8 +809,8 @@ instead of rolling for them, because the player who spawns on the roof can meet
 a fight before reaching the city and a roll that came up empty would leave them
 unarmed. It guarantees a backpack the same way, so the player can carry what
 the tower and the first streets offer before the descent instead of leaving it
-behind. See `src/content/base/gauntlet-start-rooms.libsonnet`, `loot`, and
-`src/content/base/gauntlet-start.libsonnet`, `start`.
+behind. See `mods/skelly.deadvox.residual/gauntlet-start-rooms.libsonnet`, `loot`, and
+`mods/skelly.deadvox.residual/gauntlet-start.libsonnet`, `start`.
 
 Gauntlet stock has three layers. The economy layer is what a building's template
 rolls from its loot context and tables, so a place holds what suits it. The core
@@ -833,7 +831,7 @@ population budget remains open. An authored event carries the promised reward, s
 fixed stock still passes the economy check without bending a place's theme. Stock that suits the place but not
 its context's tier is a content fix to the context instead: the crisis HQ is a
 military command post, so its tier admits military items such as a rifle, and no
-event is needed there. See `src/content/base/crisis-hq.jsonnet`, `military`.
+event is needed there. See `mods/skelly.deadvox.residual/crisis-hq.jsonnet`, `military`.
 A promise names a fixed lot and a container anchor in that lot's building or event and
 leaves the template unchanged. Validation refuses a promise without a fixed lot or
 an anchor, an event outside its lot or over the host's blocks or furniture, and fixed
@@ -849,8 +847,8 @@ following a rail. See `src/core/schema/scenarios.ts`, `ScenarioSchema`;
 `src/core/scenarioComposition.ts`, `scenarioCompositionIssues` and
 `composeScenario` and `eventIssues`; `src/core/placementLoot.ts`,
 `placementLootIssues`; `src/core/inventory.ts`, `furnish`; and
-`src/content/base/scenarios.jsonnet`, `composition`; and
-`src/content/base/gauntlet.jsonnet`, `utilities`.
+`mods/skelly.deadvox.residual/scenarios.jsonnet`, `composition`; and
+`mods/skelly.deadvox.residual/gauntlet.jsonnet`, `utilities`.
 
 A stop's rolled stock follows its place theme, not its building. Each stop takes a
 theme context, the station's carrying the Police usage and the HQ's Military, and
@@ -859,17 +857,17 @@ place is the economy's job (`DESIGN.md`, "Loot"). Two stops of one theme therefo
 roll alike; a stop that should feel unique gets that from its instance layer, not
 its rolls. The station, the HQ and the armed rooms share role tables, and each
 source's context admits only the rows it allows, so the station never rolls the HQ's
-rifles. See `src/content/base/gauntlet-city-building-types.libsonnet`, `armoury_arms`.
+rifles. See `mods/skelly.deadvox.residual/gauntlet-city-building-types.libsonnet`, `armoury_arms`.
 
 The police armoury key lies on a dead officer on the station's roof, which the
 start overlooks. The start's lookout keeps that view clear rather than hiding the
 officer behind its own roof edge. This gives the armoury a route independent of
 the sewer, whose exploration already carries enough. The key route and the
 blowtorch route must remain independent alternatives; neither should require the
-other. See `src/content/base/rural-police.jsonnet`, `templates` and `loot`, and
-`src/content/base/gauntlet-start.libsonnet`, `start` and `mapPieces`.
+other. See `mods/skelly.deadvox.residual/rural-police.jsonnet`, `templates` and `loot`, and
+`mods/skelly.deadvox.residual/gauntlet-start.libsonnet`, `start` and `mapPieces`.
 
-The blowtorch has one source: the secret cellar's footlocker, with one cartridge fitted. No economy table rolls a torch. The torch is one of the armoury's two routes, so a single hidden source keeps that route the price of finding the secret. Spare cartridges are ordinary hardware and garage loot. See `src/content/base/gauntlet-city-cellars.libsonnet`, `reward`, and `src/content/base/loot.jsonnet`, `building_tools`.
+The blowtorch has one source: the secret cellar's footlocker, with one cartridge fitted. No economy table rolls a torch. The torch is one of the armoury's two routes, so a single hidden source keeps that route the price of finding the secret. Spare cartridges are ordinary hardware and garage loot. See `mods/skelly.deadvox.residual/gauntlet-city-cellars.libsonnet`, `reward`, and `mods/skelly.deadvox.residual/loot.jsonnet`, `building_tools`.
 
 The armoury's gun is a proved resource through the key route alone: the certificate
 walks from the start up the officer's ladder, takes the key, comes back down and
@@ -878,12 +876,12 @@ proof, a layout edit that cuts the key's route would go unnoticed until play. Th
 torch is no part of the guarantee, because its route is the bonus for finding the
 secret. A ladder on an outside wall holds the climber flush against the wall, so the
 climb check accepts that pose where the wall runs the whole climb. See
-`src/content/base/scenarios.jsonnet`, `resources`; `src/core/scenarioCertificate.ts`,
+`mods/skelly.deadvox.residual/scenarios.jsonnet`, `resources`; `src/core/scenarioCertificate.ts`,
 `lotResource`; and `src/core/climbCertificate.ts`, `wallBacked`.
 
 Dead scavengers who came for the lab before the player lie by its hatch with
 rolled pockets, so the approach signals that the lab needs preparation before the
-player commits to it. See `src/content/base/gauntlet-service.libsonnet`,
+player commits to it. See `mods/skelly.deadvox.residual/gauntlet-service.libsonnet`,
 `gauntlet_scavenger_pockets`.
 
 The gauntlet is the default entry because one discovery route should carry the playable start rather than compete with a separate sandbox. The authored playtest remains an independently selected route. See `src/game/config.ts`, `makeConfig` and `configFromUrl`.
@@ -898,7 +896,7 @@ area, while authored markers stay separate. The policy is the scenario's
 The gauntlet places one horde rather than one per building group, and stragglers
 carry more of the street pressure. This reuses population and spawn
 admission instead of inventing an enemy-density runtime. See `src/core/schema/scenarios.ts`,
-`ScenarioSchema`; `src/content/base/scenarios.jsonnet`; `src/core/scenarioCity.ts`,
+`ScenarioSchema`; `mods/skelly.deadvox.residual/scenarios.jsonnet`; `src/core/scenarioCity.ts`,
 `scenarioCityPopulation`; `src/core/settlementSpawns.ts`, `settlementActorSpawns`; and
 `src/core/actorSpawns.ts`, `ActorSpawner`.
 
@@ -939,7 +937,7 @@ research level, where the place turns from offices to labs, and special research
 carries more of the dangerous kinds. The rows are slot choices, so a mod retunes a
 level by overriding data. The amalgam is never a weighted row: its body needs space
 built for it, so it has one dedicated marker where that space is. See
-`src/content/base/gauntlet-lab-threat.libsonnet`, `rows` and `amalgamSlot`; and
+`mods/skelly.deadvox.residual/gauntlet-lab-threat.libsonnet`, `rows` and `amalgamSlot`; and
 `test/scenarioCertificate.test.ts`, "lab threat by depth".
 
 One owned assembly supplies the service facade and underground campus, so the
@@ -951,8 +949,8 @@ reading one cannot authorize another. Named civic buildings keep the clues part 
 plausible places, while reserved destination landmarks keep the written directions
 consistent with the designed approach. Utility silhouettes alone should not reveal the
 destination. See
-`src/content/base/gauntlet-service.libsonnet`, `mapAssemblies`;
-`src/content/base/scenarios.jsonnet`, `composition`; and
+`mods/skelly.deadvox.residual/gauntlet-service.libsonnet`, `mapAssemblies`;
+`mods/skelly.deadvox.residual/scenarios.jsonnet`, `composition`; and
 `src/core/scenarioComposition.ts`, `composeScenario`.
 
 Furniture anchors rotate as occupied boxes, while standing poses rotate as
@@ -993,8 +991,8 @@ three dimensions and refuses one that claims a cell another placement owns: a
 corridor may pass under a building but not through it. See
 `src/core/cityUnderground.ts`, `placeUnderground`;
 `src/core/scenarioPortal.ts`, `undergroundPortIssues`;
-`src/content/base/gauntlet-sewer.libsonnet`, `mapAssemblies`; and
-`src/content/base/gauntlet-lab-threat.libsonnet`, `rows`.
+`mods/skelly.deadvox.residual/gauntlet-sewer.libsonnet`, `mapAssemblies`; and
+`mods/skelly.deadvox.residual/gauntlet-lab-threat.libsonnet`, `rows`.
 
 A resource's route passes a lock only with a key the proof takes on its way from
 the start, never a key or tool whose acquisition depends on the resource itself. An
@@ -1029,8 +1027,8 @@ inspiration, not a blueprint: its mood guides the build and BR judges fidelity i
 Looped circulation and separated descents make exploration and retreat choices rather
 than one corridor and a continuous climb. The levels share one builder and one scale,
 so a level's rooms keep their proportions and a fix to the builder reaches every level.
-See `src/content/base/gauntlet-lab-level.libsonnet`, `build`, and
-`src/content/base/gauntlet-lab.libsonnet`, `mapAssemblies` and `anchors`.
+See `mods/skelly.deadvox.residual/gauntlet-lab-level.libsonnet`, `build`, and
+`mods/skelly.deadvox.residual/gauntlet-lab.libsonnet`, `mapAssemblies` and `anchors`.
 
 The stair is the main way down because a building's descent should read as one. A
 lidded shaft remains an alternate return route. Each level's stair and shaft leave from
@@ -1040,8 +1038,8 @@ descent: its loops serve exploration and retreat around the destination. Threat 
 allowed to move between levels; that behaviour is not built. Depth ordering is not a
 promise of isolation. Floors damp sound like walls rather than silencing it between
 storeys; see `src/core/soundOcclusion.ts`, `soundOcclusion`. See
-`src/content/base/gauntlet-lab-administration.libsonnet`, `stair`, and
-`src/content/base/gauntlet-lab-descents.libsonnet`, `shaft`.
+`mods/skelly.deadvox.residual/gauntlet-lab-administration.libsonnet`, `stair`, and
+`mods/skelly.deadvox.residual/gauntlet-lab-descents.libsonnet`, `shaft`.
 
 The objective occupies special research's central chamber so the floor's strongest
 spatial landmark is also its end. The amalgam shares the destination so the final
@@ -1051,16 +1049,16 @@ pit sunk below the chamber floor, so the encounter is a look down from the rim r
 than face to face. The pit gives its whole body room inside special research, so the
 research level above stays untouched and the creature keeps its full size. A ladder in
 the pit lets a player who falls in climb back to the rim. See
-`src/content/base/gauntlet-lab-special.libsonnet`, `pitPiece`, `amalgam` and `objectiveFace`;
-`src/content/base/gauntlet-lab-threat.libsonnet`, `amalgamSlot`; and
-`src/content/base/scenarios.jsonnet`, `composition`.
+`mods/skelly.deadvox.residual/gauntlet-lab-special.libsonnet`, `pitPiece`, `amalgam` and `objectiveFace`;
+`mods/skelly.deadvox.residual/gauntlet-lab-threat.libsonnet`, `amalgamSlot`; and
+`mods/skelly.deadvox.residual/scenarios.jsonnet`, `composition`.
 
 Deeper lab stock keeps the shallower tiers, so depth adds possibilities rather than
 replacing ordinary supplies. Special research's experimental-arms locker rolls a table
 no other source shares, so what it holds is a discovery at the deepest level rather
 than equipment found elsewhere in preparation for it, and none of it is needed for the
 objective. The laser rifle joins that table when #1128 defines it. See
-`src/content/base/gauntlet-lab-special.libsonnet`, `loot`.
+`mods/skelly.deadvox.residual/gauntlet-lab-special.libsonnet`, `loot`.
 
 The hatch-side entrance is open. Each rebuilt level's ways down need that level's own
 keycard, from one authored spot on its open side. A card may be stock in a container
@@ -1077,9 +1075,9 @@ proof. Checking in that order means no card can depend on its own seal or a deep
 which would make the run a dead end. Cards gate ways down, so special research, which
 has none, has no card: level three's seal is the last clearance, and the destination is
 open to whoever reaches the level. See
-`src/content/base/gauntlet-lab-administration.libsonnet`, `seal`;
-`src/content/base/gauntlet-lab-research.libsonnet`, `lab_breached`;
-`src/content/base/gauntlet-lab-level.libsonnet`, `cardStock`;
+`mods/skelly.deadvox.residual/gauntlet-lab-administration.libsonnet`, `seal`;
+`mods/skelly.deadvox.residual/gauntlet-lab-research.libsonnet`, `lab_breached`;
+`mods/skelly.deadvox.residual/gauntlet-lab-level.libsonnet`, `cardStock`;
 `src/core/scenarioCertificate.ts`, `seals`; and `src/core/prying.ts`, `pryPlan`.
 
 Each level is fully built and judged in play before the next one, so the first level
@@ -1097,22 +1095,20 @@ fits its use, so what a search turns up says what the room was for; few rolls an
 heavy nothing weights keep the lab scarce. In-lab papers explain the facility without
 authorizing access: staff notes filed in special research's records vault tell the work
 and its failure but give no directions, so finding the destination stays architectural.
-See `src/content/base/gauntlet-lab-entry.libsonnet`, `rooms` and `plan`;
-`src/content/base/gauntlet-lab-administration.libsonnet`, `rooms`;
-`src/content/base/gauntlet-lab-research.libsonnet`, `rooms`; and
-`src/content/base/gauntlet-lab-special.libsonnet`, `rooms` and `items`.
+See `mods/skelly.deadvox.residual/gauntlet-lab-entry.libsonnet`, `rooms` and `plan`;
+`mods/skelly.deadvox.residual/gauntlet-lab-administration.libsonnet`, `rooms`;
+`mods/skelly.deadvox.residual/gauntlet-lab-research.libsonnet`, `rooms`; and
+`mods/skelly.deadvox.residual/gauntlet-lab-special.libsonnet`, `rooms` and `items`.
 
 Level two's briefing hall is double height: it extends down into a column that the
 research level reserves for it, so a level gains one tall space without a storey of its
 own. The well's walls are whole so the hall stays apart from the research level around
-it, and its floor steps up so a player can climb back out. See `src/content/base/gauntlet-lab-administration.libsonnet`, `well`, and
-`src/content/base/gauntlet-lab-level.libsonnet`, `voids`.
+it, and its floor steps up so a player can climb back out. See `mods/skelly.deadvox.residual/gauntlet-lab-administration.libsonnet`, `well`, and
+`mods/skelly.deadvox.residual/gauntlet-lab-level.libsonnet`, `voids`.
 
-Level two carries a larger population than level one because BR judged it too thin in
-play. Its spawns spread over the briefing hall, the corridor, the canteen and the offices,
-so no single room holds the danger, and the storey below stays at least as dense so threat
-still grows with depth. See `src/content/base/gauntlet-lab-administration.libsonnet`,
-`markers`, and `src/content/base/gauntlet-lab-threat.libsonnet`, `rows`.
+Threat should grow with depth and spread across a level rather than concentrating
+in one room. See `mods/skelly.deadvox.residual/gauntlet-lab-administration.libsonnet`,
+`markers`, and `mods/skelly.deadvox.residual/gauntlet-lab-threat.libsonnet`, `rows`.
 
 The underground campus extends beyond the small service facade because a surface
 disguise must not dictate the lab's capacity. One compiled assembly owns their common
@@ -1120,8 +1116,8 @@ excavation; an independent copy would let the visual preview and playable routes
 Closed descent lids support the neighboring floor cells as well as the ladder column,
 so walking an upper room does not accidentally commit the survivor to a drop. The
 real-city session witness opens these lids and proves the furnished descent and return.
-See `src/content/base/gauntlet-service.libsonnet`, `mapAssemblies`,
-`src/content/base/gauntlet-lab-descents.libsonnet`, `mapPieces`, and
+See `mods/skelly.deadvox.residual/gauntlet-service.libsonnet`, `mapAssemblies`,
+`mods/skelly.deadvox.residual/gauntlet-lab-descents.libsonnet`, `mapPieces`, and
 `test/fixtures/scenarioCertificate.ts`, `traverseScenario`.
 
 Portal anchors address furniture in the finished assembly rather than palette markers
@@ -1166,8 +1162,8 @@ The whole lab shares one grid, fed by a generator on its first subterranean leve
 Its small fuel reserve makes working lights temporary rather than a permanent escape
 from darkness. Lights and machinery declare their electrical roles in content; there
 are no per-level breakers or player refuelling interaction. See
-`src/content/base/gauntlet-lab.libsonnet`, `furniture`;
-`src/content/base/gauntlet-lab-entry.libsonnet`, `rooms`;
+`mods/skelly.deadvox.residual/gauntlet-lab.libsonnet`, `furniture`;
+`mods/skelly.deadvox.residual/gauntlet-lab-entry.libsonnet`, `rooms`;
 `src/core/sitePower.ts`, `SitePower`; and `src/game/session.ts`, `createSession`.
 Darkness also uses world-derived sky transport and ordinary carried light. Finished site placements
 expose the same sky eligibility contract across authored layouts and
@@ -1230,10 +1226,10 @@ Hunting supplies belong at hunting places, rather than wherever a common gun can
 The rifle and .308 ammunition therefore narrow their usage without changing their tiers;
 the hunting scope is Tier2 so a cabin does not give away the roof reward. Cabins and roofs
 share one table so their odds have one owner; admission, not a second table, keeps the
-scope out of Tier1 cabins. See `src/content/base/economy.libsonnet`, `huntingItems`,
-and `src/content/base/loot.jsonnet`, `hunting_cache`.
+scope out of Tier1 cabins. See `mods/skelly.deadvox.residual/economy.libsonnet`, `huntingItems`,
+and `mods/skelly.deadvox.residual/loot.jsonnet`, `hunting_cache`.
 Hunting crates are long enough to hold the rifle: increasing a pocket alone would
-misrepresent the furniture's capacity. See `src/content/base/furniture-hunting.jsonnet`,
+misrepresent the furniture's capacity. See `mods/skelly.deadvox.residual/furniture-hunting.jsonnet`,
 `hunting_crate`.
 
 Both playtest rounds offer a roof hunting place as a reason to climb: the workshop roof
@@ -1241,8 +1237,8 @@ and a weighted townhouse roof choice. The townhouse crate is not guaranteed, pre
 variation. Each roof point takes exact Tier2 without retagging the building or admitting
 lower-tier-only items. A point-level tier beside usage states that exception directly,
 without splitting the building into artificial placements. See
-`src/content/base/templates-workshop.libsonnet`, `workshop_hall`;
-`src/content/base/gauntlet-city-decor.libsonnet`, `gauntlet_roof_hunting`; and
+`mods/skelly.deadvox.residual/templates-workshop.libsonnet`, `workshop_hall`;
+`mods/skelly.deadvox.residual/gauntlet-city-decor.libsonnet`, `gauntlet_roof_hunting`; and
 `src/core/site.ts`, `lootSourcesOf`.
 
 Furniture has no loot table of its own; only a placed container has one, named by the place it stands in, and later by its loot unit's plan. What a container holds follows from where it stands, not from what it is, so a bunker's wardrobe and a bedroom's can hold different things, and no container rolls a table its author never chose.
@@ -1260,8 +1256,8 @@ furniture, pockets and kits weight it low, and the strong analgesics are Medical
 while the common one stays findable anywhere. A medical detour is worth making only if
 the street does not already supply it. Shared tables give one knob for every scenario,
 so Upheaval's survival balance moves with the gauntlet's; whether its pace still works
-waits on a playtest. See `src/content/base/economy.libsonnet`, `medicalItems`, and
-`src/content/base/loot.jsonnet`, `shambler_pockets`.
+waits on a playtest. See `mods/skelly.deadvox.residual/economy.libsonnet`, `medicalItems`, and
+`mods/skelly.deadvox.residual/loot.jsonnet`, `shambler_pockets`.
 
 Loot never depends on the order in which places are visited. There is no map-wide
 running count of what has spawned, because such a count would make one police station's
@@ -1397,8 +1393,8 @@ must obey the same limit so move order cannot create extra storage. See
 
 The ammo can uses the ordinary cuboid item presentation and shed loot, because
 a steel box suits that shape and belongs among tools without needing a firearm
-model or military-only supply. See `src/content/base/items-other.libsonnet`,
-`ammo_can`, and `src/content/base/loot.jsonnet`, `shed_tools`.
+model or military-only supply. See `mods/skelly.deadvox.residual/items-other.libsonnet`,
+`ammo_can`, and `mods/skelly.deadvox.residual/loot.jsonnet`, `shed_tools`.
 
 A soft bag's interior has no bound against its footprint; each bag is balanced
 by hand in content. Two soft bags of one volume, a plastic garbage bag and a
@@ -1454,7 +1450,7 @@ The off-hand state makes it clear whether the player is aiming with a free hand
 or still using what it holds. The rule is shared by first person, third person and
 the mannequin so other players and the third-person camera see the same hands. See
 `src/render/actorAnimator.ts`, `ActorAnimator.update`, and
-`src/content/base/figures-player.jsonnet`, `holds`.
+`mods/skelly.deadvox.residual/figures-player.jsonnet`, `holds`.
 
 **Held screens.** An item with a screen is held at a raised spot with the screen
 facing the eye and the palm on the item's back, the way a person holds a compass
@@ -1494,8 +1490,8 @@ servings, not measured fuel, so liquid transfer does not mix them. See `src/core
 
 Can vessels are inventory atoms because opening and eating retain one vessel,
 not a disassemblable set of parts. Sharing filled-package geometry must not impose
-its mass on an empty vessel; shell and food tuning must remain independent. See `src/content/base/models-items.jsonnet`, `models`,
-`src/content/base/items-food.libsonnet`, `canShellGrams`,
+its mass on an empty vessel; shell and food tuning must remain independent. See `mods/skelly.deadvox.residual/models-items.jsonnet`, `models`,
+`mods/skelly.deadvox.residual/items-food.libsonnet`, `canShellGrams`,
 `packages/thing-authoring-tool/cans.libsonnet`, `shellMassKg`, and
 `src/core/items.ts`, `typeWeightGrams` and `weightOf`.
 
@@ -1540,7 +1536,7 @@ path, not across the back, so it clears a pack; it is drawn with whatever is
 fitted to it, and its sling's strap over the shoulder
 (`DESIGN.md`, "Worn items seen"). See `src/core/firearmFitting.ts`, `SLING_SLOT`;
 `src/core/inventory.ts`, `Inventory.carriedWeight`; and
-`src/content/base/models-firearms.libsonnet`, `slung`.
+`mods/skelly.deadvox.residual/models-firearms.libsonnet`, `slung`.
 
 ### Light mount on a long gun
 
@@ -1553,7 +1549,7 @@ Crafting the taped light consumes a handheld flashlight rather than creating a
 light from mounting hardware. Recipes must explicitly permit consuming fitted
 parts so a flashlight with a battery is usable stock without making ordinary
 crafts swallow filled items. Pocket contents and unfinished work remain excluded.
-See `src/content/base/items-slice2-content.libsonnet`, `make_taped_flashlight_mount`;
+See `mods/skelly.deadvox.residual/items-slice2-content.libsonnet`, `make_taped_flashlight_mount`;
 `src/core/crafting.ts`, `indexCraftReach`; and `src/core/items.ts`, `craftComponentEligible`.
 
 The mount remains a complete light item because removing it or servicing its
@@ -1580,7 +1576,7 @@ The handling weights are content, authored beside the Inventory Management
 skill that scales them, so a mod can retune how long moving things takes. The
 schema requires them and no reader falls back to a code default, because a
 silent default would hide a mod that left one out. See `src/core/inventory.ts`,
-`handlingWeights`, and `src/content/base/recipes.libsonnet`.
+`handlingWeights`, and `mods/skelly.deadvox.residual/inventory.jsonnet`, `handling`.
 
 ### Inventory screen
 
@@ -1648,12 +1644,12 @@ Pill medicines show a blister strip or bottle regardless of stack size, includin
 when one item is one pill. A pack is easier to see and reads as medicine; the
 visual pack does not change dose counts or carried mass. See
 `packages/thing-authoring-tool/food-medical.libsonnet`, `bottle`, and
-`src/content/base/items-other.libsonnet`, `pillPack`.
+`mods/skelly.deadvox.residual/items-other.libsonnet`, `pillPack`.
 
 Food portions depict food rather than a second vessel, so a serving does not
 duplicate the can that owns it. See
 `packages/thing-authoring-tool/food-medical.libsonnet`, `atom`, and
-`src/content/base/items-food.libsonnet`, `beansGrams` and `soupGrams`.
+`mods/skelly.deadvox.residual/items-food.libsonnet`, `beansGrams` and `soupGrams`.
 
 Use one instance look and one state applier across world models, stills and the
 viewer, including each fitted part's own state. Otherwise inspection can claim
@@ -1665,8 +1661,8 @@ Fuel fill is visible only through authored clear geometry, never through an
 opaque vessel. Material-class wear distinguishes rust, fading and greying
 rather than treating every surface as the same substance. Content bands bound
 appearance variants and cold still renders without quantizing simulation state.
-See `src/core/lights.ts`, `supplyShare`, `src/content/base/item-presentation.libsonnet`,
-`decorate`, and `src/content/base/item-wear.jsonnet`, `classes`.
+See `src/core/lights.ts`, `supplyShare`, `mods/skelly.deadvox.residual/item-presentation.libsonnet`,
+`decorate`, and `mods/skelly.deadvox.residual/item-wear.jsonnet`, `classes`.
 
 Model material indices preserve coverage even for unnamed glTF materials. The
 export refresh owns asset metadata; validation rejects incomplete class coverage
@@ -1683,7 +1679,7 @@ See `packages/thing-authoring-tool/handhelds.libsonnet`, `carrier`,
 Model loading is bounded by content so an asset-heavy pack does not exhaust the
 browser's request capacity. A view that needs an unloaded model moves it ahead
 of background preload, so an equipped, visible or spawned item does not wait
-behind unrelated declarations. See `src/content/base/graphics.jsonnet`,
+behind unrelated declarations. See `mods/skelly.deadvox.residual/graphics.jsonnet`,
 `graphics`; `src/render/models.ts`, `ModelLibrary`; and `PILLARS.md`, "Content forward compatibility".
 
 ### Assets and credits
@@ -1824,7 +1820,7 @@ Looking round cover is the purpose of lean, so performance must not depend on
 a still view or change which exposure clears cover.
 See `src/core/lean.ts`, `advanceLean` and `guardLean`;
 `src/core/leanGeometry.ts`, `prepareLeanGeometry`;
-`src/core/leanCollision.ts`, `playerLeanBoxes`; `src/content/base/player.jsonnet`,
+`src/core/leanCollision.ts`, `playerLeanBoxes`; `mods/skelly.deadvox.residual/player.jsonnet`,
 `lean`; `src/game/session.ts`, `preparePlayerStep`; and
 `src/game/inputReplay.ts`, `ReplayStartState`.
 
@@ -1855,7 +1851,7 @@ same sight line. See `src/core/heldPose.ts`, `heldFirearmTransform`.
 Per-gun camera and stock-contact limits override the figure defaults because gun
 dimensions and sight heights differ; anatomy remains independent of the gun.
 See `src/core/adsView.ts`, `adsCameraEye` and `adsLimits`;
-`src/content/base/models-firearms.libsonnet`, `longGunHands`; and
+`mods/skelly.deadvox.residual/models-firearms.libsonnet`, `longGunHands`; and
 `test/firearmSight.test.ts`.
 
 Only the owning view may suppress camera-enclosing flesh during ADS in any
@@ -1865,14 +1861,14 @@ near clipping keeps the remaining limbs and held arms clear without moving the
 actor or gun. The firearm retains
 normal world depth, and external views and shadows retain the whole body. This
 exception is for an enclosing camera, not for hiding world obstructions. Content
-owns the masked body roles and clearance; see `src/content/base/figures-player.jsonnet`,
+owns the masked body roles and clearance; see `mods/skelly.deadvox.residual/figures-player.jsonnet`,
 `aimPose`; `src/render/playerFigure.ts`, `applySelfMask`; and
 `src/render/ownBodyClip.ts`, `OwnBodyClip`.
 
 Hand-fit corrections belong at the authored contact rather than in view-specific
 placement or gun-ID overrides, so hip aim, ADS and external observation cannot
 disagree. Sporting-stock palms must wrap the wrist rather than ride on its top;
-see `src/content/base/long-gun-hands.libsonnet`, `firingHold`.
+see `mods/skelly.deadvox.residual/long-gun-hands.libsonnet`, `firingHold`.
 
 The camera wall check traces the segment from the body eye to the proposed
 camera and pulls back before a hit; collision safety takes priority over sight
@@ -1897,8 +1893,8 @@ pose, so content cannot author those for it. Even there the support elbow
 hangs below its shoulder rather than on the ground, and looking up lifts both
 elbows. Scoped and iron-sighted long guns share the fit. The live camera takes
 the same bounded sight-line correction and wall guard as the other stances. See
-`src/content/base/figures-player.jsonnet`, `proneAdsPose` and
-`proneAdsElbowPole`; `src/content/base/long-gun-hands.libsonnet`, `proneSupport`;
+`mods/skelly.deadvox.residual/figures-player.jsonnet`, `proneAdsPose` and
+`proneAdsElbowPole`; `mods/skelly.deadvox.residual/long-gun-hands.libsonnet`, `proneSupport`;
 and `src/core/playerLookPose.ts`, `figureStancePose`.
 
 Firearm shots start at the shared posed muzzle and follow the barrel, never the
@@ -1960,8 +1956,8 @@ changing an optic must not pull a handgun back into the shooter's face. Camera
 framing must not supply anatomical reach. See `src/core/heldPose.ts`,
 `heldFirearmTransform` and `heldAdsStandoffMetres`; `src/core/playerLookPose.ts`,
 `playerHeldSeatFrame`; `src/core/schema/models.ts`, `GunModelSchema`;
-`src/content/base/models-firearms.libsonnet`; and
-`src/content/base/items-pistol.jsonnet`, `adsStandoffByPitch`.
+`mods/skelly.deadvox.residual/models-firearms.libsonnet`; and
+`mods/skelly.deadvox.residual/items-pistol.jsonnet`, `adsStandoffByPitch`.
 
 Third person remains a debug inspection aid, not a player-facing camera. The
 mannequin is an inert drawing of the same world body, not another simulated actor.
@@ -2010,7 +2006,7 @@ actors, corpses and loose objects read as parts of one world. Player takeoff spe
 keeps a modest obstacle-clearing apex rather than compensating for gravity with a
 higher jump. Longer airtime and horizontal carry are accepted consequences, not
 reasons to split body gravity from the world. See
-`src/content/base/player.jsonnet`, `player`, and `src/game/player.ts`, `physicsFor`
+`mods/skelly.deadvox.residual/player.jsonnet`, `player`, and `src/game/player.ts`, `physicsFor`
 and `steer`.
 
 Movement input steers only a body on the ground. A body in the air has nothing to push against, so input cannot
@@ -2034,7 +2030,7 @@ The lowest gauntlet roofs should hurt modestly without normally opening an
 artery; the tallest should kill roughly one fall in three, not guarantee death.
 These are play-balancing goals, not medical predictions or frozen test rates.
 Calibrate against roof-to-street distances in the authored buildings rather
-than an assumed human storey. See `src/content/base/gauntlet-city.libsonnet`,
+than an assumed human storey. See `mods/skelly.deadvox.residual/gauntlet-city.libsonnet`,
 `templates`, and `src/core/cityPlan.ts`, `buildCityPlan`.
 
 Speed squared represents impact energy; removing the safe-speed energy gives
@@ -2046,7 +2042,7 @@ hurt-by-height curve under shared world gravity by tuning safe impact energy and
 damage scale together, without narrowing the spread: real gravity must not make
 roofs harmless or ordinary jumps injurious. Content owns that balance so it can
 change without changing the injury mechanism. See
-`src/content/base/body.jsonnet`, `landing`, and `src/core/sim.ts`, `Simulation.land`.
+`mods/skelly.deadvox.residual/body.jsonnet`, `landing`, and `src/core/sim.ts`, `Simulation.land`.
 
 ### Bleeding
 
@@ -2131,7 +2127,7 @@ One vest at a time makes the player pick pouches or protection. Whole-region
 coverage keeps layering simple rather than asking the player to judge uncovered
 fractions. Contact can meet a different layer because a puddle reaches boots
 before trousers and a grip reaches gloves before a sleeve. See `src/core/wear.ts`,
-`wornItemMet`; `src/content/base/body.jsonnet`, `coverage` and `touchFirst`.
+`wornItemMet`; `mods/skelly.deadvox.residual/body.jsonnet`, `coverage` and `touchFirst`.
 
 **Eyes slot.** Goggles take their own slot beside the head, so night-vision goggles
 stack with a helmet or a headlamp instead of making the player choose between seeing
@@ -2150,7 +2146,7 @@ The shares, burden, warmth and durability are content tuning, not armour rules.
 Later Vest-slot armour, such as plate carriers and ballistic vests, will carry
 strength in blunt and pierce because hard plates spread a blow and stop a point;
 that is why protection is per kind rather than one number. See
-`src/core/schema/items.ts`, `WearableSchema`; `src/content/base/items-wearables.libsonnet`,
+`src/core/schema/items.ts`, `WearableSchema`; `mods/skelly.deadvox.residual/items-wearables.libsonnet`,
 `items`.
 
 Armour wears by the whole blow because it took the whole blow. Protection holds
@@ -2274,7 +2270,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   the player can see the hit was deflected. Content owns every block number. See
   `src/core/meleeCombat.ts`, `meleeBlock` and `blockJolt`;
   `src/render/playView.ts`, `createPlayView`; `src/game/session.ts`,
-  `blockedDamage`; and `src/content/base/recipes.libsonnet`, `melee_combat`.
+  `blockedDamage`; and `mods/skelly.deadvox.residual/recipes.libsonnet`, `melee_combat`.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
   capacity, handling and noise. Ammunition and magazines are items; a magazine holds its
   cartridges and fits a rifle's magazine slot (see "Magazines" and "Rifles" below). The
@@ -2398,12 +2394,12 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   `ResolvedFirearmTrajectory`, `src/core/shotTrace.ts`, `traceShot`, and
   `src/render/impactEffects.ts`, `ImpactEffects.fire`; the range comes from
   `src/core/skillTraining.ts`, `firearmsCombatTuning`, and
-  `src/content/base/recipes.json`, `firearms_combat`.
+  `mods/skelly.deadvox.residual/ranged-tuning.jsonnet`, `shotTraceRangeBlocks`.
 - **Magazines:** A detachable magazine is an item whose exported model carries gungen's fitted round column. Its calibre and capacity come from that model, as the pump's tube capacity does, so the geometry that fits the rounds also sets how many go in. Its cartridges are item state in feed order, top round first, and save with the magazine; loading pushes onto the top and stripping takes from it, as with a real spring-fed box. Each round loaded or stripped is one handling job, so releasing R loses nothing and the inputs replay deterministically. Hold R loads; stripping is the held magazine's item action, not an R gesture, because R's gestures load, rack and remove (`CONTROLS.md`, "Reload, rack, remove"). Loading and stripping a round both use the firearms skill's reload factor. See `src/core/magazine.ts`, `magazineSpec`, and `src/game/magazineHandling.ts`, `MagazineHandling`.
 - **Rifles:** A magazine is a child item of its firearm, so removing it preserves its identity and state; nested accessories and batteries use the same ownership. Cartridge data owns calibre-specific damage. A magazine change is one handling motion, so holding R does not repeat it and releasing R does not cancel it. Deadvox hand-authors `chargingHandleDegrees` because Gungen exports no value for it. See `CONTROLS.md`, "Reload, rack, remove" and `docs/firearm-cycle-playback.md` for the player actions and their presentation; `src/core/saveFormat.ts`, `wirePayloadSchema`; `src/core/pellets.ts`, `projectileShot`; `src/core/actorSystem.ts`, `ActorSystem.firePellets`; `src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`; `src/game/firearmHandling.ts`, `FirearmMechanics`; and `src/render/handlingTurn.ts`, `handlingRotation`.
 - **Modular weapons:** Fitted accessories remain complete child items so removal and saving preserve identity, condition and nested contents. Default and fitted models use the same slot-frame contract; connector axes keep distinct attachment shapes aligned without per-kind guesses. Dynamic fitting trusts gungen's certificates instead of duplicating its geometry solver, while rail footprints remain separate because a slot anchor does not describe the full occupied span. The sling mount and the light mount, which gungen does not export, are the mounts deadvox owns (see [Shoulder and sling](#shoulder-and-sling) and [Light mount on a long gun](#light-mount-on-a-long-gun)). These boundaries keep rendering, saves and compatibility consistent. Firearm details must remain responsive as the inventory fills while the world continues; see `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.candidates`; `src/ui/inventoryScreen.ts`, `viewModel`; `src/core/items.ts`, `ItemFactory.create`, `snapshotItem` and `restoreItem`; `src/core/itemTree.ts`, `walkItemTree`; `src/render/itemLook.ts`, `itemLook`; and `src/render/models.ts`, `hideSlotNodes` and `ModelLibrary.attachParts`.
 
-  A fitted optic owns the aiming sight line because its mount can obstruct the irons. Visible placement and aiming must share the connector transform so the view and shot remain aligned; see `src/core/firearmSight.ts`, `sightedFirearmModel`. Magnification changes the local sight picture, not the weapon or its ballistics, so zoom selection stays outside saved item and replay state. Content-controlled per-weapon memory lasts for the play session; a fresh session starts at the authored power rather than making a camera preference authoritative simulation state. While an optic is aimed, look sensitivity divides by its applied power so the magnified picture keeps a constant on-screen angular speed; this applies to the surrounding view too because the player has one view direction. See `src/game/opticZoom.ts`, `OpticZoom.appliedPower`; `src/game/input.ts`, `Input.setLookSensitivity`; `src/core/opticView.ts`, `mountedOptic`, `opticViewSettings` and `projectLensAperture`; and `src/render/opticLens.ts`, `OpticLensRenderer`. The digital thermal optic's explicit unavailable-view content mark keeps it out of loot admission, fitting and ADS until a thermal view exists; the mark makes the omission visible and restores its ordinary loot admission when that view lands. Exposing an optic without its defining view would mislead the player. See `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`; `src/content/base/economy.libsonnet`, `authorItem`; and `src/content/base/items-attachments.libsonnet`, `items`.
+  A fitted optic owns the aiming sight line because its mount can obstruct the irons. Visible placement and aiming must share the connector transform so the view and shot remain aligned; see `src/core/firearmSight.ts`, `sightedFirearmModel`. Magnification changes the local sight picture, not the weapon or its ballistics, so zoom selection stays outside saved item and replay state. Content-controlled per-weapon memory lasts for the play session; a fresh session starts at the authored power rather than making a camera preference authoritative simulation state. While an optic is aimed, look sensitivity divides by its applied power so the magnified picture keeps a constant on-screen angular speed; this applies to the surrounding view too because the player has one view direction. See `src/game/opticZoom.ts`, `OpticZoom.appliedPower`; `src/game/input.ts`, `Input.setLookSensitivity`; `src/core/opticView.ts`, `mountedOptic`, `opticViewSettings` and `projectLensAperture`; and `src/render/opticLens.ts`, `OpticLensRenderer`. The digital thermal optic's explicit unavailable-view content mark keeps it out of loot admission, fitting and ADS until a thermal view exists; the mark makes the omission visible and restores its ordinary loot admission when that view lands. Exposing an optic without its defining view would mislead the player. See `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`; `mods/skelly.deadvox.residual/economy.libsonnet`, `authorItem`; and `mods/skelly.deadvox.residual/items-attachments.libsonnet`, `items`.
 
   An attachment is an atom, so its mass is the mass authored for its item, and a fitted gun weighs the sum of its own parts and its fitted items; see `things/README.md`, "Rules". Every atom's item `weight` is authoritative even when atoms share a visual model. Assemblies author no competing item total: their model carries authored body-part masses, with replaceable geometry owned by the fitted child item instead. See `src/core/items.ts`, `typeWeightGrams`, and `src/core/modelMass.ts`, `modelBodyMassKg`. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear, and foregrips affect aim, stance and wear. Effects are tagged with their model's attachment kind, each kind authors every effect it has, wear included as zero for none, and a suppressor model always exports its noise factor: a missing value is a content error rather than a silent neutral default, so an unfinished attachment cannot ship as one that does nothing. Fitting either suppressor requires Firearms Combat 4; removing one has no skill gate. See `src/core/schema/items.ts`, `FirearmAttachmentEffectsSchema` and `AttachmentSchema`; `src/core/content.ts`, `checkItemAttachmentEffects`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`. A powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
 
@@ -2427,7 +2423,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   change it in one place. See `docs/decisions/0006-firearm-handling.md`,
   `src/game/firearmHandling.ts`, `FirearmMechanics`,
   `src/core/scatterPile.ts`, `spentCaseScatter`, and
-  `src/content/base/recipes.json`, `firearms_combat`.
+  `mods/skelly.deadvox.residual/ranged-tuning.jsonnet`, `caseEjection`.
 - **Noise** is an event with loudness and position. Sprinting makes footsteps
   louder; melee, gunshots, doors, breaking glass and engines also make noise.
   Walls reduce how far it travels. Zombies hear, investigate and pass noise on
@@ -2551,7 +2547,7 @@ application rather than weapon-class special cases. See `src/core/schema/actors.
   heavier hit. A severed part's launch and the blood its cut throws are presentation
   shared by the enemy kinds, for one consistent lurid look. They live in content, and
   not in the weapon's impulse, because that impulse also staggers and breaches doors,
-  which are gameplay (`src/content/base/enemies.jsonnet`, `severedGore`;
+  which are gameplay (`mods/skelly.deadvox.residual/enemies.jsonnet`, `severedGore`;
   `src/core/actorSystem.ts`, `ActorSystem.sever`; `src/render/gore.ts`, `Gore.severed`).
   See `src/render/mobActors.ts`, `MobActorMeshes.actorSevered`, for the shared launch.
   Where a droplet lands it leaves a splat. Splats fade and are not
@@ -2657,7 +2653,7 @@ finishes. Give sky work its lead by growing the loaded terrain radius, not by
 shrinking the visible radius or making visible chunks wait for lighting. The
 extra residency trades memory for time to build the next field before it enters
 view; it must not expand mesh or reveal admission. See
-`src/content/base/graphics.jsonnet`, `skyPreloadRings`,
+`mods/skelly.deadvox.residual/graphics.jsonnet`, `skyPreloadRings`,
 `src/render/skylight.ts`, `prepare`, `src/game/streamer.ts`, `dispatchSky`
 and `onBeforeReveal`, and `src/core/skyField.ts`, `finishColumn`.
 
@@ -2668,7 +2664,7 @@ not substitute its incomplete answer for gameplay's current world-state answer.
 Keep an accepted result through edit revalidation and GPU eviction so a door edit
 cannot flash a dark room and re-entry cannot repeat transport. The retained result
 may briefly delay a visible edit; that latency is preferable to a false transient
-room. See `src/content/base/graphics.jsonnet`, `unbuiltSkyCap`,
+room. See `mods/skelly.deadvox.residual/graphics.jsonnet`, `unbuiltSkyCap`,
 `src/core/skyField.ts`, `SkyFields`, and `src/render/skylight.ts`, `Skylight`.
 
 Worker execution protects rendering from dense transport work, but copying, submission,
@@ -2831,29 +2827,29 @@ flatter arc rather than extending flight to preserve curvature. Drag must not
 shorten range while presentation leaves an item floating through an undragged
 path. Replay records launch strength rather than a drag-adjusted distance so it
 can reproduce flight with the recorded aim. See
-`src/content/base/inventory.jsonnet`, `throwFlightSimSeconds`, and
+`mods/skelly.deadvox.residual/inventory.jsonnet`, `throwFlightSimSeconds`, and
 `src/core/itemThrow.ts`, `throwDistanceForItem`, `flightForItem` and
 `steppedItemFlight`.
 
 Drag derives from footprint and mass so items need no individual drag rows. The
 footprint is a cell-rounded outline, not the face that meets the air, so one
 coefficient stands in for shape and tumbling. See
-`src/content/base/inventory.jsonnet`, `throwDrag`.
+`mods/skelly.deadvox.residual/inventory.jsonnet`, `throwDrag`.
 
 ## Hand grenade
 
-A grenade thrown into the horde is meant to be the playtest's climax: the one moment the player can answer a whole crowd at once, with the gore to show it. The FOB armoury holds the grenades, and the horde outside the FOB's west wall stands within earshot of prying the armoury lock through the compound's walls, so forcing the armoury brings the crowd the grenades are for, while the key leaves the horde where it stands. It stands on the west side so the crouch passage through the east wall stays a quiet way in, away from the crowd. See `src/content/base/items-explosives.libsonnet`, `frag_grenade`; `src/content/base/layouts-playtest.json`, `fob_west`; and `src/core/agentPerception.ts`, `hearVocalNoise`, for how far a horde hears.
+A grenade thrown into the horde is meant to be the playtest's climax: the one moment the player can answer a whole crowd at once, with the gore to show it. The FOB armoury holds the grenades, and the horde outside the FOB's west wall stands within earshot of prying the armoury lock through the compound's walls, so forcing the armoury brings the crowd the grenades are for, while the key leaves the horde where it stands. It stands on the west side so the crouch passage through the east wall stays a quiet way in, away from the crowd. See `mods/skelly.deadvox.residual/items-explosives.libsonnet`, `frag_grenade`; `mods/skelly.deadvox.residual/layouts-playtest.json`, `fob_west`; and `src/core/agentPerception.ts`, `hearVocalNoise`, for how far a horde hears.
 
 - **Pulling the pin is an action.** The held grenade's primary action pulls the pin, or puts it back, and says which; the item's details show the pin, or a burning fuse. Arming takes a deliberate act, so a grenade is never live by accident. See `src/core/explosive.ts`, `Fuses.togglePin`, and `src/game/play.ts`, `togglePin`.
 - **The fuse lights when the hand lets go.** An unpinned grenade lights the moment it is anywhere but a hand: thrown, dropped, or put away, because nothing holds the lever once the grip opens. A pinned grenade that is thrown remains a dud, and re-pinning before release makes it safe. There is no cooking, and a lit fuse cannot be stopped. Pin and fuse are saved on the item, including while its presentation arc is playing. The fuse counts down in simulation time inside the zombies system's step rather than in a system of its own, because the scheduler's set of systems is part of the save. See `src/core/explosive.ts`, `Fuses.advance`, and `src/game/session.ts`, `detonate`.
-- **The lever flying off is the only sign of a lit fuse.** When the fuse lights, the grenade is drawn without its lever and a short-lived copy of the lever springs away, because the lever flying off is how a real live grenade shows itself. There is no smoke, spark or glow: a real fragmentation fuse burns inside the body, and a visible one would look wrong and would also set the look of every fused throwable. Any fused throwable whose model names a lever part takes the same path, and its launch and lifetime are content. See `src/core/schema/models.ts`, `LeverModelSchema`; `src/content/base/models-items.jsonnet`; and `src/render/leverProps.ts`, `LeverProps`.
+- **The lever flying off is the only sign of a lit fuse.** When the fuse lights, the grenade is drawn without its lever and a short-lived copy of the lever springs away, because the lever flying off is how a real live grenade shows itself. There is no smoke, spark or glow: a real fragmentation fuse burns inside the body, and a visible one would look wrong and would also set the look of every fused throwable. Any fused throwable whose model names a lever part takes the same path, and its launch and lifetime are content. See `src/core/schema/models.ts`, `LeverModelSchema`; `mods/skelly.deadvox.residual/models-items.jsonnet`; and `src/render/leverProps.ts`, `LeverProps`.
 - **The pin shows on the model until it is pulled; the lever stays on until release.** A pulled pin leaves the model and comes back when it is put back in, because our rules let the player re-pin a held grenade, so the model has to show which state it is in. The lever stays on after the pin is out, because on a real grenade the hand keeps the lever down; the lever flies and the fuse starts when the grip opens. See `src/core/schema/models.ts`, `PinModelSchema`, and `src/render/itemLook.ts`, `itemLook`.
 - **It goes off where it is:** at its simulation position, whether the grenade is in a pile or with whoever picked it up. A render-only throw arc never moves its fuse or detonation point. See `detonationPoint` and `detonate` in `src/game/session.ts`.
 - **The blast kills most of the way to its radius.** It reaches every body whose centre it sees, falling to nothing at its radius; a wall between stops it. It kills a shambler over most of its radius and severs limbs nearly to its edge, and it strikes the limbs before the region that kills, so a close blast tears limbs off before it drops the body: the giblets are the point. Which region kills is one rule shared with individual hits, so a blast and a hit never disagree on it. Its own push falls off with its damage and throws the severed parts outward. A full-strength level throw clears the blast, while fragments extend beyond it as a separate hazard; a short throw can still put the thrower in the blast. See `src/core/explosive.ts`, `blastShare`, and `src/core/actorSystem.ts`, `lethalRegion` and `ActorSystem.detonate`.
 - **Fragments are seeded shots.** They are rays through the same hit test as shotgun pellets, so walls and bodies stop them and fewer reach a farther body. One fragment severs a shambler's limb, and they reach past the blast, so a crowd around the landing point comes apart. A full-strength throw carries the player beyond fragment reach; shorter throws can still expose the player to fragments. Each ray is traced against every body in range, so the count sets the cost of the moment; the schema caps it. See `src/core/explosive.ts`, `fragmentDirections`; `ActorSystem.firePellets`; and `src/core/schema/items.ts`, `ExplosiveSchema`.
 - **The player takes the same falloff, line of sight and fragments** in a simpler model: one blast hit to the torso, and fragments traced against a body box, which zombie bodies do not shield. A short throw hurts the thrower. See `src/core/explosive.ts`, `fragmentHitsOnBody`.
 - **The blast is the player's noise, heard from where it went off.** It carries further than any other sound, so it draws zombies from far around to the blast rather than to the thrower.
-- **The blast sounds like an explosion; the flash is a placeholder.** The sound is a recorded explosion, because a pitched-down gunshot read as a gun rather than the climax the grenade is for. See `src/content/base/sounds.jsonnet`, `grenade_blast`, and `src/render/blastFlashes.ts`, `BlastFlashes`.
+- **The blast sounds like an explosion; the flash is a placeholder.** The sound is a recorded explosion, because a pitched-down gunshot read as a gun rather than the climax the grenade is for. See `mods/skelly.deadvox.residual/sounds.jsonnet`, `grenade_blast`, and `src/render/blastFlashes.ts`, `BlastFlashes`.
 
 Grenade previews use the spawn menu or a mod-owned start row; a restored inventory remains save-owned. See `docs/url-mods.md`, "Start state in mods".
 
@@ -2897,7 +2893,7 @@ so tuning player movement does not also choose enemy obstacle reach. Keep a
 modest hop apex under shared world gravity rather than letting enemies clear
 containment walls. Longer airtime is accepted; a separate enemy gravity would
 make the same world read differently for different bodies. See
-`src/content/base/enemies.jsonnet`, `jumpMetresPerSimSecond`,
+`mods/skelly.deadvox.residual/enemies.jsonnet`, `jumpMetresPerSimSecond`,
 `src/core/schema/actors.ts`, `ActorSchema`, and `src/core/actorSystem.ts`,
 `ActorSystem.stepActorBody` and `canJumpObstacle`.
 
@@ -2907,7 +2903,7 @@ Use shared world gravity for the glob, with faster content launch speed to keep
 a shallow level-shot curve rather than lofting it above intervening bodies and
 cover. Earlier impact and less dodge time are accepted costs of that curve;
 elevated shots and spread need not reproduce a different gravity's trajectory.
-See `src/content/base/enemies.jsonnet`, `globMetresPerSimSecond`,
+See `mods/skelly.deadvox.residual/enemies.jsonnet`, `globMetresPerSimSecond`,
 `src/core/actorSystem.ts`, `ActorSystem.resolveAcidSpit`, and
 `docs/acid-zombie.md`, "The spit".
 
@@ -2953,15 +2949,15 @@ unloaded terrain, it waits like any unloaded actor until the abstract tier of
 
 ### Amalgam body and damage (#308)
 
-Authored pitch lets the fused creature keep a distinct low voice without requiring separate recordings. See `src/content/base/enemies.jsonnet`, `soundPitchMultiplier`, `src/core/schema/actors.ts`, `ActorSchema`, and `src/game/session.ts`, `admitSound`. The generated manifest must remain the anatomy authority, avoiding a second hand-written list. A conservative envelope suffices where only overall size matters; visible contact needs flesh geometry instead. Authored jumping rules keep blocking independent of the jump probe's position within that envelope. See `src/content/base/enemies.jsonnet`, `amalgam`; `src/core/schema/actors.ts`, `ActorSchema`; `src/core/actorSystem.ts`, `ActorSystem.stepActorBody` and `terrainStance`; `src/core/fusedMassFigure.ts`, `fusedMassFigure` and `fusedMassCollisionEnvelope`; `src/core/spawnClearance.ts`; and `src/core/physics.ts`, `Body` and `separateBodies`.
+Authored pitch lets the fused creature keep a distinct low voice without requiring separate recordings. See `mods/skelly.deadvox.residual/enemies.jsonnet`, `soundPitchMultiplier`, `src/core/schema/actors.ts`, `ActorSchema`, and `src/game/session.ts`, `admitSound`. The generated manifest must remain the anatomy authority, avoiding a second hand-written list. A conservative envelope suffices where only overall size matters; visible contact needs flesh geometry instead. Authored jumping rules keep blocking independent of the jump probe's position within that envelope. See `mods/skelly.deadvox.residual/enemies.jsonnet`, `amalgam`; `src/core/schema/actors.ts`, `ActorSchema`; `src/core/actorSystem.ts`, `ActorSystem.stepActorBody` and `terrainStance`; `src/core/fusedMassFigure.ts`, `fusedMassFigure` and `fusedMassCollisionEnvelope`; `src/core/spawnClearance.ts`; and `src/core/physics.ts`, `Body` and `separateBodies`.
 
-Visible and gameplay size must not drift apart, so rendering, collision, hit regions and reach share the authored body scale. See `src/content/base/enemies.jsonnet`, `bodyScale`; `src/core/fusedMassFigure.ts`, `fusedMassFigureForType`; `src/core/actorRegions.ts`, `posedFusedMassRegionBoxes`; and `src/core/actorState.ts`, `actorAttackReachMetres`.
+Visible and gameplay size must not drift apart, so rendering, collision, hit regions and reach share the authored body scale. See `mods/skelly.deadvox.residual/enemies.jsonnet`, `bodyScale`; `src/core/fusedMassFigure.ts`, `fusedMassFigureForType`; `src/core/actorRegions.ts`, `posedFusedMassRegionBoxes`; and `src/core/actorState.ts`, `actorAttackReachMetres`.
 
-Member loss must stay local to that member so damage does not silently disable the rest of the fused body. Saving and restoring must preserve that distinction without a second anatomy definition. See `src/core/actorSystem.ts`, `ActorSystem.applyMeleeHit`; `src/core/actorState.ts`, `activeFusedMassMembers` and `actorAttackReachMetres`; `src/core/saveFormat.ts`, `wirePayloadSchema`; and `src/content/base/enemies.jsonnet`, `amalgam.regions`.
+Member loss must stay local to that member so damage does not silently disable the rest of the fused body. Saving and restoring must preserve that distinction without a second anatomy definition. See `src/core/actorSystem.ts`, `ActorSystem.applyMeleeHit`; `src/core/actorState.ts`, `activeFusedMassMembers` and `actorAttackReachMetres`; `src/core/saveFormat.ts`, `wirePayloadSchema`; and `mods/skelly.deadvox.residual/enemies.jsonnet`, `amalgam.regions`.
 
-A center-mass pump blast should not end the fight immediately, while focused fire should allow member loss before core death. The resulting shell count is balance tuning, not a fixed gameplay contract. See `test/fusedMass.test.ts`; `src/content/base/enemies.jsonnet`, `amalgam.regions`; and `src/core/actorSystem.ts`, `ActorSystem.firePellets`.
+A center-mass pump blast should not end the fight immediately, while focused fire should allow member loss before core death. The resulting shell count is balance tuning, not a fixed gameplay contract. See `test/fusedMass.test.ts`; `mods/skelly.deadvox.residual/enemies.jsonnet`, `amalgam.regions`; and `src/core/actorSystem.ts`, `ActorSystem.firePellets`.
 
-The amalgam reuses `ActorSystem`'s perception, attention, movement and attack lifecycle: it wanders slowly until it notices the player, then takes a direct, heavy approach, telegraphing its more severe attack before damage resolves. Its pace and attack severity live in the zombie type data rather than a scripted phase or code default. A hit snaps the shared `core` pose so the fused body reacts as one while renderer and hit-region FK stay aligned. See `src/content/base/enemies.jsonnet`, the amalgam type; `src/core/actorSystem.ts`, `ActorSystem`; and `src/core/actorPose.ts`, `posedActor`.
+The amalgam shares ordinary enemy decisions rather than a second lifecycle. Content owns its heavy pace and attack severity; visible hit reactions and hit geometry must agree. See `mods/skelly.deadvox.residual/enemies.jsonnet`, `amalgam`; `src/core/actorSystem.ts`, `ActorSystem`; and `src/core/actorPose.ts`, `posedActor`.
 
 Debug spawn placement must leave room to observe an approach without embedding the body in solid geometry or changing its combat reach. See `src/debug/shamblerSpawning.ts`, `spawnActorType`; `src/bench/shamblerPlacement.ts`, `placeShamblerRing`; and `src/core/actorState.ts`, `actorAttackReachForDef` and `actorBodyDimensions`.
 
@@ -2969,7 +2965,7 @@ A surviving amalgam attacks with a tentacle that strikes in a straight line from
 
 The rendered tentacle and simulation strike must share an origin and the same reach cap so the visible attack explains contact. A fixed interior point keeps a change in the player's bearing from moving the root between the core's lobes; presentation must not add simulation state. See `src/core/actorMotion.ts`, `withinAttackReach`; `src/core/fusedMassFigure.ts`, `fusedMassStrikeOrigin`; `src/render/fusedMassTentaclePose.ts`, `fusedMassTentaclePose`; and `src/render/mobActors.ts`, `MobActorMeshes.updateTentacle`.
 
-Carving reuses the hit test's struck voxel so visible wounds cannot disagree with contact. One shot should read as one chunk, not let successive pellets tunnel through the body. On a body this size, a full close shotgun blast should read as a chunk several voxels across; that visual intention guides carving's authored values. The tentacle's root must retain flesh so the attack cannot appear to start in a hole. See `src/content/base/enemies.jsonnet`, `carving`; `src/core/schema/actors.ts`, `ActorSchema`; `src/core/fusedMassCarving.ts`, `carveAround` and `protectedCoreCell`; and `src/core/actorSystem.ts`, `ActorSystem.carve`.
+Carving reuses the hit test's struck voxel so visible wounds cannot disagree with contact. One shot should read as one chunk, not let successive pellets tunnel through the body. On a body this size, a full close shotgun blast should read as a chunk several voxels across; that visual intention guides carving's authored values. The tentacle's root must retain flesh so the attack cannot appear to start in a hole. See `mods/skelly.deadvox.residual/enemies.jsonnet`, `carving`; `src/core/schema/actors.ts`, `ActorSchema`; `src/core/fusedMassCarving.ts`, `carveAround` and `protectedCoreCell`; and `src/core/actorSystem.ts`, `ActorSystem.carve`.
 
 Holes must change contact without changing damage, region health or severing: visible wounds represent damage already taken, not extra durability loss. They must survive saves and replay deterministically, and restores must refuse holes no play could make. See `test/fusedMass.test.ts`; `src/core/saveFormat.ts`, `wirePayloadSchema`; and `src/core/actorSystem.ts`, `ActorSystem.restoreState`.
 
@@ -2994,14 +2990,14 @@ height-extents table: its upkeep costs more than the collision it avoids. See
 
 **Movement and corners.** A type's `locomotion` says how it moves relative to its facing. A `forward` walker, as every shambler type is, moves only where it faces, so it turns before it heads somewhere new. The amalgam is `omnidirectional`: it moves toward its goal at once while its facing turns toward the goal at the type's turn rate, so its sight, its reach and its look still follow the facing. A body its size that must face where it walks spends its time turning before it can move off a wall or toward a player beside it. Its pose has no gait, so moving sideways or backwards shows no foot slide.
 
-It keeps a shambler's decisions, the same senses, targets and modes, but steers its size round corners, door frames, pillars and wall ends, so it stays a threat instead of grinding against them. `ActorSystem.wallAhead` notices a wall by moving a body's shape the lookahead distance along its aim and testing that shape against terrain, so a block corner the centre line clears but the body catches still counts as contact. A shambler's body box and the amalgam's flesh both pass that shape-along-aim test, the amalgam's shape being its flesh. A shambler then slides off to a seeded side and sometimes wanders, while at a new contact the amalgam slides to the side its flesh can move to: met at a slant, that is the side the wall leads it along, and caught on a door frame, the side that frees it, where a random side could back it out of the doorway it is squeezing through. If both sides are open, or neither side is free as when snug in a doorway, it draws its side as a shambler does. This costs one shape test per moving tick and two more when a contact starts. See `src/core/schema/actors.ts`, `ActorSchema`; `src/content/base/enemies.jsonnet`, the amalgam type; and `src/core/actorMotion.ts`, `steer`; and `src/core/actorSystem.ts`, `ActorSystem.wallAhead` and `ActorSystem.openSide`.
+The amalgam must steer its size around obstacles without gaining a separate decision system. Body-shape contact matters where a centre-line ray would miss a corner; a usable slide direction should keep it threatening rather than back it out of a doorway. Seeded ambiguity preserves deterministic behaviour. See `src/core/schema/actors.ts`, `ActorSchema`; `mods/skelly.deadvox.residual/enemies.jsonnet`, `amalgam`; `src/core/actorMotion.ts`, `steer`; and `src/core/actorSystem.ts`, `ActorSystem.wallAhead` and `ActorSystem.openSide`.
 
 Carving must expose flesh-coloured hole walls from every side, and a corpse must retain its visible wounds. Flying flesh and landing splats are presentation, not extra simulation entities: they make the hit readable without burdening saves or combat with decorative debris. Keep flesh's presentation budget independent of bodies and severed limbs so carving cannot erase those visual witnesses. See `src/render/fusedMassFlesh.ts`, `buildCarvedGeometry` and `FleshChunks`, and `src/render/mobActors.ts`, `MobActorMeshes.actorCarved`.
 
 The runner's threat comes from speed rather than stronger attacks; the crawler's
 low posture confines its bite to the legs. Keep their moves, hit regions, sounds and
-spawn chance authored with the type. See `src/content/base/enemies.jsonnet` and the
-spawn markers in `src/content/base/templates.json`. Type weights scale authored
+spawn chance authored with the type. See `mods/skelly.deadvox.residual/enemies.jsonnet` and the
+spawn markers in `mods/skelly.deadvox.residual/templates.json`. Type weights scale authored
 marker chances and choose settlement wanderers, keeping rarity a content property
 rather than an inference from generated counts.
 
@@ -3072,16 +3068,16 @@ crouch rules. See `src/core/agentPerception.ts`, `hearingTier`, `hearVocalNoise`
   than silently playing under a hidden sun. Solar boundaries, not fixed clock hours,
   should govern sight, roaming and named spawn windows. Terrain height alone should
   not end a clear pursuit: occlusion, not vertical range cost, bounds sight over a rise.
-  See `src/content/base/dayCycle.json`, `dayCycle`; `docs/content.md`, "Day cycle";
+  See `mods/skelly.deadvox.residual/dayCycle.json`, `dayCycle`; `docs/content.md`, "Day cycle";
   `src/core/dayPhase.ts`, `dayPhaseAt`; `src/core/agentPerception.ts`, `seesPlayer`;
   `src/core/agentHorde.ts`, `AgentHorde.updateHordes`; and `src/core/clock.ts`, `resolveSpawnTime`.
-- Shamblers must keep approaching without route planning: ordinary collision, jumping and seeded obstacle reactions provide local movement rather than knowledge of a route. See `src/core/actorSystem.ts`, `ActorSystem.tick`; and `src/core/agent.ts`, `openWanderHeadings`; tuning belongs to `src/content/base/enemies.jsonnet`.
+- Shamblers must keep approaching without route planning: ordinary collision, jumping and seeded obstacle reactions provide local movement rather than knowledge of a route. See `src/core/actorSystem.ts`, `ActorSystem.tick`; and `src/core/agent.ts`, `openWanderHeadings`; tuning belongs to `mods/skelly.deadvox.residual/enemies.jsonnet`.
 - Shamblers do not gain stair knowledge from an attention target on another floor.
 - For #281, visible prey suppresses obstacle wandering so local avoidance does not distract a shambler from an exposed target. See `src/core/agentPerception.ts`, `seesPlayer`; and `src/core/actorSystem.ts`, `ActorSystem.tick`.
 - Keep the established per-tick order because later phases consume state produced by earlier simulation steps. Named phases make that dependency reviewable; see `src/core/actorSystem.ts`, `ActorSystem.tick`.
-- **Quiet-sound hesitation:** Loudness, not a sound category, makes a noise urgent. Movement expresses existing interest without a heard-noise history or a random pursue roll. Hordes should remain decisive, and continuous movement hearing must not restart a discrete-noise pause. See `src/core/agent.ts`, `AgentController.updateAttention`, `AgentController.tickHesitation` and `AgentController.beginStroll`; tuning belongs to `src/content/base/enemies.jsonnet`, `hearingModel`.
-- **Idle voices:** Each nearby enemy lengthens an idle cue's interval, so a crowd does not become a steady stream of idle audio that gets to be too much. Radius and the density curve are authored per type. See `src/core/agent.ts`, `AgentController.updateIdleSound`; `src/core/schema/actors.ts`, `ActorSchema`; and `src/content/base/enemies.jsonnet`, the shambler type.
-- **Shared interest:** Searching and returning bodies already act on their own memory, so recruiting them would re-arm echoes. Sharing the target and its uncertainty keeps listeners interested in the stimulus rather than the caller. The cry cooldown limits cries rather than interest, preventing ping-pong without hop damping. Persisting the last cry prevents loading from restarting the echo. Draining calls before movement prevents entity order from delaying listeners, and pending calls must not enter saves. See `src/core/agent.ts`, `AgentController.cryAlert`, `AgentController.announcePursuit` and `AgentController.processChainStimuli`; tuning belongs to `src/content/base/enemies.jsonnet`, `hearingModel`.
+- **Quiet-sound hesitation:** Loudness, not a sound category, makes a noise urgent. Movement expresses existing interest without a heard-noise history or a random pursue roll. Hordes should remain decisive, and continuous movement hearing must not restart a discrete-noise pause. See `src/core/agent.ts`, `AgentController.updateAttention`, `AgentController.tickHesitation` and `AgentController.beginStroll`; tuning belongs to `mods/skelly.deadvox.residual/enemies.jsonnet`, `hearingModel`.
+- **Idle voices:** Each nearby enemy lengthens an idle cue's interval, so a crowd does not become a steady stream of idle audio that gets to be too much. Radius and the density curve are authored per type. See `src/core/agent.ts`, `AgentController.updateIdleSound`; `src/core/schema/actors.ts`, `ActorSchema`; and `mods/skelly.deadvox.residual/enemies.jsonnet`, `shambler`.
+- **Shared interest:** Searching and returning bodies already act on their own memory, so recruiting them would re-arm echoes. Sharing the target and its uncertainty keeps listeners interested in the stimulus rather than the caller. The cry cooldown limits cries rather than interest, preventing ping-pong without hop damping. Persisting the last cry prevents loading from restarting the echo. Draining calls before movement prevents entity order from delaying listeners, and pending calls must not enter saves. See `src/core/agent.ts`, `AgentController.cryAlert`, `AgentController.announcePursuit` and `AgentController.processChainStimuli`; tuning belongs to `mods/skelly.deadvox.residual/enemies.jsonnet`, `hearingModel`.
 - **Attention and attacks:** Sight and hearing remain the authorities for choosing targets, so interest chaining must not replace visible prey. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `src/core/agentPerception.ts`, `seesPlayer` and `farBearingTarget`; and `src/core/actorMotion.ts`, `withinAttackReach`.
 - **Background steps:** Background zombies beeline in big, cheap steps. Each type's content caps how far one step moves it, because that cap, not the chase speed, sets how fast a fast type closes in while unseen. The background tick rate stays in code: it is the scheduler's cadence, saved with its phase, so it is engine timing rather than tuning. See `src/core/schema/actors.ts`, `ActorSchema`, and `src/core/actorSystem.ts`, `ActorSystem.tickBackground`.
 - **Distant attention and noise persistence:** Solar preference must not replace an active noise target. Distance alone must not make an unseen zombie pursue the player. See `src/core/agentHorde.ts`, `AgentHorde.updateHordes`; and `src/core/actorSystem.ts`, `ActorSystem.tickBackground`.
@@ -3158,7 +3154,7 @@ on the barrel rather than carrying it. Missing export geometry must fail
 instead of hiding the omission behind a guessed hold. Mirroring must retain
 the support hand's gun-side contact. Nominal eye-relative seating remains for
 isolated item presentation and optical effects, not the anatomical actor's
-physical hold. See `src/content/base/long-gun-hands.libsonnet`, `firingHold`;
+physical hold. See `mods/skelly.deadvox.residual/long-gun-hands.libsonnet`, `firingHold`;
 `src/core/schema/models.ts`, `HandsModelSchema`; `src/core/heldPose.ts`, `heldHoldFrame`;
 and `src/core/content.ts`, `checkHeldHands`.
 
@@ -3247,7 +3243,7 @@ Every named support must carry the add-on's required word: adding that word is e
 to make a part a support, without giving `structure` a second meaning. See
 `src/core/inventory.ts`, `Inventory.vehiclePlacementRefusal`. A player-fitted plate
 belongs with add-ons because it proves support chains without bringing scratch-building
-forward. See `src/content/base/vehicles.jsonnet`, `mounting_plate`, and
+forward. See `mods/skelly.deadvox.residual/vehicles.jsonnet`, `mounting_plate`, and
 `packages/thing-authoring-tool/vehicle-parts.libsonnet`, `mounting_plate`.
 
 A stopped or refused action must not orphan or duplicate the selected item; see
@@ -3318,7 +3314,7 @@ a reworded pack relabels saved vehicles; see `src/core/vehicleInstances.ts`, `ve
     `worldBricks`, uses the same projection for accelerated physics and navigation.
     This exterior cell approximation leaves clear exported space unfilled rather than
     inventing a cabin envelope. `src/core/schema/items.ts`, `ItemSchema`, validates the
-    per-part obstruction channels, and `src/content/base/vehicles.jsonnet`, `part`,
+    per-part obstruction channels, and `mods/skelly.deadvox.residual/vehicles.jsonnet`, `part`,
     authors their policy. `src/core/collision.ts`, `worldOpaque`, `worldSoundBlocking`
     and `worldMeleeBlocker`, plus `src/game/session.ts`, `createSession`, route those
     channels to sight, hearing, combat, light, projectiles and blasts. Shared furniture
@@ -3479,7 +3475,7 @@ play, not only decorate it.
   The gauntlet's sewer stops short of the wall and builds none. See
   [Gauntlet](#gauntlet). New structures and reworks follow this direction;
   retrofitting existing structures is tracked
-  in #396. See `src/content/base/camp.libsonnet`, `camp_wall_run`, `camp_gate`, and
+  in #396. See `mods/skelly.deadvox.residual/camp.libsonnet`, `camp_wall_run`, `camp_gate`, and
   `camp_gate_return`.
 - **Wildlife as scenery:** birds, crows on the dead and flies help the player
   read the place, the bodies and the decay. They're environmental cues, not an
@@ -3518,7 +3514,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   through it can leave disconnected slivers above an otherwise complete composited disc. Both camera owners use
   authored near-plane policy supplied by the engine, rather than protecting only the optical adapter. See `src/core/schema/graphics.ts`,
   `GraphicsTuningSchema`; `src/game/engine.ts`, `createEngine`; and `src/render/hands.ts`, `HeldItems`.
-- **Optic presentation tuning is content:** the player view and lens-edge controls remain content-owned so look nudges do not require a code round. See `src/content/base/graphics.jsonnet`, `graphics`; `src/core/schema/graphics.ts`, `GraphicsTuningSchema`; and `src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
+- **Optic presentation tuning is content:** the player view and lens-edge controls remain content-owned so look nudges do not require a code round. See `mods/skelly.deadvox.residual/graphics.jsonnet`, `graphics`; `src/core/schema/graphics.ts`, `GraphicsTuningSchema`; and `src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
 - **Optic eye relief is authored per optic so imperfect alignment reads at 1x:** the dot marks the shot direction and drifts against the housing by the eye's lateral offset over the relief, so a long relief hides the sway that skill is meant to fade. See `packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`; and `src/render/hands.ts`, `HeldItems.poseOptic`.
 - **The optic window has no drawn border:** the optic's own housing already frames the view, and a second frame
   hides more of the scene. At unity a replacement image keeps nearby gun features, as a real 1× sight does, but
@@ -3629,7 +3625,7 @@ decoration.
   Larger figures should sound heavier regardless of their build or product
   identity, so humanoid voice-law tuning is shared rather than type-specific.
   Body-size pitch affects playback only, never hearing or simulation. See
-  `src/game/actorAudio.ts`, `actorVoiceLaw`, and `src/content/base/senses.jsonnet`,
+  `src/game/actorAudio.ts`, `actorVoiceLaw`, and `mods/skelly.deadvox.residual/senses.jsonnet`,
   `actorVoice`.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest
@@ -3723,16 +3719,11 @@ The repair entry stays debug-gated while #1469 settles input selection. The turn
   affordances grow. See `src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`. Utilities
   such as the compass and the wristwatch are items the player finds and holds
   (#183).
-- **Core mods set the UI's spacing and size.** `spacing` multiplies every
-  margin, padding and gap, so a value below 1 packs the UI for smaller screens;
-  padding that reserves room for a label or glyph follows the text size instead.
-  `hudScale` sizes the HUD and menus, so a player can leave page zoom to the
-  browser and still tweak the HUD. Edge insets, such as the HUD's offset from the
-  screen edge and the inventory's inset from the window, follow `hudScale`, not
-  `spacing`. `src/content/base/ui.jsonnet`, the `ui`
-  section, owns the values; `src/ui/uiTokens.ts`, `applyUiTokens`, installs them
-  on the document root at startup, and validation requires the core entry
-  (`src/core/content.ts`, `requiredContentIssues`).
+- **Core mods set the UI's spacing and size.** Content-owned density and HUD
+  scale let players adapt the interface without making page zoom authoritative.
+  Text-reserving space must remain legible as density changes. See
+  `mods/skelly.deadvox.residual/ui.jsonnet`, `ui`; `src/ui/uiTokens.ts`,
+  `applyUiTokens`; and `src/core/content.ts`, `requiredContentIssues`.
 - **Action text is content.** What the character says when an action is
   refused, the handling labels, interaction hints, held-item details and the
   causes the death screen names are mod content (#393, #456): a mod can reword
