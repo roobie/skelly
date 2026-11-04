@@ -10,6 +10,7 @@ import { resolveWeatheringUrl } from '../core/weatheringUrl.ts';
 import { sweepFromUrl } from '../render/ragdollConfig.ts';
 import type { StartupContent } from './bundledContent.ts';
 import { requireStart, startForSite } from './startSelection.ts';
+import { practiceEntry, tutorialUrl } from './tutorialUrl.ts';
 
 export const DEFAULT_RADIUS_M = 96;
 const MIN_RADIUS_M = 32;
@@ -288,4 +289,15 @@ export const configFromUrl = (params: URLSearchParams, content: StartupContent):
   }
   config.actors = actorRendererFromUrl(params);
   return config;
+};
+
+/** A guided site is disposable practice however the URL reaches it, so the run keeps only presentation choices and no save can bind to it. */
+export const practiceConfigFromUrl = (href: string, content: StartupContent): GameConfig | undefined => {
+  const { site } = configFromUrl(practiceEntry(new URL(href).searchParams), content);
+  if (!content.registry.layouts.get(site)?.guidance) {
+    return undefined;
+  }
+  const practice = new URL(tutorialUrl(href, true)).searchParams;
+  practice.set('site', site);
+  return configFromUrl(practice, content);
 };

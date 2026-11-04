@@ -16,6 +16,7 @@ import {
   configFromUrl,
   DEFAULT_RADIUS_M,
   makeConfig,
+  practiceConfigFromUrl,
   savingEnabledFromUrl,
 } from './game/config.ts';
 import { mountControlsCard } from './game/controls.ts';
@@ -27,7 +28,7 @@ import { startPlay } from './game/play.ts';
 import { renderFreeFromUrl } from './game/renderMode.ts';
 import type { SaveBackendPreference } from './game/saveStorage.ts';
 import type { StreamerStats } from './game/streamer.ts';
-import { tutorialRequested, tutorialUrl } from './game/tutorialUrl.ts';
+import { tutorialUrl } from './game/tutorialUrl.ts';
 import { WorldLoading } from './game/worldLoading.ts';
 import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
@@ -173,6 +174,7 @@ if (bench === 'report') {
   );
   const debugModule = config.debug ? await import('./debug/index.ts') : undefined;
   const skyRoute = params.get('skyRoute') === '1' ? await debugModule?.loadSkyRoute() : undefined;
+  const practiceConfig = pendingReplay ? undefined : practiceConfigFromUrl(location.href, content);
   if (pendingReplay) {
     try {
       const preliminary = await decodeInputReplay(pendingReplay, { contentLookup: () => true });
@@ -204,10 +206,7 @@ if (bench === 'report') {
       clearPendingInputReplay();
       showStartupFailure(`Replay rejected: ${error instanceof Error ? error.message : String(error)}`);
     }
-  } else if (tutorialRequested(params)) {
-    const practiceParams = new URLSearchParams(new URL(tutorialUrl(location.href, true)).search);
-    practiceParams.set('site', 'tutorial');
-    const practiceConfig = configFromUrl(practiceParams, content);
+  } else if (practiceConfig) {
     const engine = createEngine(practiceConfig, view, undefined, { render: !renderFree });
     startPlay(engine);
     document.getElementById('new-character-options')!.hidden = true;

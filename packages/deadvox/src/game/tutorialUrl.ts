@@ -1,5 +1,15 @@
-export const tutorialRequested = (params: URLSearchParams): boolean =>
-  params.get('tutorial') === '1' || params.get('site') === 'tutorial';
+const PRACTICE_SITE = 'tutorial';
+
+/** `tutorial=1` enters the practice site while `site` keeps the player's own site for the return. */
+export const practiceEntry = (params: URLSearchParams): URLSearchParams => {
+  if (params.get('tutorial') !== '1') {
+    return params;
+  }
+  const entry = new URLSearchParams(params);
+  entry.set('site', PRACTICE_SITE);
+  entry.delete('start');
+  return entry;
+};
 
 export const tutorialUrl = (href: string, practice: boolean): string => {
   const url = new URL(href);
@@ -11,7 +21,7 @@ export const tutorialUrl = (href: string, practice: boolean): string => {
     }
   }
   const site = url.searchParams.get('site');
-  if (site !== null && site !== 'tutorial') {
+  if (site !== null && site !== PRACTICE_SITE) {
     presentation.set('site', site);
   }
   url.search = presentation.toString();
