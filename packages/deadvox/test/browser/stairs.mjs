@@ -542,8 +542,8 @@ try {
         zombies: [...session.actorStore.entries()].map(([id, z]) => ({
           id,
           pos: [...z.body.pos],
-          mode: z.mode,
-          lastPerceived: z.lastPerceived,
+          mode: z.agent.mode,
+          lastPerceived: z.agent.lastPerceived,
         })),
       };
     });
@@ -1146,7 +1146,7 @@ try {
             },
             residents: [...session.actorStore.entries()].map(([, resident]) => ({
               position: [...resident.body.pos],
-              mode: resident.mode,
+              mode: resident.agent.mode,
             })),
           };
         },
@@ -1387,7 +1387,7 @@ try {
         page,
         (id) => {
           const { body, session } = globalThis.stairsWitness;
-          const target = session.actorStore.get(id)?.lastPerceived;
+          const target = session.actorStore.get(id)?.agent.lastPerceived;
           const distance = target
             ? Math.hypot(target[0] - body.pos[0], target[1] - body.pos[1], target[2] - body.pos[2])
             : Number.POSITIVE_INFINITY;
