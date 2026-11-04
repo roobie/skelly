@@ -637,6 +637,10 @@
       "output": "packages/mods/skelly.ui/assets/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.ui/cursor.jsonnet",
+      "output": "packages/mods/skelly.ui/cursor.json"
+    },
+    {
       "source": "packages/mods/skelly.ui/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.ui/pack/manifest.json"
     },

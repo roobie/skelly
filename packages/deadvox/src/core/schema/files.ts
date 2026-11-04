@@ -7,6 +7,7 @@ import { BodyTuningSchema } from './body.ts';
 import { CombatPolicySchema, RangedTuningSchema } from './combat.ts';
 import { CompressionTuningSchema } from './compression.ts';
 import { ControlSchema } from './controls.ts';
+import { CursorSchema } from './cursors.ts';
 import { DamageKindSchema } from './damageKinds.ts';
 import { DayCycleSchema } from './dayCycle.ts';
 import { FigureSchema } from './figures.ts';
@@ -127,6 +128,7 @@ const SECTION_DESCRIPTOR = {
   saves: { schema: optional(array(SaveTuningSchema)), label: 'save tuning', order: 18 },
   compression: { schema: optional(array(CompressionTuningSchema)), label: 'compression tuning', order: 19 },
   ui: { schema: optional(array(UiTuningSchema)), label: 'UI tuning', order: 20 },
+  cursors: { schema: optional(array(CursorSchema)), label: 'cursors', order: 20.1 },
   scenarios: { schema: optional(array(ScenarioSchema)), label: 'scenarios', order: 21 },
   starts: { schema: optional(array(StartSchema)), label: 'starts', order: 21.1 },
   cityBenchmarks: { schema: optional(array(CityBenchmarkSchema)), label: 'city benchmarks', order: 30 },

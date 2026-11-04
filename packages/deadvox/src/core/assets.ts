@@ -153,6 +153,17 @@ export const soundFileIssues = (
     );
   });
 
+export const cursorFileIssues = (
+  registry: Registry,
+  exists: (contentFile: string, file: string) => boolean,
+): ContentIssue[] =>
+  [...registry.cursors.values()].flatMap((cursor) => {
+    const origin = registry.contentOrigins.get(`cursors:${cursor.id}`)!;
+    return exists(origin.source, cursor.image)
+      ? []
+      : [{ source: origin.source, path: `${origin.path}.image`, message: `"${cursor.image}" is not in the pack` }];
+  });
+
 export const modelFileIssues = (
   registry: Registry,
   exists: (contentFile: string, file: string) => boolean,

@@ -10,6 +10,10 @@
       "path": "ui-sounds.json"
     },
     {
+      "kind": "content",
+      "path": "cursor.json"
+    },
+    {
       "kind": "json",
       "path": "assets/manifest.json"
     },

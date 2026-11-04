@@ -1,5 +1,6 @@
 import bodyFile from '../../mods/skelly.body/body.json' with { type: 'json' };
 import damageKindsFile from '../../mods/skelly.melee-classes/damage-kinds.json' with { type: 'json' };
+import cursorFile from '../../mods/skelly.ui/cursor.json' with { type: 'json' };
 import uiFile from '../../mods/skelly.ui/ui.json' with { type: 'json' };
 import sensesFile from '../mods/skelly.deadvox.residual/senses.json' with { type: 'json' };
 import { buildRegistry } from './core/content.ts';
@@ -26,6 +27,7 @@ export const buildSoundsPageContent = () =>
       // Named as the game names them from src/game, so audio finds each sound's files beside its source.
       .map(([path, data]) => ({ source: `../${path}`, data })),
     { source: '../../../mods/skelly.ui/ui.json', data: uiFile },
+    { source: '../../../mods/skelly.ui/cursor.json', data: cursorFile },
     { source: '../../../mods/skelly.body/body.json', data: bodyFile },
     { source: '../../../mods/skelly.melee-classes/damage-kinds.json', data: damageKindsFile },
     { source: '../../mods/skelly.deadvox.residual/senses.json', data: sensesFile },

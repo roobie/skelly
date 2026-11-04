@@ -1,0 +1,12 @@
+{
+  "cursors": [
+    {
+      "capability": "gameCursor",
+      "frameHeightPx": 28,
+      "frameWidthPx": 32,
+      "handOffsetPx": -4,
+      "id": "basic",
+      "image": "assets/cursors/cursor.png"
+    }
+  ]
+}

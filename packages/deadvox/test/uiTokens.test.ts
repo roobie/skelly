@@ -1,8 +1,11 @@
 // @vitest-environment happy-dom
+import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
 import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '../src/core/coreText.ts';
+import type { PackManifest } from '../src/core/packAdmission.ts';
+import { bundledAssetFiles } from '../src/game/bundledAssets.ts';
 import { applyUiTokens } from '../src/ui/uiTokens.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 
@@ -83,18 +86,78 @@ const tuning = {
   ),
 };
 
+const CURSOR_RULE = /#game-cursor \{[^}]*\}/;
+const cursor = {
+  id: 'fixture_cursor',
+  capability: 'gameCursor',
+  image: 'assets/cursors/fixture.png',
+  frameWidthPx: 10,
+  frameHeightPx: 20,
+  handOffsetPx: -1,
+};
+const cursorPacks = ['../../mods/fixture.early', '../../../mods/fixture.later'].map((root, index) => ({
+  root,
+  manifest: { id: `fixture.pack${index}` } as PackManifest,
+}));
+const cursorAssets = {
+  packs: cursorPacks,
+  files: bundledAssetFiles(
+    Object.fromEntries(cursorPacks.map(({ root }, index) => [`${root}/${cursor.image}`, `/url${index}.png`])),
+    cursorPacks,
+  ),
+};
+const uiSources = (ui: object) => [
+  { source: 'ui-fixture.json', data: { ui: [{ ...tuning, ...ui }] } },
+  { source: 'ui-sounds.json', data: { sounds: [refusalSound] } },
+];
+
 it('applies validated core-mod UI tuning to document-root CSS properties', () => {
   const { registry, issues } = buildRegistry([
-    { source: 'ui-fixture.json', data: { ui: [{ ...tuning, spacing: 0.75, hudScale: 1.25 }] } },
-    { source: 'ui-sounds.json', data: { sounds: [refusalSound] } },
+    ...uiSources({ spacing: 0.75, hudScale: 1.25 }),
+    { source: `${cursorPacks[0]!.root}/cursor.json`, data: { cursors: [cursor] } },
   ]);
   expect(issues).toEqual([]);
 
   const root = document.createElement('html');
-  applyUiTokens(registry, root);
+  applyUiTokens(registry, root, cursorAssets);
 
   expect(root.style.getPropertyValue('--ui-spacing')).toBe('0.75');
   expect(root.style.getPropertyValue('--ui-scale')).toBe('1.25');
+});
+
+it("draws the cursor from the later stack entry's row, with its image found in that entry's pack", () => {
+  const { registry, issues } = buildRegistry([
+    ...uiSources({}),
+    { source: `${cursorPacks[0]!.root}/cursor.json`, data: { cursors: [cursor] } },
+    {
+      source: `${cursorPacks[1]!.root}/cursor.json`,
+      data: { cursors: [{ ...cursor, frameWidthPx: 11, frameHeightPx: 22, handOffsetPx: -3 }] },
+    },
+  ]);
+  expect(issues).toEqual([]);
+
+  const root = document.createElement('html');
+  applyUiTokens(registry, root, cursorAssets);
+
+  expect(root.style.getPropertyValue('--cursor-image')).toContain('/url1.png');
+  expect(root.style.getPropertyValue('--cursor-frame-width')).toBe('11px');
+  expect(root.style.getPropertyValue('--cursor-frame-height')).toBe('22px');
+  expect(root.style.getPropertyValue('--cursor-hand-offset')).toBe('-3px');
+  const [rule] = CURSOR_RULE.exec(readFileSync('src/ui/style.css', 'utf8'))!;
+  expect(rule).toContain('var(--cursor-image)');
+  expect(rule).not.toContain('url(');
+});
+
+it('refuses a cursor missing from the stack, or whose image is not bundled, rather than drawing a broken one', () => {
+  const { registry } = buildRegistry(uiSources({}));
+  expect(requiredContentIssues(registry).some(({ path }) => path === 'cursors')).toBe(true);
+  expect(() => applyUiTokens(registry, document.createElement('html'), cursorAssets)).toThrow('"gameCursor"');
+
+  const unbundled = buildRegistry([
+    ...uiSources({}),
+    { source: 'elsewhere/cursor.json', data: { cursors: [cursor] } },
+  ]).registry;
+  expect(() => applyUiTokens(unbundled, document.createElement('html'), cursorAssets)).toThrow('not bundled');
 });
 
 it('rejects non-positive UI spacing and scale', () => {

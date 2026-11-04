@@ -164,10 +164,13 @@ because a mod of its own would add a dependency and narrow nothing that matters.
 with a model, `skelly.body` too, loads inventory tuning and the work-in-progress item. See
 `packages/mods/skelly.inventory/item-wear.jsonnet`, `classes`.
 
-**Cursor.** The basic cursor image is content presentation, not UI chrome, so it sits in
-`skelly.ui`, and a theme or product mod may replace it with a styled one. The stylesheet
-names the image's path, so a stack without `skelly.ui` has a broken cursor and no data
-selection can swap the image; see `src/ui/style.css`, "#game-cursor".
+**Cursor.** The basic cursor is content presentation, not UI chrome, so it sits in
+`skelly.ui`, and a theme or product mod may replace it by data with a styled one. It has
+its own row because overrides replace whole rows: a swap restates one short row, not the UI
+text row (`PILLARS.md`, "Moddability"). The row carries the layout as well as the image, so
+a styled cursor can be any size; the sheet stacks the arrow frame above the hand frame. A
+stack without the row fails validation. See `src/core/schema/cursors.ts`, `CursorSchema`,
+and `src/ui/uiTokens.ts`, `applyUiTokens`.
 
 **Sounds.** A sound follows the entry selecting it: shared body/block sounds belong
 with their shared content, reusable weapon sounds with their theme, and zombie-specific

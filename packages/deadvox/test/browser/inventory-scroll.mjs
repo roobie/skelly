@@ -124,6 +124,7 @@ const content = [
 const fixture = `
 import '/src/ui/style.css';
 import uiFile from '/@fs${resolve(root, '../mods/skelly.ui/ui.json')}';
+import cursorFile from '/@fs${resolve(root, '../mods/skelly.ui/cursor.json')}';
 import recipesFile from '/mods/skelly.deadvox.residual/recipes.json';
 import { fixtureIds } from '/test/fixtures/capabilityIds.ts';
 import { buildRegistry } from '/src/core/content.ts';
@@ -146,6 +147,7 @@ if (handlingSkills.length !== 1) throw Error('Base content lacks the inventory s
 const { registry, issues } = buildRegistry([
   ...${JSON.stringify(content)},
   { source: 'ui.json', data: uiFile },
+  { source: '../../../mods/skelly.ui/cursor.json', data: cursorFile },
   { source: 'inventory-skill-fixture', data: { skills: handlingSkills, skillProgression: recipesFile.skillProgression } },
 ]);
 if (issues.length) throw Error('Invalid scroll fixture: ' + JSON.stringify(issues));

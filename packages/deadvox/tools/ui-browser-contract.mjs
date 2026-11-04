@@ -353,6 +353,7 @@ try {
     const { buildRegistry } = await import('/src/core/content.ts');
     const { applyUiTokens } = await import('/src/ui/uiTokens.ts');
     const { default: baseUi } = await import('${sharedModUrl('skelly.ui/ui.json')}');
+    const { default: baseCursor } = await import('${sharedModUrl('skelly.ui/cursor.json')}');
     const frame = document.createElement('iframe');
     frame.style.cssText = 'position: fixed; left: 0; top: 0; width: 640px; height: 360px; visibility: hidden';
     frame.srcdoc = '<!doctype html><link rel="stylesheet" href="/src/ui/style.css"><button class="inv-option">Probe</button>';
@@ -364,6 +365,7 @@ try {
       const sound = { id: 'player_nope', description: 'fixture refusal', variants: ['assets/audio/nope.ogg'], gain: 0.5, pitchJitter: [1, 1], gainJitter: [1, 1], minIntervalSimSeconds: 0.75, category: 'body', noise: { enabled: false, radiusMetres: 1 } };
       const { registry, issues } = buildRegistry([
         { source: 'ui-probe-sounds.json', data: { sounds: [sound] } },
+        { source: '../../../mods/skelly.ui/cursor.json', data: baseCursor },
         { source: 'ui-probe.json', data: { ui: [{ ...baseUi.ui.find((row) => row.id === 'core'), refusalSound: sound.id, ...tuning }] } },
       ]);
       if (issues.length) throw new Error('Invalid UI probe fixture: ' + JSON.stringify(issues));
@@ -759,7 +761,7 @@ try {
     };
   })()`);
   assert.equal(arrowTip.hand, false, 'main-menu cursor uses the standard arrow');
-  assert.match(arrowTip.mask, /cursor\.png/, 'cursor sprite is used as a silhouette mask');
+  assert.match(arrowTip.mask, /url\(/, 'cursor sprite has a mask image');
   assert.equal(arrowTip.background, 'rgb(255, 255, 255)', 'cursor mask is filled white');
   assert.equal(arrowTip.blend, 'difference', 'the cursor is difference-blended');
   assert.equal(arrowTip.rootBlend, 'difference', 'cursor root uses difference blending');

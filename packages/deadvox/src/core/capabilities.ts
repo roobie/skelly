@@ -23,6 +23,7 @@ export const CONTENT_CAPABILITIES = {
     longGunSteadiness: 'optional',
   },
   ui: { interface: 'required' },
+  cursors: { gameCursor: 'required' },
   graphics: { graphics: 'required' },
   look: { defaultLook: 'required' },
   powerTuning: { power: 'required' },

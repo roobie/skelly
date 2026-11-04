@@ -3,7 +3,14 @@ import { basename, dirname, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { readBundledPacks } from '../../tools/readBundledPacks.ts';
-import { assetFileIssues, MANIFEST_PATH, modelFileIssues, soundFileIssues, validateManifest } from '../core/assets.ts';
+import {
+  assetFileIssues,
+  cursorFileIssues,
+  MANIFEST_PATH,
+  modelFileIssues,
+  soundFileIssues,
+  validateManifest,
+} from '../core/assets.ts';
 import { bundledModCatalogueIssues } from '../core/bundledModCatalogue.ts';
 import {
   buildRegistry,
@@ -136,6 +143,9 @@ export const validate = (
       );
     }
   }
+  issues.push(
+    ...cursorFileIssues(registry, (contentFile, file) => existsSync(resolve(root, dirname(contentFile), file))),
+  );
   issues.push(
     ...modelFileIssues(registry, (contentFile, file) => existsSync(resolve(root, dirname(contentFile), file))),
   );

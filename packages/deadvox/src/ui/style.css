@@ -212,18 +212,18 @@ body.unconscious::after {
 /* A bitmap sprite, so it stays at its native px size to stay crisp. */
 #game-cursor {
   position: absolute;
-  width: 32px;
-  height: 28px;
+  width: var(--cursor-frame-width);
+  height: var(--cursor-frame-height);
   margin: 0;
   background: #fff;
   mix-blend-mode: difference;
-  -webkit-mask: url("../../../mods/skelly.ui/assets/cursors/cursor.png") no-repeat 0 0 / 32px 56px;
-  mask: url("../../../mods/skelly.ui/assets/cursors/cursor.png") no-repeat 0 0 / 32px 56px;
+  -webkit-mask: var(--cursor-image) no-repeat 0 0 / var(--cursor-frame-width) calc(2 * var(--cursor-frame-height));
+  mask: var(--cursor-image) no-repeat 0 0 / var(--cursor-frame-width) calc(2 * var(--cursor-frame-height));
 }
 #game-cursor.hand {
-  margin-left: -4px;
-  -webkit-mask-position: 0 -28px;
-  mask-position: 0 -28px;
+  margin-left: var(--cursor-hand-offset);
+  -webkit-mask-position: 0 calc(-1 * var(--cursor-frame-height));
+  mask-position: 0 calc(-1 * var(--cursor-frame-height));
 }
 #game-cursor[hidden] {
   display: none;
