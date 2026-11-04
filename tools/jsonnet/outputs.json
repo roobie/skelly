@@ -725,6 +725,14 @@
       "output": "packages/mods/skelly.packaged-foods/packaged-foods-items.json"
     },
     {
+      "source": "packages/mods/skelly.progression/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.progression/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.progression/progression.jsonnet",
+      "output": "packages/mods/skelly.progression/progression.json"
+    },
+    {
       "source": "packages/mods/skelly.readables/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.readables/assets/manifest.json"
     },

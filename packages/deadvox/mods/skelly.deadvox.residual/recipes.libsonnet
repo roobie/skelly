@@ -25,7 +25,7 @@ local sharpen(blade, method) = {
   workstation: method.workstation,
 };
 local sharpenRecipes = [sharpen(blade, method) for blade in blades for method in sharpening];
-local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
+local skillCurve = import 'packages/mods/skelly.progression/skill-curve.libsonnet';
 {
   "skills": [skill + { curve: skillCurve } for skill in [
     {
@@ -34,15 +34,6 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
       "training": { "craftingTierOffset": 1 },
     },
     { "id": "mechanics", "capability": "mechanics", "name": "Mechanics", "training": { "craftingTierOffset": 1 } },
-    {
-      "id": "inventory_management", "capability": "inventoryManagement",
-      "name": "Inventory Management (IM)",
-      "training": { "activities": { "handling": { "practice": 2.5 } } },
-      "inventory": {
-        "handlingFactorFloor": 0,
-        "handlingFactorHalfLifeLevels": 1.1
-      }
-    },
     {
       "id": "firearms_combat", "capability": "firearmsCombat",
       "name": "Firearms Combat (FC)",
@@ -134,7 +125,6 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     { id: "electrical", label: "Electrical", searchTerms: ["wiring"] },
     { id: "edge", label: "Sharpening", searchTerms: ["blade", "edge"] },
   ],
-  "skillProgression": [{ "id": "core", "capability": "progression", "practicePerLevel": 10 }],
   "items": [
     {
       "id": "wooden_plank",

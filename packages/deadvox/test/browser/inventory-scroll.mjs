@@ -125,7 +125,7 @@ const fixture = `
 import '/src/ui/style.css';
 import uiFile from '/@fs${resolve(root, '../mods/skelly.ui/ui.json')}';
 import cursorFile from '/@fs${resolve(root, '../mods/skelly.ui/cursor.json')}';
-import recipesFile from '/mods/skelly.deadvox.residual/recipes.json';
+import progressionFile from '/@fs${resolve(root, '../mods/skelly.progression/progression.json')}';
 import { fixtureIds } from '/test/fixtures/capabilityIds.ts';
 import { buildRegistry } from '/src/core/content.ts';
 import { Inventory } from '/src/core/inventory.ts';
@@ -141,14 +141,14 @@ import { mountMenuPointer } from '/src/ui/menuPointer.ts';
 import { applyUiTokens } from '/src/ui/uiTokens.ts';
 import { factDetail } from '/src/ui/factDetail.ts';
 import { render } from 'lit-html';
-const handlingSkills = recipesFile.skills.filter((skill) => skill.id === fixtureIds.inventoryManagement)
+const handlingSkills = progressionFile.skills.filter((skill) => skill.id === fixtureIds.inventoryManagement)
   .map((skill) => ({ ...skill, detail: 'Fixture handling effect.' }));
 if (handlingSkills.length !== 1) throw Error('Base content lacks the inventory skill');
 const { registry, issues } = buildRegistry([
   ...${JSON.stringify(content)},
   { source: 'ui.json', data: uiFile },
   { source: '../../../mods/skelly.ui/cursor.json', data: cursorFile },
-  { source: 'inventory-skill-fixture', data: { skills: handlingSkills, skillProgression: recipesFile.skillProgression } },
+  { source: 'inventory-skill-fixture', data: { skills: handlingSkills, skillProgression: progressionFile.skillProgression } },
 ]);
 if (issues.length) throw Error('Invalid scroll fixture: ' + JSON.stringify(issues));
 applyUiTokens(registry, document.documentElement, { report: (message) => { throw Error(message); } });

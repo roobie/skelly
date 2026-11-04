@@ -2,6 +2,7 @@ import body from '../../../mods/skelly.body/body.json' with { type: 'json' };
 import graphics from '../../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import look from '../../../mods/skelly.graphics/look.json' with { type: 'json' };
 import melee from '../../../mods/skelly.melee-classes/melee-classes.json' with { type: 'json' };
+import progression from '../../../mods/skelly.progression/progression.json' with { type: 'json' };
 import saves from '../../../mods/skelly.saves/saves.json' with { type: 'json' };
 import ui from '../../../mods/skelly.ui/ui.json' with { type: 'json' };
 import weathering from '../../../mods/skelly.weathering/weathering.json' with { type: 'json' };
@@ -24,7 +25,7 @@ export const fixtureIds = {
   firearmsCombat: id(recipes.skills, 'firearmsCombat'),
   meleeCombat: id(recipes.skills, 'meleeCombat'),
   unarmed: id(melee.meleeClasses, 'unarmed'),
-  inventoryManagement: id(recipes.skills, 'inventoryManagement'),
+  inventoryManagement: id(progression.skills, 'inventoryManagement'),
   crafting: id(recipes.skills, 'crafting'),
 };
 

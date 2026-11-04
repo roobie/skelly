@@ -8,8 +8,11 @@ const baseJson = (name: string) =>
 const uiJson = (name: string) => JSON.parse(readFileSync(`../mods/skelly.ui/${name}`, 'utf8')) as ContentFile;
 const inventoryJson = () => JSON.parse(readFileSync('../mods/skelly.inventory/inventory.json', 'utf8')) as ContentFile;
 
-const baseSkill = (id: string) => {
-  const skill = baseJson('recipes.json').skills?.find((candidate) => candidate.id === id);
+const progressionJson = () =>
+  JSON.parse(readFileSync('../mods/skelly.progression/progression.json', 'utf8')) as ContentFile;
+
+const skillIn = (file: ContentFile, id: string) => {
+  const skill = file.skills?.find((candidate) => candidate.id === id);
   if (!skill) {
     throw new Error(`Base content lacks skill ${id}`);
   }
@@ -25,12 +28,12 @@ const fixtureUi = () => {
 /** Share authored tuning so fixtures do not pin product values. */
 export const playerInventorySource = (): ContentSource => ({
   source: 'player-inventory-fixture.json',
-  data: { ...inventoryJson(), ...fixtureUi(), skills: [baseSkill(fixtureIds.inventoryManagement)] },
+  data: { ...inventoryJson(), ...fixtureUi(), skills: [skillIn(progressionJson(), fixtureIds.inventoryManagement)] },
 });
 
 /** Rendering fixtures need baseline policy even when their skill set changes. */
 export const firearmsSkillSource = (): ContentSource => {
-  const combat = baseSkill(fixtureIds.firearmsCombat);
+  const combat = skillIn(baseJson('recipes.json'), fixtureIds.firearmsCombat);
   return {
     source: 'firearms-skill-fixture.json',
     data: {

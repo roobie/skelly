@@ -52,7 +52,7 @@ manifest(
     'skelly.weathering', 'skelly.deadvox.weathering', 'skelly.melee-classes', 'skelly.inventory', 'skelly.body',
     'skelly.sound-families', 'skelly.senses', 'skelly.natural-world', 'skelly.materials', 'skelly.medicine',
     'skelly.hand-tools', 'skelly.readables', 'skelly.structures', 'skelly.basic-foods', 'skelly.packaged-foods',
-    'skelly.wearables',
+    'skelly.wearables', 'skelly.progression',
   ],
   content=content,
   guns=guns,

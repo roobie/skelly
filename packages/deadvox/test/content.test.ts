@@ -1902,6 +1902,7 @@ describe('content references', () => {
 
   // Skill tuning checks read only the recipe file's own skills.
   const recipeFile = () => base.find(({ source }) => source === 'recipes.json')!;
+  const progressionFile = () => base.find(({ source }) => source === 'progression.json')!;
 
   it('rejects craftable content when the single crafting tier offset is missing', () => {
     const recipes = structuredClone(recipeFile().data) as {
@@ -1919,32 +1920,32 @@ describe('content references', () => {
   });
 
   it('rejects the Inventory Management skill without its handling tuning block', () => {
-    const recipes = structuredClone(recipeFile().data) as {
+    const progression = structuredClone(progressionFile().data) as {
       skills: { id: string; inventory?: unknown }[];
     };
-    recipes.skills = recipes.skills.map(({ inventory, ...skill }) =>
+    progression.skills = progression.skills.map(({ inventory, ...skill }) =>
       skill.id === 'inventory_management' ? skill : { ...skill, ...(inventory === undefined ? {} : { inventory }) },
     );
-    const { issues } = buildRegistry([{ source: 'recipes.json', data: recipes }]);
+    const { issues } = buildRegistry([{ source: 'progression.json', data: progression }]);
     expect(
       issues.some(
-        (issue) => issue.source === 'recipes.json' && issue.message.includes('missing required skill tuning'),
+        (issue) => issue.source === 'progression.json' && issue.message.includes('missing required skill tuning'),
       ),
     ).toBe(true);
   });
 
   it('rejects a handling tuning block that leaves out a weight', () => {
-    const recipes = structuredClone(recipeFile().data) as {
+    const progression = structuredClone(progressionFile().data) as {
       skills: { id: string; inventory?: Record<string, number> }[];
     };
-    const tuning = recipes.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
+    const tuning = progression.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
     for (const key of Object.keys(tuning).filter((name) => name !== 'handlingFactorFloor')) {
-      const partial = structuredClone(recipes);
+      const partial = structuredClone(progression);
       const { [key]: _omitted, ...rest } = partial.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
       partial.skills.find(({ id }) => id === 'inventory_management')!.inventory = rest;
-      const { issues } = buildRegistry([{ source: 'recipes.json', data: partial }]);
+      const { issues } = buildRegistry([{ source: 'progression.json', data: partial }]);
       expect(
-        issues.some((issue) => issue.source === 'recipes.json'),
+        issues.some((issue) => issue.source === 'progression.json'),
         key,
       ).toBe(true);
     }
@@ -1955,11 +1956,11 @@ describe('content references', () => {
     expect(baseActivity?.practice).toBeDefined();
     expect(baseActivity?.tier).toBeUndefined();
 
-    const recipes = structuredClone(recipeFile().data) as {
+    const progression = structuredClone(progressionFile().data) as {
       skills: { id: string; training?: { activities?: Record<string, { tier?: number }> } }[];
     };
-    recipes.skills.find(({ id }) => id === 'inventory_management')!.training!.activities!.handling!.tier = 1;
-    const { issues } = buildRegistry([{ source: 'recipes.json', data: recipes }]);
+    progression.skills.find(({ id }) => id === 'inventory_management')!.training!.activities!.handling!.tier = 1;
+    const { issues } = buildRegistry([{ source: 'progression.json', data: progression }]);
     expect(issues.some((issue) => issue.message.includes('must be untiered'))).toBe(true);
   });
 
@@ -2203,7 +2204,7 @@ describe('content references', () => {
     source: 'reference-dependencies.json',
     data: {
       items: [{ id: 'fixture_non_battery', name: 'Not a battery', category: 'medical', weight: 1, size: [1, 1] }],
-      skills: baseContent('recipes.json').skills!,
+      skills: base.flatMap(({ data }) => (data as ContentFile).skills ?? []),
       sounds: baseContent('sounds.json').sounds!.filter(({ id }) => Object.values(actorSounds).includes(id)),
     },
   };

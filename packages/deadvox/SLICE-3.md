@@ -347,7 +347,7 @@ Loose-item pickup belongs in the first Slice 3 playtest because looting is centr
 
 #### Inventory management skill
 
-Each handling action needs one skill owner so overlapping skills cannot multiply its benefit or practice. Long-run progression must leave room for future practice sources; see `mods/skelly.deadvox.residual/recipes.libsonnet`, `inventory_management`. Attachment work belongs with gun skills rather than ordinary transfers. Keep its governing skill at one boundary so admitting Gunsmithing does not require caller changes; see `src/game/firearmAttachmentHandling.ts`, `attachmentWorkSkill` and `FirearmAttachmentHandling.fitReason`.
+Each handling action needs one skill owner so overlapping skills cannot multiply its benefit or practice. Long-run progression must leave room for future practice sources; see `packages/mods/skelly.progression/progression.jsonnet`, `inventory_management`. Attachment work belongs with gun skills rather than ordinary transfers. Keep its governing skill at one boundary so admitting Gunsmithing does not require caller changes; see `src/game/firearmAttachmentHandling.ts`, `attachmentWorkSkill` and `FirearmAttachmentHandling.fitReason`.
 
 **In:** Add the skill to content; scale ordinary transfers, box unpacking and furniture searches through one shared handling factor, with level 0 unchanged and legendary matching level 10; award untiered practice only when each action completes successfully. Preserve progression through save/load and replay; allow fresh debug games to set the skill level.
 
