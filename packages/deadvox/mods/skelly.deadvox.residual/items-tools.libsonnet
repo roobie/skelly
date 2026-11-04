@@ -5,34 +5,11 @@ local salvage = [0.5, 0.6, 0.7, 0.8, 0.9, 1];
 local yield(item, count) = { item: item, count: count, fractions: salvage, rounding: 'floor' };
 local disassembly(timeGameMinutes, yields) = { timeGameMinutes: timeGameMinutes, skill: 'crafting', yields: yields };
 
-local melee(type, motion, damage, reach, cooldownSimSeconds, stamina, impulse, wearPerHit) = {
-  melee: {
-    swingSound: 'melee_swing', hitSound: 'melee_hit',
-    damage: damage,
-    reach: reach,
-    cooldownSimSeconds: cooldownSimSeconds,
-    stamina: stamina,
-    impulse: impulse,
-    wearPerHit: wearPerHit,
-    contactFraction: 0.4,
-    windupCapSimSeconds: 0.25,
-    type: type,
-    motion: motion,
-    // Provisional until #276 is tuned: a full charge costs one more swing's stamina.
-    charge: {
-      fullSimSeconds: 1,
-      curveExponent: 1,
-      damageMultiplier: 1.6,
-      impulseMultiplier: 2,
-      stamina: stamina,
-    },
-  },
-};
-
-// These selections specialize the authored shared presentation (`DESIGN.md`, "Weapon sounds").
-local lightSwing = { melee+: { swingSound: 'melee_swing_light' } };
-local heavySwing = { melee+: { swingSound: 'melee_swing_heavy' } };
-local metalRing = { melee+: { hitLayerSound: 'melee_hit_metal' } };
+local weapon = import 'tools/jsonnet/lib/melee-weapon.libsonnet';
+local melee = weapon.melee;
+local lightSwing = weapon.lightSwing;
+local heavySwing = weapon.heavySwing;
+local metalRing = weapon.metalRing;
 
 local lights = import 'lights.libsonnet';
 local batteryBeam = lights.batteryBeam;
@@ -47,25 +24,6 @@ local burns(ignition, douse, sprint, stow, drop, relight) = {
 };
 
 local items = [
-  {
-    id: 'compass',
-    name: 'Compass',
-    category: 'tool',
-    size: [1, 2],
-    description: 'A magnetic compass with a turning card.',
-    heldDisplay: 'compass',
-    model: 'compass',
-  },
-  {
-    id: 'crowbar',
-    name: 'Crowbar',
-    category: 'tool',
-    size: [2, 6],
-    description: 'Pries open doors and crates. Also a weapon.',
-    model: 'crowbar',
-    tool: { qualities: { prying: 3, hammering: 1 } },
-    weapon: melee('blunt', 'swing', damage=14, reach=0.6, cooldownSimSeconds=1.1, stamina=8, impulse=8, wearPerHit=0.015) + heavySwing + metalRing,
-  },
   {
     id: 'blowtorch',
     name: 'Blowtorch',
@@ -113,35 +71,6 @@ local items = [
     canister: { capacity: 3 },
   },
   {
-    id: 'hammer',
-    name: 'Hammer',
-    category: 'tool',
-    size: [2, 4],
-    model: 'hammer',
-    tool: { qualities: { hammering: 2 } },
-    weapon: melee('blunt', 'swing', damage=10, reach=0.4, cooldownSimSeconds=0.8, stamina=5, impulse=6, wearPerHit=0.012) + metalRing,
-  },
-  {
-    id: 'sledgehammer',
-    name: 'Sledgehammer',
-    category: 'tool',
-    size: [2, 7],
-    description: 'Breaks a locked door open in a few loud blows. Also a heavy weapon.',
-    model: 'sledgehammer',
-    twoHanded: true,
-    tool: { qualities: { hammering: 3 } },
-    weapon: melee('blunt', 'swing', damage=24, reach=0.7, cooldownSimSeconds=1.6, stamina=16, impulse=14, wearPerHit=0.01) + heavySwing + metalRing,
-  },
-  {
-    id: 'kitchen_knife',
-    name: 'Kitchen knife',
-    category: 'tool',
-    size: [1, 4],
-    model: 'kitchen_knife',
-    tool: { qualities: { cutting: 2, opening: 1 } },
-    weapon: melee('cut', 'swing', damage=8, reach=0.25, cooldownSimSeconds=0.5, stamina=3, impulse=3.5, wearPerHit=0.025) + lightSwing,
-  },
-  {
     id: 'kabar',
     name: 'Kabar',
     category: 'tool',
@@ -158,23 +87,6 @@ local items = [
     model: 'machete',
     tool: { qualities: { cutting: 2, opening: 1 } },
     weapon: melee('cut', 'swing', damage=11, reach=0.45, cooldownSimSeconds=0.75, stamina=5, impulse=4.5, wearPerHit=0.02) + lightSwing,
-  },
-  {
-    id: 'can_opener',
-    model: 'can_opener',
-    name: 'Can opener',
-    category: 'tool',
-    size: [1, 1],
-    tool: { qualities: { opening: 5 } },
-  },
-  {
-    id: 'whetstone',
-    name: 'Whetstone',
-    category: 'tool',
-    size: [1, 2],
-    description: 'A small stone for honing a blade by hand.',
-    model: 'whetstone',
-    tool: { qualities: { sharpening: 1 } },
   },
   {
     id: 'bear_trap',

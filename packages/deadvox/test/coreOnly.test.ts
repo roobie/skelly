@@ -18,6 +18,7 @@ const CORE_MODS = [
   'skelly.natural-world',
   'skelly.materials',
   'skelly.medicine',
+  'skelly.hand-tools',
 ];
 
 /** A core mod's content files, as its manifest lists them. */

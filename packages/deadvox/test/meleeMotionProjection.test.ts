@@ -12,8 +12,8 @@ import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { heldState } from './heldState.ts';
+import { modFile } from './modFile.ts';
 
-const BASE = 'mods/skelly.deadvox.residual';
 const registry = baseRegistry();
 const playerFigure = registry.figures.get('player')!;
 Object.defineProperty(globalThis, 'self', { configurable: true, value: globalThis });
@@ -23,7 +23,7 @@ const realHeldModels = new Map<string, import('three').Object3D>();
 await Promise.all(
   ['baseball_bat', 'steel_pipe', 'kitchen_knife', 'machete', 'kabar'].map(async (id) => {
     const def = registry.models.get(id)!;
-    const bytes = readFileSync(`${BASE}/${def.file}`);
+    const bytes = readFileSync(modFile(def.file));
     const gltf = await gltfLoader.parseAsync(Uint8Array.from(bytes).buffer, '').then(indexModelMaterials);
     realHeldModels.set(id, prepareModel(def, gltf.scene).held);
   }),

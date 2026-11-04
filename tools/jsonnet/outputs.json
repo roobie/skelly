@@ -565,6 +565,26 @@
       "output": "packages/mods/skelly.graphics/pack/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.hand-tools/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.hand-tools/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.hand-tools/exports/things.jsonnet",
+      "output": "packages/mods/skelly.hand-tools/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.hand-tools/hand-tools-items.jsonnet",
+      "output": "packages/mods/skelly.hand-tools/hand-tools-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.hand-tools/models-hand-tools.jsonnet",
+      "output": "packages/mods/skelly.hand-tools/models-hand-tools.json"
+    },
+    {
+      "source": "packages/mods/skelly.hand-tools/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.hand-tools/pack/manifest.json"
+    },
+    {
       "source": "packages/mods/skelly.inventory/compression.jsonnet",
       "output": "packages/mods/skelly.inventory/compression.json"
     },

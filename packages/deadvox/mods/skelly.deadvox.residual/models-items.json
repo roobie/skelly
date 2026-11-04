@@ -120,30 +120,6 @@
       "roll": 0
     },
     {
-      "file": "assets/models/can_opener.glb",
-      "grip": {
-        "at": [-0.080000000000000002, 0.0050000000000000001, -0.014999999999999999],
-        "turn": [0, 0, 0]
-      },
-      "hold": "upright",
-      "id": "can_opener",
-      "itemPresentation": {
-        "materials": ["metal", "polymer", "metal", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "body": {
-          "centreOfMass": [-0.026315789473684199, 0.0078070175438596477, 0.0011403508771929824],
-          "massKg": 0.10000000000000001,
-          "node": "body:handOpener"
-        }
-      },
-      "roll": 90
-    },
-    {
       "file": "assets/models/beans.glb",
       "grip": {
         "at": [0, 0.0050000000000000001, 0],
@@ -642,49 +618,6 @@
       }
     },
     {
-      "anchors": {
-        "needle_mount": [0, 0.01, 0]
-      },
-      "dial": {
-        "face": "paint-cream",
-        "ink": "plastic-black",
-        "markHeight": 0.29999999999999999,
-        "marks": ["N", "E", "S", "W"],
-        "needleLength": 0.59999999999999998,
-        "needleWidth": 0.20000000000000001,
-        "north": "plastic-red",
-        "south": "plastic-black"
-      },
-      "display": {
-        "at": [0, 0.01, 0],
-        "normal": [0, 1, 0],
-        "size": [0.040000000000000001, 0.040000000000000001],
-        "up": [0, 0, -1]
-      },
-      "file": "assets/models/compass.glb",
-      "grip": {
-        "at": [0, 0.0050000000000000001, 0],
-        "turn": [0, 0, -90]
-      },
-      "hold": "upright",
-      "id": "compass",
-      "itemPresentation": {
-        "materials": ["polymer", "metal", "metal", "polymer"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "compass": {
-          "centreOfMass": [0, 0.0055882352941176465, -0.001764705882352941],
-          "massKg": 0.12,
-          "node": "compass:compass"
-        }
-      },
-      "roll": 0
-    },
-    {
       "file": "assets/models/lamp_oil_bottle.glb",
       "id": "lamp_oil_bottle",
       "itemPresentation": {
@@ -775,17 +708,6 @@
           "massKg": 0.01,
           "node": "fuse:fuse"
         }
-      }
-    },
-    {
-      "file": "assets/models/sewing_kit.glb",
-      "id": "sewing_kit",
-      "itemPresentation": {
-        "materials": ["polymer", "cloth", "metal", "polymer"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
       }
     },
     {
@@ -1102,30 +1024,6 @@
         "material": {
           "centreOfMass": [-0.0031353591160220989, 0.01, 0.0045994475138121547],
           "massKg": 0.5,
-          "node": "material:cutStock"
-        }
-      },
-      "roll": 0
-    },
-    {
-      "file": "assets/models/whetstone.glb",
-      "grip": {
-        "at": [0, 0.014999999999999999, 0],
-        "turn": [0, 0, 0]
-      },
-      "hold": "upright",
-      "id": "whetstone",
-      "itemPresentation": {
-        "materials": ["mineral"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "material": {
-          "centreOfMass": [0, 0.01478723404255319, -0.0015957446808510633],
-          "massKg": 0.25,
           "node": "material:cutStock"
         }
       },
@@ -4257,102 +4155,6 @@
       "roll": 0
     },
     {
-      "file": "assets/models/repair_kit.glb",
-      "grip": {
-        "at": [-0.095000000000000001, 0.014999999999999999, -0.0050000000000000044],
-        "turn": [0, 0, 0]
-      },
-      "hold": "forward",
-      "id": "repair_kit",
-      "itemPresentation": {
-        "materials": ["metal", "metal", "paper"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "equipment": {
-          "centreOfMass": [-0.0039068825910931176, 0.01373144399460189, -0.0033265856950067479],
-          "massKg": 1.25,
-          "node": "equipment:repairKit"
-        }
-      },
-      "roll": 0
-    },
-    {
-      "file": "assets/models/wire_strippers.glb",
-      "grip": {
-        "at": [0.050000000000000003, 0, -0.02],
-        "turn": [0, 0, 0]
-      },
-      "hold": "upright",
-      "id": "wire_strippers",
-      "itemPresentation": {
-        "materials": ["metal", "polymer"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "equipment": {
-          "centreOfMass": [0.1142079207920792, 0.0014356435643564356, -0.00014851485148514865],
-          "massKg": 0.17999999999999999,
-          "node": "equipment:pliers"
-        }
-      },
-      "roll": 0
-    },
-    {
-      "file": "assets/models/adjustable_pliers.glb",
-      "grip": {
-        "at": [0.060000000000000005, 0, -0.02],
-        "turn": [0, 0, 0]
-      },
-      "hold": "upright",
-      "id": "adjustable_pliers",
-      "itemPresentation": {
-        "materials": ["metal", "polymer", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "equipment": {
-          "centreOfMass": [0.10369565217391309, 0.0016086956521739141, 4.3478260869564062e-5],
-          "massKg": 0.29999999999999999,
-          "node": "equipment:pliers"
-        }
-      },
-      "roll": 0
-    },
-    {
-      "file": "assets/models/sewing_repair_kit.glb",
-      "grip": {
-        "at": [-0.084999999999999992, 0.014999999999999999, -0.0049999999999999975],
-        "turn": [0, 0, 0]
-      },
-      "hold": "forward",
-      "id": "sewing_repair_kit",
-      "itemPresentation": {
-        "materials": ["metal", "cloth", "polymer", "paper", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "equipment": {
-          "centreOfMass": [-0.0012921348314606743, 0.013258426966292139, -0.0026029962546816484],
-          "massKg": 0.41999999999999998,
-          "node": "equipment:repairKit"
-        }
-      },
-      "roll": 0
-    },
-    {
       "file": "assets/models/portable_radio.glb",
       "grip": {
         "at": [0, 0.032500000000000001, 0],
@@ -4691,30 +4493,6 @@
           "centreOfMass": [0.14426835443037972, 0, -9.1139240506329027e-5],
           "massKg": 0.65000000000000002,
           "node": "hand_saw:compound"
-        }
-      },
-      "roll": 90
-    },
-    {
-      "file": "assets/models/screwdriver.glb",
-      "grip": {
-        "at": [0.052000000000000005, 0, 0],
-        "turn": [0, 0, 0]
-      },
-      "hold": "upright",
-      "id": "screwdriver",
-      "itemPresentation": {
-        "materials": ["polymer", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "screwdriver": {
-          "centreOfMass": [0.063305322405450781, -3.9399624765478433e-5, -3.1104966920114464e-5],
-          "massKg": 0.16,
-          "node": "screwdriver:compound"
         }
       },
       "roll": 90

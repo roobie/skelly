@@ -1,6 +1,5 @@
 {
   "assets/models/aa_battery.glb": { "materials": ["steel-grey", "steel-stainless", "paint-charcoal"] },
-  "assets/models/adjustable_pliers.glb": { "materials": ["steel-grey", "plastic-blue", "paint-charcoal"] },
   "assets/models/ak_slant_compensator.glb": { "materials": ["steel-parkerized"] },
   "assets/models/ammo_can.glb": { "materials": ["polymer-od-green", "paperboard-tan"] },
   "assets/models/apple.glb": { "materials": ["plastic-red", "wood-walnut", "plastic-green"] },
@@ -32,7 +31,6 @@
   "assets/models/broken_toaster.glb": { "materials": [null, null, null] },
   "assets/models/camp_armoury_key.glb": { "materials": ["steel-parkerized"] },
   "assets/models/camp_hq_safe_key.glb": { "materials": ["brass"] },
-  "assets/models/can_opener.glb": { "materials": ["steel-grey", "plastic-red", "steel-parkerized", "paint-charcoal"] },
   "assets/models/candle.glb": { "materials": ["wax-ivory", "cloth-charred"] },
   "assets/models/canned_beans.glb": { "materials": ["steel-grey", "paint-terracotta"] },
   "assets/models/canned_soup.glb": { "materials": ["steel-grey", "paperboard-tan"] },
@@ -54,11 +52,9 @@
   "assets/models/charging_handle_ar_large.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/chocolate_bar.glb": { "materials": ["paperboard-brown", "paperboard-tan"] },
   "assets/models/circuit_board.glb": { "materials": [null, null, null, null] },
-  "assets/models/compass.glb": { "materials": ["plastic-black", "steel-grey", "paint-cream", "plastic-white"] },
   "assets/models/copper_wire.glb": { "materials": ["plastic-black", "copper"] },
   "assets/models/cracked_phone.glb": { "materials": [null, null, null] },
   "assets/models/crackers.glb": { "materials": ["paperboard-tan", "paint-terracotta"] },
-  "assets/models/crowbar.glb": { "materials": ["steel-grey"] },
   "assets/models/dad_cabin_key.glb": { "materials": ["steel-grey"] },
   "assets/models/dead_desk_lamp.glb": { "materials": ["steel-grey", "paint-charcoal", "paint-terracotta"] },
   "assets/models/door_mirror.glb": { "materials": ["polymer-black", "glass-grey"] },
@@ -93,7 +89,6 @@
   "assets/models/grip_ak.glb": { "materials": ["wood-walnut"] },
   "assets/models/grip_ar_long.glb": { "materials": ["polymer-black"] },
   "assets/models/grip_standard.glb": { "materials": ["polymer-black"] },
-  "assets/models/hammer.glb": { "materials": ["wood-walnut", "steel-grey"] },
   "assets/models/hand_saw.glb": { "materials": ["wood-walnut", "steel-grey"] },
   "assets/models/handguard_ak.glb": { "materials": ["wood-walnut", "steel-blued"] },
   "assets/models/handguard_ar_clamped.glb": { "materials": ["polymer-black"] },
@@ -176,7 +171,6 @@
   "assets/models/jerry_can.glb": { "materials": ["polymer-od-green", "paint-charcoal"] },
   "assets/models/juice_carton.glb": { "materials": ["paperboard-tan", "plastic-green"] },
   "assets/models/kabar.glb": { "materials": ["rubber-black", "steel-blued"] },
-  "assets/models/kitchen_knife.glb": { "materials": ["plastic-black", "steel-stainless"] },
   "assets/models/lamp_oil_bottle.glb": { "materials": [null, null, null, "fuel"] },
   "assets/models/lighter.glb": { "materials": ["fuel-amber", "plastic-clear-red", "steel-grey"] },
   "assets/models/lower_ak.glb": { "materials": ["steel-blued"] },
@@ -226,7 +220,6 @@
   "assets/models/receiver_ar_large.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/receiver_pump.glb": { "materials": ["steel-blued"] },
   "assets/models/receiver_sporter.glb": { "materials": ["steel-blued"] },
-  "assets/models/repair_kit.glb": { "materials": ["paint-charcoal", "steel-grey", "paperboard-tan"] },
   "assets/models/revolver.glb": {
     "materials": ["steel-stainless", "steel-stainless", "steel-stainless", "wood-walnut"]
   },
@@ -303,11 +296,6 @@
   "assets/models/school_backpack_worn_jacket.glb": { "materials": ["plastic-red", "paint-charcoal", "polymer-black"] },
   "assets/models/scissor_jack.glb": { "materials": ["steel-parkerized", "steel-grey", "paint-terracotta"] },
   "assets/models/scrap_foregrip.glb": { "materials": ["scrap-rusted", "wood-birch", "rubber-black"] },
-  "assets/models/screwdriver.glb": { "materials": ["plastic-yellow", "steel-blued"] },
-  "assets/models/sewing_kit.glb": { "materials": [null, null, null, null] },
-  "assets/models/sewing_repair_kit.glb": {
-    "materials": ["paint-terracotta", "cord-olive", "plastic-red", "paperboard-tan", "steel-grey"]
-  },
   "assets/models/shambler_head.glb": {
     "materials": ["body-skin-sickly", "body-hair", "body-eye", "body-mouth", "body-gore", "body-bone"]
   },
@@ -341,7 +329,6 @@
     ]
   },
   "assets/models/shotshell_box.glb": { "materials": ["paperboard-brown", "plastic-red"] },
-  "assets/models/sledgehammer.glb": { "materials": ["wood-walnut", "steel-grey"] },
   "assets/models/sneakers.glb": { "materials": ["rubber-black", "cloth-pants-player"] },
   "assets/models/soda.glb": { "materials": ["glass-clear", "paint-oxblood"] },
   "assets/models/soda_can.glb": { "materials": ["steel-grey", "plastic-red"] },
@@ -371,8 +358,6 @@
   "assets/models/weapon_sling_worn.glb": { "materials": ["cord-olive", "steel-grey"] },
   "assets/models/weapon_sling_worn_jacket.glb": { "materials": ["cord-olive", "steel-grey"] },
   "assets/models/wheel_205_55r16.glb": { "materials": ["rubber-black", "steel-grey"] },
-  "assets/models/whetstone.glb": { "materials": ["stone-whet"] },
-  "assets/models/wire_strippers.glb": { "materials": ["steel-grey", "plastic-red"] },
   "assets/models/wooden_plank.glb": { "materials": ["wood-birch"] },
   "assets/models/worn_boot_foot.glb": { "materials": ["rubber-black", "paint-charcoal"] },
   "assets/models/worn_boot_shaft.glb": { "materials": ["rubber-black", "paint-charcoal"] },
@@ -385,6 +370,5 @@
   "assets/models/worn_sneaker_foot.glb": { "materials": ["cloth-pants-player", "rubber-black"] },
   "assets/models/worn_trousers_pelvis.glb": { "materials": ["cloth-pants-player", "paint-charcoal"] },
   "assets/models/worn_trousers_shin.glb": { "materials": ["cloth-pants-player", "paint-charcoal"] },
-  "assets/models/worn_trousers_thigh.glb": { "materials": ["cloth-pants-player"] },
-  "assets/models/wrench.glb": { "materials": ["steel-grey"] }
+  "assets/models/worn_trousers_thigh.glb": { "materials": ["cloth-pants-player"] }
 }

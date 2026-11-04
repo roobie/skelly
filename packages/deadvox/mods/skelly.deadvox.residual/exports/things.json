@@ -240,18 +240,6 @@
     }
   },
   {
-    "id": "can_opener",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "can_opener",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
     "id": "aa_battery",
     "kind": "item",
     "options": {
@@ -270,18 +258,6 @@
       "mass": "parts"
     },
     "source": "wooden_plank",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
-    "id": "whetstone",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "whetstone",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.01
@@ -1536,54 +1512,6 @@
     }
   },
   {
-    "id": "repair_kit",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "repair_kit",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
-    "id": "wire_strippers",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "wire_strippers",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
-    "id": "adjustable_pliers",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "adjustable_pliers",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
-    "id": "sewing_repair_kit",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "sewing_repair_kit",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
     "id": "portable_radio",
     "kind": "item",
     "options": {
@@ -1632,42 +1560,6 @@
     }
   },
   {
-    "id": "crowbar",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "crowbar",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.0040000000000000001
-    }
-  },
-  {
-    "id": "hammer",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "hammer",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.0040000000000000001
-    }
-  },
-  {
-    "id": "sledgehammer",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "sledgehammer",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.0040000000000000001
-    }
-  },
-  {
     "id": "baseball_bat",
     "kind": "item",
     "options": {
@@ -1692,36 +1584,12 @@
     }
   },
   {
-    "id": "kitchen_knife",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "kitchen_knife",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.0040000000000000001
-    }
-  },
-  {
     "id": "machete",
     "kind": "item",
     "options": {
       "mass": "parts"
     },
     "source": "machete",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.0040000000000000001
-    }
-  },
-  {
-    "id": "wrench",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "wrench",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
@@ -1749,18 +1617,6 @@
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
-    }
-  },
-  {
-    "id": "compass",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "compass",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
     }
   },
   {
@@ -1881,18 +1737,6 @@
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
-    }
-  },
-  {
-    "id": "screwdriver",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "screwdriver",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.002
     }
   },
   {

@@ -56,7 +56,7 @@ const recipes = JSON.parse(readFileSync(join(base, 'recipes.json'), 'utf8')) as 
 };
 const meleeMod = '../mods/skelly.melee-classes';
 const items = [
-  itemSource('items-tools.json', ['kitchen_knife']),
+  itemSource('../../../mods/skelly.hand-tools/hand-tools-items.json', ['kitchen_knife']),
   itemSource('items-other.json', ['portable_radio']),
   itemSource('../../../mods/skelly.materials/materials-items.json', ['scrap_metal']),
   {
@@ -83,6 +83,10 @@ const fixtureBuild = buildRegistry([
   },
   { source: 'models-melee.json', data: JSON.parse(readFileSync(join(base, 'models-melee.json'), 'utf8')) as unknown },
   { source: 'models-items.json', data: JSON.parse(readFileSync(join(base, 'models-items.json'), 'utf8')) as unknown },
+  {
+    source: 'models-hand-tools.json',
+    data: JSON.parse(readFileSync('../mods/skelly.hand-tools/models-hand-tools.json', 'utf8')) as unknown,
+  },
   {
     source: 'models-materials.json',
     data: JSON.parse(readFileSync('../mods/skelly.materials/models-materials.json', 'utf8')) as unknown,
