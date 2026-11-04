@@ -1,5 +1,5 @@
-// `metadata` is the calling mod's generated `presentation/item-materials.json`, so a mod classifies only its own
-// models. `overrides` name wear classes per model file and `supplies` a model's supply; both belong to that mod.
+// `metadata` is the calling mod's generated item material file, so a mod classifies only its own models.
+// `overrides` name wear classes per model file and `supplies` a model's supply; both belong to that mod.
 local prefixes = {
   steel: 'metal', alu: 'metal', brass: 'metal', copper: 'metal', scrap: 'metal', paint: 'metal',
   cloth: 'cloth', cord: 'cloth', wood: 'wood', rubber: 'polymer', plastic: 'polymer', polymer: 'polymer',
