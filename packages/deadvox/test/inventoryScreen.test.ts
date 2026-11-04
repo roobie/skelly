@@ -966,8 +966,8 @@ describe('inventory screen Lit rendering', () => {
   it('lists skills by name whatever order they load in', () => {
     const skill = { id: 'fixture_skill_first', name: '!Fixture sorts first' };
     const content = baseRegistryWith([{ source: 'fixture-order', data: { skills: [skill] } }]);
-    const panelOrder = (registry: typeof content) => {
-      const { screen, root } = setup(registry);
+    const panelOrder = (stack: typeof content) => {
+      const { screen, root } = setup(stack);
       screen.selectTab('skills');
       return [...root.querySelectorAll<HTMLElement>('[data-skill]')].map(({ dataset }) => dataset.skill!);
     };
