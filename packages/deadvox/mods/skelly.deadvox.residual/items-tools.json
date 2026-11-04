@@ -2,24 +2,6 @@
   "items": [
     {
       "category": "tool",
-      "description": "A gas torch that cuts steel. It runs on a gas cartridge.",
-      "id": "blowtorch",
-      "model": "blowtorch",
-      "name": "Blowtorch",
-      "size": [2, 3],
-      "tool": {
-        "fuel": {
-          "canister": "gas_canister",
-          "swapSimSeconds": 3
-        },
-        "qualities": {
-          "flame_cutting": 1
-        }
-      },
-      "workInProgress": false
-    },
-    {
-      "category": "tool",
       "description": "A light screw jack from a car boot. It raises little, slowly.",
       "id": "scissor_jack",
       "model": "scissor_jack",

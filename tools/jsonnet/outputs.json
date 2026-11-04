@@ -585,6 +585,26 @@
       "output": "packages/mods/skelly.day-cycle/pack/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.flame-tools/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.flame-tools/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.flame-tools/exports/things.jsonnet",
+      "output": "packages/mods/skelly.flame-tools/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.flame-tools/flame-tools-items.jsonnet",
+      "output": "packages/mods/skelly.flame-tools/flame-tools-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.flame-tools/models-flame-tools.jsonnet",
+      "output": "packages/mods/skelly.flame-tools/models-flame-tools.json"
+    },
+    {
+      "source": "packages/mods/skelly.flame-tools/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.flame-tools/pack/manifest.json"
+    },
+    {
       "source": "packages/mods/skelly.fuel/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.fuel/assets/manifest.json"
     },

@@ -1140,18 +1140,6 @@
     }
   },
   {
-    "id": "blowtorch",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "blowtorch",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
     "id": "headlamp",
     "kind": "item",
     "options": {

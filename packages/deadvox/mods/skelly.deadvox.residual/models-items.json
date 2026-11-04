@@ -3399,30 +3399,6 @@
       "roll": 0
     },
     {
-      "file": "assets/models/blowtorch.glb",
-      "grip": {
-        "at": [0, 0.065000000000000002, 0],
-        "turn": [0, 0, 0]
-      },
-      "hold": "forward",
-      "id": "blowtorch",
-      "itemPresentation": {
-        "materials": ["polymer", "metal", "metal", "polymer"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "equipment": {
-          "centreOfMass": [0.0038624338624338628, 0.080502645502645506, 2.645502645502646e-5],
-          "massKg": 0.90000000000000002,
-          "node": "equipment:blowtorch"
-        }
-      },
-      "roll": 0
-    },
-    {
       "anchors": {
         "housing_back": [0, 0.02, -0.108],
         "housing_bottom": [0, 0, -0.123],

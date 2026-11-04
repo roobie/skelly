@@ -1195,12 +1195,6 @@
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
     },
     {
-      "id": "blowtorch",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
       "id": "scissor_jack",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -1418,6 +1412,12 @@
     },
     {
       "id": "lamp_oil",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "blowtorch",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]

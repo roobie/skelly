@@ -12,7 +12,6 @@
   "assets/models/baseball_bat.glb": { "materials": ["wood-birch"] },
   "assets/models/baseball_cap.glb": { "materials": ["plastic-blue", "paint-charcoal"] },
   "assets/models/bear_trap.glb": { "materials": ["steel-parkerized", "steel-grey"] },
-  "assets/models/blowtorch.glb": { "materials": ["plastic-blue", "paint-charcoal", "steel-grey", "plastic-red"] },
   "assets/models/bolt_carrier_ak.glb": { "materials": ["steel-blued"] },
   "assets/models/bolt_carrier_ar.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/bolt_carrier_ar_large.glb": { "materials": ["alu-anodized-black"] },

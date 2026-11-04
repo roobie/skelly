@@ -25,15 +25,6 @@ local burns(ignition, douse, sprint, stow, drop, relight) = {
 
 local items = [
   {
-    id: 'blowtorch',
-    name: 'Blowtorch',
-    category: 'tool',
-    model: 'blowtorch',
-    size: [2, 3],
-    description: 'A gas torch that cuts steel. It runs on a gas cartridge.',
-    tool: { qualities: { flame_cutting: 1 }, fuel: { canister: 'gas_canister', swapSimSeconds: 3 } },
-  },
-  {
     id: 'scissor_jack',
     name: 'Scissor jack',
     category: 'tool',

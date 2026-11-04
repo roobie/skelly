@@ -25,7 +25,8 @@
     "skelly.crafting",
     "skelly.manufactured-blocks",
     "skelly.fuel",
-    "skelly.containers"
+    "skelly.containers",
+    "skelly.flame-tools"
   ],
   "files": [
     {
@@ -1070,10 +1071,6 @@
     },
     {
       "kind": "json",
-      "path": "things/blowtorch.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/headlamp.model.json"
     },
     {
@@ -1587,10 +1584,6 @@
     {
       "kind": "asset",
       "path": "assets/models/bear_trap.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/blowtorch.glb"
     },
     {
       "kind": "asset",
