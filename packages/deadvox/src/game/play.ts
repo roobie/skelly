@@ -640,7 +640,6 @@ const createPlayRefusalPresenter = (
 };
 
 export interface StartPlayOptions {
-  readonly tutorial?: boolean;
   readonly skyRoute?: SkyRouteAttachment;
   readonly handedness?: HandSide;
   readonly restore?: Readonly<SaveSnapshot>;
@@ -687,8 +686,12 @@ const autosaveTuning = (registry: Engine['registry']) => {
   return autosave;
 };
 
-const assertPracticeIsolation = (options: StartPlayOptions, guided: boolean): void => {
-  if (guided && (options.saveController || options.restore)) {
+/** Practice must not touch the player's save; an input replay restores only its own recorded snapshot. */
+export const assertPracticeIsolation = (
+  options: Pick<StartPlayOptions, 'saveController' | 'restore' | 'replay'>,
+  guided: boolean,
+): void => {
+  if (guided && (options.saveController || (options.restore && !options.replay))) {
     throw new Error('Practice cannot bind a save or restore a world');
   }
 };
