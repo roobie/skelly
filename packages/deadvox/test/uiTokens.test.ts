@@ -156,6 +156,7 @@ it('reports a winning cursor whose image is not bundled and draws the nearest ea
   const { registry } = buildRegistry([
     ...uiSources({}),
     { source: `${cursorPacks[0]!.root}/cursor.json`, data: { cursors: [cursor] } },
+    { source: `${cursorPacks[1]!.root}/cursor.json`, data: { cursors: [{ ...cursor, frameWidthPx: 13 }] } },
     {
       source: 'elsewhere-a/cursor.json',
       data: { cursors: [{ ...cursor, frameWidthPx: 11 }] },
@@ -169,8 +170,8 @@ it('reports a winning cursor whose image is not bundled and draws the nearest ea
   const root = document.createElement('html');
   applyUiTokens(registry, root, { ...cursorAssets, report: (message) => reported.push(message) });
 
-  expect(root.style.getPropertyValue('--cursor-image')).toContain('/url0.png');
-  expect(root.style.getPropertyValue('--cursor-frame-width')).toBe(`${cursor.frameWidthPx}px`);
+  expect(root.style.getPropertyValue('--cursor-image')).toContain('/url1.png');
+  expect(root.style.getPropertyValue('--cursor-frame-width')).toBe('13px');
   expect(reported).toHaveLength(2);
   expect(reported[0]).toContain('elsewhere-b/cursor.json');
   expect(reported[1]).toContain('elsewhere-a/cursor.json');
