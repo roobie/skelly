@@ -81,8 +81,9 @@ a skill id because skills are never core content; mechanism roles keep those row
 valid with zero skills. A role with no provider adds no requirement. Theme rows may
 name skill ids through declared dependencies, so admission checks those references
 at load. Referencing a role does not provide its skill or take over its provider.
-See `src/core/recipeSkills.ts`, `recipeSkillRequirements`, and
-`src/core/capabilities.ts`, `CONTENT_CAPABILITIES`.
+See `src/core/recipeSkills.ts`, `recipeSkillRequirements`; `src/core/disassembly.ts`,
+`planDisassembly`; `src/core/prying.ts`, `pryPlan`; and `src/core/capabilities.ts`,
+`CONTENT_CAPABILITIES`.
 
 **Tunables follow their mechanism's content owner.** Shared body, senses and needs
 tuning belongs in shared topics. Product policy belongs in product content. A mod can
