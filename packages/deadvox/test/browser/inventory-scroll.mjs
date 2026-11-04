@@ -270,6 +270,7 @@ globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu,
   useUiTuning(tuning) {
     const ui = buildRegistry([
       ${JSON.stringify(refusalSound)},
+      { source: '../../../mods/skelly.ui/cursor.json', data: cursorFile },
       { source: 'ui-tuning-fixture', data: { ui: [{ ...BUNDLED_CONTENT.registry.ui.get('core'), refusalSound: 'player_nope', ...tuning }] } },
     ]);
     if (ui.issues.length) throw Error('Invalid UI tuning fixture: ' + JSON.stringify(ui.issues));
