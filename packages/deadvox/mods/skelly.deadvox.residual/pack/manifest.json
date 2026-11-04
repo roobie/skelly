@@ -95,6 +95,10 @@
     },
     {
       "kind": "content",
+      "path": "item-economy.json"
+    },
+    {
+      "kind": "content",
       "path": "item-wear.json"
     },
     {

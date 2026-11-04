@@ -27,10 +27,6 @@
         ],
         "takeSound": "pouch_take"
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "figureModels": [
         {
           "at": [0, 0, 0],
@@ -76,7 +72,6 @@
       "id": "jeans",
       "model": "jeans",
       "name": "Jeans",
-      "notLoot": false,
       "size": [3, 3],
       "wearable": {
         "encumbrance": 10,
@@ -88,10 +83,6 @@
     },
     {
       "category": "clothing",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "figureModels": [
         {
           "at": [0, 0, 0],
@@ -129,7 +120,6 @@
       "id": "rubber_boots",
       "model": "rubber_boots",
       "name": "Rubber boots",
-      "notLoot": false,
       "size": [2, 3],
       "wearable": {
         "encumbrance": 8,
@@ -142,10 +132,6 @@
     },
     {
       "category": "clothing",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "figureModels": [
         {
           "at": [0, 0, 0],
@@ -167,7 +153,6 @@
       "id": "sneakers",
       "model": "sneakers",
       "name": "Sneakers",
-      "notLoot": false,
       "size": [2, 3],
       "wearable": {
         "encumbrance": 4,
@@ -204,14 +189,9 @@
         ],
         "takeSound": "pouch_take"
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "cargo_pants",
       "model": "cargo_pants",
       "name": "Cargo pants",
-      "notLoot": false,
       "size": [3, 3],
       "wearable": {
         "encumbrance": 12,
@@ -232,10 +212,6 @@
           }
         ],
         "takeSound": "pouch_take"
-      },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "figureModels": [
         {
@@ -282,7 +258,6 @@
       "id": "hoodie",
       "model": "hoodie",
       "name": "Hoodie",
-      "notLoot": false,
       "size": [3, 3],
       "wearable": {
         "encumbrance": 8,
@@ -314,10 +289,6 @@
           }
         ],
         "takeSound": "pouch_take"
-      },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "figureModels": [
         {
@@ -364,7 +335,6 @@
       "id": "jacket",
       "model": "jacket",
       "name": "Jacket",
-      "notLoot": false,
       "size": [3, 3],
       "wearable": {
         "encumbrance": 12,
@@ -402,10 +372,6 @@
         ],
         "takeSound": "pouch_take"
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "figureModels": [
         {
           "at": [0, 0, 0],
@@ -421,7 +387,6 @@
       "id": "utility_vest",
       "model": "utility_vest",
       "name": "Utility vest",
-      "notLoot": false,
       "size": [3, 3],
       "wearable": {
         "encumbrance": 6,
@@ -433,10 +398,6 @@
     },
     {
       "category": "clothing",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Police"]
-      },
       "figureModels": [
         {
           "at": [0, 0, 0],
@@ -452,7 +413,6 @@
       "id": "stab_vest",
       "model": "stab_vest",
       "name": "Stab vest",
-      "notLoot": false,
       "size": [3, 3],
       "wearable": {
         "encumbrance": 8,
@@ -490,10 +450,6 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "figureModels": [
         {
           "at": [0, 0, 0],
@@ -509,7 +465,6 @@
       "id": "taped_armour",
       "model": "utility_vest",
       "name": "Taped armour",
-      "notLoot": false,
       "size": [3, 3],
       "wearable": {
         "encumbrance": 10,
@@ -527,10 +482,6 @@
     },
     {
       "category": "clothing",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Police"]
-      },
       "figureModels": [
         {
           "at": [0, 0, 0],
@@ -543,7 +494,6 @@
       "id": "riot_helmet",
       "model": "riot_helmet",
       "name": "Riot helmet",
-      "notLoot": false,
       "size": [2, 2],
       "wearable": {
         "encumbrance": 3,
@@ -575,10 +525,6 @@
         ],
         "takeSound": "pouch_take"
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "figureModels": [
         {
           "at": [0, 0, 0],
@@ -594,7 +540,6 @@
       "id": "fanny_pack",
       "model": "fanny_pack",
       "name": "Fanny pack",
-      "notLoot": false,
       "size": [2, 2],
       "wearable": {
         "encumbrance": 3,
@@ -619,10 +564,6 @@
         ],
         "takeSound": "pouch_take"
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "figureModels": [
         {
           "at": [0, 0, 0],
@@ -638,7 +579,6 @@
       "id": "school_backpack",
       "model": "school_backpack",
       "name": "School backpack",
-      "notLoot": false,
       "size": [4, 4],
       "wearable": {
         "encumbrance": 10,
@@ -663,10 +603,6 @@
         ],
         "takeSound": "pouch_take"
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "figureModels": [
         {
           "at": [0, 0, 0],
@@ -682,7 +618,6 @@
       "id": "hiking_backpack",
       "model": "hiking_backpack",
       "name": "Hiking backpack",
-      "notLoot": false,
       "size": [4, 5],
       "wearable": {
         "encumbrance": 12,

@@ -60,7 +60,7 @@ export const magazineFits = (registry: Registry, firearmType: string, magazineTy
 };
 
 export const militaryLootItems = (registry: Registry): ReadonlySet<string> =>
-  new Set([...registry.items.values()].filter((item) => militaryOnlyEconomy(item.economy)).map((item) => item.id));
+  new Set([...registry.itemEconomy.values()].filter(militaryOnlyEconomy).map((item) => item.id));
 
 interface FittedAttachment {
   readonly slotId: string;

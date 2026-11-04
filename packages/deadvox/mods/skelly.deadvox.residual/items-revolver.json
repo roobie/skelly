@@ -2,10 +2,6 @@
   "items": [
     {
       "category": "weapon",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "firearm": {
         "dispersionRadians": 0.012,
         "dryFireSound": "revolver_dry_click",
@@ -61,7 +57,6 @@
       "id": "revolver_357",
       "model": "revolver",
       "name": ".357 revolver",
-      "notLoot": false,
       "size": [2, 3],
       "twoHanded": false,
       "workInProgress": false
@@ -82,14 +77,9 @@
         "stripSound": "magazine_round_strip"
       },
       "category": "ammo",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "cartridge_357_h_magnum",
       "model": "round_357_h_magnum",
       "name": ".357 Magnum round",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 50,
       "weight": 16,
@@ -97,14 +87,9 @@
     },
     {
       "category": "ammo",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "cartridge_box_357_h_magnum",
       "model": "cartridge_box_357_h_magnum",
       "name": ".357 Magnum box",
-      "notLoot": false,
       "size": [2, 2],
       "unpack": {
         "count": 50,
@@ -116,14 +101,9 @@
     {
       "category": "material",
       "description": "A fired brass case.",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "spent_case_357_h_magnum",
       "model": "case_357_h_magnum",
       "name": ".357 Magnum case",
-      "notLoot": false,
       "pileDisplay": "scatter",
       "size": [1, 1],
       "stack": 10000,

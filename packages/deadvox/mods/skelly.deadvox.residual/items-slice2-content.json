@@ -3,14 +3,9 @@
     {
       "category": "material",
       "description": "A small bottle for lamp oil.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "lamp_oil",
       "model": "lamp_oil_bottle",
       "name": "Oil bottle",
-      "notLoot": false,
       "size": [1, 2],
       "vessel": {
         "accepts": ["lamp_fuel"],
@@ -30,14 +25,9 @@
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "glass_shards",
       "model": "glass_shards",
       "name": "Glass shards",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 6,
       "weight": 80,
@@ -45,14 +35,9 @@
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "electrical_tape",
       "model": "tape_roll",
       "name": "Electrical tape",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 6,
       "workInProgress": false
@@ -77,14 +62,9 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "fastener_pack",
       "model": "fastener_pack",
       "name": "Mixed fasteners",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 5,
       "workInProgress": false
@@ -103,14 +83,9 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "wood_offcut",
       "model": "wood_offcut",
       "name": "Wood offcut",
-      "notLoot": false,
       "size": [1, 2],
       "stack": 4,
       "weight": 250,
@@ -118,14 +93,9 @@
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "rubber_strip",
       "model": "rubber_strip",
       "name": "Rubber strip",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 6,
       "weight": 45,
@@ -133,14 +103,9 @@
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "circuit_board",
       "model": "circuit_board",
       "name": "Circuit board",
-      "notLoot": false,
       "size": [1, 2],
       "stack": 2,
       "weight": 75,
@@ -148,14 +113,9 @@
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "glass_lens",
       "model": "glass_lens",
       "name": "Small glass lens",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 3,
       "weight": 40,
@@ -163,28 +123,18 @@
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "small_spring",
       "model": "small_spring",
       "name": "Small spring",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 8,
       "workInProgress": false
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "cloth_strip",
       "model": "cloth_bundle",
       "name": "Cloth strip",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 8,
       "weight": 25,
@@ -192,42 +142,27 @@
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "sewing_thread",
       "model": "thread_spool",
       "name": "Sewing thread",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 6,
       "workInProgress": false
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "fuse",
       "model": "fuse",
       "name": "Glass fuse",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 10,
       "workInProgress": false
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "nylon_cord",
       "model": "cord_coil",
       "name": "Nylon cord",
-      "notLoot": false,
       "size": [1, 2],
       "stack": 5,
       "workInProgress": false
@@ -247,14 +182,9 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "rope",
       "model": "cord_coil",
       "name": "Rope",
-      "notLoot": false,
       "size": [1, 2],
       "stack": 5,
       "workInProgress": false
@@ -279,14 +209,9 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "wire_strippers",
       "model": "wire_strippers",
       "name": "Wire strippers",
-      "notLoot": false,
       "size": [1, 2],
       "tool": {
         "qualities": {
@@ -298,14 +223,9 @@
     },
     {
       "category": "tool",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "adjustable_pliers",
       "model": "adjustable_pliers",
       "name": "Adjustable pliers",
-      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -346,14 +266,9 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "sewing_kit",
       "model": "sewing_kit",
       "name": "Sewing kit",
-      "notLoot": false,
       "size": [2, 1],
       "tool": {
         "qualities": {
@@ -365,14 +280,9 @@
     },
     {
       "category": "misc",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "broken_toaster",
       "model": "broken_toaster",
       "name": "Broken toaster",
-      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -398,14 +308,9 @@
     },
     {
       "category": "misc",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "dead_desk_lamp",
       "model": "dead_desk_lamp",
       "name": "Dead desk lamp",
-      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -430,14 +335,9 @@
     },
     {
       "category": "misc",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "broken_table_fan",
       "model": "table_fan",
       "name": "Broken table fan",
-      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -459,14 +359,9 @@
     },
     {
       "category": "misc",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "cracked_phone",
       "model": "cracked_phone",
       "name": "Cracked mobile phone",
-      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -488,14 +383,9 @@
     },
     {
       "category": "misc",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "broken_clock",
       "model": "broken_clock",
       "name": "Broken alarm clock",
-      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -536,14 +426,9 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "sewing_repair_kit",
       "model": "sewing_repair_kit",
       "name": "Clothing repair kit",
-      "notLoot": false,
       "size": [2, 2],
       "tool": {
         "qualities": {
@@ -580,14 +465,9 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "electrical_repair_kit",
       "model": "electrical_repair_kit",
       "name": "Electrical repair kit",
-      "notLoot": false,
       "size": [2, 2],
       "tool": {
         "qualities": {
@@ -619,10 +499,6 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "taped_flashlight_mount",
       "light": {
         "beam": {
@@ -651,7 +527,6 @@
       },
       "model": "taped_flashlight_mount",
       "name": "Taped-on flashlight mount",
-      "notLoot": false,
       "size": [1, 2],
       "workInProgress": false
     },
@@ -676,27 +551,17 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "scrap_foregrip",
       "model": "scrap_foregrip",
       "name": "Scrap foregrip",
-      "notLoot": false,
       "size": [1, 2],
       "workInProgress": false
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "hinge_set",
       "model": "hinge_set",
       "name": "Small hinge set",
-      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -713,14 +578,9 @@
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "glass_bulb",
       "model": "glass_bulb",
       "name": "Small light bulb",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 3,
       "weight": 30,
@@ -728,14 +588,9 @@
     },
     {
       "category": "tool",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "hand_saw",
       "model": "hand_saw",
       "name": "Hand saw",
-      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -757,14 +612,9 @@
     },
     {
       "category": "tool",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "screwdriver",
       "model": "screwdriver",
       "name": "Screwdriver",
-      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -782,14 +632,9 @@
     },
     {
       "category": "tool",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "wrench",
       "model": "wrench",
       "name": "Adjustable wrench",
-      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -820,10 +665,6 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "firearmAttachmentEffects": {
         "fitRefusal": "I can't fit this suppressor yet",
         "fitSkillLevel": 4,
@@ -834,7 +675,6 @@
       "id": "improvised_suppressor",
       "model": "improvised_suppressor",
       "name": "Improvised suppressor",
-      "notLoot": false,
       "size": [2, 2],
       "weight": 600,
       "workInProgress": false

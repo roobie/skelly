@@ -10,6 +10,16 @@ local militaryItems = [
 local medicalItems = ['codeine', 'morphine'];
 local policeItems = ['stab_vest', 'riot_helmet'];
 local huntingItems = ['bear_trap', 'rifle_hunting', 'cartridge_308_h_winchester', 'cartridge_box_308_h_winchester', 'optic_hunting_3_9x'];
+local placedOnly = [
+  'camp_armoury_key', 'camp_supply_manifest', 'camp_hq_safe_key', 'camp_hq_safe_note', 'camp_closing_note',
+  'gauntlet_public_memo', 'gauntlet_public_directions', 'gauntlet_maintenance_memo', 'gauntlet_cellar_note',
+  'gauntlet_lab_entry_card', 'gauntlet_lab_administration_card', 'gauntlet_lab_research_card', 'gauntlet_lab_special_notes',
+  'optic_digital_thermal', 'work_in_progress', 'spent_case_5_d_56x45',
+  'shambler_torso', 'shambler_head', 'shambler_left_arm', 'shambler_right_arm', 'shambler_left_leg', 'shambler_right_leg',
+  'pistol_service', 'magazine_pistol_9', 'cartridge_9x19', 'spent_case_9x19',
+  'dad_cabin_key', 'evacuation_note', 'hunter_logbook', 'pharmacy_key', 'medical_research_log',
+  'debug_shotgun_pump', 'sample_note', 'gauntlet_police_armoury_key',
+];
 local notSpawnable = [
   'pistol_service', 'magazine_pistol_9', 'cartridge_9x19', 'spent_case_9x19',
   'work_in_progress', 'debug_shotgun_pump', 'spent_case_308_h_winchester', 'spent_case_357_h_magnum',
@@ -82,22 +92,22 @@ local authorTemplate(template) = template + {
   },
 };
 // Vehicle parts arrive fitted to vehicles, so none spawns as loose loot. A placed-only item (`notLoot`) is never rolled.
-local spawnsLoose(item) = !(std.objectHas(item, 'vehicle') || std.get(item, 'notLoot', false) || std.get(item, 'opticView', null) == 'unavailable' || std.member(notSpawnable, item.id));
-local authorItem(item) =
+local spawnsLoose(item) = !(std.objectHas(item, 'vehicle') || std.member(placedOnly + notSpawnable, item.id));
+local authorEconomy(item) =
   assert !spawnsLoose(item) || std.member(commonItems + militaryItems + medicalItems + policeItems + huntingItems, item.id) : 'author economy metadata for ' + item.id;
-  { workInProgress: false } + item + {
-    notLoot: std.get(item, 'notLoot', false) || std.get(item, 'opticView', null) == 'unavailable',
-    economy:
-      if !spawnsLoose(item) then { usage: [], tiers: [] }
-      else if std.member(militaryItems, item.id) then { usage: ['Military'], tiers: ['Tier2', 'Tier3'] }
-      else if std.member(medicalItems, item.id) then { usage: ['Medical'], tiers: tiers }
-      else if std.member(policeItems, item.id) then { usage: ['Police'], tiers: tiers }
-      else if std.member(huntingItems, item.id) then { usage: ['Hunting'], tiers: if item.id == 'optic_hunting_3_9x' then ['Tier2'] else tiers }
-      else { usage: usages, tiers: tiers },
-  };
+  { id: item.id, notLoot: std.member(placedOnly, item.id) } +
+    if !spawnsLoose(item) then { usage: [], tiers: [] }
+    else if std.member(militaryItems, item.id) then { usage: ['Military'], tiers: ['Tier2', 'Tier3'] }
+    else if std.member(medicalItems, item.id) then { usage: ['Medical'], tiers: tiers }
+    else if std.member(policeItems, item.id) then { usage: ['Police'], tiers: tiers }
+    else if std.member(huntingItems, item.id) then { usage: ['Hunting'], tiers: if item.id == 'optic_hunting_3_9x' then ['Tier2'] else tiers }
+    else { usage: usages, tiers: tiers };
 {
-  pack(content):: content
-    + (if std.objectHas(content, 'items') then { items: [authorItem(item) for item in content.items] } else {})
+  itemEconomy(items):: [authorEconomy(item) for item in items],
+  itemPack(content):: content + (if std.objectHas(content, 'items') then {
+    items: [{ workInProgress: false } + item for item in content.items],
+  } else {}),
+  pack(content):: self.itemPack(content)
     + (if std.objectHas(content, 'templates') then { templates: [authorTemplate(template) for template in content.templates] } else {})
     + (if std.objectHas(content, 'layouts') then {
       layouts: [layout + {

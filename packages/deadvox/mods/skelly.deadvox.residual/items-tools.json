@@ -3,29 +3,19 @@
     {
       "category": "tool",
       "description": "A magnetic compass with a turning card.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "heldDisplay": "compass",
       "id": "compass",
       "model": "compass",
       "name": "Compass",
-      "notLoot": false,
       "size": [1, 2],
       "workInProgress": false
     },
     {
       "category": "tool",
       "description": "Pries open doors and crates. Also a weapon.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "crowbar",
       "model": "crowbar",
       "name": "Crowbar",
-      "notLoot": false,
       "size": [2, 6],
       "tool": {
         "qualities": {
@@ -62,14 +52,9 @@
     {
       "category": "tool",
       "description": "A gas torch that cuts steel. It runs on a gas cartridge.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "blowtorch",
       "model": "blowtorch",
       "name": "Blowtorch",
-      "notLoot": false,
       "size": [2, 3],
       "tool": {
         "fuel": {
@@ -85,14 +70,9 @@
     {
       "category": "tool",
       "description": "A light screw jack from a car boot. It raises little, slowly.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "scissor_jack",
       "model": "scissor_jack",
       "name": "Scissor jack",
-      "notLoot": false,
       "size": [3, 2],
       "tool": {
         "qualities": {
@@ -104,14 +84,9 @@
     {
       "category": "tool",
       "description": "A hydraulic jack with a short, strong ram.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "bottle_jack",
       "model": "bottle_jack",
       "name": "Bottle jack",
-      "notLoot": false,
       "size": [2, 3],
       "tool": {
         "qualities": {
@@ -123,14 +98,9 @@
     {
       "category": "tool",
       "description": "A wheeled floor crane with a hydraulic boom. It takes two hands and a lot of room.",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "engine_hoist",
       "model": "engine_hoist",
       "name": "Engine hoist",
-      "notLoot": false,
       "size": [4, 6],
       "tool": {
         "qualities": {
@@ -145,28 +115,18 @@
       },
       "category": "misc",
       "description": "Fuel for a blowtorch.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "gas_canister",
       "model": "gas_canister",
       "name": "Gas cartridge",
-      "notLoot": false,
       "size": [1, 2],
       "stack": 2,
       "workInProgress": false
     },
     {
       "category": "tool",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "hammer",
       "model": "hammer",
       "name": "Hammer",
-      "notLoot": false,
       "size": [2, 4],
       "tool": {
         "qualities": {
@@ -202,14 +162,9 @@
     {
       "category": "tool",
       "description": "Breaks a locked door open in a few loud blows. Also a heavy weapon.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "sledgehammer",
       "model": "sledgehammer",
       "name": "Sledgehammer",
-      "notLoot": false,
       "size": [2, 7],
       "tool": {
         "qualities": {
@@ -245,14 +200,9 @@
     },
     {
       "category": "tool",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "kitchen_knife",
       "model": "kitchen_knife",
       "name": "Kitchen knife",
-      "notLoot": false,
       "size": [1, 4],
       "tool": {
         "qualities": {
@@ -287,14 +237,9 @@
     },
     {
       "category": "tool",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "kabar",
       "model": "kabar",
       "name": "Kabar",
-      "notLoot": false,
       "size": [1, 3],
       "tool": {
         "qualities": {
@@ -329,14 +274,9 @@
     },
     {
       "category": "tool",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "machete",
       "model": "machete",
       "name": "Machete",
-      "notLoot": false,
       "size": [1, 6],
       "tool": {
         "qualities": {
@@ -371,14 +311,9 @@
     },
     {
       "category": "tool",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "can_opener",
       "model": "can_opener",
       "name": "Can opener",
-      "notLoot": false,
       "size": [1, 1],
       "tool": {
         "qualities": {
@@ -390,14 +325,9 @@
     {
       "category": "tool",
       "description": "A small stone for honing a blade by hand.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "whetstone",
       "model": "whetstone",
       "name": "Whetstone",
-      "notLoot": false,
       "size": [1, 2],
       "tool": {
         "qualities": {
@@ -409,14 +339,9 @@
     {
       "category": "tool",
       "description": "Steel jaws on a spring. It shuts on whatever steps in it.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Hunting"]
-      },
       "id": "bear_trap",
       "model": "bear_trap",
       "name": "Bear trap",
-      "notLoot": false,
       "size": [5, 5],
       "trap": {
         "actorLegDamage": 60,
@@ -433,14 +358,9 @@
     },
     {
       "category": "weapon",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "baseball_bat",
       "model": "baseball_bat",
       "name": "Baseball bat",
-      "notLoot": false,
       "size": [1, 9],
       "twoHanded": true,
       "weapon": {
@@ -470,14 +390,9 @@
     },
     {
       "category": "weapon",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "steel_pipe",
       "model": "steel_pipe",
       "name": "Steel pipe",
-      "notLoot": false,
       "size": [1, 10],
       "weapon": {
         "melee": {
@@ -526,14 +441,9 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "nail_bat",
       "model": "baseball_bat",
       "name": "Nail bat",
-      "notLoot": false,
       "size": [1, 9],
       "twoHanded": true,
       "weapon": {
@@ -582,14 +492,9 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "spear",
       "model": "steel_pipe",
       "name": "Sharpened spear",
-      "notLoot": false,
       "size": [1, 10],
       "twoHanded": true,
       "weapon": {
@@ -620,10 +525,6 @@
     {
       "category": "light",
       "description": "A battery-powered flashlight. Its light is visible to nearby zombies.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "flashlight",
       "light": {
         "beam": {
@@ -649,7 +550,6 @@
       },
       "model": "flashlight",
       "name": "Flashlight",
-      "notLoot": false,
       "size": [1, 2],
       "workInProgress": false
     },
@@ -673,10 +573,6 @@
             "rounding": "floor"
           }
         ]
-      },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "figureModels": [
         {
@@ -713,7 +609,6 @@
       },
       "model": "headlamp",
       "name": "Headlamp",
-      "notLoot": false,
       "size": [1, 2],
       "wearable": {
         "encumbrance": 0,
@@ -724,10 +619,6 @@
     {
       "category": "light",
       "description": "Battery-powered night-vision goggles with an infrared lamp.",
-      "economy": {
-        "tiers": ["Tier2", "Tier3"],
-        "usage": ["Military"]
-      },
       "figureModels": [
         {
           "at": [0, 0.040000000000000001, 0],
@@ -770,7 +661,6 @@
       },
       "model": "night_vision_goggles",
       "name": "Night-vision goggles",
-      "notLoot": false,
       "size": [2, 2],
       "wearable": {
         "encumbrance": 0,
@@ -805,10 +695,6 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "torch",
       "light": {
         "burnTimeGameHours": 4,
@@ -832,7 +718,6 @@
       },
       "model": "torch",
       "name": "Torch",
-      "notLoot": false,
       "size": [1, 4],
       "weight": 350,
       "workInProgress": false
@@ -858,10 +743,6 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "candle",
       "light": {
         "burnTimeGameHours": 6,
@@ -884,7 +765,6 @@
       },
       "model": "candle",
       "name": "Candle",
-      "notLoot": false,
       "size": [1, 1],
       "weight": 150,
       "workInProgress": false
@@ -907,10 +787,6 @@
             "rounding": "floor"
           }
         ]
-      },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "oil_lamp",
       "light": {
@@ -937,7 +813,6 @@
       },
       "model": "oil_lamp",
       "name": "Oil lamp",
-      "notLoot": false,
       "size": [2, 3],
       "vessel": {
         "accepts": ["lamp_fuel"],
@@ -957,10 +832,6 @@
     {
       "category": "light",
       "description": "A sealed chemical light.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "glowstick",
       "light": {
         "burnTimeGameHours": 8,
@@ -980,7 +851,6 @@
       },
       "model": "glowstick",
       "name": "Glowstick",
-      "notLoot": false,
       "size": [1, 2],
       "weight": 30,
       "workInProgress": false
@@ -988,10 +858,6 @@
     {
       "category": "light",
       "description": "A road flare. It burns red and bright until it is spent.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "road_flare",
       "light": {
         "burnTimeGameHours": 1,
@@ -1011,17 +877,12 @@
       },
       "model": "road_flare",
       "name": "Road flare",
-      "notLoot": false,
       "size": [1, 2],
       "weight": 200,
       "workInProgress": false
     },
     {
       "category": "light",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "lighter",
       "igniter": {
         "capacity": 100,
@@ -1036,16 +897,11 @@
       },
       "model": "lighter",
       "name": "Lighter",
-      "notLoot": false,
       "size": [1, 1],
       "workInProgress": false
     },
     {
       "category": "light",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "matches",
       "igniter": {
         "capacity": 10,
@@ -1053,7 +909,6 @@
       },
       "model": "matches",
       "name": "Box of matches",
-      "notLoot": false,
       "size": [1, 1],
       "workInProgress": false
     },
@@ -1080,13 +935,8 @@
         },
         "setSimSeconds": 3
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "door_bar",
       "name": "Door bar",
-      "notLoot": false,
       "size": [1, 6],
       "twoHanded": true,
       "weight": 3000,

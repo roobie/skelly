@@ -3299,14 +3299,9 @@
   "items": [
     {
       "category": "note",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "gauntlet_public_memo",
       "model": "paper_sheet",
       "name": "Maintenance route",
-      "notLoot": true,
       "readable": {
         "text": "The service store is on the block with the square raised water tank. Go around the low brick building to the rear apron. The two tall, narrow exhausts stand together there; the inspection hatch beside them opens onto the maintenance ladder. The office is not the basement access.\n\nSquare raised water tank → low brick store\n                           rear apron → paired exhausts → hatch\n",
         "title": "Maintenance route"
@@ -3317,14 +3312,9 @@
     },
     {
       "category": "note",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "gauntlet_public_directions",
       "model": "folded_note",
       "name": "Delivery instructions",
-      "notLoot": true,
       "readable": {
         "text": "Deliver instruments to the low brick service store beside the yellow loading frame. Do not leave them at a utility cabinet or a lone duct riser. Walk around to the rear apron, find the pair of narrow exhausts, and use the inspection hatch beside them. The lid is unlocked; the ladder below reaches the intake floor. Return by the same hatch when the shift ends.\n",
         "title": "Delivery instructions"
@@ -3335,14 +3325,9 @@
     },
     {
       "category": "note",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "gauntlet_maintenance_memo",
       "model": "paper_sheet",
       "name": "Ventilation invoice",
-      "notLoot": true,
       "readable": {
         "text": "Accounts queried the extra ducting again. The low brick service building beside the square water tank and yellow delivery frame has paired narrow exhausts on its rear apron, rather more ventilation than a stores room needs. The inspection hatch beside them has a ladder under the lid. Please use that access, not the office door.\n\nStreet → service building → rear apron\n                           paired exhausts → hatch\n",
         "title": "Ventilation invoice"
@@ -3353,14 +3338,9 @@
     },
     {
       "category": "note",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "gauntlet_cellar_note",
       "model": "folded_note",
       "name": "Note for Ray",
-      "notLoot": true,
       "readable": {
         "text": "Ray, I've taken the kids to my sister's. You won't come, I know. You've barely been up from the cellar since the radio started, and at night I hear you under the house, deeper than any cellar goes. Whatever you're keeping down there, I hope it's worth more to you than we were. Don't come after us until that bite has healed.\n\nM.\n",
         "title": "Note for Ray"
@@ -3371,63 +3351,43 @@
     },
     {
       "category": "tool",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "gauntlet_lab_entry_card",
       "key": {
         "lock": "gauntlet_lab_entry_seal"
       },
       "model": "gauntlet_lab_entry_card",
       "name": "Security keycard",
-      "notLoot": true,
       "size": [1, 1],
       "workInProgress": false
     },
     {
       "category": "tool",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "gauntlet_lab_administration_card",
       "key": {
         "lock": "gauntlet_lab_administration_seal"
       },
       "model": "folded_note",
       "name": "Clearance keycard",
-      "notLoot": true,
       "size": [1, 1],
       "weight": 5,
       "workInProgress": false
     },
     {
       "category": "tool",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "gauntlet_lab_research_card",
       "key": {
         "lock": "gauntlet_lab_research_seal"
       },
       "model": "gauntlet_lab_entry_card",
       "name": "Research keycard",
-      "notLoot": true,
       "size": [1, 1],
       "workInProgress": false
     },
     {
       "category": "note",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "gauntlet_lab_special_notes",
       "model": "paper_sheet",
       "name": "Staff notes",
-      "notLoot": true,
       "readable": {
         "text": "Requisition 9-12 came back unsigned again. Security won't counter-sign another feeding schedule without the director, and the director hasn't answered the intercom since Thursday.\n\nIt was six subjects in March. It is one now, and it still flinches at the hose. Feeding is suspended. Let the pit go quiet.\n\nWhoever keeps opening the floor at night: the schedule is the only part of this we still control.\n",
         "title": "Staff notes"

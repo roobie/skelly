@@ -3,26 +3,17 @@
     {
       "category": "tool",
       "description": "A small key for Dad's cabin.",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "dad_cabin_key",
       "key": {
         "lock": "dad_cabin"
       },
       "model": "dad_cabin_key",
       "name": "Dad's cabin key",
-      "notLoot": true,
       "size": [1, 1],
       "workInProgress": false
     },
     {
       "category": "clothing",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "figureModels": [
         {
           "at": [0, 0.10000000000000001, 0],
@@ -35,7 +26,6 @@
       "id": "baseball_cap",
       "model": "baseball_cap",
       "name": "Baseball cap",
-      "notLoot": false,
       "size": [2, 1],
       "wearable": {
         "encumbrance": 0,
@@ -46,14 +36,9 @@
     {
       "category": "note",
       "description": "A folded note from the kitchen; readable in hand.",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "evacuation_note",
       "model": "folded_note",
       "name": "Folded evacuation note",
-      "notLoot": true,
       "readable": {
         "text": "If you're reading this, they took the sick south to the clinic. We went looking for Dad. Please don't wait for us.",
         "title": "A note from the kitchen"
@@ -64,14 +49,9 @@
     },
     {
       "category": "book",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "hunter_logbook",
       "model": "notebook",
       "name": "Hunter's logbook",
-      "notLoot": true,
       "readable": {
         "text": "The deer ran straight at the fence instead of away from us. The dogs won't go near the creek. Something is wrong with the animals. Mike says his place down the ridge road has fuel and a radio. I'm heading there at first light.",
         "title": "Hunter's logbook"
@@ -83,30 +63,20 @@
     {
       "category": "tool",
       "description": "A key for the medical hall pharmacy.",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "pharmacy_key",
       "key": {
         "lock": "medical_pharmacy"
       },
       "model": "pharmacy_key",
       "name": "Medical pharmacy key",
-      "notLoot": true,
       "size": [1, 1],
       "workInProgress": false
     },
     {
       "category": "book",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "medical_research_log",
       "model": "notebook",
       "name": "Medical sampling log",
-      "notLoot": true,
       "readable": {
         "text": "The community hall became a temporary viral-sampling site after the first fever cases. We record each swab and compare the progression of symptoms; there is no treatment protocol yet. The military camp sends the sealed kits and replacement supplies. Keep the ward notes with the samples.",
         "title": "Sampling intake log"

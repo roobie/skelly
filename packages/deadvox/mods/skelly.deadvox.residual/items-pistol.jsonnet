@@ -4,7 +4,7 @@ local pistol = import 'gungen/pistol_service.model.json';
     {
       id: 'pistol_service', name: 'Service Nine', category: 'weapon',
       description: 'Polymer-frame 9×19 mm semi-automatic pistol.',
-      model: 'pistol_service', size: [2, 3], twoHanded: true, notLoot: true,
+      model: 'pistol_service', size: [2, 3], twoHanded: true,
       firearm: {
         rackSound: 'rifle_charge',
         handling: { magazine: { removeSimSeconds: 2, insertSimSeconds: 2, changeSound: 'magazine_change' } },
@@ -18,11 +18,11 @@ local pistol = import 'gungen/pistol_service.model.json';
     },
     {
       id: 'magazine_pistol_9', name: '9×19 mm pistol magazine', category: 'ammo',
-      weight: 80, size: [1, 2], model: 'magazine_pistol_9', notLoot: true,
+      weight: 80, size: [1, 2], model: 'magazine_pistol_9',
     },
     {
       id: 'cartridge_9x19', name: '9×19 mm round', category: 'ammo',
-      weight: 12, size: [1, 1], stack: 50, model: 'round_9x19', notLoot: true,
+      weight: 12, size: [1, 1], stack: 50, model: 'round_9x19',
       ammo: { damageKind: 'pierce', loadSound: 'magazine_round_insert', stripSound: 'magazine_round_strip', calibre: '9x19', pellets: 1, spreadDegrees: 0, diameterMm: 9.03, damage: 40, impulse: 2.68, rangeMetres: 100, loadSimSeconds: 0.6, stripSimSeconds: 0.5 },
     },
     {
@@ -31,7 +31,7 @@ local pistol = import 'gungen/pistol_service.model.json';
     },
     {
       id: 'spent_case_9x19', name: '9×19 mm case', category: 'material',
-      weight: 4, size: [1, 1], stack: 10000, pileDisplay: 'scatter', model: 'case_9x19', notLoot: true,
+      weight: 4, size: [1, 1], stack: 10000, pileDisplay: 'scatter', model: 'case_9x19',
     },
   ],
   models: [

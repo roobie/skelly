@@ -2,28 +2,18 @@
   "items": [
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "stick",
       "model": "stick",
       "name": "Stick",
-      "notLoot": false,
       "size": [1, 4],
       "stack": 6,
       "workInProgress": false
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "wax",
       "model": "wax",
       "name": "Wax lump",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 10,
       "workInProgress": false
@@ -42,14 +32,9 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "wooden_plank",
       "model": "wooden_plank",
       "name": "Wooden plank",
-      "notLoot": false,
       "size": [2, 4],
       "workInProgress": false
     },
@@ -80,14 +65,9 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "repair_kit",
       "model": "repair_kit",
       "name": "Repair kit",
-      "notLoot": false,
       "size": [2, 2],
       "tool": {
         "qualities": {
@@ -110,14 +90,9 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "copper_wire",
       "model": "copper_wire",
       "name": "Salvaged wire",
-      "notLoot": false,
       "size": [1, 2],
       "workInProgress": false
     },
@@ -141,14 +116,9 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "field_patch",
       "model": "field_patch",
       "name": "Field repair patch",
-      "notLoot": false,
       "size": [1, 2],
       "workInProgress": false
     }

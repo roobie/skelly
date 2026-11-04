@@ -3,7 +3,7 @@ local content = [
   'benchmark-city', 'block-materials', 'blocks', 'body', 'camp', 'combat-policy', 'compression', 'controls',
   'crisis-hq-fixtures', 'crisis-hq', 'damage-kinds', 'dayCycle', 'figures-player', 'furniture-cabins',
   'furniture-hunting', 'furniture-playtest', 'furniture', 'gauntlet-look', 'gauntlet-start',
-  'gauntlet', 'graphics', 'hunting-cabins', 'inventory', 'item-wear', 'items-ammunition',
+  'gauntlet', 'graphics', 'hunting-cabins', 'inventory', 'item-economy', 'item-wear', 'items-ammunition',
   'items-attachments', 'items-explosives', 'items-food', 'items-gun-parts', 'items-other',
   'items-pistol', 'items-playtest', 'items-revolver', 'items-slice2-content', 'items-tools',
   'items-wearables', 'ladders', 'layouts-cabins', 'layouts-playtest', 'layouts-stairs',

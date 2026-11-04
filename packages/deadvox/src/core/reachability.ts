@@ -572,7 +572,7 @@ export const checkReachability = (
     knowledge,
     skills,
   });
-  const eligible = [...registry.items.values()].filter((item) => !item.notLoot).map((item) => item.id);
+  const eligible = [...registry.itemEconomy.values()].filter((row) => !row.notLoot).map((row) => row.id);
   return {
     found,
     placed,

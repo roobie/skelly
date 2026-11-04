@@ -12,26 +12,16 @@
         "rigid": true
       },
       "description": "A steel ammunition can with a hinged lid.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "ammo_can",
       "model": "ammo_can",
       "name": "Ammo can",
-      "notLoot": false,
       "size": [3, 2],
       "workInProgress": false
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "work_in_progress",
       "name": "Work in progress",
-      "notLoot": true,
       "size": [2, 2],
       "twoHanded": true,
       "weight": 0,
@@ -46,14 +36,9 @@
       },
       "category": "battery",
       "description": "A rechargeable AA cell.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "rechargeable_aa_battery",
       "model": "aa_battery",
       "name": "Rechargeable AA battery",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 10,
       "workInProgress": false
@@ -63,14 +48,9 @@
         "capacity": 1
       },
       "category": "battery",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "aa_battery",
       "model": "aa_battery",
       "name": "AA battery",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 10,
       "workInProgress": false
@@ -90,14 +70,9 @@
           }
         ]
       },
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "bandage",
       "model": "bandage",
       "name": "Bandage",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 4,
       "treatment": {
@@ -108,14 +83,9 @@
     {
       "category": "medical",
       "description": "Treats an early wound infection.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "antiseptic",
       "model": "antiseptic",
       "name": "Antiseptic",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 4,
       "treatment": {
@@ -130,14 +100,9 @@
     {
       "category": "medical",
       "description": "An antibiotic. Treats a progressed wound infection.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "antibiotics",
       "model": "antibiotics",
       "name": "Tetracycline",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 4,
       "treatment": {
@@ -161,14 +126,9 @@
       },
       "category": "medical",
       "description": "Eases pain for a few hours. Heals nothing.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "painkillers",
       "model": "painkillers",
       "name": "Aspirin",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 24,
       "weight": 1,
@@ -187,14 +147,9 @@
       },
       "category": "medical",
       "description": "Eases strong pain for a few hours. Heals nothing. Blurs the edges of vision while it works.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Medical"]
-      },
       "id": "codeine",
       "model": "codeine",
       "name": "Codeine",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 24,
       "weight": 1,
@@ -213,28 +168,18 @@
       },
       "category": "medical",
       "description": "Eases severe pain for hours. Heals nothing. Blurs the edges of vision while it works.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Medical"]
-      },
       "id": "morphine",
       "model": "morphine",
       "name": "Morphine",
-      "notLoot": false,
       "size": [1, 1],
       "weight": 20,
       "workInProgress": false
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "rag",
       "model": "rag",
       "name": "Rag",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 6,
       "treatment": {
@@ -244,41 +189,26 @@
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "duct_tape",
       "model": "duct_tape",
       "name": "Duct tape",
-      "notLoot": false,
       "size": [1, 1],
       "workInProgress": false
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "nails",
       "model": "nails",
       "name": "Nails",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 100,
       "workInProgress": false
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "scrap_metal",
       "model": "scrap_metal",
       "name": "Scrap metal",
-      "notLoot": false,
       "size": [1, 2],
       "stack": 5,
       "workInProgress": false
@@ -296,14 +226,9 @@
         "title": "Field Manual: Making Do"
       },
       "category": "book",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "field_manual",
       "model": "notebook",
       "name": "Field Manual: Making Do",
-      "notLoot": false,
       "readable": {
         "text": "A pocket guide to salvaging useful material from damaged equipment.",
         "title": "Field Manual: Making Do"
@@ -329,14 +254,9 @@
         "title": "Camp Craft"
       },
       "category": "book",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "camp_craft_book",
       "model": "notebook",
       "name": "Camp Craft",
-      "notLoot": false,
       "readable": {
         "text": "Notes on making simple light and shelter from things found nearby.",
         "title": "Camp Craft"
@@ -373,14 +293,9 @@
         "title": "Home Repair Handbook"
       },
       "category": "book",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "home_repair_book",
       "model": "notebook",
       "name": "Home Repair Handbook",
-      "notLoot": false,
       "readable": {
         "text": "A practical handbook for keeping tools and household goods working.",
         "title": "Home Repair Handbook"
@@ -408,14 +323,9 @@
         "title": "Workshop Notes"
       },
       "category": "book",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "workshop_notes",
       "model": "notebook",
       "name": "Workshop Notes",
-      "notLoot": false,
       "readable": {
         "text": "Handwritten notes on careful repairs and using salvaged wire.",
         "title": "Workshop Notes"
@@ -427,14 +337,9 @@
     {
       "category": "book",
       "description": "Water-stained. Someone underlined things.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "paperback",
       "model": "notebook",
       "name": "Paperback novel",
-      "notLoot": false,
       "size": [2, 2],
       "weight": 300,
       "workInProgress": false
@@ -442,14 +347,9 @@
     {
       "category": "misc",
       "description": "A battered handheld radio. Its battery and metal casing can be salvaged.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "portable_radio",
       "model": "portable_radio",
       "name": "Portable radio",
-      "notLoot": false,
       "salvage": [
         {
           "count": 1,
@@ -467,28 +367,18 @@
     {
       "category": "misc",
       "description": "A fuel-filled can.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "jerry_can",
       "model": "jerry_can",
       "name": "Jerry can",
-      "notLoot": false,
       "size": [4, 5],
       "workInProgress": false
     },
     {
       "category": "material",
       "description": "A fired 5.56×45 case.",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "spent_case_5_d_56x45",
       "model": "case_5_d_56x45",
       "name": "Spent 5.56×45 case",
-      "notLoot": true,
       "pileDisplay": "scatter",
       "size": [1, 1],
       "stack": 10000,
@@ -498,14 +388,9 @@
     {
       "category": "material",
       "description": "A fired 7.62×39 case.",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "spent_case_7_d_62x39",
       "model": "case_7_d_62x39",
       "name": "Spent 7.62×39 case",
-      "notLoot": false,
       "pileDisplay": "scatter",
       "size": [1, 1],
       "stack": 10000,
@@ -529,14 +414,9 @@
       },
       "category": "ammo",
       "description": "Nine-pellet 00 buckshot.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "shell_12_gauge_00_buck",
       "model": "round_12_h_gauge_h_00_h_buck",
       "name": "12 gauge 00 buckshot shell",
-      "notLoot": false,
       "size": [1, 1],
       "stack": 25,
       "weight": 40,
@@ -545,14 +425,9 @@
     {
       "category": "ammo",
       "description": "Sealed cardboard box of twenty 00-buck shells.",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "shotshell_box",
       "model": "shotshell_box",
       "name": "Sealed shotshell box (20)",
-      "notLoot": false,
       "size": [2, 2],
       "unpack": {
         "count": 20,
@@ -564,14 +439,9 @@
     {
       "category": "material",
       "description": "A fired shotshell hull.",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "spent_case_12_h_gauge_h_00_h_buck",
       "model": "case_12_h_gauge_h_00_h_buck",
       "name": "Spent 12 gauge hull",
-      "notLoot": false,
       "pileDisplay": "scatter",
       "size": [1, 1],
       "stack": 10000,
@@ -580,79 +450,49 @@
     },
     {
       "category": "misc",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "shambler_torso",
       "model": "shambler_torso",
       "name": "Severed shambler torso",
-      "notLoot": true,
       "size": [4, 6],
       "workInProgress": false
     },
     {
       "category": "misc",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "shambler_head",
       "model": "shambler_head",
       "name": "Severed shambler head",
-      "notLoot": true,
       "size": [2, 3],
       "workInProgress": false
     },
     {
       "category": "misc",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "shambler_left_arm",
       "model": "shambler_left_arm",
       "name": "Severed shambler left arm",
-      "notLoot": true,
       "size": [1, 7],
       "workInProgress": false
     },
     {
       "category": "misc",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "shambler_right_arm",
       "model": "shambler_right_arm",
       "name": "Severed shambler right arm",
-      "notLoot": true,
       "size": [1, 7],
       "workInProgress": false
     },
     {
       "category": "misc",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "shambler_left_leg",
       "model": "shambler_left_leg",
       "name": "Severed shambler left leg",
-      "notLoot": true,
       "size": [2, 9],
       "workInProgress": false
     },
     {
       "category": "misc",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "shambler_right_leg",
       "model": "shambler_right_leg",
       "name": "Severed shambler right leg",
-      "notLoot": true,
       "size": [2, 9],
       "workInProgress": false
     }

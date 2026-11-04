@@ -26,7 +26,6 @@ import {
 } from 'valibot';
 import { BODY_REGIONS } from '../body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../character.ts';
-import { ItemEconomySchema } from '../loot.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
 import { MELEE_PROFILES } from '../meleePose.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from '../readable.ts';
@@ -721,9 +720,7 @@ const VehicleServiceFields = {
 
 export const ItemSchema = strictObject({
   id: Id,
-  economy: ItemEconomySchema,
   workInProgress: vBoolean(),
-  notLoot: vBoolean(),
   name: Name,
   category: picklist(ITEM_CATEGORIES),
   soundsLike: optional(Id),

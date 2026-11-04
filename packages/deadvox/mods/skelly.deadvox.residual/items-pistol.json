@@ -3,10 +3,6 @@
     {
       "category": "weapon",
       "description": "Polymer-frame 9×19 mm semi-automatic pistol.",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "firearm": {
         "dispersionRadians": 0.01,
         "dryFireSound": "firearm_dry_click",
@@ -37,21 +33,15 @@
       "id": "pistol_service",
       "model": "pistol_service",
       "name": "Service Nine",
-      "notLoot": true,
       "size": [2, 3],
       "twoHanded": true,
       "workInProgress": false
     },
     {
       "category": "ammo",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "magazine_pistol_9",
       "model": "magazine_pistol_9",
       "name": "9×19 mm pistol magazine",
-      "notLoot": true,
       "size": [1, 2],
       "weight": 80,
       "workInProgress": false
@@ -72,14 +62,9 @@
         "stripSound": "magazine_round_strip"
       },
       "category": "ammo",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "cartridge_9x19",
       "model": "round_9x19",
       "name": "9×19 mm round",
-      "notLoot": true,
       "size": [1, 1],
       "stack": 50,
       "weight": 12,
@@ -87,13 +72,8 @@
     },
     {
       "category": "ammo",
-      "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-      },
       "id": "cartridge_box_9x19",
       "name": "9×19 mm box",
-      "notLoot": false,
       "size": [2, 2],
       "unpack": {
         "count": 50,
@@ -105,14 +85,9 @@
     },
     {
       "category": "material",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "spent_case_9x19",
       "model": "case_9x19",
       "name": "9×19 mm case",
-      "notLoot": true,
       "pileDisplay": "scatter",
       "size": [1, 1],
       "stack": 10000,

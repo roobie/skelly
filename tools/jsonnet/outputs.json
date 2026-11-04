@@ -97,6 +97,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/inventory.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.residual/item-economy.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.residual/item-economy.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/item-wear.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/item-wear.json"
     },

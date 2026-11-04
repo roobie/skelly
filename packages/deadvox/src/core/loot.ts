@@ -3,13 +3,14 @@
 // table (rolled in full), or nothing. What comes out is a list of items to make, not
 // instances, so worldgen stays free of item uids.
 
-import { array, check, type InferOutput, literal, optional, picklist, pipe, strictObject } from 'valibot';
+import { array, boolean, check, type InferOutput, literal, optional, picklist, pipe, strictObject } from 'valibot';
 import type { ItemDef, LootEntry, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { type PaperMapCoverage, paperMapAt } from './paperMap.ts';
 import { Rng } from './random.ts';
 import { BLOCK_SIZE } from './scale.ts';
 import type { FixedLootItemDef } from './schema.ts';
+import { Id } from './schema/primitives.ts';
 
 const distinct = <T>(values: T[]): boolean => new Set(values).size === values.length;
 
@@ -22,6 +23,11 @@ export const LootTierSchema = picklist(LOOT_TIERS);
 export const ItemEconomySchema = strictObject({
   usage: UsageSchema,
   tiers: pipe(array(LootTierSchema), check(distinct, 'tiers must be unique')),
+});
+export const ItemScarcitySchema = strictObject({
+  id: Id,
+  ...ItemEconomySchema.entries,
+  notLoot: boolean(),
 });
 /** `lowerTiers` makes the context roll its tier and every tier beneath it, so a deeper area adds a tier and keeps the rest. */
 export const LootContextSchema = strictObject({
@@ -150,14 +156,20 @@ const installedLootTypes = (
 };
 
 /** An item no loot context admits: it exists only where content places it by hand. */
-const neverSpawns = (economy: ItemEconomy): boolean => economy.tiers.length === 0 || economy.usage.length === 0;
+const neverSpawns = (economy: ItemEconomy | undefined): boolean =>
+  economy === undefined || economy.tiers.length === 0 || economy.usage.length === 0;
 
 /** Why one item is refused; authored placement also admits an item that never spawns, but not craft escrow. */
-const admissionIssue = (item: ItemDef, context: LootContext, placed: boolean): string | undefined => {
+const admissionIssue = (
+  item: ItemDef,
+  economy: ItemEconomy | undefined,
+  context: LootContext,
+  placed: boolean,
+): string | undefined => {
   if (placed && item.workInProgress) {
     return `"${item.id}" is craft escrow, which only a craft creates`;
   }
-  return economyEligible(item.economy, context) || (placed && neverSpawns(item.economy))
+  return (economy !== undefined && economyEligible(economy, context)) || (placed && neverSpawns(economy))
     ? undefined
     : `"${item.id}" is outside the source loot context`;
 };
@@ -180,7 +192,7 @@ const typeIssue = (
     if (!item) {
       return `no item "${candidate.type}"`;
     }
-    const refused = admissionIssue(item, context, placed);
+    const refused = admissionIssue(item, registry.itemEconomy.get(item.id), context, placed);
     if (refused !== undefined) {
       return refused;
     }

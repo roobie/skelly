@@ -279,7 +279,7 @@ local roofAir = [
   '......................................', '......................................', '......................................', '......................................',
   '......................................', '......................................',
 ];
-breach.breaking(shape.colliding({
+(import 'economy.libsonnet').itemPack(breach.breaking(shape.colliding({
   furniture: [{
     id: 'dead_officer_body', name: 'Dead officer', size: [4, 1, 2], color: '#554f43', solid: false,
     corpse: { figure: 'player', outfit: 'police_uniform' },
@@ -296,9 +296,6 @@ breach.breaking(shape.colliding({
     id: 'gauntlet_police_armoury_key', name: 'Police armoury key', category: 'tool',
     size: [1, 1], key: { lock: 'gauntlet_police_armoury' }, model: 'gauntlet_police_armoury_key',
     description: 'A small key stamped ARMOURY.',
-    economy: { usage: [], tiers: [] },
-    workInProgress: false,
-    notLoot: true,
   }],
   templates: [{
     id: 'rural_police_station',
@@ -355,4 +352,4 @@ breach.breaking(shape.colliding({
     shamblers: [], woodlands: [],
     tracks: [{ points: [[34, 47], [94, 47]], width: 4, surface: 'dirt' }],
   }],
-}))
+})))

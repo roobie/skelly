@@ -1084,11 +1084,15 @@ const checkSearchNoise = (registry: Registry, furniture: FurnitureDef, report: R
 const militaryOnly = (id: string) => `"${id}" is military loot only`;
 
 const checkInstalledEconomy = (registry: Registry, item: ItemDef, report: Report) => {
-  for (const usage of item.economy.usage) {
-    for (const tier of item.economy.tiers) {
+  const economy = registry.itemEconomy.get(item.id);
+  if (!economy) {
+    return;
+  }
+  for (const usage of economy.usage) {
+    for (const tier of economy.tiers) {
       const issue = lootTypeIssue(registry, item.id, { usage: [usage], tier });
       if (issue !== undefined) {
-        report('items', item.id, '.economy', issue);
+        report('itemEconomy', item.id, '', issue);
       }
     }
   }
@@ -1105,6 +1109,11 @@ const itemSupplyOutputs = (item: ItemDef): (readonly [string, string])[] => [
 
 /** Military-only supply cannot be manufactured through an ordinary recipe or salvage source. */
 const checkMilitaryLoot = (registry: Registry, report: Report) => {
+  for (const row of registry.itemEconomy.values()) {
+    if (!registry.items.has(row.id)) {
+      report('itemEconomy', row.id, '.id', `no item "${row.id}"`);
+    }
+  }
   const military = militaryLootItems(registry);
   for (const item of registry.items.values()) {
     checkInstalledEconomy(registry, item, report);

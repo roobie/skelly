@@ -1,4 +1,5 @@
 import { array, check, type InferOutput, optional, pipe, strictObject } from 'valibot';
+import { ItemScarcitySchema } from '../loot.ts';
 import { PowerDeviceSchema, PowerTuningSchema } from '../powerContent.ts';
 import { ActorSchema, actorAcidSpitMatchesAbility, actorRegionsMatchModel } from './actors.ts';
 import { BlockMaterialSchema, BlockSchema } from './blocks.ts';
@@ -50,6 +51,7 @@ const SECTION_DESCRIPTOR = {
   blocks: { schema: optional(array(BlockSchema)), label: 'blocks', order: 0 },
   blockMaterials: { schema: optional(array(BlockMaterialSchema)), label: 'block materials', order: 0.1 },
   items: { schema: optional(array(ItemSchema)), label: 'items', order: 1 },
+  itemEconomy: { schema: optional(array(ItemScarcitySchema)), label: 'item scarcity', order: 1.1 },
   liquids: { schema: optional(array(LiquidSchema)), label: 'liquids', order: 34 },
   furnitureMaterials: { schema: optional(array(FurnitureMaterialSchema)), label: 'furniture materials', order: 32 },
   vehicleBlueprints: { schema: optional(array(VehicleBlueprintSchema)), label: 'vehicle blueprints', order: 33 },

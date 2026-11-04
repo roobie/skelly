@@ -649,30 +649,20 @@
     {
       "category": "tool",
       "description": "A key for the locked armoury container.",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "camp_armoury_key",
       "key": {
         "lock": "camp_armoury"
       },
       "model": "camp_armoury_key",
       "name": "Military armoury key",
-      "notLoot": true,
       "size": [1, 1],
       "workInProgress": false
     },
     {
       "category": "book",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "camp_supply_manifest",
       "model": "notebook",
       "name": "Military supply manifest",
-      "notLoot": true,
       "readable": {
         "text": "SUPPLY RECORD — COMMUNITY HEALTH SITE\n\nAntibiotics, sampling kits and dressings were sent to the clinic. Keep the ward stocked and the pharmacy secured. The road remains under military protection.",
         "title": "Clinic supply manifest"
@@ -684,30 +674,20 @@
     {
       "category": "tool",
       "description": "A key for the reserve safe in the officers' quarters.",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "camp_hq_safe_key",
       "key": {
         "lock": "camp_hq_safe"
       },
       "model": "camp_hq_safe_key",
       "name": "HQ reserve key",
-      "notLoot": true,
       "size": [1, 1],
       "workInProgress": false
     },
     {
       "category": "note",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "camp_hq_safe_note",
       "model": "paper_sheet",
       "name": "Officer's note",
-      "notLoot": true,
       "readable": {
         "text": "The reserve safe is locked. Its key is in the radio desk drawer downstairs. The suppressor in the safe is for the next patrol taking the north road.",
         "title": "Note to the relief officer"
@@ -718,14 +698,9 @@
     },
     {
       "category": "note",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
       "id": "camp_closing_note",
       "model": "folded_note",
       "name": "Playtest closing note",
-      "notLoot": true,
       "readable": {
         "text": "Thank you for playtesting Deadvox. This is the end of the authored military-camp playtest. To share feedback or reach the project home, press F9 and use Project home. You can stop here or continue playing.",
         "title": "A note for the next visitor"

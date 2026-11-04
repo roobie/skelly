@@ -36,7 +36,6 @@ local campWallRunCrouchHole = campWallRun + {
   "items": [
     {
       "id": "camp_armoury_key",
-      "notLoot": true,
       "name": "Military armoury key",
       "category": "tool",
       "size": [1, 1],
@@ -48,7 +47,6 @@ local campWallRunCrouchHole = campWallRun + {
     },
     {
       "id": "camp_supply_manifest",
-      "notLoot": true,
       "name": "Military supply manifest",
       "category": "book",
       "weight": 5,
@@ -61,7 +59,6 @@ local campWallRunCrouchHole = campWallRun + {
     },
     {
       "id": "camp_hq_safe_key",
-      "notLoot": true,
       "name": "HQ reserve key",
       "category": "tool",
       "size": [1, 1],
@@ -71,7 +68,6 @@ local campWallRunCrouchHole = campWallRun + {
     },
     {
       "id": "camp_hq_safe_note",
-      "notLoot": true,
       "name": "Officer's note",
       "category": "note",
       "model": "paper_sheet",
@@ -84,7 +80,6 @@ local campWallRunCrouchHole = campWallRun + {
     },
     {
       "id": "camp_closing_note",
-      "notLoot": true,
       "name": "Playtest closing note",
       "category": "note",
       "model": "folded_note",

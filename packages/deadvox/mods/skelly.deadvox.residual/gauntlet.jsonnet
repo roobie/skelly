@@ -22,8 +22,8 @@ local note = function(id, title, text) {
 };
 local emptyLoot = { usage: [], tier: 'Tier1' };
 local paper = function(id, title, model, text) {
-  id: id, name: title, category: 'note', weight: 5, size: [1, 1], notLoot: true,
-  model: model, economy: { usage: [], tiers: [] },
+  id: id, name: title, category: 'note', weight: 5, size: [1, 1],
+  model: model,
   readable: { title: title, text: text },
 };
 // The secret cellar house's upstairs note: a hint, not directions.
@@ -114,8 +114,8 @@ local utilities = [
     ],
   },
 ];
-breach.breaking(shape.colliding({
-  items: [{ workInProgress: false, notLoot: false } + item for item in types.items + publicNotes + houseNotes + lab.items],
+(import 'economy.libsonnet').itemPack(breach.breaking(shape.colliding({
+  items: types.items + publicNotes + houseNotes + lab.items,
   mapPools: kits.mapPools + city.mapPools,
   blocks: types.blocks,
   loot: types.loot + medical.loot + kits.loot + authored.loot + sewer.loot + service.loot + lab.loot,
@@ -157,4 +157,4 @@ breach.breaking(shape.colliding({
     },
   ],
   templates: city.templates + perimeter.templates + utilities,
-}))
+})))
