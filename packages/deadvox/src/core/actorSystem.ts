@@ -469,12 +469,12 @@ type GlobContact =
   | { kind: 'actor'; distance: number; hit: RegionHit };
 
 /** A spitter that sees the player inside its range band stands and faces; outside the band it closes in. */
-const holdSpitGround = (scratch: ActorTickScratch, toward: Vec3): void => {
+const holdSpitGround = (scratch: ActorTickScratch, toward: Vec3, chasing: boolean): void => {
   const { actor, type, sees, metresToTarget, dt } = scratch;
   const band = type.acidSpit?.rangeBand;
   if (
     band &&
-    actor.agent?.mode === 'chase' &&
+    chasing &&
     sees &&
     metresToTarget >= band.nearMetres &&
     metresToTarget <= band.farMetres
@@ -1438,11 +1438,11 @@ export class ActorSystem {
     } else if (actor.agent) {
       this.agent.startActorAttack(actor, type, pos, player);
     }
-    this.resolveAcidSpit();
+    this.resolveAcidSpit(actor.agent?.mode === 'chase');
   }
 
   /** Doc: `docs/acid-zombie.md`, "The spit". Sight starts it, release re-checks the line, a hit cancels it. */
-  private resolveAcidSpit(): void {
+  private resolveAcidSpit(chasing: boolean): void {
     const scratch = this.tickScratch;
     const { actor, dt, player, blockSize, type, pos, isSolid } = scratch;
     const spit = type.acidSpit;
@@ -1488,7 +1488,7 @@ export class ActorSystem {
     }
     const metres = horizontalDistance(player.pos, pos) * blockSize;
     if (
-      actor.agent?.mode === 'chase' &&
+      chasing &&
       scratch.sees &&
       actor.staggerSimSeconds <= 0 &&
       actor.spitWait <= 0 &&

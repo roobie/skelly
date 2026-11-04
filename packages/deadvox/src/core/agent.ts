@@ -56,7 +56,7 @@ export class AgentController {
   private readonly tickScratch: ActorTickScratch;
   private readonly store: EntityStore<Actor>;
   private readonly agentHorde: AgentHorde;
-  private readonly holdSpitGround: (scratch: ActorTickScratch, toward: Vec3) => void;
+  private readonly holdSpitGround: (scratch: ActorTickScratch, toward: Vec3, chasing: boolean) => void;
   constructor({
     options,
     tickScratch,
@@ -686,7 +686,7 @@ export class AgentController {
     const toward = unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
     scratch.direction = obstacleDirection ?? toward;
     scratch.moving = scratch.seeking ? !scratch.inReach : scratch.returnArrived || scratch.metresToTarget > 0.25;
-    this.holdSpitGround(scratch, toward);
+    this.holdSpitGround(scratch, toward, actor.agent!.mode === 'chase');
     if (scratch.moving) {
       scratch.aimDirection = scratch.direction;
       if (scratch.seeking) {
