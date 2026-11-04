@@ -1,16 +1,15 @@
 // Entry point. `?bench=1` runs the milestone 1.0 benchmark, `?bench=report` shows its
 // results; otherwise the game starts (`?radius=` in metres, `?seed=`).
 
-import assetManifest from '../mods/skelly.deadvox.residual/assets/manifest.json' with { type: 'json' };
 import { loadRecord } from './bench/plan.ts';
 import { applyBenchWeathering } from './bench/post.ts';
 import { showReport } from './bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
-import { validateManifest } from './core/assets.ts';
 import { getBuildRevision } from './core/buildInfo.ts';
 import { claimed } from './core/capabilities.ts';
 import { parseTimeOfDay } from './core/clock.ts';
+import { bundledCredits } from './game/bundledCredits.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from './game/bundledMods.ts';
 import {
   applyWeatheringConfig,
@@ -114,7 +113,7 @@ drawMenuLabel();
 const bench = params.get('bench');
 const renderFree = renderFreeFromUrl(params, import.meta.env.DEV);
 if (bench === null) {
-  const credits = validateManifest('assets/manifest.json', assetManifest);
+  const credits = bundledCredits();
   document.getElementById('errors')!.textContent = credits.issues
     .map((issue) => `${issue.source} ${issue.path}: ${issue.message}`)
     .join('\n');

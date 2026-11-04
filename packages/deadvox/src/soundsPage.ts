@@ -1,10 +1,9 @@
 import { html, render } from 'lit-html';
-import assetManifest from '../mods/skelly.deadvox.residual/assets/manifest.json' with { type: 'json' };
-import type { Manifest } from './core/assets.ts';
 import { claimed } from './core/capabilities.ts';
 import type { SoundId } from './core/soundEvents.ts';
 import { GameAudio } from './game/audio.ts';
 import { playerHeartbeat } from './game/audioPresentation.ts';
+import { bundledCredits } from './game/bundledCredits.ts';
 import { buildSoundsPageContent } from './soundsPageContent.ts';
 import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from './ui/soundGuide.ts';
 import { applyUiTokens } from './ui/uiTokens.ts';
@@ -14,11 +13,12 @@ const { registry, issues } = buildSoundsPageContent();
 applyUiTokens(registry, document.documentElement);
 const heartbeatTuning = playerHeartbeat(registry);
 const heartbeatEvents = new Set<SoundId>(Object.values(heartbeatTuning.sounds));
+const { manifest: credits } = bundledCredits();
 const guide = buildSoundGuide(
   [...registry.sounds.values()].filter(({ id }) => !heartbeatEvents.has(id)),
-  assetManifest as Manifest,
+  credits,
 );
-const heartbeat = buildHeartbeatSoundGuide(heartbeatTuning, registry.sounds, assetManifest as Manifest);
+const heartbeat = buildHeartbeatSoundGuide(heartbeatTuning, registry.sounds, credits);
 const errorRoot = document.createElement('p');
 errorRoot.className = 'sound-errors';
 errorRoot.setAttribute('role', 'status');

@@ -85,6 +85,17 @@ export const validateManifest = (source: string, data: unknown): { manifest: Man
   return { manifest: result.output, issues };
 };
 
+/** Checks each pack's manifest on its own, then lists every source: pack paths are unique only within a pack. */
+export const mergeManifests = (
+  manifests: readonly { source: string; data: unknown }[],
+): { manifest: Manifest; issues: ContentIssue[] } => {
+  const checked = manifests.map(({ source, data }) => validateManifest(source, data));
+  return {
+    manifest: { sources: checked.flatMap(({ manifest }) => manifest.sources) },
+    issues: checked.flatMap(({ issues }) => issues),
+  };
+};
+
 /** The compiled manifest's path within its pack. */
 export const MANIFEST_PATH = 'assets/manifest.json';
 
