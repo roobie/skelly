@@ -38,7 +38,8 @@ export interface CreditsViewModel {
 }
 
 export const creditsViewModel = (manifest: Manifest): CreditsViewModel => ({
-  entries: manifest.sources.map(entryViewModel),
+  // Keyed by all the text an entry shows, so entries that read the same are one (`DESIGN.md`, "Assets and credits").
+  entries: [...new Map(manifest.sources.map(entryViewModel).map((entry) => [JSON.stringify(entry), entry])).values()],
 });
 
 type CreditsText = ScreenText['credits'];

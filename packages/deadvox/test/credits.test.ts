@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateManifest } from '../src/core/assets.ts';
+import { mergeManifests, validateManifest } from '../src/core/assets.ts';
 import { creditsViewModel } from '../src/ui/credits.ts';
 
 describe('creditsViewModel', () => {
@@ -70,5 +70,30 @@ describe('creditsViewModel', () => {
       ],
     });
     expect(creditsViewModel(manifest).entries[0]).toMatchObject({ url: null, author: null, host: null, changes: null });
+  });
+
+  it('shows a source once when packs credit it with the same text, and twice when the text differs', () => {
+    const source = {
+      title: 'Fixture source',
+      url: 'https://example.com/fixture',
+      author: 'Fixture author',
+      licence: 'CC-BY-4.0',
+      download: null,
+      changes: 'Fixture changes',
+    };
+    const packed = (changes: string) =>
+      mergeManifests([
+        { source: 'pack-a/assets/manifest.json', data: { sources: [{ ...source, files: ['assets/audio/a.ogg'] }] } },
+        {
+          source: 'pack-b/assets/manifest.json',
+          data: { sources: [{ ...source, changes, files: ['assets/audio/b.ogg'] }] },
+        },
+      ]).manifest;
+
+    expect(creditsViewModel(packed(source.changes)).entries.map(({ title }) => title)).toEqual([source.title]);
+    expect(creditsViewModel(packed('Other changes')).entries.map(({ changes }) => changes)).toEqual([
+      source.changes,
+      'Other changes',
+    ]);
   });
 });
