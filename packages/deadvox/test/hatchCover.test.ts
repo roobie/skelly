@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { BlockEntity } from '../src/core/blockEntities.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
@@ -11,6 +9,7 @@ import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { cellsOf, footprint, pieceSize } from '../src/core/templates.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import {
@@ -295,8 +294,6 @@ describe('the content check for covers', () => {
   });
 });
 
-const BASE = 'mods/skelly.deadvox.residual';
-
 interface Slotted {
   id: string;
   choices?: { ref: { id: string } }[];
@@ -320,10 +317,10 @@ const onlyTarpYards = (data: { mapAssemblies?: { slots: Slotted[] }[] }) => ({
 sweepGroup('tarps', () => {
   it('never lie over a hatch and keep clear of doors and ladders', () => {
     const built = buildRegistry(
-      readdirSync(BASE)
-        .filter((file) => file.endsWith('.json'))
-        .sort()
-        .map((file) => ({ source: file, data: onlyTarpYards(JSON.parse(readFileSync(join(BASE, file), 'utf8'))) })),
+      baseContentSources().map(({ source, data }) => ({
+        source,
+        data: onlyTarpYards(data as Parameters<typeof onlyTarpYards>[0]),
+      })),
     );
     expect(built.issues).toEqual([]);
     const tarpYards = built.registry;

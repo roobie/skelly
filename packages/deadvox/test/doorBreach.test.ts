@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import type { PlayerSense } from '../src/core/actorSense.ts';
 import { BlockEntities, type BlockEntity } from '../src/core/blockEntities.ts';
@@ -12,6 +10,7 @@ import { makeScale } from '../src/core/scale.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { physicsFor } from './playerFixture.ts';
@@ -35,13 +34,7 @@ const fixtureDoor = (id: string, barredFrom?: 'front' | 'back') => ({
     ...(barredFrom ? { barredFrom } : {}),
   },
 });
-const base = readdirSync('mods/skelly.deadvox.residual')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown,
-  }));
+const base = baseContentSources();
 const { registry, issues } = buildFixtureRegistry([
   ...base,
   {

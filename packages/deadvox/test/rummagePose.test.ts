@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import {
   BoxGeometry,
   CircleGeometry,
@@ -22,18 +20,15 @@ import { Unpacking } from '../src/game/unpacking.ts';
 import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
 import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { RUMMAGE_POSE, rummageFrame } from '../src/render/rummagePose.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { firearmsSkillSource, playerInventorySource } from './fixtures/playerInventory.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
 afterEach(() => vi.unstubAllGlobals());
 
-const base = 'mods/skelly.deadvox.residual';
 const { registry, issues } = buildRegistry([
-  ...readdirSync(base)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
+  ...baseContentSources(),
   {
     source: 'rummage-fixture.json',
     data: {

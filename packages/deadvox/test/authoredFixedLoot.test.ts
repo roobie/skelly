@@ -1,6 +1,5 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared property assertions are called only by tests.
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
 import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
@@ -34,16 +33,11 @@ import { CATALOGUE } from '../src/vehicles/catalogue.ts';
 import { PartLibrary, VOXEL } from '../src/vehicles/model.ts';
 import { wheel } from '../src/vehicles/rangeRover.ts';
 import { GLASS, keyVoxel } from '../src/vehicles/voxels.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
 
-const sources = readdirSync('mods/skelly.deadvox.residual')
-  .filter((file) => file.endsWith('.json') && !file.startsWith('layouts') && file !== 'starts.json')
-  .sort()
-  .map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown,
-  }));
+const sources = baseContentSources().filter(({ source }) => !source.startsWith('layouts') && source !== 'starts.json');
 const layout = (
   JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts-playtest.json', 'utf8')) as { layouts: SiteLayoutDef[] }
 ).layouts[0]!;

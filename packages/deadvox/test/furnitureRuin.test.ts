@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { safeParse } from 'valibot';
 import { expect, it } from 'vitest';
 import type { BashOutcome, BlockEntity } from '../src/core/blockEntities.ts';
@@ -9,16 +7,11 @@ import { Inventory } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import type { Body } from '../src/core/physics.ts';
 import { ContentFileSchema } from '../src/core/schema.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry, FIXTURE_MATERIAL } from './economyFixtures.ts';
 import { createRuntime } from './snapshotTestSupport.ts';
 
-const base = readdirSync('mods/skelly.deadvox.residual')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown,
-  }));
+const base = baseContentSources();
 const BREACH = { minimumStrength: 1, durability: 3 };
 const DEBRIS = { item: 'ruin_fixture_debris', count: 5 };
 const box = (id: string, size: Vec3) => ({

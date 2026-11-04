@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -8,11 +6,13 @@ import { disassemblyOutputs, disassemblyWorkTime } from '../src/core/disassembly
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
+import type { ContentFile } from '../src/core/schema.ts';
 import type { Site } from '../src/core/site.ts';
 import { type RealSeconds, realSeconds, simSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
@@ -31,13 +31,7 @@ import {
   startRest,
 } from './snapshotTestSupport.ts';
 
-const baseContentFiles = () =>
-  readdirSync('mods/skelly.deadvox.residual')
-    .filter((name) => name.endsWith('.json'))
-    .map((source) => ({
-      source,
-      data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', source), 'utf8')),
-    }));
+const baseContentFiles = () => baseContentSources() as { source: string; data: ContentFile }[];
 
 const registryWithSleepScenario = (sleepCap: number) => {
   const files = baseContentFiles();

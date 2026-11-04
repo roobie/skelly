@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import type { BlockEntities, BlockEntitiesState, BlockEntity } from '../src/core/blockEntities.ts';
 import { terrainSolid, worldOpaque, worldSolid } from '../src/core/collision.ts';
@@ -14,16 +12,11 @@ import { captureSky, furnitureBounds, growSky, SKY_SHELL } from '../src/core/sky
 import { type BrickOut, brickHas, type SolidBricks, worldBricks } from '../src/core/solidBricks.ts';
 import { cellsOf } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
-const base = readdirSync('mods/skelly.deadvox.residual')
-  .filter((f) => f.endsWith('.json'))
-  .sort()
-  .map((f) => ({
-    source: f,
-    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', f), 'utf8')) as unknown,
-  }));
+const base = baseContentSources();
 const { registry, issues } = buildRegistry([
   ...base,
   {

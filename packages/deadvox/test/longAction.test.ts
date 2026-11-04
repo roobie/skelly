@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { bookReadingHooks } from '../src/core/bookReading.ts';
 import { Character } from '../src/core/character.ts';
@@ -14,18 +12,13 @@ import { realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { stopReadingOnClose } from '../src/game/readingClose.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
-const baseContent = readdirSync('mods/skelly.deadvox.residual')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown,
-  }));
+const baseContent = baseContentSources();
 const registry = baseRegistry();
 // Built once at load: a full registry build inside the test body pushed it past the test timeout under load.
 const readingFixtureRegistry = buildRegistry([

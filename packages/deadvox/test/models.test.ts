@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import {
   Box3,
   BoxGeometry,
@@ -37,6 +37,7 @@ import {
   prepareModel,
 } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { loadFigureModels } from './figureModels.ts';
 
@@ -72,10 +73,7 @@ const anchorIsInBounds = (anchor: readonly [number, number, number], bounds: Box
     return coordinate >= bounds.min[axis] - 0.02 && coordinate <= bounds.max[axis] + 0.02;
   });
 const { registry, issues } = buildRegistry([
-  ...readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map(base),
+  ...baseContentSources(),
   read('test/fixtures/packs/lamp/lamp.json'),
   {
     source: 'bundle-fixture',

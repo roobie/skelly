@@ -1,5 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { polylineDistance } from '../src/core/authoredTerrain.mjs';
 import { buildRegistry } from '../src/core/content.ts';
@@ -9,15 +8,10 @@ import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import { type CompiledTemplate, compileTemplate, type Facing } from '../src/core/templates.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { PLAYER } from './playerFixture.ts';
 
-const sources = readdirSync('mods/skelly.deadvox.residual')
-  .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
-  .sort()
-  .map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown,
-  }));
+const sources = baseContentSources().filter(({ source }) => !source.startsWith('layouts'));
 const layout = (
   JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts-playtest.json', 'utf8')) as { layouts: SiteLayoutDef[] }
 ).layouts[0]!;

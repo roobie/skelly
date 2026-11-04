@@ -1,21 +1,14 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, FIXTURE_MATERIAL } from './economyFixtures.ts';
 import { capture, createRuntime, encodeFixture, formatVersion, type Runtime } from './snapshotTestSupport.ts';
 
-const base = readdirSync('mods/skelly.deadvox.residual')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown,
-  }));
+const base = baseContentSources();
 const methodId = 'fixture_method';
 const qualityId = 'fixture_quality';
 const door = (id: string) => ({

@@ -1,6 +1,5 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared rejection assertions called only by tests.
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { authoredLayoutIssues, inPolygon } from '../src/core/authoredLayout.ts';
 import { placementOf } from '../src/core/authoredPlacement.ts';
@@ -33,17 +32,12 @@ import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';
 import { sweepGroup } from './sweeps.ts';
 
-const base = readdirSync('mods/skelly.deadvox.residual')
-  .filter((file) => file.endsWith('.json') && !file.startsWith('layouts') && file !== 'starts.json')
-  .sort()
-  .map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(join('mods/skelly.deadvox.residual', file), 'utf8')) as unknown,
-  }));
+const base = baseContentSources().filter(({ source }) => !source.startsWith('layouts') && source !== 'starts.json');
 const layout = (
   JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts.json', 'utf8')) as { layouts: SiteLayoutDef[] }
 ).layouts[0]!;

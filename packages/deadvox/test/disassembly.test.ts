@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Character } from '../src/core/character.ts';
@@ -8,6 +8,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import type { ItemDef, MeleeClassDef } from '../src/core/schema.ts';
 import { gameMinutes } from '../src/core/time.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
@@ -45,9 +46,9 @@ const soundSource = (sources: readonly ReturnType<typeof itemSource>[]) => {
       }
     }
   }
-  const sounds = readdirSync(base)
-    .filter((file) => file.startsWith('sounds') && file.endsWith('.json'))
-    .flatMap((file) => (JSON.parse(readFileSync(join(base, file), 'utf8')) as { sounds: { id: string }[] }).sounds)
+  const sounds = baseContentSources()
+    .filter(({ source }) => source.startsWith('sounds'))
+    .flatMap(({ data }) => (data as { sounds: { id: string }[] }).sounds)
     .filter(({ id }) => named.has(id));
   return { source: 'sounds.json', data: { sounds } };
 };
