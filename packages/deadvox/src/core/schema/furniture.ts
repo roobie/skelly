@@ -21,6 +21,7 @@ import { BLUEPRINTS } from '../../vehicles/catalogue.ts';
 import { solidBlocks } from '../../vehicles/solid.ts';
 import { POWER_UNITS, unitCount } from '../powerContent.ts';
 import { shapeBlocks } from '../shapeSolid.ts';
+import { capabilitySelection } from './capability.ts';
 import { ContainerSchema, ReadableSchema } from './items.ts';
 import {
   Color,
@@ -65,8 +66,8 @@ const DoorForcingSchema = pipe(
     quality: Id,
     level: QualityLevel,
     strikeSound: Id,
-    /** Skill whose level shortens forcing time. */
-    skill: Id,
+    /** Mechanism role whose provider's level shortens forcing time; a role with no provider adds no requirement. */
+    skill: capabilitySelection('skills'),
     /** Sim seconds of work at the lowest skill level. */
     timeSimSeconds: PositiveSimSeconds,
     /** Sim seconds of work at the fastest skill level. */

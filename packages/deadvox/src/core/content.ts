@@ -392,9 +392,6 @@ const checkUnpacking = (item: ItemDef, registry: Registry, qualities: ReadonlySe
 const checkDisassembly = (item: ItemDef, registry: Registry, qualities: ReadonlySet<string>, report: Report) => {
   const { disassembly } = item;
   if (disassembly) {
-    if (!registry.skills.has(disassembly.skill)) {
-      report('items', item.id, '.disassembly.skill', `no skill "${disassembly.skill}"`);
-    }
     disassembly.yields.forEach((yieldItem, index) => {
       if (!registry.items.has(yieldItem.item)) {
         report('items', item.id, `.disassembly.yields[${index}].item`, `no item "${yieldItem.item}"`);
@@ -447,9 +444,6 @@ const checkLiquidRecovery = (item: ItemDef, registry: Registry, qualities: Reado
   if (item.salvageLiquidRecovery) {
     if (!item.salvage) {
       report('items', item.id, '.salvageLiquidRecovery', 'salvage liquid recovery needs a salvage capability');
-    }
-    if (!registry.skills.has(item.salvageLiquidRecovery.skill)) {
-      report('items', item.id, '.salvageLiquidRecovery.skill', `no skill "${item.salvageLiquidRecovery.skill}"`);
     }
   }
 };
@@ -1157,9 +1151,6 @@ const checkDoorForcing = (registry: Registry, furniture: FurnitureDef, report: R
     const path = `.door.methods.${id}`;
     if (material?.methods && !material.methods.includes(id)) {
       report('furniture', furniture.id, path, `material "${material.id}" does not admit method "${id}"`);
-    }
-    if (!registry.skills.has(method.skill)) {
-      report('furniture', furniture.id, `${path}.skill`, `no skill "${method.skill}"`);
     }
     const sound = registry.sounds.get(method.strikeSound);
     if (!sound?.noise.enabled) {

@@ -30,7 +30,7 @@ import { ItemEconomySchema } from '../loot.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
 import { MELEE_PROFILES } from '../meleePose.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from '../readable.ts';
-import { capabilityField } from './capability.ts';
+import { capabilityField, capabilitySelection } from './capability.ts';
 import {
   CalibreId,
   Color,
@@ -632,7 +632,8 @@ const DisassemblyYieldSchema = strictObject({
 const DisassemblySchema = strictObject({
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,
-  skill: Id,
+  /** Mechanism role; the provider's skill scales the yields, and a role with no provider adds no requirement. */
+  skill: capabilitySelection('skills'),
   yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
   liquidRecovery: optional(LiquidRecoverySchema),
 });
@@ -775,7 +776,10 @@ export const ItemSchema = strictObject({
   salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
   /** Work time to salvage; required with `salvage`, forbidden without it. */
   salvageTimeGameMinutes: optional(PositiveGameMinutes),
-  salvageLiquidRecovery: optional(strictObject({ skill: Id, ...LiquidRecoverySchema.entries })),
+  /** Same role rule as `disassembly.skill`: the provider's skill scales the recovery. */
+  salvageLiquidRecovery: optional(
+    strictObject({ skill: capabilitySelection('skills'), ...LiquidRecoverySchema.entries }),
+  ),
   light: optional(LightSchema),
   igniter: optional(IgniterSchema),
   explosive: optional(ExplosiveSchema),
