@@ -654,22 +654,23 @@ describe('content', () => {
   });
 
   it('rejects skill effect ranges that exceed one when composed with product policy', () => {
-    const policySource = base.find((file) => file.source === 'combat-policy.json')!;
-    const skillSource = base.find((file) => file.source === 'recipes.json')!;
-    const policyData = structuredClone(policySource.data) as {
-      combatPolicy: { firearms: { readyMovementMinimum: number } }[];
-    };
-    const skillData = structuredClone(skillSource.data) as {
-      skills: { capability?: string; combat?: { firearms?: { readyMovementRange: number } } }[];
-    };
-    policyData.combatPolicy[0]!.firearms.readyMovementMinimum = 1;
-    skillData.skills.find((skill) => skill.capability === 'firearmsCombat')!.combat!.firearms!.readyMovementRange = 1;
-    const { issues } = buildRegistry([
-      ...base.filter((file) => file.source !== policySource.source && file.source !== skillSource.source),
-      { source: policySource.source, data: policyData },
-      { source: skillSource.source, data: skillData },
-    ]);
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms'))).toBe(true);
+    const policy = structuredClone([...baseRegistry.combatPolicy.values()].find((row) => row.capability === 'player')!);
+    const skill = structuredClone(
+      [...baseRegistry.skills.values()].find((row) => row.capability === 'firearmsCombat')!,
+    );
+    policy.id = 'fixture_combat_policy';
+    skill.id = 'fixture_firearms_skill';
+    // Unrelated content would turn rejection into a whole-stack file-removal cascade.
+    const sources = [{ source: 'fixture-combat.json', data: { combatPolicy: [policy], skills: [skill] } }];
+    expect(buildContentRegistry(sources).issues).toEqual([]);
+
+    policy.firearms!.readyMovementMinimum = 1;
+    skill.combat!.firearms!.readyMovementRange = 1;
+    expect(buildContentRegistry(sources).issues).toContainEqual({
+      source: 'fixture-combat.json',
+      path: 'skills[0].combat.firearms',
+      message: 'effect range exceeds one with combat policy baseline',
+    });
   });
 
   it('rejects out-of-range or non-positive firearm duration curve parameters', () => {
