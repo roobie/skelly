@@ -28,7 +28,7 @@ local room = {
   ],
 };
 {
-  damageKinds: (import '../../../mods/skelly.deadvox.residual/damage-kinds.json').damageKinds,
+  damageKinds: (import 'packages/mods/skelly.melee-classes/damage-kinds.json').damageKinds,
   blockMaterials: [{
     id: 'fixture_material', minimumStrength: 1, durability: 10, massKg: 1, span: 1,
     resistance: { blunt: 0, cut: 0, pierce: 0, blast: 0, fragment: 0, breach: 0, crush: 0, acid: 0 },

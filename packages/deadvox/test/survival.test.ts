@@ -43,7 +43,6 @@ const base = (file: string): ContentSource => {
 };
 const { registry } = buildRegistry(
   [
-    'damage-kinds.json',
     'item-wear.json',
     'inventory.json',
     'sounds.json',
@@ -64,9 +63,15 @@ const { registry } = buildRegistry(
   ]
     .map(base)
     .concat(
-      ['ui.json', 'ui-sounds.json'].map((file) => ({
+      [
+        'skelly.ui/ui.json',
+        'skelly.ui/ui-sounds.json',
+        'skelly.melee-classes/damage-kinds.json',
+        'skelly.melee-classes/melee-classes.json',
+        'skelly.melee-classes/melee-sounds.json',
+      ].map((file) => ({
         source: file,
-        data: JSON.parse(readFileSync(`../mods/skelly.ui/${file}`, 'utf8')),
+        data: JSON.parse(readFileSync(`../mods/${file}`, 'utf8')),
       })),
     ),
 );

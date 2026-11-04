@@ -440,46 +440,6 @@
       "url": "https://freesound.org/people/florianreichelt/sounds/459973/"
     },
     {
-      "author": "florianreichelt",
-      "changes": "Three single wooshes, 4.20–4.70, 6.55–7.05 and 8.20–8.80 s, for light blades. Equal L+R downmix, mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade.",
-      "download": "447806__florianreichelt__light-wooshes.wav",
-      "files": [
-        "assets/audio/melee-swing-light-01.ogg",
-        "assets/audio/melee-swing-light-02.ogg",
-        "assets/audio/melee-swing-light-03.ogg"
-      ],
-      "licence": "CC0-1.0",
-      "title": "Light wooshes",
-      "url": "https://freesound.org/people/florianreichelt/sounds/447806/"
-    },
-    {
-      "author": "qubodup",
-      "changes": "Whole file, 0–0.426 s, for heavy swings. Equal L+R downmix, mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade.",
-      "download": "60013__qubodup__whoosh.flac",
-      "files": ["assets/audio/melee-swing-heavy-01.ogg"],
-      "licence": "CC0-1.0",
-      "title": "Whoosh",
-      "url": "https://freesound.org/people/qubodup/sounds/60013/"
-    },
-    {
-      "author": "Rickplayer",
-      "changes": "The strike and its ring, 0.06–0.85 s, as a metal layer on melee hits. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade.",
-      "download": "530486__rickplayer__metal-impact.mp3",
-      "files": ["assets/audio/melee-hit-metal-01.ogg"],
-      "licence": "CC0-1.0",
-      "title": "Metal Impact",
-      "url": "https://freesound.org/people/Rickplayer/sounds/530486/"
-    },
-    {
-      "author": "colorsCrimsonTears",
-      "changes": "Single strikes 0.02–0.26 s (ring cut at the next strike) and 1.61–1.82 s (the last), as a metal layer on melee hits. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade.",
-      "download": "531378__colorscrimsontears__hitting-metal-pole.wav",
-      "files": ["assets/audio/melee-hit-metal-02.ogg", "assets/audio/melee-hit-metal-03.ogg"],
-      "licence": "CC0-1.0",
-      "title": "Hitting metal pole",
-      "url": "https://freesound.org/people/colorsCrimsonTears/sounds/531378/"
-    },
-    {
       "author": "BMacZero",
       "changes": "Whole files, 0–0.255 s and 0–0.209 s. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade.",
       "download": "clipload1.wav, clipload2.wav",
@@ -559,10 +519,6 @@
       "changes": "Selected seven impact variants; converted from FLAC to 24 kHz mono Opus in Ogg containers; unused source files excluded",
       "download": "independent_nu_ljudbank-hits_and_punches.7z",
       "files": [
-        "assets/audio/melee-hit-01.ogg",
-        "assets/audio/melee-hit-02.ogg",
-        "assets/audio/melee-hit-03.ogg",
-        "assets/audio/melee-hit-04.ogg",
         "assets/audio/shambler-hit-05.ogg",
         "assets/audio/shambler-hit-06.ogg",
         "assets/audio/shambler-hit-07.ogg"
@@ -631,15 +587,6 @@
       "licence": "CC0-1.0",
       "title": "Jump Landing Sound",
       "url": "https://opengameart.org/content/jump-landing-sound"
-    },
-    {
-      "author": "remaxim",
-      "changes": "Selected the generic swing recording, derived from qubodup's Swish - bamboo stick weapon swishes; trimmed leading silence, faded the tail, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report).",
-      "download": "melee.zip",
-      "files": ["assets/audio/melee_swing-01.ogg"],
-      "licence": "CC0-1.0",
-      "title": "3 Melee Sounds",
-      "url": "https://opengameart.org/content/3-melee-sounds"
     },
     {
       "author": "Jordan Irwin (AntumDeluge)",

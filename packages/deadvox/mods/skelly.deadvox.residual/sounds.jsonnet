@@ -134,18 +134,6 @@ local shellInsert = numbered('shotgun-insert', [1, 2]);
     shamblerStep('shambler_step_stone', 'hard ground', stone),
     shamblerStep('shambler_step_wood', 'planks', wood),
     shamblerStep('shambler_step_leaves', 'fabric or carpet', leaves),
-    sound(
-      'melee_swing', 'Swing a melee weapon that has no swing sound of its own.',
-      numbered('melee_swing', [1]), 0.55, [0.96, 1.04], [0.9, 1.1], 0.5,
-    ),
-    sound(
-      'melee_hit', 'Land a weapon melee swing on a shambler.',
-      numbered('melee-hit', [1, 2, 3, 4]), 0.85, [0.94, 1.06], [0.88, 1.12], 0.08,
-    ),
-    sound(
-      'melee_hit_fist', 'Land a fist swing on a shambler.',
-      numbered('melee_hit_fist', [1]), 0.85, [0.94, 1.06], [0.88, 1.12], 0.08,
-    ),
     firearm(
       'gunshot',
       'Fire the AK-pattern rifle, or a firearm without a shot sound of its own. A fitted suppressor shortens how far it is heard, and wear lengthens it again.',

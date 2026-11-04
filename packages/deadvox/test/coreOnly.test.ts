@@ -16,17 +16,9 @@ const CORE_MODS = [
   'skelly.graphics',
   'skelly.ui',
   'skelly.weathering',
+  'skelly.melee-classes',
 ];
-const CORE_TOPICS = [
-  'body',
-  'damage-kinds',
-  'compression',
-  'figures-player',
-  'inventory',
-  'item-wear',
-  'senses',
-  'player',
-];
+const CORE_TOPICS = ['body', 'compression', 'figures-player', 'inventory', 'item-wear', 'senses', 'player'];
 
 /** A core mod's content files, as its manifest lists them. */
 const coreModSources = (mod: string) => {

@@ -47,21 +47,33 @@ const soundSource = (sources: readonly ReturnType<typeof itemSource>[]) => {
     }
   }
   const sounds = baseContentSources()
-    .filter(({ source }) => source.startsWith('sounds'))
-    .flatMap(({ data }) => (data as { sounds: { id: string }[] }).sounds)
+    .flatMap(({ data }) => (data as { sounds?: { id: string }[] }).sounds ?? [])
     .filter(({ id }) => named.has(id));
   return { source: 'sounds.json', data: { sounds } };
 };
 const recipes = JSON.parse(readFileSync(join(base, 'recipes.json'), 'utf8')) as {
   skills: { id: string; [key: string]: unknown }[];
 };
+const meleeMod = '../mods/skelly.melee-classes';
 const items = [
   itemSource('items-tools.json', ['kitchen_knife']),
   itemSource('items-other.json', ['portable_radio', 'scrap_metal']),
+  {
+    source: 'melee-classes.json',
+    data: {
+      items: [],
+      ...(JSON.parse(readFileSync(join(meleeMod, 'melee-classes.json'), 'utf8')) as {
+        meleeClasses: MeleeClassDef[];
+      }),
+    },
+  },
 ];
 const fixtureBuild = buildRegistry([
   playerInventorySource(),
-  { source: 'damage-kinds.json', data: JSON.parse(readFileSync(join(base, 'damage-kinds.json'), 'utf8')) as unknown },
+  {
+    source: 'damage-kinds.json',
+    data: JSON.parse(readFileSync(join(meleeMod, 'damage-kinds.json'), 'utf8')) as unknown,
+  },
   ...items,
   soundSource(items),
   { source: 'item-wear.json', data: JSON.parse(readFileSync(join(base, 'item-wear.json'), 'utf8')) as unknown },

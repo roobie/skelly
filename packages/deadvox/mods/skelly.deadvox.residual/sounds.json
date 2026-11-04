@@ -473,53 +473,6 @@
     },
     {
       "category": "world",
-      "description": "Swing a melee weapon that has no swing sound of its own.",
-      "gain": 0.55000000000000004,
-      "gainJitter": [0.90000000000000002, 1.1000000000000001],
-      "id": "melee_swing",
-      "minIntervalSimSeconds": 0.5,
-      "noise": {
-        "enabled": false,
-        "radiusMetres": 1
-      },
-      "pitchJitter": [0.95999999999999996, 1.04],
-      "variants": ["assets/audio/melee_swing-01.ogg"]
-    },
-    {
-      "category": "world",
-      "description": "Land a weapon melee swing on a shambler.",
-      "gain": 0.84999999999999998,
-      "gainJitter": [0.88, 1.1200000000000001],
-      "id": "melee_hit",
-      "minIntervalSimSeconds": 0.080000000000000002,
-      "noise": {
-        "enabled": false,
-        "radiusMetres": 1
-      },
-      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
-      "variants": [
-        "assets/audio/melee-hit-01.ogg",
-        "assets/audio/melee-hit-02.ogg",
-        "assets/audio/melee-hit-03.ogg",
-        "assets/audio/melee-hit-04.ogg"
-      ]
-    },
-    {
-      "category": "world",
-      "description": "Land a fist swing on a shambler.",
-      "gain": 0.84999999999999998,
-      "gainJitter": [0.88, 1.1200000000000001],
-      "id": "melee_hit_fist",
-      "minIntervalSimSeconds": 0.080000000000000002,
-      "noise": {
-        "enabled": false,
-        "radiusMetres": 1
-      },
-      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
-      "variants": ["assets/audio/melee_hit_fist-01.ogg"]
-    },
-    {
-      "category": "world",
       "description": "Fire the AK-pattern rifle, or a firearm without a shot sound of its own. A fitted suppressor shortens how far it is heard, and wear lengthens it again.",
       "gain": 1,
       "gainJitter": [1, 1],

@@ -8,6 +8,7 @@
     "skelly.ui",
     "skelly.weathering",
     "skelly.deadvox.weathering",
+    "skelly.melee-classes",
     "skelly.deadvox.residual"
   ],
   "files": [],

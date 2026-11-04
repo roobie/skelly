@@ -46,22 +46,6 @@ local burns(ignition, douse, sprint, stow, drop, relight) = {
   relight: relight,
 };
 
-local meleeClasses = [
-  { id: 'blunt', pose: 'blunt', damageVariance: 0.05, headDamageMultiplier: 1.7, limbDamageMultiplier: 1, speedMultiplier: 0.85 },
-  { id: 'cut', pose: 'cut', damageVariance: 0.18, headDamageMultiplier: 1, limbDamageMultiplier: 2.5, speedMultiplier: 1 },
-  { id: 'pierce', pose: 'pierce', damageVariance: 0.4, headDamageMultiplier: 1, limbDamageMultiplier: 1, speedMultiplier: 1.15 },
-  {
-    id: 'fists',
-    capability: 'unarmed',
-    pose: 'fists',
-    damageVariance: 0,
-    headDamageMultiplier: 1,
-    limbDamageMultiplier: 1,
-    speedMultiplier: 1,
-    unarmed: { damageKind: 'blunt', swingSound: 'melee_swing', hitSound: 'melee_hit_fist', motion: 'swing', damage: 8, reach: 0.1, cooldownSimSeconds: 0.8, stamina: 4, impulse: 4, contactFraction: 0.4, windupCapSimSeconds: 0.25 },
-  },
-];
-
 local items = [
   {
     id: 'compass',
@@ -432,16 +416,15 @@ local items = [
 ];
 
 local itemIds = [item.id for item in items];
-local classIds = [meleeClass.id for meleeClass in meleeClasses];
+local classIds = [meleeClass.id for meleeClass in (import 'packages/mods/skelly.melee-classes/melee-classes.jsonnet').meleeClasses];
 assert std.length(std.set(itemIds)) == std.length(itemIds) : 'item ids must be unique';
 assert std.all([std.member(classIds, item.weapon.melee.type) for item in items if std.objectHas(item, 'weapon')])
-       : 'every melee weapon must name a melee class defined here';
+       : 'every melee weapon must name a melee class in the shared mod';
 
 {
   models: [
     { id: 'glowstick', file: 'assets/models/glowstick.glb', emissiveMaterial: 'chemical-light tube' },
     { id: 'road_flare', file: 'assets/models/glowstick.glb', emissiveMaterial: 'chemical-light tube' },
   ],
-  meleeClasses: meleeClasses,
   items: items,
 }

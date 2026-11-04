@@ -1,7 +1,7 @@
 local manifest = import '../../../../../tools/jsonnet/lib/pack-manifest.libsonnet';
 local content = [
   'benchmark-city', 'block-materials', 'blocks', 'body', 'camp', 'combat-policy', 'compression',
-  'crisis-hq-fixtures', 'crisis-hq', 'damage-kinds', 'figures-player', 'footstep-sounds', 'furniture-cabins',
+  'crisis-hq-fixtures', 'crisis-hq', 'figures-player', 'footstep-sounds', 'furniture-cabins',
   'furniture-hunting', 'furniture-playtest', 'furniture', 'gauntlet-look', 'gauntlet-start',
   'gauntlet', 'hunting-cabins', 'inventory', 'item-economy', 'item-wear', 'items-ammunition',
   'items-attachments', 'items-explosives', 'items-food', 'items-gun-parts', 'items-other',
@@ -49,7 +49,7 @@ manifest(
   tier='product',
   dependencies=[
     'skelly.saves', 'skelly.day-cycle', 'skelly.controls', 'skelly.graphics', 'skelly.ui',
-    'skelly.weathering', 'skelly.deadvox.weathering',
+    'skelly.weathering', 'skelly.deadvox.weathering', 'skelly.melee-classes',
   ],
   content=content,
   guns=guns,

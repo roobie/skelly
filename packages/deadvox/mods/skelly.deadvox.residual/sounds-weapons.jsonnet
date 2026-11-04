@@ -5,11 +5,6 @@ local mechanical(id, description, variants, gain, pitch=[0.97, 1.03], interval=0
   pitchJitter: pitch, gainJitter: [0.95, 1.05], minIntervalSimSeconds: interval,
   category: 'body', noise: { enabled: false, radiusMetres: 1 },
 };
-local melee(id, description, variants, gain, pitch, interval) = {
-  id: id, description: description, variants: variants, gain: gain,
-  pitchJitter: pitch, gainJitter: [0.9, 1.1], minIntervalSimSeconds: interval,
-  category: 'world', noise: { enabled: false, radiusMetres: 1 },
-};
 {
   sounds: [
     {
@@ -36,18 +31,6 @@ local melee(id, description, variants, gain, pitch, interval) = {
       'shotgun_dry_click',
       'Pull the pump shotgun’s trigger on an empty chamber; it clicks once, then stays silent until it is racked.',
       numbered('shotgun-dry-click', 1), gain=0.35, pitch=[0.95, 1.05], interval=0.15,
-    ),
-    melee(
-      'melee_swing_light', 'Swing a light blade (knife or machete).',
-      numbered('melee-swing-light', 3), gain=0.45, pitch=[0.96, 1.06], interval=0.3,
-    ),
-    melee(
-      'melee_swing_heavy', 'Swing a heavy weapon (bat, pipe or crowbar).',
-      numbered('melee-swing-heavy', 1), gain=0.6, pitch=[0.86, 0.98], interval=0.5,
-    ),
-    melee(
-      'melee_hit_metal', 'Land a swing with a metal weapon (pipe, crowbar or hammer); it layers over the melee hit.',
-      numbered('melee-hit-metal', 3), gain=0.35, pitch=[0.95, 1.05], interval=0.08,
     ),
   ],
 }

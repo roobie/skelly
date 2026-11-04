@@ -41,10 +41,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/damage-kinds.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/damage-kinds.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/enemies.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/enemies.json"
     },
@@ -575,6 +571,26 @@
     {
       "source": "packages/mods/skelly.graphics/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.graphics/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.melee-classes/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.melee-classes/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.melee-classes/damage-kinds.jsonnet",
+      "output": "packages/mods/skelly.melee-classes/damage-kinds.json"
+    },
+    {
+      "source": "packages/mods/skelly.melee-classes/melee-classes.jsonnet",
+      "output": "packages/mods/skelly.melee-classes/melee-classes.json"
+    },
+    {
+      "source": "packages/mods/skelly.melee-classes/melee-sounds.jsonnet",
+      "output": "packages/mods/skelly.melee-classes/melee-sounds.json"
+    },
+    {
+      "source": "packages/mods/skelly.melee-classes/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.melee-classes/pack/manifest.json"
     },
     {
       "source": "packages/mods/skelly.saves/pack/manifest.jsonnet",

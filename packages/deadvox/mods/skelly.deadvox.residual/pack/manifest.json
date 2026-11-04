@@ -6,7 +6,8 @@
     "skelly.graphics",
     "skelly.ui",
     "skelly.weathering",
-    "skelly.deadvox.weathering"
+    "skelly.deadvox.weathering",
+    "skelly.melee-classes"
   ],
   "files": [
     {
@@ -44,10 +45,6 @@
     {
       "kind": "content",
       "path": "crisis-hq.json"
-    },
-    {
-      "kind": "content",
-      "path": "damage-kinds.json"
     },
     {
       "kind": "content",
@@ -1795,34 +1792,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/audio/melee-hit-01.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/melee-hit-02.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/melee-hit-03.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/melee-hit-04.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/melee-hit-metal-01.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/melee-hit-metal-02.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/melee-hit-metal-03.ogg"
-    },
-    {
-      "kind": "asset",
       "path": "assets/audio/melee-swing-01.ogg"
     },
     {
@@ -1835,27 +1804,7 @@
     },
     {
       "kind": "asset",
-      "path": "assets/audio/melee-swing-heavy-01.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/melee-swing-light-01.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/melee-swing-light-02.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/melee-swing-light-03.ogg"
-    },
-    {
-      "kind": "asset",
       "path": "assets/audio/melee_hit_fist-01.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/melee_swing-01.ogg"
     },
     {
       "kind": "asset",

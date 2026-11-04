@@ -943,54 +943,6 @@
       "workInProgress": false
     }
   ],
-  "meleeClasses": [
-    {
-      "damageVariance": 0.050000000000000003,
-      "headDamageMultiplier": 1.7,
-      "id": "blunt",
-      "limbDamageMultiplier": 1,
-      "pose": "blunt",
-      "speedMultiplier": 0.84999999999999998
-    },
-    {
-      "damageVariance": 0.17999999999999999,
-      "headDamageMultiplier": 1,
-      "id": "cut",
-      "limbDamageMultiplier": 2.5,
-      "pose": "cut",
-      "speedMultiplier": 1
-    },
-    {
-      "damageVariance": 0.40000000000000002,
-      "headDamageMultiplier": 1,
-      "id": "pierce",
-      "limbDamageMultiplier": 1,
-      "pose": "pierce",
-      "speedMultiplier": 1.1499999999999999
-    },
-    {
-      "capability": "unarmed",
-      "damageVariance": 0,
-      "headDamageMultiplier": 1,
-      "id": "fists",
-      "limbDamageMultiplier": 1,
-      "pose": "fists",
-      "speedMultiplier": 1,
-      "unarmed": {
-        "contactFraction": 0.40000000000000002,
-        "cooldownSimSeconds": 0.80000000000000004,
-        "damage": 8,
-        "damageKind": "blunt",
-        "hitSound": "melee_hit_fist",
-        "impulse": 4,
-        "motion": "swing",
-        "reach": 0.10000000000000001,
-        "stamina": 4,
-        "swingSound": "melee_swing",
-        "windupCapSimSeconds": 0.25
-      }
-    }
-  ],
   "models": [
     {
       "emissiveMaterial": "chemical-light tube",

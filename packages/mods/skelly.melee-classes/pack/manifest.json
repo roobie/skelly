@@ -1,0 +1,78 @@
+{
+  "dependencies": [],
+  "files": [
+    {
+      "kind": "content",
+      "path": "damage-kinds.json"
+    },
+    {
+      "kind": "content",
+      "path": "melee-classes.json"
+    },
+    {
+      "kind": "content",
+      "path": "melee-sounds.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-hit-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-hit-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-hit-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-hit-04.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-hit-metal-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-hit-metal-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-hit-metal-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-swing-heavy-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-swing-light-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-swing-light-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-swing-light-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee_hit_fist-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee_swing-01.ogg"
+    }
+  ],
+  "id": "skelly.melee-classes",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}
