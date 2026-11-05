@@ -3782,7 +3782,7 @@
           "weight": 1
         },
         {
-          "table": "gauntlet_medical_stock",
+          "table": "medical_stock",
           "weight": 1
         },
         {
@@ -3826,7 +3826,7 @@
     {
       "entries": [
         {
-          "table": "gauntlet_medical_stock",
+          "table": "medical_stock",
           "weight": 3
         },
         {
@@ -3852,7 +3852,7 @@
     {
       "entries": [
         {
-          "table": "gauntlet_medical_stock",
+          "table": "medical_stock",
           "weight": 3
         },
         {
@@ -35445,7 +35445,7 @@
         "M": {
           "facing": "n",
           "furniture": "shelf",
-          "loot": "gauntlet_medical_stock",
+          "loot": "medical_stock",
           "lootUsage": ["Medical"]
         },
         "O": {

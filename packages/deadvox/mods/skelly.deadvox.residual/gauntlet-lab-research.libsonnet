@@ -219,7 +219,7 @@ local built = level.build({
   // Margin loot only, as on level one: medical supplies and protective gear, kept thin.
   loot: [
     { id: 'gauntlet_lab_research_margin', rolls: [1, 1], entries: [
-      { table: 'gauntlet_medical_stock', weight: 3 }, { item: 'bandage', weight: 2 }, { item: 'antiseptic', weight: 1 },
+      { table: 'medical_stock', weight: 3 }, { item: 'bandage', weight: 2 }, { item: 'antiseptic', weight: 1 },
       { item: 'rubber_boots', weight: 1 }, { nothing: true, weight: 6 },
     ] },
   ],

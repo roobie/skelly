@@ -243,7 +243,7 @@ local assembly = {
   // Margin loot as on the levels above, and the experimental-arms locker's own table, which no other source shares.
   loot: [
     { id: 'gauntlet_lab_special_margin', rolls: [1, 1], entries: [
-      { table: 'gauntlet_medical_stock', weight: 3 }, { item: 'bandage', weight: 2 }, { item: 'antiseptic', weight: 1 },
+      { table: 'medical_stock', weight: 3 }, { item: 'bandage', weight: 2 }, { item: 'antiseptic', weight: 1 },
       { item: 'rubber_boots', weight: 1 }, { nothing: true, weight: 6 },
     ] },
     { id: 'gauntlet_lab_special_arms', rolls: [1, 2], entries: [

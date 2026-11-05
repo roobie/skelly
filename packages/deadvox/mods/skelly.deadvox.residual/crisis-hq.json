@@ -421,7 +421,7 @@
         "M": {
           "facing": "n",
           "furniture": "shelf",
-          "loot": "gauntlet_medical_stock",
+          "loot": "medical_stock",
           "lootUsage": ["Medical"]
         },
         "O": {

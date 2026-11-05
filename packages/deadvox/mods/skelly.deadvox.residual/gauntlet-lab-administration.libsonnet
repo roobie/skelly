@@ -246,7 +246,7 @@ local built = level.build({
     ] },
     { id: 'gauntlet_lab_administration_store', rolls: [1, 1], entries: [
       { item: 'flashlight', weight: 1 }, { item: 'aa_battery', weight: 2 }, { item: 'rechargeable_aa_battery', weight: 2 }, { item: 'duct_tape', weight: 1 }, { item: 'glowstick', weight: 1 },
-      { table: 'gauntlet_medical_stock', weight: 1 }, { nothing: true, weight: 8 },
+      { table: 'medical_stock', weight: 1 }, { nothing: true, weight: 8 },
     ] },
     { id: 'gauntlet_lab_administration_office', rolls: [1, 1], entries: [
       { item: 'aa_battery', weight: 1 }, { item: 'lighter', weight: 1 }, { item: 'electrical_tape', weight: 1 }, { item: 'painkillers', weight: 1 },

@@ -49,7 +49,7 @@
           "weight": 30
         }
       ],
-      "id": "gauntlet_home_gun",
+      "id": "home_gun",
       "rolls": [1, 2]
     },
     {
@@ -134,7 +134,7 @@
     {
       "entries": [
         {
-          "table": "gauntlet_home_gun",
+          "table": "home_gun",
           "weight": 1
         },
         {

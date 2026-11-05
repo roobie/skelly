@@ -30,7 +30,7 @@ local pills(weight, least, parts, of) =
       ],
     },
     {
-      id: 'gauntlet_home_gun', rolls: [1, 2],
+      id: 'home_gun', rolls: [1, 2],
       entries: [
         item('revolver_357', 1, condition=[0.3, 0.8]), item('cartridge_357_h_magnum', 2, count=[2, 5]),
         item('cartridge_box_9x19', 1), nothing(30),
@@ -72,7 +72,7 @@ local pills(weight, least, parts, of) =
       id: 'wardrobe',
       rolls: [1, 3],
       entries: [
-        table('gauntlet_home_gun', 1),
+        table('home_gun', 1),
         item('jeans', 3, condition=[0.5, 1]),
         item('cargo_pants', 2, condition=[0.5, 1]),
         item('rubber_boots', 1, condition=[0.5, 1]),

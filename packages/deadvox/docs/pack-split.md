@@ -73,6 +73,9 @@ player lists filter to what the product uses; filtering is not registry removal.
 references. Reclassifying the referenced content requires its own consumer justification,
 not a side effect of moving its referrer. A scenario's exclusive entries stay in its
 scenario mods; reuse by two or more scenarios moves them down to product topic mods.
+An id that moves into a product mod drops the scenario's name in the same move, with no
+alias, because reusable definitions start under their shared topic identity; see
+`docs/decisions/0009-content-defined-products.md`, "Definitions and distribution".
 The shipped-mod dependency test enforces tier direction without granting the loader
 privilege; see `test/shippedMods.test.ts`. Outside mods remain unguarded by this
 repository-only check, an accepted trade-off for a privilege-free loader.
