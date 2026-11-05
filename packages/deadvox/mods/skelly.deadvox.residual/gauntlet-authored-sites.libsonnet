@@ -6,12 +6,19 @@ local medical = import 'rural-medical.jsonnet';
 local substation = import 'rural-substation.jsonnet';
 local hq = import 'crisis-hq.jsonnet';
 local find(templates, id) = std.filter(function(t) t.id == id, templates)[0];
+// The base sites carry no car; the gauntlet parks its wreck in the police garage bay and on the substation's van spot.
+local wreck = { V: { furniture: 'gauntlet_car_wreck_0_0_intact' } };
+local garageBay = { x: 32, width: 4, z0: 18, z1: 26, y0: 1, y1: 4 };
+local inGarageBay(y, z) = y >= garageBay.y0 && y <= garageBay.y1 && z >= garageBay.z0 && z <= garageBay.z1;
 local policeMain = police.templates[0] + {
-  palette+: { Z: 'shop_blue' },
+  palette+: { Z: 'shop_blue' } + wreck,
   layers: [
     [
       if y == 5 && z == 29 then '##ZZZZZZZZZZZZZZZZZZZZZZZZZZZZGGGGGG##'
       else if y == 6 && z == 29 then '##ZZZZZZZZZZZZZZZZZZZZZZZZZZZZ########'
+      else if inGarageBay(y, z) then
+        std.substr(row, 0, garageBay.x) + std.repeat('V', garageBay.width)
+        + std.substr(row, garageBay.x + garageBay.width, std.length(row) - garageBay.x - garageBay.width)
       else row
       for z in std.range(0, std.length(layer) - 1) for row in [layer[z]]
     ] for y in std.range(0, std.length(police.templates[0].layers) - 1) for layer in [police.templates[0].layers[y]]
@@ -56,6 +63,7 @@ local policeRight = fence(find(police.templates, 'rural_police_side_fence'), 'ff
 local policeFront = find(police.templates, 'rural_police_front_fence');
 local policeBack = fence(find(police.templates, 'rural_police_back_fence'), 'ffffffffffffffffffff....ffffffffffffffffffffffffffffff');
 local subYard = find(substation.templates, 'rural_substation_yard') + {
+  palette+: wreck,
   layers: [
     substation.templates[1].layers[0],
   ] + [
@@ -74,8 +82,11 @@ local subYard = find(substation.templates, 'rural_substation_yard') + {
     ] for y in std.range(1, 4)
   ] + find(substation.templates, 'rural_substation_yard').layers[5:],
 };
-local subPole = find(substation.templates, 'rural_substation_pole');
-local subVan = find(substation.templates, 'rural_substation_van_spot');
+local subPole = find(substation.templates, 'rural_substation_pole') + { palette+: wreck };
+local subVan = {
+  id: 'rural_substation_van_spot', size: [4, 5, 9], lootContext: subYard.lootContext, palette: subYard.palette,
+  layers: [[std.repeat('.', 4) for z in std.range(1, 9)]] + [[std.repeat('V', 4) for z in std.range(1, 9)] for y in std.range(1, 4)],
+};
 local medicalGrounds = find(medical.templates, 'rural_medical_grounds') + { palette+: { '.': { ground: true } } };
 local medicalFences = import 'gauntlet-yard-fences.libsonnet';
 local medicalFront = medicalFences.front;
