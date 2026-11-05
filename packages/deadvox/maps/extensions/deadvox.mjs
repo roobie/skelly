@@ -44,7 +44,7 @@ function content() {
     'skelly.deadvox.residual/templates-playtest.json',
     'skelly.deadvox.residual/templates-medical.json',
     'skelly.deadvox.buildings/templates-workshop.json',
-    'skelly.deadvox.residual/camp.json',
+    'skelly.deadvox.camp/camp.json',
     'skelly.deadvox.residual/ladders.json',
   ];
   const templates = [];

@@ -73,6 +73,30 @@
       "output": "packages/deadvox/mods/skelly.deadvox.buildings/templates.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.camp/assets/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.camp/assets/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.camp/camp.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.camp/camp.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.camp/exports/things.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.camp/exports/things.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.camp/item-economy.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.camp/item-economy.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.camp/models-camp.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.camp/models-camp.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.camp/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.camp/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.combat-policy/combat-policy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.combat-policy/combat-policy.json"
     },
@@ -107,10 +131,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/benchmark-city.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/benchmark-city.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/camp.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/camp.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq-fixtures.jsonnet",

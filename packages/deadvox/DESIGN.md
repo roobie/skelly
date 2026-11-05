@@ -253,7 +253,7 @@ A restored stance must take its height from admitted content rather than saved
 body dimensions. See `src/core/saveFormat.ts`, `decodeSave`;
 `src/game/session.ts`, `setStanceHeight`; `src/core/schema/player.ts`, `PlayerSchema`
 and `SenseSchema`; `src/core/agentPerception.ts`, `loweredStanceTuning`;
-`mods/skelly.deadvox.residual/camp.libsonnet`, `camp_wall_run_crouch_hole`; and
+`mods/skelly.deadvox.camp/camp.libsonnet`, `camp_wall_run_crouch_hole`; and
 `src/core/spawnClearance.ts`, `actorBodyDimensions`.
 
 ### Block shapes
@@ -3480,7 +3480,7 @@ play, not only decorate it.
   The gauntlet's sewer stops short of the wall and builds none. See
   [Gauntlet](#gauntlet). New structures and reworks follow this direction;
   retrofitting existing structures is tracked
-  in #396. See `mods/skelly.deadvox.residual/camp.libsonnet`, `camp_wall_run`, `camp_gate`, and
+  in #396. See `mods/skelly.deadvox.camp/camp.libsonnet`, `camp_wall_run`, `camp_gate`, and
   `camp_gate_return`.
 - **Wildlife as scenery:** birds, crows on the dead and flies help the player
   read the place, the bodies and the decay. They're environmental cues, not an

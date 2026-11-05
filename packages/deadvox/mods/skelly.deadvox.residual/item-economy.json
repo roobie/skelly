@@ -1,36 +1,6 @@
 {
   "itemEconomy": [
     {
-      "id": "camp_armoury_key",
-      "notLoot": true,
-      "tiers": [],
-      "usage": []
-    },
-    {
-      "id": "camp_supply_manifest",
-      "notLoot": true,
-      "tiers": [],
-      "usage": []
-    },
-    {
-      "id": "camp_hq_safe_key",
-      "notLoot": true,
-      "tiers": [],
-      "usage": []
-    },
-    {
-      "id": "camp_hq_safe_note",
-      "notLoot": true,
-      "tiers": [],
-      "usage": []
-    },
-    {
-      "id": "camp_closing_note",
-      "notLoot": true,
-      "tiers": [],
-      "usage": []
-    },
-    {
       "id": "gauntlet_public_memo",
       "notLoot": true,
       "tiers": [],

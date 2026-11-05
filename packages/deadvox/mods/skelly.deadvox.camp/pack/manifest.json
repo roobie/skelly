@@ -1,0 +1,66 @@
+{
+  "dependencies": [
+    "skelly.crafting",
+    "skelly.deadvox.actors",
+    "skelly.deadvox.loot",
+    "skelly.firearms",
+    "skelly.inventory",
+    "skelly.manufactured-blocks",
+    "skelly.medicine",
+    "skelly.natural-world",
+    "skelly.packaged-foods",
+    "skelly.readables",
+    "skelly.structures"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "camp.json"
+    },
+    {
+      "kind": "content",
+      "path": "item-economy.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-camp.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/camp_armoury_key.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/camp_hq_safe_key.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "exports/things.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/camp_armoury_key.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/camp_hq_safe_key.glb"
+    }
+  ],
+  "id": "skelly.deadvox.camp",
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

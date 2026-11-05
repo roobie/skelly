@@ -1,7 +1,5 @@
 {
   "assets/models/baseball_cap.glb": { "materials": ["plastic-blue", "paint-charcoal"] },
-  "assets/models/camp_armoury_key.glb": { "materials": ["steel-parkerized"] },
-  "assets/models/camp_hq_safe_key.glb": { "materials": ["brass"] },
   "assets/models/dad_cabin_key.glb": { "materials": ["steel-grey"] },
   "assets/models/gauntlet_lab_entry_card.glb": { "materials": ["plastic-white", "plastic-blue"] },
   "assets/models/gauntlet_police_armoury_key.glb": { "materials": ["steel-blued"] },

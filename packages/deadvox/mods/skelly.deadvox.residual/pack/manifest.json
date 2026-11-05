@@ -42,16 +42,13 @@
     "skelly.deadvox.combat-policy",
     "skelly.deadvox.loot",
     "skelly.deadvox.actors",
-    "skelly.deadvox.buildings"
+    "skelly.deadvox.buildings",
+    "skelly.deadvox.camp"
   ],
   "files": [
     {
       "kind": "content",
       "path": "benchmark-city.json"
-    },
-    {
-      "kind": "content",
-      "path": "camp.json"
     },
     {
       "kind": "content",
@@ -207,14 +204,6 @@
     },
     {
       "kind": "json",
-      "path": "things/camp_armoury_key.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/camp_hq_safe_key.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/shed_key.model.json"
     },
     {
@@ -284,14 +273,6 @@
     {
       "kind": "asset",
       "path": "assets/models/baseball_cap.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/camp_armoury_key.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/camp_hq_safe_key.glb"
     },
     {
       "kind": "asset",
