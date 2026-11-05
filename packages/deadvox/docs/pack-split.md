@@ -10,6 +10,7 @@ read_if:
   - you change settlement role claims or melee pose selection
   - you change skill providers, combat policy, starts or pack save identity
   - you plan the gated SkellyEngine runtime and content extraction (#1532)
+  - you place a recipe, power tuning or a household electrical device in a mod
 ---
 
 # Product and shared content packs
@@ -176,9 +177,9 @@ key box is a generic container and names no key. See `src/core/content.ts`, `che
 
 **Liquid vessels.** A vessel lists the liquids it takes or takes any liquid the stack loads, so a general container needs no edge to every mod that adds a liquid and no list to maintain. A lamp keeps its list, because what it holds must burn. See `src/core/liquids.ts`, `vesselAccepts`.
 
-**Recipes.** A recipe goes with its output's mod, one rule with no judgement per recipe, and a recipe whose output is in core goes to `skelly.basic-recipes`, because core carries no recipes of its own. The cost is that `skelly.basic-recipes` grows and a recipe spanning two topics makes its mod depend on the other.
+**Recipes.** A recipe goes with its output's mod, and a recipe whose output is in core goes to `skelly.basic-recipes`, so one rule places every recipe. The cost is that `skelly.basic-recipes` grows and a recipe spanning two topics makes its mod depend on the other.
 
-**Household electrical devices.** Lamps, chargers, fridges and the like share one mod, `skelly.household-electrical`, because many more lamps and small devices will come and a stack wanting only a grid should not carry them. Power sources, storage, switches and every device row stay in `skelly.electric-power`, as do items that sources and household devices both use. See `packages/mods/skelly.household-electrical/household-electrical-furniture.jsonnet`, `furniture`.
+**Household electrical devices.** Lamps, chargers and fridges share one mod, `skelly.household-electrical`, because many more lamps and small devices will come. Power sources, storage, switches and every device row stay in `skelly.electric-power`, as do items that sources and household devices both use. See `packages/mods/skelly.household-electrical/household-electrical-furniture.jsonnet`, `furniture`.
 
 **Power tuning.** Tuning is a power device's dependency, so a stack with no device owes none and runs no power tick, while a loaded device without tuning fails validation. See `src/core/capabilities.ts`, `requiredForStack`, and `src/game/session.ts`, `createSessionPower`.
 
