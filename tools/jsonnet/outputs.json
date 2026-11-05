@@ -105,6 +105,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.combat-policy/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.crisis-hq/crisis-hq-fixtures.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.crisis-hq/crisis-hq-fixtures.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.crisis-hq/crisis-hq.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.crisis-hq/crisis-hq.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.crisis-hq/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.crisis-hq/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.loot/item-economy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.loot/item-economy.json"
     },
@@ -131,14 +143,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/benchmark-city.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/benchmark-city.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq-fixtures.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq-fixtures.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/exports/things.jsonnet",

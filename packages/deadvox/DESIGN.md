@@ -831,7 +831,7 @@ population budget remains open. An authored event carries the promised reward, s
 fixed stock still passes the economy check without bending a place's theme. Stock that suits the place but not
 its context's tier is a content fix to the context instead: the crisis HQ is a
 military command post, so its tier admits military items such as a rifle, and no
-event is needed there. See `mods/skelly.deadvox.residual/crisis-hq.jsonnet`, `military`.
+event is needed there. See `mods/skelly.deadvox.crisis-hq/crisis-hq.jsonnet`, `military`.
 A promise names a fixed lot and a container anchor in that lot's building or event and
 leaves the template unchanged. Validation refuses a promise without a fixed lot or
 an anchor, an event outside its lot or over the host's blocks or furniture, and fixed

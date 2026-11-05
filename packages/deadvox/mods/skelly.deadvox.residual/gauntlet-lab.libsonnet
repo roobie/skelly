@@ -41,7 +41,7 @@ local cabinetShape = [
     [f for f in (import 'packages/mods/skelly.household-electrical/household-electrical-furniture.jsonnet').furniture if f.id == 'fridge'][0] + {
       id: 'gauntlet_lab_fridge', power: { device: 'lab_machine', fuelLitres: 0, enabled: true },
     },
-    [f for f in (import 'crisis-hq-fixtures.jsonnet').furniture if f.id == 'hq_generator'][0] + {
+    [f for f in (import 'packages/deadvox/mods/skelly.deadvox.crisis-hq/crisis-hq-fixtures.jsonnet').furniture if f.id == 'hq_generator'][0] + {
       id: 'gauntlet_lab_generator',
       power: { device: 'lab_generator', fuelLitres: 0.25, enabled: true },
     },

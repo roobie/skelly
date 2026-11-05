@@ -44,20 +44,13 @@
     "skelly.deadvox.actors",
     "skelly.deadvox.buildings",
     "skelly.deadvox.camp",
-    "skelly.deadvox.rural-sites"
+    "skelly.deadvox.rural-sites",
+    "skelly.deadvox.crisis-hq"
   ],
   "files": [
     {
       "kind": "content",
       "path": "benchmark-city.json"
-    },
-    {
-      "kind": "content",
-      "path": "crisis-hq-fixtures.json"
-    },
-    {
-      "kind": "content",
-      "path": "crisis-hq.json"
     },
     {
       "kind": "content",

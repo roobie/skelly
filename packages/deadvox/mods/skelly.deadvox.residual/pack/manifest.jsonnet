@@ -1,7 +1,7 @@
 local manifest = import '../../../../../tools/jsonnet/lib/pack-manifest.libsonnet';
 local content = [
   'benchmark-city',
-  'crisis-hq-fixtures', 'crisis-hq', 'footstep-sounds', 'furniture-cabins',
+  'footstep-sounds', 'furniture-cabins',
   'furniture-playtest', 'gauntlet-look', 'gauntlet-start',
   'gauntlet', 'hunting-cabins', 'item-economy', 'items-playtest',
   'ladders', 'layouts-cabins', 'layouts-playtest', 'layouts-stairs',
@@ -26,7 +26,7 @@ manifest(
     'skelly.electronics', 'skelly.electric-power', 'skelly.household-electrical', 'skelly.ground-vehicles',
     'skelly.firearms', 'skelly.manuals', 'skelly.deadvox.site-generation', 'skelly.deadvox.combat-policy',
     'skelly.deadvox.loot', 'skelly.deadvox.actors', 'skelly.deadvox.buildings', 'skelly.deadvox.camp',
-    'skelly.deadvox.rural-sites',
+    'skelly.deadvox.rural-sites', 'skelly.deadvox.crisis-hq',
   ],
   content=content,
   things=things,
