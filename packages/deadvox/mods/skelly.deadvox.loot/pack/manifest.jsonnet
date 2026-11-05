@@ -2,11 +2,12 @@ local manifest = import '../../../../../tools/jsonnet/lib/pack-manifest.libsonne
 manifest(
   id='skelly.deadvox.loot',
   tier='product',
-  content=['gauntlet-medical', 'loot-armoury', 'loot-workshop', 'loot'],
+  content=['gauntlet-medical', 'item-economy', 'loot-armoury', 'loot-workshop', 'loot'],
   dependencies=[
     'skelly.basic-foods', 'skelly.basic-recipes', 'skelly.containers', 'skelly.electric-power', 'skelly.electronics',
-    'skelly.firearms', 'skelly.fuel', 'skelly.hand-tools', 'skelly.light-sources', 'skelly.manuals',
-    'skelly.materials', 'skelly.medicine', 'skelly.melee', 'skelly.packaged-foods', 'skelly.readables',
-    'skelly.structures', 'skelly.wearables',
+    'skelly.explosives', 'skelly.firearms', 'skelly.flame-tools', 'skelly.fuel', 'skelly.ground-vehicles',
+    'skelly.hand-tools', 'skelly.inventory', 'skelly.light-sources', 'skelly.manuals', 'skelly.materials',
+    'skelly.medicine', 'skelly.melee', 'skelly.packaged-foods', 'skelly.readables', 'skelly.structures',
+    'skelly.traps', 'skelly.wearables',
   ],
 )

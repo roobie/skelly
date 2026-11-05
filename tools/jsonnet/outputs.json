@@ -13,6 +13,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.loot/gauntlet-medical.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.loot/item-economy.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.loot/item-economy.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.loot/loot-armoury.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.loot/loot-armoury.json"
     },

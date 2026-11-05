@@ -5,9 +5,13 @@
     "skelly.containers",
     "skelly.electric-power",
     "skelly.electronics",
+    "skelly.explosives",
     "skelly.firearms",
+    "skelly.flame-tools",
     "skelly.fuel",
+    "skelly.ground-vehicles",
     "skelly.hand-tools",
+    "skelly.inventory",
     "skelly.light-sources",
     "skelly.manuals",
     "skelly.materials",
@@ -16,12 +20,17 @@
     "skelly.packaged-foods",
     "skelly.readables",
     "skelly.structures",
+    "skelly.traps",
     "skelly.wearables"
   ],
   "files": [
     {
       "kind": "content",
       "path": "gauntlet-medical.json"
+    },
+    {
+      "kind": "content",
+      "path": "item-economy.json"
     },
     {
       "kind": "content",
