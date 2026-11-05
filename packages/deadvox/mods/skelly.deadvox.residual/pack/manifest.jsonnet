@@ -55,7 +55,7 @@ manifest(
     'skelly.wearables', 'skelly.progression', 'skelly.crafting', 'skelly.manufactured-blocks',
     'skelly.fuel', 'skelly.containers', 'skelly.flame-tools', 'skelly.light-sources',
     'skelly.basic-recipes', 'skelly.melee', 'skelly.traps', 'skelly.explosives',
-    'skelly.electronics', 'skelly.electric-power',
+    'skelly.electronics', 'skelly.electric-power', 'skelly.household-electrical',
   ],
   content=content,
   guns=guns,

@@ -1,0 +1,14 @@
+{
+  "dependencies": ["skelly.electric-power", "skelly.natural-world"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "household-electrical-furniture.json"
+    }
+  ],
+  "id": "skelly.household-electrical",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

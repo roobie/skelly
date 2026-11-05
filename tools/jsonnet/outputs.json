@@ -733,6 +733,14 @@
       "output": "packages/mods/skelly.hand-tools/pack/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.household-electrical/household-electrical-furniture.jsonnet",
+      "output": "packages/mods/skelly.household-electrical/household-electrical-furniture.json"
+    },
+    {
+      "source": "packages/mods/skelly.household-electrical/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.household-electrical/pack/manifest.json"
+    },
+    {
       "source": "packages/mods/skelly.inventory/compression.jsonnet",
       "output": "packages/mods/skelly.inventory/compression.json"
     },

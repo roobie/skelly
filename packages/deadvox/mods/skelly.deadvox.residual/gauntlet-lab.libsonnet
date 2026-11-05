@@ -38,7 +38,7 @@ local cabinetShape = [
       id: 'gauntlet_lab_dead_researcher', name: 'Dead researcher', color: '#c8c9c0',
       corpse: { figure: 'player', outfit: 'lab_coat' },
     },
-    [f for f in (import 'furniture.jsonnet').furniture if f.id == 'fridge'][0] + {
+    [f for f in (import 'packages/mods/skelly.household-electrical/household-electrical-furniture.jsonnet').furniture if f.id == 'fridge'][0] + {
       id: 'gauntlet_lab_fridge', power: { device: 'lab_machine', fuelLitres: 0, enabled: true },
     },
     [f for f in (import 'crisis-hq-fixtures.jsonnet').furniture if f.id == 'hq_generator'][0] + {
