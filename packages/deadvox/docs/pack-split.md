@@ -45,7 +45,9 @@ provider's identity. One rule for every pack is simpler than a privileged core.
 
 **Dependencies follow ownership.** Reusable definitions reference their own or lower
 layers, never the products or scenarios that distribute them. Consumer wiring declares
-the packs it uses; the entry pack selects the stack. An engine mechanism references no
+the packs it uses; the entry pack selects the stack. A mod declares every mod its own rows
+reference, a tool quality a recipe needs included, so its closure builds alone; only a
+missing core capability may wait for the rest of core. An engine mechanism references no
 content id. These directions keep a theme usable without importing a product's starts
 or loot and keep load order out of filename conventions. Admission must refuse missing
 dependencies and undeclared overrides through the shared loader; see

@@ -1,6 +1,7 @@
 {
   "dependencies": [
     "skelly.crafting",
+    "skelly.hand-tools",
     "skelly.inventory",
     "skelly.materials",
     "skelly.natural-world",
