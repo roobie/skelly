@@ -1,6 +1,6 @@
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
-local cabinets = import 'cabinet-shapes.libsonnet';
+local cabinets = import 'tools/jsonnet/lib/cabinet-shapes.libsonnet';
 local police = { usage: ['Police'], tier: 'Tier1' };
 local yard = import 'rural-police-yard.libsonnet';
 local foundation = [
@@ -279,7 +279,7 @@ local roofAir = [
   '......................................', '......................................', '......................................', '......................................',
   '......................................', '......................................',
 ];
-(import 'economy.libsonnet').itemPack(breach.breaking(shape.colliding({
+(import 'tools/jsonnet/lib/economy.libsonnet').itemPack(breach.breaking(shape.colliding({
   furniture: [{
     id: 'dead_officer_body', name: 'Dead officer', size: [4, 1, 2], color: '#554f43', solid: false,
     corpse: { figure: 'player', outfit: 'police_uniform' },
@@ -344,7 +344,7 @@ local roofAir = [
   }] + yard.templates,
   layouts: [{
     id: 'rural_police_spike', demo: true, lootContext: police,
-    attemptPolicy: (import 'attempt-policy.libsonnet').persistent,
+    attemptPolicy: (import 'tools/jsonnet/lib/attempt-policy.libsonnet').persistent,
     bounds: { x0: 32, z0: 32, x1: 96, z1: 96 },
     ground: 21, terrain: [],
     buildings: [{ template: 'rural_police_station', position: [52, 21, 52], rotation: 180 }] + yard.buildings,

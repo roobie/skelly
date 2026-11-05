@@ -1,1 +1,1 @@
-(import 'economy.libsonnet').pack(import 'locks.libsonnet')
+(import 'tools/jsonnet/lib/economy.libsonnet').pack(import 'locks.libsonnet')

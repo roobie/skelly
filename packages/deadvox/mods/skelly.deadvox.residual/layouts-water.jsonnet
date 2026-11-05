@@ -1,11 +1,11 @@
 // The debug lake: a basin under a water body, for looking at the shore, the surface and the bed from below.
 // It is hundreds of metres across, the scale of the haven's lake; the polygon only bounds it, and the basin's slope
 // and the ground noise draw the shore.
-(import 'economy.libsonnet').pack({
+(import 'tools/jsonnet/lib/economy.libsonnet').pack({
   layouts: [
     {
       id: 'lake_demo',
-      attemptPolicy: (import 'attempt-policy.libsonnet').persistent,
+      attemptPolicy: (import 'tools/jsonnet/lib/attempt-policy.libsonnet').persistent,
       demo: true,
       bounds: { x0: 0, z0: 0, x1: 512, z1: 448 },
       ground: 21,

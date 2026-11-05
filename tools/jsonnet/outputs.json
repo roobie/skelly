@@ -1,6 +1,14 @@
 {
   "files": [
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.combat-policy/combat-policy.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.combat-policy/combat-policy.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.combat-policy/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.combat-policy/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/assets/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/assets/manifest.json"
     },
@@ -11,10 +19,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/camp.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/camp.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/combat-policy.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/combat-policy.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq-fixtures.jsonnet",
@@ -149,10 +153,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/scenarios.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/site-generation.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/site-generation.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds.json"
     },
@@ -191,6 +191,14 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/tutorial.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/tutorial.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.site-generation/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.site-generation/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.site-generation/site-generation.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.site-generation/site-generation.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.weathering/deadvox-weathering.jsonnet",

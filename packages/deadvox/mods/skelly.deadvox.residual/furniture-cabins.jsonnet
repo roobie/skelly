@@ -1,6 +1,6 @@
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
-local cabinets = import 'cabinet-shapes.libsonnet';
+local cabinets = import 'tools/jsonnet/lib/cabinet-shapes.libsonnet';
 local detail = import 'tools/jsonnet/lib/door-detail.libsonnet';
 local wood = '#6e5037';
 breach.breaking(shape.colliding({

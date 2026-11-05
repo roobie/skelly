@@ -19,7 +19,7 @@ local liquidRecoveryStock = [
 {
   layouts: [{
     id: 'testHouse', demo: true,
-    attemptPolicy: (import 'attempt-policy.libsonnet').persistent,
+    attemptPolicy: (import 'tools/jsonnet/lib/attempt-policy.libsonnet').persistent,
     lootContext: { usage: ['Residential'], tier: 'Tier1' },
     weatheringProfile: 'proper',
     bounds: { x0: -240, z0: -80, x1: 270, z1: 340 },

@@ -22,7 +22,8 @@ export const readBundledPacks = (packageRoot: string, stack?: string): PackInput
             )
         : [];
     })
-    .sort();
+    // The save identity lists packs in this order, so it follows the game's: `src/game/bundledPacks.ts`, `bundledPacks`.
+    .sort((left, right) => `${left}/pack/manifest.json`.localeCompare(`${right}/pack/manifest.json`));
   const inputs = roots.map((root) => {
     const manifest = parse(
       PackManifestSchema,

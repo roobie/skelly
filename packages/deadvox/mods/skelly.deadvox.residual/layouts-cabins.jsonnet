@@ -1,1 +1,1 @@
-(import 'economy.libsonnet').pack(import 'layouts-cabins.libsonnet')
+(import 'tools/jsonnet/lib/economy.libsonnet').pack(import 'layouts-cabins.libsonnet')

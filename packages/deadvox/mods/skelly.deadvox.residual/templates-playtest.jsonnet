@@ -1,1 +1,1 @@
-(import 'economy.libsonnet').pack(import 'templates-playtest.libsonnet')
+(import 'tools/jsonnet/lib/economy.libsonnet').pack(import 'templates-playtest.libsonnet')

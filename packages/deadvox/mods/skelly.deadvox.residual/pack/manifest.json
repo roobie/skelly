@@ -37,7 +37,9 @@
     "skelly.household-electrical",
     "skelly.ground-vehicles",
     "skelly.firearms",
-    "skelly.manuals"
+    "skelly.manuals",
+    "skelly.deadvox.site-generation",
+    "skelly.deadvox.combat-policy"
   ],
   "files": [
     {
@@ -47,10 +49,6 @@
     {
       "kind": "content",
       "path": "camp.json"
-    },
-    {
-      "kind": "content",
-      "path": "combat-policy.json"
     },
     {
       "kind": "content",
@@ -187,10 +185,6 @@
     {
       "kind": "content",
       "path": "scenarios.json"
-    },
-    {
-      "kind": "content",
-      "path": "site-generation.json"
     },
     {
       "kind": "content",

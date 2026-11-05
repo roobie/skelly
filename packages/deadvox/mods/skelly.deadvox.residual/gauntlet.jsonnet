@@ -114,7 +114,7 @@ local utilities = [
     ],
   },
 ];
-(import 'economy.libsonnet').itemPack(breach.breaking(shape.colliding({
+(import 'tools/jsonnet/lib/economy.libsonnet').itemPack(breach.breaking(shape.colliding({
   items: types.items + publicNotes + houseNotes + lab.items,
   mapPools: kits.mapPools + city.mapPools,
   blocks: types.blocks,

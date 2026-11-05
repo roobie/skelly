@@ -1,7 +1,7 @@
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local box(position, size) = { position: position, size: size };
-local cabinets = import 'cabinet-shapes.libsonnet';
+local cabinets = import 'tools/jsonnet/lib/cabinet-shapes.libsonnet';
 local weaponPaint = '#657063';
 breach.breaking(shape.colliding({
   furniture: [

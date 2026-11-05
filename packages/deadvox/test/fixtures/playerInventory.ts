@@ -3,8 +3,8 @@ import type { ContentSource } from '../../src/core/content.ts';
 import type { ContentFile } from '../../src/core/schema.ts';
 import { fixtureIds } from './capabilityIds.ts';
 
-const baseJson = (name: string) =>
-  JSON.parse(readFileSync(`mods/skelly.deadvox.residual/${name}`, 'utf8')) as ContentFile;
+const combatPolicyJson = () =>
+  JSON.parse(readFileSync('mods/skelly.deadvox.combat-policy/combat-policy.json', 'utf8')) as ContentFile;
 const firearmsJson = (name: string) =>
   JSON.parse(readFileSync(`../mods/skelly.firearms/${name}`, 'utf8')) as ContentFile;
 const uiJson = (name: string) => JSON.parse(readFileSync(`../mods/skelly.ui/${name}`, 'utf8')) as ContentFile;
@@ -39,7 +39,7 @@ export const firearmsSkillSource = (): ContentSource => {
   return {
     source: 'firearms-skill-fixture.json',
     data: {
-      ...baseJson('combat-policy.json'),
+      ...combatPolicyJson(),
       ...firearmsJson('ranged-tuning.json'),
       skills: [
         combat,

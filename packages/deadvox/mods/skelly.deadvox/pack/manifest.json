@@ -39,6 +39,8 @@
     "skelly.ground-vehicles",
     "skelly.firearms",
     "skelly.manuals",
+    "skelly.deadvox.site-generation",
+    "skelly.deadvox.combat-policy",
     "skelly.deadvox.residual"
   ],
   "files": [],

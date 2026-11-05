@@ -104,7 +104,7 @@ local yardTop = [
   ],
   layouts: [{
     id: 'rural_medical_post_demo', demo: true, lootContext: medical,
-    attemptPolicy: (import 'attempt-policy.libsonnet').persistent,
+    attemptPolicy: (import 'tools/jsonnet/lib/attempt-policy.libsonnet').persistent,
     bounds: { x0: 32, z0: 32, x1: 96, z1: 96 }, ground: 21, terrain: [],
     buildings: [
       { template: 'rural_medical_post', position: [52, 21, 52], rotation: 0 },

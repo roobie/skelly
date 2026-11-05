@@ -1,7 +1,7 @@
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local rows = import 'tools/jsonnet/lib/rows.libsonnet';
-local cabinets = import 'cabinet-shapes.libsonnet';
+local cabinets = import 'tools/jsonnet/lib/cabinet-shapes.libsonnet';
 local supplyPaint = '#8d986d';
 local lootContext = { usage: ['Residential'], tier: 'Tier1' };
 local wall = ['WWWWWWWWWWWW', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'WWWWWDDWWWWW'];
@@ -79,7 +79,7 @@ breach.breaking(shape.colliding({
   }],
   layouts: [{
     id: 'tutorial',
-    attemptPolicy: (import 'attempt-policy.libsonnet').practice,
+    attemptPolicy: (import 'tools/jsonnet/lib/attempt-policy.libsonnet').practice,
     lootContext: lootContext,
     demo: true,
     bounds: { x0: -32, z0: -32, x1: 64, z1: 48 },

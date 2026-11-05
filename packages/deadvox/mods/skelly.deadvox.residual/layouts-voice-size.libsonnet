@@ -2,7 +2,7 @@
   "layouts": [
     {
       "id": "voice_size",
-      attemptPolicy: (import 'attempt-policy.libsonnet').persistent,
+      attemptPolicy: (import 'tools/jsonnet/lib/attempt-policy.libsonnet').persistent,
       "demo": true,
       "bounds": { "x0": 0, "z0": 0, "x1": 32, "z1": 32 },
       "ground": 21,

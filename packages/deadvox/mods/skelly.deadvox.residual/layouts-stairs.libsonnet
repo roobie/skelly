@@ -2,7 +2,7 @@
   "layouts": [
     {
       "id": "stair_demo",
-      attemptPolicy: (import 'attempt-policy.libsonnet').persistent,
+      attemptPolicy: (import 'tools/jsonnet/lib/attempt-policy.libsonnet').persistent,
       "demo": true,
       "bounds": {
         "x0": 32,

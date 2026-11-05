@@ -1,1 +1,1 @@
-(import 'economy.libsonnet').pack(import 'layouts-stairs.libsonnet')
+(import 'tools/jsonnet/lib/economy.libsonnet').pack(import 'layouts-stairs.libsonnet')

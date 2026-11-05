@@ -129,7 +129,7 @@ local flue = [
   }] + yard.templates,
   layouts: [{
     id: 'rural_substation_demo', demo: true, lootContext: utility,
-    attemptPolicy: (import 'attempt-policy.libsonnet').persistent,
+    attemptPolicy: (import 'tools/jsonnet/lib/attempt-policy.libsonnet').persistent,
     bounds: { x0: 32, z0: 32, x1: 96, z1: 96 },
     ground: 21, terrain: [],
     buildings: [{ template: 'rural_substation', position: [50, 21, 50], rotation: 0 }] + yard.buildings,
