@@ -27,7 +27,7 @@ manifest(
     'skelly.fuel', 'skelly.containers', 'skelly.flame-tools', 'skelly.light-sources',
     'skelly.basic-recipes', 'skelly.melee', 'skelly.traps', 'skelly.explosives',
     'skelly.electronics', 'skelly.electric-power', 'skelly.household-electrical', 'skelly.ground-vehicles',
-    'skelly.firearms',
+    'skelly.firearms', 'skelly.manuals',
   ],
   content=content,
   things=things,

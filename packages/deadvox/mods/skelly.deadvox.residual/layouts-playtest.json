@@ -145,7 +145,7 @@
               "at": [4, 1, 13],
               "items": [
                 {
-                  "item": "home_repair_book",
+                  "item": "home_repair_manual",
                   "count": 1,
                   "key": true
                 }
@@ -850,7 +850,7 @@
               "at": [4, 1, 4],
               "items": [
                 {
-                  "item": "workshop_notes",
+                  "item": "workshop_manual",
                   "count": 1,
                   "key": true
                 }

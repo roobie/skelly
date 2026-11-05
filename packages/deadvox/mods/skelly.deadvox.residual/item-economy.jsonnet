@@ -12,6 +12,7 @@ local sources = [
   import 'packages/mods/skelly.packaged-foods/packaged-foods-items.jsonnet',
   import 'packages/mods/skelly.firearms/items-gun-parts.jsonnet',
   import 'items-other.jsonnet',
+  import 'packages/mods/skelly.manuals/manuals-items.jsonnet',
   import 'packages/mods/skelly.firearms/items-pistol.jsonnet',
   import 'items-playtest.jsonnet',
   import 'packages/mods/skelly.firearms/items-revolver.jsonnet',

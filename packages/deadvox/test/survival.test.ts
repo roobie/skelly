@@ -22,9 +22,6 @@ const STAMINA = fixtureBody.staminaRules;
 const base = (file: string): ContentSource => {
   const source = `mods/skelly.deadvox.residual/${file}`;
   const data = JSON.parse(readFileSync(source, 'utf8'));
-  if (file === 'items-other.json') {
-    data.items = data.items.filter((item: { category: string }) => item.category !== 'book');
-  }
   return { source, data };
 };
 const firearmsFile = (file: string): ContentSource => {

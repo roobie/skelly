@@ -157,12 +157,12 @@
               },
               {
                 "count": 1,
-                "item": "camp_craft_book",
+                "item": "camp_craft_manual",
                 "placement": "surface"
               },
               {
                 "count": 1,
-                "item": "workshop_notes",
+                "item": "workshop_manual",
                 "placement": "surface"
               },
               {

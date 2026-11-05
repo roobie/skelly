@@ -817,6 +817,14 @@
       "output": "packages/mods/skelly.light-sources/pack/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.manuals/manuals-items.jsonnet",
+      "output": "packages/mods/skelly.manuals/manuals-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.manuals/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.manuals/pack/manifest.json"
+    },
+    {
       "source": "packages/mods/skelly.manufactured-blocks/manufactured-blocks.jsonnet",
       "output": "packages/mods/skelly.manufactured-blocks/manufactured-blocks.json"
     },

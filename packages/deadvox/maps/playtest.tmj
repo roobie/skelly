@@ -167,7 +167,7 @@
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[4,1,13],\"items\":[{\"item\":\"home_repair_book\",\"count\":1,\"key\":true}]},{\"at\":[1,1,5],\"items\":[{\"item\":\"rag\",\"count\":2},{\"item\":\"wax\",\"count\":1}]},{\"at\":[14,1,14],\"items\":[{\"item\":\"jacket\",\"count\":1}]}]"
+              "value": "[{\"at\":[4,1,13],\"items\":[{\"item\":\"home_repair_manual\",\"count\":1,\"key\":true}]},{\"at\":[1,1,5],\"items\":[{\"item\":\"rag\",\"count\":2},{\"item\":\"wax\",\"count\":1}]},{\"at\":[14,1,14],\"items\":[{\"item\":\"jacket\",\"count\":1}]}]"
             }
           ]
         },
@@ -1199,7 +1199,7 @@
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[4,1,4],\"items\":[{\"item\":\"workshop_notes\",\"count\":1,\"key\":true}]}]"
+              "value": "[{\"at\":[4,1,4],\"items\":[{\"item\":\"workshop_manual\",\"count\":1,\"key\":true}]}]"
             }
           ]
         },

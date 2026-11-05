@@ -36,7 +36,8 @@
     "skelly.electric-power",
     "skelly.household-electrical",
     "skelly.ground-vehicles",
-    "skelly.firearms"
+    "skelly.firearms",
+    "skelly.manuals"
   ],
   "files": [
     {

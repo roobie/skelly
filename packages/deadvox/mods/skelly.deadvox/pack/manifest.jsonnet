@@ -13,6 +13,6 @@ manifest(
     'skelly.fuel', 'skelly.containers', 'skelly.flame-tools', 'skelly.light-sources',
     'skelly.basic-recipes', 'skelly.melee', 'skelly.traps', 'skelly.explosives',
     'skelly.electronics', 'skelly.electric-power', 'skelly.household-electrical', 'skelly.ground-vehicles',
-    'skelly.firearms', 'skelly.deadvox.residual',
+    'skelly.firearms', 'skelly.manuals', 'skelly.deadvox.residual',
   ],
 )
