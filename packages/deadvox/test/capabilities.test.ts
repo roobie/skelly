@@ -34,6 +34,31 @@ describe('content capabilities', () => {
     expect(() => claimedId(registry.compression, 'player')).toThrow('missing required capability "player"');
   });
 
+  describe('power tuning', () => {
+    const device = { id: 'fixture_load', kind: 'consumer', priority: 0, demandWatts: 1 };
+    const tuningIssues = (data: unknown) => {
+      const { registry, issues } = buildRegistry([{ source: 'fixture', data }]);
+      expect(issues).toEqual([]);
+      return requiredContentIssues(registry).filter(({ path }) => path === 'powerTuning');
+    };
+
+    it('owes nothing in a stack with no power device', () => {
+      expect(tuningIssues({})).toEqual([]);
+    });
+
+    it('fails a stack whose power device has no tuning, and passes once tuning loads', () => {
+      expect(tuningIssues({ powerDevices: [device] })).toEqual([
+        { source: 'core content', path: 'powerTuning', message: 'missing required capability "power"' },
+      ]);
+      expect(
+        tuningIssues({
+          powerDevices: [device],
+          powerTuning: [{ id: 'fixture_tuning', capability: 'power', tickSimSeconds: 1 }],
+        }),
+      ).toEqual([]);
+    });
+  });
+
   it('refuses competing one-provider claims instead of choosing by load order', () => {
     const providers = [compression('first'), compression('second')];
     for (const rows of [providers, [...providers].reverse()]) {

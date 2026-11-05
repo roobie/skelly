@@ -176,6 +176,8 @@ key box is a generic container and names no key. See `src/core/content.ts`, `che
 
 **Liquid vessels.** A vessel lists the liquids it takes or takes any liquid the stack loads, so a general container needs no edge to every mod that adds a liquid and no list to maintain. A lamp keeps its list, because what it holds must burn. See `src/core/liquids.ts`, `vesselAccepts`.
 
+**Power tuning.** Tuning is a power device's dependency, so a stack with no device owes none and runs no power tick, while a loaded device without tuning fails validation. See `src/core/capabilities.ts`, `requiredForStack`, and `src/game/session.ts`, `createSessionPower`.
+
 **Cursor.** The basic cursor is content presentation, not UI chrome, so it sits in
 `skelly.ui`, and a theme or product mod may replace it by data with a styled one. It has
 its own row because overrides replace whole rows: a swap restates one short row, not the UI

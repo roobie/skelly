@@ -26,7 +26,7 @@ export const CONTENT_CAPABILITIES = {
   cursors: { gameCursor: 'required' },
   graphics: { graphics: 'required' },
   look: { defaultLook: 'required' },
-  powerTuning: { power: 'required' },
+  powerTuning: { power: 'optional' },
   weathering: { defaultWeathering: 'required' },
 } as const;
 
@@ -57,7 +57,9 @@ export const claimedId = <T extends Claimant>(entries: ReadonlyMap<string, T>, c
 };
 
 const requiredForStack = (registry: Registry, section: string, requirement: string): boolean =>
-  requirement === 'required' || (section === 'skillProgression' && registry.skills.size > 0);
+  requirement === 'required' ||
+  (section === 'skillProgression' && registry.skills.size > 0) ||
+  (section === 'powerTuning' && registry.powerDevices.size > 0);
 
 export const capabilityIssues = (registry: Registry, requireAll = true): ContentIssue[] => {
   const issues: ContentIssue[] = [];

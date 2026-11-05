@@ -15,5 +15,4 @@ const missing = (owner: Owner, section: string, capability: string): KnownIssue 
 // #1532 removes this exact ledger; it must not derive expectations from the validator's dispatch tables.
 export const CORE_ONLY_KNOWN_ISSUES: readonly KnownIssue[] = [
   missing('scenario starts', 'siteGeneration', 'authoredSite'),
-  missing('theme extraction', 'powerTuning', 'power'),
 ];
