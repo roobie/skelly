@@ -3248,7 +3248,7 @@ Every named support must carry the add-on's required word: adding that word is e
 to make a part a support, without giving `structure` a second meaning. See
 `src/core/inventory.ts`, `Inventory.vehiclePlacementRefusal`. A player-fitted plate
 belongs with add-ons because it proves support chains without bringing scratch-building
-forward. See `mods/skelly.deadvox.residual/vehicles.jsonnet`, `mounting_plate`, and
+forward. See `packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `mounting_plate`, and
 `packages/thing-authoring-tool/vehicle-parts.libsonnet`, `mounting_plate`.
 
 A stopped or refused action must not orphan or duplicate the selected item; see
@@ -3319,7 +3319,7 @@ a reworded pack relabels saved vehicles; see `src/core/vehicleInstances.ts`, `ve
     `worldBricks`, uses the same projection for accelerated physics and navigation.
     This exterior cell approximation leaves clear exported space unfilled rather than
     inventing a cabin envelope. `src/core/schema/items.ts`, `ItemSchema`, validates the
-    per-part obstruction channels, and `mods/skelly.deadvox.residual/vehicles.jsonnet`, `part`,
+    per-part obstruction channels, and `packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `part`,
     authors their policy. `src/core/collision.ts`, `worldOpaque`, `worldSoundBlocking`
     and `worldMeleeBlocker`, plus `src/game/session.ts`, `createSession`, route those
     channels to sight, hearing, combat, light, projectiles and blasts. Shared furniture

@@ -16,7 +16,7 @@ local sources = [
   import 'items-playtest.jsonnet',
   import 'items-revolver.jsonnet',
   import 'items-slice2-content.jsonnet',
-  import 'items-tools.jsonnet',
+  import 'packages/mods/skelly.ground-vehicles/ground-vehicles-items.jsonnet',
   import 'packages/mods/skelly.wearables/wearables-items.jsonnet',
   import 'packages/mods/skelly.fuel/fuel-items.jsonnet',
   import 'packages/mods/skelly.containers/containers-items.jsonnet',
@@ -33,7 +33,7 @@ local sources = [
   import 'packages/mods/skelly.readables/readables.jsonnet',
   import 'packages/mods/skelly.structures/structures-items.jsonnet',
   import 'rural-police.jsonnet',
-  import 'vehicles.jsonnet',
+  import 'packages/mods/skelly.ground-vehicles/vehicles.jsonnet',
 ];
 {
   itemEconomy: economy.itemEconomy(std.flattenArrays([source.items for source in sources])),

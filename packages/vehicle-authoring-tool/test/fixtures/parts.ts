@@ -1,5 +1,5 @@
-import battery from '../../../deadvox/mods/skelly.deadvox.residual/things/car_battery.model.json' with { type: 'json' };
 import { buildRegistry, type ContentSource } from '../../../deadvox/src/core/content.ts';
+import battery from '../../../mods/skelly.ground-vehicles/things/car_battery.model.json' with { type: 'json' };
 import inventory from '../../../mods/skelly.inventory/inventory.json' with { type: 'json' };
 import type { VehicleBlueprintInput } from '../../src/export.ts';
 

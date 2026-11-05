@@ -36,6 +36,7 @@
     "skelly.electronics",
     "skelly.electric-power",
     "skelly.household-electrical",
+    "skelly.ground-vehicles",
     "skelly.deadvox.residual"
   ],
   "files": [],

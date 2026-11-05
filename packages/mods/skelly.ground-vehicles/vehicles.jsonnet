@@ -44,12 +44,12 @@ local batteryBay(tray, at, supportedBy=[]) = [
 ];
 local headlamps(x, y, z, supportedBy=[]) = pair('headlamp', 'car_headlamp', [x, y, z], on(supportedBy));
 // A factory cargo space: `at` is the centre of its footprint on the load floor, `cells` its size in inventory
-// cells along x, y and z (`src/core/cargoSpace.ts`).
+// cells along x, y and z (`packages/deadvox/src/core/cargoSpace.ts`).
 local cargoSpace(id, at, cells, floor) = fitting(id, 'cargo_space', at, [floor]) + { cargo: cells };
 // The hatchback's own panels are pressed for its body and authored where they sit on it, so they fit at
 // its origin; shared parts are placed by their own frames.
 local origin = [0, 0, 0];
-// `src/core/inventoryScale.ts`, `PILE_GRID`. A body panel is larger than a floor pile; the cap costs
+// `packages/deadvox/src/core/inventoryScale.ts`, `PILE_GRID`. A body panel is larger than a floor pile; the cap costs
 // nothing until a carrying design gives oversized parts their own class.
 local pileSize = [12, 6];
 local hatchback = [
@@ -142,7 +142,9 @@ local boxVan = [
   fitting('box_roof', 'box_van_roof', origin, ['box_front', 'box_side_near', 'box_side_far']),
   cargoSpace('box_cargo', [-0.9, 1, 0], [42, 20, 20], 'box_floor'),
 ] + pair('box_side', 'box_van_side', origin, on(['box_floor']));
-(import 'item-presentation.libsonnet').pack((import 'economy.libsonnet').pack({
+(import 'tools/jsonnet/lib/item-presentation.libsonnet')(
+  import 'presentation/item-materials.json',
+).pack((import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack({
   models: [
     import 'things/car_battery.model.json',
     import 'things/car_headlamp.model.json',
@@ -279,7 +281,7 @@ local boxVan = [
     part('hoist_tail_lamp', 'Truck tail lamp', [3, 2], ['light']),
     part('hoist_crane_base', 'Crane base', [8, 6], ['structure']),
     part('hoist_stabiliser', 'Crane stabiliser leg', [4, 8], ['stabiliser']),
-    // One rating rather than a chart over reach; the reason is in `docs/vehicle-spike.md`, "The crane truck from content".
+    // One rating rather than a chart over reach; the reason is in `packages/deadvox/docs/vehicle-spike.md`, "The crane truck from content".
     part('hoist_crane_column', 'Crane column', [4, 8], ['lift']) + { vehicle+: { ratedLoadKg: 850 } },
     part('hoist_boom', 'Crane boom', [12, 2], ['structure']),
     part('hoist_boom_extension', 'Crane boom extension', [12, 2], ['structure']),

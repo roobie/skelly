@@ -5,7 +5,7 @@ local content = [
   'furniture-hunting', 'furniture-playtest', 'furniture', 'gauntlet-look', 'gauntlet-start',
   'gauntlet', 'hunting-cabins', 'item-economy', 'items-ammunition',
   'items-attachments', 'items-gun-parts', 'items-other',
-  'items-pistol', 'items-playtest', 'items-revolver', 'items-slice2-content', 'items-tools',
+  'items-pistol', 'items-playtest', 'items-revolver', 'items-slice2-content',
   'ladders', 'layouts-cabins', 'layouts-playtest', 'layouts-stairs',
   'layouts-test-house', 'layouts-voice-size', 'layouts-water', 'layouts', 'locks',
   'loot-workshop', 'loot', 'map-kits', 'models-attachments', 'models-firearms',
@@ -15,7 +15,7 @@ local content = [
   'site-generation', 'starts', 'sounds-pump', 'sounds-revolver',
   'sounds-weapons', 'sounds', 'templates-cabins', 'templates-medical',
   'templates-playtest', 'templates-stairs', 'templates-test-house', 'templates-workshop',
-  'templates', 'tutorial', 'vehicles', 'enemies',
+  'templates', 'tutorial', 'enemies',
 ];
 local guns = [
   'ak_slant_compensator', 'barrel_ak_medium', 'barrel_ar_large_long', 'barrel_ar_large_medium',
@@ -55,7 +55,7 @@ manifest(
     'skelly.wearables', 'skelly.progression', 'skelly.crafting', 'skelly.manufactured-blocks',
     'skelly.fuel', 'skelly.containers', 'skelly.flame-tools', 'skelly.light-sources',
     'skelly.basic-recipes', 'skelly.melee', 'skelly.traps', 'skelly.explosives',
-    'skelly.electronics', 'skelly.electric-power', 'skelly.household-electrical',
+    'skelly.electronics', 'skelly.electric-power', 'skelly.household-electrical', 'skelly.ground-vehicles',
   ],
   content=content,
   guns=guns,

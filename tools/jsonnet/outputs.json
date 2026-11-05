@@ -101,10 +101,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/items-slice2-content.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-tools.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-tools.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/ladders.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/ladders.json"
     },
@@ -251,10 +247,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/tutorial.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/tutorial.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/vehicles.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/vehicles.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.weathering/deadvox-weathering.jsonnet",
@@ -711,6 +703,30 @@
     {
       "source": "packages/mods/skelly.graphics/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.graphics/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.ground-vehicles/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.ground-vehicles/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.ground-vehicles/exports/things.jsonnet",
+      "output": "packages/mods/skelly.ground-vehicles/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.ground-vehicles/ground-vehicles-items.jsonnet",
+      "output": "packages/mods/skelly.ground-vehicles/ground-vehicles-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.ground-vehicles/models-ground-vehicles.jsonnet",
+      "output": "packages/mods/skelly.ground-vehicles/models-ground-vehicles.json"
+    },
+    {
+      "source": "packages/mods/skelly.ground-vehicles/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.ground-vehicles/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.ground-vehicles/vehicles.jsonnet",
+      "output": "packages/mods/skelly.ground-vehicles/vehicles.json"
     },
     {
       "source": "packages/mods/skelly.hand-tools/assets/manifest.jsonnet",

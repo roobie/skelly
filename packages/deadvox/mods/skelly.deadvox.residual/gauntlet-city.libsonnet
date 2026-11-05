@@ -1,7 +1,7 @@
 // Street wrecks are the workshop's stripped car, each placement a procedural variant: a body colour,
 // a dirt level and a set of stripped parts, each drawn from the pools below by the world seed.
 local decals = import 'decals.libsonnet';
-local vehicles = import 'vehicles.libsonnet';
+local vehicles = import 'packages/mods/skelly.ground-vehicles/vehicles.libsonnet';
 local bodies = ['#b3a07c', '#6f7f8f', '#8c3b32', '#4f6b4a', '#c8c3b4'];
 local dirts = [0.15, 0.5, 0.85];
 local doors = ['door-front-near', 'door-front-far', 'door-rear-near', 'door-rear-far'];

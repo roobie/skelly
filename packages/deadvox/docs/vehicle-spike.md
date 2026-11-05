@@ -59,7 +59,7 @@ Parts alike across hosts are authored once and placed by each blueprint, so part
 
 The body shell carries the mass of wiring, trim and sound deadening that no part models, so the fitted car weighs what the reference does at the kerb. Keeping that mass in the shell needs no extra parts or fittings to author; the cost, accepted, is that handling may feel less nose-heavy than the front-engined reference.
 
-A body panel is larger than a floor pile, so panels stay capped at the pile's whole size; see `mods/skelly.deadvox.residual/vehicles.jsonnet`, `pileSize`. The cap costs nothing until a carrying design gives oversized parts their own carry class.
+A body panel is larger than a floor pile, so panels stay capped at the pile's whole size; see `packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `pileSize`. The cap costs nothing until a carrying design gives oversized parts their own carry class.
 
 Real dimensions stay, and the only seated check is entry: every vehicle with a seat has a door or hatch at least as wide as the player. Whether the player figure fits a seat waits until a seated pose exists, because without the pose any fit test would measure the standing figure. See `test/vehicleExport.test.ts`.
 
@@ -93,7 +93,7 @@ The first loop builds from factory structures, uses welded assemblies as player-
 
 ## Export contract
 
-A vehicle part is an item whose exported model carries per-part mass, centre of mass, baked collision and named datums, so disassembly, inventory and fitting share one identity and the game never evaluates authoring shapes. A blueprint is content that names parts by item id and places each fitting in the vehicle frame, so a mod adds a compatible part or host with data alone. See `src/core/schema/items.ts`, `VehicleBlueprintSchema`, and `mods/skelly.deadvox.residual/vehicles.jsonnet`.
+A vehicle part is an item whose exported model carries per-part mass, centre of mass, baked collision and named datums, so disassembly, inventory and fitting share one identity and the game never evaluates authoring shapes. A blueprint is content that names parts by item id and places each fitting in the vehicle frame, so a mod adds a compatible part or host with data alone. See `src/core/schema/items.ts`, `VehicleBlueprintSchema`, and `packages/mods/skelly.ground-vehicles/vehicles.jsonnet`.
 
 Capabilities are a closed vocabulary because each one needs game code to mean anything; content naming another is refused rather than ignored. Each capability carries only the numbers the game code that reads it needs, added when that reader lands. See `src/core/schema/items.ts`, `VEHICLE_CAPABILITIES`.
 
