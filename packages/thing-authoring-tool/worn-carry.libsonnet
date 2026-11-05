@@ -169,7 +169,7 @@ local wornAtom(id, massKg, pieces, finish) = {
 };
 
 // The sling's strap over the right deltoid: a pad across its top, a short tab over its front, and a leg down its back
-// to the slung gun's stock. Its foot meets the gun where `packages/deadvox/mods/skelly.deadvox.residual/models-firearms.libsonnet`,
+// to the slung gun's stock. Its foot meets the gun where `packages/mods/skelly.firearms/models-firearms.libsonnet`,
 // `slung`, hangs it.
 local sling =
   local deltoidX = if overJacket then jacket.chest.width / 2 - fit.slingInset

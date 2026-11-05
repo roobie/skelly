@@ -1,4 +1,4 @@
-(import 'economy.libsonnet').pack({
+(import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack({
   items: [
     {
       id: 'revolver_357', name: '.357 revolver', category: 'weapon',

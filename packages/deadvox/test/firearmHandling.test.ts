@@ -42,7 +42,7 @@ import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
 import { chargedRifle, settle } from './rifleFixture.ts';
 
-const BASE = 'mods/skelly.deadvox.residual';
+const BASE = '../mods/skelly.firearms';
 const base = baseContentSources();
 const registry = baseRegistry();
 const { registry: skillZeroRegistry } = buildRegistry([
@@ -740,7 +740,7 @@ describe('rifle firearm handling', () => {
 
   it('admits and loads an unannotated held gun while its mechanics refuse without synthetic data', async () => {
     const fixture = buildRegistry([
-      base.find(({ source: file }) => file === 'sounds.json')!,
+      base.find(({ source: file }) => file === 'sounds-firearms.json')!,
       {
         source: 'no-calibre-fixture.json',
         data: {

@@ -1,77 +1,5 @@
 [
   {
-    "id": "cartridge_box_308_h_winchester",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "cartridge_box_308_h_winchester",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
-    "id": "cartridge_box_5_d_56x45",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "cartridge_box_5_d_56x45",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
-    "id": "cartridge_box_7_d_62x39",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "cartridge_box_7_d_62x39",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
-    "id": "cartridge_box_357_h_magnum",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "cartridge_box_357_h_magnum",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
-    "id": "shotshell_box",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "shotshell_box",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
-    "id": "ammo_can",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "ammo_can",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
     "id": "shambler_torso",
     "kind": "item",
     "options": {
@@ -156,18 +84,6 @@
     }
   },
   {
-    "id": "weapon_sling",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "weapon_sling",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
     "id": "dad_cabin_key",
     "kind": "item",
     "options": {
@@ -249,54 +165,6 @@
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.01
-    }
-  },
-  {
-    "id": "taped_flashlight_mount",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "taped_flashlight_mount",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.0040000000000000001
-    }
-  },
-  {
-    "id": "scrap_foregrip",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "scrap_foregrip",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.0040000000000000001
-    }
-  },
-  {
-    "id": "weapon_sling_worn",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "weapon_sling_worn",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.0040000000000000001
-    }
-  },
-  {
-    "id": "weapon_sling_worn_jacket",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "weapon_sling_worn_jacket",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.0040000000000000001
     }
   }
 ]

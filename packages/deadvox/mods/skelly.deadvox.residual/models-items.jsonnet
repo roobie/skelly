@@ -1,10 +1,4 @@
 local authored = [
-    import 'things/cartridge_box_308_h_winchester.model.json',
-    import 'things/cartridge_box_5_d_56x45.model.json',
-    import 'things/cartridge_box_7_d_62x39.model.json',
-    import 'things/cartridge_box_357_h_magnum.model.json',
-    import 'things/shotshell_box.model.json',
-    import 'things/ammo_can.model.json',
     { "id": "folded_note", "file": "assets/models/folded_note.glb" },
     import 'things/shambler_torso.model.json',
     import 'things/shambler_head.model.json',

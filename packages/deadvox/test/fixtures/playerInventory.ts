@@ -5,6 +5,8 @@ import { fixtureIds } from './capabilityIds.ts';
 
 const baseJson = (name: string) =>
   JSON.parse(readFileSync(`mods/skelly.deadvox.residual/${name}`, 'utf8')) as ContentFile;
+const firearmsJson = (name: string) =>
+  JSON.parse(readFileSync(`../mods/skelly.firearms/${name}`, 'utf8')) as ContentFile;
 const uiJson = (name: string) => JSON.parse(readFileSync(`../mods/skelly.ui/${name}`, 'utf8')) as ContentFile;
 const inventoryJson = () => JSON.parse(readFileSync('../mods/skelly.inventory/inventory.json', 'utf8')) as ContentFile;
 
@@ -33,15 +35,15 @@ export const playerInventorySource = (): ContentSource => ({
 
 /** Rendering fixtures need baseline policy even when their skill set changes. */
 export const firearmsSkillSource = (): ContentSource => {
-  const combat = skillIn(baseJson('recipes.json'), fixtureIds.firearmsCombat);
+  const combat = skillIn(firearmsJson('firearms-skills.json'), fixtureIds.firearmsCombat);
   return {
     source: 'firearms-skill-fixture.json',
     data: {
       ...baseJson('combat-policy.json'),
-      ...baseJson('ranged-tuning.json'),
+      ...firearmsJson('ranged-tuning.json'),
       skills: [
         combat,
-        baseJson('recipes.json').skills!.find(
+        firearmsJson('firearms-skills.json').skills!.find(
           (skill) => skill.capability === combat.combat!.firearms!.longGunSteadinessRole,
         )!,
       ],

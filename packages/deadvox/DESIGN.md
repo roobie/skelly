@@ -1393,7 +1393,7 @@ must obey the same limit so move order cannot create extra storage. See
 
 The ammo can uses the ordinary cuboid item presentation and shed loot, because
 a steel box suits that shape and belongs among tools without needing a firearm
-model or military-only supply. See `mods/skelly.deadvox.residual/items-other.libsonnet`,
+model or military-only supply. See `packages/mods/skelly.firearms/firearms-items.jsonnet`,
 `ammo_can`, and `mods/skelly.deadvox.residual/loot.jsonnet`, `shed_tools`.
 
 A soft bag's interior has no bound against its footprint; each bag is balanced
@@ -1536,7 +1536,7 @@ path, not across the back, so it clears a pack; it is drawn with whatever is
 fitted to it, and its sling's strap over the shoulder
 (`DESIGN.md`, "Worn items seen"). See `src/core/firearmFitting.ts`, `SLING_SLOT`;
 `src/core/inventory.ts`, `Inventory.carriedWeight`; and
-`mods/skelly.deadvox.residual/models-firearms.libsonnet`, `slung`.
+`packages/mods/skelly.firearms/models-firearms.libsonnet`, `slung`.
 
 ### Light mount on a long gun
 
@@ -1549,7 +1549,7 @@ Crafting the taped light consumes a handheld flashlight rather than creating a
 light from mounting hardware. Recipes must explicitly permit consuming fitted
 parts so a flashlight with a battery is usable stock without making ordinary
 crafts swallow filled items. Pocket contents and unfinished work remain excluded.
-See `mods/skelly.deadvox.residual/items-slice2-content.libsonnet`, `make_taped_flashlight_mount`;
+See `packages/mods/skelly.firearms/firearms-items.jsonnet`, `make_taped_flashlight_mount`;
 `src/core/crafting.ts`, `indexCraftReach`; and `src/core/items.ts`, `craftComponentEligible`.
 
 The mount remains a complete light item because removing it or servicing its
@@ -1856,7 +1856,7 @@ same sight line. See `src/core/heldPose.ts`, `heldFirearmTransform`.
 Per-gun camera and stock-contact limits override the figure defaults because gun
 dimensions and sight heights differ; anatomy remains independent of the gun.
 See `src/core/adsView.ts`, `adsCameraEye` and `adsLimits`;
-`mods/skelly.deadvox.residual/models-firearms.libsonnet`, `longGunHands`; and
+`packages/mods/skelly.firearms/models-firearms.libsonnet`, `longGunHands`; and
 `test/firearmSight.test.ts`.
 
 Only the owning view may suppress camera-enclosing flesh during ADS in any
@@ -1873,7 +1873,7 @@ owns the masked body roles and clearance; see `packages/mods/skelly.body/figures
 Hand-fit corrections belong at the authored contact rather than in view-specific
 placement or gun-ID overrides, so hip aim, ADS and external observation cannot
 disagree. Sporting-stock palms must wrap the wrist rather than ride on its top;
-see `mods/skelly.deadvox.residual/long-gun-hands.libsonnet`, `firingHold`.
+see `packages/mods/skelly.firearms/long-gun-hands.libsonnet`, `firingHold`.
 
 The camera wall check traces the segment from the body eye to the proposed
 camera and pulls back before a hit; collision safety takes priority over sight
@@ -1899,7 +1899,7 @@ hangs below its shoulder rather than on the ground, and looking up lifts both
 elbows. Scoped and iron-sighted long guns share the fit. The live camera takes
 the same bounded sight-line correction and wall guard as the other stances. See
 `packages/mods/skelly.body/figures-player.jsonnet`, `proneAdsPose` and
-`proneAdsElbowPole`; `mods/skelly.deadvox.residual/long-gun-hands.libsonnet`, `proneSupport`;
+`proneAdsElbowPole`; `packages/mods/skelly.firearms/long-gun-hands.libsonnet`, `proneSupport`;
 and `src/core/playerLookPose.ts`, `figureStancePose`.
 
 Firearm shots start at the shared posed muzzle and follow the barrel, never the
@@ -1961,8 +1961,8 @@ changing an optic must not pull a handgun back into the shooter's face. Camera
 framing must not supply anatomical reach. See `src/core/heldPose.ts`,
 `heldFirearmTransform` and `heldAdsStandoffMetres`; `src/core/playerLookPose.ts`,
 `playerHeldSeatFrame`; `src/core/schema/models.ts`, `GunModelSchema`;
-`mods/skelly.deadvox.residual/models-firearms.libsonnet`; and
-`mods/skelly.deadvox.residual/items-pistol.jsonnet`, `adsStandoffByPitch`.
+`packages/mods/skelly.firearms/models-firearms.libsonnet`; and
+`packages/mods/skelly.firearms/items-pistol.jsonnet`, `adsStandoffByPitch`.
 
 Third person remains a debug inspection aid, not a player-facing camera. The
 mannequin is an inert drawing of the same world body, not another simulated actor.
@@ -2399,12 +2399,12 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   `ResolvedFirearmTrajectory`, `src/core/shotTrace.ts`, `traceShot`, and
   `src/render/impactEffects.ts`, `ImpactEffects.fire`; the range comes from
   `src/core/skillTraining.ts`, `firearmsCombatTuning`, and
-  `mods/skelly.deadvox.residual/ranged-tuning.jsonnet`, `shotTraceRangeBlocks`.
+  `packages/mods/skelly.firearms/ranged-tuning.jsonnet`, `shotTraceRangeBlocks`.
 - **Magazines:** A detachable magazine is an item whose exported model carries gungen's fitted round column. Its calibre and capacity come from that model, as the pump's tube capacity does, so the geometry that fits the rounds also sets how many go in. Its cartridges are item state in feed order, top round first, and save with the magazine; loading pushes onto the top and stripping takes from it, as with a real spring-fed box. Each round loaded or stripped is one handling job, so releasing R loses nothing and the inputs replay deterministically. Hold R loads; stripping is the held magazine's item action, not an R gesture, because R's gestures load, rack and remove (`CONTROLS.md`, "Reload, rack, remove"). Loading and stripping a round both use the firearms skill's reload factor. See `src/core/magazine.ts`, `magazineSpec`, and `src/game/magazineHandling.ts`, `MagazineHandling`.
 - **Rifles:** A magazine is a child item of its firearm, so removing it preserves its identity and state; nested accessories and batteries use the same ownership. Cartridge data owns calibre-specific damage. A magazine change is one handling motion, so holding R does not repeat it and releasing R does not cancel it. Deadvox hand-authors `chargingHandleDegrees` because Gungen exports no value for it. See `CONTROLS.md`, "Reload, rack, remove" and `docs/firearm-cycle-playback.md` for the player actions and their presentation; `src/core/saveFormat.ts`, `wirePayloadSchema`; `src/core/pellets.ts`, `projectileShot`; `src/core/actorSystem.ts`, `ActorSystem.firePellets`; `src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`; `src/game/firearmHandling.ts`, `FirearmMechanics`; and `src/render/handlingTurn.ts`, `handlingRotation`.
 - **Modular weapons:** Fitted accessories remain complete child items so removal and saving preserve identity, condition and nested contents. Default and fitted models use the same slot-frame contract; connector axes keep distinct attachment shapes aligned without per-kind guesses. Dynamic fitting trusts gungen's certificates instead of duplicating its geometry solver, while rail footprints remain separate because a slot anchor does not describe the full occupied span. The sling mount and the light mount, which gungen does not export, are the mounts deadvox owns (see [Shoulder and sling](#shoulder-and-sling) and [Light mount on a long gun](#light-mount-on-a-long-gun)). These boundaries keep rendering, saves and compatibility consistent. Firearm details must remain responsive as the inventory fills while the world continues; see `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.candidates`; `src/ui/inventoryScreen.ts`, `viewModel`; `src/core/items.ts`, `ItemFactory.create`, `snapshotItem` and `restoreItem`; `src/core/itemTree.ts`, `walkItemTree`; `src/render/itemLook.ts`, `itemLook`; and `src/render/models.ts`, `hideSlotNodes` and `ModelLibrary.attachParts`.
 
-  A fitted optic owns the aiming sight line because its mount can obstruct the irons. Visible placement and aiming must share the connector transform so the view and shot remain aligned; see `src/core/firearmSight.ts`, `sightedFirearmModel`. Magnification changes the local sight picture, not the weapon or its ballistics, so zoom selection stays outside saved item and replay state. Content-controlled per-weapon memory lasts for the play session; a fresh session starts at the authored power rather than making a camera preference authoritative simulation state. While an optic is aimed, look sensitivity divides by its applied power so the magnified picture keeps a constant on-screen angular speed; this applies to the surrounding view too because the player has one view direction. See `src/game/opticZoom.ts`, `OpticZoom.appliedPower`; `src/game/input.ts`, `Input.setLookSensitivity`; `src/core/opticView.ts`, `mountedOptic`, `opticViewSettings` and `projectLensAperture`; and `src/render/opticLens.ts`, `OpticLensRenderer`. The digital thermal optic's explicit unavailable-view content mark keeps it out of loot admission, fitting and ADS until a thermal view exists; the mark makes the omission visible and restores its ordinary loot admission when that view lands. Exposing an optic without its defining view would mislead the player. See `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`; `mods/skelly.deadvox.residual/economy.libsonnet`, `viewUnavailable`; and `mods/skelly.deadvox.residual/items-attachments.libsonnet`, `items`.
+  A fitted optic owns the aiming sight line because its mount can obstruct the irons. Visible placement and aiming must share the connector transform so the view and shot remain aligned; see `src/core/firearmSight.ts`, `sightedFirearmModel`. Magnification changes the local sight picture, not the weapon or its ballistics, so zoom selection stays outside saved item and replay state. Content-controlled per-weapon memory lasts for the play session; a fresh session starts at the authored power rather than making a camera preference authoritative simulation state. While an optic is aimed, look sensitivity divides by its applied power so the magnified picture keeps a constant on-screen angular speed; this applies to the surrounding view too because the player has one view direction. See `src/game/opticZoom.ts`, `OpticZoom.appliedPower`; `src/game/input.ts`, `Input.setLookSensitivity`; `src/core/opticView.ts`, `mountedOptic`, `opticViewSettings` and `projectLensAperture`; and `src/render/opticLens.ts`, `OpticLensRenderer`. The digital thermal optic's explicit unavailable-view content mark keeps it out of loot admission, fitting and ADS until a thermal view exists; the mark makes the omission visible and restores its ordinary loot admission when that view lands. Exposing an optic without its defining view would mislead the player. See `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`; `mods/skelly.deadvox.residual/economy.libsonnet`, `viewUnavailable`; and `packages/mods/skelly.firearms/items-attachments.libsonnet`, `items`.
 
   An attachment is an atom, so its mass is the mass authored for its item, and a fitted gun weighs the sum of its own parts and its fitted items; see `things/README.md`, "Rules". Every atom's item `weight` is authoritative even when atoms share a visual model. Assemblies author no competing item total: their model carries authored body-part masses, with replaceable geometry owned by the fitted child item instead. See `src/core/items.ts`, `typeWeightGrams`, and `src/core/modelMass.ts`, `modelBodyMassKg`. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear, and foregrips affect aim, stance and wear. Effects are tagged with their model's attachment kind, each kind authors every effect it has, wear included as zero for none, and a suppressor model always exports its noise factor: a missing value is a content error rather than a silent neutral default, so an unfinished attachment cannot ship as one that does nothing. Fitting either suppressor requires Firearms Combat 4; removing one has no skill gate. See `src/core/schema/items.ts`, `FirearmAttachmentEffectsSchema` and `AttachmentSchema`; `src/core/content.ts`, `checkItemAttachmentEffects`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`. A powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
 
@@ -2428,7 +2428,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   change it in one place. See `docs/decisions/0006-firearm-handling.md`,
   `src/game/firearmHandling.ts`, `FirearmMechanics`,
   `src/core/scatterPile.ts`, `spentCaseScatter`, and
-  `mods/skelly.deadvox.residual/ranged-tuning.jsonnet`, `caseEjection`.
+  `packages/mods/skelly.firearms/ranged-tuning.jsonnet`, `caseEjection`.
 - **Noise** is an event with loudness and position. Sprinting makes footsteps
   louder; melee, gunshots, doors, breaking glass and engines also make noise.
   Walls reduce how far it travels. Zombies hear, investigate and pass noise on
@@ -3159,7 +3159,7 @@ on the barrel rather than carrying it. Missing export geometry must fail
 instead of hiding the omission behind a guessed hold. Mirroring must retain
 the support hand's gun-side contact. Nominal eye-relative seating remains for
 isolated item presentation and optical effects, not the anatomical actor's
-physical hold. See `mods/skelly.deadvox.residual/long-gun-hands.libsonnet`, `firingHold`;
+physical hold. See `packages/mods/skelly.firearms/long-gun-hands.libsonnet`, `firingHold`;
 `src/core/schema/models.ts`, `HandsModelSchema`; `src/core/heldPose.ts`, `heldHoldFrame`;
 and `src/core/content.ts`, `checkHeldHands`.
 

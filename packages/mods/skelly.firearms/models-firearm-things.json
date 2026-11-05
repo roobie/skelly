@@ -1,0 +1,244 @@
+{
+  "models": [
+    {
+      "file": "assets/models/cartridge_box_308_h_winchester.glb",
+      "grip": {
+        "at": [0, 0.040000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "cartridge_box_308_h_winchester",
+      "itemPresentation": {
+        "materials": ["paper", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "package": {
+          "centreOfMass": [-0.0003623188405797101, 0.042536231884057966, 0],
+          "massKg": 0.52000000000000002,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/cartridge_box_5_d_56x45.glb",
+      "grip": {
+        "at": [0, 0.029999999999999999, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "cartridge_box_5_d_56x45",
+      "itemPresentation": {
+        "materials": ["paper", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.034999999999999996, 0],
+          "massKg": 0.28000000000000003,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/cartridge_box_7_d_62x39.glb",
+      "grip": {
+        "at": [-0.0049999999999999975, 0.029999999999999999, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "cartridge_box_7_d_62x39",
+      "itemPresentation": {
+        "materials": ["paper", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "package": {
+          "centreOfMass": [-0.0034070796460176989, 0.035000000000000003, 0],
+          "massKg": 0.35999999999999999,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/cartridge_box_357_h_magnum.glb",
+      "grip": {
+        "at": [-0.0050000000000000044, 0.025000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "cartridge_box_357_h_magnum",
+      "itemPresentation": {
+        "materials": ["paper", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "package": {
+          "centreOfMass": [-0.0032500000000000003, 0.028250000000000001, 0],
+          "massKg": 0.82499999999999996,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/shotshell_box.glb",
+      "grip": {
+        "at": [0, 0.040000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "shotshell_box",
+      "itemPresentation": {
+        "materials": ["paper", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.041666666666666664, 0],
+          "massKg": 0.83999999999999997,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/ammo_can.glb",
+      "grip": {
+        "at": [-0.0049999999999999975, 0.215, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "ammo_can",
+      "itemPresentation": {
+        "materials": ["polymer", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "package": {
+          "centreOfMass": [-1.3307524800387127e-5, 0.089773772078393432, 0],
+          "massKg": 1.6000000000000001,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/weapon_sling.glb",
+      "grip": {
+        "at": [-0.121, 0.0050000000000000001, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "forward",
+      "id": "weapon_sling",
+      "itemPresentation": {
+        "materials": ["cloth", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "equipment": {
+          "centreOfMass": [-0.00069696969696969992, 0.0049696969696969703, -0.0002121212121212127],
+          "massKg": 0.14999999999999999,
+          "node": "equipment:webbingSling"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/taped_flashlight_mount.glb",
+      "id": "taped_flashlight_mount",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "taped_flashlight_mount": {
+          "centreOfMass": [0.0044588505747126424, 0.018196781609195401, -0.00016091954022988511],
+          "massKg": 0.12,
+          "node": "taped_flashlight_mount:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/scrap_foregrip.glb",
+      "id": "scrap_foregrip",
+      "itemPresentation": {
+        "materials": ["metal", "wood", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "scrap_foregrip": {
+          "centreOfMass": [-9.5011876484560619e-5, 0.043762470308788604, -0.00011401425178147265],
+          "massKg": 0.17999999999999999,
+          "node": "scrap_foregrip:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/weapon_sling_worn.glb",
+      "id": "weapon_sling_worn",
+      "itemPresentation": {
+        "materials": ["cloth", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "shell": {
+          "centreOfMass": [-0.23200000000000001, 0.51902801461632164, -0.068635809987819735],
+          "massKg": 0.14999999999999999,
+          "node": "shell:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/weapon_sling_worn_jacket.glb",
+      "id": "weapon_sling_worn_jacket",
+      "itemPresentation": {
+        "materials": ["cloth", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "shell": {
+          "centreOfMass": [-0.19999999999999998, 0.57424324324324316, -0.080945945945945938],
+          "massKg": 0.14999999999999999,
+          "node": "shell:compound"
+        }
+      }
+    }
+  ]
+}

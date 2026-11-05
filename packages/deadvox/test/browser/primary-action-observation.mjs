@@ -7,10 +7,7 @@ import { CHUNK } from '../../src/core/coords.ts';
 import { BLOCK_SIZE, chunksFor, makeScale } from '../../src/core/scale.ts';
 
 const magazineModel = JSON.parse(
-  readFileSync(
-    new URL('../../mods/skelly.deadvox.residual/gungen/magazine_pistol_9.model.json', import.meta.url),
-    'utf8',
-  ),
+  readFileSync(new URL('../../../mods/skelly.firearms/gungen/magazine_pistol_9.model.json', import.meta.url), 'utf8'),
 );
 export const cleanReplayRadiusM = 32;
 const columnMetres = CHUNK * BLOCK_SIZE;

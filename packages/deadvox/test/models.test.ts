@@ -43,7 +43,7 @@ import { loadFigureModels } from './figureModels.ts';
 
 import { modFile } from './modFile.ts';
 
-const BASE = 'mods/skelly.deadvox.residual';
+const BASE = '../mods/skelly.firearms';
 const MODEL_FILE = /^assets\/models\/[a-z0-9_]+\.glb$/;
 const AXIS_INDEX = { x: 0, y: 1, z: 2 } as const;
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
@@ -978,7 +978,7 @@ describe('base pack guns', () => {
   const guns = [...models.values()].filter((m) => m.anchors?.muzzle);
 
   it.each(guns.map((m) => [m.id, m] as const))('%s is held muzzle forward, top up', async (_, def) => {
-    const bytes = readFileSync(`mods/skelly.deadvox.residual/${def.file}`);
+    const bytes = readFileSync(`${BASE}/${def.file}`);
     const gltf = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
     if (gltf.parser.json.asset.generator === 'skelly gungen glb export') {
       expect(def.gun?.sight, `${def.id} Gungen exports need sight metadata`).toBeDefined();
@@ -996,7 +996,7 @@ describe('base pack guns', () => {
 
   it('uses the exported AR with zero turn and its muzzle at the forward end', async () => {
     const def = models.get('rifle_assault')!;
-    const bytes = readFileSync(`mods/skelly.deadvox.residual/${def.file}`);
+    const bytes = readFileSync(`${BASE}/${def.file}`);
     const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
     const bounds = new Box3().setFromObject(scene);
     expect(def.grip?.turn).toEqual([0, 0, 0]);

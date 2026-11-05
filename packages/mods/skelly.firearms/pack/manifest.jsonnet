@@ -1,0 +1,45 @@
+local manifest = import '../../../../tools/jsonnet/lib/pack-manifest.libsonnet';
+local guns = [
+  'ak_slant_compensator', 'barrel_ak_medium', 'barrel_ar_large_long', 'barrel_ar_large_medium',
+  'barrel_ar_medium', 'barrel_pistol', 'barrel_pump_medium', 'barrel_sporter_long',
+  'bolt_carrier_ak', 'bolt_carrier_ar_large', 'bolt_carrier_ar', 'bolt_carrier_bolt',
+  'bolt_carrier_pump', 'bolt_handle_sporter', 'bolt_knob_sporter',
+  'case_12_h_gauge_h_00_h_buck', 'case_308_h_winchester', 'case_357_h_magnum',
+  'case_5_d_56x45', 'case_7_d_62x39', 'case_9x19', 'charging_handle_ar_large',
+  'charging_handle_ar', 'foregrip', 'forend_pump', 'front_bead', 'front_sight_ak',
+  'front_sight_ar', 'front_sight_sporter', 'gas_block_ak', 'gas_cylinder_ak', 'grip_ak',
+  'grip_ar_long', 'grip_standard', 'handguard_ak', 'handguard_ar_clamped',
+  'handguard_ar_large_clamped', 'handguard_ar_large_free_float', 'handguard_sporter',
+  'improvised_suppressor', 'integral_magazine', 'lower_ak', 'lower_ar_large', 'lower_ar',
+  'lower_pump', 'lower_sporter', 'magazine_akm_30', 'magazine_pistol_9', 'magazine_stanag_20',
+  'magazine_stanag_30', 'optic_digital_thermal', 'optic_fixed_prism_4x', 'optic_high_mag_5_25x',
+  'optic_holographic', 'optic_hunting_3_9x', 'optic_lpvo_1_6x', 'optic_mini_reflex',
+  'optic_tube_dot', 'pistol_frame', 'pistol_service', 'pistol_slide', 'rail_front_sight',
+  'real_suppressor', 'rear_sight_ak', 'rear_sight_sporter', 'receiver_ak', 'receiver_ar_large',
+  'receiver_ar', 'receiver_pump', 'receiver_sporter', 'revolver_barrel', 'revolver_crane',
+  'revolver_cylinder', 'revolver_ejector', 'revolver_frame', 'revolver_grip',
+  'revolver_hammer', 'revolver', 'revolver_trigger', 'rifle_ak', 'rifle_assault',
+  'rifle_hunting', 'round_12_h_gauge_h_00_h_buck', 'round_308_h_winchester',
+  'round_357_h_magnum', 'round_5_d_56x45', 'round_7_d_62x39', 'round_9x19', 'shotgun_pump',
+  'stock_ak_long', 'stock_m4_long', 'stock_m4_medium', 'stock_sporting_medium',
+  'stock_tapered_medium', 'tactical_flashlight_mount', 'tube_magazine',
+];
+local things = import '../things/index.json';
+local assets = import '../assets/manifest.json';
+manifest(
+  id='skelly.firearms',
+  tier='theme',
+  content=[
+    'firearms-skills', 'ranged-tuning', 'items-ammunition', 'items-attachments', 'items-gun-parts',
+    'items-pistol', 'items-revolver', 'firearms-items', 'models-attachments', 'models-firearm-things', 'models-firearms',
+    'models-gun-parts', 'sounds-firearms', 'sounds-pump', 'sounds-revolver', 'sounds-weapons',
+  ],
+  guns=guns,
+  things=things,
+  assets=assets,
+  json=['things/index.json', 'assets/manifest.json', 'exports/things.json', 'presentation/item-materials.json'],
+  dependencies=[
+    'skelly.basic-recipes', 'skelly.crafting', 'skelly.electric-power', 'skelly.hand-tools', 'skelly.inventory',
+    'skelly.materials', 'skelly.melee', 'skelly.melee-classes', 'skelly.natural-world', 'skelly.structures',
+  ],
+)

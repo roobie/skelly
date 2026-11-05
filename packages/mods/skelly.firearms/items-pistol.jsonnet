@@ -1,5 +1,5 @@
 local pistol = import 'gungen/pistol_service.model.json';
-(import 'item-presentation.libsonnet').pack((import 'economy.libsonnet').pack({
+(import 'item-presentation.libsonnet').pack((import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack({
   items: [
     {
       id: 'pistol_service', name: 'Service Nine', category: 'weapon',

@@ -901,12 +901,6 @@
       "usage": []
     },
     {
-      "id": "ammo_can",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
       "id": "field_manual",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -929,36 +923,6 @@
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
-      "id": "spent_case_5_d_56x45",
-      "notLoot": true,
-      "tiers": [],
-      "usage": []
-    },
-    {
-      "id": "spent_case_7_d_62x39",
-      "notLoot": false,
-      "tiers": [],
-      "usage": []
-    },
-    {
-      "id": "shell_12_gauge_00_buck",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
-      "id": "shotshell_box",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
-      "id": "spent_case_12_h_gauge_h_00_h_buck",
-      "notLoot": false,
-      "tiers": [],
-      "usage": []
     },
     {
       "id": "shambler_torso",
@@ -1082,6 +1046,42 @@
     },
     {
       "id": "spent_case_357_h_magnum",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "ammo_can",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "spent_case_5_d_56x45",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "spent_case_7_d_62x39",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "shell_12_gauge_00_buck",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "shotshell_box",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "spent_case_12_h_gauge_h_00_h_buck",
       "notLoot": false,
       "tiers": [],
       "usage": []

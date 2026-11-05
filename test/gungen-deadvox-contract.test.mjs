@@ -27,7 +27,7 @@ const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders
 const { safeParse } = deadvoxRequire('valibot');
 const ROOT = new URL('../', import.meta.url).pathname;
 const DESIGNS = join(ROOT, 'packages/gun-authoring-tool/designs');
-const DEADVOX_BASE = join(ROOT, 'packages/deadvox/mods/skelly.deadvox.residual');
+const DEADVOX_BASE = join(ROOT, 'packages/mods/skelly.firearms');
 const RECIPE = loadExportRecipe();
 const EXPORTED = RECIPE.map((row) => ({ id: row.id, source: row.source, voxel: row.voxel, ...row.generate() }));
 const loadExports = () =>

@@ -656,7 +656,7 @@ describe('content', () => {
   });
 
   it('rejects out-of-range or non-positive firearm duration curve parameters', () => {
-    const source = base.find((file) => file.source === 'recipes.json')!;
+    const source = base.find((file) => file.source === 'firearms-skills.json')!;
     const data = structuredClone(source.data) as {
       skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
     };

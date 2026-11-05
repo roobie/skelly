@@ -13,7 +13,7 @@ import { browserStageUrl } from './stage-mode.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const magazineModel = JSON.parse(
-  readFileSync(resolve(root, 'mods/skelly.deadvox.residual/gungen/magazine_stanag_30.model.json'), 'utf8'),
+  readFileSync(resolve(root, '../mods/skelly.firearms/gungen/magazine_stanag_30.model.json'), 'utf8'),
 );
 const anchors = new Map([
   ['src/game/play.ts', '  const onForwardPress = (e: MouseEvent) => {'],

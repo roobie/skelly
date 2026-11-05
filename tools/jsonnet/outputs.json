@@ -69,36 +69,12 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/item-economy.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-ammunition.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-ammunition.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-attachments.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-attachments.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-gun-parts.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-gun-parts.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/items-other.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/items-other.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-pistol.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-pistol.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/items-playtest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/items-playtest.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-revolver.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-revolver.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-slice2-content.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-slice2-content.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/ladders.jsonnet",
@@ -137,32 +113,12 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/map-kits.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/models-attachments.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/models-attachments.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/models-firearms.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/models-firearms.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/models-gun-parts.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/models-gun-parts.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/models-items.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/models-items.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/pack/manifest.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/ranged-tuning.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/ranged-tuning.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/recipes.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/recipes.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/rural-medical-fixtures.jsonnet",
@@ -195,18 +151,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/site-generation.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/site-generation.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds-pump.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds-pump.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds-revolver.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds-revolver.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds-weapons.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds-weapons.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds.jsonnet",
@@ -651,6 +595,82 @@
     {
       "source": "packages/mods/skelly.explosives/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.explosives/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.firearms/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/exports/things.jsonnet",
+      "output": "packages/mods/skelly.firearms/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/firearms-items.jsonnet",
+      "output": "packages/mods/skelly.firearms/firearms-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/firearms-skills.jsonnet",
+      "output": "packages/mods/skelly.firearms/firearms-skills.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/items-ammunition.jsonnet",
+      "output": "packages/mods/skelly.firearms/items-ammunition.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/items-attachments.jsonnet",
+      "output": "packages/mods/skelly.firearms/items-attachments.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/items-gun-parts.jsonnet",
+      "output": "packages/mods/skelly.firearms/items-gun-parts.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/items-pistol.jsonnet",
+      "output": "packages/mods/skelly.firearms/items-pistol.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/items-revolver.jsonnet",
+      "output": "packages/mods/skelly.firearms/items-revolver.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/models-attachments.jsonnet",
+      "output": "packages/mods/skelly.firearms/models-attachments.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/models-firearm-things.jsonnet",
+      "output": "packages/mods/skelly.firearms/models-firearm-things.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/models-firearms.jsonnet",
+      "output": "packages/mods/skelly.firearms/models-firearms.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/models-gun-parts.jsonnet",
+      "output": "packages/mods/skelly.firearms/models-gun-parts.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.firearms/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/ranged-tuning.jsonnet",
+      "output": "packages/mods/skelly.firearms/ranged-tuning.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/sounds-firearms.jsonnet",
+      "output": "packages/mods/skelly.firearms/sounds-firearms.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/sounds-pump.jsonnet",
+      "output": "packages/mods/skelly.firearms/sounds-pump.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/sounds-revolver.jsonnet",
+      "output": "packages/mods/skelly.firearms/sounds-revolver.json"
+    },
+    {
+      "source": "packages/mods/skelly.firearms/sounds-weapons.jsonnet",
+      "output": "packages/mods/skelly.firearms/sounds-weapons.json"
     },
     {
       "source": "packages/mods/skelly.flame-tools/assets/manifest.jsonnet",

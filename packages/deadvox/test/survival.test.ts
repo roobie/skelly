@@ -25,6 +25,11 @@ const base = (file: string): ContentSource => {
   if (file === 'items-other.json') {
     data.items = data.items.filter((item: { category: string }) => item.category !== 'book');
   }
+  return { source, data };
+};
+const firearmsFile = (file: string): ContentSource => {
+  const source = `skelly.firearms/${file}`;
+  const data = JSON.parse(readFileSync(`../mods/${source}`, 'utf8'));
   if (file === 'items-attachments.json') {
     data.items = data.items.filter((item: { id: string }) => item.id !== 'weapon_sling');
   }
@@ -44,20 +49,23 @@ const electricItemsWithoutCrafting = (): ContentSource => {
   return { source, data };
 };
 const { registry } = buildRegistry(
-  [
-    'sounds.json',
-    'sounds-pump.json',
-    'sounds-weapons.json',
-    'items-other.json',
-    'items-ammunition.json',
-    'items-attachments.json',
-    'items-gun-parts.json',
-    'models-items.json',
-    'models-gun-parts.json',
-    'models-firearms.json',
-    'models-attachments.json',
-  ]
+  ['sounds.json', 'items-other.json', 'models-items.json']
     .map(base)
+    .concat(
+      [
+        'firearms-items.json',
+        'models-firearm-things.json',
+        'sounds-firearms.json',
+        'sounds-pump.json',
+        'sounds-weapons.json',
+        'items-ammunition.json',
+        'items-attachments.json',
+        'items-gun-parts.json',
+        'models-gun-parts.json',
+        'models-firearms.json',
+        'models-attachments.json',
+      ].map(firearmsFile),
+    )
     .concat(
       [
         'skelly.ui/ui.json',

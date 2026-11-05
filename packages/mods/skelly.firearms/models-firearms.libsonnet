@@ -3,7 +3,7 @@
 // Changing a magazine here stows it instead, so skill 0 sits at the slow end.
 local magazineHandling = { rackSound: 'rifle_charge', handling: { magazine: { removeSimSeconds: 3, insertSimSeconds: 3, changeSound: 'magazine_change' } } };
 local longGunHands = import 'long-gun-hands.libsonnet';
-// A slung long gun (`DESIGN.md`, "Shoulder and sling") hangs muzzle down at the wearer's right side, behind the arm
+// A slung long gun (`packages/deadvox/DESIGN.md`, "Shoulder and sling") hangs muzzle down at the wearer's right side, behind the arm
 // and clear of a pack: its top faces forward and its ejection side out. The point on its bore level with its grip sits
 // at the sling's foot (`packages/thing-authoring-tool/worn-carry.libsonnet`, `sling`), so every gun hangs from the
 // strap whatever its length.

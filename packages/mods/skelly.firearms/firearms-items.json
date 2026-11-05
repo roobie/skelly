@@ -1,6 +1,99 @@
 {
   "items": [
     {
+      "category": "bag",
+      "container": {
+        "pockets": [
+          {
+            "grid": [3, 2],
+            "handlingSimSeconds": 0.40000000000000002
+          }
+        ],
+        "rigid": true
+      },
+      "description": "A steel ammunition can with a hinged lid.",
+      "id": "ammo_can",
+      "model": "ammo_can",
+      "name": "Ammo can",
+      "size": [3, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "description": "A fired 5.56×45 case.",
+      "id": "spent_case_5_d_56x45",
+      "model": "case_5_d_56x45",
+      "name": "Spent 5.56×45 case",
+      "pileDisplay": "scatter",
+      "size": [1, 1],
+      "stack": 10000,
+      "weight": 6,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "description": "A fired 7.62×39 case.",
+      "id": "spent_case_7_d_62x39",
+      "model": "case_7_d_62x39",
+      "name": "Spent 7.62×39 case",
+      "pileDisplay": "scatter",
+      "size": [1, 1],
+      "stack": 10000,
+      "weight": 6,
+      "workInProgress": false
+    },
+    {
+      "ammo": {
+        "calibre": "12-gauge-00-buck",
+        "damage": 20,
+        "damageKind": "pierce",
+        "diameterMm": 8.3800000000000008,
+        "impulse": 0.34999999999999998,
+        "loadSimSeconds": 0.80000000000000004,
+        "loadSound": "magazine_round_insert",
+        "pellets": 9,
+        "rangeMetres": 50,
+        "spreadDegrees": 2,
+        "stripSimSeconds": 0.5,
+        "stripSound": "magazine_round_strip"
+      },
+      "category": "ammo",
+      "description": "Nine-pellet 00 buckshot.",
+      "id": "shell_12_gauge_00_buck",
+      "model": "round_12_h_gauge_h_00_h_buck",
+      "name": "12 gauge 00 buckshot shell",
+      "size": [1, 1],
+      "stack": 25,
+      "weight": 40,
+      "workInProgress": false
+    },
+    {
+      "category": "ammo",
+      "description": "Sealed cardboard box of twenty 00-buck shells.",
+      "id": "shotshell_box",
+      "model": "shotshell_box",
+      "name": "Sealed shotshell box (20)",
+      "size": [2, 2],
+      "unpack": {
+        "count": 20,
+        "item": "shell_12_gauge_00_buck",
+        "simSeconds": 1.2
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "description": "A fired shotshell hull.",
+      "id": "spent_case_12_h_gauge_h_00_h_buck",
+      "model": "case_12_h_gauge_h_00_h_buck",
+      "name": "Spent 12 gauge hull",
+      "pileDisplay": "scatter",
+      "size": [1, 1],
+      "stack": 10000,
+      "weight": 5,
+      "workInProgress": false
+    },
+    {
       "category": "light",
       "description": "A flashlight strapped to a bracket. Taped under the barrel of a long gun, its beam follows the barrel.",
       "disassembly": {

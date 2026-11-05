@@ -21,7 +21,7 @@ const { loadThingRecipe } = await import('../packages/thing-authoring-tool/src/e
 
 const jobs = [
   {
-    base: resolve(REPOSITORY_ROOT, 'packages/deadvox/mods/skelly.deadvox.residual'),
+    base: resolve(REPOSITORY_ROOT, 'packages/mods/skelly.firearms'),
     directory: 'gungen',
     recipe: loadExportRecipe(),
     index: false,

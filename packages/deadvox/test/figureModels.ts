@@ -14,6 +14,7 @@ const MOD_ROOTS = [
   new URL('../../mods/skelly.body/', import.meta.url),
   new URL('../../mods/skelly.wearables/', import.meta.url),
   new URL('../../mods/skelly.electric-power/', import.meta.url),
+  new URL('../../mods/skelly.firearms/', import.meta.url),
   new URL('../mods/skelly.deadvox.residual/', import.meta.url),
 ];
 

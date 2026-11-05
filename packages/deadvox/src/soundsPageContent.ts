@@ -9,6 +9,7 @@ import { buildRegistry } from './core/content.ts';
 const soundFiles = import.meta.glob<unknown>(
   [
     '../mods/skelly.deadvox.residual/sounds*.json',
+    '../../mods/skelly.firearms/sounds*.json',
     '../../mods/skelly.ui/ui-sounds.json',
     '../../mods/skelly.melee-classes/melee-sounds.json',
     '../../mods/skelly.body/body-sounds.json',

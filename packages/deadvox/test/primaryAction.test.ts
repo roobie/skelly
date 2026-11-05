@@ -108,6 +108,10 @@ const { registry, issues } = buildRegistry([
     data: JSON.parse(readFileSync('mods/skelly.deadvox.residual/sounds.json', 'utf8')) as unknown,
   },
   {
+    source: '../../../mods/skelly.firearms/sounds-firearms.json',
+    data: JSON.parse(readFileSync('../mods/skelly.firearms/sounds-firearms.json', 'utf8')) as unknown,
+  },
+  {
     source: '../../../mods/skelly.ui/ui.json',
     data: JSON.parse(readFileSync('../mods/skelly.ui/ui.json', 'utf8')) as unknown,
   },

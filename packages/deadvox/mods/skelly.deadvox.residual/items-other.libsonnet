@@ -1,4 +1,4 @@
-// Books, ammunition and severed parts.
+// Books and severed parts.
 
 local salvage = [0.5, 0.6, 0.7, 0.8, 0.9, 1];
 local yield(item, count) = { item: item, count: count, fractions: salvage, rounding: 'floor' };
@@ -16,33 +16,8 @@ local book(id, name, weight, readingGameMinutes, recipes, text) = {
   readable: { title: name, text: text },
 };
 
-// Fired cases and hulls pile up in the thousands and scatter where they land.
-local spentCase(id, name, weight, description, model) = {
-  id: id,
-  name: name,
-  category: 'material',
-  weight: weight,
-  size: [1, 1],
-  stack: 10000,
-  description: description,
-  pileDisplay: 'scatter',
-  model: model,
-};
-
 {
   items: [
-    {
-      id: 'ammo_can',
-      name: 'Ammo can',
-      category: 'bag',
-      model: 'ammo_can',
-      size: [3, 2],
-      description: 'A steel ammunition can with a hinged lid.',
-      container: {
-        rigid: true,
-        pockets: [{ grid: [3, 2], handlingSimSeconds: 0.4 }],
-      },
-    },
     book(
       'field_manual',
       'Field Manual: Making Do',
@@ -123,59 +98,6 @@ local spentCase(id, name, weight, description, model) = {
         'make_weapon_sling',
       ],
       'Handwritten notes on careful repairs and using salvaged wire.',
-    ),
-    spentCase(
-      'spent_case_5_d_56x45',
-      'Spent 5.56×45 case',
-      6,
-      'A fired 5.56×45 case.',
-      'case_5_d_56x45',
-    ),
-    spentCase(
-      'spent_case_7_d_62x39',
-      'Spent 7.62×39 case',
-      6,
-      'A fired 7.62×39 case.',
-      'case_7_d_62x39',
-    ),
-    {
-      id: 'shell_12_gauge_00_buck',
-      name: '12 gauge 00 buckshot shell',
-      category: 'ammo',
-      weight: 40,
-      size: [1, 1],
-      stack: 25,
-      description: 'Nine-pellet 00 buckshot.',
-      ammo: {
-        loadSound: 'magazine_round_insert', stripSound: 'magazine_round_strip',
-        calibre: '12-gauge-00-buck',
-        damageKind: 'pierce',
-        pellets: 9,
-        spreadDegrees: 2,
-        diameterMm: 8.38,
-        damage: 20,
-        impulse: 0.35,
-        rangeMetres: 50,
-        loadSimSeconds: 0.8,
-        stripSimSeconds: 0.5,
-      },
-      model: 'round_12_h_gauge_h_00_h_buck',
-    },
-    {
-      id: 'shotshell_box',
-      name: 'Sealed shotshell box (20)',
-      category: 'ammo',
-      model: 'shotshell_box',
-      size: [2, 2],
-      description: 'Sealed cardboard box of twenty 00-buck shells.',
-      unpack: { item: 'shell_12_gauge_00_buck', count: 20, simSeconds: 1.2 },
-    },
-    spentCase(
-      'spent_case_12_h_gauge_h_00_h_buck',
-      'Spent 12 gauge hull',
-      5,
-      'A fired shotshell hull.',
-      'case_12_h_gauge_h_00_h_buck',
     ),
     {
       id: 'shambler_torso',
