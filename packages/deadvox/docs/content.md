@@ -32,7 +32,7 @@ Use the repository-wide authoring and conversion rule in `../../../docs/jsonnet.
 
 The enemy pack source is named for its role rather than a creature family, so adding
 non-zombie enemies does not require renaming their content home. See
-`mods/skelly.deadvox.residual/enemies.jsonnet` and `mods/skelly.deadvox.residual/pack/manifest.jsonnet`, `content`.
+`mods/skelly.deadvox.actors/enemies.jsonnet` and `mods/skelly.deadvox.actors/pack/manifest.jsonnet`, `content`.
 
 ## Browser mod identity
 
@@ -83,7 +83,8 @@ a comma-separated list of ids; `?mods=1` is the separate mods panel. Each one go
 the same intake as a player mod, so an unknown id is refused at startup with the usual
 diagnostics instead of being ignored. A bundled mod's Jsonnet source derives its compiled
 rows from core content at build time, so its transformation remains beside its content.
-See `src/config/bundled/beginner.jsonnet` and `src/game/bundledMods.ts`, `selectBundledMods`.
+A bundled mod's file name matches its mod id, so the file is found by id. See
+`src/config/bundled/skelly.deadvox.beginner.jsonnet` and `src/game/bundledMods.ts`, `selectBundledMods`.
 
 The game and the site launcher must offer the same mods, and the launcher is a static page
 that cannot import game modules, so the list is one schema-checked content file rather than
@@ -91,13 +92,10 @@ two copies. The launcher is a developer entry point, so a missing or invalid lis
 its control instead of breaking it. See `src/core/bundledModCatalogue.ts`,
 `bundledModCatalogue`, and `site/launcher.js`, `loadBundledMods`.
 
-Beginner mode (`?mods=beginner`) scales every hostile kind, not a list of ids. Its Jsonnet source
-owns the damage, movement speed (wander and chase), detection and health factors. Detection
-covers sight, night sight, the hearing multiplier (footsteps and noise alike) and light spotting,
-the zombie stat `lightSightScale` that multiplies the range at which a carried or placed light is
-spotted. Light is included so a beginner carrying a torch or flashlight at night does not draw
+Beginner mode (`?mods=skelly.deadvox.beginner`) scales every hostile kind, not a list of ids. Light
+spotting counts as detection, so a beginner carrying a torch or flashlight at night does not draw
 enemies from full range. The mode exists so a new player can learn the game against slower,
-weaker enemies that notice less.
+weaker enemies that notice less. See `src/config/bundled/skelly.deadvox.beginner.jsonnet`, `factors`.
 
 A save records each active bundled mod as a content pack in its version identity, so a
 beginner-mode world is stored apart from a normal one. The URL alone decides the mode, because

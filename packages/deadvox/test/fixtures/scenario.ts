@@ -116,7 +116,7 @@ export const fixtureScenarioSources = (
   const {
     body: [body],
   } = JSON.parse(readFileSync('../mods/skelly.body/body.json', 'utf8'));
-  const { actors } = JSON.parse(readFileSync('mods/skelly.deadvox.residual/enemies.json', 'utf8'));
+  const { actors } = JSON.parse(readFileSync('mods/skelly.deadvox.actors/enemies.json', 'utf8'));
   const {
     footstepSound: _footstepSound,
     loot: _loot,
@@ -126,7 +126,7 @@ export const fixtureScenarioSources = (
   actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
   const selectedSounds = new Set([...bodySoundIds(body), ...Object.values(actor.sounds)]);
   const bodySounds = [
-    'mods/skelly.deadvox.residual/sounds.json',
+    'mods/skelly.deadvox.actors/actors-sounds.json',
     '../mods/skelly.body/body-sounds.json',
     '../mods/skelly.body/body-synth-sounds.json',
   ].flatMap((file) =>

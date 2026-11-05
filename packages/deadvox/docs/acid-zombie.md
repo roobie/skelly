@@ -75,7 +75,7 @@ Acid zombies spawn only in labs, where `DESIGN.md`, "Evolution" puts weird types
 
 The acid zombie must be recognisable by ear, so a player who hears it before seeing it knows to look for a spitter and a line of sight to break. Pitch alone is easy to confuse with the runner or the crawler, so the timbre is scrambled as well.
 
-The scramble is data on the type's own sound rows, and a zombie's voice sounds are content references rather than a code list, so a new or changed voice needs content only and the other types' voices stay untouched. See `PILLARS.md`, "Content forward compatibility"; `mods/skelly.deadvox.residual/sounds.jsonnet`, `zombieVoices`; `src/core/schema/models.ts`, `SoundSchema`; `src/core/schema/actors.ts`, `ActorSchema`; and `src/game/audio.ts`, `connectSample`.
+The scramble is data on the type's own sound rows, and a zombie's voice sounds are content references rather than a code list, so a new or changed voice needs content only and the other types' voices stay untouched. See `PILLARS.md`, "Content forward compatibility"; `mods/skelly.deadvox.actors/actors-sounds.jsonnet`, `zombieVoices`; `src/core/schema/models.ts`, `SoundSchema`; `src/core/schema/actors.ts`, `ActorSchema`; and `src/game/audio.ts`, `connectSample`.
 
 Hear it with the debug spawn action for acid zombies, or from the sounds page.
 

@@ -2943,48 +2943,48 @@
       "strength": 5
     }
   ],
-  "dependencies": ["skelly.deadvox.residual"],
-  "id": "beginner",
+  "dependencies": ["skelly.deadvox.actors"],
+  "id": "skelly.deadvox.beginner",
   "overrides": [
     {
       "entry": "actors:shambler",
-      "pack": "skelly.deadvox.residual"
+      "pack": "skelly.deadvox.actors"
     },
     {
       "entry": "actors:military_shambler",
-      "pack": "skelly.deadvox.residual"
+      "pack": "skelly.deadvox.actors"
     },
     {
       "entry": "actors:farmer_shambler",
-      "pack": "skelly.deadvox.residual"
+      "pack": "skelly.deadvox.actors"
     },
     {
       "entry": "actors:worker_shambler",
-      "pack": "skelly.deadvox.residual"
+      "pack": "skelly.deadvox.actors"
     },
     {
       "entry": "actors:medic_shambler",
-      "pack": "skelly.deadvox.residual"
+      "pack": "skelly.deadvox.actors"
     },
     {
       "entry": "actors:brute_shambler",
-      "pack": "skelly.deadvox.residual"
+      "pack": "skelly.deadvox.actors"
     },
     {
       "entry": "actors:runner",
-      "pack": "skelly.deadvox.residual"
+      "pack": "skelly.deadvox.actors"
     },
     {
       "entry": "actors:crawler",
-      "pack": "skelly.deadvox.residual"
+      "pack": "skelly.deadvox.actors"
     },
     {
       "entry": "actors:amalgam",
-      "pack": "skelly.deadvox.residual"
+      "pack": "skelly.deadvox.actors"
     },
     {
       "entry": "actors:acid_zombie",
-      "pack": "skelly.deadvox.residual"
+      "pack": "skelly.deadvox.actors"
     }
   ],
   "product": false,

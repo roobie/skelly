@@ -1,11 +1,5 @@
 local authored = [
-    { "id": "folded_note", "file": "assets/models/folded_note.glb" },
-    import 'things/shambler_torso.model.json',
-    import 'things/shambler_head.model.json',
-    import 'things/shambler_left_arm.model.json',
-    import 'things/shambler_right_arm.model.json',
-    import 'things/shambler_left_leg.model.json',
-    import 'things/shambler_right_leg.model.json'
+    { "id": "folded_note", "file": "assets/models/folded_note.glb" }
 ];
 (import 'item-presentation.libsonnet').pack({
   // Explicit registrations must not also appear through the export index.

@@ -7,23 +7,5 @@
   "assets/models/gauntlet_lab_entry_card.glb": { "materials": ["plastic-white", "plastic-blue"] },
   "assets/models/gauntlet_police_armoury_key.glb": { "materials": ["steel-blued"] },
   "assets/models/pharmacy_key.glb": { "materials": ["brass"] },
-  "assets/models/shambler_head.glb": {
-    "materials": ["body-skin-sickly", "body-hair", "body-eye", "body-mouth", "body-gore", "body-bone"]
-  },
-  "assets/models/shambler_left_arm.glb": {
-    "materials": ["body-skin-sickly", "cloth-shirt-faded", "body-gore", "body-bone"]
-  },
-  "assets/models/shambler_left_leg.glb": {
-    "materials": ["cloth-pants-grey", "rubber-black", "body-gore", "body-bone"]
-  },
-  "assets/models/shambler_right_arm.glb": {
-    "materials": ["body-skin-sickly", "cloth-shirt-faded", "body-gore", "body-bone"]
-  },
-  "assets/models/shambler_right_leg.glb": {
-    "materials": ["cloth-pants-grey", "rubber-black", "body-gore", "body-bone"]
-  },
-  "assets/models/shambler_torso.glb": {
-    "materials": ["cloth-pants-grey", "cloth-shirt-faded", "body-skin-sickly", "body-gore", "body-bone"]
-  },
   "assets/models/shed_key.glb": { "materials": ["steel-grey"] }
 }

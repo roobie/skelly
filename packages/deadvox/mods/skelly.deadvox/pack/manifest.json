@@ -42,6 +42,7 @@
     "skelly.deadvox.site-generation",
     "skelly.deadvox.combat-policy",
     "skelly.deadvox.loot",
+    "skelly.deadvox.actors",
     "skelly.deadvox.residual"
   ],
   "files": [],

@@ -10,14 +10,15 @@ import { capture, contentLookup, createRuntime, formatWorldOptions } from './sna
 const base = buildBundledContent().registry;
 const PACKS_DIFFER = /content packs differ/;
 // Admitted once; every case below reads it and none changes it.
-const beginner = withReusedBuilds(() => selectBundledMods(['beginner']));
+const BEGINNER_ID = 'skelly.deadvox.beginner';
+const beginner = withReusedBuilds(() => selectBundledMods([BEGINNER_ID]));
 // The suite's own build of the unmodded content stands in for a second one, so the no-mod case still compares two builds.
 reuseBundledBuilds(startupContent());
 
 describe('beginner bundled mod', () => {
   it('is admitted without issues', () => {
     expect(beginner.issues).toEqual([]);
-    expect(beginner.admitted.map(({ id }) => id)).toEqual(['beginner']);
+    expect(beginner.admitted.map(({ id }) => id)).toEqual([BEGINNER_ID]);
   });
 
   it('scales every hostile kind consistently from its core row', () => {
@@ -56,7 +57,7 @@ describe('beginner bundled mod', () => {
   });
 
   it('refuses an unknown bundled id visibly', () => {
-    const result = selectBundledMods(bundledModIdsFromUrl(new URLSearchParams('mods=beginner,nonesuch')));
+    const result = selectBundledMods(bundledModIdsFromUrl(new URLSearchParams(`mods=${BEGINNER_ID},nonesuch`)));
     expect(result.issues).toEqual([expect.objectContaining({ message: expect.stringContaining('nonesuch') })]);
   });
 

@@ -1,11 +1,11 @@
-local zombies = import '../../../mods/skelly.deadvox.residual/enemies.jsonnet';
+local zombies = import '../../../mods/skelly.deadvox.actors/enemies.jsonnet';
 {
   id: 'browser-test-mod',
   version: '1',
   tier: 'product',
   product: false,
-  dependencies: ['skelly.deadvox.residual'],
-  overrides: [{ pack: 'skelly.deadvox.residual', entry: 'actors:' + zombies.actors[0].id }],
+  dependencies: ['skelly.deadvox.actors'],
+  overrides: [{ pack: 'skelly.deadvox.actors', entry: 'actors:' + zombies.actors[0].id }],
   items: [{
     id: 'mod_test_token',
     name: 'Mod token',

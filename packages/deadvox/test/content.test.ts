@@ -2205,7 +2205,7 @@ describe('content references', () => {
     data: {
       items: [{ id: 'fixture_non_battery', name: 'Not a battery', category: 'medical', weight: 1, size: [1, 1] }],
       skills: base.flatMap(({ data }) => (data as ContentFile).skills ?? []),
-      sounds: baseContent('sounds.json').sounds!.filter(({ id }) => Object.values(actorSounds).includes(id)),
+      sounds: baseContent('actors-sounds.json').sounds!.filter(({ id }) => Object.values(actorSounds).includes(id)),
     },
   };
   const paths = (issues: { path: string }[]) => issues.map((i) => i.path);
@@ -2866,7 +2866,7 @@ const templateShamblerSoundIds = new Set(
   Object.values((templateShambler as { sounds?: Record<string, string> }).sounds ?? {}),
 );
 const templateSoundDefinitions = (
-  base.find(({ source }) => source === 'sounds.json')!.data as {
+  base.find(({ source }) => source === 'actors-sounds.json')!.data as {
     sounds: { id: string }[];
   }
 ).sounds.filter(({ id }) => templateShamblerSoundIds.has(id));

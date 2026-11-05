@@ -1,0 +1,20 @@
+{
+  "assets/models/shambler_head.glb": {
+    "materials": ["body-skin-sickly", "body-hair", "body-eye", "body-mouth", "body-gore", "body-bone"]
+  },
+  "assets/models/shambler_left_arm.glb": {
+    "materials": ["body-skin-sickly", "cloth-shirt-faded", "body-gore", "body-bone"]
+  },
+  "assets/models/shambler_left_leg.glb": {
+    "materials": ["cloth-pants-grey", "rubber-black", "body-gore", "body-bone"]
+  },
+  "assets/models/shambler_right_arm.glb": {
+    "materials": ["body-skin-sickly", "cloth-shirt-faded", "body-gore", "body-bone"]
+  },
+  "assets/models/shambler_right_leg.glb": {
+    "materials": ["cloth-pants-grey", "rubber-black", "body-gore", "body-bone"]
+  },
+  "assets/models/shambler_torso.glb": {
+    "materials": ["cloth-pants-grey", "cloth-shirt-faded", "body-skin-sickly", "body-gore", "body-bone"]
+  }
+}

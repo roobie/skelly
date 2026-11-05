@@ -22,6 +22,7 @@ local moved = std.set([
                 + (import 'packages/mods/skelly.electric-power/exports/things.jsonnet')
                 + (import 'packages/mods/skelly.ground-vehicles/exports/things.jsonnet')
                 + (import 'packages/mods/skelly.firearms/exports/things.jsonnet')
+                + (import 'packages/deadvox/mods/skelly.deadvox.actors/exports/things.jsonnet')
 ]);
 [
   {

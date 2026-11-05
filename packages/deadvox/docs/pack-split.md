@@ -159,7 +159,7 @@ These values do not change play until an attack selects the added pair. Explicit
 neutral actor maps preserve the existing absence-of-resistance behavior, while the
 acid actor keeps its authored immunity. See `packages/mods/skelly.body/body.jsonnet`, `responses`,
 `packages/mods/skelly.natural-world/block-materials.jsonnet`, `materials`, and
-`mods/skelly.deadvox.residual/enemies.jsonnet`, `neutralDamageResistance`. Missing tuning is not
+`mods/skelly.deadvox.actors/enemies.jsonnet`, `neutralDamageResistance`. Missing tuning is not
 permission to invent resistance or injury responses.
 
 **Item wear.** The one wear row every presented model selects sits in `skelly.inventory`,
@@ -204,10 +204,10 @@ live in a product section keyed by family and block, because a core block cannot
 product's actor. A block-adding mod must add rows for every family a loaded actor walks
 with, because a silent footstep is a bug that must be refused at load; a block that authors
 no footsteps and a family no loaded actor uses need none. Rows merge across mods, and a
-scenario's own blocks take their rows from that scenario's mod; every Deadvox row sits in
-`skelly.deadvox.residual` until #1532 extracts those mods. See `src/core/footsteps.ts`,
+scenario's own blocks take their rows from that scenario's mod; the gauntlet's shop-front
+rows sit in `skelly.deadvox.residual` until #1532 extracts that scenario. See `src/core/footsteps.ts`,
 `footstepEventForBlock`; `src/core/content.ts`, `checkFootstepCoverage`; and
-`mods/skelly.deadvox.residual/footstep-sounds.jsonnet`, `footstepSounds`.
+`mods/skelly.deadvox.actors/footstep-sounds.jsonnet`, `footstepSounds`.
 A sound row's file lives in the row's own pack, copied with its credit when packs share it,
 so each mod loads with only its declared dependencies. The cost is duplicate bytes, and
 replacing a file in one pack leaves the other copies. See `src/core/assets.ts`,

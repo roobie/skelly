@@ -284,7 +284,7 @@ Charging makes throw distance a deliberate choice; cancellation prevents a mista
 
 The first set is the runner and the crawler, plus an apex enemy so the playtest ends with something new: an amalgamation of several shamblers the size of a car. When the screamer arrives, its scream is an attention source every zombie in range beelines to; the bloater's cloud effect is deferred with it (#280).
 
-**In:** Distinct movement, silhouettes and sounds should make the first enemy types readable without type-specific simulation branches. See `mods/skelly.deadvox.residual/enemies.jsonnet`, `amalgam`, and `src/core/fusedMassFigure.ts`, `fusedMassFigureForType`. Infection consequences depend on 3.4. Screamer and bloater are deferred (#280).
+**In:** Distinct movement, silhouettes and sounds should make the first enemy types readable without type-specific simulation branches. See `mods/skelly.deadvox.actors/enemies.jsonnet`, `amalgam`, and `src/core/fusedMassFigure.ts`, `fusedMassFigureForType`. Infection consequences depend on 3.4. Screamer and bloater are deferred (#280).
 **Saves:** Type identity and actor movement/body state use the existing zombie snapshot. Save/fingerprint any persistent type-specific ability state introduced by implementation; do not save a second copy of shared attention state.
 **Tests:** a runner pursues by sprinting beeline; a crawler is distinguishable and interacts with body-region damage; each type has a distinct sound; type identity and state survive save/load; spawn rarity is validated as a property of the authored source, not a pinned generated count.
 **Done when:** runner, crawler and apex enemy are distinct playable threats and their persistent state round-trips.

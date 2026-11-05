@@ -13,8 +13,8 @@ const { actors } = readJson<{
     spawnWeight: number;
     sounds: Record<string, string>;
   }[];
-}>('mods/skelly.deadvox.residual/enemies.json');
-const soundDefs = readJson<{ sounds: { id: string }[] }>('mods/skelly.deadvox.residual/sounds.json').sounds;
+}>('mods/skelly.deadvox.actors/enemies.json');
+const soundDefs = readJson<{ sounds: { id: string }[] }>('mods/skelly.deadvox.actors/actors-sounds.json').sounds;
 const soundById = new Map(soundDefs.map((sound) => [sound.id, sound]));
 
 const figureForModel = (model: string, bodyScale?: number) =>

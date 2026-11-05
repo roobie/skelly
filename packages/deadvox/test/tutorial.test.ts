@@ -199,7 +199,7 @@ describe('practice objectives', () => {
   it('returns practice to its selected site and beginner mode', () => {
     for (const [site, mode] of [
       ['playtest', null],
-      ['gauntlet', 'beginner'],
+      ['gauntlet', 'skelly.deadvox.beginner'],
     ]) {
       const returned = new URL(
         tutorialUrl(`https://example.org/deadvox/?site=${site}&tutorial=1${mode ? `&mods=${mode}` : ''}`, false),

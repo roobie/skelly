@@ -295,7 +295,7 @@
       "strength": 5
     }
   ],
-  "dependencies": ["skelly.deadvox.residual"],
+  "dependencies": ["skelly.deadvox.actors"],
   "id": "browser-test-mod",
   "items": [
     {
@@ -310,7 +310,7 @@
   "overrides": [
     {
       "entry": "actors:shambler",
-      "pack": "skelly.deadvox.residual"
+      "pack": "skelly.deadvox.actors"
     }
   ],
   "product": false,

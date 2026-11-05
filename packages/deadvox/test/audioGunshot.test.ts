@@ -157,8 +157,8 @@ const setup = (solidAt: SolidAt = () => false, registryOverride?: Registry) => {
     ? { registry: registryOverride, issues: [] }
     : buildRegistry([
         {
-          source: '../../mods/skelly.deadvox.residual/sounds.json',
-          data: JSON.parse(readFileSync('mods/skelly.deadvox.residual/sounds.json', 'utf8')) as unknown,
+          source: '../../mods/skelly.deadvox.actors/actors-sounds.json',
+          data: JSON.parse(readFileSync('mods/skelly.deadvox.actors/actors-sounds.json', 'utf8')) as unknown,
         },
         {
           source: '../../../mods/skelly.firearms/sounds-firearms.json',

@@ -512,7 +512,7 @@ describe('site launcher playtest entry', () => {
       assert.ok(beginnerHref, 'the assembled page has a beginner-mode link');
       assert.ok(script.indexOf('class="playtest-action"') < script.indexOf('class="beginner-action"'));
       const beginner = new URL(beginnerHref, config.url);
-      assert.equal(beginner.searchParams.get('mods'), 'beginner', 'beginner selects its bundled mod');
+      assert.equal(beginner.searchParams.get('mods'), 'skelly.deadvox.beginner', 'beginner selects its bundled mod');
       beginner.searchParams.delete('mods');
       assert.equal(beginner.href, play.href, 'beginner mode uses the same frozen game URL');
       assert.ok(authoredLayoutIds().includes(play.searchParams.get('site')), 'play selects an authored site');

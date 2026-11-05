@@ -1,6 +1,42 @@
 {
   "files": [
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.actors/actors-items.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.actors/actors-items.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.actors/actors-sounds.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.actors/actors-sounds.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.actors/assets/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.actors/assets/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.actors/enemies.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.actors/enemies.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.actors/exports/things.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.actors/exports/things.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.actors/footstep-sounds.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.actors/footstep-sounds.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.actors/item-economy.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.actors/item-economy.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.actors/models-actors.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.actors/models-actors.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.actors/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.actors/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.combat-policy/combat-policy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.combat-policy/combat-policy.json"
     },
@@ -49,10 +85,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/crisis-hq.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/enemies.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/enemies.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/exports/things.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/exports/things.json"
     },
@@ -91,10 +123,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/item-economy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/item-economy.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-other.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-other.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/items-playtest.jsonnet",
@@ -237,8 +265,8 @@
       "output": "packages/deadvox/src/config/bundled-mods.json"
     },
     {
-      "source": "packages/deadvox/src/config/bundled/beginner.jsonnet",
-      "output": "packages/deadvox/src/config/bundled/beginner.json"
+      "source": "packages/deadvox/src/config/bundled/skelly.deadvox.beginner.jsonnet",
+      "output": "packages/deadvox/src/config/bundled/skelly.deadvox.beginner.json"
     },
     {
       "source": "packages/deadvox/src/config/bundled/test-house-debug.jsonnet",
