@@ -119,7 +119,6 @@
         "assets/models/ammo_can.glb",
         "assets/models/aa_battery.glb",
         "assets/models/field_patch.glb",
-        "assets/models/frag_grenade.glb",
         "assets/models/dead_desk_lamp.glb",
         "assets/models/shambler_torso.glb",
         "assets/models/shambler_head.glb",
@@ -331,15 +330,6 @@
       "licence": "CC0-1.0",
       "title": "DSLR Camera Sounds",
       "url": "https://freesound.org/people/Rvgerxini/sounds/571483/"
-    },
-    {
-      "author": "florianreichelt",
-      "changes": "The two blasts with their tails, 6.22–7.92 s and 8.18–10.45 s; the quiet lead-in and the late rumble are left out. Equal L+R downmix, mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade.",
-      "download": "459973__florianreichelt__huge-explosion.mp3",
-      "files": ["assets/audio/grenade-blast-01.ogg", "assets/audio/grenade-blast-02.ogg"],
-      "licence": "CC0-1.0",
-      "title": "Huge Explosion",
-      "url": "https://freesound.org/people/florianreichelt/sounds/459973/"
     },
     {
       "author": "BMacZero",

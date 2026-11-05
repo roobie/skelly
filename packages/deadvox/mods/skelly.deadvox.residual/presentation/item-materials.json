@@ -54,7 +54,6 @@
   "assets/models/folded_note.glb": { "materials": ["paper", "fold"] },
   "assets/models/foregrip.glb": { "materials": ["polymer-black"] },
   "assets/models/forend_pump.glb": { "materials": ["wood-walnut"] },
-  "assets/models/frag_grenade.glb": { "materials": ["polymer-od-green", "steel-grey"] },
   "assets/models/front_bead.glb": { "materials": ["steel-blued"] },
   "assets/models/front_seat.glb": { "materials": ["steel-grey", "cloth-seat"] },
   "assets/models/front_sight_ak.glb": { "materials": ["steel-blued"] },

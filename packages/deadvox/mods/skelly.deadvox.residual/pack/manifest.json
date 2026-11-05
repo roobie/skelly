@@ -30,7 +30,8 @@
     "skelly.light-sources",
     "skelly.basic-recipes",
     "skelly.melee",
-    "skelly.traps"
+    "skelly.traps",
+    "skelly.explosives"
   ],
   "files": [
     {
@@ -100,10 +101,6 @@
     {
       "kind": "content",
       "path": "items-attachments.json"
-    },
-    {
-      "kind": "content",
-      "path": "items-explosives.json"
     },
     {
       "kind": "content",
@@ -719,10 +716,6 @@
     },
     {
       "kind": "json",
-      "path": "things/frag_grenade.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/dead_desk_lamp.model.json"
     },
     {
@@ -1271,14 +1264,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/audio/grenade-blast-01.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/grenade-blast-02.ogg"
-    },
-    {
-      "kind": "asset",
       "path": "assets/audio/gunshot-akm-01.ogg"
     },
     {
@@ -1700,10 +1685,6 @@
     {
       "kind": "asset",
       "path": "assets/models/forend_pump.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/frag_grenade.glb"
     },
     {
       "kind": "asset",

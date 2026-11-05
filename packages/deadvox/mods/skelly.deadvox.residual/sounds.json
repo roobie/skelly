@@ -123,21 +123,6 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: use the spawn menu for a Hand grenade. Pull the pin, take the throwing stance, hold then release to throw, and step back.",
-      "description": "A thrown hand grenade goes off when its fuse runs out.",
-      "gain": 1,
-      "gainJitter": [1, 1],
-      "id": "grenade_blast",
-      "minIntervalSimSeconds": 0,
-      "noise": {
-        "enabled": true,
-        "radiusMetres": 300
-      },
-      "pitchJitter": [0.94999999999999996, 1.05],
-      "variants": ["assets/audio/grenade-blast-01.ogg", "assets/audio/grenade-blast-02.ogg"]
-    },
-    {
-      "category": "world",
       "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
       "description": "A nearby shambler walks or chases over grass; only the nearest moving shamblers are voiced.",
       "gain": 0.34000000000000002,

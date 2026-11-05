@@ -127,15 +127,6 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
       "changes": "Three isolated short clicks, 2.79–2.90, 6.455–6.565 and 7.45–7.53 s, as a closed-action dry fire, and the heavier click at 4.48–4.64 s as the pump shotgun's; the longer motor runs are left out. Equal L+R downmix, mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
     },
     {
-      "title": "Huge Explosion",
-      "url": "https://freesound.org/people/florianreichelt/sounds/459973/",
-      "author": "florianreichelt",
-      "licence": "CC0-1.0",
-      "download": "459973__florianreichelt__huge-explosion.mp3",
-      "files": ["assets/audio/grenade-blast-01.ogg", "assets/audio/grenade-blast-02.ogg"],
-      "changes": "The two blasts with their tails, 6.22–7.92 s and 8.18–10.45 s; the quiet lead-in and the late rumble are left out. Equal L+R downmix, mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
-    },
-    {
       "title": "Gun Reload Sound Effects",
       "url": "https://opengameart.org/content/gun-reload-sound-effects",
       "author": "BMacZero",

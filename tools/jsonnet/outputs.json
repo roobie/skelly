@@ -77,10 +77,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/items-attachments.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-explosives.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-explosives.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/items-gun-parts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/items-gun-parts.json"
     },
@@ -595,6 +591,30 @@
     {
       "source": "packages/mods/skelly.day-cycle/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.day-cycle/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.explosives/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.explosives/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.explosives/explosives-items.jsonnet",
+      "output": "packages/mods/skelly.explosives/explosives-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.explosives/explosives-sounds.jsonnet",
+      "output": "packages/mods/skelly.explosives/explosives-sounds.json"
+    },
+    {
+      "source": "packages/mods/skelly.explosives/exports/things.jsonnet",
+      "output": "packages/mods/skelly.explosives/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.explosives/models-explosives.jsonnet",
+      "output": "packages/mods/skelly.explosives/models-explosives.json"
+    },
+    {
+      "source": "packages/mods/skelly.explosives/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.explosives/pack/manifest.json"
     },
     {
       "source": "packages/mods/skelly.flame-tools/assets/manifest.jsonnet",

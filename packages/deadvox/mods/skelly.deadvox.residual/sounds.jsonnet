@@ -89,12 +89,6 @@ local shellInsert = numbered('shotgun-insert', [1, 2]);
       'shotgun_hull_drop', 'A fired pump shotgun hull lands after it is ejected.',
       numbered('shotgun-hull', [1, 2, 3]), 0.35, [0.97, 1.03], [0.9, 1.1], 0,
     ),
-    sound(
-      'grenade_blast', 'A thrown hand grenade goes off when its fuse runs out.',
-      numbered('grenade-blast', [1, 2]), 1, [0.95, 1.05], [1, 1], 0, noise=heard(300),
-    ) + {
-      debugHint: '?debug=1: use the spawn menu for a Hand grenade. Pull the pin, take the throwing stance, hold then release to throw, and step back.',
-    },
     shamblerStep('shambler_step_grass', 'grass', grassSand),
     shamblerStep('shambler_step_mud', 'dirt or mud', mud),
     shamblerStep('shambler_step_sand', 'sand', grassSand),

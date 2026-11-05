@@ -32,6 +32,7 @@
     "skelly.basic-recipes",
     "skelly.melee",
     "skelly.traps",
+    "skelly.explosives",
     "skelly.deadvox.residual"
   ],
   "files": [],

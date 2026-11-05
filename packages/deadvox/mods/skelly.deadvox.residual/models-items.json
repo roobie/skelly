@@ -145,39 +145,6 @@
       "roll": 0
     },
     {
-      "file": "assets/models/frag_grenade.glb",
-      "grip": {
-        "at": [0, 0.035000000000000003, 0],
-        "turn": [0, 0, -90]
-      },
-      "hold": "upright",
-      "id": "frag_grenade",
-      "itemPresentation": {
-        "materials": ["polymer", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "lever": {
-        "launchMetresPerRealSecond": 3,
-        "lifetimeRealSeconds": 1.5,
-        "piece": "lever",
-        "spinDegreesPerRealSecond": 1080
-      },
-      "parts": {
-        "grenade": {
-          "centreOfMass": [0.0045850622406639011, 0.044709543568464738, 0.0023858921161825737],
-          "massKg": 0.40000000000000002,
-          "node": "grenade:grenade"
-        }
-      },
-      "pin": {
-        "piece": "pin"
-      },
-      "roll": 0
-    },
-    {
       "anchors": {
         "lens": [0.19900000000000001, 0, 0]
       },

@@ -96,18 +96,6 @@
     }
   },
   {
-    "id": "frag_grenade",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "frag_grenade",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
     "id": "dead_desk_lamp",
     "kind": "item",
     "options": {
