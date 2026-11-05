@@ -10,7 +10,6 @@ local authored = [
       pin: { piece: 'pin' },
     },
     (import 'things/flashlight.model.json') + { grip: { at: [0.085, 0, 0] }, anchors: { lens: [0.199, 0, 0] } },
-    import 'things/bear_trap.model.json',
     { "id": "circuit_board", "file": "assets/models/circuit_board.glb" },
     { "id": "glass_lens", "file": "assets/models/glass_lens.glb" },
     import 'things/fuse.model.json',

@@ -1342,17 +1342,5 @@
       "detailGrain": 0.002,
       "grain": 0.01
     }
-  },
-  {
-    "id": "bear_trap",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "bear_trap",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
   }
 ]

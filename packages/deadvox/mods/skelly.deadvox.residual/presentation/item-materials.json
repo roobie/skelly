@@ -10,7 +10,6 @@
   "assets/models/barrel_pump_medium.glb": { "materials": ["steel-blued"] },
   "assets/models/barrel_sporter_long.glb": { "materials": ["steel-blued"] },
   "assets/models/baseball_cap.glb": { "materials": ["plastic-blue", "paint-charcoal"] },
-  "assets/models/bear_trap.glb": { "materials": ["steel-parkerized", "steel-grey"] },
   "assets/models/bolt_carrier_ak.glb": { "materials": ["steel-blued"] },
   "assets/models/bolt_carrier_ar.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/bolt_carrier_ar_large.glb": { "materials": ["alu-anodized-black"] },

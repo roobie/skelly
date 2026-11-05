@@ -222,8 +222,7 @@
         "assets/models/night_vision_goggles.glb",
         "assets/models/weapon_sling_worn.glb",
         "assets/models/weapon_sling_worn_jacket.glb",
-        "assets/models/fuse.glb",
-        "assets/models/bear_trap.glb"
+        "assets/models/fuse.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Thing tool authored models",

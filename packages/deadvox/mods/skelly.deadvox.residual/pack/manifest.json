@@ -29,7 +29,8 @@
     "skelly.flame-tools",
     "skelly.light-sources",
     "skelly.basic-recipes",
-    "skelly.melee"
+    "skelly.melee",
+    "skelly.traps"
   ],
   "files": [
     {
@@ -1134,10 +1135,6 @@
     },
     {
       "kind": "json",
-      "path": "things/bear_trap.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/index.json"
     },
     {
@@ -1527,10 +1524,6 @@
     {
       "kind": "asset",
       "path": "assets/models/baseball_cap.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/bear_trap.glb"
     },
     {
       "kind": "asset",

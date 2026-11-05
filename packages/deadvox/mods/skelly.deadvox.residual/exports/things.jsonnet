@@ -21,6 +21,7 @@ local moved = std.set([
                 + (import 'packages/mods/skelly.light-sources/exports/things.jsonnet')
                 + (import 'packages/mods/skelly.basic-recipes/exports/things.jsonnet')
                 + (import 'packages/mods/skelly.melee/exports/things.jsonnet')
+                + (import 'packages/mods/skelly.traps/exports/things.jsonnet')
 ]);
 [
   {

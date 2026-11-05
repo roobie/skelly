@@ -202,24 +202,6 @@
       }
     },
     {
-      "file": "assets/models/bear_trap.glb",
-      "id": "bear_trap",
-      "itemPresentation": {
-        "materials": ["metal", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "bear_trap": {
-          "centreOfMass": [-0.013005427408412469, 0.0093419267299864189, 0.0003052917232021689],
-          "massKg": 4.5,
-          "node": "bear_trap:bearTrap"
-        }
-      }
-    },
-    {
       "file": "assets/models/circuit_board.glb",
       "id": "circuit_board",
       "itemPresentation": {

@@ -37,21 +37,6 @@ local items = [
     tool: { qualities: { jacking: 3 } },
   },
   {
-    id: 'bear_trap',
-    model: 'bear_trap',
-    name: 'Bear trap',
-    category: 'tool',
-    size: [5, 5],
-    description: 'Steel jaws on a spring. It shuts on whatever steps in it.',
-    trap: {
-      setSimSeconds: 4,
-      disarmSimSeconds: 6,
-      holdSimSeconds: 20,
-      playerInjury: { region: 'leftLeg', damage: 25, kind: 'pierce' },
-      actorLegDamage: 60,
-    },
-  },
-  {
     id: 'flashlight',
     name: 'Flashlight',
     category: 'light',

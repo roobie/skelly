@@ -1207,12 +1207,6 @@
       "usage": []
     },
     {
-      "id": "bear_trap",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Hunting"]
-    },
-    {
       "id": "flashlight",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -1427,6 +1421,12 @@
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "bear_trap",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Hunting"]
     },
     {
       "id": "shed_key",

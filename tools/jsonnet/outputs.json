@@ -925,6 +925,26 @@
       "output": "packages/mods/skelly.structures/structures-sounds.json"
     },
     {
+      "source": "packages/mods/skelly.traps/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.traps/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.traps/exports/things.jsonnet",
+      "output": "packages/mods/skelly.traps/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.traps/models-traps.jsonnet",
+      "output": "packages/mods/skelly.traps/models-traps.json"
+    },
+    {
+      "source": "packages/mods/skelly.traps/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.traps/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.traps/traps-items.jsonnet",
+      "output": "packages/mods/skelly.traps/traps-items.json"
+    },
+    {
       "source": "packages/mods/skelly.ui/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.ui/assets/manifest.json"
     },
