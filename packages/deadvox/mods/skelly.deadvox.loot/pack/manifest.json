@@ -1,0 +1,44 @@
+{
+  "dependencies": [
+    "skelly.basic-foods",
+    "skelly.basic-recipes",
+    "skelly.containers",
+    "skelly.electric-power",
+    "skelly.electronics",
+    "skelly.firearms",
+    "skelly.fuel",
+    "skelly.hand-tools",
+    "skelly.light-sources",
+    "skelly.manuals",
+    "skelly.materials",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.packaged-foods",
+    "skelly.readables",
+    "skelly.structures",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "gauntlet-medical.json"
+    },
+    {
+      "kind": "content",
+      "path": "loot-armoury.json"
+    },
+    {
+      "kind": "content",
+      "path": "loot-workshop.json"
+    },
+    {
+      "kind": "content",
+      "path": "loot.json"
+    }
+  ],
+  "id": "skelly.deadvox.loot",
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

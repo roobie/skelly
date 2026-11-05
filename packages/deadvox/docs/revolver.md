@@ -31,7 +31,7 @@ Saving must neither duplicate ammunition nor reset recovery. Ejected rounds and 
 
 ## Content and presentation
 
-Handling times, dispersion, recoil and loot weights belong to content so mods can change feel without editing mechanics. The police armoury and gun store are ordinary sources; rare residential wardrobe finds make the gun part of a formerly inhabited world rather than exclusively institutional equipment. See `packages/mods/skelly.firearms/items-revolver.jsonnet`, `items`, `mods/skelly.deadvox.residual/gauntlet-city-building-types.libsonnet`, `loot`, and `mods/skelly.deadvox.residual/loot.jsonnet`, `loot`.
+Handling times, dispersion, recoil and loot weights belong to content so mods can change feel without editing mechanics. The police armoury and gun store are ordinary sources; rare residential wardrobe finds make the gun part of a formerly inhabited world rather than exclusively institutional equipment. See `packages/mods/skelly.firearms/items-revolver.jsonnet`, `items`, `mods/skelly.deadvox.residual/gauntlet-city-building-types.libsonnet`, `loot`, `mods/skelly.deadvox.loot/loot-armoury.jsonnet`, `armoury_arms`, and `mods/skelly.deadvox.loot/loot.jsonnet`, `loot`.
 
 The crane carries the cylinder and ejector even though the GLB nodes are flat. Loading and picking may display a different chamber angle without changing the saved alignment. Each frame starts from the exported rest transform to avoid accumulated rotation. See `src/render/firearmModel.ts`, `poseRevolverParts`.
 

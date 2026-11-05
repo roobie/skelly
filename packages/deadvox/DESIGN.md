@@ -857,7 +857,7 @@ place is the economy's job (`DESIGN.md`, "Loot"). Two stops of one theme therefo
 roll alike; a stop that should feel unique gets that from its instance layer, not
 its rolls. The station, the HQ and the armed rooms share role tables, and each
 source's context admits only the rows it allows, so the station never rolls the HQ's
-rifles. See `mods/skelly.deadvox.residual/gauntlet-city-building-types.libsonnet`, `armoury_arms`.
+rifles. See `mods/skelly.deadvox.loot/loot-armoury.jsonnet`, `armoury_arms`.
 
 The police armoury key lies on a dead officer on the station's roof, which the
 start overlooks. The start's lookout keeps that view clear rather than hiding the
@@ -867,7 +867,7 @@ blowtorch route must remain independent alternatives; neither should require the
 other. See `mods/skelly.deadvox.residual/rural-police.jsonnet`, `templates` and `loot`, and
 `mods/skelly.deadvox.residual/gauntlet-start.libsonnet`, `start` and `mapPieces`.
 
-The blowtorch has one source: the secret cellar's footlocker, with one cartridge fitted. No economy table rolls a torch. The torch is one of the armoury's two routes, so a single hidden source keeps that route the price of finding the secret. Spare cartridges are ordinary hardware and garage loot. See `mods/skelly.deadvox.residual/gauntlet-city-cellars.libsonnet`, `reward`, and `mods/skelly.deadvox.residual/loot.jsonnet`, `building_tools`.
+The blowtorch has one source: the secret cellar's footlocker, with one cartridge fitted. No economy table rolls a torch. The torch is one of the armoury's two routes, so a single hidden source keeps that route the price of finding the secret. Spare cartridges are ordinary hardware and garage loot. See `mods/skelly.deadvox.residual/gauntlet-city-cellars.libsonnet`, `reward`, and `mods/skelly.deadvox.loot/loot.jsonnet`, `building_tools`.
 
 The armoury's gun is a proved resource through the key route alone: the certificate
 walks from the start up the officer's ladder, takes the key, comes back down and
@@ -1227,7 +1227,7 @@ The rifle and .308 ammunition therefore narrow their usage without changing thei
 the hunting scope is Tier2 so a cabin does not give away the roof reward. Cabins and roofs
 share one table so their odds have one owner; admission, not a second table, keeps the
 scope out of Tier1 cabins. See `tools/jsonnet/lib/economy.libsonnet`, `huntingItems`,
-and `mods/skelly.deadvox.residual/loot.jsonnet`, `hunting_cache`.
+and `mods/skelly.deadvox.loot/loot.jsonnet`, `hunting_cache`.
 Hunting crates are long enough to hold the rifle: increasing a pocket alone would
 misrepresent the furniture's capacity. See `mods/skelly.deadvox.residual/furniture-hunting.jsonnet`,
 `hunting_crate`.
@@ -1257,7 +1257,7 @@ while the common one stays findable anywhere. A medical detour is worth making o
 the street does not already supply it. Shared tables give one knob for every scenario,
 so Upheaval's survival balance moves with the gauntlet's; whether its pace still works
 waits on a playtest. See `tools/jsonnet/lib/economy.libsonnet`, `medicalItems`, and
-`mods/skelly.deadvox.residual/loot.jsonnet`, `shambler_pockets`.
+`mods/skelly.deadvox.loot/loot.jsonnet`, `shambler_pockets`.
 
 Loot never depends on the order in which places are visited. There is no map-wide
 running count of what has spawned, because such a count would make one police station's
@@ -1394,7 +1394,7 @@ must obey the same limit so move order cannot create extra storage. See
 The ammo can uses the ordinary cuboid item presentation and shed loot, because
 a steel box suits that shape and belongs among tools without needing a firearm
 model or military-only supply. See `packages/mods/skelly.firearms/firearms-items.jsonnet`,
-`ammo_can`, and `mods/skelly.deadvox.residual/loot.jsonnet`, `shed_tools`.
+`ammo_can`, and `mods/skelly.deadvox.loot/loot.jsonnet`, `shed_tools`.
 
 A soft bag's interior has no bound against its footprint; each bag is balanced
 by hand in content. Two soft bags of one volume, a plastic garbage bag and a

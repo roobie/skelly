@@ -1,16 +1,4 @@
 {
-  "loot": [
-    {
-      "entries": [
-        {
-          "nothing": true,
-          "weight": 1
-        }
-      ],
-      "id": "d41_empty",
-      "rolls": [1, 1]
-    }
-  ],
   "templates": [
     {
       "access": {

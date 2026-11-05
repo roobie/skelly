@@ -39,7 +39,8 @@
     "skelly.firearms",
     "skelly.manuals",
     "skelly.deadvox.site-generation",
-    "skelly.deadvox.combat-policy"
+    "skelly.deadvox.combat-policy",
+    "skelly.deadvox.loot"
   ],
   "files": [
     {
@@ -141,14 +142,6 @@
     {
       "kind": "content",
       "path": "locks.json"
-    },
-    {
-      "kind": "content",
-      "path": "loot-workshop.json"
-    },
-    {
-      "kind": "content",
-      "path": "loot.json"
     },
     {
       "kind": "content",

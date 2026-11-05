@@ -9,6 +9,22 @@
       "output": "packages/deadvox/mods/skelly.deadvox.combat-policy/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.loot/gauntlet-medical.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.loot/gauntlet-medical.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.loot/loot-armoury.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.loot/loot-armoury.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.loot/loot.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.loot/loot.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.loot/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.loot/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/assets/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/assets/manifest.json"
     },
@@ -107,10 +123,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/locks.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/locks.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/loot.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/loot.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/map-kits.jsonnet",

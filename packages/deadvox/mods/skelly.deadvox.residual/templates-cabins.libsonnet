@@ -566,6 +566,5 @@
         "stairs": []
       }
     }
-  ],
-  "loot": [{ "id": "d41_empty", "rolls": [1, 1], "entries": [{ "weight": 1, "nothing": true }] }]
+  ]
 }

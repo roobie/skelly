@@ -14,6 +14,6 @@ manifest(
     'skelly.basic-recipes', 'skelly.melee', 'skelly.traps', 'skelly.explosives',
     'skelly.electronics', 'skelly.electric-power', 'skelly.household-electrical', 'skelly.ground-vehicles',
     'skelly.firearms', 'skelly.manuals', 'skelly.deadvox.site-generation', 'skelly.deadvox.combat-policy',
-    'skelly.deadvox.residual',
+    'skelly.deadvox.loot', 'skelly.deadvox.residual',
   ],
 )

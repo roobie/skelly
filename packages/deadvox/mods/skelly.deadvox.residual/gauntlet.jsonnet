@@ -5,7 +5,6 @@ local city = import 'gauntlet-city.libsonnet';
 local kits = import 'gauntlet-city-kits.libsonnet';
 local types = import 'gauntlet-city-building-types.libsonnet';
 local authored = import 'gauntlet-authored-sites.libsonnet';
-local medical = import 'gauntlet-medical.libsonnet';
 local perimeter = import 'gauntlet-city-perimeter.libsonnet';
 local rooms = import 'gauntlet-lab-rooms.libsonnet';
 local descents = import 'gauntlet-lab-descents.libsonnet';
@@ -118,7 +117,7 @@ local utilities = [
   items: types.items + publicNotes + houseNotes + lab.items,
   mapPools: kits.mapPools + city.mapPools,
   blocks: types.blocks,
-  loot: types.loot + medical.loot + kits.loot + authored.loot + sewer.loot + service.loot + lab.loot,
+  loot: types.loot + kits.loot + authored.loot + sewer.loot + service.loot + lab.loot,
   mapStyles: rooms.mapStyles + [{ id: 'service_brick', bindings: {
     air: { role: 'opening', block: 'air' }, concrete: { role: 'interior_floor', block: 'concrete' },
     brick: { role: 'shell', block: 'brick' }, galvanized: { role: 'shell', block: 'galvanized' },

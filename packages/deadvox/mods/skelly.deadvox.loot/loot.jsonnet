@@ -362,5 +362,10 @@ local pills(weight, least, parts, of) =
         nothing(3),
       ],
     },
+    {
+      id: 'd41_empty',
+      rolls: [1, 1],
+      entries: [nothing(1)],
+    },
   ],
 }
