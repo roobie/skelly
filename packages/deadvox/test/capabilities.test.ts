@@ -38,8 +38,7 @@ describe('content capabilities', () => {
     const device = { id: 'fixture_load', kind: 'consumer', priority: 0, demandWatts: 1 };
     const tuningIssues = (data: unknown) => {
       const { registry, issues } = buildRegistry([{ source: 'fixture', data }]);
-      expect(issues).toEqual([]);
-      return requiredContentIssues(registry).filter(({ path }) => path === 'powerTuning');
+      return [...issues, ...requiredContentIssues(registry).filter(({ path }) => path === 'powerTuning')];
     };
 
     it('owes nothing in a stack with no power device', () => {
