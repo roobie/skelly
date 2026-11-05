@@ -5,7 +5,6 @@ local authored = [
     import 'things/cartridge_box_357_h_magnum.model.json',
     import 'things/shotshell_box.model.json',
     import 'things/ammo_can.model.json',
-    (import 'things/flashlight.model.json') + { grip: { at: [0.085, 0, 0] }, anchors: { lens: [0.199, 0, 0] } },
     { "id": "folded_note", "file": "assets/models/folded_note.glb" },
     import 'things/shambler_torso.model.json',
     import 'things/shambler_head.model.json',

@@ -1,5 +1,6 @@
 import body from '../../../mods/skelly.body/body.json' with { type: 'json' };
 import crafting from '../../../mods/skelly.crafting/crafting.json' with { type: 'json' };
+import power from '../../../mods/skelly.electric-power/power.json' with { type: 'json' };
 import graphics from '../../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import look from '../../../mods/skelly.graphics/look.json' with { type: 'json' };
 import meleeItems from '../../../mods/skelly.melee/melee-items.json' with { type: 'json' };
@@ -8,7 +9,6 @@ import progression from '../../../mods/skelly.progression/progression.json' with
 import saves from '../../../mods/skelly.saves/saves.json' with { type: 'json' };
 import ui from '../../../mods/skelly.ui/ui.json' with { type: 'json' };
 import weathering from '../../../mods/skelly.weathering/weathering.json' with { type: 'json' };
-import power from '../../mods/skelly.deadvox.residual/power.json' with { type: 'json' };
 import recipes from '../../mods/skelly.deadvox.residual/recipes.json' with { type: 'json' };
 import sites from '../../mods/skelly.deadvox.residual/site-generation.json' with { type: 'json' };
 import { claimedId } from '../../src/core/capabilities.ts';

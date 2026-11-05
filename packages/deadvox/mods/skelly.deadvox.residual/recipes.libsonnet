@@ -53,20 +53,4 @@ local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
       } },
     },
   ]],
-  "recipes": [
-    {
-      "id": "make_headlamp_strap",
-      category: "lighting", tags: ["textile"], searchTerms: [],
-      "consumeFitted": true,
-      "result": { "item": "headlamp", "count": 1 },
-      "timeGameMinutes": 10,
-      "skills": { "crafting": 0 },
-      "qualities": {},
-      "components": [
-        [{ "item": "flashlight", "count": 1 }],
-        [{ "item": "cloth_strip", "count": 1 }],
-        [{ "item": "duct_tape", "count": 1 }]
-      ]
-    }
-  ]
 }

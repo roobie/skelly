@@ -17,8 +17,10 @@ const itemSource = (file: string, ids: readonly string[]) => {
   const data = JSON.parse(readFileSync(join(base, file), 'utf8')) as {
     items: { id: string; salvage?: unknown; salvageTimeGameMinutes?: unknown }[];
     meleeClasses?: MeleeClassDef[];
+    recipes?: unknown;
   };
   data.items = data.items.filter(({ id }) => ids.includes(id));
+  data.recipes = undefined;
   const absent = ids.filter((id) => !data.items.some((item) => item.id === id));
   if (ids.length === 0 || absent.length > 0) {
     throw new Error(`${file} selects nothing or holds no ${absent.join(', ')}`);
@@ -61,7 +63,7 @@ const crafting = JSON.parse(readFileSync('../mods/skelly.crafting/crafting.json'
 const meleeMod = '../mods/skelly.melee-classes';
 const items = [
   itemSource('../../../mods/skelly.hand-tools/hand-tools-items.json', ['kitchen_knife']),
-  itemSource('items-other.json', ['portable_radio']),
+  itemSource('../../../mods/skelly.electric-power/electric-power-items.json', ['portable_radio']),
   itemSource('../../../mods/skelly.materials/materials-items.json', ['scrap_metal']),
   {
     source: 'melee-classes.json',
@@ -86,6 +88,10 @@ const fixtureBuild = buildRegistry([
     data: JSON.parse(readFileSync('../mods/skelly.inventory/item-wear.json', 'utf8')) as unknown,
   },
   { source: 'models-items.json', data: JSON.parse(readFileSync(join(base, 'models-items.json'), 'utf8')) as unknown },
+  {
+    source: 'models-electric-power.json',
+    data: JSON.parse(readFileSync('../mods/skelly.electric-power/models-electric-power.json', 'utf8')) as unknown,
+  },
   {
     source: 'models-hand-tools.json',
     data: JSON.parse(readFileSync('../mods/skelly.hand-tools/models-hand-tools.json', 'utf8')) as unknown,

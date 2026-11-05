@@ -71,7 +71,7 @@ const onSurface = (runtime: Runtime, item: Item): [open: boolean, supported: boo
 };
 
 /** An item that can be taken apart, put in a pocket of a bag the player wears. */
-const pocketedForDisassembly = ({ inventory }: Runtime): Item => {
+const pocketedForDisassembly = ({ inventory, session }: Runtime): Item => {
   const bag = [...registry.items.values()].find((def) => def.wearable && def.container?.pockets.length)!;
   if (!inventory.add(inventory.create(bag.id), { kind: 'worn' })) {
     throw new Error('The player could not put on a bag');
@@ -79,7 +79,11 @@ const pocketedForDisassembly = ({ inventory }: Runtime): Item => {
   const pockets = playerPockets(inventory).map(({ owner, pocket }): Target => ({ kind: 'pocket', owner, pocket }));
   for (const def of registry.items.values()) {
     const candidate = def.disassembly && !def.container ? inventory.create(def.id) : undefined;
-    if (candidate && pockets.some((pocket) => inventory.add(candidate, pocket))) {
+    if (
+      candidate &&
+      pockets.some((pocket) => inventory.add(candidate, pocket)) &&
+      planDisassembly(candidate, session.reach(), session.character)
+    ) {
       return candidate;
     }
   }

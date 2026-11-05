@@ -25,11 +25,6 @@ const base = (file: string): ContentSource => {
   if (file === 'items-other.json') {
     data.items = data.items.filter((item: { category: string }) => item.category !== 'book');
   }
-  if (file === 'items-tools.json') {
-    data.items = data.items.filter(
-      (item: { id: string }) => !['torch', 'candle', 'oil_lamp', 'headlamp'].includes(item.id),
-    );
-  }
   if (file === 'items-attachments.json') {
     data.items = data.items.filter((item: { id: string }) => item.id !== 'weapon_sling');
   }
@@ -41,13 +36,19 @@ const wearablesWithoutArmourInputs = (): ContentSource => {
   data.items = data.items.filter((item: { id: string }) => item.id !== 'taped_armour');
   return { source, data };
 };
+const electricItemsWithoutCrafting = (): ContentSource => {
+  const source = 'skelly.electric-power/electric-power-items.json';
+  const data = JSON.parse(readFileSync(`../mods/${source}`, 'utf8'));
+  data.items = data.items.filter((item: { id: string }) => item.id !== 'headlamp');
+  data.recipes = [];
+  return { source, data };
+};
 const { registry } = buildRegistry(
   [
     'sounds.json',
     'sounds-pump.json',
     'sounds-weapons.json',
     'items-other.json',
-    'items-tools.json',
     'items-ammunition.json',
     'items-attachments.json',
     'items-gun-parts.json',
@@ -78,12 +79,13 @@ const { registry } = buildRegistry(
         'skelly.wearables/models-wearables.json',
         'skelly.fuel/fuel-items.json',
         'skelly.fuel/models-fuel.json',
+        'skelly.electric-power/models-electric-power.json',
       ]
         .map((file) => ({
           source: file,
           data: JSON.parse(readFileSync(`../mods/${file}`, 'utf8')),
         }))
-        .concat(wearablesWithoutArmourInputs()),
+        .concat(wearablesWithoutArmourInputs(), electricItemsWithoutCrafting()),
     ),
 );
 

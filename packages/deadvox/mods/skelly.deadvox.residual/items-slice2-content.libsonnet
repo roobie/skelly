@@ -114,17 +114,6 @@ local lights = import 'tools/jsonnet/lib/lights.libsonnet';
         [{ "item": "fastener_pack", "count": 1 }]
       ],
       "workstation": "workbench"
-    },
-    {
-      "id": "repair_flashlight",
-      category: 'repair_electrical', tags: ['electrical'], searchTerms: [],
-      "kind": "repair",
-      "result": { "item": "flashlight", "count": 1 },
-      "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
-      "timeGameMinutes": 14,
-      "skills": { "mechanics": 0 },
-      "qualities": { "screwing": 1 },
-      "components": [[{ "item": "fuse", "count": 1 }], [{ "item": "electrical_tape", "count": 1 }]]
     }
   ]
 }

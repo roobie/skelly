@@ -72,18 +72,6 @@
     }
   },
   {
-    "id": "aa_battery",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "aa_battery",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
     "id": "shambler_torso",
     "kind": "item",
     "options": {
@@ -1056,36 +1044,12 @@
     }
   },
   {
-    "id": "headlamp",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "headlamp",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.002
-    }
-  },
-  {
     "id": "weapon_sling",
     "kind": "item",
     "options": {
       "mass": "parts"
     },
     "source": "weapon_sling",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
-    "id": "portable_radio",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "portable_radio",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.01
@@ -1125,18 +1089,6 @@
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.01
-    }
-  },
-  {
-    "id": "flashlight",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "flashlight",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.0040000000000000001
     }
   },
   {
@@ -1245,18 +1197,6 @@
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
-    }
-  },
-  {
-    "id": "night_vision_goggles",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "night_vision_goggles",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.002
     }
   },
   {

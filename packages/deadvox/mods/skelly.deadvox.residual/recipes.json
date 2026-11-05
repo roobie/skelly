@@ -1,42 +1,4 @@
 {
-  "recipes": [
-    {
-      "category": "lighting",
-      "components": [
-        [
-          {
-            "count": 1,
-            "item": "flashlight"
-          }
-        ],
-        [
-          {
-            "count": 1,
-            "item": "cloth_strip"
-          }
-        ],
-        [
-          {
-            "count": 1,
-            "item": "duct_tape"
-          }
-        ]
-      ],
-      "consumeFitted": true,
-      "id": "make_headlamp_strap",
-      "qualities": {},
-      "result": {
-        "count": 1,
-        "item": "headlamp"
-      },
-      "searchTerms": [],
-      "skills": {
-        "crafting": 0
-      },
-      "tags": ["textile"],
-      "timeGameMinutes": 10
-    }
-  ],
   "skills": [
     {
       "capability": "firearmsCombat",

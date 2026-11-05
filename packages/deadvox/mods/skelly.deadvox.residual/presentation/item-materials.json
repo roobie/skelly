@@ -1,5 +1,4 @@
 {
-  "assets/models/aa_battery.glb": { "materials": ["steel-grey", "steel-stainless", "paint-charcoal"] },
   "assets/models/ak_slant_compensator.glb": { "materials": ["steel-parkerized"] },
   "assets/models/ammo_can.glb": { "materials": ["polymer-od-green", "paperboard-tan"] },
   "assets/models/barrel_ak_medium.glb": { "materials": ["steel-blued"] },
@@ -42,7 +41,6 @@
   "assets/models/dad_cabin_key.glb": { "materials": ["steel-grey"] },
   "assets/models/door_mirror.glb": { "materials": ["polymer-black", "glass-grey"] },
   "assets/models/engine_hoist.glb": { "materials": ["paint-charcoal", "plastic-blue", "steel-grey"] },
-  "assets/models/flashlight.glb": { "materials": ["polymer-black", "plastic-white"] },
   "assets/models/folded_note.glb": { "materials": ["paper", "fold"] },
   "assets/models/foregrip.glb": { "materials": ["polymer-black"] },
   "assets/models/forend_pump.glb": { "materials": ["wood-walnut"] },
@@ -86,9 +84,6 @@
   "assets/models/hatchback_tail_lamp.glb": { "materials": ["plastic-red"] },
   "assets/models/hatchback_tailgate.glb": { "materials": ["paint-oxblood", "glass-clear", "plastic-black"] },
   "assets/models/hatchback_windscreen.glb": { "materials": ["glass-clear"] },
-  "assets/models/headlamp.glb": {
-    "materials": ["cord-olive", "plastic-red", "steel-grey", "glass-grey", "paint-charcoal"]
-  },
   "assets/models/hoist_a_post.glb": { "materials": ["paint-cream"] },
   "assets/models/hoist_bench.glb": { "materials": ["cloth-seat"] },
   "assets/models/hoist_boom.glb": { "materials": ["paint-crane-yellow"] },
@@ -140,7 +135,6 @@
   "assets/models/magazine_stanag_20.glb": { "materials": ["alu-anodized-black", "steel-blued"] },
   "assets/models/magazine_stanag_30.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/mounting_plate.glb": { "materials": ["steel-grey"] },
-  "assets/models/night_vision_goggles.glb": { "materials": ["rubber-black", "polymer-od-green", "glass-lens-green"] },
   "assets/models/optic_digital_thermal.glb": { "materials": ["alu-anodized-black", "glass-lens-amber"] },
   "assets/models/optic_fixed_prism_4x.glb": { "materials": ["alu-anodized-black", "glass-lens-green"] },
   "assets/models/optic_high_mag_5_25x.glb": { "materials": ["alu-anodized-black", "glass-lens-amber"] },
@@ -157,9 +151,6 @@
   "assets/models/pistol_frame.glb": { "materials": ["steel-blued"] },
   "assets/models/pistol_service.glb": { "materials": ["steel-blued", "steel-blued", "steel-blued", "steel-blued"] },
   "assets/models/pistol_slide.glb": { "materials": ["steel-blued"] },
-  "assets/models/portable_radio.glb": {
-    "materials": ["polymer-od-green", "steel-grey", "paint-charcoal", "glass-grey", "plastic-red"]
-  },
   "assets/models/rail_front_sight.glb": { "materials": ["steel-parkerized"] },
   "assets/models/real_suppressor.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/rear_sight_ak.glb": { "materials": ["steel-blued"] },

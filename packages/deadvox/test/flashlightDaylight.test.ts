@@ -22,7 +22,7 @@ describe('flashlight daylight scale', () => {
 
   it('keeps the daylight-scaled flashlight weaker than direct sun lighting', () => {
     const hour = phaseMidpoint('day') / 3600;
-    const { items } = JSON.parse(readFileSync('mods/skelly.deadvox.residual/items-tools.json', 'utf8')) as {
+    const { items } = JSON.parse(readFileSync('../mods/skelly.electric-power/electric-power-items.json', 'utf8')) as {
       items: ItemDef[];
     };
     const beams = items.flatMap(({ light }) => (light?.beam && light.power ? [light] : []));

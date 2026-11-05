@@ -43,7 +43,7 @@ drift onto a separate electrical clock. Smooth curves, weather and panel
 orientation remain open. See `src/core/dayPhase.ts`, `dayPhaseAt`, and
 `src/core/power.ts`, `PowerNetwork.solar`.
 
-The approved per-phase output is authored in `mods/skelly.deadvox.residual/power.jsonnet`,
+The approved per-phase output is authored in `packages/mods/skelly.electric-power/power.jsonnet`,
 `solar_panel`. There is no manufacturing grade: a better panel is another item
 type with more authored output, and damage lowers output. Better and less damaged
 panels are therefore worth seeking out and repairing. Player-directed panel placement

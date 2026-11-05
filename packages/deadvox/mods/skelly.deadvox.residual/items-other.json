@@ -19,34 +19,6 @@
       "workInProgress": false
     },
     {
-      "battery": {
-        "capacity": 1,
-        "rechargeable": {
-          "microjoulesPerCharge": 7200000000
-        }
-      },
-      "category": "battery",
-      "description": "A rechargeable AA cell.",
-      "id": "rechargeable_aa_battery",
-      "model": "aa_battery",
-      "name": "Rechargeable AA battery",
-      "size": [1, 1],
-      "stack": 10,
-      "workInProgress": false
-    },
-    {
-      "battery": {
-        "capacity": 1
-      },
-      "category": "battery",
-      "id": "aa_battery",
-      "model": "aa_battery",
-      "name": "AA battery",
-      "size": [1, 1],
-      "stack": 10,
-      "workInProgress": false
-    },
-    {
       "book": {
         "readingGameMinutes": 20,
         "recipes": [
@@ -165,26 +137,6 @@
       },
       "size": [2, 2],
       "weight": 300,
-      "workInProgress": false
-    },
-    {
-      "category": "misc",
-      "description": "A battered handheld radio. Its battery and metal casing can be salvaged.",
-      "id": "portable_radio",
-      "model": "portable_radio",
-      "name": "Portable radio",
-      "salvage": [
-        {
-          "count": 1,
-          "item": "scrap_metal"
-        },
-        {
-          "count": 1,
-          "item": "aa_battery"
-        }
-      ],
-      "salvageTimeGameMinutes": 5,
-      "size": [2, 2],
       "workInProgress": false
     },
     {

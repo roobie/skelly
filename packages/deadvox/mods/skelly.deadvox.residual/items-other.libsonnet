@@ -1,4 +1,4 @@
-// Batteries, books, ammunition and severed parts.
+// Books, ammunition and severed parts.
 
 local salvage = [0.5, 0.6, 0.7, 0.8, 0.9, 1];
 local yield(item, count) = { item: item, count: count, fractions: salvage, rounding: 'floor' };
@@ -42,25 +42,6 @@ local spentCase(id, name, weight, description, model) = {
         rigid: true,
         pockets: [{ grid: [3, 2], handlingSimSeconds: 0.4 }],
       },
-    },
-    {
-      id: 'rechargeable_aa_battery',
-      name: 'Rechargeable AA battery',
-      description: 'A rechargeable AA cell.',
-      category: 'battery',
-      model: 'aa_battery',
-      size: [1, 1],
-      stack: 10,
-      battery: { capacity: 1, rechargeable: { microjoulesPerCharge: 7200000000 } },
-    },
-    {
-      id: 'aa_battery',
-      name: 'AA battery',
-      category: 'battery',
-      model: 'aa_battery',
-      size: [1, 1],
-      stack: 10,
-      battery: { capacity: 1 },
     },
     book(
       'field_manual',
@@ -143,16 +124,6 @@ local spentCase(id, name, weight, description, model) = {
       ],
       'Handwritten notes on careful repairs and using salvaged wire.',
     ),
-    {
-      id: 'portable_radio',
-      name: 'Portable radio',
-      category: 'misc',
-      model: 'portable_radio',
-      size: [2, 2],
-      description: 'A battered handheld radio. Its battery and metal casing can be salvaged.',
-      salvageTimeGameMinutes: 5,
-      salvage: [{ item: 'scrap_metal', count: 1 }, { item: 'aa_battery', count: 1 }],
-    },
     spentCase(
       'spent_case_5_d_56x45',
       'Spent 5.56×45 case',

@@ -267,43 +267,6 @@
       "tags": ["wood"],
       "timeGameMinutes": 15,
       "workstation": "workbench"
-    },
-    {
-      "category": "repair_electrical",
-      "components": [
-        [
-          {
-            "count": 1,
-            "item": "fuse"
-          }
-        ],
-        [
-          {
-            "count": 1,
-            "item": "electrical_tape"
-          }
-        ]
-      ],
-      "id": "repair_flashlight",
-      "kind": "repair",
-      "qualities": {
-        "screwing": 1
-      },
-      "repair": {
-        "amount": 0.20000000000000001,
-        "perSkill": 0.10000000000000001,
-        "skill": "mechanics"
-      },
-      "result": {
-        "count": 1,
-        "item": "flashlight"
-      },
-      "searchTerms": [],
-      "skills": {
-        "mechanics": 0
-      },
-      "tags": ["electrical"],
-      "timeGameMinutes": 14
     }
   ]
 }

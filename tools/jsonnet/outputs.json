@@ -161,10 +161,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/pack/manifest.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/power.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/power.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/ranged-tuning.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/ranged-tuning.json"
     },
@@ -591,6 +587,34 @@
     {
       "source": "packages/mods/skelly.day-cycle/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.day-cycle/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.electric-power/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.electric-power/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.electric-power/electric-power-furniture.jsonnet",
+      "output": "packages/mods/skelly.electric-power/electric-power-furniture.json"
+    },
+    {
+      "source": "packages/mods/skelly.electric-power/electric-power-items.jsonnet",
+      "output": "packages/mods/skelly.electric-power/electric-power-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.electric-power/exports/things.jsonnet",
+      "output": "packages/mods/skelly.electric-power/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.electric-power/models-electric-power.jsonnet",
+      "output": "packages/mods/skelly.electric-power/models-electric-power.json"
+    },
+    {
+      "source": "packages/mods/skelly.electric-power/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.electric-power/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.electric-power/power.jsonnet",
+      "output": "packages/mods/skelly.electric-power/power.json"
     },
     {
       "source": "packages/mods/skelly.electronics/assets/manifest.jsonnet",

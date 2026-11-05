@@ -32,7 +32,8 @@
     "skelly.melee",
     "skelly.traps",
     "skelly.explosives",
-    "skelly.electronics"
+    "skelly.electronics",
+    "skelly.electric-power"
   ],
   "files": [
     {
@@ -194,10 +195,6 @@
     {
       "kind": "content",
       "path": "models-items.json"
-    },
-    {
-      "kind": "content",
-      "path": "power.json"
     },
     {
       "kind": "content",
@@ -709,10 +706,6 @@
     },
     {
       "kind": "json",
-      "path": "things/aa_battery.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/shambler_torso.model.json"
     },
     {
@@ -1037,15 +1030,7 @@
     },
     {
       "kind": "json",
-      "path": "things/headlamp.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/weapon_sling.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/portable_radio.model.json"
     },
     {
       "kind": "json",
@@ -1058,10 +1043,6 @@
     {
       "kind": "json",
       "path": "things/engine_hoist.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/flashlight.model.json"
     },
     {
       "kind": "json",
@@ -1098,10 +1079,6 @@
     {
       "kind": "json",
       "path": "things/scrap_foregrip.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/night_vision_goggles.model.json"
     },
     {
       "kind": "json",
@@ -1453,10 +1430,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/aa_battery.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/ak_slant_compensator.glb"
     },
     {
@@ -1625,10 +1598,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/flashlight.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/folded_note.glb"
     },
     {
@@ -1790,10 +1759,6 @@
     {
       "kind": "asset",
       "path": "assets/models/hatchback_windscreen.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/headlamp.glb"
     },
     {
       "kind": "asset",
@@ -1993,10 +1958,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/night_vision_goggles.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/optic_digital_thermal.glb"
     },
     {
@@ -2058,10 +2019,6 @@
     {
       "kind": "asset",
       "path": "assets/models/pistol_slide.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/portable_radio.glb"
     },
     {
       "kind": "asset",

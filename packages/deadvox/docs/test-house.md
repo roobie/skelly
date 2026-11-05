@@ -148,8 +148,8 @@ delete remains separate and does not test destruction. See `src/debug/build.ts`,
 Mixed supply lets the same home demonstrate both direct generation and stored energy;
 a generator-only fixture would hide their independence. Electrical values belong to
 content so balancing the haven does not change its mechanisms. See
-`mods/skelly.deadvox.residual/furniture.jsonnet`, `furniture`, and
-`mods/skelly.deadvox.residual/power.jsonnet`, `powerDevices`.
+`packages/mods/skelly.electric-power/electric-power-furniture.jsonnet`, `furniture`, and
+`packages/mods/skelly.electric-power/power.jsonnet`, `powerDevices`.
 
 ## Showroom
 
