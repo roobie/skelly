@@ -907,7 +907,7 @@ proof into an encounter trial: a scripted walker would only stall on a chasing
 zombie. The body and rules stay ordinary: damage, collision and the dead-survivor
 barrier apply, and default play keeps both populations; lab encounters are judged
 in play. See `src/core/scenarioCity.ts`,
-`ScenarioCitySite`; `test/browser/save-controller-regressions.mjs`, `observation`; and
+`ScenarioCitySite`; `test/browser/save-controller-fixture.mjs`, `observation`; and
 `test/browser/gauntlet-flow.mjs`, `gauntletFlow`.
 
 Admission fails closed because dangling references, ambiguous selectors, overlapping

@@ -86,6 +86,10 @@ jobs:
         if: ${{ inputs.shard == 'save-other' }}
         timeout-minutes: 4
         run: node test/browser/save-controller-regressions.mjs
+      - name: Gauntlet save browser regressions
+        if: ${{ inputs.shard == 'save-other' }}
+        timeout-minutes: 4
+        run: node test/browser/gauntlet-save-regressions.mjs
       - name: Save-storage browser contract (Chromium)
         if: ${{ inputs.shard == 'save-other' }}
         timeout-minutes: 1
