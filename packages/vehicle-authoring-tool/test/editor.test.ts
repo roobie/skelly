@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile, REPOSITORY_ROOT } from '../../../tools/jsonnet/index.mjs';
 import { loadVehicleBlueprint, vehicleContentIssues } from '../../deadvox/src/core/vehicleBlueprint.ts';
 import {
@@ -267,28 +267,20 @@ describe('hand-merge against the authored Jsonnet source', () => {
   const library = 'packages/vehicle-authoring-tool/test/fixtures/authored-blueprint.libsonnet';
 
   /** Compiles a throwaway source that applies the tracked library to `height` and `duration`. */
-  const compileAuthored = (sourceHeight: number, sourceDuration: number): VehicleBlueprintInput => {
+  const compileAuthored = (height: number, duration: number): VehicleBlueprintInput => {
     const directory = mkdtempSync(join(tmpdir(), 'vat-authored-'));
     try {
       const path = join(directory, 'edited.jsonnet');
-      writeFileSync(path, `(import '${library}').blueprint(${sourceHeight}, ${sourceDuration})\n`);
+      writeFileSync(path, `(import '${library}').blueprint(${height}, ${duration})\n`);
       return JSON.parse(compileJsonnetFile(path, REPOSITORY_ROOT)) as VehicleBlueprintInput;
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
   };
 
-  const [height, duration] = [0.8, 45];
-  let beforeEdit: VehicleBlueprintInput;
-  let recompiled: VehicleBlueprintInput;
-
-  beforeAll(() => {
-    beforeEdit = compileAuthored(0.9, 30);
-    recompiled = compileAuthored(height, duration);
-  });
-
   it('matches the recompiled source once the same edit is merged by hand, service included', () => {
-    let edited = beforeEdit;
+    const [height, duration] = [0.8, 45];
+    let edited = compileAuthored(0.9, 30);
     edited = setAt(edited, 'rail', [0.5, height, 0]);
     edited = setAt(edited, 'plate_near', [1, height, 0.4]);
     edited = setAt(edited, 'plate_far', [1, height, -0.4]);
@@ -299,6 +291,7 @@ describe('hand-merge against the authored Jsonnet source', () => {
     edited = setService(edited, 'plate_far', { ...record(edited, 'plate_far').service!, durationSimSeconds: duration });
 
     const downloaded = roundTrip(edited);
+    const recompiled = compileAuthored(height, duration);
     const authored = roundTrip(recompiled);
 
     expect(downloaded.issues).toEqual([]);
