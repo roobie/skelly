@@ -99,7 +99,9 @@ describe('debug avatar mannequin', () => {
 
   it('raises an active off-hand item through the third-person aim owner', () => {
     const firearm = [...registry.items.values()].find((item) => item.firearm && !item.twoHanded)!;
-    const light = [...registry.items.values()].find((item) => item.light && !item.twoHanded && !item.firearm)!;
+    const light = [...registry.items.values()].find(
+      (item) => item.light && !item.twoHanded && !item.firearm && !item.wearable && !item.lightMount,
+    )!;
     const gripHeight = (on: boolean): number => {
       const meshes = new PlayerMeshes(0.5, figure, registry.models, models);
       meshes.sync({
