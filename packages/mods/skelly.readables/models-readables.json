@@ -21,6 +21,17 @@
         },
         "wear": "core"
       }
+    },
+    {
+      "file": "assets/models/folded_note.glb",
+      "id": "folded_note",
+      "itemPresentation": {
+        "materials": ["paper", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     }
   ]
 }

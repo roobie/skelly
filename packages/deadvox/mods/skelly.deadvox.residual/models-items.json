@@ -1,17 +1,6 @@
 {
   "models": [
     {
-      "file": "assets/models/folded_note.glb",
-      "id": "folded_note",
-      "itemPresentation": {
-        "materials": ["paper", "paper"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      }
-    },
-    {
       "file": "assets/models/baseball_cap.glb",
       "grip": {
         "at": [-0.0020000000000000018, 0.040000000000000001, 0],

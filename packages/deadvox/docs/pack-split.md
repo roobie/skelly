@@ -79,6 +79,9 @@ alias, because reusable definitions start under their shared topic identity; see
 The three range rows are one set that travels whole, so they sit together in the base building
 owner rather than split across mods at each row's users; see
 `mods/skelly.deadvox.buildings/furniture.jsonnet`, `range_table`.
+The folded note model sits beside the other readables, below all its users across camp and
+scenarios, so no scenario must depend on camp to show a note; see
+`packages/mods/skelly.readables/models-readables.jsonnet`, `folded_note`.
 The shipped-mod dependency test enforces tier direction without granting the loader
 privilege; see `test/shippedMods.test.ts`. Outside mods remain unguarded by this
 repository-only check, an accepted trade-off for a privilege-free loader.

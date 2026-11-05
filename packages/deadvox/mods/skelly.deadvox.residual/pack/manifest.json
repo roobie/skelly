@@ -299,10 +299,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/folded_note.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/gauntlet_lab_entry_card.glb"
     },
     {

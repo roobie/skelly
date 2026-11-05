@@ -28,15 +28,6 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
         "assets/audio/door-close-03.ogg"
       ],
       "changes": "Selected three blade, three wood and three metal variants; converted to 24 kHz mono Opus in Ogg containers; unused source files excluded"
-    },
-    {
-      "title": "Project-built low-poly hand-tool and content stand-ins",
-      "url": "https://github.com/roobie/skelly",
-      "author": "Skelly contributors",
-      "licence": "CC0-1.0",
-      "download": null,
-      "files": ["assets/models/folded_note.glb"],
-      "changes": "Built from primitive meshes for readable ground-pile silhouettes; no external asset source or texture is used."
     }
   ]
 }
