@@ -3,122 +3,6 @@ local lights = import 'tools/jsonnet/lib/lights.libsonnet';
 {
   "items": [
     {
-      "id": "circuit_board",
-      "name": "Circuit board",
-      "category": "material",
-      "weight": 75,
-      "size": [1, 2],
-      "stack": 2,
-      "model": "circuit_board"
-    },
-    {
-      "id": "glass_lens",
-      "name": "Small glass lens",
-      "category": "material",
-      "weight": 40,
-      "size": [1, 1],
-      "stack": 3,
-      "model": "glass_lens"
-    },
-    {
-      "id": "fuse",
-      "name": "Glass fuse",
-      "category": "material",
-      "size": [1, 1],
-      "stack": 10,
-      "model": "fuse"
-    },
-    {
-      "id": "broken_toaster",
-      "name": "Broken toaster",
-      "category": "misc",
-      "weight": 1400,
-      "size": [3, 2],
-      "model": "broken_toaster",
-      "salvageTimeGameMinutes": 5,
-      "salvage": [
-        { "item": "circuit_board", "count": 1 },
-        { "item": "fuse", "count": 1 },
-        { "item": "scrap_metal", "count": 1 },
-        { "item": "copper_wire", "count": 1 }
-      ]
-    },
-    {
-      "id": "dead_desk_lamp",
-      "name": "Dead desk lamp",
-      "category": "misc",
-      "size": [2, 3],
-      "model": "dead_desk_lamp",
-      "salvageTimeGameMinutes": 5,
-      "salvage": [
-        { "item": "glass_bulb", "count": 1 },
-        { "item": "glass_lens", "count": 1 },
-        { "item": "copper_wire", "count": 1 },
-        { "item": "scrap_metal", "count": 1 }
-      ]
-    },
-    {
-      "id": "broken_table_fan",
-      "name": "Broken table fan",
-      "category": "misc",
-      "weight": 1500,
-      "size": [3, 3],
-      "model": "table_fan",
-      "salvageTimeGameMinutes": 5,
-      "salvage": [
-        { "item": "small_spring", "count": 1 },
-        { "item": "copper_wire", "count": 1 },
-        { "item": "scrap_metal", "count": 1 }
-      ]
-    },
-    {
-      "id": "cracked_phone",
-      "name": "Cracked mobile phone",
-      "category": "misc",
-      "weight": 250,
-      "size": [1, 2],
-      "model": "cracked_phone",
-      "salvageTimeGameMinutes": 5,
-      "salvage": [
-        { "item": "circuit_board", "count": 1 },
-        { "item": "glass_shards", "count": 1 },
-        { "item": "copper_wire", "count": 1 }
-      ]
-    },
-    {
-      "id": "broken_clock",
-      "name": "Broken alarm clock",
-      "category": "misc",
-      "weight": 350,
-      "size": [2, 2],
-      "model": "broken_clock",
-      "salvageTimeGameMinutes": 5,
-      "salvage": [
-        { "item": "small_spring", "count": 1 },
-        { "item": "circuit_board", "count": 1 },
-        { "item": "fastener_pack", "count": 1 }
-      ]
-    },
-    {
-      "id": "electrical_repair_kit",
-      "name": "Electrical repair kit",
-      "category": "tool",
-      "weight": 650,
-      "size": [2, 2],
-      "model": "electrical_repair_kit",
-      "description": "Insulated tape, wire and a few replacement fuses.",
-      "tool": { "qualities": { "screwing": 1, "repairing": 1 } },
-      "disassembly": {
-        "timeGameMinutes": 10,
-        "skill": "mechanics",
-        "yields": [
-          { "item": "copper_wire", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
-          { "item": "fuse", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
-          { "item": "electrical_tape", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
-        ]
-      }
-    },
-    {
       "id": "taped_flashlight_mount",
       "name": "Taped-on flashlight mount",
       "category": "light",
@@ -151,15 +35,6 @@ local lights = import 'tools/jsonnet/lib/lights.libsonnet';
           { "item": "rubber_strip", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
         ]
       }
-    },
-    {
-      "id": "glass_bulb",
-      "name": "Small light bulb",
-      "category": "material",
-      "weight": 30,
-      "size": [1, 1],
-      "stack": 3,
-      "model": "glass_bulb"
     },
     {
       "id": "improvised_suppressor",
@@ -195,20 +70,6 @@ local lights = import 'tools/jsonnet/lib/lights.libsonnet';
         [{ "item": "rope", "count": 1 }, { "item": "nylon_cord", "count": 1 }],
         [{ "item": "fastener_pack", "count": 1 }]
       ]
-    },
-    {
-      "id": "make_electrical_repair_kit",
-      category: 'tools', tags: ['electrical'], searchTerms: [],
-      "result": { "item": "electrical_repair_kit", "count": 1 },
-      "timeGameMinutes": 20,
-      "skills": { "mechanics": 0 },
-      "qualities": { "screwing": 1 },
-      "components": [
-        [{ "item": "copper_wire", "count": 1 }],
-        [{ "item": "electrical_tape", "count": 1 }],
-        [{ "item": "fuse", "count": 1 }]
-      ],
-      "workstation": "workbench"
     },
     {
       "id": "make_improvised_suppressor",

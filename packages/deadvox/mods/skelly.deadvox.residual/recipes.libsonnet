@@ -53,35 +53,6 @@ local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
       } },
     },
   ]],
-  "items": [
-    {
-      "id": "copper_wire",
-      "name": "Salvaged wire",
-      "category": "material",
-      "size": [1, 2],
-      "model": "copper_wire",
-      "disassembly": {
-        "timeGameMinutes": 8,
-        "skill": "mechanics",
-        "yields": [{ "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
-      }
-    },
-    {
-      "id": "field_patch",
-      "name": "Field repair patch",
-      "category": "material",
-      "model": "field_patch",
-      "size": [1, 2],
-      "disassembly": {
-        "timeGameMinutes": 12,
-        "skill": "mechanics",
-        "yields": [
-          { "item": "copper_wire", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
-          { "item": "duct_tape", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
-        ]
-      }
-    }
-  ],
   "recipes": [
     {
       "id": "make_headlamp_strap",
@@ -96,24 +67,6 @@ local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
         [{ "item": "cloth_strip", "count": 1 }],
         [{ "item": "duct_tape", "count": 1 }]
       ]
-    },
-    {
-      "id": "strip_wire",
-      category: "materials", tags: ["electrical", "metal"], searchTerms: ["strip"],
-      "result": { "item": "copper_wire", "count": 1 },
-      "timeGameMinutes": 8,
-      "skills": { "mechanics": 0 },
-      "qualities": { "cutting": 1 },
-      "components": [[{ "item": "scrap_metal", "count": 1 }]]
-    },
-    {
-      "id": "field_patch",
-      category: "materials", tags: ["electrical"], searchTerms: [],
-      "result": { "item": "field_patch", "count": 1 },
-      "timeGameMinutes": 12,
-      "skills": { "mechanics": 2 },
-      "qualities": {},
-      "components": [[{ "item": "copper_wire", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
     }
   ]
 }

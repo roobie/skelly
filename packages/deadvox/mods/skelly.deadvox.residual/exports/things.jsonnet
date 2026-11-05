@@ -23,6 +23,7 @@ local moved = std.set([
                 + (import 'packages/mods/skelly.melee/exports/things.jsonnet')
                 + (import 'packages/mods/skelly.traps/exports/things.jsonnet')
                 + (import 'packages/mods/skelly.explosives/exports/things.jsonnet')
+                + (import 'packages/mods/skelly.electronics/exports/things.jsonnet')
 ]);
 [
   {

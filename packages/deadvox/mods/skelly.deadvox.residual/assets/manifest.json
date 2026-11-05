@@ -118,8 +118,6 @@
         "assets/models/shotshell_box.glb",
         "assets/models/ammo_can.glb",
         "assets/models/aa_battery.glb",
-        "assets/models/field_patch.glb",
-        "assets/models/dead_desk_lamp.glb",
         "assets/models/shambler_torso.glb",
         "assets/models/shambler_head.glb",
         "assets/models/shambler_left_arm.glb",
@@ -215,13 +213,11 @@
         "assets/models/shed_key.glb",
         "assets/models/gauntlet_police_armoury_key.glb",
         "assets/models/gauntlet_lab_entry_card.glb",
-        "assets/models/copper_wire.glb",
         "assets/models/taped_flashlight_mount.glb",
         "assets/models/scrap_foregrip.glb",
         "assets/models/night_vision_goggles.glb",
         "assets/models/weapon_sling_worn.glb",
-        "assets/models/weapon_sling_worn_jacket.glb",
-        "assets/models/fuse.glb"
+        "assets/models/weapon_sling_worn_jacket.glb"
       ],
       "licence": "CC0-1.0",
       "title": "Thing tool authored models",
@@ -478,17 +474,7 @@
       "author": "Skelly contributors",
       "changes": "Built from primitive meshes for readable ground-pile silhouettes; no external asset source or texture is used.",
       "download": null,
-      "files": [
-        "assets/models/circuit_board.glb",
-        "assets/models/glass_lens.glb",
-        "assets/models/broken_toaster.glb",
-        "assets/models/table_fan.glb",
-        "assets/models/cracked_phone.glb",
-        "assets/models/broken_clock.glb",
-        "assets/models/electrical_repair_kit.glb",
-        "assets/models/glass_bulb.glb",
-        "assets/models/folded_note.glb"
-      ],
+      "files": ["assets/models/folded_note.glb"],
       "licence": "CC0-1.0",
       "title": "Project-built low-poly hand-tool and content stand-ins",
       "url": "https://github.com/roobie/skelly"

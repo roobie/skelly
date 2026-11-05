@@ -593,6 +593,26 @@
       "output": "packages/mods/skelly.day-cycle/pack/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.electronics/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.electronics/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.electronics/electronics-items.jsonnet",
+      "output": "packages/mods/skelly.electronics/electronics-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.electronics/exports/things.jsonnet",
+      "output": "packages/mods/skelly.electronics/exports/things.json"
+    },
+    {
+      "source": "packages/mods/skelly.electronics/models-electronics.jsonnet",
+      "output": "packages/mods/skelly.electronics/models-electronics.json"
+    },
+    {
+      "source": "packages/mods/skelly.electronics/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.electronics/pack/manifest.json"
+    },
+    {
       "source": "packages/mods/skelly.explosives/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.explosives/assets/manifest.json"
     },

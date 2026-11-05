@@ -33,6 +33,7 @@
     "skelly.melee",
     "skelly.traps",
     "skelly.explosives",
+    "skelly.electronics",
     "skelly.deadvox.residual"
   ],
   "files": [],

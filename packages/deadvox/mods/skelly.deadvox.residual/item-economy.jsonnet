@@ -26,11 +26,11 @@ local sources = [
   import 'packages/mods/skelly.melee/melee-items.jsonnet',
   import 'packages/mods/skelly.traps/traps-items.jsonnet',
   import 'packages/mods/skelly.explosives/explosives-items.jsonnet',
+  import 'packages/mods/skelly.electronics/electronics-items.jsonnet',
   import 'locks.jsonnet',
   import 'models-firearms.jsonnet',
   import 'packages/mods/skelly.readables/readables.jsonnet',
   import 'packages/mods/skelly.structures/structures-items.jsonnet',
-  import 'recipes.jsonnet',
   import 'rural-police.jsonnet',
   import 'vehicles.jsonnet',
 ];

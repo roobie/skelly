@@ -1,52 +1,4 @@
 {
-  "items": [
-    {
-      "category": "material",
-      "disassembly": {
-        "skill": "mechanics",
-        "timeGameMinutes": 8,
-        "yields": [
-          {
-            "count": 1,
-            "fractions": [0.5, 1],
-            "item": "scrap_metal",
-            "rounding": "floor"
-          }
-        ]
-      },
-      "id": "copper_wire",
-      "model": "copper_wire",
-      "name": "Salvaged wire",
-      "size": [1, 2],
-      "workInProgress": false
-    },
-    {
-      "category": "material",
-      "disassembly": {
-        "skill": "mechanics",
-        "timeGameMinutes": 12,
-        "yields": [
-          {
-            "count": 1,
-            "fractions": [0.5, 1],
-            "item": "copper_wire",
-            "rounding": "floor"
-          },
-          {
-            "count": 1,
-            "fractions": [0.5, 1],
-            "item": "duct_tape",
-            "rounding": "floor"
-          }
-        ]
-      },
-      "id": "field_patch",
-      "model": "field_patch",
-      "name": "Field repair patch",
-      "size": [1, 2],
-      "workInProgress": false
-    }
-  ],
   "recipes": [
     {
       "category": "lighting",
@@ -83,60 +35,6 @@
       },
       "tags": ["textile"],
       "timeGameMinutes": 10
-    },
-    {
-      "category": "materials",
-      "components": [
-        [
-          {
-            "count": 1,
-            "item": "scrap_metal"
-          }
-        ]
-      ],
-      "id": "strip_wire",
-      "qualities": {
-        "cutting": 1
-      },
-      "result": {
-        "count": 1,
-        "item": "copper_wire"
-      },
-      "searchTerms": ["strip"],
-      "skills": {
-        "mechanics": 0
-      },
-      "tags": ["electrical", "metal"],
-      "timeGameMinutes": 8
-    },
-    {
-      "category": "materials",
-      "components": [
-        [
-          {
-            "count": 1,
-            "item": "copper_wire"
-          }
-        ],
-        [
-          {
-            "count": 1,
-            "item": "duct_tape"
-          }
-        ]
-      ],
-      "id": "field_patch",
-      "qualities": {},
-      "result": {
-        "count": 1,
-        "item": "field_patch"
-      },
-      "searchTerms": [],
-      "skills": {
-        "mechanics": 2
-      },
-      "tags": ["electrical"],
-      "timeGameMinutes": 12
     }
   ],
   "skills": [

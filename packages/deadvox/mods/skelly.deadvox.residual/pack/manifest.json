@@ -31,7 +31,8 @@
     "skelly.basic-recipes",
     "skelly.melee",
     "skelly.traps",
-    "skelly.explosives"
+    "skelly.explosives",
+    "skelly.electronics"
   ],
   "files": [
     {
@@ -712,14 +713,6 @@
     },
     {
       "kind": "json",
-      "path": "things/field_patch.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/dead_desk_lamp.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/shambler_torso.model.json"
     },
     {
@@ -1100,10 +1093,6 @@
     },
     {
       "kind": "json",
-      "path": "things/copper_wire.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/taped_flashlight_mount.model.json"
     },
     {
@@ -1121,10 +1110,6 @@
     {
       "kind": "json",
       "path": "things/weapon_sling_worn_jacket.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/fuse.model.json"
     },
     {
       "kind": "json",
@@ -1560,14 +1545,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/broken_clock.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/broken_toaster.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/camp_armoury_key.glb"
     },
     {
@@ -1636,23 +1613,7 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/circuit_board.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/copper_wire.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/cracked_phone.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/dad_cabin_key.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/dead_desk_lamp.glb"
     },
     {
       "kind": "asset",
@@ -1660,15 +1621,7 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/electrical_repair_kit.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/engine_hoist.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/field_patch.glb"
     },
     {
       "kind": "asset",
@@ -1708,10 +1661,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/fuse.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/gas_block_ak.glb"
     },
     {
@@ -1729,14 +1678,6 @@
     {
       "kind": "asset",
       "path": "assets/models/gear_lever.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/glass_bulb.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/glass_lens.glb"
     },
     {
       "kind": "asset",
@@ -2297,10 +2238,6 @@
     {
       "kind": "asset",
       "path": "assets/models/stock_tapered_medium.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/table_fan.glb"
     },
     {
       "kind": "asset",
