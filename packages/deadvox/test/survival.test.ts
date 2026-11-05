@@ -27,8 +27,7 @@ const base = (file: string): ContentSource => {
   }
   if (file === 'items-tools.json') {
     data.items = data.items.filter(
-      (item: { id: string }) =>
-        !['torch', 'candle', 'oil_lamp', 'headlamp'].includes(item.id),
+      (item: { id: string }) => !['torch', 'candle', 'oil_lamp', 'headlamp'].includes(item.id),
     );
   }
   if (file === 'items-attachments.json') {
