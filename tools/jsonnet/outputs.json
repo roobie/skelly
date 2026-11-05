@@ -105,10 +105,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.combat-policy/pack/manifest.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.loot/gauntlet-medical.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.loot/gauntlet-medical.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.loot/item-economy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.loot/item-economy.json"
     },
@@ -119,6 +115,10 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.loot/loot.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.loot/loot.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.loot/medical-stock.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.loot/medical-stock.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.loot/pack/manifest.jsonnet",
@@ -213,30 +213,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/pack/manifest.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/rural-medical-fixtures.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/rural-medical-fixtures.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/rural-medical.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/rural-medical.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/rural-police-fixtures.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/rural-police-fixtures.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/rural-police.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/rural-police.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/rural-substation-fixtures.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/rural-substation-fixtures.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/rural-substation.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/rural-substation.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/scenarios.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/scenarios.json"
     },
@@ -247,10 +223,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-cabins.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-cabins.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-medical.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-medical.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-playtest.jsonnet",
@@ -267,6 +239,58 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/tutorial.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/tutorial.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/assets/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/assets/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/exports/things.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/exports/things.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/furniture-medical.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/furniture-medical.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/item-economy.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/item-economy.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/models-rural-sites.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/models-rural-sites.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/rural-medical-fixtures.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/rural-medical-fixtures.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/rural-medical.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/rural-medical.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/rural-police-fixtures.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/rural-police-fixtures.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/rural-police.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/rural-police.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/rural-substation-fixtures.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/rural-substation-fixtures.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/rural-substation.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/rural-substation.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/templates-medical.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/templates-medical.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.site-generation/pack/manifest.jsonnet",

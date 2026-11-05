@@ -73,12 +73,6 @@
       "usage": []
     },
     {
-      "id": "pharmacy_key",
-      "notLoot": true,
-      "tiers": [],
-      "usage": []
-    },
-    {
       "id": "medical_research_log",
       "notLoot": true,
       "tiers": [],
@@ -89,12 +83,6 @@
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
-      "id": "gauntlet_police_armoury_key",
-      "notLoot": true,
-      "tiers": [],
-      "usage": []
     }
   ]
 }

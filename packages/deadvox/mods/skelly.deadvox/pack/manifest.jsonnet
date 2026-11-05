@@ -15,6 +15,6 @@ manifest(
     'skelly.electronics', 'skelly.electric-power', 'skelly.household-electrical', 'skelly.ground-vehicles',
     'skelly.firearms', 'skelly.manuals', 'skelly.deadvox.site-generation', 'skelly.deadvox.combat-policy',
     'skelly.deadvox.loot', 'skelly.deadvox.actors', 'skelly.deadvox.buildings', 'skelly.deadvox.camp',
-    'skelly.deadvox.residual',
+    'skelly.deadvox.rural-sites', 'skelly.deadvox.residual',
   ],
 )

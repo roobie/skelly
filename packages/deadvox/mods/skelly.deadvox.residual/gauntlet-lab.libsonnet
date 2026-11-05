@@ -34,7 +34,7 @@ local cabinetShape = [
   items: entry.items + administration.items + research.items + special.items,
   furniture: [
     // The level-three card's body: the officer body's pockets in a lab coat, under a name that fits a lab.
-    [f for f in (import 'rural-police.jsonnet').furniture if f.id == 'dead_officer_body'][0] + {
+    [f for f in (import 'packages/deadvox/mods/skelly.deadvox.rural-sites/rural-police.jsonnet').furniture if f.id == 'dead_officer_body'][0] + {
       id: 'gauntlet_lab_dead_researcher', name: 'Dead researcher', color: '#c8c9c0',
       corpse: { figure: 'player', outfit: 'lab_coat' },
     },

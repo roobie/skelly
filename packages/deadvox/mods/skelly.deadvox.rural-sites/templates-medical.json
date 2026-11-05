@@ -1,4 +1,18 @@
 {
+  "items": [
+    {
+      "category": "tool",
+      "description": "A key for the medical hall pharmacy.",
+      "id": "pharmacy_key",
+      "key": {
+        "lock": "medical_pharmacy"
+      },
+      "model": "pharmacy_key",
+      "name": "Medical pharmacy key",
+      "size": [1, 1],
+      "workInProgress": false
+    }
+  ],
   "templates": [
     {
       "access": {

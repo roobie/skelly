@@ -1,9 +1,9 @@
 local kit = import 'authored-site-kit.libsonnet';
 local dressing = import 'gauntlet-authored-dressing.libsonnet';
 local disorder = import 'aftermath.libsonnet';
-local police = import 'rural-police.jsonnet';
-local medical = import 'rural-medical.jsonnet';
-local substation = import 'rural-substation.jsonnet';
+local police = import 'packages/deadvox/mods/skelly.deadvox.rural-sites/rural-police.jsonnet';
+local medical = import 'packages/deadvox/mods/skelly.deadvox.rural-sites/rural-medical.jsonnet';
+local substation = import 'packages/deadvox/mods/skelly.deadvox.rural-sites/rural-substation.jsonnet';
 local hq = import 'crisis-hq.jsonnet';
 local find(templates, id) = std.filter(function(t) t.id == id, templates)[0];
 // The base sites carry no car; the gauntlet parks its wreck in the police garage bay and on the substation's van spot.

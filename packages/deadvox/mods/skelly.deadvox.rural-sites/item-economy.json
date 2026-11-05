@@ -1,0 +1,16 @@
+{
+  "itemEconomy": [
+    {
+      "id": "police_armoury_key",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "pharmacy_key",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    }
+  ]
+}

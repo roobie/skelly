@@ -6,10 +6,8 @@ local content = [
   'gauntlet', 'hunting-cabins', 'item-economy', 'items-playtest',
   'ladders', 'layouts-cabins', 'layouts-playtest', 'layouts-stairs',
   'layouts-test-house', 'layouts-voice-size', 'layouts-water', 'layouts', 'locks',
-  'models-items',
-  'rural-medical-fixtures', 'rural-medical', 'rural-police-fixtures', 'rural-police',
-  'rural-substation-fixtures', 'rural-substation', 'scenarios',
-  'starts', 'templates-cabins', 'templates-medical',
+  'models-items', 'scenarios',
+  'starts', 'templates-cabins',
   'templates-playtest', 'templates-stairs', 'templates-test-house', 'tutorial',
 ];
 local things = import '../things/index.json';
@@ -28,6 +26,7 @@ manifest(
     'skelly.electronics', 'skelly.electric-power', 'skelly.household-electrical', 'skelly.ground-vehicles',
     'skelly.firearms', 'skelly.manuals', 'skelly.deadvox.site-generation', 'skelly.deadvox.combat-policy',
     'skelly.deadvox.loot', 'skelly.deadvox.actors', 'skelly.deadvox.buildings', 'skelly.deadvox.camp',
+    'skelly.deadvox.rural-sites',
   ],
   content=content,
   things=things,

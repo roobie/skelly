@@ -1,4 +1,15 @@
 {
+  "items": [
+    {
+      "id": "pharmacy_key",
+      "name": "Medical pharmacy key",
+      "category": "tool",
+      "size": [1, 1],
+      "key": { "lock": "medical_pharmacy" },
+      "model": "pharmacy_key",
+      "description": "A key for the medical hall pharmacy."
+    }
+  ],
   "templates": [
     {
       "id": "medical_hall",

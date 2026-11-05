@@ -6165,19 +6165,19 @@
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
-        "part": "gauntlet_police_armoury_key",
+        "part": "police_armoury_key",
         "roll": 0,
         "solid": "shaft",
         "turn": [0, 0, -90]
       },
-      "id": "gauntlet_police_armoury_key",
+      "id": "police_armoury_key",
       "parts": [
         {
           "family": "key",
           "finish": {
             "metal": "steel-blued"
           },
-          "id": "gauntlet_police_armoury_key",
+          "id": "police_armoury_key",
           "massKg": 0.01,
           "params": {
             "bowRadius": "0.014",

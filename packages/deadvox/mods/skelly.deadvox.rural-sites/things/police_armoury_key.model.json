@@ -1,9 +1,9 @@
 {
-  "id": "gauntlet_police_armoury_key",
-  "file": "assets/models/gauntlet_police_armoury_key.glb",
+  "id": "police_armoury_key",
+  "file": "assets/models/police_armoury_key.glb",
   "parts": {
-    "gauntlet_police_armoury_key": {
-      "node": "gauntlet_police_armoury_key:key",
+    "police_armoury_key": {
+      "node": "police_armoury_key:key",
       "massKg": 0.01,
       "centreOfMass": [0.03566666666666667, 0.0023333333333333335, 0.005333333333333333]
     }

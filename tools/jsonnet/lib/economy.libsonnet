@@ -18,7 +18,7 @@ local placedOnly = [
   'shambler_torso', 'shambler_head', 'shambler_left_arm', 'shambler_right_arm', 'shambler_left_leg', 'shambler_right_leg',
   'pistol_service', 'magazine_pistol_9', 'cartridge_9x19', 'spent_case_9x19',
   'dad_cabin_key', 'evacuation_note', 'hunter_logbook', 'pharmacy_key', 'medical_research_log',
-  'debug_shotgun_pump', 'sample_note', 'gauntlet_police_armoury_key',
+  'debug_shotgun_pump', 'sample_note', 'police_armoury_key',
 ];
 local notSpawnable = [
   'pistol_service', 'magazine_pistol_9', 'cartridge_9x19', 'spent_case_9x19',

@@ -1,6 +1,8 @@
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local cabinets = import 'tools/jsonnet/lib/cabinet-shapes.libsonnet';
+local detail = import 'tools/jsonnet/lib/door-detail.libsonnet';
+local woodDoor = std.filter(function(f) f.id == 'wood_door', (import 'packages/mods/skelly.structures/structures-furniture.jsonnet').furniture)[0];
 local police = { usage: ['Police'], tier: 'Tier1' };
 local yard = import 'rural-police-yard.libsonnet';
 local foundation = [
@@ -291,10 +293,27 @@ local roofAir = [
       shell: '#657063', frame: '#454f45', door: '#768170', metal: '#a1aaa0',
       shadow: '#252e29', wear: '#929b86', badge: '#b9bba7',
     }),
+  }, woodDoor + {
+    id: 'cell_door', name: 'Cell door', color: '#626d70',
+    // The pull sits below the lock box, which the shape carries.
+    door: woodDoor.door + {
+      detail: detail.flush + {
+        handle: { kind: 'pull', fromFreeEdge: 0.12, along: 0.35, length: 0.15, thickness: 0.025 },
+      },
+    },
+    shape: [
+      { position: [0, 0, 0.35], size: [0.15, 4, 0.3] },
+      { position: [1.85, 0, 0.35], size: [0.15, 4, 0.3] },
+      { position: [0.6, 0, 0.4], size: [0.12, 4, 0.2] },
+      { position: [1.25, 0, 0.4], size: [0.12, 4, 0.2] },
+      { position: [0, 0.1, 0.35], size: [2, 0.15, 0.3] },
+      { position: [0, 3.7, 0.35], size: [2, 0.15, 0.3] },
+      { position: [1.5, 1.7, 0.3], size: [0.35, 0.4, 0.4] },
+    ],
   }],
   items: [{
-    id: 'gauntlet_police_armoury_key', name: 'Police armoury key', category: 'tool',
-    size: [1, 1], key: { lock: 'gauntlet_police_armoury' }, model: 'gauntlet_police_armoury_key',
+    id: 'police_armoury_key', name: 'Police armoury key', category: 'tool',
+    size: [1, 1], key: { lock: 'police_armoury' }, model: 'police_armoury_key',
     description: 'A small key stamped ARMOURY.',
   }],
   templates: [{
@@ -304,10 +323,10 @@ local roofAir = [
     palette: {
       '.': 'air', '#': 'brick', k: 'concrete', '=': 'window_frame', g: { ground: true },
       D: { furniture: 'wood_door' },
-      U: { furniture: 'steel_armoury_door', lock: { id: 'gauntlet_police_armoury', locked: true } },
+      U: { furniture: 'steel_armoury_door', lock: { id: 'police_armoury', locked: true } },
       O: { furniture: 'wood_door', facing: 'e' },
       E: { furniture: 'station_emergency_door', facing: 'e' },
-      Q: { furniture: 'gauntlet_cell_door', facing: 'e' },
+      Q: { furniture: 'cell_door', facing: 'e' },
       G: { furniture: 'workshop_roller_door' },
       W: { furniture: 'desk', loot: 'desk' },
       S: { furniture: 'shelf', loot: 'equipment_locker' },
@@ -333,7 +352,7 @@ local roofAir = [
       H: { furniture: 'station_coal_hatch' },
       j: { furniture: 'ladder', facing: 'e' },
       X: { furniture: 'dead_officer_body' },
-      Y: { groundLoot: { kind: 'fixed', items: [{ item: 'gauntlet_police_armoury_key' }] } },
+      Y: { groundLoot: { kind: 'fixed', items: [{ item: 'police_armoury_key' }] } },
     },
     layers: [foundation, furnished, low, standing, standingUpper, heads, lintel, roofDeck, roof, roofAir, roofAir, roofAir],
     access: {

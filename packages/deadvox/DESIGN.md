@@ -864,7 +864,7 @@ start overlooks. The start's lookout keeps that view clear rather than hiding th
 officer behind its own roof edge. This gives the armoury a route independent of
 the sewer, whose exploration already carries enough. The key route and the
 blowtorch route must remain independent alternatives; neither should require the
-other. See `mods/skelly.deadvox.residual/rural-police.jsonnet`, `templates` and `loot`, and
+other. See `mods/skelly.deadvox.rural-sites/rural-police.jsonnet`, `templates` and `loot`, and
 `mods/skelly.deadvox.residual/gauntlet-start.libsonnet`, `start` and `mapPieces`.
 
 The blowtorch has one source: the secret cellar's footlocker, with one cartridge fitted. No economy table rolls a torch. The torch is one of the armoury's two routes, so a single hidden source keeps that route the price of finding the secret. Spare cartridges are ordinary hardware and garage loot. See `mods/skelly.deadvox.residual/gauntlet-city-cellars.libsonnet`, `reward`, and `mods/skelly.deadvox.loot/loot.jsonnet`, `building_tools`.

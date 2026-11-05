@@ -43,7 +43,8 @@
     "skelly.deadvox.loot",
     "skelly.deadvox.actors",
     "skelly.deadvox.buildings",
-    "skelly.deadvox.camp"
+    "skelly.deadvox.camp",
+    "skelly.deadvox.rural-sites"
   ],
   "files": [
     {
@@ -136,30 +137,6 @@
     },
     {
       "kind": "content",
-      "path": "rural-medical-fixtures.json"
-    },
-    {
-      "kind": "content",
-      "path": "rural-medical.json"
-    },
-    {
-      "kind": "content",
-      "path": "rural-police-fixtures.json"
-    },
-    {
-      "kind": "content",
-      "path": "rural-police.json"
-    },
-    {
-      "kind": "content",
-      "path": "rural-substation-fixtures.json"
-    },
-    {
-      "kind": "content",
-      "path": "rural-substation.json"
-    },
-    {
-      "kind": "content",
       "path": "scenarios.json"
     },
     {
@@ -169,10 +146,6 @@
     {
       "kind": "content",
       "path": "templates-cabins.json"
-    },
-    {
-      "kind": "content",
-      "path": "templates-medical.json"
     },
     {
       "kind": "content",
@@ -200,15 +173,7 @@
     },
     {
       "kind": "json",
-      "path": "things/pharmacy_key.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/shed_key.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/gauntlet_police_armoury_key.model.json"
     },
     {
       "kind": "json",
@@ -281,14 +246,6 @@
     {
       "kind": "asset",
       "path": "assets/models/gauntlet_lab_entry_card.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/gauntlet_police_armoury_key.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/pharmacy_key.glb"
     },
     {
       "kind": "asset",

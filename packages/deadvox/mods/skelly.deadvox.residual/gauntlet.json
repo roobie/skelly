@@ -2974,97 +2974,6 @@
     },
     {
       "breach": {
-        "durability": 150,
-        "minimumStrength": 4.5
-      },
-      "color": "#626d70",
-      "door": {
-        "blockedCloseSound": "door_blocked_close",
-        "closeSound": "door_close",
-        "detail": {
-          "fields": [1, 1],
-          "frame": 0.050000000000000003,
-          "handle": {
-            "along": 0.34999999999999998,
-            "fromFreeEdge": 0.12,
-            "kind": "pull",
-            "length": 0.14999999999999999,
-            "thickness": 0.025000000000000001
-          },
-          "hardware": "#a9adb0",
-          "hinges": {
-            "count": 3,
-            "length": 0.10000000000000001,
-            "width": 0.059999999999999998
-          },
-          "relief": 0.0080000000000000002,
-          "seam": 0.050000000000000003
-        },
-        "handlingSimSeconds": 0.59999999999999998,
-        "methods": {
-          "hammer": {
-            "fastestTimeSimSeconds": 2.5,
-            "level": 3,
-            "quality": "hammering",
-            "skill": "mechanics",
-            "strikeIntervalSimSeconds": 0.80000000000000004,
-            "strikeSound": "lock_hammer",
-            "timeSimSeconds": 4
-          },
-          "pry": {
-            "fastestTimeSimSeconds": 7.5,
-            "level": 3,
-            "quality": "prying",
-            "skill": "mechanics",
-            "strikeIntervalSimSeconds": 0.5,
-            "strikeSound": "lock_pry",
-            "timeSimSeconds": 15
-          }
-        },
-        "openSound": "door_open"
-      },
-      "id": "gauntlet_cell_door",
-      "massKg": 16,
-      "material": "wood",
-      "moveSounds": {
-        "drag": "furniture_drag",
-        "lift": "furniture_scrape"
-      },
-      "name": "Cell door",
-      "shape": [
-        {
-          "position": [0, 0, 0.34999999999999998],
-          "size": [0.14999999999999999, 4, 0.29999999999999999]
-        },
-        {
-          "position": [1.8500000000000001, 0, 0.34999999999999998],
-          "size": [0.14999999999999999, 4, 0.29999999999999999]
-        },
-        {
-          "position": [0.59999999999999998, 0, 0.40000000000000002],
-          "size": [0.12, 4, 0.20000000000000001]
-        },
-        {
-          "position": [1.25, 0, 0.40000000000000002],
-          "size": [0.12, 4, 0.20000000000000001]
-        },
-        {
-          "position": [0, 0.10000000000000001, 0.34999999999999998],
-          "size": [2, 0.14999999999999999, 0.29999999999999999]
-        },
-        {
-          "position": [0, 3.7000000000000002, 0.34999999999999998],
-          "size": [2, 0.14999999999999999, 0.29999999999999999]
-        },
-        {
-          "position": [1.5, 1.7, 0.29999999999999999],
-          "size": [0.34999999999999998, 0.40000000000000002, 0.40000000000000002]
-        }
-      ],
-      "size": [2, 4, 1]
-    },
-    {
-      "breach": {
         "durability": 60,
         "minimumStrength": 3.5
       },
@@ -34060,7 +33969,7 @@
         },
         "Q": {
           "facing": "e",
-          "furniture": "gauntlet_cell_door"
+          "furniture": "cell_door"
         },
         "S": {
           "furniture": "shelf",
@@ -34072,7 +33981,7 @@
         "U": {
           "furniture": "steel_armoury_door",
           "lock": {
-            "id": "gauntlet_police_armoury",
+            "id": "police_armoury",
             "locked": true
           }
         },
@@ -34090,7 +33999,7 @@
           "groundLoot": {
             "items": [
               {
-                "item": "gauntlet_police_armoury_key"
+                "item": "police_armoury_key"
               }
             ],
             "kind": "fixed"

@@ -76,6 +76,9 @@ scenario mods; reuse by two or more scenarios moves them down to product topic m
 An id that moves into a product mod drops the scenario's name in the same move, with no
 alias, because reusable definitions start under their shared topic identity; see
 `docs/decisions/0009-content-defined-products.md`, "Definitions and distribution".
+A file in a product mod drops the scenario's name too, so every move checks file names as
+well as ids: a scenario name on a product file misleads the reader, and a search for the
+scenario finds product files.
 The three range rows are one set that travels whole, so they sit together in the base building
 owner rather than split across mods at each row's users; see
 `mods/skelly.deadvox.buildings/furniture.jsonnet`, `range_table`.

@@ -318,7 +318,7 @@ Replay retains generated-column transitions because readiness determines whether
 
 The end-of-slice playtest uses the authored progression in [#181](https://github.com/roobie/skelly/issues/181). Testers open the frozen round's landing page and use its play link to enter the map; the Pages landing directs them there. They can explore for as long as they like; the game is not a facilitated or shadowed session. The localized task is authored in `site/playtest.jsonnet`, `en.task` and `sv.task`. See `EPIC.md`, "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md) for the self-serve format, frozen round publication and how tester feedback and metrics inform Slice 4a.
 
-**In:** The authored progression should teach through exploration rather than mission scripting. The medical site's virus-sampling research is lore, not a player task; its danger belongs to the care setting. Ordinary enemies must not obscure clear routes or the finale. See `mods/skelly.deadvox.residual/templates-medical.json`, `medical_hall`, and `maps/playtest.tmj`, its spawn layer.
+**In:** The authored progression should teach through exploration rather than mission scripting. The medical site's virus-sampling research is lore, not a player task; its danger belongs to the care setting. Ordinary enemies must not obscure clear routes or the finale. See `mods/skelly.deadvox.rural-sites/templates-medical.json`, `medical_hall`, and `maps/playtest.tmj`, its spawn layer.
 
 - **Discoverable lore:** readable notes and documents, perhaps a wall notice; distinct from 2.5's recipe-teaching books.
 - **Nights:** the first night is near the hunting cabins; the second is at the medical site.

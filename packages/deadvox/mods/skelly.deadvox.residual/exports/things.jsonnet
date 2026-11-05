@@ -24,6 +24,7 @@ local moved = std.set([
                 + (import 'packages/mods/skelly.firearms/exports/things.jsonnet')
                 + (import 'packages/deadvox/mods/skelly.deadvox.actors/exports/things.jsonnet')
                 + (import 'packages/deadvox/mods/skelly.deadvox.camp/exports/things.jsonnet')
+                + (import 'packages/deadvox/mods/skelly.deadvox.rural-sites/exports/things.jsonnet')
 ]);
 [
   {

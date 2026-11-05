@@ -34,9 +34,9 @@ local layouts = std.flattenArrays([
   (import 'locks.jsonnet').layouts,
   (import 'hunting-cabins.json').layouts,
   (import 'crisis-hq.jsonnet').layouts,
-  (import 'rural-medical.jsonnet').layouts,
-  (import 'rural-police.jsonnet').layouts,
-  (import 'rural-substation.jsonnet').layouts,
+  (import 'packages/deadvox/mods/skelly.deadvox.rural-sites/rural-medical.jsonnet').layouts,
+  (import 'packages/deadvox/mods/skelly.deadvox.rural-sites/rural-police.jsonnet').layouts,
+  (import 'packages/deadvox/mods/skelly.deadvox.rural-sites/rural-substation.jsonnet').layouts,
 ]);
 local normalStarts = [common + {
   id: std.asciiLower(layout.id),
