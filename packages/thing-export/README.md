@@ -37,8 +37,6 @@ file writing is separate from browser-safe geometry and preview code; see `src/f
 `writeRecipeExports`. Each owning mod receives its own recipe-derived registration index,
 so content needs no second model list. Credits derive their file set from the same recipes
 through `tools/jsonnet/lib/export-files.libsonnet`.
-Consumer-authored projections can still select gameplay-specific physical boundaries; see
-`packages/mods/skelly.ground-vehicles/models-ground-vehicles.jsonnet`, `models`.
 
 ## Voxelized export
 
