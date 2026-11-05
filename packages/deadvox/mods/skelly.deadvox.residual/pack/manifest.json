@@ -41,7 +41,8 @@
     "skelly.deadvox.site-generation",
     "skelly.deadvox.combat-policy",
     "skelly.deadvox.loot",
-    "skelly.deadvox.actors"
+    "skelly.deadvox.actors",
+    "skelly.deadvox.buildings"
   ],
   "files": [
     {
@@ -70,15 +71,7 @@
     },
     {
       "kind": "content",
-      "path": "furniture-hunting.json"
-    },
-    {
-      "kind": "content",
       "path": "furniture-playtest.json"
-    },
-    {
-      "kind": "content",
-      "path": "furniture.json"
     },
     {
       "kind": "content",
@@ -142,10 +135,6 @@
     },
     {
       "kind": "content",
-      "path": "map-kits.json"
-    },
-    {
-      "kind": "content",
       "path": "models-items.json"
     },
     {
@@ -182,10 +171,6 @@
     },
     {
       "kind": "content",
-      "path": "sounds.json"
-    },
-    {
-      "kind": "content",
       "path": "templates-cabins.json"
     },
     {
@@ -203,14 +188,6 @@
     {
       "kind": "content",
       "path": "templates-test-house.json"
-    },
-    {
-      "kind": "content",
-      "path": "templates-workshop.json"
-    },
-    {
-      "kind": "content",
-      "path": "templates.json"
     },
     {
       "kind": "content",
@@ -283,10 +260,6 @@
     {
       "kind": "asset",
       "path": "assets/audio/door-open-02.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/door-open-03.ogg"
     },
     {
       "kind": "asset",

@@ -28,7 +28,7 @@ describe('nested tier ranges reach the loot sources', () => {
   // An inner range inside an outer one: the inner assembly's pieces and ground loot take the inner range.
   const crate = [...registry.furniture.values()].find((def) => def.container && def.size.every((n) => n >= 1))!;
   const [w, h, d] = crate.size;
-  const style = [...registry.mapStyles.keys()][0]!;
+  const style = [...registry.mapStyles.values()].find(({ bindings }) => bindings.air?.role === 'opening')!.id;
   const row = (end: string) => `${'F'.repeat(w)}${end}`;
   const piece = {
     id: 'fixture_tier_piece',

@@ -23,7 +23,6 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
         "assets/audio/melee-swing-03.ogg",
         "assets/audio/door-open-01.ogg",
         "assets/audio/door-open-02.ogg",
-        "assets/audio/door-open-03.ogg",
         "assets/audio/door-close-01.ogg",
         "assets/audio/door-close-02.ogg",
         "assets/audio/door-close-03.ogg"

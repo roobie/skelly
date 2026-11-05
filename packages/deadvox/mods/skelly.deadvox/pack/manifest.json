@@ -43,6 +43,7 @@
     "skelly.deadvox.combat-policy",
     "skelly.deadvox.loot",
     "skelly.deadvox.actors",
+    "skelly.deadvox.buildings",
     "skelly.deadvox.residual"
   ],
   "files": [],

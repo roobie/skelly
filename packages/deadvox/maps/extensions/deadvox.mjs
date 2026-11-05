@@ -36,25 +36,25 @@ function writeJson(path, value) {
   file.commit(); // QSaveFile: close() without commit silently cancels the write.
 }
 function content() {
-  const base = `${root}/../mods/skelly.deadvox.residual`;
+  const mods = `${root}/../mods`;
   const templateFiles = [
-    'templates.json',
-    'templates-cabins.json',
-    'templates-stairs.json',
-    'templates-playtest.json',
-    'templates-medical.json',
-    'templates-workshop.json',
-    'camp.json',
-    'ladders.json',
+    'skelly.deadvox.buildings/templates.json',
+    'skelly.deadvox.residual/templates-cabins.json',
+    'skelly.deadvox.residual/templates-stairs.json',
+    'skelly.deadvox.residual/templates-playtest.json',
+    'skelly.deadvox.residual/templates-medical.json',
+    'skelly.deadvox.buildings/templates-workshop.json',
+    'skelly.deadvox.residual/camp.json',
+    'skelly.deadvox.residual/ladders.json',
   ];
   const templates = [];
   for (const file of templateFiles) {
-    const entries = readJson(`${base}/${file}`).templates || [];
+    const entries = readJson(`${mods}/${file}`).templates || [];
     for (const entry of entries) {
       templates.push(entry);
     }
   }
-  return { templates, actors: readJson(`${root}/../mods/skelly.deadvox.actors/enemies.json`).actors };
+  return { templates, actors: readJson(`${mods}/skelly.deadvox.actors/enemies.json`).actors };
 }
 function scalar(object, name, fallback) {
   const property = object.property(name);

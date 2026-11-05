@@ -1229,7 +1229,7 @@ share one table so their odds have one owner; admission, not a second table, kee
 scope out of Tier1 cabins. See `tools/jsonnet/lib/economy.libsonnet`, `huntingItems`,
 and `mods/skelly.deadvox.loot/loot.jsonnet`, `hunting_cache`.
 Hunting crates are long enough to hold the rifle: increasing a pocket alone would
-misrepresent the furniture's capacity. See `mods/skelly.deadvox.residual/furniture-hunting.jsonnet`,
+misrepresent the furniture's capacity. See `mods/skelly.deadvox.buildings/furniture-hunting.jsonnet`,
 `hunting_crate`.
 
 Both playtest rounds offer a roof hunting place as a reason to climb: the workshop roof
@@ -1237,7 +1237,7 @@ and a weighted townhouse roof choice. The townhouse crate is not guaranteed, pre
 variation. Each roof point takes exact Tier2 without retagging the building or admitting
 lower-tier-only items. A point-level tier beside usage states that exception directly,
 without splitting the building into artificial placements. See
-`mods/skelly.deadvox.residual/templates-workshop.libsonnet`, `workshop_hall`;
+`mods/skelly.deadvox.buildings/templates-workshop.libsonnet`, `workshop_hall`;
 `mods/skelly.deadvox.residual/gauntlet-city-decor.libsonnet`, `gauntlet_roof_hunting`; and
 `src/core/site.ts`, `lootSourcesOf`.
 
@@ -3002,7 +3002,7 @@ Carving must expose flesh-coloured hole walls from every side, and a corpse must
 The runner's threat comes from speed rather than stronger attacks; the crawler's
 low posture confines its bite to the legs. Keep their moves, hit regions, sounds and
 spawn chance authored with the type. See `mods/skelly.deadvox.actors/enemies.jsonnet` and the
-spawn markers in `mods/skelly.deadvox.residual/templates.json`. Type weights scale authored
+spawn markers in `mods/skelly.deadvox.buildings/templates.json`. Type weights scale authored
 marker chances and choose settlement wanderers, keeping rarity a content property
 rather than an inference from generated counts.
 

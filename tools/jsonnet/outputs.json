@@ -37,6 +37,42 @@
       "output": "packages/deadvox/mods/skelly.deadvox.actors/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/assets/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/assets/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/buildings-sounds.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/buildings-sounds.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/furniture-hunting.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/furniture-hunting.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/furniture-workshop.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/furniture-workshop.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/furniture.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/furniture.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/map-kits.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/map-kits.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/templates-workshop.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/templates-workshop.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/templates.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/templates.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.combat-policy/combat-policy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.combat-policy/combat-policy.json"
     },
@@ -97,16 +133,8 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/furniture-cabins.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/furniture-hunting.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/furniture-hunting.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/furniture-playtest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/furniture-playtest.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/furniture.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/furniture.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet-look.jsonnet",
@@ -157,10 +185,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/locks.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/map-kits.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/map-kits.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/models-items.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/models-items.json"
     },
@@ -197,10 +221,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/scenarios.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/sounds.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/sounds.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/starts.json"
     },
@@ -223,14 +243,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-test-house.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-test-house.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-workshop.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-workshop.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/templates.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/templates.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/tutorial.jsonnet",

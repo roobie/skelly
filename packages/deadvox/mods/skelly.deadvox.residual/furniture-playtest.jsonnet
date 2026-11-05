@@ -1,8 +1,6 @@
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local cabinets = import 'tools/jsonnet/lib/cabinet-shapes.libsonnet';
-local vehicles = import 'packages/mods/skelly.ground-vehicles/vehicles.libsonnet';
-local detail = import 'tools/jsonnet/lib/door-detail.libsonnet';
 local plaque(id, name, color, readable) = {
   id: id,
   name: name,
@@ -40,85 +38,5 @@ breach.breaking(shape.colliding({
     },
     { id: 'sample_rack', name: 'Specimen rack', size: [2, 3, 1], color: '#7c8581' },
     { id: 'sample_tray', name: 'Sample tray', size: [2, 1, 1], color: '#b6c1bc' },
-    {
-      id: 'workshop_roller_door',
-      name: 'Roller door',
-      size: [6, 5, 1],
-      color: '#666c70',
-      material: 'steel',
-      breach: { minimumStrength: 9, durability: 400 },
-      door: {
-        methods: {}, handlingSimSeconds: 1.2, openSound: 'door_roller_open', detail: detail.slatted,
-      },
-    },
-    { id: 'workshop_service_pit', name: 'Service pit', size: [6, 1, 2], color: '#373a3b', solid: false },
-    { id: 'workshop_lift', name: 'Vehicle lift', size: [4, 2, 9], color: '#dfb72f', solid: false },
-    {
-      id: 'workshop_stripped_car',
-      name: 'Stripped car',
-      size: [4, 4, 9],
-      color: '#5b605c',
-      vehicle: vehicles {
-        blueprint: 'rover',
-        body: '#b3a07c',
-        dirt: 0,
-        removed: [
-          'bonnet',
-          'front-wing-near',
-          'front-wing-far',
-          'headlight-near',
-          'headlight-far',
-          'front-panel',
-          'front-bumper',
-          'rear-bumper',
-          'door-front-near',
-          'door-front-far',
-          'door-rear-near',
-          'door-rear-far',
-          'tailgate-upper',
-          'tailgate-lower',
-          'wheel-front-near',
-          'wheel-front-far',
-          'wheel-rear-near',
-          'wheel-rear-far',
-          'spare-wheel',
-        ],
-      },
-    },
-    {
-      id: 'workshop_sedan',
-      name: 'Car',
-      size: [4, 3, 10],
-      color: '#8a97a3',
-      vehicle: vehicles { blueprint: 'sedan', body: '#8a97a3', dirt: 0.15, removed: [] },
-    },
-    {
-      id: 'workshop_scrap_pile',
-      name: 'Scrap pile',
-      size: [4, 1, 3],
-      color: '#615b50',
-      shape: [
-        // Sheet metal and planks lie flat at the base; pipe, a drum and offcuts heap on top.
-        { position: [0.2, 0, 0.3], size: [2.2, 0.12, 1.6], color: '#7b8185' },
-        { position: [1.6, 0, 1.4], size: [2.1, 0.1, 1.4], color: '#5a4a3a' },
-        { position: [0.5, 0.12, 1.5], size: [1.9, 0.08, 0.35], color: '#8a6f4a' },
-        { position: [0.9, 0.12, 0.6], size: [0.3, 0.1, 1.9], color: '#7a5f3e' },
-        { position: [2.7, 0.1, 0.2], size: [0.9, 0.5, 0.9], color: '#4f5a60' },
-        { position: [0.4, 0.2, 0.45], size: [1.7, 0.14, 0.14], color: '#8d9296' },
-        { position: [0.7, 0.34, 0.55], size: [1.4, 0.14, 0.14], color: '#8d9296' },
-        { position: [1.9, 0.1, 0.5], size: [0.6, 0.38, 0.55], color: '#6b5334' },
-        { position: [1.3, 0.2, 1.1], size: [1.0, 0.1, 0.8], color: '#9a6b4b' },
-        { position: [2.2, 0.1, 1.9], size: [0.5, 0.62, 0.3], color: '#6e7478' },
-        { position: [3.0, 0.1, 1.7], size: [0.6, 0.18, 0.6], color: '#76563a' },
-        { position: [0.3, 0.12, 2.1], size: [0.9, 0.3, 0.7], color: '#5f666a' },
-        { position: [1.2, 0.1, 2.2], size: [0.7, 0.14, 0.5], color: '#8a6f4a' },
-      ],
-      container: { pockets: [{ grid: [10, 10], handlingSimSeconds: 1.2 }] },
-      searchNoise: { sound: 'player_strain' },
-    },
-    plaque('workshop_map_board', 'Workshop wall map', '#9f9675', {
-      title: 'Workshop wall map',
-      text: 'The clinic is south, past the hamlet. The military camp lies beyond it.',
-    }),
   ],
 }))

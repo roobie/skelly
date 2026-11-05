@@ -3,7 +3,7 @@
 // shambler markers that the library turns into one piece per level. See
 // `packages/deadvox/docs/aftermath.md`, "Scene slots".
 function(palette, context)
-local base = (import 'packages/mods/skelly.structures/structures-furniture.jsonnet').furniture + (import 'furniture.jsonnet').furniture + (import 'aftermath.libsonnet').furniture;
+local base = (import 'packages/mods/skelly.structures/structures-furniture.jsonnet').furniture + (import 'packages/deadvox/mods/skelly.deadvox.buildings/furniture.jsonnet').furniture + (import 'aftermath.libsonnet').furniture;
 local sizes = { [f.id]: f.size for f in base };
 local item(id, weight, count=null, condition=null) =
   { item: id, weight: weight }
