@@ -42,6 +42,7 @@ import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { loadFigureModels } from './figureModels.ts';
 
 import { modFile } from './modFile.ts';
+import { thingModels } from './thingModels.ts';
 
 const BASE = '../mods/skelly.firearms';
 const MODEL_FILE = /^assets\/models\/[a-z0-9_]+\.glb$/;
@@ -82,12 +83,12 @@ const playerFigure = registry.figures.get('player')!;
 const figureModels = await loadFigureModels(registry);
 
 it('prepares every thing recipe export for ground and held drawing with its grip at the hand origin', async () => {
-  const recipe: { id: string }[] = JSON.parse(readFileSync('mods/skelly.deadvox.residual/exports/things.json', 'utf8'));
-  expect(recipe.length).toBeGreaterThan(0);
+  const models = thingModels();
+  expect(models.length).toBeGreaterThan(0);
   await Promise.all(
-    recipe.map(async ({ id }) => {
+    models.map(async ({ id, path }) => {
       const definition = registry.models.get(id)!;
-      const { scene } = await parseGlb(readFileSync(modFile(definition.file)));
+      const { scene } = await parseGlb(readFileSync(path));
       const { ground, held, groundParts } = prepareModel(definition, scene);
       const groundBounds = new Box3().setFromObject(ground);
       expect(groundBounds.isEmpty(), id).toBe(false);
