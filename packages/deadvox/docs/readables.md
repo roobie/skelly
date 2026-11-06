@@ -11,7 +11,7 @@ read_if:
 
 Items and furniture may carry immutable authored text. Each distinct note or sign is its own content type; copies share the text, and saves keep the existing type reference rather than duplicating prose or per-copy reading state. Keep authored text plain and render it as text nodes, never HTML. `npm run validate` owns the field checks; see `src/core/schema/items.ts`, `ReadableSchema`.
 
-Loose notes, manuals and logs are items because their appearance should agree with pickup and carrying. Separate paper categories let content tune carrying weight, stacking and loot eligibility without treating a sheet as a manual. See `src/core/schema/items.ts`, `ItemSchema`, and `mods/skelly.deadvox.scenario.gauntlet.city/models-items.jsonnet`.
+Loose notes, manuals and logs are items because their appearance should agree with pickup and carrying. Separate paper categories let content tune carrying weight, stacking and loot eligibility without treating a sheet as a manual. See `src/core/schema/items.ts`, `ItemSchema`, and `packages/mods/skelly.readables/models-readables.jsonnet`, `models`.
 
 Fixed signage stays furniture: wall plaques must look attached rather than occupy a wall-sized solid cell, while freestanding boards need legs. Shape and mounting are explicit content choices, never inferred from readable text or solidity. The mount and shape contract belongs to `src/core/schema/furniture.ts`, `FurnitureSchema`; host admission belongs to `src/core/content.ts`, `checkPaletteThing`. Plaques stay fixed and cannot be pried down. Nothing drops a plaque when its host wall is removed, so removing the wall can leave a plaque floating.
 
