@@ -23,7 +23,7 @@ manifest(
     'skelly.deadvox.scenario.gauntlet.start','skelly.deadvox.scenario.hunting-cabins', 'skelly.deadvox.scenario.lock-test',
     'skelly.deadvox.scenario.lone-house', 'skelly.deadvox.scenario.playtest', 'skelly.deadvox.scenario.rural-medical-post',
     'skelly.deadvox.scenario.rural-police', 'skelly.deadvox.scenario.rural-substation',
-    'skelly.deadvox.scenario.stairs', 'skelly.deadvox.scenario.tutorial', 'skelly.deadvox.scenario.voice-size',
+    'skelly.deadvox.scenario.stairs', 'skelly.deadvox.scenario.test-house', 'skelly.deadvox.scenario.tutorial', 'skelly.deadvox.scenario.voice-size',
     'skelly.deadvox.scenario.water', 'skelly.deadvox.scenario.weathering-test',
   ],
 )

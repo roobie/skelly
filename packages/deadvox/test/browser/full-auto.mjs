@@ -43,7 +43,7 @@ const vite = await createServer({
       name: 'full-auto-observation',
       enforce: 'pre',
       transform(code, id) {
-        if (id.endsWith('/mods/skelly.deadvox.residual/starts.json')) {
+        if (id.endsWith('/mods/skelly.deadvox.scenario.test-house/starts.json')) {
           const data = JSON.parse(code);
           const { defaultForSite: _default, ...start } = data.starts.find((row) => row.site === 'testHouse');
           data.starts.push({

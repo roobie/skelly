@@ -149,20 +149,8 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/assets/manifest.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-test-house.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-test-house.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/pack/manifest.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/starts.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/starts.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-test-house.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-test-house.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/assets/manifest.jsonnet",
@@ -463,6 +451,22 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house/layouts-test-house.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house/templates-test-house.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house/templates-test-house.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.tutorial.debug/catalogue.jsonnet",

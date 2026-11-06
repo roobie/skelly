@@ -1,5 +1,33 @@
 {
-  "dependencies": ["skelly.deadvox.residual", "skelly.deadvox.woods"],
+  "dependencies": [
+    "skelly.deadvox.scenario.test-house",
+    "skelly.basic-recipes",
+    "skelly.containers",
+    "skelly.deadvox.buildings",
+    "skelly.electric-power",
+    "skelly.electronics",
+    "skelly.firearms",
+    "skelly.flame-tools",
+    "skelly.fuel",
+    "skelly.ground-vehicles",
+    "skelly.hand-tools",
+    "skelly.light-sources",
+    "skelly.manuals",
+    "skelly.manufactured-blocks",
+    "skelly.materials",
+    "skelly.melee",
+    "skelly.readables",
+    "skelly.structures",
+    "skelly.wearables",
+    "skelly.weathering",
+    "skelly.deadvox.camp",
+    "skelly.deadvox.crisis-hq",
+    "skelly.deadvox.labs.underground",
+    "skelly.deadvox.rural-sites",
+    "skelly.deadvox.woods",
+    "skelly.household-electrical",
+    "skelly.natural-world"
+  ],
   "files": [
     {
       "kind": "content",
@@ -15,7 +43,7 @@
   "overrides": [
     {
       "entry": "layouts:testHouse",
-      "pack": "skelly.deadvox.residual"
+      "pack": "skelly.deadvox.scenario.test-house"
     }
   ],
   "product": false,

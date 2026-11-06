@@ -52,7 +52,7 @@ export const observationPlugin = {
       });
       return JSON.stringify(data);
     }
-    if (id.endsWith('/mods/skelly.deadvox.residual/starts.json')) {
+    if (id.endsWith('/mods/skelly.deadvox.scenario.test-house/starts.json')) {
       const data = JSON.parse(code);
       const { defaultForSite: _default, ...houseStart } = data.starts.find((row) => row.site === 'testHouse');
       data.starts.push({

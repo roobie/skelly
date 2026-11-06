@@ -100,31 +100,12 @@ const withMultiRootFixture = async (check: (root: string) => void | Promise<void
     mkdirSync(join(root, 'src/config'), { recursive: true });
     const definitions = join(root, 'mods/fixture.definitions');
     mkdirSync(join(definitions, 'pack'), { recursive: true });
-    const shipped = JSON.parse(readFileSync('mods/skelly.deadvox.residual/pack/manifest.json', 'utf8'));
-    const contentFiles = shipped.files.filter(
-      ({ path, kind }: { path: string; kind: string }) => kind === 'content' || path === 'assets/manifest.json',
-    );
+    // The shipped entry's dependencies are the whole stack; the fixture pack stands in for it without its product flag.
+    const shipped = JSON.parse(readFileSync('mods/skelly.deadvox/pack/manifest.json', 'utf8'));
     writeFileSync(
       join(definitions, 'pack/manifest.json'),
-      JSON.stringify({
-        ...shipped,
-        id: 'fixture.definitions',
-        files: contentFiles,
-      }),
+      JSON.stringify({ ...shipped, id: 'fixture.definitions', product: false, defaultStart: undefined }),
     );
-    for (const { path, kind } of contentFiles) {
-      if (kind === 'content') {
-        const data = JSON.parse(readFileSync(resolve('mods/skelly.deadvox.residual', path), 'utf8'));
-        if (data.scenarios) {
-          data.scenarios = [];
-        }
-        if (data.starts) {
-          data.starts = [];
-        }
-        writeFileSync(join(definitions, path), JSON.stringify(data));
-      }
-    }
-    symlinkSync(resolve('mods/skelly.deadvox.residual/assets'), join(definitions, 'assets'), 'dir');
     for (const dependency of shipped.dependencies as string[]) {
       const modRoot = existsSync(resolve('../mods', dependency)) ? '../mods' : 'mods';
       symlinkSync(resolve(modRoot, dependency), join(root, modRoot, dependency), 'dir');

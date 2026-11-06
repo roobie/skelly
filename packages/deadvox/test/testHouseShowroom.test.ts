@@ -61,7 +61,7 @@ describe('test house showroom', () => {
   it('shows rows from other mods in load order, overridden in place, with no edge to the showroom host', () => {
     const listed = new Set([...registry.catalogueRows.values()].flatMap((row) => row.furniture));
     // Neither the showroom's host nor the host's dependency is an edge the fixture mods may lean on.
-    const hosts = new Set(['skelly.deadvox.scenario.test-house.debug', 'skelly.deadvox.residual']);
+    const hosts = new Set(['skelly.deadvox.scenario.test-house.debug', 'skelly.deadvox.scenario.test-house']);
     const ownerOf = (type: string) => {
       const origin = registry.contentOrigins.get(`furniture:${type}`)?.source;
       return availablePackInputs.find((pack) => origin?.startsWith(`${pack.source}/`))?.manifest.id;

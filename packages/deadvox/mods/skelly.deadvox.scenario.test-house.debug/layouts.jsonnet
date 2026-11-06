@@ -1,4 +1,4 @@
-local layout = (import '../skelly.deadvox.residual/layouts-test-house.jsonnet').layouts[0];
+local layout = (import '../skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet').layouts[0];
 {
   templates: [import 'test-house-range.libsonnet'],
   layouts: [layout + {
