@@ -124,6 +124,7 @@ import { type ActorModel, bodyPlanModel, FIGURE_VARIANTS, figureVariantOf } from
 import { acidSpitWindupProgress, actorCrawls, actorPoseInputFor, posedActor } from '../core/actorPose.ts';
 import { type Actor, actorAttackReachMetres } from '../core/actorState.ts';
 import { BACKGROUND_ACTOR_RATE, type HitImpulse } from '../core/actorSystem.ts';
+import type { ColumnReveal } from '../core/columnReveal.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import { FUSED_MASS_FIGURE_SEED, type FusedMassFigure } from '../core/fusedMassFigure.ts';
@@ -131,7 +132,6 @@ import type { LookDefaults } from '../core/mood.ts';
 import type { Quaternion } from '../core/spatial.ts';
 import { ACTIVE_ACTOR_RATE } from '../game/simulationRates.ts';
 import { BLOOD_STAIN_COLOR_FRAGMENT, BLOOD_STAIN_FRAGMENT_DECLARATIONS } from './bloodStain.ts';
-import type { ColumnReveal } from './columnReveal.ts';
 import { buildCarvedGeometry, FleshChunks, mergeBoneMeshes } from './fusedMassFlesh.ts';
 import { fusedMassCoreInteriorAnchor, fusedMassTentaclePose } from './fusedMassTentaclePose.ts';
 import { woundSeverity } from './gore.ts';

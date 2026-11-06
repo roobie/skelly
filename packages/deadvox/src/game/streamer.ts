@@ -6,6 +6,7 @@
 
 import { installColumn } from '../core/canonicalTerrain.ts';
 import type { Chunk } from '../core/chunk.ts';
+import { revealedColumns } from '../core/columnReveal.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
 import type { FencePostDefs } from '../core/fencePosts.ts';
 import { extractPadded, extractWide } from '../core/meshInput.ts';
@@ -18,7 +19,6 @@ import type { World } from '../core/world.ts';
 import { isEnclosed } from '../core/world.ts';
 import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
-import { revealedColumns } from '../render/columnReveal.ts';
 import type { FromMesher, ToMesher } from '../worker/protocol.ts';
 
 const COLUMNS_PER_FRAME = 2;

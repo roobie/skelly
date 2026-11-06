@@ -21,11 +21,11 @@ import {
   panelFor,
   poseKey,
 } from '../core/blockEntities.ts';
+import type { ColumnReveal } from '../core/columnReveal.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { rotationOf } from '../core/orientation.ts';
 import type { FurnitureDef } from '../core/schema.ts';
 import type { Facing } from '../core/templates.ts';
-import type { ColumnReveal } from './columnReveal.ts';
 import { doorDetail } from './doorDetail.ts';
 import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';

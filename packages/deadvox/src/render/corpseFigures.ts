@@ -4,11 +4,11 @@
 
 import { Group, Matrix4, Vector3 } from 'three';
 import type { BlockEntities, BlockEntity } from '../core/blockEntities.ts';
+import type { ColumnReveal } from '../core/columnReveal.ts';
 import type { Registry } from '../core/content.ts';
 import { rotationOf } from '../core/orientation.ts';
 import type { Body } from '../core/physics.ts';
 import type { FurnitureDef } from '../core/schema.ts';
-import type { ColumnReveal } from './columnReveal.ts';
 import { type ModelLibrary, visibleBounds } from './models.ts';
 import { FIGURE_PIVOT, PlayerMeshes } from './playerFigure.ts';
 

@@ -14,11 +14,11 @@ import {
   Sphere,
   Vector3,
 } from 'three';
+import type { ColumnReveal } from '../core/columnReveal.ts';
 import type { Registry } from '../core/content.ts';
 import { toChunk, type Vec3 } from '../core/coords.ts';
 import type { MeshData } from '../core/mesher.ts';
 import type { WeatheringDef } from '../core/schema.ts';
-import type { ColumnReveal } from './columnReveal.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { createSurfaceNoise } from './surfaceNoise.ts';
 import { camoShaderConfig, SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
