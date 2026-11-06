@@ -430,7 +430,9 @@ state. See `src/core/schema/scenarios.ts`, `ScenarioSchema`; `src/core/climbCert
   trade speed against safety or noise, so leaving the roof is a choice. The start
   building is a condo block repurposed during the outbreak. It needs enough room and
   something on every storey to make it interesting, rather than just a staircase.
-  See `mods/skelly.deadvox.residual/gauntlet-start.libsonnet`, `start`, and
+  The start row carries this placement, not the scenario row, so another start can bring
+  its own building and ways down to the same city. See
+  `mods/skelly.deadvox.residual/gauntlet-start.libsonnet`, `placement`, and
   `mods/skelly.deadvox.residual/gauntlet-start-rooms.libsonnet`, `slots`.
   Collapsed floors are extra risky shortcuts, not registered descents, so the start
   check never certifies an interior fall to meet the minimum.
@@ -438,8 +440,8 @@ state. See `src/core/schema/scenarios.ts`, `ScenarioSchema`; `src/core/climbCert
   the foot of a way down. Redundant ways down prevent one obstruction from forcing a
   single exit. A way down counts even when it can injure or kill, because choosing the
   risk is part of the descent; its foot need not be kept clear. See
-  `src/core/scenarioStart.ts`, `scenarioStartIssues`; `src/core/cityPlan.ts`,
-  `buildCityPlan`; and
+  `src/core/scenarioStart.ts`, `scenarioStartIssues`; `src/core/startIssues.ts`,
+  `startIssues`; `src/core/cityPlan.ts`, `buildCityPlan`; and
   `src/core/scenarioCertificate.ts`, `scenarioCertificate`.
 - **Street approach.** The street a kind's proof enters its site from is an authored
   anchor, not derived from the site, so a scenario can approach from another side and

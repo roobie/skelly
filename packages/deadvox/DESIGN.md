@@ -810,7 +810,7 @@ a fight before reaching the city and a roll that came up empty would leave them
 unarmed. It guarantees a backpack the same way, so the player can carry what
 the tower and the first streets offer before the descent instead of leaving it
 behind. See `mods/skelly.deadvox.residual/gauntlet-start-rooms.libsonnet`, `loot`, and
-`mods/skelly.deadvox.residual/gauntlet-start.libsonnet`, `start`.
+`mods/skelly.deadvox.residual/gauntlet-start.libsonnet`, `placement`.
 
 Gauntlet stock has three layers. The economy layer is what a building's template
 rolls from its loot context and tables, so a place holds what suits it. The core
@@ -865,7 +865,7 @@ officer behind its own roof edge. This gives the armoury a route independent of
 the sewer, whose exploration already carries enough. The key route and the
 blowtorch route must remain independent alternatives; neither should require the
 other. See `mods/skelly.deadvox.rural-sites/rural-police.jsonnet`, `templates` and `loot`, and
-`mods/skelly.deadvox.residual/gauntlet-start.libsonnet`, `start` and `mapPieces`.
+`mods/skelly.deadvox.residual/gauntlet-start.libsonnet`, `placement` and `mapPieces`.
 
 The blowtorch has one source: the secret cellar's footlocker, with one cartridge fitted. No economy table rolls a torch. The torch is one of the armoury's two routes, so a single hidden source keeps that route the price of finding the secret. Spare cartridges are ordinary hardware and garage loot. See `mods/skelly.deadvox.residual/gauntlet-city-cellars.libsonnet`, `reward`, and `mods/skelly.deadvox.loot/loot.jsonnet`, `building_tools`.
 
