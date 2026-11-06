@@ -36,7 +36,7 @@ export type CertificatePhase =
  * the selected start, because no other root is authored; a default spawn or street corner would prove a route no
  * player takes.
  */
-export const CITY_PHASES: readonly CertificatePhase[] = Object.freeze([
+const CITY_PHASES: readonly CertificatePhase[] = Object.freeze([
   'portalApproach',
   'floors',
   'seals',
