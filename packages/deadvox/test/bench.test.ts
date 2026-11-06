@@ -21,7 +21,8 @@ import {
 } from '../src/bench/report.ts';
 import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
-import { frameStats, percentile } from '../src/bench/stats.ts';
+import { frameStats } from '../src/bench/stats.ts';
+import { percentile } from '../src/core/percentile.ts';
 import { gameHours } from '../src/core/time.ts';
 
 describe('bench stats', () => {

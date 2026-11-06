@@ -1,7 +1,7 @@
 // A rolling window of frame times for the debug readout: the median and 95th percentile of
 // what the last couple of seconds took, which a single smoothed fps number hides.
 
-import { percentile } from '../bench/stats.ts';
+import { percentile } from '../core/percentile.ts';
 
 export interface FrameSummary {
   /** Milliseconds; NaN while the window is empty. */
