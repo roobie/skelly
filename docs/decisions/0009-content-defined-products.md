@@ -243,8 +243,10 @@ mechanisms still require scoped engine work.
 ## Refactor gate
 
 The runtime moves out of `packages/deadvox` into its own workspace package, and content
-splits into `skelly.*` mods in one refactor. The runtime package name is chosen at the
-refactor and must not collide with `packages/engine`, the assembly/geometry library.
+splits into `skelly.*` mods in one refactor. The runtime package is `packages/engine`,
+`@skelly/engine`, when it moves under #1532. The assembly/geometry library therefore gave
+up that name and is `packages/construct`, `@skelly/construct`; the reasons for that name
+are in `packages/construct/README.md`, "Name".
 
 The #1532 gate is closure or merge of every PR in its frozen in-flight set: #1531,
 #1529, #1528, #1527, #1526, #1524, #1520, #1509, #1503, #1496, #1493, #1488, #1477,

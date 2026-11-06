@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { PartFamily, Resolved } from '@skelly/engine/assembly/schema.ts';
-import { add, applyDir, applyPoint, IDENTITY, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import { distanceWorld, obbPolyhedron, penetrationWorld, worldSolid } from '@skelly/engine/shapes/geometry.ts';
-import { meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
-import type { BoxSolid } from '@skelly/engine/shapes/solid.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { PartFamily, Resolved } from '@skelly/construct/assembly/schema.ts';
+import { add, applyDir, applyPoint, IDENTITY, type Vec3 } from '@skelly/construct/foundation/math.ts';
+import { distanceWorld, obbPolyhedron, penetrationWorld, worldSolid } from '@skelly/construct/shapes/geometry.ts';
+import { meshForSolidGroup } from '@skelly/construct/shapes/mesh.ts';
+import type { BoxSolid } from '@skelly/construct/shapes/solid.ts';
 import { expect, it } from 'vitest';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { boltCartridge } from '../src/gun/boltCartridge.ts';

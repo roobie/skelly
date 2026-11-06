@@ -6,7 +6,7 @@
 // Params left out are default or inherited: a barrel's bore follows its
 // receiver, and a clamped handguard or tube magazine follows the barrel.
 
-import type { Template } from '@skelly/engine/assembly/template.ts';
+import type { Template } from '@skelly/construct/assembly/template.ts';
 import { AK_MAGAZINE_VARIANT_BY_CALIBRE } from './akMagazineCalibre.ts';
 import {
   AR_ACTION_FRAMES,

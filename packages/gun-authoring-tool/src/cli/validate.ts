@@ -6,8 +6,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { formatParseError, parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
+import { formatParseError, parseAssemblyJson } from '@skelly/construct/assembly/parseAssembly.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { checkTraceRecords } from './traceCheck.ts';
 

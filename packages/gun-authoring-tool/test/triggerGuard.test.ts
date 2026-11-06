@@ -1,15 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { PartDef } from '@skelly/engine/assembly/schema.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { applyPoint, IDENTITY, invert } from '@skelly/engine/foundation/math.ts';
+import type { PartDef } from '@skelly/construct/assembly/schema.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { applyPoint, IDENTITY, invert } from '@skelly/construct/foundation/math.ts';
 import {
   localSolidBounds,
   penetrationWorld,
   validateExtrudedPolygon,
   worldSolid,
-} from '@skelly/engine/shapes/geometry.ts';
-import type { Box, Solid } from '@skelly/engine/shapes/solid.ts';
+} from '@skelly/construct/shapes/geometry.ts';
+import type { Box, Solid } from '@skelly/construct/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import recipe from '../exports/deadvox.json' with { type: 'json' };
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';

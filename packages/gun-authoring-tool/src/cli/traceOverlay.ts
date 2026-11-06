@@ -1,11 +1,11 @@
 import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve as resolvePath } from 'node:path';
 import { parseArgs } from 'node:util';
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Resolved } from '@skelly/engine/assembly/schema.ts';
-import { applyPoint, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import { displayItems } from '@skelly/engine/shapes/display.ts';
-import { displayBevel, meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Resolved } from '@skelly/construct/assembly/schema.ts';
+import { applyPoint, type Vec3 } from '@skelly/construct/foundation/math.ts';
+import { displayItems } from '@skelly/construct/shapes/display.ts';
+import { displayBevel, meshForSolid, meshForSolidGroup } from '@skelly/construct/shapes/mesh.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import type { TracePoint } from '../gun/trace.ts';

@@ -1,15 +1,22 @@
 // Where each solid is drawn, so the datums an export writes (grips, anchors, round poses, collision boxes, centres of
 // mass) read off the voxels the player sees rather than off the authored solids those voxels approximate.
 
-import type { PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
-import { add, applyPoint, extrusionPoint, invert, type Transform, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import type { PartDef, Resolved } from '@skelly/construct/assembly/schema.ts';
+import {
+  add,
+  applyPoint,
+  extrusionPoint,
+  invert,
+  type Transform,
+  type Vec3,
+} from '@skelly/construct/foundation/math.ts';
 import {
   clippedExtrudedPolygonPolyhedron,
   localSolidBounds,
   polyhedronMeasures,
-} from '@skelly/engine/shapes/geometry.ts';
-import { displayBevel, meshForSolid } from '@skelly/engine/shapes/mesh.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+} from '@skelly/construct/shapes/geometry.ts';
+import { displayBevel, meshForSolid } from '@skelly/construct/shapes/mesh.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import type { VoxelGrains } from './exportTypes.ts';
 import { latticeOrigin, partVoxelGrain } from './glb.ts';
 import { measureVoxels } from './voxelize.ts';

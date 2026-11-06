@@ -1,6 +1,6 @@
-import { generate, generateValid } from '@skelly/engine/assembly/generate.ts';
-import type { ParamReference, Template } from '@skelly/engine/assembly/template.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
+import { generate, generateValid } from '@skelly/construct/assembly/generate.ts';
+import type { ParamReference, Template } from '@skelly/construct/assembly/template.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';

@@ -1,10 +1,10 @@
 import { readdirSync } from 'node:fs';
-import type { PartFamily } from '@skelly/engine/assembly/schema.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { GRID } from '@skelly/engine/foundation/conventions.ts';
-import { dot } from '@skelly/engine/foundation/math.ts';
-import { localSolidBounds, validateExtrudedPolygon } from '@skelly/engine/shapes/geometry.ts';
-import { meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
+import type { PartFamily } from '@skelly/construct/assembly/schema.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { GRID } from '@skelly/construct/foundation/conventions.ts';
+import { dot } from '@skelly/construct/foundation/math.ts';
+import { localSolidBounds, validateExtrudedPolygon } from '@skelly/construct/shapes/geometry.ts';
+import { meshForSolid, meshForSolidGroup } from '@skelly/construct/shapes/mesh.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { CARRIER_HANDLE_STYLES, FAMILIES, GRIP_MOUNT_PROFILE } from '../src/gun/parts.ts';

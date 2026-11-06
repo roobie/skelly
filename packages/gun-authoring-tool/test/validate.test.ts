@@ -1,5 +1,5 @@
-import type { Assembly, Domain, PartDef, Rule } from '@skelly/engine/assembly/schema.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
+import type { Assembly, Domain, PartDef, Rule } from '@skelly/construct/assembly/schema.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { GUN_UNITS } from '../src/gun/units.ts';
 

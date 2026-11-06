@@ -2,15 +2,15 @@
 read_if:
   - you change how the authoring tools draw an assembly in three.js
   - you add a part shared by the thing and gun authoring tools' interfaces
-  - you decide whether code belongs in the engine or in the tool UI
+  - you decide whether code belongs in the construct package or in the tool UI
   - you share orbit controls or a minimal authoring preview
   - you change camera persistence or assembly parameter editing
 ---
 
 # Tool UI
 
-Interface parts shared by the authoring tools. It sits above the engine and may import any
-engine layer; the engine never imports it, which keeps three.js out of the engine.
+Interface parts shared by the authoring tools. It sits above `packages/construct` and may
+import any of its layers; construct never imports it, which keeps three.js out of construct.
 
 Scene conversion belongs below the tools so domain views can add layers without copying
 rendering mechanics; see `src/scene.ts`, `buildLayers`. Renderer injection keeps tests

@@ -1,4 +1,4 @@
-import type { Domain } from '@skelly/engine/assembly/schema.ts';
+import type { Domain } from '@skelly/construct/assembly/schema.ts';
 import {
   array,
   finite,

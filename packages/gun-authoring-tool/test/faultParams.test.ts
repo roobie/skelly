@@ -1,4 +1,4 @@
-import type { ParamReference, Template } from '@skelly/engine/assembly/template.ts';
+import type { ParamReference, Template } from '@skelly/construct/assembly/template.ts';
 import { buildPanelModel } from '@skelly/tool-ui/param-panel';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';

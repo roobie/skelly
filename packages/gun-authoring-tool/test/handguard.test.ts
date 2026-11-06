@@ -1,4 +1,4 @@
-import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import { localSolidBounds } from '@skelly/construct/shapes/geometry.ts';
 import { describe, expect, it } from 'vitest';
 import { FAMILIES } from '../src/gun/parts.ts';
 

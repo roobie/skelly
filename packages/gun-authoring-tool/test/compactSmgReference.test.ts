@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Resolved } from '@skelly/engine/assembly/schema.ts';
-import { applyPoint, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import { obbPolyhedron, worldSolid } from '@skelly/engine/shapes/geometry.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Resolved } from '@skelly/construct/assembly/schema.ts';
+import { applyPoint, type Vec3 } from '@skelly/construct/foundation/math.ts';
+import { obbPolyhedron, worldSolid } from '@skelly/construct/shapes/geometry.ts';
 import { expect, it } from 'vitest';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { COMPACT_SMG_PROPORTIONS } from '../src/gun/compactSmgProportions.ts';

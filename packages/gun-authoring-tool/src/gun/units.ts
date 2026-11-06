@@ -1,6 +1,6 @@
-import { GRID } from '@skelly/engine/foundation/conventions.ts';
-import { BEVEL } from '@skelly/engine/shapes/mesh.ts';
-import type { DomainUnits } from '@skelly/engine/shapes/solid.ts';
+import { GRID } from '@skelly/construct/foundation/conventions.ts';
+import { BEVEL } from '@skelly/construct/shapes/mesh.ts';
+import type { DomainUnits } from '@skelly/construct/shapes/solid.ts';
 import { METRES_PER_UNIT } from './exportFrame.ts';
 
 export const GUN_UNITS: DomainUnits = { metresPerUnit: METRES_PER_UNIT, grid: GRID, bevel: BEVEL };

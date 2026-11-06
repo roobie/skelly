@@ -16,7 +16,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@skelly/engine": "*",
+    "@skelly/construct": "*",
     "valibot": "^1.5.0"
   },
   "devDependencies": {

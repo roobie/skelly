@@ -1,9 +1,9 @@
-import type { Design, DesignIssue, DesignLoadResult } from '@skelly/engine/assembly/design.ts';
-import type { DesignLoadInputs } from '@skelly/engine/assembly/designLoader.ts';
-import { loadDesignValue, readDeclaredStatus } from '@skelly/engine/assembly/designLoader.ts';
-import { describeValue, parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
-import type { Resolved } from '@skelly/engine/assembly/schema.ts';
-import type { Template } from '@skelly/engine/assembly/template.ts';
+import type { Design, DesignIssue, DesignLoadResult } from '@skelly/construct/assembly/design.ts';
+import type { DesignLoadInputs } from '@skelly/construct/assembly/designLoader.ts';
+import { loadDesignValue, readDeclaredStatus } from '@skelly/construct/assembly/designLoader.ts';
+import { describeValue, parseAssemblyJson } from '@skelly/construct/assembly/parseAssembly.ts';
+import type { Resolved } from '@skelly/construct/assembly/schema.ts';
+import type { Template } from '@skelly/construct/assembly/template.ts';
 import { ATTACHMENT_IDS } from './attachments.ts';
 import { boltCalibreIssue, isBoltAssembly, withBoltCalibre } from './boltCartridge.ts';
 import { PART_CATALOGUE, type PartCatalogue } from './catalogue.ts';

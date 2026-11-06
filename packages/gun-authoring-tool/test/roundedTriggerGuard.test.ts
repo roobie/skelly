@@ -1,7 +1,7 @@
-import type { PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
-import { IDENTITY } from '@skelly/engine/foundation/math.ts';
-import { boxFromMinMax, localSolidBounds, validateExtrudedPolygon } from '@skelly/engine/shapes/geometry.ts';
-import type { Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import type { PartDef, Resolved } from '@skelly/construct/assembly/schema.ts';
+import { IDENTITY } from '@skelly/construct/foundation/math.ts';
+import { boxFromMinMax, localSolidBounds, validateExtrudedPolygon } from '@skelly/construct/shapes/geometry.ts';
+import type { Solid, Vec2 } from '@skelly/construct/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';

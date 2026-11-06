@@ -1,4 +1,4 @@
-import { GRID } from '@skelly/engine/foundation/conventions.ts';
+import { GRID } from '@skelly/construct/foundation/conventions.ts';
 import { mmToU } from './units.ts';
 
 const snap = (value: number): number => Math.round(value / GRID) * GRID;

@@ -1,6 +1,6 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import { compose, scale, sub, translation } from '@skelly/engine/foundation/math.ts';
-import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import { compose, scale, sub, translation } from '@skelly/construct/foundation/math.ts';
+import { localSolidBounds } from '@skelly/construct/shapes/geometry.ts';
 import { describe, expect, it } from 'vitest';
 import {
   ACTION_CYCLE_PROFILES,

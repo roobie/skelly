@@ -1,6 +1,6 @@
-import type { PartFamily } from '@skelly/engine/assembly/schema.ts';
-import { GRID } from '@skelly/engine/foundation/conventions.ts';
-import { cross, dot, length } from '@skelly/engine/foundation/math.ts';
+import type { PartFamily } from '@skelly/construct/assembly/schema.ts';
+import { GRID } from '@skelly/construct/foundation/conventions.ts';
+import { cross, dot, length } from '@skelly/construct/foundation/math.ts';
 import { expect, it } from 'vitest';
 import { BOLT_CARRIER_RUNNING_CLEARANCE_U } from '../src/gun/parts.ts';
 

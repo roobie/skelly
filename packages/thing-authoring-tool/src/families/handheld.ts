@@ -1,4 +1,4 @@
-import type { BoxSolid } from '@skelly/engine/shapes/solid.ts';
+import type { BoxSolid } from '@skelly/construct/shapes/solid.ts';
 import { parse, strictObject } from 'valibot';
 import { annulus, cylinder, positive } from './shapes.ts';
 

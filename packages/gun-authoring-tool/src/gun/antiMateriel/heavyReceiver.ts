@@ -1,6 +1,6 @@
-import type { KeepOut, PartDef, PartFamily, PortDef } from '@skelly/engine/assembly/schema.ts';
-import { boxFromMinMax } from '@skelly/engine/shapes/geometry.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import type { KeepOut, PartDef, PartFamily, PortDef } from '@skelly/construct/assembly/schema.ts';
+import { boxFromMinMax } from '@skelly/construct/shapes/geometry.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { EJECTION_PORT_MARGIN_U } from '../ejectionPort.ts';
 import { box, choice, NEG_X, NEG_Y, X, Y } from './common.ts';
 import {

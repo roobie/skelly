@@ -4,7 +4,7 @@
   "license": "EUPL-1.2",
   "type": "module",
   "workspaces": [
-    "packages/engine",
+    "packages/construct",
     "packages/thing-core",
     "packages/thing-export",
     "packages/tool-ui",

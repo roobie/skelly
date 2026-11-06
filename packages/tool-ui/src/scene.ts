@@ -1,15 +1,15 @@
 // Builds three.js objects from a validation report. This is the only place
 // core types are converted to three.js types.
 
-import { portFrame } from '@skelly/engine/assembly/resolve.ts';
-import type { Report } from '@skelly/engine/assembly/validate.ts';
-import type { Issue } from '@skelly/engine/foundation/issue.ts';
-import type { Mat3, Transform, Vec3 } from '@skelly/engine/foundation/math.ts';
-import { applyDir, compose } from '@skelly/engine/foundation/math.ts';
-import { type DisplayItem, displayItems } from '@skelly/engine/shapes/display.ts';
-import { type Obb, worldBox } from '@skelly/engine/shapes/geometry.ts';
-import { displayBevel, meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import { portFrame } from '@skelly/construct/assembly/resolve.ts';
+import type { Report } from '@skelly/construct/assembly/validate.ts';
+import type { Issue } from '@skelly/construct/foundation/issue.ts';
+import type { Mat3, Transform, Vec3 } from '@skelly/construct/foundation/math.ts';
+import { applyDir, compose } from '@skelly/construct/foundation/math.ts';
+import { type DisplayItem, displayItems } from '@skelly/construct/shapes/display.ts';
+import { type Obb, worldBox } from '@skelly/construct/shapes/geometry.ts';
+import { displayBevel, meshForSolid, meshForSolidGroup } from '@skelly/construct/shapes/mesh.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { type MaterialDef, surfaceOf } from '@skelly/thing-core/materials';
 import { resolveAppearance, solidColor, srgbToHex } from '@skelly/thing-export/appearance.ts';
 import type { AppearanceContext, Palette } from '@skelly/thing-export/exportTypes.ts';
@@ -26,7 +26,7 @@ export interface Layers {
   readonly axes: Three.Group;
 }
 
-type MainAxis = typeof import('@skelly/engine/foundation/conventions.ts').MAIN_AXIS;
+type MainAxis = typeof import('@skelly/construct/foundation/conventions.ts').MAIN_AXIS;
 
 type ThreeRuntime = Pick<
   typeof import('three'),

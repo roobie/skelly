@@ -1,5 +1,5 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Assembly, Domain, PartDef } from '@skelly/engine/assembly/schema.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Assembly, Domain, PartDef } from '@skelly/construct/assembly/schema.ts';
 import { partNodeName } from '@skelly/thing-export/glb.ts';
 import { expect, it } from 'vitest';
 import { ATTACHMENT_IDS, attachmentInstanceForId } from '../src/gun/attachments.ts';

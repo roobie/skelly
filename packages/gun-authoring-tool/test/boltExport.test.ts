@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Assembly } from '@skelly/engine/assembly/schema.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { applyDir, applyPoint, invert, length, sub } from '@skelly/engine/foundation/math.ts';
-import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Assembly } from '@skelly/construct/assembly/schema.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { applyDir, applyPoint, invert, length, sub } from '@skelly/construct/foundation/math.ts';
+import { localSolidBounds } from '@skelly/construct/shapes/geometry.ts';
 import { expect, it } from 'vitest';
 import { buildRegistry } from '../../deadvox/src/core/content.ts';
 import { exportFileText } from '../src/cli/exportFile.ts';

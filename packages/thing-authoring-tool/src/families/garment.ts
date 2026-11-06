@@ -1,4 +1,4 @@
-import type { BoxSolid } from '@skelly/engine/shapes/solid.ts';
+import type { BoxSolid } from '@skelly/construct/shapes/solid.ts';
 import { type InferOutput, minValue, parse, picklist, pipe, strictObject } from 'valibot';
 import { positive, scalar } from './shapes.ts';
 

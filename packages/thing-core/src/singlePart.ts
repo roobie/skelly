@@ -1,5 +1,5 @@
-import type { Assembly, Domain, PartDef } from '@skelly/engine/assembly/schema.ts';
-import type { DomainUnits } from '@skelly/engine/shapes/solid.ts';
+import type { Assembly, Domain, PartDef } from '@skelly/construct/assembly/schema.ts';
+import type { DomainUnits } from '@skelly/construct/shapes/solid.ts';
 
 export const singlePart = ({
   id,

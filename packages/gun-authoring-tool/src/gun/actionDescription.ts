@@ -1,6 +1,6 @@
 // Gun-owned discovery and coupling. Consumers choose a presentation mode, not instance names.
 
-import type { PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
+import type { PartDef, Resolved } from '@skelly/construct/assembly/schema.ts';
 import {
   applyDir,
   applyPoint,
@@ -9,7 +9,7 @@ import {
   sub,
   type Transform,
   type Vec3,
-} from '@skelly/engine/foundation/math.ts';
+} from '@skelly/construct/foundation/math.ts';
 import { partNodeName } from '@skelly/thing-export/glb.ts';
 import { AR_CYCLIC_RPM } from './arFrames.ts';
 import { COMPACT_SMG_PROPORTIONS } from './compactSmgProportions.ts';

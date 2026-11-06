@@ -1,10 +1,10 @@
 // Frames derive from built geometry, following parameter changes without duplicating builder constants.
 // Declarations are keyed by registry key; a grip's frame follows its own leaned axes after placement.
 
-import type { AnchorFrame } from '@skelly/engine/assembly/anchors.ts';
-import type { PartDef } from '@skelly/engine/assembly/schema.ts';
-import { add, extrusionPoint, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import type { RevolvedSolid, Solid } from '@skelly/engine/shapes/solid.ts';
+import type { AnchorFrame } from '@skelly/construct/assembly/anchors.ts';
+import type { PartDef } from '@skelly/construct/assembly/schema.ts';
+import { add, extrusionPoint, type Vec3 } from '@skelly/construct/foundation/math.ts';
+import type { RevolvedSolid, Solid } from '@skelly/construct/shapes/solid.ts';
 import type { GunAnchorDeclarations, GunPartAnchors } from './anchors.ts';
 import { localEjectionPoint } from './ejection.ts';
 import { FIRING_GRIP } from './parts.ts';

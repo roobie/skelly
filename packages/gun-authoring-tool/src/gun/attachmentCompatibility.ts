@@ -1,4 +1,4 @@
-import { mateTransform, resolve } from '@skelly/engine/assembly/resolve.ts';
+import { mateTransform, resolve } from '@skelly/construct/assembly/resolve.ts';
 import {
   keepOut,
   keepOutBetweenParts,
@@ -6,7 +6,7 @@ import {
   solidOverlap,
   solidOverlapBetweenParts,
   solidOverlapForPart,
-} from '@skelly/engine/assembly/rules.ts';
+} from '@skelly/construct/assembly/rules.ts';
 import type {
   Assembly,
   Domain,
@@ -15,10 +15,10 @@ import type {
   Resolved,
   ResolvedParam,
   Rule,
-} from '@skelly/engine/assembly/schema.ts';
-import { checkRule, validationRules } from '@skelly/engine/assembly/validate.ts';
-import type { Issue } from '@skelly/engine/foundation/issue.ts';
-import type { Transform } from '@skelly/engine/foundation/math.ts';
+} from '@skelly/construct/assembly/schema.ts';
+import { checkRule, validationRules } from '@skelly/construct/assembly/validate.ts';
+import type { Issue } from '@skelly/construct/foundation/issue.ts';
+import type { Transform } from '@skelly/construct/foundation/math.ts';
 import {
   ATTACHMENT_IDS,
   type AttachmentSlotMetadata,

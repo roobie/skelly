@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { MAIN_AXIS } from '@skelly/engine/foundation/conventions.ts';
-import type { Vec3 } from '@skelly/engine/foundation/math.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { MAIN_AXIS } from '@skelly/construct/foundation/conventions.ts';
+import type { Vec3 } from '@skelly/construct/foundation/math.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import type { Palette } from '@skelly/thing-export/exportTypes.ts';
 import { buildLayers as buildToolLayers } from '@skelly/tool-ui/scene';
 import { threeRuntime } from '@skelly/tool-ui/three-runtime';

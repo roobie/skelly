@@ -1,7 +1,7 @@
-import { motionTransform } from '@skelly/engine/assembly/motion.ts';
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import { length } from '@skelly/engine/foundation/math.ts';
-import { penetrationWorld, worldSolid } from '@skelly/engine/shapes/geometry.ts';
+import { motionTransform } from '@skelly/construct/assembly/motion.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import { length } from '@skelly/construct/foundation/math.ts';
+import { penetrationWorld, worldSolid } from '@skelly/construct/shapes/geometry.ts';
 import { describe, expect, it } from 'vitest';
 import { resolveGunAction } from '../src/gun/actionDescription.ts';
 import { sweepTurningAction } from '../src/gun/boltSweep.ts';

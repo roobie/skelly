@@ -1,4 +1,4 @@
-import { IDENTITY, mulMM, rotX, rotY, rotZ } from '@skelly/engine/foundation/math.ts';
+import { IDENTITY, mulMM, rotX, rotY, rotZ } from '@skelly/construct/foundation/math.ts';
 import {
   boxFromMinMax,
   clipConvexPolyhedron,
@@ -12,8 +12,8 @@ import {
   validateExtrudedPolygon,
   worldBox,
   worldSolid,
-} from '@skelly/engine/shapes/geometry.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+} from '@skelly/construct/shapes/geometry.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { sweepGroup } from './sweeps.ts';
 

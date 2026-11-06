@@ -113,7 +113,7 @@ start flow.
    first tool slice exercises both run modes and the single merge authority. Show only
    data an adapter can actually access; another origin's browser store is not implicitly
    readable. This slice has no editing dependency on field patches. Guard the API-only
-   import direction through `packages/engine/test/engineImportBoundary.test.ts`,
+   import direction through `packages/construct/test/constructImportBoundary.test.ts`,
    `packageEdges`, including subpath and forbidden reverse/private/tool imports.
 2. **Engine field-patch merge.** Design-check and build the merge, schema marking
    and per-field origins governed by ADR 0007. This is independently scheduled within

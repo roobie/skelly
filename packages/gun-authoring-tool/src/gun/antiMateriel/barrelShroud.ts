@@ -1,6 +1,6 @@
-import type { PartDef, PartFamily, PortDef } from '@skelly/engine/assembly/schema.ts';
-import type { SizeClass } from '@skelly/engine/foundation/conventions.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import type { PartDef, PartFamily, PortDef } from '@skelly/construct/assembly/schema.ts';
+import type { SizeClass } from '@skelly/construct/foundation/conventions.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { box, cls, NEG_X, NEG_Y, NEG_Z, RUBBER, sizeParam, X, Y } from './common.ts';
 
 /**

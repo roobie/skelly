@@ -9,7 +9,7 @@ on:
     paths:
       - 'site/**'
       - 'packages/gun-authoring-tool/**'
-      - 'packages/engine/**'
+      - 'packages/construct/**'
       - 'packages/tool-ui/**'
       - 'packages/thing-core/**'
       - 'packages/thing-export/**'

@@ -98,7 +98,7 @@ test('thing-export has its own typecheck and unit job covering its dependency pa
   for (const event of ['push', 'pull_request']) {
     for (const file of [
       'packages/thing-export/src/physical.ts',
-      'packages/engine/src/shapes/solid.ts',
+      'packages/construct/src/shapes/solid.ts',
       'packages/thing-core/src/schema.ts',
       'package-lock.json',
     ]) {

@@ -1,4 +1,4 @@
-import type { Resolved } from '@skelly/engine/assembly/schema.ts';
+import type { Resolved } from '@skelly/construct/assembly/schema.ts';
 import {
   applyDir,
   applyPoint,
@@ -7,9 +7,9 @@ import {
   sub,
   type Transform,
   type Vec3,
-} from '@skelly/engine/foundation/math.ts';
-import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/shapes/geometry.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+} from '@skelly/construct/foundation/math.ts';
+import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/construct/shapes/geometry.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { partNodeName } from '@skelly/thing-export/glb.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { toFileAxes } from './exportFrame.ts';

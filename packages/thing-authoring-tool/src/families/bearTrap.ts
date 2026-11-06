@@ -1,5 +1,5 @@
-import type { Vec3 } from '@skelly/engine/foundation/math.ts';
-import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import type { Vec3 } from '@skelly/construct/foundation/math.ts';
+import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '@skelly/construct/shapes/solid.ts';
 import { integer, minValue, parse, pipe, strictObject } from 'valibot';
 import { annulus, cylinder, positive, scalar } from './shapes.ts';
 

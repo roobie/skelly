@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import type { Mat3 } from '@skelly/engine/foundation/math.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import type { Mat3 } from '@skelly/construct/foundation/math.ts';
 import type { AppearanceContext } from '@skelly/thing-export/exportTypes.ts';
 import { Matrix4, Mesh, MeshStandardMaterial, Quaternion } from 'three';
 import { describe, expect, it } from 'vitest';

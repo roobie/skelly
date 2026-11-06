@@ -17,14 +17,14 @@ reasons and `things/WORK.md`, "Phases" for the remaining suite work.
 
 ## Contract
 
-- Math comes from the engine and is used, never reimplemented.
-- Shapes, meshing and assembly solving belong to the engine. The wrapper does not build
+- Math comes from `packages/construct` and is used, never reimplemented.
+- Shapes, meshing and assembly solving belong to construct. The wrapper does not build
   geometry or solve placement. Work that does, such as placing a part's geometric centre,
   belongs above this core; see
   `packages/thing-export/README.md`, "Physical model".
 - Nothing here names a kind of thing, so any code that does belongs in a tool.
 - Deadvox depends on this package for the model schema, so consuming that envelope never
-  loads rendering or authoring geometry. The single-part helper wraps engine types rather
+  loads rendering or authoring geometry. The single-part helper wraps construct types rather
   than introducing a second assembly format; see `src/singlePart.ts`, `singlePart`.
 - Each domain pack owns one named block on a model entry and validates it with its own
   schema. The envelope then names no kind of thing, nothing leaks between packs, and one

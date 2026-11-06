@@ -3,7 +3,7 @@ read_if:
   - you plan or pick up work on the things suite or on retiring gungen
   - you wonder which gungen names remain to retire
   - you decide where a shared concept, consumer schema extension or tool UI part belongs
-  - you move the engine's export layer, the material data or mass out of gungen or the engine
+  - you move construct's export layer, the material data or mass out of gungen or construct
   - you change the recipe defining the gun tool's reproduction exit
   - you turn gun parts into Deadvox items
   - you continue the non-gun slice or migrate shared visuals and handling datums
@@ -18,11 +18,11 @@ a gun authoring tool that together replace gungen. Delete this file at close-out
 
 Why each boundary matters, and where it is checked:
 
-- The engine stays domain-neutral so that each consumer can change its own data and rules
-  without the engine knowing; the neutral-name check is `packages/engine/test/engineImportBoundary.test.ts`,
+- `packages/construct` stays domain-neutral so that each consumer can change its own data and rules
+  without construct knowing; the neutral-name check is `packages/construct/test/constructImportBoundary.test.ts`,
   `forbiddenDomainIdentifiers`.
-- Import edges between packages are enforced by `packages/engine/test/engineImportBoundary.test.ts`,
-  `packageEdges`. Deadvox must not import the engine or export package, so the game's
+- Import edges between packages are enforced by `packages/construct/test/constructImportBoundary.test.ts`,
+  `packageEdges`. Deadvox must not import the construct or export package, so the game's
   dependency graph stays free of authoring geometry (see `things/WORK.md`, "Decisions").
 - Shared fields need one owner so tool and consumer contracts cannot diverge. See
   `packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
@@ -55,10 +55,10 @@ Settled:
   tool succeeds gungen, and gungen is deleted at the end.
 - Neither authoring tool imports its peer, and lower packages and Deadvox cannot import
   the gun tool, so content ownership cannot reverse the shared dependency layers.
-- `thing-core` imports no package but the engine, so the core stays free of gun modules and
+- `thing-core` imports no package but construct, so the core stays free of gun modules and
   of the tools above it. Domain packs extend the schema without the core knowing.
-- Deadvox imports nothing from the engine. The game reads exported per-part mass and
-  centre-of-mass numbers and never loads the engine's shapes, so the engine's geometry stays
+- Deadvox imports nothing from construct. The game reads exported per-part mass and
+  centre-of-mass numbers and never loads construct's shapes, so construct's geometry stays
   out of the game's dependency graph.
 - The model schema is one neutral schema owned by `thing-core`; domain packs extend it, each
   in a named block of its own (`packages/thing-core/README.md`, "Contract").
@@ -103,12 +103,12 @@ Settled:
 - A carried item may leave its datum out and take Deadvox's default hold; the tool authors a
   datum only where the default looks wrong at a look in game. A datum that reproduces the
   default adds work and a second value to keep in step without changing what the player sees.
-- Engine family and parameter types serve non-gun parts, so the thing tool needs no
+- Construct's family and parameter types serve non-gun parts, so the thing tool needs no
   parallel assembly schema. See `packages/thing-authoring-tool/src/catalogue.ts`, `buildItem`.
-- The engine ends at assembly; export belongs above the neutral core so material and model
-  contracts cannot pull dependencies back into geometry (`packages/engine/README.md`, "Layers").
+- Construct ends at assembly; export belongs above the neutral core so material and model
+  contracts cannot pull dependencies back into geometry (`packages/construct/README.md`, "Layers").
 - The thing authoring tool owns non-gun family policy above the shared packages, so
-  neither the engine nor the core knows its item kinds. Its home is
+  neither construct nor the core knows its item kinds. Its home is
   `packages/thing-authoring-tool/README.md`.
 - The directory structure is fixed before any new feature work.
 - Packages live in the top-level `packages/` directory, each a workspace of the root
@@ -129,9 +129,9 @@ one implementation and one authored-source owner.
 
 | Area | Home |
 |---|---|
-| Math, conventions, RNG | `packages/engine/foundation` |
-| Solids, mesh, volume, collision | `packages/engine/shapes` |
-| Parts, ports, templates, resolving, validation, generation | `packages/engine/assembly` |
+| Math, conventions, RNG | `packages/construct/foundation` |
+| Solids, mesh, volume, collision | `packages/construct/shapes` |
+| Parts, ports, templates, resolving, validation, generation | `packages/construct/assembly` |
 | Material table, anchors, neutral model envelope | `thing-core` |
 | GLB and model-entry writing, per-part mass and centre of mass | the export package |
 | Scene, camera, parameter panel, URL state | `packages/tool-ui` |
@@ -156,7 +156,7 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
    `packages/thing-core/src/materials.ts`, `MATERIALS`; and
    `test/gungen-deadvox-contract.test.mjs`, "gungen exports satisfy deadvox model validation".
 2. **Export package and physical model — complete.**
-   The engine ends at assembly so the game can consume authored mass and placed centres
+   Construct ends at assembly so the game can consume authored mass and placed centres
    without loading authoring geometry. Atoms read their item weight; gun bodies sum authored
    part masses and fitted child items keep their own weight. See
    `packages/thing-export/README.md`, "Physical model";
@@ -182,7 +182,7 @@ Deadvox depends on `thing-core` for the schema and on nothing above it.
    `test/gungen-deadvox-contract.test.mjs`, "registers every recipe export in the full base and keeps each gun companion inside the recipe".
    No root gungen directory remains. Phase 6 retains only names: the root contract and
    gun workflow, launcher presentation and controls, exporter metadata and consumer output
-   directory, plus dead old-name support in the engine boundary test and zero-drift scanner,
+   directory, plus dead old-name support in the construct boundary test and zero-drift scanner,
    boundary/scanner fixtures and `GUNGEN_SWEEPS`. These do not preserve a second
    implementation. The retirement audit and deferred ownership transfer follow
    `things/TASK-gun-tool.md`, "Phase 5: complete".

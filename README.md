@@ -17,7 +17,7 @@ skelly is a hobby monorepo built around **deadvox**, a voxel survival game that 
 - **[deadvox](packages/deadvox/PROJECT.md)**: the game. You scavenge a large voxel world full of zombies, with detailed items, bodies and crafting. It runs entirely in the browser, with no server.
 - **[gun authoring tool](packages/gun-authoring-tool/PROJECT.md)**: a designer for low-poly firearms whose parts fit together and whose moving parts have room to move. It exports the guns deadvox loads.
 - **[mobgen](packages/mobgen/PROJECT.md)**: a procedural generator of voxel creatures, from humanoids to crawlers and dogs, with bodies that can be severed.
-- **[engine](packages/engine/README.md)**: the shared assembly, geometry and fit code that gungen builds on.
+- **[construct](packages/construct/README.md)**: the shared assembly, geometry and fit code that gungen builds on.
 - **[things](things/README.md)**: the authoring tools and shared core, in the `thing-*` workspaces under `packages/`, that are replacing gungen as the source of deadvox's models.
 
 ## Run and check locally

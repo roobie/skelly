@@ -1,5 +1,5 @@
-import { cross, dot, sub, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import type { ExtrudedPolygonSolid } from '@skelly/engine/shapes/solid.ts';
+import { cross, dot, sub, type Vec3 } from '@skelly/construct/foundation/math.ts';
+import type { ExtrudedPolygonSolid } from '@skelly/construct/shapes/solid.ts';
 import {
   array,
   finite,

@@ -1,4 +1,4 @@
-import type { RevolvedSolid, Solid } from '@skelly/engine/shapes/solid.ts';
+import type { RevolvedSolid, Solid } from '@skelly/construct/shapes/solid.ts';
 import { parse, strictObject } from 'valibot';
 import { cylinder, positive, revolve } from './shapes.ts';
 

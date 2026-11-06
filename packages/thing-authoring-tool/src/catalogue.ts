@@ -1,7 +1,7 @@
-import type { Assembly, Domain, PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { applyDir, applyPoint, scale, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import type { Assembly, Domain, PartDef, PartFamily } from '@skelly/construct/assembly/schema.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { applyDir, applyPoint, scale, type Vec3 } from '@skelly/construct/foundation/math.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { MATERIALS } from '@skelly/thing-core/materials';
 import { ModelPointSchema, type NeutralModel, NeutralModelSchema } from '@skelly/thing-core/schema';
 import { singlePart } from '@skelly/thing-core/single-part';

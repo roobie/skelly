@@ -1,6 +1,10 @@
-import type { PartDef, PortDef } from '@skelly/engine/assembly/schema.ts';
-import { boxFromMinMax, clippedExtrudedPolygonPolyhedron, polyhedronVolume } from '@skelly/engine/shapes/geometry.ts';
-import type { Box, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import type { PartDef, PortDef } from '@skelly/construct/assembly/schema.ts';
+import {
+  boxFromMinMax,
+  clippedExtrudedPolygonPolyhedron,
+  polyhedronVolume,
+} from '@skelly/construct/shapes/geometry.ts';
+import type { Box, Solid, Vec2 } from '@skelly/construct/shapes/solid.ts';
 import physical from './physical.json' with { type: 'json' };
 import { type SectionPocket, subtractAxialPockets, subtractConvexSection } from './receiverSection.ts';
 import { roundedTriggerGuardSolids, TRIGGER_BLADE_ID } from './roundedTriggerGuard.ts';

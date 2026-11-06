@@ -1,6 +1,6 @@
-import type { PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
-import { GRID, type SizeClass } from '@skelly/engine/foundation/conventions.ts';
-import type { Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import type { PartDef, PartFamily } from '@skelly/construct/assembly/schema.ts';
+import { GRID, type SizeClass } from '@skelly/construct/foundation/conventions.ts';
+import type { Solid, Vec2 } from '@skelly/construct/shapes/solid.ts';
 import { choice, cls, NEG_X, octagonPrism, sizeParam, X, Y } from './common.ts';
 
 /**

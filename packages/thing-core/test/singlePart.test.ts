@@ -1,5 +1,5 @@
-import type { PartDef } from '@skelly/engine/assembly/schema.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
+import type { PartDef } from '@skelly/construct/assembly/schema.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
 import { expect, it } from 'vitest';
 import { singlePart } from '../src/singlePart.ts';
 

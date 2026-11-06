@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Assembly } from '@skelly/engine/assembly/schema.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Assembly } from '@skelly/construct/assembly/schema.ts';
 import { describe, expect, it } from 'vitest';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';

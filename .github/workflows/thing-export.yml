@@ -6,7 +6,7 @@ on:
     paths:
       - 'packages/thing-export/**'
       - 'packages/thing-core/**'
-      - 'packages/engine/**'
+      - 'packages/construct/**'
       - 'package.json'
       - 'package-lock.json'
       - 'tools/jsonnet/**'
@@ -16,7 +16,7 @@ on:
     paths:
       - 'packages/thing-export/**'
       - 'packages/thing-core/**'
-      - 'packages/engine/**'
+      - 'packages/construct/**'
       - 'package.json'
       - 'package-lock.json'
       - 'tools/jsonnet/**'

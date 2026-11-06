@@ -17,7 +17,7 @@ The gun implementation, authored sources, tests and still-valid docs have one ow
 package or a second recipe authority. No root gungen directory remains. The retained
 names are the root consumption contract, the gun CI workflow, the launcher control and
 presentation names, exporter metadata and the consumer output directory. Phase 6 also
-retires the dead old-name support in `packages/engine/test/engineImportBoundary.test.ts`,
+retires the dead old-name support in `packages/construct/test/constructImportBoundary.test.ts`,
 `rootsUnder`, `importTarget` and its canary fixtures; `tools/zero-drift-check.mjs`,
 `SUBPROJECTS`; the zero-drift and Deadvox import-boundary fixtures; and `GUNGEN_SWEEPS`.
 None is a second authoring implementation or an old source-path alias.
@@ -57,7 +57,7 @@ see `test/model-export-sync.mjs`, `assertExportSynced` and `assertRecipeCredits`
 Preserve `test/things-deadvox-contract.test.mjs` independently.
 
 Neither tool imports its peer; lower packages and Deadvox cannot import the gun tool.
-See `packages/engine/test/engineImportBoundary.test.ts`, `packageEdges`. Shared engine
+See `packages/construct/test/constructImportBoundary.test.ts`, `packageEdges`. Shared construct
 shapes are not shared authored parts: an actual cross-tool authored part needs BR's
 ownership decision rather than duplication or promotion into the neutral core.
 

@@ -1,4 +1,4 @@
-import type { Resolved } from '@skelly/engine/assembly/schema.ts';
+import type { Resolved } from '@skelly/construct/assembly/schema.ts';
 import { NeutralModelSchema } from '@skelly/thing-core/schema';
 import { safeParse } from 'valibot';
 import { expect, expectTypeOf, it } from 'vitest';

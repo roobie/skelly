@@ -1,8 +1,8 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Domain, Resolved } from '@skelly/engine/assembly/schema.ts';
-import type { Vec3 } from '@skelly/engine/foundation/math.ts';
-import { meshForSolid } from '@skelly/engine/shapes/mesh.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Domain, Resolved } from '@skelly/construct/assembly/schema.ts';
+import type { Vec3 } from '@skelly/construct/foundation/math.ts';
+import { meshForSolid } from '@skelly/construct/shapes/mesh.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { drawnGeometry } from '../src/drawn.ts';
 import { modelParts } from '../src/physical.ts';

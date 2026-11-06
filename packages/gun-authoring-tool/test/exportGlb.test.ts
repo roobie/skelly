@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Assembly } from '@skelly/engine/assembly/schema.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Assembly } from '@skelly/construct/assembly/schema.ts';
 import {
   applyPoint,
   cross,
@@ -16,10 +16,10 @@ import {
   rotZ,
   sub,
   type Vec3,
-} from '@skelly/engine/foundation/math.ts';
-import { displayItems as selectDisplayItems } from '@skelly/engine/shapes/display.ts';
-import { localSolidBounds, penetrationWorld, worldBox, worldSolid } from '@skelly/engine/shapes/geometry.ts';
-import { meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
+} from '@skelly/construct/foundation/math.ts';
+import { displayItems as selectDisplayItems } from '@skelly/construct/shapes/display.ts';
+import { localSolidBounds, penetrationWorld, worldBox, worldSolid } from '@skelly/construct/shapes/geometry.ts';
+import { meshForSolid, meshForSolidGroup } from '@skelly/construct/shapes/mesh.ts';
 import type { GlbAssetIdentity, Palette } from '@skelly/thing-export/exportTypes.ts';
 import { exportGlb, partNodeName, srgbToLinear } from '@skelly/thing-export/glb.ts';
 import { describe, expect, it } from 'vitest';

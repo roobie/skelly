@@ -7,7 +7,7 @@ on:
     paths:
       - 'packages/mods/**'
       - 'packages/deadvox/**'
-      - 'packages/engine/**'
+      - 'packages/construct/**'
       - 'packages/tool-ui/**'
       - 'package.json'
       - 'package-lock.json'
@@ -23,7 +23,7 @@ on:
     paths:
       - 'packages/mods/**'
       - 'packages/deadvox/**'
-      - 'packages/engine/**'
+      - 'packages/construct/**'
       - 'packages/tool-ui/**'
       - 'package.json'
       - 'package-lock.json'

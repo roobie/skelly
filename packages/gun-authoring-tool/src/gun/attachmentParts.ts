@@ -1,7 +1,7 @@
-import type { PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
-import type { Vec3 } from '@skelly/engine/foundation/math.ts';
-import { boxFromMinMax } from '@skelly/engine/shapes/geometry.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import type { PartDef, PartFamily } from '@skelly/construct/assembly/schema.ts';
+import type { Vec3 } from '@skelly/construct/foundation/math.ts';
+import { boxFromMinMax } from '@skelly/construct/shapes/geometry.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { FOREGRIP_PROPORTIONS } from './foregripProportions.ts';
 import type { MuzzleBore } from './mounts.ts';
 

@@ -14,8 +14,8 @@ import type { Domain, PartInstance } from '../src/assembly/schema.ts';
 import type { Template } from '../src/assembly/template.ts';
 
 // Type-level only: the typecheck enforces these contracts. The domain-neutral source scan lives in
-// engineImportBoundary.test.ts.
-it("pins the engine's 3.0a contracts and chosen-value storage", () => {
+// constructImportBoundary.test.ts.
+it("pins the construct package's 3.0a contracts and chosen-value storage", () => {
   const partWithoutInheritedLength = {
     family: 'handguard',
     params: { mount: 'clamped' },

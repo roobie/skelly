@@ -1,9 +1,9 @@
-import { generate } from '@skelly/engine/assembly/generate.ts';
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { IDENTITY } from '@skelly/engine/foundation/math.ts';
-import { distanceWorld, validateExtrudedPolygon, worldSolid } from '@skelly/engine/shapes/geometry.ts';
-import type { ExtrudedPolygonSolid } from '@skelly/engine/shapes/solid.ts';
+import { generate } from '@skelly/construct/assembly/generate.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { IDENTITY } from '@skelly/construct/foundation/math.ts';
+import { distanceWorld, validateExtrudedPolygon, worldSolid } from '@skelly/construct/shapes/geometry.ts';
+import type { ExtrudedPolygonSolid } from '@skelly/construct/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';

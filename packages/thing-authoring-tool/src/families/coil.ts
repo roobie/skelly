@@ -1,4 +1,4 @@
-import type { Vec2 } from '@skelly/engine/shapes/solid.ts';
+import type { Vec2 } from '@skelly/construct/shapes/solid.ts';
 import { integer, parse, pipe, strictObject } from 'valibot';
 import { positive, revolve } from './shapes.ts';
 

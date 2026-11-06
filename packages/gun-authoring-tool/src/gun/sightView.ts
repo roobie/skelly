@@ -1,6 +1,6 @@
-import type { Resolved } from '@skelly/engine/assembly/schema.ts';
-import { applyPoint, dot, sub, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import type { Resolved } from '@skelly/construct/assembly/schema.ts';
+import { applyPoint, dot, sub, type Vec3 } from '@skelly/construct/foundation/math.ts';
+import { localSolidBounds } from '@skelly/construct/shapes/geometry.ts';
 import { check, minValue, number, parse, pipe, strictObject } from 'valibot';
 import content from './sightView.json' with { type: 'json' };
 

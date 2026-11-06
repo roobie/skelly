@@ -1,7 +1,7 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { ParamChoice } from '@skelly/engine/assembly/template.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { worldBox } from '@skelly/engine/shapes/geometry.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { ParamChoice } from '@skelly/construct/assembly/template.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { worldBox } from '@skelly/construct/shapes/geometry.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';

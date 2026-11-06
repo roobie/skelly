@@ -1,5 +1,5 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Assembly } from '@skelly/engine/assembly/schema.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Assembly } from '@skelly/construct/assembly/schema.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';

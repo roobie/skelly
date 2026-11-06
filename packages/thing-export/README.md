@@ -11,15 +11,15 @@ read_if:
 
 # thing-export
 
-Exports sit above the engine and `thing-core` so model formats can use geometry and the
+Exports sit above `packages/construct` and `thing-core` so model formats can use geometry and the
 neutral contract without making either depend on authoring tools. This package may import
 those packages, but never a tool. Deadvox reads the neutral contract, not this package or
-engine geometry. See `packages/engine/test/engineImportBoundary.test.ts`, `packageEdges`.
+construct geometry. See `packages/construct/test/constructImportBoundary.test.ts`, `packageEdges`.
 
 Generator identity and metadata namespaces stay caller-owned so tools do not inherit each
 other's identity. See `src/exportTypes.ts`, `GlbExportInput`. Construction choices and
 appearance profiles remain independent: changing a finish must not change an assembly.
-See `packages/engine/src/assembly/template.ts`, `Template.variantParams`, and
+See `packages/construct/src/assembly/template.ts`, `Template.variantParams`, and
 `src/exportTypes.ts`, `AppearanceContext`.
 
 ## Recipe ownership

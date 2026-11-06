@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { generate } from '@skelly/engine/assembly/generate.ts';
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import { validateExtrudedPolygon } from '@skelly/engine/shapes/geometry.ts';
-import { BEVEL, meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
-import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import { generate } from '@skelly/construct/assembly/generate.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import { validateExtrudedPolygon } from '@skelly/construct/shapes/geometry.ts';
+import { BEVEL, meshForSolid, meshForSolidGroup } from '@skelly/construct/shapes/mesh.ts';
+import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '@skelly/construct/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
@@ -135,9 +135,9 @@ const importRe = /^\s*(?:import|export)[^'"]*from\s+['"]([^'"]+)['"]|^\s*import\
 const meshSpecifierRe = /(^|\/)mesh(\.ts)?$/;
 
 describe('mesh module is display-only', () => {
-  it('the validator path in the engine does not import mesh.ts', () => {
+  it('the validator path in the construct package does not import mesh.ts', () => {
     for (const name of ['assembly/validate.ts', 'assembly/rules.ts', 'assembly/resolve.ts', 'shapes/geometry.ts']) {
-      const source = readFileSync(join(import.meta.dirname, '..', '..', 'engine', 'src', name), 'utf8');
+      const source = readFileSync(join(import.meta.dirname, '..', '..', 'construct', 'src', name), 'utf8');
       const specs = [...source.matchAll(importRe)].map((m) => m[1] ?? m[2] ?? '');
       expect(specs.length, `${name}: no imports parsed`).toBeGreaterThan(0);
       expect(

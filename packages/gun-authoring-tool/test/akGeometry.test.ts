@@ -1,6 +1,6 @@
-import type { Resolved } from '@skelly/engine/assembly/schema.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { applyPoint, IDENTITY, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import type { Resolved } from '@skelly/construct/assembly/schema.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { applyPoint, IDENTITY, type Vec3 } from '@skelly/construct/foundation/math.ts';
 import {
   boundsOfPoints,
   localSolidBounds,
@@ -9,7 +9,7 @@ import {
   type WorldSolid,
   worldBox,
   worldSolid,
-} from '@skelly/engine/shapes/geometry.ts';
+} from '@skelly/construct/shapes/geometry.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadCorpus } from './helpers.ts';

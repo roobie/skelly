@@ -1,6 +1,6 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Assembly, Domain, PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
-import type { RevolvedSolid, Solid } from '@skelly/engine/shapes/solid.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Assembly, Domain, PartDef, PartFamily } from '@skelly/construct/assembly/schema.ts';
+import type { RevolvedSolid, Solid } from '@skelly/construct/shapes/solid.ts';
 import type {
   AppearanceContext,
   GlbAssetIdentity,

@@ -1,4 +1,4 @@
-import type { Assembly, Domain, PartDef } from '@skelly/engine/assembly/schema.ts';
+import type { Assembly, Domain, PartDef } from '@skelly/construct/assembly/schema.ts';
 import { loadPartCatalogue } from '../src/gun/catalogue.ts';
 
 const block = (x: number, y: number): PartDef['solids'][number] => ({

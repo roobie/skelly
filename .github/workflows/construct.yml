@@ -1,4 +1,4 @@
-name: engine
+name: construct
 
 # The import edges span every package, so the filter names all of packages/. Markdown-only
 # changes skip this workflow. thing-core has no workflow of its own, and the packages/** filter
@@ -10,13 +10,13 @@ on:
       - 'packages/**'
       - 'package-lock.json'
       - '!**/*.md'
-      - '.github/workflows/engine.yml'
+      - '.github/workflows/construct.yml'
   pull_request:
     paths:
       - 'packages/**'
       - 'package-lock.json'
       - '!**/*.md'
-      - '.github/workflows/engine.yml'
+      - '.github/workflows/construct.yml'
 
 # PR updates replace this PR's checks; main/manual groups always remain unique.
 concurrency:
@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: packages/engine
+        working-directory: packages/construct
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

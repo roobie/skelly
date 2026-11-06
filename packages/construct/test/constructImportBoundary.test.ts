@@ -10,7 +10,7 @@ interface Roots {
   readonly repo: string;
   readonly packages: string;
   readonly gungen: string;
-  readonly engineSrc: string;
+  readonly constructSrc: string;
 }
 interface PackageEdge {
   readonly from: string;
@@ -78,17 +78,17 @@ const resolveRelativeImport = (from: string, specifier: string): string | undefi
   return candidates.find(existsSync);
 };
 
-// Each engine folder may import only itself and the folders before it in this list.
-const engineLayers = ['foundation', 'shapes', 'assembly'];
+// Each construct folder may import only itself and the folders before it in this list.
+const constructLayers = ['foundation', 'shapes', 'assembly'];
 
-const layerIndex = (engineSrc: string, path: string): number =>
-  engineLayers.indexOf(relative(engineSrc, path).split(sep)[0] ?? '');
+const layerIndex = (constructSrc: string, path: string): number =>
+  constructLayers.indexOf(relative(constructSrc, path).split(sep)[0] ?? '');
 
 const rootsUnder = (repo: string): Roots => ({
   repo,
   packages: join(repo, 'packages'),
   gungen: join(repo, 'gungen'),
-  engineSrc: join(repo, 'packages', 'engine', 'src'),
+  constructSrc: join(repo, 'packages', 'construct', 'src'),
 });
 
 // The directory an import lands in, or undefined for an external package.
@@ -105,7 +105,7 @@ const importTarget = (file: string, specifier: string, roots: Roots): string | u
 
 // Each edge rejects an import from the files under `from` into the targets it forbids.
 const packageEdges = (roots: Roots): readonly PackageEdge[] => {
-  const engine = join(roots.packages, 'engine');
+  const construct = join(roots.packages, 'construct');
   const thingCore = join(roots.packages, 'thing-core');
   const thingExport = join(roots.packages, 'thing-export');
   const thingTool = join(roots.packages, 'thing-authoring-tool');
@@ -117,7 +117,7 @@ const packageEdges = (roots: Roots): readonly PackageEdge[] => {
       forbids: (target) => isWithin(thingTool, target),
       problem: 'gun tool imports the thing tool',
     },
-    ...[engine, thingCore, thingExport, toolUi, join(roots.packages, 'deadvox'), thingTool].map((from) => ({
+    ...[construct, thingCore, thingExport, toolUi, join(roots.packages, 'deadvox'), thingTool].map((from) => ({
       from,
       forbids: (target: string) => isWithin(gunTool, target),
       problem: 'imports the gun tool',
@@ -129,7 +129,7 @@ const packageEdges = (roots: Roots): readonly PackageEdge[] => {
       from: thingTool,
       forbids: (target) =>
         isWithin(roots.packages, target) &&
-        ![engine, thingCore, thingExport, toolUi, thingTool].some((root) => isWithin(root, target)),
+        ![construct, thingCore, thingExport, toolUi, thingTool].some((root) => isWithin(root, target)),
       problem: 'thing tool imports outside its lower layers',
     },
     {
@@ -141,19 +141,19 @@ const packageEdges = (roots: Roots): readonly PackageEdge[] => {
     {
       from: thingCore,
       forbids: (target) =>
-        isWithin(roots.packages, target) && !isWithin(engine, target) && !isWithin(thingCore, target),
-      problem: 'thing-core imports a package other than the engine',
+        isWithin(roots.packages, target) && !isWithin(construct, target) && !isWithin(thingCore, target),
+      problem: 'thing-core imports a package other than the construct package',
     },
     {
       from: join(roots.packages, 'deadvox'),
-      forbids: (target) => isWithin(engine, target),
-      problem: 'deadvox imports the engine',
+      forbids: (target) => isWithin(construct, target),
+      problem: 'deadvox imports the construct package',
     },
     {
       from: thingExport,
       forbids: (target) =>
-        isWithin(roots.packages, target) && ![engine, thingCore, thingExport].some((root) => isWithin(root, target)),
-      problem: 'thing-export imports a package other than the engine or thing-core',
+        isWithin(roots.packages, target) && ![construct, thingCore, thingExport].some((root) => isWithin(root, target)),
+      problem: 'thing-export imports a package other than the construct package or thing-core',
     },
     {
       from: join(roots.packages, 'deadvox'),
@@ -161,9 +161,9 @@ const packageEdges = (roots: Roots): readonly PackageEdge[] => {
       problem: 'deadvox imports thing-export',
     },
     {
-      from: roots.engineSrc,
-      forbids: (target) => isWithin(roots.packages, target) && !isWithin(engine, target),
-      problem: 'engine imports a package above the engine',
+      from: roots.constructSrc,
+      forbids: (target) => isWithin(roots.packages, target) && !isWithin(construct, target),
+      problem: 'construct imports a package above it',
     },
   ];
 };
@@ -175,12 +175,12 @@ const importProblem = (
   edges: readonly PackageEdge[],
 ): string | undefined => {
   const { specifier } = reference;
-  const inEngine = isWithin(roots.engineSrc, file);
+  const inConstruct = isWithin(roots.constructSrc, file);
   if (specifier === undefined) {
-    return inEngine ? `${file}: import cannot be resolved statically` : undefined;
+    return inConstruct ? `${file}: import cannot be resolved statically` : undefined;
   }
-  if (inEngine && specifier.startsWith('.') && !isWithin(roots.engineSrc, resolve(dirname(file), specifier))) {
-    return `${file}: relative import leaves engine/src (${specifier})`;
+  if (inConstruct && specifier.startsWith('.') && !isWithin(roots.constructSrc, resolve(dirname(file), specifier))) {
+    return `${file}: relative import leaves construct/src (${specifier})`;
   }
 
   const target = importTarget(file, specifier, roots);
@@ -190,13 +190,13 @@ const importProblem = (
   if (edge) {
     return `${file}: ${edge.problem}: ${specifier}`;
   }
-  if (!(inEngine && specifier.startsWith('.'))) {
+  if (!(inConstruct && specifier.startsWith('.'))) {
     return undefined;
   }
   if (!resolveRelativeImport(file, specifier)) {
     return `${file}: unresolved relative import ${specifier}`;
   }
-  if (layerIndex(roots.engineSrc, resolve(dirname(file), specifier)) > layerIndex(roots.engineSrc, file)) {
+  if (layerIndex(roots.constructSrc, resolve(dirname(file), specifier)) > layerIndex(roots.constructSrc, file)) {
     return `${file}: imports upward into a higher layer (${specifier})`;
   }
   return undefined;
@@ -316,12 +316,12 @@ const findBoundaryViolations = (files: readonly string[], roots: Roots): string[
   );
 };
 
-describe('engine import boundary', () => {
+describe('construct import boundary', () => {
   const repo = fileURLToPath(new URL('../../../', import.meta.url));
   const roots = rootsUnder(repo);
 
-  it('keeps engine source identifiers domain-neutral', () => {
-    const files = sourceFiles(roots.engineSrc);
+  it('keeps construct source identifiers domain-neutral', () => {
+    const files = sourceFiles(roots.constructSrc);
     expect(findDomainIdentifierViolations(files)).toEqual([]);
   });
 
@@ -362,11 +362,11 @@ describe('engine import boundary', () => {
     expect(references.map(({ specifier }) => specifier)).toEqual(['./t.ts', './u.ts']);
   });
 
-  it('flags relative imports outside engine/src and bare gungen imports', () => {
-    const fixtureRoot = mkdtempSync(join(tmpdir(), 'engine-import-boundary-'));
+  it('flags relative imports outside construct/src and bare gungen imports', () => {
+    const fixtureRoot = mkdtempSync(join(tmpdir(), 'construct-import-boundary-'));
     const fixtureRoots = rootsUnder(fixtureRoot);
-    const coreRoot = join(fixtureRoots.engineSrc, 'core');
-    const viewerRoot = join(fixtureRoots.engineSrc, 'viewer');
+    const coreRoot = join(fixtureRoots.constructSrc, 'core');
+    const viewerRoot = join(fixtureRoots.constructSrc, 'viewer');
     const ammoRoot = join(fixtureRoots.gungen, 'src', 'ammo');
     mkdirSync(coreRoot, { recursive: true });
     mkdirSync(viewerRoot, { recursive: true });
@@ -390,7 +390,7 @@ describe('engine import boundary', () => {
 
       const violations = findBoundaryViolations([relativeCanary, packageCanary, globCanary], fixtureRoots);
       expect(violations).toHaveLength(3);
-      expect(violations[0]).toContain('relative import leaves engine/src');
+      expect(violations[0]).toContain('relative import leaves construct/src');
       expect(violations[1]).toContain('imports gungen: gungen/src/gun/palette.ts');
       expect(violations[2]).toContain('import cannot be resolved statically');
       expect(findDomainIdentifierViolations([identifierCanary])).toHaveLength(7);
@@ -400,10 +400,10 @@ describe('engine import boundary', () => {
   });
 
   it('flags an import from a lower layer into a higher one but allows the reverse', () => {
-    const fixtureRoot = mkdtempSync(join(tmpdir(), 'engine-layer-boundary-'));
+    const fixtureRoot = mkdtempSync(join(tmpdir(), 'construct-layer-boundary-'));
     const fixtureRoots = rootsUnder(fixtureRoot);
-    const foundationRoot = join(fixtureRoots.engineSrc, 'foundation');
-    const shapesRoot = join(fixtureRoots.engineSrc, 'shapes');
+    const foundationRoot = join(fixtureRoots.constructSrc, 'foundation');
+    const shapesRoot = join(fixtureRoots.constructSrc, 'shapes');
     mkdirSync(foundationRoot, { recursive: true });
     mkdirSync(shapesRoot, { recursive: true });
 
@@ -412,11 +412,11 @@ describe('engine import boundary', () => {
       const downward = join(shapesRoot, 'solid.ts');
       writeFileSync(upward, "import '../shapes/solid.ts';\n");
       writeFileSync(downward, "import '../foundation/math.ts';\n");
-      const aboveEngine = join(shapesRoot, 'scene.ts');
-      writeFileSync(aboveEngine, "import '@skelly/tool-ui/scene';\n");
+      const aboveConstruct = join(shapesRoot, 'scene.ts');
+      writeFileSync(aboveConstruct, "import '@skelly/tool-ui/scene';\n");
 
       expect(findBoundaryViolations([downward], fixtureRoots)).toEqual([]);
-      expect(findBoundaryViolations([aboveEngine], fixtureRoots)).toHaveLength(1);
+      expect(findBoundaryViolations([aboveConstruct], fixtureRoots)).toHaveLength(1);
       const violations = findBoundaryViolations([upward], fixtureRoots);
       expect(violations).toHaveLength(1);
       expect(violations[0]).toContain('imports upward into a higher layer');
@@ -446,14 +446,14 @@ describe('engine import boundary', () => {
     }
   });
 
-  it('keeps tool-ui independent of both authoring tools while allowing engine parameter types', () => {
+  it('keeps tool-ui independent of both authoring tools while allowing construct parameter types', () => {
     const fixtureRoot = mkdtempSync(join(tmpdir(), 'tool-ui-boundary-'));
     const fixtureRoots = rootsUnder(fixtureRoot);
     const directory = join(fixtureRoots.packages, 'tool-ui', 'src');
     mkdirSync(directory, { recursive: true });
     try {
       const file = join(directory, 'panel.ts');
-      writeFileSync(file, "import type { Assembly } from '@skelly/engine/assembly/schema.ts';\n");
+      writeFileSync(file, "import type { Assembly } from '@skelly/construct/assembly/schema.ts';\n");
       expect(findBoundaryViolations([file], fixtureRoots)).toEqual([]);
       writeFileSync(file, "import 'gungen/src/gun/domain.ts';\n");
       expect(findBoundaryViolations([file], fixtureRoots)[0]).toContain('imports gungen');
@@ -469,7 +469,7 @@ describe('engine import boundary', () => {
     const fixtureRoots = rootsUnder(fixtureRoot);
     const gunTool = 'gun-authoring-tool';
     const pairs = [
-      ...['engine', 'thing-core', 'thing-export', 'tool-ui', 'deadvox', 'thing-authoring-tool'].map(
+      ...['construct', 'thing-core', 'thing-export', 'tool-ui', 'deadvox', 'thing-authoring-tool'].map(
         (from) => [from, gunTool] as const,
       ),
       [gunTool, 'thing-authoring-tool'] as const,
@@ -489,7 +489,7 @@ describe('engine import boundary', () => {
     }
   });
 
-  it('keeps thing-core to the engine among packages, and allows the engine', () => {
+  it('keeps thing-core to the construct package among packages, and allows it', () => {
     const fixtureRoot = mkdtempSync(join(tmpdir(), 'thing-core-boundary-'));
     const fixtureRoots = rootsUnder(fixtureRoot);
     const coreSrc = join(fixtureRoots.packages, 'thing-core', 'src');
@@ -497,14 +497,14 @@ describe('engine import boundary', () => {
 
     try {
       const toolImport = join(coreSrc, 'tool.ts');
-      const engineImport = join(coreSrc, 'engine.ts');
+      const constructImport = join(coreSrc, 'construct.ts');
       writeFileSync(toolImport, "import '@skelly/tool-ui/scene';\n");
-      writeFileSync(engineImport, "import '@skelly/engine/foundation/math.ts';\n");
+      writeFileSync(constructImport, "import '@skelly/construct/foundation/math.ts';\n");
 
-      expect(findBoundaryViolations([engineImport], fixtureRoots)).toEqual([]);
+      expect(findBoundaryViolations([constructImport], fixtureRoots)).toEqual([]);
       const violations = findBoundaryViolations([toolImport], fixtureRoots);
       expect(violations).toHaveLength(1);
-      expect(violations[0]).toContain('thing-core imports a package other than the engine');
+      expect(violations[0]).toContain('thing-core imports a package other than the construct package');
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });
     }
@@ -526,7 +526,7 @@ describe('engine import boundary', () => {
     }
   });
 
-  it('keeps thing-export to its own modules, engine and core', () => {
+  it('keeps thing-export to its own modules, construct and core', () => {
     const fixtureRoot = mkdtempSync(join(tmpdir(), 'thing-export-boundary-'));
     const fixtureRoots = rootsUnder(fixtureRoot);
     const directory = join(fixtureRoots.packages, 'thing-export', 'src');
@@ -535,7 +535,7 @@ describe('engine import boundary', () => {
       const file = join(directory, 'physical.ts');
       writeFileSync(
         file,
-        "import '@skelly/engine/shapes/solid.ts';\nimport '@skelly/thing-core/materials';\nimport './glb.ts';\n",
+        "import '@skelly/construct/shapes/solid.ts';\nimport '@skelly/thing-core/materials';\nimport './glb.ts';\n",
       );
       expect(findBoundaryViolations([file], fixtureRoots)).toEqual([]);
       writeFileSync(file, "import '@skelly/tool-ui/scene';\n");
@@ -546,7 +546,7 @@ describe('engine import boundary', () => {
   });
 
   it('flags deadvox importing geometry or export, including type-only re-exports', () => {
-    const fixtureRoot = mkdtempSync(join(tmpdir(), 'deadvox-engine-boundary-'));
+    const fixtureRoot = mkdtempSync(join(tmpdir(), 'deadvox-construct-boundary-'));
     const fixtureRoots = rootsUnder(fixtureRoot);
     const deadvoxSrc = join(fixtureRoots.packages, 'deadvox', 'src');
     mkdirSync(deadvoxSrc, { recursive: true });
@@ -555,9 +555,9 @@ describe('engine import boundary', () => {
       const namedImport = join(deadvoxSrc, 'named.ts');
       const relativeImport = join(deadvoxSrc, 'relative.ts');
       const typeReExport = join(deadvoxSrc, 'types.ts');
-      writeFileSync(namedImport, "import '@skelly/engine/shapes/solid.ts';\n");
-      writeFileSync(relativeImport, "import '../../engine/src/shapes/solid.ts';\n");
-      writeFileSync(typeReExport, "export type { Solid } from '@skelly/engine/shapes/solid.ts';\n");
+      writeFileSync(namedImport, "import '@skelly/construct/shapes/solid.ts';\n");
+      writeFileSync(relativeImport, "import '../../construct/src/shapes/solid.ts';\n");
+      writeFileSync(typeReExport, "export type { Solid } from '@skelly/construct/shapes/solid.ts';\n");
       const exportImport = join(deadvoxSrc, 'export.ts');
       writeFileSync(exportImport, "import '@skelly/thing-export/glb.ts';\n");
 
@@ -566,9 +566,9 @@ describe('engine import boundary', () => {
         fixtureRoots,
       );
       expect(violations).toHaveLength(4);
-      expect(violations[0]).toContain('deadvox imports the engine');
-      expect(violations[1]).toContain('deadvox imports the engine');
-      expect(violations[2]).toContain('deadvox imports the engine');
+      expect(violations[0]).toContain('deadvox imports the construct package');
+      expect(violations[1]).toContain('deadvox imports the construct package');
+      expect(violations[2]).toContain('deadvox imports the construct package');
       expect(violations[3]).toContain('deadvox imports thing-export');
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });

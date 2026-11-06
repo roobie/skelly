@@ -1,5 +1,5 @@
-import { generate } from '@skelly/engine/assembly/generate.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
+import { generate } from '@skelly/construct/assembly/generate.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';

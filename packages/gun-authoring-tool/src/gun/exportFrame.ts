@@ -1,6 +1,6 @@
 // Keep firearm units and file axes in the Gungen adapter so the shared engine stays domain-neutral.
 
-import { IDENTITY_M, type Mat3, mulMV, transpose, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import { IDENTITY_M, type Mat3, mulMV, transpose, type Vec3 } from '@skelly/construct/foundation/math.ts';
 import unitScale from './unitScale.json' with { type: 'json' };
 
 /**

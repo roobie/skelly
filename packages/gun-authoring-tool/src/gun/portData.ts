@@ -1,4 +1,4 @@
-import type { PortDef } from '@skelly/engine/assembly/schema.ts';
+import type { PortDef } from '@skelly/construct/assembly/schema.ts';
 
 /** Gun-only metadata for a magazine's seating interface. Core port rules ignore it. */
 export interface GunPortDef extends PortDef {

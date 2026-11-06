@@ -1,7 +1,7 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Domain, PartDef } from '@skelly/engine/assembly/schema.ts';
-import { applyPoint, scale } from '@skelly/engine/foundation/math.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Domain, PartDef } from '@skelly/construct/assembly/schema.ts';
+import { applyPoint, scale } from '@skelly/construct/foundation/math.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { assemblyProperties, modelParts, partProperties } from '../src/physical.ts';
 

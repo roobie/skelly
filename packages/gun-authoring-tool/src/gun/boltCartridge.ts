@@ -1,5 +1,5 @@
-import type { Assembly, ParamSpec } from '@skelly/engine/assembly/schema.ts';
-import { GRID } from '@skelly/engine/foundation/conventions.ts';
+import type { Assembly, ParamSpec } from '@skelly/construct/assembly/schema.ts';
+import { GRID } from '@skelly/construct/foundation/conventions.ts';
 import catalogue from '../../cartridges/catalogue/bolt.json' with { type: 'json' };
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { formatCartridgeParseError, parseCartridge } from '../ammo/parseCartridge.ts';

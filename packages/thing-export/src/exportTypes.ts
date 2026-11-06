@@ -1,9 +1,9 @@
 // Inputs and results of the GLB exporter, and the palette it colours with. They sit above the assembly
 // layer because the exporter needs a resolved assembly; the assembly types never import them.
 
-import type { Gender, Resolved } from '@skelly/engine/assembly/schema.ts';
-import type { Issue } from '@skelly/engine/foundation/issue.ts';
-import type { Vec3 } from '@skelly/engine/foundation/math.ts';
+import type { Gender, Resolved } from '@skelly/construct/assembly/schema.ts';
+import type { Issue } from '@skelly/construct/foundation/issue.ts';
+import type { Vec3 } from '@skelly/construct/foundation/math.ts';
 import type { MaterialDef } from '@skelly/thing-core/materials';
 import type { ExportSkin } from './skin.ts';
 

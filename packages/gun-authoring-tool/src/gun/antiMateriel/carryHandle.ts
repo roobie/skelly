@@ -1,6 +1,6 @@
-import type { KeepOut, ParamSpec, PartDef, PartFamily } from '@skelly/engine/assembly/schema.ts';
-import { boxFromMinMax } from '@skelly/engine/shapes/geometry.ts';
-import type { ExtrudedPolygonSolid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import type { KeepOut, ParamSpec, PartDef, PartFamily } from '@skelly/construct/assembly/schema.ts';
+import { boxFromMinMax } from '@skelly/construct/shapes/geometry.ts';
+import type { ExtrudedPolygonSolid, Vec2 } from '@skelly/construct/shapes/solid.ts';
 import { choice, NEG_X, NEG_Y, octagonPrism, X, Y, Z } from './common.ts';
 
 /**

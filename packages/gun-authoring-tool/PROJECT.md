@@ -26,9 +26,9 @@ Reusable part families keep fit rules applicable as authored designs change; the
 restrict a gun's resemblance to a real model. See `src/gun/designLoader.ts`, `loadGunDesign`
 and `src/gun/templates.ts`, `TEMPLATES`.
 
-The shared engine owns domain-neutral assembly, geometry and fit mechanisms. The gun
+The construct package owns domain-neutral assembly, geometry and fit mechanisms. The gun
 tool owns firearm data and policy so other consumers do not inherit gun-specific concepts;
-see `packages/engine/README.md`, "Shared engine".
+see `packages/construct/README.md`, "construct".
 
 ## Scale and ammunition
 

@@ -8,7 +8,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@skelly/engine": "*",
+    "@skelly/construct": "*",
     "@skelly/thing-core": "^0.0.0",
     "@skelly/thing-export": "*"
   },
