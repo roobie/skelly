@@ -504,7 +504,10 @@ const createInputReplayRecorder = (
   if (replaying) {
     return undefined;
   }
-  return new InputReplayRecorder(snapshot(), undefined, generatedColumns, { startState: startState() });
+  return new InputReplayRecorder(snapshot(), undefined, generatedColumns, {
+    startState: startState(),
+    nowRealMilliseconds: () => performance.now(),
+  });
 };
 
 const createInputReplayDriver = (
@@ -1555,7 +1558,7 @@ export const startPlay = (
   const captureReplayStartState = (): ReplayStartState => replayPlayState.capture();
 
   const importReplay = (bytes: Uint8Array): void => {
-    stashInputReplay(bytes);
+    stashInputReplay(() => sessionStorage, bytes);
     const url = new URL(location.href);
     url.searchParams.delete('cam');
     url.searchParams.delete('freeze');

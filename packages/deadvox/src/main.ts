@@ -151,11 +151,12 @@ if (bench === 'report') {
   inputBindings.loadLayout();
   let config = configFromUrl(params, content);
   keyboardInput.context = () => ({ context: 'title', debug: config.debug });
+  const replayStash = () => sessionStorage;
   let pendingReplay: Uint8Array | undefined;
   try {
-    pendingReplay = pendingInputReplay();
+    pendingReplay = pendingInputReplay(replayStash);
   } catch (error) {
-    clearPendingInputReplay();
+    clearPendingInputReplay(replayStash);
     reportError(`Replay rejected: ${error instanceof Error ? error.message : String(error)}`);
   }
   if (pendingReplay) {
@@ -189,7 +190,7 @@ if (bench === 'report') {
       const decoded = await decodeInputReplay(pendingReplay, {
         contentLookup: (kind, id) => contentLookup(engine.registry, kind, id),
       });
-      clearPendingInputReplay();
+      clearPendingInputReplay(replayStash);
       startPlay(engine, debugModule!, {
         restore: decoded.snapshot,
         replay: {
@@ -201,7 +202,7 @@ if (bench === 'report') {
       });
       hideStartupScreen();
     } catch (error) {
-      clearPendingInputReplay();
+      clearPendingInputReplay(replayStash);
       showStartupFailure(`Replay rejected: ${error instanceof Error ? error.message : String(error)}`);
     }
   } else if (tutorialRequested(params)) {

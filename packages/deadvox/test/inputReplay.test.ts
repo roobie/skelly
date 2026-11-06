@@ -13,6 +13,7 @@ import { gameTimeOfDay, realSeconds as realDuration } from '../src/core/time.ts'
 import { INPUT_BINDINGS } from '../src/game/bindingRegistry.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import {
+  clearPendingInputReplay,
   DEFAULT_REPLAY_START_STATE,
   decodeInputReplay,
   encodeInputReplay,
@@ -20,6 +21,7 @@ import {
   INPUT_REPLAY_SCHEMA_VERSION,
   InputReplayRecorder,
   joinInputReplayWindows,
+  pendingInputReplay,
   type ReplayAction,
   type ReplayColumnUpdate,
   type ReplayControlSample,
@@ -30,6 +32,7 @@ import {
   restoreReplayStartState,
   rolloverInputReplayRecorder,
   sampleFromReplayFrame,
+  stashInputReplay,
   withReplayExportGuard,
 } from '../src/game/inputReplay.ts';
 import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from '../src/game/inputReplayActions.ts';
@@ -1397,6 +1400,25 @@ describe('input replay', () => {
     });
     expect([...replay.world.chunks.values()].some((chunk) => chunk.cx === cx && chunk.cz === cz)).toBe(true);
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
+  it('a stashed replay is pending after reload and gone after clear', () => {
+    const session = new Map<string, string>();
+    // Each page load resolves its own store over the same session data.
+    const reloadedStash = () => ({
+      getItem: (key: string) => session.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        session.set(key, value);
+      },
+      removeItem: (key: string) => {
+        session.delete(key);
+      },
+    });
+    const bytes = new Uint8Array([0, 1, 2, 250, 255]);
+    stashInputReplay(reloadedStash, bytes);
+    expect(pendingInputReplay(reloadedStash)).toEqual(bytes);
+    clearPendingInputReplay(reloadedStash);
+    expect(pendingInputReplay(reloadedStash)).toBeUndefined();
   });
 
   it('bounds the always-on recording window and retained buffers', () => {

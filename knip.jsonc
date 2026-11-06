@@ -21,7 +21,6 @@
         // Vite resolves this browser URL from the Deadvox root at runtime.
         "/src/game/saveStorage.ts",
         "/src/game/inputBindings.ts",
-        "/src/game/bindingRegistry.ts",
         "/src/game/controls.ts",
         "/src/game/guidedSteps.ts",
         "/src/ui/guidedSteps.ts",

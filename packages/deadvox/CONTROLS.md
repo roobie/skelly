@@ -74,4 +74,4 @@ Native delivery failures cannot be inferred from synthetic events or movement al
 
 ## Replay boundary
 
-Input recording samples control state at player ticks so action order does not depend on browser event timing. Replay must restore any held state that changes simulation or shot resolution; presentation-only selection and scroll position do not belong in replay state. Live play still cancels held input on focus loss. See `src/game/inputReplay.ts`, `replayStateFingerprint`, and `src/game/play.ts`, `captureReplayStartState`.
+Input recording samples control state at player ticks so action order does not depend on browser event timing. Replay must restore any held state that changes simulation or shot resolution; presentation-only selection and scroll position do not belong in replay state. Live play still cancels held input on focus loss. Replay must run without a browser, so its session stash and its recording-cost clock come from the caller; the browser passes `sessionStorage` and `performance`. See `src/game/inputReplay.ts`, `replayStateFingerprint` and `ReplayStash`, and `src/game/play.ts`, `captureReplayStartState`.
