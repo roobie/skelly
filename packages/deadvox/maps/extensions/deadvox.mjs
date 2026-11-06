@@ -40,7 +40,7 @@ function content() {
   const templateFiles = [
     'skelly.deadvox.buildings/templates.json',
     'skelly.deadvox.residual/templates-cabins.json',
-    'skelly.deadvox.residual/templates-stairs.json',
+    'skelly.deadvox.scenario.stairs/templates-stairs.json',
     'skelly.deadvox.residual/templates-playtest.json',
     'skelly.deadvox.rural-sites/templates-medical.json',
     'skelly.deadvox.buildings/templates-workshop.json',

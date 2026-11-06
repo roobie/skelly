@@ -1,14 +1,13 @@
 local manifest = import '../../../../../tools/jsonnet/lib/pack-manifest.libsonnet';
 local content = [
-  'benchmark-city',
   'footstep-sounds', 'furniture-cabins',
   'furniture-playtest', 'gauntlet-look', 'gauntlet-start',
-  'gauntlet', 'hunting-cabins', 'item-economy', 'items-playtest',
-  'ladders', 'layouts-cabins', 'layouts-playtest', 'layouts-stairs',
-  'layouts-test-house', 'layouts-voice-size', 'layouts-water', 'layouts', 'locks',
+  'gauntlet', 'item-economy', 'items-playtest',
+  'ladders', 'layouts-cabins', 'layouts-playtest',
+  'layouts-test-house',
   'models-items', 'scenarios',
   'starts', 'templates-cabins',
-  'templates-playtest', 'templates-stairs', 'templates-test-house', 'tutorial',
+  'templates-playtest', 'templates-test-house', 'tutorial',
 ];
 local things = import '../things/index.json';
 local assets = import '../assets/manifest.json';

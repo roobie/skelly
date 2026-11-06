@@ -35,7 +35,7 @@ export const observationPlugin = {
   enforce: 'pre',
   transform(code, id) {
     // A quiet test-owned site isolates replay's stream-edge witness from scenario population changes.
-    if (id.endsWith('/mods/skelly.deadvox.residual/layouts.json')) {
+    if (id.endsWith('/mods/skelly.deadvox.scenario.lone-house/layouts.json')) {
       const data = JSON.parse(code);
       data.layouts.push({
         id: 'replay_fixture',

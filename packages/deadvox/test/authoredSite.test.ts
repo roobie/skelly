@@ -39,7 +39,9 @@ import { sweepGroup } from './sweeps.ts';
 
 const base = baseContentSources().filter(({ source }) => !source.startsWith('layouts') && source !== 'starts.json');
 const layout = (
-  JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts.json', 'utf8')) as { layouts: SiteLayoutDef[] }
+  JSON.parse(readFileSync('mods/skelly.deadvox.scenario.lone-house/layouts.json', 'utf8')) as {
+    layouts: SiteLayoutDef[];
+  }
 ).layouts[0]!;
 const load = (data: unknown) => buildRegistry([...base, { source: 'layout-test.json', data: { layouts: [data] } }]);
 const { registry, issues } = load(layout);
@@ -899,7 +901,9 @@ it('keeps trees out of an authored building covered by woodland', () => {
 
 it('grounds the exported ridge lots, track and slope trees with order-independent overlapping profiles', () => {
   const ridge = (
-    JSON.parse(readFileSync('mods/skelly.deadvox.residual/hunting-cabins.json', 'utf8')) as { layouts: SiteLayoutDef[] }
+    JSON.parse(readFileSync('mods/skelly.deadvox.scenario.hunting-cabins/hunting-cabins.json', 'utf8')) as {
+      layouts: SiteLayoutDef[];
+    }
   ).layouts[0]!;
   for (const building of ridge.buildings) {
     expect(building.position[1]).toBe(

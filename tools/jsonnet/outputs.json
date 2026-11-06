@@ -141,10 +141,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/assets/manifest.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/benchmark-city.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/benchmark-city.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/exports/things.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/exports/things.json"
     },
@@ -189,24 +185,8 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-cabins.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-stairs.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-stairs.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-test-house.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-test-house.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-voice-size.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-voice-size.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-water.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-water.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/locks.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/locks.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/models-items.jsonnet",
@@ -231,10 +211,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-playtest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-playtest.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-stairs.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-stairs.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-test-house.jsonnet",
@@ -295,6 +271,98 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/templates-medical.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/templates-medical.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.benchmark-city/benchmark-city.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.benchmark-city/benchmark-city.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.benchmark-city/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.benchmark-city/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.hunting-cabins/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.hunting-cabins/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.hunting-cabins/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.hunting-cabins/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/assets/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/assets/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/exports/things.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/exports/things.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/item-economy.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/item-economy.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/locks.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/locks.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/models-lock-test.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/models-lock-test.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.lone-house/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.lone-house/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.lone-house/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.lone-house/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.stairs/layouts-stairs.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.stairs/layouts-stairs.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.stairs/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.stairs/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.stairs/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.stairs/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.stairs/templates-stairs.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.stairs/templates-stairs.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.voice-size/layouts-voice-size.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.voice-size/layouts-voice-size.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.voice-size/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.voice-size/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.voice-size/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.voice-size/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.water/layouts-water.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.water/layouts-water.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.water/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.water/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.water/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.water/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.site-generation/pack/manifest.jsonnet",

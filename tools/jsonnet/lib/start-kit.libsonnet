@@ -1,0 +1,35 @@
+// Importing this kit gives a start mod no runtime dependency, so each one declares the kit's item and recipe owners itself.
+local day = (import 'packages/mods/skelly.day-cycle/dayCycle.json').dayCycle;
+local common = {
+  seed: 1,
+  storeys: 1,
+  density: null,
+  startTimeGameTimeOfDay: day.defaultStartGameTimeOfDay,
+  kit: [
+    { id: 'jeans', item: 'jeans', count: 1, condition: 0.7, destination: { kind: 'worn' } },
+    { id: 'sneakers', item: 'sneakers', count: 1, condition: 0.8, destination: { kind: 'worn' } },
+    { id: 'hoodie', item: 'hoodie', count: 1, condition: 0.8, destination: { kind: 'worn' } },
+    { id: 'beans', item: 'canned_beans', destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 } },
+    { id: 'matches', item: 'matches', destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 } },
+    { id: 'bandages', item: 'bandage', count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 } },
+  ],
+  wounds: [],
+  skills: {},
+  recipes: ['torch', 'candle', 'repair_kit', 'repair_crowbar', 'sawn_plank', 'door_bar', 'make_rope'] + [
+    recipe.id
+    for recipe in (import 'packages/mods/skelly.basic-recipes/basic-recipes-items.jsonnet').recipes
+                  + (import 'packages/mods/skelly.melee/melee-items.jsonnet').recipes
+    if std.objectHas(recipe, 'activation') && recipe.activation == 'sharpen'
+  ],
+  defaultForSite: true,
+};
+{
+  day: day,
+  common: common,
+  fromLayouts(layouts):: [common + {
+    id: std.asciiLower(layout.id),
+    site: layout.id,
+  } + (if std.objectHas(layout, 'startTimeGameTimeOfDay') then {
+    startTimeGameTimeOfDay: layout.startTimeGameTimeOfDay,
+  } else {}) for layout in layouts],
+}

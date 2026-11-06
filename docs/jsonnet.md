@@ -34,7 +34,7 @@ A placed content template is spatial data, not a Jsonnet constructor. Constructo
 Curated geometry lets authors inspect and change intended spaces without reverse-engineering a generator. Exclusive ownership prevents composition from repainting a correctly authored shell, while reserved walking space protects circulation from furnishing. See `docs/decisions/0005-curated-map-kits.md`, "Decision".
 
 Generated geometry in `packages/deadvox/mods/skelly.deadvox.camp/camp.libsonnet`,
-`packages/deadvox/mods/skelly.deadvox.residual/ladders.libsonnet` and `packages/deadvox/mods/skelly.deadvox.residual/locks.libsonnet`
+`packages/deadvox/mods/skelly.deadvox.residual/ladders.libsonnet` and `packages/deadvox/mods/skelly.deadvox.scenario.lock-test/locks.libsonnet`
 remains outside #712's city-and-lab migration. Those features need a separate curated
 migration before they satisfy this rule; the gauntlet migration does not authorize
 additional generators.

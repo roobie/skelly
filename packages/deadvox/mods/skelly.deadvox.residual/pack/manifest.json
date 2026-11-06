@@ -50,10 +50,6 @@
   "files": [
     {
       "kind": "content",
-      "path": "benchmark-city.json"
-    },
-    {
-      "kind": "content",
       "path": "footstep-sounds.json"
     },
     {
@@ -78,10 +74,6 @@
     },
     {
       "kind": "content",
-      "path": "hunting-cabins.json"
-    },
-    {
-      "kind": "content",
       "path": "item-economy.json"
     },
     {
@@ -102,27 +94,7 @@
     },
     {
       "kind": "content",
-      "path": "layouts-stairs.json"
-    },
-    {
-      "kind": "content",
       "path": "layouts-test-house.json"
-    },
-    {
-      "kind": "content",
-      "path": "layouts-voice-size.json"
-    },
-    {
-      "kind": "content",
-      "path": "layouts-water.json"
-    },
-    {
-      "kind": "content",
-      "path": "layouts.json"
-    },
-    {
-      "kind": "content",
-      "path": "locks.json"
     },
     {
       "kind": "content",
@@ -146,10 +118,6 @@
     },
     {
       "kind": "content",
-      "path": "templates-stairs.json"
-    },
-    {
-      "kind": "content",
       "path": "templates-test-house.json"
     },
     {
@@ -163,10 +131,6 @@
     {
       "kind": "json",
       "path": "things/dad_cabin_key.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/shed_key.model.json"
     },
     {
       "kind": "json",
@@ -239,10 +203,6 @@
     {
       "kind": "asset",
       "path": "assets/models/gauntlet_lab_entry_card.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/shed_key.glb"
     }
   ],
   "id": "skelly.deadvox.residual",

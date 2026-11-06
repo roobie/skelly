@@ -1,0 +1,34 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.deadvox.actors",
+    "skelly.firearms",
+    "skelly.light-sources",
+    "skelly.manufactured-blocks",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.natural-world",
+    "skelly.packaged-foods",
+    "skelly.structures",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "layouts-stairs.json"
+    },
+    {
+      "kind": "content",
+      "path": "starts.json"
+    },
+    {
+      "kind": "content",
+      "path": "templates-stairs.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.stairs",
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

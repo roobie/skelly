@@ -486,7 +486,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           }
           if (
             relative === 'core/authoredSite.ts' ||
-            id.endsWith('/mods/skelly.deadvox.residual/templates-stairs.json')
+            id.endsWith('/mods/skelly.deadvox.scenario.stairs/templates-stairs.json')
           ) {
             source = fixtureTransform(source, id) ?? source;
           }

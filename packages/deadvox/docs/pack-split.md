@@ -31,6 +31,14 @@ its sandbox campaign scenario. An ordinary top-level entry pack declares the pro
 dependencies and chooses its default scenario and start. Metadata marks the entry as
 a product; anyone can author one.
 
+The Deadvox entry depends on every scenario mod except debug ones. The browser loads
+every bundled mod folder while the CLI and tests load the entry's closure, so one set
+keeps them in step without a second loading path. The cost is that the entry stack
+carries every demo. See `src/game/bundledPacks.ts`, `bundledPacks`, and
+`tools/readBundledPacks.ts`, `readBundledPacks`. The entry is therefore the one pack
+whose dependencies may sit in a higher tier than its own: it selects the stack rather
+than defining reusable content.
+
 First-party ids use `skelly.*`, named for their content. The manifest, not the id,
 declares core, theme, product or scenario tier; see
 `docs/decisions/0009-content-defined-products.md`, "Mod identity and tiers".

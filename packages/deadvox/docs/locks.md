@@ -14,4 +14,4 @@ Every leaf yields to enough strength; a broken leaf loses its lock as forcing do
 
 Flame cutting is a separate tool quality from the knife's `cutting`, so a knife never opens a steel door. A cut method names the gas it spends, and the cut won't start without that fill in the torch's cartridge. Without a price, one torch would settle every cut door. A stopped cut spends nothing and keeps its progress; the gas goes when the cut finishes. Refilling an emptied cartridge is direction only, with no source yet. See `src/core/torch.ts`, `spendFuel`, and `src/core/schema/furniture.ts`, `DoorForcingSchema`.
 
-Use the `lock_test` site for a first look without depending on a loot roll. See `mods/skelly.deadvox.residual/locks.libsonnet`. Save shape changes have no migration path before compatibility is owed; see `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility".
+Use the `lock_test` site for a first look without depending on a loot roll. See `mods/skelly.deadvox.scenario.lock-test/locks.libsonnet`. Save shape changes have no migration path before compatibility is owed; see `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility".

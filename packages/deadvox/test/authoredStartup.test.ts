@@ -8,11 +8,10 @@ it('refuses startup rather than inventing a run when rejected content removes th
   for (const file of readdirSync(new URL('../mods/skelly.deadvox.residual/', import.meta.url))) {
     // Shared mods keep the content config and the binding registry need while this isolates layout rejection.
     if (file.endsWith('.json')) {
-      vi.doMock(`../mods/skelly.deadvox.residual/${file}`, () => ({
-        default: file === 'layouts.json' ? { layouts: {} } : {},
-      }));
+      vi.doMock(`../mods/skelly.deadvox.residual/${file}`, () => ({ default: {} }));
     }
   }
+  vi.doMock('../mods/skelly.deadvox.scenario.lone-house/layouts.json', () => ({ default: { layouts: {} } }));
   const { buildBundledContent } = await import('../src/game/bundledContent.ts');
   const { configFromUrl } = await import('../src/game/config.ts');
   const content = buildBundledContent();

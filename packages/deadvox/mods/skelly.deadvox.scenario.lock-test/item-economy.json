@@ -1,0 +1,10 @@
+{
+  "itemEconomy": [
+    {
+      "id": "shed_key",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    }
+  ]
+}

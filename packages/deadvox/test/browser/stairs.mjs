@@ -83,7 +83,7 @@ const vite = await createServer({
       name: 'stairs-test-observation',
       enforce: 'pre',
       transform(code, id) {
-        if (mode === 'camo' && id.endsWith('/mods/skelly.deadvox.residual/templates-stairs.json')) {
+        if (mode === 'camo' && id.endsWith('/mods/skelly.deadvox.scenario.stairs/templates-stairs.json')) {
           const content = JSON.parse(code);
           const floor = new Array(8).fill('########');
           const walls = ['########', ...new Array(6).fill('c......#'), '########'];
