@@ -6,7 +6,7 @@ import type { RawSaveSlots } from './saveStorageProtocol.ts';
 
 export type SaveBackend = 'opfs' | 'indexeddb';
 export type SaveBackendPreference = 'auto' | SaveBackend;
-export type SlotName = 'a' | 'b';
+type SlotName = 'a' | 'b';
 
 export interface SaveLoadResult {
   readonly generation: number;
