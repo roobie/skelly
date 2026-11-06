@@ -15,7 +15,9 @@ import { withReusedBuilds } from './bundledContentReuse.ts';
 import { content as baseContent } from './fixtures/startupContent.ts';
 import { testHouseSite } from './testHouseSite.ts';
 
-const selected = withReusedBuilds(() => selectBundledMods(['skelly.deadvox.scenario.test-house.debug']));
+// The showroom host shows rows only from loaded mods, so the product debug mod brings rows to show.
+const debugMods = ['skelly.deadvox.scenario.test-house.debug', 'skelly.deadvox.scenario.debug'];
+const selected = withReusedBuilds(() => selectBundledMods(debugMods));
 const config = configFromUrl(new URLSearchParams('site=testHouse'), selected.content);
 const { registry } = config.content;
 const area = (authored: AuthoredSite) => {
@@ -84,22 +86,23 @@ describe('test house showroom', () => {
         catalogueRows: [{ id: row, furniture: [type] }],
       },
     });
+    // The override replaces the earlier row, so in-place replacement and delete-and-append show different orders.
     const mods = [
       mod('fixture.rows-a', 'fixture_row_a', 'fixture_furniture_a', {}),
-      mod('fixture.rows-b', 'fixture_row_b', 'fixture_furniture_b', {}),
-      mod('fixture.rows-b-override', 'fixture_row_b', 'fixture_furniture_c', {
-        dependencies: ['fixture.rows-b'],
-        overrides: [{ pack: 'fixture.rows-b', entry: 'catalogueRows:fixture_row_b' }],
+      mod('fixture.rows-b', 'fixture_row_b', 'fixture_furniture_b', { dependencies: ['fixture.rows-a'] }),
+      mod('fixture.rows-a-override', 'fixture_row_a', 'fixture_furniture_c', {
+        dependencies: ['fixture.rows-a', 'fixture.rows-b'],
+        overrides: [{ pack: 'fixture.rows-a', entry: 'catalogueRows:fixture_row_a' }],
       }),
     ];
-    const withRows = withReusedBuilds(() => selectBundledMods(['skelly.deadvox.scenario.test-house.debug'], mods));
+    const withRows = withReusedBuilds(() => selectBundledMods(debugMods, mods));
     expect(withRows.issues).toEqual([]);
     const rowsConfig = configFromUrl(new URLSearchParams('site=testHouse'), withRows.content);
     const rowsRegistry = rowsConfig.content.registry;
     const authored = new AuthoredSite(7, rowsRegistry, rowsConfig.scale, rowsRegistry.layouts.get('testHouse')!);
     const shown = authored.catalogue!.props.map(({ furniture: type }) => type);
-    expect(shown.slice(-2)).toEqual(['fixture_furniture_a', 'fixture_furniture_c']);
-    expect(shown).not.toContain('fixture_furniture_b');
+    expect(shown.slice(-2)).toEqual(['fixture_furniture_c', 'fixture_furniture_b']);
+    expect(shown).not.toContain('fixture_furniture_a');
     expect(new Set(shown.slice(0, -2))).toEqual(listed);
   });
 

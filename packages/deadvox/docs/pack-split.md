@@ -416,16 +416,21 @@ The build hashes marked packs beside the default ones and keeps their identities
 separate define, so a selection reuses the build's hashes. See
 `tools/readBundledPacks.ts`, `bundledPackDefines`.
 
-Each debug mod depends only on its own scenario and the tiers below, so none may override
-the test-house layout. A scenario split into city and start mods keeps one debug mod that
-depends on both halves and covers the whole scenario, as the gauntlet's does. Debug furniture therefore goes in catalogue rows, a content section
-any mod can add to without an edge to the test house, and the test-house debug showroom
-is the one view of every loaded row. The section is an engine mechanism, not a mod's row,
-so using it adds no dependency; a row's furniture still constrains placement like any
-reference, and rows override by id like other entries.
-A debug mod's rows show only when the test-house debug mod is selected too, and the grid
-lays rows out in load order. See `src/core/schema/catalogueRows.ts`, `CatalogueRowSchema`,
-and `src/core/showroom.ts`, `ShowroomCatalogue`.
+Each scenario's debug mod depends only on that scenario and the tiers below, so none but
+the test house's may override the test-house layout. A scenario split into city and start
+mods keeps one debug mod that depends on both halves, as the gauntlet's does. Furniture
+owned by product, theme or core mods belongs to no scenario, so its debug rows live in one
+product debug mod, `skelly.deadvox.scenario.debug`. It depends on product mods and below
+only; its tier is scenario because it is a test flow, although its id names no scenario.
+
+Debug furniture therefore goes in catalogue rows, a content section any mod can add to
+without an edge to the test house, and the test-house debug showroom is the one view of
+every loaded row. The section is an engine mechanism, not a mod's row, so using it adds no
+dependency; a row's furniture still constrains placement like any reference, and rows
+override by id like other entries. A debug mod's rows show only when the test-house debug
+mod is selected too, and the grid lays rows out in load order. See
+`src/core/schema/catalogueRows.ts`, `CatalogueRowSchema`, and `src/core/showroom.ts`,
+`ShowroomCatalogue`.
 
 ## Save identity
 

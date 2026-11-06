@@ -19,23 +19,12 @@
     "skelly.readables",
     "skelly.structures",
     "skelly.wearables",
-    "skelly.weathering",
-    "skelly.deadvox.camp",
-    "skelly.deadvox.crisis-hq",
-    "skelly.deadvox.labs.underground",
-    "skelly.deadvox.rural-sites",
-    "skelly.deadvox.woods",
-    "skelly.household-electrical",
-    "skelly.natural-world"
+    "skelly.weathering"
   ],
   "files": [
     {
       "kind": "content",
       "path": "layouts.json"
-    },
-    {
-      "kind": "content",
-      "path": "catalogue.json"
     }
   ],
   "id": "skelly.deadvox.scenario.test-house.debug",

@@ -245,6 +245,14 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.crisis-hq/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.debug/catalogue.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.debug/catalogue.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.debug/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.debug/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.forest/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.forest/pack/manifest.json"
     },
@@ -439,10 +447,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.stairs/templates-stairs.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.stairs/templates-stairs.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/catalogue.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/catalogue.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/layouts.jsonnet",

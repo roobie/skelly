@@ -29,11 +29,10 @@ content rather than runtime synthesis. See
 `mods/skelly.deadvox.scenario.test-house.debug/test-house-range.libsonnet`. The admission reason is in
 `docs/test-house.md`, "Normal and debug additions".
 
-The debug scenario mod is a scenario-tier folder mod that depends on the pack owning the
-test house, because it only stages that scenario; its id extends the test house's scenario
-id. Its opt-in marker keeps it out of normal play until a URL names it, as in
-`?site=testHouse&mods=skelly.deadvox.scenario.test-house.debug`. See `docs/pack-split.md`,
-"Debug mods".
+The debug scenario mod depends on the test house's scenario mod, because it only stages
+that scenario; its id extends the scenario's id. Its opt-in marker keeps it out of normal
+play until a URL names it, as in `?site=testHouse&mods=skelly.deadvox.scenario.test-house.debug`.
+See `docs/pack-split.md`, "Debug mods".
 
 The charging corner belongs to the same template and layout sources, rather than a
 separate runtime look-piece overlay, so furniture, fixture loot and power share one
@@ -177,13 +176,18 @@ The catalogue needs no per-feature slot because it exposes evaluation pieces rat
 staging a feature's supplies. It shows every loaded catalogue row, hand-kept content
 that any mod may add, so unlisted furniture stays absent instead of being discovered
 from the registry; `docs/pack-split.md`, "Debug mods", gives the reason rows are their
-own section. The debug scenario mod's layout override hosts the floor, so no row shows
-without it. See `mods/skelly.deadvox.scenario.test-house.debug/catalogue.jsonnet`,
-`catalogueRows`, and `src/core/showroom.ts`, `ShowroomCatalogue`. Keep the floor beyond
-the startup ring to avoid delaying every fixture visit, and separate it from the haven
-to preserve the home's view. Empty catalogue pieces must stay off the house grid so
-evaluation cannot change house supply. Item and vehicle looks still belong to a slot or
-their owning zone.
+own section and which debug mod holds which rows. The test-house debug mod's layout override
+hosts the floor but holds no row, so the floor shows only the rows of the debug mods
+selected with it. Select them together for the full showroom:
+`?site=testHouse&mods=skelly.deadvox.scenario.test-house.debug,skelly.deadvox.scenario.debug,skelly.deadvox.scenario.gauntlet.debug,skelly.deadvox.scenario.playtest.debug,skelly.deadvox.scenario.tutorial.debug`.
+See `mods/skelly.deadvox.scenario.debug/catalogue.jsonnet`, `catalogueRows`, and
+`src/core/showroom.ts`, `ShowroomCatalogue`.
+
+Each row starts a new line, in load order, so each mod's pieces stay together; a short row
+leaves a gap at its line's end. Keep the floor beyond the startup ring to avoid delaying
+every fixture visit, and separate it from the haven to preserve the home's view. Empty
+catalogue pieces must stay off the house grid so evaluation cannot change house supply.
+Item and vehicle looks still belong to a slot or their owning zone.
 
 ## Focus
 
