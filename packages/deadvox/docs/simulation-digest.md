@@ -9,11 +9,12 @@ tags: [deadvox, simulation, refactor, testing]
 
 # Simulation digest
 
-`npm run digest:simulation` prints two SHA-256 digests of one fixed actor run: three actors on
-a floor with one wall, and a scripted player whose moves take them through investigate, chase
-and search. The raw digest hashes every snapshot as the actor system returns it. The flattened
-digest hashes a fixed list of decision fields, so it stays comparable when a round only
-reshapes how state is nested. See `tools/simulationDigest.ts`, `FLATTENED_FIELDS`.
+Moving simulation code can change behaviour without failing a test, because tests assert
+properties rather than exact outcomes. A reproducible run whose digest is compared before and
+after the move shows that the simulation did the same thing. The run and what it hashes live in
+`tools/simulationDigest.ts`; the flattened digest's field list and its order are part of its
+definition, so a baseline stays comparable when a round only reshapes how state is nested. See
+`tools/simulationDigest.ts`, `FLATTENED_FIELDS` and `flattened`.
 
 A round that moves or splits simulation code without meaning to change behaviour proves that
 by digest equality: run the tool at the round's base and at its head, and report both
@@ -24,6 +25,8 @@ tool pins nothing, no test asserts its output, and the values live only in round
 
 The tool reaches the runtime through static relative imports, so a round that moves those
 modules repoints the tool with the TypeScript language service, like any other importer.
+Deadvox's typecheck does not cover the tool, because `tsconfig.json` includes only the
+source, the tests and the Vite config; running the tool is what shows it still works.
 
 The simulation fingerprint answers a different question: which source files the simulation
 depends on. Its value changes whenever those paths move, so it cannot show that behaviour held;
