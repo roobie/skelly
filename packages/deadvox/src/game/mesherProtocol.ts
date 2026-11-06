@@ -33,3 +33,21 @@ interface Meshed {
   /** Time spent in buildMesh, in milliseconds. */
   ms: number;
 }
+
+/** What a mesher reports back: a reply, or a failure that leaves its replies unusable. */
+export interface MesherHandlers {
+  message: (reply: FromMesher) => void;
+  failure: (reason: string) => void;
+}
+
+/** One mesher, named without DOM types so the streamer needs no browser to schedule meshing. */
+export interface MesherPort {
+  post: (msg: ToMesher, transfer: readonly ArrayBuffer[]) => void;
+  listen: (handlers: MesherHandlers) => void;
+}
+
+/** The meshers a streamer schedules across; the caller owns how many and how they run. */
+export interface MesherSource {
+  readonly count: number;
+  create: () => MesherPort;
+}

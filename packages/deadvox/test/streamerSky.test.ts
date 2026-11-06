@@ -6,7 +6,7 @@ import { buildMesh } from '../src/core/mesher.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { buildSkyResult } from '../src/core/skyTransport.ts';
 import { World } from '../src/core/world.ts';
-import type { ToMesher } from '../src/game/mesherProtocol.ts';
+import type { FromMesher, MesherHandlers, MesherPort, MesherSource, ToMesher } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
@@ -15,9 +15,9 @@ import { baseRegistry, baseTerrainShape } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 import { skyFixture } from './fixtures/sky.ts';
 
-class OwnedWorker {
+class OwnedWorker implements MesherPort {
   static instances: OwnedWorker[] = [];
-  onmessage: ((event: { data: unknown }) => void) | undefined;
+  handlers: MesherHandlers | undefined;
   readonly waiting: Exclude<ToMesher, { type: 'init' }>[] = [];
   readonly posted: string[] = [];
   colors: Uint8Array = new Uint8Array();
@@ -26,8 +26,11 @@ class OwnedWorker {
   constructor() {
     OwnedWorker.instances.push(this);
   }
-  postMessage(message: ToMesher, transfer: ArrayBuffer[]) {
-    const copy = structuredClone(message, { transfer });
+  listen(handlers: MesherHandlers) {
+    this.handlers = handlers;
+  }
+  post(message: ToMesher, transfer: readonly ArrayBuffer[]) {
+    const copy = structuredClone(message, { transfer: [...transfer] });
     if (copy.type === 'init') {
       this.colors = copy.colors;
       this.patterns = copy.patterns;
@@ -56,23 +59,23 @@ class OwnedWorker {
             }),
           }
         : { type: 'sky', id: message.id, result: buildSkyResult(message.input), workerRealMs: 0 };
-    this.onmessage?.({ data });
+    this.handlers?.message(data as FromMesher);
   }
 }
 
+const ownedMeshers = (count: number): MesherSource => ({ count, create: () => new OwnedWorker() });
+
 afterEach(() => {
-  vi.unstubAllGlobals();
   OwnedWorker.instances = [];
 });
 
 it('meshes a partial recorded ring without generating extra columns and repairs it when a neighbour arrives', () => {
-  vi.stubGlobal('navigator', { hardwareConcurrency: 2 });
-  vi.stubGlobal('Worker', OwnedWorker);
   const scale = { ...makeScale(0.5), minCy: 0, maxCy: 0 };
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const streamer = new Streamer({
     world: new World(),
     meshes: meshes as never,
+    mesher: ownedMeshers(1),
     seed: 17,
     terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
     shape: baseTerrainShape(),
@@ -122,8 +125,6 @@ it('meshes a partial recorded ring without generating extra columns and repairs 
 });
 
 it.each([0, 1])('blocks sight past an incomplete column (height %i), even after moving', (missingCy) => {
-  vi.stubGlobal('navigator', { hardwareConcurrency: 2 });
-  vi.stubGlobal('Worker', OwnedWorker);
   const scale = { ...makeScale(0.5), minCy: 0, maxCy: 1 };
   const world = new World();
   const registry = baseRegistry();
@@ -168,6 +169,7 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
   const streamer = new Streamer({
     world,
     meshes,
+    mesher: ownedMeshers(1),
     seed: 17,
     terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
     shape: baseTerrainShape(),
@@ -249,14 +251,13 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
   expect(visible()).toEqual([]);
 });
 
-function skyStreamer(hardwareConcurrency: number) {
-  vi.stubGlobal('navigator', { hardwareConcurrency });
-  vi.stubGlobal('Worker', OwnedWorker);
+function skyStreamer(meshers: number) {
   const scale = { ...makeScale(0.5), minCy: 0, maxCy: 0 };
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const streamer = new Streamer({
     world: new World(),
     meshes: meshes as never,
+    mesher: ownedMeshers(meshers),
     seed: 17,
     terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
     shape: baseTerrainShape(),
@@ -274,7 +275,7 @@ function skyStreamer(hardwareConcurrency: number) {
 }
 
 it('delivers the first mesh before sky and admits queued sky at the next completion despite mesh backlog', () => {
-  const { streamer, meshes } = skyStreamer(2);
+  const { streamer, meshes } = skyStreamer(1);
   const receive = vi.fn();
   const secondReceive = vi.fn();
   expect(streamer.requestSky(skyFixture().capture().input, receive)).toBe(true);
@@ -308,7 +309,7 @@ it('delivers the first mesh before sky and admits queued sky at the next complet
 });
 
 it('routes concurrent sky replies to their owners when different workers finish in reverse order', () => {
-  const { streamer } = skyStreamer(8);
+  const { streamer } = skyStreamer(3);
   for (let step = 0; step < 32; step++) {
     streamer.update(0, 0);
   }

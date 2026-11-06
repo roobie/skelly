@@ -1,4 +1,4 @@
-import { afterEach, expect, it, vi } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import type { EntitySpec } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
@@ -13,8 +13,7 @@ import { contentLookup } from '../src/ui/saveController.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
-
-afterEach(() => vi.unstubAllGlobals());
+import { quietMesherSource } from './fixtures/quietMesherSource.ts';
 
 const content = startupContent();
 const { registry } = content;
@@ -42,14 +41,8 @@ const cx = toChunk(crate.pos[0]);
 const cz = toChunk(crate.pos[2]);
 
 const worldSetup = (): WorldSetup => {
-  vi.stubGlobal(
-    'Worker',
-    class {
-      postMessage = vi.fn();
-    },
-  );
   const config = configFromUrl(new URLSearchParams('site=testHouse'), content);
-  const source = createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry));
+  const source = createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
   const chunk = new Chunk(cx, 0, cz);
   for (let z = 0; z < CHUNK; z++) {
     for (let x = 0; x < CHUNK; x++) {

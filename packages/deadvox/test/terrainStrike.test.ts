@@ -1,5 +1,5 @@
 import { Scene } from 'three';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { BlockBlow } from '../src/core/blockDamage.ts';
 import { CanonicalTerrain, installColumn } from '../src/core/canonicalTerrain.ts';
 import { worldSolid } from '../src/core/collision.ts';
@@ -17,7 +17,7 @@ import { affectedChunks, World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import { BuildMode } from '../src/debug/build.ts';
 import type { Engine } from '../src/game/engine.ts';
-import type { FromMesher, ToMesher } from '../src/game/mesherProtocol.ts';
+import type { MesherHandlers, MesherPort, ToMesher } from '../src/game/mesherProtocol.ts';
 import { playerTuning } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { Streamer } from '../src/game/streamer.ts';
@@ -308,20 +308,23 @@ const restore = async (f: Fixture, variant: Variant) => {
 const meshing = (f: Fixture) => {
   type Request = Extract<ToMesher, { type: 'mesh' }>;
   const requests: { worker: ControlledWorker; message: Request }[] = [];
-  class ControlledWorker {
-    onmessage: ((event: { data: FromMesher }) => void) | undefined;
-    postMessage(message: ToMesher): void {
+  class ControlledWorker implements MesherPort {
+    handlers: MesherHandlers | undefined;
+    listen(handlers: MesherHandlers): void {
+      this.handlers = handlers;
+    }
+    post(message: ToMesher): void {
       if (message.type === 'mesh') {
         requests.push({ worker: this, message });
       }
     }
   }
-  vi.stubGlobal('Worker', ControlledWorker);
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const colors = new Uint8Array(f.registry.blocks.length * 4);
   const streamer = new Streamer({
     world: f.world,
     meshes: meshes as never,
+    mesher: { count: 1, create: () => new ControlledWorker() },
     seed: f.terrain.seed,
     terrain: f.terrain.blocks,
     shape: f.terrain.shape,
@@ -347,7 +350,7 @@ const meshing = (f: Fixture) => {
   };
   const reply = ({ worker, message }: ReturnType<typeof next>) => {
     const mesh = buildMesh(message.padded, colors, { wide: message.wide });
-    worker.onmessage?.({ data: { type: 'mesh', key: message.key, version: message.version, ms: 0, mesh } });
+    worker.handlers?.message({ type: 'mesh', key: message.key, version: message.version, ms: 0, mesh });
     return mesh;
   };
   return { streamer, meshes, next, reply };
@@ -375,8 +378,6 @@ const debugKind = (f: Fixture, damageKind: string) => {
   const player = playerTuning(f.registry);
   f.registry.player.set(player.id, { ...player, debugBlockTool: { ...player.debugBlockTool, damageKind } });
 };
-
-afterEach(() => vi.unstubAllGlobals());
 
 describe('supply-aware terrain destruction', () => {
   it('steps debug damage through the real strike owner, then removes the floor and its shelf like player hits', () => {

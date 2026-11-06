@@ -1,20 +1,23 @@
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, expect, it } from 'vitest';
 import { CHUNK } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
-import type { FromMesher, ToMesher } from '../src/game/mesherProtocol.ts';
+import type { MesherHandlers, MesherPort, ToMesher } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 
 /** Answers every mesh request with a non-empty mesh when `drain` runs. */
-class AnsweringWorker {
+class AnsweringWorker implements MesherPort {
   static instances: AnsweringWorker[] = [];
-  onmessage: ((event: { data: FromMesher }) => void) | undefined;
+  private handlers: MesherHandlers | undefined;
   private readonly waiting: Extract<ToMesher, { type: 'mesh' }>[] = [];
   constructor() {
     AnsweringWorker.instances.push(this);
   }
-  postMessage(message: ToMesher): void {
+  listen(handlers: MesherHandlers): void {
+    this.handlers = handlers;
+  }
+  post(message: ToMesher): void {
     if (message.type === 'mesh') {
       this.waiting.push(message);
     }
@@ -22,13 +25,12 @@ class AnsweringWorker {
   drain(): void {
     for (const { key, version } of this.waiting.splice(0)) {
       const mesh = { indices: new Uint32Array(3) };
-      this.onmessage?.({ data: { type: 'mesh', key, version, ms: 0, mesh } as never });
+      this.handlers?.message({ type: 'mesh', key, version, ms: 0, mesh } as never);
     }
   }
 }
 
 afterEach(() => {
-  vi.unstubAllGlobals();
   AnsweringWorker.instances = [];
 });
 
@@ -40,8 +42,6 @@ const distance = (key: string, [pcx, pcz]: readonly [number, number]) => {
 };
 
 const liveStreamer = (preloadRings = 0) => {
-  vi.stubGlobal('navigator', { hardwareConcurrency: 2 });
-  vi.stubGlobal('Worker', AnsweringWorker);
   const drawn = new Map<string, unknown>();
   const reveal = { columns: new Set<string>() };
   const meshes = {
@@ -55,6 +55,7 @@ const liveStreamer = (preloadRings = 0) => {
   const streamer = new Streamer({
     world: new World(),
     meshes: meshes as never,
+    mesher: { count: 1, create: () => new AnsweringWorker() },
     seed: 17,
     terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
     shape: baseTerrainShape(),

@@ -6,6 +6,7 @@ import type { Engine } from '../src/game/engine.ts';
 import type { FromMesher, ToMesher } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { WorldLoading } from '../src/game/worldLoading.ts';
+import { workerMesherPort } from '../src/worker/mesherPort.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 
 const replies: FromMesher[] = [];
@@ -46,14 +47,14 @@ afterEach(() => {
 
 /** A streamer whose world loading has turned ready, with its one worker. */
 const loadedStreamer = () => {
-  vi.stubGlobal('navigator', { hardwareConcurrency: 2 });
-  vi.stubGlobal('Worker', RelayWorker);
   vi.stubGlobal('postMessage', (reply: FromMesher) => replies.push(reply));
   const scale = { ...makeScale(0.5), minCy: 0, maxCy: 0 };
   const world = new World();
   const streamer = new Streamer({
     world,
     meshes: { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() } as never,
+    // The browser adapter around the relay, so its failure strings are the ones streaming reports.
+    mesher: { count: 1, create: () => workerMesherPort(new RelayWorker() as unknown as Worker) },
     seed: 17,
     terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
     shape: baseTerrainShape(),

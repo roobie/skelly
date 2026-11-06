@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ScenarioCitySite } from '../src/core/scenarioCity.ts';
@@ -6,18 +6,11 @@ import { configFromUrl as readConfig } from '../src/game/config.ts';
 import { createWorldSetup, playerStartFromWorld, siteForReviewMap } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { makeAttemptLayout } from './fixtures/attemptPolicy.ts';
+import { quietMesherSource } from './fixtures/quietMesherSource.ts';
 import { composedFixture, fixtureStart, fixtureStartRow } from './fixtures/scenario.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';
 
-afterEach(() => vi.unstubAllGlobals());
-
 it('selects the active authored layout policy and supplies none for a rowless diagnostic site', () => {
-  vi.stubGlobal(
-    'Worker',
-    class {
-      postMessage = vi.fn();
-    },
-  );
   const original = configFromUrl(new URLSearchParams());
   const layout = makeAttemptLayout();
   const start = {
@@ -34,7 +27,7 @@ it('selects the active authored layout policy and supplies none for a rowless di
   const content = { ...original.content, registry };
   const setup = (params: string) => {
     const config = readConfig(new URLSearchParams(params), content);
-    return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry));
+    return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
   };
   expect(setup(`site=${layout.id}`).attemptPolicy).toEqual(layout.attemptPolicy);
   registry.layouts.set(layout.id, { ...layout, attemptPolicy: undefined });

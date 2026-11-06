@@ -8,11 +8,11 @@ import { createWorldSetup } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { reuseBundledBuilds } from './bundledContentReuse.ts';
 import fixture from './fixtures/mods/browser-mod.json' with { type: 'json' };
+import { quietMesherSource } from './fixtures/quietMesherSource.ts';
 
 const base = bundledContent.buildBundledContent();
 reuseBundledBuilds();
 afterEach(() => {
-  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 const mod = (data: unknown): BrowserMod => ({ source: 'fixture.json', text: JSON.stringify(data), enabled: true });
@@ -117,17 +117,9 @@ describe('browser mod admission', () => {
     const actor = data.actors[0]!;
     expect(result.content.registry.actors.get(actor.id)?.speed).toEqual(actor.speed);
     expect(result.content.origins.get(`actors:${actor.id}`)?.source).toBe('fixture.json/content.json');
-    vi.stubGlobal(
-      'Worker',
-      class {
-        postMessage() {
-          /* No mesh work is requested by this startup contract. */
-        }
-      },
-    );
     const config = configFromUrl(new URLSearchParams('site=testHouse'), result.content);
     const meshes = new ChunkMeshes(config.scale.blockSize, result.content.registry);
-    const world = createWorldSetup(config, meshes);
+    const world = createWorldSetup(config, meshes, quietMesherSource());
     expect(world.registry).toBe(result.content.registry);
   });
 

@@ -20,9 +20,9 @@ import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts
 import { authoredSkyBoxes, SkyFields } from '../core/skyField.ts';
 import { World } from '../core/world.ts';
 import { worldGroundAt } from '../core/worldgen.ts';
-import type { ChunkMeshes } from '../render/chunks.ts';
 import type { DebugStart, GameConfig } from './config.ts';
-import { Streamer, type StreamerStats } from './streamer.ts';
+import type { MesherSource } from './mesherProtocol.ts';
+import { type ChunkMeshSink, Streamer, type StreamerStats } from './streamer.ts';
 import { buildDebugWeatheringTestSite } from './weatheringTestSite.ts';
 
 export interface WorldSetup extends ColumnSource {
@@ -84,7 +84,12 @@ const buildSite = (config: GameConfig, registry: Registry): Site | undefined => 
 export const siteForReviewMap = (config: GameConfig, registry = config.content.registry): Site | undefined =>
   buildSite(config, registry);
 
-export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?: StreamerStats): WorldSetup {
+export function createWorldSetup(
+  config: GameConfig,
+  meshes: ChunkMeshSink,
+  mesher: MesherSource,
+  stats?: StreamerStats,
+): WorldSetup {
   const { registry, issues } = config.content;
   const contentErrors = issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n');
   const { seed, scale } = config;
@@ -108,6 +113,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
   const streamer = new Streamer({
     world,
     meshes,
+    mesher,
     seed,
     terrain: terrain.blocks,
     shape: terrain.shape,

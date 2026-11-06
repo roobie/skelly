@@ -15,6 +15,7 @@ import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts'
 import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import { Skylight } from '../render/skylight.ts';
+import { browserMesherSource } from '../worker/mesherPort.ts';
 import type { GameConfig } from './config.ts';
 import { GraphicsControls } from './graphicsControls.ts';
 import type { StreamerStats } from './streamer.ts';
@@ -100,7 +101,7 @@ export function createEngine(
 
   const meshes = new ChunkMeshes(scale.blockSize, config.content.registry);
   meshes.setWeathering(config.weathering, config.weatheringSplit);
-  const worldSetup = createWorldSetup(config, meshes, stats);
+  const worldSetup = createWorldSetup(config, meshes, browserMesherSource(), stats);
   scene.add(meshes.group);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
   const { skyFields } = worldSetup;

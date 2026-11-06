@@ -1,4 +1,4 @@
-import { afterEach, expect, it, vi } from 'vitest';
+import { expect, it } from 'vitest';
 import { batteryCapacityMicrojoules, batteryEnergy } from '../src/core/battery.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
@@ -6,20 +6,13 @@ import { generateColumn } from '../src/core/worldgen.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { createWorldSetup, playerStartFromWorld } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
+import { quietMesherSource } from './fixtures/quietMesherSource.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';
 
-afterEach(() => vi.unstubAllGlobals());
-
 it('lets a player charge a nearby rechargeable cell from the test-house spawn', () => {
-  vi.stubGlobal(
-    'Worker',
-    class {
-      postMessage = vi.fn();
-    },
-  );
   const config = configFromUrl(new URLSearchParams('site=testHouse&debug=1'));
   const { registry } = config.content;
-  const source = createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry));
+  const source = createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
   const start = playerStartFromWorld(source, config.scale);
   const session = createSession({
     registry,
