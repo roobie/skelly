@@ -3,9 +3,9 @@ import { makeScale } from '../src/core/scale.ts';
 import { realTimestamp } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import type { Engine } from '../src/game/engine.ts';
+import type { FromMesher, ToMesher } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { WorldLoading } from '../src/game/worldLoading.ts';
-import type { FromMesher, ToMesher } from '../src/worker/protocol.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 
 const replies: FromMesher[] = [];

@@ -5,8 +5,8 @@ import { PADDED, paddedIndex } from '../src/core/meshInput.ts';
 import { OCCLUSION_RADIUS, WIDE, wideIndex } from '../src/core/occlusion.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
+import type { ToMesher } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
-import type { ToMesher } from '../src/worker/protocol.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 import { unitFaces } from './meshFaces.ts';
 

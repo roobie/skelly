@@ -249,6 +249,9 @@
     "game/melee.ts": {
       "cooldown": 4
     },
+    "game/mesherProtocol.ts": {
+      "ms": 1
+    },
     "game/play.ts": {
       "recordSnapshotDuration": 1,
       "setTimeOfDay": 1,
@@ -346,9 +349,6 @@
       "simTime": 1
     },
     "worker/mesh.worker.ts": {
-      "ms": 1
-    },
-    "worker/protocol.ts": {
       "ms": 1
     }
   }

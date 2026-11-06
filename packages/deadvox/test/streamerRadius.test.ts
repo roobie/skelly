@@ -2,8 +2,8 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { CHUNK } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
+import type { FromMesher, ToMesher } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
-import type { FromMesher, ToMesher } from '../src/worker/protocol.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 
 /** Answers every mesh request with a non-empty mesh when `drain` runs. */

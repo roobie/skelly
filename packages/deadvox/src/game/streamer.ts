@@ -19,7 +19,7 @@ import type { World } from '../core/world.ts';
 import { isEnclosed } from '../core/world.ts';
 import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
-import type { FromMesher, ToMesher } from '../worker/protocol.ts';
+import type { FromMesher, ToMesher } from './mesherProtocol.ts';
 
 const COLUMNS_PER_FRAME = 2;
 

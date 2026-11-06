@@ -5,8 +5,8 @@ import type { FencePostDefs } from '../core/fencePosts.ts';
 import { buildMesh, type MeshData } from '../core/mesher.ts';
 import { buildSkyResult } from '../core/skyTransport.ts';
 import type { WireMeshes } from '../core/wireMesh.ts';
+import type { FromMesher, ToMesher } from '../game/mesherProtocol.ts';
 import { buildShape, shapeBuffers } from '../render/vehicleShape.ts';
-import type { FromMesher, ToMesher } from './protocol.ts';
 
 let wireMeshes: WireMeshes = [];
 let fencePosts: FencePostDefs = [];
