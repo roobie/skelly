@@ -9,6 +9,7 @@ import { buildBundledContent } from './game/bundledContent.ts';
 import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { inputBindings, keyboardInput } from './game/inputBindings.ts';
 import { MAP_SLICE_ACTIONS, mapSliceKeys } from './game/mapSliceInput.ts';
+import { startForSite } from './game/startSelection.ts';
 import { siteForReviewMap } from './game/worldSetup.ts';
 import {
   hillshade,
@@ -33,6 +34,10 @@ const seed = Number.isFinite(rawSeed) ? rawSeed | 0 : DEFAULT_SEED;
 const config = makeConfig(seed, DEFAULT_RADIUS_M, content);
 Object.assign(config, siteFromUrl(params, 'playtest', registry));
 config.debug = true;
+if (registry.scenarios.has(config.site)) {
+  // A scenario city is reviewed as its default start places it.
+  config.startId = startForSite(content, config.site, true).id;
+}
 const layout = registry.layouts.get(config.site);
 const site = siteForReviewMap(config, registry);
 const selectedView = (params.get('view') === 'satellite' ? 'satellite' : 'topographic') as SiteMapView;

@@ -4,6 +4,7 @@ import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { hash3, Rng } from './random.ts';
 import type { Scale } from './scale.ts';
+import type { StartPlacementDef } from './scenarioStart.ts';
 import type { ScenarioDef } from './schema.ts';
 import { ordinarySpawnWeights, settlementActorSpawns, settlementHordeSpawn } from './settlementSpawns.ts';
 import { type ActorSpawn, type HordeSpawn, rectDistance } from './site.ts';
@@ -21,11 +22,14 @@ export class ScenarioCitySite extends CitySite {
     registry,
     scale,
     scenario,
+    start,
   }: {
     seed: number;
     registry: Registry;
     scale: Scale;
     scenario: ScenarioDef;
+    /** The selected start's placement; omitted, the scenario builds city-only. */
+    start?: StartPlacementDef | undefined;
   }) {
     super(
       seed,
@@ -37,6 +41,7 @@ export class ScenarioCitySite extends CitySite {
         floor: terrainHeight(seed, terrainShapeOf(registry), scale, 0, 0),
         grid: cityGridOf(registry, scenario.city),
         scenario,
+        start,
       }),
     );
     this.scenario = scenario;

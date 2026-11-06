@@ -12,6 +12,7 @@ import { generateChunk } from '../src/core/worldgen.ts';
 import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 
 const { registry, issues } = startupContent();
 
@@ -73,7 +74,14 @@ it('street car procedural variants', () => {
 it('keeps the street surface under every placed item standing on a street cell', () => {
   const scenario = [...registry.scenarios.values()].find(({ city }) => city.streetProps?.length)!;
   const grid = cityGridOf(registry, scenario.city);
-  const plan = buildCityPlan({ seed: 1, registry, grid, floor: 0, scenario });
+  const plan = buildCityPlan({
+    seed: 1,
+    registry,
+    grid,
+    floor: 0,
+    scenario,
+    start: defaultStartOf(registry, scenario),
+  });
   const scale = makeScale(0.5);
   const site = new CitySite(1, registry, scale, plan);
   const terrain = {

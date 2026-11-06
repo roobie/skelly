@@ -12,6 +12,7 @@ import { captureSky, growSky, SKY_SHELL, skyDependencyBounds } from '../src/core
 import { buildSkyResult } from '../src/core/skyTransport.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
 import { blockId, capture, createRuntime, fixtureZombieColumn, registry, scale, seed } from './snapshotTestSupport.ts';
 
@@ -98,7 +99,10 @@ const benchRange = { bottom: scale.minCy * CHUNK, top: (scale.maxCy + 1) * CHUNK
 const largestAuthoredField = (): { site: Site; box: SkyBounds } => {
   const sites: Site[] = [
     ...[...registry.layouts.values()].map((layout) => new AuthoredSite(seed, registry, scale, layout)),
-    ...[...registry.scenarios.values()].map((scenario) => new ScenarioCitySite({ seed, registry, scale, scenario })),
+    ...[...registry.scenarios.values()].map(
+      (scenario) =>
+        new ScenarioCitySite({ seed, registry, scale, scenario, start: defaultStartOf(registry, scenario) }),
+    ),
   ];
   const cells = ({ min, max }: SkyBounds) => max.reduce((product, value, axis) => product * (value - min[axis]!), 1);
   const candidates = sites.flatMap((owner) =>

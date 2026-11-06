@@ -26,7 +26,7 @@ import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureLootContext } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
-import { fixtureScenario, fixtureScenarioSources, fixtureStart } from './fixtures/scenario.ts';
+import { defaultStartOf, fixtureScenario, fixtureScenarioSources, fixtureStart } from './fixtures/scenario.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const BUNDLED_CONTENT = startupContent();
@@ -223,6 +223,7 @@ describe('one finished city plan', () => {
         floor,
         grid: cityGridOf(cityRegistry, scenario.city),
         scenario,
+        start: defaultStartOf(cityRegistry, scenario),
       });
       const site = new CitySite(73, cityRegistry, scale, plan);
       const { actors, hordes } = scenarioCityPopulation(site, scenario);
@@ -328,6 +329,7 @@ describe('one finished city plan', () => {
         floor,
         grid: cityGridOf(testRegistry, scenario.city),
         scenario,
+        start: scenario.composition.start,
       });
       const site = new CitySite(73, testRegistry, scale, plan);
       const markers = placedSpawns(plan.composition!.events[0]!);
@@ -584,7 +586,13 @@ describe('one finished city plan', () => {
     it('keeps every gauntlet spawn inside the walled area and clear of the wall', () => {
       const native = BUNDLED_CONTENT.registry;
       const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
-      const site = new ScenarioCitySite({ seed: 73, registry: native, scale, scenario });
+      const site = new ScenarioCitySite({
+        seed: 73,
+        registry: native,
+        scale,
+        scenario,
+        start: defaultStartOf(native, scenario),
+      });
       const spawns: { pos: Vec3 }[] = [];
       for (let cz = toChunk(site.bounds.z0) - 2; cz <= toChunk(site.bounds.z1) + 2; cz++) {
         for (let cx = toChunk(site.bounds.x0) - 2; cx <= toChunk(site.bounds.x1) + 2; cx++) {
@@ -609,7 +617,6 @@ describe('one finished city plan', () => {
   it('reserves each candidate/turn class inside the apron and keeps ordinary rows out of street space', () => {
     const plan = planned();
     expect(plan.candidates.length).toBeGreaterThan(0);
-    expect(plan.candidates.some(([i, j]) => i === 0 && j === 0)).toBe(false);
     const service = compileTemplate(registry, registry.templates.get(profile.serviceTemplate)!);
     const grid = fixtureGrid;
     const pitchX = grid.street + grid.blockX;

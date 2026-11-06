@@ -12,6 +12,7 @@ import { cellsOf, footprint, pieceSize } from '../src/core/templates.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 import {
   capture,
   contentLookup,
@@ -224,7 +225,13 @@ describe('a cover over a hatch', () => {
 sweepGroup('the secret house', () => {
   it('has one cover lying over every cell of its hatch, which can be lifted', () => {
     const scenario = [...registry.scenarios.values()].find((candidate) => candidate.composition)!;
-    const city = new ScenarioCitySite({ seed: 73, registry, scale: makeScale(0.5), scenario });
+    const city = new ScenarioCitySite({
+      seed: 73,
+      registry,
+      scale: makeScale(0.5),
+      scenario,
+      start: defaultStartOf(registry, scenario),
+    });
     const [house] = city.plan.placements.filter(({ template }) => template.id === 'gauntlet_city_cellar_secret');
     const all = specsOf(city, [house!]);
     const hatches = all.filter((spec) => registry.furniture.get(spec.type)?.door?.hatch);
@@ -325,7 +332,13 @@ sweepGroup('tarps', () => {
     expect(built.issues).toEqual([]);
     const tarpYards = built.registry;
     const scenario = [...tarpYards.scenarios.values()].find((candidate) => candidate.composition)!;
-    const city = new ScenarioCitySite({ seed: 73, registry: tarpYards, scale: makeScale(0.5), scenario });
+    const city = new ScenarioCitySite({
+      seed: 73,
+      registry: tarpYards,
+      scale: makeScale(0.5),
+      scenario,
+      start: defaultStartOf(tarpYards, scenario),
+    });
     const all = specsOf(city, city.plan.placements);
     const tarps = all.filter((spec) => spec.type === 'tarp');
     expect(tarps.length).toBeGreaterThan(0);

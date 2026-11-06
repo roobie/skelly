@@ -14,6 +14,7 @@ import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
 import { compileAssembly, placedGroundLoot, placedPieces } from '../src/core/templates.ts';
 import { startupContent } from './baseRegistry.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const { registry } = startupContent();
@@ -111,7 +112,13 @@ describe('nested tier ranges reach the loot sources', () => {
 sweepGroup('gauntlet lab loot tiers by depth', () => {
   it('lets deeper levels roll more tiers, retain the upper levels’ tiers and reach the highest tier', () => {
     const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'assembledCity')!;
-    const site = new ScenarioCitySite({ seed: 1, registry, scale, scenario });
+    const site = new ScenarioCitySite({
+      seed: 1,
+      registry,
+      scale,
+      scenario,
+      start: defaultStartOf(registry, scenario),
+    });
     const sources = site.placements
       .flatMap((placement) =>
         [...placedPieces(placement), ...placedGroundLoot(placement)]
@@ -137,7 +144,13 @@ sweepGroup('gauntlet lab loot tiers by depth', () => {
 
   it('rolls rifle supplies only from containers that carry a Military usage on a level below the first', () => {
     const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'assembledCity')!;
-    const site = new ScenarioCitySite({ seed: 1, registry, scale, scenario });
+    const site = new ScenarioCitySite({
+      seed: 1,
+      registry,
+      scale,
+      scenario,
+      start: defaultStartOf(registry, scenario),
+    });
     const sources = site.placements.flatMap((placement) =>
       lootSourcesOf(
         registry,

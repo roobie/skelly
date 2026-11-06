@@ -2,7 +2,7 @@ import { lotChoices, type PlannedLot } from './cityLots.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type PlacementLootSource, placementLootIssues } from './placementLoot.ts';
-import { composeStart, type ScenarioStart, startTemplate } from './scenarioStart.ts';
+import { composeStart, type ScenarioStart, type StartPlacementDef, startTemplate } from './scenarioStart.ts';
 import type { FixedLootOverrideDef, ScenarioDef } from './schema.ts';
 import { admittedChoices, cityRowDepth } from './settlementPools.ts';
 import {
@@ -19,7 +19,8 @@ import {
 } from './templates.ts';
 
 export interface ScenarioComposition {
-  readonly start: ScenarioStart;
+  /** Absent in a city-only build: no start is selected, so nothing roots a playable run. */
+  readonly start?: ScenarioStart;
   readonly leads: readonly Placement[];
   readonly leadFaces?: readonly (Readonly<Vec3> | undefined)[];
   readonly events: readonly Placement[];
@@ -465,7 +466,16 @@ export const composeScenario = (
   registry: Registry,
   scenario: ScenarioDef,
   service: Placement,
-  { floor, start, lots = [] }: { floor: number; start: Placement; lots?: readonly PlannedLot[] },
+  {
+    floor,
+    start,
+    lots = [],
+  }: {
+    floor: number;
+    /** The selected start's authored placement and its placed building; a city-only build composes without one. */
+    start?: { readonly definition: StartPlacementDef; readonly placement: Placement } | undefined;
+    lots?: readonly PlannedLot[];
+  },
 ): ScenarioComposition | undefined => {
   const authored = scenario.composition;
   if (!authored) {
@@ -574,7 +584,7 @@ export const composeScenario = (
     return promised(parent, stop.fixedLoot);
   });
   return Object.freeze({
-    start: composeStart(authored.start, start),
+    ...(start ? { start: composeStart(start.definition, start.placement) } : {}),
     leads,
     leadFaces: Object.freeze(leadFaces),
     events,
@@ -583,7 +593,7 @@ export const composeScenario = (
       Object.freeze({ placement: service, fixedLoot }),
       ...leads.map((lead, index) => Object.freeze({ placement: lead, fixedLoot: authored.leads[index]!.fixedLoot })),
       ...events.map((event, index) => promised(event, authored.events![index]!.fixedLoot)),
-      ...(authored.start.fixedLoot ? [promised(start, authored.start.fixedLoot)] : []),
+      ...(start?.definition.fixedLoot ? [promised(start.placement, start.definition.fixedLoot)] : []),
       ...stops,
     ]),
     objective: furnitureAnchor(authored.objective),

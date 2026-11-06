@@ -9,6 +9,7 @@ import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import type { ActorDef, SiteLayoutDef } from '../src/core/schema.ts';
 import { footprint } from '../src/core/templates.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const registry = baseRegistry();
@@ -88,7 +89,13 @@ describe('authored zombie spawn persistence', () => {
   sweepGroup('in a gauntlet site', () => {
     it('keeps the secret house’s sealed brute shambler through generation and a save round-trip', () => {
       const scenario = [...registry.scenarios.values()].find((candidate) => candidate.composition)!;
-      const city = new ScenarioCitySite({ seed: 73, registry, scale: makeScale(0.5), scenario });
+      const city = new ScenarioCitySite({
+        seed: 73,
+        registry,
+        scale: makeScale(0.5),
+        scenario,
+        start: defaultStartOf(registry, scenario),
+      });
       const [house, ...others] = city.plan.placements.filter(
         ({ template }) => template.id === 'gauntlet_city_cellar_secret',
       );

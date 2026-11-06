@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
-import type { ContentSource } from '../../src/core/content.ts';
+import type { ContentSource, Registry } from '../../src/core/content.ts';
+import type { StartPlacementDef } from '../../src/core/scenarioStart.ts';
 import type { MapPoolDef, ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
 import { gameHours } from '../../src/core/time.ts';
 import { fixtureBlockMaterial } from '../blockMaterialFixture.ts';
@@ -49,6 +50,19 @@ export const fixtureScenario = (): ScenarioDef => ({
     pool: 'fixture_pool',
   },
 });
+
+/**
+ * The placement of the one start a live scenario's site defaults to, so a test builds the playable run that start
+ * selects. Fixture scenarios carry no start rows; their tests name the authored placement they build.
+ */
+export const defaultStartOf = (registry: Pick<Registry, 'starts'>, scenario: ScenarioDef): StartPlacementDef => {
+  const rows = [...registry.starts.values()].filter((row) => row.defaultForSite && row.site === scenario.id);
+  const placement = scenario.composition?.start;
+  if (rows.length !== 1 || !placement) {
+    throw new Error(`Scenario "${scenario.id}" needs one default start with a placement`);
+  }
+  return placement;
+};
 
 export const fixturePool = (
   choices: MapPoolDef['choices'] = [{ ref: { kind: 'template', id: 'fixture_house' }, weight: 1 }],
@@ -100,7 +114,7 @@ const fixtureStartTemplate = (): TemplateDef => {
   return template;
 };
 
-export const fixtureStart = (): NonNullable<ScenarioDef['composition']>['start'] => ({
+export const fixtureStart = (): StartPlacementDef => ({
   template: 'fixture_start',
   cell: [0, 0],
   spawn: [2, 7, 2],

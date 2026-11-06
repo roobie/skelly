@@ -6,7 +6,7 @@ import { hash3, pickWeighted, Rng } from './random.ts';
 import { BLOCK_SIZE } from './scale.ts';
 import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } from './scenarioComposition.ts';
 import { portalLadderPoint, scenarioPortalIssues, undergroundPortIssues } from './scenarioPortal.ts';
-import { scenarioStartIssues, startTemplate } from './scenarioStart.ts';
+import { type StartPlacementDef, scenarioStartIssues, startTemplate } from './scenarioStart.ts';
 import type { CityBenchmarkDef, MapPoolDef, ScenarioDef } from './schema.ts';
 import { admittedChoices, cityRowDepth, eligibilityExclusion } from './settlementPools.ts';
 import { type Rect, rectsOverlap } from './site.ts';
@@ -831,13 +831,16 @@ export const servicePlacement = ({
     turn,
   });
 
-const startPlacement = (context: FillContext, scenario?: ScenarioDef): Placement | undefined => {
-  const definition = scenario?.composition?.start;
-  if (!definition) {
+const startPlacement = (
+  context: FillContext,
+  scenario: ScenarioDef | undefined,
+  definition: StartPlacementDef | undefined,
+): Placement | undefined => {
+  if (!(scenario && definition)) {
     return undefined;
   }
   return servicePlacement({
-    template: startTemplate(context.registry, definition.template, context.seed, `scenario:${scenario!.id}:start`),
+    template: startTemplate(context.registry, definition.template, context.seed, `scenario:${scenario.id}:start`),
     floor: context.floor,
     grid: context.grid,
     cell: definition.cell,
@@ -1096,6 +1099,7 @@ export const buildCityPlan = ({
   grid,
   maxStoreys = 1,
   scenario,
+  start: startDefinition,
 }: {
   seed: number;
   registry: Registry;
@@ -1103,10 +1107,12 @@ export const buildCityPlan = ({
   grid: CityGrid;
   maxStoreys?: number;
   scenario?: ScenarioDef;
+  /** The selected start's placement; without one the scenario builds city-only and reserves no start cell. */
+  start?: StartPlacementDef | undefined;
 }): CityPlan => {
   const cells = cityCells(grid);
-  const startCell = scenario?.composition?.start.cell ?? [0, 0];
-  const candidates = cells.filter(([i, j]) => i !== startCell[0] || j !== startCell[1]);
+  const startCell = startDefinition?.cell;
+  const candidates = cells.filter(([i, j]) => !startCell || i !== startCell[0] || j !== startCell[1]);
   const context: FillContext = {
     seed,
     floor,
@@ -1120,9 +1126,15 @@ export const buildCityPlan = ({
   };
   const { service, serviceBlock } = planService(context, scenario, candidates);
   const lots = placeCityLots(registry, grid, { seed, floor, compiled: context.compiled });
-  const start = startPlacement(context, scenario);
+  const start = startPlacement(context, scenario, startDefinition);
   const composition =
-    service && scenario && start ? composeScenario(registry, scenario, service, { floor, start, lots }) : undefined;
+    service && scenario
+      ? composeScenario(registry, scenario, service, {
+          floor,
+          start: start && startDefinition && { definition: startDefinition, placement: start },
+          lots,
+        })
+      : undefined;
   const lotCounts = countsForLots(lots, grid.pool);
   const fillCells = (forced: PoolRef[]): Placement[] => {
     context.counts = new Map(lotCounts);
@@ -1134,7 +1146,7 @@ export const buildCityPlan = ({
       if (service && serviceBlock?.[0] === i && serviceBlock[1] === j) {
         return [service];
       }
-      if (start && i === startCell[0] && j === startCell[1]) {
+      if (start && startCell && i === startCell[0] && j === startCell[1]) {
         return [start];
       }
       return Array.from({ length: grid.rows }, (_, row) => fillRow(context, [i, j], row)).flat();
@@ -1151,7 +1163,8 @@ export const buildCityPlan = ({
   }
   const pitchX = grid.street + grid.blockX;
   const pitchZ = grid.street + grid.blockZ;
-  const spawn: Vec3 = composition ? [...composition.start.spawn] : [grid.street / 2, floor + 1, grid.street / 2];
+  // The default spawn only places a body in a city-only build; no certificate roots a route there.
+  const spawn: Vec3 = composition?.start ? [...composition.start.spawn] : [grid.street / 2, floor + 1, grid.street / 2];
   const core = cityCore(grid);
   const bounds = cityBounds(grid);
   const { perimeter } = grid;

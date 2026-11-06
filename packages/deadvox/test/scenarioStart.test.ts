@@ -12,12 +12,20 @@ import { type BlockBox, stampChunk } from '../src/core/structure.ts';
 import { templateReachableStandingPositions } from '../src/core/templateSpatial.ts';
 import { gameHours } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 
 const registry = baseRegistry();
 const profile = [...registry.scenarios.values()].find((row) => row.composition)!;
 const grid = cityGridOf(registry, profile.city);
-const plan = buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile });
-const { start } = plan.composition!;
+const plan = buildCityPlan({
+  seed: 9,
+  registry,
+  floor: 64,
+  grid,
+  scenario: profile,
+  start: defaultStartOf(registry, profile),
+});
+const start = plan.composition!.start!;
 const scale = makeScale(0.5);
 const obstruction = (at: Readonly<Vec3>) => ({
   min: at.map(Math.floor) as Vec3,
@@ -94,9 +102,9 @@ it('refuses start reservations that overlap authored lots or leave the street gr
   const cell = plan.candidates[0]!;
   own.composition!.start.cell = [...cell];
   expect(scenarioStartIssues(registry, own)).toEqual([]);
-  expect(() => buildCityPlan({ seed: 9, registry, floor: plan.floor, grid, scenario: own })).toThrow(
-    'overlaps reserved building',
-  );
+  expect(() =>
+    buildCityPlan({ seed: 9, registry, floor: plan.floor, grid, scenario: own, start: own.composition!.start }),
+  ).toThrow('overlaps reserved building');
   own.composition!.start.cell = [grid.blocksX, grid.blocksZ];
   expect(scenarioStartIssues(registry, own).some(([path]) => path === '.composition.start.cell')).toBe(true);
 });

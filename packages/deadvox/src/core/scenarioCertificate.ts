@@ -19,15 +19,35 @@ export type CertificatePhase =
   | 'lots'
   | 'service'
   | 'street'
+  | 'portalApproach'
   | 'floors'
   | 'seals'
   | 'ladders'
   | 'stairs'
+  | 'mouths'
   | 'underground'
   | 'objective'
   | 'resources'
   | 'leads'
   | 'lotResources';
+
+/**
+ * The phases a city proves without a start: none reads the start's feet. The rest are playable-run checks, rooted in
+ * the selected start, because no other root is authored; a default spawn or street corner would prove a route no
+ * player takes.
+ */
+export const CITY_PHASES: readonly CertificatePhase[] = Object.freeze([
+  'portalApproach',
+  'floors',
+  'seals',
+  'ladders',
+  'stairs',
+  'underground',
+  'objective',
+  'resources',
+]);
+
+const NO_START: [string, string] = ['.composition.start', 'playable-run certification needs a selected start'];
 
 class Certificate {
   readonly space: ScenarioRouteSpace;
@@ -56,15 +76,23 @@ class Certificate {
     return route !== undefined;
   }
 
-  street(): void {
+  /** The street corner outside the reserved service block. */
+  serviceCorner(): Vec3 {
     const { plan } = this.site;
     const service = plan.service!;
     const { street, pad } = plan.grid;
-    const corner: Vec3 = [service.origin[0] - pad - street / 2, plan.floor + 1, service.origin[2] - pad - street / 2];
+    return [service.origin[0] - pad - street / 2, plan.floor + 1, service.origin[2] - pad - street / 2];
+  }
+
+  street(): void {
+    const corner = this.serviceCorner();
     if (!this.startFeet.some((foot) => this.space.path(foot, corner))) {
       this.fail('.route.street', 'reserved street component has unsupported or obstructed body space');
     }
-    this.connected(corner, plan.portal!.upper, '.portal.upper');
+  }
+
+  portalApproach(): void {
+    this.connected(this.serviceCorner(), this.site.plan.portal!.upper, '.portal.upper');
   }
 
   floors(): void {
@@ -123,7 +151,7 @@ class Certificate {
   }
 
   startDescent(descent: StartDescent): boolean {
-    const { start } = this.composition;
+    const start = this.composition.start!;
     const walking = { steps: true, placement: start.placement };
     if (!this.space.path(this.site.plan.spawn, descent.upper, { placement: start.placement })) {
       return false;
@@ -157,7 +185,7 @@ class Certificate {
   }
 
   start(): void {
-    const { start } = this.composition;
+    const start = this.composition.start!;
     const open = start.descents.map((descent) => this.startDescent(descent));
     for (const [index, accessible] of open.entries()) {
       const foot = start.descents[index]!.lower;
@@ -200,34 +228,46 @@ class Certificate {
     return reached;
   }
 
-  /** The sewer is a second way in, so each mouth must reach each port as surely as the hatch reaches the lab. */
-  underground(): void {
-    for (const [index, { definition, placement }] of this.site.plan.underground.entries()) {
-      const path = `.city.underground[${index}]`;
-      for (const [mouthIndex, mouth] of definition.mouths.entries()) {
-        const lower = this.mouth(placement, mouth, `${path}.mouths[${mouthIndex}]`);
-        for (const [portIndex, port] of definition.ports.entries()) {
-          this.port(placement, lower, port, `${path}.ports[${portIndex}]`);
-        }
+  /** Each sewer mouth on the street, with its placed ladder link and issue path. */
+  mouthLinks(): { placement: Placement; ports: Underground['ports']; tunnel: string; path: string; link: ClimbLink }[] {
+    return this.site.plan.underground.flatMap(({ definition, placement }, index) =>
+      definition.mouths.map((mouth, mouthIndex) => {
+        const anchor = placement.template.pieces.findIndex((piece) => piece.pos.join(',') === mouth.ladder.join(','));
+        const tunnel = `.city.underground[${index}]`;
+        return {
+          placement,
+          ports: definition.ports,
+          tunnel,
+          path: `${tunnel}.mouths[${mouthIndex}]`,
+          link: {
+            ladder: placedPieces(placement)[anchor]?.pos,
+            upper: placedPoint(placement, mouth.upper),
+            lower: placedPoint(placement, mouth.lower),
+          },
+        };
+      }),
+    );
+  }
+
+  mouths(): void {
+    for (const { path, link } of this.mouthLinks()) {
+      if (!this.startFeet.some((foot) => this.space.path(foot, link.upper))) {
+        this.fail(path, 'mouth needs a supported street route from the start');
       }
     }
   }
 
-  mouth(placement: Placement, mouth: Underground['mouths'][number], path: string): Readonly<Vec3> {
-    const anchor = placement.template.pieces.findIndex((piece) => piece.pos.join(',') === mouth.ladder.join(','));
-    const link = {
-      ladder: placedPieces(placement)[anchor]?.pos,
-      upper: placedPoint(placement, mouth.upper),
-      lower: placedPoint(placement, mouth.lower),
-    };
-    if (!this.startFeet.some((foot) => this.space.path(foot, link.upper))) {
-      this.fail(path, 'mouth needs a supported street route from the start');
+  /** The sewer is a second way in, so each mouth must reach each port as surely as the hatch reaches the lab. */
+  underground(): void {
+    for (const { placement, ports, tunnel, path, link } of this.mouthLinks()) {
+      const issue = this.climbIssue(link);
+      if (issue) {
+        this.fail(path, issue);
+      }
+      for (const [portIndex, port] of ports.entries()) {
+        this.port(placement, link.lower, port, `${tunnel}.ports[${portIndex}]`);
+      }
     }
-    const issue = this.climbIssue(link);
-    if (issue) {
-      this.fail(path, issue);
-    }
-    return link.lower;
   }
 
   port(placement: Placement, lower: Readonly<Vec3>, port: Underground['ports'][number], path: string): void {
@@ -459,10 +499,12 @@ class Certificate {
       ['lots', () => this.issues.push(...cityLotRouteIssues(this.site.plan.lots ?? [], this.space, this.startFeet))],
       ['service', () => this.serviceRoutes()],
       ['street', () => this.street()],
+      ['portalApproach', () => this.portalApproach()],
       ['floors', () => this.floors()],
       ['seals', () => this.seals()],
       ['ladders', () => this.ladders()],
       ['stairs', () => this.stairs()],
+      ['mouths', () => this.mouths()],
       ['underground', () => this.underground()],
       ['objective', () => this.objective(floors())],
       ['resources', () => this.fixedResources(floors())],
@@ -531,39 +573,53 @@ class Certificate {
   }
 }
 
-export const scenarioStartCertificate = (site: CitySite): ScenarioCertificate => {
-  const { composition } = site.plan;
-  if (!composition) {
-    return {
-      space: new ScenarioRouteSpace(site),
-      issues: [['.composition', 'scenario needs its final composed route metadata']],
-    };
+/** A certificate over the composed city, or the one issue that stops it: missing metadata, then a missing start. */
+const certificateOf = (
+  site: CitySite,
+  { playable, lab }: { playable: boolean; lab: boolean },
+): Certificate | ScenarioCertificate => {
+  const { composition, service, portal } = site.plan;
+  const fail = (issue: [string, string]): ScenarioCertificate => ({
+    space: new ScenarioRouteSpace(site),
+    issues: [issue],
+  });
+  if (!(composition && (!lab || (service && portal)))) {
+    return fail(['.composition', 'scenario needs its final composed route metadata']);
   }
-  const certificate = new Certificate(site, composition);
+  return playable && !composition.start ? fail(NO_START) : new Certificate(site, composition);
+};
+
+export const scenarioStartCertificate = (site: CitySite): ScenarioCertificate => {
+  const certificate = certificateOf(site, { playable: true, lab: false });
+  if (!(certificate instanceof Certificate)) {
+    return certificate;
+  }
   certificate.start();
   return { space: certificate.space, issues: certificate.issues };
 };
 
 /** The start and lot resources alone, so a lot-resource case need not certify the lab. */
 export const scenarioLotResourceCertificate = (site: CitySite): ScenarioCertificate => {
-  const { composition } = site.plan;
-  if (!composition) {
-    return scenarioStartCertificate(site);
+  const certificate = certificateOf(site, { playable: true, lab: false });
+  if (!(certificate instanceof Certificate)) {
+    return certificate;
   }
-  const certificate = new Certificate(site, composition);
   certificate.start();
   certificate.lotResources();
   return { space: certificate.space, issues: certificate.issues };
 };
 
-/** `only` narrows the run to the named phases, so a case that probes one rule need not certify the whole lab. */
+/**
+ * The playable run from the selected start. `only` narrows the run to the named phases, so a case that probes one
+ * rule need not certify the whole lab.
+ */
 export const scenarioCertificate = (site: CitySite, only?: readonly CertificatePhase[]): ScenarioCertificate => {
-  const { composition, service, portal } = site.plan;
-  if (!(composition && service && portal)) {
-    return {
-      space: new ScenarioRouteSpace(site),
-      issues: [['.composition', 'scenario needs its final composed route metadata']],
-    };
-  }
-  return new Certificate(site, composition).run(only && new Set(only));
+  const certificate = certificateOf(site, { playable: true, lab: true });
+  return certificate instanceof Certificate ? certificate.run(only && new Set(only)) : certificate;
+};
+
+/** The city's own promises, which hold whichever start is selected, or with none. */
+export const scenarioCityCertificate = (site: CitySite): ScenarioCertificate => {
+  const certificate = certificateOf(site, { playable: false, lab: true });
+  return certificate instanceof Certificate ? certificate.run(new Set(CITY_PHASES)) : certificate;
 };

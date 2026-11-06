@@ -244,7 +244,7 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
     assert(drop.ok);
     until(() => !session.inventory.hands.left, Math.ceil((drop.job.duration + 1) * 60));
   };
-  const foot = leaveRoof(session, space, plan.composition!.start, {
+  const foot = leaveRoof(session, space, plan.composition!.start!, {
     intent: (value) => {
       intent = { ...value };
     },

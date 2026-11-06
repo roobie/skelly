@@ -19,8 +19,9 @@ import {
   templateResolves,
 } from './templates.ts';
 
-type StartDef = NonNullable<ScenarioDef['composition']>['start'];
-type DescentDef = StartDef['descents'][number];
+/** A playable start's placement in its scenario city: building, cell, roof spawn and ways down. */
+export type StartPlacementDef = NonNullable<ScenarioDef['composition']>['start'];
+type DescentDef = StartPlacementDef['descents'][number];
 export type StartDescent = DescentDef extends infer D
   ? D extends DescentDef
     ? { readonly [K in keyof D]: D[K] extends Vec3 ? Readonly<Vec3> : D[K] }
@@ -157,7 +158,7 @@ export const scenarioStartIssues = (registry: Registry, scenario: ScenarioDef): 
   return issues;
 };
 
-export const composeStart = (start: StartDef, placement: Placement): ScenarioStart => {
+export const composeStart = (start: StartPlacementDef, placement: Placement): ScenarioStart => {
   const point = (local: Vec3): Readonly<Vec3> => Object.freeze(placedPoint(placement, local));
   const pieces = placedPieces(placement);
   const furniture = (local: Vec3): Readonly<Vec3> => {

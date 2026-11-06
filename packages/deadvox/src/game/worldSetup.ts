@@ -53,7 +53,13 @@ const SCENARIO_SITES: Record<ScenarioKind, (options: ConstructorParameters<typeo
 const buildSite = (config: GameConfig, registry: Registry): Site | undefined => {
   const scenario = registry.scenarios.get(config.site);
   if (scenario) {
-    return SCENARIO_SITES[scenario.kind]({ seed: config.seed, registry, scale: config.scale, scenario });
+    const selected = registry.starts.get(config.startId);
+    if (selected?.site !== config.site) {
+      throw new Error(`Start "${config.startId}" does not start on site "${config.site}"`);
+    }
+    // The selected start's placement is authored on its scenario row.
+    const start = scenario.composition?.start;
+    return SCENARIO_SITES[scenario.kind]({ seed: config.seed, registry, scale: config.scale, scenario, start });
   }
   const layout = registry.layouts.get(config.site);
   if (layout) {

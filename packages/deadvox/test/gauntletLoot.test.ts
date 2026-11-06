@@ -6,6 +6,7 @@ import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
 import { firearmModelForType } from '../src/game/firearmHandling.ts';
 import { startupContent } from './baseRegistry.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 
 const { registry } = startupContent();
 const scale = makeScale(BLOCK_SIZE);
@@ -14,7 +15,7 @@ const SEED = 1;
 
 /** Everything a run's loot points deliver, fixed or rolled, as item types with their stack counts. */
 const placedStacks = (seed: number, scenario: (typeof gauntlets)[number]): { type: string; count: number }[] => {
-  const site = new ScenarioCitySite({ seed, registry, scale, scenario });
+  const site = new ScenarioCitySite({ seed, registry, scale, scenario, start: defaultStartOf(registry, scenario) });
   const sources = site.placements.flatMap((placement) =>
     lootSourcesOf(
       registry,

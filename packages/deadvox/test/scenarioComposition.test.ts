@@ -16,7 +16,13 @@ const BUNDLED_CONTENT = startupContent();
 const PROMISED_STOCK_ERROR = /Promised stock/;
 
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootContext } from './economyFixtures.ts';
-import { fixtureScenario, fixtureScenarioSources, fixtureService, fixtureStart } from './fixtures/scenario.ts';
+import {
+  defaultStartOf,
+  fixtureScenario,
+  fixtureScenarioSources,
+  fixtureService,
+  fixtureStart,
+} from './fixtures/scenario.ts';
 
 const fixture = () => {
   const profile = fixtureScenario();
@@ -130,13 +136,14 @@ describe('authored scenario composition', () => {
   it('places fixed container and surface items at the turned anchor independent of column requests', () => {
     const { profile, registry } = fixture();
     const grid = cityGridOf(registry, profile.city);
-    const base = buildCityPlan({ seed: 7, registry, floor: 32, grid, scenario: profile });
+    const { start } = profile.composition!;
+    const base = buildCityPlan({ seed: 7, registry, floor: 32, grid, scenario: profile, start });
     const compiled = compileTemplate(registry, registry.templates.get(profile.serviceTemplate)!);
     for (const turn of [0, 1, 2, 3] as const) {
       const service = servicePlacement({ template: compiled, floor: 32, grid, cell: [-1, 0], turn });
       const composition = composeScenario(registry, profile, service, {
         floor: 32,
-        start: base.composition!.start.placement,
+        start: { definition: start, placement: base.composition!.start!.placement },
       })!;
       const site = new CitySite(7, registry, makeScale(0.5), {
         ...base,
@@ -232,6 +239,7 @@ describe('authored scenario composition', () => {
       floor: 32,
       grid: cityGridOf(registry, profile.city),
       scenario: profile,
+      start: profile.composition!.start,
     });
     const composition = plan.composition!;
     expect(composition.events[0]!.turn).toBe(plan.lots![0]!.placement!.turn);
@@ -280,6 +288,7 @@ describe('authored scenario composition', () => {
       floor: 32,
       grid: cityGridOf(registry, profile.city),
       scenario: profile,
+      start: profile.composition!.start,
     });
     const site = new CitySite(8, registry, makeScale(0.5), plan);
     const support = placedPieces(plan.composition!.leads[0]!)[0]!;
@@ -307,7 +316,14 @@ describe('authored scenario composition', () => {
   it('keeps public leads at separate locations and destination landmarks in the finished plan', () => {
     const { profile, registry } = fixture();
     const grid = cityGridOf(registry, profile.city);
-    const plan = buildCityPlan({ seed: 8, registry, floor: 32, grid, scenario: profile });
+    const plan = buildCityPlan({
+      seed: 8,
+      registry,
+      floor: 32,
+      grid,
+      scenario: profile,
+      start: profile.composition!.start,
+    });
     const { leads, landmarks } = plan.composition!;
     expect(leads[0]!.origin).not.toEqual(leads[1]!.origin);
     for (const placement of [...leads, ...landmarks]) {
@@ -333,11 +349,12 @@ describe('promised stop stock', () => {
       floor: 64,
       grid: cityGridOf(registry, profile.city),
       scenario: profile,
+      start: defaultStartOf(registry, profile),
     });
     const site = new CitySite(9, registry, makeScale(0.5), plan);
     const composition = profile.composition!;
     const promises = [
-      { placement: plan.composition!.start.placement, stock: composition.start.fixedLoot ?? [] },
+      { placement: plan.composition!.start!.placement, stock: composition.start.fixedLoot ?? [] },
       ...(composition.stops ?? []).map((stop) => ({
         placement: plan.lots!.find(({ definition }) => definition.id === stop.lot)!.placement!,
         stock: stop.fixedLoot,
@@ -378,9 +395,16 @@ describe('promised stop stock', () => {
     expect(paths).toContain(`.composition.stops[${composition.stops!.length - 1}].lot`);
     composition.stops!.pop();
     const grid = cityGridOf(registry, profile.city);
-    expect(() => buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile })).toThrow(
-      PROMISED_STOCK_ERROR,
-    );
+    expect(() =>
+      buildCityPlan({
+        seed: 9,
+        registry,
+        floor: 64,
+        grid,
+        scenario: profile,
+        start: defaultStartOf(registry, profile),
+      }),
+    ).toThrow(PROMISED_STOCK_ERROR);
   });
 });
 
@@ -395,6 +419,7 @@ it('stamps every occupied authored lot and leaves intentional open lots unstampe
     floor: 64,
     grid: cityGridOf(registry, profile.city),
     scenario: profile,
+    start: defaultStartOf(registry, profile),
   });
   const site = new CitySite(9, registry, scale, plan);
   expect(plan.lots!.length).toBeGreaterThan(0);
