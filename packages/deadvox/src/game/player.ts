@@ -3,9 +3,9 @@
 import { claimed } from '../core/capabilities.ts';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
-import type { LadderHoldState } from '../core/ladders.ts';
 import type { Body, PhysicsParams } from '../core/physics.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
+import type { PlayerState } from '../core/playerState.ts';
 import type { Scale } from '../core/scale.ts';
 import type { PlayerDef } from '../core/schema.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
@@ -48,19 +48,6 @@ export const nextStance = (stance: PlayerStance, toggle: StanceToggle | undefine
   }
   return stance === 'crouching' ? 'standing' : 'crouching';
 };
-
-export interface PlayerState {
-  body: Body;
-  yaw: number;
-  pitch: number;
-  walk: boolean;
-  stance: PlayerStance;
-  sprinting: boolean;
-  firearmReadyWalking: boolean;
-  snipingAdsUid?: number | undefined;
-  handlingPausedForKnockout: boolean;
-  ladder: LadderHoldState | null;
-}
 
 export const snapshotPlayer = (
   body: Body,
