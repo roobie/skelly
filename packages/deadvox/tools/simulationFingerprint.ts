@@ -96,6 +96,8 @@ export const SIMULATION_EXCLUSIONS = [
   // What the mesher reads from the world (block arrays copied out of chunks) and its helpers: presentation only.
   'src/core/meshInput.ts',
   'src/core/occlusion.ts',
+  // Which columns are drawn yet: presentation only.
+  'src/core/columnReveal.ts',
   // Diffuse sky visibility only; does not change movement, sight, hearing or saved world state.
   'src/core/skylight.ts',
   'src/core/skySnapshot.ts',
