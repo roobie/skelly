@@ -121,6 +121,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/game/engine.ts',
   // Chooses the ray for debug readouts only; it cannot affect gameplay or saves.
   'src/game/debugTargetRay.ts',
+  // Debug ragdoll staging and its tuning are presentation; corpse physics must not invalidate saves.
+  'src/game/ragdollConfig.ts',
   'src/game/saveStorage.ts',
   // Browser selection persistence is transport; admission and pack identity are fingerprinted separately.
   'src/game/modStorage.ts',

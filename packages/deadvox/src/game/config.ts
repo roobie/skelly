@@ -7,7 +7,7 @@ import type { HandSide } from '../core/inventory.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
 import type { WeatheringDef } from '../core/schema.ts';
 import { resolveWeatheringUrl } from '../core/weatheringUrl.ts';
-import { sweepFromUrl } from '../render/ragdollConfig.ts';
+import { sweepFromUrl } from './ragdollConfig.ts';
 import type { StartupContent } from './bundledContent.ts';
 import { requireStart, startForSite } from './startSelection.ts';
 
