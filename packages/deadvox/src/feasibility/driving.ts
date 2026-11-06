@@ -1,5 +1,5 @@
 import type * as Rapier from '../../vendor/rapier-f64/rapier.js';
-import config from '../config/vehicleFeasibility.json' with { type: 'json' };
+import config from './vehicleFeasibility.json' with { type: 'json' };
 
 export const { driving } = config;
 type RapierApi = Pick<typeof Rapier, 'World' | 'RigidBodyDesc' | 'ColliderDesc'>;

@@ -14,6 +14,7 @@ const SOURCE_ROOTS = [
   'packages/deadvox/mods',
   'packages/mods',
   'packages/deadvox/src/config',
+  'packages/deadvox/src/feasibility',
   'packages/deadvox/test/fixtures/mods',
   'packages/deadvox/test/fixtures/content',
   'packages/deadvox/test/fixtures/packs',

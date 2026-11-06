@@ -341,7 +341,7 @@ describe('simulation source fingerprint', () => {
     const modules = await sourceFilesUnder('src/feasibility');
     const erasedContracts = 'src/feasibility/contract.ts';
     expect(modules.filter((path) => !graph.sources.has(path) && path !== erasedContracts)).toEqual([]);
-    expect(graph.sources.has('src/config/vehicleFeasibility.json')).toBe(true);
+    expect(graph.sources.has('src/feasibility/vehicleFeasibility.json')).toBe(true);
     expect(graph.sources.has('src/feasibility/movingBody.ts')).toBe(true);
     const entry = `${root}/src/core/sim.ts`;
     const wasm = `${root}/src/core/candidate.wasm`;

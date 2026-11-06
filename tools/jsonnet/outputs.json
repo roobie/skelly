@@ -565,8 +565,8 @@
       "output": "packages/deadvox/src/config/perf-baseline.json"
     },
     {
-      "source": "packages/deadvox/src/config/vehicleFeasibility.jsonnet",
-      "output": "packages/deadvox/src/config/vehicleFeasibility.json"
+      "source": "packages/deadvox/src/feasibility/vehicleFeasibility.jsonnet",
+      "output": "packages/deadvox/src/feasibility/vehicleFeasibility.json"
     },
     {
       "source": "packages/deadvox/test/fixtures/content/reachability-unfound.jsonnet",

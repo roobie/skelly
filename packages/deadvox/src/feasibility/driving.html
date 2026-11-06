@@ -25,8 +25,8 @@
   <script type="module">
     import { ColliderDesc, RigidBodyDesc, World } from '../../vendor/rapier-f64/rapier.js';
     import init from '../../vendor/rapier-f64/rapier_wasm3d.js';
-    import config from '../config/vehicleFeasibility.json' with { type: 'json' };
     import { driving, rapierDriver } from './driving.ts';
+    import config from './vehicleFeasibility.json' with { type: 'json' };
 
     await init();
     // biome-ignore lint/style/useNamingConvention: upstream Rapier API names
