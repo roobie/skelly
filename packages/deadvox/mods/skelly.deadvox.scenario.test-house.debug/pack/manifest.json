@@ -4,6 +4,7 @@
     "skelly.basic-recipes",
     "skelly.containers",
     "skelly.deadvox.buildings",
+    "skelly.deadvox.site-generation",
     "skelly.electric-power",
     "skelly.electronics",
     "skelly.firearms",

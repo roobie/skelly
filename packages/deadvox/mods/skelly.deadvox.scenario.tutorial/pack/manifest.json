@@ -2,6 +2,7 @@
   "dependencies": [
     "skelly.basic-recipes",
     "skelly.deadvox.actors",
+    "skelly.deadvox.site-generation",
     "skelly.electric-power",
     "skelly.firearms",
     "skelly.hand-tools",

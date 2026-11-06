@@ -4,7 +4,8 @@ manifest(
   tier='scenario',
   content=['layouts-stairs', 'starts', 'templates-stairs'],
   dependencies=[
-    'skelly.basic-recipes', 'skelly.deadvox.actors', 'skelly.firearms', 'skelly.light-sources',
+    'skelly.basic-recipes', 'skelly.deadvox.actors', 'skelly.deadvox.site-generation', 'skelly.firearms',
+    'skelly.light-sources',
     'skelly.manufactured-blocks', 'skelly.medicine', 'skelly.melee', 'skelly.natural-world', 'skelly.packaged-foods',
     'skelly.structures', 'skelly.wearables',
   ],

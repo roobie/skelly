@@ -4,6 +4,7 @@
     "skelly.deadvox.actors",
     "skelly.deadvox.buildings",
     "skelly.deadvox.loot",
+    "skelly.deadvox.site-generation",
     "skelly.deadvox.woods",
     "skelly.light-sources",
     "skelly.manufactured-blocks",

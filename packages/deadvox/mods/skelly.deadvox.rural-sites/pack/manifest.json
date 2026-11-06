@@ -5,6 +5,7 @@
     "skelly.deadvox.actors",
     "skelly.deadvox.buildings",
     "skelly.deadvox.loot",
+    "skelly.deadvox.site-generation",
     "skelly.household-electrical",
     "skelly.inventory",
     "skelly.manufactured-blocks",

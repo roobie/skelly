@@ -9,7 +9,7 @@ manifest(
   assets=assets,
   json=['things/index.json', 'assets/manifest.json', 'exports/things.json', 'presentation/item-materials.json'],
   dependencies=[
-    'skelly.basic-recipes', 'skelly.inventory', 'skelly.light-sources', 'skelly.manufactured-blocks',
+    'skelly.basic-recipes', 'skelly.deadvox.site-generation', 'skelly.inventory', 'skelly.light-sources', 'skelly.manufactured-blocks',
     'skelly.medicine', 'skelly.melee', 'skelly.natural-world', 'skelly.packaged-foods', 'skelly.structures',
     'skelly.wearables',
   ],

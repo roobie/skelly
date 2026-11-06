@@ -3,6 +3,7 @@
     "skelly.basic-recipes",
     "skelly.deadvox.actors",
     "skelly.deadvox.buildings",
+    "skelly.deadvox.site-generation",
     "skelly.light-sources",
     "skelly.medicine",
     "skelly.melee",

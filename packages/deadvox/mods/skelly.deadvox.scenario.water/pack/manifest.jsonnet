@@ -4,7 +4,7 @@ manifest(
   tier='scenario',
   content=['layouts-water', 'starts'],
   dependencies=[
-    'skelly.basic-recipes', 'skelly.light-sources', 'skelly.medicine', 'skelly.melee', 'skelly.packaged-foods',
-    'skelly.wearables',
+    'skelly.basic-recipes', 'skelly.deadvox.site-generation', 'skelly.light-sources', 'skelly.medicine',
+    'skelly.melee', 'skelly.packaged-foods', 'skelly.wearables',
   ],
 )

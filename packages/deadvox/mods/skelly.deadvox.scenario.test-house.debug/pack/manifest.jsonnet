@@ -7,7 +7,8 @@ manifest(
   optIn=true,
   content=['layouts'],
   dependencies=[
-    scenario, 'skelly.basic-recipes', 'skelly.containers', 'skelly.deadvox.buildings', 'skelly.electric-power',
+    scenario, 'skelly.basic-recipes', 'skelly.containers', 'skelly.deadvox.buildings',
+    'skelly.deadvox.site-generation', 'skelly.electric-power',
     'skelly.electronics', 'skelly.firearms', 'skelly.flame-tools', 'skelly.fuel', 'skelly.ground-vehicles',
     'skelly.hand-tools', 'skelly.light-sources', 'skelly.manuals', 'skelly.manufactured-blocks', 'skelly.materials',
     'skelly.melee', 'skelly.readables', 'skelly.structures', 'skelly.wearables', 'skelly.weathering',

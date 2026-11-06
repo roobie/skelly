@@ -5,6 +5,6 @@ manifest(
   content=['crisis-hq-fixtures', 'crisis-hq'],
   dependencies=[
     'skelly.deadvox.actors', 'skelly.deadvox.camp', 'skelly.deadvox.loot', 'skelly.deadvox.rural-sites',
-    'skelly.manufactured-blocks', 'skelly.natural-world', 'skelly.structures',
+    'skelly.deadvox.site-generation', 'skelly.manufactured-blocks', 'skelly.natural-world', 'skelly.structures',
   ],
 )

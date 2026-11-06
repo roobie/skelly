@@ -1,6 +1,7 @@
 {
   "dependencies": [
     "skelly.basic-recipes",
+    "skelly.deadvox.site-generation",
     "skelly.light-sources",
     "skelly.medicine",
     "skelly.melee",
