@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { claimed, claimedId } from '../src/core/capabilities.ts';
-import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
+import { buildRegistry, type Registry, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { worldGravity } from '../src/core/gravity.ts';
+import { siteGenerationOf } from '../src/core/sitePalette.ts';
 import { resolveWeatheringUrl } from '../src/core/weatheringUrl.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
@@ -55,6 +56,40 @@ describe('content capabilities', () => {
           powerTuning: [{ id: 'fixture_tuning', capability: 'power', tickSimSeconds: 1 }],
         }),
       ).toEqual([]);
+    });
+  });
+
+  describe('site generation', () => {
+    const empty = new Map();
+    const siteIssues = (registry: Registry) =>
+      requiredContentIssues(registry).filter(({ path }) => path === 'siteGeneration');
+
+    it('owes nothing in a stack that builds no site', () => {
+      expect(siteIssues(buildRegistry([]).registry)).toEqual([]);
+      expect(
+        siteIssues({ ...baseRegistry(), siteGeneration: empty, starts: empty, layouts: empty, scenarios: empty }),
+      ).toEqual([]);
+    });
+
+    it('fails a stack whose start, layout or scenario builds a site without the row', () => {
+      const base = baseRegistry();
+      const siteRows = { starts: base.starts, layouts: base.layouts, scenarios: base.scenarios };
+      for (const [section, rows] of Object.entries(siteRows)) {
+        expect(rows.size, section).toBeGreaterThan(0);
+        const registry = {
+          ...base,
+          siteGeneration: empty,
+          starts: empty,
+          layouts: empty,
+          scenarios: empty,
+          [section]: rows,
+        } as Registry;
+        expect(siteIssues(registry), section).toEqual([
+          { source: 'core content', path: 'siteGeneration', message: 'missing required capability "authoredSite"' },
+        ]);
+        expect(() => siteGenerationOf(registry)).toThrow('Missing site generation content');
+      }
+      expect(siteIssues(base)).toEqual([]);
     });
   });
 

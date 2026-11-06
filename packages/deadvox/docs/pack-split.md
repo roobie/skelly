@@ -12,6 +12,7 @@ read_if:
   - you add a debug mod, change how opt-in folder mods are selected or add catalogue rows
   - you plan the gated SkellyEngine runtime and content extraction (#1532)
   - you place a recipe, power tuning, a manual or a household electrical device in a mod
+  - you change when a stack needs site generation or what core-alone validation requires
 ---
 
 # Product and shared content packs
@@ -214,6 +215,8 @@ key box is a generic container and names no key. See `src/core/content.ts`, `che
 
 **Power tuning.** Tuning is a power device's dependency, so a stack with no device owes none and runs no power tick, while a loaded device without tuning fails validation. See `src/core/capabilities.ts`, `requiredForStack`, and `src/game/session.ts`, `createSessionPower`.
 
+**Site generation.** A stack that builds no site needs no site look, so product-free stacks validate clean. A stack holding a start, layout or scenario builds a site, and fails validation without the site-generation row. See `src/core/capabilities.ts`, `requiredForStack`, and `src/core/sitePalette.ts`, `siteGenerationOf`.
+
 **Cursor.** The basic cursor is content presentation, not UI chrome, so it sits in
 `skelly.ui`, and a theme or product mod may replace it by data with a styled one. It has
 its own row because overrides replace whole rows: a swap restates one short row, not the UI
@@ -336,15 +339,10 @@ construction can discard broken files, so a registry existing is not proof of
 validity. This check keeps upward references out of shared content.
 
 Do not boot or play the core-only stack. It intentionally lacks a scenario and start;
-adding them merely to test core would reintroduce consumer dependencies. Until
-#1532 completes topic extraction, `test/coreOnly.test.ts` checks the core-tier mods,
-chosen by manifest tier so a new one needs no test edit, against
-`test/fixtures/coreOnlyKnownIssues.ts`, `CORE_ONLY_KNOWN_ISSUES`.
-Every listed issue has an extraction owner; an unlisted issue or a stale exception
-fails, so partial validation cannot conceal an unrelated defect. The final stack
-must remove that ledger and require zero issues. Manifest, model and sound checks
-apply per pack; static reachability applies to playable stacks
-(`docs/content.md`, "Static reachability").
+adding them merely to test core would reintroduce consumer dependencies.
+`test/coreOnly.test.ts` picks the core-tier mods by manifest tier, so a new one needs
+no test edit. Manifest, model and sound checks apply per pack; static reachability
+applies to playable stacks (`docs/content.md`, "Static reachability").
 
 ## Refactor workstreams
 

@@ -10,7 +10,7 @@ export const CONTENT_CAPABILITIES = {
   saves: { autosave: 'required' },
   senses: { player: 'required' },
   player: { player: 'required' },
-  siteGeneration: { authoredSite: 'required' },
+  siteGeneration: { authoredSite: 'optional' },
   skillProgression: { progression: 'optional' },
   rangedTuning: { ranged: 'optional' },
   combatPolicy: { player: 'optional' },
@@ -59,7 +59,8 @@ export const claimedId = <T extends Claimant>(entries: ReadonlyMap<string, T>, c
 const requiredForStack = (registry: Registry, section: string, requirement: string): boolean =>
   requirement === 'required' ||
   (section === 'skillProgression' && registry.skills.size > 0) ||
-  (section === 'powerTuning' && registry.powerDevices.size > 0);
+  (section === 'powerTuning' && registry.powerDevices.size > 0) ||
+  (section === 'siteGeneration' && registry.starts.size + registry.layouts.size + registry.scenarios.size > 0);
 
 export const capabilityIssues = (registry: Registry, requireAll = true): ContentIssue[] => {
   const issues: ContentIssue[] = [];
