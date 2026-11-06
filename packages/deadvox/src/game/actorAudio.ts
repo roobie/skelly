@@ -47,10 +47,7 @@ export const actorVoiceLaw = (figureSeeds: readonly number[], tuning: ActorVoice
   const defaultTallestAnchor = oldLawPitch(tallestHeight);
   const clampPitch = (pitch: number): number => Math.max(pitchClamp[0], Math.min(pitchClamp[1], pitch));
 
-  const bodyPitch = (
-    body: Body,
-    search = typeof globalThis.location === 'undefined' ? '' : globalThis.location.search,
-  ): number => {
+  const bodyPitch = (body: Body, search = ''): number => {
     const height = bodyHeight(body);
     const smallestAnchor = clampPitch(defaultSmallestAnchor * debugVoicePitch(search, 'voicePitch'));
     const tallestAnchor = Math.min(

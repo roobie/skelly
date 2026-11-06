@@ -896,6 +896,7 @@ export const startPlay = (
     isOpaque: engine.isOpaque,
     scale,
     seed: config.seed,
+    urlSearch: location.search,
     wobbleFlatOverride: config.debugWobbleFlat,
     wobbleNoiseScaleOverride: config.debugWobbleNoiseScale,
     start: config.start,

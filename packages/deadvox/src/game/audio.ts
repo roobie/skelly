@@ -4,7 +4,6 @@ import type { Vec3 } from '../core/coords.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import type { SenseDef, SoundDef, SoundRecipe } from '../core/schema.ts';
 import type { SoundId } from '../core/soundEvents.ts';
-import { soundOcclusion } from '../core/soundOcclusion.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import { renderSoundRecipe, soundRecipeFor, soundVariantKey } from '../core/soundSynth.ts';
 import {
@@ -15,6 +14,8 @@ import {
 } from './audioPresentation.ts';
 
 import { bundledAssetFiles, bundledOriginAssetKey } from './bundledAssets.ts';
+import { type HeardSound, Hearing } from './hearing.ts';
+import { VoiceCaps } from './voiceCaps.ts';
 
 const SETTINGS_KEY = 'skelly.audio.settings';
 const CATEGORIES = ['world', 'body', 'ui'] as const;
@@ -82,19 +83,6 @@ export interface GameAudioOptions {
   report: (message: string) => void;
 }
 
-export interface HeardSound {
-  readonly event: SoundId;
-  readonly file: string;
-  readonly sourceLabel: string | null;
-  readonly distanceMetres: number;
-  readonly occluded: boolean;
-  readonly lowpassHz: number | null;
-  /** Combined sample, occlusion, saved master/category settings, and inverse-distance gain. */
-  readonly gain: number;
-  readonly emittedAsNoise: boolean;
-  readonly noiseRadiusMetres: number | null;
-}
-
 interface SourceStartOptions {
   context: AudioContext;
   nodes: Nodes;
@@ -147,24 +135,18 @@ const connectSample = (
   return { nodes, carrier };
 };
 
-/** Thin Web Audio adapter; sound choices and occlusion calculations live in pure core modules. */
+/** Thin Web Audio adapter; sound choices live in pure core modules and what is heard in `hearing.ts`. */
 export class GameAudio {
   private readonly buffers = new Map<string, AudioBuffer>();
   private readonly loading = new Map<string, Promise<AudioBuffer | null>>();
   private readonly volumes: AudioVolumes;
   private context: AudioContext | undefined;
   private nodes: Nodes | undefined;
-  private listenerPosition: Vec3 = [0, 0, 0];
   private listenerForward: Vec3 = [0, 0, -1];
   private readonly registry: Registry;
-  private readonly blockSize: number;
-  private readonly isSolid: SolidAt;
-  private readonly tuning: SenseDef;
+  private readonly hearing: Hearing;
   private readonly report: (message: string) => void;
-  private readonly recentSounds: HeardSound[] = [];
-  private readonly voices = new Map<SoundId, Set<Voice>>();
-  // Up to one cap's worth of 10ms tails: a 40-shot cold burst can fade every retiree.
-  private readonly retiring = new Map<SoundId, Set<Voice>>();
+  private readonly voiceCaps = new VoiceCaps<Voice>(VOICE_FADE_SECONDS);
   private readonly heartbeat: HeartbeatTuning;
   private heartbeatTarget: HeartbeatTarget;
   private heartbeatNextAt = Number.NEGATIVE_INFINITY;
@@ -175,9 +157,7 @@ export class GameAudio {
 
   constructor({ registry, blockSize, isSolid, tuning, report }: GameAudioOptions) {
     this.registry = registry;
-    this.blockSize = blockSize;
-    this.isSolid = isSolid;
-    this.tuning = tuning;
+    this.hearing = new Hearing({ blockSize, isSolid, tuning });
     this.report = report;
     this.volumes = readVolumes(claimed(registry.ui, 'interface')!.audioVolumes);
     this.heartbeat = playerHeartbeat(registry);
@@ -197,7 +177,7 @@ export class GameAudio {
   }
 
   get heardSounds(): readonly HeardSound[] {
-    return [...this.recentSounds];
+    return this.hearing.heardSounds;
   }
 
   /** Deferred entry may need a fresh gesture; play retries unlocking on its first pointerdown. */
@@ -214,7 +194,7 @@ export class GameAudio {
       master.connect(this.context.destination);
       this.nodes = { master, categories };
       this.applyVolumes();
-      this.updateListener(this.listenerPosition, this.listenerForward);
+      this.updateListener(this.hearing.listener, this.listenerForward);
     }
     if (this.context.state !== 'running') {
       this.context.resume().catch((error: unknown) => this.report(`audio context did not resume: ${String(error)}`));
@@ -240,7 +220,7 @@ export class GameAudio {
   }
 
   updateListener(positionMetres: Vec3, forward: Vec3): void {
-    this.listenerPosition = [...positionMetres];
+    this.hearing.moveListener(positionMetres);
     this.listenerForward = [...forward];
     const listener = this.context?.listener;
     if (!listener) {
@@ -312,7 +292,7 @@ export class GameAudio {
       return false;
     }
     const pick = { file, gain: sound.gain, pitch: 1 };
-    const positionMetres = [...this.listenerPosition] as Vec3;
+    const positionMetres = this.hearing.listener;
     this.variantBuffer(context, file, variant).then(async (buffer) => {
       if (!buffer || this.context !== context) {
         return;
@@ -371,33 +351,15 @@ export class GameAudio {
 
   /** Playback voice allocation happens after decoding; pending loads consume no playback slots. */
   private stealOldestVoice(event: SoundId, cap: number | undefined, context: AudioContext): void {
-    const active = this.voices.get(event);
-    if (cap === undefined || !active || active.size < cap) {
-      return;
-    }
-    const now = context.currentTime;
-    const tails = this.retiring.get(event) ?? new Set<Voice>();
-    // A delayed ended callback need not keep an already-stopped node connected.
-    for (const tail of tails) {
-      if (tail.stopAt !== undefined && tail.stopAt <= now) {
-        tail.finish();
-      }
-    }
-    // The safety ceiling is 2*cap connected sources, including pathological >64-shot
-    // same-quantum calls. Ordinary 75/100ms cadence never reaches this tail ceiling.
-    if (tails.size >= cap) {
-      const previousTail = tails.values().next().value!;
-      previousTail.source.stop();
-      previousTail.finish();
-    }
-    const oldest = active.values().next().value!;
-    active.delete(oldest);
-    tails.add(oldest);
-    this.retiring.set(event, tails);
-    oldest.stopAt = now + VOICE_FADE_SECONDS;
-    oldest.gain.gain.setValueAtTime(oldest.gain.gain.value, now);
-    oldest.gain.gain.linearRampToValueAtTime(0, oldest.stopAt);
-    oldest.source.stop(oldest.stopAt);
+    this.voiceCaps.makeRoom(event, cap, context.currentTime, {
+      finish: (voice) => voice.finish(),
+      cut: (voice) => voice.source.stop(),
+      fade: (voice, now, stopAt) => {
+        voice.gain.gain.setValueAtTime(voice.gain.gain.value, now);
+        voice.gain.gain.linearRampToValueAtTime(0, stopAt);
+        voice.source.stop(stopAt);
+      },
+    });
   }
 
   private applyVolumes(): void {
@@ -590,34 +552,15 @@ export class GameAudio {
     const { nodes: connectedNodes, carrier } = connectSample(context, source, gain, sound);
 
     const category = nodes.categories.get(sound.category)!;
-    const listenerBlocks: Vec3 = this.listenerPosition.map((v) => v / this.blockSize) as Vec3;
-    const sourceBlocks: Vec3 = positionMetres.map((v) => v / this.blockSize) as Vec3;
-    const headLocked = listenerRelative || sound.category === 'ui';
-    const occlusion = headLocked
-      ? { occluded: false, gain: 1, cutoffHz: Number.POSITIVE_INFINITY }
-      : soundOcclusion({
-          listener: listenerBlocks,
-          source: sourceBlocks,
-          isSolid: this.isSolid,
-          globalWall: this.tuning.wall,
-          soundWall: sound.wall,
-        });
-    const distanceMetres = headLocked
-      ? 0
-      : Math.hypot(
-          positionMetres[0] - this.listenerPosition[0],
-          positionMetres[1] - this.listenerPosition[1],
-          positionMetres[2] - this.listenerPosition[2],
-        );
-    const distanceGain = headLocked ? 1 : 1 / Math.max(1, Math.min(64, distanceMetres));
-    if (headLocked) {
+    const audibility = this.hearing.audibility(sound, positionMetres, listenerRelative);
+    if (audibility.headLocked) {
       gain.connect(category);
     } else {
       const filter = context.createBiquadFilter();
       const wallGain = context.createGain();
       filter.type = 'lowpass';
-      filter.frequency.value = occlusion.cutoffHz;
-      wallGain.gain.value = occlusion.gain;
+      filter.frequency.value = audibility.cutoffHz;
+      wallGain.gain.value = audibility.gain;
       const panner = context.createPanner();
       panner.panningModel = 'HRTF';
       panner.distanceModel = 'inverse';
@@ -646,42 +589,26 @@ export class GameAudio {
           return;
         }
         finished = true;
-        const active = this.voices.get(event);
-        active?.delete(voice);
-        if (active?.size === 0) {
-          this.voices.delete(event);
-        }
-        const tails = this.retiring.get(event);
-        tails?.delete(voice);
-        if (tails?.size === 0) {
-          this.retiring.delete(event);
-        }
+        this.voiceCaps.release(event, voice);
         carrier?.stop();
         for (const node of connectedNodes) {
           node.disconnect();
         }
       },
     };
-    if (sound.voiceCap !== undefined) {
-      const active = this.voices.get(event) ?? new Set<Voice>();
-      active.add(voice);
-      this.voices.set(event, active);
-    }
+    this.voiceCaps.add(event, sound.voiceCap, voice);
     source.onended = voice.finish;
     source.start();
-    this.recentSounds.push({
+    this.hearing.heard({
       event,
+      sound,
       file: pick.file,
-      sourceLabel,
-      distanceMetres,
-      occluded: occlusion.occluded,
-      lowpassHz: headLocked ? null : occlusion.cutoffHz,
-      gain: pick.gain * occlusion.gain * this.volumes.master * this.volumes[sound.category] * distanceGain,
+      pickGain: pick.gain,
+      audibility,
+      masterVolume: this.volumes.master,
+      categoryVolume: this.volumes[sound.category],
       emittedAsNoise,
-      noiseRadiusMetres: emittedAsNoise && sound.noise.enabled ? sound.noise.radiusMetres : null,
+      sourceLabel,
     });
-    if (this.recentSounds.length > 8) {
-      this.recentSounds.shift();
-    }
   }
 }

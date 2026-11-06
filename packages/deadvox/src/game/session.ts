@@ -564,6 +564,8 @@ export interface SessionOptions {
   };
   /** Debug tools, once attached; read each time they matter. */
   debug?: () => SessionDebug | undefined;
+  /** The page's URL query, for the debug actor voice-pitch overrides; a headless caller omits it and gets none. */
+  urlSearch?: string | undefined;
   /** Debug-only vertical/horizontal ratio override for the walking lune. */
   wobbleFlatOverride?: number | undefined;
   /** Debug-only multiplier for authored OU noise strength. */
@@ -1010,7 +1012,7 @@ export const createSession = (options: SessionOptions) => {
       return false;
     }
     const definition = registry.sounds.get(event)!;
-    const bodyPitch = soundPitchMultiplier ?? (mobBody ? actorVoice.bodyPitch(mobBody) : 1);
+    const bodyPitch = soundPitchMultiplier ?? (mobBody ? actorVoice.bodyPitch(mobBody, options.urlSearch) : 1);
     const pitch = selected.pitch * bodyPitch;
     const pick = { ...selected, pitch };
     const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);

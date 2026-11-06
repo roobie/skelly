@@ -9,10 +9,10 @@ import type { Weather } from '../core/weather.ts';
 import type { DrawSubmission } from '../render/drawCounters.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import type { ActorRenderer } from '../render/mobActors.ts';
-import type { HeardSound } from './audio.ts';
 import type { DebugGunPoseMode } from './debugGunPose.ts';
 import type { Engine } from './engine.ts';
 import type { RealFrameObserver } from './frameDriver.ts';
+import type { HeardSound } from './hearing.ts';
 import type { Session } from './session.ts';
 
 export type SkyRouteAttachment = (hooks: {
