@@ -1,4 +1,3 @@
-import type { SaveVersionComponents, SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { SaveStorageError, type SaveStorageErrorKind } from './saveStorageErrors.ts';
 import {
@@ -9,10 +8,17 @@ import {
   SaveCorruptionError,
   type SaveSlotPair,
 } from './saveStorageProtocol.ts';
+import type {
+  SaveBackend,
+  SaveBackendPreference,
+  SaveCommitResult,
+  SaveEncodingOptions,
+  SaveLoadResult,
+  SaveQuota,
+  SaveStorageStatus,
+  SaveStore,
+} from './storageContract.ts';
 
-type SaveBackend = 'opfs' | 'indexeddb';
-export type SaveBackendPreference = 'auto' | SaveBackend;
-type SlotName = 'a' | 'b';
 const SAVE_WRITE_LOCK = 'skelly-save-storage';
 const warnSaveLockTimeout = (message: string, details: Record<string, unknown>): void => {
   // biome-ignore lint/suspicious/noConsole: a lock timeout must name its holder in the browser console.
@@ -45,31 +51,7 @@ export interface SaveStorageOptions {
   /** Test-only abrupt worker termination at a named physical-write stage. */
   readonly testCrashAt?: CrashStage;
 }
-export interface SaveLoadResult {
-  readonly generation: number;
-  readonly slot: SlotName;
-  readonly payload: Uint8Array;
-  /** Corrupt inactive records are retained and reported while the other generation loads. */
-  readonly corruptSlots: readonly SlotName[];
-}
-export interface SaveQuota {
-  readonly supported: boolean;
-  readonly usageBytes?: number;
-  readonly quotaBytes?: number;
-  readonly availableBytes?: number;
-}
-export interface SaveStorageStatus {
-  readonly backend: SaveBackend;
-  readonly persistent: boolean | null;
-  readonly quota: SaveQuota;
-}
-export interface SaveEncodingOptions {
-  readonly worldOptions: SaveWorldOptions;
-  readonly version: SaveVersionComponents;
-  readonly buildRevision: string;
-}
-
-export class SaveStorage {
+export class SaveStorage implements SaveStore {
   private readonly preference: SaveBackendPreference;
   private readonly timeoutMs: number;
   private readonly crashAt: CrashStage | undefined;
@@ -367,7 +349,7 @@ export class SaveStorage {
     namespace: string,
     encodePayload: (generation: number) => Promise<Uint8Array>,
     options: { readonly replaceCorrupt?: boolean } = {},
-  ): Promise<{ readonly generation: number; readonly slot: SlotName; readonly backend: SaveBackend }> {
+  ): Promise<SaveCommitResult> {
     const status = await this.status();
     const driver = {
       readSlots: (key: string) => this.request<SaveSlotPair>({ operation: 'read', namespace: key }),

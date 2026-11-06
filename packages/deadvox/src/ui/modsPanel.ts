@@ -4,6 +4,7 @@ import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
 import { type BrowserMod, evaluateMods, MAX_MOD_BYTES, type ModEvaluation } from '../game/browserMods.ts';
 import { isInvalidModSelection, ModStorage } from '../game/modStorage.ts';
+import type { ModStore } from '../game/storageContract.ts';
 import { factDetail } from './factDetail.ts';
 
 const httpUrl = /^https?:\/\//i;
@@ -80,7 +81,7 @@ const readUpload = async (file: File, messages: ModsText): Promise<{ name: strin
 export const chooseMods = async (
   root: HTMLElement,
   text: ModsText,
-  storage = new ModStorage(),
+  storage: ModStore = new ModStorage(),
 ): Promise<ModEvaluation> => {
   let initial: BrowserMod[] = [];
   let storageFailed = false;

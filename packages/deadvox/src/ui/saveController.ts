@@ -22,13 +22,9 @@ import { KNOWN_SCHEDULER_IDS } from '../core/schedulerIds.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
 import { type RealTimestamp, realTimestamp } from '../core/time.ts';
-import {
-  type SaveBackendPreference,
-  type SaveLoadResult,
-  SaveStorage,
-  type SaveStorageStatus,
-} from '../game/saveStorage.ts';
+import { SaveStorage } from '../game/saveStorage.ts';
 import { SaveCorruptionError } from '../game/saveStorageProtocol.ts';
+import type { SaveBackendPreference, SaveLoadResult, SaveStorageStatus, SaveStore } from '../game/storageContract.ts';
 import { CheckpointSchedule } from './checkpointSchedule.ts';
 import { factDetail } from './factDetail.ts';
 import { computeMenuState } from './menuState.ts';
@@ -103,7 +99,7 @@ const versionLabel = (saved: Partial<SaveVersionIdentity> | undefined | null, te
 
 /** Title-screen discovery, checkpoint scheduling and lifecycle save triggers. */
 export class SaveController {
-  readonly storage: SaveStorage;
+  readonly storage: SaveStore;
   private readonly identity: Promise<SaveVersionIdentity> | undefined;
   private identityValue: SaveVersionIdentity | undefined;
   namespace = '';

@@ -14,13 +14,13 @@ import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import type { SaveLoadResult } from '../src/game/saveStorage.ts';
 import {
   commitSavePayload,
   type RawSaveSlots,
   SaveCorruptionError,
   type SaveSlotPair,
 } from '../src/game/saveStorageProtocol.ts';
+import type { SaveLoadResult } from '../src/game/storageContract.ts';
 import { shouldConfirmPageLeave } from '../src/ui/leaveConfirmation.ts';
 import { SaveController } from '../src/ui/saveController.ts';
 import { showWin } from '../src/ui/win.ts';

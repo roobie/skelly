@@ -25,7 +25,7 @@ import { inputBindings, keyboardInput, labelForAction } from './game/inputBindin
 import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from './game/inputReplay.ts';
 import { startPlay } from './game/play.ts';
 import { renderFreeFromUrl } from './game/renderMode.ts';
-import type { SaveBackendPreference } from './game/saveStorage.ts';
+import type { SaveBackendPreference } from './game/storageContract.ts';
 import type { StreamerStats } from './game/streamer.ts';
 import { tutorialRequested, tutorialUrl } from './game/tutorialUrl.ts';
 import { WorldLoading } from './game/worldLoading.ts';

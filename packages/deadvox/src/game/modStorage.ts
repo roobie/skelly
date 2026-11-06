@@ -1,4 +1,5 @@
 import type { BrowserMod } from './browserMods.ts';
+import type { ModStore } from './storageContract.ts';
 
 const DATABASE = 'skelly.browser-mods';
 const STORE = 'selection';
@@ -28,7 +29,7 @@ const selection = (value: unknown): BrowserMod[] => {
   return value.map(({ source, text, enabled }) => ({ source, text, enabled }));
 };
 
-export class ModStorage {
+export class ModStorage implements ModStore {
   private readonly factory: IDBFactory | undefined;
 
   constructor(factory?: IDBFactory) {
