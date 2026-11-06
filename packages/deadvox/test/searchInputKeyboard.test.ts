@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { expect, it } from 'vitest';
-import { BindingRegistry, INPUT_BINDINGS, KeyboardInput } from '../src/game/inputBindings.ts';
+import { BindingRegistry, INPUT_BINDINGS } from '../src/game/bindingRegistry.ts';
+import { KeyboardInput } from '../src/game/inputBindings.ts';
 
 it('keeps native text codes and defaults intact without emitting gameplay intents', () => {
   const keyboard = new KeyboardInput(

@@ -2,7 +2,8 @@ import { html, render } from 'lit-html';
 import { bindingIsDebugOnly, contextsForRun } from '../core/inputActions.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
-import { inputBindings, keyboardInput, NATIVE_EDITING, NATIVE_INPUTS } from '../game/inputBindings.ts';
+import { NATIVE_EDITING, NATIVE_INPUTS } from '../game/bindingRegistry.ts';
+import { inputBindings, keyboardInput } from '../game/inputBindings.ts';
 import { factDetail } from './factDetail.ts';
 
 export const mountInputOptions = (root: HTMLElement, text: ScreenText['inputOptions'], debugRun = false): void => {

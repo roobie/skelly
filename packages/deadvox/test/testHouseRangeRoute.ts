@@ -1,4 +1,4 @@
-import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
+import { INPUT_BINDINGS } from '../src/game/bindingRegistry.ts';
 
 interface TestHouseRangeWaypoint {
   readonly id: string;

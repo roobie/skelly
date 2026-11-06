@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { BindingRegistry, INPUT_BINDINGS, KeyboardInput } from '../src/game/inputBindings.ts';
+import { BindingRegistry, INPUT_BINDINGS } from '../src/game/bindingRegistry.ts';
+import { KeyboardInput } from '../src/game/inputBindings.ts';
 import { MAP_SLICE_ACTIONS, type MapSliceAction, mapSliceKeys } from '../src/game/mapSliceInput.ts';
 
 const keyEvent = (code: string, extra: Partial<Record<'shiftKey' | 'ctrlKey', boolean>> = {}) => ({

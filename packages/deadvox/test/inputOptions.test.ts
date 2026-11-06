@@ -1,14 +1,8 @@
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it } from 'vitest';
 import { bindingIsDebugOnly, DEBUG_ONLY_CONTEXTS, type InputContext } from '../src/core/inputActions.ts';
-import {
-  BindingRegistry,
-  bindingConflict,
-  chordIssue,
-  INPUT_BINDINGS,
-  inputBindings,
-  keyboardInput,
-} from '../src/game/inputBindings.ts';
+import { BindingRegistry, bindingConflict, chordIssue, INPUT_BINDINGS } from '../src/game/bindingRegistry.ts';
+import { inputBindings, keyboardInput } from '../src/game/inputBindings.ts';
 import { baseScreenText } from './baseRegistry.ts';
 
 const contextWordSeparator = /[^a-z0-9-]+/;

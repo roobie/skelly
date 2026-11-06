@@ -5,15 +5,13 @@ import { KeyTrace } from '../src/debug/keyTrace.ts';
 import {
   BindingRegistry,
   bindingConflict,
-  capturedChord,
   chordIssue,
   controlRowIssue,
   defaultKeySetIssues,
   INPUT_BINDINGS,
-  type InputCommand,
-  KeyboardInput,
   REFUSED_MODIFIERS,
-} from '../src/game/inputBindings.ts';
+} from '../src/game/bindingRegistry.ts';
+import { capturedChord, type InputCommand, KeyboardInput } from '../src/game/inputBindings.ts';
 
 const fixture: readonly Binding[] = [
   {

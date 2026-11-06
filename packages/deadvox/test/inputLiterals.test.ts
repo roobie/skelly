@@ -6,6 +6,8 @@ import { keyboardViolations } from '../tools/lit-check/inputGuard.ts';
 const sourceExtension = /\.[cm]?[jt]s$/;
 // This visual-only page pans a Three.js preview; its camera keys are not gameplay bindings.
 const DEBUG_CAMERA_KEY_OWNERS = new Set(['debug/vehicleSpike.ts']);
+// The binding data and its DOM resolver own the physical codes every other file names through an action.
+const KEYBOARD_OWNERS = new Set(['game/bindingRegistry.ts', 'game/inputBindings.ts']);
 const files = (directory: string): string[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
@@ -17,7 +19,7 @@ const files = (directory: string): string[] =>
 const root = join(import.meta.dirname, '../src');
 const scanned = files(root).filter((path) => {
   const source = relative(root, path);
-  return source !== 'game/inputBindings.ts' && !DEBUG_CAMERA_KEY_OWNERS.has(source);
+  return !(KEYBOARD_OWNERS.has(source) || DEBUG_CAMERA_KEY_OWNERS.has(source));
 });
 
 it('finds source files for the keyboard-literal guard', () => {

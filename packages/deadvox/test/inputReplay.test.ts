@@ -10,8 +10,8 @@ import { encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import type { ActorSpawn, Site } from '../src/core/site.ts';
 import { gameTimeOfDay, realSeconds as realDuration } from '../src/core/time.ts';
+import { INPUT_BINDINGS } from '../src/game/bindingRegistry.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
-import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import {
   DEFAULT_REPLAY_START_STATE,
   decodeInputReplay,

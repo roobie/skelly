@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { DEBUG_ONLY_CONTEXTS, INPUT_CONTEXTS } from '../src/core/inputActions.ts';
 import { measureSnapshots, snapshotTimerQuantumForUserAgent } from '../src/debug/snapshotMeasurement.ts';
+import { BindingRegistry, INPUT_BINDINGS } from '../src/game/bindingRegistry.ts';
 import { controlsCardRows, filterControlsCardRows } from '../src/game/controls.ts';
-import { BindingRegistry, INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import {
   loadMetrics,
   metricsExportJson,

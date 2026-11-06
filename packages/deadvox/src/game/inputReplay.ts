@@ -3,7 +3,7 @@ import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { type InputContext, POINTER_ACTIONS } from '../core/inputActions.ts';
 import { decodeSave, encodeSave, type SaveContentKind, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
-import { INPUT_BINDINGS } from './inputBindings.ts';
+import { INPUT_BINDINGS } from './bindingRegistry.ts';
 import type { MoveIntent } from './player.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';

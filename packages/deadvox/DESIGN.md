@@ -1410,7 +1410,7 @@ bands without a code change.
 
 Item descriptions identify the item, not its controls. Controls belong to the
 binding table and displayed controls list, because bindings can change. See
-`INPUT_BINDINGS` in `src/game/inputBindings.ts`.
+`INPUT_BINDINGS` in `src/game/bindingRegistry.ts`.
 
 ### Hands: what you see is what's there
 
