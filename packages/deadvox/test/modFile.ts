@@ -1,7 +1,8 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const MOD_ROOTS = ['mods', '../mods'];
+/** The deadvox mods and the shared mods, relative to the deadvox package. */
+export const MOD_ROOTS = ['mods', '../mods'];
 
 /** Where a pack-relative asset file lives, for a test holding a row but not the pack that defined it. */
 export const modFile = (file: string): string => {
