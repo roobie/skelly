@@ -1,14 +1,12 @@
 import {
   array,
   type InferOutput,
-  integer,
   literal,
   maxLength,
   maxValue,
   minLength,
   minValue,
   nonEmpty,
-  number,
   optional,
   picklist,
   pipe,
@@ -27,7 +25,6 @@ import {
   FixedLootOverride,
   LayoutRect,
   PerimeterCrossingSchema,
-  StartDescentSchema,
 } from './layouts.ts';
 import { Count, Id, PositiveGameHours } from './primitives.ts';
 import { CellCoordinate, CellPosition } from './templates.ts';
@@ -69,15 +66,6 @@ export const ScenarioSchema = strictObject({
   serviceTemplate: Id,
   composition: optional(
     strictObject({
-      start: strictObject({
-        template: Id,
-        cell: tuple([pipe(number(), integer()), pipe(number(), integer())]),
-        spawn: CellPosition,
-        minimumOpenDescents: optional(pipe(Count, minValue(1), maxValue(32)), 2),
-        descents: pipe(array(StartDescentSchema), minLength(1), maxLength(32)),
-        /** Core stock the instance promises in the start building, at template-local furniture anchors. */
-        fixedLoot: optional(array(FixedLootOverride)),
-      }),
       fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a fixed resource source')),
       events: optional(
         array(

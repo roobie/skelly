@@ -258,7 +258,6 @@ describe('one finished city plan', () => {
       };
       scenario.population.hordes = 0;
       scenario.composition = {
-        start: fixtureStart(),
         fixedLoot: [{ at: [2, 1, 2], items: [{ item: 'fixture_token' }] }],
         leads: [{ template: 'fixture_marker_lead_a' }, { template: 'fixture_marker_lead_b' }],
         landmarks: ['fixture_marker_landmark_a', 'fixture_marker_landmark_b'],
@@ -329,7 +328,7 @@ describe('one finished city plan', () => {
         floor,
         grid: cityGridOf(testRegistry, scenario.city),
         scenario,
-        start: scenario.composition.start,
+        start: fixtureStart(),
       });
       const site = new CitySite(73, testRegistry, scale, plan);
       const markers = placedSpawns(plan.composition!.events[0]!);

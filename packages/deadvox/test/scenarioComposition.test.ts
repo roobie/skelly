@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { buildCityPlan, cityGridOf, scenarioPlanIssues, servicePlacement } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
-import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 // biome-ignore lint/performance/noNamespaceImport: A module spy observes every scenario-source handoff.
@@ -9,85 +8,15 @@ import * as lootSelection from '../src/core/loot.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { discoveryForPlan } from '../src/core/scenarioDiscovery.ts';
+import { startIssues } from '../src/core/startIssues.ts';
 import { compileTemplate, placedPieces } from '../src/core/templates.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 const PROMISED_STOCK_ERROR = /Promised stock/;
 
-import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootContext } from './economyFixtures.ts';
-import {
-  defaultStartOf,
-  fixtureScenario,
-  fixtureScenarioSources,
-  fixtureService,
-  fixtureStart,
-} from './fixtures/scenario.ts';
-
-const fixture = () => {
-  const profile = fixtureScenario();
-  profile.city.street = 8;
-  const service = fixtureService();
-  service.size[1] = 12;
-  service.layers = service.layers.slice(0, service.size[1]);
-  service.palette.C = { furniture: 'fixture_crate' };
-  service.layers[1]![2] = '..C.....==';
-  profile.composition = {
-    start: fixtureStart(),
-    fixedLoot: [
-      {
-        at: [2, 1, 2],
-        lootUsage: ['Medical'],
-        items: [
-          { item: 'fixture_token', count: 3 },
-          { item: 'fixture_token', placement: 'surface' },
-        ],
-      },
-    ],
-    leads: [{ template: 'fixture_note_a' }, { template: 'fixture_note_b' }],
-    landmarks: ['fixture_landmark_a', 'fixture_landmark_b'],
-    incidentalTemplates: ['fixture_small_house'],
-    objective: [2, 1, 2],
-    objectiveFace: [2, 1, 4],
-    retreat: [2, 7, 2],
-    resources: [{ at: [2, 1, 2], standing: [2, 1, 4] }],
-    storeys: [{ id: 'lower', standing: [2, 1, 4] }],
-    stairs: [],
-    seals: [],
-    descents: [{ ladder: [4, 1, 3], lower: [3, 1, 4], upper: [3, 7, 4] }],
-  };
-  const sources = fixtureScenarioSources(profile, service);
-  sources.push({
-    source: 'composition-fixture.json',
-    data: {
-      furniture: [
-        {
-          id: 'fixture_note',
-          name: 'Fixture note',
-          size: [1, 1, 1],
-          color: '#ffffff',
-          massKg: 1,
-          solid: false,
-          readable: { title: 'Fixture lead', text: 'An independent fixture lead.' },
-          breach: fixtureBreach(),
-          material: FIXTURE_MATERIAL,
-        },
-      ],
-      templates: ['fixture_note_a', 'fixture_note_b', 'fixture_landmark_a', 'fixture_landmark_b'].map((id) => ({
-        id,
-        lootContext: fixtureLootContext(),
-        size: [1, 2, 1],
-        palette: { '=': 'fixture_solid', N: { furniture: 'fixture_note' } },
-        layers: [['='], ['N']],
-      })),
-    },
-  } satisfies ContentSource);
-  const built = buildRegistry(sources);
-  if (built.issues.length > 0) {
-    throw new Error(JSON.stringify(built.issues));
-  }
-  return { profile, registry: built.registry };
-};
+import { fixtureLootContext } from './economyFixtures.ts';
+import { defaultStartOf, composedFixture as fixture, fixtureStart } from './fixtures/scenario.ts';
 
 const eventFixture = () => {
   const { profile, registry } = fixture();
@@ -136,7 +65,7 @@ describe('authored scenario composition', () => {
   it('places fixed container and surface items at the turned anchor independent of column requests', () => {
     const { profile, registry } = fixture();
     const grid = cityGridOf(registry, profile.city);
-    const { start } = profile.composition!;
+    const start = fixtureStart();
     const base = buildCityPlan({ seed: 7, registry, floor: 32, grid, scenario: profile, start });
     const compiled = compileTemplate(registry, registry.templates.get(profile.serviceTemplate)!);
     for (const turn of [0, 1, 2, 3] as const) {
@@ -239,7 +168,7 @@ describe('authored scenario composition', () => {
       floor: 32,
       grid: cityGridOf(registry, profile.city),
       scenario: profile,
-      start: profile.composition!.start,
+      start: fixtureStart(),
     });
     const composition = plan.composition!;
     expect(composition.events[0]!.turn).toBe(plan.lots![0]!.placement!.turn);
@@ -288,7 +217,7 @@ describe('authored scenario composition', () => {
       floor: 32,
       grid: cityGridOf(registry, profile.city),
       scenario: profile,
-      start: profile.composition!.start,
+      start: fixtureStart(),
     });
     const site = new CitySite(8, registry, makeScale(0.5), plan);
     const support = placedPieces(plan.composition!.leads[0]!)[0]!;
@@ -322,7 +251,7 @@ describe('authored scenario composition', () => {
       floor: 32,
       grid,
       scenario: profile,
-      start: profile.composition!.start,
+      start: fixtureStart(),
     });
     const { leads, landmarks } = plan.composition!;
     expect(leads[0]!.origin).not.toEqual(leads[1]!.origin);
@@ -354,7 +283,7 @@ describe('promised stop stock', () => {
     const site = new CitySite(9, registry, makeScale(0.5), plan);
     const composition = profile.composition!;
     const promises = [
-      { placement: plan.composition!.start!.placement, stock: composition.start.fixedLoot ?? [] },
+      { placement: plan.composition!.start!.placement, stock: defaultStartOf(registry, profile).fixedLoot ?? [] },
       ...(composition.stops ?? []).map((stop) => ({
         placement: plan.lots!.find(({ definition }) => definition.id === stop.lot)!.placement!,
         stock: stop.fixedLoot,
@@ -386,13 +315,18 @@ describe('promised stop stock', () => {
     const composition = profile.composition!;
     const [stop] = composition.stops!;
     stop!.fixedLoot[0]!.at = [0, 0, 0];
-    composition.start.fixedLoot![0]!.at = [0, 0, 0];
+    const startRow = [...registry.starts.values()].find((row) => row.defaultForSite && row.site === profile.id)!;
+    const ownStart = structuredClone(startRow);
+    ownStart.placement!.fixedLoot![0]!.at = [0, 0, 0];
     const poolLot = profile.city.lots!.find(({ source }) => source?.kind === 'pool')!;
     composition.stops!.push({ lot: poolLot.id, fixedLoot: structuredClone(stop!.fixedLoot) });
     const paths = scenarioPlanIssues(registry, profile).map(([path]) => path);
     expect(paths).toContain('.composition.stops[0].fixedLoot[0].at');
-    expect(paths).toContain('.composition.start.fixedLoot[0].at');
     expect(paths).toContain(`.composition.stops[${composition.stops!.length - 1}].lot`);
+    const startPaths = startIssues({ ...registry, starts: new Map([[ownStart.id, ownStart]]) })
+      .filter(({ id }) => id === ownStart.id)
+      .map(({ path }) => path);
+    expect(startPaths).toContain('.placement.fixedLoot[0].at');
     composition.stops!.pop();
     const grid = cityGridOf(registry, profile.city);
     expect(() =>

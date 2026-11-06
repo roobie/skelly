@@ -23,7 +23,6 @@ local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
     body: 'player', compression: 'player',
     serviceTemplate: service.id,
     composition: {
-      start: (import 'gauntlet-start.libsonnet').start,
       fixedLoot: [{
         at: [lab.surfaceOffset + 9, ground + 1, lab.surfaceOffset + 18],
         items: [{ item: 'flashlight', placement: 'surface', key: true }],

@@ -1,9 +1,13 @@
 import { claimed } from './capabilities.ts';
+import { startReservationIssues } from './cityPlan.ts';
 import type { Registry } from './content.ts';
 import { GENERATED_SITES } from './generatedSites.ts';
 import { ItemFactory, setInitialCylinder } from './items.ts';
 import { knownItemSlot, magazineContentsReason } from './magazine.ts';
+import { startFixedLootIssues } from './scenarioComposition.ts';
+import { scenarioStartIssues } from './scenarioStart.ts';
 import type { StartDef, StartKitEntry } from './schema/starts.ts';
+import type { ScenarioDef } from './schema.ts';
 
 interface StartIssue {
   id: string;
@@ -69,6 +73,33 @@ const kitIssues = (registry: Registry, start: StartDef, fail: (path: string, mes
   });
 };
 
+/** A composed scenario names no start, so each start on it brings and answers for its own placement. */
+const placementIssues = (
+  registry: Registry,
+  start: StartDef,
+  scenario: ScenarioDef | undefined,
+  fail: (path: string, message: string) => void,
+): void => {
+  const { placement } = start;
+  if (!scenario?.composition) {
+    if (placement) {
+      fail('.placement', `site "${start.site}" is not a composed scenario, so a start there takes no placement`);
+    }
+    return;
+  }
+  if (!placement) {
+    fail('.placement', `composed scenario "${scenario.id}" needs a placement on each of its starts`);
+    return;
+  }
+  for (const [path, message] of [
+    ...scenarioStartIssues(registry, scenario, placement),
+    ...startReservationIssues(registry, scenario, placement),
+    ...startFixedLootIssues(registry, scenario, placement),
+  ]) {
+    fail(path, message);
+  }
+};
+
 export const startIssues = (registry: Registry): StartIssue[] => {
   const issues: StartIssue[] = [];
   for (const start of registry.starts.values()) {
@@ -79,6 +110,7 @@ export const startIssues = (registry: Registry): StartIssue[] => {
     if (!(scenario || registry.layouts.has(start.site) || GENERATED_SITES.has(start.site))) {
       fail('.site', `no scenario or layout "${start.site}"`);
     }
+    placementIssues(registry, start, scenario, fail);
     if (
       start.defaultForSite &&
       [...registry.starts.values()].some(

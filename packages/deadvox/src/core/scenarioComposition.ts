@@ -3,6 +3,7 @@ import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type PlacementLootSource, placementLootIssues } from './placementLoot.ts';
 import { composeStart, type ScenarioStart, type StartPlacementDef, startTemplate } from './scenarioStart.ts';
+import type { StartDef } from './schema/starts.ts';
 import type { FixedLootOverrideDef, ScenarioDef } from './schema.ts';
 import { admittedChoices, cityRowDepth } from './settlementPools.ts';
 import {
@@ -307,14 +308,6 @@ const promisedStockIssues = (registry: Registry, scenario: ScenarioDef): Issue[]
   const promised = (template: CompiledTemplate, fixedLoot: readonly FixedLootOverrideDef[], path: string) => {
     issues.push(...placementLootIssues({ registry, context: template.lootContext }, template, fixedLoot, path));
   };
-  const { start } = composition;
-  if (start.fixedLoot) {
-    promised(
-      startTemplate(registry, start.template, 0, `scenario:${scenario.id}:start`),
-      start.fixedLoot,
-      '.composition.start.fixedLoot',
-    );
-  }
   const named = new Set<string>();
   (composition.stops ?? []).forEach((stop, index) => {
     const path = `.composition.stops[${index}]`;
@@ -436,29 +429,62 @@ const scenarioBuildingSources = (registry: Registry, scenario: ScenarioDef): str
   return choices.filter(({ weight, atMost }) => weight > 0 && atMost !== 0).map(({ ref }) => ref.id);
 };
 
-export const scenarioSources = (registry: Registry, scenarios: Iterable<ScenarioDef> = registry.scenarios.values()) => {
+/** The start's promised stock, checked at its template-local anchors; paths are on the start row. */
+export const startFixedLootIssues = (registry: Registry, scenario: ScenarioDef, start: StartPlacementDef): Issue[] => {
+  if (!start.fixedLoot) {
+    return [];
+  }
+  try {
+    const template = startTemplate(registry, start.template, 0, `scenario:${scenario.id}:start`);
+    return placementLootIssues(
+      { registry, context: template.lootContext },
+      template,
+      start.fixedLoot,
+      '.placement.fixedLoot',
+    );
+  } catch {
+    // An unresolved start template is reported once, by `scenarioStartIssues`.
+    return [];
+  }
+};
+
+/**
+ * Templates and promised stock a world of these scenarios can hold. Start placements come from the given start rows
+ * on those scenarios, so a caller scopes them to one selected start or to every start.
+ */
+export const scenarioSources = (
+  registry: Registry,
+  scenarios: Iterable<ScenarioDef> = registry.scenarios.values(),
+  starts: Iterable<StartDef> = registry.starts.values(),
+) => {
   const selected = [...scenarios];
+  const ids = new Set(selected.map(({ id }) => id));
+  const placements = [...starts].flatMap(({ site, placement }) => (placement && ids.has(site) ? [placement] : []));
   return {
-    templates: selected.flatMap((scenario) => [
-      scenario.serviceTemplate,
-      ...scenarioBuildingSources(registry, scenario),
-      ...(scenario.composition
-        ? [
-            scenario.composition.start.template,
-            ...scenario.composition.leads.map((lead) => lead.template),
-            ...(scenario.composition.events ?? []).map((event) => event.template),
-            ...scenario.composition.landmarks,
-            ...scenario.composition.incidentalTemplates,
-          ]
-        : []),
-    ]),
-    fixedLoot: selected.flatMap((scenario) => [
-      ...(scenario.composition?.fixedLoot ?? []),
-      ...(scenario.composition?.leads.flatMap((lead) => lead.fixedLoot ?? []) ?? []),
-      ...(scenario.composition?.events?.flatMap((event) => event.fixedLoot) ?? []),
-      ...(scenario.composition?.start.fixedLoot ?? []),
-      ...(scenario.composition?.stops?.flatMap((stop) => stop.fixedLoot) ?? []),
-    ]),
+    templates: [
+      ...placements.map(({ template }) => template),
+      ...selected.flatMap((scenario) => [
+        scenario.serviceTemplate,
+        ...scenarioBuildingSources(registry, scenario),
+        ...(scenario.composition
+          ? [
+              ...scenario.composition.leads.map((lead) => lead.template),
+              ...(scenario.composition.events ?? []).map((event) => event.template),
+              ...scenario.composition.landmarks,
+              ...scenario.composition.incidentalTemplates,
+            ]
+          : []),
+      ]),
+    ],
+    fixedLoot: [
+      ...placements.flatMap(({ fixedLoot }) => fixedLoot ?? []),
+      ...selected.flatMap((scenario) => [
+        ...(scenario.composition?.fixedLoot ?? []),
+        ...(scenario.composition?.leads.flatMap((lead) => lead.fixedLoot ?? []) ?? []),
+        ...(scenario.composition?.events?.flatMap((event) => event.fixedLoot) ?? []),
+        ...(scenario.composition?.stops?.flatMap((stop) => stop.fixedLoot) ?? []),
+      ]),
+    ],
   };
 };
 

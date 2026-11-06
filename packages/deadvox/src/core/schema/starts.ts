@@ -4,7 +4,9 @@ import {
   type InferOutput,
   integer,
   literal,
+  maxLength,
   maxValue,
+  minLength,
   minValue,
   nullable,
   number,
@@ -13,11 +15,14 @@ import {
   pipe,
   record,
   strictObject,
+  tuple,
   union,
 } from 'valibot';
 import { BODY_REGIONS } from '../body.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../character.ts';
+import { FixedLootOverride, StartDescentSchema } from './layouts.ts';
 import { Count, Fraction, GameTimeOfDay, Id, Name } from './primitives.ts';
+import { CellPosition } from './templates.ts';
 
 const KitDestinationSchema = union([
   strictObject({ kind: literal('worn') }),
@@ -35,6 +40,18 @@ export const StartSchema = strictObject({
   storeys: optional(pipe(Count, minValue(1))),
   density: optional(nullable(Fraction)),
   startTimeGameTimeOfDay: optional(GameTimeOfDay),
+  /** Where this start sits in its scenario city: building, cell, roof spawn and ways down. */
+  placement: optional(
+    strictObject({
+      template: Id,
+      cell: tuple([pipe(number(), integer()), pipe(number(), integer())]),
+      spawn: CellPosition,
+      minimumOpenDescents: optional(pipe(Count, minValue(1), maxValue(32)), 2),
+      descents: pipe(array(StartDescentSchema), minLength(1), maxLength(32)),
+      /** Core stock the instance promises in the start building, at template-local furniture anchors. */
+      fixedLoot: optional(array(FixedLootOverride)),
+    }),
+  ),
   kit: array(
     strictObject({
       id: Id,

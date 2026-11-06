@@ -214,6 +214,8 @@ const worldActorTypes = (
 export interface ReachabilityScope {
   /** Site ids whose authored sources are included; absent means every playable site. */
   readonly sites?: ReadonlySet<string>;
+  /** Start rows whose placements add their building and promised stock; absent means every start. */
+  readonly starts?: readonly StartDef[];
   readonly items?: ReadonlySet<string>;
   readonly skills?: ReadonlyMap<string, number>;
 }
@@ -324,7 +326,7 @@ const worldSources = (registry: Registry, scope: ReachabilityScope = {}) => {
     actorTypes: worldActorTypes(registry, authoredLayouts, scenarios),
   };
   const authoredTemplates = authoredLayouts.flatMap((layout) => layout.buildings.map(({ template }) => template));
-  const scenarioContent = scenarioSources(registry, scenarios);
+  const scenarioContent = scenarioSources(registry, scenarios, scope.starts);
   // Compilation follows every positive-weight kit alternative, not unused palette declarations.
   for (const template of sourceTemplates(registry, new Set([...authoredTemplates, ...scenarioContent.templates]))) {
     addTemplateSources(registry, template, sources);
@@ -590,6 +592,7 @@ export const checkReachability = (
 export const checkStartReachability = (registry: Registry, start: StartDef, scope: ReachabilityScope = {}) =>
   checkReachability(registry, new Set(start.recipes), {
     ...scope,
+    starts: [start],
     items: new Set(
       start.kit.flatMap((entry) => [
         entry.item,

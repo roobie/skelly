@@ -1,6 +1,7 @@
 import { lotChoices } from './cityLots.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import type { StartDef } from './schema/starts.ts';
 import type { ScenarioDef } from './schema.ts';
 import {
   templateBodySpace,
@@ -20,7 +21,7 @@ import {
 } from './templates.ts';
 
 /** A playable start's placement in its scenario city: building, cell, roof spawn and ways down. */
-export type StartPlacementDef = NonNullable<ScenarioDef['composition']>['start'];
+export type StartPlacementDef = NonNullable<StartDef['placement']>;
 type DescentDef = StartPlacementDef['descents'][number];
 export type StartDescent = DescentDef extends infer D
   ? D extends DescentDef
@@ -52,7 +53,12 @@ export const startTemplate = (registry: Registry, id: string, seed: number, site
   return assembly ? compileAssembly(registry, assembly, { seed, siteId }) : compileTemplate(registry, template!);
 };
 
-const skylineIssues = (registry: Registry, scenario: ScenarioDef, template: CompiledTemplate): [string, string][] => {
+const skylineIssues = (
+  registry: Registry,
+  scenario: ScenarioDef,
+  start: StartPlacementDef,
+  template: CompiledTemplate,
+): [string, string][] => {
   const { city, composition } = scenario;
   const buildingIds = new Set([
     scenario.serviceTemplate,
@@ -65,7 +71,7 @@ const skylineIssues = (registry: Registry, scenario: ScenarioDef, template: Comp
     ...composition!.landmarks,
     ...composition!.incidentalTemplates,
   ]);
-  const roofHeight = composition!.start.spawn[1] - (template.groundLayer ?? 0);
+  const roofHeight = start.spawn[1] - (template.groundLayer ?? 0);
   return [...buildingIds].flatMap((id): [string, string][] => {
     const definition = registry.mapAssemblies.get(id) ?? registry.templates.get(id);
     if (!definition) {
@@ -76,7 +82,7 @@ const skylineIssues = (registry: Registry, scenario: ScenarioDef, template: Comp
     return building.size[1] - (building.groundLayer ?? 0) >= roofHeight
       ? [
           [
-            '.composition.start.template',
+            '.placement.template',
             `start roof must stand above "${id}"; raise the start building or lower the other building`,
           ],
         ]
@@ -84,11 +90,12 @@ const skylineIssues = (registry: Registry, scenario: ScenarioDef, template: Comp
   });
 };
 
-export const scenarioStartIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
-  const start = scenario.composition?.start;
-  if (!start) {
-    return [];
-  }
+/** A start's placement checked against the composed scenario it starts on; paths are on the start row. */
+export const scenarioStartIssues = (
+  registry: Registry,
+  scenario: ScenarioDef,
+  start: StartPlacementDef,
+): [string, string][] => {
   const issues: [string, string][] = [];
   try {
     const template = startTemplate(registry, start.template, 0, `scenario:${scenario.id}:start`);
@@ -99,24 +106,24 @@ export const scenarioStartIssues = (registry: Registry, scenario: ScenarioDef): 
       start.cell[1] < -city.blocksZ ||
       start.cell[1] >= city.blocksZ
     ) {
-      issues.push(['.composition.start.cell', 'start cell must lie inside the street grid']);
+      issues.push(['.placement.cell', 'start cell must lie inside the street grid']);
     }
     if (template.size[0] > city.blockX - 2 * city.pad || template.size[2] > city.blockZ - 2 * city.pad) {
-      issues.push(['.composition.start.template', 'start template must fit inside its reserved city block']);
+      issues.push(['.placement.template', 'start template must fit inside its reserved city block']);
     }
     const anchor = (point: Vec3, path: string) => {
       if (point.some((value, axis) => value < 0 || value >= template.size[axis]!)) {
         issues.push([path, 'anchor outside start template']);
       }
     };
-    anchor(start.spawn, '.composition.start.spawn');
+    anchor(start.spawn, '.placement.spawn');
     if (!templateBodySpace(registry, template).standing(start.spawn)) {
-      issues.push(['.composition.start.spawn', 'spawn needs supported standing body clearance']);
+      issues.push(['.placement.spawn', 'spawn needs supported standing body clearance']);
     }
     if (start.minimumOpenDescents > start.descents.length) {
-      issues.push(['.composition.start.minimumOpenDescents', 'minimum exceeds the authored ways down']);
+      issues.push(['.placement.minimumOpenDescents', 'minimum exceeds the authored ways down']);
     }
-    issues.push(...skylineIssues(registry, scenario, template));
+    issues.push(...skylineIssues(registry, scenario, start, template));
     const placement: Placement = { template, origin: [0, 0, 0], turn: 0 };
     const roofRoutes = templateWalkingRoutes(
       registry,
@@ -125,7 +132,7 @@ export const scenarioStartIssues = (registry: Registry, scenario: ScenarioDef): 
       start.descents.map(({ upper }) => upper),
     );
     start.descents.forEach((descent, index) => {
-      const path = `.composition.start.descents[${index}]`;
+      const path = `.placement.descents[${index}]`;
       for (const [name, point] of descentPoints(descent)) {
         anchor(point, `${path}.${name}`);
       }
@@ -153,7 +160,7 @@ export const scenarioStartIssues = (registry: Registry, scenario: ScenarioDef): 
       }
     });
   } catch (error) {
-    issues.push(['.composition.start.template', error instanceof Error ? error.message : String(error)]);
+    issues.push(['.placement.template', error instanceof Error ? error.message : String(error)]);
   }
   return issues;
 };

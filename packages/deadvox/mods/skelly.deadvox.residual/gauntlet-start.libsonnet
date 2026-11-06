@@ -140,7 +140,7 @@ local deckPiece(id, layer) = piece(id, [32, 1, 24], [layer], [structuralClaims(l
 local stairs = std.filter(function(p) p.id == 'gauntlet_city_stairs_east', kits.mapPieces)[0];
 {
   loot: rooms.loot,
-  start: {
+  placement: {
     template: 'gauntlet_start', cell: [0, 0], spawn: [22, roofY + 1, 4], minimumOpenDescents: 2,
     descents: [
       { kind: 'ladder', ladder: [39, 1, 10], upper: [36, roofY + 1, 11], lower: [41, 1, 11] },

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
-import type { ContentSource, Registry } from '../../src/core/content.ts';
+import { buildRegistry, type ContentSource, type Registry } from '../../src/core/content.ts';
 import type { StartPlacementDef } from '../../src/core/scenarioStart.ts';
+import type { StartDef } from '../../src/core/schema/starts.ts';
 import type { MapPoolDef, ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
 import { gameHours } from '../../src/core/time.ts';
 import { fixtureBlockMaterial } from '../blockMaterialFixture.ts';
@@ -51,18 +52,30 @@ export const fixtureScenario = (): ScenarioDef => ({
   },
 });
 
-/**
- * The placement of the one start a live scenario's site defaults to, so a test builds the playable run that start
- * selects. Fixture scenarios carry no start rows; their tests name the authored placement they build.
- */
+/** The placement of the one start a scenario's site defaults to, so a test builds the playable run that start selects. */
 export const defaultStartOf = (registry: Pick<Registry, 'starts'>, scenario: ScenarioDef): StartPlacementDef => {
   const rows = [...registry.starts.values()].filter((row) => row.defaultForSite && row.site === scenario.id);
-  const placement = scenario.composition?.start;
-  if (rows.length !== 1 || !placement) {
+  const placement = rows.length === 1 ? rows[0]!.placement : undefined;
+  if (!placement) {
     throw new Error(`Scenario "${scenario.id}" needs one default start with a placement`);
   }
   return placement;
 };
+
+/** A bare start row on a fixture scenario: no kit, wounds, skills or recipes, so only its placement is under test. */
+export const fixtureStartRow = (
+  placement: StartPlacementDef | null = fixtureStart(),
+  { id = 'fixture_start_row', site = 'fixture_scenario' } = {},
+): StartDef => ({
+  id,
+  site,
+  defaultForSite: true,
+  ...(placement ? { placement } : {}),
+  kit: [],
+  wounds: [],
+  skills: {},
+  recipes: [],
+});
 
 export const fixturePool = (
   choices: MapPoolDef['choices'] = [{ ref: { kind: 'template', id: 'fixture_house' }, weight: 1 }],
@@ -121,6 +134,75 @@ export const fixtureStart = (): StartPlacementDef => ({
   minimumOpenDescents: 1,
   descents: [{ kind: 'ladder', ladder: [4, 1, 3], upper: [6.5, 7, 4], lower: [3, 1, 4] }],
 });
+
+/**
+ * A fixture scenario with a full composition (fixed loot, two leads, two landmarks, a resource and a descent) and the
+ * given start rows, admitted with no issues.
+ */
+export const composedFixture = (starts: StartDef[] = []) => {
+  const profile = fixtureScenario();
+  profile.city.street = 8;
+  const service = fixtureService();
+  service.size[1] = 12;
+  service.layers = service.layers.slice(0, service.size[1]);
+  service.palette.C = { furniture: 'fixture_crate' };
+  service.layers[1]![2] = '..C.....==';
+  profile.composition = {
+    fixedLoot: [
+      {
+        at: [2, 1, 2],
+        lootUsage: ['Medical'],
+        items: [
+          { item: 'fixture_token', count: 3 },
+          { item: 'fixture_token', placement: 'surface' },
+        ],
+      },
+    ],
+    leads: [{ template: 'fixture_note_a' }, { template: 'fixture_note_b' }],
+    landmarks: ['fixture_landmark_a', 'fixture_landmark_b'],
+    incidentalTemplates: ['fixture_small_house'],
+    objective: [2, 1, 2],
+    objectiveFace: [2, 1, 4],
+    retreat: [2, 7, 2],
+    resources: [{ at: [2, 1, 2], standing: [2, 1, 4] }],
+    storeys: [{ id: 'lower', standing: [2, 1, 4] }],
+    stairs: [],
+    seals: [],
+    descents: [{ ladder: [4, 1, 3], lower: [3, 1, 4], upper: [3, 7, 4] }],
+  };
+  const sources = fixtureScenarioSources(profile, service);
+  sources.push({
+    source: 'composition-fixture.json',
+    data: {
+      furniture: [
+        {
+          id: 'fixture_note',
+          name: 'Fixture note',
+          size: [1, 1, 1],
+          color: '#ffffff',
+          massKg: 1,
+          solid: false,
+          readable: { title: 'Fixture lead', text: 'An independent fixture lead.' },
+          breach: fixtureBreach(),
+          material: FIXTURE_MATERIAL,
+        },
+      ],
+      templates: ['fixture_note_a', 'fixture_note_b', 'fixture_landmark_a', 'fixture_landmark_b'].map((id) => ({
+        id,
+        lootContext: fixtureLootContext(),
+        size: [1, 2, 1],
+        palette: { '=': 'fixture_solid', N: { furniture: 'fixture_note' } },
+        layers: [['='], ['N']],
+      })),
+      starts,
+    },
+  } satisfies ContentSource);
+  const built = buildRegistry(sources);
+  if (built.issues.length > 0) {
+    throw new Error(JSON.stringify(built.issues));
+  }
+  return { profile, registry: built.registry };
+};
 
 export const fixtureScenarioSources = (
   scenario = fixtureScenario(),
