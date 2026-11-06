@@ -11,7 +11,7 @@ import { stampPacks } from '../tools/stampBundle.ts';
 
 it('injects exporter JSON digests without model payloads while preserving runtime pack identity', async () => {
   const root = mkdtempSync(join(tmpdir(), 'pack-digests-'));
-  const directory = join(root, 'mods/skelly.deadvox.residual');
+  const directory = join(root, 'mods/fixture.digests');
   try {
     mkdirSync(join(directory, 'pack'), { recursive: true });
     writeFileSync(

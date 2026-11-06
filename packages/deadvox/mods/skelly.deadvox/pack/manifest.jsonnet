@@ -16,7 +16,7 @@ manifest(
     'skelly.firearms', 'skelly.manuals', 'skelly.deadvox.site-generation', 'skelly.deadvox.combat-policy',
     'skelly.deadvox.loot', 'skelly.deadvox.actors', 'skelly.deadvox.buildings', 'skelly.deadvox.camp',
     'skelly.deadvox.rural-sites', 'skelly.deadvox.crisis-hq', 'skelly.deadvox.woods',
-    'skelly.deadvox.labs.underground', 'skelly.deadvox.residual',
+    'skelly.deadvox.labs.underground',
     'skelly.deadvox.scenario.benchmark-city', 'skelly.deadvox.scenario.cabins', 'skelly.deadvox.scenario.city',
     'skelly.deadvox.scenario.crisis-hq',
     'skelly.deadvox.scenario.forest', 'skelly.deadvox.scenario.gauntlet.city',

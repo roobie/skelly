@@ -145,14 +145,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.loot/pack/manifest.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/assets/manifest.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/assets/manifest.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/pack/manifest.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/pack/manifest.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/assets/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/assets/manifest.json"
     },

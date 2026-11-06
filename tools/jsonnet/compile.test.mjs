@@ -26,6 +26,6 @@ test('a partial compile cannot be checked against the full-set manifest', () => 
 test('formatter preserves a generated document larger than the subprocess default output buffer', () => {
   const document = { rows: Array.from({ length: 16_384 }, () => 'fixture'.repeat(16)) };
   const source = JSON.stringify(document);
-  const formatted = formatJson(source, 'packages/deadvox/mods/skelly.deadvox.residual/fixture.json');
+  const formatted = formatJson(source, 'packages/deadvox/mods/fixture.pack/fixture.json');
   assert.deepEqual(JSON.parse(formatted), document);
 });

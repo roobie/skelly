@@ -36,7 +36,7 @@ const closeWith = async (records: object[]): Promise<void> => {
 const modelAbort = {
   event: 'asset-error',
   model: 'machete',
-  url: '/mods/skelly.deadvox.residual/assets/models/machete.glb',
+  url: '/mods/fixture.pack/assets/models/machete.glb',
 };
 
 describe('model load audit', () => {
