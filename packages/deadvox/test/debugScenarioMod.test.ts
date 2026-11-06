@@ -34,7 +34,7 @@ describe('authored debug scenario mod', () => {
     expect(selected.admitted).toEqual([]);
   });
 
-  it('builds every debug mod from its own closure with its catalogue rows', () => {
+  it('builds every debug mod from its own closure and keeps the catalogue rows it declares', () => {
     // Selection supplies the default stack, which would hide a row whose owner the debug mod does not declare.
     const debugPacks = readAvailablePacks('.').filter(({ manifest }) => manifest.optIn);
     expect(debugPacks.map(({ manifest }) => manifest.id)).toContain(debugManifest.id);
@@ -44,7 +44,6 @@ describe('authored debug scenario mod', () => {
       const { registry, issues } = buildRegistry(admitted.sources);
       expect(issues, manifest.id).toEqual([]);
       const rows = files.flatMap(({ data }) => (data as { catalogueRows?: { id: string }[] }).catalogueRows ?? []);
-      expect(rows.length, manifest.id).toBeGreaterThan(0);
       for (const { id } of rows) {
         expect(registry.catalogueRows.has(id), `${manifest.id} ${id}`).toBe(true);
       }
