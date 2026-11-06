@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { paperMapBounds } from '../src/core/paperMap.ts';
+import { makeScale } from '../src/core/scale.ts';
+import type { TerrainShape } from '../src/core/worldgen.ts';
 import {
   type PaperMapCacheKey,
   PaperMapRenderCache,
   type PaperMapRenderConfig,
   samplePaperMapTerrain,
-} from '../src/core/paperMapRender.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { TerrainShape } from '../src/core/worldgen.ts';
+} from '../src/render/paperMapRender.ts';
 
 const shape: TerrainShape = {
   minHeightMetres: -3,

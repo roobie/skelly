@@ -3683,7 +3683,7 @@ layer shows actors, possessions, secrets or mutable damage. See
 contours at the cut, and shared contour levels keep neighbouring sheets aligned.
 A bounded session cache deduplicates renders by world identity, region and render
 configuration; it is disposable presentation work, not saved knowledge. See
-`src/core/paperMapRender.ts`, `samplePaperMapTerrain` and `PaperMapRenderCache`.
+`src/render/paperMapRender.ts`, `samplePaperMapTerrain` and `PaperMapRenderCache`.
 The discovery policy is optional local supply without guaranteed coverage;
 duplicate copies are ordinary possessions, not globally unique collectibles.
 A map needs light like any paper, with no map-only exception; see `docs/readables.md`,

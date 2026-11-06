@@ -1,7 +1,7 @@
-import { type ContourSegments, hillshade as calculateHillshade, marchingSquares } from '../render/siteMap.ts';
-import { type PaperMapCoverage, paperMapBounds } from './paperMap.ts';
-import type { PublicCartographicFeature } from './publicCartography.ts';
-import { type Terrain, worldGroundAt } from './worldgen.ts';
+import { type PaperMapCoverage, paperMapBounds } from '../core/paperMap.ts';
+import type { PublicCartographicFeature } from '../core/publicCartography.ts';
+import { type Terrain, worldGroundAt } from '../core/worldgen.ts';
+import { type ContourSegments, hillshade as calculateHillshade, marchingSquares } from './siteMap.ts';
 
 export interface PaperMapRenderConfig {
   /** Metres between printed terrain samples. */
