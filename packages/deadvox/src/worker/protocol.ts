@@ -3,7 +3,7 @@ import type { MeshData } from '../core/mesher.ts';
 import type { SkySnapshot } from '../core/skySnapshot.ts';
 import type { SkyResult } from '../core/skyTransport.ts';
 import type { WireMeshes } from '../core/wireMesh.ts';
-import type { ShapeData } from '../render/vehicleShape.ts';
+import type { ShapeData } from '../vehicles/shapeData.ts';
 
 export type ToMesher =
   | {
