@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { expect, it } from 'vitest';
 import { validate } from '../src/cli/validate.ts';
+import { launcherModCatalogue } from '../src/core/bundledModCatalogue.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { admitPacks, packContentHash } from '../src/core/packAdmission.ts';
 import { bundledPackDefines, readAvailablePacks, readBundledPacks } from '../tools/readBundledPacks.ts';
@@ -62,7 +63,8 @@ it('injects exporter JSON digests without model payloads while preserving runtim
   }
 });
 
-it('keeps opt-in packs out of the default identity and no-stack set while hashing them for selection', async () => {
+/** A mod root with one default pack and one opt-in pack that depends on it. */
+const withOptInPacks = async (check: (root: string) => void | Promise<void>): Promise<void> => {
   const root = mkdtempSync(join(tmpdir(), 'opt-in-packs-'));
   try {
     const write = (id: string, extra: object) => {
@@ -74,6 +76,14 @@ it('keeps opt-in packs out of the default identity and no-stack set while hashin
     };
     write('fixture.default', { dependencies: [] });
     write('fixture.opt-in', { optIn: true, dependencies: ['fixture.default'] });
+    await check(root);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+};
+
+it('keeps opt-in packs out of the default identity and no-stack set while hashing them for selection', async () => {
+  await withOptInPacks(async (root) => {
     const ids = (packs: readonly { manifest: { id: string } }[]) => packs.map(({ manifest }) => manifest.id);
     expect(ids(readBundledPacks(root))).toEqual(['fixture.default']);
     expect(ids(readBundledPacks(root, 'fixture.opt-in'))).toEqual(['fixture.default', 'fixture.opt-in']);
@@ -84,9 +94,16 @@ it('keeps opt-in packs out of the default identity and no-stack set while hashin
     expect(listed('__SKELLY_OPT_IN_PACKS__')).toEqual(['fixture.opt-in']);
     const optIn = available.find(({ manifest }) => manifest.optIn)!;
     expect(JSON.parse(defines.__SKELLY_OPT_IN_PACKS__!)[0].canonicalHash).toBe(await packContentHash(optIn));
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
+  });
+});
+
+it('lists a newly shipped opt-in pack in the launcher catalogue by its id, and no default pack', async () => {
+  await withOptInPacks((root) => {
+    const bundled = JSON.parse(readFileSync(resolve(import.meta.dirname, '../src/config/bundled-mods.json'), 'utf8'));
+    const { folderMods } = launcherModCatalogue(bundled, readAvailablePacks(root));
+    expect(folderMods).toContain('fixture.opt-in');
+    expect(folderMods).not.toContain('fixture.default');
+  });
 });
 
 const withMultiRootFixture = async (check: (root: string) => void | Promise<void>): Promise<void> => {

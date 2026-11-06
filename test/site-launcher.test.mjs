@@ -5,10 +5,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { bundledModCatalogueIssues, launcherModCatalogue } from '../packages/deadvox/src/core/bundledModCatalogue.ts';
+import { bundledModCatalogueIssues } from '../packages/deadvox/src/core/bundledModCatalogue.ts';
 import { tutorialRequested } from '../packages/deadvox/src/game/tutorialUrl.ts';
 import { gitEnvironment, playtestRound, publishPlaytest } from '../packages/deadvox/tools/publish-playtest.mjs';
-import { readAvailablePacks } from '../packages/deadvox/tools/readBundledPacks.ts';
 import { loadPlaytestText } from '../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
 
@@ -368,47 +367,27 @@ describe('site launchers track the games’ URL parameters', () => {
     assert.deepEqual(failed, [], 'a failed fetch hides the control');
   });
 
-  it('offers a newly shipped opt-in folder mod by id and links it when picked', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'launcher-opt-in-'));
-    try {
-      const ship = (id, extra) => {
-        mkdirSync(join(root, 'mods', id, 'pack'), { recursive: true });
-        writeFileSync(
-          join(root, 'mods', id, 'pack/manifest.json'),
-          JSON.stringify({
-            id,
-            version: '1',
-            tier: 'scenario',
-            product: false,
-            dependencies: [],
-            overrides: [],
-            files: [],
-            ...extra,
-          }),
-        );
-      };
-      ship('fixture.default', {});
-      ship('fixture.debug', { optIn: true });
-      const catalogue = launcherModCatalogue(
-        JSON.parse(read('packages/deadvox/src/config/bundled-mods.json')),
-        readAvailablePacks(root),
-      );
-      const loadBundledMods = new Function(`${extractDeclaration('loadBundledMods')}\nreturn loadBundledMods;`)();
-      const shown = await loadBundledMods(async () => ({ ok: true, json: async () => catalogue }), 'x');
-      const ids = shown.map(({ id }) => id);
-      assert.ok(ids.includes('fixture.debug'), 'the opt-in pack is offered by its id');
-      assert.ok(!ids.includes('fixture.default'), 'a default pack is not offered');
+  // The site job runs without an install, so the build side (an opt-in pack reaching `folderMods`) is tested in
+  // `packages/deadvox/test/readBundledPacks.test.ts`, where packages resolve.
+  it('offers a catalogue folder mod by id and links it when picked', async () => {
+    const catalogue = {
+      ...JSON.parse(read('packages/deadvox/src/config/bundled-mods.json')),
+      folderMods: ['fixture.debug'],
+    };
+    const loadBundledMods = new Function(`${extractDeclaration('loadBundledMods')}\nreturn loadBundledMods;`)();
+    const shown = await loadBundledMods(async () => ({ ok: true, json: async () => catalogue }), 'x');
+    assert.ok(
+      shown.some(({ id }) => id === 'fixture.debug'),
+      'the folder mod is offered by its id',
+    );
 
-      const makeDeadvox = makeDeadvoxForTest();
-      const model = launcherModelForTest();
-      onInputForTest(model)({
-        currentTarget: { id: 'deadvox-form' },
-        target: { dataset: { modId: 'fixture.debug' }, type: 'checkbox', checked: true },
-      });
-      assert.equal(makeDeadvox(model.deadvox).searchParams.get('mods'), 'fixture.debug', 'picking it requests its id');
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
+    const makeDeadvox = makeDeadvoxForTest();
+    const model = launcherModelForTest();
+    onInputForTest(model)({
+      currentTarget: { id: 'deadvox-form' },
+      target: { dataset: { modId: 'fixture.debug' }, type: 'checkbox', checked: true },
+    });
+    assert.equal(makeDeadvox(model.deadvox).searchParams.get('mods'), 'fixture.debug', 'picking it requests its id');
   });
 
   it('composes a practice tutorial URL the game accepts from the launcher', () => {
