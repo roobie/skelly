@@ -1,6 +1,6 @@
-local variants = import 'gauntlet-city-variants.libsonnet';
+local variants = import 'packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-variants.libsonnet';
 local context = { usage: ['Residential'], tier: 'Tier1' };
-local doors = import 'gauntlet-city-doors.libsonnet';
+local doors = import 'packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-doors.libsonnet';
 local palette = {
   '.': { role: 'opening', material: 'opening' },
   '#': { role: 'shell', material: 'facade' },
@@ -94,7 +94,7 @@ local slot = function(id, piece, at, size, turn=0) {
   id: id, at: at, size: size, turn: turn,
   choices: [{ ref: { kind: 'piece', id: piece }, weight: 1 }],
 };
-local scenes = (import 'gauntlet-city-scenes.libsonnet')(palette, context);
+local scenes = (import 'packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-scenes.libsonnet')(palette, context);
 local roomSlot = scenes.slot;
 local lowerSlots = [
   slot('ground', 'gauntlet_city_ground', [0, 0, 0], [18, 1, 16]),

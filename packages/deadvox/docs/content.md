@@ -234,7 +234,7 @@ Keep enclosed building roofs flush with their exterior wall footprint so the roo
 - A sheet-metal roof is a plain galvanized deck.
 - A semi-walled concrete roof is a concrete deck with waist-high wall segments along some edges, never a full ring.
 
-Non-wood decks keep wooden flooring from reading as a wooden roof on masonry walls. The mix makes the skyline varied and plausible; keep ladder landings and roof routes open. Open forecourt canopies are separate structures, not building eaves. See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-decor.libsonnet`, `roofs`, and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-kits.libsonnet`, `roofDeck`.
+Non-wood decks keep wooden flooring from reading as a wooden roof on masonry walls. The mix makes the skyline varied and plausible; keep ladder landings and roof routes open. Open forecourt canopies are separate structures, not building eaves. See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-decor.libsonnet`, `roofs`, and `tools/jsonnet/lib/gauntlet-city-kits.libsonnet`, `roofDeck`.
 
 The test house is authored content rather than a code-built exception, so the same layout and template mechanisms serve mods and evaluation scenes. See `mods/skelly.deadvox.residual/layouts-test-house.jsonnet`, `layouts`, and `docs/test-house.md`, "Content ownership".
 

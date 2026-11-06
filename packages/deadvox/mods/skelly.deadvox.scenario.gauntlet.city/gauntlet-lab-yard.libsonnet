@@ -1,4 +1,4 @@
-local kit = import 'authored-site-kit.libsonnet';
+local kit = import 'tools/jsonnet/lib/authored-site-kit.libsonnet';
 local fences = import 'gauntlet-yard-fences.libsonnet';
 local dressing = import 'gauntlet-authored-dressing.libsonnet';
 local disorder = import 'aftermath.libsonnet';

@@ -62,7 +62,7 @@ explain both claimed solids and reserved voids. See `packages/deadvox/src/core/t
 A stair wedge and its reserved air own the opening through the next floor. The room and
 floor pieces leave that strip unclaimed; they cannot repaint the stair or its headroom.
 Sharing literal storey pieces keeps repeated facades consistent without turning floor
-count into a geometry generator. See `packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-kits.libsonnet`,
+count into a geometry generator. See `tools/jsonnet/lib/gauntlet-city-kits.libsonnet`,
 `lowerSlots`, `lowerFloorClaims` and `middleFloorClaims`.
 
 Furnishing choices preserve the circulation contract but can still add obstacles and
