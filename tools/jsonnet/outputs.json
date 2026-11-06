@@ -149,10 +149,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/assets/manifest.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet-start.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet-start.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-test-house.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-test-house.json"
     },
@@ -311,6 +307,18 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.debug/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.debug/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.start/gauntlet-start.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.start/gauntlet-start.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.start/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.start/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.start/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.start/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.hunting-cabins/pack/manifest.jsonnet",

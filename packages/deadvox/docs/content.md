@@ -432,8 +432,8 @@ state. See `src/core/schema/scenarios.ts`, `ScenarioSchema`; `src/core/climbCert
   something on every storey to make it interesting, rather than just a staircase.
   The start row carries this placement, not the scenario row, so another start can bring
   its own building and ways down to the same city. See
-  `mods/skelly.deadvox.residual/gauntlet-start.libsonnet`, `placement`, and
-  `mods/skelly.deadvox.residual/gauntlet-start-rooms.libsonnet`, `slots`.
+  `mods/skelly.deadvox.scenario.gauntlet.start/gauntlet-start.libsonnet`, `placement`, and
+  `mods/skelly.deadvox.scenario.gauntlet.start/gauntlet-start-rooms.libsonnet`, `slots`.
   Collapsed floors are extra risky shortcuts, not registered descents, so the start
   check never certifies an interior fall to meet the minimum.
   The route proof starts at the roof because rolled furnishings can block

@@ -1,6 +1,5 @@
 local manifest = import '../../../../../tools/jsonnet/lib/pack-manifest.libsonnet';
 local content = [
-  'gauntlet-start',
   'layouts-test-house',
   'starts',
   'templates-test-house',
@@ -21,7 +20,6 @@ manifest(
     'skelly.firearms', 'skelly.manuals', 'skelly.deadvox.site-generation', 'skelly.deadvox.combat-policy',
     'skelly.deadvox.loot', 'skelly.deadvox.actors', 'skelly.deadvox.buildings', 'skelly.deadvox.camp',
     'skelly.deadvox.rural-sites', 'skelly.deadvox.crisis-hq', 'skelly.deadvox.labs.underground',
-    'skelly.deadvox.scenario.gauntlet.city',
   ],
   content=content,
   assets=assets,

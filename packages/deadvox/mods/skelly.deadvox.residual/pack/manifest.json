@@ -46,14 +46,9 @@
     "skelly.deadvox.camp",
     "skelly.deadvox.rural-sites",
     "skelly.deadvox.crisis-hq",
-    "skelly.deadvox.labs.underground",
-    "skelly.deadvox.scenario.gauntlet.city"
+    "skelly.deadvox.labs.underground"
   ],
   "files": [
-    {
-      "kind": "content",
-      "path": "gauntlet-start.json"
-    },
     {
       "kind": "content",
       "path": "layouts-test-house.json"

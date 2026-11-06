@@ -5,10 +5,12 @@ it('refuses startup rather than inventing a run when rejected content removes th
   // Mocks rather than a second Vite server (#557): that server re-transformed the content graph Vitest has
   // already transformed for other files, and its client dependency optimizer re-bundled the app whenever the
   // checkout's shared cache was stale, enough CPU to cross the default timeout on a loaded host.
-  for (const file of readdirSync(new URL('../mods/skelly.deadvox.residual/', import.meta.url))) {
-    // Shared mods keep the content config and the binding registry need while this isolates layout rejection.
-    if (file.endsWith('.json')) {
-      vi.doMock(`../mods/skelly.deadvox.residual/${file}`, () => ({ default: {} }));
+  for (const mod of ['skelly.deadvox.scenario.gauntlet.city', 'skelly.deadvox.scenario.gauntlet.start']) {
+    for (const file of readdirSync(new URL(`../mods/${mod}/`, import.meta.url))) {
+      // Shared mods keep the content config and the binding registry need while this isolates layout rejection.
+      if (file.endsWith('.json')) {
+        vi.doMock(`../mods/${mod}/${file}`, () => ({ default: {} }));
+      }
     }
   }
   vi.doMock('../mods/skelly.deadvox.scenario.lone-house/layouts.json', () => ({ default: { layouts: {} } }));
