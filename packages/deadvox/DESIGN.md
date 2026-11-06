@@ -296,7 +296,7 @@ Sound passes open wire because chain-link barely dampens it. Sound blocking has
 its own content property: sight is the wrong key because foliage hides without
 muffling. Furniture still owns whether its closed state blocks sound.
 See `src/core/collision.ts`, `worldSoundBlocking`; `src/core/agent.ts`,
-`AgentController.updatePerception`; and `src/game/audio.ts`, `GameAudio`.
+`AgentController.updatePerception`; and `src/game/hearing.ts`, `Hearing.audibility`.
 
 The partial-block set remains under discussion in #221; do not implement it
 before playtest 1. Its purposes, in priority order, are roof silhouettes,
