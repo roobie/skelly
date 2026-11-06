@@ -1,15 +1,6 @@
 {
   "sources": [
     {
-      "author": "Skelly contributors",
-      "changes": "Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.",
-      "download": null,
-      "files": ["assets/models/gauntlet_lab_entry_card.glb"],
-      "licence": "CC0-1.0",
-      "title": "Thing tool authored models",
-      "url": "https://github.com/roobie/skelly/blob/main/packages/deadvox/mods/skelly.deadvox.residual/exports/things.jsonnet"
-    },
-    {
       "author": "rubberduck",
       "changes": "Selected three blade, three wood and three metal variants; converted to 24 kHz mono Opus in Ogg containers; unused source files excluded",
       "download": "80-CC0-RPG-SFX.zip",

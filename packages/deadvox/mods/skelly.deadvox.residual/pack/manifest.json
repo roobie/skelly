@@ -46,40 +46,17 @@
     "skelly.deadvox.camp",
     "skelly.deadvox.rural-sites",
     "skelly.deadvox.crisis-hq",
-    "skelly.deadvox.labs.underground"
+    "skelly.deadvox.labs.underground",
+    "skelly.deadvox.scenario.gauntlet.city"
   ],
   "files": [
-    {
-      "kind": "content",
-      "path": "footstep-sounds.json"
-    },
-    {
-      "kind": "content",
-      "path": "gauntlet-look.json"
-    },
     {
       "kind": "content",
       "path": "gauntlet-start.json"
     },
     {
       "kind": "content",
-      "path": "gauntlet.json"
-    },
-    {
-      "kind": "content",
-      "path": "item-economy.json"
-    },
-    {
-      "kind": "content",
       "path": "layouts-test-house.json"
-    },
-    {
-      "kind": "content",
-      "path": "models-items.json"
-    },
-    {
-      "kind": "content",
-      "path": "scenarios.json"
     },
     {
       "kind": "content",
@@ -91,23 +68,7 @@
     },
     {
       "kind": "json",
-      "path": "things/gauntlet_lab_entry_card.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
       "path": "assets/manifest.json"
-    },
-    {
-      "kind": "json",
-      "path": "exports/things.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
     },
     {
       "kind": "asset",
@@ -148,10 +109,6 @@
     {
       "kind": "asset",
       "path": "assets/manifest.libsonnet"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/gauntlet_lab_entry_card.glb"
     }
   ],
   "id": "skelly.deadvox.residual",

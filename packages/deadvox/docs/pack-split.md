@@ -266,7 +266,7 @@ manufactured materials may be thematic. A site's distribution and authored run r
 product or scenario content even when its component definitions are shared. A scenario
 that wants a wreck in a base site places it there, so the wreck family keeps one owner,
 with no hole in its generated set and no twin row; the cost is that base sites have no
-car. See `mods/skelly.deadvox.residual/gauntlet-authored-sites.libsonnet`, `wreck`. Reusable
+car. See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-authored-sites.libsonnet`, `wreck`. Reusable
 transport and parts are shared; a product's own vehicles remain product content.
 Classify references entry by entry rather than moving every vehicle or furnished house
 into one tier.

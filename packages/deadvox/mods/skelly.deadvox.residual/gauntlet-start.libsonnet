@@ -1,4 +1,4 @@
-local kits = import 'gauntlet-city-kits.libsonnet';
+local kits = import 'packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-kits.libsonnet';
 local rooms = import 'gauntlet-start-rooms.libsonnet';
 local context = { usage: ['Residential'], tier: 'Tier1' };
 local storeys = [1, 9, 17, 25, 33];

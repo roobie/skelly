@@ -47,5 +47,5 @@ additional generators.
 - Keep module exports deliberate and inheritance shallow so ownership and composition stay inspectable.
 - Force critical assertions because Jsonnet evaluation is lazy; invalid authored data must fail before it reaches consumers.
 - Separate authored values from transformation rules and final output so one tuning change can update dependent data without duplicating definitions.
-- Cache height-invariant membership and reuse glyphs for ownership when expanding authored plans. Repeated interpreted list scans make content checks expensive without adding authoring flexibility; see `packages/deadvox/mods/skelly.deadvox.residual/gauntlet-lab-level.libsonnet`, `build`.
+- Cache height-invariant membership and reuse glyphs for ownership when expanding authored plans. Repeated interpreted list scans make content checks expensive without adding authoring flexibility; see `packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-level.libsonnet`, `build`.
 - Use the pinned go-jsonnet runtime so contributors and CI evaluate the same source without requiring a Go toolchain. See `tools/jsonnet/runtime.json` and `tools/jsonnet/setup.mjs`.

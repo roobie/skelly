@@ -149,44 +149,16 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/assets/manifest.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/exports/things.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/exports/things.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/footstep-sounds.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/footstep-sounds.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet-look.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet-look.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet-start.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet-start.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/item-economy.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/item-economy.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-test-house.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-test-house.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/models-items.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/models-items.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/pack/manifest.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/scenarios.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/scenarios.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/starts.jsonnet",
@@ -295,6 +267,50 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.forest/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.forest/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/assets/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/assets/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/exports/things.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/exports/things.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/footstep-sounds.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/footstep-sounds.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-look.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-look.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/item-economy.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/item-economy.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/models-items.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/models-items.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/scenarios.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/scenarios.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.debug/catalogue.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.debug/catalogue.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.debug/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.debug/pack/manifest.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.hunting-cabins/pack/manifest.jsonnet",

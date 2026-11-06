@@ -300,9 +300,9 @@ describe('site launchers track the games’ URL parameters', () => {
     const makeDeadvox = makeDeadvoxForTest();
     const defaults = launcherModelForTest().deadvox;
     const gauntlet = { ...defaults, ...launcherPresetsForTest().gauntlet };
-    const scenarioIds = JSON.parse(read('packages/deadvox/mods/skelly.deadvox.residual/scenarios.json')).scenarios.map(
-      (scenario) => scenario.id,
-    );
+    const scenarioIds = JSON.parse(
+      read('packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/scenarios.json'),
+    ).scenarios.map((scenario) => scenario.id);
     const play = makeDeadvox(gauntlet);
     const site = play.searchParams.get('site');
     assert.ok(scenarioIds.includes(site), `the gauntlet preset composes a scenario site (${site})`);

@@ -12,7 +12,7 @@ import { baseContentSources } from './baseContentFiles.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
-const base = 'mods/skelly.deadvox.residual';
+const base = 'mods/skelly.deadvox.scenario.gauntlet.city';
 const itemSource = (file: string, ids: readonly string[]) => {
   const data = JSON.parse(readFileSync(join(base, file), 'utf8')) as {
     items: { id: string; salvage?: unknown; salvageTimeGameMinutes?: unknown }[];

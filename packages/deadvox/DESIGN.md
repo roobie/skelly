@@ -775,7 +775,7 @@ large. Adding a point of interest is the trigger to expand those bounds, not a r
 to reserve empty city in advance. Reserving the service campus makes its street approach
 constructible; knowing a clue never grants access. Independent notes in separate civic
 buildings give alternate ways to infer the destination. See
-`mods/skelly.deadvox.residual/gauntlet-layout.libsonnet`, `lots` and `paving`, and
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-layout.libsonnet`, `lots` and `paving`, and
 `src/core/cityLots.ts`, `placeCityLots`.
 
 The play area is closed by physical voxels, not an invisible wall: a continuous
@@ -801,7 +801,7 @@ and stamping cannot diverge. Playable upper floors use authored stairs rather th
 benchmark stacking. Elevated routes reward getting onto structures and traversing
 away from default ground; not every structure must provide one, and existing
 movement remains the only authority. See `src/core/cityPlan.ts`, `buildCityPlan`;
-`src/core/citySite.ts`, `CitySite`; and `mods/skelly.deadvox.residual/gauntlet-city.libsonnet`,
+`src/core/citySite.ts`, `CitySite`; and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city.libsonnet`,
 `templates`.
 
 The start tower guarantees a melee weapon, a revolver and revolver ammunition
@@ -847,8 +847,8 @@ following a rail. See `src/core/schema/scenarios.ts`, `ScenarioSchema`;
 `src/core/scenarioComposition.ts`, `scenarioCompositionIssues` and
 `composeScenario` and `eventIssues`; `src/core/placementLoot.ts`,
 `placementLootIssues`; `src/core/inventory.ts`, `furnish`; and
-`mods/skelly.deadvox.residual/scenarios.jsonnet`, `composition`; and
-`mods/skelly.deadvox.residual/gauntlet.jsonnet`, `utilities`.
+`mods/skelly.deadvox.scenario.gauntlet.city/scenarios.jsonnet`, `composition`; and
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet.jsonnet`, `utilities`.
 
 A stop's rolled stock follows its place theme, not its building. Each stop takes a
 theme context, the station's carrying the Police usage and the HQ's Military, and
@@ -867,7 +867,7 @@ blowtorch route must remain independent alternatives; neither should require the
 other. See `mods/skelly.deadvox.rural-sites/rural-police.jsonnet`, `templates` and `loot`, and
 `mods/skelly.deadvox.residual/gauntlet-start.libsonnet`, `placement` and `mapPieces`.
 
-The blowtorch has one source: the secret cellar's footlocker, with one cartridge fitted. No economy table rolls a torch. The torch is one of the armoury's two routes, so a single hidden source keeps that route the price of finding the secret. Spare cartridges are ordinary hardware and garage loot. See `mods/skelly.deadvox.residual/gauntlet-city-cellars.libsonnet`, `reward`, and `mods/skelly.deadvox.loot/loot.jsonnet`, `building_tools`.
+The blowtorch has one source: the secret cellar's footlocker, with one cartridge fitted. No economy table rolls a torch. The torch is one of the armoury's two routes, so a single hidden source keeps that route the price of finding the secret. Spare cartridges are ordinary hardware and garage loot. See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-cellars.libsonnet`, `reward`, and `mods/skelly.deadvox.loot/loot.jsonnet`, `building_tools`.
 
 The armoury's gun is a proved resource through the key route alone: the certificate
 walks from the start up the officer's ladder, takes the key, comes back down and
@@ -876,12 +876,12 @@ proof, a layout edit that cuts the key's route would go unnoticed until play. Th
 torch is no part of the guarantee, because its route is the bonus for finding the
 secret. A ladder on an outside wall holds the climber flush against the wall, so the
 climb check accepts that pose where the wall runs the whole climb. See
-`mods/skelly.deadvox.residual/scenarios.jsonnet`, `resources`; `src/core/scenarioCertificate.ts`,
+`mods/skelly.deadvox.scenario.gauntlet.city/scenarios.jsonnet`, `resources`; `src/core/scenarioCertificate.ts`,
 `lotResource`; and `src/core/climbCertificate.ts`, `wallBacked`.
 
 Dead scavengers who came for the lab before the player lie by its hatch with
 rolled pockets, so the approach signals that the lab needs preparation before the
-player commits to it. See `mods/skelly.deadvox.residual/gauntlet-service.libsonnet`,
+player commits to it. See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-service.libsonnet`,
 `gauntlet_scavenger_pockets`.
 
 The gauntlet is the default entry because one discovery route should carry the playable start rather than compete with a separate sandbox. The authored playtest remains an independently selected route. See `src/game/config.ts`, `makeConfig` and `configFromUrl`.
@@ -896,7 +896,7 @@ area, while authored markers stay separate. The policy is the scenario's
 The gauntlet places one horde rather than one per building group, and stragglers
 carry more of the street pressure. This reuses population and spawn
 admission instead of inventing an enemy-density runtime. See `src/core/schema/scenarios.ts`,
-`ScenarioSchema`; `mods/skelly.deadvox.residual/scenarios.jsonnet`; `src/core/scenarioCity.ts`,
+`ScenarioSchema`; `mods/skelly.deadvox.scenario.gauntlet.city/scenarios.jsonnet`; `src/core/scenarioCity.ts`,
 `scenarioCityPopulation`; `src/core/settlementSpawns.ts`, `settlementActorSpawns`; and
 `src/core/actorSpawns.ts`, `ActorSpawner`.
 
@@ -937,7 +937,7 @@ research level, where the place turns from offices to labs, and special research
 carries more of the dangerous kinds. The rows are slot choices, so a mod retunes a
 level by overriding data. The amalgam is never a weighted row: its body needs space
 built for it, so it has one dedicated marker where that space is. See
-`mods/skelly.deadvox.residual/gauntlet-lab-threat.libsonnet`, `rows` and `amalgamSlot`; and
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-threat.libsonnet`, `rows` and `amalgamSlot`; and
 `test/scenarioCertificate.test.ts`, "lab threat by depth".
 
 One owned assembly supplies the service facade and underground campus, so the
@@ -949,8 +949,8 @@ reading one cannot authorize another. Named civic buildings keep the clues part 
 plausible places, while reserved destination landmarks keep the written directions
 consistent with the designed approach. Utility silhouettes alone should not reveal the
 destination. See
-`mods/skelly.deadvox.residual/gauntlet-service.libsonnet`, `mapAssemblies`;
-`mods/skelly.deadvox.residual/scenarios.jsonnet`, `composition`; and
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-service.libsonnet`, `mapAssemblies`;
+`mods/skelly.deadvox.scenario.gauntlet.city/scenarios.jsonnet`, `composition`; and
 `src/core/scenarioComposition.ts`, `composeScenario`.
 
 Furniture anchors rotate as occupied boxes, while standing poses rotate as
@@ -991,8 +991,8 @@ three dimensions and refuses one that claims a cell another placement owns: a
 corridor may pass under a building but not through it. See
 `src/core/cityUnderground.ts`, `placeUnderground`;
 `src/core/scenarioPortal.ts`, `undergroundPortIssues`;
-`mods/skelly.deadvox.residual/gauntlet-sewer.libsonnet`, `mapAssemblies`; and
-`mods/skelly.deadvox.residual/gauntlet-lab-threat.libsonnet`, `rows`.
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-sewer.libsonnet`, `mapAssemblies`; and
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-threat.libsonnet`, `rows`.
 
 A resource's route passes a lock only with a key the proof takes on its way from
 the start, never a key or tool whose acquisition depends on the resource itself. An
@@ -1027,8 +1027,8 @@ inspiration, not a blueprint: its mood guides the build and BR judges fidelity i
 Looped circulation and separated descents make exploration and retreat choices rather
 than one corridor and a continuous climb. The levels share one builder and one scale,
 so a level's rooms keep their proportions and a fix to the builder reaches every level.
-See `mods/skelly.deadvox.residual/gauntlet-lab-level.libsonnet`, `build`, and
-`mods/skelly.deadvox.residual/gauntlet-lab.libsonnet`, `mapAssemblies` and `anchors`.
+See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-level.libsonnet`, `build`, and
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab.libsonnet`, `mapAssemblies` and `anchors`.
 
 The stair is the main way down because a building's descent should read as one. A
 lidded shaft remains an alternate return route. Each level's stair and shaft leave from
@@ -1038,8 +1038,8 @@ descent: its loops serve exploration and retreat around the destination. Threat 
 allowed to move between levels; that behaviour is not built. Depth ordering is not a
 promise of isolation. Floors damp sound like walls rather than silencing it between
 storeys; see `src/core/soundOcclusion.ts`, `soundOcclusion`. See
-`mods/skelly.deadvox.residual/gauntlet-lab-administration.libsonnet`, `stair`, and
-`mods/skelly.deadvox.residual/gauntlet-lab-descents.libsonnet`, `shaft`.
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-administration.libsonnet`, `stair`, and
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-descents.libsonnet`, `shaft`.
 
 The objective occupies special research's central chamber so the floor's strongest
 spatial landmark is also its end. The amalgam shares the destination so the final
@@ -1049,16 +1049,16 @@ pit sunk below the chamber floor, so the encounter is a look down from the rim r
 than face to face. The pit gives its whole body room inside special research, so the
 research level above stays untouched and the creature keeps its full size. A ladder in
 the pit lets a player who falls in climb back to the rim. See
-`mods/skelly.deadvox.residual/gauntlet-lab-special.libsonnet`, `pitPiece`, `amalgam` and `objectiveFace`;
-`mods/skelly.deadvox.residual/gauntlet-lab-threat.libsonnet`, `amalgamSlot`; and
-`mods/skelly.deadvox.residual/scenarios.jsonnet`, `composition`.
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-special.libsonnet`, `pitPiece`, `amalgam` and `objectiveFace`;
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-threat.libsonnet`, `amalgamSlot`; and
+`mods/skelly.deadvox.scenario.gauntlet.city/scenarios.jsonnet`, `composition`.
 
 Deeper lab stock keeps the shallower tiers, so depth adds possibilities rather than
 replacing ordinary supplies. Special research's experimental-arms locker rolls a table
 no other source shares, so what it holds is a discovery at the deepest level rather
 than equipment found elsewhere in preparation for it, and none of it is needed for the
 objective. The laser rifle joins that table when #1128 defines it. See
-`mods/skelly.deadvox.residual/gauntlet-lab-special.libsonnet`, `loot`.
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-special.libsonnet`, `loot`.
 
 The hatch-side entrance is open. Each rebuilt level's ways down need that level's own
 keycard, from one authored spot on its open side. A card may be stock in a container
@@ -1075,9 +1075,9 @@ proof. Checking in that order means no card can depend on its own seal or a deep
 which would make the run a dead end. Cards gate ways down, so special research, which
 has none, has no card: level three's seal is the last clearance, and the destination is
 open to whoever reaches the level. See
-`mods/skelly.deadvox.residual/gauntlet-lab-administration.libsonnet`, `seal`;
-`mods/skelly.deadvox.residual/gauntlet-lab-research.libsonnet`, `lab_breached`;
-`mods/skelly.deadvox.residual/gauntlet-lab-level.libsonnet`, `cardStock`;
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-administration.libsonnet`, `seal`;
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-research.libsonnet`, `lab_breached`;
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-level.libsonnet`, `cardStock`;
 `src/core/scenarioCertificate.ts`, `seals`; and `src/core/prying.ts`, `pryPlan`.
 
 Each level is fully built and judged in play before the next one, so the first level
@@ -1095,20 +1095,20 @@ fits its use, so what a search turns up says what the room was for; few rolls an
 heavy nothing weights keep the lab scarce. In-lab papers explain the facility without
 authorizing access: staff notes filed in special research's records vault tell the work
 and its failure but give no directions, so finding the destination stays architectural.
-See `mods/skelly.deadvox.residual/gauntlet-lab-entry.libsonnet`, `rooms` and `plan`;
-`mods/skelly.deadvox.residual/gauntlet-lab-administration.libsonnet`, `rooms`;
-`mods/skelly.deadvox.residual/gauntlet-lab-research.libsonnet`, `rooms`; and
-`mods/skelly.deadvox.residual/gauntlet-lab-special.libsonnet`, `rooms` and `items`.
+See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-entry.libsonnet`, `rooms` and `plan`;
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-administration.libsonnet`, `rooms`;
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-research.libsonnet`, `rooms`; and
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-special.libsonnet`, `rooms` and `items`.
 
 Level two's briefing hall is double height: it extends down into a column that the
 research level reserves for it, so a level gains one tall space without a storey of its
 own. The well's walls are whole so the hall stays apart from the research level around
-it, and its floor steps up so a player can climb back out. See `mods/skelly.deadvox.residual/gauntlet-lab-administration.libsonnet`, `well`, and
-`mods/skelly.deadvox.residual/gauntlet-lab-level.libsonnet`, `voids`.
+it, and its floor steps up so a player can climb back out. See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-administration.libsonnet`, `well`, and
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-level.libsonnet`, `voids`.
 
 Threat should grow with depth and spread across a level rather than concentrating
-in one room. See `mods/skelly.deadvox.residual/gauntlet-lab-administration.libsonnet`,
-`markers`, and `mods/skelly.deadvox.residual/gauntlet-lab-threat.libsonnet`, `rows`.
+in one room. See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-administration.libsonnet`,
+`markers`, and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-threat.libsonnet`, `rows`.
 
 The underground campus extends beyond the small service facade because a surface
 disguise must not dictate the lab's capacity. One compiled assembly owns their common
@@ -1116,8 +1116,8 @@ excavation; an independent copy would let the visual preview and playable routes
 Closed descent lids support the neighboring floor cells as well as the ladder column,
 so walking an upper room does not accidentally commit the survivor to a drop. The
 real-city session witness opens these lids and proves the furnished descent and return.
-See `mods/skelly.deadvox.residual/gauntlet-service.libsonnet`, `mapAssemblies`,
-`mods/skelly.deadvox.residual/gauntlet-lab-descents.libsonnet`, `mapPieces`, and
+See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-service.libsonnet`, `mapAssemblies`,
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-descents.libsonnet`, `mapPieces`, and
 `test/fixtures/scenarioCertificate.ts`, `traverseScenario`.
 
 Portal anchors address furniture in the finished assembly rather than palette markers
@@ -1162,8 +1162,8 @@ The whole lab shares one grid, fed by a generator on its first subterranean leve
 Its small fuel reserve makes working lights temporary rather than a permanent escape
 from darkness. Lights and machinery declare their electrical roles in content; there
 are no per-level breakers or player refuelling interaction. See
-`mods/skelly.deadvox.residual/gauntlet-lab.libsonnet`, `furniture`;
-`mods/skelly.deadvox.residual/gauntlet-lab-entry.libsonnet`, `rooms`;
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab.libsonnet`, `furniture`;
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-entry.libsonnet`, `rooms`;
 `src/core/sitePower.ts`, `SitePower`; and `src/game/session.ts`, `createSession`.
 Darkness also uses world-derived sky transport and ordinary carried light. Finished site placements
 expose the same sky eligibility contract across authored layouts and
@@ -1238,7 +1238,7 @@ variation. Each roof point takes exact Tier2 without retagging the building or a
 lower-tier-only items. A point-level tier beside usage states that exception directly,
 without splitting the building into artificial placements. See
 `mods/skelly.deadvox.buildings/templates-workshop.libsonnet`, `workshop_hall`;
-`mods/skelly.deadvox.residual/gauntlet-city-decor.libsonnet`, `gauntlet_roof_hunting`; and
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-decor.libsonnet`, `gauntlet_roof_hunting`; and
 `src/core/site.ts`, `lootSourcesOf`.
 
 Furniture has no loot table of its own; only a placed container has one, named by the place it stands in, and later by its loot unit's plan. What a container holds follows from where it stands, not from what it is, so a bunker's wardrobe and a bedroom's can hold different things, and no container rolls a table its author never chose.
@@ -2035,7 +2035,7 @@ The lowest gauntlet roofs should hurt modestly without normally opening an
 artery; the tallest should kill roughly one fall in three, not guarantee death.
 These are play-balancing goals, not medical predictions or frozen test rates.
 Calibrate against roof-to-street distances in the authored buildings rather
-than an assumed human storey. See `mods/skelly.deadvox.residual/gauntlet-city.libsonnet`,
+than an assumed human storey. See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city.libsonnet`,
 `templates`, and `src/core/cityPlan.ts`, `buildCityPlan`.
 
 Speed squared represents impact energy; removing the safe-speed energy gives
@@ -2847,7 +2847,7 @@ A grenade thrown into the horde is meant to be the playtest's climax: the one mo
 
 - **Pulling the pin is an action.** The held grenade's primary action pulls the pin, or puts it back, and says which; the item's details show the pin, or a burning fuse. Arming takes a deliberate act, so a grenade is never live by accident. See `src/core/explosive.ts`, `Fuses.togglePin`, and `src/game/play.ts`, `togglePin`.
 - **The fuse lights when the hand lets go.** An unpinned grenade lights the moment it is anywhere but a hand: thrown, dropped, or put away, because nothing holds the lever once the grip opens. A pinned grenade that is thrown remains a dud, and re-pinning before release makes it safe. There is no cooking, and a lit fuse cannot be stopped. Pin and fuse are saved on the item, including while its presentation arc is playing. The fuse counts down in simulation time inside the zombies system's step rather than in a system of its own, because the scheduler's set of systems is part of the save. See `src/core/explosive.ts`, `Fuses.advance`, and `src/game/session.ts`, `detonate`.
-- **The lever flying off is the only sign of a lit fuse.** When the fuse lights, the grenade is drawn without its lever and a short-lived copy of the lever springs away, because the lever flying off is how a real live grenade shows itself. There is no smoke, spark or glow: a real fragmentation fuse burns inside the body, and a visible one would look wrong and would also set the look of every fused throwable. Any fused throwable whose model names a lever part takes the same path, and its launch and lifetime are content. See `src/core/schema/models.ts`, `LeverModelSchema`; `mods/skelly.deadvox.residual/models-items.jsonnet`; and `src/render/leverProps.ts`, `LeverProps`.
+- **The lever flying off is the only sign of a lit fuse.** When the fuse lights, the grenade is drawn without its lever and a short-lived copy of the lever springs away, because the lever flying off is how a real live grenade shows itself. There is no smoke, spark or glow: a real fragmentation fuse burns inside the body, and a visible one would look wrong and would also set the look of every fused throwable. Any fused throwable whose model names a lever part takes the same path, and its launch and lifetime are content. See `src/core/schema/models.ts`, `LeverModelSchema`; `mods/skelly.deadvox.scenario.gauntlet.city/models-items.jsonnet`; and `src/render/leverProps.ts`, `LeverProps`.
 - **The pin shows on the model until it is pulled; the lever stays on until release.** A pulled pin leaves the model and comes back when it is put back in, because our rules let the player re-pin a held grenade, so the model has to show which state it is in. The lever stays on after the pin is out, because on a real grenade the hand keeps the lever down; the lever flies and the fuse starts when the grip opens. See `src/core/schema/models.ts`, `PinModelSchema`, and `src/render/itemLook.ts`, `itemLook`.
 - **It goes off where it is:** at its simulation position, whether the grenade is in a pile or with whoever picked it up. A render-only throw arc never moves its fuse or detonation point. See `detonationPoint` and `detonate` in `src/game/session.ts`.
 - **The blast kills most of the way to its radius.** It reaches every body whose centre it sees, falling to nothing at its radius; a wall between stops it. It kills a shambler over most of its radius and severs limbs nearly to its edge, and it strikes the limbs before the region that kills, so a close blast tears limbs off before it drops the body: the giblets are the point. Which region kills is one rule shared with individual hits, so a blast and a hit never disagree on it. Its own push falls off with its damage and throws the severed parts outward. A full-strength level throw clears the blast, while fragments extend beyond it as a separate hazard; a short throw can still put the thrower in the blast. See `src/core/explosive.ts`, `blastShare`, and `src/core/actorSystem.ts`, `lethalRegion` and `ActorSystem.detonate`.

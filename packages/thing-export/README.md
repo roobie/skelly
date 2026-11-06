@@ -65,7 +65,7 @@ is smaller than a few item voxels. The item's own definition names it, beside a 
 reason, because that definition is where the item's look is authored; a recipe holds no
 list of exceptions. The recipe compiles the resolved grain into each row, so the exporter
 and the contract tests read one explicit value. See `tools/jsonnet/lib/voxel-grains.libsonnet`,
-`of`, and the recipes `packages/deadvox/mods/skelly.deadvox.residual/exports/things.jsonnet` and
+`of`, and the recipes `packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/exports/things.jsonnet` and
 `packages/gun-authoring-tool/exports/deadvox.jsonnet`.
 
 A part asks for the finest grain by carrying a tag in its definition, so the choice sits

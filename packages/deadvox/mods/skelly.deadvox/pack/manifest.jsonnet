@@ -19,7 +19,7 @@ manifest(
     'skelly.deadvox.labs.underground', 'skelly.deadvox.residual',
     'skelly.deadvox.scenario.benchmark-city', 'skelly.deadvox.scenario.cabins', 'skelly.deadvox.scenario.city',
     'skelly.deadvox.scenario.crisis-hq',
-    'skelly.deadvox.scenario.forest', 'skelly.deadvox.scenario.hunting-cabins', 'skelly.deadvox.scenario.lock-test',
+    'skelly.deadvox.scenario.forest', 'skelly.deadvox.scenario.gauntlet.city', 'skelly.deadvox.scenario.hunting-cabins', 'skelly.deadvox.scenario.lock-test',
     'skelly.deadvox.scenario.lone-house', 'skelly.deadvox.scenario.playtest', 'skelly.deadvox.scenario.rural-medical-post',
     'skelly.deadvox.scenario.rural-police', 'skelly.deadvox.scenario.rural-substation',
     'skelly.deadvox.scenario.stairs', 'skelly.deadvox.scenario.tutorial', 'skelly.deadvox.scenario.voice-size',

@@ -1,4 +1,4 @@
-local kit = import 'authored-site-kit.libsonnet';
+local kit = import 'packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/authored-site-kit.libsonnet';
 local context = { usage: ['Residential'], tier: 'Tier1' };
 local palette = {
   '.': 'air', G: { ground: true }, s: 'stone', b: 'brick', p: 'planks', t: 'tiles',
