@@ -1,0 +1,11 @@
+{
+  "id": "santa_jacket_short",
+  "file": "assets/models/santa_jacket_short.glb",
+  "parts": {
+    "santa_jacket_short": {
+      "node": "santa_jacket_short:compound",
+      "massKg": 0.93,
+      "centreOfMass": [-9.093144392810922e-20, 0.025865886168136964, -0.001865666309396213]
+    }
+  }
+}

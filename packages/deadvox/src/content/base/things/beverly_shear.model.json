@@ -1,0 +1,11 @@
+{
+  "id": "beverly_shear",
+  "file": "assets/models/beverly_shear.glb",
+  "parts": {
+    "beverly_shear": {
+      "node": "beverly_shear:compound",
+      "massKg": 39,
+      "centreOfMass": [0.0211617293835068, 0.16463170536429142, 0.006466773418734988]
+    }
+  }
+}

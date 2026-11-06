@@ -1,0 +1,11 @@
+{
+  "id": "hd_compressor",
+  "file": "assets/models/hd_compressor.glb",
+  "parts": {
+    "hd_compressor": {
+      "node": "hd_compressor:compound",
+      "massKg": 41,
+      "centreOfMass": [0.00001387241033129492, 0.187483122335363, 0.014510828042086607]
+    }
+  }
+}

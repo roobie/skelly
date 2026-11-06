@@ -1,0 +1,11 @@
+{
+  "id": "molle_medium_rucksack",
+  "file": "assets/models/molle_medium_rucksack.glb",
+  "parts": {
+    "molle_medium_rucksack": {
+      "node": "molle_medium_rucksack:compound",
+      "massKg": 1,
+      "centreOfMass": [-0.00014878818299153906, 0.2682417897605049, 0.004889574071418326]
+    }
+  }
+}

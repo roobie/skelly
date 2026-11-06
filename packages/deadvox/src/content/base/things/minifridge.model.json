@@ -1,0 +1,11 @@
+{
+  "id": "minifridge",
+  "file": "assets/models/minifridge.glb",
+  "parts": {
+    "minifridge": {
+      "node": "minifridge:compound",
+      "massKg": 25,
+      "centreOfMass": [0.00018754511911446225, 0.42696238068500864, -0.002322782144862434]
+    }
+  }
+}

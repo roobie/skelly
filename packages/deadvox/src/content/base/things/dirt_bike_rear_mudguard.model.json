@@ -1,0 +1,17 @@
+{
+  "id": "dirt_bike_rear_mudguard",
+  "file": "assets/models/dirt_bike_rear_mudguard.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-0.7902573529411765, 0.8799632352941177, 0],
+      "collision": [
+        { "min": [-0.84375, 0.8125, -0.09375], "max": [-0.375, 0.875, 0.09375] },
+        { "min": [-1.125, 0.84375, -0.125], "max": [-0.84375, 0.96875, 0.125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

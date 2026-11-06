@@ -1,0 +1,11 @@
+{
+  "id": "petri_dish",
+  "file": "assets/models/petri_dish.glb",
+  "parts": {
+    "petri_dish": {
+      "node": "petri_dish:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0.00014229060913705584, 0.00900444162436548, 0]
+    }
+  }
+}

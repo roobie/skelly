@@ -1,0 +1,17 @@
+{
+  "id": "wheel_295_80r22_5",
+  "file": "assets/models/wheel_295_80r22_5.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 85,
+      "centreOfMass": [0, 0, 0],
+      "collision": [
+        { "min": [-0.53125, -0.53125, -0.15625], "max": [0.53125, 0.53125, 0.15625] },
+        { "min": [-0.28125, -0.28125, -0.09375], "max": [0.28125, 0.28125, 0.09375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": { "hub": [0, 0, 0] }
+}

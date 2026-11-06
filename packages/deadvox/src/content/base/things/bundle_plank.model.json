@@ -1,0 +1,11 @@
+{
+  "id": "bundle_plank",
+  "file": "assets/models/bundle_plank.glb",
+  "parts": {
+    "bundle_plank": {
+      "node": "bundle_plank:compound",
+      "massKg": 21,
+      "centreOfMass": [-0.0009458495802433371, 0.09359202769307777, -0.0019824887563774213]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "bottle_plastic",
+  "file": "assets/models/bottle_plastic.glb",
+  "parts": {
+    "bottle_plastic": { "node": "bottle_plastic:compound", "massKg": 0.52, "centreOfMass": [0, 0.07744951848400125, 0] }
+  },
+  "grip": { "at": [0, 0.084, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

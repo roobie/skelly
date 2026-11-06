@@ -1,0 +1,11 @@
+{
+  "id": "gambeson_sleeve",
+  "file": "assets/models/gambeson_sleeve.glb",
+  "parts": {
+    "gambeson_sleeve": {
+      "node": "gambeson_sleeve:compound",
+      "massKg": 1,
+      "centreOfMass": [-0.004523278405411239, 0.06223199251637043, 1.674063087576736e-20]
+    }
+  }
+}

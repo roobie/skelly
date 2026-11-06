@@ -1,0 +1,123 @@
+[
+  {
+    "id": "trousers_ninja",
+    "model": "trousers_ninja",
+    "name": "Black tie trousers",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "legs", "encumbrance": 5, "warmth": 8, "wearPerDamage": 0.0012 },
+    "description": "Loose black cotton trousers tied at the waist and gathered at each calf with a cloth tie. No pockets.",
+    "reference": "trousers_ninja",
+    "variants": [],
+    "notes": "Folded in three layers, 260 mm by 340 mm and 40 mm tall, in `cloth-charcoal` so the folds read against the black ties: a tied waist with its two ends trailing over the seat, and the calf ties hanging off the folded hems at +z. No pockets, so no container. Slot `legs`. Box/volume x3.4: folded cloth stands looser than the packed reference volume. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "winter_pants_army",
+    "model": "winter_pants_army",
+    "name": "Army winter trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "slot": "legs", "encumbrance": 11, "warmth": 50, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left cargo" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right cargo" }
+      ]
+    },
+    "description": "Thick quilted nylon field trousers for cold weather, with padded knees and bellows cargo pockets on the thighs.",
+    "reference": "winter_pants_army",
+    "variants": [],
+    "notes": "Folded in four layers, 290 mm by 360 mm and 90 mm tall, ranger green with dark olive trim: quilted lines across the seat, belt loops and a button, a flapped cargo pocket with a press stud and padded knee panels by the fold. Pockets follow the army trousers. CHECK VOLUME (x4.5): padded cloth folds bulky and the cargo pocket stands proud of the stack. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "zubon_gi",
+    "model": "zubon_gi",
+    "name": "Martial arts trousers",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 5, "wearPerDamage": 0.0012 },
+    "description": "Light white cotton trousers with a drawcord waist, worn for martial arts training.",
+    "reference": "zubon_gi",
+    "variants": [],
+    "notes": "Folded in two thin layers, 250 mm by 330 mm and 24 mm tall: bright white cloth with a cream waistband and drawcord ends trailing over the seat. No pockets, so no container. Slot `legs`. Box/volume x3.5: folded cloth stands looser than the packed reference volume. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "balclava",
+    "model": "balclava",
+    "name": "Balaclava",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential", "Military"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "hood", "encumbrance": 5, "warmth": 15, "wearPerDamage": 0.0015 },
+    "description": "A knitted hood that covers the head, neck and mouth, leaving one opening for the eyes and nose.",
+    "reference": "balclava",
+    "variants": [],
+    "notes": "Laid flat on its back, 220 mm across the head and 322 mm from neck hem to crown: two layers of olive knit, an oval face opening drawn as a dark patch inside a dark olive rib, a crease where the narrower neck tube meets the head, and the ribbed hem turned back. CHECK VOLUME (x5.1): the model lies as two loose layers of knit, while the reference counts the knit packed tight. Slot `hood`, as balaclavas take under a helmet; it covers the mouth too. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "balaclava_cut_resistant",
+    "model": "balclava",
+    "name": "Cut-resistant balaclava",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Industrial", "Police"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "hood",
+      "encumbrance": 5,
+      "warmth": 15,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0, "blunt": 0, "cut": 0.5, "pierce": 0.1 }
+    },
+    "finishes": { "knit": "cloth-charcoal", "rib": "cloth-black" },
+    "description": "A balaclava knitted from aramid yarn, which keeps out the cold and resists blades across the head and neck.",
+    "reference": "balaclava_cut_resistant",
+    "variants": [],
+    "notes": "Shares the balaclava's model in charcoal with black ribs, as cut-resistant hoods are dyed dark. CHECK VOLUME (x5.1) as for the balaclava. Protection against cuts only: aramid knit stops a slash but not a stab or a blow. Slot `hood`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bandana",
+    "model": "bandana",
+    "name": "Bandana",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "face", "encumbrance": 1, "warmth": 5, "wearPerDamage": 0.0015 },
+    "description": "A square of printed cotton, tied over the nose and mouth against dust and cold.",
+    "reference": "bandana",
+    "variants": [],
+    "notes": "Folded corner to corner twice and laid flat, 390 mm along the folded edge and 195 mm deep, 8 mm thick: red cloth with a cream border inset from the hemmed edges and cream dots standing in for the print, which no finish draws. Slot `face`, as masks and bandanas over the face take. The reference also lists it as a tool; it brings no crafting quality, so none is given. The iso tile foreshortens one edge of the flat triangle; the top tile shows its shape. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bondage_mask",
+    "model": "bondage_mask",
+    "name": "Leather zip mask",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "hood", "encumbrance": 30, "warmth": 10, "wearPerDamage": 0.001 },
+    "description": "A tight black leather hood laced up the back, with zips over the eyes and mouth. The zips are open.",
+    "reference": "bondage_mask",
+    "variants": [],
+    "notes": "Standing upright as on a head form, 196 mm across and 268 mm tall, in `leather-charcoal` so its details read: two eye slits and a mouth slit gaping open at +z, each edged with steel zip teeth and a pull, a seam down the nose with two nostril holes, and black lacing through steel eyelets up the back of the head. Open and zipped are distinct states, so the zipped mask has its own model. CHECK VOLUME (x11): the model stands round a head-sized space, while the reference counts the leather packed flat. Slot `hood`, as balaclavas take: it covers the whole head. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bondage_mask_zipped",
+    "model": "bondage_mask_zipped",
+    "name": "Leather zip mask (zipped)",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "hood", "encumbrance": 30, "warmth": 10, "wearPerDamage": 0.001 },
+    "description": "A tight black leather hood laced up the back, its eye and mouth zips drawn shut. Only the nose holes are open.",
+    "reference": "bondage_mask_zipped",
+    "variants": [],
+    "notes": "The open mask's shape with each eye and mouth slit closed: a narrow black leather seam with a single row of steel zip teeth and the pull at its end, 196 mm across and 268 mm tall. Its own model because zipped is a distinct state. CHECK VOLUME (x11) as for the open mask. Slot `hood`. The worn look is pending: no worn model is authored."
+  }
+]

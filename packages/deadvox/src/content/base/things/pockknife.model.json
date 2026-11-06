@@ -1,0 +1,14 @@
+{
+  "id": "pockknife",
+  "file": "assets/models/pockknife.glb",
+  "parts": {
+    "pockknife": {
+      "node": "pockknife:compound",
+      "massKg": 0.039,
+      "centreOfMass": [-0.02274844333748444, 0.0000311332503113325, 0.0002191780821917808]
+    }
+  },
+  "grip": { "at": [-0.036000000000000004, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

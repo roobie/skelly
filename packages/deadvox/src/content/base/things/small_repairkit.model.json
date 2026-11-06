@@ -1,0 +1,11 @@
+{
+  "id": "small_repairkit",
+  "file": "assets/models/small_repairkit.glb",
+  "parts": {
+    "small_repairkit": {
+      "node": "small_repairkit:compound",
+      "massKg": 2.5,
+      "centreOfMass": [0.0003487324200081926, 0.0705032087752037, -0.03760598971371354]
+    }
+  }
+}

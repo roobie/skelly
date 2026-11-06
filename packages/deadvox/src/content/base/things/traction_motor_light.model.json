@@ -1,0 +1,18 @@
+{
+  "id": "traction_motor_light",
+  "file": "assets/models/traction_motor_light.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 25,
+      "centreOfMass": [-0.006965361445783133, 0.088855421686747, 0],
+      "collision": [
+        { "min": [-0.09375, 0, -0.125], "max": [0.09375, 0.1875, 0.125] },
+        { "min": [-0.125, 0, -0.0625], "max": [0, 0.125, 0.0625] },
+        { "min": [0.09375, 0.09375, -0.03125], "max": [0.1875, 0.15625, 0.03125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

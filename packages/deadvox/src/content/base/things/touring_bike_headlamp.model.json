@@ -1,0 +1,17 @@
+{
+  "id": "touring_bike_headlamp",
+  "file": "assets/models/touring_bike_headlamp.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0.6633522727272727, 0.8892045454545455, 0],
+      "collision": [
+        { "min": [0.5625, 0.8125, -0.125], "max": [0.75, 0.96875, 0.125] },
+        { "min": [0.71875, 0.8125, -0.09375], "max": [0.75, 0.9375, 0.09375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

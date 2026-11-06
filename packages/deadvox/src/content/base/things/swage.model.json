@@ -1,0 +1,11 @@
+{
+  "id": "swage",
+  "file": "assets/models/swage.glb",
+  "parts": {
+    "swage": {
+      "node": "swage:compound",
+      "massKg": 3.5,
+      "centreOfMass": [0.01893216774732756, 0.03603150317458177, 0.010233328390601622]
+    }
+  }
+}

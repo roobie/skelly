@@ -1,0 +1,11 @@
+{
+  "id": "postman_shorts",
+  "file": "assets/models/postman_shorts.glb",
+  "parts": {
+    "postman_shorts": {
+      "node": "postman_shorts:compound",
+      "massKg": 0.43,
+      "centreOfMass": [0.000010431627485070686, 0.01660926751833093, 0.002358228135157608]
+    }
+  }
+}

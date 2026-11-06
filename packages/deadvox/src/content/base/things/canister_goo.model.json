@@ -1,0 +1,11 @@
+{
+  "id": "canister_goo",
+  "file": "assets/models/canister_goo.glb",
+  "parts": {
+    "canister_goo": {
+      "node": "canister_goo:compound",
+      "massKg": 0.36,
+      "centreOfMass": [-0.000020287193187510454, 0.05202212389380538, 0.00020629487393554856]
+    }
+  }
+}

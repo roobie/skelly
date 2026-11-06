@@ -1,0 +1,11 @@
+{
+  "id": "hk_briefcase",
+  "file": "assets/models/hk_briefcase.glb",
+  "parts": {
+    "hk_briefcase": {
+      "node": "hk_briefcase:compound",
+      "massKg": 3.4,
+      "centreOfMass": [0.00009952495178966186, 0.19018962210411341, 0.001435920752133536]
+    }
+  }
+}

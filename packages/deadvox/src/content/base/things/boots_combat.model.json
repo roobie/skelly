@@ -1,0 +1,11 @@
+{
+  "id": "boots_combat",
+  "file": "assets/models/boots_combat.glb",
+  "parts": {
+    "boots_combat": {
+      "node": "boots_combat:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-1.4380312992229503e-17, 0.0748075396825397, -0.0361278344671202]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "condensor_coil",
+  "file": "assets/models/condensor_coil.glb",
+  "parts": {
+    "condensor_coil": {
+      "node": "condensor_coil:compound",
+      "massKg": 13,
+      "centreOfMass": [0.029838407796024636, 0.11061976333496615, 0.00046258819081010946]
+    }
+  }
+}

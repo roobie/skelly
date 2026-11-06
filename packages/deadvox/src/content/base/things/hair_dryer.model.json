@@ -1,0 +1,14 @@
+{
+  "id": "hair_dryer",
+  "file": "assets/models/hair_dryer.glb",
+  "parts": {
+    "hair_dryer": {
+      "node": "hair_dryer:compound",
+      "massKg": 0.5,
+      "centreOfMass": [0.02439677868979402, 0.172831655567601, 0.000019513706055443706]
+    }
+  },
+  "grip": { "at": [-0.008, 0.08199999999999999, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

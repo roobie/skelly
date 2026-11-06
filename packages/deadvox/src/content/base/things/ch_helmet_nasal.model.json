@@ -1,0 +1,11 @@
+{
+  "id": "ch_helmet_nasal",
+  "file": "assets/models/ch_helmet_nasal.glb",
+  "parts": {
+    "ch_helmet_nasal": {
+      "node": "ch_helmet_nasal:compound",
+      "massKg": 1.6,
+      "centreOfMass": [0, 0.11041356601909764, 0.0022660520250246926]
+    }
+  }
+}

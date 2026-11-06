@@ -1,0 +1,11 @@
+{
+  "id": "scarf_fur_long",
+  "file": "assets/models/scarf_fur_long.glb",
+  "parts": {
+    "scarf_fur_long": {
+      "node": "scarf_fur_long:compound",
+      "massKg": 0.55,
+      "centreOfMass": [0.07891722688104977, 0.04172746244060958, 0.000004974549710844658]
+    }
+  }
+}

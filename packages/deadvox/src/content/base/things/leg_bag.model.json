@@ -1,0 +1,11 @@
+{
+  "id": "leg_bag",
+  "file": "assets/models/leg_bag.glb",
+  "parts": {
+    "leg_bag": {
+      "node": "leg_bag:compound",
+      "massKg": 0.21,
+      "centreOfMass": [0.00009987460352585384, 0.12424567873915075, -0.001842049617663692]
+    }
+  }
+}

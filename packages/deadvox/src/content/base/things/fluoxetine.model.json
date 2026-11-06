@@ -1,0 +1,10 @@
+{
+  "id": "fluoxetine",
+  "file": "assets/models/fluoxetine.glb",
+  "parts": {
+    "fluoxetine": { "node": "fluoxetine:vessel", "massKg": 0.039, "centreOfMass": [0, 0.03428796095444686, 0] }
+  },
+  "grip": { "at": [0, 0.033, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

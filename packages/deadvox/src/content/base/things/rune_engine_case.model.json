@@ -1,0 +1,14 @@
+{
+  "id": "rune_engine_case",
+  "file": "assets/models/rune_engine_case.glb",
+  "parts": {
+    "rune_engine_case": {
+      "node": "rune_engine_case:compound",
+      "massKg": 20,
+      "centreOfMass": [0.000765565782349757, 0.13108770979967518, 0.0009797870420501723]
+    }
+  },
+  "grip": { "at": [0.10800000000000001, 0.29600000000000004, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

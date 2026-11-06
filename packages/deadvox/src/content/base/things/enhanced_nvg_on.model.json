@@ -1,0 +1,11 @@
+{
+  "id": "enhanced_nvg_on",
+  "file": "assets/models/enhanced_nvg_on.glb",
+  "parts": {
+    "enhanced_nvg_on": {
+      "node": "enhanced_nvg_on:compound",
+      "massKg": 0.91,
+      "centreOfMass": [0.0007523111252789284, 0.04314249282754224, 0.007951546063117626]
+    }
+  }
+}

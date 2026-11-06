@@ -1,0 +1,11 @@
+{
+  "id": "mc_shoulder_guards",
+  "file": "assets/models/mc_shoulder_guards.glb",
+  "parts": {
+    "mc_shoulder_guards": {
+      "node": "mc_shoulder_guards:compound",
+      "massKg": 1.4,
+      "centreOfMass": [-2.2981815465275317e-17, 0.035845847440748854, 0.003046803425612429]
+    }
+  }
+}

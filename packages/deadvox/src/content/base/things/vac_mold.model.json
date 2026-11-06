@@ -1,0 +1,11 @@
+{
+  "id": "vac_mold",
+  "file": "assets/models/vac_mold.glb",
+  "parts": {
+    "vac_mold": {
+      "node": "vac_mold:compound",
+      "massKg": 8,
+      "centreOfMass": [0.000021563616482943626, 0.12049390344687297, -0.006634575529872472]
+    }
+  }
+}

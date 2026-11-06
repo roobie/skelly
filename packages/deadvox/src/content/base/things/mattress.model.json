@@ -1,0 +1,11 @@
+{
+  "id": "mattress",
+  "file": "assets/models/mattress.glb",
+  "parts": {
+    "mattress": {
+      "node": "mattress:compound",
+      "massKg": 18,
+      "centreOfMass": [-3.0199836964813387e-21, 0.09139284644675477, 0.0007089376631155603]
+    }
+  }
+}

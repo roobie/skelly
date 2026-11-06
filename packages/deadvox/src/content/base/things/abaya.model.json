@@ -1,0 +1,11 @@
+{
+  "id": "abaya",
+  "file": "assets/models/abaya.glb",
+  "parts": {
+    "abaya": {
+      "node": "abaya:compound",
+      "massKg": 0.61,
+      "centreOfMass": [-0.0016660274922028421, 0.018358831003811946, 0.003454915097608872]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "petpack",
+  "file": "assets/models/petpack.glb",
+  "parts": {
+    "petpack": {
+      "node": "petpack:compound",
+      "massKg": 0.77,
+      "centreOfMass": [4.807079523540698e-21, 0.20859468663464575, -0.006094179589773093]
+    }
+  }
+}

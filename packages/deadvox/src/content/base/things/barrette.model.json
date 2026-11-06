@@ -1,0 +1,11 @@
+{
+  "id": "barrette",
+  "file": "assets/models/barrette.glb",
+  "parts": {
+    "barrette": {
+      "node": "barrette:compound",
+      "massKg": 0.01,
+      "centreOfMass": [0, 0.0041489361702127655, 0.000005319148936170234]
+    }
+  }
+}

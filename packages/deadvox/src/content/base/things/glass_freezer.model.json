@@ -1,0 +1,11 @@
+{
+  "id": "glass_freezer",
+  "file": "assets/models/glass_freezer.glb",
+  "parts": {
+    "glass_freezer": {
+      "node": "glass_freezer:compound",
+      "massKg": 160,
+      "centreOfMass": [-0.00055862385747525, 0.9044017722633402, -0.003329801748202993]
+    }
+  }
+}

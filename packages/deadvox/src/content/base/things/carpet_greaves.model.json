@@ -1,0 +1,11 @@
+{
+  "id": "carpet_greaves",
+  "file": "assets/models/carpet_greaves.glb",
+  "parts": {
+    "carpet_greaves": {
+      "node": "carpet_greaves:compound",
+      "massKg": 0.93,
+      "centreOfMass": [1.7519074308561253e-19, 0.05713317519484926, -0.0044252795662487205]
+    }
+  }
+}

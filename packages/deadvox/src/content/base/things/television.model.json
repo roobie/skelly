@@ -1,0 +1,11 @@
+{
+  "id": "television",
+  "file": "assets/models/television.glb",
+  "parts": {
+    "television": {
+      "node": "television:compound",
+      "massKg": 11,
+      "centreOfMass": [0.0000038026731106053377, 0.33300151420070495, -0.003372902363714133]
+    }
+  }
+}

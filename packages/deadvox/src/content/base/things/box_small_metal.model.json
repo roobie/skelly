@@ -1,0 +1,14 @@
+{
+  "id": "box_small_metal",
+  "file": "assets/models/box_small_metal.glb",
+  "parts": {
+    "box_small_metal": {
+      "node": "box_small_metal:compound",
+      "massKg": 1.4,
+      "centreOfMass": [0, 0.04741318796406946, -0.0002468815876042269]
+    }
+  },
+  "grip": { "at": [0, 0.035, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

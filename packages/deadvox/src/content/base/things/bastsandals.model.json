@@ -1,0 +1,11 @@
+{
+  "id": "bastsandals",
+  "file": "assets/models/bastsandals.glb",
+  "parts": {
+    "bastsandals": {
+      "node": "bastsandals:compound",
+      "massKg": 0.076,
+      "centreOfMass": [-3.819225606247145e-18, 0.009187379761446712, -0.009989996152366296]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "ring_signet",
+  "file": "assets/models/ring_signet.glb",
+  "parts": {
+    "ring_signet": {
+      "node": "ring_signet:compound",
+      "massKg": 0.023,
+      "centreOfMass": [-7.494991858264789e-20, 0.016814432989690726, 0]
+    }
+  }
+}

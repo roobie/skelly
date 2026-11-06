@@ -1,0 +1,11 @@
+{
+  "id": "wash_kit",
+  "file": "assets/models/wash_kit.glb",
+  "parts": {
+    "wash_kit": {
+      "node": "wash_kit:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0, 0.21165906473162863, 0.004360055286800275]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "hacksaw",
+  "file": "assets/models/hacksaw.glb",
+  "parts": {
+    "hacksaw": {
+      "node": "hacksaw:compound",
+      "massKg": 0.91,
+      "centreOfMass": [-0.053233948746211075, 0.00967484155414715, 0.02112923670432626]
+    }
+  },
+  "grip": { "at": [-0.164, 0.012, -0.03], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

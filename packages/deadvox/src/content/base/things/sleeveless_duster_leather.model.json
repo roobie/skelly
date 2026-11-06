@@ -1,0 +1,11 @@
+{
+  "id": "sleeveless_duster_leather",
+  "file": "assets/models/sleeveless_duster_leather.glb",
+  "parts": {
+    "sleeveless_duster_leather": {
+      "node": "sleeveless_duster_leather:compound",
+      "massKg": 2.3,
+      "centreOfMass": [-4.8482291272926054e-20, 0.0294852738622044, 0.0032207015795797577]
+    }
+  }
+}

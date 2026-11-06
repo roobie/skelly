@@ -1,0 +1,14 @@
+{
+  "id": "heatpack_used",
+  "file": "assets/models/heatpack_used.glb",
+  "parts": {
+    "heatpack_used": {
+      "node": "heatpack_used:compound",
+      "massKg": 0.065,
+      "centreOfMass": [0.00008464867617107938, 0.005659368635437883, 0.00020213849287169038]
+    }
+  },
+  "grip": { "at": [0, 0.005, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

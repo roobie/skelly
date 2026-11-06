@@ -1,0 +1,11 @@
+{
+  "id": "police_belt",
+  "file": "assets/models/police_belt.glb",
+  "parts": {
+    "police_belt": {
+      "node": "police_belt:compound",
+      "massKg": 0.45,
+      "centreOfMass": [0.012121248378864578, 0.013243651424507383, 0.01261576371166799]
+    }
+  }
+}

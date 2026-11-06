@@ -1,0 +1,11 @@
+{
+  "id": "ankle_wallet_pouch",
+  "file": "assets/models/ankle_wallet_pouch.glb",
+  "parts": {
+    "ankle_wallet_pouch": {
+      "node": "ankle_wallet_pouch:compound",
+      "massKg": 0.052,
+      "centreOfMass": [0.005617171242532054, 0.0080004698932671, 0.00014445861582869037]
+    }
+  }
+}

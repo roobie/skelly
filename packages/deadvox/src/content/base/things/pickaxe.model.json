@@ -1,0 +1,14 @@
+{
+  "id": "pickaxe",
+  "file": "assets/models/pickaxe.glb",
+  "parts": {
+    "pickaxe": {
+      "node": "pickaxe:compound",
+      "massKg": 6.6,
+      "centreOfMass": [0.24373038930854155, 0.02686112725159791, 0.0020801859384079]
+    }
+  },
+  "grip": { "at": [0.02400000000000002, 0.028, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

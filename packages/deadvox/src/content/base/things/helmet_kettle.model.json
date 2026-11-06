@@ -1,0 +1,11 @@
+{
+  "id": "helmet_kettle",
+  "file": "assets/models/helmet_kettle.glb",
+  "parts": {
+    "helmet_kettle": {
+      "node": "helmet_kettle:compound",
+      "massKg": 2.4,
+      "centreOfMass": [-2.2798901166239308e-20, 0.05385323690245199, -3.28304176793846e-19]
+    }
+  }
+}

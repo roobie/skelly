@@ -1,0 +1,11 @@
+{
+  "id": "jacket_leather",
+  "file": "assets/models/jacket_leather.glb",
+  "parts": {
+    "jacket_leather": {
+      "node": "jacket_leather:compound",
+      "massKg": 2.2,
+      "centreOfMass": [0.00008187608028776527, 0.03705872093928586, -0.0030955947616748917]
+    }
+  }
+}

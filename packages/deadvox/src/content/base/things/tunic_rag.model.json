@@ -1,0 +1,11 @@
+{
+  "id": "tunic_rag",
+  "file": "assets/models/tunic_rag.glb",
+  "parts": {
+    "tunic_rag": {
+      "node": "tunic_rag:compound",
+      "massKg": 0.42,
+      "centreOfMass": [0.0002136438337004792, 0.01251099688800308, -0.000372670373089968]
+    }
+  }
+}

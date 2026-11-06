@@ -1,0 +1,11 @@
+{
+  "id": "kiln",
+  "file": "assets/models/kiln.glb",
+  "parts": {
+    "kiln": {
+      "node": "kiln:compound",
+      "massKg": 13,
+      "centreOfMass": [0.0004953752162860743, 0.1740398302058952, 0.003703763606568382]
+    }
+  }
+}

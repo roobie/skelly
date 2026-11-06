@@ -1,0 +1,14 @@
+{
+  "id": "birchbark_funnel",
+  "file": "assets/models/birchbark_funnel.glb",
+  "parts": {
+    "birchbark_funnel": {
+      "node": "birchbark_funnel:compound",
+      "massKg": 0.01,
+      "centreOfMass": [0.002587197672304055, 0.060952354973631565, 0]
+    }
+  },
+  "grip": { "at": [0, 0.05, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

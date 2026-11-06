@@ -3437,6 +3437,9 @@ describe('content', () => {
       'figures[4].armRig.fore.part',
       'figures[5].armRig.hand.pivot',
       'figures[5].armRig.hand.pivot',
+      // The glove frames hang from the hand pivot, so they report it too.
+      'figures[5].attachmentFrames.left_glove.pivot',
+      'figures[5].attachmentFrames.right_glove.pivot',
       'figures[6].armRig.shoulderFromEye',
       'figures[7].legRig.shin.part',
       'figures[7].legRig.shin.part',

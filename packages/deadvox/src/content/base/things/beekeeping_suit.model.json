@@ -1,0 +1,11 @@
+{
+  "id": "beekeeping_suit",
+  "file": "assets/models/beekeeping_suit.glb",
+  "parts": {
+    "beekeeping_suit": {
+      "node": "beekeeping_suit:compound",
+      "massKg": 0.91,
+      "centreOfMass": [0.00017869494268465478, 0.04322995305984035, -0.00039745354670176543]
+    }
+  }
+}

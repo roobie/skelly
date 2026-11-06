@@ -1,0 +1,14 @@
+{
+  "id": "fire_ax",
+  "file": "assets/models/fire_ax.glb",
+  "parts": {
+    "fire_ax": {
+      "node": "fire_ax:compound",
+      "massKg": 5,
+      "centreOfMass": [0.6062444167704442, 0, 0.006523038605230384]
+    }
+  },
+  "grip": { "at": [0.15, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

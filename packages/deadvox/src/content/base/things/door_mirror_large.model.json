@@ -1,0 +1,18 @@
+{
+  "id": "door_mirror_large",
+  "file": "assets/models/door_mirror_large.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 4,
+      "centreOfMass": [-0.010190217391304348, 0.21875, 0.22305253623188406],
+      "collision": [
+        { "min": [-0.03125, 0.1875, 0], "max": [0.03125, 0.25, 0.15625] },
+        { "min": [-0.03125, 0, 0.125], "max": [0.03125, 0.4375, 0.34375] },
+        { "min": [-0.0625, 0.03125, 0.15625], "max": [-0.03125, 0.40625, 0.3125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "crossbow_trap",
+  "file": "assets/models/crossbow_trap.glb",
+  "parts": {
+    "crossbow_trap": {
+      "node": "crossbow_trap:compound",
+      "massKg": 1.3,
+      "centreOfMass": [0.00014666294897467753, 0.024168259359712063, -0.038739347545055924]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "ammo_satchel_leather",
+  "file": "assets/models/ammo_satchel_leather.glb",
+  "parts": {
+    "ammo_satchel_leather": {
+      "node": "ammo_satchel_leather:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0, 0.07997622499275155, 0.0008889533198028417]
+    }
+  }
+}

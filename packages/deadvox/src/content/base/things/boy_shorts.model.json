@@ -1,0 +1,11 @@
+{
+  "id": "boy_shorts",
+  "file": "assets/models/boy_shorts.glb",
+  "parts": {
+    "boy_shorts": {
+      "node": "boy_shorts:compound",
+      "massKg": 0.044,
+      "centreOfMass": [6.122350799134231e-19, 0.002275149571331647, -0.00013575525812619825]
+    }
+  }
+}

@@ -2,13 +2,13 @@
   "id": "jerry_can",
   "file": "assets/models/jerry_can.glb",
   "parts": {
-    "package": {
-      "node": "package:carton",
-      "massKg": 2.5,
-      "centreOfMass": [0, 0.21406402196050647, -0.00009961923315328076]
+    "jerry_can": {
+      "node": "jerry_can:compound",
+      "massKg": 4,
+      "centreOfMass": [-0.00027423897337937455, 0.21481420419758526, 0.00009413954399627754]
     }
   },
-  "grip": { "at": [0, 0.475, 0], "turn": [0, 0, -90] },
+  "grip": { "at": [0.04, 0.46, 0], "turn": [0, 0, -90] },
   "hold": "upright",
   "roll": 0
 }

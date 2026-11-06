@@ -1,0 +1,10 @@
+{
+  "id": "shot_glass",
+  "file": "assets/models/shot_glass.glb",
+  "parts": {
+    "shot_glass": { "node": "shot_glass:compound", "massKg": 0.071, "centreOfMass": [0, 0.023084720121028746, 0] }
+  },
+  "grip": { "at": [0, 0.029, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

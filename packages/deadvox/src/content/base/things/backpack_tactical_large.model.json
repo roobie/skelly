@@ -1,0 +1,11 @@
+{
+  "id": "backpack_tactical_large",
+  "file": "assets/models/backpack_tactical_large.glb",
+  "parts": {
+    "backpack_tactical_large": {
+      "node": "backpack_tactical_large:compound",
+      "massKg": 2.3,
+      "centreOfMass": [0.000003244084951771294, 0.2819877589861153, -0.00024186455584872756]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "sheet_lycra",
+  "file": "assets/models/sheet_lycra.glb",
+  "parts": {
+    "sheet_lycra": {
+      "node": "sheet_lycra:compound",
+      "massKg": 0.032,
+      "centreOfMass": [0, 0.003958904109589041, -0.0009480519480519479]
+    }
+  }
+}

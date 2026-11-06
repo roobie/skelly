@@ -1,0 +1,10 @@
+{
+  "id": "soaking_long_pole",
+  "file": "assets/models/soaking_long_pole.glb",
+  "parts": {
+    "soaking_long_pole": { "node": "soaking_long_pole:compound", "massKg": 2.6, "centreOfMass": [0, 0.02, 0] }
+  },
+  "grip": { "at": [0, 0.02, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

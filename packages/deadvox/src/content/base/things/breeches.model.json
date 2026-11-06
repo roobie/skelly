@@ -1,0 +1,11 @@
+{
+  "id": "breeches",
+  "file": "assets/models/breeches.glb",
+  "parts": {
+    "breeches": {
+      "node": "breeches:compound",
+      "massKg": 0.69,
+      "centreOfMass": [0.000007925575075953437, 0.023423282320306438, -0.0019498046911856273]
+    }
+  }
+}

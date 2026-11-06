@@ -1,0 +1,14 @@
+{
+  "id": "needle_bone",
+  "file": "assets/models/needle_bone.glb",
+  "parts": {
+    "needle_bone": {
+      "node": "needle_bone:compound",
+      "massKg": 0.004,
+      "centreOfMass": [0.03238053097345133, 0.003893805309734514, 0.000008849557522123863]
+    }
+  },
+  "grip": { "at": [0.046, 0.004, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

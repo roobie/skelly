@@ -1,0 +1,11 @@
+{
+  "id": "plastic_bucket",
+  "file": "assets/models/plastic_bucket.glb",
+  "parts": {
+    "plastic_bucket": {
+      "node": "plastic_bucket:compound",
+      "massKg": 0.31,
+      "centreOfMass": [-3.846814921420393e-20, 0.08587592428963395, 0]
+    }
+  }
+}

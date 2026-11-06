@@ -1,0 +1,11 @@
+{
+  "id": "ammunition_can_carlgustav",
+  "file": "assets/models/ammunition_can_carlgustav.glb",
+  "parts": {
+    "ammunition_can_carlgustav": {
+      "node": "ammunition_can_carlgustav:compound",
+      "massKg": 2.5,
+      "centreOfMass": [-0.008601384197083301, 0.06451305924033947, -2.896256678837725e-18]
+    }
+  }
+}

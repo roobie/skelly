@@ -1,0 +1,11 @@
+{
+  "id": "ch_helmet_turban",
+  "file": "assets/models/ch_helmet_turban.glb",
+  "parts": {
+    "ch_helmet_turban": {
+      "node": "ch_helmet_turban:compound",
+      "massKg": 2.1,
+      "centreOfMass": [1.319522332940705e-7, 0.13816282905588195, 0.003953948670581256]
+    }
+  }
+}

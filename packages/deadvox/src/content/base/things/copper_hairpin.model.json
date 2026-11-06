@@ -1,0 +1,11 @@
+{
+  "id": "copper_hairpin",
+  "file": "assets/models/copper_hairpin.glb",
+  "parts": {
+    "copper_hairpin": {
+      "node": "copper_hairpin:compound",
+      "massKg": 0.002,
+      "centreOfMass": [-0.0008909090909090905, 0.0010000000000000002, -0.0003818181818181818]
+    }
+  }
+}

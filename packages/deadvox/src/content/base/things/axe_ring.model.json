@@ -1,0 +1,11 @@
+{
+  "id": "axe_ring",
+  "file": "assets/models/axe_ring.glb",
+  "parts": {
+    "axe_ring": {
+      "node": "axe_ring:compound",
+      "massKg": 0.12,
+      "centreOfMass": [0.01537545713124745, 0.005119057293783011, 8.402891228697957e-20]
+    }
+  }
+}

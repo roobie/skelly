@@ -1,0 +1,18 @@
+{
+  "id": "crew_pickup_front_bumper",
+  "file": "assets/models/crew_pickup_front_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 7,
+      "centreOfMass": [2.593497340425532, 0.7357579787234042, 0],
+      "collision": [
+        { "min": [2.53125, 0.5625, -0.90625], "max": [2.65625, 0.8125, 0.90625] },
+        { "min": [2.5625, 0.84375, -0.59375], "max": [2.59375, 1.15625, 0.59375] },
+        { "min": [2.625, 0.59375, -0.59375], "max": [2.65625, 0.6875, 0.59375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

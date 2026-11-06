@@ -1,0 +1,11 @@
+{
+  "id": "kilt_leather",
+  "file": "assets/models/kilt_leather.glb",
+  "parts": {
+    "kilt_leather": {
+      "node": "kilt_leather:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-0.0015915478763311426, 0.022753703682966985, -0.00045976059034970947]
+    }
+  }
+}

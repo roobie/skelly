@@ -1,0 +1,11 @@
+{
+  "id": "touring_suit",
+  "file": "assets/models/touring_suit.glb",
+  "parts": {
+    "touring_suit": {
+      "node": "touring_suit:compound",
+      "massKg": 5.5,
+      "centreOfMass": [1.2039324111872299e-18, 0.042638375759892405, -0.003756231668859668]
+    }
+  }
+}

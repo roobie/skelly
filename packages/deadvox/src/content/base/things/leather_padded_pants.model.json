@@ -1,0 +1,11 @@
+{
+  "id": "leather_padded_pants",
+  "file": "assets/models/leather_padded_pants.glb",
+  "parts": {
+    "leather_padded_pants": {
+      "node": "leather_padded_pants:compound",
+      "massKg": 1.2,
+      "centreOfMass": [0.00042818023400547674, 0.03101063812131773, -0.003466965397062485]
+    }
+  }
+}

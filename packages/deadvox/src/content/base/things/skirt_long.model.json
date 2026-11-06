@@ -1,0 +1,11 @@
+{
+  "id": "skirt_long",
+  "file": "assets/models/skirt_long.glb",
+  "parts": {
+    "skirt_long": {
+      "node": "skirt_long:compound",
+      "massKg": 0.64,
+      "centreOfMass": [0, 0.012536387912860157, -0.01366302178496135]
+    }
+  }
+}

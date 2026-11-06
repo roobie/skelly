@@ -1,0 +1,11 @@
+{
+  "id": "denim_overalls",
+  "file": "assets/models/denim_overalls.glb",
+  "parts": {
+    "denim_overalls": {
+      "node": "denim_overalls:compound",
+      "massKg": 1.6,
+      "centreOfMass": [0.00026561963837930583, 0.02768206414148079, 0.0018920417051603519]
+    }
+  }
+}

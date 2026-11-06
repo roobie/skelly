@@ -1,0 +1,8 @@
+{
+  "id": "clay_cup",
+  "file": "assets/models/clay_cup.glb",
+  "parts": { "clay_cup": { "node": "clay_cup:compound", "massKg": 0.2, "centreOfMass": [0, 0.04932588134135855, 0] } },
+  "grip": { "at": [0, 0.06, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "state_flag",
+  "file": "assets/models/state_flag.glb",
+  "parts": {
+    "state_flag": {
+      "node": "state_flag:compound",
+      "massKg": 0.6,
+      "centreOfMass": [-0.001566379872839562, 0.024604937709594692, -0.002753251088754343]
+    }
+  }
+}

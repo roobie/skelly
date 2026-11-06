@@ -136,6 +136,7 @@ export class WornModels {
     attachment.name = `worn-${slot}`;
     attachment.position.set(...entry.at);
     attachment.rotation.set(...(entry.turn.map((degrees) => (degrees * Math.PI) / 180) as Vec3));
+    attachment.scale.set(...(entry.scale ?? [1, 1, 1]));
     attachment.add(model);
     attachment.traverse((object) => {
       object.layers.mask = frame.layers.mask;

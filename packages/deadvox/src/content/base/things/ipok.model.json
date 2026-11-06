@@ -1,0 +1,11 @@
+{
+  "id": "ipok",
+  "file": "assets/models/ipok.glb",
+  "parts": {
+    "ipok": {
+      "node": "ipok:compound",
+      "massKg": 0.031,
+      "centreOfMass": [-0.0005598880223955209, 0.004578484303139373, -0.0013427314537092583]
+    }
+  }
+}

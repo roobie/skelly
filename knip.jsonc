@@ -59,9 +59,11 @@
         "sounds.html!",
         "map.html!",
         "vehicle-spike.html!",
+        "wardrobe.html!",
         // Vite dev-only pages are deliberately outside the production build inputs.
         "src/siteMapPage.ts!",
         "src/debug/vehicleSpike.ts!",
+        "src/debug/wardrobe.ts!",
         "src/soundsPage.ts!",
         "tools/bench-expressions.mjs",
         "tools/police-item-models.mjs",

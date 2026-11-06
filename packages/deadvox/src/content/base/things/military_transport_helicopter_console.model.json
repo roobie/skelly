@@ -1,0 +1,17 @@
+{
+  "id": "military_transport_helicopter_console",
+  "file": "assets/models/military_transport_helicopter_console.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 18,
+      "centreOfMass": [0.011375523012552301, 0.4565245815899581, 0],
+      "collision": [
+        { "min": [-0.1875, 0, -0.15625], "max": [0.1875, 0.40625, 0.15625] },
+        { "min": [-0.125, 0.40625, -0.75], "max": [0.1875, 0.71875, 0.75] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

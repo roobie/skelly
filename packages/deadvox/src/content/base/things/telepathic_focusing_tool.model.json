@@ -1,0 +1,14 @@
+{
+  "id": "telepathic_focusing_tool",
+  "file": "assets/models/telepathic_focusing_tool.glb",
+  "parts": {
+    "telepathic_focusing_tool": {
+      "node": "telepathic_focusing_tool:compound",
+      "massKg": 3.5,
+      "centreOfMass": [0.000027494622650331903, 0.06166295707472176, 0.0010483493874497332]
+    }
+  },
+  "grip": { "at": [0, 0.008, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

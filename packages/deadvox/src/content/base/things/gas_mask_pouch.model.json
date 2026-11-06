@@ -1,0 +1,11 @@
+{
+  "id": "gas_mask_pouch",
+  "file": "assets/models/gas_mask_pouch.glb",
+  "parts": {
+    "gas_mask_pouch": {
+      "node": "gas_mask_pouch:compound",
+      "massKg": 0.37,
+      "centreOfMass": [0, 0.11897521700842874, -0.00027409737073845773]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "livestock_scale",
+  "file": "assets/models/livestock_scale.glb",
+  "parts": {
+    "livestock_scale": {
+      "node": "livestock_scale:compound",
+      "massKg": 57,
+      "centreOfMass": [-0.011714678239305642, 0.06144176565406079, 0.0027500359578425306]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "hand_crank_charger",
+  "file": "assets/models/hand_crank_charger.glb",
+  "parts": {
+    "hand_crank_charger": {
+      "node": "hand_crank_charger:compound",
+      "massKg": 0.37,
+      "centreOfMass": [0.0018330125120307988, 0.03184311838306064, 0.00033926852743022134]
+    }
+  }
+}

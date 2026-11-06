@@ -1,0 +1,18 @@
+{
+  "id": "chopper_headlamp",
+  "file": "assets/models/chopper_headlamp.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 1,
+      "centreOfMass": [0.58125, 1.075, 0],
+      "collision": [
+        { "min": [0.40625, 1.03125, -0.03125], "max": [0.53125, 1.0625, 0.03125] },
+        { "min": [0.53125, 1, -0.0625], "max": [0.625, 1.15625, 0.0625] },
+        { "min": [0.59375, 1.03125, -0.0625], "max": [0.65625, 1.125, 0.0625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

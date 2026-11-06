@@ -1,0 +1,14 @@
+{
+  "id": "heavy_cargo_helicopter_gearbox",
+  "file": "assets/models/heavy_cargo_helicopter_gearbox.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 420,
+      "centreOfMass": [0, 0.16000542953667954, 0],
+      "collision": [{ "min": [-0.5625, 0, -0.5625], "max": [0.5625, 0.40625, 0.5625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "oil_cooker",
+  "file": "assets/models/oil_cooker.glb",
+  "parts": {
+    "oil_cooker": {
+      "node": "oil_cooker:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-0.00002088469905728775, 0.04597795503988396, 0.001541116751269035]
+    }
+  }
+}

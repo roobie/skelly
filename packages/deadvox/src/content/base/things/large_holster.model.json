@@ -1,0 +1,11 @@
+{
+  "id": "large_holster",
+  "file": "assets/models/large_holster.glb",
+  "parts": {
+    "large_holster": {
+      "node": "large_holster:compound",
+      "massKg": 0.45,
+      "centreOfMass": [0.004615079049813297, 0.13762945896559942, -0.01135536664812902]
+    }
+  }
+}

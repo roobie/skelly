@@ -1,0 +1,11 @@
+{
+  "id": "cured_hide",
+  "file": "assets/models/cured_hide.glb",
+  "parts": {
+    "cured_hide": {
+      "node": "cured_hide:compound",
+      "massKg": 0.098,
+      "centreOfMass": [-0.00030355515041020984, 0.01479580674567001, 0.0002652689152233364]
+    }
+  }
+}

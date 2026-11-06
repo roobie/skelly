@@ -1,0 +1,14 @@
+{
+  "id": "antiseptic_powder",
+  "file": "assets/models/antiseptic_powder.glb",
+  "parts": {
+    "antiseptic_powder": {
+      "node": "antiseptic_powder:compound",
+      "massKg": 0.055,
+      "centreOfMass": [-1.2366544375283402e-7, 0.042762232573477874, 1.23665443752834e-7]
+    }
+  },
+  "grip": { "at": [0, 0.038, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

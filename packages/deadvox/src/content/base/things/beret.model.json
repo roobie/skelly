@@ -1,0 +1,11 @@
+{
+  "id": "beret",
+  "file": "assets/models/beret.glb",
+  "parts": {
+    "beret": {
+      "node": "beret:compound",
+      "massKg": 0.21,
+      "centreOfMass": [0.013590521304394518, 0.02969548616497035, 0]
+    }
+  }
+}

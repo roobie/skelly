@@ -1,0 +1,11 @@
+{
+  "id": "noise_emitter_super",
+  "file": "assets/models/noise_emitter_super.glb",
+  "parts": {
+    "noise_emitter_super": {
+      "node": "noise_emitter_super:compound",
+      "massKg": 5,
+      "centreOfMass": [0.00510872608492767, 0.09859304194535176, -0.008302587234925076]
+    }
+  }
+}

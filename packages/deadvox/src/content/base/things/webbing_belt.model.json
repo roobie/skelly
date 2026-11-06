@@ -1,0 +1,11 @@
+{
+  "id": "webbing_belt",
+  "file": "assets/models/webbing_belt.glb",
+  "parts": {
+    "webbing_belt": {
+      "node": "webbing_belt:compound",
+      "massKg": 0.32,
+      "centreOfMass": [0.06657278669043368, 0.0043030303030303, 0]
+    }
+  }
+}

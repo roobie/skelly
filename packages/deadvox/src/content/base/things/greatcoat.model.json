@@ -1,0 +1,11 @@
+{
+  "id": "greatcoat",
+  "file": "assets/models/greatcoat.glb",
+  "parts": {
+    "greatcoat": {
+      "node": "greatcoat:compound",
+      "massKg": 2.3,
+      "centreOfMass": [1.9391211687347528e-20, 0.037775514270644066, -0.005249135556467208]
+    }
+  }
+}

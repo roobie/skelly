@@ -1,0 +1,11 @@
+{
+  "id": "stone_polishing",
+  "file": "assets/models/stone_polishing.glb",
+  "parts": {
+    "stone_polishing": {
+      "node": "stone_polishing:compound",
+      "massKg": 11,
+      "centreOfMass": [-0.0012899956967753568, 0.033567345465650544, 0.0005820458362831237]
+    }
+  }
+}

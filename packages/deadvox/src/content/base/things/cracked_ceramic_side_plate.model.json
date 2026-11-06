@@ -1,0 +1,11 @@
+{
+  "id": "cracked_ceramic_side_plate",
+  "file": "assets/models/cracked_ceramic_side_plate.glb",
+  "parts": {
+    "cracked_ceramic_side_plate": {
+      "node": "cracked_ceramic_side_plate:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-0.0008815131399472547, 0.014708193143584616, -0.0017679367100118216]
+    }
+  }
+}

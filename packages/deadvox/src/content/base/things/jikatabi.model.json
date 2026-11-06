@@ -1,0 +1,11 @@
+{
+  "id": "jikatabi",
+  "file": "assets/models/jikatabi.glb",
+  "parts": {
+    "jikatabi": {
+      "node": "jikatabi:compound",
+      "massKg": 0.8,
+      "centreOfMass": [5.606916739601924e-19, 0.07462367416207047, -0.046897242257106515]
+    }
+  }
+}

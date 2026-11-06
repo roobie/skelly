@@ -1,0 +1,11 @@
+{
+  "id": "thread_cutting_set",
+  "file": "assets/models/thread_cutting_set.glb",
+  "parts": {
+    "thread_cutting_set": {
+      "node": "thread_cutting_set:compound",
+      "massKg": 2,
+      "centreOfMass": [0.00004983922829581991, 0.01129501607717042, -0.02214710610932475]
+    }
+  }
+}

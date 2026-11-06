@@ -1,0 +1,14 @@
+{
+  "id": "parabolan_wool_staple",
+  "file": "assets/models/parabolan_wool_staple.glb",
+  "parts": {
+    "parabolan_wool_staple": {
+      "node": "parabolan_wool_staple:compound",
+      "massKg": 0.01,
+      "centreOfMass": [-0.0029093343069246697, 0.033725934039187055, 0.0021801143969818674]
+    }
+  },
+  "grip": { "at": [-0.005999999999999998, 0.034, 0.007999999999999997], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,10 @@
+{
+  "id": "saw",
+  "file": "assets/models/saw.glb",
+  "parts": {
+    "saw": { "node": "saw:compound", "massKg": 0.5, "centreOfMass": [0.1492777906706893, 0, -0.009143188674866558] }
+  },
+  "grip": { "at": [0.026000000000000002, 0, 0.0020000000000000018], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

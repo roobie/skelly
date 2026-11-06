@@ -1,0 +1,11 @@
+{
+  "id": "rashguard",
+  "file": "assets/models/rashguard.glb",
+  "parts": {
+    "rashguard": {
+      "node": "rashguard:compound",
+      "massKg": 0.38,
+      "centreOfMass": [0, 0.021460074553659, -0.0005218756131057484]
+    }
+  }
+}

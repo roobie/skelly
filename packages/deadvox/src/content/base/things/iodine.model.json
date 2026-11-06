@@ -1,0 +1,14 @@
+{
+  "id": "iodine",
+  "file": "assets/models/iodine.glb",
+  "parts": {
+    "iodine": {
+      "node": "iodine:compound",
+      "massKg": 0.0057,
+      "centreOfMass": [-0.0002420262664165105, 0.00199812382739212, 0]
+    }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

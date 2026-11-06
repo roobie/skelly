@@ -1,0 +1,11 @@
+{
+  "id": "onyx_gold_cufflinks",
+  "file": "assets/models/onyx_gold_cufflinks.glb",
+  "parts": {
+    "onyx_gold_cufflinks": {
+      "node": "onyx_gold_cufflinks:compound",
+      "massKg": 0.02,
+      "centreOfMass": [0, 0.00923076923076923, 0]
+    }
+  }
+}

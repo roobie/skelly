@@ -1,0 +1,11 @@
+{
+  "id": "snuggie",
+  "file": "assets/models/snuggie.glb",
+  "parts": {
+    "snuggie": {
+      "node": "snuggie:compound",
+      "massKg": 0.64,
+      "centreOfMass": [-0.0013650768181635846, 0.0245849947183334, -0.0015650046131012068]
+    }
+  }
+}

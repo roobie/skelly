@@ -1,0 +1,287 @@
+[
+  {
+    "id": "plank_arm_guard",
+    "model": "plank_arm_guard",
+    "name": "Plank arm guards",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 9,
+      "warmth": 5,
+      "wearPerDamage": 0.004,
+      "protects": { "acid": 0, "blunt": 0.3, "cut": 0.3, "pierce": 0.2 }
+    },
+    "description": "Broken plank slats tied round the forearms with rags and string. Stiff and awkward, but they turn a blow.",
+    "reference": "2byarm_guard",
+    "variants": [],
+    "notes": "Id renamed from the reference, which starts with a digit; ids must start with a letter. Each guard is three pine slats side by side with two rag bands and string ties, laid flat. Slot `arms` is new: none of feet, legs, torso, vest, head, waist or back covers the arms, and earlier clothing batches named no arm slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "armguard_bronze",
+    "model": "armguard_bronze",
+    "name": "Bronze vambraces",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 5,
+      "warmth": 15,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.7, "pierce": 0.5 }
+    },
+    "description": "Curved bronze forearm guards with a leather lining and buckled straps.",
+    "reference": "armguard_bronze",
+    "variants": ["xl_armguard_bronze", "xs_armguard_bronze"],
+    "notes": "Laid open side down with the leather lining showing past both ends. Bronze uses `brass-polished`, the nearest finish; a browner bronze finish would read better. Size variants share the model. Slot `arms` is new: none of feet, legs, torso, vest, head, waist or back covers the arms, and earlier clothing batches named no arm slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "armguard_cut_resistant",
+    "model": "armguard_cut_resistant",
+    "name": "Cut-resistant arm sleeves",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 5,
+      "warmth": 20,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0, "blunt": 0.05, "cut": 0.7, "pierce": 0.2 }
+    },
+    "description": "Long aramid fibre sleeves with thumb loops, worn for work with chainsaws and sheet metal.",
+    "reference": "armguard_cut_resistant",
+    "variants": [],
+    "notes": "Laid flat with knit cuffs and a thumb loop past each wrist. Aramid yellow uses `cloth-khaki`, the nearest matte finish. Slot `arms` is new: none of feet, legs, torso, vest, head, waist or back covers the arms, and earlier clothing batches named no arm slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "armguard_hard",
+    "model": "armguard_hard",
+    "name": "Hard arm guards",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 5,
+      "warmth": 20,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.1, "blunt": 0.45, "cut": 0.4, "pierce": 0.3 }
+    },
+    "description": "Neoprene sleeves with moulded plastic shells over the forearm and elbow, held by two straps.",
+    "reference": "armguard_hard",
+    "variants": ["xl_armguard_hard", "xs_armguard_hard"],
+    "notes": "Laid flat, shells up. Size variants share the model. Slot `arms` is new: none of feet, legs, torso, vest, head, waist or back covers the arms, and earlier clothing batches named no arm slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "armguard_larmor",
+    "model": "armguard_larmor",
+    "name": "Leather arm guards",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 5,
+      "warmth": 25,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.05, "blunt": 0.2, "cut": 0.45, "pierce": 0.3 }
+    },
+    "description": "Stiff leather guards that lace shut along the arm. Light and easy to wear.",
+    "reference": "armguard_larmor",
+    "variants": ["xl_armguard_larmor", "xs_armguard_larmor"],
+    "notes": "Laid open side down, split along the top and laced across the split with rawhide, knotted at the top end, so the lacing shows from above. CHECK VOLUME: the reference volume is the pair packed flat, while the model keeps their curve. Size variants share the model. Slot `arms` is new: none of feet, legs, torso, vest, head, waist or back covers the arms, and earlier clothing batches named no arm slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "armguard_lightplate",
+    "model": "armguard_lightplate",
+    "name": "Steel arm guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 16,
+      "warmth": 20,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.2, "blunt": 0.5, "cut": 0.85, "pierce": 0.7 }
+    },
+    "description": "Full plate arm harness: an upper-arm plate, an elbow cop and a forearm plate, strapped together with leather.",
+    "reference": "armguard_lightplate",
+    "variants": ["xl_armguard_lightplate", "xs_armguard_lightplate"],
+    "notes": "Each arm laid out as forearm plate, elbow cop and upper-arm plate in a row, with four buckled straps. CHECK VOLUME: the reference volume is the pieces stacked, while the model's box is both arms laid out. Size variants share the model. Slot `arms` is new: none of feet, legs, torso, vest, head, waist or back covers the arms, and earlier clothing batches named no arm slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "armguard_metal",
+    "model": "armguard_metal",
+    "name": "Sheet metal arm guards",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 7,
+      "warmth": 10,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.15, "blunt": 0.4, "cut": 0.75, "pierce": 0.6 }
+    },
+    "description": "Arm guards beaten out of sheet steel in two pieces each, leaving the elbow free.",
+    "reference": "armguard_metal",
+    "variants": ["xl_armguard_metal", "xs_armguard_metal"],
+    "notes": "Faceted plates, so they read as hand-hammered, riveted to black straps. CHECK VOLUME: the reference volume is the guards packed together, while the model's box is the pair laid out side by side. Size variants share the model. Slot `arms` is new: none of feet, legs, torso, vest, head, waist or back covers the arms, and earlier clothing batches named no arm slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "armguard_metal_sheets_bracer",
+    "model": "armguard_metal_sheets_bracer",
+    "name": "Sheet steel bracers",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 3,
+      "warmth": 10,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.7, "pierce": 0.55 }
+    },
+    "description": "Hammered sheet steel guards that cover only the forearms.",
+    "reference": "armguard_metal_sheets_bracer",
+    "variants": [],
+    "notes": "Faceted plates with two leather straps each. CHECK VOLUME: the reference volume is the guards packed together, while the model's box is the pair laid out side by side. The reference covers both whole arms; the arm slot has no forearm-only coverage yet. Slot `arms` is new: none of feet, legs, torso, vest, head, waist or back covers the arms, and earlier clothing batches named no arm slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "armguard_metal_sheets_elbows",
+    "model": "armguard_metal_sheets_elbows",
+    "name": "Sheet steel elbow guards",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 2,
+      "warmth": 5,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.3, "cut": 0.6, "pierce": 0.45 }
+    },
+    "description": "Two short half-cylinders of sheet steel strapped over the elbows.",
+    "reference": "armguard_metal_sheets_elbows",
+    "variants": [],
+    "notes": "Each a faceted half-cylinder with two long leather straps laid out on both sides; the straps give the reference's longest side. CHECK VOLUME: the reference volume is the guards packed together, while the model's box is the pair laid out side by side. The arm slot has no elbow-only coverage yet. Slot `arms` is new: none of feet, legs, torso, vest, head, waist or back covers the arms, and earlier clothing batches named no arm slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "armguard_metal_sheets_shoulders",
+    "model": "armguard_metal_sheets_shoulders",
+    "name": "Sheet steel pauldrons",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 10,
+      "warmth": 5,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.7, "pierce": 0.55 }
+    },
+    "description": "Overlapping sheet steel plates that cap the shoulders. They stop the arms from lifting all the way.",
+    "reference": "armguard_metal_sheets_shoulders",
+    "variants": [],
+    "notes": "Each a half-cylinder shoulder plate with a second plate seated over its outer edge and riveted through both, and two straps trailing. CHECK VOLUME: the reference volume is the guards packed together, while the model's box is the pair laid out side by side. The arm slot has no shoulder coverage yet, and raising the arms is not limited by any field yet. Slot `arms` is new: none of feet, legs, torso, vest, head, waist or back covers the arms, and earlier clothing batches named no arm slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "armguard_paper",
+    "model": "armguard_paper",
+    "name": "Paper arm guards",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 4,
+      "warmth": 5,
+      "wearPerDamage": 0.005,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.25, "pierce": 0.15 }
+    },
+    "description": "Stacks of paper bound round the forearms with duct tape.",
+    "reference": "armguard_paper",
+    "variants": [],
+    "notes": "Each a stack of sheets with three tape bands, laid flat. Slot `arms` is new: none of feet, legs, torso, vest, head, waist or back covers the arms, and earlier clothing batches named no arm slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "armguard_scrap",
+    "model": "armguard_scrap",
+    "name": "Scrap arm guards",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 6,
+      "warmth": 10,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.05, "blunt": 0.3, "cut": 0.6, "pierce": 0.45 }
+    },
+    "description": "Mismatched scraps of metal bent round the arms over a rag lining and tied on with string.",
+    "reference": "armguard_scrap",
+    "variants": ["xl_armguard_scrap", "xs_armguard_scrap"],
+    "notes": "Each a rusted forearm scrap and a galvanised upper scrap with a patch, over a rag lining, with three string ties. Size variants share the model. Slot `arms` is new: none of feet, legs, torso, vest, head, waist or back covers the arms, and earlier clothing batches named no arm slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "armguard_soft",
+    "model": "armguard_soft",
+    "name": "Neoprene arm sleeves",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 5,
+      "warmth": 20,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.1, "pierce": 0.05 }
+    },
+    "description": "Soft padded sleeves worn for contact sports.",
+    "reference": "armguard_soft",
+    "variants": ["xl_armguard_soft", "xs_armguard_soft"],
+    "notes": "Laid flat, black neoprene with light grey bound cuffs and a grey side seam so the parts read apart. Size variants share the model. Slot `arms` is new: none of feet, legs, torso, vest, head, waist or back covers the arms, and earlier clothing batches named no arm slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "armguard_tire",
+    "model": "armguard_tire",
+    "name": "Tyre arm guards",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 14,
+      "warmth": 10,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.2, "blunt": 0.55, "cut": 0.45, "pierce": 0.35 }
+    },
+    "description": "Thick chunks of tyre tread strung together round the arms. Heavy and clumsy, but they soak up a hit.",
+    "reference": "armguard_tire",
+    "variants": ["xl_armguard_tire", "xs_armguard_tire"],
+    "notes": "Each three curved tread chunks with tread blocks, strung with cord. Size variants share the model. Slot `arms` is new: none of feet, legs, torso, vest, head, waist or back covers the arms, and earlier clothing batches named no arm slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "armor_ch_armguard",
+    "model": "armor_ch_armguard",
+    "name": "Hardened steel arm guard",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 15,
+      "warmth": 20,
+      "wearPerDamage": 0.0005,
+      "protects": { "acid": 0.2, "blunt": 0.55, "cut": 0.9, "pierce": 0.8 }
+    },
+    "description": "A plate harness for one arm in hardened steel, with mail across the elbow joints.",
+    "reference": "armor_ch_armguard",
+    "variants": ["xl_armor_ch_armguard"],
+    "notes": "One guard for one arm: the reference marks it sided, and the arm slot has no side yet, so wearing a pair needs a sided slot or two items. Laid out as forearm plate, elbow cop and upper-arm plate with mail bands at both elbow joints. Hardened steel uses `steel-blued`. Size variant shares the model. Slot `arms` is new: none of feet, legs, torso, vest, head, waist or back covers the arms, and earlier clothing batches named no arm slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  }
+]

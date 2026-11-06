@@ -1,0 +1,11 @@
+{
+  "id": "water_mill",
+  "file": "assets/models/water_mill.glb",
+  "parts": {
+    "water_mill": {
+      "node": "water_mill:compound",
+      "massKg": 140,
+      "centreOfMass": [0.0004489893355289115, 0.4458262650966332, -0.4585014445023654]
+    }
+  }
+}

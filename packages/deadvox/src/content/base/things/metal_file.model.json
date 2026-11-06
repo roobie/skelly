@@ -1,0 +1,11 @@
+{
+  "id": "metal_file",
+  "file": "assets/models/metal_file.glb",
+  "parts": {
+    "metal_file": {
+      "node": "metal_file:compound",
+      "massKg": 0.087,
+      "centreOfMass": [-0.00421490181684713, 0.003062763809873371, -0.0006909524683428153]
+    }
+  }
+}

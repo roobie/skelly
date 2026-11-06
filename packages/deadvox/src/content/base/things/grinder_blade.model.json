@@ -1,0 +1,11 @@
+{
+  "id": "grinder_blade",
+  "file": "assets/models/grinder_blade.glb",
+  "parts": {
+    "grinder_blade": {
+      "node": "grinder_blade:compound",
+      "massKg": 0.14,
+      "centreOfMass": [0, 0.0009999999999999998, 1.3269709518625313e-19]
+    }
+  }
+}

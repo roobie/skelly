@@ -1,0 +1,11 @@
+{
+  "id": "jerrypack",
+  "file": "assets/models/jerrypack.glb",
+  "parts": {
+    "jerrypack": {
+      "node": "jerrypack:compound",
+      "massKg": 1.4,
+      "centreOfMass": [0.00004992662881883093, 0.23578596150472964, -0.0024856017078586316]
+    }
+  }
+}

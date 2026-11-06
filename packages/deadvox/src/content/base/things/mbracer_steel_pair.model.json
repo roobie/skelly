@@ -1,0 +1,11 @@
+{
+  "id": "mbracer_steel_pair",
+  "file": "assets/models/mbracer_steel_pair.glb",
+  "parts": {
+    "mbracer_steel_pair": {
+      "node": "mbracer_steel_pair:compound",
+      "massKg": 1.3,
+      "centreOfMass": [-0.006397898423817886, 0.018462346760070046, -0.008338353765323993]
+    }
+  }
+}

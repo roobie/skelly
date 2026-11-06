@@ -1,0 +1,305 @@
+[
+  {
+    "id": "hc_vambrace_brigandine",
+    "model": "lc_vambrace_brigandine",
+    "name": "High-carbon steel splint vambraces",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 4,
+      "warmth": 8,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.7, "pierce": 0.5 }
+    },
+    "finishes": { "rivet": "steel-blued", "splint": "steel-blued" },
+    "description": "Short canvas forearm guards with strips of high-carbon steel riveted along them, strapped on at the wrist. They fit over mail.",
+    "reference": "hc_vambrace_brigandine",
+    "variants": ["xl_hc_vambrace_brigandine", "xs_hc_vambrace_brigandine"],
+    "notes": "Laid side by side, open side down: each vambrace is a canvas shell curved across the forearm, 120 mm long and 110 mm across, with four steel splints riveted along it between bare canvas strips, leather binding at both ends and one buckled strap. CHECK LENGTH: longest x2.6 because the pair lies side by side with the strap tails out, 316 mm across; each vambrace is 120 mm long as the reference gives. Shares the mild steel pair's model with splints and rivets in `steel-blued`. Slot `arms` follows the earlier clothing batches' arm guards. The xl and xs sizes share the model. Warmth is a guess for padded canvas; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lc_vambrace_brigandine",
+    "model": "lc_vambrace_brigandine",
+    "name": "Mild steel splint vambraces",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 4,
+      "warmth": 8,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.6, "pierce": 0.4 }
+    },
+    "description": "Short canvas forearm guards with strips of mild steel riveted along them, strapped on at the wrist. They fit over mail.",
+    "reference": "lc_vambrace_brigandine",
+    "variants": ["xl_lc_vambrace_brigandine", "xs_lc_vambrace_brigandine"],
+    "notes": "Laid side by side, open side down: each vambrace is a canvas shell curved across the forearm, 120 mm long and 110 mm across, with four steel splints riveted along it between bare canvas strips, leather binding at both ends and one buckled strap. CHECK LENGTH: longest x2.6 because the pair lies side by side with the strap tails out, 316 mm across; each vambrace is 120 mm long as the reference gives. The model's root: splints and rivets in `steel-bright`. Slot `arms` follows the earlier clothing batches' arm guards. The xl and xs sizes share the model. Warmth is a guess for padded canvas; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lc_brigandine_hands",
+    "model": "lc_brigandine_hands",
+    "name": "Mild steel brigandine gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 12,
+      "warmth": 8,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.32, "cut": 0.54, "pierce": 0.36 }
+    },
+    "description": "Canvas gloves with mild steel plates riveted over the backs of the hands and the finger joints.",
+    "reference": "lc_brigandine_hands",
+    "variants": ["xl_lc_brigandine_hands", "lc_brigandine_hands_xs"],
+    "notes": "The model's root: plates and rivets in `steel-bright`. Laid flat side by side, backs up, fingers towards +z: canvas gloves 250 mm from cuff to fingertip with leather cuffs and a buckled wrist strap, nine riveted steel plates over the back of each hand and a small plate on each finger joint. CHECK VOLUME: box/volume x4.5 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands` is new: none of feet, legs, torso, vest, head, waist or back covers the hands, and no earlier clothing batch named a hand slot. The xl and xs sizes share the model. Warmth is a guess for canvas gloves; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_brigandine_hands",
+    "model": "lc_brigandine_hands",
+    "name": "Medium steel brigandine gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 12,
+      "warmth": 8,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0.1, "blunt": 0.33, "cut": 0.59, "pierce": 0.41 }
+    },
+    "finishes": { "plate": "steel-grey", "rivet": "steel-grey" },
+    "description": "Canvas gloves with medium steel plates riveted over the backs of the hands and the finger joints.",
+    "reference": "mc_brigandine_hands",
+    "variants": ["xl_mc_brigandine_hands", "mc_brigandine_hands_xs"],
+    "notes": "Shares the mild steel pair's model with plates and rivets in `steel-grey`. Laid flat side by side, backs up, fingers towards +z: canvas gloves 250 mm from cuff to fingertip with leather cuffs and a buckled wrist strap, nine riveted steel plates over the back of each hand and a small plate on each finger joint. CHECK VOLUME: box/volume x4.5 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands` is new: none of feet, legs, torso, vest, head, waist or back covers the hands, and no earlier clothing batch named a hand slot. The xl and xs sizes share the model. Warmth is a guess for canvas gloves; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lc_elbow_guards",
+    "model": "lc_elbow_guards",
+    "name": "Mild steel elbow guards",
+    "category": "clothing",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "elbows",
+      "encumbrance": 0,
+      "warmth": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.21, "cut": 0.36, "pierce": 0.24 }
+    },
+    "description": "A pair of thin mild steel cups that strap over the elbows. They fit over mail.",
+    "reference": "lc_elbow_guards",
+    "variants": ["xl_lc_elbow_guards", "lc_elbow_guards_xs"],
+    "notes": "The model's root: cop and rim in `steel-bright`. Standing dome up side by side: each guard is a thin pressed steel cop 90 mm across and 30 mm high with a rolled rim, a fan-shaped wing on the outer side and two leather straps. Slot `arms` follows the earlier batches' elbow pads and arm guards, so they cannot be worn with vambraces; one slot cannot say that both guard different parts of the arm. Encumbrance 0 follows the reference. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_elbow_guards",
+    "model": "lc_elbow_guards",
+    "name": "Medium steel elbow guards",
+    "category": "clothing",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "elbows",
+      "encumbrance": 0,
+      "warmth": 0,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0, "blunt": 0.22, "cut": 0.39, "pierce": 0.27 }
+    },
+    "finishes": { "cop": "steel-grey", "rim": "steel-grey" },
+    "description": "A pair of thin medium steel cups that strap over the elbows. They fit over mail.",
+    "reference": "mc_elbow_guards",
+    "variants": ["xl_mc_elbow_guards", "mc_elbow_guards_xs"],
+    "notes": "Shares the mild steel pair's model with cop and rim in `steel-grey`. Standing dome up side by side: each guard is a thin pressed steel cop 90 mm across and 30 mm high with a rolled rim, a fan-shaped wing on the outer side and two leather straps. Slot `arms` follows the earlier batches' elbow pads and arm guards, so they cannot be worn with vambraces; one slot cannot say that both guard different parts of the arm. Encumbrance 0 follows the reference. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lc_knee_guards",
+    "model": "lc_knee_guards",
+    "name": "Mild steel knee guards",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "knees",
+      "encumbrance": 0,
+      "warmth": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.21, "cut": 0.36, "pierce": 0.24 }
+    },
+    "description": "A pair of thin mild steel knee cups with a small plate above and below each, strapped on over the trousers. They fit over mail.",
+    "reference": "lc_knee_guards",
+    "variants": ["xl_lc_knee_guards", "lc_knee_guards_xs"],
+    "notes": "Standing dome up side by side: each guard is a 100 mm steel cop 35 mm high with a rolled rim, a curved lame above and below it, a wing on the outer side and two leather straps, 156 mm from the top lame to the bottom one.Encumbrance 0 follows the reference. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lc_shoulder_guards",
+    "model": "lc_shoulder_guards",
+    "name": "Mild steel shoulder guards",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "encumbrance": 4,
+      "warmth": 2,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.6, "pierce": 0.4 }
+    },
+    "fits": ["brigandine"],
+    "description": "A pair of shoulder guards made of four overlapping curved mild steel plates on a leather strap, made to be buckled onto a brigandine.",
+    "reference": "lc_shoulder_guards",
+    "variants": ["xl_lc_shoulder_guards", "lc_shoulder_guards_xs"],
+    "notes": "Lying crown up side by side: each guard is four overlapping steel lames 150 mm across on a leather strap riveted along their crowns, with a buckle tab at the strap end. CHECK VOLUME: box/volume x6.5 because the curved lames enclose air; the reference volume is the steel. Worn by mounting on a brigandine's shoulder points, so it `fits` `brigandine` and its `wearable` has no slot. The reference gives no worn data: protection and wear follow the mild steel vambraces, with the same encumbrance and less warmth for bare lames on leather. The xl and xs sizes share the model."
+  },
+  {
+    "id": "lc_greaves_brigandine",
+    "model": "lc_greaves_brigandine",
+    "name": "Mild steel splint greaves",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 4,
+      "warmth": 8,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.6, "pierce": 0.4 }
+    },
+    "description": "Canvas shin guards with strips of mild steel riveted along them, buckled on below the knee and at the ankle. They fit over mail.",
+    "reference": "lc_greaves_brigandine",
+    "variants": ["xl_lc_greaves_brigandine", "xs_lc_greaves_brigandine"],
+    "notes": "The model's root: splints and rivets in `steel-bright`. Laid side by side, open side down: each greave is a canvas shell curved across the shin, 340 mm from knee to ankle, 140 mm across at the calf and 100 mm at the ankle, with five steel splints riveted along it, leather binding at both ends and two buckled straps.The xl and xs sizes share the model. Warmth is a guess for padded canvas; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_greaves_brigandine",
+    "model": "lc_greaves_brigandine",
+    "name": "Medium steel splint greaves",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 4,
+      "warmth": 8,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0.1, "blunt": 0.37, "cut": 0.65, "pierce": 0.45 }
+    },
+    "finishes": { "rivet": "steel-grey", "splint": "steel-grey" },
+    "description": "Canvas shin guards with strips of medium steel riveted along them, buckled on below the knee and at the ankle. They fit over mail.",
+    "reference": "mc_greaves_brigandine",
+    "variants": ["xl_mc_greaves_brigandine", "xs_mc_greaves_brigandine"],
+    "notes": "Shares the mild steel pair's model with splints and rivets in `steel-grey`. Laid side by side, open side down: each greave is a canvas shell curved across the shin, 340 mm from knee to ankle, 140 mm across at the calf and 100 mm at the ankle, with five steel splints riveted along it, leather binding at both ends and two buckled straps.The xl and xs sizes share the model. Warmth is a guess for padded canvas; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "legguard_ch_brigandine",
+    "model": "legguard_lc_brigandine",
+    "name": "Hardened steel splint leg guards",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 6,
+      "warmth": 10,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.1, "blunt": 0.42, "cut": 0.75, "pierce": 0.55 }
+    },
+    "finishes": {
+      "cop": "steel-parkerized",
+      "rim": "steel-parkerized",
+      "rivet": "steel-parkerized",
+      "splint": "steel-parkerized"
+    },
+    "description": "Full-length canvas leg guards with strips of hardened steel riveted along the thighs and shins and a steel cup over each knee. They fit over mail.",
+    "reference": "legguard_ch_brigandine",
+    "variants": ["xl_legguard_ch_brigandine", "legguard_ch_brigandine_xs"],
+    "notes": "Shares the mild steel pair's model with splints, rivets and knee cops in `steel-parkerized`. Laid side by side, open side down: each guard is 780 mm from hip to ankle, a splinted canvas thigh section 200 mm across at the top, a steel knee cop with a side wing and a splinted shin section, each section with two buckled straps. CHECK VOLUME: box/volume x7.3 because the pair lies spread at full length; the reference volume is the pair folded.The xl and xs sizes share the model. Warmth is a guess for padded canvas; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "legguard_hc_brigandine",
+    "model": "legguard_lc_brigandine",
+    "name": "High-carbon steel splint leg guards",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 6,
+      "warmth": 10,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.7, "pierce": 0.5 }
+    },
+    "finishes": { "cop": "steel-blued", "rim": "steel-blued", "rivet": "steel-blued", "splint": "steel-blued" },
+    "description": "Full-length canvas leg guards with strips of high-carbon steel, stiffer and harder than the common kind riveted along the thighs and shins and a steel cup over each knee. They fit over mail.",
+    "reference": "legguard_hc_brigandine",
+    "variants": ["xl_legguard_hc_brigandine", "legguard_hc_brigandine_xs"],
+    "notes": "Shares the mild steel pair's model with splints, rivets and knee cops in `steel-blued`. Laid side by side, open side down: each guard is 780 mm from hip to ankle, a splinted canvas thigh section 200 mm across at the top, a steel knee cop with a side wing and a splinted shin section, each section with two buckled straps. CHECK VOLUME: box/volume x7.3 because the pair lies spread at full length; the reference volume is the pair folded.The xl and xs sizes share the model. Warmth is a guess for padded canvas; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "legguard_lc_brigandine",
+    "model": "legguard_lc_brigandine",
+    "name": "Mild steel splint leg guards",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 6,
+      "warmth": 10,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.6, "pierce": 0.4 }
+    },
+    "description": "Full-length canvas leg guards with strips of mild steel riveted along the thighs and shins and a steel cup over each knee. They fit over mail.",
+    "reference": "legguard_lc_brigandine",
+    "variants": ["xl_legguard_lc_brigandine", "legguard_lc_brigandine_xs"],
+    "notes": "The model's root: splints, rivets and knee cops in `steel-bright`. Laid side by side, open side down: each guard is 780 mm from hip to ankle, a splinted canvas thigh section 200 mm across at the top, a steel knee cop with a side wing and a splinted shin section, each section with two buckled straps. CHECK VOLUME: box/volume x7.3 because the pair lies spread at full length; the reference volume is the pair folded.The xl and xs sizes share the model. Warmth is a guess for padded canvas; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "legguard_mc_brigandine",
+    "model": "legguard_lc_brigandine",
+    "name": "Medium steel splint leg guards",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 6,
+      "warmth": 10,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0.1, "blunt": 0.37, "cut": 0.65, "pierce": 0.45 }
+    },
+    "finishes": { "cop": "steel-grey", "rim": "steel-grey", "rivet": "steel-grey", "splint": "steel-grey" },
+    "description": "Full-length canvas leg guards with strips of medium-carbon steel, harder than mild steel riveted along the thighs and shins and a steel cup over each knee. They fit over mail.",
+    "reference": "legguard_mc_brigandine",
+    "variants": ["xl_legguard_mc_brigandine", "legguard_mc_brigandine_xs"],
+    "notes": "Shares the mild steel pair's model with splints, rivets and knee cops in `steel-grey`. Laid side by side, open side down: each guard is 780 mm from hip to ankle, a splinted canvas thigh section 200 mm across at the top, a steel knee cop with a side wing and a splinted shin section, each section with two buckled straps. CHECK VOLUME: box/volume x7.3 because the pair lies spread at full length; the reference volume is the pair folded.The xl and xs sizes share the model. Warmth is a guess for padded canvas; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "legguard_qt_brigandine",
+    "model": "legguard_lc_brigandine",
+    "name": "Tempered steel splint leg guards",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier4"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 6,
+      "warmth": 10,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.1, "blunt": 0.44, "cut": 0.78, "pierce": 0.58 }
+    },
+    "finishes": {
+      "cop": "steel-heat-tint",
+      "rim": "steel-heat-tint",
+      "rivet": "steel-heat-tint",
+      "splint": "steel-heat-tint"
+    },
+    "description": "Full-length canvas leg guards with strips of tempered steel, hard without being brittle riveted along the thighs and shins and a steel cup over each knee. They fit over mail.",
+    "reference": "legguard_qt_brigandine",
+    "variants": ["xl_legguard_qt_brigandine", "legguard_qt_brigandine_xs"],
+    "notes": "Shares the mild steel pair's model with splints, rivets and knee cops in `steel-heat-tint`. Laid side by side, open side down: each guard is 780 mm from hip to ankle, a splinted canvas thigh section 200 mm across at the top, a steel knee cop with a side wing and a splinted shin section, each section with two buckled straps. CHECK VOLUME: box/volume x7.3 because the pair lies spread at full length; the reference volume is the pair folded.The xl and xs sizes share the model. Warmth is a guess for padded canvas; the reference gives none. The worn look is pending: no worn model is authored."
+  }
+]

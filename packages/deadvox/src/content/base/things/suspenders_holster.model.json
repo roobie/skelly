@@ -1,0 +1,11 @@
+{
+  "id": "suspenders_holster",
+  "file": "assets/models/suspenders_holster.glb",
+  "parts": {
+    "suspenders_holster": {
+      "node": "suspenders_holster:compound",
+      "massKg": 0.32,
+      "centreOfMass": [-0.07314872031132066, 0.015161149612319513, 0.16470887205073664]
+    }
+  }
+}

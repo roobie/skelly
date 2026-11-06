@@ -1,0 +1,11 @@
+{
+  "id": "case_violin",
+  "file": "assets/models/case_violin.glb",
+  "parts": {
+    "case_violin": {
+      "node": "case_violin:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-0.04623030376449926, 0.06131099064175172, 0.0005834095520760775]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "hakama_gi",
+  "file": "assets/models/hakama_gi.glb",
+  "parts": {
+    "hakama_gi": {
+      "node": "hakama_gi:compound",
+      "massKg": 0.7,
+      "centreOfMass": [0, 0.023708198425070957, 0.0012424351441020106]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "crystal_urn",
+  "file": "assets/models/crystal_urn.glb",
+  "parts": {
+    "crystal_urn": {
+      "node": "crystal_urn:compound",
+      "massKg": 2.4,
+      "centreOfMass": [-4.645829285097431e-21, 0.1478901869158878, -9.291658570194862e-21]
+    }
+  },
+  "grip": { "at": [0, 0.14800000000000002, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

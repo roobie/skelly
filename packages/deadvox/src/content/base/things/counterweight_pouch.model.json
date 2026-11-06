@@ -1,0 +1,11 @@
+{
+  "id": "counterweight_pouch",
+  "file": "assets/models/counterweight_pouch.glb",
+  "parts": {
+    "counterweight_pouch": {
+      "node": "counterweight_pouch:compound",
+      "massKg": 0.05,
+      "centreOfMass": [0, 0.03807646066230753, -0.0019112001687407718]
+    }
+  }
+}

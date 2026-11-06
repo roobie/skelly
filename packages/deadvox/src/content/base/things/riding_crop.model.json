@@ -1,0 +1,10 @@
+{
+  "id": "riding_crop",
+  "file": "assets/models/riding_crop.glb",
+  "parts": {
+    "riding_crop": { "node": "riding_crop:compound", "massKg": 0.041, "centreOfMass": [-0.08588452761296211, 0, 0] }
+  },
+  "grip": { "at": [-0.22400000000000003, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

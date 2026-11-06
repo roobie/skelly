@@ -1,0 +1,11 @@
+{
+  "id": "bandolier_shotgun",
+  "file": "assets/models/bandolier_shotgun.glb",
+  "parts": {
+    "bandolier_shotgun": {
+      "node": "bandolier_shotgun:compound",
+      "massKg": 0.4,
+      "centreOfMass": [-0.01572766654958435, 0.00967685282753776, 0.013826718182882575]
+    }
+  }
+}

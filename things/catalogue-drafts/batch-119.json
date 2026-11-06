@@ -1,0 +1,145 @@
+[
+  {
+    "id": "sunglasses_eye",
+    "model": "sunglasses_eye",
+    "name": "Prescription sunglasses",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Medical"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "eyes", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.002 },
+    "description": "Black-framed sunglasses with smoked lenses ground for short sight. They cut glare and sharpen the distance for a near-sighted wearer.",
+    "reference": "sunglasses_eye",
+    "variants": [],
+    "notes": "Open, standing on the lens rims, front on +z, the arms running back and hooking down behind: 140 mm across, 45 mm tall, 160 mm deep. Lenses in `glass-lens-green`, which stays see-through in the game. CHECK VOLUME: box/volume x4.5 because the arms stand open; the reference volume is the folded pair in a case. Slot `eyes`, as Deadvox's night-vision goggles have it. The corrective effect for near-sighted wearers is left to the eyesight rules. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "sunglasses_reading",
+    "model": "sunglasses_eye",
+    "name": "Reading sunglasses",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Medical"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "eyes", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.002 },
+    "finishes": { "frame": "leather-brown", "lens": "glass-lens-amber" },
+    "description": "Brown-framed sunglasses with tinted magnifying lenses for a far-sighted reader. Anyone else sees a blur through them.",
+    "reference": "sunglasses_reading",
+    "variants": [],
+    "notes": "Shares the `sunglasses_eye` model: the same open frame, recoloured with a brown frame and amber-tinted lenses so the two pairs tell apart. `leather-brown` stands in for brown tortoiseshell plastic, which has no finish. Slot `eyes`. The magnifying effect is left to the eyesight rules. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "aketon_canvas",
+    "model": "aketon_canvas",
+    "name": "Canvas aketon",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 15,
+      "warmth": 30,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.35, "cut": 0.4, "pierce": 0.25 }
+    },
+    "description": "A thick padded jacket quilted from a dozen layers of canvas, made to go under armour. It turns a blade and softens a blow on its own.",
+    "reference": "aketon_canvas",
+    "variants": ["xl_aketon_canvas", "xs_aketon_canvas"],
+    "notes": "Folded on a shelf, collar at the +z end and the hem folded under at -z: 380 mm by 340 mm and 70 mm tall in four layers, with quilted channels down the front, a stand collar, the quilted sleeves folded in along each side and leather toggles closing the front. CHECK flags: none. Slot `torso`: it is worn under armour, and brigandines take `vest`, so the two layer. The reference also covers the arms, which the sleeves reach. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "aketon_canvas_vest",
+    "model": "aketon_canvas_vest",
+    "name": "Canvas aketon vest",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 10,
+      "warmth": 30,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.35, "cut": 0.4, "pierce": 0.25 }
+    },
+    "description": "A sleeveless padded vest quilted from a dozen layers of canvas and laced up the front, made to go under armour.",
+    "reference": "aketon_canvas_vest",
+    "variants": ["xl_aketon_canvas_vest", "xs_aketon_canvas_vest"],
+    "notes": "Folded on a shelf, collar at the +z end: 340 mm by 320 mm and 50 mm tall in three layers, with quilted channels, a stand collar, the armholes marked at both shoulders and leather laces crossing down the front. CHECK flags: none. Slot `torso`, not `vest`: it is padding under armour, and brigandines take `vest`, so the two layer. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "aketon_gloves_canvas",
+    "model": "aketon_gloves_canvas",
+    "name": "Canvas arming gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 20,
+      "warmth": 25,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.25, "cut": 0.3, "pierce": 0.15 }
+    },
+    "description": "Quilted canvas gloves thin enough to wear under gauntlets. They keep the hands safe in a fight.",
+    "reference": "aketon_gloves_canvas",
+    "variants": ["xl_aketon_gloves_canvas", "xs_aketon_gloves_canvas"],
+    "notes": "The model's root, in `cloth-canvas` with a khaki cuff. Laid flat side by side, backs up, fingers towards +z: quilted gloves 230 mm from cuff to fingertip with channels over the back of the hand, two quilted segments per finger and a short flared cuff. CHECK VOLUME: box/volume x8.7 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands`, as earlier clothing batches name it for gloves; these are meant to go under gauntlets, which also take `hands`, so wearing both waits on layered slots. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "aketon_gloves_nylon",
+    "model": "aketon_gloves_canvas",
+    "name": "Nylon arming gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 15,
+      "warmth": 25,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.2, "cut": 0.3, "pierce": 0.15 }
+    },
+    "finishes": { "cloth": "webbing-black", "cuff": "cloth-charcoal", "quilt": "webbing-black" },
+    "description": "Quilted black nylon gloves thin enough to wear under gauntlets. They keep the hands safe in a fight.",
+    "reference": "aketon_gloves_nylon",
+    "variants": ["xl_aketon_gloves_nylon", "xs_aketon_gloves_nylon"],
+    "notes": "Shares the `aketon_gloves_canvas` model, recoloured black nylon with a charcoal cuff. Laid flat side by side, backs up, fingers towards +z: quilted gloves 230 mm from cuff to fingertip with channels over the back of the hand, two quilted segments per finger and a short flared cuff. CHECK VOLUME: box/volume x8.7 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands`, as earlier clothing batches name it for gloves; these are meant to go under gauntlets, which also take `hands`, so wearing both waits on layered slots. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "aketon_gloves_wool",
+    "model": "aketon_gloves_canvas",
+    "name": "Wool arming gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 18,
+      "warmth": 28,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.25, "cut": 0.25, "pierce": 0.12 }
+    },
+    "finishes": { "cloth": "wool-grey", "cuff": "felt-grey", "quilt": "wool-grey" },
+    "description": "Quilted grey wool gloves thin enough to wear under gauntlets. Warmer than canvas, and they keep the hands safe in a fight.",
+    "reference": "aketon_gloves_wool",
+    "variants": ["xl_aketon_gloves_wool", "xs_aketon_gloves_wool"],
+    "notes": "Shares the `aketon_gloves_canvas` model, recoloured grey wool with a felt cuff. Laid flat side by side, backs up, fingers towards +z: quilted gloves 230 mm from cuff to fingertip with channels over the back of the hand, two quilted segments per finger and a short flared cuff. CHECK VOLUME: box/volume x8.7 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands`, as earlier clothing batches name it for gloves; these are meant to go under gauntlets, which also take `hands`, so wearing both waits on layered slots. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "aketon_hood_canvas",
+    "model": "aketon_hood_canvas",
+    "name": "Canvas coif",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "hood",
+      "encumbrance": 0,
+      "warmth": 25,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.3, "cut": 0.35, "pierce": 0.2 }
+    },
+    "description": "A padded canvas hood that covers the head, neck and forehead and rests on the shoulders. Warm, tough, and made to cushion a helmet.",
+    "reference": "aketon_hood_canvas",
+    "variants": ["xl_aketon_hood_canvas", "xs_aketon_hood_canvas"],
+    "notes": "Standing upright as on a shelf, face opening on +z: 290 mm across the shoulder cape and 260 mm tall, a quilted round crown ringed with channels, a bound oval face opening and a neck flaring into the cape. CHECK VOLUME: box/volume x43 because its padding holds it open round an empty head and the cape spreads wide; the reference volume is the coif squashed flat. Slot `head`: it is meant under a helmet, which also takes `head`, so wearing both waits on layered slots. The xl and xs sizes share the model. The worn look is pending: no worn model is authored. Slot hood: worn under a helmet, which takes head."
+  }
+]

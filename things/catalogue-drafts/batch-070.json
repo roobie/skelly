@@ -1,0 +1,102 @@
+[
+  {
+    "id": "radio_mod",
+    "model": "radio_mod",
+    "name": "Radio trigger module",
+    "category": "material",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A small steel-cased radio receiver with a wire aerial and two clip leads. Wired into a device, it lets a hobby transmitter switch it on.",
+    "reference": "radio_mod",
+    "variants": [],
+    "notes": "90 by 55 mm and 28 mm tall: a steel case with a screwed lid, a label, a red light and a green terminal block on the front, a 70 mm wire aerial out of one end and red and black leads with clips out of the other. The box is 1.74 times the reference's 250 mL because of the aerial and leads. Fitting it to a device and pairing it with the hobby transmitter need content fields that do not exist yet."
+  },
+  {
+    "id": "radiocontrol",
+    "model": "radiocontrol",
+    "name": "Hobby radio transmitter",
+    "category": "tool",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A handheld transmitter for a toy car, with a steering stick, a pull-out aerial and four coloured buttons.",
+    "reference": "radiocontrol",
+    "variants": [],
+    "notes": "160 by 110 mm and 40 mm thick, face up, with two grip lugs underneath: one stick on the left, red, yellow, green and blue buttons on the right, a power switch and a label. CHECK VOLUME (x6.0): the reference's 500 mL is the case; the box also counts the half-drawn aerial and the stick standing 30 mm proud. Driving a toy car or setting off a radio trigger module needs content fields that do not exist yet."
+  },
+  {
+    "id": "remotevehcontrol",
+    "model": "remotevehcontrol",
+    "name": "Vehicle remote controller",
+    "category": "tool",
+    "size": [3, 3],
+    "economy": { "usage": ["Industrial", "Police"], "tiers": ["Tier2", "Tier3"] },
+    "description": "A rugged handheld controller with a screen, ten toggle switches and a drive stick, for working a vehicle's fitted equipment from a distance.",
+    "reference": "remotevehcontrol",
+    "variants": [],
+    "notes": "200 by 130 mm and 45 mm thick, face up: a grey case with yellow corner bumpers, a dark screen, ten labelled toggle switches in two rows, a drive stick, a green light on the front and a stubby rubber aerial behind. The box is 3.8 times the reference's 1 L because of the aerial, stick and switches. Linking it to a vehicle needs vehicle content that does not exist yet."
+  },
+  {
+    "id": "two_way_radio",
+    "model": "two_way_radio",
+    "name": "Handheld two-way radio",
+    "category": "tool",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential", "Industrial", "Police", "Military"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A battery handheld radio that can both send and receive. It talks to any other radio on the same channel.",
+    "reference": "two_way_radio",
+    "variants": [],
+    "notes": "58 by 35 mm and 125 mm tall, standing, with an 85 mm rubber aerial: a speaker grille, small green display and keypad on the front, a channel knob on top, a push-to-talk key on the left side and an aluminium battery pack with a belt clip behind. Talking over it needs radio content that does not exist yet; a battery charge field would follow the existing battery lights."
+  },
+  {
+    "id": "birchbark_funnel",
+    "model": "birchbark_funnel",
+    "name": "Birch bark funnel",
+    "category": "tool",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "pouring": 1 } },
+    "description": "A sheet of birch bark rolled into a cone and pinned with a twig. Set over a container outdoors, it gathers rain.",
+    "reference": "birchbark_funnel",
+    "variants": [],
+    "notes": "100 mm across the mouth and 100 mm tall, open at the tip, with the darker overlap running up one side and a twig pin near the rim. CHECK VOLUME (x4.1): the reference's 250 mL is the bark; the box counts the empty cone. Catching rain needs a placed-item rule that does not exist yet; the pouring quality is new and names what a rain catcher recipe would ask for."
+  },
+  {
+    "id": "funnel",
+    "model": "funnel",
+    "name": "Plastic funnel",
+    "category": "tool",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "pouring": 2 } },
+    "description": "A wide orange plastic funnel with a narrow spout and a hanging tab. It pours neatly, and set over a container outdoors it gathers rain.",
+    "reference": "funnel",
+    "variants": [],
+    "notes": "150 mm across the rim and 142 mm tall with a 22 mm spout and a ringed tab. CHECK VOLUME (x7.6): the reference's 500 mL is the plastic; the box counts the empty cone and the tab. It gathers more than the small funnels, hence the higher pouring quality. Catching rain needs a placed-item rule that does not exist yet."
+  },
+  {
+    "id": "leather_funnel",
+    "model": "leather_funnel",
+    "name": "Leather funnel",
+    "category": "tool",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "pouring": 1 } },
+    "description": "A small funnel of stitched leather with a rolled rim and a thong loop for hanging. Set over a container outdoors, it gathers rain.",
+    "reference": "leather_funnel",
+    "variants": [],
+    "notes": "100 mm across the mouth and 110 mm tall with a short spout, a darker rolled rim, a stitched side seam and a pale thong loop. CHECK VOLUME (x6.0): the reference's 250 mL is the leather; the box counts the empty cone and the loop. Catching rain needs a placed-item rule that does not exist yet."
+  },
+  {
+    "id": "makeshift_funnel",
+    "model": "makeshift_funnel",
+    "name": "Bottle-top funnel",
+    "category": "tool",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "pouring": 1 } },
+    "description": "The top of a plastic drinks bottle cut off and turned neck down, its sharp edge taped over. Set over a container outdoors, it gathers rain.",
+    "reference": "makeshift_funnel",
+    "variants": [],
+    "notes": "100 mm across and 100 mm tall: the threaded neck and collar at the bottom, the shoulder flaring out, the cut edge bound with silver tape. plastic-clear draws the bottle; it stays see-through in the game. CHECK VOLUME (x4.3): the reference's 250 mL is the plastic; the box counts the empty cone. Catching rain needs a placed-item rule that does not exist yet."
+  }
+]

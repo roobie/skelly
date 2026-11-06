@@ -1,0 +1,14 @@
+{
+  "id": "trimmer_off",
+  "file": "assets/models/trimmer_off.glb",
+  "parts": {
+    "trimmer_off": {
+      "node": "trimmer_off:compound",
+      "massKg": 5.5,
+      "centreOfMass": [0.2776978973999194, 0.09137051682717888, 0.0003838042392159372]
+    }
+  },
+  "grip": { "at": [0.076, 0.116, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

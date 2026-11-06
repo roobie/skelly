@@ -1,0 +1,11 @@
+{
+  "id": "block_and_tackle_wood",
+  "file": "assets/models/block_and_tackle_wood.glb",
+  "parts": {
+    "block_and_tackle_wood": {
+      "node": "block_and_tackle_wood:compound",
+      "massKg": 0.37,
+      "centreOfMass": [-0.00029281127111212225, 0.02174269386369422, 0.0014831527428070272]
+    }
+  }
+}

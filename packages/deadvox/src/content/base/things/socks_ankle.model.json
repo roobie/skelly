@@ -1,0 +1,11 @@
+{
+  "id": "socks_ankle",
+  "file": "assets/models/socks_ankle.glb",
+  "parts": {
+    "socks_ankle": {
+      "node": "socks_ankle:compound",
+      "massKg": 0.045,
+      "centreOfMass": [4.233268232103519e-18, 0.0030092118730808593, 0.021127942681678606]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "badge_marshal",
+  "file": "assets/models/badge_marshal.glb",
+  "parts": {
+    "badge_marshal": {
+      "node": "badge_marshal:compound",
+      "massKg": 0.06,
+      "centreOfMass": [3.7706701509163736e-20, 0.004436265709156193, -0.00029982046678635535]
+    }
+  }
+}

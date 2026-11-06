@@ -1,0 +1,11 @@
+{
+  "id": "helmet_army_outdated",
+  "file": "assets/models/helmet_army_outdated.glb",
+  "parts": {
+    "helmet_army_outdated": {
+      "node": "helmet_army_outdated:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-0.000004139626140014195, 0.06731476251051079, 0.0007199931006231001]
+    }
+  }
+}

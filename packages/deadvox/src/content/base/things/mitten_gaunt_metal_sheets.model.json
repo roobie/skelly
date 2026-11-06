@@ -1,0 +1,11 @@
+{
+  "id": "mitten_gaunt_metal_sheets",
+  "file": "assets/models/mitten_gaunt_metal_sheets.glb",
+  "parts": {
+    "mitten_gaunt_metal_sheets": {
+      "node": "mitten_gaunt_metal_sheets:compound",
+      "massKg": 1.5,
+      "centreOfMass": [1.1510842883274647e-17, 0.011091654063939794, 0.02709073963352444]
+    }
+  }
+}

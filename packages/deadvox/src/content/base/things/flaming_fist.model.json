@@ -1,0 +1,11 @@
+{
+  "id": "flaming_fist",
+  "file": "assets/models/flaming_fist.glb",
+  "parts": {
+    "flaming_fist": {
+      "node": "flaming_fist:compound",
+      "massKg": 1.2,
+      "centreOfMass": [0.000006134073316777938, 0.013685409668467935, 0.023355630203008605]
+    }
+  }
+}

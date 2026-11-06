@@ -1,0 +1,11 @@
+{
+  "id": "spearsling",
+  "file": "assets/models/spearsling.glb",
+  "parts": {
+    "spearsling": {
+      "node": "spearsling:compound",
+      "massKg": 0.15,
+      "centreOfMass": [-0.04152517275419547, 0.0077926949654491635, -0.021796643632773945]
+    }
+  }
+}

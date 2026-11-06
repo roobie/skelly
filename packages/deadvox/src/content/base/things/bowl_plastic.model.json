@@ -1,0 +1,7 @@
+{
+  "id": "bowl_plastic",
+  "file": "assets/models/bowl_plastic.glb",
+  "parts": {
+    "bowl_plastic": { "node": "bowl_plastic:compound", "massKg": 0.1, "centreOfMass": [0, 0.03566935483870967, 0] }
+  }
+}

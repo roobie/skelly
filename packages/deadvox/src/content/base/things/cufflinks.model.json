@@ -1,0 +1,11 @@
+{
+  "id": "cufflinks",
+  "file": "assets/models/cufflinks.glb",
+  "parts": {
+    "cufflinks": {
+      "node": "cufflinks:compound",
+      "massKg": 0.021,
+      "centreOfMass": [-6.154617652924312e-19, 0.008666666666666665, 0]
+    }
+  }
+}

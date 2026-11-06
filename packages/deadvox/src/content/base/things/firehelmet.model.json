@@ -1,0 +1,11 @@
+{
+  "id": "firehelmet",
+  "file": "assets/models/firehelmet.glb",
+  "parts": {
+    "firehelmet": {
+      "node": "firehelmet:compound",
+      "massKg": 1.2,
+      "centreOfMass": [0, 0.07480152365677627, -0.015534883720930232]
+    }
+  }
+}

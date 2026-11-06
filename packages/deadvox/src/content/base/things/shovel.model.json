@@ -1,0 +1,14 @@
+{
+  "id": "shovel",
+  "file": "assets/models/shovel.glb",
+  "parts": {
+    "shovel": {
+      "node": "shovel:compound",
+      "massKg": 2.5,
+      "centreOfMass": [0.8459970924195224, 0.029524195223260646, 1.3743395431826006e-18]
+    }
+  },
+  "grip": { "at": [0.49500000000000005, 0.039999999999999994, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

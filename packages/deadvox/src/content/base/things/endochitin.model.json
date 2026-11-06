@@ -1,0 +1,11 @@
+{
+  "id": "endochitin",
+  "file": "assets/models/endochitin.glb",
+  "parts": {
+    "endochitin": {
+      "node": "endochitin:compound",
+      "massKg": 0.043,
+      "centreOfMass": [-0.040192759295499036, 0.013248532289628183, -0.0005445205479452054]
+    }
+  }
+}

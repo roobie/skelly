@@ -15,11 +15,14 @@ export const requireConvex = (profile: readonly Vec2[], what: string): void => {
     }
   }
 };
+/** Flat sides on every turned shape; why is in `packages/thing-authoring-tool/README.md`, "Turned shapes". */
+export const TURNED_SIDES = 8;
 export const revolve = (id: string, profile: readonly Vec2[], slot = 'body'): RevolvedSolid => ({
   id,
   kind: 'revolved',
   axis: 'y',
   profile,
+  sides: TURNED_SIDES,
   slot,
 });
 export const cylinder = (id: string, radius: number, height: number, slot = 'body') =>

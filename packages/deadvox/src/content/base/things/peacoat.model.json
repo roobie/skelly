@@ -1,0 +1,11 @@
+{
+  "id": "peacoat",
+  "file": "assets/models/peacoat.glb",
+  "parts": {
+    "peacoat": {
+      "node": "peacoat:compound",
+      "massKg": 1.9,
+      "centreOfMass": [3.1176715383424855e-21, 0.040837268204432405, -0.005220503542891609]
+    }
+  }
+}

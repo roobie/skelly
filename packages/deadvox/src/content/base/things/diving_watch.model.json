@@ -1,0 +1,11 @@
+{
+  "id": "diving_watch",
+  "file": "assets/models/diving_watch.glb",
+  "parts": {
+    "diving_watch": {
+      "node": "diving_watch:compound",
+      "massKg": 0.14,
+      "centreOfMass": [0.00014292520247737026, 0.0065502620295378785, -0.004515959980943308]
+    }
+  }
+}

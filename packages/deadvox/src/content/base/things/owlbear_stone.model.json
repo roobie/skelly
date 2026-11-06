@@ -1,0 +1,14 @@
+{
+  "id": "owlbear_stone",
+  "file": "assets/models/owlbear_stone.glb",
+  "parts": {
+    "owlbear_stone": {
+      "node": "owlbear_stone:compound",
+      "massKg": 1.9,
+      "centreOfMass": [-0.011465765501028506, 0.05005877167205408, 0]
+    }
+  },
+  "grip": { "at": [-0.04, 0.05, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

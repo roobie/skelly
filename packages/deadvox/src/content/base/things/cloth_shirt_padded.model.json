@@ -1,0 +1,11 @@
+{
+  "id": "cloth_shirt_padded",
+  "file": "assets/models/cloth_shirt_padded.glb",
+  "parts": {
+    "cloth_shirt_padded": {
+      "node": "cloth_shirt_padded:compound",
+      "massKg": 1.2,
+      "centreOfMass": [0.0001951323991928665, 0.042649223866800465, -0.010735100158946671]
+    }
+  }
+}

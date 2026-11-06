@@ -1,0 +1,11 @@
+{
+  "id": "helmet_chitin_light",
+  "file": "assets/models/helmet_chitin_light.glb",
+  "parts": {
+    "helmet_chitin_light": {
+      "node": "helmet_chitin_light:compound",
+      "massKg": 1.4,
+      "centreOfMass": [0, 0.12564225394301784, -0.0018304819179944477]
+    }
+  }
+}

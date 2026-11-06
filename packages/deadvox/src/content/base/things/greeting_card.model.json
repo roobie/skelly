@@ -1,0 +1,11 @@
+{
+  "id": "greeting_card",
+  "file": "assets/models/greeting_card.glb",
+  "parts": {
+    "greeting_card": {
+      "node": "greeting_card:compound",
+      "massKg": 0.015,
+      "centreOfMass": [0, 0.06034458259325045, 0.0059952634695085855]
+    }
+  }
+}

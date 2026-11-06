@@ -1,0 +1,11 @@
+{
+  "id": "fancy_rifle_cartridge_necklace",
+  "file": "assets/models/fancy_rifle_cartridge_necklace.glb",
+  "parts": {
+    "fancy_rifle_cartridge_necklace": {
+      "node": "fancy_rifle_cartridge_necklace:compound",
+      "massKg": 0.03,
+      "centreOfMass": [-3.9891040343027943e-20, 0.004724279835390945, 0.0655432098765432]
+    }
+  }
+}

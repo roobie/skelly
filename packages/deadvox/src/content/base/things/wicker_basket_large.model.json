@@ -1,0 +1,11 @@
+{
+  "id": "wicker_basket_large",
+  "file": "assets/models/wicker_basket_large.glb",
+  "parts": {
+    "wicker_basket_large": {
+      "node": "wicker_basket_large:compound",
+      "massKg": 0.56,
+      "centreOfMass": [3.7308047092389113e-19, 0.20183341261535528, 0]
+    }
+  }
+}

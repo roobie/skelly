@@ -1,0 +1,11 @@
+{
+  "id": "nylon_quiver",
+  "file": "assets/models/nylon_quiver.glb",
+  "parts": {
+    "nylon_quiver": {
+      "node": "nylon_quiver:compound",
+      "massKg": 0.15,
+      "centreOfMass": [-0.005127631492113768, 0.04029142744011087, -0.0008235992872698475]
+    }
+  }
+}

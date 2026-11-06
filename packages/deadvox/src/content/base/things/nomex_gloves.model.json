@@ -1,0 +1,11 @@
+{
+  "id": "nomex_gloves",
+  "file": "assets/models/nomex_gloves.glb",
+  "parts": {
+    "nomex_gloves": {
+      "node": "nomex_gloves:compound",
+      "massKg": 0.05,
+      "centreOfMass": [-4.179016902300179e-18, 0.0038824067300658343, 0.032866678858814904]
+    }
+  }
+}

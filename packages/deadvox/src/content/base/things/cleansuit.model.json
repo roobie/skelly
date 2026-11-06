@@ -1,0 +1,11 @@
+{
+  "id": "cleansuit",
+  "file": "assets/models/cleansuit.glb",
+  "parts": {
+    "cleansuit": {
+      "node": "cleansuit:compound",
+      "massKg": 0.2,
+      "centreOfMass": [0, 0.03972397800995285, -0.000988457830697481]
+    }
+  }
+}

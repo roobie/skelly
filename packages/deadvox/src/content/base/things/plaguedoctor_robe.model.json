@@ -1,0 +1,11 @@
+{
+  "id": "plaguedoctor_robe",
+  "file": "assets/models/plaguedoctor_robe.glb",
+  "parts": {
+    "plaguedoctor_robe": {
+      "node": "plaguedoctor_robe:compound",
+      "massKg": 1.3,
+      "centreOfMass": [0.00016378457655445272, 0.030452402878679348, -0.0022447104835317247]
+    }
+  }
+}

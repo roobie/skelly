@@ -1,0 +1,14 @@
+{
+  "id": "wicker_backpack",
+  "file": "assets/models/wicker_backpack.glb",
+  "parts": {
+    "wicker_backpack": {
+      "node": "wicker_backpack:compound",
+      "massKg": 0.68,
+      "centreOfMass": [0, 0.2078356835815571, -0.0005790778560599304]
+    }
+  },
+  "grip": { "at": [0, 0.41600000000000004, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "armor_qt_chestplate",
+  "file": "assets/models/armor_qt_chestplate.glb",
+  "parts": {
+    "armor_qt_chestplate": {
+      "node": "armor_qt_chestplate:compound",
+      "massKg": 20,
+      "centreOfMass": [4.410082536235015e-18, 0.02920841809891269, -0.0789679410733076]
+    }
+  }
+}

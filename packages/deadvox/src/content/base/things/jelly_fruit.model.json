@@ -1,0 +1,11 @@
+{
+  "id": "jelly_fruit",
+  "file": "assets/models/jelly_fruit.glb",
+  "parts": {
+    "jelly_fruit": {
+      "node": "jelly_fruit:compound",
+      "massKg": 0.25,
+      "centreOfMass": [-0.0014500055859680487, 0.034107250586526645, -0.00003686738911853425]
+    }
+  }
+}

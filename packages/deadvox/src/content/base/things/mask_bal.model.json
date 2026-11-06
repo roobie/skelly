@@ -1,0 +1,11 @@
+{
+  "id": "mask_bal",
+  "file": "assets/models/mask_bal.glb",
+  "parts": {
+    "mask_bal": {
+      "node": "mask_bal:compound",
+      "massKg": 0.25,
+      "centreOfMass": [3.656855051074392e-18, 0.10432360742705571, -0.04257824933687001]
+    }
+  }
+}

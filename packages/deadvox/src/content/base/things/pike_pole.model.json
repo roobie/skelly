@@ -1,0 +1,14 @@
+{
+  "id": "pike_pole",
+  "file": "assets/models/pike_pole.glb",
+  "parts": {
+    "pike_pole": {
+      "node": "pike_pole:compound",
+      "massKg": 2,
+      "centreOfMass": [0.6923480176211453, 0, 0.0006651982378854626]
+    }
+  },
+  "grip": { "at": [0.15, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,11 @@
+{
+  "id": "biollante_bud",
+  "file": "assets/models/biollante_bud.glb",
+  "parts": {
+    "biollante_bud": {
+      "node": "biollante_bud:compound",
+      "massKg": 0.12,
+      "centreOfMass": [-0.008726433096710175, 0.028111518204717207, 0]
+    }
+  }
+}

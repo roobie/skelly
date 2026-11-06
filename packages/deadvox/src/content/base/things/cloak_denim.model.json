@@ -1,0 +1,11 @@
+{
+  "id": "cloak_denim",
+  "file": "assets/models/cloak_denim.glb",
+  "parts": {
+    "cloak_denim": {
+      "node": "cloak_denim:compound",
+      "massKg": 1.2,
+      "centreOfMass": [7.152819999284694e-8, 0.030237092140242967, -0.003578150519175518]
+    }
+  }
+}

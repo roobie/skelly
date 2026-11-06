@@ -1,0 +1,285 @@
+[
+  {
+    "id": "gambeson_gloves_wool",
+    "model": "gambeson_gloves_wool",
+    "name": "Wool arming mittens",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 29,
+      "warmth": 55,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.4, "cut": 0.45, "pierce": 0.3 }
+    },
+    "description": "A pair of thick quilted wool mittens with leather-bound cuffs. Warm and protective, but too clumsy for fine work.",
+    "reference": "gambeson_gloves_wool",
+    "variants": ["xl_gambeson_gloves_wool", "xs_gambeson_gloves_wool"],
+    "notes": "Laid flat side by side, backs up, thumbs out, cuffs at -z: each a channel-quilted mitt and thumb with a deep leather-bound cuff. CHECK VOLUME: the reference gives 0.5 L, well under a pair of mittens 45 mm thick laid flat; the box ratio counts the space between and around them. Slot `hands`, as the brigandine gloves take it. The xl and xs sizes share the model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "gambeson_hood",
+    "model": "gambeson_hood",
+    "name": "Padded coif",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "hood",
+      "encumbrance": 0,
+      "warmth": 25,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.35, "cut": 0.35, "pierce": 0.25 }
+    },
+    "description": "A quilted cotton hood that covers the head, neck and forehead and rests on the shoulders. Worn alone or as padding under a helmet.",
+    "reference": "gambeson_hood",
+    "variants": ["xl_gambeson_hood", "xs_gambeson_hood"],
+    "notes": "Standing upright as a hat would, its oval face opening at the front (+z): a head quilted in vertical channels, a short shoulder cape with a bound hem, and the face opening bound in brown. CHECK VOLUME: the reference gives 0.5 L for the cloth alone; the model stands as a hollow hood, so its box is far larger. Slot `hood` is new: the coif is worn under a helmet, which takes `head`, so it needs its own slot; balaclavas, cowls and mail coifs would share it. The xl and xs sizes share the model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "gambeson_nylon",
+    "model": "gambeson_nylon",
+    "name": "Nylon gambeson",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 21,
+      "warmth": 60,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.45, "cut": 0.55, "pierce": 0.4 }
+    },
+    "description": "A long coat quilted from dozens of layers of tough nylon, reaching below the knees with thick padded sleeves. Heavy and hot, and too thick to wear under other armour.",
+    "reference": "gambeson_nylon",
+    "variants": ["xl_gambeson_nylon", "xs_gambeson_nylon"],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 420 mm by 380 mm and 100 mm tall in four layers: dense channel quilting, a stand collar, toggles down the front and the thick quilted sleeves folded along both sides, ringed with stitching and bound at the cuffs. Nylon uses nylon-coyote with black binding and brass toggles; no plain nylon cloth finish exists. Slot `torso`, as the coats in earlier batches take it; it also reaches the arms and legs. No pockets. The xl and xs sizes share the model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "gambeson_nylon_thinsleeved",
+    "model": "gambeson_nylon_thinsleeved",
+    "name": "Thin-sleeved nylon gambeson",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 15,
+      "warmth": 60,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.45, "cut": 0.55, "pierce": 0.4 }
+    },
+    "description": "A long quilted nylon coat that reaches below the knees, its sleeves cut thin so the arms move freely. Heavy and hot, and too thick to wear under other armour.",
+    "reference": "gambeson_nylon_thinsleeved",
+    "variants": ["xl_gambeson_nylon_thinsleeved", "xs_gambeson_nylon_thinsleeved"],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 420 mm by 380 mm and 100 mm tall, as the nylon gambeson, but its sleeves fold to slim rolls along the sides so the two read apart. Nylon uses nylon-coyote with black binding and brass toggles; no plain nylon cloth finish exists. Slot `torso`, as the coats in earlier batches take it; it also reaches the arms and legs. No pockets. The reference also lets it sit in the normal layer; Deadvox has no layers yet. The xl and xs sizes share the model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "gambeson_wool",
+    "model": "gambeson_nylon",
+    "name": "Wool gambeson",
+    "category": "clothing",
+    "size": [4, 4],
+    "weight": 10140,
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 23,
+      "warmth": 66,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.45, "cut": 0.5, "pierce": 0.35 }
+    },
+    "finishes": {
+      "binding": "leather-brown",
+      "cloth": "wool-grey",
+      "quilt": "wool-grey",
+      "sleeve": "wool-grey",
+      "stitch": "leather-brown",
+      "toggle": "wood-oak"
+    },
+    "description": "A long coat of thick layered wool quilting, reaching below the knees with padded sleeves. Heavy and very warm, and too thick to wear under other armour.",
+    "reference": "gambeson_wool",
+    "variants": ["xl_gambeson_wool", "xs_gambeson_wool"],
+    "notes": "Shares the nylon gambeson's model, recoloured to grey wool with leather binding and wooden toggles; weight 10140 g overrides the model's 8.424 kg. Slot `torso`, as the coats in earlier batches take it; it also reaches the arms and legs. No pockets. The xl and xs sizes share the model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "gambeson_wool_thinsleeved",
+    "model": "gambeson_nylon_thinsleeved",
+    "name": "Thin-sleeved wool gambeson",
+    "category": "clothing",
+    "size": [4, 4],
+    "weight": 10488,
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 23,
+      "warmth": 66,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.45, "cut": 0.5, "pierce": 0.35 }
+    },
+    "finishes": {
+      "binding": "leather-brown",
+      "cloth": "wool-grey",
+      "quilt": "wool-grey",
+      "sleeve": "wool-grey",
+      "stitch": "leather-brown",
+      "toggle": "wood-oak"
+    },
+    "description": "A long coat of thick layered wool quilting that reaches below the knees, its sleeves cut thin so the arms move freely. Heavy and very warm.",
+    "reference": "gambeson_wool_thinsleeved",
+    "variants": ["xl_gambeson_wool_thinsleeved", "xs_gambeson_wool_thinsleeved"],
+    "notes": "Shares the thin-sleeved nylon gambeson's model, recoloured to grey wool with leather binding and wooden toggles; weight 10488 g overrides the model's 7.452 kg. Slot `torso`, as the coats in earlier batches take it; it also reaches the arms and legs. No pockets. The reference also lets it sit in the normal layer; Deadvox has no layers yet. The xl and xs sizes share the model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "gambeson_nylon_vest",
+    "model": "gambeson_nylon_vest",
+    "name": "Sleeveless nylon gambeson",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 15,
+      "warmth": 60,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.45, "cut": 0.55, "pierce": 0.4 }
+    },
+    "description": "A sleeveless surcoat quilted from dozens of layers of tough nylon, hanging below the knees. Heavy and hot, and too thick to wear under other armour.",
+    "reference": "gambeson_nylon_vest",
+    "variants": ["xl_gambeson_nylon_vest", "xs_gambeson_nylon_vest"],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 400 mm by 360 mm and 90 mm tall in four layers: channel quilting, a stand collar, toggles down the front, and bound armholes drawn as shadowed half-rounds cut into both sides at the shoulders so it reads as sleeveless. Nylon uses nylon-coyote with black binding and brass toggles; no plain nylon cloth finish exists. Slot `torso`, as the sleeveless coats in earlier batches take it rather than `vest`, which holds chest rigs and load vests; it also reaches the legs. No pockets. The xl and xs sizes share the model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "gambeson_wool_vest",
+    "model": "gambeson_nylon_vest",
+    "name": "Sleeveless wool gambeson",
+    "category": "clothing",
+    "size": [4, 3],
+    "weight": 7800,
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 18,
+      "warmth": 66,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.45, "cut": 0.5, "pierce": 0.35 }
+    },
+    "finishes": {
+      "binding": "leather-brown",
+      "cloth": "wool-grey",
+      "quilt": "wool-grey",
+      "stitch": "leather-brown",
+      "toggle": "wood-oak"
+    },
+    "description": "A sleeveless surcoat of thick layered wool quilting, hanging below the knees. Heavy and very warm, and too thick to wear under other armour.",
+    "reference": "gambeson_wool_vest",
+    "variants": ["xl_gambeson_wool_vest", "xs_gambeson_wool_vest"],
+    "notes": "Shares the sleeveless nylon gambeson's model, recoloured to grey wool with leather binding and wooden toggles; weight 7800 g overrides the model's 6.48 kg. Slot `torso`, as the sleeveless coats in earlier batches take it rather than `vest`, which holds chest rigs and load vests; it also reaches the legs. No pockets. The xl and xs sizes share the model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "gambeson_vest",
+    "model": "gambeson_vest",
+    "name": "Padded gambeson vest",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 20,
+      "warmth": 50,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0, "blunt": 0.38, "cut": 0.4, "pierce": 0.28 }
+    },
+    "description": "A crude sleeveless surcoat of cotton stuffed thick with rags and quilted in a coarse diamond pattern, laced shut down the front with a leather thong.",
+    "reference": "gambeson_vest",
+    "variants": ["xl_gambeson_vest", "gambeson_vest_xs"],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 400 mm by 360 mm and 100 mm tall in four layers: a coarse diamond lattice of stitching, a plain bound neck, bound armholes drawn as shadowed half-rounds in both sides, and a leather thong criss-crossed through two rows of eyelets down the front opening. Slot `torso`, as the sleeveless coats in earlier batches take it rather than `vest`, which holds chest rigs and load vests; it also reaches the legs. No pockets. The xl and xs sizes share the model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "gambeson_pants",
+    "model": "gambeson_pants",
+    "name": "Padded arming trousers",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 15,
+      "warmth": 30,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.35, "cut": 0.35, "pierce": 0.25 }
+    },
+    "description": "Quilted cotton trousers with a drawstring waist, made to be worn with a gambeson, under armour or alone.",
+    "reference": "gambeson_pants",
+    "variants": ["xl_gambeson_pants", "gambeson_pants_xs"],
+    "notes": "Folded lengthwise in three on a shelf, waistband at the +z end and hem at -z, 280 mm by 420 mm and 60 mm tall: channel quilting down the leg, a bound waistband with the drawstring tied at the front, a fly seam and a bound hem. CHECK VOLUME: the reference gives 1.75 L for the cloth; folded trousers take more room than the cloth packed solid. Slot `legs`, as the jeans take it. No pockets. The xl and xs sizes share the model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "gambeson_pants_canvas",
+    "model": "gambeson_pants_canvas",
+    "name": "Canvas heavy arming trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 25,
+      "warmth": 55,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.45, "cut": 0.5, "pierce": 0.35 }
+    },
+    "description": "Stiff, very thick trousers quilted from many layers of canvas, with a padded knee and points at the waist to tie them to a gambeson. Hot and restrictive.",
+    "reference": "gambeson_pants_canvas",
+    "variants": ["xl_gambeson_pants_canvas", "xs_gambeson_pants_canvas"],
+    "notes": "Folded lengthwise in four on a shelf, waistband at the +z end and hem at -z, 320 mm by 440 mm and 110 mm tall: thick channel quilting down the leg, a padded knee panel stitched with a cross, a leather-bound waistband with four pairs of lacing points hanging past it, and a leather-bound hem. CHECK VOLUME: the reference gives 3.75 L for the cloth; folded trousers take more room than the cloth packed solid. Slot `legs`, as the jeans take it. No pockets. The xl and xs sizes share the model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "gambeson_pants_nylon",
+    "model": "gambeson_pants_canvas",
+    "name": "Nylon heavy arming trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "weight": 3888,
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 21,
+      "warmth": 55,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.45, "cut": 0.55, "pierce": 0.4 }
+    },
+    "finishes": {
+      "binding": "webbing-black",
+      "cloth": "nylon-coyote",
+      "point": "webbing-black",
+      "quilt": "nylon-coyote",
+      "stitch": "webbing-black"
+    },
+    "description": "Very thick trousers quilted from many layers of tough nylon, with a padded knee and points at the waist to tie them to a gambeson. Hot and restrictive.",
+    "reference": "gambeson_pants_nylon",
+    "variants": ["xl_gambeson_pants_nylon", "xs_gambeson_pants_nylon"],
+    "notes": "Shares the canvas heavy arming trousers' model, recoloured to nylon-coyote with black binding and points; weight 3888 g overrides the model's 5.472 kg. CHECK VOLUME as for the canvas trousers. Slot `legs`, as the jeans take it. No pockets. The xl and xs sizes share the model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "gambeson_pants_wool",
+    "model": "gambeson_pants_canvas",
+    "name": "Wool heavy arming trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "weight": 4680,
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 23,
+      "warmth": 61,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.45, "cut": 0.5, "pierce": 0.35 }
+    },
+    "finishes": { "cloth": "wool-grey", "quilt": "wool-grey" },
+    "description": "Very thick trousers of layered wool quilting, with a padded knee and points at the waist to tie them to a gambeson. Warm, stuffy and restrictive.",
+    "reference": "gambeson_pants_wool",
+    "variants": ["xl_gambeson_pants_wool", "xs_gambeson_pants_wool"],
+    "notes": "Shares the canvas heavy arming trousers' model, recoloured to grey wool with leather binding; weight 4680 g overrides the model's 5.472 kg. CHECK VOLUME as for the canvas trousers. Slot `legs`, as the jeans take it. No pockets. The xl and xs sizes share the model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  }
+]

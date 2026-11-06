@@ -1,0 +1,11 @@
+{
+  "id": "duster",
+  "file": "assets/models/duster.glb",
+  "parts": {
+    "duster": {
+      "node": "duster:compound",
+      "massKg": 1.8,
+      "centreOfMass": [-5.1491214326809294e-20, 0.03338304958137509, -0.009620342992312245]
+    }
+  }
+}

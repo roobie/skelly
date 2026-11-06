@@ -1,0 +1,11 @@
+{
+  "id": "kettle",
+  "file": "assets/models/kettle.glb",
+  "parts": {
+    "kettle": {
+      "node": "kettle:compound",
+      "massKg": 0.58,
+      "centreOfMass": [-0.0007767734867159682, 0.06690641833287683, 0]
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "scooter_headlamp",
+  "file": "assets/models/scooter_headlamp.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 1,
+      "centreOfMass": [0.4352678571428571, 1, 0],
+      "collision": [
+        { "min": [0.40625, 0.9375, -0.0625], "max": [0.4375, 1.0625, 0.0625] },
+        { "min": [0.4375, 0.9375, -0.0625], "max": [0.46875, 1.0625, 0.0625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "ammonia_machine_pipework",
+  "file": "assets/models/ammonia_machine_pipework.glb",
+  "parts": {
+    "ammonia_machine_pipework": {
+      "node": "ammonia_machine_pipework:compound",
+      "massKg": 1200,
+      "centreOfMass": [-0.0020332515365046365, 0.4290396001710978, 0.06276565208581916]
+    }
+  }
+}

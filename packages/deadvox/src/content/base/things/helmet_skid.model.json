@@ -1,0 +1,11 @@
+{
+  "id": "helmet_skid",
+  "file": "assets/models/helmet_skid.glb",
+  "parts": {
+    "helmet_skid": {
+      "node": "helmet_skid:compound",
+      "massKg": 0.96,
+      "centreOfMass": [0.0006538461538461539, 0.06313736263736262, 0]
+    }
+  }
+}

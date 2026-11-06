@@ -1,0 +1,11 @@
+{
+  "id": "sextant",
+  "file": "assets/models/sextant.glb",
+  "parts": {
+    "sextant": {
+      "node": "sextant:compound",
+      "massKg": 0.71,
+      "centreOfMass": [0.11589307643446958, 0.018032112357964567, 0.014254922718611047]
+    }
+  }
+}

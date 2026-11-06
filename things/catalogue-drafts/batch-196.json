@@ -1,0 +1,110 @@
+[
+  {
+    "id": "kampuch",
+    "model": "kampuch",
+    "name": "Pale assassin's bloom",
+    "category": "material",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier2", "Tier3"] },
+    "description": "A slim white flower rolled tight around a pinch of yellow pollen. The pollen kills, quickly and painfully; keep it away from your face.",
+    "reference": "kampuch",
+    "variants": [],
+    "notes": "75 mm long and 14 mm across on a short green stem, lying along x: three stepped petal tiers read as petals rolled one over the next, with the yellow pollen standing proud of the open tip. cloth-bright-white for the petals, since cloth-cream reads grey. The box is 3.5 times the reference's 5 ml because a thin stem and bloom enclose air. Its poison use needs a recipe or an effect, not a tool quality. A white petal finish would suit it better than cloth."
+  },
+  {
+    "id": "olieribos",
+    "model": "olieribos",
+    "name": "Bitterleaf bundle",
+    "category": "material",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A small bundle of dark leaves and pale, bitter roots tied with twine. Harmless, but too tough to swallow whole.",
+    "reference": "olieribos",
+    "variants": [],
+    "notes": "110 mm long, lying along x: five dark purple leaves fanned at one end, four stalks under a jute tie, and four pale roots splayed at the other end. plant-purple carries the dark mutant leaves and bark-birch the pale roots. CHECK VOLUME: the box is 18 times the reference's 3 ml, which no fanned sheaf of this size fits; a 2 g bundle this long is mostly air, so the drawn size is kept."
+  },
+  {
+    "id": "platonic_flower",
+    "model": "platonic_flower",
+    "name": "Spiral rose",
+    "category": "food",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier2", "Tier3"] },
+    "description": "A flower whose petals wind inward in a perfect spiral, each ring a smaller copy of the one outside it, around a faintly glowing violet heart. Edible.",
+    "reference": "platonic_flower",
+    "variants": [
+      "moonflowers",
+      "golden_reed_stalk",
+      "wood_barnacle",
+      "dragon_nail",
+      "moly_tuber",
+      "fern_flower",
+      "funnelcap_chunk",
+      "sojourners_flower",
+      "whiskflower"
+    ],
+    "notes": "A head 94 mm across and 30 mm high lying face up on a stub of stem: forty kite-shaped petals set at the golden angle, shrinking and climbing toward the centre in three shades (petal-pink, plastic-pink, lycra-red) around a crystal-glow-violet heart. CHECK VOLUME: the box is 5 times the reference's 50 ml because an open flower head is mostly air between petals. The variants are the reference's other edible magical plants and ride here as the brief asks, but they do not look like this flower: moonflowers, golden reed stalks, a wood barnacle, a dragon's-nail, a tuber, a fern flower, a mushroom chunk, a sojourner's flower and a whiskflower each want their own row in a later batch. Their masses differ too (moonflowers 120 g; sojourner's flower and whiskflower 10 g)."
+  },
+  {
+    "id": "crimsonite_ingot",
+    "model": "crimsonite_ingot",
+    "name": "Crimson metal ingot",
+    "category": "material",
+    "size": [1, 1],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier3", "Tier4"] },
+    "description": "A heavy ingot of a deep red metal, stamped with a maker's rune, ready for the forge.",
+    "reference": "crimsonite_ingot",
+    "variants": [],
+    "notes": "120 by 70 by 30 mm, as the reference gives, drawn as six layers narrowing to the top with a raised rune on the top face; the three ingots in this batch share the shape through a local helper and each carry their own mass. metal-crimson for the red metal and rust-red for the rune. Smithing it needs recipes, not a tool quality."
+  },
+  {
+    "id": "mithril_ingot",
+    "model": "mithril_ingot",
+    "name": "Pale silver ingot",
+    "category": "material",
+    "size": [1, 1],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier3", "Tier4"] },
+    "description": "An ingot of a bright silvery metal, startlingly light for its size, stamped with a maker's rune.",
+    "reference": "mithril_ingot",
+    "variants": [],
+    "notes": "Same 120 by 70 by 30 mm stepped shape as the crimson ingot, at the reference's 683 g. mithril for the pale blue-silver metal and mirror-silver for the rune. Smithing it needs recipes, not a tool quality."
+  },
+  {
+    "id": "orichalcum_ingot",
+    "model": "orichalcum_ingot",
+    "name": "Red-gold ingot",
+    "category": "material",
+    "size": [1, 1],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier3", "Tier4"] },
+    "description": "A heavy ingot of a warm red-gold metal that shrugs off corrosion, stamped with a maker's rune.",
+    "reference": "orichalcum_ingot",
+    "variants": [],
+    "notes": "Same 120 by 70 by 30 mm stepped shape as the other ingots, at the reference's 2 kg, in the orichalcum finish with a bronze rune. Smithing it needs recipes, not a tool quality."
+  },
+  {
+    "id": "cauldron_demon_chitin",
+    "model": "cauldron_demon_chitin",
+    "name": "Black chitin cauldron",
+    "category": "tool",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential", "Infected"], "tiers": ["Tier3", "Tier4"] },
+    "tool": { "qualities": { "alchemy": 1, "cooking": 3, "mutagen_brewing": 2 } },
+    "description": "A round-bellied cauldron grown from black spider shell, on three clawed feet. Its dull body seems to swallow light, and whatever simmers in it comes out cleaner of poison.",
+    "reference": "cauldron_demon_chitin",
+    "variants": [],
+    "notes": "360 mm high and 360 mm across the belly on three clawed feet, with a flared lip, two ring handles at the shoulders and three glossy chitin bands over a void-black body, so it reads as dark shell that drinks light. It holds about 16 L. cooking 3, the pot level, covers the reference's cooking and boiling qualities, and its container quality is left to a container block; mutagen_brewing and alchemy carry its magic mutagen and cauldron qualities. Drawing poison out of its contents needs a recipe or an effect. Almost all black in the tiles, as it is meant to be."
+  },
+  {
+    "id": "cauldron_orichalcum",
+    "model": "cauldron_orichalcum",
+    "name": "Red-gold alchemist's pot",
+    "category": "tool",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3", "Tier4"] },
+    "tool": { "qualities": { "alchemy": 2, "cooking": 3, "mutagen_brewing": 1 } },
+    "description": "A tall lidded stockpot of red-gold metal with a band of pale blue runes round its middle. Alchemy that eats through steel leaves it unmarked.",
+    "reference": "cauldron_orichalcum",
+    "variants": [],
+    "notes": "300 mm across and 300 mm high under a domed lid with a knob, bronze bracket handles each side, and twelve crystal-glow-blue rune plates between two raised bands; 20 L, the reference's volume. cooking 3 covers the reference's cooking and boiling qualities; mutagen_brewing and alchemy carry the reference's magic mutagen and cauldron qualities, the same names as the chitin cauldron."
+  }
+]

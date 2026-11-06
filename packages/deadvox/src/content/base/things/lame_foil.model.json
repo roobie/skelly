@@ -1,0 +1,11 @@
+{
+  "id": "lame_foil",
+  "file": "assets/models/lame_foil.glb",
+  "parts": {
+    "lame_foil": {
+      "node": "lame_foil:compound",
+      "massKg": 0.32,
+      "centreOfMass": [0.001426866519855083, 0.004007103786318107, -0.054013355118278046]
+    }
+  }
+}

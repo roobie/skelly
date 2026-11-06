@@ -5,7 +5,7 @@
     "hinge_set": {
       "node": "hinge_set:compound",
       "massKg": 0.36,
-      "centreOfMass": [0, 0.0016666666666666668, 9.069962856941094e-19]
+      "centreOfMass": [-1.1456795187715064e-18, 0.0019473684210526314, 0]
     }
   }
 }

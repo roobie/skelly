@@ -1,0 +1,11 @@
+{
+  "id": "armchair",
+  "file": "assets/models/armchair.glb",
+  "parts": {
+    "armchair": {
+      "node": "armchair:compound",
+      "massKg": 19,
+      "centreOfMass": [-3.765244564978309e-18, 0.4212233026567112, 0.057915219656190314]
+    }
+  }
+}

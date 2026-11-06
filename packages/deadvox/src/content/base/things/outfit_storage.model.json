@@ -1,0 +1,11 @@
+{
+  "id": "outfit_storage",
+  "file": "assets/models/outfit_storage.glb",
+  "parts": {
+    "outfit_storage": {
+      "node": "outfit_storage:compound",
+      "massKg": 0.78,
+      "centreOfMass": [-0.027064240153125904, 0.030020044745892822, 0.0004603928143954506]
+    }
+  }
+}

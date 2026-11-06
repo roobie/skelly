@@ -1,0 +1,11 @@
+{
+  "id": "duffelbag_l_poly",
+  "file": "assets/models/duffelbag_l_poly.glb",
+  "parts": {
+    "duffelbag_l_poly": {
+      "node": "duffelbag_l_poly:compound",
+      "massKg": 1.4,
+      "centreOfMass": [0.000006365410963056431, 0.17114716830146576, 0.003783903391248466]
+    }
+  }
+}

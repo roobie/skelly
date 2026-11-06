@@ -1,0 +1,14 @@
+{
+  "id": "toy_figurine_large",
+  "file": "assets/models/toy_figurine_large.glb",
+  "parts": {
+    "toy_figurine_large": {
+      "node": "toy_figurine_large:compound",
+      "massKg": 1.3,
+      "centreOfMass": [0, 0.13791857453641349, -0.001972029420905417]
+    }
+  },
+  "grip": { "at": [0, 0.016, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

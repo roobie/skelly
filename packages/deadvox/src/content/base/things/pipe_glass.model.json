@@ -1,0 +1,14 @@
+{
+  "id": "pipe_glass",
+  "file": "assets/models/pipe_glass.glb",
+  "parts": {
+    "pipe_glass": {
+      "node": "pipe_glass:compound",
+      "massKg": 0.062,
+      "centreOfMass": [0.012613112817483757, 0.000941523922031896, 0.000006497341996455996]
+    }
+  },
+  "grip": { "at": [0, 0, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

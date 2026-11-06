@@ -1,0 +1,11 @@
+{
+  "id": "keikogi",
+  "file": "assets/models/keikogi.glb",
+  "parts": {
+    "keikogi": {
+      "node": "keikogi:compound",
+      "massKg": 0.34,
+      "centreOfMass": [0.00004398340248962655, 0.012325145228215765, -0.0010092946058091285]
+    }
+  }
+}

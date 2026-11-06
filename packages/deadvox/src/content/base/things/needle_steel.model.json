@@ -1,0 +1,14 @@
+{
+  "id": "needle_steel",
+  "file": "assets/models/needle_steel.glb",
+  "parts": {
+    "needle_steel": {
+      "node": "needle_steel:compound",
+      "massKg": 0.0054,
+      "centreOfMass": [0.02982993197278912, 0.001843537414965986, 0.00003401360544217692]
+    }
+  },
+  "grip": { "at": [0.036000000000000004, 0.002, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "washboard",
+  "file": "assets/models/washboard.glb",
+  "parts": {
+    "washboard": {
+      "node": "washboard:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0, 0.22051984231274632, -0.000020499342969776583]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "tattered_garment",
+  "file": "assets/models/tattered_garment.glb",
+  "parts": {
+    "tattered_garment": {
+      "node": "tattered_garment:compound",
+      "massKg": 0.7,
+      "centreOfMass": [-0.0008046905335093578, 0.031064300691154775, -0.0029097615904325543]
+    }
+  }
+}

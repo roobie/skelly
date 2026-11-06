@@ -1,0 +1,14 @@
+{
+  "id": "billet_bone",
+  "file": "assets/models/billet_bone.glb",
+  "parts": {
+    "billet_bone": {
+      "node": "billet_bone:compound",
+      "massKg": 0.2,
+      "centreOfMass": [-0.003266289794703956, 0.023730437369830413, 0.000360011901219875]
+    }
+  },
+  "grip": { "at": [0, 0.023999999999999997, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

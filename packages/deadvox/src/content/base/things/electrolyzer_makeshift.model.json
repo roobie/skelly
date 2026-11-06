@@ -1,0 +1,11 @@
+{
+  "id": "electrolyzer_makeshift",
+  "file": "assets/models/electrolyzer_makeshift.glb",
+  "parts": {
+    "electrolyzer_makeshift": {
+      "node": "electrolyzer_makeshift:compound",
+      "massKg": 89,
+      "centreOfMass": [0.00012875914013964432, 0.3589233052944087, 0.0006900507632818364]
+    }
+  }
+}

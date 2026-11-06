@@ -1,8 +1,9 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { sha256, slotCache } from './cache.mjs';
 import { compileJsonnetFile, REPOSITORY_ROOT } from './index.mjs';
 
 const BIOME_EXECUTABLE = resolve(REPOSITORY_ROOT, 'node_modules/@biomejs/biome/bin/biome');
@@ -67,8 +68,27 @@ function checkManifest(expectedText) {
   }
 }
 
+// Formatting is a pure function of the text, the path's rules and the formatter, so it shares the compile cache.
+const formattedCache = slotCache(resolve(REPOSITORY_ROOT, 'node_modules/.cache/jsonnet/formatted'));
+const FORMATTER_KEY = sha256(
+  [resolve(REPOSITORY_ROOT, 'node_modules/@biomejs/biome/package.json'), resolve(REPOSITORY_ROOT, 'biome.jsonc')]
+    .map((path) => (existsSync(path) ? readFileSync(path, 'utf8') : 'missing'))
+    .join('\0'),
+);
+
 export function formatJson(source, target) {
   const formatPath = target.endsWith('.tmj') ? `${target}.json` : target;
+  const key = `${FORMATTER_KEY}:${sha256(source)}`;
+  const hit = formattedCache.get(formatPath, key);
+  if (hit !== undefined) {
+    return hit;
+  }
+  const output = formatWithBiome(source, formatPath);
+  formattedCache.set(formatPath, key, output);
+  return output;
+}
+
+function formatWithBiome(source, formatPath) {
   return execFileSync(
     process.execPath,
     [BIOME_EXECUTABLE, 'format', `--stdin-file-path=${relative(REPOSITORY_ROOT, formatPath)}`],
@@ -94,10 +114,16 @@ function checkOutputs(files) {
   return outputs;
 }
 
-function compileOutputs(files) {
+function compileOutputs(files, { outDir = REPOSITORY_ROOT, overlay } = {}) {
   return files.map(({ source, output }) => {
-    const target = resolve(REPOSITORY_ROOT, output);
-    writeFileSync(target, formatJson(compileJsonnetFile(source), target));
+    const target = resolve(outDir, output);
+    mkdirSync(dirname(target), { recursive: true });
+    // Format as the tracked file would be, so the output matches it and the formatter's ignore list does not apply.
+    const formatted = formatJson(
+      compileJsonnetFile(source, REPOSITORY_ROOT, { overlay }),
+      resolve(REPOSITORY_ROOT, output),
+    );
+    writeFileSync(target, formatted);
     return target;
   });
 }
@@ -126,14 +152,22 @@ export function selectWithin(files, within) {
   return inside;
 }
 
-export function compileJsonnetSources({ check = false, within } = {}) {
+// `outDir` mirrors the repository layout under another root, so a partial compile can leave tracked outputs alone;
+// `overlay` is the library folder that compileJsonnetFile searches first.
+export function compileJsonnetSources({ check = false, within, outDir, overlay } = {}) {
   const sources = SOURCE_ROOTS.flatMap((root) => jsonnetFiles(resolve(REPOSITORY_ROOT, root))).sort();
   const manifest = createManifest(sources);
   if (within) {
     if (check) {
       throw new Error('A partial Jsonnet compile cannot be checked; the manifest covers the full source set');
     }
-    return compileOutputs(selectWithin(manifest.files, within));
+    if (overlay && !outDir) {
+      throw new Error('An overlaid Jsonnet compile must write outside the repository outputs');
+    }
+    return compileOutputs(selectWithin(manifest.files, within), { outDir, overlay });
+  }
+  if (outDir || overlay) {
+    throw new Error('Only a partial Jsonnet compile can write outside the repository outputs');
   }
   if (check) {
     checkManifest(manifestText(manifest));

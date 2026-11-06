@@ -1,0 +1,11 @@
+{
+  "id": "tie_clipon",
+  "file": "assets/models/tie_clipon.glb",
+  "parts": {
+    "tie_clipon": {
+      "node": "tie_clipon:compound",
+      "massKg": 0.045,
+      "centreOfMass": [0.000028568034685514045, 0.0031780602245055525, -0.018900219754112966]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "sunglasses",
+  "file": "assets/models/sunglasses.glb",
+  "parts": {
+    "sunglasses": {
+      "node": "sunglasses:compound",
+      "massKg": 0.034,
+      "centreOfMass": [-0.000597754911131898, 0.030787464920486445, 0.00010084190832553853]
+    }
+  }
+}

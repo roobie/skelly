@@ -1,0 +1,11 @@
+{
+  "id": "trunks",
+  "file": "assets/models/trunks.glb",
+  "parts": {
+    "trunks": {
+      "node": "trunks:compound",
+      "massKg": 0.36,
+      "centreOfMass": [-5.735935636764338e-7, 0.02358867303657413, 0.000887590756086884]
+    }
+  }
+}

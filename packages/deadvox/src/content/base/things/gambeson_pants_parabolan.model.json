@@ -1,0 +1,11 @@
+{
+  "id": "gambeson_pants_parabolan",
+  "file": "assets/models/gambeson_pants_parabolan.glb",
+  "parts": {
+    "gambeson_pants_parabolan": {
+      "node": "gambeson_pants_parabolan:compound",
+      "massKg": 1.2,
+      "centreOfMass": [0.000006833999145750102, 0.021503128062108984, 0.010569030928871131]
+    }
+  }
+}

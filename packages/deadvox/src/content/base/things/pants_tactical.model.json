@@ -1,0 +1,11 @@
+{
+  "id": "pants_tactical",
+  "file": "assets/models/pants_tactical.glb",
+  "parts": {
+    "pants_tactical": {
+      "node": "pants_tactical:compound",
+      "massKg": 0.86,
+      "centreOfMass": [0.001613045278712037, 0.03398165823308993, 0.002392449171287459]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "lc_esapi_plate",
+  "file": "assets/models/lc_esapi_plate.glb",
+  "parts": {
+    "lc_esapi_plate": {
+      "node": "lc_esapi_plate:compound",
+      "massKg": 2.2,
+      "centreOfMass": [-0.007831350232798762, 0.017785825142265916, -0.0007946197620279375]
+    }
+  }
+}

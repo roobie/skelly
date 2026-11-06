@@ -1,0 +1,10 @@
+{
+  "id": "poppy_sleep",
+  "file": "assets/models/poppy_sleep.glb",
+  "parts": {
+    "poppy_sleep": { "node": "poppy_sleep:compound", "massKg": 0.021, "centreOfMass": [0, 0.008749412685982774, 0] }
+  },
+  "grip": { "at": [0, 0.006, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

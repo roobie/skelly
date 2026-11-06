@@ -1,0 +1,11 @@
+{
+  "id": "flotation_vest",
+  "file": "assets/models/flotation_vest.glb",
+  "parts": {
+    "flotation_vest": {
+      "node": "flotation_vest:compound",
+      "massKg": 0.64,
+      "centreOfMass": [-0.0002543840143539568, 0.026639609866811832, -0.016412323546776873]
+    }
+  }
+}

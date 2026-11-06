@@ -1,0 +1,14 @@
+{
+  "id": "prison_bus_rear_window",
+  "file": "assets/models/prison_bus_rear_window.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 12,
+      "centreOfMass": [-6.0625, 2.6875, 0],
+      "collision": [{ "min": [-6.09375, 2.3125, -0.90625], "max": [-6.03125, 3.0625, 0.90625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

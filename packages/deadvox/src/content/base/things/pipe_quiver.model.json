@@ -1,0 +1,11 @@
+{
+  "id": "pipe_quiver",
+  "file": "assets/models/pipe_quiver.glb",
+  "parts": {
+    "pipe_quiver": {
+      "node": "pipe_quiver:compound",
+      "massKg": 0.41,
+      "centreOfMass": [0.022695370203566923, 0.030122860745811563, 0]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "glass_prism",
+  "file": "assets/models/glass_prism.glb",
+  "parts": {
+    "glass_prism": {
+      "node": "glass_prism:compound",
+      "massKg": 0.049,
+      "centreOfMass": [0, 0.008564356435643563, 0.000009139375476009182]
+    }
+  }
+}

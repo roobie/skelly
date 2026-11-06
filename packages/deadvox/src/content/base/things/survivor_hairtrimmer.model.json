@@ -1,0 +1,14 @@
+{
+  "id": "survivor_hairtrimmer",
+  "file": "assets/models/survivor_hairtrimmer.glb",
+  "parts": {
+    "survivor_hairtrimmer": {
+      "node": "survivor_hairtrimmer:compound",
+      "massKg": 0.25,
+      "centreOfMass": [-0.014829900360948412, 0.034636155359111256, 0.0013555666025460917]
+    }
+  },
+  "grip": { "at": [-0.015, 0.034, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

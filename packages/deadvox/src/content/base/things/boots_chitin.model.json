@@ -1,0 +1,11 @@
+{
+  "id": "boots_chitin",
+  "file": "assets/models/boots_chitin.glb",
+  "parts": {
+    "boots_chitin": {
+      "node": "boots_chitin:compound",
+      "massKg": 1.7,
+      "centreOfMass": [3.2250014135172034e-18, 0.08898588638933291, -0.03748957074349877]
+    }
+  }
+}

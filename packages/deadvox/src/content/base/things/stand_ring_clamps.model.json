@@ -1,0 +1,11 @@
+{
+  "id": "stand_ring_clamps",
+  "file": "assets/models/stand_ring_clamps.glb",
+  "parts": {
+    "stand_ring_clamps": {
+      "node": "stand_ring_clamps:compound",
+      "massKg": 0.18,
+      "centreOfMass": [0.0017730116848850357, 0.009943987938183192, 0.002542254052016585]
+    }
+  }
+}

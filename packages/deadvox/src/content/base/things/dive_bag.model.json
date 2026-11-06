@@ -1,0 +1,11 @@
+{
+  "id": "dive_bag",
+  "file": "assets/models/dive_bag.glb",
+  "parts": {
+    "dive_bag": {
+      "node": "dive_bag:compound",
+      "massKg": 0.53,
+      "centreOfMass": [0.0008363888363888373, 0.017075663075663067, -0.041800667800667775]
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "steered_axle_drop",
+  "file": "assets/models/steered_axle_drop.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 260,
+      "centreOfMass": [0, 0.2863116197183099, 0],
+      "collision": [
+        { "min": [-0.0625, 0.1875, -0.875], "max": [0.0625, 0.3125, 0.875] },
+        { "min": [-0.0625, 0.1875, 0.875], "max": [0.0625, 0.65625, 0.9375] },
+        { "min": [-0.0625, 0.1875, -0.9375], "max": [0.0625, 0.65625, -0.875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

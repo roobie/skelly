@@ -1,0 +1,14 @@
+{
+  "id": "pliers",
+  "file": "assets/models/pliers.glb",
+  "parts": {
+    "pliers": {
+      "node": "pliers:pliers",
+      "massKg": 0.2,
+      "centreOfMass": [0.08229834254143649, 0.00005179558011049727, -1.1670608715826617e-18]
+    }
+  },
+  "grip": { "at": [0.049999999999999996, 0, -0.017], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 0
+}

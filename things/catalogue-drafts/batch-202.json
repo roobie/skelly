@@ -1,0 +1,113 @@
+[
+  {
+    "id": "storage_ring_greater",
+    "model": "storage_ring",
+    "name": "Violet crystal ring",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": { "slot": "finger", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.0005 },
+    "container": { "pockets": [{ "grid": [2, 4], "handlingSimSeconds": 0.2, "name": "crystal" }] },
+    "description": "A heavy platinum ring with a violet crystal that glows from within. A blade or a short gun pressed to the stone vanishes into it, and comes back to the hand at a thought.",
+    "reference": "storage_ring_greater",
+    "variants": [],
+    "notes": "A finger ring 21 mm across and 4 mm wide standing on its edge: a platinum band cut with glowing rune notches and a 7 mm `crystal-glow-violet` stone in a cup setting on top. The hidden space is a pocket sized for a large pistol or short blade (2x4) with a quick draw. CHECK VOLUME: the box spans the open middle of the ring; the metal alone is about the reference volume. Slot `finger`, as earlier ring batches use. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "storage_ring_lesser",
+    "model": "storage_ring",
+    "name": "Blue crystal ring",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "slot": "finger", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.0005 },
+    "container": { "pockets": [{ "grid": [1, 2], "handlingSimSeconds": 0.2, "name": "crystal" }] },
+    "finishes": { "gem": "crystal-glow-blue", "metal": "metal-platinum", "rune": "crystal-glow-blue" },
+    "description": "A platinum ring with a small blue crystal that glows from within. It holds a knife or a few small things out of sight, ready to hand at a thought.",
+    "reference": "storage_ring_lesser",
+    "variants": [],
+    "notes": "Rides on the `storage_ring` model with a blue crystal and runes through `finishes`, so the two rings tell apart. Its pocket is a 1x2 grid, a magazine or knife. CHECK VOLUME: the box spans the open middle of the ring. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "flaming_fist",
+    "model": "flaming_fist",
+    "name": "Flame-marked fist guards",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "tool": { "qualities": { "hammering": 1 } },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 5,
+      "warmth": 3,
+      "wearPerDamage": 0.0006,
+      "protects": { "blunt": 0.25, "cut": 0.3, "pierce": 0.2 }
+    },
+    "description": "A pair of padded leather hand wraps with a curved steel plate over each back and a heavy steel bar across the knuckles. A violet flame mark on each plate flickers when a punch lands, and the dark fire it throws burns only what you hit.",
+    "reference": "flaming_fist",
+    "variants": [],
+    "notes": "A pair laid flat, backs up, fingers to +z, 230 mm from cuff to knuckle bar: fingerless tan leather wraps with oxblood binding, a riveted `steel-grey` back plate, a steel knuckle bar and a `crystal-glow-violet` flame mark on each plate. CHECK VOLUME (box/volume x4.5): the pair lies spread apart; each guard alone is near the reference volume. Slot `hands`, as earlier glove batches use. Protection is a guess for a steel-backed leather guard; the reference gives none. The magic flames are a weapon effect left to the melee framework. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "flaming_fist_plus_one",
+    "model": "flaming_fist",
+    "name": "Bright flame-marked fist guards",
+    "category": "clothing",
+    "size": [2, 2],
+    "mass": 0.873,
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "tool": { "qualities": { "hammering": 1 } },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 5,
+      "warmth": 3,
+      "wearPerDamage": 0.0005,
+      "protects": { "blunt": 0.25, "cut": 0.3, "pierce": 0.2 }
+    },
+    "description": "Padded leather hand wraps with steel back plates and knuckle bars, lighter than they look. The violet flame marks burn steadily, and the dark fire they throw bites harder than on a plainer pair.",
+    "reference": "flaming_fist_plus_one",
+    "variants": [],
+    "notes": "Rides on the `flaming_fist` model; it looks the same and only its mass (0.873 kg, from the reference) differs, so it sets `mass` instead of a row. A stronger enchantment is a weapon effect left to the melee framework. CHECK VOLUME as for `flaming_fist`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "flaming_fist_plus_two",
+    "model": "flaming_fist",
+    "name": "Blazing flame-marked fist guards",
+    "category": "clothing",
+    "size": [2, 2],
+    "mass": 0.776,
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "tool": { "qualities": { "hammering": 1 } },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 5,
+      "warmth": 3,
+      "wearPerDamage": 0.0004,
+      "protects": { "blunt": 0.25, "cut": 0.3, "pierce": 0.2 }
+    },
+    "description": "Padded leather hand wraps with steel back plates and knuckle bars, light as gloves. The violet flame marks blaze, and the dark fire they throw hits hardest of any pair.",
+    "reference": "flaming_fist_plus_two",
+    "variants": [],
+    "notes": "Rides on the `flaming_fist` model; it looks the same and only its mass (0.776 kg, from the reference) differs, so it sets `mass` instead of a row. A stronger enchantment is a weapon effect left to the melee framework. CHECK VOLUME as for `flaming_fist`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gauntlet_pounding",
+    "model": "gauntlet_pounding",
+    "name": "Rune-carved steel gauntlet",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "tool": { "qualities": { "hammering": 1 } },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 8,
+      "warmth": 5,
+      "wearPerDamage": 0.0005,
+      "protects": { "blunt": 0.3, "cut": 0.45, "pierce": 0.35 }
+    },
+    "description": "A single heavy steel gauntlet for the right hand, its back plate and flared cuff carved with runes that glow a cold blue. A fist in it lands like a sledgehammer.",
+    "reference": "gauntlet_pounding",
+    "variants": [],
+    "notes": "One right gauntlet laid flat, back up, fingers to +z, 300 mm from cuff to fingertip: a leather lining under a domed steel back plate, steel fingers and thumb, a knuckle ridge, a flared steel cuff and `crystal-glow-blue` rune marks on the plate and cuff. Box/volume x2.27, no flag. The reference covers only the right hand, but slot `hands` is the only glove slot, so wearing it takes both hands' slot; a one-handed slot would need a new slot pair. Protection is a guess for plate steel; the reference gives none. The worn look is pending: no worn model is authored."
+  }
+]

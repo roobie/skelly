@@ -1,0 +1,18 @@
+{
+  "id": "army_jeep_steering_box",
+  "file": "assets/models/army_jeep_steering_box.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 14,
+      "centreOfMass": [0.8148437500000001, 0.55625, -0.38359375],
+      "collision": [
+        { "min": [0.71875, 0.53125, -0.40625], "max": [0.875, 0.625, -0.34375] },
+        { "min": [0.8125, 0.46875, -0.4375], "max": [1, 0.5, -0.40625] },
+        { "min": [0.78125, 0.46875, -0.40625], "max": [0.84375, 0.53125, -0.375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

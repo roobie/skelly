@@ -1,0 +1,11 @@
+{
+  "id": "kariginu",
+  "file": "assets/models/kariginu.glb",
+  "parts": {
+    "kariginu": {
+      "node": "kariginu:compound",
+      "massKg": 2.7,
+      "centreOfMass": [-0.0000413368001313288, 0.04387399848548235, -0.00283578074444368]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "engineering_engine_kit",
+  "file": "assets/models/engineering_engine_kit.glb",
+  "parts": {
+    "engineering_engine_kit": {
+      "node": "engineering_engine_kit:compound",
+      "massKg": 3.5,
+      "centreOfMass": [-0.01132442091583213, 0.0385378793670209, -0.00013666768595673107]
+    }
+  }
+}

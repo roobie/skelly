@@ -1,0 +1,11 @@
+{
+  "id": "tshirt",
+  "file": "assets/models/tshirt.glb",
+  "parts": {
+    "tshirt": {
+      "node": "tshirt:compound",
+      "massKg": 0.18,
+      "centreOfMass": [0, 0.012857397277700041, -0.0007604630454140699]
+    }
+  }
+}

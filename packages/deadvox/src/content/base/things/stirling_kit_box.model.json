@@ -1,0 +1,11 @@
+{
+  "id": "stirling_kit_box",
+  "file": "assets/models/stirling_kit_box.glb",
+  "parts": {
+    "stirling_kit_box": {
+      "node": "stirling_kit_box:compound",
+      "massKg": 0.5,
+      "centreOfMass": [0.000847248916832264, 0.0766248819102844, 0.0017878620060592246]
+    }
+  }
+}

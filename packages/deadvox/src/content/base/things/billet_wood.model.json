@@ -1,0 +1,14 @@
+{
+  "id": "billet_wood",
+  "file": "assets/models/billet_wood.glb",
+  "parts": {
+    "billet_wood": {
+      "node": "billet_wood:compound",
+      "massKg": 0.22,
+      "centreOfMass": [-0.015431901431901431, 0.02004195804195804, 0]
+    }
+  },
+  "grip": { "at": [-0.054000000000000006, 0.02, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

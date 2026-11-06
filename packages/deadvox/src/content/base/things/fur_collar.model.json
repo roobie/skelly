@@ -1,0 +1,7 @@
+{
+  "id": "fur_collar",
+  "file": "assets/models/fur_collar.glb",
+  "parts": {
+    "fur_collar": { "node": "fur_collar:compound", "massKg": 0.02, "centreOfMass": [0, 0.01004, 0.0007515789473684206] }
+  }
+}

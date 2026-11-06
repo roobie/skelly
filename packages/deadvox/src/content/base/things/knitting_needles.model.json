@@ -1,0 +1,14 @@
+{
+  "id": "knitting_needles",
+  "file": "assets/models/knitting_needles.glb",
+  "parts": {
+    "knitting_needles": {
+      "node": "knitting_needles:compound",
+      "massKg": 0.012,
+      "centreOfMass": [-0.02533156114064765, 0.005999033349444175, -9.666505558236164e-7]
+    }
+  },
+  "grip": { "at": [-0.0010000000000000009, 0.006, -0.01], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,8 @@
+{
+  "id": "cu_pipe",
+  "file": "assets/models/cu_pipe.glb",
+  "parts": { "cu_pipe": { "node": "cu_pipe:compound", "massKg": 0.35, "centreOfMass": [0, 0, 0] } },
+  "grip": { "at": [0, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

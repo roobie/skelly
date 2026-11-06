@@ -1,0 +1,11 @@
+{
+  "id": "trenchcoat_fur",
+  "file": "assets/models/trenchcoat_fur.glb",
+  "parts": {
+    "trenchcoat_fur": {
+      "node": "trenchcoat_fur:compound",
+      "massKg": 2.3,
+      "centreOfMass": [0.00008337898487719316, 0.042049936925481604, -0.00489326585281272]
+    }
+  }
+}

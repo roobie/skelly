@@ -1,0 +1,11 @@
+{
+  "id": "ammo_satchel",
+  "file": "assets/models/ammo_satchel.glb",
+  "parts": {
+    "ammo_satchel": {
+      "node": "ammo_satchel:compound",
+      "massKg": 0.18,
+      "centreOfMass": [0, 0.07997622499275155, 0.0008889533198028417]
+    }
+  }
+}

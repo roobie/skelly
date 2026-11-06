@@ -1,0 +1,11 @@
+{
+  "id": "copper_locket",
+  "file": "assets/models/copper_locket.glb",
+  "parts": {
+    "copper_locket": {
+      "node": "copper_locket:compound",
+      "massKg": 0.028,
+      "centreOfMass": [0.0002666091458153603, 0.0032312338222605687, 0.06949698015530628]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "toy_figurine",
+  "file": "assets/models/toy_figurine.glb",
+  "parts": {
+    "toy_figurine": {
+      "node": "toy_figurine:compound",
+      "massKg": 0.12,
+      "centreOfMass": [3.7148482484490376e-8, 0.07765619079460605, 0.00031646792228537466]
+    }
+  },
+  "grip": { "at": [0, 0.101, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

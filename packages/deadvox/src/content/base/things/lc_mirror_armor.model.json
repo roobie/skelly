@@ -1,0 +1,11 @@
+{
+  "id": "lc_mirror_armor",
+  "file": "assets/models/lc_mirror_armor.glb",
+  "parts": {
+    "lc_mirror_armor": {
+      "node": "lc_mirror_armor:compound",
+      "massKg": 5.7,
+      "centreOfMass": [7.279580897338464e-18, 0.005302765863038029, -0.007374944534832181]
+    }
+  }
+}

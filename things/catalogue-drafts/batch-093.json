@@ -1,0 +1,211 @@
+[
+  {
+    "id": "mc_chainmail_arms",
+    "model": "mc_chainmail_arms",
+    "name": "Steel mail sleeves",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.12, "cut": 0.8, "pierce": 0.35 }
+    },
+    "description": "A pair of mail sleeves of medium steel rings, strapped together at the shoulders. They leave the hands free for gloves.",
+    "reference": "mc_chainmail_arms",
+    "variants": ["xl_mc_chainmail_arms", "xs_mc_chainmail_arms"],
+    "notes": "Laid flat side by side as two sleeves of mail, ridged where the rows of rings lie, joined at the shoulders by a strap. CHECK VOLUME LENGTH: the reference gives the mail bundled into a 90 mm ball; the model lays it out so it reads as sleeves. The tempered sleeves share this model with their mail in heat-tinted steel. The xl and xs sizes share the model. Slot arms follows the earlier arm guard batches. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "qt_chainmail_arms",
+    "model": "mc_chainmail_arms",
+    "name": "Tempered steel mail sleeves",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.88, "pierce": 0.42 }
+    },
+    "finishes": { "mail": "steel-heat-tint" },
+    "description": "A pair of mail sleeves of tempered steel rings with a straw-and-blue heat tint, strapped together at the shoulders. They leave the hands free for gloves.",
+    "reference": "qt_chainmail_arms",
+    "variants": ["xl_qt_chainmail_arms", "xs_qt_chainmail_arms"],
+    "notes": "Laid flat side by side as two sleeves of mail, ridged where the rows of rings lie, joined at the shoulders by a strap. CHECK VOLUME LENGTH: the reference gives the mail bundled into a 90 mm ball; the model lays it out so it reads as sleeves. Shares the medium steel sleeves' model with its mail in heat-tinted steel. The xl and xs sizes share the model. Slot arms follows the earlier arm guard batches. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "survivor_adhoc_leather_sleeves",
+    "model": "survivor_adhoc_leather_sleeves",
+    "name": "Leather-padded sleeves",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential", "Infected"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 8,
+      "warmth": 35,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.05, "blunt": 0.25, "cut": 0.35, "pierce": 0.2 }
+    },
+    "description": "Two sleeves cut from a heavy cotton shirt, with panels of salvaged leather stitched over the upper arms and forearms. The elbows are left bare so they still bend.",
+    "reference": "survivor_adhoc_leather_sleeves",
+    "variants": [],
+    "notes": "Laid flat side by side: canvas-coloured cotton sleeves with a brown leather panel over the upper arm and one over the forearm, rawhide stitching at each panel's ends, bare cloth at the elbow and a cord tying them at the shoulders. CHECK VOLUME (x7.7): the reference packs the sleeves down; laid flat they span their whole length. Slot arms follows the earlier arm guard batches. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "vambrace_larmor",
+    "model": "vambrace_larmor",
+    "name": "Leather vambraces",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 2,
+      "warmth": 10,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.05, "blunt": 0.1, "cut": 0.3, "pierce": 0.15 }
+    },
+    "description": "A pair of light leather forearm guards that buckle on with three straps each. Archers wear them to keep the bowstring off the arm.",
+    "reference": "vambrace_larmor",
+    "variants": ["xl_vambrace_larmor", "xs_vambrace_larmor"],
+    "notes": "Two stiff curved forearm guards lying crown up, 220 mm long, with black rolled edges at both ends and three black straps with brass buckles trailing to one side. They cover the forearm only, unlike the full leather arm guards. The xl and xs sizes share the model. Slot arms follows the earlier arm guard batches. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "ballistic_vest_esapi",
+    "model": "ballistic_vest_esapi",
+    "name": "Plate carrier",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 6,
+      "warmth": 15,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.2, "cut": 0.6, "pierce": 0.65 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [3, 3], "handlingSimSeconds": 2, "name": "front plate" },
+        { "grid": [3, 3], "handlingSimSeconds": 3, "name": "back plate" },
+        { "grid": [2, 2], "handlingSimSeconds": 2, "name": "left side plate" },
+        { "grid": [2, 2], "handlingSimSeconds": 2, "name": "right side plate" }
+      ]
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front webbing", "reachSimSeconds": 0.6, "standard": "pals" },
+      { "id": "left", "name": "left side webbing", "reachSimSeconds": 0.9, "standard": "pals" },
+      { "id": "right", "name": "right side webbing", "reachSimSeconds": 0.9, "standard": "pals" },
+      { "id": "back", "name": "back webbing", "reachSimSeconds": 1.8, "standard": "pals" }
+    ],
+    "description": "A soft armoured vest with pockets for hard plates at the front, back and both sides, covered in webbing for pouches. Without plates it stops little more than knives and fragments.",
+    "reference": "ballistic_vest_esapi",
+    "variants": [],
+    "notes": "Lying flat, front up: a coyote front panel over the back panel, the front plate pocket bulging under five rows of dark webbing, padded shoulder straps over the neck opening, a black drag handle at the back's collar, and a cummerbund wing each side with a side plate pocket under three rows of webbing. Attach points: front on the front panel's webbing, left and right on the cummerbund wings, back on the back panel (underneath as it lies). Plate pockets are grids sized to a chest plate and a side plate. No damage type for bullets exists, so pierce stands in for the ballistic layer, as the oversized ballistic vest does. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ballistic_vest_heavy",
+    "model": "ballistic_vest_heavy",
+    "name": "Heavy plate carrier",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 8,
+      "warmth": 15,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0, "blunt": 0.25, "cut": 0.65, "pierce": 0.7 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [3, 3], "handlingSimSeconds": 2, "name": "front plate" },
+        { "grid": [3, 3], "handlingSimSeconds": 3, "name": "back plate" },
+        { "grid": [2, 2], "handlingSimSeconds": 2, "name": "left side plate" },
+        { "grid": [2, 2], "handlingSimSeconds": 2, "name": "right side plate" }
+      ]
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front webbing", "reachSimSeconds": 0.6, "standard": "pals" },
+      { "id": "left", "name": "left side webbing", "reachSimSeconds": 0.9, "standard": "pals" },
+      { "id": "right", "name": "right side webbing", "reachSimSeconds": 0.9, "standard": "pals" },
+      { "id": "back", "name": "back webbing", "reachSimSeconds": 1.8, "standard": "pals" }
+    ],
+    "description": "A heavy army armoured vest with plate pockets front, back and sides, a padded collar and a guard over the lower back. A red pull tab at the chest drops the whole vest at once.",
+    "reference": "ballistic_vest_heavy",
+    "variants": [],
+    "notes": "Lying flat, front up, in olive drab: as the plate carrier, larger, with six rows of webbing on the front, a raised collar round the neck opening, a red quick-release tab and cable at the chest and a lower back guard hanging out below the hem. Attach points as the plate carrier: front on the front panel, left and right on the cummerbund wings, back on the back panel. CHECK VOLUME (x5.7): the reference counts it packed down; lying flat with its collar it holds air. Encumbrance 8 instead of the reference's 6, since it is half as heavy again as the plate carrier with the same reference value. The optional shoulder, groin and neck guards are not modelled; they would mount as items of their own. No damage type for bullets exists, so pierce stands in for the ballistic layer, as the oversized ballistic vest does. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ballistic_vest_light",
+    "model": "ballistic_vest_light",
+    "name": "Light plate carrier",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 1,
+      "warmth": 0,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.45, "pierce": 0.5 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [3, 3], "handlingSimSeconds": 2, "name": "front plate" },
+        { "grid": [3, 3], "handlingSimSeconds": 3, "name": "back plate" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "left magazine 1" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "left magazine 2" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "right magazine 1" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "right magazine 2" }
+      ]
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front webbing", "reachSimSeconds": 0.6, "standard": "pals" },
+      { "id": "left", "name": "left cummerbund", "reachSimSeconds": 0.9, "standard": "pals" },
+      { "id": "right", "name": "right cummerbund", "reachSimSeconds": 0.9, "standard": "pals" }
+    ],
+    "description": "A minimal black vest covering only the chest and upper back, with pockets for a front and back plate and an elastic cummerbund that holds four rifle magazines.",
+    "reference": "ballistic_vest_light",
+    "variants": [],
+    "notes": "Lying flat, front up, in black: a small front panel over the back panel, three rows of webbing on the front, shoulder straps over the neck opening, and a cummerbund wing each side with two tall magazine pockets. Attach points: front on the front panel's webbing, left and right on the cummerbund wings outside the magazine pockets. No back attach point: the back panel is plain. No damage type for bullets exists, so pierce stands in for the ballistic layer, as the oversized ballistic vest does. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ballistic_vest_light_operator",
+    "model": "ballistic_vest_light_operator",
+    "name": "Light plate carrier with radio pouch",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 1,
+      "warmth": 0,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.45, "pierce": 0.5 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [3, 3], "handlingSimSeconds": 2, "name": "front plate" },
+        { "grid": [3, 3], "handlingSimSeconds": 3, "name": "back plate" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "radio" }
+      ]
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front webbing", "reachSimSeconds": 0.6, "standard": "pals" },
+      { "id": "left", "name": "left cummerbund", "reachSimSeconds": 0.9, "standard": "pals" },
+      { "id": "right", "name": "right cummerbund", "reachSimSeconds": 0.9, "standard": "pals" },
+      { "id": "hook", "name": "chest hook", "reachSimSeconds": 0.4, "standard": "loop_small" }
+    ],
+    "description": "A minimal tan vest covering only the chest and upper back, with pockets for a front and back plate, a radio pouch on the left shoulder and a small hook on the chest.",
+    "reference": "ballistic_vest_light_operator",
+    "variants": [],
+    "notes": "Lying flat, front up, in coyote: the light plate carrier's panels with plain cummerbund wings under webbing, an olive radio pouch with a flap and an aerial stub standing on the left shoulder strap, and a steel hook on the chest. Attach points: front on the front panel's webbing, left and right on the cummerbund wings, and the chest hook, a loop_small point meant for a glow stick. CHECK VOLUME (x5.6): the radio pouch stands proud of the flat vest. No damage type for bullets exists, so pierce stands in for the ballistic layer, as the oversized ballistic vest does. The worn look is pending: no worn model is authored."
+  }
+]

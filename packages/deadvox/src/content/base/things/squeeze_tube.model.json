@@ -1,0 +1,11 @@
+{
+  "id": "squeeze_tube",
+  "file": "assets/models/squeeze_tube.glb",
+  "parts": {
+    "squeeze_tube": {
+      "node": "squeeze_tube:compound",
+      "massKg": 0.42,
+      "centreOfMass": [0.0009768035073734554, 0.025569230769230764, -1.5942606616181806e-7]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "pocketwatch",
+  "file": "assets/models/pocketwatch.glb",
+  "parts": {
+    "pocketwatch": {
+      "node": "pocketwatch:compound",
+      "massKg": 0.073,
+      "centreOfMass": [0.00001266490765171504, 0.006906068601583121, 0.001]
+    }
+  },
+  "grip": { "at": [0, 0.006, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

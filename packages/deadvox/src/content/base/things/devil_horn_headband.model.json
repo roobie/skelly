@@ -1,0 +1,11 @@
+{
+  "id": "devil_horn_headband",
+  "file": "assets/models/devil_horn_headband.glb",
+  "parts": {
+    "devil_horn_headband": {
+      "node": "devil_horn_headband:compound",
+      "massKg": 0.025,
+      "centreOfMass": [1.5763327537932872e-18, 0.08111624583134824, 4.764173415912379e-7]
+    }
+  }
+}

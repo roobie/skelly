@@ -1,0 +1,14 @@
+{
+  "id": "violin",
+  "file": "assets/models/violin.glb",
+  "parts": {
+    "violin": {
+      "node": "violin:compound",
+      "massKg": 0.48,
+      "centreOfMass": [-0.10384238041500655, 0.02149648787453075, -0.0003971177540821261]
+    }
+  },
+  "grip": { "at": [0.11800000000000001, 0.035, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

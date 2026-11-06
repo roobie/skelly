@@ -1,0 +1,14 @@
+{
+  "id": "taxi_rear_bumper",
+  "file": "assets/models/taxi_rear_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 6,
+      "centreOfMass": [-2.28125, 0.4375, 0],
+      "collision": [{ "min": [-2.34375, 0.3125, -0.875], "max": [-2.21875, 0.5625, 0.875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

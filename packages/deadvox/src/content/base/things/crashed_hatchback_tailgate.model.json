@@ -1,0 +1,18 @@
+{
+  "id": "crashed_hatchback_tailgate",
+  "file": "assets/models/crashed_hatchback_tailgate.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 18,
+      "centreOfMass": [-1.9171001552795033, 0.9053377329192547, 0],
+      "collision": [
+        { "min": [-2.03125, 0.5625, -0.625], "max": [-1.96875, 0.90625, 0.625] },
+        { "min": [-2, 0.875, -0.59375], "max": [-1.65625, 1.34375, 0.59375] },
+        { "min": [-2.03125, 0.6875, -0.125], "max": [-2, 0.71875, 0.125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

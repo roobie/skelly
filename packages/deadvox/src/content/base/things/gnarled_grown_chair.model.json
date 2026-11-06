@@ -1,0 +1,14 @@
+{
+  "id": "gnarled_grown_chair",
+  "file": "assets/models/gnarled_grown_chair.glb",
+  "parts": {
+    "gnarled_grown_chair": {
+      "node": "gnarled_grown_chair:compound",
+      "massKg": 14,
+      "centreOfMass": [-0.0016790456325990735, 0.4350427328686982, -0.04874421325736379]
+    }
+  },
+  "grip": { "at": [-0.11499999999999999, 0.925, -0.225], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

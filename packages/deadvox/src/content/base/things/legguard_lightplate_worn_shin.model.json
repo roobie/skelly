@@ -1,0 +1,11 @@
+{
+  "id": "legguard_lightplate_worn_shin",
+  "file": "assets/models/legguard_lightplate_worn_shin.glb",
+  "parts": {
+    "legguard_lightplate_worn_shin": {
+      "node": "legguard_lightplate_worn_shin:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0, -0.1298512585812357, 0.0008143184047074209]
+    }
+  }
+}

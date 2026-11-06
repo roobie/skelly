@@ -1,0 +1,11 @@
+{
+  "id": "tempered_glass_sheet",
+  "file": "assets/models/tempered_glass_sheet.glb",
+  "parts": {
+    "tempered_glass_sheet": {
+      "node": "tempered_glass_sheet:compound",
+      "massKg": 18,
+      "centreOfMass": [0.0005564773968999152, 0.004002023554170545, 0.0004249463758144806]
+    }
+  }
+}

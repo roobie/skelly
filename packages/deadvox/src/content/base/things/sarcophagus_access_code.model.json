@@ -1,0 +1,11 @@
+{
+  "id": "sarcophagus_access_code",
+  "file": "assets/models/sarcophagus_access_code.glb",
+  "parts": {
+    "sarcophagus_access_code": {
+      "node": "sarcophagus_access_code:compound",
+      "massKg": 0.005,
+      "centreOfMass": [-0.002638911001432894, 0.0023836968635567598, 0.00169893329087725]
+    }
+  }
+}

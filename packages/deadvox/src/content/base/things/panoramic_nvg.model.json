@@ -1,0 +1,11 @@
+{
+  "id": "panoramic_nvg",
+  "file": "assets/models/panoramic_nvg.glb",
+  "parts": {
+    "panoramic_nvg": {
+      "node": "panoramic_nvg:compound",
+      "massKg": 0.63,
+      "centreOfMass": [0.0001403594273530326, 0.030305553863336374, 0.010702792161640776]
+    }
+  }
+}

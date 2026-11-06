@@ -1,0 +1,11 @@
+{
+  "id": "tallit_gadol",
+  "file": "assets/models/tallit_gadol.glb",
+  "parts": {
+    "tallit_gadol": {
+      "node": "tallit_gadol:compound",
+      "massKg": 0.3,
+      "centreOfMass": [0.000003379830355208891, 0.015751285057574015, -0.0020599945675158085]
+    }
+  }
+}

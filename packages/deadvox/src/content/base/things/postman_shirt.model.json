@@ -1,0 +1,11 @@
+{
+  "id": "postman_shirt",
+  "file": "assets/models/postman_shirt.glb",
+  "parts": {
+    "postman_shirt": {
+      "node": "postman_shirt:compound",
+      "massKg": 0.3,
+      "centreOfMass": [-0.0002656552134463776, 0.02224822251970844, 0.009733987803064104]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "vac_pump",
+  "file": "assets/models/vac_pump.glb",
+  "parts": {
+    "vac_pump": {
+      "node": "vac_pump:compound",
+      "massKg": 45,
+      "centreOfMass": [0.0001566810377894003, 0.09584884238304929, -0.00369021280513064]
+    }
+  }
+}

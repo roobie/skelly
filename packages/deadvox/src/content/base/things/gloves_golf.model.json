@@ -1,0 +1,11 @@
+{
+  "id": "gloves_golf",
+  "file": "assets/models/gloves_golf.glb",
+  "parts": {
+    "gloves_golf": {
+      "node": "gloves_golf:compound",
+      "massKg": 0.15,
+      "centreOfMass": [1.472741617351198e-18, 0.006123622682074712, 0.03634238108035475]
+    }
+  }
+}

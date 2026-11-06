@@ -111,7 +111,7 @@
       },
       "attachmentFrames": {
         "clothing_body": {
-          "at": [0, -0.20000000000000001, 0.0050000000000000044],
+          "at": [0, -0.20000000000000001, 0],
           "insideView": false,
           "part": "body",
           "pivot": "spine",
@@ -138,6 +138,20 @@
           "pivot": "elbow",
           "turn": [0, 0, 0]
         },
+        "left_fingers": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "leftArm",
+          "pivot": "knuckles",
+          "turn": [0, 0, 0]
+        },
+        "left_glove": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "leftArm",
+          "pivot": "wrist",
+          "turn": [0, 0, 0]
+        },
         "left_hem": {
           "at": [0, 0, 0],
           "insideView": false,
@@ -149,6 +163,13 @@
           "at": [0, 0, 0],
           "insideView": false,
           "part": "leftArm",
+          "turn": [0, 0, 0]
+        },
+        "left_thumb": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "leftArm",
+          "pivot": "thumb_root",
           "turn": [0, 0, 0]
         },
         "left_trouser": {
@@ -171,6 +192,20 @@
           "pivot": "elbow",
           "turn": [0, 0, 0]
         },
+        "right_fingers": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "rightArm",
+          "pivot": "knuckles",
+          "turn": [0, 0, 0]
+        },
+        "right_glove": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "rightArm",
+          "pivot": "wrist",
+          "turn": [0, 0, 0]
+        },
         "right_hem": {
           "at": [0, 0, 0],
           "insideView": false,
@@ -184,6 +219,13 @@
           "part": "rightArm",
           "turn": [0, 0, 0]
         },
+        "right_thumb": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "rightArm",
+          "pivot": "thumb_root",
+          "turn": [0, 0, 0]
+        },
         "right_trouser": {
           "at": [0, 0, 0],
           "insideView": false,
@@ -191,7 +233,7 @@
           "turn": [0, 0, 0]
         },
         "torso": {
-          "at": [0, -0.20000000000000001, 0.0050000000000000044],
+          "at": [0, -0.20000000000000001, 0],
           "insideView": false,
           "part": "body",
           "pivot": "spine",

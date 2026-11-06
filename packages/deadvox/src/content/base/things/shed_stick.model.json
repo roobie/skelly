@@ -1,0 +1,14 @@
+{
+  "id": "shed_stick",
+  "file": "assets/models/shed_stick.glb",
+  "parts": {
+    "shed_stick": {
+      "node": "shed_stick:compound",
+      "massKg": 0.18,
+      "centreOfMass": [0, 0.006, 0.0000017204301075268716]
+    }
+  },
+  "grip": { "at": [0, 0.006, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

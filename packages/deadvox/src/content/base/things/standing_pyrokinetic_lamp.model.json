@@ -1,0 +1,14 @@
+{
+  "id": "standing_pyrokinetic_lamp",
+  "file": "assets/models/standing_pyrokinetic_lamp.glb",
+  "parts": {
+    "standing_pyrokinetic_lamp": {
+      "node": "standing_pyrokinetic_lamp:compound",
+      "massKg": 6,
+      "centreOfMass": [0.004151034616128408, 0.7150038677238445, 0.0009002127248114484]
+    }
+  },
+  "grip": { "at": [0, 0.775, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

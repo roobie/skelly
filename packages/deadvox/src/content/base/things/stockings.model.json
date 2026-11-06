@@ -1,0 +1,11 @@
+{
+  "id": "stockings",
+  "file": "assets/models/stockings.glb",
+  "parts": {
+    "stockings": {
+      "node": "stockings:compound",
+      "massKg": 0.14,
+      "centreOfMass": [-3.2134171986615627e-18, 0.0025427326132272127, -0.23170096645821497]
+    }
+  }
+}

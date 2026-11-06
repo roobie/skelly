@@ -1,0 +1,11 @@
+{
+  "id": "food_processor",
+  "file": "assets/models/food_processor.glb",
+  "parts": {
+    "food_processor": {
+      "node": "food_processor:compound",
+      "massKg": 3.1,
+      "centreOfMass": [0.0027591734948343425, 0.1433113644460278, 0.005228001425008906]
+    }
+  }
+}

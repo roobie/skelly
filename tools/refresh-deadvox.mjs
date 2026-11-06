@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { codeFingerprint, exportCache } from '../packages/thing-export/src/cache.ts';
 import { writeRecipeExports } from '../packages/thing-export/src/files.ts';
 import { compileJsonnetSources } from './jsonnet/compile.mjs';
 import { REPOSITORY_ROOT } from './jsonnet/index.mjs';
@@ -23,8 +24,20 @@ const ids = jobs.flatMap(({ recipe }) => recipe.map(({ id }) => id));
 if (new Set(ids).size !== ids.length) {
   throw new Error('Tool recipes cannot own the same model identity');
 }
+// Unchanged models come from an untracked cache; deleting node_modules/.cache/thing-export rebuilds every model.
+const code = codeFingerprint(REPOSITORY_ROOT, [
+  'package-lock.json',
+  'packages/engine/src',
+  'packages/thing-core/src',
+  'packages/thing-export/src',
+  'packages/thing-authoring-tool/src',
+]);
 for (const { directory, recipe, index } of jobs) {
-  writeRecipeExports(recipe, resolve(REPOSITORY_ROOT, 'packages/deadvox/src/content/base'), directory, { index });
+  const cache = { store: exportCache(resolve(REPOSITORY_ROOT, 'node_modules/.cache/thing-export', directory)), code };
+  writeRecipeExports(recipe, resolve(REPOSITORY_ROOT, 'packages/deadvox/src/content/base'), directory, {
+    index,
+    cache,
+  });
 }
 await import('../packages/deadvox/tools/item-fuel-models.mjs');
 await import('./item-model-metadata.mjs');

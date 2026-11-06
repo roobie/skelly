@@ -1,0 +1,11 @@
+{
+  "id": "forged_steel_side_plate",
+  "file": "assets/models/forged_steel_side_plate.glb",
+  "parts": {
+    "forged_steel_side_plate": {
+      "node": "forged_steel_side_plate:compound",
+      "massKg": 0.68,
+      "centreOfMass": [0.0006366822429906518, 0.008268691588785047, -0.0001974299065420561]
+    }
+  }
+}

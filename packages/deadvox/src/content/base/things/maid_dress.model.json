@@ -1,0 +1,11 @@
+{
+  "id": "maid_dress",
+  "file": "assets/models/maid_dress.glb",
+  "parts": {
+    "maid_dress": {
+      "node": "maid_dress:compound",
+      "massKg": 0.7,
+      "centreOfMass": [0, 0.028349994232131984, -0.000009327466587563439]
+    }
+  }
+}

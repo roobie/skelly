@@ -1,0 +1,11 @@
+{
+  "id": "samghati",
+  "file": "assets/models/samghati.glb",
+  "parts": {
+    "samghati": {
+      "node": "samghati:compound",
+      "massKg": 0.82,
+      "centreOfMass": [-0.00008522116132448566, 0.021302874352567395, -0.0011119789512005435]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "sun_shield",
+  "file": "assets/models/sun_shield.glb",
+  "parts": {
+    "sun_shield": {
+      "node": "sun_shield:compound",
+      "massKg": 0.25,
+      "centreOfMass": [5.4276943080907296e-18, 0.004170603674540684, -0.06504921259842521]
+    }
+  }
+}

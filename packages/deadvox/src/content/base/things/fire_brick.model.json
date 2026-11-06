@@ -1,0 +1,11 @@
+{
+  "id": "fire_brick",
+  "file": "assets/models/fire_brick.glb",
+  "parts": {
+    "fire_brick": {
+      "node": "fire_brick:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-0.000892411106443114, 0.0323059236909445, -0.00041286330825344693]
+    }
+  }
+}

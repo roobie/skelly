@@ -1,0 +1,11 @@
+{
+  "id": "pumpkin_mask",
+  "file": "assets/models/pumpkin_mask.glb",
+  "parts": {
+    "pumpkin_mask": {
+      "node": "pumpkin_mask:compound",
+      "massKg": 0.32,
+      "centreOfMass": [0.000003863970424479351, 0.11522613692040438, 0.00014706471872076723]
+    }
+  }
+}

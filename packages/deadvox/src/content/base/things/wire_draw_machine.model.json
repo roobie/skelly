@@ -1,0 +1,11 @@
+{
+  "id": "wire_draw_machine",
+  "file": "assets/models/wire_draw_machine.glb",
+  "parts": {
+    "wire_draw_machine": {
+      "node": "wire_draw_machine:compound",
+      "massKg": 34,
+      "centreOfMass": [0.015789267757564684, 0.07229344547033549, -0.00005228997166102935]
+    }
+  }
+}

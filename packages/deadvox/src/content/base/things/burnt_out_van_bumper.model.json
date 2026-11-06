@@ -1,0 +1,14 @@
+{
+  "id": "burnt_out_van_bumper",
+  "file": "assets/models/burnt_out_van_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 16,
+      "centreOfMass": [2.65625, 0.23061963519313305, 0.0008717811158798286],
+      "collision": [{ "min": [2.625, 0, -0.9375], "max": [2.6875, 0.46875, 0.9375] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

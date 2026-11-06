@@ -1,0 +1,11 @@
+{
+  "id": "bellywrap_fur",
+  "file": "assets/models/bellywrap_fur.glb",
+  "parts": {
+    "bellywrap_fur": {
+      "node": "bellywrap_fur:compound",
+      "massKg": 0.4,
+      "centreOfMass": [-5.3183494163289397e-20, 0.04023609087012432, -0.08685177882554652]
+    }
+  }
+}

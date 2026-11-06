@@ -1,0 +1,11 @@
+{
+  "id": "bundle_leather",
+  "file": "assets/models/bundle_leather.glb",
+  "parts": {
+    "bundle_leather": {
+      "node": "bundle_leather:compound",
+      "massKg": 0.46,
+      "centreOfMass": [-0.00039425513939735286, 0.020215770205575894, 0]
+    }
+  }
+}

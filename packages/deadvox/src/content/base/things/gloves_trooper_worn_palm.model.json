@@ -1,0 +1,11 @@
+{
+  "id": "gloves_trooper_worn_palm",
+  "file": "assets/models/gloves_trooper_worn_palm.glb",
+  "parts": {
+    "gloves_trooper_worn_palm": {
+      "node": "gloves_trooper_worn_palm:compound",
+      "massKg": 0.1,
+      "centreOfMass": [-0.00007471980074719796, 0.0499033623910336, 0.00002490660024906599]
+    }
+  }
+}

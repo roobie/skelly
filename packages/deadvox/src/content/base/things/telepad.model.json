@@ -1,0 +1,11 @@
+{
+  "id": "telepad",
+  "file": "assets/models/telepad.glb",
+  "parts": {
+    "telepad": {
+      "node": "telepad:compound",
+      "massKg": 2.9,
+      "centreOfMass": [0.00035865995182833354, 0.007878694985767461, 0.0016422158966498792]
+    }
+  }
+}

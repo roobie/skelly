@@ -1,0 +1,11 @@
+{
+  "id": "boots_trooper_worn_foot",
+  "file": "assets/models/boots_trooper_worn_foot.glb",
+  "parts": {
+    "boots_trooper_worn_foot": {
+      "node": "boots_trooper_worn_foot:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0, -0.036303163686382395, 0.06125730610517406]
+    }
+  }
+}

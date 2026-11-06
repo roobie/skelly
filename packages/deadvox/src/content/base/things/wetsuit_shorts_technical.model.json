@@ -1,0 +1,11 @@
+{
+  "id": "wetsuit_shorts_technical",
+  "file": "assets/models/wetsuit_shorts_technical.glb",
+  "parts": {
+    "wetsuit_shorts_technical": {
+      "node": "wetsuit_shorts_technical:compound",
+      "massKg": 0.69,
+      "centreOfMass": [0.000329087138685514, 0.022717254221507475, -0.005769943713233739]
+    }
+  }
+}

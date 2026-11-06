@@ -1,0 +1,7 @@
+{
+  "id": "ceramic_plate",
+  "file": "assets/models/ceramic_plate.glb",
+  "parts": {
+    "ceramic_plate": { "node": "ceramic_plate:compound", "massKg": 0.35, "centreOfMass": [0, 0.00960968660968661, 0] }
+  }
+}

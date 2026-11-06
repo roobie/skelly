@@ -1,0 +1,17 @@
+{
+  "id": "utility_trailer_headboard",
+  "file": "assets/models/utility_trailer_headboard.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 12,
+      "centreOfMass": [1.0821917808219177, 0.8381849315068493, 0],
+      "collision": [
+        { "min": [1.0625, 0.59375, -0.5625], "max": [1.09375, 0.96875, 0.5625] },
+        { "min": [1.0625, 0.96875, -0.59375], "max": [1.125, 1.03125, 0.59375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

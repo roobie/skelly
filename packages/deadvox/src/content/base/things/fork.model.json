@@ -1,0 +1,5 @@
+{
+  "id": "fork",
+  "file": "assets/models/fork.glb",
+  "parts": { "fork": { "node": "fork:compound", "massKg": 0.079, "centreOfMass": [0.10537499999999997, 0.002, 0] } }
+}

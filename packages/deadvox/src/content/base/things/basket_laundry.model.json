@@ -1,0 +1,11 @@
+{
+  "id": "basket_laundry",
+  "file": "assets/models/basket_laundry.glb",
+  "parts": {
+    "basket_laundry": {
+      "node": "basket_laundry:compound",
+      "massKg": 0.96,
+      "centreOfMass": [-0.00010908228598529894, 0.07540265591652837, -0.0007690301161963475]
+    }
+  }
+}

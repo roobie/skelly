@@ -1,0 +1,11 @@
+{
+  "id": "clown_suit",
+  "file": "assets/models/clown_suit.glb",
+  "parts": {
+    "clown_suit": {
+      "node": "clown_suit:compound",
+      "massKg": 1.7,
+      "centreOfMass": [-0.004826634466103155, 0.04241762980852161, -0.00011988959806796613]
+    }
+  }
+}

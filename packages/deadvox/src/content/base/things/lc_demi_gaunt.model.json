@@ -1,0 +1,11 @@
+{
+  "id": "lc_demi_gaunt",
+  "file": "assets/models/lc_demi_gaunt.glb",
+  "parts": {
+    "lc_demi_gaunt": {
+      "node": "lc_demi_gaunt:compound",
+      "massKg": 1.6,
+      "centreOfMass": [-1.0769343605898134e-17, 0.008434946826101332, 0.018205855220789206]
+    }
+  }
+}

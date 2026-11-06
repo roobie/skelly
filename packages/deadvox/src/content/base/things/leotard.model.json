@@ -1,0 +1,11 @@
+{
+  "id": "leotard",
+  "file": "assets/models/leotard.glb",
+  "parts": {
+    "leotard": {
+      "node": "leotard:compound",
+      "massKg": 0.091,
+      "centreOfMass": [-1.594657257389396e-20, 0.004244293645897593, -0.0021307834669956854]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "mic_stand",
+  "file": "assets/models/mic_stand.glb",
+  "parts": {
+    "mic_stand": {
+      "node": "mic_stand:compound",
+      "massKg": 1.6,
+      "centreOfMass": [6.011487009833049e-19, 0.5662151162790698, 0.006215116279069751]
+    }
+  }
+}

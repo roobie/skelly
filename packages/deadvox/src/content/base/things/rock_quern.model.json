@@ -1,0 +1,11 @@
+{
+  "id": "rock_quern",
+  "file": "assets/models/rock_quern.glb",
+  "parts": {
+    "rock_quern": {
+      "node": "rock_quern:compound",
+      "massKg": 25,
+      "centreOfMass": [0.0006479339457730501, 0.07908822107338118, 0.0009037824971175659]
+    }
+  }
+}

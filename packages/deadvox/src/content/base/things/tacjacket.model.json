@@ -1,0 +1,11 @@
+{
+  "id": "tacjacket",
+  "file": "assets/models/tacjacket.glb",
+  "parts": {
+    "tacjacket": {
+      "node": "tacjacket:compound",
+      "massKg": 1.3,
+      "centreOfMass": [0.00006753752672919374, 0.026225774352677197, -0.0013843287532022113]
+    }
+  }
+}

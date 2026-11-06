@@ -1,0 +1,14 @@
+{
+  "id": "survival_match",
+  "file": "assets/models/survival_match.glb",
+  "parts": {
+    "survival_match": {
+      "node": "survival_match:compound",
+      "massKg": 0.001,
+      "centreOfMass": [0.046902912621359226, 0.002, 0]
+    }
+  },
+  "grip": { "at": [0.035, 0.002, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,11 @@
+{
+  "id": "cuvettes",
+  "file": "assets/models/cuvettes.glb",
+  "parts": {
+    "cuvettes": {
+      "node": "cuvettes:compound",
+      "massKg": 0.066,
+      "centreOfMass": [-0.00001818817768450453, 0.019353830010493196, -0.0014856243441762865]
+    }
+  }
+}

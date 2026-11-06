@@ -1,0 +1,11 @@
+{
+  "id": "xssocks_wool",
+  "file": "assets/models/xssocks_wool.glb",
+  "parts": {
+    "xssocks_wool": {
+      "node": "xssocks_wool:compound",
+      "massKg": 0.051,
+      "centreOfMass": [-0.024479833679833675, 0.00646153846153846, -0.02248648648648648]
+    }
+  }
+}

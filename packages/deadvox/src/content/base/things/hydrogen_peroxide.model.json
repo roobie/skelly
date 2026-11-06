@@ -1,0 +1,14 @@
+{
+  "id": "hydrogen_peroxide",
+  "file": "assets/models/hydrogen_peroxide.glb",
+  "parts": {
+    "hydrogen_peroxide": {
+      "node": "hydrogen_peroxide:vessel",
+      "massKg": 0.3,
+      "centreOfMass": [0, 0.057781842818428186, 0]
+    }
+  },
+  "grip": { "at": [0, 0.063, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

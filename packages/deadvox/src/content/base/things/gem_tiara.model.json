@@ -1,0 +1,11 @@
+{
+  "id": "gem_tiara",
+  "file": "assets/models/gem_tiara.glb",
+  "parts": {
+    "gem_tiara": {
+      "node": "gem_tiara:compound",
+      "massKg": 0.29,
+      "centreOfMass": [1.9147699364653433e-19, 0.011775925925925936, 0.05365000000000002]
+    }
+  }
+}

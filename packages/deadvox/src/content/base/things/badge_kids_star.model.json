@@ -1,0 +1,11 @@
+{
+  "id": "badge_kids_star",
+  "file": "assets/models/badge_kids_star.glb",
+  "parts": {
+    "badge_kids_star": {
+      "node": "badge_kids_star:compound",
+      "massKg": 0.0061,
+      "centreOfMass": [1.0748188832549735e-19, 0.004076923076923077, -0.0002515592515592511]
+    }
+  }
+}

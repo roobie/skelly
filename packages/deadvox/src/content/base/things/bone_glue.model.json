@@ -1,0 +1,10 @@
+{
+  "id": "bone_glue",
+  "file": "assets/models/bone_glue.glb",
+  "parts": {
+    "bone_glue": { "node": "bone_glue:compound", "massKg": 0.18, "centreOfMass": [0, 0.02669699007903145, 0] }
+  },
+  "grip": { "at": [0, 0.027, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

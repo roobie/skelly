@@ -1,0 +1,17 @@
+{
+  "id": "refuse_truck_subframe",
+  "file": "assets/models/refuse_truck_subframe.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 460,
+      "centreOfMass": [-0.78125, 1.15625, 0],
+      "collision": [
+        { "min": [-4.40625, 1, 0.34375], "max": [2.84375, 1.3125, 0.46875] },
+        { "min": [-4.40625, 1, -0.46875], "max": [2.84375, 1.3125, -0.34375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "gloves_airsoft",
+  "file": "assets/models/gloves_airsoft.glb",
+  "parts": {
+    "gloves_airsoft": {
+      "node": "gloves_airsoft:compound",
+      "massKg": 0.26,
+      "centreOfMass": [2.1079671795364815e-18, 0.013370421561852102, 0.04230684174153422]
+    }
+  }
+}

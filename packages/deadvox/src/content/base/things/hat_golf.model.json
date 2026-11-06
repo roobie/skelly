@@ -1,0 +1,11 @@
+{
+  "id": "hat_golf",
+  "file": "assets/models/hat_golf.glb",
+  "parts": {
+    "hat_golf": {
+      "node": "hat_golf:compound",
+      "massKg": 0.088,
+      "centreOfMass": [0.00003557439157516169, 0.026858023502215375, 0.008430873948500613]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "bandolier_wrist",
+  "file": "assets/models/bandolier_wrist.glb",
+  "parts": {
+    "bandolier_wrist": {
+      "node": "bandolier_wrist:compound",
+      "massKg": 0.015,
+      "centreOfMass": [0.003899778924097273, 0.004394252026529108, 0]
+    }
+  }
+}

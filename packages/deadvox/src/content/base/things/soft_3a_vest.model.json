@@ -1,0 +1,11 @@
+{
+  "id": "soft_3a_vest",
+  "file": "assets/models/soft_3a_vest.glb",
+  "parts": {
+    "soft_3a_vest": {
+      "node": "soft_3a_vest:compound",
+      "massKg": 1.6,
+      "centreOfMass": [0, 0.015143624641833811, 0.02832843839541548]
+    }
+  }
+}

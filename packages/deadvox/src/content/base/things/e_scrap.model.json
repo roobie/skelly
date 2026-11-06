@@ -1,0 +1,11 @@
+{
+  "id": "e_scrap",
+  "file": "assets/models/e_scrap.glb",
+  "parts": {
+    "e_scrap": {
+      "node": "e_scrap:compound",
+      "massKg": 0.0029,
+      "centreOfMass": [0.000138047138047138, 0.0042457912457912455, -0.0015791245791245796]
+    }
+  }
+}

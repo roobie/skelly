@@ -1,0 +1,159 @@
+[
+  {
+    "id": "tac_helmet",
+    "model": "tac_helmet",
+    "name": "Tactical helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 20,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.2, "blunt": 0.6, "cut": 0.7, "pierce": 0.7 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left rail", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right rail", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear patch", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A dark green composite combat helmet with a rail down each side and a mount on the brow for night-vision gear. It stops shell fragments and most pistol rounds.",
+    "reference": "tac_helmet",
+    "variants": [],
+    "notes": "Standing on its rim, front on +z: a dark green full-cut shell 250 mm across and 150 mm tall on a black rubber edge, a small black night-vision bracket on the brow, a slim black rail curving along each side, a hook-and-loop patch following the crown's curve and another on the back, a black counterweight pouch under the back patch, and a webbing chin harness hanging from the rails' ends to a padded cup and buckle on the floor. Shell in `nylon-ranger-green` so the black fittings read against it. CHECK VOLUME (x6.1): a hollow shell fills little of its box. Slot `head`. It hosts helmet add-ons through four `helmet` points: the brow bracket (front, where goggles and night-vision mounts go on this open-faced helmet), the left and right rails, and the back patch; reach follows the helmet convention, quickest at the front and slowest at the back. Encumbrance and warmth follow the reference; protection is a guess for an aramid shell, above the riot helmet against piercing. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "back_holster",
+    "model": "back_holster",
+    "name": "Rifle back scabbard",
+    "category": "bag",
+    "size": [2, 7],
+    "economy": { "usage": ["Hunting", "Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [2, 8], "handlingSimSeconds": 1.2, "name": "scabbard" }] },
+    "description": "A long leather scabbard on two shoulder straps that carries a rifle or shotgun slung across the back, its stock up behind the shoulder.",
+    "reference": "back_holster",
+    "variants": [],
+    "notes": "Lying on its side along x: a brown leather sheath 950 mm long, narrow at the closed muzzle end and widening to 130 mm at the mouth for the receiver, with black welts along both edges, a black toe and rim, a hood strap with a brass stud over the mouth, and two black collars whose straps are laid out flat beside it to a brass buckle. CHECK VOLUME (x12): the straps spread on the floor add air the reference does not count, and the reference packs the empty leather tight. The reference covers the torso and looks like the large back quiver, which takes `back`, so this does too. Its one pocket is a grid sized to one long gun, as the javelin bag's is; drawing over the shoulder is slow, so its handling is the longest in the batch. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "baldric_holster",
+    "model": "baldric_holster",
+    "name": "Six-pistol baldric",
+    "category": "bag",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "vest", "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 3], "handlingSimSeconds": 0.7, "name": "front left" },
+        { "grid": [2, 3], "handlingSimSeconds": 0.7, "name": "front middle" },
+        { "grid": [2, 3], "handlingSimSeconds": 0.7, "name": "front right" },
+        { "grid": [2, 3], "handlingSimSeconds": 1, "name": "back left" },
+        { "grid": [2, 3], "handlingSimSeconds": 1, "name": "back middle" },
+        { "grid": [2, 3], "handlingSimSeconds": 1, "name": "back right" }
+      ]
+    },
+    "description": "A broad leather sash worn over one shoulder and across the chest, with six pistol holsters hanging from it so a loaded gun is always to hand.",
+    "reference": "baldric_holster",
+    "variants": [],
+    "notes": "Laid flat: a black leather sash in a closed loop 1.6 m round and 70 mm wide with a brass buckle on one bend, and six red-brown holsters, each 200 mm long with a black rim, toe and thumb-break strap, three hanging from each run with their muzzles pointing out. CHECK VOLUME (x6.4): the loop encloses floor the reference does not count. It is worn across the chest like the cloth bandolier, so it takes `vest`. Each holster is a pocket sized to one pistol; the three on the back run are slower to reach. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bbholster",
+    "model": "bbholster",
+    "name": "Belly band holster",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Police"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "belly", "encumbrance": 0, "warmth": 5, "wearPerDamage": 0.002 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 3], "handlingSimSeconds": 1.4, "name": "pistol" },
+        { "grid": [1, 2], "handlingSimSeconds": 1, "name": "magazine" }
+      ]
+    },
+    "description": "A wide stretch band worn round the stomach under a shirt, with a pocket for a pistol and one for a spare magazine. Hard to draw from without practice.",
+    "reference": "bbholster",
+    "variants": [],
+    "notes": "Laid flat: an off-white elastic band in a closed ring 1.1 m round and 100 mm wide, a charcoal pistol pocket 180 mm long with a black rim and thumb-break strap and a charcoal magazine sleeve sewn on one run, and a grey hook-and-loop tab on the other where it fastens. CHECK VOLUME (x8): the ring encloses floor the reference does not count. Slot: it sits round the stomach under the shirt and is worn alongside a belt and a vest, so neither `waist`, `torso` nor `vest` fits; it names a new slot, `belly`. The awkward draw is the longest pistol handling in the batch. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bholster",
+    "model": "bholster",
+    "name": "Thigh concealment band",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Police"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "thigh", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.002 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 1.4, "name": "pistol" },
+        { "grid": [1, 2], "handlingSimSeconds": 1, "name": "magazine" },
+        { "grid": [1, 2], "handlingSimSeconds": 1, "name": "slip pocket" }
+      ]
+    },
+    "description": "A stretch band worn round the upper thigh under trousers or a skirt, with a pocket for a very small pistol and two slim sleeves for a magazine and a knife.",
+    "reference": "bholster",
+    "variants": [],
+    "notes": "Laid flat: a tan elastic band in a closed ring 700 mm round and 90 mm wide, with a brown pocket 130 mm long for a small pistol, a slim magazine sleeve on one run and a flat slip pocket and a grey hook-and-loop tab on the other. CHECK VOLUME (x11): the ring encloses floor the reference does not count. The reference covers either leg; a leg band takes `thigh`, as the drop-leg holster does, and the side has no content field. The pistol pocket is sized to a compact pistol; the awkward draw is a long handling time. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bootstrap",
+    "model": "bootstrap",
+    "name": "Ankle holster",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Police", "Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "ankle", "encumbrance": 3, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 1.5, "name": "pistol" }] },
+    "description": "A small leather holster on a fleece-lined band that straps round the ankle, hiding a backup pistol under the trouser leg.",
+    "reference": "bootstrap",
+    "variants": [],
+    "notes": "Lying on its side as a short open cuff: a tan leather band 330 mm round and 70 mm wide with dark fleece lining showing at both edges and inside, and a brown holster 120 mm long riding on top, with a black rim, toe and thumb-break strap with a brass stud. CHECK VOLUME (x7.1): the cuff's hollow fills its box the reference does not count. The reference covers either foot and is belted over the boot; it takes `ankle`, as the ankle pouch does. Its pocket is sized to a compact pistol; bending to the ankle makes it the slowest draw in the batch. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bow_sling",
+    "model": "bow_sling",
+    "name": "Bow sling",
+    "category": "bag",
+    "size": [2, 3],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 3, "warmth": 0, "wearPerDamage": 0.003 },
+    "container": { "pockets": [{ "grid": [2, 8], "handlingSimSeconds": 0.8, "name": "bow" }] },
+    "description": "A set of cotton straps with a sleeve and a cup that hold a bow across the back, out of the way but quick to pull free.",
+    "reference": "bow_sling",
+    "variants": [],
+    "notes": "Laid flat: an olive drab shoulder strap in a loop 1.6 m round and 40 mm wide with a khaki shoulder pad, a canvas sleeve 280 mm long with brown edging at one end for the lower limb, a shallow canvas cup at the other for the upper limb, and a brown cross strap between them with a steel buckle. CHECK VOLUME (x18): the strap loop encloses floor the reference does not count. The reference covers the torso and looks like a sling pack; a bow carried across the back takes `back`, as the large quiver does. Its one pocket is a grid sized to one bow. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leather_double_holster_tandem",
+    "model": "double_holster_tandem",
+    "name": "Stacked leather double holster",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Police"], "tiers": ["Tier2"] },
+    "wearable": { "encumbrance": 8, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 3], "handlingSimSeconds": 0.8, "name": "inner holster" },
+        { "grid": [2, 3], "handlingSimSeconds": 1.1, "name": "outer holster" }
+      ]
+    },
+    "fits": ["belt"],
+    "finishes": {
+      "body": "leather-brown",
+      "loop": "leather-chestnut",
+      "mouth": "leather-black",
+      "strap": "leather-chestnut",
+      "stud": "brass-dull",
+      "trim": "leather-chestnut"
+    },
+    "description": "Two brown leather pistol holsters strapped one in front of the other on a belt. The outer gun is the slower draw.",
+    "reference": "FB_double_holster",
+    "variants": [],
+    "notes": "Rides on batch 139's `double_holster_tandem` model (cross-batch reference) in brown leather, at 500 g. This batch's own `double_holster` row was removed because batch 139 uses that id for the side-by-side double holster; the tandem model already shows this front-and-back layout. It hangs from a belt loop, so it mounts on a belt and takes no body slot, like its nylon twin; the reference covers either leg. Two pockets, each sized to one pistol; the outer one is slower, as the reference describes. The worn look is pending: no worn model is authored."
+  }
+]

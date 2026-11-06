@@ -1,0 +1,10 @@
+{
+  "id": "inj_iron",
+  "file": "assets/models/inj_iron.glb",
+  "parts": {
+    "inj_iron": { "node": "inj_iron:compound", "massKg": 0.024, "centreOfMass": [0, 0.023199178644763858, 0] }
+  },
+  "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

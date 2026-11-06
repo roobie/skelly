@@ -1,0 +1,14 @@
+{
+  "id": "elec_jackhammer",
+  "file": "assets/models/elec_jackhammer.glb",
+  "parts": {
+    "elec_jackhammer": {
+      "node": "elec_jackhammer:compound",
+      "massKg": 31,
+      "centreOfMass": [-0.12297574660369938, 0.106065639970296, 0.0002795959870506181]
+    }
+  },
+  "grip": { "at": [-0.402, 0.09, 0.186], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,14 @@
+{
+  "id": "briefcase",
+  "file": "assets/models/briefcase.glb",
+  "parts": {
+    "briefcase": {
+      "node": "briefcase:compound",
+      "massKg": 1.9,
+      "centreOfMass": [0, 0.18196577629382304, 0.0001252086811352254]
+    }
+  },
+  "grip": { "at": [0, 0.375, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

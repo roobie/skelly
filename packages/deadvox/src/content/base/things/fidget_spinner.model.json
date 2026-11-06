@@ -1,0 +1,14 @@
+{
+  "id": "fidget_spinner",
+  "file": "assets/models/fidget_spinner.glb",
+  "parts": {
+    "fidget_spinner": {
+      "node": "fidget_spinner:compound",
+      "massKg": 0.13,
+      "centreOfMass": [-4.413984058447319e-19, 0.006050693703308431, 0.00010832443970117452]
+    }
+  },
+  "grip": { "at": [0, 0.006, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

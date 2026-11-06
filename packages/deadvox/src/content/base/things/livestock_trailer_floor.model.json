@@ -1,0 +1,17 @@
+{
+  "id": "livestock_trailer_floor",
+  "file": "assets/models/livestock_trailer_floor.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 110,
+      "centreOfMass": [-0.12499999999999999, 0.46874999999999994, 0],
+      "collision": [
+        { "min": [-1.90625, 0.4375, -0.78125], "max": [1.65625, 0.46875, 0.78125] },
+        { "min": [-1.90625, 0.46875, -0.78125], "max": [1.65625, 0.5, 0.78125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

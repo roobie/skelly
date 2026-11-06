@@ -1,0 +1,11 @@
+{
+  "id": "anvil",
+  "file": "assets/models/anvil.glb",
+  "parts": {
+    "anvil": {
+      "node": "anvil:compound",
+      "massKg": 37,
+      "centreOfMass": [-0.0027094084954346976, 0.10147876141325923, 0]
+    }
+  }
+}

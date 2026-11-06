@@ -1,0 +1,11 @@
+{
+  "id": "large_repairkit",
+  "file": "assets/models/large_repairkit.glb",
+  "parts": {
+    "large_repairkit": {
+      "node": "large_repairkit:compound",
+      "massKg": 4,
+      "centreOfMass": [0.00005293933512802842, 0.08480162774682277, -0.03083673699367684]
+    }
+  }
+}

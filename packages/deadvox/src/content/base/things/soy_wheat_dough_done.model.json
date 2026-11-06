@@ -1,0 +1,11 @@
+{
+  "id": "soy_wheat_dough_done",
+  "file": "assets/models/soy_wheat_dough_done.glb",
+  "parts": {
+    "soy_wheat_dough_done": {
+      "node": "soy_wheat_dough_done:compound",
+      "massKg": 0.45,
+      "centreOfMass": [0.00005852910814277215, 0.01974336034035099, 0.000006506710044733687]
+    }
+  }
+}

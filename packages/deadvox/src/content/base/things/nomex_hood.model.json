@@ -1,0 +1,11 @@
+{
+  "id": "nomex_hood",
+  "file": "assets/models/nomex_hood.glb",
+  "parts": {
+    "nomex_hood": {
+      "node": "nomex_hood:compound",
+      "massKg": 0.16,
+      "centreOfMass": [-0.00005221599987589814, 0.17203921629461924, 0.010975350200890438]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "ambulance_load_floor",
+  "file": "assets/models/ambulance_load_floor.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 45,
+      "centreOfMass": [-1.484375, 0.859375, 0],
+      "collision": [{ "min": [-2.875, 0.84375, -1.0625], "max": [-0.09375, 0.875, 1.0625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

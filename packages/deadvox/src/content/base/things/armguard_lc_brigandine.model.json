@@ -1,0 +1,11 @@
+{
+  "id": "armguard_lc_brigandine",
+  "file": "assets/models/armguard_lc_brigandine.glb",
+  "parts": {
+    "armguard_lc_brigandine": {
+      "node": "armguard_lc_brigandine:compound",
+      "massKg": 1.9,
+      "centreOfMass": [0.00011973060613620058, 0.0293280119730606, -0.0023302569219256675]
+    }
+  }
+}

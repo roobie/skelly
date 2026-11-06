@@ -1,0 +1,11 @@
+{
+  "id": "armor_mc_heavy_chestplate",
+  "file": "assets/models/armor_mc_heavy_chestplate.glb",
+  "parts": {
+    "armor_mc_heavy_chestplate": {
+      "node": "armor_mc_heavy_chestplate:compound",
+      "massKg": 33,
+      "centreOfMass": [1.2168255307074038e-18, 0.03269444152569077, -0.054833560996112016]
+    }
+  }
+}

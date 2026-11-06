@@ -1,0 +1,11 @@
+{
+  "id": "steel_drum_100",
+  "file": "assets/models/steel_drum_100.glb",
+  "parts": {
+    "steel_drum_100": {
+      "node": "steel_drum_100:compound",
+      "massKg": 16,
+      "centreOfMass": [0.000021879058212410368, 0.38060329738580545, 0.000019338264355485294]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "legpouch",
+  "file": "assets/models/legpouch.glb",
+  "parts": {
+    "legpouch": {
+      "node": "legpouch:compound",
+      "massKg": 0.049,
+      "centreOfMass": [0, 0.06067017049740986, 0.002907056279233515]
+    }
+  }
+}

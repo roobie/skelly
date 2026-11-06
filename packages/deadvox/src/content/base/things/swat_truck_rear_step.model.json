@@ -1,0 +1,18 @@
+{
+  "id": "swat_truck_rear_step",
+  "file": "assets/models/swat_truck_rear_step.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 40,
+      "centreOfMass": [-3.2261660447761193, 0.6309701492537314, 0],
+      "collision": [
+        { "min": [-3.40625, 0.59375, -0.90625], "max": [-3.0625, 0.65625, 0.90625] },
+        { "min": [-3.09375, 0.625, 0.375], "max": [-3.03125, 0.875, 0.4375] },
+        { "min": [-3.09375, 0.625, -0.4375], "max": [-3.03125, 0.875, -0.375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "medium_propane_tank",
+  "file": "assets/models/medium_propane_tank.glb",
+  "parts": {
+    "medium_propane_tank": {
+      "node": "medium_propane_tank:compound",
+      "massKg": 13,
+      "centreOfMass": [0.000013367729831144464, 0.21213383364602875, 0]
+    }
+  }
+}

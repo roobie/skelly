@@ -1,0 +1,11 @@
+{
+  "id": "denim_shirt",
+  "file": "assets/models/denim_shirt.glb",
+  "parts": {
+    "denim_shirt": {
+      "node": "denim_shirt:compound",
+      "massKg": 0.39,
+      "centreOfMass": [3.753599004188533e-20, 0.019687888551073184, 0.0030847211507918477]
+    }
+  }
+}

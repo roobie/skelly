@@ -1,0 +1,11 @@
+{
+  "id": "improvised_legguard_tire",
+  "file": "assets/models/improvised_legguard_tire.glb",
+  "parts": {
+    "improvised_legguard_tire": {
+      "node": "improvised_legguard_tire:compound",
+      "massKg": 2.9,
+      "centreOfMass": [0.000012037002637743273, 0.028249061931121568, -0.1498942675632499]
+    }
+  }
+}

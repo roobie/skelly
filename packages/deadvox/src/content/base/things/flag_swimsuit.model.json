@@ -1,0 +1,11 @@
+{
+  "id": "flag_swimsuit",
+  "file": "assets/models/flag_swimsuit.glb",
+  "parts": {
+    "flag_swimsuit": {
+      "node": "flag_swimsuit:compound",
+      "massKg": 0.24,
+      "centreOfMass": [-0.0031535294117647026, 0.004815294117647045, -0.013080588235294096]
+    }
+  }
+}

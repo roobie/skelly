@@ -1,0 +1,11 @@
+{
+  "id": "mbelt_weaponry",
+  "file": "assets/models/mbelt_weaponry.glb",
+  "parts": {
+    "mbelt_weaponry": {
+      "node": "mbelt_weaponry:compound",
+      "massKg": 0.9,
+      "centreOfMass": [0.02375817432160321, 0.0035752229360437207, 0.023524594879662488]
+    }
+  }
+}

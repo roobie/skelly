@@ -1,0 +1,11 @@
+{
+  "id": "judo_gi",
+  "file": "assets/models/judo_gi.glb",
+  "parts": {
+    "judo_gi": {
+      "node": "judo_gi:compound",
+      "massKg": 0.89,
+      "centreOfMass": [0.0014814281370525066, 0.02774000992206378, 0.001919791316593851]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "tonewood",
+  "file": "assets/models/tonewood.glb",
+  "parts": {
+    "tonewood": {
+      "node": "tonewood:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-0.00018229623137598597, 0.0120122699386503, 0]
+    }
+  }
+}

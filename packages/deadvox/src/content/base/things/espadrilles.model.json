@@ -1,0 +1,11 @@
+{
+  "id": "espadrilles",
+  "file": "assets/models/espadrilles.glb",
+  "parts": {
+    "espadrilles": {
+      "node": "espadrilles:compound",
+      "massKg": 0.64,
+      "centreOfMass": [-1.1184539939195184e-17, 0.025664807490788637, -0.0061587398167866686]
+    }
+  }
+}

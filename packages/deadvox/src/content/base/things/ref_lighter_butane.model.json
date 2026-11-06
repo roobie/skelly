@@ -1,0 +1,14 @@
+{
+  "id": "ref_lighter_butane",
+  "file": "assets/models/ref_lighter_butane.glb",
+  "parts": {
+    "ref_lighter_butane": {
+      "node": "ref_lighter_butane:compound",
+      "massKg": 0.25,
+      "centreOfMass": [0.000010615442941994189, 0.07727334765575637, 0.0028913180841652975]
+    }
+  },
+  "grip": { "at": [0, 0.057999999999999996, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

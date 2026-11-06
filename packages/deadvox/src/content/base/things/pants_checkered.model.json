@@ -1,0 +1,11 @@
+{
+  "id": "pants_checkered",
+  "file": "assets/models/pants_checkered.glb",
+  "parts": {
+    "pants_checkered": {
+      "node": "pants_checkered:compound",
+      "massKg": 0.48,
+      "centreOfMass": [0.0000049518569463548105, 0.02211829436038496, -0.0005337689133425015]
+    }
+  }
+}

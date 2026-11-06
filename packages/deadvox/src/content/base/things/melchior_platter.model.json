@@ -1,0 +1,11 @@
+{
+  "id": "melchior_platter",
+  "file": "assets/models/melchior_platter.glb",
+  "parts": {
+    "melchior_platter": {
+      "node": "melchior_platter:compound",
+      "massKg": 2.6,
+      "centreOfMass": [4.166736915943116e-20, 0.004886157565988313, 0]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "ragpouch",
+  "file": "assets/models/ragpouch.glb",
+  "parts": {
+    "ragpouch": {
+      "node": "ragpouch:compound",
+      "massKg": 0.15,
+      "centreOfMass": [-0.0008974695506089872, 0.08764983200335989, -0.00021204325913481677]
+    }
+  }
+}

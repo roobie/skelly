@@ -1,0 +1,237 @@
+[
+  {
+    "id": "boots_denim",
+    "model": "boots_denim",
+    "name": "Denim boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "feet", "encumbrance": 4, "warmth": 10, "wearPerDamage": 0.002 },
+    "description": "Mid-calf boots with denim uppers on a rubber sole, a leather band round the top and a zip up the inner side.",
+    "reference": "boots_denim",
+    "variants": [],
+    "notes": "A standing pair, 280 mm long and 230 mm tall, toes to +z: denim feet and shafts, a black rubber sole with a short heel, a brown leather top band and a seam band at the ankle; the steel zips face each other on the inner sides. CHECK VOLUME: the bounding box of a standing pair takes in the air between and round the boots; the reference volume is the pair packed. Encumbrance and warmth are scaled from the reference to sit beside Deadvox's rubber boots and sneakers on the feet slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "boots_faux_fur",
+    "model": "boots_faux_fur",
+    "name": "Faux fur boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "feet", "encumbrance": 7, "warmth": 20, "wearPerDamage": 0.002 },
+    "description": "Tall soft boots of shaggy synthetic fur on a thick sole, the top turned out in a deep cuff and tied at the ankle with bobbled cords.",
+    "reference": "boots_faux_fur",
+    "variants": ["xl_boots_faux_fur", "xs_boots_faux_fur"],
+    "notes": "A standing pair, 300 mm long and 280 mm tall: khaki cloth feet on a grey sole, grey shaggy shafts with a white fur cuff, khaki cords and bobbles at the ankle front. The xl and xs sizes share the model. CHECK VOLUME: the bounding box of a standing pair takes in the air between and round the boots; the reference volume is the pair packed. Encumbrance and warmth are scaled from the reference to sit beside Deadvox's rubber boots and sneakers on the feet slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "boots_fur",
+    "model": "boots_fur",
+    "name": "Fur boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "slot": "feet", "encumbrance": 7, "warmth": 30, "wearPerDamage": 0.0012 },
+    "description": "Brown leather boots lined with fur, the lining turned down over the top in a thick cuff and the shaft bound with two rawhide thongs.",
+    "reference": "boots_fur",
+    "variants": ["xl_boots_fur", "xs_boots_fur"],
+    "notes": "A standing pair, 300 mm long and 270 mm tall: brown leather on a black rubber sole, a fur cuff and fur showing at the opening, two pale rawhide thongs round the shaft. The xl and xs sizes share the model. CHECK VOLUME: the bounding box of a standing pair takes in the air between and round the boots; the reference volume is the pair packed. Encumbrance and warmth are scaled from the reference to sit beside Deadvox's rubber boots and sneakers on the feet slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "boots_hiking",
+    "model": "boots_hiking",
+    "name": "Hiking boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "feet", "encumbrance": 4, "warmth": 15, "wearPerDamage": 0.0012 },
+    "description": "Light leather boots laced to above the ankle, with a padded collar and a rubber rand wrapped round the toe of a deep sole.",
+    "reference": "boots_hiking",
+    "variants": [],
+    "notes": "A standing pair, 290 mm long and 170 mm tall: brown leather uppers, a khaki padded collar and tongue, red laces, a charcoal rand over the toe and a thick black sole. CHECK VOLUME: the bounding box of a standing pair takes in the air between and round the boots; the reference volume is the pair packed. Encumbrance and warmth are scaled from the reference to sit beside Deadvox's rubber boots and sneakers on the feet slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "leather_armour_boots",
+    "model": "leather_armour_boots",
+    "name": "Leather armour boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 6,
+      "warmth": 12,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.05, "blunt": 0.15, "cut": 0.35, "pierce": 0.2 }
+    },
+    "description": "Thick black leather boots with a hardened leather cap over the toe and a plate down the shin, buckled on with three straps.",
+    "reference": "boots_larmor",
+    "variants": ["xl_boots_larmor", "xs_boots_larmor"],
+    "notes": "A standing pair, 290 mm long and 250 mm tall: black leather, brown hardened leather toe caps and ridged shin plates, three rawhide straps with steel buckles on the outer side. The xl and xs sizes share the model. CHECK VOLUME: the bounding box of a standing pair takes in the air between and round the boots; the reference volume is the pair packed. Encumbrance and warmth are scaled from the reference to sit beside Deadvox's rubber boots and sneakers on the feet slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "armoured_boots",
+    "model": "armoured_boots",
+    "name": "Armoured boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 9,
+      "warmth": 10,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.85, "pierce": 0.6 }
+    },
+    "description": "Heavy boots of plate steel: a greave closed round the shin and overlapping lames stepping down over the instep to the toe, strapped and buckled at the front.",
+    "reference": "boots_plate",
+    "variants": ["xl_boots_plate", "xs_boots_plate"],
+    "notes": "A standing pair, 300 mm long and 270 mm tall: steel greaves with a ridge down the front and a rim at the ankle, seven lames alternating bright and dull steel over each foot, a leather strap and padded top rim, rivets at the sides. The xl and xs sizes share the model. CHECK VOLUME: the bounding box of a standing pair takes in the air between and round the boots; the reference volume is the pair packed. Encumbrance and warmth are scaled from the reference to sit beside Deadvox's rubber boots and sneakers on the feet slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "reference": "boots_rubber",
+    "notes": "Skipped: Deadvox already has this item as rubber_boots, with its own model and worn look, so a second row would duplicate it. Point this reference at the existing rubber_boots."
+  },
+  {
+    "id": "boots_scrap",
+    "model": "boots_scrap",
+    "name": "Scrap boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": [], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 2,
+      "warmth": 5,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.5, "pierce": 0.3 }
+    },
+    "description": "Cloth wrapped round the foot and shin and bound with rag strips, with rusty metal scraps lashed over the toe, the shin and the ankle.",
+    "reference": "boots_scrap",
+    "variants": ["xl_boots_scrap", "xs_boots_scrap"],
+    "notes": "A standing pair, 290 mm long and 200 mm tall: pale rag uppers bound with five darker rag bands, a rusty plate over the toe and another tied over the shin with a bolt, a grey steel patch over each outer ankle, on a black rubber sole. Usage is empty because survivors make them rather than finding them. The xl and xs sizes share the model. CHECK VOLUME: the bounding box of a standing pair takes in the air between and round the boots; the reference volume is the pair packed. Encumbrance and warmth are scaled from the reference to sit beside Deadvox's rubber boots and sneakers on the feet slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "steel_toe_boots",
+    "model": "steel_toe_boots",
+    "name": "Steel-toe boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 7,
+      "warmth": 15,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.3, "cut": 0.4, "pierce": 0.25 }
+    },
+    "description": "Laced tan leather work boots on a thick sole, with a steel cap inside the toe under a darker leather cover.",
+    "reference": "boots_steel",
+    "variants": [],
+    "notes": "A standing pair, 290 mm long and 180 mm tall: tan nubuck uppers and tongue, a brown leather toe cap swollen over the steel, a brown padded collar, black laces and a thick charcoal sole. CHECK VOLUME: the bounding box of a standing pair takes in the air between and round the boots; the reference volume is the pair packed. Encumbrance and warmth are scaled from the reference to sit beside Deadvox's rubber boots and sneakers on the feet slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "boots_western",
+    "model": "boots_western",
+    "name": "Western boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "feet", "encumbrance": 4, "warmth": 10, "wearPerDamage": 0.0012 },
+    "container": { "pockets": [{ "grid": [1, 2], "handlingSimSeconds": 1.2, "name": "boot shaft" }] },
+    "description": "Tall stiff leather boots with a pointed toe and a stacked heel, the shafts stitched in chevrons. Each shaft has room to hide something small.",
+    "reference": "boots_western",
+    "variants": [],
+    "notes": "A standing pair, 300 mm long and 320 mm tall: narrow pointed brown feet on a walnut-coloured leather sole with a 30 mm heel, black shafts with three cream stitched chevrons down the front, and a brown pull tab either side of the top. The pocket is the space inside one shaft, sized for a small pistol. CHECK VOLUME: the bounding box of a standing pair takes in the air between and round the boots; the reference volume is the pair packed. Encumbrance and warmth are scaled from the reference to sit beside Deadvox's rubber boots and sneakers on the feet slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "boots_winter",
+    "model": "boots_winter",
+    "name": "Winter boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "feet", "encumbrance": 8, "warmth": 40, "wearPerDamage": 0.0015 },
+    "description": "Insulated boots with a rubber shell over the foot, a laced nylon shaft and a thick wool lining rolled over the top.",
+    "reference": "boots_winter",
+    "variants": ["xl_boots_winter", "xs_boots_winter"],
+    "notes": "A standing pair, 310 mm long and 260 mm tall: a black rubber shell over the foot on a thick charcoal sole, khaki shafts with black laces, a grey wool collar and lining. The xl and xs sizes share the model. CHECK VOLUME: the bounding box of a standing pair takes in the air between and round the boots; the reference volume is the pair packed. Encumbrance and warmth are scaled from the reference to sit beside Deadvox's rubber boots and sneakers on the feet slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "hardened_mail_chausses",
+    "model": "hardened_mail_chausses",
+    "name": "Hardened mail chausses",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": [], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 5,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0, "blunt": 0.12, "cut": 0.85, "pierce": 0.4 }
+    },
+    "description": "Mail booties of hardened steel rings that cover the foot and tie at the top of the leg.",
+    "reference": "ch_chainmail_feet",
+    "variants": ["xl_ch_chainmail_feet", "xs_ch_chainmail_feet"],
+    "notes": "Laid flat as a pair, each a mail leg 120 mm across with its foot turned out to the side, 300 mm from the leather tie to the heel; the hardened steel mail is ridged with rows of rings. Mail slumps flat on the floor rather than standing. CHECK VOLUME: the model lays the mail out so it reads as two booties; the reference volume is the mail bundled. Usage is empty because they are smithed rather than found. The xl and xs sizes share the model. Encumbrance and warmth are scaled from the reference to sit beside Deadvox's rubber boots and sneakers on the feet slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "hardened_sabaton",
+    "model": "hardened_sabaton",
+    "name": "Hardened sabaton",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": [], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 3,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.3, "cut": 0.85, "pierce": 0.55 }
+    },
+    "description": "A shell of jointed hardened steel lames that straps over a shoe to cover the top of one foot.",
+    "reference": "ch_sabaton",
+    "variants": ["xl_ch_sabaton"],
+    "notes": "One sabaton, 280 mm long and 100 mm tall: seven lames alternating hardened and grey steel step down from the ankle to a rounded toe; it is open behind with a dark hollow, held by a leather strap under the arch and a buckled strap round the heel. The reference is sided: one sabaton covers one foot, so a player wears two. Slot feet like the other footwear; the reference sits on the outer layer over a shoe, which the feet slot cannot yet express. CHECK VOLUME: the heel strap loop stands out behind and the box takes in its air. Usage is empty because they are smithed. The xl size shares the model. Encumbrance and warmth are scaled from the reference to sit beside Deadvox's rubber boots and sneakers on the feet slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "hardened_sheet_sabatons",
+    "model": "hardened_sheet_sabatons",
+    "name": "Hardened sheet sabatons",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": [], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 5,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.3, "cut": 0.8, "pierce": 0.5 }
+    },
+    "description": "A pair of crude foot guards bent from hardened sheet steel and riveted together, strapped over shoes.",
+    "reference": "ch_sabaton_metal_sheets",
+    "variants": [],
+    "notes": "A standing pair, 300 mm long and 95 mm tall: three thick plates over the front of each foot, alternating hardened and blackened steel, steel rivets at the sides, open behind, with leather straps under the arch and round the heel. They sit on the outer layer over a shoe, which the feet slot cannot yet express. CHECK VOLUME: the heel strap loops stand out behind and the box takes in their air. Usage is empty because they are made rather than found. Encumbrance and warmth are scaled from the reference to sit beside Deadvox's rubber boots and sneakers on the feet slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "rusty_mail_chausses",
+    "model": "rusty_mail_chausses",
+    "name": "Rusty mail chausses",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": [], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 5,
+      "warmth": 0,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.7, "pierce": 0.3 }
+    },
+    "description": "Mail booties of rusting steel rings with a leather sole patch under each foot, tied at the top of the leg.",
+    "reference": "chainmail_junk_feet",
+    "variants": [],
+    "notes": "Laid flat as a pair, each a mail leg 120 mm across with its foot turned out to the side, 300 mm from the leather tie to the heel; dull mail ridged with rust-coloured rows, a brown leather sole patch over each foot. CHECK VOLUME: the model lays the mail out so it reads as two booties; the reference volume is the mail bundled. Usage is empty because they are made rather than found. Encumbrance and warmth are scaled from the reference to sit beside Deadvox's rubber boots and sneakers on the feet slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  }
+]

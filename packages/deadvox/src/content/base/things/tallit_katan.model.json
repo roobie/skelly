@@ -1,0 +1,11 @@
+{
+  "id": "tallit_katan",
+  "file": "assets/models/tallit_katan.glb",
+  "parts": {
+    "tallit_katan": {
+      "node": "tallit_katan:compound",
+      "massKg": 0.12,
+      "centreOfMass": [5.658644223238665e-20, 0.01602398868974325, -0.002171295662881381]
+    }
+  }
+}

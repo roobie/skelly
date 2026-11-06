@@ -1,0 +1,11 @@
+{
+  "id": "portable_hard_drive",
+  "file": "assets/models/portable_hard_drive.glb",
+  "parts": {
+    "portable_hard_drive": {
+      "node": "portable_hard_drive:compound",
+      "massKg": 0.3,
+      "centreOfMass": [0.0000539668409925448, 0.008512406809836432, 0.00004840324913764327]
+    }
+  }
+}

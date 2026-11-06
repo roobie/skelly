@@ -1,0 +1,11 @@
+{
+  "id": "football",
+  "file": "assets/models/football.glb",
+  "parts": {
+    "football": {
+      "node": "football:compound",
+      "massKg": 0.21,
+      "centreOfMass": [3.174821191633765e-21, 0.08534684352738885, 0]
+    }
+  }
+}

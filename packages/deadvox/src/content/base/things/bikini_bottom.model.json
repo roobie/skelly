@@ -1,0 +1,11 @@
+{
+  "id": "bikini_bottom",
+  "file": "assets/models/bikini_bottom.glb",
+  "parts": {
+    "bikini_bottom": {
+      "node": "bikini_bottom:compound",
+      "massKg": 0.021,
+      "centreOfMass": [-4.186666392777565e-19, 0.0023076047070732636, -0.02363343034290775]
+    }
+  }
+}

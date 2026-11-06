@@ -1,0 +1,11 @@
+{
+  "id": "dish_towel",
+  "file": "assets/models/dish_towel.glb",
+  "parts": {
+    "dish_towel": {
+      "node": "dish_towel:compound",
+      "massKg": 0.06,
+      "centreOfMass": [-0.00003852126813378279, 0.00812018484148328, -0.0004482405969470857]
+    }
+  }
+}

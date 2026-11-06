@@ -1,0 +1,14 @@
+{
+  "id": "e_tool",
+  "file": "assets/models/e_tool.glb",
+  "parts": {
+    "e_tool": {
+      "node": "e_tool:compound",
+      "massKg": 0.69,
+      "centreOfMass": [0.07444114921223355, 0.01878665430954588, 3.707136237256898e-7]
+    }
+  },
+  "grip": { "at": [0.010000000000000002, 0.014000000000000002, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

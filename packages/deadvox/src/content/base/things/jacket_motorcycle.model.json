@@ -1,0 +1,11 @@
+{
+  "id": "jacket_motorcycle",
+  "file": "assets/models/jacket_motorcycle.glb",
+  "parts": {
+    "jacket_motorcycle": {
+      "node": "jacket_motorcycle:compound",
+      "massKg": 2.4,
+      "centreOfMass": [-0.00021190815236739048, 0.041535421858312535, -0.004352675922629645]
+    }
+  }
+}

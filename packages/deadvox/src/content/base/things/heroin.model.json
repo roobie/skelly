@@ -1,0 +1,14 @@
+{
+  "id": "heroin",
+  "file": "assets/models/heroin.glb",
+  "parts": {
+    "heroin": {
+      "node": "heroin:compound",
+      "massKg": 0.0015,
+      "centreOfMass": [0, 0.0021377245508982035, 0.0005568862275449104]
+    }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

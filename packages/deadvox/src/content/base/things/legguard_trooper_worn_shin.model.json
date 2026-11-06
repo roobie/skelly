@@ -1,0 +1,11 @@
+{
+  "id": "legguard_trooper_worn_shin",
+  "file": "assets/models/legguard_trooper_worn_shin.glb",
+  "parts": {
+    "legguard_trooper_worn_shin": {
+      "node": "legguard_trooper_worn_shin:compound",
+      "massKg": 0.1,
+      "centreOfMass": [3.660080960990856e-7, -0.12597263723473562, 0.00323611182279352]
+    }
+  }
+}

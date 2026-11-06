@@ -1,0 +1,14 @@
+{
+  "id": "wood_smoother",
+  "file": "assets/models/wood_smoother.glb",
+  "parts": {
+    "wood_smoother": {
+      "node": "wood_smoother:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0.30520671277922673, 0.022950447896586918, 0]
+    }
+  },
+  "grip": { "at": [0.30600000000000005, 0.074, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

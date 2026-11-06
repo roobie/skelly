@@ -1,0 +1,10 @@
+{
+  "id": "cigarette",
+  "file": "assets/models/cigarette.glb",
+  "parts": {
+    "cigarette": { "node": "cigarette:compound", "massKg": 0.022, "centreOfMass": [0, 0.04606630136986302, 0] }
+  },
+  "grip": { "at": [0, 0.043000000000000003, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

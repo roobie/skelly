@@ -1,0 +1,11 @@
+{
+  "id": "glove_jackson",
+  "file": "assets/models/glove_jackson.glb",
+  "parts": {
+    "glove_jackson": {
+      "node": "glove_jackson:compound",
+      "massKg": 0.053,
+      "centreOfMass": [0.005866687909017384, 0.008511066447707038, 0.05617797004828548]
+    }
+  }
+}

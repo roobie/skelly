@@ -1,0 +1,11 @@
+{
+  "id": "tailoring_pattern_set",
+  "file": "assets/models/tailoring_pattern_set.glb",
+  "parts": {
+    "tailoring_pattern_set": {
+      "node": "tailoring_pattern_set:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0.03334423188569973, 0.006371716628198412, 0.0014279038812817718]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "mithril_ingot",
+  "file": "assets/models/mithril_ingot.glb",
+  "parts": {
+    "mithril_ingot": {
+      "node": "mithril_ingot:compound",
+      "massKg": 0.9,
+      "centreOfMass": [-0.0000014135702746365104, 0.01312924071082391, 0.00000518309100700054]
+    }
+  }
+}

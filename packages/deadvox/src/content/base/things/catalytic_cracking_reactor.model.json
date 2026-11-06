@@ -1,0 +1,11 @@
+{
+  "id": "catalytic_cracking_reactor",
+  "file": "assets/models/catalytic_cracking_reactor.glb",
+  "parts": {
+    "catalytic_cracking_reactor": {
+      "node": "catalytic_cracking_reactor:compound",
+      "massKg": 350,
+      "centreOfMass": [0.024882592248947243, 0.2643896462303426, -0.05781100563842691]
+    }
+  }
+}

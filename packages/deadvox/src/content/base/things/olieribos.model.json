@@ -1,0 +1,11 @@
+{
+  "id": "olieribos",
+  "file": "assets/models/olieribos.glb",
+  "parts": {
+    "olieribos": {
+      "node": "olieribos:compound",
+      "massKg": 0.015,
+      "centreOfMass": [0.010969264544456646, 0.00250384193194292, 0.00008013172338090013]
+    }
+  }
+}

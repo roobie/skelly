@@ -1,0 +1,14 @@
+{
+  "id": "bottle_plastic_pill_prescription",
+  "file": "assets/models/bottle_plastic_pill_prescription.glb",
+  "parts": {
+    "bottle_plastic_pill_prescription": {
+      "node": "bottle_plastic_pill_prescription:compound",
+      "massKg": 0.015,
+      "centreOfMass": [0, 0.049467231755220206, -2.672048185061208e-21]
+    }
+  },
+  "grip": { "at": [0, 0.043000000000000003, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

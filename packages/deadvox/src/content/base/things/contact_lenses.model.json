@@ -1,0 +1,14 @@
+{
+  "id": "contact_lenses",
+  "file": "assets/models/contact_lenses.glb",
+  "parts": {
+    "contact_lenses": {
+      "node": "contact_lenses:compound",
+      "massKg": 0.0094,
+      "centreOfMass": [0, 0.00896330275229358, 0]
+    }
+  },
+  "grip": { "at": [0, 0.003, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "wrapper_foil",
+  "file": "assets/models/wrapper_foil.glb",
+  "parts": {
+    "wrapper_foil": {
+      "node": "wrapper_foil:compound",
+      "massKg": 0.004,
+      "centreOfMass": [0.013396116504854371, 0.0027949514563106793, 0.012961165048543687]
+    }
+  }
+}

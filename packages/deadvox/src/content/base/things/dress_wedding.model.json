@@ -1,0 +1,11 @@
+{
+  "id": "dress_wedding",
+  "file": "assets/models/dress_wedding.glb",
+  "parts": {
+    "dress_wedding": {
+      "node": "dress_wedding:compound",
+      "massKg": 5.6,
+      "centreOfMass": [9.419710716637142e-19, 0.07254941652703846, -0.02305751694073339]
+    }
+  }
+}

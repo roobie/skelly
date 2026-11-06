@@ -1,0 +1,11 @@
+{
+  "id": "pants_ski",
+  "file": "assets/models/pants_ski.glb",
+  "parts": {
+    "pants_ski": {
+      "node": "pants_ski:compound",
+      "massKg": 0.77,
+      "centreOfMass": [-0.0007267684388035858, 0.030870284902813527, 0.0013415727345344815]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "kippah",
+  "file": "assets/models/kippah.glb",
+  "parts": {
+    "kippah": {
+      "node": "kippah:compound",
+      "massKg": 0.054,
+      "centreOfMass": [-1.0350522200000847e-20, 0.011353487627132215, -4.140208880000339e-21]
+    }
+  }
+}

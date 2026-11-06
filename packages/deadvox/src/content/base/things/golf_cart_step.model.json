@@ -1,0 +1,14 @@
+{
+  "id": "golf_cart_step",
+  "file": "assets/models/golf_cart_step.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 3,
+      "centreOfMass": [0.046875, 0.25, 0.625],
+      "collision": [{ "min": [-0.34375, 0.21875, 0.59375], "max": [0.4375, 0.28125, 0.65625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": { "hinge_a": [-0.34375, 0.25, 0.59375], "hinge_b": [0.4375, 0.25, 0.59375] }
+}

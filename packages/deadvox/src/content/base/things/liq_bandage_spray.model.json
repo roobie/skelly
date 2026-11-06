@@ -1,0 +1,14 @@
+{
+  "id": "liq_bandage_spray",
+  "file": "assets/models/liq_bandage_spray.glb",
+  "parts": {
+    "liq_bandage_spray": {
+      "node": "liq_bandage_spray:compound",
+      "massKg": 0.025,
+      "centreOfMass": [0, 0.0324310761789601, 0.000012696493349455865]
+    }
+  },
+  "grip": { "at": [0, 0.032, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

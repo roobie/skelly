@@ -1,0 +1,14 @@
+{
+  "id": "duffelbag_gym_xl",
+  "file": "assets/models/duffelbag_gym_xl.glb",
+  "parts": {
+    "duffelbag_gym_xl": {
+      "node": "duffelbag_gym_xl:compound",
+      "massKg": 0.75,
+      "centreOfMass": [0.005948749976963291, 0.15114665885807546, 0.00010580914137577277]
+    }
+  },
+  "grip": { "at": [0, 0.388, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

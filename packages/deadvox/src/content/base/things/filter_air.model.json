@@ -1,0 +1,11 @@
+{
+  "id": "filter_air",
+  "file": "assets/models/filter_air.glb",
+  "parts": {
+    "filter_air": {
+      "node": "filter_air:compound",
+      "massKg": 0.54,
+      "centreOfMass": [0.0000014703664605633568, 0.014348916704368374, 0]
+    }
+  }
+}

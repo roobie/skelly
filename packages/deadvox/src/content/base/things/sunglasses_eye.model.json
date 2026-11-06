@@ -1,0 +1,11 @@
+{
+  "id": "sunglasses_eye",
+  "file": "assets/models/sunglasses_eye.glb",
+  "parts": {
+    "sunglasses_eye": {
+      "node": "sunglasses_eye:compound",
+      "massKg": 0.046,
+      "centreOfMass": [-1.7891433580815307e-18, 0.02730209084354722, -0.01447440519105984]
+    }
+  }
+}

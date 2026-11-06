@@ -1,0 +1,11 @@
+{
+  "id": "armor_nomad_lightplate_on",
+  "file": "assets/models/armor_nomad_lightplate_on.glb",
+  "parts": {
+    "armor_nomad_lightplate_on": {
+      "node": "armor_nomad_lightplate_on:compound",
+      "massKg": 26,
+      "centreOfMass": [0.00245144754922442, 0.03716151125775892, -0.04496846449078396]
+    }
+  }
+}

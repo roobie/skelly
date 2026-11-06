@@ -1,0 +1,11 @@
+{
+  "id": "legguard_lightplate",
+  "file": "assets/models/legguard_lightplate.glb",
+  "parts": {
+    "legguard_lightplate": {
+      "node": "legguard_lightplate:compound",
+      "massKg": 5.1,
+      "centreOfMass": [-0.000025416075345117076, 0.026405883111856543, -0.13559231066959096]
+    }
+  }
+}

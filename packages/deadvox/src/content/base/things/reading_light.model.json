@@ -1,0 +1,14 @@
+{
+  "id": "reading_light",
+  "file": "assets/models/reading_light.glb",
+  "parts": {
+    "reading_light": {
+      "node": "reading_light:compound",
+      "massKg": 0.05,
+      "centreOfMass": [0.01198862461220269, 0.04054188210961738, 0]
+    }
+  },
+  "grip": { "at": [-0.036, 0.015000000000000001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

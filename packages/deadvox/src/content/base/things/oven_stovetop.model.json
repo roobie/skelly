@@ -1,0 +1,11 @@
+{
+  "id": "oven_stovetop",
+  "file": "assets/models/oven_stovetop.glb",
+  "parts": {
+    "oven_stovetop": {
+      "node": "oven_stovetop:compound",
+      "massKg": 9.1,
+      "centreOfMass": [-0.0004973323507737656, 0.02095711127487104, 0.00033554409236059943]
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "id": "mre_package",
+  "file": "assets/models/mre_package.glb",
+  "parts": { "mre_package": { "node": "mre_package:compound", "massKg": 0.76, "centreOfMass": [0, 0.021273125, 0] } }
+}

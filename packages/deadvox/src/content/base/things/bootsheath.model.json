@@ -1,0 +1,11 @@
+{
+  "id": "bootsheath",
+  "file": "assets/models/bootsheath.glb",
+  "parts": {
+    "bootsheath": {
+      "node": "bootsheath:compound",
+      "massKg": 0.08,
+      "centreOfMass": [-0.0055371205126812555, 0.008162113723999347, 0.0009086514962254928]
+    }
+  }
+}

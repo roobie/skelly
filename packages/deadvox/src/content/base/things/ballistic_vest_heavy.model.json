@@ -1,0 +1,11 @@
+{
+  "id": "ballistic_vest_heavy",
+  "file": "assets/models/ballistic_vest_heavy.glb",
+  "parts": {
+    "ballistic_vest_heavy": {
+      "node": "ballistic_vest_heavy:compound",
+      "massKg": 3,
+      "centreOfMass": [0, 0.028072215641324998, -0.013328464416283888]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "paint_can_plastic",
+  "file": "assets/models/paint_can_plastic.glb",
+  "parts": {
+    "paint_can_plastic": {
+      "node": "paint_can_plastic:compound",
+      "massKg": 0.2,
+      "centreOfMass": [0, 0.09424720893141944, 0]
+    }
+  }
+}

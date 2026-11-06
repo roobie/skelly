@@ -1,0 +1,11 @@
+{
+  "id": "gauntlets_xlblack_dragon_scale",
+  "file": "assets/models/gauntlets_xlblack_dragon_scale.glb",
+  "parts": {
+    "gauntlets_xlblack_dragon_scale": {
+      "node": "gauntlets_xlblack_dragon_scale:compound",
+      "massKg": 0.63,
+      "centreOfMass": [-1.399561673201158e-17, 0.011551199348656605, 0.006067388989791444]
+    }
+  }
+}

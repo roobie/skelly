@@ -1,0 +1,11 @@
+{
+  "id": "aim_game",
+  "file": "assets/models/aim_game.glb",
+  "parts": {
+    "aim_game": {
+      "node": "aim_game:compound",
+      "massKg": 1,
+      "centreOfMass": [0.0004420670363645283, 0.1259224615988615, -0.0457100652696668]
+    }
+  }
+}

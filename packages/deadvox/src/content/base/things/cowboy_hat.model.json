@@ -1,0 +1,11 @@
+{
+  "id": "cowboy_hat",
+  "file": "assets/models/cowboy_hat.glb",
+  "parts": {
+    "cowboy_hat": {
+      "node": "cowboy_hat:compound",
+      "massKg": 0.32,
+      "centreOfMass": [0, 0.06216943521594684, 0.00004561717352415026]
+    }
+  }
+}

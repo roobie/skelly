@@ -1,0 +1,250 @@
+[
+  {
+    "id": "jacket_windbreaker",
+    "model": "jacket_windbreaker",
+    "name": "Windbreaker",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Commercial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 2, "warmth": 10, "wearPerDamage": 0.002 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "right" }
+      ]
+    },
+    "description": "A thin nylon jacket that zips up the front, its hood rolled away inside the collar. It keeps off wind and rain but holds in little warmth.",
+    "reference": "jacket_windbreaker",
+    "variants": [],
+    "notes": "Folded to 300 mm by 240 mm and 36 mm high in three folds of red nylon, the hood rolled into the collar at the back, a black zip running from the collar down over the front edge and a dark elastic hem band. Box/volume x2.1 is within limits: the reference counts the thin nylon packed tight. Encumbrance and warmth follow the reference; wear is higher than the jacket's for the thin cloth. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "judo_gi",
+    "model": "judo_gi",
+    "name": "Judo uniform",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Commercial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 10, "warmth": 10, "wearPerDamage": 0.0008 },
+    "description": "A heavy white cotton jacket and trousers for grappling, the jacket woven thick and its lapel padded so it takes being gripped and pulled. A white belt ties it shut.",
+    "reference": "judo_gi",
+    "variants": [],
+    "notes": "Folded to 300 mm by 240 mm and 50 mm high in four folds of cream cotton with the trousers inside, the thick lapel band crossing left over right from the collar, and a white belt tied round the bundle with its ends hanging over the front. CHECK VOLUME (x3.5) is explained: the reference volume packs the jacket and trousers tighter than a folded bundle with a belt round it lies. Slot `torso`: the robe also covers the legs, but it is one garment and Deadvox has no whole-body slot, so it takes the torso slot as the jacket does and leaves `legs` free for trousers underneath. Wear is low for the heavy weave. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "karate_gi",
+    "model": "karate_gi",
+    "name": "Karate uniform",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Commercial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 0, "warmth": 5, "wearPerDamage": 0.0012 },
+    "description": "A light, loose white cotton jacket and trousers for striking practice, tied shut with a cloth belt.",
+    "reference": "karate_gi",
+    "variants": [],
+    "notes": "Folded to 300 mm by 240 mm and 40 mm high in three folds of thin cream cotton with the trousers inside, a narrow lapel crossing left over right and a black belt tied round the bundle; the black belt sets it apart from the judo uniform at a glance. Box/volume x2.8 is within limits. Slot `torso`: the robe also covers the legs, but it is one garment and Deadvox has no whole-body slot, so it takes the torso slot as the jacket does and leaves `legs` free for trousers underneath. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "keikogi",
+    "model": "keikogi",
+    "name": "Training jacket",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Commercial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 0, "warmth": 5, "wearPerDamage": 0.0015 },
+    "description": "A plain white cotton jacket for martial arts practice, wrapped left over right and worn without its trousers.",
+    "reference": "keikogi",
+    "variants": [],
+    "notes": "Folded to 280 mm by 220 mm and 24 mm high in two folds of thin cream cotton, the narrow lapel crossing left over right from the collar; jacket only, so it has no belt. Box/volume x2.7 is within limits. Slot `torso` as the jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "kariginu",
+    "model": "kariginu",
+    "name": "Shrine robe",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 17, "warmth": 23, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "left sleeve" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "right sleeve" }
+      ]
+    },
+    "description": "A long, layered ceremonial robe with very wide sleeves left open at the sides, a round collar and cords run through the cuffs. Warm but cumbersome.",
+    "reference": "kariginu",
+    "variants": [],
+    "notes": "Folded to 420 mm by 320 mm and 80 mm high in four folds of cream cotton, the wide sleeves folded back over each side of the top with crimson cords along their cuffs ending in tassels over the front edge, a round collar with its knot at one shoulder, and the crimson under-robe showing along the front edge for the layers. Box/volume x2.4 is within limits. Slot `torso`: the robe also covers the legs, but it is one garment and Deadvox has no whole-body slot, so it takes the torso slot as the jacket does and leaves `legs` free for trousers underneath. The wide sleeves hold small things, so each is a pocket. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "kasaya",
+    "model": "kasaya",
+    "name": "Monk's robe",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 2, "warmth": 20, "wearPerDamage": 0.0012 },
+    "description": "A long saffron robe sewn together from many patches of cloth and wrapped round the body. Warm and easy to move in.",
+    "reference": "kasaya",
+    "variants": [],
+    "notes": "Folded to 380 mm by 300 mm and 70 mm high in four folds of orange cotton, the top showing the field of stitched patches in staggered rows inside a yellow border, the pattern that marks the robe. Box/volume x1.7 is within limits. Slot `torso`: the robe also covers the legs, but it is one garment and Deadvox has no whole-body slot, so it takes the torso slot as the jacket does and leaves `legs` free for trousers underneath. The reference leaves the arms bare and so does the draft; only the slot covers more. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "kimono",
+    "model": "kimono",
+    "name": "Kimono",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 2, "warmth": 20, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.8, "name": "left sleeve" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.8, "name": "right sleeve" }
+      ]
+    },
+    "description": "A long robe of navy cotton wrapped left over right and tied with a wide red sash. Its deep sleeves serve as pockets.",
+    "reference": "kimono",
+    "variants": [],
+    "notes": "Folded lengthwise to 400 mm by 250 mm and 50 mm high in four folds of navy cotton, its cream collar band running diagonally across the folded front and the red sash folded flat across the middle. Box/volume x1.4 is within limits. Slot `torso`: the robe also covers the legs, but it is one garment and Deadvox has no whole-body slot, so it takes the torso slot as the jacket does and leaves `legs` free for trousers underneath. Each deep sleeve is a small pocket. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "kittel",
+    "model": "kittel",
+    "name": "Kittel",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 10, "warmth": 17, "wearPerDamage": 0.0012 },
+    "description": "A plain white knee-length cotton robe with a stand collar and small buttons, closed with a white belt and a silver buckle. Worn for prayer and on solemn days.",
+    "reference": "kittel",
+    "variants": [],
+    "notes": "Folded to 320 mm by 260 mm and 50 mm high in four folds of cream cotton: a stand collar at the back, a placket with small white buttons down the front, and its white belt wrapped round the bundle with a silver buckle on top. The reference marks it as worn under a belt, which the wrapped belt shows; Deadvox has no belted layer yet. Box/volume x1.3 is within limits. Slot `torso`: the robe also covers the legs, but it is one garment and Deadvox has no whole-body slot, so it takes the torso slot as the jacket does and leaves `legs` free for trousers underneath. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_motorcycle",
+    "model": "jacket_motorcycle",
+    "name": "Motorcycle jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Police"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 15,
+      "warmth": 30,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.1, "cut": 0.35, "pierce": 0.15 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.8, "name": "inner" }
+      ]
+    },
+    "description": "A heavy black leather jacket cut for riding: broad studded lapels, a slanted steel zip, a belt across the waist and straps on the shoulders. Warm, stiff and hard to tear.",
+    "reference": "leather_police_jacket",
+    "variants": [],
+    "notes": "Folded to 360 mm by 280 mm and 80 mm high in three folds of black leather: wide lapels studded down at the collar, a steel zip running slant from the left shoulder to the right hip, a waist belt with a steel buckle across the front and epaulettes at the shoulders. Id `jacket_motorcycle` follows the name, as the reference id names a police jacket the item is not. Box/volume x2.8 is within limits. Protection is a guess for thick leather: it resists cuts and scrapes and does little against blows. Slot `torso` as the jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "nun_habit",
+    "model": "nun_habit",
+    "name": "Nun's habit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 10, "warmth": 15, "wearPerDamage": 0.0012 },
+    "container": { "pockets": [{ "grid": [1, 2], "handlingSimSeconds": 0.8, "name": "side" }] },
+    "description": "A long black robe with a white collar and a black veil, tied at the waist with a knotted cord.",
+    "reference": "nun_habit",
+    "variants": [],
+    "notes": "Folded to 340 mm by 260 mm and 50 mm high in four folds of black cotton: the white collar folded flat at the back, the black veil folded over the middle with its white band showing, and a dark knotted cord wrapped round the bundle with its ends over the front. The reference marks it as worn under a belt, which the cord shows; Deadvox has no belted layer yet. Box/volume x1.3 is within limits. Slot `torso`: the robe also covers the legs, but it is one garment and Deadvox has no whole-body slot, so it takes the torso slot as the jacket does and leaves `legs` free for trousers underneath. The veil is part of the habit; Deadvox has no separate veil, so it does not take the head slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "peacoat",
+    "model": "peacoat",
+    "name": "Peacoat",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 10, "warmth": 50, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.8, "name": "inner" }
+      ]
+    },
+    "description": "A heavy navy wool coat, double-breasted with two rows of dark buttons and broad lapels. Very warm, with deep pockets at the hips.",
+    "reference": "peacoat",
+    "variants": [],
+    "notes": "Folded to 360 mm by 280 mm and 80 mm high in three folds of navy wool: broad lapels from the collar, two rows of three dark buttons down the double-breasted front, and slanted flaps over the hip pockets. CHECK VOLUME (x3.1) is explained: the reference counts the wool pressed flat, while a folded heavy coat stands thick. Slot `torso` as the jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "plaguedoctor_robe",
+    "model": "plaguedoctor_robe",
+    "name": "Plague robe",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 12, "warmth": 24, "wearPerDamage": 0.0012 },
+    "description": "A dark, hooded, ankle-length robe of heavy cotton, closed with a broad leather belt. The costume of an old plague doctor.",
+    "reference": "plaguedoctor_robe",
+    "variants": [],
+    "notes": "Folded to 340 mm by 270 mm and 55 mm high in four folds of black cotton, its hood lying folded on top with a charcoal lining showing at the opening, and a broad brown leather belt with a brass buckle wrapped round the bundle. The reference marks it as worn under a belt, which the wrapped belt shows; Deadvox has no belted layer yet. Box/volume x1.4 is within limits. Slot `torso`: the robe also covers the legs, but it is one garment and Deadvox has no whole-body slot, so it takes the torso slot as the jacket does and leaves `legs` free for trousers underneath. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "robe",
+    "model": "robe",
+    "name": "Robe",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 8, "warmth": 20, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.8, "name": "inner left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.8, "name": "inner right" }
+      ]
+    },
+    "description": "A loose brown cotton robe with a shawl collar and a sash at the waist. More pockets are sewn inside than anyone would guess from the outside.",
+    "reference": "robe",
+    "variants": [],
+    "notes": "Folded to 340 mm by 260 mm and 45 mm high in three folds of brown cotton: a wide suede-brown shawl collar curving round the neck and down the front, two patch pockets on the front, and its sash tied round the bundle with the ends over the front edge. The reference marks it as worn under a belt, which the sash shows; Deadvox has no belted layer yet. Slot `torso`: the robe also covers the legs, but it is one garment and Deadvox has no whole-body slot, so it takes the torso slot as the jacket does and leaves `legs` free for trousers underneath. The two inner pockets are the hidden ones. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "robe_wizard",
+    "model": "robe_wizard",
+    "name": "Wizard robe",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Commercial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 8, "warmth": 15, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "right" }
+      ]
+    },
+    "description": "A long hooded costume robe of deep blue, sewn with gold stars and a crescent moon, its hood lined with shimmering cloth. A few pockets hide in the folds.",
+    "reference": "robe_wizard",
+    "variants": [],
+    "notes": "Folded to 330 mm by 260 mm and 45 mm high in three folds of navy cotton: the hood on top lined in shimmering cloth, gold stars and a crescent moon scattered over the folds, and a gold cord tied round the bundle. Navy stands in for a deep purple cloth, which the palette lacks. The reference marks it as worn under a belt, which the cord shows; Deadvox has no belted layer yet. Slot `torso`: the robe also covers the legs, but it is one garment and Deadvox has no whole-body slot, so it takes the torso slot as the jacket does and leaves `legs` free for trousers underneath. Wear is a little higher for the thin costume cloth. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "samghati",
+    "model": "samghati",
+    "name": "Outer monk's robe",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "cloak", "encumbrance": 2, "warmth": 12, "wearPerDamage": 0.0012 },
+    "description": "A double-layered maroon robe pieced from many stitched patches, wrapped over everything else as an outer cloak.",
+    "reference": "samghati",
+    "variants": [],
+    "notes": "Folded to 340 mm by 260 mm and 40 mm high in three folds of crimson cotton, the top showing stitched patches in staggered rows inside a darker red border, with a cotton loop at one corner where it fastens. Box/volume x1.9 is within limits. Slot `cloak` as earlier batches name it for a wrap worn over everything else, which is how this robe is worn; it covers the torso and legs and leaves the arms bare. The worn look is pending: no worn model is authored."
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "id": "bulette_plate",
+  "file": "assets/models/bulette_plate.glb",
+  "parts": {
+    "bulette_plate": {
+      "node": "bulette_plate:compound",
+      "massKg": 47,
+      "centreOfMass": [0.000012218010525161413, 0.08741633238876831, -0.01030890957936187]
+    }
+  },
+  "grip": { "at": [0.028, 0.112, -0.008000000000000007], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

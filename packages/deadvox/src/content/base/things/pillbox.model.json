@@ -1,0 +1,11 @@
+{
+  "id": "pillbox",
+  "file": "assets/models/pillbox.glb",
+  "parts": {
+    "pillbox": {
+      "node": "pillbox:compound",
+      "massKg": 0.038,
+      "centreOfMass": [0.00002736098852603651, 0.011073256840247124, 0.00016416593115622236]
+    }
+  }
+}

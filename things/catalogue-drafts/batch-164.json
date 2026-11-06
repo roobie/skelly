@@ -1,0 +1,231 @@
+[
+  {
+    "id": "camera_bag",
+    "model": "camera_bag",
+    "name": "Camera bag",
+    "category": "bag",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 3, "warmth": 2, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [3, 2], "handlingSimSeconds": 1, "name": "main" },
+        { "grid": [2, 1], "handlingSimSeconds": 0.8, "name": "front" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.6, "name": "side" }
+      ]
+    },
+    "description": "A padded nylon shoulder bag with a flap lid and a side pocket, made to keep a camera and its lenses from knocks.",
+    "reference": "camera_bag",
+    "variants": [],
+    "notes": "Standing front +z: a black nylon box 260 mm by 190 mm by 150 mm under a flap lid with a press stud, a zipped charcoal front pocket, a side pocket at the left end, a grab handle on top and its shoulder strap lying behind it in a U. Worn slung from the shoulder, it takes `back` as the earlier shoulder-slung bags do. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "case_violin",
+    "model": "case_violin",
+    "name": "Violin case",
+    "category": "bag",
+    "size": [3, 8],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "container": { "pockets": [{ "grid": [2, 7], "handlingSimSeconds": 3, "name": "violin" }] },
+    "description": "A shaped hard case with a padded bed for a violin and a clip for its bow. It is awkward to carry and good for little else.",
+    "reference": "case_violin",
+    "variants": [],
+    "notes": "Lying flat with the lid closed: a dark leather-covered shell 800 mm long, 250 mm across the wide end and 120 mm tall, tapering to the neck end, with a bright metal seam round it, a raised panel on the lid, a black side handle and two latches facing +z. Deadvox has no slot for a bag carried in one hand, so it has no wearable block: it is carried as a held or stowed container until a hand-carry slot exists. The pocket is sized for a violin and its bow."
+  },
+  {
+    "id": "daypack",
+    "model": "daypack",
+    "name": "Daypack",
+    "category": "bag",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 6, "warmth": 2, "wearPerDamage": 0.002 },
+    "container": {
+      "pockets": [
+        { "grid": [4, 5], "handlingSimSeconds": 1.5, "name": "main" },
+        { "grid": [2, 2], "handlingSimSeconds": 1, "name": "front" }
+      ]
+    },
+    "description": "A light nylon backpack for a day's walking: one main compartment, a zipped front pocket and thin shoulder straps.",
+    "reference": "daypack",
+    "variants": [],
+    "notes": "Standing front +z: a red nylon pack 300 mm by 450 mm by 120 mm with a domed top, a black zip round the top of the main compartment, a zipped front pocket with a pull, a black base, a grab loop and two thin black shoulder straps on the back. CHECK VOLUME (x10.8): the reference counts the empty pack folded; the model stands open at its real size. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "deployment_bag",
+    "model": "deployment_bag",
+    "name": "Deployment bag",
+    "category": "bag",
+    "size": [3, 2],
+    "economy": { "usage": ["Military"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "waist", "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [3, 2], "handlingSimSeconds": 0.8, "name": "main" }] },
+    "fits": ["pals"],
+    "description": "A tough nylon zip bag with clips for a waist strap and webbing on its back, so it can hang at the hip or ride on a vest or pack.",
+    "reference": "deployment_bag",
+    "variants": [],
+    "notes": "Standing front +z: an olive drab bag 250 mm by 150 mm by 90 mm zipped along the top, a darker front panel with a black label, black clips at both top corners for a waist strap and three webbing rows across the back. CHECK VOLUME (x15): the reference volume is far below a bag of this size; the model keeps a real bag's size and the reference mass. It takes `waist` when worn on its own strap like a belt bag, and `fits: [\"pals\"]` for its back webbing, so it can also mount on a vest or pack. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "dive_bag",
+    "model": "dive_bag",
+    "name": "Mesh dive bag",
+    "category": "bag",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "back", "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.002 },
+    "container": { "pockets": [{ "grid": [4, 4], "handlingSimSeconds": 1.2, "name": "main" }] },
+    "description": "An open mesh drawstring sack carried on the back, for wet gear that has to drain and dry on the way home.",
+    "reference": "dive_bag",
+    "variants": [],
+    "notes": "Lying flat: a yellow plastic net 400 mm by 500 mm in two layers with the floor showing through, a black hem at the mouth (-z), black side seams and bottom corners, drawcords running down both sides and an orange cord lock on the cord ends. The look tiles draw the net as solid strips, which reads as mesh. CHECK VOLUME (x6.4): the reference counts the sack bunched up; the model lies flat at its full size. Worn on the back by its drawcords, so it takes `back`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "dry_bag",
+    "model": "dry_bag",
+    "name": "Dry bag",
+    "category": "bag",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [3, 4], "handlingSimSeconds": 1.5, "name": "main" }] },
+    "description": "A waterproof roll-top sack with shoulder straps. Rolled down and clipped, it keeps its contents dry in rain or a river crossing.",
+    "reference": "dry_bag",
+    "variants": [],
+    "notes": "Standing up: a yellow coated cylinder 200 mm across and 380 mm tall, its top rolled into a charcoal band whose ends come down to black clips on both sides, a charcoal patch on the front and two black shoulder straps behind. CHECK VOLUME (x12.5): the reference counts it empty and rolled small; the model stands filled at its real size. The watertight seal is a property for later; nothing in Deadvox gets wet yet. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "dry_duffelbag",
+    "model": "dry_duffelbag",
+    "name": "Dry duffel bag",
+    "category": "bag",
+    "size": [6, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 10, "warmth": 10, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [6, 6], "handlingSimSeconds": 2, "name": "main" }] },
+    "description": "A huge waterproof duffel with a roll-top end and backpack straps. It holds a lot and floats, but it is bulky to carry.",
+    "reference": "dry_duffelbag",
+    "variants": [],
+    "notes": "Lying along x: a blue coated cylinder 650 mm long and 300 mm across, a charcoal end cap at -x and a rolled charcoal band at +x clipped top and bottom, two black carry handles over the top, a cord lashing across the top and two black shoulder straps on the back. CHECK VOLUME (x6.9): the reference counts it empty and rolled; the model lies filled at its real size. Floating is a property for later. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "duffelbag",
+    "model": "duffelbag",
+    "name": "Duffel bag",
+    "category": "bag",
+    "size": [6, 3],
+    "economy": { "usage": ["Residential", "Military"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 5, "warmth": 10, "wearPerDamage": 0.002 },
+    "container": { "pockets": [{ "grid": [5, 5], "handlingSimSeconds": 1.8, "name": "main" }] },
+    "description": "A canvas tube bag zipped along its top, with carry handles and a shoulder strap. Roomy, but it swings and bumps when worn.",
+    "reference": "duffelbag",
+    "variants": [],
+    "notes": "Lying along x: a canvas cylinder 600 mm long and 300 mm across with khaki end panels, a steel zip and pull along the top, two dark webbing handles over it, rings at both ends and a dark shoulder strap with a pad lying in front of it. CHECK VOLUME (x12.6): the reference counts the empty bag folded; the model lies full at its real size. Slung on the shoulder, it takes `back`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "dump_pouch",
+    "model": "dump_pouch",
+    "name": "Dump pouch",
+    "category": "bag",
+    "size": [2, 1],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [3, 3], "handlingSimSeconds": 0.5, "name": "main" }] },
+    "fits": ["belt", "pals"],
+    "description": "A nylon pouch that stays rolled up small until needed, then opens into a wide bag for spent magazines or anything grabbed on the move.",
+    "reference": "dump_pouch",
+    "variants": [],
+    "notes": "Rolled and stowed, standing front +z: a coyote pouch 150 mm by 120 mm by 60 mm, its flap closed over a grey hook-and-loop patch, two darker roll lines on the front, a drawcord with a black toggle at the right end and two webbing straps on its back. It mounts on a belt or a vest's webbing by those straps, so it has `fits` and no slot. The pocket is the pouch opened out. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "frame_pack",
+    "model": "frame_pack",
+    "name": "Pack frame",
+    "category": "bag",
+    "size": [4, 7],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "back", "encumbrance": 10, "warmth": 5, "wearPerDamage": 0.001 },
+    "attachPoints": [
+      { "id": "upper_lash", "name": "upper lashing strap", "reachSimSeconds": 1.5, "standard": "lash" },
+      { "id": "lower_lash", "name": "lower lashing strap", "reachSimSeconds": 1.5, "standard": "lash" },
+      { "id": "shelf", "name": "foot shelf", "reachSimSeconds": 1.8, "standard": "lash" }
+    ],
+    "description": "A wooden carrying frame with shoulder straps and a shelf at its foot. Heavy or awkward loads are strapped on rather than packed in.",
+    "reference": "frame_pack",
+    "variants": [],
+    "notes": "Standing upright, load side +z: two oak rails 750 mm tall and 360 mm apart, three pine cross slats, a pine shelf 250 mm deep with a lip at the foot, corner braces, two tan leather lashing straps with brass buckles across the front and two tan shoulder straps behind. Its attach points are the upper lashing strap, the lower lashing strap and the shelf at the foot. It has no container: loads ride on its lash points. CHECK VOLUME (x9.5): the reference volume is below the frame's open outer box. A crafted frame, so it carries only a light economy. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "golf_bag",
+    "model": "golf_bag",
+    "name": "Golf bag",
+    "category": "bag",
+    "size": [3, 9],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 15, "warmth": 5, "wearPerDamage": 0.002 },
+    "container": {
+      "pockets": [
+        { "grid": [3, 10], "handlingSimSeconds": 2, "name": "main" },
+        { "grid": [2, 4], "handlingSimSeconds": 1.2, "name": "front" },
+        { "grid": [1, 7], "handlingSimSeconds": 1.5, "name": "umbrella" }
+      ]
+    },
+    "description": "A tall stiff bag with a divided top, a long front pocket and fold-out legs. It can carry anything long, though it is clumsy on the back.",
+    "reference": "golf_bag",
+    "variants": [],
+    "notes": "Standing on its foot: a navy tube 250 mm across and 900 mm tall with a charcoal foot and top cuff, cross dividers in a black well, a long white zipped front pocket and a short one above it, an umbrella sleeve at the right, two steel stand legs folded along the back under a charcoal hinge and two black shoulder straps. The main pocket is sized for golf clubs and takes any long thing. The stand legs do not deploy in Deadvox. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hide_bag",
+    "model": "hide_bag",
+    "name": "Raw hide bag",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier1"] },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 1, "name": "main" }] },
+    "description": "A fresh animal skin gathered into a sack and tied at the neck. It holds a few things, but it will rot unless it is cured and tanned.",
+    "reference": "hide_bag",
+    "variants": [],
+    "notes": "Standing: a lumpy rawhide sack 150 mm across and 200 mm tall, its neck drawn tight with a `leather-chestnut` thong tied in a bow with its ends hanging, creases running down from the tie, and crumpled flaps of skin closing the mouth round a dark pucker. CHECK VOLUME (x6.2): the box counts the round sack's empty corners and the flaps above the tie. The reference also makes it food that spoils; rotting and its link to curing are pending. Deadvox has no slot for a bag carried in one hand, so it has no wearable block: it is carried as a held or stowed container until a hand-carry slot exists."
+  },
+  {
+    "id": "hide_tainted_bag",
+    "model": "hide_bag",
+    "name": "Tainted hide bag",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier1"] },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 1, "name": "main" }] },
+    "finishes": { "hide": "flesh-membrane", "mouth": "plant-purple" },
+    "description": "The skin of something diseased, gathered into a sack and tied at the neck. It holds a few things, and it will rot unless cured and tanned.",
+    "reference": "hide_tainted_bag",
+    "variants": [],
+    "notes": "Shares `hide_bag`'s model; only the hide differs: a pale translucent membrane finish instead of rawhide, so the bag reads as sick skin. The reference also makes it food that spoils; rotting and its link to curing are pending. Deadvox has no slot for a bag carried in one hand, so it has no wearable block: it is carried as a held or stowed container until a hand-carry slot exists."
+  },
+  {
+    "id": "hk_briefcase",
+    "model": "hk_briefcase",
+    "name": "Gun briefcase",
+    "category": "bag",
+    "size": [5, 4],
+    "economy": { "usage": ["Police", "Military"], "tiers": ["Tier3"] },
+    "container": { "pockets": [{ "grid": [2, 4], "handlingSimSeconds": 4, "name": "gun mount" }] },
+    "description": "A plain hard-sided black briefcase with a trigger hidden in the handle and a port in one end. A small gun mounted inside could fire while it stays shut. This one is empty.",
+    "reference": "hk_briefcase",
+    "variants": [],
+    "notes": "Standing on its feet, front +z: a black shell 544 mm by 370 mm by 110 mm with a grey seam round it, a raised front panel, two bright latches, a black handle with a dark trigger under it and a dark port in the right end. The pocket is the gun mount, sized for a compact submachine gun. Firing from the case is a mechanic for later. Deadvox has no slot for a bag carried in one hand, so it has no wearable block: it is carried as a held or stowed container until a hand-carry slot exists."
+  },
+  {
+    "id": "jerrypack",
+    "model": "jerrypack",
+    "name": "Jerrycan backpack",
+    "category": "bag",
+    "size": [4, 5],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 14, "warmth": 5, "wearPerDamage": 0.0015 },
+    "description": "A plastic jerrycan with canvas shoulder straps fixed round it, so twenty litres of water or fuel can be carried on the back.",
+    "reference": "jerrypack",
+    "variants": [],
+    "notes": "Standing front +z: a red plastic can 350 mm by 460 mm by 165 mm with an X pressed into the front and a rim round its middle, three handles under a bar on top, a black capped spout at one corner and khaki straps belted round the back with shoulder straps. Encumbrance is scaled to sit just above the hiking backpack, as a full can on the back is heavier and stiffer. It has no container: Deadvox has no liquid storage yet, so the can's contents are pending. The worn look is pending: no worn model is authored."
+  }
+]

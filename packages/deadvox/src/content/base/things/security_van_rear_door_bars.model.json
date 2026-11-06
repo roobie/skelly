@@ -1,0 +1,19 @@
+{
+  "id": "security_van_rear_door_bars",
+  "file": "assets/models/security_van_rear_door_bars.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 34,
+      "centreOfMass": [-2.8353125, 1.5821875, 0.36125],
+      "collision": [
+        { "min": [-2.84375, 1.09375, 0.1875], "max": [-2.8125, 1.1875, 0.9375] },
+        { "min": [-2.84375, 1.5625, 0.1875], "max": [-2.8125, 1.65625, 0.9375] },
+        { "min": [-2.84375, 2, 0.1875], "max": [-2.8125, 2.09375, 0.9375] },
+        { "min": [-2.875, 0.84375, 0.09375], "max": [-2.8125, 2.28125, 0.15625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,17 @@
+{
+  "id": "wheel_185r14",
+  "file": "assets/models/wheel_185r14.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 16,
+      "centreOfMass": [0, 0, 0],
+      "collision": [
+        { "min": [-0.3125, -0.3125, -0.09375], "max": [0.3125, 0.3125, 0.09375] },
+        { "min": [-0.1875, -0.1875, -0.0625], "max": [0.1875, 0.1875, 0.0625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": { "hub": [0, 0, 0] }
+}

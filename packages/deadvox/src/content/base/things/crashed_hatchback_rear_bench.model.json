@@ -1,0 +1,17 @@
+{
+  "id": "crashed_hatchback_rear_bench",
+  "file": "assets/models/crashed_hatchback_rear_bench.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 16,
+      "centreOfMass": [-0.12866512345679015, 0.2037037037037037, 0],
+      "collision": [
+        { "min": [-0.28125, 0, -0.65625], "max": [0.25, 0.1875, 0.65625] },
+        { "min": [-0.4375, 0.15625, -0.65625], "max": [-0.1875, 0.625, 0.65625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

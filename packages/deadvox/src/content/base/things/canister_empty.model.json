@@ -1,0 +1,11 @@
+{
+  "id": "canister_empty",
+  "file": "assets/models/canister_empty.glb",
+  "parts": {
+    "canister_empty": {
+      "node": "canister_empty:compound",
+      "massKg": 0.071,
+      "centreOfMass": [0, 0.05001444963875903, 0]
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "military_transport_helicopter_tail_surfaces",
+  "file": "assets/models/military_transport_helicopter_tail_surfaces.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 60,
+      "centreOfMass": [-8.04131010594947, 3.034586389568052, 0],
+      "collision": [
+        { "min": [-9.34375, 2.71875, -0.0625], "max": [-7.9375, 4.40625, 0.0625] },
+        { "min": [-8.625, 2.34375, -0.0625], "max": [-7.9375, 2.8125, 0.0625] },
+        { "min": [-7.5625, 2.625, -1.6875], "max": [-6.9375, 2.6875, 1.6875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

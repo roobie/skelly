@@ -1,0 +1,11 @@
+{
+  "id": "ghost_robe",
+  "file": "assets/models/ghost_robe.glb",
+  "parts": {
+    "ghost_robe": {
+      "node": "ghost_robe:compound",
+      "massKg": 0.5,
+      "centreOfMass": [0, 0.007559548254620124, -0.005705852156057494]
+    }
+  }
+}

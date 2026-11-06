@@ -1,0 +1,11 @@
+{
+  "id": "bead_bracelet",
+  "file": "assets/models/bead_bracelet.glb",
+  "parts": {
+    "bead_bracelet": {
+      "node": "bead_bracelet:compound",
+      "massKg": 0.0037,
+      "centreOfMass": [-6.611098246107955e-19, 0.004069053708439896, -2.644439298443182e-19]
+    }
+  }
+}

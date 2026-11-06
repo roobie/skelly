@@ -1,0 +1,11 @@
+{
+  "id": "glass_sheet",
+  "file": "assets/models/glass_sheet.glb",
+  "parts": {
+    "glass_sheet": {
+      "node": "glass_sheet:compound",
+      "massKg": 6.7,
+      "centreOfMass": [0.002312039732830965, 0.0020000000000000005, 0.0015841753724952906]
+    }
+  }
+}

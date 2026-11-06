@@ -1,0 +1,11 @@
+{
+  "id": "water_filter_sand",
+  "file": "assets/models/water_filter_sand.glb",
+  "parts": {
+    "water_filter_sand": {
+      "node": "water_filter_sand:compound",
+      "massKg": 31,
+      "centreOfMass": [0, 0.18186994092331316, -0.00007922827548035105]
+    }
+  }
+}

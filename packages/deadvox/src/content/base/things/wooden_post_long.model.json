@@ -1,0 +1,5 @@
+{
+  "id": "wooden_post_long",
+  "file": "assets/models/wooden_post_long.glb",
+  "parts": { "wooden_post_long": { "node": "wooden_post_long:compound", "massKg": 9.6, "centreOfMass": [0, 0.045, 0] } }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "spoon",
+  "file": "assets/models/spoon.glb",
+  "parts": {
+    "spoon": { "node": "spoon:compound", "massKg": 0.06, "centreOfMass": [0.1161095406360424, 0.003731448763250883, 0] }
+  },
+  "grip": { "at": [0.015, 0.005, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

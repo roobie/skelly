@@ -1,0 +1,11 @@
+{
+  "id": "backpack_small",
+  "file": "assets/models/backpack_small.glb",
+  "parts": {
+    "backpack_small": {
+      "node": "backpack_small:compound",
+      "massKg": 0.35,
+      "centreOfMass": [-0.00004947453106886533, 0.13990043013068623, 0.007751132339619532]
+    }
+  }
+}

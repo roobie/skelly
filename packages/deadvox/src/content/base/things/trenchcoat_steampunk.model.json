@@ -1,0 +1,11 @@
+{
+  "id": "trenchcoat_steampunk",
+  "file": "assets/models/trenchcoat_steampunk.glb",
+  "parts": {
+    "trenchcoat_steampunk": {
+      "node": "trenchcoat_steampunk:compound",
+      "massKg": 2.4,
+      "centreOfMass": [-0.0000029634207144512117, 0.031090707358693258, -0.004478683735595457]
+    }
+  }
+}

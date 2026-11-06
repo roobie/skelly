@@ -1,0 +1,240 @@
+[
+  {
+    "id": "apron_cotton",
+    "model": "apron_cotton",
+    "name": "Cotton apron",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "vest", "encumbrance": 2, "warmth": 2, "wearPerDamage": 0.002 },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "front" }] },
+    "description": "A plain cream kitchen apron with a navy neck strap and waist ties, and a wide front pocket stitched down the middle.",
+    "reference": "apron_cotton",
+    "variants": ["apron_cotton_xl", "apron_cotton_xs"],
+    "notes": "Folded to 260 mm by 320 mm and 24 mm tall, the bib lying on top with its neck strap running up to and along the top edge, the waist ties running down both side edges and the split pocket near the hem. Slot `vest`: an apron is worn over the shirt on the torso, the outer layer the denim vest takes; no apron slot exists. It also covers the front of the legs. The pocket holds small kitchen tools. The `xl` and `xs` sizes share this model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "apron_cut_resistant",
+    "model": "apron_cut_resistant",
+    "name": "Cut-resistant apron",
+    "category": "armor",
+    "size": [2, 2],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 2,
+      "warmth": 2,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.02, "cut": 0.5, "pierce": 0.15 }
+    },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "front" }] },
+    "description": "A stiff golden apron woven from aramid fibre, made for butchers and glass cutters. A slipping blade drags rather than bites.",
+    "reference": "apron_cut_resistant",
+    "variants": [],
+    "notes": "The cotton apron's builder in aramid gold, folded a little thicker (30 mm), with black binding and ties. Slot `vest`: an apron is worn over the shirt on the torso, the outer layer the denim vest takes; no apron slot exists. It also covers the front of the legs. Protects against cuts only modestly: woven aramid stops a sliding edge, not a thrust. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "apron_leather",
+    "model": "apron_leather",
+    "name": "Leather apron",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 3,
+      "warmth": 2,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.03, "cut": 0.25, "pierce": 0.1 }
+    },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "front" }] },
+    "description": "A heavy tan leather work apron with a riveted front pocket and a buckled neck strap. Blacksmiths, welders and farriers wear one against sparks and scrapes.",
+    "reference": "apron_leather",
+    "variants": [],
+    "notes": "The cotton apron's builder in tan leather, folded 36 mm tall: brass rivets at the pocket's corners and seam, chestnut ties and binding, and a brass buckle on the neck strap. Slot `vest`: an apron is worn over the shirt on the torso, the outer layer the denim vest takes; no apron slot exists. It also covers the front of the legs. Encumbrance raised to 3 from the reference's 2 for its stiffness and 1.9 kg weight. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "apron_plastic",
+    "model": "apron_plastic",
+    "name": "Plastic apron",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Industrial", "Medical"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 2,
+      "warmth": 1,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0.4, "blunt": 0, "cut": 0, "pierce": 0 }
+    },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "front" }] },
+    "description": "A blue PVC apron with white ties. It sheds splashes of water, blood and chemicals, but tears easily.",
+    "reference": "apron_plastic",
+    "variants": [],
+    "notes": "The cotton apron's builder in glossy blue, with white ties and binding. Slot `vest`: an apron is worn over the shirt on the torso, the outer layer the denim vest takes; no apron slot exists. It also covers the front of the legs. Its protection is acid only: it keeps splashes off the clothes beneath. CDDA counts it as armour; here it is clothing with an acid rating. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bee_dress",
+    "model": "bee_dress",
+    "name": "Bee costume dress",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 8, "warmth": 10, "wearPerDamage": 0.002 },
+    "description": "A short yellow dress striped in black, sold as a bee costume with gauzy wings and a headband of bobbing antennae.",
+    "reference": "bee_dress",
+    "variants": [],
+    "notes": "Folded flat on a shelf, neck at the +z end and the hem folded under at -z. 280 mm by 300 mm and 40 mm tall, three black stripes wrapped round the bundle, the white mesh wings laid on top and the antenna headband resting on them. The tiles draw the mesh wings opaque. Slot `torso`; as a dress it should also block `legs` once slots can block others. The reference's hood is folded in under the top layer and not shown. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "blazer",
+    "model": "blazer",
+    "name": "Blazer",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 16, "warmth": 25, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "inner" }
+      ]
+    },
+    "description": "A navy wool blazer with brass buttons, cut for the office. Warmer than it looks.",
+    "reference": "blazer",
+    "variants": [],
+    "notes": "Folded flat on a shelf, neck at the +z end and the hem folded under at -z. Built on `g.jacket` with shawl lapels meeting at the top button, 360 mm by 340 mm and 60 mm tall; a white shirt front and red tie show in the V to read as tailoring, the sleeves are folded in along each side, with flapped hip pockets and a breast welt. The bundle is three times the reference volume because a folded jacket lies looser. Slot `torso`, as Deadvox's jacket has it. The shirt and tie are part of the display, not separate items. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bunny_suit_playboy",
+    "model": "bunny_suit_playboy",
+    "name": "Bunny bodysuit",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.002 },
+    "description": "A strapless black patent bodysuit with boned seams and white piping, the costume of a nightclub hostess. Still glossy.",
+    "reference": "bunny_suit_playboy",
+    "variants": [],
+    "notes": "Laid flat and folded double, 240 mm by 270 mm and 20 mm tall, at `voxelGrain` 0.002 so the piping reads: the corset bodice with cups at the +z end, white piping along its top and down two boning seams, narrowing at the waist to a high-cut leg line. Slot `torso`; it covers the hips as well and should block `legs` once slots can block others. The ears, tail, collar and cuffs are not part of this item. No warmth, as the reference has none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "buttonshirt",
+    "model": "buttonshirt",
+    "name": "Button shirt",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 4, "warmth": 10, "wearPerDamage": 0.0015 },
+    "description": "A blue long-sleeved cotton shirt that buttons down the front. Smart enough for an office.",
+    "reference": "buttonshirt",
+    "variants": [],
+    "notes": "Folded flat on a shelf, neck at the +z end and the hem folded under at -z. Folded as a shop folds a shirt, 240 mm by 300 mm and 30 mm tall, with the collar standing at the +z end, its two points lying forward over a navy neck opening, and a placket of small white buttons; the sleeves are folded behind. CHECK VOLUME (x4.7): the standing collar lifts the bounding box well above 750 ml of pressed cotton. Slot `torso`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cheerleader_dress",
+    "model": "cheerleader_dress",
+    "name": "Cheerleader dress",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 0, "warmth": 2, "wearPerDamage": 0.002 },
+    "description": "A light blue and white sleeveless dress with a pleated skirt, from a school cheer squad. A white band crosses the chest for the team's name.",
+    "reference": "cheerleader_dress",
+    "variants": [],
+    "notes": "Folded flat on a shelf, neck at the +z end and the hem folded under at -z. Folded small, 240 mm by 280 mm and 25 mm tall: white chest band and waist line, white neck trim round a navy neckline, and alternating white pleat panels on the skirt. Lettering is not modelled. Slot `torso`; as a dress it should also block `legs` once slots can block others. Warmth 2 for thin cotton; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cheerleader_top_short",
+    "model": "cheerleader_top_short",
+    "name": "Cheerleader crop top",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 2, "warmth": 1, "wearPerDamage": 0.002 },
+    "description": "A short red sleeveless top with white straps and a white band across the chest for a team name. It leaves the midriff bare.",
+    "reference": "cheerleader_top_short",
+    "variants": [],
+    "notes": "Folded flat on a shelf, neck at the +z end and the hem folded under at -z. Folded small, 200 mm by 200 mm and 20 mm tall: white straps and neck trim and a white chest band. Lettering is not modelled. Slot `torso`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "combat_shirt",
+    "model": "combat_shirt",
+    "name": "Combat shirt",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 7, "warmth": 5, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "left shoulder" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "right shoulder" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "pen" }
+      ]
+    },
+    "description": "A military shirt worn under body armour: a thin khaki torso that breathes beneath a vest, olive jacket-weight sleeves with flapped shoulder pockets and patch panels, and a pen slot on the arm.",
+    "reference": "combat_shirt",
+    "variants": [],
+    "notes": "Folded flat on a shelf, neck at the +z end and the hem folded under at -z. Built on `g.jacket`, 280 mm by 320 mm and 40 mm tall: a mandarin collar over a short black zip, the olive sleeves folded in along each side with a flapped pocket, a grey hook-and-loop patch panel on each and a pen slot with a cap showing on the left. No camouflage print exists, so the sleeves are plain olive drab against the khaki torso. Slot `torso`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "denim_shirt",
+    "model": "denim_shirt",
+    "name": "Denim shirt",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 4, "warmth": 10, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "left chest" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "right chest" }
+      ]
+    },
+    "description": "A long-sleeved shirt of heavy blue denim with pearl snaps and two flapped chest pockets. Tough enough for ranch work.",
+    "reference": "denim_shirt",
+    "variants": [],
+    "notes": "Folded flat on a shelf, neck at the +z end and the hem folded under at -z. On the batch's shirt builder, 240 mm by 300 mm and 36 mm tall: collar points, pearl snaps down the placket and two flapped chest pockets with snaps, flaps in faded denim. CHECK VOLUME (x4.1): the standing collar lifts the bounding box above the reference's 1 l. Slot `torso`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "dress",
+    "model": "dress",
+    "name": "Long dress",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 7, "warmth": 10, "wearPerDamage": 0.0015 },
+    "description": "A plain sage-green cotton dress that falls to the ankles, with a cream sash tied at the waist.",
+    "reference": "dress",
+    "variants": [],
+    "notes": "Folded flat on a shelf, neck at the +z end and the hem folded under at -z. Folded in a thick bundle, 280 mm by 360 mm and 50 mm tall: a scooped neckline painted dark where the inside shows, and a cream sash wrapped round the bundle and tied in a bow on top. Slot `torso`; as a dress it should also block `legs` once slots can block others. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "dress_shirt",
+    "model": "dress_shirt",
+    "name": "Pocket shirt",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 4, "warmth": 10, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "breast" }] },
+    "description": "A white long-sleeved cotton shirt that buttons down the front, with one patch pocket on the left breast. Smart enough for an office.",
+    "reference": "dress_shirt",
+    "variants": [],
+    "notes": "Folded flat on a shelf, neck at the +z end and the hem folded under at -z. On the batch's shirt builder, 240 mm by 300 mm and 30 mm tall: collar points, a placket of small cream buttons and a cream-edged patch pocket on the left breast. CHECK VOLUME (x4.7): the standing collar lifts the bounding box well above 750 ml. Slot `torso`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "dress_wedding",
+    "model": "dress_wedding",
+    "name": "Wedding dress",
+    "category": "clothing",
+    "size": [5, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 20, "warmth": 16, "wearPerDamage": 0.002 },
+    "description": "A white wedding gown with a boned, pearl-studded bodice and a skirt of lace over many layers of tulle. Heavy, bulky and no use for anything now.",
+    "reference": "dress_wedding",
+    "variants": [],
+    "notes": "Folded flat on a shelf, neck at the +z end and the hem folded under at -z. Folded into a deep bundle, 560 mm by 460 mm and 140 mm tall: the boned bodice with a sweetheart neckline lying on top at the +z end, a band of pearls at the waist, a lace lattice over the tulle skirt, and three tiers of tulle ruffles along the hem end and both sides. The base cloth is cream so the bright white bodice and tulle read apart from it; the tiles draw the mesh tulle opaque. The reference's 9.3 kg is kept. Slot `torso`; it should also block `legs` once slots can block others. The worn look is pending: no worn model is authored."
+  }
+]

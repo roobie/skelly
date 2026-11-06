@@ -1,0 +1,14 @@
+{
+  "id": "street_sweeper_windscreen",
+  "file": "assets/models/street_sweeper_windscreen.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 28,
+      "centreOfMass": [2.8804810209424083, 2.3494491710296685, 0],
+      "collision": [{ "min": [2.75, 1.96875, -1.15625], "max": [3, 2.71875, 1.15625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

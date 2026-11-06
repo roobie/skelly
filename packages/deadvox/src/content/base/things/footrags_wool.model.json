@@ -1,0 +1,11 @@
+{
+  "id": "footrags_wool",
+  "file": "assets/models/footrags_wool.glb",
+  "parts": {
+    "footrags_wool": {
+      "node": "footrags_wool:compound",
+      "massKg": 0.098,
+      "centreOfMass": [-0.0005664179827536081, 0.0061821528921616135, 0.007520395310531924]
+    }
+  }
+}

@@ -1,0 +1,139 @@
+[
+  {
+    "id": "extension_cable",
+    "model": "extension_cable",
+    "name": "Extension cord",
+    "category": "tool",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "description": "Ten metres of orange power cord with a plug at one end and a socket at the other, for running power where a wall outlet cannot reach.",
+    "reference": "extension_cable",
+    "variants": [],
+    "notes": "A coil 350 mm across of 8 mm orange cord, its tail wrapped round the bundle, with a two-prong plug and a single socket lying on the front of the coil. The reference stacks ten; one cord is one item at the reference's 800 g, so the look step's volume ratio does not apply. Linking an appliance to a power source has no content field yet. The outdoor cord has its own draft on this model."
+  },
+  {
+    "id": "long_extension_cable",
+    "model": "extension_cable",
+    "name": "Outdoor extension cord",
+    "category": "tool",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "finishes": { "cable": "plastic-yellow" },
+    "description": "A heavy yellow outdoor power cord, thicker and longer than a household one, with a plug and a socket at the ends.",
+    "reference": "long_extension_cable",
+    "variants": [],
+    "notes": "Shares the extension_cable model, recoloured plastic-yellow for the common outdoor jacket, and carries the reference's 2.5 kg. A longer cord would draw as a fatter coil; the household coil reads the same at tile size."
+  },
+  {
+    "id": "hd_tow_cable",
+    "model": "hd_tow_cable",
+    "name": "Tow cable",
+    "category": "tool",
+    "size": [4, 4],
+    "economy": { "usage": ["Industrial", "Residential"], "tiers": ["Tier1", "Tier2"] },
+    "tool": { "qualities": { "tying": 2 } },
+    "description": "Nine metres of plastic-sheathed steel wire rope with a forged hook on each end, strong enough to drag a vehicle.",
+    "reference": "hd_tow_cable",
+    "variants": [],
+    "notes": "A coil 480 mm across of 12 mm black-sheathed wire rope with a crimped galvanised sleeve and a red-painted hook on each end lying on top. The reference stacks eight; one cable is one item at the reference's 3.25 kg, so the look step's volume ratio does not apply. tying reuses the rope quality name for the reference's rope quality; hitching it between two vehicles has no content field yet."
+  },
+  {
+    "id": "jumper_cable",
+    "model": "jumper_cable",
+    "name": "Jumper lead",
+    "category": "tool",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "jump_starting": 1 } },
+    "description": "A one metre length of insulated copper cable with a spring clamp on each end, for passing power from one battery to another.",
+    "reference": "jumper_cable",
+    "variants": [],
+    "notes": "Two loose loops 170 mm across of black cable with a red-booted clamp and bare copper jaws on each end. One lead is one item at the reference's 75 g; the reference stacks four. jump_starting is a new quality name for the reference's jump-start quality. The heavy-duty lead has its own draft on this model."
+  },
+  {
+    "id": "jumper_cable_heavy",
+    "model": "jumper_cable",
+    "name": "Heavy jumper lead",
+    "category": "tool",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "tool": { "qualities": { "jump_starting": 2 } },
+    "finishes": { "boot": "plastic-black", "cable": "plastic-red" },
+    "description": "A thick, heavy-gauge battery lead with large spring clamps, for moving serious current between batteries.",
+    "reference": "jumper_cable_heavy",
+    "variants": [],
+    "notes": "Shares the jumper_cable model with a red cable and black boots so it reads apart from the light lead, and carries the reference's 750 g. A thicker cable would need its own row; at tile size the colour swap is enough."
+  },
+  {
+    "id": "bottle_folding",
+    "model": "bottle_folding",
+    "name": "Collapsible bottle",
+    "category": "misc",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential", "Hunting", "Military"], "tiers": ["Tier1"] },
+    "vessel": {
+      "capacityMicrolitres": 500000,
+      "pour": { "incrementMicrolitres": 10000, "microlitresPerSimSecond": 50000 }
+    },
+    "description": "A soft plastic water bottle that holds half a litre and folds flat when empty.",
+    "reference": "bottle_folding",
+    "variants": [],
+    "notes": "Drawn empty and lying flat: a clear blue body 210 mm long and 100 mm wide, 6 mm thick, with shoulders tapering to a screw cap, a label panel and a hanging tab at the base, at the reference's 13 g. plastic-clear-blue stays see-through in the game. CHECK VOLUME (x12.6): the reference's 50 ml is the flattened plastic; the box counts the air round the cap and the thin body. The model has no filled state; growing fat when filled would need one."
+  },
+  {
+    "id": "bottle_metal",
+    "model": "bottle_metal",
+    "name": "Steel water bottle",
+    "category": "misc",
+    "size": [1, 3],
+    "economy": { "usage": ["Residential", "Hunting", "Military"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "cooking": 1 } },
+    "vessel": {
+      "capacityMicrolitres": 750000,
+      "pour": { "incrementMicrolitres": 10000, "microlitresPerSimSecond": 50000 }
+    },
+    "description": "A brushed stainless steel bottle with a screw cap and carry loop. Holds 750 ml and can sit in a fire to boil water.",
+    "reference": "bottle_metal",
+    "variants": [],
+    "notes": "A single-walled bottle 73 mm across and 260 mm tall with a rounded shoulder, a black cap and a loop on top, at the reference's 200 g. Being single-walled is what lets it boil, so it carries cooking 1, the level for a cup or can."
+  },
+  {
+    "id": "acetylene_cooker",
+    "model": "acetylene_cooker",
+    "name": "Acetylene burner",
+    "category": "tool",
+    "size": [2, 2],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "tool": { "qualities": { "heating": 2 } },
+    "description": "A brass burner on a steel pan stand, made to run off a welding torch's acetylene line for cooking.",
+    "reference": "acetylene_cooker",
+    "variants": [],
+    "notes": "A steel ring base with three uprights and pan supports, a brass bowl and crown burner, and a brass feed tube to a needle valve with a black knob and a hose barb, 170 mm across and 95 mm tall. heating stands for the reference's hotplate quality. Drawing gas from a welding tank has no content field yet."
+  },
+  {
+    "id": "butchering_kit",
+    "model": "butchering_kit",
+    "name": "Butcher's knife roll",
+    "category": "tool",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier2"] },
+    "tool": { "qualities": { "butchering": 3, "cutting": 2 } },
+    "description": "A canvas roll holding a full set of butcher's knives: cleaver, butcher knife, boning knife, skinner and a honing steel.",
+    "reference": "butchering_kit",
+    "variants": [],
+    "notes": "Drawn laid open, 400 by 320 mm, so the knives read: a canvas sheet with leather edges and a pocket strip holding the blade tips, black-handled stainless knives, a honing steel and a buckled tie strap. butchering 3 is the kit level, above a single knife's 2; the reference's fine cutting quality folds into cutting. Rolled up it would be about 320 mm long, which the size follows."
+  },
+  {
+    "id": "can_sealer",
+    "model": "can_sealer",
+    "name": "Can sealer",
+    "category": "tool",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "workstation": { "id": "can_sealer", "qualities": { "can_sealing": 1 } },
+    "description": "A heavy hand-cranked machine that crimps lids onto tin cans. A lever lifts the can to the seaming head and the crank rolls the seam.",
+    "reference": "can_sealer",
+    "variants": [],
+    "notes": "A green-painted cast frame 480 mm tall: a base, a rear column and an arm over the seaming chuck and two rollers, a crank with a wooden knob on top and a lever at the side that raises the can table. It is set on a bench to work, so its quality sits on a workstation. can_sealing is a new quality name. CHECK VOLUME (x8.2): the reference's 5 L is the cast body; the box counts the air under the arm and round the crank and lever."
+  }
+]

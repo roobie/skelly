@@ -1,0 +1,7 @@
+{
+  "id": "impact_fuze",
+  "file": "assets/models/impact_fuze.glb",
+  "parts": {
+    "impact_fuze": { "node": "impact_fuze:compound", "massKg": 0.0079, "centreOfMass": [0, 0.009911764705882354, 0] }
+  }
+}

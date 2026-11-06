@@ -1,0 +1,11 @@
+{
+  "id": "hotplate",
+  "file": "assets/models/hotplate.glb",
+  "parts": {
+    "hotplate": {
+      "node": "hotplate:compound",
+      "massKg": 1.4,
+      "centreOfMass": [-0.00017595611762913276, 0.04265610239219868, -0.0003641627304586316]
+    }
+  }
+}

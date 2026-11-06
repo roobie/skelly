@@ -1,0 +1,11 @@
+{
+  "id": "sippy_cup",
+  "file": "assets/models/sippy_cup.glb",
+  "parts": {
+    "sippy_cup": {
+      "node": "sippy_cup:compound",
+      "massKg": 0.086,
+      "centreOfMass": [0, 0.05176004661478892, 0.00041107477162512685]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "cuirass_tire",
+  "file": "assets/models/cuirass_tire.glb",
+  "parts": {
+    "cuirass_tire": {
+      "node": "cuirass_tire:compound",
+      "massKg": 4,
+      "centreOfMass": [-0.0048911655530809155, 0.00981232368225686, 0.0046246176688938215]
+    }
+  }
+}

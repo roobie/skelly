@@ -1,0 +1,11 @@
+{
+  "id": "rain_poncho",
+  "file": "assets/models/rain_poncho.glb",
+  "parts": {
+    "rain_poncho": {
+      "node": "rain_poncho:compound",
+      "massKg": 0.2,
+      "centreOfMass": [0, 0.009000000000000001, -0.0012970161511086777]
+    }
+  }
+}

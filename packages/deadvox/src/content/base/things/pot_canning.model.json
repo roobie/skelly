@@ -1,0 +1,7 @@
+{
+  "id": "pot_canning",
+  "file": "assets/models/pot_canning.glb",
+  "parts": {
+    "pot_canning": { "node": "pot_canning:compound", "massKg": 4.9, "centreOfMass": [0, 0.13182787914604416, 0] }
+  }
+}

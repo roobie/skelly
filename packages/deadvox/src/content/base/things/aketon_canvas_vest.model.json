@@ -1,0 +1,11 @@
+{
+  "id": "aketon_canvas_vest",
+  "file": "assets/models/aketon_canvas_vest.glb",
+  "parts": {
+    "aketon_canvas_vest": {
+      "node": "aketon_canvas_vest:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-9.154270259023974e-7, 0.02850943513991466, 0.001008675751586394]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "rusty_mail_chausses",
+  "file": "assets/models/rusty_mail_chausses.glb",
+  "parts": {
+    "rusty_mail_chausses": {
+      "node": "rusty_mail_chausses:compound",
+      "massKg": 3.2,
+      "centreOfMass": [5.020391922738095e-17, 0.007660177497852833, -0.01660750071571712]
+    }
+  }
+}

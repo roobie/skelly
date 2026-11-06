@@ -1,0 +1,11 @@
+{
+  "id": "sandpaper",
+  "file": "assets/models/sandpaper.glb",
+  "parts": {
+    "sandpaper": {
+      "node": "sandpaper:compound",
+      "massKg": 0.015,
+      "centreOfMass": [0.004277842907385698, 0.0010961313012895664, 0.005431418522860493]
+    }
+  }
+}

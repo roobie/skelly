@@ -1,0 +1,11 @@
+{
+  "id": "glasses_bal",
+  "file": "assets/models/glasses_bal.glb",
+  "parts": {
+    "glasses_bal": {
+      "node": "glasses_bal:compound",
+      "massKg": 0.04,
+      "centreOfMass": [-8.527635180959051e-19, 0.034416082474226804, -0.07151876288659796]
+    }
+  }
+}

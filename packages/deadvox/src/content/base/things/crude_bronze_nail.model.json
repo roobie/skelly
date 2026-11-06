@@ -1,0 +1,11 @@
+{
+  "id": "crude_bronze_nail",
+  "file": "assets/models/crude_bronze_nail.glb",
+  "parts": {
+    "crude_bronze_nail": {
+      "node": "crude_bronze_nail:compound",
+      "massKg": 0.006,
+      "centreOfMass": [0.012894736842105264, 0.003052631578947369, 0]
+    }
+  }
+}

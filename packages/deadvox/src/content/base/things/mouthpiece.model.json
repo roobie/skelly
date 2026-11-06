@@ -1,0 +1,11 @@
+{
+  "id": "mouthpiece",
+  "file": "assets/models/mouthpiece.glb",
+  "parts": {
+    "mouthpiece": {
+      "node": "mouthpiece:compound",
+      "massKg": 0.017,
+      "centreOfMass": [0, 0.0067432862994993206, 0.006204369594902139]
+    }
+  }
+}

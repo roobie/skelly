@@ -1,0 +1,11 @@
+{
+  "id": "legrig",
+  "file": "assets/models/legrig.glb",
+  "parts": {
+    "legrig": {
+      "node": "legrig:compound",
+      "massKg": 0.13,
+      "centreOfMass": [0.00019250712989369982, 0.09066074669432202, -0.009486129115893185]
+    }
+  }
+}

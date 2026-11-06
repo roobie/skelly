@@ -1,0 +1,18 @@
+{
+  "id": "car_transporter_ramp",
+  "file": "assets/models/car_transporter_ramp.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 60,
+      "centreOfMass": [-5.557468220338983, 1.734375, 0.828125],
+      "collision": [
+        { "min": [-5.59375, 1.09375, 0.5625], "max": [-5.5, 2.375, 1.09375] },
+        { "min": [-5.65625, 1.09375, 0.5625], "max": [-5.59375, 2.375, 0.625] },
+        { "min": [-5.65625, 1.09375, 1.03125], "max": [-5.59375, 2.375, 1.09375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

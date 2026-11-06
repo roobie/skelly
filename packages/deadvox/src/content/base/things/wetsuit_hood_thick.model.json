@@ -1,0 +1,11 @@
+{
+  "id": "wetsuit_hood_thick",
+  "file": "assets/models/wetsuit_hood_thick.glb",
+  "parts": {
+    "wetsuit_hood_thick": {
+      "node": "wetsuit_hood_thick:compound",
+      "massKg": 0.35,
+      "centreOfMass": [-0.00006449365676312588, 0.13246787018542594, 0.008605108333015855]
+    }
+  }
+}

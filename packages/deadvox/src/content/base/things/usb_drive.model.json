@@ -1,0 +1,11 @@
+{
+  "id": "usb_drive",
+  "file": "assets/models/usb_drive.glb",
+  "parts": {
+    "usb_drive": {
+      "node": "usb_drive:compound",
+      "massKg": 0.0055,
+      "centreOfMass": [-0.0037843137254901967, 0.004084967320261437, 0]
+    }
+  }
+}

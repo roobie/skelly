@@ -1,0 +1,14 @@
+{
+  "id": "pen",
+  "file": "assets/models/pen.glb",
+  "parts": {
+    "pen": {
+      "node": "pen:compound",
+      "massKg": 0.025,
+      "centreOfMass": [-0.003571969696969696, 0.00021590909090909093, 0]
+    }
+  },
+  "grip": { "at": [-0.013999999999999999, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

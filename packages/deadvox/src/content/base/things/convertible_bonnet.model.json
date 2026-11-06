@@ -1,0 +1,14 @@
+{
+  "id": "convertible_bonnet",
+  "file": "assets/models/convertible_bonnet.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 13,
+      "centreOfMass": [1.421875, 0.7555555555555555, 0],
+      "collision": [{ "min": [0.71875, 0.65625, -0.8125], "max": [2.125, 0.84375, 0.8125] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

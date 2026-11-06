@@ -1,0 +1,14 @@
+{
+  "id": "dog_whistle",
+  "file": "assets/models/dog_whistle.glb",
+  "parts": {
+    "dog_whistle": {
+      "node": "dog_whistle:compound",
+      "massKg": 0.023,
+      "centreOfMass": [-0.004923423423423424, 0.006387387387387388, 0]
+    }
+  },
+  "grip": { "at": [-0.0030000000000000027, 0.007, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,7 @@
+{
+  "id": "anvil_stump",
+  "file": "assets/models/anvil_stump.glb",
+  "parts": {
+    "anvil_stump": { "node": "anvil_stump:compound", "massKg": 15, "centreOfMass": [0, 0.15659407274360138, 0] }
+  }
+}

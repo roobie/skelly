@@ -1,0 +1,11 @@
+{
+  "id": "helmet_xlblack_dragon_scale",
+  "file": "assets/models/helmet_xlblack_dragon_scale.glb",
+  "parts": {
+    "helmet_xlblack_dragon_scale": {
+      "node": "helmet_xlblack_dragon_scale:compound",
+      "massKg": 2.4,
+      "centreOfMass": [0.00003561932473787169, 0.14371726051503347, 0.0010660250300043625]
+    }
+  }
+}

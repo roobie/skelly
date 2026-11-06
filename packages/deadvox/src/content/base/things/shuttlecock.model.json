@@ -1,0 +1,7 @@
+{
+  "id": "shuttlecock",
+  "file": "assets/models/shuttlecock.glb",
+  "parts": {
+    "shuttlecock": { "node": "shuttlecock:compound", "massKg": 0.0092, "centreOfMass": [0, 0.04689096573208724, 0] }
+  }
+}

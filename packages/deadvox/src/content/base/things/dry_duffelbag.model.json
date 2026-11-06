@@ -1,0 +1,11 @@
+{
+  "id": "dry_duffelbag",
+  "file": "assets/models/dry_duffelbag.glb",
+  "parts": {
+    "dry_duffelbag": {
+      "node": "dry_duffelbag:compound",
+      "massKg": 1.3,
+      "centreOfMass": [-0.01578120631851097, 0.15059859798841818, -0.0013586585250501848]
+    }
+  }
+}

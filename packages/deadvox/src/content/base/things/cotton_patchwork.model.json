@@ -1,0 +1,11 @@
+{
+  "id": "cotton_patchwork",
+  "file": "assets/models/cotton_patchwork.glb",
+  "parts": {
+    "cotton_patchwork": {
+      "node": "cotton_patchwork:compound",
+      "massKg": 0.005,
+      "centreOfMass": [-0.0036073281962572734, 0.0012211039471615032, -0.0036054411070923103]
+    }
+  }
+}

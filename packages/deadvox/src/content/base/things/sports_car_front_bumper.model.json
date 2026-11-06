@@ -1,0 +1,18 @@
+{
+  "id": "sports_car_front_bumper",
+  "file": "assets/models/sports_car_front_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 7,
+      "centreOfMass": [2.095382462686567, 0.3570429104477612, 0],
+      "collision": [
+        { "min": [2.03125, 0.21875, -0.90625], "max": [2.15625, 0.46875, 0.90625] },
+        { "min": [2.0625, 0.46875, -0.5], "max": [2.09375, 0.625, 0.5] },
+        { "min": [2.125, 0.25, -0.5], "max": [2.15625, 0.375, 0.5] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

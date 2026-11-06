@@ -1,0 +1,19 @@
+{
+  "id": "military_transport_helicopter_main_gear",
+  "file": "assets/models/military_transport_helicopter_main_gear.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 150,
+      "centreOfMass": [2.609125, 0.601875, 5.684341886080802e-17],
+      "collision": [
+        { "min": [2.5625, 0.4375, 0.875], "max": [2.65625, 0.84375, 1.34375] },
+        { "min": [2.5625, 0.40625, 1.28125], "max": [2.65625, 0.46875, 1.4375] },
+        { "min": [2.5625, 0.4375, -1.34375], "max": [2.65625, 0.84375, -0.875] },
+        { "min": [2.5625, 0.40625, -1.4375], "max": [2.65625, 0.46875, -1.28125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

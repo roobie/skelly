@@ -1,0 +1,11 @@
+{
+  "id": "scrap_esbi_plate",
+  "file": "assets/models/scrap_esbi_plate.glb",
+  "parts": {
+    "scrap_esbi_plate": {
+      "node": "scrap_esbi_plate:compound",
+      "massKg": 0.38,
+      "centreOfMass": [0, 0.0043973941368078175, 0]
+    }
+  }
+}

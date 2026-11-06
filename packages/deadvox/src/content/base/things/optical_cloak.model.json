@@ -1,0 +1,11 @@
+{
+  "id": "optical_cloak",
+  "file": "assets/models/optical_cloak.glb",
+  "parts": {
+    "optical_cloak": {
+      "node": "optical_cloak:compound",
+      "massKg": 1.4,
+      "centreOfMass": [0.0008807360685145572, 0.01565812163647941, 0.0011476187720618062]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "cleats",
+  "file": "assets/models/cleats.glb",
+  "parts": {
+    "cleats": {
+      "node": "cleats:compound",
+      "massKg": 1,
+      "centreOfMass": [1.826079356925679e-17, 0.044685772284912544, -0.011927279240551675]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "cloak_leather",
+  "file": "assets/models/cloak_leather.glb",
+  "parts": {
+    "cloak_leather": {
+      "node": "cloak_leather:compound",
+      "massKg": 3.1,
+      "centreOfMass": [2.529180419085187e-8, 0.02830307168961898, -0.004020966905674215]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "glasses_bifocal",
+  "file": "assets/models/glasses_bifocal.glb",
+  "parts": {
+    "glasses_bifocal": {
+      "node": "glasses_bifocal:compound",
+      "massKg": 0.025,
+      "centreOfMass": [-0.0013161290322580691, 0.02323225806451614, -0.0007241935483870982]
+    }
+  }
+}

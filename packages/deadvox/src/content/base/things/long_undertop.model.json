@@ -1,0 +1,11 @@
+{
+  "id": "long_undertop",
+  "file": "assets/models/long_undertop.glb",
+  "parts": {
+    "long_undertop": {
+      "node": "long_undertop:compound",
+      "massKg": 0.3,
+      "centreOfMass": [0, 0.02055949212863508, -0.004229247491102631]
+    }
+  }
+}

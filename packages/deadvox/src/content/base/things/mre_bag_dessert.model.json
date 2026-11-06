@@ -1,0 +1,11 @@
+{
+  "id": "mre_bag_dessert",
+  "file": "assets/models/mre_bag_dessert.glb",
+  "parts": {
+    "mre_bag_dessert": {
+      "node": "mre_bag_dessert:compound",
+      "massKg": 0.05,
+      "centreOfMass": [0, 0.004360419397116646, 0]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "ballistic_collar",
+  "file": "assets/models/ballistic_collar.glb",
+  "parts": {
+    "ballistic_collar": {
+      "node": "ballistic_collar:compound",
+      "massKg": 0.4,
+      "centreOfMass": [1.0434617818902869e-18, 0.012168807339449533, -0.0665626911314984]
+    }
+  }
+}

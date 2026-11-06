@@ -1,0 +1,11 @@
+{
+  "id": "wool_staple",
+  "file": "assets/models/wool_staple.glb",
+  "parts": {
+    "wool_staple": {
+      "node": "wool_staple:compound",
+      "massKg": 0.01,
+      "centreOfMass": [0.002066622604097819, 0.029022868473231985, 0.002356378056840714]
+    }
+  }
+}

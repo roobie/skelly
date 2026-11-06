@@ -1,0 +1,17 @@
+{
+  "id": "skid_steer_tilt_ram",
+  "file": "assets/models/skid_steer_tilt_ram.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 22,
+      "centreOfMass": [0.9022120786516854, 1.1027036516853932, 0.1875],
+      "collision": [
+        { "min": [0.71875, 0.96875, 0.125], "max": [1.03125, 1.3125, 0.25] },
+        { "min": [0.96875, 0.8125, 0.15625], "max": [1.15625, 1.03125, 0.21875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

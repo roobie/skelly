@@ -1,0 +1,11 @@
+{
+  "id": "sports_bra",
+  "file": "assets/models/sports_bra.glb",
+  "parts": {
+    "sports_bra": {
+      "node": "sports_bra:compound",
+      "massKg": 0.086,
+      "centreOfMass": [1.6388251625649395e-19, 0.005148036612909617, -0.01637924475967825]
+    }
+  }
+}

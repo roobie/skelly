@@ -1,0 +1,14 @@
+{
+  "id": "scissors_wavy",
+  "file": "assets/models/scissors_wavy.glb",
+  "parts": {
+    "scissors_wavy": {
+      "node": "scissors_wavy:compound",
+      "massKg": 0.034,
+      "centreOfMass": [-0.018278538812785388, 0.0020479452054794527, 0]
+    }
+  },
+  "grip": { "at": [-0.048, 0.005, 0.017], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

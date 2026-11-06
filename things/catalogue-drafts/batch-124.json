@@ -1,0 +1,251 @@
+[
+  {
+    "id": "gloves_plate",
+    "model": "gloves_plate",
+    "name": "Steel gauntlets",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 20,
+      "warmth": 20,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.6, "pierce": 0.45 }
+    },
+    "description": "Heavy leather gloves armoured in steel: a plate over the back of the hand, jointed lames down each finger and a flared steel cuff.",
+    "reference": "gloves_plate",
+    "variants": ["xl_gloves_plate", "xs_gloves_plate"],
+    "notes": "Laid flat side by side, backs up, fingers towards +z, thumbs out. Leather gloves 290 mm from cuff to fingertip, a crowned steel plate over the back of each hand, two knuckle lames, three lames down each finger, one on the thumb and a flared steel cuff. CHECK VOLUME: box/volume x2.8 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands`, as earlier clothing batches name it for gloves. Encumbrance and warmth follow the reference. Protection is a guess for steel plate over leather; the reference gives none. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_rubber",
+    "model": "gloves_rubber",
+    "name": "Rubber gloves",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential", "Medical", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hands", "encumbrance": 4, "warmth": 10, "wearPerDamage": 0.004, "imperviousTo": ["acid"] },
+    "description": "Long yellow rubber gloves for washing up and cleaning. Nothing wet gets through them, but they split easily.",
+    "reference": "gloves_rubber",
+    "variants": [],
+    "notes": "Laid flat side by side, backs up, fingers towards +z, thumbs out. Yellow rubber gloves 360 mm from the rolled lip of the long cuff to the fingertips, with grip ridges across the fingertips. CHECK VOLUME: box/volume x6.2 because the long cuffs lie open and flat; the reference volume is the thin pair folded. Slot `hands`, as earlier clothing batches name it for gloves. Encumbrance and warmth follow the reference. Impervious to acid, as Deadvox's rubber boots are; wear per damage is high because thin rubber tears. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_skeleton",
+    "model": "gloves_skeleton",
+    "name": "Skeleton gloves",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hands", "encumbrance": 1, "warmth": 5, "wearPerDamage": 0.003 },
+    "description": "Thin black costume gloves with the bones of the hand printed in white on the back.",
+    "reference": "gloves_skeleton",
+    "variants": [],
+    "notes": "Laid flat side by side, backs up, fingers towards +z, thumbs out. Thin black cotton gloves 230 mm from cuff to fingertip, with wrist bones, hand bones, three bones down each finger and two down the thumb printed in white. CHECK VOLUME: box/volume x3.2 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands`, as earlier clothing batches name it for gloves. Encumbrance and warmth follow the reference. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_tactical",
+    "model": "gloves_tactical",
+    "name": "Duty gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Police", "Military"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 13,
+      "warmth": 20,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.05, "blunt": 0.25, "cut": 0.35, "pierce": 0.1 }
+    },
+    "description": "Tan gloves of cut- and flame-resistant aramid fabric, with a hard moulded knuckle guard and a hook-and-loop wrist strap.",
+    "reference": "gloves_tactical",
+    "variants": [],
+    "notes": "Laid flat side by side, backs up, fingers towards +z, thumbs out. Tan aramid gloves 230 mm from cuff to fingertip: a black moulded knuckle shell, padded strips over the middle finger joints and a grey hook-and-loop wrist strap with a black pull tab. CHECK VOLUME: box/volume x5.8 because the pair lies spread flat with the thumbs out and the knuckle shells stand proud; the reference volume is the pair stacked. Slot `hands`, as earlier clothing batches name it for gloves. Encumbrance and warmth follow the reference. Protection is a guess for aramid with a hard knuckle; the reference gives none. The reference's flame resistance has no Deadvox damage kind yet. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_white",
+    "model": "gloves_white",
+    "name": "White cotton gloves",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hands", "encumbrance": 5, "warmth": 5, "wearPerDamage": 0.002 },
+    "description": "Plain white cotton gloves with three stitched lines down the back and a snap at the wrist, worn for formal dress or costume.",
+    "reference": "gloves_white",
+    "variants": [],
+    "notes": "Laid flat side by side, backs up, fingers towards +z, thumbs out. White cotton gloves 230 mm from cuff to fingertip, three raised stitch lines down the back and a silver snap at the wrist. `cloth-bright-white` renders light grey in the tiles. CHECK VOLUME: box/volume x3.9 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands`, as earlier clothing batches name it for gloves. Encumbrance and warmth follow the reference. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_winter",
+    "model": "gloves_winter",
+    "name": "Winter gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hands", "encumbrance": 40, "warmth": 70, "wearPerDamage": 0.0015 },
+    "description": "Thick padded gloves quilted across the back, with a long knitted cuff. Very warm, but clumsy for fine work.",
+    "reference": "gloves_winter",
+    "variants": [],
+    "notes": "Laid flat side by side, backs up, fingers towards +z, thumbs out. Navy padded gloves 260 mm from cuff to fingertip and 30 mm thick, four quilted baffles across the back of the hand and a long charcoal gathered knit cuff. CHECK VOLUME: box/volume x4.3 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands`, as earlier clothing batches name it for gloves. Encumbrance and warmth follow the reference. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_wool",
+    "model": "gloves_wool",
+    "name": "Wool gloves",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hands", "encumbrance": 20, "warmth": 60, "wearPerDamage": 0.002 },
+    "description": "Warm knitted grey wool gloves with a dark ribbed cuff.",
+    "reference": "gloves_wool",
+    "variants": ["xl_gloves_wool", "xs_gloves_wool"],
+    "notes": "Laid flat side by side, backs up, fingers towards +z, thumbs out. Grey knitted wool gloves 250 mm from cuff to fingertip with a 70 mm dark ribbed cuff. CHECK VOLUME: box/volume x5.6 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands`, as earlier clothing batches name it for gloves. Encumbrance and warmth follow the reference. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_wool_fingerless",
+    "model": "gloves_wool_fingerless",
+    "name": "Fingerless wool gloves",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hands", "encumbrance": 7, "warmth": 40, "wearPerDamage": 0.002 },
+    "description": "Knitted grey wool gloves cut off at the middle of the fingers, so the fingertips stay free for fine work at the cost of warmth.",
+    "reference": "gloves_wool_fingerless",
+    "variants": ["xl_gloves_wool_fingerless", "xs_gloves_wool_fingerless"],
+    "notes": "Laid flat side by side, backs up, fingers towards +z, thumbs out. Grey knitted wool gloves 200 mm from cuff to the open finger ends, with a dark ribbed cuff and a dark ribbed band round each finger end and the thumb end. CHECK VOLUME: box/volume x3.8 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands`, as earlier clothing batches name it for gloves. Encumbrance and warmth follow the reference. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_work",
+    "model": "gloves_work",
+    "name": "Work gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Industrial", "Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 20,
+      "warmth": 25,
+      "wearPerDamage": 0.0012,
+      "protects": { "blunt": 0.1, "cut": 0.2, "pierce": 0.05 }
+    },
+    "description": "Sturdy gloves with a canvas back, leather fingers and palm, and a stiff cuff. Made for hard everyday work.",
+    "reference": "gloves_work",
+    "variants": [],
+    "notes": "Laid flat side by side, backs up, fingers towards +z, thumbs out. Gloves 260 mm from cuff to fingertip: cream canvas backs, tan leather fingers, thumb, knuckle strip and heel strip, and a stiff khaki safety cuff bound in brown leather. CHECK VOLUME: box/volume x7.3 because the pair lies spread flat with the thumbs out and the safety cuffs open; the reference volume is the pair stacked. Slot `hands`, as earlier clothing batches name it for gloves. Encumbrance and warmth follow the reference. Protection is a guess for leather work gloves; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_wraps",
+    "model": "gloves_wraps",
+    "name": "Cotton hand wraps",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.002,
+      "protects": { "blunt": 0.05 }
+    },
+    "description": "Long red cotton strips with a thumb loop, wound round the hands and knuckles to brace them for punching.",
+    "reference": "gloves_wraps",
+    "variants": [],
+    "notes": "Two red cotton wraps rolled up and lying side by side, each roll 50 mm wide and 45 mm across with a crimson core, a 120 mm tail unrolled towards +z and ending in a thumb loop. CHECK VOLUME: box/volume x5.1 because the two rolls lie apart with their tails unrolled; the reference volume is the pair rolled tight. Slot `hands`, as earlier clothing batches name it for gloves. Encumbrance and warmth follow the reference. The small blunt protection stands for the padding over the knuckles. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_wraps_fur",
+    "model": "gloves_wraps_fur",
+    "name": "Fur hand wraps",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": [], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 5,
+      "warmth": 20,
+      "wearPerDamage": 0.002,
+      "protects": { "blunt": 0.08 }
+    },
+    "description": "Strips of animal pelt wound round the hands, warm and a little padded over the knuckles.",
+    "reference": "gloves_wraps_fur",
+    "variants": [],
+    "notes": "Two fur wraps rolled up and tied with a rawhide thong, lying side by side, each roll 70 mm wide and 70 mm across with a hide core, a 120 mm tail of pelt unrolled towards +z and a thumb loop of hide. CHECK VOLUME: box/volume x5.9 because the two rolls lie apart with their tails unrolled; the reference volume is the pair rolled tight. Usage is empty because they are made by hand from pelts, not found in shops. Slot `hands`, as earlier clothing batches name it for gloves. Encumbrance and warmth follow the reference. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_wraps_leather",
+    "model": "gloves_wraps_leather",
+    "name": "Leather hand wraps",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": [], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 5,
+      "warmth": 10,
+      "wearPerDamage": 0.0012,
+      "protects": { "blunt": 0.08, "cut": 0.05 }
+    },
+    "description": "Strips of leather wound round the hands, guarding the knuckles and palms.",
+    "reference": "gloves_wraps_leather",
+    "variants": [],
+    "notes": "Two brown leather wraps rolled up and tied with a black thong, lying side by side, each roll 50 mm wide and 55 mm across with a red-brown core, a 120 mm tail unrolled towards +z and a thumb loop. Usage is empty because they are made by hand from leather scraps. Slot `hands`, as earlier clothing batches name it for gloves. Encumbrance and warmth follow the reference. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_wraps_wool",
+    "model": "gloves_wraps_wool",
+    "name": "Wool hand wraps",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": [], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 2,
+      "warmth": 15,
+      "wearPerDamage": 0.002,
+      "protects": { "blunt": 0.05 }
+    },
+    "description": "Long strips of wool wound round the hands, warmer than cotton wraps.",
+    "reference": "gloves_wraps_wool",
+    "variants": [],
+    "notes": "Two grey wool wraps rolled up and lying side by side, each roll 50 mm wide and 45 mm across with a lighter core, a 120 mm tail unrolled towards +z and a thumb loop. CHECK VOLUME: box/volume x5.1 because the two rolls lie apart with their tails unrolled; the reference volume is the pair rolled tight. Usage is empty because they are made by hand from wool cloth. Slot `hands`, as earlier clothing batches name it for gloves. Encumbrance and warmth follow the reference. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_chainmail_hands",
+    "model": "hc_chainmail_hands",
+    "name": "High steel mail gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 14,
+      "warmth": 5,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.05, "blunt": 0.2, "cut": 0.7, "pierce": 0.35 }
+    },
+    "description": "Fitted gloves of high steel mail that close round the whole hand, with a leather band at the wrist.",
+    "reference": "hc_chainmail_hands",
+    "variants": ["xl_hc_chainmail_hands", "xs_hc_chainmail_hands"],
+    "notes": "Laid flat side by side, backs up, fingers towards +z, thumbs out. Steel mail gloves 240 mm from cuff to fingertip, rows of rings across the back and down the fingers and a brown leather band at the wrist. Slot `hands`, as earlier clothing batches name it for gloves. Encumbrance follows the reference; warmth is a guess, as the reference gives none. Protection is a guess for close high steel mail, strong against cuts and weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_demi_gaunt",
+    "model": "hc_demi_gaunt",
+    "name": "High steel demi-gauntlets",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 10,
+      "warmth": 15,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.6, "pierce": 0.4 }
+    },
+    "description": "Leather gloves with high steel mail over the fingers and palm, and blued plates over the back of the hand and the wrist.",
+    "reference": "hc_demi_gaunt",
+    "variants": ["xl_hc_demi_gaunt"],
+    "notes": "Laid flat side by side, backs up, fingers towards +z, thumbs out. Brown leather gloves 260 mm from cuff to fingertip with mail fingers and thumb, a crowned blued steel plate over the back of each hand, a curved plate round the wrist and four rivets. Slot `hands`, as earlier clothing batches name it for gloves. Encumbrance and warmth follow the reference. Protection is a guess for plate and mail over leather; the reference gives none. The xl size shares the model. The worn look is pending: no worn model is authored."
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "id": "wheel_8r19_5",
+  "file": "assets/models/wheel_8r19_5.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 48,
+      "centreOfMass": [0, 0, 0],
+      "collision": [
+        { "min": [-0.4375, -0.4375, -0.09375], "max": [0.4375, 0.4375, 0.09375] },
+        { "min": [-0.25, -0.25, -0.0625], "max": [0.25, 0.25, 0.0625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": { "hub": [0, 0, 0] }
+}

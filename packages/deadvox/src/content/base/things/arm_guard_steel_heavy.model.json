@@ -1,0 +1,11 @@
+{
+  "id": "arm_guard_steel_heavy",
+  "file": "assets/models/arm_guard_steel_heavy.glb",
+  "parts": {
+    "arm_guard_steel_heavy": {
+      "node": "arm_guard_steel_heavy:compound",
+      "massKg": 7.2,
+      "centreOfMass": [0.27851822869432324, 0.039130671365273456, 0.0001317855569663052]
+    }
+  }
+}

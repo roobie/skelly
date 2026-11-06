@@ -1,0 +1,11 @@
+{
+  "id": "boots_xlblack_dragon_scale",
+  "file": "assets/models/boots_xlblack_dragon_scale.glb",
+  "parts": {
+    "boots_xlblack_dragon_scale": {
+      "node": "boots_xlblack_dragon_scale:compound",
+      "massKg": 4.5,
+      "centreOfMass": [-1.3110156719436719e-17, 0.14394644088575584, -0.06902804382805915]
+    }
+  }
+}

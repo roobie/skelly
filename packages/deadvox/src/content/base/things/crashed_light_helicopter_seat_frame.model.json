@@ -1,0 +1,18 @@
+{
+  "id": "crashed_light_helicopter_seat_frame",
+  "file": "assets/models/crashed_light_helicopter_seat_frame.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 7,
+      "centreOfMass": [-0.12012987012987013, 0.23762175324675325, 0],
+      "collision": [
+        { "min": [-0.25, 0, -0.21875], "max": [0.21875, 0.09375, 0.21875] },
+        { "min": [-0.25, 0.09375, -0.21875], "max": [0.21875, 0.1875, 0.21875] },
+        { "min": [-0.34375, 0.125, -0.21875], "max": [-0.1875, 0.78125, 0.21875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

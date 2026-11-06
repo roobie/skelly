@@ -1,0 +1,36 @@
+// A 12.2 m high-floor touring coach: 2.55 m wide, 3.6 m high, 6.1 m wheelbase, about 13.5 t at the kerb, with its
+// saloon floor above a luggage hold that runs between the axles. Metres in the vehicle frame.
+{
+  rear: -6.1, front: 6.1, side: 1.275, skin: 1.2, sill: 0.35,
+  floor: 1.42,
+  roofBase: 3.4, roof: 3.6,
+  decks: [{ waist: 2.1, top: 3.05, bayFront: 5.35, pitch: 1.45, bays: 7 }],
+  frontAxle: 3.2, rearAxle: -2.9, arch: 0.62, archTop: 1.2, frontWell: 0.86, rearWell: 0.6,
+  wheel: 'wheel_295_80r22_5', wheelR: 0.522, wheelZ: 1.1, wheelTwin: 0.3,
+  lean: 0.35, screens: [[1.34, 3.1]], screenPost: true, pillar: 0.1,
+  doors: [{ bay: 0, width: 0.95 }], doorLeaves: 1, doorSteps: 4, doorSill: 0.35, doorKick: 0.3, doorFinish: 'plastic-black',
+  rearHoles: [{ y: [2.3, 3.05], z: 0.9 }], engineHatch: [0.55, 1.75],
+  sign: { y: [3.12, 3.38], z: 0.7 },
+  stripes: [
+    { y: [1.2, 1.3], slot: 'accent' },
+    { y: [1.92, 1.98], slot: 'accent' },
+  ],
+  paint: 'paint-cream', band: 'paint-oxblood', accent: 'paint-oxblood', pillarFinish: 'plastic-black',
+  bumperFinish: 'paint-oxblood',
+  driver: { x: 4.55, y: 1.42, z: 0.62 },
+  dashTop: 1.85, dashShelfTop: 1.68,
+  shellMass: 10050,
+  mirrorAt: [5.65, 3.35, 1.27], tailLampAt: [-6.13, 1.05, 1.1], headlampAt: [6.1, 0.78, 0.95],
+  seats: [{ part: 'bus_seat_coach', x: 3.45 - 0.8 * i, y: 1.42, z: 0.72, sides: 'both' } for i in std.range(0, 11)],
+  hold: { rear: -2.28, front: 2.58, y: 0.5 },
+  luggageDoors: [-1.42, 0.15, 1.72],
+  power: {
+    engine: 'engine_i6_heavy_diesel', engineAt: [-5.2, 0.42, 0],
+    gearbox: 'gearbox_heavy', gearboxAt: [-4.2, 0.46, 0],
+    shafts: [{ part: 'prop_shaft_short', at: [-3.4, 0.55, 0] }],
+    radiator: 'radiator_truck', radiatorAt: [-5.9, 0.5, 0],
+    tank: 'fuel_tank_truck', tankAt: [-4.0, 0.35, 0.86],
+    exhaust: 'exhaust_bus_rear', exhaustAt: [-5.32, 0.31, -0.62],
+    batteryAt: [5.3, 0.7, -0.85],
+  },
+}

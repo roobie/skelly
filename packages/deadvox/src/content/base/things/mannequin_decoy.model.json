@@ -1,0 +1,11 @@
+{
+  "id": "mannequin_decoy",
+  "file": "assets/models/mannequin_decoy.glb",
+  "parts": {
+    "mannequin_decoy": {
+      "node": "mannequin_decoy:compound",
+      "massKg": 15,
+      "centreOfMass": [0, 1.0479268648372746, 0.012512578081326107]
+    }
+  }
+}

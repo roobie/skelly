@@ -1,0 +1,11 @@
+{
+  "id": "national_flag",
+  "file": "assets/models/national_flag.glb",
+  "parts": {
+    "national_flag": {
+      "node": "national_flag:compound",
+      "massKg": 0.8,
+      "centreOfMass": [-0.011074772322478745, 0.02654212454212455, -0.002078166481836208]
+    }
+  }
+}

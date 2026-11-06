@@ -1,0 +1,17 @@
+{
+  "id": "prison_bus_windscreen",
+  "file": "assets/models/prison_bus_windscreen.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 30,
+      "centreOfMass": [5.865055994491157, 2.219986771527979, 0],
+      "collision": [
+        { "min": [5.6875, 1.34375, -1.1875], "max": [6.03125, 3.09375, 1.1875] },
+        { "min": [5.6875, 1.34375, -0.03125], "max": [6.0625, 3.09375, 0.03125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

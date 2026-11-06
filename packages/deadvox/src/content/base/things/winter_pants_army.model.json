@@ -1,0 +1,11 @@
+{
+  "id": "winter_pants_army",
+  "file": "assets/models/winter_pants_army.glb",
+  "parts": {
+    "winter_pants_army": {
+      "node": "winter_pants_army:compound",
+      "massKg": 1.3,
+      "centreOfMass": [0.0012202044070100551, 0.0481486492495125, 0.0011763502740883306]
+    }
+  }
+}

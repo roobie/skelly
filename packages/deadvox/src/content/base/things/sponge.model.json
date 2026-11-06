@@ -1,0 +1,11 @@
+{
+  "id": "sponge",
+  "file": "assets/models/sponge.glb",
+  "parts": {
+    "sponge": {
+      "node": "sponge:compound",
+      "massKg": 0.013,
+      "centreOfMass": [-0.0000037133308577794318, 0.013422205718529527, 0.00005941329372447088]
+    }
+  }
+}

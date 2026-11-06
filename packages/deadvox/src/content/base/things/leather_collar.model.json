@@ -1,0 +1,11 @@
+{
+  "id": "leather_collar",
+  "file": "assets/models/leather_collar.glb",
+  "parts": {
+    "leather_collar": {
+      "node": "leather_collar:compound",
+      "massKg": 0.068,
+      "centreOfMass": [0.0010425742574257427, 0.010916171617161715, 0.0013052805280528064]
+    }
+  }
+}

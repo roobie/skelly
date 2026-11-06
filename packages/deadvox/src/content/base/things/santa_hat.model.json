@@ -1,0 +1,11 @@
+{
+  "id": "santa_hat",
+  "file": "assets/models/santa_hat.glb",
+  "parts": {
+    "santa_hat": {
+      "node": "santa_hat:compound",
+      "massKg": 0.19,
+      "centreOfMass": [0.00767886316073719, 0.09386106798082763, 6.750826976304269e-8]
+    }
+  }
+}

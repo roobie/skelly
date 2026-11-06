@@ -1,0 +1,14 @@
+{
+  "id": "jar_glass_sealed",
+  "file": "assets/models/jar_glass_sealed.glb",
+  "parts": {
+    "jar_glass_sealed": {
+      "node": "jar_glass_sealed:compound",
+      "massKg": 0.42,
+      "centreOfMass": [0, 0.06152393980848153, 0]
+    }
+  },
+  "grip": { "at": [0, 0.056, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

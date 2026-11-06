@@ -1,0 +1,11 @@
+{
+  "id": "tuning_pegs",
+  "file": "assets/models/tuning_pegs.glb",
+  "parts": {
+    "tuning_pegs": {
+      "node": "tuning_pegs:compound",
+      "massKg": 0.0015,
+      "centreOfMass": [-0.000008000000000000025, 0.007016, 0.018632000000000003]
+    }
+  }
+}

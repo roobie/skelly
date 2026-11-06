@@ -1,0 +1,11 @@
+{
+  "id": "geiger_counter",
+  "file": "assets/models/geiger_counter.glb",
+  "parts": {
+    "geiger_counter": {
+      "node": "geiger_counter:compound",
+      "massKg": 0.12,
+      "centreOfMass": [-0.001549592099613568, 0.027657925157710476, -0.0016727879248274267]
+    }
+  }
+}

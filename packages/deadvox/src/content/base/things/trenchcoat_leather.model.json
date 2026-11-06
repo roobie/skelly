@@ -1,0 +1,11 @@
+{
+  "id": "trenchcoat_leather",
+  "file": "assets/models/trenchcoat_leather.glb",
+  "parts": {
+    "trenchcoat_leather": {
+      "node": "trenchcoat_leather:compound",
+      "massKg": 2.5,
+      "centreOfMass": [0.0001135889026586239, 0.031904733213285595, -0.005555284725407898]
+    }
+  }
+}

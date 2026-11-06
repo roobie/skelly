@@ -1,0 +1,11 @@
+{
+  "id": "scarf",
+  "file": "assets/models/scarf.glb",
+  "parts": {
+    "scarf": {
+      "node": "scarf:compound",
+      "massKg": 0.2,
+      "centreOfMass": [0.03686082441984116, 0.01165159191843374, 6.208899324849149e-19]
+    }
+  }
+}

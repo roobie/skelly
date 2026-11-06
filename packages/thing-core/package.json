@@ -2,6 +2,7 @@
   "name": "@skelly/thing-core",
   "version": "0.0.0",
   "private": true,
+  "license": "EUPL-1.2 AND CC-BY-NC-SA-4.0",
   "type": "module",
   "exports": {
     "./schema": "./src/schema.ts",

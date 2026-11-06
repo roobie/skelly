@@ -1,0 +1,11 @@
+{
+  "id": "bowling_shoes",
+  "file": "assets/models/bowling_shoes.glb",
+  "parts": {
+    "bowling_shoes": {
+      "node": "bowling_shoes:compound",
+      "massKg": 0.99,
+      "centreOfMass": [-6.447311566769628e-18, 0.03577144500509819, -0.015043478260869568]
+    }
+  }
+}

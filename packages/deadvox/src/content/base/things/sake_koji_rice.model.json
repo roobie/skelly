@@ -1,0 +1,11 @@
+{
+  "id": "sake_koji_rice",
+  "file": "assets/models/sake_koji_rice.glb",
+  "parts": {
+    "sake_koji_rice": {
+      "node": "sake_koji_rice:compound",
+      "massKg": 0.17,
+      "centreOfMass": [-0.00002665159992282889, 0.012341234186809253, -0.00006777278615329493]
+    }
+  }
+}

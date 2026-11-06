@@ -1,0 +1,11 @@
+{
+  "id": "teapot",
+  "file": "assets/models/teapot.glb",
+  "parts": {
+    "teapot": {
+      "node": "teapot:compound",
+      "massKg": 0.45,
+      "centreOfMass": [0.00030249885373681773, 0.04982975126088951, 0]
+    }
+  }
+}

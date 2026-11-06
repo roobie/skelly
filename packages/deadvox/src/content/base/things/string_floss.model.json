@@ -1,0 +1,11 @@
+{
+  "id": "string_floss",
+  "file": "assets/models/string_floss.glb",
+  "parts": {
+    "string_floss": {
+      "node": "string_floss:compound",
+      "massKg": 0.012,
+      "centreOfMass": [-0.000001183431952662722, 0.008147140039447732, 0.00013964497041420116]
+    }
+  }
+}

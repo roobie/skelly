@@ -1,0 +1,14 @@
+{
+  "id": "psionic_transporter_beacon",
+  "file": "assets/models/psionic_transporter_beacon.glb",
+  "parts": {
+    "psionic_transporter_beacon": {
+      "node": "psionic_transporter_beacon:compound",
+      "massKg": 6,
+      "centreOfMass": [-0.003022880754879893, 0.06581704647075153, 0.0008906534274877427]
+    }
+  },
+  "grip": { "at": [0, 0.008, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

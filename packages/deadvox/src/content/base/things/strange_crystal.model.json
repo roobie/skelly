@@ -1,0 +1,11 @@
+{
+  "id": "strange_crystal",
+  "file": "assets/models/strange_crystal.glb",
+  "parts": {
+    "strange_crystal": {
+      "node": "strange_crystal:compound",
+      "massKg": 0.01,
+      "centreOfMass": [-0.00009535452322738397, 0.011195599022004886, -0.00006601466992665034]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "ammunition_tube_mortar",
+  "file": "assets/models/ammunition_tube_mortar.glb",
+  "parts": {
+    "ammunition_tube_mortar": {
+      "node": "ammunition_tube_mortar:compound",
+      "massKg": 0.22,
+      "centreOfMass": [0.0013963776934640992, 0.03895869425155702, 0]
+    }
+  }
+}

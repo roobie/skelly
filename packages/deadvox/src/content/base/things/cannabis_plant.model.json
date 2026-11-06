@@ -1,0 +1,11 @@
+{
+  "id": "cannabis_plant",
+  "file": "assets/models/cannabis_plant.glb",
+  "parts": {
+    "cannabis_plant": {
+      "node": "cannabis_plant:compound",
+      "massKg": 0.16,
+      "centreOfMass": [0.02392753623188404, 0.023927536231884056, 0.0032686733556298786]
+    }
+  }
+}

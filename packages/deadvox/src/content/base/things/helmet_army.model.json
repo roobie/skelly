@@ -1,0 +1,11 @@
+{
+  "id": "helmet_army",
+  "file": "assets/models/helmet_army.glb",
+  "parts": {
+    "helmet_army": {
+      "node": "helmet_army:compound",
+      "massKg": 1.4,
+      "centreOfMass": [-9.798976633927948e-20, 0.06705415704160003, 0.0014831882169440663]
+    }
+  }
+}

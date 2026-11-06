@@ -1,0 +1,11 @@
+{
+  "id": "judo_belt",
+  "file": "assets/models/judo_belt.glb",
+  "parts": {
+    "judo_belt": {
+      "node": "judo_belt:compound",
+      "massKg": 0.15,
+      "centreOfMass": [1.1947542135724164e-18, 0.00397494922139472, 0.08707339201083278]
+    }
+  }
+}

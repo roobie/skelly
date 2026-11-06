@@ -1,0 +1,11 @@
+{
+  "id": "wetsuit_pants_thin",
+  "file": "assets/models/wetsuit_pants_thin.glb",
+  "parts": {
+    "wetsuit_pants_thin": {
+      "node": "wetsuit_pants_thin:compound",
+      "massKg": 0.48,
+      "centreOfMass": [0.000434659615029826, 0.012658877067831005, -0.010376114630096552]
+    }
+  }
+}

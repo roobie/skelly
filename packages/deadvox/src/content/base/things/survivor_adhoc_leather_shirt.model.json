@@ -1,0 +1,11 @@
+{
+  "id": "survivor_adhoc_leather_shirt",
+  "file": "assets/models/survivor_adhoc_leather_shirt.glb",
+  "parts": {
+    "survivor_adhoc_leather_shirt": {
+      "node": "survivor_adhoc_leather_shirt:compound",
+      "massKg": 1.2,
+      "centreOfMass": [0.0011396976957021028, 0.0433457845863281, -0.0039705623466181695]
+    }
+  }
+}

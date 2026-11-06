@@ -1,0 +1,11 @@
+{
+  "id": "heraldic_cape",
+  "file": "assets/models/heraldic_cape.glb",
+  "parts": {
+    "heraldic_cape": {
+      "node": "heraldic_cape:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-0.004550844723660753, 0.02210357415739877, -0.005989201120638424]
+    }
+  }
+}

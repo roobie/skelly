@@ -1,0 +1,11 @@
+{
+  "id": "filter_air_makeshift",
+  "file": "assets/models/filter_air_makeshift.glb",
+  "parts": {
+    "filter_air_makeshift": {
+      "node": "filter_air_makeshift:compound",
+      "massKg": 0.12,
+      "centreOfMass": [-0.02014824317582496, 0.055096429335043835, -0.000194284085239826]
+    }
+  }
+}

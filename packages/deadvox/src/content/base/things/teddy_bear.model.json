@@ -1,0 +1,14 @@
+{
+  "id": "teddy_bear",
+  "file": "assets/models/teddy_bear.glb",
+  "parts": {
+    "teddy_bear": {
+      "node": "teddy_bear:compound",
+      "massKg": 0.2,
+      "centreOfMass": [-2.1763022448582337e-8, 0.138511474553586, 0.015890553760106205]
+    }
+  },
+  "grip": { "at": [0, 0.11, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

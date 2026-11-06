@@ -1,0 +1,14 @@
+{
+  "id": "camera",
+  "file": "assets/models/camera.glb",
+  "parts": {
+    "camera": {
+      "node": "camera:compound",
+      "massKg": 0.2,
+      "centreOfMass": [0.00003673413284766825, 0.030155630390708225, 0.0018847805917322432]
+    }
+  },
+  "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

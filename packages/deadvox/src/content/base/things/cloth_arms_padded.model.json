@@ -1,0 +1,11 @@
+{
+  "id": "cloth_arms_padded",
+  "file": "assets/models/cloth_arms_padded.glb",
+  "parts": {
+    "cloth_arms_padded": {
+      "node": "cloth_arms_padded:compound",
+      "massKg": 0.29,
+      "centreOfMass": [-0.01944941397093295, 0.008579465541490855, -1.5318159491722728e-18]
+    }
+  }
+}

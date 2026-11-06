@@ -1,0 +1,5 @@
+{
+  "id": "brick",
+  "file": "assets/models/brick.glb",
+  "parts": { "brick": { "node": "brick:compound", "massKg": 1.8, "centreOfMass": [0, 0.026771331058020473, 0] } }
+}

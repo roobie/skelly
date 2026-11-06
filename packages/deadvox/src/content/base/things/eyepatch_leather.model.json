@@ -1,0 +1,11 @@
+{
+  "id": "eyepatch_leather",
+  "file": "assets/models/eyepatch_leather.glb",
+  "parts": {
+    "eyepatch_leather": {
+      "node": "eyepatch_leather:compound",
+      "massKg": 0.005,
+      "centreOfMass": [-2.4855186675271256e-19, 0.002028846153846156, -0.011378205128205131]
+    }
+  }
+}

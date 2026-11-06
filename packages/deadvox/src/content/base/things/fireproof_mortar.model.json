@@ -1,0 +1,14 @@
+{
+  "id": "fireproof_mortar",
+  "file": "assets/models/fireproof_mortar.glb",
+  "parts": {
+    "fireproof_mortar": {
+      "node": "fireproof_mortar:compound",
+      "massKg": 2,
+      "centreOfMass": [-0.000008078021869766524, 0.0843862345253341, 0.0001442879190884314]
+    }
+  },
+  "grip": { "at": [0, 0.08, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

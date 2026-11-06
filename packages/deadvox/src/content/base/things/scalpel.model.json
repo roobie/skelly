@@ -1,0 +1,14 @@
+{
+  "id": "scalpel",
+  "file": "assets/models/scalpel.glb",
+  "parts": {
+    "scalpel": {
+      "node": "scalpel:compound",
+      "massKg": 0.024,
+      "centreOfMass": [0.06134163701067619, 0.00008540925266903917, 0.000032028469750889695]
+    }
+  },
+  "grip": { "at": [0.045, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

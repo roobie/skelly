@@ -1,0 +1,11 @@
+{
+  "id": "angel_wings",
+  "file": "assets/models/angel_wings.glb",
+  "parts": {
+    "angel_wings": {
+      "node": "angel_wings:compound",
+      "massKg": 0.27,
+      "centreOfMass": [-3.655222636915643e-17, 0.012025814451583808, -0.05201927629354076]
+    }
+  }
+}

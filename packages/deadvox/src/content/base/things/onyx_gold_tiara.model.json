@@ -1,0 +1,11 @@
+{
+  "id": "onyx_gold_tiara",
+  "file": "assets/models/onyx_gold_tiara.glb",
+  "parts": {
+    "onyx_gold_tiara": {
+      "node": "onyx_gold_tiara:compound",
+      "massKg": 0.2,
+      "centreOfMass": [-0.00012774451097804476, 0.014122421823020622, 0.059982035928143704]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "b_shorts",
+  "file": "assets/models/b_shorts.glb",
+  "parts": {
+    "b_shorts": {
+      "node": "b_shorts:compound",
+      "massKg": 0.31,
+      "centreOfMass": [0.0000014160636883278361, 0.01669231699103735, 0.002890531369264509]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "agency_ballistic_vest",
+  "file": "assets/models/agency_ballistic_vest.glb",
+  "parts": {
+    "agency_ballistic_vest": {
+      "node": "agency_ballistic_vest:compound",
+      "massKg": 2.2,
+      "centreOfMass": [4.5079190852776804e-20, 0.02315033107169133, 0.004985258453908828]
+    }
+  }
+}

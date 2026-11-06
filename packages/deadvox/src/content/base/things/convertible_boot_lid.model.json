@@ -1,0 +1,17 @@
+{
+  "id": "convertible_boot_lid",
+  "file": "assets/models/convertible_boot_lid.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 12,
+      "centreOfMass": [-1.9151785714285714, 0.8404017857142857, 0],
+      "collision": [
+        { "min": [-2.15625, 0.875, -0.75], "max": [-1.40625, 0.90625, 0.75] },
+        { "min": [-2.1875, 0.625, -0.625], "max": [-2.125, 0.875, 0.625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": { "hinge_a": [-1.40625, 0.90625, 0.75], "hinge_b": [-1.40625, 0.90625, -0.75] }
+}

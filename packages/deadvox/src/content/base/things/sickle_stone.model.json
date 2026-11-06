@@ -1,0 +1,14 @@
+{
+  "id": "sickle_stone",
+  "file": "assets/models/sickle_stone.glb",
+  "parts": {
+    "sickle_stone": {
+      "node": "sickle_stone:compound",
+      "massKg": 0.41,
+      "centreOfMass": [0.18141440922190205, 0.015999999999999997, -0.005080115273775216]
+    }
+  },
+  "grip": { "at": [0.0664, 0.016, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

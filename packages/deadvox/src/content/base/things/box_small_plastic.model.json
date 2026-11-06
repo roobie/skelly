@@ -1,0 +1,11 @@
+{
+  "id": "box_small_plastic",
+  "file": "assets/models/box_small_plastic.glb",
+  "parts": {
+    "box_small_plastic": {
+      "node": "box_small_plastic:compound",
+      "massKg": 0.93,
+      "centreOfMass": [0, 0.08924487343800062, -0.000030999679589874934]
+    }
+  }
+}

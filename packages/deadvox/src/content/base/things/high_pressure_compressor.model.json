@@ -1,0 +1,11 @@
+{
+  "id": "high_pressure_compressor",
+  "file": "assets/models/high_pressure_compressor.glb",
+  "parts": {
+    "high_pressure_compressor": {
+      "node": "high_pressure_compressor:compound",
+      "massKg": 54,
+      "centreOfMass": [0.008736285013553636, 0.1296869756034594, -0.00027623596230799024]
+    }
+  }
+}

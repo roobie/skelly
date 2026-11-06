@@ -1,0 +1,11 @@
+{
+  "id": "bite_suit",
+  "file": "assets/models/bite_suit.glb",
+  "parts": {
+    "bite_suit": {
+      "node": "bite_suit:compound",
+      "massKg": 6,
+      "centreOfMass": [-6.943806555281364e-18, 0.10109783814679078, -0.006739434488787272]
+    }
+  }
+}

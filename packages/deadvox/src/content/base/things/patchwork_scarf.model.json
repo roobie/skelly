@@ -1,0 +1,11 @@
+{
+  "id": "patchwork_scarf",
+  "file": "assets/models/patchwork_scarf.glb",
+  "parts": {
+    "patchwork_scarf": {
+      "node": "patchwork_scarf:compound",
+      "massKg": 0.13,
+      "centreOfMass": [0.0000070165590794272224, 0.01225989334830199, 0.0007687342127420711]
+    }
+  }
+}

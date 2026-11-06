@@ -1,0 +1,10 @@
+{
+  "id": "methacola",
+  "file": "assets/models/methacola.glb",
+  "parts": {
+    "methacola": { "node": "methacola:compound", "massKg": 0.22, "centreOfMass": [0, 0.05803667136812412, 0] }
+  },
+  "grip": { "at": [0, 0.05, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

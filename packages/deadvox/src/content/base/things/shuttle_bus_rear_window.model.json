@@ -1,0 +1,14 @@
+{
+  "id": "shuttle_bus_rear_window",
+  "file": "assets/models/shuttle_bus_rear_window.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 12,
+      "centreOfMass": [-3.9062500000000004, 1.9062500000000002, 0],
+      "collision": [{ "min": [-3.9375, 1.5, -0.875], "max": [-3.875, 2.3125, 0.875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

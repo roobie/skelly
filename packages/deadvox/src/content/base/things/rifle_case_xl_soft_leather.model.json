@@ -1,0 +1,11 @@
+{
+  "id": "rifle_case_xl_soft_leather",
+  "file": "assets/models/rifle_case_xl_soft_leather.glb",
+  "parts": {
+    "rifle_case_xl_soft_leather": {
+      "node": "rifle_case_xl_soft_leather:compound",
+      "massKg": 1.7,
+      "centreOfMass": [-0.04815637384412152, 0.035110221268163794, 0.0055767007926023765]
+    }
+  }
+}

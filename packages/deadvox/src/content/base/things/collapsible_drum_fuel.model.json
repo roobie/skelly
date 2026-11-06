@@ -1,0 +1,11 @@
+{
+  "id": "collapsible_drum_fuel",
+  "file": "assets/models/collapsible_drum_fuel.glb",
+  "parts": {
+    "collapsible_drum_fuel": {
+      "node": "collapsible_drum_fuel:compound",
+      "massKg": 170,
+      "centreOfMass": [0.005881435257410296, 0.05357817646039175, 0]
+    }
+  }
+}

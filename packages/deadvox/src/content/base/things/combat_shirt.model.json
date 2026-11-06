@@ -1,0 +1,11 @@
+{
+  "id": "combat_shirt",
+  "file": "assets/models/combat_shirt.glb",
+  "parts": {
+    "combat_shirt": {
+      "node": "combat_shirt:compound",
+      "massKg": 0.58,
+      "centreOfMass": [-0.00007163956344641014, 0.02348216784303972, 0.002133453561767358]
+    }
+  }
+}

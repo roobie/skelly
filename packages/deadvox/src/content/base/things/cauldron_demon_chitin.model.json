@@ -1,0 +1,11 @@
+{
+  "id": "cauldron_demon_chitin",
+  "file": "assets/models/cauldron_demon_chitin.glb",
+  "parts": {
+    "cauldron_demon_chitin": {
+      "node": "cauldron_demon_chitin:compound",
+      "massKg": 12,
+      "centreOfMass": [0.000007007251690703208, 0.19064890409842752, 0]
+    }
+  }
+}

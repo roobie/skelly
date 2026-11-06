@@ -1,0 +1,19 @@
+{
+  "id": "car_transporter_lower_deck",
+  "file": "assets/models/car_transporter_lower_deck.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 1200,
+      "centreOfMass": [-1.0638669454770755, 1.1310447645600992, 0],
+      "collision": [
+        { "min": [-5.5, 1.09375, -1.1875], "max": [3.4375, 1.1875, 1.1875] },
+        { "min": [-5.40625, 1, -0.46875], "max": [-5.1875, 1.09375, 0.46875] },
+        { "min": [-5.40625, 1, 0.3125], "max": [3.4375, 1.09375, 0.4375] },
+        { "min": [-5.40625, 1, -0.4375], "max": [3.4375, 1.09375, -0.3125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,14 @@
+{
+  "id": "hi_q_distillate",
+  "file": "assets/models/hi_q_distillate.glb",
+  "parts": {
+    "hi_q_distillate": {
+      "node": "hi_q_distillate:compound",
+      "massKg": 0.0065,
+      "centreOfMass": [-0.005055096418732781, 0.007038567493112949, 0.000011019283746556472]
+    }
+  },
+  "grip": { "at": [0, 0.007, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

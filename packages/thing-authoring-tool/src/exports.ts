@@ -1,3 +1,4 @@
+import { MATERIALS } from '@skelly/thing-core/materials';
 import type { VoxelGrains } from '@skelly/thing-export/exportTypes.ts';
 import { exportGlb } from '@skelly/thing-export/glb.ts';
 import { assemblyProperties, modelParts } from '@skelly/thing-export/physical.ts';
@@ -71,4 +72,19 @@ const exporters = {
     return () => exportItem(item, recipeAsset(row), recipeVoxel(row), { collision: options.collision === true });
   },
 };
-export const loadThingRecipe = (value: unknown = recipe) => loadRecipe(value, exporters);
+const strings = (value: unknown): string[] => {
+  if (typeof value === 'string') {
+    return [value];
+  }
+  return value && typeof value === 'object' ? Object.values(value).flatMap(strings) : [];
+};
+const { items: _items, ...settings } = catalogue;
+/** What an item's export reads besides code: its row, the catalogue settings and the materials it names. */
+const itemInputs = (row: RecipeRow) => {
+  const item = catalogue.items.find(({ id }) => id === row.source);
+  const named = [...new Set([catalogue.defaultMaterial, ...strings(item)])].filter((id) =>
+    Object.hasOwn(MATERIALS, id),
+  );
+  return { item, settings, materials: named.sort().map((id) => [id, MATERIALS[id]]) };
+};
+export const loadThingRecipe = (value: unknown = recipe) => loadRecipe(value, exporters, itemInputs);

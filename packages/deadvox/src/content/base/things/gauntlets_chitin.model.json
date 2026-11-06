@@ -1,0 +1,11 @@
+{
+  "id": "gauntlets_chitin",
+  "file": "assets/models/gauntlets_chitin.glb",
+  "parts": {
+    "gauntlets_chitin": {
+      "node": "gauntlets_chitin:compound",
+      "massKg": 0.56,
+      "centreOfMass": [1.2893611843426298e-17, 0.015049879744849932, 0.05747464184879218]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "hat_field",
+  "file": "assets/models/hat_field.glb",
+  "parts": {
+    "hat_field": {
+      "node": "hat_field:compound",
+      "massKg": 0.11,
+      "centreOfMass": [0.000024156673280993875, 0.05032594254162713, 0.004303166249676473]
+    }
+  }
+}

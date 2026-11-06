@@ -1,0 +1,11 @@
+{
+  "id": "bigback",
+  "file": "assets/models/bigback.glb",
+  "parts": {
+    "bigback": {
+      "node": "bigback:compound",
+      "massKg": 6.7,
+      "centreOfMass": [0.000004039859951522016, 0.40472110003890227, -0.0006272256635844012]
+    }
+  }
+}

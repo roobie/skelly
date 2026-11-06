@@ -1,0 +1,14 @@
+{
+  "id": "electric_van_grille_panel",
+  "file": "assets/models/electric_van_grille_panel.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 3,
+      "centreOfMass": [2.671875, 0.78125, 0],
+      "collision": [{ "min": [2.65625, 0.625, -0.5], "max": [2.6875, 0.9375, 0.5] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

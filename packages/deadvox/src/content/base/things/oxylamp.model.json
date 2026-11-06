@@ -1,0 +1,14 @@
+{
+  "id": "oxylamp",
+  "file": "assets/models/oxylamp.glb",
+  "parts": {
+    "oxylamp": {
+      "node": "oxylamp:compound",
+      "massKg": 0.53,
+      "centreOfMass": [0, 0.0679078756027247, 0.008010995739469857]
+    }
+  },
+  "grip": { "at": [0, 0.035, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

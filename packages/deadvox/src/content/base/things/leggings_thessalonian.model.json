@@ -1,0 +1,11 @@
+{
+  "id": "leggings_thessalonian",
+  "file": "assets/models/leggings_thessalonian.glb",
+  "parts": {
+    "leggings_thessalonian": {
+      "node": "leggings_thessalonian:compound",
+      "massKg": 6.1,
+      "centreOfMass": [-1.0431314735878523e-16, 0.032254523677118487, -0.06066501261924084]
+    }
+  }
+}

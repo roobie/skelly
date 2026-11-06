@@ -1,0 +1,295 @@
+[
+  {
+    "id": "iotv_shoulder_plate",
+    "model": "iotv_shoulder_plate",
+    "name": "Ballistic shoulder protectors",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 3,
+      "warmth": 5,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.7, "pierce": 0.55 }
+    },
+    "description": "A pair of padded aramid shields for the shoulders and upper arms, each on a webbing tab that fixes under a vest's shoulder strap.",
+    "reference": "iotv_shoulder_plate",
+    "variants": [],
+    "notes": "Two coyote nylon pads laid side by side, each with a darker seam, two black press studs and a webbing tab with a hook and loop patch off its top. They fasten under a body armour vest's shoulder by hook and loop and snaps, which no standard names, so they keep the arms slot that earlier arm guards named until a shoulder standard exists (proposed in the report). CHECK VOLUME: the pads laid side by side with their tabs out make a larger box than the packed pair. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "jacket_eod",
+    "model": "jacket_eod",
+    "name": "EOD jacket",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 71,
+      "warmth": 65,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.2, "blunt": 0.6, "cut": 0.9, "pierce": 0.6 }
+    },
+    "container": { "pockets": [{ "grid": [3, 3], "handlingSimSeconds": 3, "name": "plate" }] },
+    "description": "A thick bomb disposal jacket of aramid, fire-resistant cloth and foam, with a high collar and a front pocket for a large hard plate.",
+    "reference": "jacket_eod",
+    "variants": [],
+    "notes": "Folded olive drab bundle, quilted ridges along both sides, the high padded collar rolled along the back and the flapped plate pocket on top. The plate pocket is a grid sized to a front plate. The reference's tool subtype has no use in Deadvox. CHECK VOLUME (x2.2): the folded jacket stands stiff and full of padding, larger than the reference's packed volume. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "jacket_eod_light",
+    "model": "jacket_eod_light",
+    "name": "Tactical EOD jacket",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 31,
+      "warmth": 40,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.85, "pierce": 0.5 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 1.5, "name": "left shoulder" },
+        { "grid": [2, 2], "handlingSimSeconds": 1.5, "name": "right shoulder" }
+      ]
+    },
+    "description": "A lighter bomb disposal jacket of aramid, fire-resistant cloth and foam, cut to go over a plate carrier, with a pocket on each upper arm for a shoulder pad.",
+    "reference": "jacket_eod_light",
+    "variants": [],
+    "notes": "Folded coyote bundle with a black front zip, a low padded collar along the back and the flapped deltoid pockets of both folded sleeves on top. Each deltoid pocket is a grid sized to one shoulder pad; the shoulder protectors are one item for the pair, so filling both pockets from it needs the pair split or a mount standard. The reference's tool subtype has no use in Deadvox. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "lc_esapi_plate",
+    "model": "lc_esapi_plate",
+    "name": "Mild steel ESAPI plate",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "encumbrance": 1,
+      "warmth": 0,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0, "blunt": 0.3, "cut": 0.9, "pierce": 0.6 }
+    },
+    "description": "A front or back armour plate forged from mild steel, its edges bound in nylon and two straps buckled across it.",
+    "reference": "lc_esapi_plate",
+    "variants": [],
+    "notes": "Steel plate with a shooter's cut, bent round a 350 mm radius, olive drab edge binding and straps, black buckles. The medium and tempered plates share this model with their own steel finish. No slot: it is an insert that rides in a vest's plate pocket and cannot be worn alone, so it keeps encumbrance, wear and protection for when it is carried there. Armour from an insert in a pocket has no content rule yet; the report proposes a plate standard for it. CHECK VOLUME: the reference volume is the plate's material; the model's box includes the air under its curve. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "lc_esbi_plate",
+    "model": "lc_esbi_plate",
+    "name": "Mild steel ESBI plate",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "encumbrance": 1,
+      "warmth": 0,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0, "blunt": 0.3, "cut": 0.9, "pierce": 0.6 }
+    },
+    "description": "A hexagonal side armour plate forged from mild steel on a nylon pad, with a strap across it.",
+    "reference": "lc_esbi_plate",
+    "variants": [],
+    "notes": "Steel hexagon on an olive drab pad that shows round its edge, with one strap and buckle. The medium and tempered side plates share this model with their own steel finish. The reference gives the side plate the front plate's mass; the row keeps it. No slot: it is an insert that rides in a vest's plate pocket and cannot be worn alone, so it keeps encumbrance, wear and protection for when it is carried there. Armour from an insert in a pocket has no content rule yet; the report proposes a plate standard for it. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "level_3_vest",
+    "model": "level_3_vest",
+    "name": "Hard armour vest",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 4,
+      "warmth": 15,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.2, "cut": 0.75, "pierce": 0.6 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [3, 3], "handlingSimSeconds": 2.5, "name": "front plate" },
+        { "grid": [3, 3], "handlingSimSeconds": 4, "name": "back plate" }
+      ]
+    },
+    "description": "A soft aramid vest in an olive drab carrier, with pockets front and back for hard armour plates.",
+    "reference": "level_3_vest",
+    "variants": [],
+    "notes": "Laid flat, front up: carrier with padded shoulders, buckled side straps and the flapped front plate pocket; the back plate pocket is underneath. The plate pockets are grids sized to a front plate. It has no webbing, so it gets no attach points. CHECK VOLUME: the vest laid flat with its side straps out makes a larger box than the packed vest. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "mc_esapi_plate",
+    "model": "lc_esapi_plate",
+    "name": "Medium steel ESAPI plate",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "encumbrance": 1,
+      "warmth": 0,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.3, "cut": 0.9, "pierce": 0.7 }
+    },
+    "finishes": { "plate": "steel" },
+    "description": "A front or back armour plate forged from medium carbon steel, its edges bound in nylon and two straps buckled across it.",
+    "reference": "mc_esapi_plate",
+    "variants": [],
+    "notes": "Shares the mild plate's model; its steel takes the plain steel finish. No slot: it is an insert that rides in a vest's plate pocket and cannot be worn alone, so it keeps encumbrance, wear and protection for when it is carried there. Armour from an insert in a pocket has no content rule yet; the report proposes a plate standard for it. CHECK VOLUME: the reference volume is the plate's material; the model's box includes the air under its curve. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "mc_esbi_plate",
+    "model": "lc_esbi_plate",
+    "name": "Medium steel ESBI plate",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "encumbrance": 1,
+      "warmth": 0,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.3, "cut": 0.9, "pierce": 0.7 }
+    },
+    "finishes": { "plate": "steel" },
+    "description": "A hexagonal side armour plate forged from medium carbon steel on a nylon pad, with a strap across it.",
+    "reference": "mc_esbi_plate",
+    "variants": [],
+    "notes": "Shares the mild side plate's model; its steel takes the plain steel finish. No slot: it is an insert that rides in a vest's plate pocket and cannot be worn alone, so it keeps encumbrance, wear and protection for when it is carried there. Armour from an insert in a pocket has no content rule yet; the report proposes a plate standard for it. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "qt_esapi_plate",
+    "model": "lc_esapi_plate",
+    "name": "Tempered steel ESAPI plate",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "encumbrance": 1,
+      "warmth": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.3, "cut": 0.95, "pierce": 0.8 }
+    },
+    "finishes": { "plate": "steel-heat-tint" },
+    "description": "A front or back armour plate forged from tempered steel, its edges bound in nylon and two straps buckled across it.",
+    "reference": "qt_esapi_plate",
+    "variants": [],
+    "notes": "Shares the mild plate's model; its steel takes the heat-tinted finish of hardened steel. No slot: it is an insert that rides in a vest's plate pocket and cannot be worn alone, so it keeps encumbrance, wear and protection for when it is carried there. Armour from an insert in a pocket has no content rule yet; the report proposes a plate standard for it. CHECK VOLUME: the reference volume is the plate's material; the model's box includes the air under its curve. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "qt_esbi_plate",
+    "model": "lc_esbi_plate",
+    "name": "Tempered steel ESBI plate",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "encumbrance": 1,
+      "warmth": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.3, "cut": 0.95, "pierce": 0.8 }
+    },
+    "finishes": { "plate": "steel-heat-tint" },
+    "description": "A hexagonal side armour plate forged from tempered steel on a nylon pad, with a strap across it.",
+    "reference": "qt_esbi_plate",
+    "variants": [],
+    "notes": "Shares the mild side plate's model; its steel takes the heat-tinted finish of hardened steel. No slot: it is an insert that rides in a vest's plate pocket and cannot be worn alone, so it keeps encumbrance, wear and protection for when it is carried there. Armour from an insert in a pocket has no content rule yet; the report proposes a plate standard for it. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "scrap_esapi_plate",
+    "model": "scrap_esapi_plate",
+    "name": "Scrap ESAPI plate",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Industrial", "Infected"], "tiers": ["Tier1"] },
+    "wearable": {
+      "encumbrance": 3,
+      "warmth": 0,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0, "blunt": 0.2, "cut": 0.8, "pierce": 0.45 }
+    },
+    "description": "A sheet of salvaged steel cut and bent to the shape of a front armour plate, with rags wrapped over its sharp edges.",
+    "reference": "scrap_esapi_plate",
+    "variants": [],
+    "notes": "Rusted steel bent in three creases with hacked corners, rag bands across it and along both long edges. No slot: it is an insert that rides in a vest's plate pocket and cannot be worn alone, so it keeps encumbrance, wear and protection for when it is carried there. Armour from an insert in a pocket has no content rule yet; the report proposes a plate standard for it. CHECK VOLUME: the reference volume is the plate's material; the model's box includes the air under its curve. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "scrap_esbi_plate",
+    "model": "scrap_esbi_plate",
+    "name": "Scrap ESBI plate",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial", "Infected"], "tiers": ["Tier1"] },
+    "wearable": {
+      "encumbrance": 1,
+      "warmth": 0,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0, "blunt": 0.2, "cut": 0.8, "pierce": 0.45 }
+    },
+    "description": "A hexagon of salvaged steel cut to the shape of a side armour plate, with rags wrapped over its sharp edges.",
+    "reference": "scrap_esbi_plate",
+    "variants": [],
+    "notes": "Rusted steel hexagon with rag bands at both ends and round the middle. CHECK VOLUME (x4.1): the rag wraps stand proud of a 3 mm plate that the reference volume counts alone. No slot: it is an insert that rides in a vest's plate pocket and cannot be worn alone, so it keeps encumbrance, wear and protection for when it is carried there. Armour from an insert in a pocket has no content rule yet; the report proposes a plate standard for it. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "soft_3a_vest",
+    "model": "soft_3a_vest",
+    "name": "Soft armour vest",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Police", "Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 4,
+      "warmth": 15,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.7, "pierce": 0.55 }
+    },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 2, "name": "front insert" }] },
+    "description": "A soft aramid vest in a navy carrier with elastic side straps and a pocket on the front for a small insert.",
+    "reference": "soft_3a_vest",
+    "variants": [],
+    "notes": "Laid flat, front up: navy carrier, black elastic side straps with hook and loop tabs and a flapped insert pocket on the front. The insert pocket is a grid sized to a stab or trauma panel. It has no webbing, so it gets no attach points. CHECK VOLUME: the vest laid flat with its side straps out makes a larger box than the packed vest. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "stab_plate",
+    "model": "stab_plate",
+    "name": "Soft stab panel",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Police"], "tiers": ["Tier2"] },
+    "wearable": {
+      "encumbrance": 0,
+      "warmth": 0,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.05, "cut": 0.8, "pierce": 0.5 }
+    },
+    "description": "A flexible panel of layered aramid in a black cover, made to stop knife points.",
+    "reference": "stab_plate",
+    "variants": [],
+    "notes": "Rounded black slab stepped in at its seam with a white care label. No slot: it is an insert that rides in a vest's plate pocket and cannot be worn alone, so it keeps encumbrance, wear and protection for when it is carried there. Armour from an insert in a pocket has no content rule yet; the report proposes a plate standard for it. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "steel_ballistic_plate",
+    "model": "steel_ballistic_plate",
+    "name": "Steel ballistic plate",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "encumbrance": 1,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0, "blunt": 0.3, "cut": 0.95, "pierce": 0.85 }
+    },
+    "description": "A curved plate of hardened steel with a rubber edge guard, made to stop handgun rounds.",
+    "reference": "steel_ballistic_plate",
+    "variants": [],
+    "notes": "Dark steel plate with a shooter's cut, bent round a 300 mm radius, with a black rubber guard round its edges; the rating stamp on its back is not modelled. No slot: it is an insert that rides in a vest's plate pocket and cannot be worn alone, so it keeps encumbrance, wear and protection for when it is carried there. Armour from an insert in a pocket has no content rule yet; the report proposes a plate standard for it. CHECK VOLUME: the reference volume is the plate's material; the model's box includes the air under its curve. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  }
+]

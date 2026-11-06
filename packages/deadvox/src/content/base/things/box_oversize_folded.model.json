@@ -1,0 +1,11 @@
+{
+  "id": "box_oversize_folded",
+  "file": "assets/models/box_oversize_folded.glb",
+  "parts": {
+    "box_oversize_folded": {
+      "node": "box_oversize_folded:compound",
+      "massKg": 3.6,
+      "centreOfMass": [-0.011253292361720822, 0.005, 1.4873273876282707e-18]
+    }
+  }
+}

@@ -1,0 +1,98 @@
+[
+  {
+    "id": "vortex",
+    "model": "vortex",
+    "name": "Vortex mixer",
+    "category": "tool",
+    "size": [2, 2],
+    "economy": { "usage": ["Medical", "Industrial"], "tiers": ["Tier2"] },
+    "description": "A heavy bench mixer with a rubber cup on top. Pressed into the cup, a test tube shakes until its contents mix.",
+    "reference": "vortex",
+    "variants": [],
+    "notes": "128 by 168 mm and 148 mm tall: a white sloped base, a dark front panel with a speed dial and a red rocker switch, and a black rubber cup. The box against the reference's 750 mL counts the sloping sides and the cup standing above the base. Needs mains power; no mixing quality is in use yet, so it declares none."
+  },
+  {
+    "id": "weather_glass",
+    "model": "weather_glass",
+    "name": "Weather glass",
+    "category": "tool",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "description": "A sealed glass pear half full of water on a wooden stand, with a thin open spout climbing beside it. The water in the spout rises and falls with the air pressure.",
+    "reference": "weather_glass",
+    "variants": [],
+    "notes": "492 mm tall, a body 200 mm across on a turned oak stand, glass-clear with water inside and a cork-stoppered fill neck. The tile draws the glass opaque; it stays see-through in game. The box against the reference's 4 L counts the air round the pear and the spout. Reading the pressure needs a use action the item schema does not have yet."
+  },
+  {
+    "id": "weather_reader",
+    "model": "weather_reader",
+    "name": "Briefcase weather station",
+    "category": "tool",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "description": "An old weather station built into a hard briefcase: a green monochrome screen in the lid, a keypad and two dials in the base.",
+    "reference": "weather_reader",
+    "variants": [],
+    "notes": "400 by 300 mm, modelled open with the lid tilted back so the screen faces the iso view; aluminium shell, grille, printer slot and front handle. The box against the reference's 2.5 L counts the open lid; closed it is about 60 mm thick. The reference name is a brand-style joke, so this draft names what the thing is. Weather readings need a use action the item schema does not have yet."
+  },
+  {
+    "id": "shelter_kit",
+    "model": "shelter_kit",
+    "name": "Hide shelter bundle",
+    "category": "tool",
+    "size": [1, 4],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1"] },
+    "description": "A dozen peeled poles under a rolled hide, tied with rawhide thongs. Set up, it makes a lean-to for one.",
+    "reference": "shelter_kit",
+    "variants": [],
+    "notes": "900 mm long: twelve 30 mm poles, some still in bark, staggered at the ends, under a rolled hide 120 mm across, three thongs. The box against the reference's 7.5 L counts the gaps in the bundle. Setting it up as a placed shelter needs a placed-object field the item schema does not have yet."
+  },
+  {
+    "id": "damaged_shelter_kit",
+    "model": "damaged_shelter_kit",
+    "name": "Damaged hide shelter bundle",
+    "category": "tool",
+    "size": [1, 4],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1"] },
+    "description": "A bundle of shelter poles and a rolled hide. One pole is snapped and the hide is torn.",
+    "reference": "damaged_shelter_kit",
+    "variants": [],
+    "notes": "A distinct state of the shelter bundle, so its own model from the same builder: one pole snapped short with a splintered end and a torn hide flap hanging on the near side. Repairing it into the whole bundle is a recipe for when recipes land."
+  },
+  {
+    "id": "large_shelter_kit",
+    "model": "large_shelter_kit",
+    "name": "Large hide shelter bundle",
+    "category": "tool",
+    "size": [1, 8],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier2"] },
+    "description": "A long bundle of heavy poles under a thick rolled hide, tied with rawhide thongs. Set up, it makes a shelter for several people.",
+    "reference": "large_shelter_kit",
+    "variants": [],
+    "notes": "3 m long: twelve 40 mm pine poles under a rolled hide 160 mm across, four thongs. The box against the reference's 22 L counts the gaps in the bundle; 3 m of poles cannot fit 22 L. Too long for most bags; it is meant to be dragged or carried on the shoulder. Look with --size 512: the iso tile reads dark at the default size."
+  },
+  {
+    "id": "large_tent_kit",
+    "model": "large_tent_kit",
+    "name": "Family tent",
+    "category": "tool",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "description": "A family tent packed in a green storage bag with two compression straps and the poles in a zipped side pocket.",
+    "reference": "large_tent_kit",
+    "variants": [],
+    "notes": "776 mm long and 160 mm across, a drawstring end with a toggle and a white label panel. Shorter than the reference's 900 mm so the bag keeps a believable girth near its 10 L volume. Pitching it needs a placed-object field the item schema does not have yet."
+  },
+  {
+    "id": "tent_kit",
+    "model": "tent_kit",
+    "name": "One-person tent",
+    "category": "tool",
+    "size": [1, 3],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1"] },
+    "description": "A small tent packed in a red stuff sack with two compression straps and the poles in a zipped side pocket.",
+    "reference": "tent_kit",
+    "variants": [],
+    "notes": "500 mm long and 100 mm across, from the same bag builder as the family tent. The reference's 900 mm longest side with 2.5 L would make a bag 60 mm thick, so the length follows the volume instead (CHECK LENGTH). Pitching it needs a placed-object field the item schema does not have yet."
+  }
+]

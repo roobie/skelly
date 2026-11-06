@@ -1,0 +1,14 @@
+{
+  "id": "melatonin_tablet",
+  "file": "assets/models/melatonin_tablet.glb",
+  "parts": {
+    "melatonin_tablet": {
+      "node": "melatonin_tablet:vessel",
+      "massKg": 0.089,
+      "centreOfMass": [0, 0.044711824906272166, 0]
+    }
+  },
+  "grip": { "at": [0, 0.045, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "notched_plank",
+  "file": "assets/models/notched_plank.glb",
+  "parts": {
+    "notched_plank": {
+      "node": "notched_plank:compound",
+      "massKg": 0.44,
+      "centreOfMass": [0.1501526717557252, 0.018091603053435115, 0]
+    }
+  }
+}

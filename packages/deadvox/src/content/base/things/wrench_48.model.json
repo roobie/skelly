@@ -1,0 +1,14 @@
+{
+  "id": "wrench_48",
+  "file": "assets/models/wrench_48.glb",
+  "parts": {
+    "wrench_48": {
+      "node": "wrench_48:compound",
+      "massKg": 21,
+      "centreOfMass": [0.7105331529093364, 0.02665042850699141, 0.015633739287325202]
+    }
+  },
+  "grip": { "at": [0.48400000000000004, 0.028, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

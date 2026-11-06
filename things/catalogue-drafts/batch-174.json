@@ -1,0 +1,293 @@
+[
+  {
+    "id": "lc_chainmail_suit",
+    "model": "lc_chainmail_suit",
+    "name": "Mild steel mail suit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.2, "cut": 0.6, "pierce": 0.35 }
+    },
+    "description": "Mild steel rings riveted into one suit from the crown of the head to the ankles, coif, sleeves and legs all of a piece. It wants padding underneath and is very heavy.",
+    "reference": "lc_chainmail_suit",
+    "variants": ["xl_lc_chainmail_suit", "lc_chainmail_suit_xs"],
+    "notes": "The model's root: mail in `steel-mail`. Folded to 380 mm by 460 mm and 60 mm tall: a long mail shirt with sleeves along its sides, the legs folded up over the body under a leather belt with a brass buckle, and the attached coif standing at the neck, 160 mm tall in all, its face opening forward and edged in leather. CHECK VOLUME LENGTH: the reference gives the mail packed tight in a 140 to 150 mm bundle; folded flat on a shelf it is far longer and its box far emptier, and the mass is the reference's. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the head, arms and legs slots once a slot can cover more than one region. The reference gives no warmth. Protection is a judgement for riveted mail by grade: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_chainmail_suit",
+    "model": "lc_chainmail_suit",
+    "name": "Medium steel mail suit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0.05, "blunt": 0.22, "cut": 0.65, "pierce": 0.4 }
+    },
+    "finishes": { "mail": "steel-mail-dark" },
+    "description": "Medium steel rings riveted into one suit from the crown of the head to the ankles, coif, sleeves and legs all of a piece. It wants padding underneath and is very heavy.",
+    "reference": "mc_chainmail_suit",
+    "variants": ["xl_mc_chainmail_suit", "mc_chainmail_suit_xs"],
+    "notes": "Shares the `lc_chainmail_suit` model with the mail in `steel-mail-dark`. Folded to 380 mm by 460 mm and 60 mm tall: a long mail shirt with sleeves along its sides, the legs folded up over the body under a leather belt with a brass buckle, and the attached coif standing at the neck, 160 mm tall in all, its face opening forward and edged in leather. CHECK VOLUME LENGTH: the reference gives the mail packed tight in a 140 to 150 mm bundle; folded flat on a shelf it is far longer and its box far emptier, and the mass is the reference's. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the head, arms and legs slots once a slot can cover more than one region. The reference gives no warmth. Protection is a judgement for riveted mail by grade: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_chainmail_hauberk",
+    "model": "mc_chainmail_hauberk",
+    "name": "Medium steel mail hauberk",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0.05, "blunt": 0.22, "cut": 0.65, "pierce": 0.4 }
+    },
+    "description": "A long shirt of medium steel rings with full sleeves and a skirt split front and back that reaches the knees. Wear something padded under it.",
+    "reference": "mc_chainmail_hauberk",
+    "variants": ["xl_mc_chainmail_hauberk", "mc_chainmail_hauberk_xs"],
+    "notes": "The model's root: mail in `steel-mail-dark`. Batch 173's mild steel, high-carbon and rusted hauberks ride on this model. Folded to 380 mm by 420 mm and 60 mm tall: a long mail shirt with sleeves along its sides, a leather-bound neck and a skirt split up the front so it can be worn in the saddle or a crouch. CHECK VOLUME LENGTH: the reference gives the mail packed tight in a 140 to 150 mm bundle; folded flat on a shelf it is far longer and its box far emptier, and the mass is the reference's. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the arms and legs slots once a slot can cover more than one region. The reference gives no warmth. Protection is a judgement for riveted mail by grade: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_chainmail_jumpsuit",
+    "model": "mc_chainmail_jumpsuit",
+    "name": "Medium steel mail jumpsuit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0.05, "blunt": 0.22, "cut": 0.65, "pierce": 0.4 }
+    },
+    "description": "A one-piece suit of medium steel rings with sleeves and legs, belted at the waist, leaving the head bare. Wear something padded under it.",
+    "reference": "mc_chainmail_jumpsuit",
+    "variants": ["xl_mc_chainmail_jumpsuit", "mc_chainmail_jumpsuit_xs"],
+    "notes": "The model's root: mail in `steel-mail-dark`. Batch 173's mild steel and high-carbon jumpsuits ride on this model. Folded to 380 mm by 440 mm and 60 mm tall: sleeves along its sides, the legs folded up over the body under a leather belt with a brass buckle, and a leather-bound neck. CHECK VOLUME LENGTH: the reference gives the mail packed tight in a 140 to 150 mm bundle; folded flat on a shelf it is far longer and its box far emptier, and the mass is the reference's. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the arms and legs slots once a slot can cover more than one region. The reference gives no warmth. Protection is a judgement for riveted mail by grade: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_chainmail_sjumpsuit",
+    "model": "mc_chainmail_sjumpsuit",
+    "name": "Medium steel mail sleeveless jumpsuit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0.05, "blunt": 0.22, "cut": 0.65, "pierce": 0.4 }
+    },
+    "description": "A one-piece suit of medium steel rings from the shoulders to the ankles, cut without sleeves so the arms swing free. Wear something padded under it.",
+    "reference": "mc_chainmail_sjumpsuit",
+    "variants": ["xl_mc_chainmail_sjumpsuit", "mc_chainmail_sjumpsuit_xs"],
+    "notes": "The model's root: mail in `steel-mail-dark`. Batch 173's mild steel, high-carbon and hardened sleeveless jumpsuits ride on this model. Folded to 380 mm by 420 mm and 60 mm tall: leather-bound armholes at the shoulders, a leather-bound neck and the legs folded up over the body under a leather belt with a brass buckle. The reference lists the arms among what it covers although the suit is sleeveless; the model follows the name and leaves the arms bare. CHECK VOLUME LENGTH: the reference gives the mail packed tight in a 140 to 150 mm bundle; folded flat on a shelf it is far longer and its box far emptier, and the mass is the reference's. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the legs slot once a slot can cover more than one region. The reference gives no warmth. Protection is a judgement for riveted mail by grade: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_chainmail_suit",
+    "model": "lc_chainmail_suit",
+    "name": "Tempered steel mail suit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.25, "cut": 0.7, "pierce": 0.45 }
+    },
+    "finishes": { "mail": "steel-heat-tint" },
+    "description": "Tempered steel rings riveted into one suit from the crown of the head to the ankles, coif, sleeves and legs all of a piece. It wants padding underneath and is very heavy.",
+    "reference": "qt_chainmail_suit",
+    "variants": ["xl_qt_chainmail_suit", "qt_chainmail_suit_xs"],
+    "notes": "Shares the `lc_chainmail_suit` model with the mail in `steel-heat-tint`. Folded to 380 mm by 460 mm and 60 mm tall: a long mail shirt with sleeves along its sides, the legs folded up over the body under a leather belt with a brass buckle, and the attached coif standing at the neck, 160 mm tall in all, its face opening forward and edged in leather. CHECK VOLUME LENGTH: the reference gives the mail packed tight in a 140 to 150 mm bundle; folded flat on a shelf it is far longer and its box far emptier, and the mass is the reference's. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the head, arms and legs slots once a slot can cover more than one region. The reference gives no warmth. Protection is a judgement for riveted mail by grade: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_chainmail_hauberk",
+    "model": "mc_chainmail_hauberk",
+    "name": "Tempered steel mail hauberk",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.25, "cut": 0.7, "pierce": 0.45 }
+    },
+    "finishes": { "mail": "steel-heat-tint" },
+    "description": "A long shirt of tempered steel rings with full sleeves and a skirt split front and back that reaches the knees. Wear something padded under it.",
+    "reference": "qt_chainmail_hauberk",
+    "variants": ["xl_qt_chainmail_hauberk", "qt_chainmail_hauberk_xs"],
+    "notes": "Shares the `mc_chainmail_hauberk` model with the mail in `steel-heat-tint`. Folded to 380 mm by 420 mm and 60 mm tall: a long mail shirt with sleeves along its sides, a leather-bound neck and a skirt split up the front so it can be worn in the saddle or a crouch. CHECK VOLUME LENGTH: the reference gives the mail packed tight in a 140 to 150 mm bundle; folded flat on a shelf it is far longer and its box far emptier, and the mass is the reference's. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the arms and legs slots once a slot can cover more than one region. The reference gives no warmth. Protection is a judgement for riveted mail by grade: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_chainmail_jumpsuit",
+    "model": "mc_chainmail_jumpsuit",
+    "name": "Tempered steel mail jumpsuit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.25, "cut": 0.7, "pierce": 0.45 }
+    },
+    "finishes": { "mail": "steel-heat-tint" },
+    "description": "A one-piece suit of tempered steel rings with sleeves and legs, belted at the waist, leaving the head bare. Wear something padded under it.",
+    "reference": "qt_chainmail_jumpsuit",
+    "variants": ["xl_qt_chainmail_jumpsuit", "qt_chainmail_jumpsuit_xs"],
+    "notes": "Shares the `mc_chainmail_jumpsuit` model with the mail in `steel-heat-tint`. Folded to 380 mm by 440 mm and 60 mm tall: sleeves along its sides, the legs folded up over the body under a leather belt with a brass buckle, and a leather-bound neck. CHECK VOLUME LENGTH: the reference gives the mail packed tight in a 140 to 150 mm bundle; folded flat on a shelf it is far longer and its box far emptier, and the mass is the reference's. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the arms and legs slots once a slot can cover more than one region. The reference gives no warmth. Protection is a judgement for riveted mail by grade: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_chainmail_sjumpsuit",
+    "model": "mc_chainmail_sjumpsuit",
+    "name": "Tempered steel mail sleeveless jumpsuit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.25, "cut": 0.7, "pierce": 0.45 }
+    },
+    "finishes": { "mail": "steel-heat-tint" },
+    "description": "A one-piece suit of tempered steel rings from the shoulders to the ankles, cut without sleeves so the arms swing free. Wear something padded under it.",
+    "reference": "qt_chainmail_sjumpsuit",
+    "variants": ["xl_qt_chainmail_sjumpsuit", "qt_chainmail_sjumpsuit_xs"],
+    "notes": "Shares the `mc_chainmail_sjumpsuit` model with the mail in `steel-heat-tint`. Folded to 380 mm by 420 mm and 60 mm tall: leather-bound armholes at the shoulders, a leather-bound neck and the legs folded up over the body under a leather belt with a brass buckle. The reference lists the arms among what it covers although the suit is sleeveless; the model follows the name and leaves the arms bare. CHECK VOLUME LENGTH: the reference gives the mail packed tight in a 140 to 150 mm bundle; folded flat on a shelf it is far longer and its box far emptier, and the mass is the reference's. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the legs slot once a slot can cover more than one region. The reference gives no warmth. Protection is a judgement for riveted mail by grade: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mil_flight_suit",
+    "model": "mil_flight_suit",
+    "name": "Flight suit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "slot": "torso", "encumbrance": 4, "warmth": 25, "wearPerDamage": 0.002 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "left chest pocket" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "right chest pocket" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "sleeve pocket" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left thigh pocket" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right thigh pocket" }
+      ]
+    },
+    "description": "A sage-green one-piece suit of flame-resistant cloth made for aircrew, zipped from crotch to collar. Pockets on the chest, thighs and sleeve, and a name tape, a flag and a unit patch sewn on.",
+    "reference": "mil_flight_suit",
+    "variants": [],
+    "notes": "Folded to 360 mm by 420 mm and 50 mm tall, legs folded up over the lower half: a dark zip down the front with a steel pull, a flat collar, two flapped chest pockets with a black name tape over the left one, a red and navy flag patch and a pen pocket on the left sleeve, a yellow round unit patch on the right sleeve, and flapped thigh pockets. `cloth-ucp` stands in for sage green. CHECK: the reference gives no longest side. Slot `torso` is the nearest existing slot, as no slot spans the whole body; it should also block the arms and legs slots once a slot can cover more than one region. The reference's encumbrance of 1 is raised to 4 for a whole-body garment. Pocket grids are a judgement from the pocket sizes. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "nomex_suit",
+    "model": "nomex_suit",
+    "name": "Flame-resistant undersuit",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Industrial", "Military"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 6, "warmth": 5, "wearPerDamage": 0.002 },
+    "description": "A thin, snug one-piece suit of flame-resistant knit with a short zip at the neck. Light enough to wear under other clothes, and slow to catch fire.",
+    "reference": "nomex_suit",
+    "variants": ["xl_nomex_suit", "nomex_suit_xs"],
+    "notes": "Folded to 300 mm by 320 mm and 30 mm tall, legs folded up over the lower half: olive flame-resistant knit (`knit-fr`) with a mock neck, a light zip with a steel pull, sleeves along the sides and darker ribbed cuffs at the wrists and ankles. Slot `torso` is the nearest existing slot, as no slot spans the whole body; it should also block the arms and legs slots once a slot can cover more than one region. It is an under-layer; once layers exist it belongs under clothing. No pockets. Deadvox has no fire damage kind yet, so the flame resistance is in the text only. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "officer_uniform",
+    "model": "officer_uniform",
+    "name": "Dress uniform",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 7, "warmth": 15, "wearPerDamage": 0.0025 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "left hip pocket" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "right hip pocket" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "trouser pockets" }
+      ]
+    },
+    "description": "A navy officer's dress jacket and trousers with gold buttons, rank on the shoulder boards and rows of ribbons and medals on the breast.",
+    "reference": "officer_uniform",
+    "variants": [],
+    "notes": "Folded on a shelf: a navy jacket 380 mm by 360 mm on folded trousers 320 mm by 420 mm, 90 mm tall in all, the trousers showing at the right and the hem end with a gold stripe down the leg. The jacket has lapels meeting in a V over a cream shirt front and black tie, two gold buttons, shoulder boards with gold rank bars, flapped hip pockets, a breast pocket with three rows of red, blue and green ribbons above it and two gold medals on ribbons beside them. CHECK VOLUME: the jacket and trousers stacked fill a box far bigger than the reference's packed volume. Slot `torso` is the nearest existing slot, as no slot spans the whole body; the two-piece suit should also block the arms and legs slots once a slot can cover more than one region. Pocket grids are a judgement. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "robofac_enviro_suit",
+    "model": "robofac_enviro_suit",
+    "name": "Sealed environmental suit",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier4"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 25,
+      "warmth": 40,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.6, "blunt": 0.1, "cut": 0.35, "pierce": 0.2 }
+    },
+    "container": { "pockets": [{ "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "chest pocket" }] },
+    "description": "A light, sealed suit of brown and blue flame-resistant cloth over an aramid lining, with the boots and gloves built in and a white seal sewn on each upper arm. It seals at a neck ring; breathing protection needs a separate gas mask.",
+    "reference": "robofac_enviro_suit",
+    "variants": [],
+    "notes": "Folded to 460 mm by 440 mm and 80 mm tall, legs folded up, with its attached black boots standing on the bundle and its attached gloves lying on the sleeves: brown cloth with blue shoulders and a blue storm flap over the zip, a black ring neck seal, a white seal on each upper arm and a blue-flapped chest pocket. The reference's name ties it to one underground facility from the source game; the name and text here leave that out. CHECK VOLUME: the boots standing on the bundle fill out its box. It covers the whole body, hands and feet: slot `torso` is the nearest existing slot; it should also block the arms, legs, hands and feet slots once a slot can cover more than one region. Protection is a judgement for an aramid-lined suit with vinyl seals; acid reflects the sealed shell. The worn-open state is `robofac_enviro_suit_casual`, its own model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "robofac_enviro_suit_casual",
+    "model": "robofac_enviro_suit_casual",
+    "name": "Sealed environmental suit (worn open)",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier4"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 25,
+      "warmth": 40,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.6, "blunt": 0.1, "cut": 0.35, "pierce": 0.2 }
+    },
+    "description": "The sealed environmental suit with its top half peeled down and the sleeves knotted round the waist. It still covers the legs and feet.",
+    "reference": "robofac_enviro_suit_casual",
+    "variants": [],
+    "notes": "A distinct state of the sealed suit, so it gets its own model: the legs folded to 420 mm by 380 mm and 70 mm tall, the blue-shouldered top half rolled into a tube across the back with a white seal showing, the brown sleeves knotted at the front and hanging over the front edge with their black gloves lying on the floor, and the attached boots standing on the bundle. Changing between the two states is a use action yet to be designed. CHECK VOLUME: the boots and hanging gloves fill out its box. It covers legs and feet: slot `legs`, and it should also block the feet slot once a slot can cover more than one region. Protection matches the closed suit for the parts it covers. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "suit",
+    "model": "suit",
+    "name": "Business suit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 7, "warmth": 25, "wearPerDamage": 0.0025 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "left jacket pocket" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "right jacket pocket" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "inside pocket" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "trouser pockets" }
+      ]
+    },
+    "description": "A charcoal two-piece suit, jacket and trousers, with a shirt and red tie still tucked into it.",
+    "reference": "suit",
+    "variants": [],
+    "notes": "Folded on a shelf: a charcoal jacket 380 mm by 360 mm on folded trousers 320 mm by 420 mm, 90 mm tall in all, the trousers showing at the right and the hem end with a pressed crease. The jacket's lapels meet in a V over a cream shirt front and a red tie, with a cream pocket square in the breast pocket, two black buttons and flapped hip pockets. It shares its builder with the dress uniform but not its model. Slot `torso` is the nearest existing slot, as no slot spans the whole body; it should also block the arms and legs slots once a slot can cover more than one region. Pocket grids are a judgement. The worn look is pending: no worn model is authored."
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "id": "prussian_blue",
+  "file": "assets/models/prussian_blue.glb",
+  "parts": {
+    "prussian_blue": {
+      "node": "prussian_blue:compound",
+      "massKg": 0.022,
+      "centreOfMass": [0, 0.04327286585365853, 0.0000820993031358885]
+    }
+  },
+  "grip": { "at": [0, 0.048, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

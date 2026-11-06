@@ -1,0 +1,11 @@
+{
+  "id": "holy_symbol",
+  "file": "assets/models/holy_symbol.glb",
+  "parts": {
+    "holy_symbol": {
+      "node": "holy_symbol:compound",
+      "massKg": 0.07,
+      "centreOfMass": [-0.0004059405940594043, 0.0019438943894389427, 0.04082838283828381]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "armguard_cut_resistant",
+  "file": "assets/models/armguard_cut_resistant.glb",
+  "parts": {
+    "armguard_cut_resistant": {
+      "node": "armguard_cut_resistant:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0.03372305724336425, 0.00434026223217141, 1.4549067377811486e-18]
+    }
+  }
+}

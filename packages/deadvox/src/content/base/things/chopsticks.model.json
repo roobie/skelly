@@ -1,0 +1,11 @@
+{
+  "id": "chopsticks",
+  "file": "assets/models/chopsticks.glb",
+  "parts": {
+    "chopsticks": {
+      "node": "chopsticks:compound",
+      "massKg": 0.0077,
+      "centreOfMass": [0.08785822784810127, 0.0035822784810126585, 2.6176601663070495e-19]
+    }
+  }
+}

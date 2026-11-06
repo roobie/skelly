@@ -1,0 +1,14 @@
+{
+  "id": "hi_q_shatter",
+  "file": "assets/models/hi_q_shatter.glb",
+  "parts": {
+    "hi_q_shatter": {
+      "node": "hi_q_shatter:compound",
+      "massKg": 0.0054,
+      "centreOfMass": [0.0000767441860465117, 0.0014930232558139534, 0.000277906976744186]
+    }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

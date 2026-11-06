@@ -1,0 +1,11 @@
+{
+  "id": "steel_ballistic_plate",
+  "file": "assets/models/steel_ballistic_plate.glb",
+  "parts": {
+    "steel_ballistic_plate": {
+      "node": "steel_ballistic_plate:compound",
+      "massKg": 3.7,
+      "centreOfMass": [-0.008691580567157605, 0.02199648274346008, 6.818921294952406e-20]
+    }
+  }
+}

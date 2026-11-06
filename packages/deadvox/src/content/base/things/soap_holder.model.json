@@ -1,0 +1,11 @@
+{
+  "id": "soap_holder",
+  "file": "assets/models/soap_holder.glb",
+  "parts": {
+    "soap_holder": {
+      "node": "soap_holder:compound",
+      "massKg": 0.12,
+      "centreOfMass": [1.1082269728738306e-19, 0.006241157556270093, 0]
+    }
+  }
+}

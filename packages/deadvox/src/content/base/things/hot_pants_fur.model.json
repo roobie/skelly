@@ -1,0 +1,11 @@
+{
+  "id": "hot_pants_fur",
+  "file": "assets/models/hot_pants_fur.glb",
+  "parts": {
+    "hot_pants_fur": {
+      "node": "hot_pants_fur:compound",
+      "massKg": 0.22,
+      "centreOfMass": [0.00001402357153513352, 0.014187378785618375, 0.0010593763986274792]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "large_propane_tank",
+  "file": "assets/models/large_propane_tank.glb",
+  "parts": {
+    "large_propane_tank": {
+      "node": "large_propane_tank:compound",
+      "massKg": 77,
+      "centreOfMass": [0.000003750000000000033, 0.5480816071428575, 0]
+    }
+  }
+}

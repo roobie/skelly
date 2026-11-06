@@ -1,0 +1,11 @@
+{
+  "id": "fish_trap_basket",
+  "file": "assets/models/fish_trap_basket.glb",
+  "parts": {
+    "fish_trap_basket": {
+      "node": "fish_trap_basket:compound",
+      "massKg": 0.35,
+      "centreOfMass": [0.29838409366745194, 0, 0]
+    }
+  }
+}

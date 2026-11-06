@@ -1,0 +1,14 @@
+{
+  "id": "minivan_rear_bumper",
+  "file": "assets/models/minivan_rear_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 6,
+      "centreOfMass": [-2.34375, 0.5, 0],
+      "collision": [{ "min": [-2.40625, 0.375, -0.90625], "max": [-2.28125, 0.625, 0.90625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

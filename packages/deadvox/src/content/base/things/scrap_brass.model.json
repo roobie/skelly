@@ -1,0 +1,11 @@
+{
+  "id": "scrap_brass",
+  "file": "assets/models/scrap_brass.glb",
+  "parts": {
+    "scrap_brass": {
+      "node": "scrap_brass:compound",
+      "massKg": 0.18,
+      "centreOfMass": [-0.011654158849280801, 0.009711069418386491, -0.010679174484052532]
+    }
+  }
+}

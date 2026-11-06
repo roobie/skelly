@@ -1,0 +1,11 @@
+{
+  "id": "duster_faux_fur",
+  "file": "assets/models/duster_faux_fur.glb",
+  "parts": {
+    "duster_faux_fur": {
+      "node": "duster_faux_fur:compound",
+      "massKg": 2.4,
+      "centreOfMass": [0, 0.04439285439877063, -0.010005224740683823]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "light_snare_kit",
+  "file": "assets/models/light_snare_kit.glb",
+  "parts": {
+    "light_snare_kit": {
+      "node": "light_snare_kit:compound",
+      "massKg": 0.67,
+      "centreOfMass": [-0.021241142857142865, 0.023190620689655172, -0.026104985221674884]
+    }
+  }
+}

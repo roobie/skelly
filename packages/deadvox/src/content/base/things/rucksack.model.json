@@ -1,0 +1,11 @@
+{
+  "id": "rucksack",
+  "file": "assets/models/rucksack.glb",
+  "parts": {
+    "rucksack": {
+      "node": "rucksack:compound",
+      "massKg": 1.3,
+      "centreOfMass": [0, 0.3379790944340726, -0.0009153109164392842]
+    }
+  }
+}

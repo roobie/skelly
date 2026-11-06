@@ -1,0 +1,11 @@
+{
+  "id": "leg_sheath6",
+  "file": "assets/models/leg_sheath6.glb",
+  "parts": {
+    "leg_sheath6": {
+      "node": "leg_sheath6:compound",
+      "massKg": 0.27,
+      "centreOfMass": [-0.0035898347626019673, 0.0049391340723697955, 0.00873457435682912]
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "id": "glass",
+  "file": "assets/models/glass.glb",
+  "parts": { "glass": { "node": "glass:compound", "massKg": 0.34, "centreOfMass": [0, 0.0645479912923016, 0] } }
+}

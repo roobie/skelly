@@ -1,0 +1,11 @@
+{
+  "id": "bucket",
+  "file": "assets/models/bucket.glb",
+  "parts": {
+    "bucket": {
+      "node": "bucket:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-1.6777892642873775e-19, 0.0962093229089836, 0]
+    }
+  }
+}

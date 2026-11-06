@@ -1,0 +1,11 @@
+{
+  "id": "eod_plate",
+  "file": "assets/models/eod_plate.glb",
+  "parts": {
+    "eod_plate": {
+      "node": "eod_plate:compound",
+      "massKg": 4.5,
+      "centreOfMass": [2.016386643773567e-18, 0.0254515260779036, 0.00813132903356863]
+    }
+  }
+}

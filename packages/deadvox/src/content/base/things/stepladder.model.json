@@ -1,0 +1,11 @@
+{
+  "id": "stepladder",
+  "file": "assets/models/stepladder.glb",
+  "parts": {
+    "stepladder": {
+      "node": "stepladder:compound",
+      "massKg": 10,
+      "centreOfMass": [0, 0.8850719643219142, 0.039212446786945084]
+    }
+  }
+}

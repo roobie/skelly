@@ -1,0 +1,11 @@
+{
+  "id": "vest_jean",
+  "file": "assets/models/vest_jean.glb",
+  "parts": {
+    "vest_jean": {
+      "node": "vest_jean:compound",
+      "massKg": 0.45,
+      "centreOfMass": [0, 0.01398146571800267, -0.005600725952813067]
+    }
+  }
+}

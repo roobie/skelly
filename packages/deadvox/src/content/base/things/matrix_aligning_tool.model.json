@@ -1,0 +1,14 @@
+{
+  "id": "matrix_aligning_tool",
+  "file": "assets/models/matrix_aligning_tool.glb",
+  "parts": {
+    "matrix_aligning_tool": {
+      "node": "matrix_aligning_tool:compound",
+      "massKg": 2.8,
+      "centreOfMass": [0, 0.07745854145854145, 0]
+    }
+  },
+  "grip": { "at": [0, 0.046, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

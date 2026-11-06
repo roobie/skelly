@@ -1,0 +1,11 @@
+{
+  "id": "box_battery_charger",
+  "file": "assets/models/box_battery_charger.glb",
+  "parts": {
+    "box_battery_charger": {
+      "node": "box_battery_charger:compound",
+      "massKg": 7.6,
+      "centreOfMass": [-0.00021414567938470814, 0.15823480621324088, -0.060076911476398744]
+    }
+  }
+}

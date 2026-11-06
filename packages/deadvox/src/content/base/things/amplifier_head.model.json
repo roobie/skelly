@@ -1,0 +1,11 @@
+{
+  "id": "amplifier_head",
+  "file": "assets/models/amplifier_head.glb",
+  "parts": {
+    "amplifier_head": {
+      "node": "amplifier_head:compound",
+      "massKg": 14,
+      "centreOfMass": [0.0000346522923824192, 0.1304747660229831, 0.0039198554673616935]
+    }
+  }
+}

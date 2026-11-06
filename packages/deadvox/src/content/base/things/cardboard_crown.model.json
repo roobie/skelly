@@ -1,0 +1,11 @@
+{
+  "id": "cardboard_crown",
+  "file": "assets/models/cardboard_crown.glb",
+  "parts": {
+    "cardboard_crown": {
+      "node": "cardboard_crown:compound",
+      "massKg": 0.03,
+      "centreOfMass": [-4.8509508592381444e-18, 0.04242377507847687, -0.0012578135662617714]
+    }
+  }
+}

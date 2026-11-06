@@ -1,0 +1,11 @@
+{
+  "id": "kufi_cap",
+  "file": "assets/models/kufi_cap.glb",
+  "parts": {
+    "kufi_cap": {
+      "node": "kufi_cap:compound",
+      "massKg": 0.091,
+      "centreOfMass": [6.997030727809939e-20, 0.04301872996231518, -2.180892694382319e-20]
+    }
+  }
+}

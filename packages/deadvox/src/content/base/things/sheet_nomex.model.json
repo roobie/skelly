@@ -1,0 +1,11 @@
+{
+  "id": "sheet_nomex",
+  "file": "assets/models/sheet_nomex.glb",
+  "parts": {
+    "sheet_nomex": {
+      "node": "sheet_nomex:compound",
+      "massKg": 0.032,
+      "centreOfMass": [0, 0.004062250736951621, 0.0008987341772151902]
+    }
+  }
+}

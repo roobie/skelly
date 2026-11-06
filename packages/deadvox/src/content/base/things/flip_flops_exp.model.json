@@ -1,0 +1,11 @@
+{
+  "id": "flip_flops_exp",
+  "file": "assets/models/flip_flops_exp.glb",
+  "parts": {
+    "flip_flops_exp": {
+      "node": "flip_flops_exp:compound",
+      "massKg": 0.5,
+      "centreOfMass": [-1.613136622530281e-18, 0.013200866738894906, 0.002627518959913326]
+    }
+  }
+}

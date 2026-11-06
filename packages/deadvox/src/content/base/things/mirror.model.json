@@ -1,0 +1,14 @@
+{
+  "id": "mirror",
+  "file": "assets/models/mirror.glb",
+  "parts": {
+    "mirror": {
+      "node": "mirror:compound",
+      "massKg": 0.21,
+      "centreOfMass": [0.02661383647798743, 0.007348427672955977, 0]
+    }
+  },
+  "grip": { "at": [0.14600000000000002, 0.006, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

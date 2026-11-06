@@ -1,0 +1,11 @@
+{
+  "id": "clogs",
+  "file": "assets/models/clogs.glb",
+  "parts": {
+    "clogs": {
+      "node": "clogs:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-3.0920669415570987e-18, 0.0420365312320795, -0.0032409574581058987]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "cuirass_scrap",
+  "file": "assets/models/cuirass_scrap.glb",
+  "parts": {
+    "cuirass_scrap": {
+      "node": "cuirass_scrap:compound",
+      "massKg": 3.4,
+      "centreOfMass": [0.0007764511171533281, 0.004847381487173428, 0.005345785553847971]
+    }
+  }
+}

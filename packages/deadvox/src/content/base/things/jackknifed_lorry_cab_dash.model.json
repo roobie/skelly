@@ -1,0 +1,18 @@
+{
+  "id": "jackknifed_lorry_cab_dash",
+  "file": "assets/models/jackknifed_lorry_cab_dash.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 30,
+      "centreOfMass": [2.0004822371678497, 0.7410695865654399, 0.012904357154645982],
+      "collision": [
+        { "min": [1.8125, 0.40625, -1], "max": [2.21875, 1.0625, 1] },
+        { "min": [1.65625, 0.71875, 0.53125], "max": [1.90625, 1.03125, 0.59375] },
+        { "min": [1.53125, 0.90625, 0.375], "max": [1.84375, 1.15625, 0.75] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

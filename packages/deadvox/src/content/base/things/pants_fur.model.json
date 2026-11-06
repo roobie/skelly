@@ -1,0 +1,11 @@
+{
+  "id": "pants_fur",
+  "file": "assets/models/pants_fur.glb",
+  "parts": {
+    "pants_fur": {
+      "node": "pants_fur:compound",
+      "massKg": 1.3,
+      "centreOfMass": [-2.305593626317123e-7, 0.04652782723418427, -0.00044405733242817394]
+    }
+  }
+}

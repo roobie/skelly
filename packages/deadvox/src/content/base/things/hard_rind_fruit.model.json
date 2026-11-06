@@ -1,0 +1,11 @@
+{
+  "id": "hard_rind_fruit",
+  "file": "assets/models/hard_rind_fruit.glb",
+  "parts": {
+    "hard_rind_fruit": {
+      "node": "hard_rind_fruit:compound",
+      "massKg": 6.9,
+      "centreOfMass": [5.803391559578964e-21, 0.12359765389310644, -5.332061122256749e-7]
+    }
+  }
+}

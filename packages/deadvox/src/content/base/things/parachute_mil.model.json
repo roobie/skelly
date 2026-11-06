@@ -1,0 +1,11 @@
+{
+  "id": "parachute_mil",
+  "file": "assets/models/parachute_mil.glb",
+  "parts": {
+    "parachute_mil": {
+      "node": "parachute_mil:compound",
+      "massKg": 55,
+      "centreOfMass": [-0.0002248323721104704, 0.17266786233413053, 0.00017641956205748585]
+    }
+  }
+}

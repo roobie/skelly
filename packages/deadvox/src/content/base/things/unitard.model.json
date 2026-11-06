@@ -1,0 +1,11 @@
+{
+  "id": "unitard",
+  "file": "assets/models/unitard.glb",
+  "parts": {
+    "unitard": {
+      "node": "unitard:compound",
+      "massKg": 0.09,
+      "centreOfMass": [2.35155790711321e-7, 0.002311346266901822, -0.020156848912404456]
+    }
+  }
+}

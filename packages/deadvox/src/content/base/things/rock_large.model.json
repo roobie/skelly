@@ -1,0 +1,11 @@
+{
+  "id": "rock_large",
+  "file": "assets/models/rock_large.glb",
+  "parts": {
+    "rock_large": {
+      "node": "rock_large:compound",
+      "massKg": 20,
+      "centreOfMass": [0.003936279408984092, 0.07939453283271657, 0.0037163501796277794]
+    }
+  }
+}

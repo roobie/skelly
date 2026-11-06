@@ -1,0 +1,11 @@
+{
+  "id": "woven_anklet",
+  "file": "assets/models/woven_anklet.glb",
+  "parts": {
+    "woven_anklet": {
+      "node": "woven_anklet:compound",
+      "massKg": 0.002,
+      "centreOfMass": [-0.00014682539682539652, 0.0013253968253968264, -0.007480158730158731]
+    }
+  }
+}

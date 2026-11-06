@@ -1,0 +1,14 @@
+{
+  "id": "tindalos_whistle",
+  "file": "assets/models/tindalos_whistle.glb",
+  "parts": {
+    "tindalos_whistle": {
+      "node": "tindalos_whistle:compound",
+      "massKg": 0.04,
+      "centreOfMass": [0.0035174246898995857, 0.008479031305375074, -0.0004235085646780859]
+    }
+  },
+  "grip": { "at": [0.004, 0.009, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

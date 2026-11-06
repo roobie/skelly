@@ -1,0 +1,11 @@
+{
+  "id": "suit",
+  "file": "assets/models/suit.glb",
+  "parts": {
+    "suit": {
+      "node": "suit:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-0.0008977986430057561, 0.047963422263823316, 0.007444175545974361]
+    }
+  }
+}

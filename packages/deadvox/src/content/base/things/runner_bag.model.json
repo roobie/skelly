@@ -1,0 +1,11 @@
+{
+  "id": "runner_bag",
+  "file": "assets/models/runner_bag.glb",
+  "parts": {
+    "runner_bag": {
+      "node": "runner_bag:compound",
+      "massKg": 0.43,
+      "centreOfMass": [-0.0005964148261155993, 0.1991600707326375, -0.001974480773898269]
+    }
+  }
+}

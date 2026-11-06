@@ -1,0 +1,7 @@
+{
+  "id": "wood_block",
+  "file": "assets/models/wood_block.glb",
+  "parts": {
+    "wood_block": { "node": "wood_block:compound", "massKg": 0.17, "centreOfMass": [0, 0.026000000000000002, 0] }
+  }
+}

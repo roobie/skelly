@@ -1,0 +1,11 @@
+{
+  "id": "flame_ward_belt_cracked",
+  "file": "assets/models/flame_ward_belt_cracked.glb",
+  "parts": {
+    "flame_ward_belt_cracked": {
+      "node": "flame_ward_belt_cracked:compound",
+      "massKg": 0.39,
+      "centreOfMass": [0.007624099390356548, 0.008995981895436916, 0.021014502124515055]
+    }
+  }
+}

@@ -1,0 +1,271 @@
+[
+  {
+    "id": "attachable_ear_muffs_on",
+    "model": "attachable_ear_muffs_on",
+    "name": "Helmet ear muffs (lowered)",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "encumbrance": 0, "warmth": 8, "wearPerDamage": 0.006 },
+    "fits": ["helmet"],
+    "description": "Two padded hearing-protector cups on sprung steel arms that clip into the side slots of a hard hat, swung down over the ears.",
+    "reference": "attachable_ear_muffs_on",
+    "variants": [],
+    "notes": "Two orange cups 80 mm across with black cushions, on steel arms swung down into the working position, each ending in a black slot clip; 190 mm from cushion to clip. This is the cups-down state; the cups-up standby item `attachable_ear_muffs` is its own reference item with its own model, and switching between them waits on Deadvox item states. Muffling sound needs a hearing system Deadvox does not have yet. CHECK VOLUME (x10.5): the open arms span air that the reference packs away. It mounts on a helmet, so it `fits` `helmet` and its `wearable` has no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ballistic_mandible_guard",
+    "model": "ballistic_mandible_guard",
+    "name": "Ballistic jaw guard",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 12,
+      "warmth": 0,
+      "wearPerDamage": 0.004,
+      "protects": { "acid": 0.2, "blunt": 0.3, "cut": 0.5, "pierce": 0.45 }
+    },
+    "fits": ["helmet"],
+    "description": "A moulded tan shell that curves round the lower face from ear to ear and locks onto a combat helmet's side rails, with vent slots over the mouth.",
+    "reference": "ballistic_mandible_guard",
+    "variants": [],
+    "notes": "Standing on its lower edge, front on +z: a 230 mm wide tan shell 70 mm deep at the chin, five black vent slots over the mouth and a black rail adapter at each end. CHECK VOLUME (x7.3): a thin curved shell fills little of its box. It mounts on a helmet, so it `fits` `helmet` and its `wearable` has no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_chainmail_aventail",
+    "model": "ch_chainmail_aventail",
+    "name": "Hardened steel mail aventail",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "encumbrance": 5,
+      "warmth": 3,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.85, "pierce": 0.4 }
+    },
+    "fits": ["helmet"],
+    "description": "A broad curtain of hardened steel rings laced to a helmet's rim, hanging over the face, neck and shoulders.",
+    "reference": "ch_chainmail_aventail",
+    "variants": ["xl_ch_chainmail_aventail", "xs_ch_chainmail_aventail"],
+    "notes": "Laid out flat, outside up, front on +z: a 600 mm crescent of dark rings round a 200 mm head opening, its inner edge sewn to a brown leather band pierced with 13 lacing holes, open at the back with two tie thongs. Rings show as raised rows running round the curtain. Mail in `steel-mail-dark`, the hardened grade that still shows its rings. CHECK VOLUME (x6): the reference counts the mail bunched up, and a heap would not read as a curtain. The xl and xs sizes share the model. It covers the shoulders too, as the reference's arms entry says. It mounts on a helmet, so it `fits` `helmet` and its `wearable` has no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_chainmail_face",
+    "model": "ch_chainmail_face",
+    "name": "Hardened steel mail half aventail",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "encumbrance": 5,
+      "warmth": 3,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.85, "pierce": 0.4 }
+    },
+    "fits": ["helmet"],
+    "description": "A short ring of hardened steel mail laced to a helmet's rim, hanging down over the face and neck.",
+    "reference": "ch_chainmail_face",
+    "variants": ["xl_ch_chainmail_face", "xs_ch_chainmail_face"],
+    "notes": "Laid out flat, outside up, front on +z: a 380 mm crescent of dark rings round a 200 mm head opening, on the same laced leather band and back ties as the full aventail but reaching only to the neck. Rings show as raised rows running round the curtain. Mail in `steel-mail-dark`. The xl and xs sizes share the model. It mounts on a helmet, so it `fits` `helmet` and its `wearable` has no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_steel_facemask",
+    "model": "ch_steel_facemask",
+    "name": "Gilded steel half mask",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "encumbrance": 7,
+      "warmth": 3,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.1, "blunt": 0.5, "cut": 0.9, "pierce": 0.7 }
+    },
+    "fits": ["helmet"],
+    "description": "A hardened steel plate that hooks onto a cap helmet and guards the jaw and mouth. Gold bands are inlaid along its edges.",
+    "reference": "ch_steel_facemask",
+    "variants": ["xl_ch_steel_facemask", "xs_ch_steel_facemask"],
+    "notes": "Standing on its chin edge, front on +z: a plate 190 mm across and 135 mm tall at the nose ridge, curving back to the ears, with rolled edges, seven breathing slots, hinged hooks at the upper corners and gold inlay bands and scrolls. Plate in `steel-hardened`; inlay in `metal-gold`. CHECK VOLUME (x8.5): a curved plate fills little of its box. The xl and xs sizes share the model. It mounts on a helmet, so it `fits` `helmet` and its `wearable` has no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "counterweight_pouch",
+    "model": "counterweight_pouch",
+    "name": "Helmet counterweight pouch",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Military", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": { "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.003 },
+    "container": { "pockets": [{ "grid": [1, 1], "handlingSimSeconds": 1.5 }] },
+    "fits": ["helmet"],
+    "description": "A small black nylon pouch that presses onto the back of a helmet to balance the weight of goggles or a visor at the front. It holds batteries or other small things.",
+    "reference": "counterweight_pouch",
+    "variants": [],
+    "notes": "Standing upright, front on +z: a pouch 100 mm by 70 mm by 30 mm with a charcoal flap, a steel press stud and a grey hook-and-loop panel on its back. The pocket grid holds a few batteries. It mounts on a helmet, so it `fits` `helmet` and its `wearable` has no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "enhanced_nvg_on",
+    "model": "enhanced_nvg_on",
+    "name": "Thermal night-vision goggles (on)",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Military"], "tiers": ["Tier4"] },
+    "wearable": { "encumbrance": 10, "warmth": 0, "wearPerDamage": 0.004 },
+    "fits": ["helmet"],
+    "description": "A rare high-resolution thermal binocular on a helmet swing arm. It shows the dark in green and picks out the heat of anything warm, living or not, while it drains its battery.",
+    "reference": "enhanced_nvg_on",
+    "variants": [],
+    "notes": "Housing on its belly, objectives on +z: a dark binocular 130 mm wide and 110 mm long with glossy black thermal objectives, eyepieces glowing green at the back and a small green lamp lit on top, a battery cap at the side, and a steel swing arm ending in the dovetail shoe for a helmet mount. This is the switched-on state; the unlit item `enhanced_nvg` is its own reference item with its own model, and switching between them waits on Deadvox item states. Its sight should follow Deadvox's `night_vision_goggles` `nightVision` block, with heat detection pending a thermal view; it takes a battery as those goggles do. It mounts on a helmet, so it `fits` `helmet` and its `wearable` has no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "face_shield",
+    "model": "face_shield",
+    "name": "Face shield",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "encumbrance": 4,
+      "warmth": 0,
+      "wearPerDamage": 0.008,
+      "protects": { "acid": 0.5, "blunt": 0.1, "cut": 0.3, "pierce": 0.2 }
+    },
+    "fits": ["helmet"],
+    "description": "A clear thermoplastic visor on a brow bracket that clips onto a hard hat or helmet, keeping chips and splashes off the face.",
+    "reference": "face_shield",
+    "variants": [],
+    "notes": "Standing on its lower edge, front on +z: a clear visor 400 mm round the curve and 210 mm tall on a black brow bracket, whose arms reach back to a pivot and slot clip at each side. CHECK VOLUME (x62): a thin curved visor fills almost none of its box. Tiles draw the visor opaque; it stays see-through in the game. It mounts on a helmet, so it `fits` `helmet` and its `wearable` has no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "face_shield_eod",
+    "model": "face_shield_eod",
+    "name": "Blast visor",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0.5, "blunt": 0.3, "cut": 0.6, "pierce": 0.5 }
+    },
+    "fits": ["helmet"],
+    "description": "A thick clear polycarbonate visor in a moulded black rim, made to bolt onto a bomb-disposal helmet and stop blast and fragments.",
+    "reference": "face_shield_eod",
+    "variants": [],
+    "notes": "Standing on its lower edge, front on +z: a 10 mm clear visor 330 mm round the curve and 200 mm tall in a black rim down both sides and along the bottom, on a heavy brow bracket with steel rail clips. CHECK VOLUME (x44): a curved visor fills little of its box. Tiles draw the visor opaque; it stays see-through in the game. It mounts on a helmet, so it `fits` `helmet` and its `wearable` has no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "face_shield_plastic",
+    "model": "face_shield",
+    "name": "Cheap face shield",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Industrial", "Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "encumbrance": 4,
+      "warmth": 0,
+      "wearPerDamage": 0.012,
+      "protects": { "acid": 0.4, "blunt": 0.05, "cut": 0.2, "pierce": 0.1 }
+    },
+    "fits": ["helmet"],
+    "finishes": { "visor": "plastic-clear-blue" },
+    "description": "A thin, faintly blue plastic visor on a brow bracket that clips onto a hard hat. It keeps splashes off but scratches and cracks easily.",
+    "reference": "face_shield_plastic",
+    "variants": [],
+    "notes": "Shares the face shield's model with the visor in `plastic-clear-blue`, so the cheaper shield reads apart on a shelf. Tiles draw the visor opaque; it stays see-through in the game. It mounts on a helmet, so it `fits` `helmet` and its `wearable` has no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_chainmail_aventail",
+    "model": "ch_chainmail_aventail",
+    "name": "High steel mail aventail",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 5,
+      "warmth": 3,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.05, "blunt": 0.2, "cut": 0.7, "pierce": 0.35 }
+    },
+    "fits": ["helmet"],
+    "finishes": { "mail": "steel-mail" },
+    "description": "A broad curtain of high-carbon steel rings laced to a helmet's rim, hanging over the face, neck and shoulders.",
+    "reference": "hc_chainmail_aventail",
+    "variants": ["xl_hc_chainmail_aventail", "xs_hc_chainmail_aventail"],
+    "notes": "Shares the hardened aventail's model with the mail in `steel-mail`, the brighter rings of a softer steel. The xl and xs sizes share the model. It mounts on a helmet, so it `fits` `helmet` and its `wearable` has no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_chainmail_face",
+    "model": "ch_chainmail_face",
+    "name": "High steel mail half aventail",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 5,
+      "warmth": 3,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.05, "blunt": 0.2, "cut": 0.7, "pierce": 0.35 }
+    },
+    "fits": ["helmet"],
+    "finishes": { "mail": "steel-mail" },
+    "description": "A short ring of high-carbon steel mail laced to a helmet's rim, hanging down over the face and neck.",
+    "reference": "hc_chainmail_face",
+    "variants": ["xl_hc_chainmail_face", "xs_hc_chainmail_face"],
+    "notes": "Shares the hardened half aventail's model with the mail in `steel-mail`. The xl and xs sizes share the model. It mounts on a helmet, so it `fits` `helmet` and its `wearable` has no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_steel_facemask",
+    "model": "hc_steel_facemask",
+    "name": "Moustached steel half mask",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 7,
+      "warmth": 3,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.1, "blunt": 0.45, "cut": 0.8, "pierce": 0.6 }
+    },
+    "fits": ["helmet"],
+    "description": "A blued high-carbon steel plate that hooks onto a cap helmet and guards the jaw and mouth. Someone hammered a curling moustache across its face.",
+    "reference": "hc_steel_facemask",
+    "variants": ["xl_hc_steel_facemask", "xs_hc_steel_facemask"],
+    "notes": "Standing on its chin edge, front on +z: the same plate as the gilded mask, 190 mm across and 135 mm tall, in `steel-blued`, with a raised bright steel moustache curling up over the breathing slots in place of inlay. CHECK VOLUME (x8.9): a curved plate fills little of its box. The xl and xs sizes share the model. It mounts on a helmet, so it `fits` `helmet` and its `wearable` has no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "insert_vision_correction",
+    "model": "insert_vision_correction",
+    "name": "Mask lens insert",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Military", "Medical"], "tiers": ["Tier2"] },
+    "wearable": { "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.008 },
+    "fits": ["mask_lens"],
+    "description": "A slim frame of prescription lenses that clips in behind a full-face gas mask's visor, for wearers who need glasses.",
+    "reference": "insert_vision_correction",
+    "variants": [],
+    "notes": "Standing upright, lenses on +z: a 100 mm black frame with two clear lenses, a bridge and a sprung steel post that clips behind a mask visor. It clips in behind a full-face gas mask's eyepiece, so it `fits` `mask_lens` and its `wearable` has no slot. Correcting sight needs a vision system Deadvox does not have yet. CHECK VOLUME (x4.2): an open frame fills little of its box. Tiles draw the lenses opaque; they stay see-through in the game. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "kevlar_nape_protector",
+    "model": "kevlar_nape_protector",
+    "name": "Aramid nape guard",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Industrial", "Military"], "tiers": ["Tier2"] },
+    "wearable": {
+      "encumbrance": 0,
+      "warmth": 8,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0, "blunt": 0.05, "cut": 0.5, "pierce": 0.2 }
+    },
+    "fits": ["helmet"],
+    "description": "A curved curtain of khaki cotton lined with aramid that hangs from the back of a hard hat or helmet, guarding the nape of the neck against cuts.",
+    "reference": "kevlar_nape_protector",
+    "variants": [],
+    "notes": "Laid out flat, outside up: a khaki crescent 330 mm across and 120 mm deep, bound with gold aramid tape, two stitched seams and a grey hook-and-loop strip along its inner edge that fastens to the helmet. It mounts on a helmet, so it `fits` `helmet` and its `wearable` has no slot. The worn look is pending: no worn model is authored."
+  }
+]

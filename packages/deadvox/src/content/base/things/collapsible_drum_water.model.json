@@ -1,0 +1,11 @@
+{
+  "id": "collapsible_drum_water",
+  "file": "assets/models/collapsible_drum_water.glb",
+  "parts": {
+    "collapsible_drum_water": {
+      "node": "collapsible_drum_water:compound",
+      "massKg": 21,
+      "centreOfMass": [0.002201894348738161, 0.03227951179200306, 0]
+    }
+  }
+}

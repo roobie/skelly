@@ -1,0 +1,11 @@
+{
+  "id": "cauldron_orichalcum",
+  "file": "assets/models/cauldron_orichalcum.glb",
+  "parts": {
+    "cauldron_orichalcum": {
+      "node": "cauldron_orichalcum:compound",
+      "massKg": 3.4,
+      "centreOfMass": [3.7522368453301303e-19, 0.16232751190746192, -4.690296056662663e-20]
+    }
+  }
+}

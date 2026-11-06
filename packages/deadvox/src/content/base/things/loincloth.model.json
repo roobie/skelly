@@ -1,0 +1,11 @@
+{
+  "id": "loincloth",
+  "file": "assets/models/loincloth.glb",
+  "parts": {
+    "loincloth": {
+      "node": "loincloth:compound",
+      "massKg": 0.069,
+      "centreOfMass": [-0.0004160458452722059, 0.003091881566380134, -0.024308309455587398]
+    }
+  }
+}

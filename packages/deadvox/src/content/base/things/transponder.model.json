@@ -1,0 +1,11 @@
+{
+  "id": "transponder",
+  "file": "assets/models/transponder.glb",
+  "parts": {
+    "transponder": {
+      "node": "transponder:compound",
+      "massKg": 0.28,
+      "centreOfMass": [-0.0033203906909441694, 0.008357048112866274, -0.0013014590618593998]
+    }
+  }
+}

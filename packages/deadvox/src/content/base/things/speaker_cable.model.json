@@ -1,0 +1,11 @@
+{
+  "id": "speaker_cable",
+  "file": "assets/models/speaker_cable.glb",
+  "parts": {
+    "speaker_cable": {
+      "node": "speaker_cable:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0.0038149176383490656, 0.0060225800481214144, 0.0027170090690357205]
+    }
+  }
+}

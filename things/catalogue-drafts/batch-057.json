@@ -1,0 +1,102 @@
+[
+  {
+    "id": "fishing_hook_basic",
+    "model": "fishing_hook_basic",
+    "name": "Fishing hook",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1"] },
+    "description": "A small barbed steel hook with an eye for the line.",
+    "reference": "fishing_hook_basic",
+    "variants": [],
+    "notes": "A J hook 30 mm long lying flat: ring eye, straight shank, round bend and a point leg with an inward barb, in steel-blued. The wire is drawn 2 mm thick, the finest the grain holds; a real hook wire is thinner. It is a crafting part for rods and lines; no fishing system uses it yet."
+  },
+  {
+    "id": "fishing_hook_bone",
+    "model": "fishing_hook_bone",
+    "name": "Bone fishing hook",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A fishing hook carved from a sliver of bone, with a knob and a lashing to hold the line.",
+    "reference": "fishing_hook_bone",
+    "variants": [],
+    "notes": "A thick bone hook 46 mm long with a knob at the top of the shank, three jute lashing turns under it and a short line end. CHECK VOLUME (x8.8): the box counts the open space inside the bend and the line end; the bone alone is close to the reference's 1 mL. A hand-made item: Residential is a stand-in until a crafted-only usage exists."
+  },
+  {
+    "id": "fishing_rod_2pc_packed",
+    "model": "fishing_rod_2pc_packed",
+    "name": "Two-piece fishing rod (packed)",
+    "category": "tool",
+    "size": [10, 1],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A spinning rod taken apart into two sections and strapped together, a small reel still on the butt.",
+    "reference": "fishing_rod_2pc_packed",
+    "variants": [],
+    "notes": "Two 1 m sections side by side held by two hook-and-loop straps: the butt section with rubber cap, cork grips, reel seat, spinning reel and metal ferrule, the tip section with three guides and a tip ring. CHECK VOLUME (x7.8): the box counts the air round two thin rods and the reel. It brings no fishing quality until put together; assembling it into the two-piece rod (the professional rod's variant) has no recipe yet. The size is a placeholder for a 1 m thing."
+  },
+  {
+    "id": "fishing_rod_basic",
+    "model": "fishing_rod_basic",
+    "name": "Stick fishing rod",
+    "category": "tool",
+    "size": [9, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "fishing": 2 } },
+    "description": "A straight branch with a cotton line tied to its tip and a hook on the end.",
+    "reference": "fishing_rod_basic",
+    "variants": [],
+    "notes": "A barked stick 900 mm long tapering from 45 mm to 20 mm with a pale cut butt and a twig stub; the line is tied at the tip, runs back along the top and is wound eight turns near the butt, with a steel hook lying on the winding. The reference's 1.7 kg is heavy for the stick; the mass follows the reference. fishing is a new quality name: 1 for a hobo reel, 2 for a rod, 3 for a professional rod. A hand-made item: Residential is a stand-in. The size is a placeholder."
+  },
+  {
+    "id": "fishing_rod_professional",
+    "model": "fishing_rod_professional",
+    "name": "Spinning rod",
+    "category": "tool",
+    "size": [20, 1],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier2", "Tier3"] },
+    "tool": { "qualities": { "fishing": 3 } },
+    "description": "A 2 m graphite spinning rod with a cork grip, a small reel and a set of sinkers.",
+    "reference": "fishing_rod_professional",
+    "variants": ["fishing_rod_2pc", "fishing_rod_tele"],
+    "notes": "A one-piece 2 m rod: rubber butt cap, cork grip, screw reel seat with a spinning reel (body, spool of green line, bail and crank), cork fore grip, then a black blank tapering from 14 mm to 5 mm with six shrinking guides and a tip ring, all on +z. The tip is drawn 5 mm across so it holds at the 2 mm grain. The sinkers in the reference are not drawn. CHECK VOLUME (x12.7): the box counts the air round a long thin rod and its reel. The two-piece and telescoping rods share this model and its fishing 3; their own masses (1.05 kg and 1.15 kg) and the joint or nested sections have no field yet. The size is a placeholder for a 2 m thing."
+  },
+  {
+    "id": "fishing_rod_tele_packed",
+    "model": "fishing_rod_tele_packed",
+    "name": "Telescoping fishing rod (packed)",
+    "category": "tool",
+    "size": [5, 1],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A telescoping spinning rod pushed shut, its sections nested in the butt and a small reel on the seat.",
+    "reference": "fishing_rod_tele_packed",
+    "variants": [],
+    "notes": "A 500 mm closed rod: rubber butt cap, dark foam grip, screw reel seat with a spinning reel, the butt tube with four nested section ends stepping down to a tip cap, and one stripping guide. rubber-offblack stands in for black EVA foam; foam-eva reads blue. CHECK VOLUME (x7.0): the box counts the air round the rod and its reel. It brings no fishing quality until extended; extending it into the telescoping rod (the professional rod's variant) has no recipe yet."
+  },
+  {
+    "id": "hoboreel",
+    "model": "hoboreel",
+    "name": "Wooden hand reel",
+    "category": "tool",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "fishing": 1 } },
+    "description": "A whittled wooden handle with cotton line wound on a spool at one end and a notch to guide it.",
+    "reference": "hoboreel",
+    "variants": [],
+    "notes": "A 150 mm pine reel: round handle, two lips holding cotton line wound on the spool, and a split end whose notch is painted in wood-walnut with the line end through it. A hand-made item: Residential is a stand-in."
+  },
+  {
+    "id": "plastichoboreel",
+    "model": "plastichoboreel",
+    "name": "Plastic hand reel",
+    "category": "tool",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "fishing": 1 } },
+    "description": "A moulded plastic hand reel: a handle, a spool of green line and an open guard with a line eyelet.",
+    "reference": "plastichoboreel",
+    "variants": [],
+    "notes": "A 158 mm reel: black handle, red spool flanges, green line, and a charcoal guard of two hoops and four bars with a steel eyelet on top. The guard is drawn fixed; that it turns has no field yet."
+  }
+]

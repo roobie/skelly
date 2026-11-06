@@ -1,0 +1,11 @@
+{
+  "id": "pencil_case",
+  "file": "assets/models/pencil_case.glb",
+  "parts": {
+    "pencil_case": {
+      "node": "pencil_case:compound",
+      "massKg": 0.06,
+      "centreOfMass": [0.00018876351669017399, 0.03196191819464035, 2.3507287259050218e-7]
+    }
+  }
+}

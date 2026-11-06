@@ -1,0 +1,11 @@
+{
+  "id": "stockings_tent_arms",
+  "file": "assets/models/stockings_tent_arms.glb",
+  "parts": {
+    "stockings_tent_arms": {
+      "node": "stockings_tent_arms:compound",
+      "massKg": 0.15,
+      "centreOfMass": [-1.9162115307882722e-19, 0.006615277697341744, 0.2868344240458679]
+    }
+  }
+}

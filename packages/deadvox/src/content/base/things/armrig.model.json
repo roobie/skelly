@@ -1,0 +1,11 @@
+{
+  "id": "armrig",
+  "file": "assets/models/armrig.glb",
+  "parts": {
+    "armrig": {
+      "node": "armrig:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0.0022401779095626386, 0.020686434395848777, 0.001652582159624413]
+    }
+  }
+}

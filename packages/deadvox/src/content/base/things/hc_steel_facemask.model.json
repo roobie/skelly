@@ -1,0 +1,11 @@
+{
+  "id": "hc_steel_facemask",
+  "file": "assets/models/hc_steel_facemask.glb",
+  "parts": {
+    "hc_steel_facemask": {
+      "node": "hc_steel_facemask:compound",
+      "massKg": 1.2,
+      "centreOfMass": [8.233510726800967e-19, 0.05891851851851846, -0.02641185185185187]
+    }
+  }
+}

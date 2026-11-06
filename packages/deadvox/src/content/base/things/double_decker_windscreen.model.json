@@ -1,0 +1,17 @@
+{
+  "id": "double_decker_windscreen",
+  "file": "assets/models/double_decker_windscreen.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 60,
+      "centreOfMass": [5.123634708737865, 2.2298240291262137, 0],
+      "collision": [
+        { "min": [5.09375, 0.9375, -1.1875], "max": [5.1875, 2.15625, 1.1875] },
+        { "min": [5.0625, 3.0625, -1.1875], "max": [5.125, 3.875, 1.1875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

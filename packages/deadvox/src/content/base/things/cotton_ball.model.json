@@ -1,0 +1,11 @@
+{
+  "id": "cotton_ball",
+  "file": "assets/models/cotton_ball.glb",
+  "parts": {
+    "cotton_ball": {
+      "node": "cotton_ball:compound",
+      "massKg": 0.0025,
+      "centreOfMass": [0.0032482245519107195, 0.012535339871491379, 0.0006273249915454855]
+    }
+  }
+}

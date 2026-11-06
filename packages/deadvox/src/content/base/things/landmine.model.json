@@ -1,0 +1,14 @@
+{
+  "id": "landmine",
+  "file": "assets/models/landmine.glb",
+  "parts": {
+    "landmine": {
+      "node": "landmine:compound",
+      "massKg": 3.3,
+      "centreOfMass": [0.000023475956077243465, 0.06487337047655108, 0.0000020554984583761557]
+    }
+  },
+  "grip": { "at": [0, 0.06, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

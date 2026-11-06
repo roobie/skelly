@@ -1,0 +1,14 @@
+{
+  "id": "broad_spectrum_antibiotic",
+  "file": "assets/models/broad_spectrum_antibiotic.glb",
+  "parts": {
+    "broad_spectrum_antibiotic": {
+      "node": "broad_spectrum_antibiotic:compound",
+      "massKg": 0.0085,
+      "centreOfMass": [-0.0009782082324455196, 0.0026029055690072627, 6.258933206363706e-20]
+    }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

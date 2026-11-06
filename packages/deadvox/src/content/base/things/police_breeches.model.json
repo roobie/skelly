@@ -1,0 +1,11 @@
+{
+  "id": "police_breeches",
+  "file": "assets/models/police_breeches.glb",
+  "parts": {
+    "police_breeches": {
+      "node": "police_breeches:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0.000006026838264145, 0.024301373302989874, -0.0005751235972690889]
+    }
+  }
+}

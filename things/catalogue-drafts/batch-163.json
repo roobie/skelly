@@ -1,0 +1,283 @@
+[
+  {
+    "id": "ankle_wallet_pouch",
+    "model": "ankle_wallet_pouch",
+    "name": "Ankle wallet",
+    "category": "bag",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "ankle", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.002 },
+    "container": { "pockets": [{ "grid": [1, 1], "handlingSimSeconds": 1.5 }] },
+    "description": "A flat zipped pouch on an elastic band, worn round the ankle under a trouser leg to keep cash and papers out of sight.",
+    "reference": "ankle_wallet_pouch",
+    "variants": [],
+    "notes": "Laid flat: a black nylon pouch 120 mm by 90 mm on a charcoal band 300 mm long with a grey hook-and-loop patch at one end. Takes the ankle slot as the ankle magazine pouch does. Its slow handling time stands for reaching under a trouser leg. The reference marks it as worn on one side; choosing a side has no content field yet. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armrig",
+    "model": "armrig",
+    "name": "Armband pouch",
+    "category": "bag",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "arms", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [1, 2], "handlingSimSeconds": 0.8 }] },
+    "description": "A small flapped canvas pouch on a buckled strap that wraps round the upper arm, made for runners and hikers.",
+    "reference": "armrig",
+    "variants": [],
+    "notes": "Laid flat: a canvas pouch 120 mm by 90 mm with a flap on a black webbing strap 400 mm long with a side-release buckle. Takes the arms slot that arm guards use; an upper-arm slot would let it sit under a guard, but none exists. The reference marks it as worn on one side; choosing a side has no content field yet. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "backpack",
+    "model": "backpack",
+    "name": "Daypack",
+    "category": "bag",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 6, "warmth": 4, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [4, 5], "handlingSimSeconds": 1.5, "name": "main" },
+        { "grid": [3, 2], "handlingSimSeconds": 1.2, "name": "front" }
+      ]
+    },
+    "description": "A small nylon backpack with a rounded top and a zipped front pocket, big enough for a day's water and food.",
+    "reference": "backpack",
+    "variants": [],
+    "notes": "Standing, front pocket toward the iso view, a navy body with black straps, back pad and zip. CHECK VOLUME: the reference volume is the empty bag packed down; the model stands at its real size. The denim and leather backpacks share this model with their own finishes. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "backpack_denim",
+    "model": "backpack",
+    "name": "Denim backpack",
+    "category": "bag",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "back", "encumbrance": 6, "warmth": 4, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [4, 5], "handlingSimSeconds": 1.5, "name": "main" },
+        { "grid": [3, 2], "handlingSimSeconds": 1.2, "name": "front" }
+      ]
+    },
+    "finishes": {
+      "back": "cloth-denim",
+      "body": "cloth-denim",
+      "pocket": "cloth-denim-faded",
+      "strap": "leather-tan",
+      "trim": "brass-dull",
+      "webbing": "leather-tan"
+    },
+    "description": "A small backpack sewn from denim, with tan leather straps and a zipped front pocket.",
+    "reference": "backpack_denim",
+    "variants": [],
+    "notes": "Shares the daypack's model in denim with a faded front pocket, tan leather straps and brass fittings. CHECK VOLUME: the reference volume is the empty bag packed down; the model stands at its real size. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "backpack_leather",
+    "model": "backpack",
+    "name": "Leather backpack",
+    "category": "bag",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 7, "warmth": 6, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [4, 5], "handlingSimSeconds": 1.5, "name": "main" },
+        { "grid": [3, 2], "handlingSimSeconds": 1.2, "name": "front" }
+      ]
+    },
+    "finishes": {
+      "back": "leather-black",
+      "body": "leather-brown",
+      "pocket": "leather-chestnut",
+      "strap": "leather-black",
+      "trim": "brass-dull",
+      "webbing": "leather-black"
+    },
+    "description": "A small brown leather backpack with black straps and a zipped front pocket; heavier than nylon and longer-lasting.",
+    "reference": "backpack_leather",
+    "variants": [],
+    "notes": "Shares the daypack's model in brown leather with a red-brown pocket, black straps and brass fittings. CHECK VOLUME: the reference volume is the empty bag packed down; the model stands at its real size. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "backpack_giant",
+    "model": "backpack_giant",
+    "name": "Giant novelty backpack",
+    "category": "bag",
+    "size": [6, 8],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "back", "encumbrance": 20, "warmth": 4, "wearPerDamage": 0.002 },
+    "container": {
+      "pockets": [
+        { "grid": [8, 10], "handlingSimSeconds": 2.5, "name": "main" },
+        { "grid": [5, 4], "handlingSimSeconds": 2, "name": "front" }
+      ]
+    },
+    "description": "A gag backpack blown up to nearly a person's height. It is ridiculous to wear and drags at the backs of the knees, but it holds a great deal.",
+    "reference": "backpack_giant",
+    "variants": [],
+    "notes": "The daypack's shape at 750 mm wide and 1.15 m tall in yellow with red pockets, blue straps and an oversized zip pull. CHECK VOLUME: the reference volume is the empty bag packed down; the model stands at its real size. The reference also covers the legs; the back slot alone stands for it, and its high encumbrance carries the cost. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "backpack_hunting",
+    "model": "backpack_hunting",
+    "name": "Hunting pack",
+    "category": "bag",
+    "size": [4, 6],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "slot": "back", "encumbrance": 14, "warmth": 6, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [6, 9], "handlingSimSeconds": 1.8, "name": "main" },
+        { "grid": [3, 2], "handlingSimSeconds": 1, "name": "lid" },
+        { "grid": [2, 3], "handlingSimSeconds": 1.2, "name": "left side" },
+        { "grid": [2, 3], "handlingSimSeconds": 1.2, "name": "right side" }
+      ]
+    },
+    "attachPoints": [
+      { "id": "left_side", "name": "left side straps", "reachSimSeconds": 2, "standard": "lash" },
+      { "id": "right_side", "name": "right side straps", "reachSimSeconds": 2, "standard": "lash" },
+      { "id": "base", "name": "base straps", "reachSimSeconds": 2.5, "standard": "lash" }
+    ],
+    "description": "A large brown hunting pack with a lid, side pockets, a hip belt and straps under the base for a bedroll or a game bag.",
+    "reference": "backpack_hunting",
+    "variants": [],
+    "notes": "Standing, front toward the iso view: a coyote body with a brown lid, front and side pockets, black compression straps and two lashing straps hanging at the base. Points: left side straps and right side straps are the compression straps on each side; base straps are the two straps at the foot of the front. CHECK VOLUME: the reference volume is the empty bag packed down; the model stands at its real size. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "backpack_tactical_large",
+    "model": "backpack_tactical_large",
+    "name": "Large tactical backpack",
+    "category": "bag",
+    "size": [4, 5],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "slot": "back", "encumbrance": 13, "warmth": 6, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [6, 8], "handlingSimSeconds": 1.6, "name": "main" },
+        { "grid": [3, 3], "handlingSimSeconds": 1.2, "name": "front" }
+      ]
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front webbing", "reachSimSeconds": 2.5, "standard": "pals" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 2, "standard": "lash" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 2, "standard": "lash" }
+    ],
+    "description": "A squared olive pack with a padded hip belt and rows of webbing across its front pocket for extra pouches.",
+    "reference": "backpack_tactical_large",
+    "variants": [],
+    "notes": "Standing, front toward the iso view: an olive drab body with four rows of dark webbing on the front pocket, side compression straps and a hip belt. The reference lists leather, but the model is drawn in nylon, as packs of this kind are made. Points: front webbing is the four rows on the front pocket; left side and right side are the compression straps. CHECK VOLUME: the reference volume is the empty bag packed down; the model stands at its real size. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bigback",
+    "model": "bigback",
+    "name": "High-volume rucksack",
+    "category": "bag",
+    "size": [4, 7],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "slot": "back", "encumbrance": 18, "warmth": 6, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [7, 10], "handlingSimSeconds": 2, "name": "main" },
+        { "grid": [3, 2], "handlingSimSeconds": 1, "name": "lid" },
+        { "grid": [2, 3], "handlingSimSeconds": 1.2, "name": "left side" },
+        { "grid": [2, 3], "handlingSimSeconds": 1.2, "name": "right side" }
+      ]
+    },
+    "attachPoints": [
+      { "id": "left_side", "name": "left side straps", "reachSimSeconds": 2, "standard": "lash" },
+      { "id": "right_side", "name": "right side straps", "reachSimSeconds": 2, "standard": "lash" },
+      { "id": "lid", "name": "lid straps", "reachSimSeconds": 2.5, "standard": "lash" }
+    ],
+    "description": "A tall leather rucksack with a deep lid, side pockets and three rows of compression straps. It carries almost anything, and a full one hurts the back.",
+    "reference": "bigback",
+    "variants": [],
+    "notes": "Standing, front toward the iso view: brown leather with a red-brown lid and pockets, black straps and brass buckles. Points: left side straps and right side straps are the compression straps on each side; lid straps are the two straps holding the lid down the front. CHECK VOLUME: the reference volume is the empty bag packed down; the model stands at its real size. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bigframe_pack",
+    "model": "bigframe_pack",
+    "name": "Pack frame",
+    "category": "bag",
+    "size": [5, 10],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "back", "encumbrance": 25, "warmth": 2, "wearPerDamage": 0.0008 },
+    "container": { "pockets": [{ "grid": [5, 8], "handlingSimSeconds": 3, "name": "load" }] },
+    "attachPoints": [
+      { "id": "upper", "name": "upper load strap", "reachSimSeconds": 2.5, "standard": "lash" },
+      { "id": "lower", "name": "lower load strap", "reachSimSeconds": 2.5, "standard": "lash" }
+    ],
+    "description": "A heavy L-shaped timber frame with a shelf at the foot and leather straps, for carrying one large, awkward load on the back.",
+    "reference": "bigframe_pack",
+    "variants": [],
+    "notes": "Standing, shelf toward the iso view: pine uprights, three rails and a braced shelf, two leather load straps with iron buckles across the face and leather shoulder straps behind. Points: the upper and lower load straps across the frame's face. The load grid stands for whatever is strapped to the shelf. CHECK VOLUME: the reference volume counts the frame's load space; the box is the bare frame. A crafted item in the reference; it keeps a low loot tier. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bigtrapper_pack",
+    "model": "bigtrapper_pack",
+    "name": "Trapper's frame pack",
+    "category": "bag",
+    "size": [5, 9],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "back", "encumbrance": 25, "warmth": 4, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [6, 9], "handlingSimSeconds": 2.5, "name": "main" }] },
+    "description": "Waxed canvas stretched over a pole frame and gathered shut at the top with a drawstring, carried on canvas shoulder straps.",
+    "reference": "bigtrapper_pack",
+    "variants": [],
+    "notes": "Standing, front toward the iso view: grey canvas over a frame whose four oak corner posts and foot rails stand proud, the top drawn in to a corded neck with a toggle, canvas shoulder straps behind. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bindle",
+    "model": "bindle",
+    "name": "Bindle",
+    "category": "bag",
+    "size": [2, 8],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "container": { "pockets": [{ "grid": [3, 3], "handlingSimSeconds": 2, "name": "bundle" }] },
+    "description": "A cloth tied into a bundle on the end of a stick, carried over the shoulder. It leaves a hand busy.",
+    "reference": "bindle",
+    "variants": [],
+    "notes": "Lying on the ground: a red cotton bundle tied at the top with its corners as ears, on an oak stick 1 m long whose far end rests on the floor; held by the stick. The reference wears it on the arms and hands at high encumbrance; here it is carried in the hand, so it has no wearable slot. CHECK VOLUME: the reference volume is the bundle alone; the box counts the stick."
+  },
+  {
+    "id": "bookstrap",
+    "model": "bookstrap",
+    "name": "Book strap",
+    "category": "bag",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "container": { "pockets": [{ "grid": [2, 3], "handlingSimSeconds": 1.5, "name": "books" }] },
+    "description": "Two crossed leather straps under a stiff carrying handle, buckled round a stack of books to carry them.",
+    "reference": "bookstrap",
+    "variants": [],
+    "notes": "Laid flat and empty: two tan straps buckled into crossed loops with brass buckles under a brown handle. The reference wears it on the legs; it hangs from the hand, so it has no wearable slot. CHECK VOLUME: the box counts the open loops. The grid is sized for a stack of books."
+  },
+  {
+    "id": "boxpack",
+    "model": "boxpack",
+    "name": "Box backpack",
+    "category": "bag",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "back", "encumbrance": 20, "warmth": 2, "wearPerDamage": 0.0008 },
+    "container": { "pockets": [{ "grid": [4, 5], "handlingSimSeconds": 2, "name": "box" }] },
+    "description": "A lidded wooden box with two rope loops tied to its back for shoulder straps. Stiff, heavy and crude, but it keeps its shape.",
+    "reference": "boxpack",
+    "variants": [],
+    "notes": "Standing, lid up and hasp toward the iso view: pine sides with oak corner battens, iron hinges and hasp, and two jute rope loops on the back. A crafted item in the reference; it keeps a low loot tier. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "briefcase",
+    "model": "briefcase",
+    "name": "Briefcase",
+    "category": "bag",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "container": { "pockets": [{ "grid": [5, 4], "handlingSimSeconds": 1.5 }] },
+    "description": "A hard plastic case with a carrying handle and two latches, made for papers and anything else that should stay flat and dry.",
+    "reference": "briefcase",
+    "variants": [],
+    "notes": "Standing on its long edge, latches toward the iso view: charcoal shells meeting at a grey seam, a black handle and silver latches; held by the handle. The reference wears it on the arms and hands; here it is carried in the hand, so it has no wearable slot."
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "id": "boxer_briefs",
+  "file": "assets/models/boxer_briefs.glb",
+  "parts": {
+    "boxer_briefs": {
+      "node": "boxer_briefs:compound",
+      "massKg": 0.07,
+      "centreOfMass": [0, 0.0023171962469447287, 0.0009729559252542793]
+    }
+  }
+}

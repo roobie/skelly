@@ -1,0 +1,11 @@
+{
+  "id": "dress",
+  "file": "assets/models/dress.glb",
+  "parts": {
+    "dress": {
+      "node": "dress:compound",
+      "massKg": 0.69,
+      "centreOfMass": [0.000003087836428124348, 0.025676569997913623, -0.00019182140621740043]
+    }
+  }
+}

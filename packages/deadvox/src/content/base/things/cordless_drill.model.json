@@ -1,0 +1,14 @@
+{
+  "id": "cordless_drill",
+  "file": "assets/models/cordless_drill.glb",
+  "parts": {
+    "cordless_drill": {
+      "node": "cordless_drill:compound",
+      "massKg": 1.6,
+      "centreOfMass": [-0.016802329151231095, 0.11427812685482718, 0]
+    }
+  },
+  "grip": { "at": [-0.03, 0.085, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

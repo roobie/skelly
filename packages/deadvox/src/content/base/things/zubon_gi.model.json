@@ -1,0 +1,11 @@
+{
+  "id": "zubon_gi",
+  "file": "assets/models/zubon_gi.glb",
+  "parts": {
+    "zubon_gi": {
+      "node": "zubon_gi:compound",
+      "massKg": 0.28,
+      "centreOfMass": [-0.000009809469911337488, 0.012431742438533615, -0.0027526881720430114]
+    }
+  }
+}

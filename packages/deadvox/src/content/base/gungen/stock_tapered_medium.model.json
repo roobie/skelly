@@ -7,7 +7,7 @@
       "item": "stock_tapered_medium",
       "node": "stock_tapered_medium:stock",
       "massKg": 0.545,
-      "centreOfMass": [-0.2152514720314033, -0.05593032384690873, -0.00004268891069676152]
+      "centreOfMass": [-0.2146325308566541, -0.05579103018452892, 0]
     }
   }
 }

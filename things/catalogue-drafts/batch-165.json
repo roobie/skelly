@@ -1,0 +1,263 @@
+[
+  {
+    "id": "leather_pouch",
+    "model": "leather_pouch",
+    "name": "Leather scrap pouch",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": [], "tiers": [] },
+    "wearable": { "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 0.6 }] },
+    "fits": ["belt"],
+    "description": "A small flapped pouch stitched together from leftover pieces of leather, with a loop to hang it from a belt.",
+    "reference": "leather_pouch",
+    "variants": [],
+    "notes": "Brown, chestnut and tan leather patches laced with rawhide, a flap closed by a bone toggle and a leather belt loop on the back. CHECK VOLUME (x3.3): the model is the pouch standing open at its real size. The reference covers the torso; its back loop takes a belt, so it mounts on a belt with no slot. A crafted item, so it has no loot economy. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_bag",
+    "model": "leg_bag",
+    "name": "Drop leg bag",
+    "category": "bag",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "thigh", "encumbrance": 3, "warmth": 2, "wearPerDamage": 0.002 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 3], "handlingSimSeconds": 0.8, "name": "main" },
+        { "grid": [2, 1], "handlingSimSeconds": 0.6, "name": "front" }
+      ]
+    },
+    "description": "A canvas bag that hangs from the belt and buckles round the thigh, with a zipped front pocket under a buckled flap.",
+    "reference": "leg_bag",
+    "variants": [],
+    "notes": "Standing with its flap forward: a buckled flap, a zipped front pocket, a hanger strap rising to a belt loop and two thigh straps lying slack in loops on the floor behind it. CHECK VOLUME (x14): the reference volume is the empty bag packed flat; the model is the bag standing open at its real size, and the box counts the open thigh loops. It has its own leg straps, so it keeps the thigh slot. The reference marks it as worn on one side; choosing a side has no content field yet. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_small_bag",
+    "model": "leg_small_bag",
+    "name": "Small leg purse",
+    "category": "bag",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "thigh", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.002 },
+    "container": { "pockets": [{ "grid": [2, 1], "handlingSimSeconds": 0.5 }] },
+    "description": "A slim zipped purse on two buckled straps, worn high on the leg to keep a phone and money close.",
+    "reference": "leg_small_bag",
+    "variants": [],
+    "notes": "Navy canvas purse with a zipped top and a slip pocket, its two black leg straps lying slack in loops on the floor behind it with their buckles on the far side. CHECK VOLUME (x6.3): the reference volume is the empty bag packed flat; the model is the bag standing open at its real size, and the box counts the open strap loops. Worn on the thigh by its own straps, so it takes the thigh slot. The reference marks it as worn on one side; choosing a side has no content field yet. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "legrig",
+    "model": "legrig",
+    "name": "Drop leg pouch",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "slot": "thigh", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 0.6 }] },
+    "description": "A nylon pouch that drops from the belt on a hanger strap and buckles round the thigh, with webbing across its front.",
+    "reference": "legrig",
+    "variants": [],
+    "notes": "Olive nylon pouch with a hook-and-loop flap, two short rows of webbing on its front, a buckled hanger strap to a belt loop and two buckled thigh straps lying slack in loops on the floor behind it. CHECK VOLUME (x26): the reference volume is the empty bag packed flat; the model is the bag standing open at its real size, and the box counts the hanger and the open thigh loops. It has its own leg straps, so it keeps the thigh slot rather than mounting on a belt; its front webbing is too short to host a pouch, so it has no attach point. The reference marks it as worn on one side; choosing a side has no content field yet. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "legrig_wetsuit",
+    "model": "legrig_wetsuit",
+    "name": "Diving thigh pouches",
+    "category": "bag",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "thigh", "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left pouch" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right pouch" }
+      ]
+    },
+    "description": "Two zipped nylon pouches on neoprene thigh bands, with drain mesh at the bottom of each.",
+    "reference": "legrig_wetsuit",
+    "variants": [],
+    "notes": "A pair standing side by side: black nylon with blue piping, a zip across each top, a mesh drain at the bottom and a black neoprene band lying slack in a loop on the floor behind each. CHECK VOLUME (x12): the reference volume is the empty bag packed flat; the model is the bag standing open at its real size, and the box counts the open neoprene bands. Worn on both thighs as one item, so it takes the thigh slot; neoprene reads as rubber-black. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "long_duffelbag",
+    "model": "long_duffelbag",
+    "name": "Longarm bag",
+    "category": "bag",
+    "size": [2, 9],
+    "economy": { "usage": ["Residential", "Hunting", "Police"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 8, "warmth": 8, "wearPerDamage": 0.002 },
+    "container": {
+      "pockets": [
+        { "grid": [3, 10], "handlingSimSeconds": 1.5, "name": "main" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "front pocket" }
+      ]
+    },
+    "description": "A long canvas bag zipped along its top, made to carry a rifle or shotgun, with carry handles and a shoulder strap.",
+    "reference": "long_duffelbag",
+    "variants": [],
+    "notes": "Lying on its side: a canvas tube 1.1 m long with leather end caps, a zip along the top and down one end, a leather front pocket, two wrap-round carry handles and its shoulder strap laid out in front. CHECK VOLUME (x8.7): the reference volume is the empty bag packed flat; the model is the bag standing open at its real size. The main pocket is long enough for a rifle. Slung across the back, so it takes the back slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "makeshift_knapsack",
+    "model": "makeshift_knapsack",
+    "name": "Trouser knapsack",
+    "category": "bag",
+    "size": [3, 3],
+    "economy": { "usage": [], "tiers": [] },
+    "wearable": { "slot": "back", "encumbrance": 2, "warmth": 5, "wearPerDamage": 0.003 },
+    "container": { "pockets": [{ "grid": [4, 4], "handlingSimSeconds": 1.2 }] },
+    "description": "A pair of jeans made into a backpack: the seat holds the load, and the legs are tied off through the belt loops as shoulder straps.",
+    "reference": "makeshift_knapsack",
+    "variants": [],
+    "notes": "Standing up: dark denim seat with a fly, pockets and a brass button, gathered at the waistband with cotton string, the faded legs turned up behind and tied off at the belt loops. CHECK VOLUME (x10): the reference volume is the empty bag packed flat; the model is the bag standing open at its real size. A crafted item, so it has no loot economy. Worn on the back. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "makeshift_sling",
+    "model": "makeshift_sling",
+    "name": "Bedsheet sling bag",
+    "category": "bag",
+    "size": [3, 3],
+    "economy": { "usage": [], "tiers": [] },
+    "wearable": { "slot": "sling", "encumbrance": 4, "warmth": 10, "wearPerDamage": 0.003 },
+    "container": { "pockets": [{ "grid": [5, 5], "handlingSimSeconds": 1.5 }] },
+    "description": "A bed sheet knotted round a bundle, with a long twisted loop to hang it over one shoulder.",
+    "reference": "makeshift_sling",
+    "variants": [],
+    "notes": "A cream sheet rolled round its load and knotted on top, its twisted ends running down to the long shoulder loop lying flat round it. CHECK VOLUME (x15): the reference volume is the empty bag packed flat; the model is the bag standing open at its real size, and the box counts the shoulder loop laid out. A crafted item, so it has no loot economy. Worn across the body over one shoulder: it takes a new sling slot for cross-body bags, since back is the backpack's and a cross-body bag is worn with one. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mbag",
+    "model": "mbag",
+    "name": "Messenger bag",
+    "category": "bag",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "sling", "encumbrance": 4, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [5, 4], "handlingSimSeconds": 1, "name": "main" }] },
+    "description": "A nylon shoulder bag under a full flap with two buckled straps and a reflective stripe, worn across the body.",
+    "reference": "mbag",
+    "variants": ["mbag_sided"],
+    "notes": "Standing upright: charcoal nylon with a full flap, a yellow reflective stripe, two buckled flap straps, a top grab handle and its padded shoulder strap lying in a U behind it. CHECK VOLUME (x26): the reference volume is the empty bag packed flat; the model is the bag standing open at its real size, and the box counts the strap laid out. Worn across the body over one shoulder: it takes a new sling slot for cross-body bags, since back is the backpack's and a cross-body bag is worn with one. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mbag_sided",
+    "model": "mbag",
+    "name": "Messenger bag",
+    "category": "bag",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "sling", "encumbrance": 4, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [5, 4], "handlingSimSeconds": 1, "name": "main" }] },
+    "description": "A nylon shoulder bag under a full flap with two buckled straps and a reflective stripe, worn across the body.",
+    "reference": "mbag_sided",
+    "variants": [],
+    "notes": "The reference's second entry for the messenger bag, worn hanging at one hip; the bag is the same, so it rides on the mbag model and lists as one of its variants. Which hip it hangs at is a choice of side, which has no content field yet, so the two may merge into one item. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "molle_large_rucksack",
+    "model": "molle_large_rucksack",
+    "name": "Large military rucksack",
+    "category": "bag",
+    "size": [5, 6],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "slot": "back", "encumbrance": 8, "warmth": 12, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [7, 9], "handlingSimSeconds": 1.5, "name": "main" },
+        { "grid": [3, 2], "handlingSimSeconds": 1, "name": "lid" },
+        { "grid": [2, 3], "handlingSimSeconds": 1, "name": "left pouch" },
+        { "grid": [2, 3], "handlingSimSeconds": 1, "name": "right pouch" }
+      ]
+    },
+    "attachPoints": [
+      { "id": "front_upper", "name": "upper front", "reachSimSeconds": 2.5, "standard": "pals" },
+      { "id": "front_lower", "name": "lower front", "reachSimSeconds": 2.5, "standard": "pals" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 1.5, "standard": "pals" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 1.5, "standard": "pals" }
+    ],
+    "description": "A big olive rucksack with a lid, a pouch on each side and a padded hip belt, covered in webbing for more pouches.",
+    "reference": "molle_large_rucksack",
+    "variants": [],
+    "notes": "Standing upright, harness on -z and front on +z, rather than laid flat: a pack stands, and its front and side webbing both show in the iso view. Olive drab with dark webbing: a lid with two buckled straps, nine rows of PALS webbing across the front, compression straps and webbing down both sides above a flapped side pouch each, padded shoulder straps and hip belt pads. CHECK VOLUME (x14): the reference volume is the empty bag packed flat; the model is the bag standing open at its real size, and the box counts the hip belt. Attach points: the upper front is the top half of the front webbing, the lower front its bottom half, and each side point the webbing above that side's pouch; the sides are quicker to reach than the front, which faces away from the wearer. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "molle_medium_rucksack",
+    "model": "molle_medium_rucksack",
+    "name": "Medium military rucksack",
+    "category": "bag",
+    "size": [4, 5],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "slot": "back", "encumbrance": 6, "warmth": 10, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [6, 7], "handlingSimSeconds": 1.5, "name": "main" },
+        { "grid": [3, 2], "handlingSimSeconds": 1, "name": "lid" },
+        { "grid": [3, 2], "handlingSimSeconds": 1, "name": "front pouch" }
+      ]
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front", "reachSimSeconds": 2.5, "standard": "pals" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 1.5, "standard": "pals" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 1.5, "standard": "pals" }
+    ],
+    "description": "A tan rucksack with a lid and a flapped front pouch, covered in webbing for more pouches.",
+    "reference": "molle_medium_rucksack",
+    "variants": [],
+    "notes": "Standing upright, harness on -z and front on +z, rather than laid flat: a pack stands, and its front and side webbing both show in the iso view. Coyote tan with khaki webbing: a lid with two buckled straps, eight rows of PALS webbing across the front, a flapped front pouch with two rows of its own, webbing and compression straps down both sides and padded shoulder straps. CHECK VOLUME (x8.8): the reference volume is the empty bag packed flat; the model is the bag standing open at its real size. Attach points: the front is the webbing round and on the front pouch, and each side point that side's webbing. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "molle_pack",
+    "model": "molle_pack",
+    "name": "Military assault pack",
+    "category": "bag",
+    "size": [4, 4],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "slot": "back", "encumbrance": 5, "warmth": 10, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [5, 6], "handlingSimSeconds": 1.5, "name": "main" },
+        { "grid": [3, 1], "handlingSimSeconds": 1, "name": "lid" },
+        { "grid": [3, 2], "handlingSimSeconds": 1, "name": "front pouch" }
+      ]
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front", "reachSimSeconds": 2.5, "standard": "pals" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 1.5, "standard": "pals" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 1.5, "standard": "pals" }
+    ],
+    "description": "A compact green daypack with a lid and a flapped front pouch, covered in webbing for more pouches.",
+    "reference": "molle_pack",
+    "variants": [],
+    "notes": "Standing upright, harness on -z and front on +z, rather than laid flat: a pack stands, and its front and side webbing both show in the iso view. Ranger green with dark webbing: the medium rucksack's layout at assault-pack size, with seven rows of PALS webbing across the front, a flapped front pouch, webbing down both sides and padded shoulder straps. CHECK VOLUME (x8.2): the reference volume is the empty bag packed flat; the model is the bag standing open at its real size. Attach points: the front is the webbing round and on the front pouch, and each side point that side's webbing. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "net_backpack",
+    "model": "net_backpack",
+    "name": "String net backpack",
+    "category": "bag",
+    "size": [3, 3],
+    "economy": { "usage": [], "tiers": [] },
+    "wearable": { "slot": "back", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.003 },
+    "container": { "pockets": [{ "grid": [4, 5], "handlingSimSeconds": 1.2 }] },
+    "description": "A bag knotted from string, with cloth straps; small things slip through its mesh.",
+    "reference": "net_backpack",
+    "variants": [],
+    "notes": "Lying slumped: cotton string knotted in a 32 mm mesh over a flat underside, a cream hem with a drawcord and cord lock at the mouth, and cream straps down both sides to the bottom corners. CHECK VOLUME (x17): the reference volume is the empty bag packed flat; the model is the bag standing open at its real size, here lying slumped with the drawcord out. The reference cannot hold small items; pockets restrict nothing, so the grid is plain. A crafted item, so it has no loot economy. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "petpack",
+    "model": "petpack",
+    "name": "Pet carrier backpack",
+    "category": "bag",
+    "size": [5, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 35, "warmth": 8, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [5, 6], "handlingSimSeconds": 1.5 }] },
+    "description": "A boxy nylon backpack for a cat or small dog, with a clear domed window, air holes and mesh vents.",
+    "reference": "petpack",
+    "variants": [],
+    "notes": "Blue nylon box with black trim, a clear domed window on the front ringed by air holes, mesh vents on both sides, a zipped top, a top handle and padded shoulder straps. Tiles draw the window opaque; it stays see-through in the game. Deadvox has no pets, so it is a bulky back container. The worn look is pending: no worn model is authored."
+  }
+]

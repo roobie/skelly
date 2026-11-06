@@ -1,0 +1,11 @@
+{
+  "id": "hat_hard_hooded",
+  "file": "assets/models/hat_hard_hooded.glb",
+  "parts": {
+    "hat_hard_hooded": {
+      "node": "hat_hard_hooded:compound",
+      "massKg": 0.36,
+      "centreOfMass": [0.00011648540354894064, 0.03582741843159705, 0.0002026330852890674]
+    }
+  }
+}

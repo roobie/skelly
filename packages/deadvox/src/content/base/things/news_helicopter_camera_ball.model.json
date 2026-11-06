@@ -1,0 +1,19 @@
+{
+  "id": "news_helicopter_camera_ball",
+  "file": "assets/models/news_helicopter_camera_ball.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 22,
+      "centreOfMass": [0.01752232142857143, 0.017224702380952382, 0],
+      "collision": [
+        { "min": [-0.1875, -0.1875, -0.1875], "max": [0.1875, 0.1875, 0.1875] },
+        { "min": [-0.0625, 0.1875, -0.0625], "max": [0.0625, 0.40625, 0.0625] },
+        { "min": [0.125, -0.09375, -0.125], "max": [0.21875, 0.15625, 0.125] },
+        { "min": [0.21875, -0.0625, -0.09375], "max": [0.25, 0.09375, 0.09375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

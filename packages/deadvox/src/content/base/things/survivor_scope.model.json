@@ -1,0 +1,10 @@
+{
+  "id": "survivor_scope",
+  "file": "assets/models/survivor_scope.glb",
+  "parts": {
+    "survivor_scope": { "node": "survivor_scope:compound", "massKg": 0.15, "centreOfMass": [0.03654476310096993, 0, 0] }
+  },
+  "grip": { "at": [0.13, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

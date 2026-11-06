@@ -1,0 +1,14 @@
+{
+  "id": "heavy_cargo_helicopter_cockpit_bulkhead",
+  "file": "assets/models/heavy_cargo_helicopter_cockpit_bulkhead.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 70,
+      "centreOfMass": [4.921875, 2.321903135870677, 0],
+      "collision": [{ "min": [4.875, 1, -1.84375], "max": [4.96875, 3.84375, 1.84375] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

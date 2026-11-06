@@ -1,0 +1,17 @@
+{
+  "id": "swat_truck_engine_guard",
+  "file": "assets/models/swat_truck_engine_guard.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 60,
+      "centreOfMass": [1.84375, 0.890625, 0],
+      "collision": [
+        { "min": [1.09375, 0.8125, 0.59375], "max": [2.59375, 0.96875, 0.625] },
+        { "min": [1.09375, 0.8125, -0.625], "max": [2.59375, 0.96875, -0.59375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,19 @@
+{
+  "id": "articulated_bus_destination_sign",
+  "file": "assets/models/articulated_bus_destination_sign.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 8,
+      "centreOfMass": [8.892614700374532, 2.625, 0],
+      "collision": [
+        { "min": [8.8125, 2.5, -0.9375], "max": [8.9375, 2.75, 0.9375] },
+        { "min": [8.875, 2.5, -0.9375], "max": [8.9375, 2.53125, 0.9375] },
+        { "min": [8.875, 2.71875, -0.9375], "max": [8.9375, 2.75, 0.9375] },
+        { "min": [8.875, 2.53125, -0.90625], "max": [8.96875, 2.71875, 0.90625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

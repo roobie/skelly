@@ -1,0 +1,11 @@
+{
+  "id": "gloves_medical",
+  "file": "assets/models/gloves_medical.glb",
+  "parts": {
+    "gloves_medical": {
+      "node": "gloves_medical:compound",
+      "massKg": 0.012,
+      "centreOfMass": [-1.6658556289457812e-18, 0.0031258684925989334, 0.01454526230993858]
+    }
+  }
+}

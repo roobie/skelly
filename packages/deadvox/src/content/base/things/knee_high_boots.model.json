@@ -1,0 +1,11 @@
+{
+  "id": "knee_high_boots",
+  "file": "assets/models/knee_high_boots.glb",
+  "parts": {
+    "knee_high_boots": {
+      "node": "knee_high_boots:compound",
+      "massKg": 1.8,
+      "centreOfMass": [-2.370565994422692e-18, 0.19037742660189333, -0.05563687218776604]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "id": "ceramic_bowl",
+  "file": "assets/models/ceramic_bowl.glb",
+  "parts": {
+    "ceramic_bowl": { "node": "ceramic_bowl:compound", "massKg": 0.27, "centreOfMass": [0, 0.024575508339045007, 0] }
+  }
+}

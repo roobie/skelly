@@ -1,0 +1,14 @@
+{
+  "id": "limousine_bonnet",
+  "file": "assets/models/limousine_bonnet.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 13,
+      "centreOfMass": [2.578125, 0.8978658536585366, 0],
+      "collision": [{ "min": [1.9375, 0.84375, -0.84375], "max": [3.21875, 0.96875, 0.84375] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

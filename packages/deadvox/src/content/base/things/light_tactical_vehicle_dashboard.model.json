@@ -1,0 +1,18 @@
+{
+  "id": "light_tactical_vehicle_dashboard",
+  "file": "assets/models/light_tactical_vehicle_dashboard.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 14,
+      "centreOfMass": [0.671783447265625, 1.14208984375, -0.005218505859375],
+      "collision": [
+        { "min": [0.59375, 1.03125, -0.90625], "max": [0.75, 1.25, 0.90625] },
+        { "min": [0.5625, 1.3125, -0.625], "max": [0.71875, 1.34375, -0.5625] },
+        { "min": [0.65625, 1.25, -0.625], "max": [0.71875, 1.3125, -0.5625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

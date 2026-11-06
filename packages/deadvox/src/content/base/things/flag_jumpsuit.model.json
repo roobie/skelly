@@ -1,0 +1,11 @@
+{
+  "id": "flag_jumpsuit",
+  "file": "assets/models/flag_jumpsuit.glb",
+  "parts": {
+    "flag_jumpsuit": {
+      "node": "flag_jumpsuit:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-0.00017178663123687099, 0.031331166849201925, -0.011174282277321933]
+    }
+  }
+}

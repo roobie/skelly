@@ -1,0 +1,17 @@
+{
+  "id": "technical_bonnet",
+  "file": "assets/models/technical_bonnet.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 30,
+      "centreOfMass": [1.7042588589352323, 1.0470869362495763, -0.014395769752458461],
+      "collision": [
+        { "min": [0.96875, 1, -0.71875], "max": [2.4375, 1.09375, 0.71875] },
+        { "min": [1.59375, 1.03125, -0.46875], "max": [2, 1.09375, -0.125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

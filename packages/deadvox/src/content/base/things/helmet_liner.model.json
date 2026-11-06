@@ -1,0 +1,11 @@
+{
+  "id": "helmet_liner",
+  "file": "assets/models/helmet_liner.glb",
+  "parts": {
+    "helmet_liner": {
+      "node": "helmet_liner:compound",
+      "massKg": 0.21,
+      "centreOfMass": [2.687978593651517e-19, 0.1025251299826689, -0.0033795493934142082]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "plank_short",
+  "file": "assets/models/plank_short.glb",
+  "parts": {
+    "plank_short": {
+      "node": "plank_short:compound",
+      "massKg": 1,
+      "centreOfMass": [0.3062714617169373, 0.020967517401392112, -0.00028538283062645004]
+    }
+  },
+  "grip": { "at": [0.122, 0.02, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,11 @@
+{
+  "id": "dutch_oven",
+  "file": "assets/models/dutch_oven.glb",
+  "parts": {
+    "dutch_oven": {
+      "node": "dutch_oven:compound",
+      "massKg": 8.3,
+      "centreOfMass": [-3.7020256558943314e-20, 0.087887576083065, -0.0001222102876238216]
+    }
+  }
+}

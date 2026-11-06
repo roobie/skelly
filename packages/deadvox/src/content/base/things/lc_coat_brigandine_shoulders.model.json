@@ -1,0 +1,11 @@
+{
+  "id": "lc_coat_brigandine_shoulders",
+  "file": "assets/models/lc_coat_brigandine_shoulders.glb",
+  "parts": {
+    "lc_coat_brigandine_shoulders": {
+      "node": "lc_coat_brigandine_shoulders:compound",
+      "massKg": 8,
+      "centreOfMass": [0.000022050620807655636, 0.017038426804591705, 0.14560237408786494]
+    }
+  }
+}

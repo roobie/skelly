@@ -1,0 +1,11 @@
+{
+  "id": "bag_plastic",
+  "file": "assets/models/bag_plastic.glb",
+  "parts": {
+    "bag_plastic": {
+      "node": "bag_plastic:compound",
+      "massKg": 0.008,
+      "centreOfMass": [0, 0.14219511571954774, 0.00033534183575702084]
+    }
+  }
+}

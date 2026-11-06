@@ -1,0 +1,11 @@
+{
+  "id": "kampuch",
+  "file": "assets/models/kampuch.glb",
+  "parts": {
+    "kampuch": {
+      "node": "kampuch:compound",
+      "massKg": 0.0028,
+      "centreOfMass": [0.016730138713745273, 0.007060529634300126, 0.000008827238335435055]
+    }
+  }
+}

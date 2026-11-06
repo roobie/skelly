@@ -1,0 +1,11 @@
+{
+  "id": "gold_watch",
+  "file": "assets/models/gold_watch.glb",
+  "parts": {
+    "gold_watch": {
+      "node": "gold_watch:compound",
+      "massKg": 0.15,
+      "centreOfMass": [0.0001447963800904977, 0.004949723479135253, -0.0074032176973353415]
+    }
+  }
+}

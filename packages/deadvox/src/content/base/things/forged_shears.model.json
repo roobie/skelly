@@ -1,0 +1,14 @@
+{
+  "id": "forged_shears",
+  "file": "assets/models/forged_shears.glb",
+  "parts": {
+    "forged_shears": {
+      "node": "forged_shears:compound",
+      "massKg": 0.43,
+      "centreOfMass": [0.11780220994475137, 0.0068000000000000005, 0]
+    }
+  },
+  "grip": { "at": [0.07, 0.006, 0.017], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

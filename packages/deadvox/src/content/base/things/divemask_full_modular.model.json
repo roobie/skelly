@@ -1,0 +1,11 @@
+{
+  "id": "divemask_full_modular",
+  "file": "assets/models/divemask_full_modular.glb",
+  "parts": {
+    "divemask_full_modular": {
+      "node": "divemask_full_modular:compound",
+      "massKg": 0.59,
+      "centreOfMass": [0.000021814576103123446, 0.1065654161846526, -0.018608384289098216]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "gambeson_nylon",
+  "file": "assets/models/gambeson_nylon.glb",
+  "parts": {
+    "gambeson_nylon": {
+      "node": "gambeson_nylon:compound",
+      "massKg": 3.5,
+      "centreOfMass": [5.491621508858222e-18, 0.0608565872509615, -0.00562214886883713]
+    }
+  }
+}

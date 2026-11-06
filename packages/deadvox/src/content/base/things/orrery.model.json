@@ -1,0 +1,14 @@
+{
+  "id": "orrery",
+  "file": "assets/models/orrery.glb",
+  "parts": {
+    "orrery": {
+      "node": "orrery:compound",
+      "massKg": 14,
+      "centreOfMass": [-0.002245802766460998, 0.09255663749366677, 0.007259579547899473]
+    }
+  },
+  "grip": { "at": [0, 0.04, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

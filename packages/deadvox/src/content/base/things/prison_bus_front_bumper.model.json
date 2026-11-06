@@ -1,0 +1,14 @@
+{
+  "id": "prison_bus_front_bumper",
+  "file": "assets/models/prison_bus_front_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 40,
+      "centreOfMass": [6.109375, 0.4375, 0],
+      "collision": [{ "min": [6.0625, 0.28125, -1.3125], "max": [6.15625, 0.59375, 1.3125] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

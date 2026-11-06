@@ -1,0 +1,14 @@
+{
+  "id": "tanker_truck_windscreen",
+  "file": "assets/models/tanker_truck_windscreen.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 28,
+      "centreOfMass": [4.288810483870968, 2.5075604838709675, 0],
+      "collision": [{ "min": [4.15625, 2.125, -1.15625], "max": [4.40625, 2.875, 1.15625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

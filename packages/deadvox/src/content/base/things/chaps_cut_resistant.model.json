@@ -1,0 +1,11 @@
+{
+  "id": "chaps_cut_resistant",
+  "file": "assets/models/chaps_cut_resistant.glb",
+  "parts": {
+    "chaps_cut_resistant": {
+      "node": "chaps_cut_resistant:compound",
+      "massKg": 1.8,
+      "centreOfMass": [-6.652866921601398e-18, 0.00607086378827813, 0.015142950302964435]
+    }
+  }
+}

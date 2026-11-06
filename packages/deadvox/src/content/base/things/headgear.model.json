@@ -1,0 +1,11 @@
+{
+  "id": "headgear",
+  "file": "assets/models/headgear.glb",
+  "parts": {
+    "headgear": {
+      "node": "headgear:compound",
+      "massKg": 0.55,
+      "centreOfMass": [2.409058058299444e-7, 0.09944290532401825, 0.005487201879065281]
+    }
+  }
+}

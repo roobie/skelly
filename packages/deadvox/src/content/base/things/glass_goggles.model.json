@@ -1,0 +1,11 @@
+{
+  "id": "glass_goggles",
+  "file": "assets/models/glass_goggles.glb",
+  "parts": {
+    "glass_goggles": {
+      "node": "glass_goggles:compound",
+      "massKg": 0.14,
+      "centreOfMass": [8.576898663710848e-19, 0.027997185602133014, -0.019588949785217004]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "ibuprofen",
+  "file": "assets/models/ibuprofen.glb",
+  "parts": {
+    "ibuprofen": { "node": "ibuprofen:vessel", "massKg": 0.063, "centreOfMass": [0, 0.04066504559270517, 0] }
+  },
+  "grip": { "at": [0, 0.04, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

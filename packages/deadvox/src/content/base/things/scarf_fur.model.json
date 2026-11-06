@@ -1,0 +1,11 @@
+{
+  "id": "scarf_fur",
+  "file": "assets/models/scarf_fur.glb",
+  "parts": {
+    "scarf_fur": {
+      "node": "scarf_fur:compound",
+      "massKg": 0.3,
+      "centreOfMass": [0.056589520695430266, 0.02174391897280485, 0]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "pickles_ferment",
+  "file": "assets/models/pickles_ferment.glb",
+  "parts": {
+    "pickles_ferment": {
+      "node": "pickles_ferment:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0.0008549948830984807, 0.05997176519982158, -0.00014752420688026463]
+    }
+  },
+  "grip": { "at": [0, 0.061, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

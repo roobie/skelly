@@ -1,0 +1,11 @@
+{
+  "id": "ceramic_armor",
+  "file": "assets/models/ceramic_armor.glb",
+  "parts": {
+    "ceramic_armor": {
+      "node": "ceramic_armor:compound",
+      "massKg": 2.5,
+      "centreOfMass": [0, 0.011997348652231551, -0.008532920901458243]
+    }
+  }
+}

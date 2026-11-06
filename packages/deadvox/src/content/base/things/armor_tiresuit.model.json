@@ -1,0 +1,11 @@
+{
+  "id": "armor_tiresuit",
+  "file": "assets/models/armor_tiresuit.glb",
+  "parts": {
+    "armor_tiresuit": {
+      "node": "armor_tiresuit:compound",
+      "massKg": 10,
+      "centreOfMass": [-3.5464095485695225e-18, 0.030921102661596943, -0.042044359949303105]
+    }
+  }
+}

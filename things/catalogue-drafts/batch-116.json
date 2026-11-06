@@ -1,0 +1,288 @@
+[
+  {
+    "id": "santa_jacket",
+    "model": "santa_jacket",
+    "name": "Santa jacket",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 20, "warmth": 40, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "right" }
+      ]
+    },
+    "description": "A heavy red jacket trimmed with white faux fur at the collar, front, hem and cuffs, held shut by a wide black belt with a gold buckle. A holiday costume, but a warm one.",
+    "reference": "santa_jacket",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 380 mm by 320 mm and 70 mm tall in three layers: the sleeves folded in along the sides with fur cuffs, a rolled fur collar, fur down the front and round the hem, the black belt with its gold buckle round the bundle and two small fur-edged pockets. `fur-pale` stands in for the faux fur. Slot `torso`, as the jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "santa_jacket_short",
+    "model": "santa_jacket_short",
+    "name": "Short Santa jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 6, "warmth": 15, "wearPerDamage": 0.0015 },
+    "description": "A short sleeveless red jacket edged in white faux fur and fastened with three fluffy pompoms. A holiday costume with little warmth to it.",
+    "reference": "santa_jacket_short",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 320 mm by 260 mm and 45 mm tall: fur round the collar, the armholes, down the front and along the hem, and three pompom buttons. The armholes are drawn as shadowed half-rounds cut into each side edge, bound in a darker trim, so the folded bundle reads as sleeveless. The reference's description calls it sleeveless while its coverage lists the arms; the model follows the description and the wearable keeps the reference's encumbrance and warmth. `fur-pale` stands in for the faux fur. Slot `torso`, as the jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ski_jacket",
+    "model": "ski_jacket",
+    "name": "Ski jacket",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 15, "warmth": 80, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "chest" }
+      ]
+    },
+    "description": "A padded nylon jacket with a hood, made for skiing. Very warm without being stiff, with zipped pockets big enough for gloves and goggles.",
+    "reference": "ski_jacket",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 380 mm by 320 mm and 75 mm tall: quilted baffles across the red body, a black yoke over the shoulders, the red hood folded down on top with a dark rim, a zip up the front and zipped chest and hip pockets. `nylon-red` gives the shell. Slot `torso`, as the jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "sleeveless_duster",
+    "model": "sleeveless_duster",
+    "name": "Sleeveless duster",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 7, "warmth": 15, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right hip" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside right" }
+      ]
+    },
+    "description": "A full-length canvas duster with the sleeves left off, so the arms move freely. A short shoulder cape, a stand collar and deep pockets inside and out.",
+    "reference": "sleeveless_duster",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 380 mm by 320 mm and 55 mm tall in five layers: the short shoulder cape between the armholes, a stand collar, three leather buttons and two flapped hip pockets; the two inside pockets are not drawn. The armholes are drawn as shadowed half-rounds cut into each side edge, bound in a darker trim, so the folded bundle reads as sleeveless. Pockets match the duster's. Slot `torso`, as the jacket has it; it also reaches the legs. The reference marks it as worn under a belt. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "sleeveless_duster_faux_fur",
+    "model": "sleeveless_duster_faux_fur",
+    "name": "Sleeveless faux fur duster",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 9, "warmth": 40, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right hip" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside right" }
+      ]
+    },
+    "description": "A thick full-length duster of pale faux fur with no sleeves, falling below the knee. A deep collar and plenty of pockets.",
+    "reference": "sleeveless_duster_faux_fur",
+    "variants": [],
+    "notes": "Rides on its own row of the shared sleeveless duster builder. Folded flat on a shelf, collar at the +z end and the hem folded under at -z. Folded thick, 420 mm by 360 mm and 80 mm tall in five layers: a deep rolled collar, khaki cotton binding round the armholes and down the front, toggle buttons and two flapped pockets; the inside pockets are not drawn. The armholes are drawn as shadowed half-rounds cut into each side edge, bound in a darker trim, so the folded bundle reads as sleeveless. `fur-pale` stands in for the faux fur. Slot `torso`, as the jacket has it; it also reaches the legs. The reference marks it as worn under a belt. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "sleeveless_duster_fur",
+    "model": "sleeveless_duster_fur",
+    "name": "Sleeveless fur duster",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 9, "warmth": 50, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right hip" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside right" }
+      ]
+    },
+    "description": "A thick full-length duster of brown fur with no sleeves, leaving the arms free. A deep collar and plenty of pockets.",
+    "reference": "sleeveless_duster_fur",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. Folded thick, 420 mm by 360 mm and 80 mm tall in five layers: a deep rolled collar, black leather binding round the armholes and down the front, three buttons and two flapped pockets; the inside pockets are not drawn. The armholes are drawn as shadowed half-rounds cut into each side edge, bound in a darker trim, so the folded bundle reads as sleeveless. Slot `torso`, as the jacket has it; it also reaches the legs. The reference marks it as worn under a belt. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "sleeveless_duster_leather",
+    "model": "sleeveless_duster_leather",
+    "name": "Sleeveless leather duster",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 10, "warmth": 30, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right hip" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside right" }
+      ]
+    },
+    "description": "A heavy full-length leather duster without sleeves, leaving the arms free. A short shoulder cape, brass buttons and deep pockets.",
+    "reference": "sleeveless_duster_leather",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 400 mm by 340 mm and 55 mm tall in five layers: the shoulder cape between the armholes, a stand collar, brass buttons and two flapped pockets; the inside pockets are not drawn. The armholes are drawn as shadowed half-rounds cut into each side edge, bound in a darker trim, so the folded bundle reads as sleeveless. Slot `torso`, as the jacket has it; it also reaches the legs. The reference marks it as worn under a belt. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "sleeveless_trenchcoat",
+    "model": "sleeveless_trenchcoat",
+    "name": "Sleeveless trench coat",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 7, "warmth": 15, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside" }
+      ]
+    },
+    "description": "A long canvas trench coat cut without sleeves: wide lapels, two rows of buttons and a belt with a buckle. Roomy pockets.",
+    "reference": "sleeveless_trenchcoat",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 360 mm by 320 mm and 50 mm tall in four layers: wide lapels, an epaulette on the left shoulder, two columns of buttons, slanted pocket flaps and the belt buckled round the bundle. The armholes are drawn as shadowed half-rounds cut into each side edge, bound in a darker trim, so the folded bundle reads as sleeveless. The gun flap of the sleeved trench coat is left off, since it would cover the right armhole. Slot `torso`, as the jacket has it; it also reaches the legs. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "sleeveless_trenchcoat_faux_fur",
+    "model": "sleeveless_trenchcoat_faux_fur",
+    "name": "Sleeveless faux fur trench coat",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 9, "warmth": 40, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside" }
+      ]
+    },
+    "description": "A long sleeveless trench coat of pale faux fur, belted with tan leather. Smart, warm and roomy in the pockets.",
+    "reference": "sleeveless_trenchcoat_faux_fur",
+    "variants": [],
+    "notes": "Rides on the shared trench coat builder. Folded flat on a shelf, collar at the +z end and the hem folded under at -z. Folded thick, 380 mm by 320 mm and 70 mm tall in four layers, cut and belted as the canvas one with a tan belt and dark buttons. The armholes are drawn as shadowed half-rounds cut into each side edge, bound in a darker trim, so the folded bundle reads as sleeveless. `fur-pale` stands in for the faux fur. Slot `torso`, as the jacket has it; it also reaches the legs. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "sleeveless_trenchcoat_fur",
+    "model": "sleeveless_trenchcoat_fur",
+    "name": "Sleeveless fur trench coat",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 9, "warmth": 50, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside" }
+      ]
+    },
+    "description": "A long sleeveless trench coat of brown fur with a black leather belt. Warm, and with room in the pockets.",
+    "reference": "sleeveless_trenchcoat_fur",
+    "variants": [],
+    "notes": "Rides on the shared trench coat builder. Folded flat on a shelf, collar at the +z end and the hem folded under at -z. Folded thick, 380 mm by 320 mm and 70 mm tall in four layers, with a black leather belt, silver buckle and dark buttons. The armholes are drawn as shadowed half-rounds cut into each side edge, bound in a darker trim, so the folded bundle reads as sleeveless. Slot `torso`, as the jacket has it; it also reaches the legs. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "sleeveless_trenchcoat_leather",
+    "model": "sleeveless_trenchcoat_leather",
+    "name": "Sleeveless leather trench coat",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 11, "warmth": 30, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside" }
+      ]
+    },
+    "description": "A long black leather trench coat with no sleeves, belted and double-breasted, with silver hardware and deep pockets.",
+    "reference": "sleeveless_trenchcoat_leather",
+    "variants": [],
+    "notes": "Rides on the shared trench coat builder. Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 360 mm by 320 mm and 50 mm tall in four layers, black throughout with a silver buckle and buttons. The armholes are drawn as shadowed half-rounds cut into each side edge, bound in a darker trim, so the folded bundle reads as sleeveless. Slot `torso`, as the jacket has it; it also reaches the legs. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "sleeveless_tunic",
+    "model": "sleeveless_tunic",
+    "name": "Sleeveless tunic",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 3, "warmth": 2, "wearPerDamage": 0.002 },
+    "description": "A plain sleeveless cotton tunic that hangs to the knees, laced shut at the neck.",
+    "reference": "sleeveless_tunic",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. Folded thin, 300 mm by 260 mm and 20 mm tall in two layers: a bound neck with a laced slit, bound armholes and a stitched hem. The armholes are drawn as shadowed half-rounds cut into each side edge, bound in a darker trim, so the folded bundle reads as sleeveless. Slot `torso`, as the jacket has it; it also reaches the legs. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "tacjacket",
+    "model": "tacjacket",
+    "name": "Tactical jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Police", "Military"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 6, "warmth": 15, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "left chest" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "right chest" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left cargo" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right cargo" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.9, "name": "left sleeve" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.9, "name": "right sleeve" }
+      ]
+    },
+    "description": "A tough field jacket covered in zips, press studs and hook-and-loop patches, with a high stand collar and pockets on the chest, hips and sleeves.",
+    "reference": "tacjacket",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 360 mm by 300 mm and 45 mm tall in three layers: a high mandarin collar, a snapped storm flap over the zip, slanted zipped chest pockets, a hook-and-loop panel on the chest and on each folded-in sleeve, sleeve pockets, a small steel plate for ID tags and two flapped cargo pockets. No camouflage print exists, so `cloth-ucp` gives a plain grey-green. The reference's attachment points are left off: the jacket is not a host here, since its patches take insignia rather than pouches. Slot `torso`, as the jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "thawb",
+    "model": "thawb",
+    "name": "Thawb",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 7, "warmth": 20, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [1, 1], "handlingSimSeconds": 0.7, "name": "breast" }] },
+    "description": "A long, loose ankle-length robe of white cotton with wide sleeves, a narrow stand collar and a short buttoned opening at the neck.",
+    "reference": "thawb",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 360 mm by 340 mm and 50 mm tall in four layers: a narrow stand collar, a short buttoned placket, a breast pocket and the wide sleeves folded in along the sides. `cloth-cream` gives the white, since `cloth-white` renders greyish. Slot `torso`, as the jacket has it; it also reaches the legs. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "trenchcoat",
+    "model": "trenchcoat",
+    "name": "Trench coat",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 7, "warmth": 15, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside" }
+      ]
+    },
+    "description": "A long khaki canvas coat with wide lapels, two rows of buttons and a buckled belt. Pockets inside and out.",
+    "reference": "trenchcoat",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 380 mm by 340 mm and 60 mm tall in four layers: the sleeves folded in along the sides with strapped cuffs, wide lapels, a gun flap over the right shoulder, an epaulette, two columns of buttons, slanted pocket flaps and the belt buckled round the bundle. Slot `torso`, as the jacket has it; it also reaches the legs. The worn look is pending: no worn model is authored."
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "id": "fanning_mill",
+  "file": "assets/models/fanning_mill.glb",
+  "parts": {
+    "fanning_mill": {
+      "node": "fanning_mill:compound",
+      "massKg": 10,
+      "centreOfMass": [-0.05082228859887127, 0.42240488861336334, 0.0005157519302454777]
+    }
+  }
+}

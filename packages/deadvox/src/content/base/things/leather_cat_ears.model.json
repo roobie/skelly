@@ -1,0 +1,11 @@
+{
+  "id": "leather_cat_ears",
+  "file": "assets/models/leather_cat_ears.glb",
+  "parts": {
+    "leather_cat_ears": {
+      "node": "leather_cat_ears:compound",
+      "massKg": 0.021,
+      "centreOfMass": [2.0404060497114636e-18, 0.07747360631475084, 0.00017020226936359148]
+    }
+  }
+}

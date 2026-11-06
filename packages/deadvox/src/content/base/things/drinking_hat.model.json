@@ -1,0 +1,11 @@
+{
+  "id": "drinking_hat",
+  "file": "assets/models/drinking_hat.glb",
+  "parts": {
+    "drinking_hat": {
+      "node": "drinking_hat:compound",
+      "massKg": 0.92,
+      "centreOfMass": [-8.179960949951868e-18, 0.06934836918806384, 0.005065926439972239]
+    }
+  }
+}

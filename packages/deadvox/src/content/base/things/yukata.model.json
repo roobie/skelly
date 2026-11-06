@@ -1,0 +1,11 @@
+{
+  "id": "yukata",
+  "file": "assets/models/yukata.glb",
+  "parts": {
+    "yukata": {
+      "node": "yukata:compound",
+      "massKg": 0.54,
+      "centreOfMass": [0.000026084553744128228, 0.01456192318319978, 0.010189776181265544]
+    }
+  }
+}

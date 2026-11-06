@@ -1,0 +1,11 @@
+{
+  "id": "bscabbard",
+  "file": "assets/models/bscabbard.glb",
+  "parts": {
+    "bscabbard": {
+      "node": "bscabbard:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-0.03934284690320269, 0.011639331443651648, -0.016332388492490142]
+    }
+  }
+}

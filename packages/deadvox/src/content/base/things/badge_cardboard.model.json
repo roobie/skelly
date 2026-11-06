@@ -1,0 +1,11 @@
+{
+  "id": "badge_cardboard",
+  "file": "assets/models/badge_cardboard.glb",
+  "parts": {
+    "badge_cardboard": {
+      "node": "badge_cardboard:compound",
+      "massKg": 0.006,
+      "centreOfMass": [-0.0005270622286541246, 0.002238205499276411, -0.005910564399421133]
+    }
+  }
+}

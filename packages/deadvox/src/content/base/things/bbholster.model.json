@@ -1,0 +1,11 @@
+{
+  "id": "bbholster",
+  "file": "assets/models/bbholster.glb",
+  "parts": {
+    "bbholster": {
+      "node": "bbholster:compound",
+      "massKg": 0.18,
+      "centreOfMass": [-0.001007940790995297, 0.008914193200215862, 0.03771258962300515]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "headscarf",
+  "file": "assets/models/headscarf.glb",
+  "parts": {
+    "headscarf": {
+      "node": "headscarf:compound",
+      "massKg": 0.1,
+      "centreOfMass": [-0.000012811867835468638, 0.01052461227242076, -0.0002645538323218701]
+    }
+  }
+}

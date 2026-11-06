@@ -7,7 +7,7 @@
       "item": "front_bead",
       "node": "front_bead:front-sight-bead",
       "massKg": 0.005,
-      "centreOfMass": [-0.000020242914979757166, 0.0070728744939271265, -0.000020242914979757166]
+      "centreOfMass": [0, 0.007096774193548388, 0]
     }
   }
 }

@@ -1,0 +1,14 @@
+{
+  "id": "net_backpack",
+  "file": "assets/models/net_backpack.glb",
+  "parts": {
+    "net_backpack": {
+      "node": "net_backpack:compound",
+      "massKg": 0.14,
+      "centreOfMass": [0.000580428077390412, 0.00954425647256756, -0.024512384334984653]
+    }
+  },
+  "grip": { "at": [0, 0.006, -0.196], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,316 @@
+[
+  {
+    "id": "leg_guards_sheet_metal",
+    "model": "leg_guards_sheet_metal",
+    "name": "Sheet metal leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 7,
+      "warmth": 2,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.15, "cut": 0.5, "pierce": 0.4 }
+    },
+    "description": "Two hammered steel plates for each leg, one shaped to the thigh and one to the shin, tied on with cord so the knee stays free.",
+    "reference": "legguard_metal_sheets",
+    "variants": ["xl_legguard_metal_sheets", "xs_legguard_metal_sheets"],
+    "notes": "A pair laid side by side, convex side up: each guard is a 3 mm steel thigh plate and shin plate with rolled top edges and a bare gap at the knee, two cord ties round each plate with loose ends. CHECK VOLUME: box/volume x6 because the open shells lie at full length and enclose air; the reference volume is the pair packed. The xl and xs sizes share the model. The reference covers both whole legs; plate goes on over trousers, so it takes `shins` as the steel leg guards of batch 148 do; a slot for whole-leg armour over trousers is open. Protection follows the mild steel light leg guards of batch 148. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "greaves_sheet_metal",
+    "model": "greaves_sheet_metal",
+    "name": "Sheet metal greaves",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 3,
+      "warmth": 2,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.15, "cut": 0.5, "pierce": 0.4 }
+    },
+    "description": "A pair of steel shin guards hammered out of sheet, narrowing to the ankle and flared over the instep, tied on with cord.",
+    "reference": "legguard_metal_sheets_greaves",
+    "variants": [],
+    "notes": "A pair laid side by side, convex side up: each a tapering 3 mm steel shell wrapping a little past half round, a rolled top edge, a flare at the ankle and two cord ties with loose ends. CHECK VOLUME: box/volume x9.8 because the open shells enclose air; the reference volume is the pair packed. Takes `shins`, as greaves do. Protection follows the sheet metal leg guards. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "skirt_sheet_metal",
+    "model": "skirt_sheet_metal",
+    "name": "Sheet metal skirt",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "hips",
+      "encumbrance": 12,
+      "warmth": 1,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.2, "cut": 0.5, "pierce": 0.4 }
+    },
+    "description": "Four cut-down steel sheets hung loosely from a leather belt to guard the hips and groin. They swing and catch on everything when you run.",
+    "reference": "legguard_metal_sheets_hip",
+    "variants": [],
+    "notes": "Laid flat, outside up, waist to +z: four 4 mm steel plates 120 mm wide and 300 mm long, slightly curved and wider at the hem, each hung by two riveted leather tabs from a belt 500 mm long with a buckle. The reference covers the upper legs from the waist; `waist` is the belt's slot and `legs` the trousers', so this names a new `hips` slot for skirts and tassets hung over trousers. Protection follows the sheet metal leg guards. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "knee_guards_sheet_metal",
+    "model": "knee_guards_sheet_metal",
+    "name": "Sheet metal knee guards",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "knees",
+      "encumbrance": 2,
+      "warmth": 1,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.25, "cut": 0.5, "pierce": 0.4 }
+    },
+    "description": "Two half-pipes of sheet steel hammered to fit over the front of the knees, each with a domed cap, a felt lining and leather straps to buckle behind. Kneeling in them still hurts.",
+    "reference": "legguard_metal_sheets_knees",
+    "variants": [],
+    "notes": "A pair of half-pipes 130 mm long and 130 mm across lying side by side, convex side up, each with a knee cop domed out of its crown, a `felt-grey` pad lining it that shows past both ends, two punched holes along each edge and four `leather-brown` straps lying flat on the floor, the outer ones buckled; 500 mm across the pair, the reference's longest side. CHECK VOLUME: the half-pipes enclose air and the straps spread the box; the reference volume is the pair packed. Takes `knees`, as the steel knee guards do. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_paper",
+    "model": "leg_guards_paper",
+    "name": "Paper leg guards",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 4,
+      "warmth": 2,
+      "wearPerDamage": 0.006,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.2, "pierce": 0.1 }
+    },
+    "description": "Curved stacks of paper sheets bound with duct tape, tied over the legs with more tape. Better than nothing, until it rains.",
+    "reference": "legguard_paper",
+    "variants": [],
+    "notes": "A pair laid side by side, convex side up: each guard is three curved layers of stacked paper 470 mm long, each layer a little shorter so the stack shows at the ends, bound by three bands of duct tape whose loose ends tie on. CHECK VOLUME: box/volume x31 because the light open shells enclose air at full length; the reference volume is the pair packed. Paper is `paper-white` and tape `tape-grey`. The reference covers both whole legs; plate goes on over trousers, so it takes `shins` as the steel leg guards of batch 148 do; a slot for whole-leg armour over trousers is open. Protection and wear are guesses for thick paper; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_scrap",
+    "model": "leg_guards_scrap",
+    "name": "Scrap metal leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 15,
+      "warmth": 2,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.05, "blunt": 0.15, "cut": 0.45, "pierce": 0.35 }
+    },
+    "description": "Mismatched scraps of sheet metal strung together with cord to cover the legs. They rattle, pinch and protect, roughly in that order.",
+    "reference": "legguard_scrap",
+    "variants": ["xl_legguard_scrap", "xs_legguard_scrap"],
+    "notes": "A pair laid side by side: each guard is four overlapping pieces of sheet, each a different curve and set askew, in rusted, galvanised and bare steel, strung together by four cord ties with loose ends. The xl and xs sizes share the model. The reference covers both whole legs; plate goes on over trousers, so it takes `shins` as the steel leg guards of batch 148 do; a slot for whole-leg armour over trousers is open. Protection sits a little below the sheet metal leg guards for the cheaper, gappier steel. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_tyre",
+    "model": "leg_guards_tyre",
+    "name": "Tyre leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 14,
+      "warmth": 4,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.2, "blunt": 0.3, "cut": 0.35, "pierce": 0.2 }
+    },
+    "description": "Thick chunks of tyre tread strung together over the legs. They soak up a blow well but flap about when you move.",
+    "reference": "legguard_tire",
+    "variants": ["xl_legguard_tire", "xs_legguard_tire"],
+    "notes": "A pair laid side by side, tread up: each guard is three curved chunks of tyre 14 mm thick with ridged tread lugs over the thigh, knee and shin, strung together by three cord ties with loose ends. The lugs are `plastic-charcoal` so they read against the `rubber-black` body. The reference covers both whole legs; plate goes on over trousers, so it takes `shins` as the steel leg guards of batch 148 do; a slot for whole-leg armour over trousers is open. Protection and wear are guesses for thick rubber; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "chainmail_leggings_medium",
+    "model": "chainmail_leggings",
+    "name": "Medium steel mail leggings",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 14,
+      "warmth": 1,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.1, "cut": 0.7, "pierce": 0.35 }
+    },
+    "description": "Fitted leggings of medium steel mail, held up by straps to a belt and by a stirrup under each foot, open at toe and heel so any boots fit over them.",
+    "reference": "mc_chainmail_legs",
+    "variants": ["xl_mc_chainmail_legs", "xs_mc_chainmail_legs"],
+    "notes": "The model's root: mail in `steel-mail`. A pair laid flat side by side, 780 mm from hip to ankle, each a tapering mail sheet with raised ring rows, a leather band at the hip with two straps and buckles that fasten to a belt, and a stirrup strap at the ankle. CHECK LENGTH and VOLUME: the reference's longest side (100 to 110 mm) is the mail bundled up; the model lies at full length so it reads as leggings, and the open shells enclose air. The xl and xs sizes share the model. The reference covers both whole legs; it is worn over trousers, so it takes `shins` as other whole-leg armour does, which keeps greaves off it: a slot for mail under plate is open. Protection follows mail: strong against cuts, weak against blunt blows; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "chainmail_leggings_tempered",
+    "model": "chainmail_leggings",
+    "name": "Tempered steel mail leggings",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 14,
+      "warmth": 1,
+      "wearPerDamage": 0.0005,
+      "protects": { "acid": 0.05, "blunt": 0.12, "cut": 0.78, "pierce": 0.42 }
+    },
+    "finishes": { "mail": "steel-heat-tint", "ring": "steel-heat-tint" },
+    "description": "Fitted leggings of tempered steel mail, held up by straps to a belt and by a stirrup under each foot, open at toe and heel so any boots fit over them.",
+    "reference": "qt_chainmail_legs",
+    "variants": ["xl_qt_chainmail_legs", "xs_qt_chainmail_legs"],
+    "notes": "Shares the medium steel mail leggings' model; the mail and ring rows take `steel-heat-tint` for tempered steel. Same shape and weight as the medium pair; tempered rings hold up better, so wear is lower and protection a little higher. CHECK LENGTH and VOLUME: the reference's longest side (100 to 110 mm) is the mail bundled up; the model lies at full length so it reads as leggings, and the open shells enclose air. Takes `shins`, as the medium pair does. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "chainmail_half_leggings_medium",
+    "model": "chainmail_half_leggings",
+    "name": "Medium steel mail half-leggings",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 11,
+      "warmth": 1,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.08, "cut": 0.6, "pierce": 0.3 }
+    },
+    "description": "Medium steel mail covering only the front and sides of the legs, laced closed up the back, open at toe and heel so any boots fit over them.",
+    "reference": "mc_chainmail_half_legs",
+    "variants": ["xl_mc_chainmail_half_legs", "xs_mc_chainmail_half_legs"],
+    "notes": "The model's root: mail in `steel-mail`. A pair lying back up, 740 mm long, each a tapering shell of mail wrapping the front and sides with raised ring rows, the open back laced across in a zigzag of light cord so it shows, and a leather band at the hip. CHECK LENGTH and VOLUME: the reference's longest side (100 to 110 mm) is the mail bundled up; the model lies at full length so it reads as leggings, and the open shells enclose air. The xl and xs sizes share the model. Takes `shins`, as the full mail leggings do. Protection sits below the full leggings because the back is bare. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "chainmail_half_leggings_tempered",
+    "model": "chainmail_half_leggings",
+    "name": "Tempered steel mail half-leggings",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 11,
+      "warmth": 1,
+      "wearPerDamage": 0.0005,
+      "protects": { "acid": 0.05, "blunt": 0.1, "cut": 0.68, "pierce": 0.36 }
+    },
+    "finishes": { "mail": "steel-heat-tint", "ring": "steel-heat-tint" },
+    "description": "Tempered steel mail covering only the front and sides of the legs, laced closed up the back, open at toe and heel so any boots fit over them.",
+    "reference": "qt_chainmail_half_legs",
+    "variants": ["xl_qt_chainmail_half_legs", "xs_qt_chainmail_half_legs"],
+    "notes": "Shares the medium steel mail half-leggings' model; the mail and ring rows take `steel-heat-tint` for tempered steel. Same shape and weight as the medium pair; wear is lower and protection a little higher. CHECK LENGTH and VOLUME: the reference's longest side (100 to 110 mm) is the mail bundled up; the model lies at full length so it reads as leggings, and the open shells enclose air. Takes `shins`, as the medium pair does. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "motorcycle_jeans",
+    "model": "motorcycle_jeans",
+    "name": "Motorcycle jeans",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 10,
+      "warmth": 3,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.15, "cut": 0.3, "pierce": 0.15 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" }
+      ]
+    },
+    "description": "Heavy jeans woven through with aramid fibre, with pads sewn in at the knees and hips to save your skin when you hit the road.",
+    "reference": "motorbike_pants",
+    "variants": [],
+    "notes": "Folded in thirds, 380 by 320 mm and 60 mm thick: denim with a waistband, belt loops, a button and slanted front pocket mouths, a ribbed knee pad and a hip pad standing proud of the top fold, and orange stitch lines. The aramid weave does not show. Pockets follow the jeans. Protection is a guess for aramid-lined denim with pads; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leather_padded_pants",
+    "model": "leather_padded_pants",
+    "name": "Leather-patched trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 8,
+      "warmth": 5,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.1, "cut": 0.25, "pierce": 0.1 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" }
+      ]
+    },
+    "description": "Tough canvas trousers with panels cut from old leather trousers sewn over the thighs and shins, leaving the knees free.",
+    "reference": "survivor_adhoc_leather_pants",
+    "variants": [],
+    "notes": "Folded in thirds, 380 by 320 mm and 60 mm thick: canvas with a waistband, belt loops, a button and two front pocket mouths, two leather panels sewn on the top fold. The leather took the place of the back pockets, so only the two front pockets remain. Protection is a guess for canvas with leather panels; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "eod_trousers",
+    "model": "eod_trousers",
+    "name": "Bomb disposal trousers",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Police", "Military"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 80,
+      "warmth": 12,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.3, "blunt": 0.5, "cut": 0.7, "pierce": 0.55 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "left thigh" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "right thigh" }
+      ]
+    },
+    "description": "Very heavy trousers padded with aramid, flame-resistant cloth and foam for bomb disposal work. They stop fragments well but not bullets, and you can barely run in them.",
+    "reference": "trousers_eod",
+    "variants": [],
+    "notes": "Folded in thirds, 440 by 380 mm and 140 mm thick with padding: olive drab with quilted channels across the top fold, a hard curved knee plate with two hook-and-loop strips, a waistband and braces laid over the top ending past the waist edge. CHECK VOLUME: box/volume x4.5 because the bundle is folded loosely around its padding, 140 mm thick, and the braces lie out past it; the reference volume is the trousers compressed. Takes `legs`, as trousers do; the bomb suit's jacket and helmet are separate items. Pockets are guesses: the reference lists none. Protection is high against cuts and fragments and weak against bullets, as the description says. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "eod_trousers_light",
+    "model": "eod_trousers_light",
+    "name": "Light bomb disposal trousers",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Police", "Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 40,
+      "warmth": 8,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.25, "blunt": 0.4, "cut": 0.6, "pierce": 0.45 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "thigh cargo" }
+      ]
+    },
+    "description": "Lighter bomb disposal trousers, padded with aramid, flame-resistant cloth and foam but cut for moving quickly. They still stop fragments, not bullets.",
+    "reference": "trousers_eod_light",
+    "variants": [],
+    "notes": "Folded in thirds, 400 by 340 mm and 90 mm thick: coyote tan with stitched padding lines, a ribbed knee pad, a flapped thigh cargo pocket and a hook-and-loop panel on the top fold, a waistband with belt loops. Takes `legs`, as trousers do. Pockets are guesses: the reference lists none. Protection sits below the full bomb disposal trousers. The worn look is pending: no worn model is authored."
+  }
+]

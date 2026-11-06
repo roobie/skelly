@@ -1,0 +1,11 @@
+{
+  "id": "sheet_faux_fur",
+  "file": "assets/models/sheet_faux_fur.glb",
+  "parts": {
+    "sheet_faux_fur": {
+      "node": "sheet_faux_fur:compound",
+      "massKg": 0.1,
+      "centreOfMass": [-0.00020181112548512453, 0.008865459249676582, -0.001278137128072444]
+    }
+  }
+}

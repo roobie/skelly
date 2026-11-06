@@ -1,0 +1,11 @@
+{
+  "id": "jacket_ninja",
+  "file": "assets/models/jacket_ninja.glb",
+  "parts": {
+    "jacket_ninja": {
+      "node": "jacket_ninja:compound",
+      "massKg": 0.5,
+      "centreOfMass": [0.006906977599588039, 0.01999271710744106, 0.00005841026961415435]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "face_veil",
+  "file": "assets/models/face_veil.glb",
+  "parts": {
+    "face_veil": {
+      "node": "face_veil:compound",
+      "massKg": 0.095,
+      "centreOfMass": [0.00008095273988090781, 0.006437702570287186, -0.004174869978141256]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "helmet_ball",
+  "file": "assets/models/helmet_ball.glb",
+  "parts": {
+    "helmet_ball": {
+      "node": "helmet_ball:compound",
+      "massKg": 0.57,
+      "centreOfMass": [7.450593253488551e-8, 0.1019630450574627, 0.004797474248887068]
+    }
+  }
+}

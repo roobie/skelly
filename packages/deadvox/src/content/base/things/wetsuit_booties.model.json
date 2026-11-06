@@ -1,0 +1,11 @@
+{
+  "id": "wetsuit_booties",
+  "file": "assets/models/wetsuit_booties.glb",
+  "parts": {
+    "wetsuit_booties": {
+      "node": "wetsuit_booties:compound",
+      "massKg": 0.3,
+      "centreOfMass": [-0.02685456428465749, 0.006519603491640775, -0.029265275928391787]
+    }
+  }
+}

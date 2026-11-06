@@ -1,0 +1,5 @@
+{
+  "id": "lens",
+  "file": "assets/models/lens.glb",
+  "parts": { "lens": { "node": "lens:compound", "massKg": 0.0038, "centreOfMass": [0, 0.0014193548387096775, 0] } }
+}

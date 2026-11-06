@@ -1,0 +1,14 @@
+{
+  "id": "mess_kit",
+  "file": "assets/models/mess_kit.glb",
+  "parts": {
+    "mess_kit": {
+      "node": "mess_kit:compound",
+      "massKg": 0.4,
+      "centreOfMass": [-0.00005385651086747458, 0.07781871513752645, 0]
+    }
+  },
+  "grip": { "at": [0, 0.043000000000000003, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

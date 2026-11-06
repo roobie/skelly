@@ -1,0 +1,14 @@
+{
+  "id": "ram_stick",
+  "file": "assets/models/ram_stick.glb",
+  "parts": {
+    "ram_stick": {
+      "node": "ram_stick:compound",
+      "massKg": 0.024,
+      "centreOfMass": [0.0001639950678175093, 0.0013970406905055488, 0.0009260172626387173]
+    }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

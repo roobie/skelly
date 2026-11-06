@@ -1,0 +1,14 @@
+{
+  "id": "smart_lamp",
+  "file": "assets/models/smart_lamp.glb",
+  "parts": {
+    "smart_lamp": {
+      "node": "smart_lamp:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0, 0.1535151713957684, 0.000004920452681646711]
+    }
+  },
+  "grip": { "at": [0, 0.008, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

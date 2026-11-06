@@ -1,0 +1,11 @@
+{
+  "id": "crimsonite_ingot",
+  "file": "assets/models/crimsonite_ingot.glb",
+  "parts": {
+    "crimsonite_ingot": {
+      "node": "crimsonite_ingot:compound",
+      "massKg": 1.6,
+      "centreOfMass": [-0.0000014135702746365104, 0.01312924071082391, 0.00000518309100700054]
+    }
+  }
+}

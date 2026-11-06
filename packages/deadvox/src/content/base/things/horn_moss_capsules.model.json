@@ -1,0 +1,14 @@
+{
+  "id": "horn_moss_capsules",
+  "file": "assets/models/horn_moss_capsules.glb",
+  "parts": {
+    "horn_moss_capsules": {
+      "node": "horn_moss_capsules:compound",
+      "massKg": 0.03,
+      "centreOfMass": [-0.003475728155339806, 0.012680494263018536, -1.1407499621483722e-19]
+    }
+  },
+  "grip": { "at": [0.0009999999999999974, 0.008, -0.008], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,10 @@
+{
+  "id": "caffeine_pills",
+  "file": "assets/models/caffeine_pills.glb",
+  "parts": {
+    "caffeine_pills": { "node": "caffeine_pills:vessel", "massKg": 0.034, "centreOfMass": [0, 0.029602843601895735, 0] }
+  },
+  "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

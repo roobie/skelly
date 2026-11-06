@@ -1,0 +1,11 @@
+{
+  "id": "robofac_gun_kit",
+  "file": "assets/models/robofac_gun_kit.glb",
+  "parts": {
+    "robofac_gun_kit": {
+      "node": "robofac_gun_kit:compound",
+      "massKg": 0.3,
+      "centreOfMass": [0.004010172351452333, 0.017350126551765703, 0.0008419910811136554]
+    }
+  }
+}

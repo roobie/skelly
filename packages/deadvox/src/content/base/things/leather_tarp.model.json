@@ -1,0 +1,11 @@
+{
+  "id": "leather_tarp",
+  "file": "assets/models/leather_tarp.glb",
+  "parts": {
+    "leather_tarp": {
+      "node": "leather_tarp:compound",
+      "massKg": 3,
+      "centreOfMass": [6.432947953128496e-20, 0.04683524516856555, 0.0045989812186491424]
+    }
+  }
+}

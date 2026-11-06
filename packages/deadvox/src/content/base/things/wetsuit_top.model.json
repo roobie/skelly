@@ -1,0 +1,11 @@
+{
+  "id": "wetsuit_top",
+  "file": "assets/models/wetsuit_top.glb",
+  "parts": {
+    "wetsuit_top": {
+      "node": "wetsuit_top:compound",
+      "massKg": 0.4,
+      "centreOfMass": [0, 0.01595991186296112, -0.00007704883076266993]
+    }
+  }
+}

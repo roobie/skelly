@@ -1,0 +1,11 @@
+{
+  "id": "cheerleader_top_short",
+  "file": "assets/models/cheerleader_top_short.glb",
+  "parts": {
+    "cheerleader_top_short": {
+      "node": "cheerleader_top_short:compound",
+      "massKg": 0.11,
+      "centreOfMass": [0, 0.010495417515274956, 0.000739307535641548]
+    }
+  }
+}

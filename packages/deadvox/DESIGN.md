@@ -1666,8 +1666,9 @@ behind unrelated declarations. See `src/content/base/graphics.jsonnet`,
 ### Assets and credits
 
 - **Licences.** Asset files (models, sounds, textures) are made for the game,
-  or are CC0 1.0, CC BY 3.0 or CC BY 4.0. Other licences, such as share-alike
-  or non-commercial ones, aren't accepted.
+  and are then content under CC BY-NC-SA 4.0, or are third-party files under
+  CC0 1.0, CC BY 3.0 or CC BY 4.0. Third-party share-alike or non-commercial
+  licences aren't accepted. See `docs/licensing.md`, "Content and code".
 - **Models are our own.** Every item and thing model is authored in the
   project's model tools and voxelized on its class grain; no model comes from a
   third party, whatever its licence. A third-party mesh isn't an authored recipe
@@ -1676,6 +1677,13 @@ behind unrelated declarations. See `src/content/base/graphics.jsonnet`,
   needs it (firearms through gungen, other items through the thing tool), not
   kept ready ahead of its item: a model with no item gets no play check and
   drifts until something uses it.
+- **Data from other games.** Another game's catalogue may tell us which
+  everyday things to make and roughly how large they are. Every id, name, text
+  and number we commit is our own: an id names the thing in our own words, and
+  a mass comes from our model's geometry and materials or from the real object,
+  never from the other game's table. One borrowed fact is harmless, but a table
+  copied row for row takes a database's contents wholesale, which share-alike
+  licences and the EU database right both reach. See `tools/cdda-reference.mjs`.
 - **The asset manifest.** Each pack records the source, author, licence and
   changes for its assets. Validation rejects disallowed licences, missing CC BY
   attribution, duplicate or unlisted files, and missing files. The manifest and
@@ -2074,9 +2082,9 @@ when removed, so layering neither clips through clothing nor leaves a missing bo
 Item-owned presentation and figure-owned attachment frames keep
 gear additions independent of human renderers and equipment ownership. The same
 human must serve different equipment owners without manufacturing inventory in
-the renderer. Attachment does not decide whether a garment needs rigid segments
-or skin deformation; that choice needs a visual comparison before multiplying
-clothing assets. See `src/core/schema.ts`, `ItemSchema` and `FigureSchema`;
+the renderer. Soft goods take generated rigid shells fitted from the body's own
+measures; see `docs/decisions/0011-generated-worn-fit.md`, "Decision". See
+`src/core/schema.ts`, `ItemSchema` and `FigureSchema`;
 `src/render/playerFigure.ts`, `WornPresentation` and `PlayerMeshes`.
 
 Carry and armour follow the torso's under-layer so changes to the body or clothing

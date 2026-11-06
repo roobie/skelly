@@ -1,0 +1,11 @@
+{
+  "id": "ear_pads",
+  "file": "assets/models/ear_pads.glb",
+  "parts": {
+    "ear_pads": {
+      "node": "ear_pads:compound",
+      "massKg": 0.054,
+      "centreOfMass": [0, 0.012200113058224986, -0.00015715093273035617]
+    }
+  }
+}

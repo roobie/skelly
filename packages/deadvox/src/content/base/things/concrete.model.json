@@ -1,0 +1,5 @@
+{
+  "id": "concrete",
+  "file": "assets/models/concrete.glb",
+  "parts": { "concrete": { "node": "concrete:compound", "massKg": 0.47, "centreOfMass": [0, 0.04166992014196983, 0] } }
+}

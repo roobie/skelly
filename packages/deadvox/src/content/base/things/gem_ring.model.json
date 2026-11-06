@@ -1,0 +1,7 @@
+{
+  "id": "gem_ring",
+  "file": "assets/models/gem_ring.glb",
+  "parts": {
+    "gem_ring": { "node": "gem_ring:compound", "massKg": 0.006, "centreOfMass": [0, 0.014846153846153846, 0] }
+  }
+}

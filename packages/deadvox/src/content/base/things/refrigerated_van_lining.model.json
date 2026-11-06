@@ -1,0 +1,18 @@
+{
+  "id": "refrigerated_van_lining",
+  "file": "assets/models/refrigerated_van_lining.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 190,
+      "centreOfMass": [-1.234375, 1.8063858695652173, 0],
+      "collision": [
+        { "min": [-2.4375, 2.21875, -0.84375], "max": [-0.03125, 2.25, 0.84375] },
+        { "min": [-2.4375, 0.875, 0.84375], "max": [-0.03125, 2.1875, 0.875] },
+        { "min": [-2.4375, 0.875, -0.875], "max": [-0.03125, 2.1875, -0.84375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

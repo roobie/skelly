@@ -1,0 +1,11 @@
+{
+  "id": "standing_floodlight",
+  "file": "assets/models/standing_floodlight.glb",
+  "parts": {
+    "standing_floodlight": {
+      "node": "standing_floodlight:compound",
+      "massKg": 4.5,
+      "centreOfMass": [0.001071428571428572, 1.3174806949806952, -0.002992277992277994]
+    }
+  }
+}

@@ -16,7 +16,7 @@ import {
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { glowingCopy } from '../src/render/itemEmissive.ts';
-import { applyModelMaterials, modelMaterialWarmUp } from '../src/render/modelMaterials.ts';
+import { applyModelMaterials, DRAWN_METALLIC_LIMIT, modelMaterialWarmUp } from '../src/render/modelMaterials.ts';
 import { prepareModel } from '../src/render/models.ts';
 
 const table = {
@@ -48,11 +48,21 @@ it('prepares exported material references from shared content without losing the
   for (const [index, channel] of material.color.toArray().entries()) {
     expect(channel).toBeCloseTo(srgbToLinear(definition.colour[index]! * colourMultiplier[index]!));
   }
-  expect(material.metalness).toBe(definition.finish.metallic);
+  expect(material.metalness).toBe(Math.min(definition.finish.metallic, DRAWN_METALLIC_LIMIT));
   expect(material.roughness).toBe(definition.finish.roughness);
   const before = material.color.clone();
   applyModelMaterials(scene, MATERIALS);
   expect(material.color).toEqual(before);
+});
+
+it('draws a fully metallic finish with some diffuse colour, since no environment lights it', () => {
+  const loaded = new MeshStandardMaterial();
+  loaded.userData = { materialId: 'mirror', colourMultiplier: [1, 1, 1] };
+  const mesh = new Mesh(new BoxGeometry(), loaded);
+  applyModelMaterials(new Group().add(mesh), {
+    mirror: { colour: [0.8, 0.8, 0.8], finish: { metallic: 1, roughness: 0.1 } },
+  });
+  expect((mesh.material as MeshStandardMaterial).metalness).toBeLessThan(1);
 });
 
 it('draws a sheened material with its sheen, keeping one prepared copy per shared loaded material', () => {

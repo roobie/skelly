@@ -1,0 +1,14 @@
+{
+  "id": "wasp_sting",
+  "file": "assets/models/wasp_sting.glb",
+  "parts": {
+    "wasp_sting": {
+      "node": "wasp_sting:compound",
+      "massKg": 0.036,
+      "centreOfMass": [0.04444932504821084, 0.018545318191557747, -0.00019177201628455098]
+    }
+  },
+  "grip": { "at": [0.047, 0.02, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

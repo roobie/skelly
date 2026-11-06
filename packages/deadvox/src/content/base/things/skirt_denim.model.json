@@ -1,0 +1,11 @@
+{
+  "id": "skirt_denim",
+  "file": "assets/models/skirt_denim.glb",
+  "parts": {
+    "skirt_denim": {
+      "node": "skirt_denim:compound",
+      "massKg": 0.27,
+      "centreOfMass": [0.0012381144103338368, 0.006350545210535147, -0.0020673712464351623]
+    }
+  }
+}

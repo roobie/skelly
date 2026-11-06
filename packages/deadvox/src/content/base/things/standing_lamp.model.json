@@ -1,0 +1,11 @@
+{
+  "id": "standing_lamp",
+  "file": "assets/models/standing_lamp.glb",
+  "parts": {
+    "standing_lamp": {
+      "node": "standing_lamp:compound",
+      "massKg": 5,
+      "centreOfMass": [0.00002286353012905193, 1.4527121227517532, 0]
+    }
+  }
+}

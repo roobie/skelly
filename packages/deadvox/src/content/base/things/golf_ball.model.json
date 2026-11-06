@@ -1,0 +1,11 @@
+{
+  "id": "golf_ball",
+  "file": "assets/models/golf_ball.glb",
+  "parts": {
+    "golf_ball": {
+      "node": "golf_ball:compound",
+      "massKg": 0.043,
+      "centreOfMass": [-7.005751146216178e-21, 0.021419306184012103, -1.827587255534655e-21]
+    }
+  }
+}

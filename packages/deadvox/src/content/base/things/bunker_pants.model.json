@@ -1,0 +1,11 @@
+{
+  "id": "bunker_pants",
+  "file": "assets/models/bunker_pants.glb",
+  "parts": {
+    "bunker_pants": {
+      "node": "bunker_pants:compound",
+      "massKg": 3.1,
+      "centreOfMass": [0.0019291566475757443, 0.047627176146548336, -0.0012012591264810024]
+    }
+  }
+}

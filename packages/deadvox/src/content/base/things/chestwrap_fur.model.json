@@ -1,0 +1,11 @@
+{
+  "id": "chestwrap_fur",
+  "file": "assets/models/chestwrap_fur.glb",
+  "parts": {
+    "chestwrap_fur": {
+      "node": "chestwrap_fur:compound",
+      "massKg": 0.22,
+      "centreOfMass": [-3.1259187232749885e-20, 0.031804549920640905, -0.08298465724435038]
+    }
+  }
+}

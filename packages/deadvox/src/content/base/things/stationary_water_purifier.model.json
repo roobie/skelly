@@ -1,0 +1,11 @@
+{
+  "id": "stationary_water_purifier",
+  "file": "assets/models/stationary_water_purifier.glb",
+  "parts": {
+    "stationary_water_purifier": {
+      "node": "stationary_water_purifier:compound",
+      "massKg": 19,
+      "centreOfMass": [0.00006762025112252305, 0.22614161266905047, 0.0031827225553195475]
+    }
+  }
+}

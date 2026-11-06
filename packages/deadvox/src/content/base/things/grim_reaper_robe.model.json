@@ -1,0 +1,11 @@
+{
+  "id": "grim_reaper_robe",
+  "file": "assets/models/grim_reaper_robe.glb",
+  "parts": {
+    "grim_reaper_robe": {
+      "node": "grim_reaper_robe:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0, 0.008976034780109226, -0.004131179936763439]
+    }
+  }
+}

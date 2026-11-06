@@ -1,0 +1,11 @@
+{
+  "id": "thermostat",
+  "file": "assets/models/thermostat.glb",
+  "parts": {
+    "thermostat": {
+      "node": "thermostat:compound",
+      "massKg": 0.16,
+      "centreOfMass": [-0.004733112308329882, 0.012357646083713219, 0]
+    }
+  }
+}

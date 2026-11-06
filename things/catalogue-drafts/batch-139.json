@@ -1,0 +1,254 @@
+[
+  {
+    "id": "holster",
+    "model": "holster",
+    "name": "Leather holster",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Police", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "encumbrance": 3, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [2, 3], "handlingSimSeconds": 0.7, "name": "holster" }] },
+    "fits": ["belt"],
+    "description": "A brown leather belt holster for a pistol, with a snap strap over the grip to keep the gun in.",
+    "reference": "holster",
+    "variants": [],
+    "notes": "A brown leather holster 180 mm tall standing on its toe, the trigger-guard bulge on +x, a darker rim and toe, a thumb-break strap snapped in a loop over the mouth with a brass stud, and a belt loop on its back. It hangs from its loop on a belt, so it mounts on a belt and takes no body slot; the reference covers either leg, and the side has no content field. Its pocket is sized to a pistol, two cells by three as Deadvox's pistols and revolvers are. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "nylon_holster",
+    "model": "holster",
+    "name": "Nylon holster",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Police", "Military"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "encumbrance": 3, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [2, 3], "handlingSimSeconds": 0.7, "name": "holster" }] },
+    "fits": ["belt"],
+    "finishes": {
+      "body": "nylon-black",
+      "loop": "webbing-black",
+      "mouth": "plastic-matte-black",
+      "strap": "webbing-black",
+      "stud": "plastic-matte-black",
+      "trim": "webbing-black"
+    },
+    "description": "A black nylon belt holster for a pistol, lighter and tougher than leather, with a snap strap over the grip.",
+    "reference": "nylon_holster",
+    "variants": [],
+    "notes": "Rides on the leather holster's model in black nylon and webbing; the 20 g lighter mass is within the shared model's. It hangs from its loop on a belt, so it mounts on a belt and takes no body slot; the reference covers either leg, and the side has no content field. Its pocket is sized to a pistol, two cells by three as Deadvox's pistols and revolvers are. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "compact_holster",
+    "model": "holster",
+    "name": "Compact holster",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Police"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "encumbrance": 3, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "holster" }] },
+    "fits": ["belt"],
+    "description": "A small brown leather belt holster cut for a pocket pistol, with a snap strap over the grip.",
+    "reference": "XS_holster",
+    "variants": [],
+    "notes": "A smaller size of the leather holster, so it rides on the holster model; the reference weighs 165 g against the model's 220 g. Its pocket is sized to a small pistol, two cells by two. The reference names it plain holster; the name says compact so the two read apart. It hangs from its loop on a belt, so it mounts on a belt and takes no body slot; the reference covers either leg, and the side has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "compact_nylon_holster",
+    "model": "holster",
+    "name": "Compact nylon holster",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Police"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "encumbrance": 3, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "holster" }] },
+    "fits": ["belt"],
+    "finishes": {
+      "body": "nylon-black",
+      "loop": "webbing-black",
+      "mouth": "plastic-matte-black",
+      "strap": "webbing-black",
+      "stud": "plastic-matte-black",
+      "trim": "webbing-black"
+    },
+    "description": "A small black nylon belt holster cut for a pocket pistol, with a snap strap over the grip.",
+    "reference": "XS_nylon_holster",
+    "variants": [],
+    "notes": "A smaller size of the nylon holster, so it rides on the holster model with the nylon finishes; the reference weighs 150 g against the model's 220 g. Its pocket is sized to a small pistol, two cells by two. It hangs from its loop on a belt, so it mounts on a belt and takes no body slot; the reference covers either leg, and the side has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "fast_draw_holster",
+    "model": "fast_draw_holster",
+    "name": "Fast-draw holster",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Police", "Hunting"], "tiers": ["Tier2"] },
+    "wearable": { "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [2, 3], "handlingSimSeconds": 0.4, "name": "holster" }] },
+    "fits": ["belt"],
+    "description": "An open-topped tan leather holster raked forward and cut low at the front, so a pistol clears it in one quick pull.",
+    "reference": "sholster",
+    "variants": [],
+    "notes": "A tan leather holster 150 mm tall, raked forward 30 mm at the toe, open-topped with no strap, cut low over the trigger guard, with a steel tension screw on its face and a belt loop on its back. It hangs from its loop on a belt, so it mounts on a belt and takes no body slot; the reference covers either leg, and the side has no content field. Its pocket is sized to a pistol, two cells by three as Deadvox's pistols and revolvers are. The quick draw is its short handling time. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "large_holster",
+    "model": "large_holster",
+    "name": "Large holster",
+    "category": "bag",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Police", "Hunting"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "thigh", "encumbrance": 4, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [2, 4], "handlingSimSeconds": 0.9, "name": "holster" }] },
+    "description": "A long chestnut leather holster for a big handgun, hung low from a belt shank and tied flat to the thigh by a buckled leg strap.",
+    "reference": "XL_holster",
+    "variants": [],
+    "notes": "A chestnut leather holster 260 mm tall standing on its toe, a thumb break over the mouth, a belt shank rising 90 mm behind it with its top folded over as the belt loop, and a leg strap wrapped round the sheath just above its toe and lying in a closed, buckled loop on the floor behind it. CHECK VOLUME (x41): the reference volume is the holster alone, while the leg strap spread on the floor and the shank fill the box with air. The leg strap ties it to the thigh, so it keeps a body slot, thigh, as the drop-leg holster does; the reference covers either leg and the side has no content field. Its pocket is sized to a long-barrelled handgun, two cells by four. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "large_nylon_holster",
+    "model": "large_holster",
+    "name": "Large nylon holster",
+    "category": "bag",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Police", "Military"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "thigh", "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [2, 4], "handlingSimSeconds": 0.9, "name": "holster" }] },
+    "finishes": {
+      "body": "nylon-black",
+      "buckle": "plastic-matte-black",
+      "loop": "webbing-black",
+      "mouth": "plastic-matte-black",
+      "strap": "webbing-black",
+      "stud": "plastic-matte-black",
+      "trim": "webbing-black"
+    },
+    "description": "A long black nylon holster for a big handgun, hung low from a belt shank and tied flat to the thigh by a buckled leg strap.",
+    "reference": "XL_nylon_holster",
+    "variants": [],
+    "notes": "Rides on the large holster's model in black nylon and webbing; the reference weighs 287 g against the model's 320 g. CHECK VOLUME (x41): as on the large holster, the leg strap and shank fill the box with air. The leg strap ties it to the thigh, so it keeps the thigh slot. Its pocket is sized to a long-barrelled handgun, two cells by four. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "double_holster",
+    "model": "double_holster",
+    "name": "Double holster",
+    "category": "bag",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier2"] },
+    "wearable": { "encumbrance": 5, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 3], "handlingSimSeconds": 0.9, "name": "left holster" },
+        { "grid": [2, 3], "handlingSimSeconds": 0.9, "name": "right holster" }
+      ]
+    },
+    "fits": ["belt"],
+    "description": "Two brown leather pistol holsters sewn side by side on one strap, each with its own snap strap.",
+    "reference": "side_double_holster",
+    "variants": [],
+    "notes": "Two brown leather holsters 180 mm tall standing side by side 85 mm apart, each with a thumb break, joined by a back strap with a belt loop behind each. It hangs from its loops on a belt, so it mounts on a belt and takes no body slot; the reference covers either leg. Two pockets, each sized to a pistol; the crowded draw is their longer handling time. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "nylon_double_holster",
+    "model": "double_holster",
+    "name": "Nylon double holster",
+    "category": "bag",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential", "Police", "Military"], "tiers": ["Tier2"] },
+    "wearable": { "encumbrance": 5, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 3], "handlingSimSeconds": 0.9, "name": "left holster" },
+        { "grid": [2, 3], "handlingSimSeconds": 0.9, "name": "right holster" }
+      ]
+    },
+    "fits": ["belt"],
+    "finishes": {
+      "body": "nylon-black",
+      "loop": "webbing-black",
+      "mouth": "plastic-matte-black",
+      "strap": "webbing-black",
+      "stud": "plastic-matte-black",
+      "trim": "webbing-black"
+    },
+    "description": "Two black nylon pistol holsters sewn side by side on one strap, each with its own snap strap.",
+    "reference": "side_nylon_double_holster",
+    "variants": [],
+    "notes": "Rides on the leather double holster's model in black nylon and webbing, at the same 500 g. It mounts on a belt and takes no body slot; the reference covers either leg. Two pockets, each sized to a pistol; the crowded draw is their longer handling time. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "double_holster_tandem",
+    "model": "double_holster_tandem",
+    "name": "Stacked double holster",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": ["Police", "Military"], "tiers": ["Tier2"] },
+    "wearable": { "encumbrance": 8, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 3], "handlingSimSeconds": 0.7, "name": "inner holster" },
+        { "grid": [2, 3], "handlingSimSeconds": 1.2, "name": "outer holster" }
+      ]
+    },
+    "fits": ["belt"],
+    "description": "Two charcoal nylon pistol holsters trimmed in black webbing, strapped one in front of the other, the outer one awkward to draw from.",
+    "reference": "FB_nylon_double_holster",
+    "variants": [],
+    "notes": "Two charcoal nylon holsters 180 mm tall with black webbing trim, the outer one riding 44 mm in front of the inner one and 30 mm lower on a stitched spacer strap, each with a thumb break, and a belt loop behind the inner one. It mounts on a belt and takes no body slot; the reference covers either leg. Two pockets, each sized to a pistol: the inner one draws at a single holster's pace and the outer one, reached across the inner gun, is slower. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "shoulder_holster",
+    "model": "shoulder_holster",
+    "name": "Shoulder holster",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential", "Police"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "shoulders", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 3], "handlingSimSeconds": 0.6, "name": "holster" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "magazine pouch" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "magazine pouch" }
+      ]
+    },
+    "description": "A leather harness worn under a jacket, with a pistol holster under one arm and two magazine pouches under the other.",
+    "reference": "shoulder_holster",
+    "variants": [],
+    "notes": "Laid flat, outside up, 640 mm across: two shoulder loops of 25 mm brown strap meeting at a diamond patch behind the neck, a holster 190 mm long lying along the left loop's end with a thumb break, and a twin magazine pouch with snapped flaps at the right loop's end. CHECK VOLUME (x12): the loops spread on the floor fill the box with air. A shoulder harness takes the shoulders slot, as suspenders do; the reference covers the torso. Pockets: one sized to a pistol and two to a pistol magazine each, one cell by two. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "single_point_sling",
+    "model": "single_point_sling",
+    "name": "Single-point sling",
+    "category": "misc",
+    "size": [2, 2],
+    "economy": { "usage": ["Police", "Military", "Hunting"], "tiers": ["Tier2"] },
+    "sling": true,
+    "description": "A webbing loop with a snap hook. Fitted to a long gun, it lets you carry the gun on your shoulder with your hands free.",
+    "reference": "single_sling",
+    "variants": [],
+    "notes": "Laid flat: a body loop 1.3 m round of 32 mm black webbing with a sliding adjuster, and a 200 mm lead through a padded bungee section to a steel swivel snap hook. CHECK VOLUME (x18): the loop spread on the floor is mostly air. A sling is an attachment fitted to a long gun's sling mount, as Deadvox's weapon sling is (`packages/deadvox/DESIGN.md`, \"Shoulder and sling\"): it takes no body slot and has no pocket, and the gun it is fitted to takes the shoulder slot. It has no handling effect. The worn look of its strap is pending: no worn model is authored."
+  },
+  {
+    "id": "western_gun_belt",
+    "model": "western_gun_belt",
+    "name": "Western gun belt",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "waist", "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 3], "handlingSimSeconds": 0.6, "name": "holster" },
+        { "grid": [2, 1], "handlingSimSeconds": 0.6, "name": "cartridge loops" }
+      ]
+    },
+    "attachPoints": [
+      { "id": "front_left", "name": "left front", "reachSimSeconds": 0, "standard": "belt" },
+      { "id": "hip_left", "name": "left hip", "reachSimSeconds": 0.2, "standard": "belt" }
+    ],
+    "description": "A wide leather belt with a holster hanging at the hip and a row of cartridge loops around the back.",
+    "reference": "western_holster",
+    "variants": [],
+    "notes": "A belt 1.1 m long and 65 mm wide laid flat in a U, outside up, with both runs ending at -x: the buckle run along +z and the tip run along -z, joined by the bend at +x. Fourteen cartridge loops stand along the tip run; a holster 200 mm long lies hanging off the buckle run near the bend from a slotted drop loop, with a hammer thong across it. CHECK VOLUME (x14): the U and the hanging holster spread on the floor fill the box with air. A belt is the waist item; its sewn holster and loops are pockets, one sized to a pistol and the cartridge loops two cells by one for loose rounds. As a waist host it keeps two belt points on the free buckle run: the left front at its middle and the left hip by the buckle. The reference covers the torso and legs. The worn look is pending: no worn model is authored."
+  }
+]

@@ -1,0 +1,287 @@
+[
+  {
+    "id": "armor_lorica",
+    "model": "armor_lorica",
+    "name": "Segmented iron cuirass",
+    "category": "clothing",
+    "size": [4, 5],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 15,
+      "warmth": 15,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.08, "blunt": 0.3, "cut": 0.6, "pierce": 0.45 }
+    },
+    "description": "Curved iron bands that wrap the body and overlap downwards, hooked shut down the front, with hinged plates at the chest and arched lames over each shoulder. A museum-grade replica built to be worn, and it still works.",
+    "reference": "armor_lorica",
+    "variants": ["xl_armor_lorica", "xs_armor_lorica"],
+    "notes": "Laid out front up, neck towards -z, as the earlier torso armour lies. 670 mm across the shoulder guards and 550 mm long: seven girth hoops in `iron-dull` with `steel-grey` edges and paired `brass-polished` hooks, breast and collar plates either side of the neck with brass hinges and buckles, four arched lames over each shoulder on two straps, all seated at one height on a `leather-brown` backing. CHECK VOLUME: the reference volume is the armour packed; laid flat its bounding box is about five times that. Slot `vest` follows the earlier torso armour (the cardboard cuirass and the armour suits): it goes over clothes. The xl and xs sizes share the model. Protection is a judgement for 1-2 mm iron bands. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_mc_chestplate",
+    "model": "armor_mc_chestplate",
+    "name": "Steel chestplate",
+    "category": "clothing",
+    "size": [4, 5],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 20,
+      "warmth": 20,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.75, "pierce": 0.6 }
+    },
+    "description": "A breast and back of 4 mm medium steel with lames at the waist, tassets over the thighs and a pair of spaulders over the upper arms. Heavy and stiff, but blades and teeth skid off it.",
+    "reference": "armor_mc_chestplate",
+    "variants": ["xl_armor_mc_chestplate"],
+    "notes": "Laid out front up, neck towards -z, as the earlier torso armour lies. 700 mm across the spaulders and 610 mm from the neck to the tassets. A breastplate on a flat backplate, ridged down the middle with rims at the neck and arm holes, shoulder and side straps with buckles and riveted waist lames, two tassets of two lames each hung from the lowest lame, and two arched lames over each upper arm. Medium steel in `steel-grey`, straps `leather-brown` with `steel` buckles and rivets. The tassets and spaulders stand for the reference's arm and leg coverage. Slot `vest` follows the earlier torso armour (the cardboard cuirass and the armour suits): it goes over clothes. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_mc_heavy_chestplate",
+    "model": "armor_mc_heavy_chestplate",
+    "name": "Heavy steel chestplate",
+    "category": "clothing",
+    "size": [4, 5],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 25,
+      "warmth": 20,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.82, "pierce": 0.7 }
+    },
+    "description": "A thick 6 mm medium steel breast and back with a second plate riveted over the belly, three waist lames, tassets and deep spaulders. It stops nearly anything with an edge, and it is a load to carry.",
+    "reference": "armor_mc_heavy_chestplate",
+    "variants": ["xl_armor_mc_heavy_chestplate"],
+    "notes": "Laid out front up, neck towards -z, as the earlier torso armour lies. 700 mm across the spaulders and 660 mm long. The steel chestplate's cut with 6 mm plate, a riveted plackart over the belly, three waist lames and three lames per spaulder. Medium steel in `steel-grey`. Slot `vest` follows the earlier torso armour (the cardboard cuirass and the armour suits): it goes over clothes. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_mc_light_chestplate",
+    "model": "armor_mc_light_chestplate",
+    "name": "Light steel chestplate",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 15,
+      "warmth": 20,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.08, "blunt": 0.3, "cut": 0.65, "pierce": 0.5 }
+    },
+    "description": "A thin 2 mm medium steel breast and back with a single waist lame and no extra plates, cut for someone who has to keep moving.",
+    "reference": "armor_mc_light_chestplate",
+    "variants": ["xl_armor_mc_light_chestplate"],
+    "notes": "Laid out front up, neck towards -z, as the earlier torso armour lies. 420 mm across and 440 mm long. The steel chestplate's cut with 3 mm plate (2 mm is the finest grain the export takes), one waist lame and no tassets or spaulders. Medium steel in `steel-grey`. Slot `vest` follows the earlier torso armour (the cardboard cuirass and the armour suits): it goes over clothes. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_qt_chestplate",
+    "model": "armor_qt_chestplate",
+    "name": "Tempered steel chestplate",
+    "category": "clothing",
+    "size": [4, 5],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 20,
+      "warmth": 20,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.38, "cut": 0.82, "pierce": 0.68 }
+    },
+    "description": "A breast and back of quenched and tempered 4 mm steel, the straw tint of the heat still on it, with waist lames, tassets and spaulders. As good as plate gets without a forge-master's name on it.",
+    "reference": "armor_qt_chestplate",
+    "variants": ["xl_armor_qt_chestplate"],
+    "notes": "Laid out front up, neck towards -z, as the earlier torso armour lies. The steel chestplate's cut (tassets, two-lame spaulders, two waist lames) in `steel-heat-tint`, the tempered steel grade. Its own row rather than a finishes map because it is a separate item with its own protection. Slot `vest` follows the earlier torso armour (the cardboard cuirass and the armour suits): it goes over clothes. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_qt_heavy_chestplate",
+    "model": "armor_qt_heavy_chestplate",
+    "name": "Heavy tempered steel chestplate",
+    "category": "clothing",
+    "size": [4, 5],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 25,
+      "warmth": 20,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.1, "blunt": 0.42, "cut": 0.88, "pierce": 0.76 }
+    },
+    "description": "Thick tempered steel, 6 mm through, with a riveted belly plate, three waist lames, tassets and deep spaulders. The best a smith can do short of a power suit, and every kilo of it shows.",
+    "reference": "armor_qt_heavy_chestplate",
+    "variants": ["xl_armor_qt_heavy_chestplate"],
+    "notes": "Laid out front up, neck towards -z, as the earlier torso armour lies. The heavy steel chestplate's cut (plackart, three lames, three-lame spaulders) in `steel-heat-tint`. Slot `vest` follows the earlier torso armour (the cardboard cuirass and the armour suits): it goes over clothes. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_qt_light_chestplate",
+    "model": "armor_qt_light_chestplate",
+    "name": "Light tempered steel chestplate",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 15,
+      "warmth": 20,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0.08, "blunt": 0.32, "cut": 0.72, "pierce": 0.58 }
+    },
+    "description": "A thin breast and back of tempered 2 mm steel with one waist lame. Light enough to run in and still hard enough to turn a blade.",
+    "reference": "armor_qt_light_chestplate",
+    "variants": ["xl_armor_qt_light_chestplate"],
+    "notes": "Laid out front up, neck towards -z, as the earlier torso armour lies. The light steel chestplate's cut in `steel-heat-tint`. Slot `vest` follows the earlier torso armour (the cardboard cuirass and the armour suits): it goes over clothes. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_riot_torso",
+    "model": "armor_riot_torso",
+    "name": "Riot chest guard",
+    "category": "clothing",
+    "size": [4, 5],
+    "economy": { "usage": ["Police"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 6,
+      "warmth": 20,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.2, "blunt": 0.6, "cut": 0.4, "pierce": 0.25 }
+    },
+    "description": "A moulded black plastic chest shell over a padded back, with guards for the upper arms and thighs hanging off it on straps. Webbing rows cross the chest under a pale band where the agency's lettering goes.",
+    "reference": "armor_riot_torso",
+    "variants": [],
+    "notes": "Laid out front up, neck towards -z, as the earlier torso armour lies. 680 mm across the arm guards and 700 mm from the collar to the foot of the thigh guards: the chest shell in `plastic-matte-black` on a `plastic-charcoal` pad, three `webbing-black` rows, a `cloth-cream` band where the lettering goes (no lettering is drawn), arm guards joined at the shoulders and thigh guards hung from the hem, `hook-loop-grey` straps. CHECK VOLUME: the reference volume is the guard packed. The chest webbing is not an attach host: the reference gives it no pouch use, as with the riot suit. Slot `vest` follows the earlier torso armour (the cardboard cuirass and the armour suits): it goes over clothes. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_thessalonian",
+    "model": "armor_thessalonian",
+    "name": "Bronze scale armour",
+    "category": "clothing",
+    "size": [4, 5],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 17,
+      "warmth": 18,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.1, "blunt": 0.3, "cut": 0.65, "pierce": 0.5 }
+    },
+    "description": "Rows of small burnished bronze scales laced over a leather backing, with scaled flaps over the shoulders and a skirt of bronze-tipped leather strips. It looks like it came out of a museum case, and a few torn-off scales say it has been in a fight since.",
+    "reference": "armor_thessalonian",
+    "variants": [],
+    "notes": "Laid out front up, neck towards -z, as the earlier torso armour lies. 660 mm across the shoulder flaps and 590 mm from the neck to the foot of the strips: thirteen staggered rows of `bronze-polished` scales on a `leather-brown` backing, a `bronze` band at the neck and arm holes, three-row scaled shoulder flaps and ten `leather-chestnut` strips tipped in bronze. Four scales are missing for the battle damage. Slot `vest` follows the earlier torso armour (the cardboard cuirass and the armour suits): it goes over clothes. Protection is a judgement for bronze scale. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bookplate",
+    "model": "bookplate",
+    "name": "Book armour",
+    "category": "clothing",
+    "size": [4, 5],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 20,
+      "warmth": 10,
+      "wearPerDamage": 0.004,
+      "protects": { "acid": 0.02, "blunt": 0.2, "cut": 0.35, "pierce": 0.25 }
+    },
+    "description": "Thick books and catalogues laid edge to edge into a front and a back, then wrapped in duct tape over the shoulders and round the chest. Clumsy, stiff and surprisingly hard to bite through.",
+    "reference": "bookplate",
+    "variants": [],
+    "notes": "Laid out front up, neck towards -z, as the earlier torso armour lies. 530 mm across and 630 mm long: a front and back panel, each six paper blocks (`paper-white` page edges under `paper-butcher` covers), bound by three `tape-silver` bands round the body and two over the shoulders, with a loose tape end. Slot `vest` follows the earlier torso armour (the cardboard cuirass and the armour suits): it goes over clothes. Protection is a judgement for stacked paper. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "carpet_cuirass",
+    "model": "carpet_cuirass",
+    "name": "Carpet tabard",
+    "category": "clothing",
+    "size": [4, 5],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 10,
+      "warmth": 15,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0.05, "blunt": 0.25, "cut": 0.3, "pierce": 0.15 }
+    },
+    "description": "A length of heavy carpet folded over the shoulders with a hole cut for the head, its edges bound and a cord knotted round the waist. It soaks up a surprising amount of punishment, and it is very much a look.",
+    "reference": "carpet_cuirass",
+    "variants": [],
+    "notes": "Folded at the shoulders and lying front up, the fold and head hole towards -z, 540 mm across and 610 mm long: two layers of `carpet-pile` with a `plastic-charcoal` head hole, `cloth-brown` binding on the cut edges and a `cord-cotton` waist cord with a knot and two loose ends. Slot `vest` follows the earlier torso armour (the cardboard cuirass and the armour suits): it goes over clothes. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_chainmail_vest",
+    "model": "ch_chainmail_vest",
+    "name": "Hardened mail vest",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.15, "cut": 0.75, "pierce": 0.4 }
+    },
+    "description": "A sleeveless shirt of hardened steel rings, with leather straps over the shoulders buckling to a band round the waist so the weight sits on the hips instead of the neck.",
+    "reference": "ch_chainmail_vest",
+    "variants": ["xl_ch_chainmail_vest", "xs_ch_chainmail_vest"],
+    "notes": "Laid out front up, neck towards -z, as the earlier torso armour lies. 490 mm across and 630 mm long: the mail in `steel-mail-dark` with `steel-mail` ring rows, `leather-brown` shoulder straps buckled to a waist band with `steel` buckles. CHECK VOLUME LENGTH: the reference gives the vest bundled up (100 mm, 1 L); laid flat it is 630 mm long. Slot `vest` follows the earlier torso armour (the cardboard cuirass and the armour suits): it goes over clothes. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_chestguard_metal_sheets",
+    "model": "ch_chestguard_metal_sheets",
+    "name": "Hardened sheet-metal chest guard",
+    "category": "clothing",
+    "size": [4, 5],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 18,
+      "warmth": 10,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.08, "blunt": 0.3, "cut": 0.65, "pierce": 0.5 }
+    },
+    "description": "Scrap sheet steel hammered to fit the chest and back, heat-hardened, laced at the shoulders and belted round the waist. Rough, dented and very hard to get through.",
+    "reference": "ch_chestguard_metal_sheets",
+    "variants": [],
+    "notes": "Laid out front up, neck towards -z, as the earlier torso armour lies. 530 mm across and 660 mm long: a front sheet bent across the chest over a flat back sheet in `steel-hardened`, `steel-grey` hammer dents, laces at each shoulder and two `leather-brown` belts buckled at the front. CHECK VOLUME: the reference volume is the piece packed; laid flat its bounding box is larger. Slot `vest` follows the earlier torso armour (the cardboard cuirass and the armour suits): it goes over clothes. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_chestguard_metal_sheets_heavy",
+    "model": "ch_chestguard_metal_sheets_heavy",
+    "name": "Heavy hardened sheet-metal chest guard",
+    "category": "clothing",
+    "size": [4, 5],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 30,
+      "warmth": 10,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0.08, "blunt": 0.35, "cut": 0.75, "pierce": 0.6 }
+    },
+    "description": "Two layers of hardened scrap steel hammered round the torso, the second bolted over the chest. Brutally heavy and about as safe as a junkyard gets.",
+    "reference": "ch_chestguard_metal_sheets_heavy",
+    "variants": [],
+    "notes": "Laid out front up, neck towards -z, as the earlier torso armour lies. The hardened chest guard's cut with a second sheet bolted over the chest. CHECK VOLUME: the reference volume is the guard packed; laid flat its bounding box is larger. The doubled thickness is shown by the bolted chest sheet. Slot `vest` follows the earlier torso armour (the cardboard cuirass and the armour suits): it goes over clothes. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_chestguard_metal_sheets_light",
+    "model": "ch_chestguard_metal_sheets_light",
+    "name": "Light hardened sheet-metal chest guard",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 4,
+      "warmth": 5,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.05, "blunt": 0.25, "cut": 0.55, "pierce": 0.4 }
+    },
+    "description": "A hardened sheet-steel guard over the upper chest only, laced at the shoulders and belted under the ribs, leaving the belly free to bend.",
+    "reference": "ch_chestguard_metal_sheets_light",
+    "variants": [],
+    "notes": "Laid out front up, neck towards -z, as the earlier torso armour lies. 510 mm across and 390 mm long: the hardened chest guard's cut, cut short below the ribs with one belt. CHECK VOLUME: the reference volume is the piece packed; laid flat its bounding box is larger. Slot `vest` follows the earlier torso armour (the cardboard cuirass and the armour suits): it goes over clothes. The worn look is pending: no worn model is authored."
+  }
+]

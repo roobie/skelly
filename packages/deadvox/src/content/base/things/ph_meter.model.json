@@ -1,0 +1,11 @@
+{
+  "id": "ph_meter",
+  "file": "assets/models/ph_meter.glb",
+  "parts": {
+    "ph_meter": {
+      "node": "ph_meter:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-0.013138088012139606, 0.03477661528631899, 0.005562974203338392]
+    }
+  }
+}

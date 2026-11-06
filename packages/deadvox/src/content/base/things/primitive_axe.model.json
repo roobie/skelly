@@ -1,0 +1,14 @@
+{
+  "id": "primitive_axe",
+  "file": "assets/models/primitive_axe.glb",
+  "parts": {
+    "primitive_axe": {
+      "node": "primitive_axe:compound",
+      "massKg": 1,
+      "centreOfMass": [0.36720206584893483, 0, 0.013071659134925756]
+    }
+  },
+  "grip": { "at": [0.098, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

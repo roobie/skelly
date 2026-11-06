@@ -1,0 +1,290 @@
+[
+  {
+    "id": "armor_qt_plate",
+    "model": "armor_qt_plate",
+    "name": "Tempered plate armour",
+    "category": "clothing",
+    "size": [5, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 20,
+      "warmth": 20,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.15, "blunt": 0.5, "cut": 0.88, "pierce": 0.78 }
+    },
+    "description": "A full suit of quenched and tempered steel plate over a mail skirt and gussets, strapped and buckled at every limb. It turns almost any blade, at the cost of moving like a door.",
+    "reference": "armor_qt_plate",
+    "variants": ["xl_armor_qt_plate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 1.3 to 1.5 m from collar to toe: the pieces a player finds as one set. CHECK LENGTH and VOLUME: the reference's longest side and volume are the suit packed together; the model lays it out so the pieces read. Pieces: a curved breastplate with a centre ridge, a three-lame fauld, a mail skirt below it and mail gussets at the armpits, shoulder cops with two lames, upper and lower arm plates round a winged elbow cop, thigh and shin plates round a winged knee cop, three sabaton lames. Tempered steel uses `steel-heat-tint`, mail `steel-mail` with `steel-mail-dark` ring rows, straps `leather-tan` with `brass-dull` buckles. Slot `vest` follows the earlier whole-body armour (the cardboard armour): Deadvox has no whole-body slot, and the suit goes over clothes. Protection is graded against the light and heavy suits that share its layout. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_qt_lightplate",
+    "model": "armor_qt_lightplate",
+    "name": "Light tempered plate armour",
+    "category": "clothing",
+    "size": [5, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 15,
+      "warmth": 20,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.12, "blunt": 0.38, "cut": 0.82, "pierce": 0.7 }
+    },
+    "description": "A light suit of thin tempered steel plates over mail, cut back at the shoulders and feet so the wearer can still run in it.",
+    "reference": "armor_qt_lightplate",
+    "variants": ["xl_armor_qt_lightplate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 1.3 to 1.5 m from collar to toe: the pieces a player finds as one set. CHECK LENGTH and VOLUME: the reference's longest side and volume are the suit packed together; the model lays it out so the pieces read. The tempered plate suit's layout with thinner plates, small one-lame shoulder cops, a two-lame fauld, cops without wings and no sabatons. Tempered steel uses `steel-heat-tint`, mail `steel-mail` with `steel-mail-dark` ring rows, straps `leather-tan` with `brass-dull` buckles. Slot `vest` follows the earlier whole-body armour (the cardboard armour): Deadvox has no whole-body slot, and the suit goes over clothes. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_qt_heavyplate",
+    "model": "armor_qt_heavyplate",
+    "name": "Heavy tempered plate armour",
+    "category": "clothing",
+    "size": [5, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 25,
+      "warmth": 20,
+      "wearPerDamage": 0.0005,
+      "protects": { "acid": 0.18, "blunt": 0.6, "cut": 0.92, "pierce": 0.84 }
+    },
+    "description": "A heavy suit of thick tempered steel plate with a gorget, broad shoulder cops and a deep fauld over mail. Little gets through it, and the wearer feels every step.",
+    "reference": "armor_qt_heavyplate",
+    "variants": ["xl_armor_qt_heavyplate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 1.3 to 1.5 m from collar to toe: the pieces a player finds as one set. CHECK LENGTH and VOLUME: the reference's longest side and volume are the suit packed together; the model lays it out so the pieces read. The tempered plate suit's layout with thicker plates, a gorget over the neck, broad three-lame shoulder cops and a four-lame fauld. Tempered steel uses `steel-heat-tint`, mail `steel-mail` with `steel-mail-dark` ring rows, straps `leather-tan` with `brass-dull` buckles. Slot `vest` follows the earlier whole-body armour (the cardboard armour): Deadvox has no whole-body slot, and the suit goes over clothes. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_nomad_plate_on",
+    "model": "armor_nomad_plate",
+    "name": "Ventilated plate armour",
+    "category": "clothing",
+    "size": [5, 6],
+    "economy": { "usage": ["Military"], "tiers": ["Tier4"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 22,
+      "warmth": 20,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.2, "blunt": 0.52, "cut": 0.9, "pierce": 0.8 }
+    },
+    "description": "Tempered steel plate worn over a fitted black bodysuit with an aramid liner under the chest. Vent panels down the flanks and cooling lines along the limbs carry air to the skin underneath.",
+    "reference": "armor_nomad_plate_on",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, about 1.3 to 1.5 m from collar to toe: the pieces a player finds as one set. CHECK LENGTH and VOLUME: the reference's longest side and volume are the suit packed together; the model lays it out so the pieces read. The tempered plate suit resting on a black stretch bodysuit (`nylon-black`) that shows between the plates and at the cuffs and feet, with ribbed vent panels on the flanks and a cooling line down each arm and leg in `plastic-charcoal`. The reference is the suit with its cooling running, powered from an implant Deadvox does not have; the cooling and its power source are pending, so the draft has no power use or cooling effect, and the on and off states would look the same, so one model serves both. The aramid liner is inside the chest and does not show. Slot `vest` follows the earlier whole-body armour (the cardboard armour): Deadvox has no whole-body slot, and the suit goes over clothes. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_plarmor",
+    "model": "armor_plarmor",
+    "name": "Plated leather armour",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 22,
+      "warmth": 25,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.6, "pierce": 0.42 }
+    },
+    "description": "A suit of thick leather with steel plates riveted over the chest, belly, arms, thighs, knees and shins. Heavier than plain leather, and a good deal harder to cut through.",
+    "reference": "armor_plarmor",
+    "variants": ["xl_armor_plarmor", "armor_plarmor_xs"],
+    "notes": "Laid out flat, front up, neck towards -z, about 1.3 to 1.5 m from collar to toe: the pieces a player finds as one set. CHECK LENGTH and VOLUME: the reference's longest side and volume are the suit packed together; the model lays it out so the pieces read. Leather torso, sleeves and leggings in `leather-chestnut`, a laced front and a belt in `leather-black`, rectangular plates of budget steel in `steel-grey` with `steel-bright` rivets at their corners. Slot `vest` follows the earlier whole-body armour (the cardboard armour): Deadvox has no whole-body slot, and the suit goes over clothes. Size variants share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_riot",
+    "model": "armor_riot",
+    "name": "Riot armour suit",
+    "category": "clothing",
+    "size": [5, 6],
+    "economy": { "usage": ["Police"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 6,
+      "warmth": 20,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.25, "blunt": 0.6, "cut": 0.45, "pierce": 0.3 }
+    },
+    "description": "A full set of black moulded plastic riot armour: chest shell, arm and leg guards with domed knee and elbow cups, and foot guards, all held on by hook-and-loop straps. Webbing rows run across the chest under a pale lettering band.",
+    "reference": "armor_riot",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, about 1.3 to 1.5 m from collar to toe: the pieces a player finds as one set. CHECK LENGTH and VOLUME: the reference's longest side and volume are the suit packed together; the model lays it out so the pieces read. Plastic shells in `plastic-matte-black` with `plastic-charcoal` padding edges, `hook-loop-grey` straps, three webbing rows on the chest and a `felt-grey` band where the agency's lettering goes; no lettering is drawn. The foot guards are two domes at the toes. The chest webbing is not an attach host here: the reference gives it no pouch use, and the suit covers the whole body. Slot `vest` follows the earlier whole-body armour (the cardboard armour): Deadvox has no whole-body slot, and the suit goes over clothes. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_samurai",
+    "model": "armor_samurai",
+    "name": "Lacquered lamellar armour",
+    "category": "clothing",
+    "size": [5, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 15,
+      "warmth": 25,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.15, "blunt": 0.4, "cut": 0.7, "pierce": 0.5 }
+    },
+    "description": "An old suit of lacquered lamellar armour: a boxy cuirass of black iron scales laced in crimson silk, broad laced shoulder boards, a hanging skirt of four panels, plated cloth sleeves with hand guards and splinted shin guards. Built to impress as much as to protect.",
+    "reference": "armor_samurai",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, about 1.3 to 1.5 m from collar to toe: the pieces a player finds as one set. CHECK LENGTH and VOLUME: the reference's longest side and volume are the suit packed together; the model lays it out so the pieces read. Lames in `lacquer-black` laced with `cloth-crimson`, a `brass-polished` rim at the top of the cuirass and shoulder boards, sleeves and shin guard backing in `cloth-navy`, small plates and splints in `iron-dull`. The reference also covers the hands; the hand guards at the sleeve ends stand for that. The name avoids the Japanese term so the text stays plain. Slot `vest` follows the earlier whole-body armour (the cardboard armour): Deadvox has no whole-body slot, and the suit goes over clothes. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_scrapsuit",
+    "model": "armor_scrapsuit",
+    "name": "Scrap suit",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 18,
+      "warmth": 10,
+      "wearPerDamage": 0.004,
+      "protects": { "acid": 0.08, "blunt": 0.25, "cut": 0.5, "pierce": 0.38 }
+    },
+    "description": "Cotton wraps cut into a crude suit, with mismatched pieces of scrap sheet metal tied over them with string. It stops a fair amount and rattles and pinches the whole time.",
+    "reference": "armor_scrapsuit",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, about 1.3 to 1.5 m from collar to toe: the pieces a player finds as one set. CHECK LENGTH and VOLUME: the reference's longest side and volume are the suit packed together; the model lays it out so the pieces read. Cotton wraps in `canvas-grey` with sixteen pieces of sheet set askew in `steel-bright`, `rust-red` and `steel-galvanised`, tied across with `cord-cotton`. Slot `vest` follows the earlier whole-body armour (the cardboard armour): Deadvox has no whole-body slot, and the suit goes over clothes. The xl and xs scrap suits are separate reference items and ride on this model with their own masses. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_xl_scrapsuit",
+    "model": "armor_scrapsuit",
+    "name": "Scrap suit (large)",
+    "category": "clothing",
+    "size": [5, 6],
+    "weight": 11918,
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 18,
+      "warmth": 10,
+      "wearPerDamage": 0.004,
+      "protects": { "acid": 0.08, "blunt": 0.25, "cut": 0.5, "pierce": 0.38 }
+    },
+    "description": "A larger scrap suit: cotton wraps with mismatched pieces of sheet metal tied over them with string, cut for a big frame.",
+    "reference": "armor_xl_scrapsuit",
+    "variants": [],
+    "notes": "Rides on the scrap suit's model (`armor_scrapsuit`); mass 11.92 kg overrides the model's 9.53 kg. Laid out flat, front up, neck towards -z, about 1.3 to 1.5 m from collar to toe: the pieces a player finds as one set. CHECK LENGTH and VOLUME: the reference's longest side and volume are the suit packed together; the model lays it out so the pieces read. Slot `vest` follows the earlier whole-body armour (the cardboard armour): Deadvox has no whole-body slot, and the suit goes over clothes. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_xs_scrapsuit",
+    "model": "armor_scrapsuit",
+    "name": "Scrap suit (small)",
+    "category": "clothing",
+    "size": [4, 5],
+    "weight": 7151,
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 18,
+      "warmth": 10,
+      "wearPerDamage": 0.004,
+      "protects": { "acid": 0.08, "blunt": 0.25, "cut": 0.5, "pierce": 0.38 }
+    },
+    "description": "A smaller scrap suit: cotton wraps with mismatched pieces of sheet metal tied over them with string, cut for a slight frame.",
+    "reference": "armor_xs_scrapsuit",
+    "variants": [],
+    "notes": "Rides on the scrap suit's model (`armor_scrapsuit`); mass 7.15 kg overrides the model's 9.53 kg. Laid out flat, front up, neck towards -z, about 1.3 to 1.5 m from collar to toe: the pieces a player finds as one set. CHECK LENGTH and VOLUME: the reference's longest side and volume are the suit packed together; the model lays it out so the pieces read. Slot `vest` follows the earlier whole-body armour (the cardboard armour): Deadvox has no whole-body slot, and the suit goes over clothes. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_tiresuit",
+    "model": "armor_tiresuit",
+    "name": "Tyre suit",
+    "category": "clothing",
+    "size": [5, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 18,
+      "warmth": 10,
+      "wearPerDamage": 0.004,
+      "protects": { "acid": 0.25, "blunt": 0.4, "cut": 0.38, "pierce": 0.28 }
+    },
+    "description": "Thick curved chunks cut from tyres, tread out, strung together with string over the chest, back, arms and legs. Heavy and clumsy, but it soaks up a beating.",
+    "reference": "armor_tiresuit",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, about 1.3 to 1.5 m from collar to toe: the pieces a player finds as one set. CHECK LENGTH and VOLUME: the reference's longest side and volume are the suit packed together; the model lays it out so the pieces read. Ten curved chunks of `rubber-black` 14 mm thick with chevron tread blocks in `rubber-tread`, joined at their corners by `cord-cotton` ties; there is no cloth backing, as the reference lists rubber only. Slot `vest` follows the earlier whole-body armour (the cardboard armour): Deadvox has no whole-body slot, and the suit goes over clothes. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "beekeeping_suit",
+    "model": "beekeeping_suit",
+    "name": "Beekeeping suit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 10,
+      "warmth": 25,
+      "wearPerDamage": 0.02,
+      "protects": { "acid": 0.02, "blunt": 0.02, "cut": 0.12, "pierce": 0.08 }
+    },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "chest" }] },
+    "description": "A loose white cotton coverall with a zipped front and elastic straps at the wrists and ankles to keep stinging insects out. A flapped chest pocket holds small things.",
+    "reference": "beekeeping_suit",
+    "variants": [],
+    "notes": "Folded square, 360 mm by 300 mm and 80 mm thick: white cotton (`cloth-bright-white`), a zip down the front, a stand collar, a flapped chest pocket, sleeves folded in along the sides and the ankle straps with hook-and-loop tabs laid over the top. CHECK LENGTH: the reference's 120 mm longest side is smaller than the folded suit. Slot `torso` follows the earlier robes and gi, which also reach the legs; the reference covers torso, arms and legs. The veil hood is a separate item. The protection against stings is pending an insect sting rule, so `protects` is a light cloth guess. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bite_suit",
+    "model": "bite_suit",
+    "name": "Bite suit",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Police"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 30,
+      "warmth": 50,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0.05, "blunt": 0.4, "cut": 0.7, "pierce": 0.65 }
+    },
+    "description": "A thick one-piece suit for training attack dogs: aramid cloth quilted with strips of soft armour under a denim shell. Teeth and claws don't get through, though wearing it is like moving in a mattress.",
+    "reference": "bite_suit",
+    "variants": [],
+    "notes": "Folded into a thick bundle, 460 mm by 380 mm and 160 mm tall: a `cloth-denim` shell quilted in raised channels, a stand collar and cuffs bound in `aramid-gold`, the padded sleeves rolled along both sides with stitched rings. CHECK VOLUME (x4.9): the reference volume is the suit compressed; the model keeps the padding's bulk. Slot `vest` follows the earlier whole-body armour (the cardboard armour): Deadvox has no whole-body slot, and the suit goes over clothes. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_chainmail_hauberk",
+    "model": "ch_chainmail_hauberk",
+    "name": "Hardened mail hauberk",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.25, "cut": 0.75, "pierce": 0.45 }
+    },
+    "description": "A long shirt of hardened steel rings reaching to the knees, with full sleeves and a split skirt for riding or running. Wear padding under it or the rings bruise you as they stop the blade.",
+    "reference": "ch_chainmail_hauberk",
+    "variants": ["xl_ch_chainmail_hauberk", "ch_chainmail_hauberk_xs"],
+    "notes": "Folded to 380 mm by 420 mm and 60 mm tall, neck up, as batch 174's mail: mail in `steel-mail-dark` (hardened, as earlier hardened mail takes) with raised ring rows, sleeves folded along the sides, a split skirt, a `cloth-black` neck opening and `leather-black` binding. CHECK LENGTH and VOLUME: the reference gives the mail bundled into a 140 mm ball; the model folds it so it reads as a garment. The reference covers the legs too, as the skirt reaches the knees. Slot `vest` follows the earlier whole-body armour (the cardboard armour): Deadvox has no whole-body slot, and the suit goes over clothes. Size variants share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_chainmail_jumpsuit",
+    "model": "ch_chainmail_jumpsuit",
+    "name": "Hardened mail suit",
+    "category": "clothing",
+    "size": [3, 5],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.25, "cut": 0.75, "pierce": 0.45 }
+    },
+    "description": "A one-piece suit of hardened steel mail from collar to ankles, laced up the front and belted at the waist. Only the head is left bare; pad underneath it.",
+    "reference": "ch_chainmail_jumpsuit",
+    "variants": ["xl_ch_chainmail_jumpsuit", "ch_chainmail_jumpsuit_xs"],
+    "notes": "Folded to 380 mm by 440 mm and 60 mm tall, neck up, as batch 174's mail: mail in `steel-mail-dark` with raised ring rows, sleeves folded along the sides and the legs folded up over the body under a `leather-black` belt with a `brass-dull` buckle, a `cloth-black` neck opening and leather binding. CHECK LENGTH and VOLUME: the reference gives the mail bundled into a 150 mm ball; the model folds it so it reads as a garment. Slot `vest` follows the earlier whole-body armour (the cardboard armour): Deadvox has no whole-body slot, and the suit goes over clothes. Size variants share the model. The worn look is pending: no worn model is authored."
+  }
+]

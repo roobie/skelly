@@ -1,0 +1,11 @@
+{
+  "id": "sheet_neoprene",
+  "file": "assets/models/sheet_neoprene.glb",
+  "parts": {
+    "sheet_neoprene": {
+      "node": "sheet_neoprene:compound",
+      "massKg": 0.08,
+      "centreOfMass": [0, 0.004111986301369863, 0.0017125000000000005]
+    }
+  }
+}

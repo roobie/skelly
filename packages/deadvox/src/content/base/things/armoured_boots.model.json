@@ -1,0 +1,11 @@
+{
+  "id": "armoured_boots",
+  "file": "assets/models/armoured_boots.glb",
+  "parts": {
+    "armoured_boots": {
+      "node": "armoured_boots:compound",
+      "massKg": 5.5,
+      "centreOfMass": [-8.987653211889328e-8, 0.09695217445034884, -0.0480237948118772]
+    }
+  }
+}

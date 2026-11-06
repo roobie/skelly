@@ -1,0 +1,11 @@
+{
+  "id": "fast_draw_holster",
+  "file": "assets/models/fast_draw_holster.glb",
+  "parts": {
+    "fast_draw_holster": {
+      "node": "fast_draw_holster:compound",
+      "massKg": 0.17,
+      "centreOfMass": [0.01552107089737233, 0.08399702528507684, -0.002328210213187903]
+    }
+  }
+}

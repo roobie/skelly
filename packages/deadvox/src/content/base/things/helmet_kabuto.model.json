@@ -1,0 +1,11 @@
+{
+  "id": "helmet_kabuto",
+  "file": "assets/models/helmet_kabuto.glb",
+  "parts": {
+    "helmet_kabuto": {
+      "node": "helmet_kabuto:compound",
+      "massKg": 2.5,
+      "centreOfMass": [0.00006258389261745018, 0.11043892617449648, 0.006824328859060402]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "boots_combat_worn_shaft",
+  "file": "assets/models/boots_combat_worn_shaft.glb",
+  "parts": {
+    "boots_combat_worn_shaft": {
+      "node": "boots_combat_worn_shaft:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0, -0.25090151724137927, 0.0015348965517241375]
+    }
+  }
+}

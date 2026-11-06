@@ -1,0 +1,14 @@
+{
+  "id": "bee_sting",
+  "file": "assets/models/bee_sting.glb",
+  "parts": {
+    "bee_sting": {
+      "node": "bee_sting:compound",
+      "massKg": 0.038,
+      "centreOfMass": [-0.024859390172849098, 0.01929675665177705, -0.00025966207030491355]
+    }
+  },
+  "grip": { "at": [0.03, 0.023, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

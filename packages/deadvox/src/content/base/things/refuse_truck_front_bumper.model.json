@@ -1,0 +1,17 @@
+{
+  "id": "refuse_truck_front_bumper",
+  "file": "assets/models/refuse_truck_front_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 40,
+      "centreOfMass": [4.828675660792952, 0.8130506607929516, 0],
+      "collision": [
+        { "min": [4.75, 0.53125, -1.25], "max": [4.90625, 1.09375, 1.25] },
+        { "min": [4.875, 0.84375, -0.5], "max": [4.90625, 0.90625, 0.5] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

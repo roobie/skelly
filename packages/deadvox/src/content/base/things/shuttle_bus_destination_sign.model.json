@@ -1,0 +1,19 @@
+{
+  "id": "shuttle_bus_destination_sign",
+  "file": "assets/models/shuttle_bus_destination_sign.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 8,
+      "centreOfMass": [3.7969376252505005, 2.4829972444889776, 0],
+      "collision": [
+        { "min": [3.71875, 2.375, -0.8125], "max": [3.84375, 2.59375, 0.8125] },
+        { "min": [3.8125, 2.375, -0.8125], "max": [3.84375, 2.40625, 0.8125] },
+        { "min": [3.8125, 2.53125, -0.8125], "max": [3.84375, 2.59375, 0.8125] },
+        { "min": [3.8125, 2.40625, -0.75], "max": [3.875, 2.53125, 0.75] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

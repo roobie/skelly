@@ -1,0 +1,14 @@
+{
+  "id": "homeopathic_pills",
+  "file": "assets/models/homeopathic_pills.glb",
+  "parts": {
+    "homeopathic_pills": {
+      "node": "homeopathic_pills:compound",
+      "massKg": 0.0083,
+      "centreOfMass": [0, 0.03083760683760683, 0]
+    }
+  },
+  "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

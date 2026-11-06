@@ -1,0 +1,11 @@
+{
+  "id": "gloves_light",
+  "file": "assets/models/gloves_light.glb",
+  "parts": {
+    "gloves_light": {
+      "node": "gloves_light:compound",
+      "massKg": 0.081,
+      "centreOfMass": [7.982442581935128e-19, 0.006096501809408928, 0.040220506634499394]
+    }
+  }
+}

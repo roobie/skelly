@@ -1,0 +1,14 @@
+{
+  "id": "psi_noetic_resonance_detector",
+  "file": "assets/models/psi_noetic_resonance_detector.glb",
+  "parts": {
+    "psi_noetic_resonance_detector": {
+      "node": "psi_noetic_resonance_detector:compound",
+      "massKg": 12,
+      "centreOfMass": [0.0013363106208015825, 0.12462740761694144, -0.00033022746819131124]
+    }
+  },
+  "grip": { "at": [0, 0.14400000000000002, -0.010000000000000009], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

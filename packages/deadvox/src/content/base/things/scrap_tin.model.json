@@ -1,0 +1,11 @@
+{
+  "id": "scrap_tin",
+  "file": "assets/models/scrap_tin.glb",
+  "parts": {
+    "scrap_tin": {
+      "node": "scrap_tin:compound",
+      "massKg": 0.019,
+      "centreOfMass": [-0.0016946386946386947, 0.004776223776223777, 0.0071818181818181824]
+    }
+  }
+}

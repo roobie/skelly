@@ -1,0 +1,10 @@
+{
+  "id": "antiparasitic",
+  "file": "assets/models/antiparasitic.glb",
+  "parts": {
+    "antiparasitic": { "node": "antiparasitic:vessel", "massKg": 0.09, "centreOfMass": [0, 0.031726733956847865, 0] }
+  },
+  "grip": { "at": [0, 0.029, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

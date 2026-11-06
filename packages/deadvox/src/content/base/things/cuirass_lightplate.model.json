@@ -1,0 +1,11 @@
+{
+  "id": "cuirass_lightplate",
+  "file": "assets/models/cuirass_lightplate.glb",
+  "parts": {
+    "cuirass_lightplate": {
+      "node": "cuirass_lightplate:compound",
+      "massKg": 7.5,
+      "centreOfMass": [1.6023353976631782e-18, 0.027071915009534188, -0.0033072732225551574]
+    }
+  }
+}

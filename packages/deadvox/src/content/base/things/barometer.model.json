@@ -1,0 +1,11 @@
+{
+  "id": "barometer",
+  "file": "assets/models/barometer.glb",
+  "parts": {
+    "barometer": {
+      "node": "barometer:compound",
+      "massKg": 0.07,
+      "centreOfMass": [3.2389477423669428e-22, 0.0322890938251804, 0.007829190056134723]
+    }
+  }
+}

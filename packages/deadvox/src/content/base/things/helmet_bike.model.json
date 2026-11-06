@@ -1,0 +1,11 @@
+{
+  "id": "helmet_bike",
+  "file": "assets/models/helmet_bike.glb",
+  "parts": {
+    "helmet_bike": {
+      "node": "helmet_bike:compound",
+      "massKg": 0.2,
+      "centreOfMass": [0, 0.04987380621990047, -0.006620724838788675]
+    }
+  }
+}

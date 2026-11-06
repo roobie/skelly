@@ -1,0 +1,11 @@
+{
+  "id": "leg_guard_steel_heavy",
+  "file": "assets/models/leg_guard_steel_heavy.glb",
+  "parts": {
+    "leg_guard_steel_heavy": {
+      "node": "leg_guard_steel_heavy:compound",
+      "massKg": 9.4,
+      "centreOfMass": [0.2822055276381915, 0.05046055276381919, -0.00007399497487436386]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "string_6",
+  "file": "assets/models/string_6.glb",
+  "parts": {
+    "string_6": {
+      "node": "string_6:compound",
+      "massKg": 0.00074,
+      "centreOfMass": [0.006098591549295774, 0.002084507042253521, 0.001647887323943662]
+    }
+  }
+}

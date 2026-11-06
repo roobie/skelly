@@ -1,3 +1,10 @@
+// Catalogue items worn ahead of the framework refactor (#1532): the draft supplies the item, and
+// `packages/thing-authoring-tool/catalogue/worn.libsonnet` its worn look under the draft's model id.
+local fitted = import 'packages/thing-authoring-tool/catalogue/worn.libsonnet';
+local fromDraft(batch, id, extra={}) =
+  local d = [row for row in batch if std.get(row, 'id') == id][0];
+  { id: d.id, name: d.name, category: d.category, model: d.model, size: d.size, wearable: d.wearable,
+    figureModels: fitted[d.model].figureModels } + extra;
 local worn(model, frame, covers) = {
   model: model, frame: frame, covers: covers,
   pivot: [0, 0, 0], at: [0, 0, 0], turn: [0, 0, 0],
@@ -8,8 +15,45 @@ local onTorso(model) = [{ model: model, overTorso: { jacket: model + '_jacket' }
 local salvage = [0.5, 0.6, 0.7, 0.8, 0.9, 1];
 local yield(item, count) = { item: item, count: count, fractions: salvage, rounding: 'floor' };
 local disassembly(timeGameMinutes, yields) = { timeGameMinutes: timeGameMinutes, skill: 'crafting', yields: yields };
+// The plate set shows heavy armour on the figure; where it spawns is not decided, so none does.
+local knight = { notLoot: true };
+// Heavy trooper armour, likewise shown on the figure with no spawn yet.
+local trooper(model, name, size, wearable) = knight + {
+  id: model, name: name, category: 'clothing', model: model, size: size, wearable: wearable,
+  figureModels: fitted[model].figureModels,
+};
 {
   "items": [
+    fromDraft(import 'things/catalogue-drafts/batch-114.json', 'jacket_leather', { wearable+: { figureFit: 'jacket' } }),
+    fromDraft(import 'things/catalogue-drafts/batch-127.json', 'cowboy_hat'),
+    fromDraft(import 'things/catalogue-drafts/batch-123.json', 'gloves_leather'),
+    fromDraft(import 'things/catalogue-drafts/batch-099.json', 'boots_combat'),
+    fromDraft(import 'things/catalogue-drafts/batch-171.json', 'armor_lc_plate', knight),
+    fromDraft(import 'things/catalogue-drafts/batch-135.json', 'helmet_plate', knight),
+    fromDraft(import 'things/catalogue-drafts/batch-124.json', 'gloves_plate', knight),
+    fromDraft(import 'things/catalogue-drafts/batch-102.json', 'lc_sabaton', knight),
+    // Deadvox has no shins slot, so the harness takes the legs slot.
+    fromDraft(import 'things/catalogue-drafts/batch-150.json', 'legguard_lightplate', knight + { wearable+: { slot: 'legs' } }),
+    trooper('armor_trooper', 'Trooper cuirass', [4, 5], {
+      slot: 'vest', encumbrance: 22, warmth: 15, wearPerDamage: 0.0008,
+      protects: { blunt: 0.55, cut: 0.8, pierce: 0.7, acid: 0.2 },
+    }),
+    trooper('helmet_trooper', 'Trooper helm', [3, 3], {
+      slot: 'head', encumbrance: 25, warmth: 10, wearPerDamage: 0.0008,
+      protects: { blunt: 0.55, cut: 0.8, pierce: 0.6, acid: 0.4 },
+    }),
+    trooper('gloves_trooper', 'Trooper gauntlets', [2, 2], {
+      slot: 'hands', encumbrance: 15, warmth: 15, wearPerDamage: 0.0008,
+      protects: { blunt: 0.4, cut: 0.65, pierce: 0.5, acid: 0.2 },
+    }),
+    trooper('boots_trooper', 'Trooper boots', [2, 3], {
+      slot: 'feet', encumbrance: 10, warmth: 10, wearPerDamage: 0.001,
+      protects: { blunt: 0.45, cut: 0.7, pierce: 0.55, acid: 0.3 },
+    }),
+    trooper('legguard_trooper', 'Trooper leg armour', [4, 4], {
+      slot: 'legs', encumbrance: 12, warmth: 15, wearPerDamage: 0.0008,
+      protects: { blunt: 0.5, cut: 0.8, pierce: 0.65, acid: 0.2 },
+    }),
     {
       "id": "jeans",
       "name": "Jeans",

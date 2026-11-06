@@ -1,0 +1,14 @@
+{
+  "id": "forklift_step",
+  "file": "assets/models/forklift_step.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 6,
+      "centreOfMass": [0.046875, 0.3125, 0.640625],
+      "collision": [{ "min": [-0.3125, 0.28125, 0.59375], "max": [0.40625, 0.34375, 0.6875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": { "hinge_a": [-0.3125, 0.3125, 0.59375], "hinge_b": [0.40625, 0.3125, 0.59375] }
+}

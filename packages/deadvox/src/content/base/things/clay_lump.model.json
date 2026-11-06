@@ -1,0 +1,11 @@
+{
+  "id": "clay_lump",
+  "file": "assets/models/clay_lump.glb",
+  "parts": {
+    "clay_lump": {
+      "node": "clay_lump:compound",
+      "massKg": 0.34,
+      "centreOfMass": [-0.0014704273771388387, 0.017662708024064378, 0.001570278928041253]
+    }
+  }
+}

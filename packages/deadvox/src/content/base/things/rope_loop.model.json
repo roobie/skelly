@@ -1,0 +1,11 @@
+{
+  "id": "rope_loop",
+  "file": "assets/models/rope_loop.glb",
+  "parts": {
+    "rope_loop": {
+      "node": "rope_loop:compound",
+      "massKg": 0.23,
+      "centreOfMass": [0.001080221421667694, 0.010289254019857651, 0.05075880854055003]
+    }
+  }
+}

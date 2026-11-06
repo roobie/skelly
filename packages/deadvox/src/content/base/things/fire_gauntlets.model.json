@@ -1,0 +1,11 @@
+{
+  "id": "fire_gauntlets",
+  "file": "assets/models/fire_gauntlets.glb",
+  "parts": {
+    "fire_gauntlets": {
+      "node": "fire_gauntlets:compound",
+      "massKg": 0.44,
+      "centreOfMass": [1.1339007711487698e-18, 0.01257573680603153, 0.008626182316655247]
+    }
+  }
+}

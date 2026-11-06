@@ -1,0 +1,11 @@
+{
+  "id": "bucket_5gal",
+  "file": "assets/models/bucket_5gal.glb",
+  "parts": {
+    "bucket_5gal": {
+      "node": "bucket_5gal:compound",
+      "massKg": 0.99,
+      "centreOfMass": [4.9911940803788603e-20, 0.17226144043251596, 0]
+    }
+  }
+}

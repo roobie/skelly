@@ -1,0 +1,14 @@
+{
+  "id": "copper_ax",
+  "file": "assets/models/copper_ax.glb",
+  "parts": {
+    "copper_ax": {
+      "node": "copper_ax:compound",
+      "massKg": 0.72,
+      "centreOfMass": [0.2122921119592875, 0, 0.009938931297709922]
+    }
+  },
+  "grip": { "at": [0.062, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

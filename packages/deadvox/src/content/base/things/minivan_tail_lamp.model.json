@@ -1,0 +1,14 @@
+{
+  "id": "minivan_tail_lamp",
+  "file": "assets/models/minivan_tail_lamp.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 1,
+      "centreOfMass": [-2.328125, 0.8593750000000001, 0.8125000000000001],
+      "collision": [{ "min": [-2.375, 0.6875, 0.71875], "max": [-2.28125, 1.03125, 0.90625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

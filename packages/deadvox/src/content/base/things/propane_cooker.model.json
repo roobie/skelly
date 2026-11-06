@@ -1,0 +1,11 @@
+{
+  "id": "propane_cooker",
+  "file": "assets/models/propane_cooker.glb",
+  "parts": {
+    "propane_cooker": {
+      "node": "propane_cooker:compound",
+      "massKg": 1,
+      "centreOfMass": [0.008130911993614048, 0.06528237876671324, 0.00043703851526641363]
+    }
+  }
+}

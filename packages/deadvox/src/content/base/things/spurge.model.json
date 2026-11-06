@@ -1,0 +1,11 @@
+{
+  "id": "spurge",
+  "file": "assets/models/spurge.glb",
+  "parts": {
+    "spurge": {
+      "node": "spurge:compound",
+      "massKg": 0.0099,
+      "centreOfMass": [0.036959411466260764, 0.01137138508371385, -0.007021308980213087]
+    }
+  }
+}

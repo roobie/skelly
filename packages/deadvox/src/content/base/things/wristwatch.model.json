@@ -1,0 +1,11 @@
+{
+  "id": "wristwatch",
+  "file": "assets/models/wristwatch.glb",
+  "parts": {
+    "wristwatch": {
+      "node": "wristwatch:compound",
+      "massKg": 0.033,
+      "centreOfMass": [0.000015852885225110967, 0.005367786937222573, 0.0005351934051997459]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "tanned_hide",
+  "file": "assets/models/tanned_hide.glb",
+  "parts": {
+    "tanned_hide": {
+      "node": "tanned_hide:compound",
+      "massKg": 0.5,
+      "centreOfMass": [0, 0.0020000000000000005, -0.008288939051918742]
+    }
+  }
+}

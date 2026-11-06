@@ -1,0 +1,11 @@
+{
+  "id": "chamomile",
+  "file": "assets/models/chamomile.glb",
+  "parts": {
+    "chamomile": {
+      "node": "chamomile:compound",
+      "massKg": 0.003,
+      "centreOfMass": [0.012580419580419581, 0.001674825174825175, 0.004631118881118881]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "id": "canvas_patch",
+  "file": "assets/models/canvas_patch.glb",
+  "parts": {
+    "canvas_patch": { "node": "canvas_patch:compound", "massKg": 0.015, "centreOfMass": [0, 0.0014769828064337214, 0] }
+  }
+}

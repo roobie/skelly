@@ -1,0 +1,11 @@
+{
+  "id": "aketon_pants_nylon",
+  "file": "assets/models/aketon_pants_nylon.glb",
+  "parts": {
+    "aketon_pants_nylon": {
+      "node": "aketon_pants_nylon:compound",
+      "massKg": 0.9,
+      "centreOfMass": [4.732696032458104e-21, 0.02387115230575581, -0.000020185375901131844]
+    }
+  }
+}

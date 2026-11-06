@@ -1,0 +1,5 @@
+{
+  "id": "chalice",
+  "file": "assets/models/chalice.glb",
+  "parts": { "chalice": { "node": "chalice:compound", "massKg": 0.48, "centreOfMass": [0, 0.05111818181818182, 0] } }
+}

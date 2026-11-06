@@ -1,0 +1,11 @@
+{
+  "id": "lc_knee_guards",
+  "file": "assets/models/lc_knee_guards.glb",
+  "parts": {
+    "lc_knee_guards": {
+      "node": "lc_knee_guards:compound",
+      "massKg": 0.7,
+      "centreOfMass": [3.0427032516401435e-18, 0.010810299527062535, -0.0008334209143457698]
+    }
+  }
+}

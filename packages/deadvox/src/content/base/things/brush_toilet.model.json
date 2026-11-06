@@ -1,0 +1,14 @@
+{
+  "id": "brush_toilet",
+  "file": "assets/models/brush_toilet.glb",
+  "parts": {
+    "brush_toilet": {
+      "node": "brush_toilet:compound",
+      "massKg": 0.13,
+      "centreOfMass": [0.2837768487065586, 0.029588189182126988, 0]
+    }
+  },
+  "grip": { "at": [0.15, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -2,10 +2,6 @@
   "id": "utility_vest_worn",
   "file": "assets/models/utility_vest_worn.glb",
   "parts": {
-    "shell": {
-      "node": "shell:compound",
-      "massKg": 0.9,
-      "centreOfMass": [0.003167715684404601, 0.43289363595905656, 0.02443620064848368]
-    }
+    "shell": { "node": "shell:compound", "massKg": 0.9, "centreOfMass": [0, 0.44373071798208924, 0.024998853459762632] }
   }
 }

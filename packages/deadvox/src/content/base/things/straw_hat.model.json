@@ -1,0 +1,11 @@
+{
+  "id": "straw_hat",
+  "file": "assets/models/straw_hat.glb",
+  "parts": {
+    "straw_hat": {
+      "node": "straw_hat:compound",
+      "massKg": 0.12,
+      "centreOfMass": [0.0005158963174230352, 0.041119033638117614, 0.00044039929536112766]
+    }
+  }
+}

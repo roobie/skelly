@@ -1,0 +1,11 @@
+{
+  "id": "kantele",
+  "file": "assets/models/kantele.glb",
+  "parts": {
+    "kantele": {
+      "node": "kantele:compound",
+      "massKg": 0.83,
+      "centreOfMass": [-0.02534634422326873, 0.02806089818051619, -0.011610386664225014]
+    }
+  }
+}

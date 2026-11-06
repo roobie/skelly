@@ -1,0 +1,14 @@
+{
+  "id": "forge_warp_scroll",
+  "file": "assets/models/forge_warp_scroll.glb",
+  "parts": {
+    "forge_warp_scroll": {
+      "node": "forge_warp_scroll:compound",
+      "massKg": 0.32,
+      "centreOfMass": [0.00020249039552728263, 0.02310829888910866, 0.003985726035669293]
+    }
+  },
+  "grip": { "at": [0, 0.025, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,11 @@
+{
+  "id": "tinted_lenses",
+  "file": "assets/models/tinted_lenses.glb",
+  "parts": {
+    "tinted_lenses": {
+      "node": "tinted_lenses:compound",
+      "massKg": 0.021,
+      "centreOfMass": [0, 0.001, -0.0018692449355432782]
+    }
+  }
+}

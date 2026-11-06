@@ -1,0 +1,11 @@
+{
+  "id": "mbelt_iron_whip",
+  "file": "assets/models/mbelt_iron_whip.glb",
+  "parts": {
+    "mbelt_iron_whip": {
+      "node": "mbelt_iron_whip:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-0.030814396156097074, 0.004117134321002867, -0.003969599901438396]
+    }
+  }
+}

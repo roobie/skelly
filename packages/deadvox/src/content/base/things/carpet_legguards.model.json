@@ -1,0 +1,11 @@
+{
+  "id": "carpet_legguards",
+  "file": "assets/models/carpet_legguards.glb",
+  "parts": {
+    "carpet_legguards": {
+      "node": "carpet_legguards:compound",
+      "massKg": 2.1,
+      "centreOfMass": [-0.006048115654141154, 0.06763350438669091, -0.005794552042524226]
+    }
+  }
+}

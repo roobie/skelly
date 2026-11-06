@@ -1,0 +1,123 @@
+[
+  {
+    "id": "tanned_pelt",
+    "model": "tanned_pelt",
+    "name": "Tanned pelt",
+    "category": "material",
+    "size": [3, 2],
+    "economy": { "usage": ["Hunting", "Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A soft, cured animal hide folded fur side out, ready to cut into patches or wear as it is.",
+    "reference": "tanned_pelt",
+    "variants": [],
+    "notes": "Hide about 340 by 220 mm folded to 14 mm thick: fur-brown on top over a leather-tan flesh side, a rolled fold along the back edge, two leg tabs and a tail flap. Pelts have no shared outline helper, so the outline is built from convex prisms. The box counts the leg tabs and tail around a thin fold (box/volume x3.9); the folded hide itself is about the reference's 0.47 L."
+  },
+  {
+    "id": "wool_staple",
+    "model": "wool_staple",
+    "name": "Raw wool",
+    "category": "material",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A loose lock of raw, crimped fleece. It can be felted into patches or spun into yarn.",
+    "reference": "wool_staple",
+    "variants": [],
+    "notes": "About 160 by 90 mm and 60 mm high: nine squashed puffs in cloth-cream with fleece-pale tips; fleece-pale alone renders grey. The box counts the air between the puffs (box/volume x2.2)."
+  },
+  {
+    "id": "plank_long",
+    "model": "plank_long",
+    "name": "Long plank",
+    "category": "material",
+    "size": [2, 16],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "description": "An eight-foot length of two-by-four lumber, long enough for framing and awkward to carry.",
+    "reference": "plank_long",
+    "variants": [],
+    "notes": "2440 mm long. Planed softwood 89 by 38 mm lying flat, with darker sawn end grain and a few grain streaks painted flush on the top face (wood-pine, wood-birch). It lies along x and takes its grip near one end so it can be swung."
+  },
+  {
+    "id": "plank_short",
+    "model": "plank_short",
+    "name": "Short plank",
+    "category": "material",
+    "size": [2, 6],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A two-foot offcut of two-by-four lumber, handy for small carpentry jobs.",
+    "reference": "plank_short",
+    "variants": [],
+    "notes": "610 mm long. Planed softwood 89 by 38 mm lying flat, with darker sawn end grain and a few grain streaks painted flush on the top face (wood-pine, wood-birch). It lies along x and takes its grip near one end so it can be swung."
+  },
+  {
+    "id": "notched_plank",
+    "model": "notched_plank",
+    "name": "Notched plank",
+    "category": "material",
+    "size": [1, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A short block of two-by-four with two half-depth notches sawn across it, ready to lap onto another piece.",
+    "reference": "2x4",
+    "variants": [],
+    "notes": "The reference lists it as a variant of the 2x4; it gets its own model because the notches change its shape. 300 by 89 by 38 mm with two 50 mm notches cut halfway down across the top face, their floors painted with the end-grain finish so they read. 0.61 kg follows the variant; the look step's CHECK MASS, VOLUME and LENGTH compare it with the 2x4 root, while against its own 1 L the box matches."
+  },
+  {
+    "id": "wood_panel",
+    "model": "wood_panel",
+    "name": "Wooden panel",
+    "category": "material",
+    "size": [6, 12],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A broad panel of edge-glued boards, solid enough to board up a window or floor a platform.",
+    "reference": "2x4",
+    "variants": [],
+    "notes": "The reference lists it as a variant of the 2x4; it gets its own model because a panel shares nothing of a board's shape. 1220 by 610 by 25 mm, three boards with dark glue lines (wood-oak) and grain streaks. 12 kg follows the variant; the look step's CHECK MASS and VOLUME compare it with the 2x4 root, while against its own 19 L the box matches."
+  },
+  {
+    "id": "giant_wood_screw",
+    "model": "giant_wood_screw",
+    "name": "Giant wooden screw",
+    "category": "material",
+    "size": [2, 12],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "description": "A great wooden screw carved from a single log, the kind that drives an old press. Turn it with a bar through its head.",
+    "reference": "giant_wood_screw",
+    "variants": [],
+    "notes": "1200 mm long, all wood-oak: a 160 mm square head bored through both ways for a turning bar (holes painted coal-black, since compound pieces only add), a plain collar and 900 mm of coarse thread 180 mm across the crests on a 120 mm core. The thread is drawn as a turned sawtooth of rings, not a true helix, since no helix helper exists. The box counts the air round the head and thread (box/volume x1.6)."
+  },
+  {
+    "id": "log",
+    "model": "log",
+    "name": "Log",
+    "category": "material",
+    "size": [3, 14],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A heavy length of tree trunk with the bark still on. Saw or split it to get planks.",
+    "reference": "log",
+    "variants": [],
+    "notes": "1400 mm long and 220 mm across in bark, slightly tapered, with two lopped branch stubs; both sawn ends show three growth rings and a dark pith (wood-pine with wood-oak rings). The box is square round a round trunk (box/volume x1.75). Cutting it into planks is recipe content."
+  },
+  {
+    "id": "long_pole",
+    "model": "long_pole",
+    "name": "Long pole",
+    "category": "material",
+    "size": [1, 20],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "tool": { "qualities": { "hammering": 1 } },
+    "description": "A stout ten-foot wooden pole. It keeps trouble at a distance and can be used like a crude spear.",
+    "reference": "long_pole",
+    "variants": [],
+    "notes": "3050 mm long, 40 mm across tapering to 34 mm, wood-birch with a darker butt end. It lies along x and takes its grip a third of the way along. hammering 1 follows the reference's HAMMER quality under the name earlier batches use. Thrusting with it has no melee block in this draft. The box is square round a round pole (box/volume x1.3)."
+  },
+  {
+    "id": "tent_pole",
+    "model": "tent_pole",
+    "name": "Tent pole",
+    "category": "material",
+    "size": [1, 5],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A shock-corded aluminium tent pole folded into a short bundle of sections.",
+    "reference": "long_pole",
+    "variants": [],
+    "notes": "The reference lists it as a variant of the long pole; it gets its own model because a folded aluminium pole shares nothing of a wooden pole's shape. Six 470 mm sections, 9.5 mm across, hex-packed with staggered steel ferrules, the cord showing at one end and two black webbing ties; voxelGrain 0.002 keeps the thin tubes round. 0.225 kg follows the variant. The look step's CHECK MASS, VOLUME and LENGTH compare it with the long pole root; against its own 0.1 L the box is about 4.4 times, the air between the sections and the ties."
+  }
+]

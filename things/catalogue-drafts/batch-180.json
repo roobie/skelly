@@ -1,0 +1,287 @@
+[
+  {
+    "id": "ch_mirror_armor",
+    "model": "ch_mirror_armor",
+    "name": "Hardened steel mirror armour",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 5,
+      "warmth": 20,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.6, "pierce": 0.4 }
+    },
+    "description": "A leather jerkin set with a large polished steel disc over the chest and a smaller one over the belly, framed by riveted rectangular plates. Made to go on over mail or a brigandine.",
+    "reference": "ch_mirror_armor",
+    "variants": ["xl_ch_mirror_armor", "xs_ch_mirror_armor"],
+    "notes": "Laid out flat, front up, neck towards -z, 590 mm from the shoulder straps to the waist and 580 mm across the side straps: a chestnut leather jerkin with a 210 mm mirror-polished disc over the chest and a 130 mm one over the belly, each with a brass rim, a raised boss and eight brass studs, hardened steel plates riveted down both sides, beside the belly disc and at the shoulders, black shoulder straps buckled at the neck and side straps hanging loose. Only the front set is drawn; the back set lies under it. CHECK VOLUME (x5.5): laid out flat its box is wider than the folded reference volume. The reference weight of 1 kg is kept, though real mirror armour of hardened steel weighs several times that. Plates in `steel-hardened`, discs in `mirror-silver`. Slot `vest`, as the cuirasses and chestplates of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. It is meant to go over mail or a brigandine, which also take `vest` here; layering both needs an outer armour layer Deadvox does not have yet. Protection is a judgement for polished hardened plates over leather. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "chainmail_junk_vest",
+    "model": "chainmail_junk_vest",
+    "name": "Rusty mail vest",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Military"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.5, "pierce": 0.25 }
+    },
+    "description": "A sleeveless shirt of riveted mail gone orange with rust in patches, with two leather straps over the shoulders to spread its weight. The rings still hold, mostly.",
+    "reference": "chainmail_junk_vest",
+    "variants": [],
+    "notes": "Folded on a shelf, neck at +z, 380 mm by 310 mm and 60 mm tall: a heavy grey pile ridged where its rows of rings lie, rust patches over the top and front fold, a leather-bound neck and armholes, and two tan shoulder straps with iron buckles running over the fold. CHECK VOLUME LENGTH: the reference gives mail bundled into a 100 mm ball; the model folds it as a vest so it reads as one. Slot `vest`, as batch 172's mail hauberks have it: the mail goes over clothes. The reference also lists the arms and legs, as straps and a short hem; Deadvox gives a wearable one slot. The reference gives no warmth. Protection is a judgement for rusted mild steel mail: fair against cuts, weak against points and blows. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "chestguard_hard",
+    "model": "chestguard_hard",
+    "name": "Hard chest guard",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 4,
+      "warmth": 15,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.15, "blunt": 0.4, "cut": 0.35, "pierce": 0.2 }
+    },
+    "description": "A moulded plastic chest plate and belly plates on a stretchy neoprene vest, with a cup over each shoulder and straps buckled round the sides. Built for falls and flying stones.",
+    "reference": "chestguard_hard",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, 560 mm from the shoulder caps to the lowest belly plate and 580 mm across the side straps: a white plastic chest plate with three vent slots each side, three belly plates below it, a shaped cap against each shoulder with a charcoal edge, all on a black neoprene vest, with black webbing side straps and buckles. CHECK LENGTH: the reference gives a 200 mm longest side, which only fits the guard rolled up; a chest guard laid out is chest-sized. Plastic in `uhmw-white`, neoprene in `neoprene-black`. Slot `vest`, as the cuirasses and chestplates of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. Protection is a judgement for hard plastic over foam: good against blows, weak against points. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "chestguard_metal_sheets",
+    "model": "chestguard_metal_sheets",
+    "name": "Sheet metal chest guard",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 18,
+      "warmth": 10,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.1, "blunt": 0.3, "cut": 0.55, "pierce": 0.4 }
+    },
+    "description": "Two sheets of steel hammered roughly to the shape of a chest and riveted to leather belts that buckle round the body and over the shoulders. Heavy and awkward, but it keeps a blade out.",
+    "reference": "chestguard_metal_sheets",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, 620 mm from the shoulder belts to the waist and 600 mm across the cross belts: a shallow hammered front sheet with dents in it over a wider back sheet, two tan leather belts riveted across the front and two over the shoulders. CHECK VOLUME (x4.5): laid flat its box is emptier than the reference packs it. Sheet in `steel-bright`, the finish for mild steel. Slot `vest`, as the cuirasses and chestplates of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. Protection is a judgement for 2 mm mild steel: good against cuts, fair against points and blows. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "chestguard_metal_sheets_heavy",
+    "model": "chestguard_metal_sheets_heavy",
+    "name": "Heavy sheet metal chest guard",
+    "category": "clothing",
+    "size": [4, 5],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 30,
+      "warmth": 10,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.12, "blunt": 0.4, "cut": 0.7, "pierce": 0.55 }
+    },
+    "description": "A sheet metal chest guard with a second sheet laid over the first and riveted through. Very heavy, but the doubled steel takes a beating.",
+    "reference": "chestguard_metal_sheets_heavy",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, 700 mm from the shoulder belts to the waist and 600 mm across the cross belts: as the sheet metal chest guard, longer, with a second hammered sheet over the first and three riveted cross belts. CHECK VOLUME (x6.3): laid flat its box is emptier than the reference packs it. Sheet in `steel-bright`. Slot `vest`, as the cuirasses and chestplates of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. Protection is a judgement for two layers of mild steel sheet. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "chestguard_metal_sheets_light",
+    "model": "chestguard_metal_sheets_light",
+    "name": "Light sheet metal chest guard",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 4,
+      "warmth": 5,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.08, "blunt": 0.25, "cut": 0.5, "pierce": 0.35 }
+    },
+    "description": "Half a sheet metal chest guard: a short hammered sheet over the upper chest and another over the upper back, riveted to leather belts. Leaves the belly bare, so you can still bend.",
+    "reference": "chestguard_metal_sheets_light",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, 390 mm from the shoulder belts to the lower edge and 600 mm across the belt: a short hammered front sheet over its half back sheet, one tan leather belt riveted across and two over the shoulders. CHECK VOLUME (x5.6): laid flat its box is emptier than the reference packs it. Sheet in `steel-bright`. Slot `vest`, as the cuirasses and chestplates of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers only the upper torso; Deadvox has no smaller torso slot. Protection is a judgement for one mild steel sheet. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cloth_shirt_padded",
+    "model": "cloth_shirt_padded",
+    "name": "Padded sweatshirt",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 8,
+      "warmth": 35,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0, "blunt": 0.25, "cut": 0.2, "pierce": 0.1 }
+    },
+    "description": "A thick sweatshirt with layer upon layer of spare cloth sewn onto it by an unskilled hand. Lumpy and warm, and it takes the sting out of a blow.",
+    "reference": "cloth_shirt_padded",
+    "variants": [],
+    "notes": "Folded on a shelf, neck at +z, 380 mm by 340 mm and 90 mm tall: a thick grey sweatshirt in four folds with its sleeves folded along the sides, a dark ribbed crew neck and hem, and odd khaki, denim and red patches sewn over the top. CHECK VOLUME (x3.4): a folded box against the reference's packed volume. Slot `torso`, as the gambesons and aketons have it. Protection is a judgement for layered cotton: some against blows, little against cuts and points. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cloth_vest_padded",
+    "model": "cloth_vest_padded",
+    "name": "Padded sleeveless shirt",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 8,
+      "warmth": 35,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0, "blunt": 0.25, "cut": 0.2, "pierce": 0.1 }
+    },
+    "description": "A cotton shirt with its sleeves cut off and thick wads of mismatched cloth sewn in to pad it. The colours clash; the padding works.",
+    "reference": "cloth_vest_padded",
+    "variants": [],
+    "notes": "Folded on a shelf, neck at +z, 360 mm by 320 mm and 70 mm tall: a khaki body with dark bound neck and armholes and a patchwork of blue, red, green and yellow cloth sewn over the top. CHECK VOLUME (x3.9): a folded box against the reference's packed volume. Slot `torso`, as the gambeson vests have it. Protection is a judgement for layered cotton. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cuirass_bronze",
+    "model": "cuirass_bronze",
+    "name": "Bronze cuirass",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential", "Military"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 10,
+      "warmth": 15,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.1, "blunt": 0.3, "cut": 0.55, "pierce": 0.35 }
+    },
+    "description": "A plain breastplate and backplate of hammered bronze, rough in shape and dented, held on by leather straps. Not fine work, but solid.",
+    "reference": "cuirass_bronze",
+    "variants": ["xl_cuirass_bronze", "xs_cuirass_bronze"],
+    "notes": "Laid out flat, front up, neck towards -z, 560 mm from the shoulder straps to the waist and 600 mm across the side straps: a smooth curved breastplate without a ridge or modelling, a polished rolled rim round the neck, armholes and waist, green-spotted dents in the face, the backplate's edge showing round the sides and tan leather straps. CHECK VOLUME (x3.7): laid flat its box is emptier than the reference packs it. Batch 178's `armor_cuirass` is the finer bell cuirass with modelled chest and belly; this one is plain. Plate in `bronze`, dents in `verdigris`. Slot `vest`, as the cuirasses and chestplates of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. Protection is a judgement for cast and hammered bronze plate. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cuirass_lightplate",
+    "model": "cuirass_lightplate",
+    "name": "Steel cuirass",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 20,
+      "warmth": 20,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.12, "blunt": 0.35, "cut": 0.65, "pierce": 0.45 }
+    },
+    "description": "A steel breastplate and backplate in the old cavalry style, edged with brass rivets, with brass scales on the shoulder straps and a red lining. The heart of a suit of plate.",
+    "reference": "cuirass_lightplate",
+    "variants": ["xl_cuirass_lightplate", "xs_cuirass_lightplate"],
+    "notes": "Laid out flat, front up, neck towards -z, 550 mm from the shoulder straps to the lining and 580 mm across the side straps: a curved steel breastplate with a middle ridge and rolled neck, arm and waist edges, brass rivets round the edge, black shoulder straps faced with brass scales, the crimson lining showing below the waist and the backplate's edge round the sides. CHECK VOLUME (x4.4): laid flat its box is emptier than the reference packs it. Plate in `steel-grey`, the finish for medium steel. Slot `vest`, as the cuirasses and chestplates of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers the arms and legs too; Deadvox gives a wearable one slot. Protection is a judgement for steel plate. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cuirass_scrap",
+    "model": "cuirass_scrap",
+    "name": "Scrap cuirass",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 18,
+      "warmth": 10,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.05, "blunt": 0.2, "cut": 0.45, "pierce": 0.3 }
+    },
+    "description": "Odd pieces of scrap metal punched at the corners and tied to each other and a cloth backing with string. Rattles when you move, and stops more than it should.",
+    "reference": "cuirass_scrap",
+    "variants": ["xl_cuirass_scrap", "xs_cuirass_scrap"],
+    "notes": "Laid out flat, front up, neck towards -z, 430 mm from neck to hem and 410 mm across: ten mismatched skewed metal pieces in bright, dull, galvanised and rusted steel in overlapping rows on a khaki cloth backing, tied across their seams with cotton string, two loose ties at the shoulders. Slot `vest`, as the cuirasses have it. Protection is a judgement for loose scrap plates. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cuirass_tire",
+    "model": "cuirass_tire",
+    "name": "Tyre cuirass",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 18,
+      "warmth": 10,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.35, "pierce": 0.25 }
+    },
+    "description": "Thick chunks cut from tyres, tread out, tied together in rows with string. Heavy and loose, but rubber that thick soaks up a blow.",
+    "reference": "cuirass_tire",
+    "variants": ["xl_cuirass_tire", "xs_cuirass_tire"],
+    "notes": "Laid out flat, front up, neck towards -z, 440 mm from neck to hem and 410 mm across: nine skewed chunks of tyre with raised tread blocks in overlapping rows on a khaki backing, tied across their seams with cotton string, two loose ties at the shoulders. Slot `vest`, as the cuirasses have it. The reference's xl variant weighs less than the base item; each size keeps its reference weight. Protection is a judgement for thick rubber: good against blows, weak against cuts and points. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "fencing_jacket",
+    "model": "fencing_jacket",
+    "name": "Fencing jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 5,
+      "warmth": 20,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.3, "pierce": 0.2 }
+    },
+    "description": "A close-fitting padded white jacket with a stand collar, fastened by a zip down the back and a strap between the legs, so no point catches an opening.",
+    "reference": "fencing_jacket",
+    "variants": [],
+    "notes": "Folded on a shelf, back up, neck at +z, 380 mm by 370 mm and 90 mm tall: a white jacket with its sleeves folded along the sides, a stand collar, a dark zip running down the back off centre and the strap that passes between the legs folded over the hem with its snap. CHECK VOLUME (x5.2): a folded box against the reference's packed volume. Slot `torso`, as the jackets have it. Protection is a judgement for tough cotton and nylon cloth made to stop a blunted blade. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "football_armor",
+    "model": "football_armor",
+    "name": "Football shoulder pads",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 5,
+      "warmth": 5,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.05, "blunt": 0.45, "cut": 0.3, "pierce": 0.2 }
+    },
+    "description": "Hard plastic shoulder pads for a football player: domed caps over the shoulders with flaps over the arms, padded panels front and back, laced at the chest.",
+    "reference": "football_armor",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, 640 mm from the back panel to the arm straps and 640 mm across the shoulder flaps: a large white arched shell bridging each shoulder with a smaller flap over its outer edge, each with a blue foam rim along its front and back edges, white front panels either side of a laced gap below the padded neck, a back panel above, blue foam padding showing at the edges and black arm straps. CHECK VOLUME (x5.5): laid flat its box is emptier than the reference packs it. Shell in `enamel-white`, padding in `foam-eva`. Slot `vest`, as the cuirasses and chestplates of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers the upper arms too; Deadvox gives a wearable one slot. Protection is a judgement for hard plastic over foam: good against blows, weak against points. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_chainmail_vest",
+    "model": "hc_chainmail_vest",
+    "name": "High steel mail vest",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.24, "cut": 0.68, "pierce": 0.42 }
+    },
+    "description": "A sleeveless shirt of high steel mail, its rings dark and tight, with leather straps over the shoulders to spread the weight.",
+    "reference": "hc_chainmail_vest",
+    "variants": ["xl_hc_chainmail_vest", "xs_hc_chainmail_vest"],
+    "notes": "Folded on a shelf, neck at +z, 380 mm by 310 mm and 60 mm tall: a heavy dark pile ridged where its rows of rings lie, black leather binding at the neck and armholes and two black shoulder straps with steel buckles over the fold. Its own row from the rusty vest's builder without rust patches. CHECK VOLUME LENGTH: the reference gives mail bundled into a 100 mm ball; the model folds it as a vest so it reads as one. Mail in `steel-mail-dark`. Slot `vest`, as batch 172's mail hauberks have it. The reference also lists the arms and legs; Deadvox gives a wearable one slot. The reference gives no warmth. Protection follows the high steel mail of batch 173. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  }
+]

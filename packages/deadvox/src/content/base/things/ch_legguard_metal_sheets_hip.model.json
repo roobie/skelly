@@ -1,0 +1,11 @@
+{
+  "id": "ch_legguard_metal_sheets_hip",
+  "file": "assets/models/ch_legguard_metal_sheets_hip.glb",
+  "parts": {
+    "ch_legguard_metal_sheets_hip": {
+      "node": "ch_legguard_metal_sheets_hip:compound",
+      "massKg": 2.6,
+      "centreOfMass": [-0.003290685160827452, 0.010640918330742558, -0.0010773645820877538]
+    }
+  }
+}

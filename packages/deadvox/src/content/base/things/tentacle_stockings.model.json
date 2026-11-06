@@ -1,0 +1,11 @@
+{
+  "id": "tentacle_stockings",
+  "file": "assets/models/tentacle_stockings.glb",
+  "parts": {
+    "tentacle_stockings": {
+      "node": "tentacle_stockings:compound",
+      "massKg": 0.45,
+      "centreOfMass": [-2.8090754274591335e-17, 0.004364231036882394, -0.06998872651356994]
+    }
+  }
+}

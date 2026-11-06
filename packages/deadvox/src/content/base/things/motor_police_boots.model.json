@@ -1,0 +1,11 @@
+{
+  "id": "motor_police_boots",
+  "file": "assets/models/motor_police_boots.glb",
+  "parts": {
+    "motor_police_boots": {
+      "node": "motor_police_boots:compound",
+      "massKg": 2.5,
+      "centreOfMass": [-5.4371967782323795e-19, 0.19091801869560546, -0.05513212698854121]
+    }
+  }
+}

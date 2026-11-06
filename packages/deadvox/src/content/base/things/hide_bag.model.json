@@ -1,0 +1,11 @@
+{
+  "id": "hide_bag",
+  "file": "assets/models/hide_bag.glb",
+  "parts": {
+    "hide_bag": {
+      "node": "hide_bag:compound",
+      "massKg": 0.25,
+      "centreOfMass": [0.001067003606565423, 0.0715756029343214, 0.0016813464510905599]
+    }
+  }
+}

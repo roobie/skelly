@@ -1,0 +1,11 @@
+{
+  "id": "jacket_eod_light",
+  "file": "assets/models/jacket_eod_light.glb",
+  "parts": {
+    "jacket_eod_light": {
+      "node": "jacket_eod_light:compound",
+      "massKg": 5,
+      "centreOfMass": [1.6659525002486308e-19, 0.054960275721215236, -0.010173959663007404]
+    }
+  }
+}

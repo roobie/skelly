@@ -1,0 +1,11 @@
+{
+  "id": "bath_toy",
+  "file": "assets/models/bath_toy.glb",
+  "parts": {
+    "bath_toy": {
+      "node": "bath_toy:compound",
+      "massKg": 0.019,
+      "centreOfMass": [3.653501881552891e-8, 0.03726955536882102, 0.0005948266413357203]
+    }
+  }
+}

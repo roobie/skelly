@@ -1,0 +1,18 @@
+{
+  "id": "beach_buggy_headlamp",
+  "file": "assets/models/beach_buggy_headlamp.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 1.5,
+      "centreOfMass": [1.3236607142857142, 0.8114426691729323, 0.30415883458646614],
+      "collision": [
+        { "min": [1.25, 0.71875, 0.21875], "max": [1.375, 0.90625, 0.40625] },
+        { "min": [1.375, 0.75, 0.21875], "max": [1.40625, 0.90625, 0.375] },
+        { "min": [1.28125, 0.65625, 0.28125], "max": [1.34375, 0.75, 0.3125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

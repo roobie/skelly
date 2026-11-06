@@ -1,0 +1,11 @@
+{
+  "id": "circsaw_blade",
+  "file": "assets/models/circsaw_blade.glb",
+  "parts": {
+    "circsaw_blade": {
+      "node": "circsaw_blade:compound",
+      "massKg": 0.44,
+      "centreOfMass": [-2.0184983224817669e-19, 0.001117130307467057, -5.046245806204417e-20]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "chaos_stone",
+  "file": "assets/models/chaos_stone.glb",
+  "parts": {
+    "chaos_stone": {
+      "node": "chaos_stone:compound",
+      "massKg": 0.3,
+      "centreOfMass": [-0.0026154816073680172, 0.023942053615481615, 0.0031313524477824682]
+    }
+  },
+  "grip": { "at": [-0.008, 0.026000000000000002, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

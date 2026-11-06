@@ -1,0 +1,11 @@
+{
+  "id": "gambeson_batting",
+  "file": "assets/models/gambeson_batting.glb",
+  "parts": {
+    "gambeson_batting": {
+      "node": "gambeson_batting:compound",
+      "massKg": 0.013,
+      "centreOfMass": [0.00009729461404815115, 0.011724000992802186, 0.0005107967237527922]
+    }
+  }
+}

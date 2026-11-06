@@ -1,0 +1,11 @@
+{
+  "id": "lc_heavyhelm_close",
+  "file": "assets/models/lc_heavyhelm_close.glb",
+  "parts": {
+    "lc_heavyhelm_close": {
+      "node": "lc_heavyhelm_close:compound",
+      "massKg": 4.1,
+      "centreOfMass": [-0.00005850316437322171, 0.14790401207687376, 0.00540321662892643]
+    }
+  }
+}

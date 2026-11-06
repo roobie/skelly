@@ -1,0 +1,7 @@
+{
+  "id": "gem_bracelet",
+  "file": "assets/models/gem_bracelet.glb",
+  "parts": {
+    "gem_bracelet": { "node": "gem_bracelet:compound", "massKg": 0.04, "centreOfMass": [0, 0.003396313364055302, 0] }
+  }
+}

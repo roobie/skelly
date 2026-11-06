@@ -1,0 +1,11 @@
+{
+  "id": "display_fridge",
+  "file": "assets/models/display_fridge.glb",
+  "parts": {
+    "display_fridge": {
+      "node": "display_fridge:compound",
+      "massKg": 160,
+      "centreOfMass": [0, 0.4676272643476785, -0.008859409422824233]
+    }
+  }
+}

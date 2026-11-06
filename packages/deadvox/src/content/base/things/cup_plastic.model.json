@@ -1,0 +1,10 @@
+{
+  "id": "cup_plastic",
+  "file": "assets/models/cup_plastic.glb",
+  "parts": {
+    "cup_plastic": { "node": "cup_plastic:compound", "massKg": 0.0029, "centreOfMass": [0, 0.04767600896860986, 0] }
+  },
+  "grip": { "at": [0, 0.048, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

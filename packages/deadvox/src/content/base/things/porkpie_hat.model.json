@@ -1,0 +1,11 @@
+{
+  "id": "porkpie_hat",
+  "file": "assets/models/porkpie_hat.glb",
+  "parts": {
+    "porkpie_hat": {
+      "node": "porkpie_hat:compound",
+      "massKg": 0.18,
+      "centreOfMass": [0.00012043561819346575, 0.03661826464517048, 0]
+    }
+  }
+}

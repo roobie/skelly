@@ -1,0 +1,11 @@
+{
+  "id": "hd_tow_cable",
+  "file": "assets/models/hd_tow_cable.glb",
+  "parts": {
+    "hd_tow_cable": {
+      "node": "hd_tow_cable:compound",
+      "massKg": 5.9,
+      "centreOfMass": [-0.006228176491210489, 0.012967696699554247, 0.01783432663895425]
+    }
+  }
+}

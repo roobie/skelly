@@ -1,0 +1,10 @@
+{
+  "id": "porcelain_urn",
+  "file": "assets/models/porcelain_urn.glb",
+  "parts": {
+    "porcelain_urn": { "node": "porcelain_urn:compound", "massKg": 1.3, "centreOfMass": [0, 0.13674848138040324, 0] }
+  },
+  "grip": { "at": [0, 0.13, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

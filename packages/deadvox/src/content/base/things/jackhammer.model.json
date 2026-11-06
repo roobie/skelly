@@ -1,0 +1,14 @@
+{
+  "id": "jackhammer",
+  "file": "assets/models/jackhammer.glb",
+  "parts": {
+    "jackhammer": {
+      "node": "jackhammer:compound",
+      "massKg": 30,
+      "centreOfMass": [-0.20344873961931356, 0.11049395164253693, 0.0010362754464613806]
+    }
+  },
+  "grip": { "at": [-0.45999999999999996, 0.09, 0.186], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

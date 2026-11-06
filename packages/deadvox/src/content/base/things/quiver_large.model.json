@@ -1,0 +1,11 @@
+{
+  "id": "quiver_large",
+  "file": "assets/models/quiver_large.glb",
+  "parts": {
+    "quiver_large": {
+      "node": "quiver_large:compound",
+      "massKg": 0.51,
+      "centreOfMass": [-0.004825790554414786, 0.06459449691991785, 0.007989486652977414]
+    }
+  }
+}

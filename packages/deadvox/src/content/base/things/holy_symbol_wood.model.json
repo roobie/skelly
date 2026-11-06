@@ -1,0 +1,11 @@
+{
+  "id": "holy_symbol_wood",
+  "file": "assets/models/holy_symbol_wood.glb",
+  "parts": {
+    "holy_symbol_wood": {
+      "node": "holy_symbol_wood:compound",
+      "massKg": 0.0057,
+      "centreOfMass": [0, 0.0027629350893697085, 0.05647883349012232]
+    }
+  }
+}

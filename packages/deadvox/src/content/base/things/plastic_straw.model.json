@@ -1,0 +1,11 @@
+{
+  "id": "plastic_straw",
+  "file": "assets/models/plastic_straw.glb",
+  "parts": {
+    "plastic_straw": {
+      "node": "plastic_straw:compound",
+      "massKg": 0.0005,
+      "centreOfMass": [-0.03338814016172508, 0.007528301886792452, 0]
+    }
+  }
+}

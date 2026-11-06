@@ -1,0 +1,11 @@
+{
+  "id": "bigtrapper_pack",
+  "file": "assets/models/bigtrapper_pack.glb",
+  "parts": {
+    "bigtrapper_pack": {
+      "node": "bigtrapper_pack:compound",
+      "massKg": 3.5,
+      "centreOfMass": [0.000014535485634301965, 0.42653107115347977, -0.0016670255675465258]
+    }
+  }
+}

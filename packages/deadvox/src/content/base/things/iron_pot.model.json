@@ -1,0 +1,5 @@
+{
+  "id": "iron_pot",
+  "file": "assets/models/iron_pot.glb",
+  "parts": { "iron_pot": { "node": "iron_pot:compound", "massKg": 3.5, "centreOfMass": [0, 0.042730538922155684, 0] } }
+}

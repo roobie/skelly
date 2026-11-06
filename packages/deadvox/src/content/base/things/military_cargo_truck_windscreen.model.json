@@ -1,0 +1,19 @@
+{
+  "id": "military_cargo_truck_windscreen",
+  "file": "assets/models/military_cargo_truck_windscreen.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 26,
+      "centreOfMass": [1.073930012744265, 2.229662276975361, 0.0006106627017841971],
+      "collision": [
+        { "min": [1.59375, 1.90625, 0.03125], "max": [1.625, 2.59375, 0.96875] },
+        { "min": [1.59375, 1.90625, -0.96875], "max": [1.625, 2.59375, -0.03125] },
+        { "min": [0.34375, 1.90625, 0.125], "max": [0.40625, 2.5, 0.96875] },
+        { "min": [0.34375, 1.90625, -0.96875], "max": [0.40625, 2.5, -0.125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

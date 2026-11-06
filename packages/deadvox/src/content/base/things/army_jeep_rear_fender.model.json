@@ -1,0 +1,18 @@
+{
+  "id": "army_jeep_rear_fender",
+  "file": "assets/models/army_jeep_rear_fender.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 9,
+      "centreOfMass": [-1.0026785714285715, 0.815625, 0.7187500000000001],
+      "collision": [
+        { "min": [-1.40625, 0.8125, 0.625], "max": [-0.59375, 0.875, 0.8125] },
+        { "min": [-0.625, 0.59375, 0.625], "max": [-0.4375, 0.875, 0.8125] },
+        { "min": [-1.59375, 0.59375, 0.625], "max": [-1.375, 0.875, 0.8125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

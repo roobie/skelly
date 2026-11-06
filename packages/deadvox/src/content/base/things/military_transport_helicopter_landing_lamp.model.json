@@ -1,0 +1,17 @@
+{
+  "id": "military_transport_helicopter_landing_lamp",
+  "file": "assets/models/military_transport_helicopter_landing_lamp.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 4,
+      "centreOfMass": [0, -0.009375000000000001, 0],
+      "collision": [
+        { "min": [-0.125, -0.09375, -0.125], "max": [0.125, 0.09375, 0.125] },
+        { "min": [-0.09375, -0.125, -0.09375], "max": [0.09375, -0.09375, 0.09375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

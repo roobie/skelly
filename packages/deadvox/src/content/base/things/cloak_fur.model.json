@@ -1,0 +1,11 @@
+{
+  "id": "cloak_fur",
+  "file": "assets/models/cloak_fur.glb",
+  "parts": {
+    "cloak_fur": {
+      "node": "cloak_fur:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-6.940016885250673e-20, 0.03160265122912996, -0.005093044718516655]
+    }
+  }
+}

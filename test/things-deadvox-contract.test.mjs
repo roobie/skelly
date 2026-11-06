@@ -62,6 +62,16 @@ const figureModels = new Set([
     .filter((model) => !itemModels.has(model)),
 ]);
 
+// Catalogue items drafted for after the framework refactor (#1532): their models export, their items wait.
+// See `things/TASK-catalogue-breadth.md`, "Item drafts wait for the refactor".
+const DRAFT_FILE = /^batch-\d+\.json$/;
+const draftsDir = new URL('../things/catalogue-drafts/', import.meta.url).pathname;
+const drafted = new Set(
+  readdirSync(draftsDir)
+    .filter((file) => DRAFT_FILE.test(file))
+    .flatMap((file) => JSON.parse(readFileSync(join(draftsDir, file), 'utf8')).flatMap(({ id, model }) => [id, model])),
+);
+
 describe('thing tool exports satisfy the Deadvox contract', () => {
   it('validates and reproduces every recipe model without orphaned records', () => {
     const ids = new Set(recipe.map(({ id }) => id));
@@ -118,6 +128,10 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
         continue;
       }
       const item = registry.items.get(row.source);
+      if (item === undefined && drafted.has(row.source)) {
+        assert.ok(registry.models.get(row.id), row.id);
+        continue;
+      }
       assert.ok(item, `${row.source}: missing consumer`);
       assert.equal(item.model, row.id);
       const model = registry.models.get(row.id);

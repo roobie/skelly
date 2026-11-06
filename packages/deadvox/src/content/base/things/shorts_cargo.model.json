@@ -1,0 +1,11 @@
+{
+  "id": "shorts_cargo",
+  "file": "assets/models/shorts_cargo.glb",
+  "parts": {
+    "shorts_cargo": {
+      "node": "shorts_cargo:compound",
+      "massKg": 0.4,
+      "centreOfMass": [0.000007719307011079958, 0.019803969572440325, -0.00426822718245294]
+    }
+  }
+}

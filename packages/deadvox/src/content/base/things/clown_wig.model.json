@@ -1,0 +1,11 @@
+{
+  "id": "clown_wig",
+  "file": "assets/models/clown_wig.glb",
+  "parts": {
+    "clown_wig": {
+      "node": "clown_wig:compound",
+      "massKg": 0.2,
+      "centreOfMass": [-0.0007678111587982818, 0.04831926561754887, -0.03360414878397711]
+    }
+  }
+}

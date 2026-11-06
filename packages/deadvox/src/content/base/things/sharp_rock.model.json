@@ -1,0 +1,14 @@
+{
+  "id": "sharp_rock",
+  "file": "assets/models/sharp_rock.glb",
+  "parts": {
+    "sharp_rock": {
+      "node": "sharp_rock:compound",
+      "massKg": 0.56,
+      "centreOfMass": [-0.004821939697096012, 0.023186188689731838, -0.0005780880922606642]
+    }
+  },
+  "grip": { "at": [-0.008, 0.024, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

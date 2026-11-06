@@ -1,0 +1,150 @@
+[
+  {
+    "id": "tool_belt",
+    "model": "tool_belt",
+    "name": "Tool belt",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Industrial", "Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "waist", "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left pouch" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right pouch" }
+      ]
+    },
+    "attachPoints": [
+      { "id": "hammer_ring", "name": "hammer ring", "reachSimSeconds": 0.3, "standard": "loop_medium" },
+      { "id": "loop_front", "name": "front loop", "reachSimSeconds": 0.3, "standard": "loop_small" },
+      { "id": "loop_middle", "name": "middle loop", "reachSimSeconds": 0.3, "standard": "loop_small" },
+      { "id": "loop_back", "name": "back loop", "reachSimSeconds": 0.4, "standard": "loop_small" }
+    ],
+    "description": "A wide leather work belt with two tool pouches, a hammer ring and a row of small tool loops.",
+    "reference": "tool_belt",
+    "variants": [],
+    "notes": "Laid flat and straight, outside up: a brown leather strap 1.05 m long and 50 mm wide with a steel buckle at the +x end, two pouches 160 mm by 200 mm with a black front pocket each and screwdriver and plier handles standing out of their tops, a steel hammer ring hanging from a tab between them, and three small loops near the buckle. CHECK VOLUME (x6.3): the reference counts the belt rolled up; laid out flat, its pouches standing open, it spans air. The reference holds seven tools; here two pouches hold small tools and loose parts as grids, the hammer ring is a medium loop point (between the pouches) and the three small loops (near the buckle, front to back) take screwdrivers, pliers or a torch. It has no belt or webbing points: its length is taken by its own pouches. The reference covers the torso; it is the waist item. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "webbing_belt",
+    "model": "webbing_belt",
+    "name": "Webbing belt",
+    "category": "clothing",
+    "size": [3, 1],
+    "economy": { "usage": ["Military"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "waist", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.0015 },
+    "attachPoints": [
+      { "id": "front_left", "name": "left front", "reachSimSeconds": 0, "standard": "pals" },
+      { "id": "front_right", "name": "right front", "reachSimSeconds": 0, "standard": "pals" },
+      { "id": "hip_left", "name": "left hip", "reachSimSeconds": 0.2, "standard": "pals" },
+      { "id": "hip_right", "name": "right hip", "reachSimSeconds": 0.2, "standard": "pals" },
+      { "id": "back_left", "name": "left back", "reachSimSeconds": 1, "standard": "pals" },
+      { "id": "back_right", "name": "right back", "reachSimSeconds": 1, "standard": "pals" }
+    ],
+    "description": "A two-inch nylon belt with a row of webbing channels for threading pouches on, and a quick-release steel buckle.",
+    "reference": "webbing_belt",
+    "variants": [],
+    "notes": "Laid flat and straight, outside up: an olive strap 1.1 m long and 50 mm wide covered in a row of darker webbing channels, a keeper at the tail and a blackened steel quick-release buckle at the +x end. Its six points split the channel row into sixths: the front points are the two sixths either side of the buckle end's middle, the hips the next sixths out, and the back points the two sixths at the tail end. They take the pals standard, since threading pouches through webbing is what the belt is for; gear that only fits belt (the leather belt pouches and quivers) cannot hang on it until a point can accept more than one standard. The reference covers the torso; it is the waist item. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bastsandals",
+    "model": "bastsandals",
+    "name": "Cord sandals",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "feet", "encumbrance": 10, "warmth": 0, "wearPerDamage": 0.002 },
+    "description": "A pair of light sandals with soles of wound cord and cord straps over the toes and round the heel.",
+    "reference": "bastsandals",
+    "variants": [],
+    "notes": "A standing pair of soles 260 mm long and 95 mm wide in wicker-coloured cord, with darker woven bands across them, a strap arched over the toes and a cord loop round each heel. CHECK VOLUME (x11): the reference counts the sandals stacked flat; the box spans the air under the straps and between the pair. Cotton cord has no finish, so the sole uses straw-wicker and plant-dried, the straps cord-olive. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "boots",
+    "model": "boots",
+    "name": "Leather boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "feet", "encumbrance": 12, "warmth": 20, "wearPerDamage": 0.0012 },
+    "description": "A pair of laced brown leather work boots on thick rubber soles.",
+    "reference": "boots",
+    "variants": ["xl_boots", "xs_boots"],
+    "notes": "A standing pair, each boot 300 mm long, 105 mm wide and 170 mm tall, toes on +z: brown leather uppers, a rounded toe, black rubber soles with a raised heel, tan laces up the shaft and instep and a dark lining showing inside the collar. CHECK VOLUME (x5.5): the reference counts the boots packed; the box spans the air between and around the pair. The reference names no material; leather follows its description. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "boots_bone",
+    "model": "boots_bone",
+    "name": "Bone-studded boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 16,
+      "warmth": 20,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.2, "pierce": 0.1 }
+    },
+    "description": "A pair of black leather boots studded all over with small carved bones that click together with every step.",
+    "reference": "boots_bone",
+    "variants": [],
+    "notes": "The leather boot shape 190 mm tall in black leather, with rows of small bone studs on both sides of each shaft and along each foot, a bone tab at each heel and a bone-coloured collar. The look step raises no check. The reference copies the plain boots with bone added; it names no material, so the bones use body-bone. The clicking is flavour only: no noise rule is drafted. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "boots_bunker",
+    "model": "boots_bunker",
+    "name": "Turnout boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 40,
+      "warmth": 35,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.6, "blunt": 0.35, "cut": 0.4, "pierce": 0.4 }
+    },
+    "description": "A pair of tall black rubber firefighter's boots with steel toe caps, a reflective band and pull-on loops.",
+    "reference": "boots_bunker",
+    "variants": [],
+    "notes": "A standing pair, each boot 310 mm long, 110 mm wide and 380 mm tall, toes on +z: black rubber pull-on shafts with no laces, a yellow reflective band at mid-shaft, bare steel toe caps, dark red soles and a pull loop either side of each collar. CHECK VOLUME (x9.6): the reference counts the boots packed; the tall shafts and the gap between them hold air. A reflective yellow finish would suit the band better; paint-crane-yellow stands in. Their acid protection follows the rubber boots; their heat protection is not drafted. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "boots_chitin",
+    "model": "boots_chitin",
+    "name": "Shell boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 14,
+      "warmth": 10,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.2, "blunt": 0.25, "cut": 0.5, "pierce": 0.4 }
+    },
+    "description": "A pair of boots sheathed in overlapping bands of hard insect shell, with a shell plate over each shin and instep.",
+    "reference": "boots_chitin",
+    "variants": ["xl_boots_chitin", "xs_boots_chitin"],
+    "notes": "A standing pair, each boot 300 mm long, 105 mm wide and 220 mm tall, toes on +z: three overlapping shell bands round each shaft, a shin plate down its front and a plate over the instep, a shell toe and sole, with black leather showing between them. CHECK VOLUME (x4.1): the box spans the air round the pair. No chitin finish exists; paint-oxblood stands in for the dark reddish shell. The name avoids the reference's lore; the shell comes from giant insects. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "boots_combat",
+    "model": "boots_combat",
+    "name": "Combat boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 12,
+      "warmth": 25,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.3, "pierce": 0.25 }
+    },
+    "description": "A pair of tall coyote-tan combat boots with reinforced toes and heels, black lugged soles and laces to the top.",
+    "reference": "boots_combat",
+    "variants": [],
+    "notes": "A standing pair, each boot 300 mm long, 105 mm wide and 220 mm tall, toes on +z: coyote nylon shafts laced with black laces up six rungs, darker tan toe caps, heel cups and collars, and thick black rubber soles. CHECK VOLUME (x8.9): the reference counts the boots packed; the box spans the air round the pair. The reference names no material; nylon and leather follow its description. The worn look is pending: no worn model is authored."
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "id": "gambeson",
+  "file": "assets/models/gambeson.glb",
+  "parts": {
+    "gambeson": {
+      "node": "gambeson:compound",
+      "massKg": 3.5,
+      "centreOfMass": [1.8655824726607012e-19, 0.052459655532751524, -0.007850590526022994]
+    }
+  }
+}

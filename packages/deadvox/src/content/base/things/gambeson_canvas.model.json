@@ -1,0 +1,11 @@
+{
+  "id": "gambeson_canvas",
+  "file": "assets/models/gambeson_canvas.glb",
+  "parts": {
+    "gambeson_canvas": {
+      "node": "gambeson_canvas:compound",
+      "massKg": 3.8,
+      "centreOfMass": [1.8655824726607012e-19, 0.052459655532751524, -0.007850590526022994]
+    }
+  }
+}

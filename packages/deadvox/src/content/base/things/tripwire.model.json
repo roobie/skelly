@@ -1,0 +1,14 @@
+{
+  "id": "tripwire",
+  "file": "assets/models/tripwire.glb",
+  "parts": {
+    "tripwire": {
+      "node": "tripwire:compound",
+      "massKg": 0.0084,
+      "centreOfMass": [0.007957160342717259, 0.003554467564259486, -0.0006340269277845778]
+    }
+  },
+  "grip": { "at": [0, 0.003, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

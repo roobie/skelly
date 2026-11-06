@@ -1,0 +1,11 @@
+{
+  "id": "butchering_kit",
+  "file": "assets/models/butchering_kit.glb",
+  "parts": {
+    "butchering_kit": {
+      "node": "butchering_kit:compound",
+      "massKg": 0.99,
+      "centreOfMass": [0.0017146726574574175, 0.005453690868823987, -0.0028914965823813405]
+    }
+  }
+}

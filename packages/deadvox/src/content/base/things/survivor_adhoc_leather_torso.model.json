@@ -1,0 +1,11 @@
+{
+  "id": "survivor_adhoc_leather_torso",
+  "file": "assets/models/survivor_adhoc_leather_torso.glb",
+  "parts": {
+    "survivor_adhoc_leather_torso": {
+      "node": "survivor_adhoc_leather_torso:compound",
+      "massKg": 0.89,
+      "centreOfMass": [-0.000024844720496894393, 0.036931262939958576, -0.004176693286010053]
+    }
+  }
+}

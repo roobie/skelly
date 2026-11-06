@@ -1,0 +1,11 @@
+{
+  "id": "tireplate",
+  "file": "assets/models/tireplate.glb",
+  "parts": {
+    "tireplate": {
+      "node": "tireplate:compound",
+      "massKg": 2.3,
+      "centreOfMass": [0.00018443144238107316, 0.014691681505978132, -0.03512821165097941]
+    }
+  }
+}

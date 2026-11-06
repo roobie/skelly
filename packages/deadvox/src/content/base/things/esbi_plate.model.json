@@ -1,0 +1,11 @@
+{
+  "id": "esbi_plate",
+  "file": "assets/models/esbi_plate.glb",
+  "parts": {
+    "esbi_plate": {
+      "node": "esbi_plate:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0, 0.014842879663688911, -0.0003941145559642669]
+    }
+  }
+}

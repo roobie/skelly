@@ -9,4 +9,7 @@
   shoulderWidth: 0.09, shoulderHeight: 0.12, shoulderDepth: 0.12, deltoidInset: 0.012, deltoidDrop: 0.01,
   neckWidth: 0.1, neckHeight: 0.07, neckOverlap: 0.02,
   headWidth: 0.165, headHeight: 0.235, headDepth: 0.2, jawHeight: 0.08, hairCover: 0.07,
+  // How far the head's attachment frame sits above the top of the neck, about mid-skull. Hidden, as no body part
+  // takes it.
+  headFrameRise:: 0.0804,
 }

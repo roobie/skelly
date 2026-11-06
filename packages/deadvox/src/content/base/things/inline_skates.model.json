@@ -1,0 +1,11 @@
+{
+  "id": "inline_skates",
+  "file": "assets/models/inline_skates.glb",
+  "parts": {
+    "inline_skates": {
+      "node": "inline_skates:compound",
+      "massKg": 2.9,
+      "centreOfMass": [1.750374980592873e-17, 0.1663048121818403, -0.025853915512327113]
+    }
+  }
+}

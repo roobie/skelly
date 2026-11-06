@@ -1,0 +1,11 @@
+{
+  "id": "pedal_grindstone",
+  "file": "assets/models/pedal_grindstone.glb",
+  "parts": {
+    "pedal_grindstone": {
+      "node": "pedal_grindstone:compound",
+      "massKg": 15,
+      "centreOfMass": [0.010712780100576096, 0.19650384385657316, 0.005135739195776575]
+    }
+  }
+}

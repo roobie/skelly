@@ -1,0 +1,11 @@
+{
+  "id": "sf_watch",
+  "file": "assets/models/sf_watch.glb",
+  "parts": {
+    "sf_watch": {
+      "node": "sf_watch:compound",
+      "massKg": 0.2,
+      "centreOfMass": [0.00021790030211480364, 0.005287764350453169, -0.006452416918429001]
+    }
+  }
+}

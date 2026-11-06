@@ -1,0 +1,17 @@
+{
+  "id": "flatbed_truck_dashboard",
+  "file": "assets/models/flatbed_truck_dashboard.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 25,
+      "centreOfMass": [4.277012711864407, 1.7171610169491525, 0],
+      "collision": [
+        { "min": [4.1875, 1.21875, -1.15625], "max": [4.40625, 1.9375, 1.15625] },
+        { "min": [4, 1.9375, -1.15625], "max": [4.46875, 2.09375, 1.15625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

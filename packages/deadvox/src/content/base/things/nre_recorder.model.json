@@ -1,0 +1,11 @@
+{
+  "id": "nre_recorder",
+  "file": "assets/models/nre_recorder.glb",
+  "parts": {
+    "nre_recorder": {
+      "node": "nre_recorder:compound",
+      "massKg": 1,
+      "centreOfMass": [-0.00640271596114486, 0.04858146259055911, 0.000409928202462558]
+    }
+  }
+}

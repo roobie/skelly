@@ -1,0 +1,18 @@
+{
+  "id": "rear_step_tread",
+  "file": "assets/models/rear_step_tread.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 14,
+      "centreOfMass": [-0.12143987341772151, 0.034216772151898736, 0],
+      "collision": [
+        { "min": [-0.25, 0, -0.59375], "max": [0, 0.0625, 0.59375] },
+        { "min": [-0.0625, 0.0625, 0.40625], "max": [0, 0.15625, 0.46875] },
+        { "min": [-0.0625, 0.0625, -0.46875], "max": [0, 0.15625, -0.40625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

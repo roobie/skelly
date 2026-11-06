@@ -1,0 +1,11 @@
+{
+  "id": "cufflinks_intricate",
+  "file": "assets/models/cufflinks_intricate.glb",
+  "parts": {
+    "cufflinks_intricate": {
+      "node": "cufflinks_intricate:compound",
+      "massKg": 0.029,
+      "centreOfMass": [0.00007042253521126956, 0.00962910798122065, 0.00007042253521126762]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "five_point_harness",
+  "file": "assets/models/five_point_harness.glb",
+  "parts": {
+    "five_point_harness": {
+      "node": "five_point_harness:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0, 0.0062496328928047, -0.15158541360744018]
+    }
+  }
+}

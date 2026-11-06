@@ -1,0 +1,11 @@
+{
+  "id": "reinforced_glass_sheet",
+  "file": "assets/models/reinforced_glass_sheet.glb",
+  "parts": {
+    "reinforced_glass_sheet": {
+      "node": "reinforced_glass_sheet:compound",
+      "massKg": 57,
+      "centreOfMass": [0, 0.010032246728817413, 0.0017171383095272545]
+    }
+  }
+}

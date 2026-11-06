@@ -1,0 +1,11 @@
+{
+  "id": "american_flag",
+  "file": "assets/models/american_flag.glb",
+  "parts": {
+    "american_flag": {
+      "node": "american_flag:compound",
+      "massKg": 0.8,
+      "centreOfMass": [2.1757986161216645e-20, 0.02045011047592326, -0.05850503279205976]
+    }
+  }
+}

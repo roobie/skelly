@@ -1,0 +1,11 @@
+{
+  "id": "pride_flag",
+  "file": "assets/models/pride_flag.glb",
+  "parts": {
+    "pride_flag": {
+      "node": "pride_flag:compound",
+      "massKg": 0.6,
+      "centreOfMass": [-0.00017415470125057886, 0.025587540528022226, -0.002236220472440945]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "crystal_sight_glasses",
+  "file": "assets/models/crystal_sight_glasses.glb",
+  "parts": {
+    "crystal_sight_glasses": {
+      "node": "crystal_sight_glasses:compound",
+      "massKg": 0.05,
+      "centreOfMass": [0.0004073036985182589, 0.028421537743553844, -0.0014643565511608925]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "mop_folded",
+  "file": "assets/models/mop_folded.glb",
+  "parts": {
+    "mop_folded": {
+      "node": "mop_folded:compound",
+      "massKg": 0.5,
+      "centreOfMass": [0.18945967947087256, 0.021660137369626048, 0]
+    }
+  },
+  "grip": { "at": [-0.25, 0.062, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

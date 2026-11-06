@@ -1,0 +1,14 @@
+{
+  "id": "metoprolol",
+  "file": "assets/models/metoprolol.glb",
+  "parts": {
+    "metoprolol": {
+      "node": "metoprolol:compound",
+      "massKg": 0.0055,
+      "centreOfMass": [-0.0010043668122270745, 0.0018122270742358074, -1.4109931300372323e-19]
+    }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,5 @@
+{
+  "id": "barstool",
+  "file": "assets/models/barstool.glb",
+  "parts": { "barstool": { "node": "barstool:compound", "massKg": 7.3, "centreOfMass": [0, 0.5681603061438457, 0] } }
+}

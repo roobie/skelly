@@ -1,0 +1,14 @@
+{
+  "id": "brush",
+  "file": "assets/models/brush.glb",
+  "parts": {
+    "brush": {
+      "node": "brush:compound",
+      "massKg": 0.11,
+      "centreOfMass": [0.0005202483003251564, 0.023378066804611367, -0.00032515518770322225]
+    }
+  },
+  "grip": { "at": [0, 0.041, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

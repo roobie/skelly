@@ -1,0 +1,11 @@
+{
+  "id": "oven_broiler_pan",
+  "file": "assets/models/oven_broiler_pan.glb",
+  "parts": {
+    "oven_broiler_pan": {
+      "node": "oven_broiler_pan:compound",
+      "massKg": 4.5,
+      "centreOfMass": [0, 0.028140824337585867, 0.03732041216879293]
+    }
+  }
+}

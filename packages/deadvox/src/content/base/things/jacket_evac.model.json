@@ -1,0 +1,11 @@
+{
+  "id": "jacket_evac",
+  "file": "assets/models/jacket_evac.glb",
+  "parts": {
+    "jacket_evac": {
+      "node": "jacket_evac:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0, 0.01974839922270714, 0.00519658500844191]
+    }
+  }
+}

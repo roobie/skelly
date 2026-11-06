@@ -1,0 +1,11 @@
+{
+  "id": "xssocks",
+  "file": "assets/models/xssocks.glb",
+  "parts": {
+    "xssocks": {
+      "node": "xssocks:compound",
+      "massKg": 0.033,
+      "centreOfMass": [-0.018230817217716775, 0.004669993761696819, -0.015281347473487215]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "adobe_pallet_done",
+  "file": "assets/models/adobe_pallet_done.glb",
+  "parts": {
+    "adobe_pallet_done": {
+      "node": "adobe_pallet_done:compound",
+      "massKg": 64,
+      "centreOfMass": [-0.0027055112265726307, 0.10963518277973645, 0]
+    }
+  }
+}

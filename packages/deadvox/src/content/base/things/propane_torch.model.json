@@ -1,0 +1,14 @@
+{
+  "id": "propane_torch",
+  "file": "assets/models/propane_torch.glb",
+  "parts": {
+    "propane_torch": {
+      "node": "propane_torch:compound",
+      "massKg": 0.46,
+      "centreOfMass": [0.16405237410071943, 0.019822158273381296, 0.0006589928057553956]
+    }
+  },
+  "grip": { "at": [0.116, 0.02, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

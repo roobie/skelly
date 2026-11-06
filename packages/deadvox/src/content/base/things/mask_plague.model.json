@@ -1,0 +1,11 @@
+{
+  "id": "mask_plague",
+  "file": "assets/models/mask_plague.glb",
+  "parts": {
+    "mask_plague": {
+      "node": "mask_plague:compound",
+      "massKg": 0.35,
+      "centreOfMass": [9.499833752892596e-8, 0.09950667363321142, 0.019051251603096956]
+    }
+  }
+}

@@ -1,0 +1,111 @@
+[
+  {
+    "id": "pipe_fittings",
+    "model": "pipe_fittings",
+    "name": "Pipe fittings",
+    "category": "material",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A handful of threaded iron pipe fittings: an elbow, a tee, a coupling, a nipple, two caps and a bushing.",
+    "reference": "pipe_fittings",
+    "variants": [],
+    "notes": "Seven fittings for 20 mm pipe laid out loose, some black iron (iron-dull) and some galvanised (steel-galvanised); the elbow, tee and coupling have beaded ends, the nipple has thread rings and the caps stand open end down. Taking the set apart into single fittings has no content field yet."
+  },
+  {
+    "id": "pressure_gauge",
+    "model": "pressure_gauge",
+    "name": "Pressure gauge",
+    "category": "material",
+    "size": [2, 2],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A dial pressure gauge screwed into a short length of thick-walled steel pipe with threaded ends.",
+    "reference": "pressure_gauge",
+    "variants": [],
+    "notes": "Pipe 200 mm long and 60 mm across with a 14 mm bore, a boss and brass hex rising to a steel-cased dial 100 mm across facing front, with ticks, a red band at the top of the scale and a needle. No glass is drawn over the dial: tiles draw glass opaque and it hid the face. The box counts the air beside the dial (box/volume x2.4)."
+  },
+  {
+    "id": "pump_complex",
+    "model": "pump_complex",
+    "name": "High-pressure pump",
+    "category": "material",
+    "size": [2, 2],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "description": "A compact three-plunger pump with a cast crankcase, a keyed drive shaft and a brass manifold.",
+    "reference": "pump_complex",
+    "variants": [],
+    "notes": "Crankcase 120 mm by 80 mm on a foot with back ribs, an oil cap and side bearing housings; the keyed shaft leaves the +x side. The brass manifold across the front carries three valve plugs, a suction port and a smaller outlet. The reference lists iron only; the manifold is drawn in brass-polished because that is how these pumps look. paint-charcoal draws the painted crankcase. The box counts air round the shaft and ports (box/volume x2.6)."
+  },
+  {
+    "id": "pyrometer",
+    "model": "pyrometer",
+    "name": "Pyrometer",
+    "category": "tool",
+    "size": [1, 2],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "tool": { "qualities": { "temperature_measurement": 2 } },
+    "description": "A handheld thermocouple meter in a yellow rubber boot, with a steel probe on a cable for reading high temperatures.",
+    "reference": "pyrometer",
+    "variants": [],
+    "notes": "Meter 150 mm by 75 mm with a green display, four buttons and a cable to a black-handled steel probe 260 mm long laid beside it. CHECK VOLUME (x5): the box counts the air between the meter, cable and probe; the meter and probe alone are about 0.3 L against the reference's 0.25 L. temperature_measurement is a new quality for kilns, forges and smelting."
+  },
+  {
+    "id": "simple_crank",
+    "model": "simple_crank",
+    "name": "Hand crank",
+    "category": "material",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "description": "An iron rod bent into a crank, with a square drive end, a collar and a loose grip on the handle.",
+    "reference": "simple_crank",
+    "variants": [],
+    "notes": "Bent from one rod 16 mm across: a 200 mm shaft with a square end and a fixed collar, a 140 mm arm at a right angle and a 110 mm handle with a grip sleeve (iron-cast against the rod's iron-dull) and a peened end, laid flat."
+  },
+  {
+    "id": "small_pressure_vessel",
+    "model": "small_pressure_vessel",
+    "name": "Small pressure vessel",
+    "category": "material",
+    "size": [2, 4],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "description": "A heavy steel tank with thick walls and rounded ends, a threaded nozzle on top and a plugged side port.",
+    "reference": "small_pressure_vessel",
+    "variants": [],
+    "notes": "Stands upright, 400 mm tall and 180 mm across, on a skirt foot, with two weld bands, a brass-dull nozzle on a hex, a side plug and a stamped plate on the front. Mass 30 kg follows the reference."
+  },
+  {
+    "id": "well_pump",
+    "model": "well_pump",
+    "name": "Mechanical pump",
+    "category": "material",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A small cast-iron impeller pump with a round casing, a flanged inlet in front and a flanged outlet on top.",
+    "reference": "well_pump",
+    "variants": [],
+    "notes": "Volute casing 124 mm across facing front with a bolted cover lip, a scroll toward the outlet, a flanged suction eye on the axis, a flanged outlet rising off the top edge, a drain plug, and a bearing bracket on a foot with the keyed shaft out the back. CHECK VOLUME (x4.8): the box counts the air round the casing, flanges and shaft; the iron itself is about the reference's 1 L. recovery_pump is not a variant on this model: it is a 27 kg boxed machine and has its own row."
+  },
+  {
+    "id": "recovery_pump",
+    "model": "recovery_pump",
+    "name": "Refrigerant recovery machine",
+    "category": "material",
+    "size": [3, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "description": "A heavy steel cabinet with a carry handle, two dial gauges, valve knobs and hose ports on its front, for pumping refrigerant out of cooling systems.",
+    "reference": "recovery_pump",
+    "variants": [],
+    "notes": "Variant of well_pump in the reference, given its own model because it shares no shape with an impeller pump: cabinet 380 mm by 230 mm and 330 mm tall on rubber feet, a carry handle, side vents, blue low-side and red high-side gauges and knobs, a selector knob, a red switch and three brass hose ports. Mass 27.24 kg follows the variant. The box is about 29 L against the variant's 8 L, which is too small for a machine of this weight; the size follows real recovery machines."
+  },
+  {
+    "id": "clothes_hanger",
+    "model": "clothes_hanger",
+    "name": "Clothes hanger",
+    "category": "misc",
+    "size": [4, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A black plastic clothes hanger with a bright steel hook.",
+    "reference": "clothes_hanger",
+    "variants": [],
+    "notes": "Hung facing front, 420 mm wide and 210 mm tall with the hook: sloping shoulders, strap notches, a bottom bar and a curled steel hook from the neck. CHECK VOLUME (x7): the box counts the open triangle of the frame; the reference's 0.15 L is the plastic and wire."
+  }
+]

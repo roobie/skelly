@@ -1,0 +1,11 @@
+{
+  "id": "aketon_hood_wool",
+  "file": "assets/models/aketon_hood_wool.glb",
+  "parts": {
+    "aketon_hood_wool": {
+      "node": "aketon_hood_wool:compound",
+      "massKg": 0.62,
+      "centreOfMass": [0.000010046296683885001, 0.10957564442807273, 0.004741500414409736]
+    }
+  }
+}

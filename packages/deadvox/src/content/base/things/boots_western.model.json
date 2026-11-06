@@ -1,0 +1,11 @@
+{
+  "id": "boots_western",
+  "file": "assets/models/boots_western.glb",
+  "parts": {
+    "boots_western": {
+      "node": "boots_western:compound",
+      "massKg": 1.3,
+      "centreOfMass": [0.00006411323896753333, 0.10979888981404388, -0.055887982237024715]
+    }
+  }
+}

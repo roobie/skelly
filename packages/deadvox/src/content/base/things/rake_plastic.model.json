@@ -1,0 +1,14 @@
+{
+  "id": "rake_plastic",
+  "file": "assets/models/rake_plastic.glb",
+  "parts": {
+    "rake_plastic": {
+      "node": "rake_plastic:compound",
+      "massKg": 0.56,
+      "centreOfMass": [0.8420007857002542, 0.018370064820271075, 3.249580092528098e-19]
+    }
+  },
+  "grip": { "at": [0.42400000000000004, 0.022000000000000002, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

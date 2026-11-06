@@ -1,0 +1,7 @@
+{
+  "id": "pot",
+  "file": "assets/models/pot.glb",
+  "parts": {
+    "pot": { "node": "pot:compound", "massKg": 1.6, "centreOfMass": [1.8816665435692165e-19, 0.07524294813466789, 0] }
+  }
+}

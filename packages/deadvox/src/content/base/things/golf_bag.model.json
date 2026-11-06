@@ -1,0 +1,11 @@
+{
+  "id": "golf_bag",
+  "file": "assets/models/golf_bag.glb",
+  "parts": {
+    "golf_bag": {
+      "node": "golf_bag:compound",
+      "massKg": 1.8,
+      "centreOfMass": [0.003654442530150136, 0.4251013208630733, 0.007878414964312084]
+    }
+  }
+}

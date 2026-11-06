@@ -1,0 +1,11 @@
+{
+  "id": "tacvest",
+  "file": "assets/models/tacvest.glb",
+  "parts": {
+    "tacvest": {
+      "node": "tacvest:compound",
+      "massKg": 2.1,
+      "centreOfMass": [-0.0017851986777305529, 0.03851411095369808, 0.003484224965706445]
+    }
+  }
+}

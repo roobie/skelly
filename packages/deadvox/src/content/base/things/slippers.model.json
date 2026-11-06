@@ -1,0 +1,11 @@
+{
+  "id": "slippers",
+  "file": "assets/models/slippers.glb",
+  "parts": {
+    "slippers": {
+      "node": "slippers:compound",
+      "massKg": 0.35,
+      "centreOfMass": [-7.144136175544878e-18, 0.030842888740652316, -0.024146683986939574]
+    }
+  }
+}

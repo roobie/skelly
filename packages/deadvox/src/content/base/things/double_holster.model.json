@@ -1,0 +1,11 @@
+{
+  "id": "double_holster",
+  "file": "assets/models/double_holster.glb",
+  "parts": {
+    "double_holster": {
+      "node": "double_holster:compound",
+      "massKg": 0.46,
+      "centreOfMass": [0.0018633198973983113, 0.10898057896665442, -0.004888603884206668]
+    }
+  }
+}

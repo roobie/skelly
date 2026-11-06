@@ -1,0 +1,11 @@
+{
+  "id": "willowbark",
+  "file": "assets/models/willowbark.glb",
+  "parts": {
+    "willowbark": {
+      "node": "willowbark:compound",
+      "massKg": 0.097,
+      "centreOfMass": [-0.0021775587424674166, 0.014870042509459521, -0.00256836548792451]
+    }
+  }
+}

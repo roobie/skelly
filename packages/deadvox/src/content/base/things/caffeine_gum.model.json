@@ -1,0 +1,14 @@
+{
+  "id": "caffeine_gum",
+  "file": "assets/models/caffeine_gum.glb",
+  "parts": {
+    "caffeine_gum": {
+      "node": "caffeine_gum:compound",
+      "massKg": 0.017,
+      "centreOfMass": [-0.0007867435158501441, 0.006948126801152738, 0]
+    }
+  },
+  "grip": { "at": [-0.0029999999999999957, 0.007, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

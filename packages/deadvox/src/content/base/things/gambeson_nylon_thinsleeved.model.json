@@ -1,0 +1,11 @@
+{
+  "id": "gambeson_nylon_thinsleeved",
+  "file": "assets/models/gambeson_nylon_thinsleeved.glb",
+  "parts": {
+    "gambeson_nylon_thinsleeved": {
+      "node": "gambeson_nylon_thinsleeved:compound",
+      "massKg": 3.2,
+      "centreOfMass": [1.0627835535909305e-18, 0.0558759025207737, -0.0037711053697367506]
+    }
+  }
+}

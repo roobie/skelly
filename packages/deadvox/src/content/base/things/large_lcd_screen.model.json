@@ -1,0 +1,11 @@
+{
+  "id": "large_lcd_screen",
+  "file": "assets/models/large_lcd_screen.glb",
+  "parts": {
+    "large_lcd_screen": {
+      "node": "large_lcd_screen:compound",
+      "massKg": 16,
+      "centreOfMass": [0, 0.012, 0.0018635746167281197]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "honey_scraper",
+  "file": "assets/models/honey_scraper.glb",
+  "parts": {
+    "honey_scraper": { "node": "honey_scraper:compound", "massKg": 0.53, "centreOfMass": [-0.004960079122459986, 0, 0] }
+  },
+  "grip": { "at": [-0.08499999999999999, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

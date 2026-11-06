@@ -1,0 +1,11 @@
+{
+  "id": "dental_grill",
+  "file": "assets/models/dental_grill.glb",
+  "parts": {
+    "dental_grill": {
+      "node": "dental_grill:compound",
+      "massKg": 0.025,
+      "centreOfMass": [3.866362371708862e-19, 0.006213675213675212, 0.007632478632478631]
+    }
+  }
+}

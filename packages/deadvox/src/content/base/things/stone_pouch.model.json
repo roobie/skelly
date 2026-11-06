@@ -1,0 +1,11 @@
+{
+  "id": "stone_pouch",
+  "file": "assets/models/stone_pouch.glb",
+  "parts": {
+    "stone_pouch": {
+      "node": "stone_pouch:compound",
+      "massKg": 0.11,
+      "centreOfMass": [0, 0.05786290351581699, 0.0007880920129940186]
+    }
+  }
+}

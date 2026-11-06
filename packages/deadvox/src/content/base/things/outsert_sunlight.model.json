@@ -1,0 +1,11 @@
+{
+  "id": "outsert_sunlight",
+  "file": "assets/models/outsert_sunlight.glb",
+  "parts": {
+    "outsert_sunlight": {
+      "node": "outsert_sunlight:compound",
+      "massKg": 0.054,
+      "centreOfMass": [2.624581531104265e-18, 0.04141988365943944, -0.01524219989423585]
+    }
+  }
+}

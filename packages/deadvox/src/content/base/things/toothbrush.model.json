@@ -1,0 +1,14 @@
+{
+  "id": "toothbrush",
+  "file": "assets/models/toothbrush.glb",
+  "parts": {
+    "toothbrush": {
+      "node": "toothbrush:compound",
+      "massKg": 0.02,
+      "centreOfMass": [0.08415072933549432, 0.006196110210696921, 0]
+    }
+  },
+  "grip": { "at": [0.055, 0.005, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

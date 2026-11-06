@@ -1,0 +1,17 @@
+{
+  "id": "motorbike_tail_lamp",
+  "file": "assets/models/motorbike_tail_lamp.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 0.3,
+      "centreOfMass": [-0.884375, 0.628125, 0],
+      "collision": [
+        { "min": [-0.875, 0.625, -0.03125], "max": [-0.84375, 0.65625, 0.03125] },
+        { "min": [-0.90625, 0.59375, -0.0625], "max": [-0.875, 0.65625, 0.0625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

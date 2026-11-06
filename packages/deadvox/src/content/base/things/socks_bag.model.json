@@ -1,0 +1,11 @@
+{
+  "id": "socks_bag",
+  "file": "assets/models/socks_bag.glb",
+  "parts": {
+    "socks_bag": {
+      "node": "socks_bag:compound",
+      "massKg": 0.012,
+      "centreOfMass": [0.000024330380962550337, 0.004176075125386833, 0.06784868210436454]
+    }
+  }
+}

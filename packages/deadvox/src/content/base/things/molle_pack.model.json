@@ -1,0 +1,11 @@
+{
+  "id": "molle_pack",
+  "file": "assets/models/molle_pack.glb",
+  "parts": {
+    "molle_pack": {
+      "node": "molle_pack:compound",
+      "massKg": 0.75,
+      "centreOfMass": [-0.00014049586776859575, 0.23004903581267233, 0.004660055096418731]
+    }
+  }
+}

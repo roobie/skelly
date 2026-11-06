@@ -1,0 +1,11 @@
+{
+  "id": "pot_makeshift_copper",
+  "file": "assets/models/pot_makeshift_copper.glb",
+  "parts": {
+    "pot_makeshift_copper": {
+      "node": "pot_makeshift_copper:compound",
+      "massKg": 1,
+      "centreOfMass": [-0.001981559094719195, 0.04128331936295052, -0.00022548197820620297]
+    }
+  }
+}

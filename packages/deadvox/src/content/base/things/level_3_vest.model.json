@@ -1,0 +1,11 @@
+{
+  "id": "level_3_vest",
+  "file": "assets/models/level_3_vest.glb",
+  "parts": {
+    "level_3_vest": {
+      "node": "level_3_vest:compound",
+      "massKg": 1.9,
+      "centreOfMass": [0, 0.020713307813555508, 0.02591970276964648]
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "cement_mixer_rear_frame",
+  "file": "assets/models/cement_mixer_rear_frame.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 200,
+      "centreOfMass": [-3.1941659556313993, 2.599829351535836, 0],
+      "collision": [
+        { "min": [-3.40625, 2.90625, -0.75], "max": [-2.96875, 3, 0.75] },
+        { "min": [-3.28125, 1.34375, 0.625], "max": [-3.125, 2.90625, 0.71875] },
+        { "min": [-3.28125, 1.34375, -0.71875], "max": [-3.125, 2.90625, -0.625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

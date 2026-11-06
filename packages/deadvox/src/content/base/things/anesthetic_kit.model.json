@@ -1,0 +1,11 @@
+{
+  "id": "anesthetic_kit",
+  "file": "assets/models/anesthetic_kit.glb",
+  "parts": {
+    "anesthetic_kit": {
+      "node": "anesthetic_kit:compound",
+      "massKg": 3.6,
+      "centreOfMass": [-1.9918233670977327e-18, 0.04354697575708106, 3.8823675799362583e-19]
+    }
+  }
+}

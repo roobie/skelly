@@ -1,0 +1,11 @@
+{
+  "id": "duffelbag_xl_nylon",
+  "file": "assets/models/duffelbag_xl_nylon.glb",
+  "parts": {
+    "duffelbag_xl_nylon": {
+      "node": "duffelbag_xl_nylon:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0.0000045907800055519135, 0.20096865458117139, 0.0008513583726574568]
+    }
+  }
+}

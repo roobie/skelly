@@ -1,0 +1,14 @@
+{
+  "id": "psionic_transporter_remote",
+  "file": "assets/models/psionic_transporter_remote.glb",
+  "parts": {
+    "psionic_transporter_remote": {
+      "node": "psionic_transporter_remote:compound",
+      "massKg": 0.33,
+      "centreOfMass": [0.003732964842334179, 0.015907575208408836, -0.000030173976078289247]
+    }
+  },
+  "grip": { "at": [0, 0.018000000000000002, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

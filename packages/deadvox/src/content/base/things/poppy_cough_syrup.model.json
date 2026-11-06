@@ -1,0 +1,14 @@
+{
+  "id": "poppy_cough_syrup",
+  "file": "assets/models/poppy_cough_syrup.glb",
+  "parts": {
+    "poppy_cough_syrup": {
+      "node": "poppy_cough_syrup:compound",
+      "massKg": 0.34,
+      "centreOfMass": [0, 0.05769749854566608, 0]
+    }
+  },
+  "grip": { "at": [0, 0.05, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

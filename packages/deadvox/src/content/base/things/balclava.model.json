@@ -1,0 +1,11 @@
+{
+  "id": "balclava",
+  "file": "assets/models/balclava.glb",
+  "parts": {
+    "balclava": {
+      "node": "balclava:compound",
+      "massKg": 0.13,
+      "centreOfMass": [8.634907476966459e-9, 0.00745540502033521, -0.00794766382578211]
+    }
+  }
+}

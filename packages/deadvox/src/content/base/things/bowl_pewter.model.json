@@ -1,0 +1,10 @@
+{
+  "id": "bowl_pewter",
+  "file": "assets/models/bowl_pewter.glb",
+  "parts": {
+    "bowl_pewter": { "node": "bowl_pewter:compound", "massKg": 0.3, "centreOfMass": [0, 0.019690130068859987, 0] }
+  },
+  "grip": { "at": [0, 0.023, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

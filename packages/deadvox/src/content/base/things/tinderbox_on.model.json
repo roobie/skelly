@@ -1,0 +1,11 @@
+{
+  "id": "tinderbox_on",
+  "file": "assets/models/tinderbox_on.glb",
+  "parts": {
+    "tinderbox_on": {
+      "node": "tinderbox_on:compound",
+      "massKg": 0.2,
+      "centreOfMass": [3.885568815855618e-21, 0.03722427096903502, 1.942784407927809e-21]
+    }
+  }
+}

@@ -1,0 +1,99 @@
+[
+  {
+    "id": "transponder",
+    "model": "transponder",
+    "name": "Transponder circuit",
+    "category": "material",
+    "size": [2, 2],
+    "economy": { "usage": ["Industrial", "Military"], "tiers": ["Tier2", "Tier3"] },
+    "description": "A small radio module in an aluminium tray: a green board with a shielded section, chips and an antenna socket. It picks up a signal and sends it on again. Useful in building radio gear.",
+    "reference": "transponder",
+    "variants": [],
+    "notes": "A 120 by 80 mm tray 24 mm tall, open on top so the board shows, with the coax socket on the front edge. No aluminium finish exists, so metal-silver draws the tray."
+  },
+  {
+    "id": "tree_spile",
+    "model": "tree_spile",
+    "name": "Tree spile",
+    "category": "tool",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "tapping": 1 } },
+    "description": "A short steel spout with a hook under it. Tapped into a hole drilled in a maple, it drips sap into a bucket hung from the hook, from late winter into spring.",
+    "reference": "tree_spile",
+    "variants": ["makeshift_tree_spile"],
+    "notes": "An 80 mm galvanised tube, 12 mm across at the head, a stop collar, then a tapering spout; the bucket hook hangs under the head. CHECK VOLUME (x0.41): the reference's 50 ml is generous for so slim a part. The makeshift spile rides on this model; a cut-down pipe looks much the same at this size."
+  },
+  {
+    "id": "usb_drive_nano",
+    "model": "usb_drive_nano",
+    "name": "Rugged USB drive",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Industrial", "Military"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A thumb drive sealed inside a knurled steel capsule with a screw cap and a key ring. It holds software and survives being stepped on.",
+    "reference": "usb_drive_nano",
+    "variants": ["train_data", "lixa_data"],
+    "notes": "A 62 mm stainless capsule 17 mm across with flush knurl bands, a rubber seal at the cap joint and a small split ring at the tail; the plug sits under the cap. The two data variants are the same drive with records on it, so they share this model; their names need writing when they are drafted for a quest."
+  },
+  {
+    "id": "willowbark",
+    "model": "willowbark",
+    "name": "Willow bark",
+    "category": "material",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A curled strip of bark peeled from a willow, grey and furrowed outside and pale inside. It can be boiled down for a pain remedy.",
+    "reference": "willowbark",
+    "variants": [],
+    "notes": "A 262 by 90 mm sheet 7 mm thick, curled across its width, with five dark furrows along it. CHECK VOLUME (x1.89): the box counts the air under the curl. bark draws the outside, which reads browner than willow; a grey bark finish would suit it better."
+  },
+  {
+    "id": "wire",
+    "model": "wire",
+    "name": "Steel wire",
+    "category": "material",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A loose coil of stiff steel wire, twist-tied to keep it together. Good for binding, mending and making small parts.",
+    "reference": "wire",
+    "variants": [],
+    "notes": "About 6 m of wire in a 150 mm coil of six turns, tied in two places, one end sticking out. The wire is drawn 3 mm thick so it holds up at the 2 mm grain. CHECK VOLUME (x5.28): the reference counts the steel; the box counts the open middle of the coil."
+  },
+  {
+    "id": "wire_barbed",
+    "model": "wire_barbed",
+    "name": "Barbed wire",
+    "category": "material",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Industrial", "Military"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A coil of galvanised wire studded with four-point barbs. Strung across a gap, it slows anything that tries to push through.",
+    "reference": "wire_barbed",
+    "variants": [],
+    "notes": "Three turns 220 mm across with fourteen barbs. CHECK VOLUME (x2.97): the box counts the open middle of the coil."
+  },
+  {
+    "id": "wire_mesh",
+    "model": "wire_mesh",
+    "name": "Steel mesh",
+    "category": "material",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A 15 cm square of fine woven steel mesh. Works as a filter, a strainer or a small screen.",
+    "reference": "wire_mesh",
+    "variants": [],
+    "notes": "A 152 mm square drawn as wires every 10 mm with open squares, so the floor shows through; real filter mesh is finer than the 2 mm grain can show. CHECK VOLUME (x15.4): the reference's 6 ml is the steel alone; the box counts the open weave and the sheet's area."
+  },
+  {
+    "id": "young_koji_done",
+    "model": "young_koji_done",
+    "name": "Koji rice parcel",
+    "category": "food",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "Cooked rice wrapped in corn husk, split open along the top where white and yellow-green mould has spread through it. Take it apart to recover the mould culture for brewing and fermenting.",
+    "reference": "young_koji_done",
+    "variants": [],
+    "notes": "A 140 mm husk parcel tied at both ends with a split along the top showing the rice and mould patches. CHECK VOLUME (x2.37): the box counts the flared husk ends. Taking it apart into a culture item has no content field yet."
+  }
+]

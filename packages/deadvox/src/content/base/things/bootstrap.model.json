@@ -1,0 +1,11 @@
+{
+  "id": "bootstrap",
+  "file": "assets/models/bootstrap.glb",
+  "parts": {
+    "bootstrap": {
+      "node": "bootstrap:compound",
+      "massKg": 0.2,
+      "centreOfMass": [0.005276939457355804, 0.0776916327055109, 0.00036556889525278096]
+    }
+  }
+}

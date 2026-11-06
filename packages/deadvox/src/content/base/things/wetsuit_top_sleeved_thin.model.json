@@ -1,0 +1,11 @@
+{
+  "id": "wetsuit_top_sleeved_thin",
+  "file": "assets/models/wetsuit_top_sleeved_thin.glb",
+  "parts": {
+    "wetsuit_top_sleeved_thin": {
+      "node": "wetsuit_top_sleeved_thin:compound",
+      "massKg": 0.67,
+      "centreOfMass": [0, 0.015821368330110674, -0.00020167030073641332]
+    }
+  }
+}

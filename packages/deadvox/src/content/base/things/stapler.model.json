@@ -1,0 +1,14 @@
+{
+  "id": "stapler",
+  "file": "assets/models/stapler.glb",
+  "parts": {
+    "stapler": {
+      "node": "stapler:compound",
+      "massKg": 0.32,
+      "centreOfMass": [-0.00012162780064014626, 0.025292181069958845, 0]
+    }
+  },
+  "grip": { "at": [0, 0.044, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,17 @@
+{
+  "id": "horse_box_wall_plain",
+  "file": "assets/models/horse_box_wall_plain.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 160,
+      "centreOfMass": [-0.203125, 1.4031250000000002, -0.7978365384615385],
+      "collision": [
+        { "min": [-1.90625, 0.4375, -0.8125], "max": [1.5, 2.40625, -0.78125] },
+        { "min": [-1.90625, 0.78125, -0.84375], "max": [1.5, 0.84375, -0.8125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

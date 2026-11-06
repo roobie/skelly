@@ -1,0 +1,7 @@
+{
+  "id": "bucket_wood",
+  "file": "assets/models/bucket_wood.glb",
+  "parts": {
+    "bucket_wood": { "node": "bucket_wood:compound", "massKg": 2.1, "centreOfMass": [0, 0.12345113706207744, 0] }
+  }
+}

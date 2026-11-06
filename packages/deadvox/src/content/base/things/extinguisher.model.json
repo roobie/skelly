@@ -1,0 +1,11 @@
+{
+  "id": "extinguisher",
+  "file": "assets/models/extinguisher.glb",
+  "parts": {
+    "extinguisher": {
+      "node": "extinguisher:compound",
+      "massKg": 14,
+      "centreOfMass": [0.0013321838367549464, 0.20411360168703097, 0.001517633194814861]
+    }
+  }
+}

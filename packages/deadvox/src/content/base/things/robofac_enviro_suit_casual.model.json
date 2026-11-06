@@ -1,0 +1,11 @@
+{
+  "id": "robofac_enviro_suit_casual",
+  "file": "assets/models/robofac_enviro_suit_casual.glb",
+  "parts": {
+    "robofac_enviro_suit_casual": {
+      "node": "robofac_enviro_suit_casual:compound",
+      "massKg": 3.3,
+      "centreOfMass": [-0.00009170149253731612, 0.07984937856173677, -0.013381405698778838]
+    }
+  }
+}

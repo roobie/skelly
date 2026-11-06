@@ -1,0 +1,14 @@
+{
+  "id": "comb_lice",
+  "file": "assets/models/comb_lice.glb",
+  "parts": {
+    "comb_lice": {
+      "node": "comb_lice:compound",
+      "massKg": 0.035,
+      "centreOfMass": [0.00485714285714286, 0.0014571428571428585, 0.0008714285714285719]
+    }
+  },
+  "grip": { "at": [-0.027000000000000003, 0.001, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

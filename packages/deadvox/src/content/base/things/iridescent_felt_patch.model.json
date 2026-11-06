@@ -1,0 +1,14 @@
+{
+  "id": "iridescent_felt_patch",
+  "file": "assets/models/iridescent_felt_patch.glb",
+  "parts": {
+    "iridescent_felt_patch": {
+      "node": "iridescent_felt_patch:compound",
+      "massKg": 0.003,
+      "centreOfMass": [0.00009944311853619715, 0.00215035799522673, -0.00013922036595067621]
+    }
+  },
+  "grip": { "at": [0, 0.002, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

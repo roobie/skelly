@@ -1,0 +1,11 @@
+{
+  "id": "coat_winter",
+  "file": "assets/models/coat_winter.glb",
+  "parts": {
+    "coat_winter": {
+      "node": "coat_winter:compound",
+      "massKg": 2,
+      "centreOfMass": [-2.4099190436808866e-20, 0.036146836033096374, -0.004871110593170957]
+    }
+  }
+}

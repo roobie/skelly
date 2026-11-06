@@ -1,0 +1,11 @@
+{
+  "id": "oxygen_concentrator",
+  "file": "assets/models/oxygen_concentrator.glb",
+  "parts": {
+    "oxygen_concentrator": {
+      "node": "oxygen_concentrator:compound",
+      "massKg": 16,
+      "centreOfMass": [0.0005982256020278832, 0.35655310519645134, 0.0013913814955640053]
+    }
+  }
+}

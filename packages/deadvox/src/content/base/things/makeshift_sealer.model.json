@@ -1,0 +1,11 @@
+{
+  "id": "makeshift_sealer",
+  "file": "assets/models/makeshift_sealer.glb",
+  "parts": {
+    "makeshift_sealer": {
+      "node": "makeshift_sealer:compound",
+      "massKg": 1.2,
+      "centreOfMass": [0.016761155205762695, 0.023447075301807514, -0.004092976722470485]
+    }
+  }
+}

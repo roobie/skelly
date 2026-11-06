@@ -1,0 +1,11 @@
+{
+  "id": "portable_stove",
+  "file": "assets/models/portable_stove.glb",
+  "parts": {
+    "portable_stove": {
+      "node": "portable_stove:compound",
+      "massKg": 3.5,
+      "centreOfMass": [0.0001189637630116615, 0.023258824450183922, 0.005823432730687954]
+    }
+  }
+}

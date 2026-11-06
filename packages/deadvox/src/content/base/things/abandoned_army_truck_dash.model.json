@@ -1,0 +1,18 @@
+{
+  "id": "abandoned_army_truck_dash",
+  "file": "assets/models/abandoned_army_truck_dash.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 30,
+      "centreOfMass": [1.5205338359046283, 1.4186152261570828, 0.02252805049088359],
+      "collision": [
+        { "min": [1.46875, 1.0625, -0.96875], "max": [1.59375, 1.75, 0.96875] },
+        { "min": [1.25, 1.40625, 0.5], "max": [1.53125, 1.71875, 0.5625] },
+        { "min": [1.125, 1.59375, 0.3125], "max": [1.40625, 1.84375, 0.71875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

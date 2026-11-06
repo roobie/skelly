@@ -1,0 +1,11 @@
+{
+  "id": "flower_anklet",
+  "file": "assets/models/flower_anklet.glb",
+  "parts": {
+    "flower_anklet": {
+      "node": "flower_anklet:compound",
+      "massKg": 0.0025,
+      "centreOfMass": [-0.000001912045889100343, 0.0023231357552581265, 0.007948374760994262]
+    }
+  }
+}

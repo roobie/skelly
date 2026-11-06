@@ -1,0 +1,11 @@
+{
+  "id": "aketon_wool_vest",
+  "file": "assets/models/aketon_wool_vest.glb",
+  "parts": {
+    "aketon_wool_vest": {
+      "node": "aketon_wool_vest:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-3.830178235970014e-21, 0.0312559871089626, -0.0027761293548924804]
+    }
+  }
+}

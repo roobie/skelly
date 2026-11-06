@@ -7,7 +7,7 @@
       "item": "revolver_grip",
       "node": "revolver_grip:revolver-grip",
       "massKg": 0.08,
-      "centreOfMass": [-0.02107276819204801, -0.0394973743435859, 0]
+      "centreOfMass": [-0.0206430155210643, -0.03932742054693273, 0]
     }
   }
 }

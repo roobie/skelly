@@ -1,0 +1,276 @@
+[
+  {
+    "id": "lc_chainmail_hands",
+    "model": "lc_chainmail_hands",
+    "name": "Mild steel mail gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.55, "pierce": 0.3 }
+    },
+    "description": "Gloves of soft steel rings that close over the whole hand. They stop a blade but not a blow.",
+    "reference": "lc_chainmail_hands",
+    "variants": ["xl_lc_chainmail_hands", "xs_lc_chainmail_hands"],
+    "notes": "Laid flat side by side, backs up, fingers towards +z: each glove 245 mm from cuff to fingertip and 90 mm across the knuckles, the whole hand, thumb and cuff in mail with rows of rings across the back and every finger, and a leather binding round the cuff. CHECK flags: none; box/volume x2.75 because the pair lies spread flat with the thumbs out. Slot `hands`, as earlier clothing batches name it for gloves. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_chainmail_hands",
+    "model": "lc_chainmail_hands",
+    "name": "Medium steel mail gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0, "blunt": 0.17, "cut": 0.6, "pierce": 0.35 }
+    },
+    "finishes": { "ring": "steel-grey" },
+    "description": "Gloves of medium steel rings that close over the whole hand. They stop a blade but not a blow.",
+    "reference": "mc_chainmail_hands",
+    "variants": ["xl_mc_chainmail_hands", "xs_mc_chainmail_hands"],
+    "notes": "Shares the `lc_chainmail_hands` model, its ring rows recoloured `steel-grey` to mark medium steel. Slot `hands`, as earlier clothing batches name it for gloves. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_chainmail_hands",
+    "model": "lc_chainmail_hands",
+    "name": "Tempered steel mail gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0, "blunt": 0.22, "cut": 0.7, "pierce": 0.45 }
+    },
+    "finishes": { "ring": "steel-heat-tint" },
+    "description": "Gloves of hardened, tempered steel rings that close over the whole hand. They stop a blade but not a blow.",
+    "reference": "qt_chainmail_hands",
+    "variants": ["xl_qt_chainmail_hands", "xs_qt_chainmail_hands"],
+    "notes": "Shares the `lc_chainmail_hands` model, its ring rows recoloured `steel-heat-tint` to mark tempered steel, the hardest grade. Slot `hands`, as earlier clothing batches name it for gloves. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lc_demi_gaunt",
+    "model": "lc_demi_gaunt",
+    "name": "Mild steel demi-gauntlets",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 10,
+      "warmth": 15,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.3, "cut": 0.6, "pierce": 0.4 }
+    },
+    "description": "Leather gloves with mail fingers and soft steel plates riveted over the back of the hand and the wrist.",
+    "reference": "lc_demi_gaunt",
+    "variants": ["xl_lc_demi_gaunt"],
+    "notes": "Laid flat side by side, backs up, fingers towards +z: each 260 mm from cuff to fingertip, a leather glove with mail over the fingers, a riveted plate curved over the back of the hand with a knuckle ridge, and a flared plate over the wrist. CHECK flags: none; box/volume x3.16 because the pair lies spread flat with the thumbs out and the plates stand proud. Slot `hands`, as earlier clothing batches name it for gloves. Leather is not in the reference materials but holds the mail and plates together, as the reference look describes. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_demi_gaunt",
+    "model": "lc_demi_gaunt",
+    "name": "Medium steel demi-gauntlets",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 10,
+      "warmth": 15,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0.05, "blunt": 0.33, "cut": 0.65, "pierce": 0.45 }
+    },
+    "finishes": { "plate": "steel-grey", "ring": "steel-grey" },
+    "description": "Leather gloves with mail fingers and medium steel plates riveted over the back of the hand and the wrist.",
+    "reference": "mc_demi_gaunt",
+    "variants": ["xl_mc_demi_gaunt"],
+    "notes": "Shares the `lc_demi_gaunt` model, its plates and rings recoloured `steel-grey` to mark medium steel. Slot `hands`, as earlier clothing batches name it for gloves. Leather is not in the reference materials but holds the mail and plates together, as the reference look describes. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_demi_gaunt",
+    "model": "lc_demi_gaunt",
+    "name": "Tempered steel demi-gauntlets",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 10,
+      "warmth": 15,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.05, "blunt": 0.38, "cut": 0.75, "pierce": 0.55 }
+    },
+    "finishes": { "plate": "steel-heat-tint", "ring": "steel-heat-tint" },
+    "description": "Leather gloves with mail fingers and tempered steel plates riveted over the back of the hand and the wrist.",
+    "reference": "qt_demi_gaunt",
+    "variants": ["xl_qt_demi_gaunt"],
+    "notes": "Shares the `lc_demi_gaunt` model, its plates and rings recoloured `steel-heat-tint` to mark tempered steel, the hardest grade. Slot `hands`, as earlier clothing batches name it for gloves. Leather is not in the reference materials but holds the mail and plates together, as the reference look describes. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lc_mitten_gaunt",
+    "model": "lc_mitten_gaunt",
+    "name": "Mild steel mitten gauntlets",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 20,
+      "warmth": 15,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.38, "cut": 0.68, "pierce": 0.48 }
+    },
+    "description": "Leather mitts with mail inside and soft steel lames over the fingers, the back of the hand and the wrist.",
+    "reference": "lc_mitten_gaunt",
+    "variants": ["xl_lc_mitten_gaunt"],
+    "notes": "Laid flat side by side, backs up, fingers towards +z: each 280 mm from cuff to tip, a leather mitt whose finger end is mail under four overlapping riveted lames and a rounded tip plate, with a plate curved over the back of the hand, a flared wrist plate and a mail thumb. CHECK flags: none; box/volume x2.23 because the pair lies spread flat. Slot `hands`, as earlier clothing batches name it for gloves. The fingers work together as one, so fine work is hard in them; that is left to encumbrance. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_mitten_gaunt",
+    "model": "lc_mitten_gaunt",
+    "name": "Medium steel mitten gauntlets",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 20,
+      "warmth": 15,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0.05, "blunt": 0.41, "cut": 0.73, "pierce": 0.53 }
+    },
+    "finishes": { "plate": "steel-grey", "ring": "steel-grey" },
+    "description": "Leather mitts with mail inside and medium steel lames over the fingers, the back of the hand and the wrist.",
+    "reference": "mc_mitten_gaunt",
+    "variants": ["xl_mc_mitten_gaunt"],
+    "notes": "Shares the `lc_mitten_gaunt` model, its plates and rings recoloured `steel-grey` to mark medium steel. Slot `hands`, as earlier clothing batches name it for gloves. The fingers work together as one, so fine work is hard in them; that is left to encumbrance. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_mitten_gaunt",
+    "model": "lc_mitten_gaunt",
+    "name": "High steel mitten gauntlets",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 20,
+      "warmth": 15,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.43, "cut": 0.78, "pierce": 0.58 }
+    },
+    "finishes": { "plate": "steel-blued", "ring": "steel-blued" },
+    "description": "Leather mitts with mail inside and high steel lames over the fingers, the back of the hand and the wrist.",
+    "reference": "hc_mitten_gaunt",
+    "variants": ["xl_hc_mitten_gaunt"],
+    "notes": "Shares the `lc_mitten_gaunt` model, its plates and rings recoloured `steel-blued` to mark high-carbon steel. Slot `hands`, as earlier clothing batches name it for gloves. The fingers work together as one, so fine work is hard in them; that is left to encumbrance. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_mitten_gaunt",
+    "model": "lc_mitten_gaunt",
+    "name": "Tempered steel mitten gauntlets",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 20,
+      "warmth": 15,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.05, "blunt": 0.46, "cut": 0.83, "pierce": 0.63 }
+    },
+    "finishes": { "plate": "steel-heat-tint", "ring": "steel-heat-tint" },
+    "description": "Leather mitts with mail inside and tempered steel lames over the fingers, the back of the hand and the wrist.",
+    "reference": "qt_mitten_gaunt",
+    "variants": ["xl_qt_mitten_gaunt"],
+    "notes": "Shares the `lc_mitten_gaunt` model, its plates and rings recoloured `steel-heat-tint` to mark tempered steel, the hardest grade. Slot `hands`, as earlier clothing batches name it for gloves. The fingers work together as one, so fine work is hard in them; that is left to encumbrance. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "long_glove_white",
+    "model": "long_glove_white",
+    "name": "Long white gloves",
+    "category": "clothing",
+    "size": [1, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "hands", "encumbrance": 2, "warmth": 10, "wearPerDamage": 0.003 },
+    "description": "Thin white cotton evening gloves that reach past the elbow.",
+    "reference": "long_glove_white",
+    "variants": [],
+    "notes": "Laid flat side by side, backs up, fingers towards +z: each 570 mm from the top of the sleeve to the fingertip, slender fingers and a sleeve gathered in soft cream folds along the forearm. CHECK flags: none. Slot `hands`, as earlier clothing batches name it for gloves. The reference also covers the forearms, which the sleeves reach; they take no `arms` slot so they can be worn under arm guards. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mitten_gaunt_metal_sheets",
+    "model": "mitten_gaunt_metal_sheets",
+    "name": "Sheet steel mitten gauntlets",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 25,
+      "warmth": 5,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0, "blunt": 0.2, "cut": 0.4, "pierce": 0.25 }
+    },
+    "description": "Canvas mittens with curved scraps of sheet steel tied over the wrist, the back of the hand and the fingers.",
+    "reference": "mitten_gaunt_metal_sheets",
+    "variants": [],
+    "notes": "Laid flat side by side, backs up, fingers towards +z: per hand a padded khaki canvas mitten with a leather cuff, and three curved sheet plates overlapping down the back (wrist, hand, fingers), each bound on with a cotton cord wrapped round the mitten. 280 mm from cuff to tip. Finish `steel-galvanised` for scrap sheet. CHECK flags: none. Slot `hands`, as earlier clothing batches name it for gloves. An improvised item, so it would also come from crafting. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mittens",
+    "model": "mittens",
+    "name": "Wool mittens",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "hands", "encumbrance": 80, "warmth": 70, "wearPerDamage": 0.003 },
+    "description": "Thick knitted wool mittens. Very warm, but the fingers cannot work apart in them.",
+    "reference": "mittens",
+    "variants": [],
+    "notes": "Laid flat side by side, backs up, tips towards +z: each 240 mm from cuff to tip, a thick grey mitt with a red knitted band across the back and a ribbed cuff. CHECK flags: none. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "nomex_gloves",
+    "model": "nomex_gloves",
+    "name": "Flame-resistant gloves",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Industrial", "Police", "Military"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 6,
+      "warmth": 5,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.1, "blunt": 0, "cut": 0.05, "pierce": 0 }
+    },
+    "description": "Thin, snug gloves knitted from a fibre that will not burn. They keep flame off the hands without dulling the fingers.",
+    "reference": "nomex_gloves",
+    "variants": [],
+    "notes": "Laid flat side by side, backs up, fingers towards +z: each 240 mm from cuff to fingertip, in `knit-fr` with a ribbed cuff and seams down the backs of the fingers. CHECK flags: none. Slot `hands`, as earlier clothing batches name it for gloves. Fire resistance has no `protects` key yet; it waits on a fire damage type. Pilots, firefighters and racing drivers wear them, hence the usage tags. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "nomex_sockmitts",
+    "model": "nomex_sockmitts",
+    "name": "Flame-resistant sock mitts",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hands", "encumbrance": 0, "warmth": 5, "wearPerDamage": 0.004 },
+    "description": "A pair of flame-resistant socks pulled over the hands, with holes poked through for the fingertips and thumbs.",
+    "reference": "nomex_sockmitts",
+    "variants": [],
+    "notes": "Laid flat side by side, toes towards +z: each 380 mm long and 90 mm wide, a plain `knit-fr` sock with a charcoal heel, toe and cuff, four finger holes poked through near the toe and a slit for the thumb. CHECK flags: none. Slot `hands`, as earlier clothing batches name it for gloves. An improvised item, made by cutting flame-resistant socks; fire resistance waits on a fire damage type. The worn look is pending: no worn model is authored."
+  }
+]

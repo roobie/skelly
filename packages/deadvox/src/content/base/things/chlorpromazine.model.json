@@ -1,0 +1,14 @@
+{
+  "id": "chlorpromazine",
+  "file": "assets/models/chlorpromazine.glb",
+  "parts": {
+    "chlorpromazine": {
+      "node": "chlorpromazine:compound",
+      "massKg": 0.0047,
+      "centreOfMass": [-0.0014583333333333338, 0.0016296296296296295, 0]
+    }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

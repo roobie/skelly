@@ -1,0 +1,11 @@
+{
+  "id": "badge_deputy",
+  "file": "assets/models/badge_deputy.glb",
+  "parts": {
+    "badge_deputy": {
+      "node": "badge_deputy:compound",
+      "massKg": 0.032,
+      "centreOfMass": [3.0057435049165245e-19, 0.003511627906976745, -7.514358762291311e-20]
+    }
+  }
+}

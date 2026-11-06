@@ -1,0 +1,11 @@
+{
+  "id": "jeans_ripped",
+  "file": "assets/models/jeans_ripped.glb",
+  "parts": {
+    "jeans_ripped": {
+      "node": "jeans_ripped:compound",
+      "massKg": 0.7,
+      "centreOfMass": [0.0000052670562093654505, 0.02635826955257457, 0.0006158340877294045]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "santa_beard",
+  "file": "assets/models/santa_beard.glb",
+  "parts": {
+    "santa_beard": {
+      "node": "santa_beard:compound",
+      "massKg": 0.13,
+      "centreOfMass": [-6.134534355925749e-20, 0.011659448234945125, 0.014984277662414724]
+    }
+  }
+}

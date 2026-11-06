@@ -1,0 +1,98 @@
+[
+  {
+    "id": "scrap_aluminum",
+    "model": "scrap_aluminum",
+    "name": "Scrap aluminium",
+    "category": "material",
+    "size": [1, 1],
+    "economy": { "usage": ["Industrial", "Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A handful of aluminium offcuts: torn sheet, a bent strip of angle and a sawn ring of tube. Light, and useful for repairs.",
+    "reference": "scrap_aluminum",
+    "variants": [],
+    "notes": "Two torn sheet pieces, a bent angle strip and a 15 mm ring of tube scattered on about 90 by 60 mm. CHECK VOLUME (x4.4): the box counts the air between loose pieces; the metal itself is about 19 ml against the reference's 20 ml. alu-bare draws every piece."
+  },
+  {
+    "id": "scrap_brass",
+    "model": "scrap_brass",
+    "name": "Brass chunks",
+    "category": "material",
+    "size": [1, 1],
+    "economy": { "usage": ["Industrial", "Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A few heavy pieces of scrap brass: a stub of hex bar, a short threaded pipe fitting and a flattened lump.",
+    "reference": "scrap_brass",
+    "variants": [],
+    "notes": "A 25 mm hex bar stub, a threaded pipe nipple and a folded lump on about 90 by 70 mm, drawn in brass."
+  },
+  {
+    "id": "scrap_cast_iron",
+    "model": "scrap_cast_iron",
+    "name": "Scrap cast iron",
+    "category": "material",
+    "size": [1, 1],
+    "economy": { "usage": ["Industrial", "Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A few broken shards of cast iron, the biggest a curved piece of a pan rim. Brittle, but it can be melted down.",
+    "reference": "scrap_cast_iron",
+    "variants": [],
+    "notes": "A thick curved rim piece and three small shards on about 60 by 50 mm, drawn in iron-cast. CHECK VOLUME (x4.1): the box counts the air between loose shards; the iron is about 7 ml against the reference's 8 ml."
+  },
+  {
+    "id": "scrap_copper",
+    "model": "scrap_copper",
+    "name": "Copper chunk",
+    "category": "material",
+    "size": [1, 1],
+    "economy": { "usage": ["Industrial", "Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A sheared-off length of thick copper bar, bent at one end. Good for wiring and repairs once worked.",
+    "reference": "scrap_copper",
+    "variants": [],
+    "notes": "A 25 by 10 mm bus bar about 75 mm long with a slanted shear at one end and a bend at the other, drawn in copper."
+  },
+  {
+    "id": "scrap_tin",
+    "model": "scrap_tin",
+    "name": "Scrap tin",
+    "category": "material",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "description": "Strips and torn pieces of thin tin plate cut from cans, one curled up and one still ribbed.",
+    "reference": "scrap_tin",
+    "variants": [],
+    "notes": "Flat torn sheet, a ribbed can-wall panel, a curled piece and a strip on about 80 by 50 mm. CHECK VOLUME (x10.4): the sheet is 0.6 mm thick (thicker than real tin plate so it survives the 2 mm grain) and the box counts the air round a curl and loose strips. No tin finish exists; steel-bright stands in for the bright tin plate."
+  },
+  {
+    "id": "spike",
+    "model": "spike",
+    "name": "Steel spike",
+    "category": "material",
+    "size": [1, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A crudely forged, rusty steel spike on a square plate with two bolt holes, made to be bolted onto something. Awkward to swing.",
+    "reference": "spike",
+    "variants": [],
+    "notes": "A 280 mm spike, 30 mm square at the root, drawn as square sections that narrow and step up where the point bends, on a 60 mm plate with two painted bolt holes. CHECK VOLUME (x4.0): the reference's 250 ml is a bulk volume; the steel itself is about 70 ml, and the box counts the air round a taper. The reference's quality is a butchering penalty, so the draft brings no quality. Mounting on a vehicle has no field yet. Held by the shank."
+  },
+  {
+    "id": "armor_star_samurai_helmet_destroyed",
+    "model": "armor_star_samurai_helmet_destroyed",
+    "name": "Split stone helmet",
+    "category": "material",
+    "size": [6, 6],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier4"] },
+    "description": "A huge cone-shaped helmet of dense black stone, cracked clean in two. Bundles of fine bright metal tubes jut from the break.",
+    "reference": "armor_star_samurai_helmet_destroyed",
+    "variants": [],
+    "notes": "Two half-cones 700 mm across and 500 mm tall lying 140 mm apart, grey on the broken faces, with five metal tubes standing out of each face; the halves are stepped stacks, since compound pieces cannot taper a half-cone. The size matches the 150 kg mass for dense stone. CHECK VOLUME (x73): the reference's 4 L cannot hold 150 kg of anything; the stone is about 64 L. obsidian draws the stone, stone-grey the break and mithril the tubes. Too heavy to carry; the size is a placeholder. Name and description avoid the source's lore; whether Deadvox wants this salvage is a content call."
+  },
+  {
+    "id": "bee_sting",
+    "model": "bee_sting",
+    "name": "Giant stinger",
+    "category": "material",
+    "size": [1, 2],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier2", "Tier3"] },
+    "description": "A barbed stinger as long as a hand, cut from a giant insect with its venom sac still attached. Too light to make a good weapon.",
+    "reference": "bee_sting",
+    "variants": [],
+    "notes": "A 130 mm barbed shaft in chitin-black with a chitin-brown root and a lumpy, flattened sac in flesh-membrane on a short neck, 180 mm overall. Held by the shaft. Infected usage stands in for harvest from mutant insects until a harvest source exists."
+  }
+]

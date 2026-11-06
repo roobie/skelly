@@ -1,0 +1,11 @@
+{
+  "id": "badge_doctor",
+  "file": "assets/models/badge_doctor.glb",
+  "parts": {
+    "badge_doctor": {
+      "node": "badge_doctor:compound",
+      "massKg": 0.01,
+      "centreOfMass": [0, 0.0032773109243697473, -0.0021848739495798322]
+    }
+  }
+}

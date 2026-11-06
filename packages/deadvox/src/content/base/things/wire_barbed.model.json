@@ -1,0 +1,11 @@
+{
+  "id": "wire_barbed",
+  "file": "assets/models/wire_barbed.glb",
+  "parts": {
+    "wire_barbed": {
+      "node": "wire_barbed:compound",
+      "massKg": 0.18,
+      "centreOfMass": [-0.000005025125628141179, 0.007789949748743718, -9.872130426198194e-19]
+    }
+  }
+}

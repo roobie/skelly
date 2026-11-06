@@ -1,0 +1,11 @@
+{
+  "id": "dog_tag",
+  "file": "assets/models/dog_tag.glb",
+  "parts": {
+    "dog_tag": {
+      "node": "dog_tag:compound",
+      "massKg": 0.016,
+      "centreOfMass": [-0.003993753549119818, 0.0027365133446905165, 0.0744923339011925]
+    }
+  }
+}

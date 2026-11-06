@@ -1,0 +1,11 @@
+{
+  "id": "leg_guards_scrap",
+  "file": "assets/models/leg_guards_scrap.glb",
+  "parts": {
+    "leg_guards_scrap": {
+      "node": "leg_guards_scrap:compound",
+      "massKg": 2.1,
+      "centreOfMass": [0.27733387305699464, 0.03499449481865284, 0.0002587435233160776]
+    }
+  }
+}

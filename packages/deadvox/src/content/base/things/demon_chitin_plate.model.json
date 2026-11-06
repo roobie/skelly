@@ -1,0 +1,14 @@
+{
+  "id": "demon_chitin_plate",
+  "file": "assets/models/demon_chitin_plate.glb",
+  "parts": {
+    "demon_chitin_plate": {
+      "node": "demon_chitin_plate:compound",
+      "massKg": 1.4,
+      "centreOfMass": [-0.0009943496858002682, 0.03722522046786714, -0.001415324497016423]
+    }
+  },
+  "grip": { "at": [0.01, 0.048, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

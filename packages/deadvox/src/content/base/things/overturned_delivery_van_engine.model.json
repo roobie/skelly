@@ -1,0 +1,18 @@
+{
+  "id": "overturned_delivery_van_engine",
+  "file": "assets/models/overturned_delivery_van_engine.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 240,
+      "centreOfMass": [1.934986033519553, 1.0039280726256983, 0.5174930167597765],
+      "collision": [
+        { "min": [1.8125, 0.75, 0.15625], "max": [2.34375, 1.25, 0.65625] },
+        { "min": [1.875, 0.8125, 0.65625], "max": [2.3125, 1.1875, 0.84375] },
+        { "min": [1.1875, 0.875, 0.5], "max": [1.8125, 1.15625, 0.8125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

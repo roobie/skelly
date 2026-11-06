@@ -1,0 +1,11 @@
+{
+  "id": "tank_top",
+  "file": "assets/models/tank_top.glb",
+  "parts": {
+    "tank_top": {
+      "node": "tank_top:compound",
+      "massKg": 0.19,
+      "centreOfMass": [-6.173911125190536e-20, 0.010597104045379903, 0.0031595760561277794]
+    }
+  }
+}

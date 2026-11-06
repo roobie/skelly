@@ -1,0 +1,11 @@
+{
+  "id": "santa_gloves",
+  "file": "assets/models/santa_gloves.glb",
+  "parts": {
+    "santa_gloves": {
+      "node": "santa_gloves:compound",
+      "massKg": 0.08,
+      "centreOfMass": [-1.9713215721750593e-18, 0.012823048770108092, 0.005868584560388118]
+    }
+  }
+}

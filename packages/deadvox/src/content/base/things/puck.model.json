@@ -1,0 +1,5 @@
+{
+  "id": "puck",
+  "file": "assets/models/puck.glb",
+  "parts": { "puck": { "node": "puck:compound", "massKg": 0.13, "centreOfMass": [0, 0.013260204081632653, 0] } }
+}

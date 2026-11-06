@@ -1,0 +1,14 @@
+{
+  "id": "iceaxe",
+  "file": "assets/models/iceaxe.glb",
+  "parts": {
+    "iceaxe": {
+      "node": "iceaxe:compound",
+      "massKg": 0.5,
+      "centreOfMass": [0.27155595447528097, 0.010093490826840917, -0.0035854306537895383]
+    }
+  },
+  "grip": { "at": [0.11800000000000001, 0.01, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

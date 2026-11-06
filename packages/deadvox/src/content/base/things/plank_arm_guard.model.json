@@ -1,0 +1,11 @@
+{
+  "id": "plank_arm_guard",
+  "file": "assets/models/plank_arm_guard.glb",
+  "parts": {
+    "plank_arm_guard": {
+      "node": "plank_arm_guard:compound",
+      "massKg": 0.24,
+      "centreOfMass": [-0.0015591761450968336, 0.006623424531201967, 0.0007279434368275471]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "hydraulic_press",
+  "file": "assets/models/hydraulic_press.glb",
+  "parts": {
+    "hydraulic_press": {
+      "node": "hydraulic_press:compound",
+      "massKg": 130,
+      "centreOfMass": [0.00032920520457751986, 0.8530498510738356, 0.0001713957255578199]
+    }
+  }
+}

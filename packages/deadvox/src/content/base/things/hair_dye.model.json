@@ -1,0 +1,8 @@
+{
+  "id": "hair_dye",
+  "file": "assets/models/hair_dye.glb",
+  "parts": { "hair_dye": { "node": "hair_dye:compound", "massKg": 0.26, "centreOfMass": [0, 0.05947574468085106, 0] } },
+  "grip": { "at": [0, 0.062, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

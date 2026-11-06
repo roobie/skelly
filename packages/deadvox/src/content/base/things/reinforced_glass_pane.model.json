@@ -1,0 +1,11 @@
+{
+  "id": "reinforced_glass_pane",
+  "file": "assets/models/reinforced_glass_pane.glb",
+  "parts": {
+    "reinforced_glass_pane": {
+      "node": "reinforced_glass_pane:compound",
+      "massKg": 15,
+      "centreOfMass": [0, 0.02814595533298332, 0]
+    }
+  }
+}

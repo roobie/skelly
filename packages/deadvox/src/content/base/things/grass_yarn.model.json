@@ -1,0 +1,11 @@
+{
+  "id": "grass_yarn",
+  "file": "assets/models/grass_yarn.glb",
+  "parts": {
+    "grass_yarn": {
+      "node": "grass_yarn:compound",
+      "massKg": 0.049,
+      "centreOfMass": [0.00018534185932120022, 0.039959862272503685, 0.0001230693556320708]
+    }
+  }
+}

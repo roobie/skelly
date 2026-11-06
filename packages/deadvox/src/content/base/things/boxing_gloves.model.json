@@ -1,0 +1,11 @@
+{
+  "id": "boxing_gloves",
+  "file": "assets/models/boxing_gloves.glb",
+  "parts": {
+    "boxing_gloves": {
+      "node": "boxing_gloves:compound",
+      "massKg": 0.68,
+      "centreOfMass": [-2.9913908273440612e-18, 0.0602440680467914, 0.02140676777740876]
+    }
+  }
+}

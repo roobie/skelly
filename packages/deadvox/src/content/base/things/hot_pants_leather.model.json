@@ -1,0 +1,11 @@
+{
+  "id": "hot_pants_leather",
+  "file": "assets/models/hot_pants_leather.glb",
+  "parts": {
+    "hot_pants_leather": {
+      "node": "hot_pants_leather:compound",
+      "massKg": 0.35,
+      "centreOfMass": [0.000026428694010640116, 0.010333962587952635, 0.0012785309764887592]
+    }
+  }
+}

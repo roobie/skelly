@@ -1,0 +1,11 @@
+{
+  "id": "lawnmower",
+  "file": "assets/models/lawnmower.glb",
+  "parts": {
+    "lawnmower": {
+      "node": "lawnmower:compound",
+      "massKg": 22,
+      "centreOfMass": [0.006111919566080168, 0.17272192088900648, -0.0148478634740045]
+    }
+  }
+}

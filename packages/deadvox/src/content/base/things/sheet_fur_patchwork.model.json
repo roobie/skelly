@@ -1,0 +1,11 @@
+{
+  "id": "sheet_fur_patchwork",
+  "file": "assets/models/sheet_fur_patchwork.glb",
+  "parts": {
+    "sheet_fur_patchwork": {
+      "node": "sheet_fur_patchwork:compound",
+      "massKg": 0.33,
+      "centreOfMass": [-0.00010964912280701725, 0.008405043859649122, -0.0021842105263157902]
+    }
+  }
+}

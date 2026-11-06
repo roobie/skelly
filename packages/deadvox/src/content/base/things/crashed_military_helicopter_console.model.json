@@ -1,0 +1,17 @@
+{
+  "id": "crashed_military_helicopter_console",
+  "file": "assets/models/crashed_military_helicopter_console.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 40,
+      "centreOfMass": [2.9737682481751824, 0.801132907542579, 0],
+      "collision": [
+        { "min": [2.40625, 0.3125, -0.1875], "max": [3.09375, 0.78125, 0.1875] },
+        { "min": [2.9375, 0.78125, -0.75], "max": [3.3125, 1.1875, 0.75] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

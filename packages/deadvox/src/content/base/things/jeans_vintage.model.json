@@ -1,0 +1,11 @@
+{
+  "id": "jeans_vintage",
+  "file": "assets/models/jeans_vintage.glb",
+  "parts": {
+    "jeans_vintage": {
+      "node": "jeans_vintage:compound",
+      "massKg": 0.9,
+      "centreOfMass": [0.000004203241837350803, 0.030455947238864883, 0.0013878593655659269]
+    }
+  }
+}

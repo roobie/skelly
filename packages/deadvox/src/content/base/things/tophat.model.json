@@ -1,0 +1,5 @@
+{
+  "id": "tophat",
+  "file": "assets/models/tophat.glb",
+  "parts": { "tophat": { "node": "tophat:compound", "massKg": 0.2, "centreOfMass": [0, 0.05763745236799128, 0] } }
+}

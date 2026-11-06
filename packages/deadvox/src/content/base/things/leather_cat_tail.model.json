@@ -1,0 +1,11 @@
+{
+  "id": "leather_cat_tail",
+  "file": "assets/models/leather_cat_tail.glb",
+  "parts": {
+    "leather_cat_tail": {
+      "node": "leather_cat_tail:compound",
+      "massKg": 0.15,
+      "centreOfMass": [-0.07325895153313548, 0.012432443125618213, 0.01539505440158258]
+    }
+  }
+}

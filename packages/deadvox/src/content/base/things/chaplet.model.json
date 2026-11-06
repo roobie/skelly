@@ -1,0 +1,11 @@
+{
+  "id": "chaplet",
+  "file": "assets/models/chaplet.glb",
+  "parts": {
+    "chaplet": {
+      "node": "chaplet:compound",
+      "massKg": 0.047,
+      "centreOfMass": [0.0000689931809065382, 0.013138387484957874, -1.6590064431468657e-19]
+    }
+  }
+}

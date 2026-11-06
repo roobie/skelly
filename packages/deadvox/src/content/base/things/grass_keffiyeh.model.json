@@ -1,0 +1,11 @@
+{
+  "id": "grass_keffiyeh",
+  "file": "assets/models/grass_keffiyeh.glb",
+  "parts": {
+    "grass_keffiyeh": {
+      "node": "grass_keffiyeh:compound",
+      "massKg": 0.35,
+      "centreOfMass": [0.00003525351492831164, 0.013863711115743652, -0.00018386491557223315]
+    }
+  }
+}

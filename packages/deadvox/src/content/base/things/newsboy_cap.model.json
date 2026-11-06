@@ -1,0 +1,11 @@
+{
+  "id": "newsboy_cap",
+  "file": "assets/models/newsboy_cap.glb",
+  "parts": {
+    "newsboy_cap": {
+      "node": "newsboy_cap:compound",
+      "massKg": 0.14,
+      "centreOfMass": [3.209360644653634e-20, 0.059220299526654765, 0.014744160782183591]
+    }
+  }
+}

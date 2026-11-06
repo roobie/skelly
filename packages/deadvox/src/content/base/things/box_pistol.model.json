@@ -1,0 +1,11 @@
+{
+  "id": "box_pistol",
+  "file": "assets/models/box_pistol.glb",
+  "parts": {
+    "box_pistol": {
+      "node": "box_pistol:compound",
+      "massKg": 2.4,
+      "centreOfMass": [0, 0.04881018246935687, 0.002041094198647689]
+    }
+  }
+}

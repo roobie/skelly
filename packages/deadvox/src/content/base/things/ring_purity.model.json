@@ -1,0 +1,11 @@
+{
+  "id": "ring_purity",
+  "file": "assets/models/ring_purity.glb",
+  "parts": {
+    "ring_purity": {
+      "node": "ring_purity:compound",
+      "massKg": 0.0052,
+      "centreOfMass": [-4.327465537212406e-20, 0.01052380952380952, 4.808295041347118e-21]
+    }
+  }
+}

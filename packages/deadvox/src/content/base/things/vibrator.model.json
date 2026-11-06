@@ -1,0 +1,14 @@
+{
+  "id": "vibrator",
+  "file": "assets/models/vibrator.glb",
+  "parts": {
+    "vibrator": {
+      "node": "vibrator:compound",
+      "massKg": 0.13,
+      "centreOfMass": [0.10380301851563717, 0.02307141745760075, 0]
+    }
+  },
+  "grip": { "at": [0.078, 0.023, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

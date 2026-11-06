@@ -1,0 +1,11 @@
+{
+  "id": "sinister_gown",
+  "file": "assets/models/sinister_gown.glb",
+  "parts": {
+    "sinister_gown": {
+      "node": "sinister_gown:compound",
+      "massKg": 3.8,
+      "centreOfMass": [4.361336749372404e-9, 0.07038034345526914, -0.015225195442403106]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "winter_gloves_army",
+  "file": "assets/models/winter_gloves_army.glb",
+  "parts": {
+    "winter_gloves_army": {
+      "node": "winter_gloves_army:compound",
+      "massKg": 0.21,
+      "centreOfMass": [0.00021976416571012548, 0.014142891926675713, 0.01608995095481584]
+    }
+  }
+}

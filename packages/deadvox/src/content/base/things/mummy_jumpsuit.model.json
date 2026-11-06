@@ -1,0 +1,11 @@
+{
+  "id": "mummy_jumpsuit",
+  "file": "assets/models/mummy_jumpsuit.glb",
+  "parts": {
+    "mummy_jumpsuit": {
+      "node": "mummy_jumpsuit:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0.0004092598037905315, 0.03140490256355423, -0.012401062132998296]
+    }
+  }
+}

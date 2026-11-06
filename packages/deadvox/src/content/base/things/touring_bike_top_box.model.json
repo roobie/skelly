@@ -1,0 +1,18 @@
+{
+  "id": "touring_bike_top_box",
+  "file": "assets/models/touring_bike_top_box.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 6,
+      "centreOfMass": [-1.1245296822742474, 1.0010974080267558, 0],
+      "collision": [
+        { "min": [-1.28125, 0.84375, -0.1875], "max": [-0.96875, 1.09375, 0.1875] },
+        { "min": [-1.28125, 1.09375, -0.1875], "max": [-0.96875, 1.15625, 0.1875] },
+        { "min": [-1.28125, 0.9375, -0.125], "max": [-1.25, 0.96875, 0.125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

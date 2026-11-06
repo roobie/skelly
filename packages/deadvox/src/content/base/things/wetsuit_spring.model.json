@@ -1,0 +1,11 @@
+{
+  "id": "wetsuit_spring",
+  "file": "assets/models/wetsuit_spring.glb",
+  "parts": {
+    "wetsuit_spring": {
+      "node": "wetsuit_spring:compound",
+      "massKg": 1.3,
+      "centreOfMass": [0.000026146975233457266, 0.006320747056435239, -0.28803873325213153]
+    }
+  }
+}

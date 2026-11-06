@@ -1,0 +1,11 @@
+{
+  "id": "dance_shoes",
+  "file": "assets/models/dance_shoes.glb",
+  "parts": {
+    "dance_shoes": {
+      "node": "dance_shoes:compound",
+      "massKg": 0.6,
+      "centreOfMass": [-2.7476350252118186e-19, 0.04842192805472171, -0.019314502239063037]
+    }
+  }
+}

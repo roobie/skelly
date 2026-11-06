@@ -1,0 +1,11 @@
+{
+  "id": "pickelhaube",
+  "file": "assets/models/pickelhaube.glb",
+  "parts": {
+    "pickelhaube": {
+      "node": "pickelhaube:compound",
+      "massKg": 0.7,
+      "centreOfMass": [-0.000007751823741802399, 0.064720624861838, 0.0015722643872964426]
+    }
+  }
+}

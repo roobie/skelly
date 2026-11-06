@@ -1,0 +1,11 @@
+{
+  "id": "tablesaw",
+  "file": "assets/models/tablesaw.glb",
+  "parts": {
+    "tablesaw": {
+      "node": "tablesaw:compound",
+      "massKg": 280,
+      "centreOfMass": [0.0027047697647338133, 0.4868224744591289, 0.002789862035958834]
+    }
+  }
+}

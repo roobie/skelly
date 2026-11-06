@@ -1,0 +1,11 @@
+{
+  "id": "boxer_shorts",
+  "file": "assets/models/boxer_shorts.glb",
+  "parts": {
+    "boxer_shorts": {
+      "node": "boxer_shorts:compound",
+      "massKg": 0.08,
+      "centreOfMass": [-0.00008623822897736754, 0.0023040145382455016, -0.004044374690236254]
+    }
+  }
+}

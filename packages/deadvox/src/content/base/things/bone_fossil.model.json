@@ -1,0 +1,11 @@
+{
+  "id": "bone_fossil",
+  "file": "assets/models/bone_fossil.glb",
+  "parts": {
+    "bone_fossil": {
+      "node": "bone_fossil:compound",
+      "massKg": 0.69,
+      "centreOfMass": [-0.0011764063353358798, 0.02507737119970872, 0.0017953759330056433]
+    }
+  }
+}

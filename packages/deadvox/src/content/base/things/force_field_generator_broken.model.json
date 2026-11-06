@@ -1,0 +1,14 @@
+{
+  "id": "force_field_generator_broken",
+  "file": "assets/models/force_field_generator_broken.glb",
+  "parts": {
+    "force_field_generator_broken": {
+      "node": "force_field_generator_broken:compound",
+      "massKg": 0.29,
+      "centreOfMass": [-0.0037509942631893853, 0.009672579453067261, 0.00021620385035019184]
+    }
+  },
+  "grip": { "at": [0, 0.013000000000000001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

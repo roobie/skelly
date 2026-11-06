@@ -1,0 +1,11 @@
+{
+  "id": "picklocks",
+  "file": "assets/models/picklocks.glb",
+  "parts": {
+    "picklocks": {
+      "node": "picklocks:compound",
+      "massKg": 0.15,
+      "centreOfMass": [0.0004252986417934872, 0.003689903452790055, -0.00025500463644793556]
+    }
+  }
+}

@@ -2,6 +2,824 @@
   "items": [
     {
       "category": "clothing",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["torso"],
+          "frame": "clothing_body",
+          "model": "jacket_leather_worn_body",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["upper"],
+          "frame": "left_sleeve",
+          "model": "jacket_leather_worn_upper",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["upper"],
+          "frame": "right_sleeve",
+          "model": "jacket_leather_worn_upper",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fore"],
+          "frame": "left_cuff",
+          "model": "jacket_leather_worn_fore",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fore"],
+          "frame": "right_cuff",
+          "model": "jacket_leather_worn_fore",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "jacket_leather",
+      "model": "jacket_leather",
+      "name": "Leather jacket",
+      "notLoot": false,
+      "size": [3, 3],
+      "wearable": {
+        "encumbrance": 12,
+        "figureFit": "jacket",
+        "slot": "torso",
+        "warmth": 25,
+        "wearPerDamage": 0.00080000000000000004
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "figureModels": [
+        {
+          "at": [0, 0.059600000000000014, 0],
+          "covers": [],
+          "frame": "head",
+          "model": "cowboy_hat",
+          "pivot": [0, 0, 0],
+          "scale": [1.0600000000000001, 1, 1.25],
+          "turn": [0, 180, 0]
+        }
+      ],
+      "id": "cowboy_hat",
+      "model": "cowboy_hat",
+      "name": "Cowboy hat",
+      "notLoot": false,
+      "size": [4, 4],
+      "wearable": {
+        "encumbrance": 0,
+        "slot": "head",
+        "warmth": 7,
+        "wearPerDamage": 0.0015
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["palm"],
+          "frame": "left_glove",
+          "model": "gloves_leather_worn_palm",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["palm"],
+          "frame": "right_glove",
+          "model": "gloves_leather_worn_palm",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fingers"],
+          "frame": "left_fingers",
+          "model": "gloves_leather_worn_fingers",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fingers"],
+          "frame": "right_fingers",
+          "model": "gloves_leather_worn_fingers",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["thumb"],
+          "frame": "left_thumb",
+          "model": "gloves_leather_worn_thumb",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["thumb"],
+          "frame": "right_thumb",
+          "model": "gloves_leather_worn_thumb",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "gloves_leather",
+      "model": "gloves_leather",
+      "name": "Leather gloves",
+      "notLoot": false,
+      "size": [1, 2],
+      "wearable": {
+        "encumbrance": 10,
+        "protects": {
+          "acid": 0,
+          "blunt": 0.050000000000000003,
+          "cut": 0.10000000000000001,
+          "pierce": 0.050000000000000003
+        },
+        "slot": "hands",
+        "warmth": 25,
+        "wearPerDamage": 0.0011999999999999999
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["foot"],
+          "frame": "left_boot",
+          "model": "boots_combat_worn_foot",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["foot"],
+          "frame": "right_boot",
+          "model": "boots_combat_worn_foot",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": [],
+          "frame": "left_hem",
+          "model": "boots_combat_worn_shaft",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": [],
+          "frame": "right_hem",
+          "model": "boots_combat_worn_shaft",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "boots_combat",
+      "model": "boots_combat",
+      "name": "Combat boots",
+      "notLoot": false,
+      "size": [2, 3],
+      "wearable": {
+        "encumbrance": 12,
+        "protects": {
+          "acid": 0,
+          "blunt": 0.14999999999999999,
+          "cut": 0.29999999999999999,
+          "pierce": 0.25
+        },
+        "slot": "feet",
+        "warmth": 25,
+        "wearPerDamage": 0.00080000000000000004
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["torso"],
+          "frame": "clothing_body",
+          "model": "armor_lc_plate_worn_body",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["upper"],
+          "frame": "left_sleeve",
+          "model": "armor_lc_plate_worn_upper",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["upper"],
+          "frame": "right_sleeve",
+          "model": "armor_lc_plate_worn_upper",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fore"],
+          "frame": "left_cuff",
+          "model": "armor_lc_plate_worn_fore",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fore"],
+          "frame": "right_cuff",
+          "model": "armor_lc_plate_worn_fore",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "armor_lc_plate",
+      "model": "armor_lc_plate",
+      "name": "Mild steel plate armour",
+      "notLoot": true,
+      "size": [4, 6],
+      "wearable": {
+        "encumbrance": 20,
+        "protects": {
+          "acid": 0.10000000000000001,
+          "blunt": 0.45000000000000001,
+          "cut": 0.80000000000000004,
+          "pierce": 0.59999999999999998
+        },
+        "slot": "vest",
+        "warmth": 20,
+        "wearPerDamage": 0.001
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "figureModels": [
+        {
+          "at": [0, -0.1704, 0],
+          "covers": [],
+          "frame": "head",
+          "model": "helmet_plate",
+          "pivot": [0, 0, 0],
+          "scale": [1.0600000000000001, 1.2, 1.0600000000000001],
+          "turn": [0, 180, 0]
+        }
+      ],
+      "id": "helmet_plate",
+      "model": "helmet_plate",
+      "name": "Great helm",
+      "notLoot": true,
+      "size": [3, 3],
+      "wearable": {
+        "encumbrance": 30,
+        "protects": {
+          "acid": 0.25,
+          "blunt": 0.5,
+          "cut": 0.80000000000000004,
+          "pierce": 0.55000000000000004
+        },
+        "slot": "head",
+        "warmth": 10,
+        "wearPerDamage": 0.00080000000000000004
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["palm"],
+          "frame": "left_glove",
+          "model": "gloves_plate_worn_palm",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["palm"],
+          "frame": "right_glove",
+          "model": "gloves_plate_worn_palm",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fingers"],
+          "frame": "left_fingers",
+          "model": "gloves_plate_worn_fingers",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fingers"],
+          "frame": "right_fingers",
+          "model": "gloves_plate_worn_fingers",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["thumb"],
+          "frame": "left_thumb",
+          "model": "gloves_plate_worn_thumb",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["thumb"],
+          "frame": "right_thumb",
+          "model": "gloves_plate_worn_thumb",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "gloves_plate",
+      "model": "gloves_plate",
+      "name": "Steel gauntlets",
+      "notLoot": true,
+      "size": [2, 2],
+      "wearable": {
+        "encumbrance": 20,
+        "protects": {
+          "acid": 0.10000000000000001,
+          "blunt": 0.40000000000000002,
+          "cut": 0.59999999999999998,
+          "pierce": 0.45000000000000001
+        },
+        "slot": "hands",
+        "warmth": 20,
+        "wearPerDamage": 0.00080000000000000004
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["foot"],
+          "frame": "left_boot",
+          "model": "sabaton_worn_foot",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["foot"],
+          "frame": "right_boot",
+          "model": "sabaton_worn_foot",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": [],
+          "frame": "left_hem",
+          "model": "sabaton_worn_shaft",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": [],
+          "frame": "right_hem",
+          "model": "sabaton_worn_shaft",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "lc_sabaton",
+      "model": "sabaton",
+      "name": "Mild steel sabatons",
+      "notLoot": true,
+      "size": [2, 2],
+      "wearable": {
+        "encumbrance": 10,
+        "protects": {
+          "acid": 0,
+          "blunt": 0.40000000000000002,
+          "cut": 0.69999999999999996,
+          "pierce": 0.5
+        },
+        "slot": "feet",
+        "warmth": 0,
+        "wearPerDamage": 0.0011999999999999999
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["thigh"],
+          "frame": "left_trouser",
+          "model": "legguard_lightplate_worn_thigh",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["thigh"],
+          "frame": "right_trouser",
+          "model": "legguard_lightplate_worn_thigh",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["shin"],
+          "frame": "left_hem",
+          "model": "legguard_lightplate_worn_shin",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["shin"],
+          "frame": "right_hem",
+          "model": "legguard_lightplate_worn_shin",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "legguard_lightplate",
+      "model": "legguard_lightplate",
+      "name": "Steel leg harness",
+      "notLoot": true,
+      "size": [4, 4],
+      "wearable": {
+        "encumbrance": 8,
+        "protects": {
+          "acid": 0.10000000000000001,
+          "blunt": 0.45000000000000001,
+          "cut": 0.80000000000000004,
+          "pierce": 0.59999999999999998
+        },
+        "slot": "legs",
+        "warmth": 20,
+        "wearPerDamage": 0.00080000000000000004
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["torso"],
+          "frame": "clothing_body",
+          "model": "armor_trooper_worn_body",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["upper"],
+          "frame": "left_sleeve",
+          "model": "armor_trooper_worn_upper",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["upper"],
+          "frame": "right_sleeve",
+          "model": "armor_trooper_worn_upper",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fore"],
+          "frame": "left_cuff",
+          "model": "armor_trooper_worn_fore",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fore"],
+          "frame": "right_cuff",
+          "model": "armor_trooper_worn_fore",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "armor_trooper",
+      "model": "armor_trooper",
+      "name": "Trooper cuirass",
+      "notLoot": true,
+      "size": [4, 5],
+      "wearable": {
+        "encumbrance": 22,
+        "protects": {
+          "acid": 0.20000000000000001,
+          "blunt": 0.55000000000000004,
+          "cut": 0.80000000000000004,
+          "pierce": 0.69999999999999996
+        },
+        "slot": "vest",
+        "warmth": 15,
+        "wearPerDamage": 0.00080000000000000004
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "figureModels": [
+        {
+          "at": [0, -0.1804, 0],
+          "covers": [],
+          "frame": "head",
+          "model": "helmet_trooper",
+          "pivot": [0, 0, 0],
+          "scale": [1, 1, 1],
+          "turn": [0, 180, 0]
+        }
+      ],
+      "id": "helmet_trooper",
+      "model": "helmet_trooper",
+      "name": "Trooper helm",
+      "notLoot": true,
+      "size": [3, 3],
+      "wearable": {
+        "encumbrance": 25,
+        "protects": {
+          "acid": 0.40000000000000002,
+          "blunt": 0.55000000000000004,
+          "cut": 0.80000000000000004,
+          "pierce": 0.59999999999999998
+        },
+        "slot": "head",
+        "warmth": 10,
+        "wearPerDamage": 0.00080000000000000004
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["palm"],
+          "frame": "left_glove",
+          "model": "gloves_trooper_worn_palm",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["palm"],
+          "frame": "right_glove",
+          "model": "gloves_trooper_worn_palm",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fingers"],
+          "frame": "left_fingers",
+          "model": "gloves_trooper_worn_fingers",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fingers"],
+          "frame": "right_fingers",
+          "model": "gloves_trooper_worn_fingers",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["thumb"],
+          "frame": "left_thumb",
+          "model": "gloves_trooper_worn_thumb",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["thumb"],
+          "frame": "right_thumb",
+          "model": "gloves_trooper_worn_thumb",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "gloves_trooper",
+      "model": "gloves_trooper",
+      "name": "Trooper gauntlets",
+      "notLoot": true,
+      "size": [2, 2],
+      "wearable": {
+        "encumbrance": 15,
+        "protects": {
+          "acid": 0.20000000000000001,
+          "blunt": 0.40000000000000002,
+          "cut": 0.65000000000000002,
+          "pierce": 0.5
+        },
+        "slot": "hands",
+        "warmth": 15,
+        "wearPerDamage": 0.00080000000000000004
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["foot"],
+          "frame": "left_boot",
+          "model": "boots_trooper_worn_foot",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["foot"],
+          "frame": "right_boot",
+          "model": "boots_trooper_worn_foot",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": [],
+          "frame": "left_hem",
+          "model": "boots_trooper_worn_shaft",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": [],
+          "frame": "right_hem",
+          "model": "boots_trooper_worn_shaft",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "boots_trooper",
+      "model": "boots_trooper",
+      "name": "Trooper boots",
+      "notLoot": true,
+      "size": [2, 3],
+      "wearable": {
+        "encumbrance": 10,
+        "protects": {
+          "acid": 0.29999999999999999,
+          "blunt": 0.45000000000000001,
+          "cut": 0.69999999999999996,
+          "pierce": 0.55000000000000004
+        },
+        "slot": "feet",
+        "warmth": 10,
+        "wearPerDamage": 0.001
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["thigh"],
+          "frame": "left_trouser",
+          "model": "legguard_trooper_worn_thigh",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["thigh"],
+          "frame": "right_trouser",
+          "model": "legguard_trooper_worn_thigh",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["shin"],
+          "frame": "left_hem",
+          "model": "legguard_trooper_worn_shin",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["shin"],
+          "frame": "right_hem",
+          "model": "legguard_trooper_worn_shin",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "legguard_trooper",
+      "model": "legguard_trooper",
+      "name": "Trooper leg armour",
+      "notLoot": true,
+      "size": [4, 4],
+      "wearable": {
+        "encumbrance": 12,
+        "protects": {
+          "acid": 0.20000000000000001,
+          "blunt": 0.5,
+          "cut": 0.80000000000000004,
+          "pierce": 0.65000000000000002
+        },
+        "slot": "legs",
+        "warmth": 15,
+        "wearPerDamage": 0.00080000000000000004
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
       "container": {
         "pockets": [
           {

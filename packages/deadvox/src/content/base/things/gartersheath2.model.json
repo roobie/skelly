@@ -1,0 +1,11 @@
+{
+  "id": "gartersheath2",
+  "file": "assets/models/gartersheath2.glb",
+  "parts": {
+    "gartersheath2": {
+      "node": "gartersheath2:compound",
+      "massKg": 0.09,
+      "centreOfMass": [-0.006360645405269128, 0.0067268792806420424, 0.04327219631076935]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "yoyo",
+  "file": "assets/models/yoyo.glb",
+  "parts": {
+    "yoyo": {
+      "node": "yoyo:compound",
+      "massKg": 0.049,
+      "centreOfMass": [0.00032245149368647985, 0.03168493994456422, 0.00018663381582999694]
+    }
+  },
+  "grip": { "at": [0, 0.032, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

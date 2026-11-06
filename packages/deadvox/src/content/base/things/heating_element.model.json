@@ -1,0 +1,11 @@
+{
+  "id": "heating_element",
+  "file": "assets/models/heating_element.glb",
+  "parts": {
+    "heating_element": {
+      "node": "heating_element:compound",
+      "massKg": 0.22,
+      "centreOfMass": [0.05624728669226915, 0.025060778093170807, 8.34863917181505e-7]
+    }
+  }
+}

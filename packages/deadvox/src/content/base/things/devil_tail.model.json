@@ -1,0 +1,11 @@
+{
+  "id": "devil_tail",
+  "file": "assets/models/devil_tail.glb",
+  "parts": {
+    "devil_tail": {
+      "node": "devil_tail:compound",
+      "massKg": 0.075,
+      "centreOfMass": [-0.05991746031746031, 0.008022222222222222, 0.010396825396825392]
+    }
+  }
+}

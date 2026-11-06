@@ -1,0 +1,18 @@
+{
+  "id": "checkpoint_barrier_trailer_mudguard",
+  "file": "assets/models/checkpoint_barrier_trailer_mudguard.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 4,
+      "centreOfMass": [-0.1049107142857143, 0.5906250000000001, 0.7343750000000001],
+      "collision": [
+        { "min": [-0.40625, 0.625, 0.625], "max": [0.1875, 0.65625, 0.84375] },
+        { "min": [0.1875, 0.40625, 0.625], "max": [0.34375, 0.65625, 0.84375] },
+        { "min": [-0.53125, 0.40625, 0.625], "max": [-0.375, 0.65625, 0.84375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "carpet_armguards",
+  "file": "assets/models/carpet_armguards.glb",
+  "parts": {
+    "carpet_armguards": {
+      "node": "carpet_armguards:compound",
+      "massKg": 0.7,
+      "centreOfMass": [-0.015586705870692765, 0.038635369519970895, 0.016302223396874677]
+    }
+  }
+}

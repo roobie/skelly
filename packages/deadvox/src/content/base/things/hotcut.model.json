@@ -1,0 +1,10 @@
+{
+  "id": "hotcut",
+  "file": "assets/models/hotcut.glb",
+  "parts": {
+    "hotcut": { "node": "hotcut:compound", "massKg": 1, "centreOfMass": [0.2293756523649948, -0.005324122397407021, 0] }
+  },
+  "grip": { "at": [0.145, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

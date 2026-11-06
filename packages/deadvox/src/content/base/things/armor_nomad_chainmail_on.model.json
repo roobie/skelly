@@ -1,0 +1,11 @@
+{
+  "id": "armor_nomad_chainmail_on",
+  "file": "assets/models/armor_nomad_chainmail_on.glb",
+  "parts": {
+    "armor_nomad_chainmail_on": {
+      "node": "armor_nomad_chainmail_on:compound",
+      "massKg": 10,
+      "centreOfMass": [0.0002676516033442702, 0.049542334638586594, -0.00112019472960102]
+    }
+  }
+}

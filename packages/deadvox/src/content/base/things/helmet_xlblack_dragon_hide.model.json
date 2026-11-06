@@ -1,0 +1,11 @@
+{
+  "id": "helmet_xlblack_dragon_hide",
+  "file": "assets/models/helmet_xlblack_dragon_hide.glb",
+  "parts": {
+    "helmet_xlblack_dragon_hide": {
+      "node": "helmet_xlblack_dragon_hide:compound",
+      "massKg": 1.6,
+      "centreOfMass": [0, 0.13656632624379275, 0.0011348261969455638]
+    }
+  }
+}

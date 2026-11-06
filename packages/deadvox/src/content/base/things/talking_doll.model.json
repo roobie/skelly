@@ -1,0 +1,11 @@
+{
+  "id": "talking_doll",
+  "file": "assets/models/talking_doll.glb",
+  "parts": {
+    "talking_doll": {
+      "node": "talking_doll:compound",
+      "massKg": 0.48,
+      "centreOfMass": [0, 0.1933392632524708, -0.0001725067385444745]
+    }
+  }
+}

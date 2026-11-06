@@ -1,0 +1,11 @@
+{
+  "id": "geta",
+  "file": "assets/models/geta.glb",
+  "parts": {
+    "geta": {
+      "node": "geta:compound",
+      "massKg": 0.51,
+      "centreOfMass": [-2.2887003738971663e-18, 0.04704248482684756, 0.0004805426633345247]
+    }
+  }
+}

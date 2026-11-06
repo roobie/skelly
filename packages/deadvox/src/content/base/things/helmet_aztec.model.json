@@ -1,0 +1,11 @@
+{
+  "id": "helmet_aztec",
+  "file": "assets/models/helmet_aztec.glb",
+  "parts": {
+    "helmet_aztec": {
+      "node": "helmet_aztec:compound",
+      "massKg": 2.5,
+      "centreOfMass": [0.00010714285714285711, 0.11996389518081699, 0.008274603608529246]
+    }
+  }
+}

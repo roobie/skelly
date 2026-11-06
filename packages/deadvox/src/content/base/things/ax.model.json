@@ -1,0 +1,10 @@
+{
+  "id": "ax",
+  "file": "assets/models/ax.glb",
+  "parts": {
+    "ax": { "node": "ax:compound", "massKg": 1.6, "centreOfMass": [0.5446666666666665, 0, 0.02850759219088936] }
+  },
+  "grip": { "at": [0.136, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

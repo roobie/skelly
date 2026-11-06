@@ -1,0 +1,11 @@
+{
+  "id": "sleeveless_tunic",
+  "file": "assets/models/sleeveless_tunic.glb",
+  "parts": {
+    "sleeveless_tunic": {
+      "node": "sleeveless_tunic:compound",
+      "massKg": 0.36,
+      "centreOfMass": [-6.449324433284851e-8, 0.010482280481119599, 0.0013168875560285065]
+    }
+  }
+}

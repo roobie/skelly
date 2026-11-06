@@ -1,0 +1,11 @@
+{
+  "id": "tights",
+  "file": "assets/models/tights.glb",
+  "parts": {
+    "tights": {
+      "node": "tights:compound",
+      "massKg": 0.099,
+      "centreOfMass": [1.1450451447301043e-19, 0.002351052048726466, 0.04959468438538203]
+    }
+  }
+}

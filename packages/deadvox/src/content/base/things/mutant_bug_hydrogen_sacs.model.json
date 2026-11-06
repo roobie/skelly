@@ -1,0 +1,11 @@
+{
+  "id": "mutant_bug_hydrogen_sacs",
+  "file": "assets/models/mutant_bug_hydrogen_sacs.glb",
+  "parts": {
+    "mutant_bug_hydrogen_sacs": {
+      "node": "mutant_bug_hydrogen_sacs:compound",
+      "massKg": 0.0054,
+      "centreOfMass": [0.0011147458480120773, 0.01863739305485657, -0.0013842476094614998]
+    }
+  }
+}

@@ -1,0 +1,39 @@
+[
+  {
+    "id": "demon_forge",
+    "model": "demon_forge",
+    "name": "Spider-shell forge",
+    "category": "tool",
+    "size": [3, 3],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier3"] },
+    "tool": { "qualities": { "forging": 1, "smelting": 2 } },
+    "description": "A squat cement firepot clad in plates of black spider shell, with a grate, an air pipe and two iron handles. It burns hot enough to melt down strange metals, and two people can carry it.",
+    "reference": "demon_forge",
+    "variants": [],
+    "notes": "A cement bowl 250 mm across and 200 mm deep inside eight black chitin plates with red seams, 300 mm across the rim and 230 mm tall; a grate and coals inside, an air pipe on +x, handles front and back and three glowing runes on the front. The bounding box is about four times the reference's 8 l because the round body, pipe and handles leave air in the box; the 8 kg mass follows the reference. Kept as a carried tool rather than a workstation because the reference forge is portable; if Deadvox makes it a placed station, add `workstation: { id: 'spider_shell_forge', qualities: { smelting: 2, forging: 1 } }`. The coals are glow-flame; a dull coal-black finish would read better than plastic-charcoal."
+  },
+  {
+    "id": "fireproof_mortar",
+    "model": "fireproof_mortar",
+    "name": "Sack of heatproof mortar",
+    "category": "material",
+    "size": [1, 2],
+    "economy": { "usage": ["Industrial", "Infected"], "tiers": ["Tier2", "Tier3"] },
+    "description": "A stiff paper sack of grey mortar with its top rolled shut and a pale blue sign printed on a red band. Mixed and laid, it holds against heat that would crack common brick.",
+    "reference": "fireproof_mortar",
+    "variants": [],
+    "notes": "Loose powder, modelled in the paper sack a player would pick up: 110 by 70 mm and 190 mm tall with its top rolled twice and a little grey spill on the roll. The bounding box is about 1.5 times the reference's 1 l, the room the sack's folds take; the 2.34 kg mass is the mortar and the paper adds nothing worth counting."
+  },
+  {
+    "id": "parabolan_wool_staple",
+    "model": "parabolan_wool_staple",
+    "name": "Shimmerwool tuft",
+    "category": "material",
+    "size": [2, 1],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier2"] },
+    "description": "A loose cluster of fine crimped wool, pale and soft, its lock tips almost white. It can be felted into patches or spun into yarn.",
+    "reference": "parabolan_wool_staple",
+    "variants": [],
+    "notes": "A clump about 170 by 110 mm and 76 mm high built from overlapping balls, with paler lock tips. The bounding box is about 2.8 times the reference's 500 ml because a fluffy clump fills little of its box; the 120 g mass follows the reference. The reference lists it as a tool with no qualities, so no qualities are given. A soft fibre or fleece finish with a faint sheen would read better than fur-pale with feather-white tips."
+  }
+]

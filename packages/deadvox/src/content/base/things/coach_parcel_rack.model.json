@@ -1,0 +1,17 @@
+{
+  "id": "coach_parcel_rack",
+  "file": "assets/models/coach_parcel_rack.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 26,
+      "centreOfMass": [0, 0.022836538461538464, -0.03966346153846154],
+      "collision": [
+        { "min": [-4.59375, 0, -0.15625], "max": [4.59375, 0.03125, 0.15625] },
+        { "min": [-4.59375, 0, -0.1875], "max": [4.59375, 0.09375, -0.15625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

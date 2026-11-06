@@ -1,0 +1,11 @@
+{
+  "id": "bodysuit_lycra",
+  "file": "assets/models/bodysuit_lycra.glb",
+  "parts": {
+    "bodysuit_lycra": {
+      "node": "bodysuit_lycra:compound",
+      "massKg": 0.44,
+      "centreOfMass": [-2.4139805568249453e-19, 0.01770700032831139, -0.0031492357640535516]
+    }
+  }
+}

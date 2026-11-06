@@ -1,0 +1,14 @@
+{
+  "id": "needle_curved",
+  "file": "assets/models/needle_curved.glb",
+  "parts": {
+    "needle_curved": {
+      "node": "needle_curved:compound",
+      "massKg": 0.0068,
+      "centreOfMass": [0.0009480519480519486, 0.002, 0.012428571428571428]
+    }
+  },
+  "grip": { "at": [0.003, 0.002, 0.024], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

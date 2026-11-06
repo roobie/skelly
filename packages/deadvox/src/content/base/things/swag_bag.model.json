@@ -1,0 +1,14 @@
+{
+  "id": "swag_bag",
+  "file": "assets/models/swag_bag.glb",
+  "parts": {
+    "swag_bag": {
+      "node": "swag_bag:compound",
+      "massKg": 4,
+      "centreOfMass": [0.000026905316185169644, 0.1405493009706268, 0.00002492081059420678]
+    }
+  },
+  "grip": { "at": [0, 0.352, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

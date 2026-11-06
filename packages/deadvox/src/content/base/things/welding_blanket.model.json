@@ -1,0 +1,11 @@
+{
+  "id": "welding_blanket",
+  "file": "assets/models/welding_blanket.glb",
+  "parts": {
+    "welding_blanket": {
+      "node": "welding_blanket:compound",
+      "massKg": 2.4,
+      "centreOfMass": [0, 0.029947657826964576, -0.0016163827819705876]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "everburning_wall_sconce",
+  "file": "assets/models/everburning_wall_sconce.glb",
+  "parts": {
+    "everburning_wall_sconce": {
+      "node": "everburning_wall_sconce:compound",
+      "massKg": 2.3,
+      "centreOfMass": [8.365050817683805e-8, 0.3092499895436865, 0.04632573507884061]
+    }
+  },
+  "grip": { "at": [0, 0.25, -0.01], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

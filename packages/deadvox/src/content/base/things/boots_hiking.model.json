@@ -1,0 +1,11 @@
+{
+  "id": "boots_hiking",
+  "file": "assets/models/boots_hiking.glb",
+  "parts": {
+    "boots_hiking": {
+      "node": "boots_hiking:compound",
+      "massKg": 0.81,
+      "centreOfMass": [-1.971521133877189e-17, 0.0598385706273536, -0.025643490104959556]
+    }
+  }
+}

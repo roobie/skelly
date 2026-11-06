@@ -1,0 +1,11 @@
+{
+  "id": "mocassins",
+  "file": "assets/models/mocassins.glb",
+  "parts": {
+    "mocassins": {
+      "node": "mocassins:compound",
+      "massKg": 0.5,
+      "centreOfMass": [0.000007190087950185813, 0.03489555113308085, -0.018406111574757657]
+    }
+  }
+}

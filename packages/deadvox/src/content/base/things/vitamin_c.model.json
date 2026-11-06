@@ -1,0 +1,10 @@
+{
+  "id": "vitamin_c",
+  "file": "assets/models/vitamin_c.glb",
+  "parts": {
+    "vitamin_c": { "node": "vitamin_c:compound", "massKg": 0.043, "centreOfMass": [0, 0.0507146103158373, 0] }
+  },
+  "grip": { "at": [0, 0.046, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

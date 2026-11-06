@@ -1,0 +1,11 @@
+{
+  "id": "motorbike_armor",
+  "file": "assets/models/motorbike_armor.glb",
+  "parts": {
+    "motorbike_armor": {
+      "node": "motorbike_armor:compound",
+      "massKg": 1.3,
+      "centreOfMass": [-3.5855249785566863e-19, 0.006832791504117902, -0.030439315127871687]
+    }
+  }
+}

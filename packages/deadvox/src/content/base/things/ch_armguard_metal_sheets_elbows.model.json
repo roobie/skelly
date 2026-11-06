@@ -1,0 +1,11 @@
+{
+  "id": "ch_armguard_metal_sheets_elbows",
+  "file": "assets/models/ch_armguard_metal_sheets_elbows.glb",
+  "parts": {
+    "ch_armguard_metal_sheets_elbows": {
+      "node": "ch_armguard_metal_sheets_elbows:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0.027744807121661722, 0.013865727002967359, 0.002063056379821958]
+    }
+  }
+}

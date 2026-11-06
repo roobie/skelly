@@ -1,0 +1,11 @@
+{
+  "id": "anvil_scavenged",
+  "file": "assets/models/anvil_scavenged.glb",
+  "parts": {
+    "anvil_scavenged": {
+      "node": "anvil_scavenged:compound",
+      "massKg": 66,
+      "centreOfMass": [0.013170626968222162, 0.07291010592613802, 0.00022187231606069286]
+    }
+  }
+}

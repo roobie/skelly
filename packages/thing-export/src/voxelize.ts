@@ -2,7 +2,9 @@
 // glTF: `glb.ts` feeds it one part's solids (metres, part-local) and writes what comes back.
 //
 // A solid is sampled by casting rays along each axis through the columns of voxel centres, nudged off the centres by a
-// fixed fraction of a voxel so a ray never runs along a mesh edge. The spans between paired crossings are filled, and a
+// fixed fraction of a voxel so a ray never runs along a mesh edge. The nudge points toward the origin and a centre on a
+// span's end counts as inside, so the sampling is mirror-symmetric about the origin: a surface that lies exactly on a
+// row of centres, such as a 33 mm radius at a 2 mm grain, fills the same on both sides. The spans between paired crossings are filled, and a
 // span too short to hold a centre keeps one voxel, inside the shape the sources make together (see `fillAlong`). Open
 // meshes (an odd crossing count) drop the unpaired crossing. What the sources connect stays connected: bodies left
 // apart are joined through the cells the sources meet, to each other and to neighbouring parts (see `bridge`).
@@ -30,6 +32,9 @@ const HALF_RANGE = 1024;
 const RANGE = 2 * HALF_RANGE;
 const NUDGE_X = 0.0137;
 const NUDGE_Y = 0.0291;
+
+/** Column `index`'s sample line, in voxels: its centre nudged toward the origin. */
+const sampleAt = (index: number, nudge: number): number => (index >= 0 ? index + 0.5 - nudge : index + 0.5 + nudge);
 
 const keyOf = (x: number, y: number, z: number): number =>
   ((x + HALF_RANGE) * RANGE + (y + HALF_RANGE)) * RANGE + (z + HALF_RANGE);
@@ -71,16 +76,17 @@ const addTriangle = (
   if (Math.abs(area) < 1e-18) {
     return;
   }
-  const columnsOf = (axis: number, nudge: number): [number, number] => [
-    Math.ceil(Math.min(at(a, axis), at(b, axis), at(c, axis)) / grain - 0.5 - nudge),
-    Math.floor(Math.max(at(a, axis), at(b, axis), at(c, axis)) / grain - 0.5 - nudge),
+  // One column past each end, as the nudge's direction depends on the column; the weights below reject the extras.
+  const columnsOf = (axis: number): [number, number] => [
+    Math.floor(Math.min(at(a, axis), at(b, axis), at(c, axis)) / grain - 0.5) - 1,
+    Math.ceil(Math.max(at(a, axis), at(b, axis), at(c, axis)) / grain - 0.5) + 1,
   ];
-  const [x0, x1] = columnsOf(ax, NUDGE_X);
-  const [y0, y1] = columnsOf(ay, NUDGE_Y);
+  const [x0, x1] = columnsOf(ax);
+  const [y0, y1] = columnsOf(ay);
   for (let ix = x0; ix <= x1; ix += 1) {
     for (let iy = y0; iy <= y1; iy += 1) {
-      const px = (ix + 0.5 + NUDGE_X) * grain;
-      const py = (iy + 0.5 + NUDGE_Y) * grain;
+      const px = sampleAt(ix, NUDGE_X) * grain;
+      const py = sampleAt(iy, NUDGE_Y) * grain;
       const wa = ((at(b, ax) - px) * (at(c, ay) - py) - (at(c, ax) - px) * (at(b, ay) - py)) / area;
       const wb = ((at(c, ax) - px) * (at(a, ay) - py) - (at(a, ax) - px) * (at(c, ay) - py)) / area;
       const wc = 1 - wa - wb;
@@ -151,10 +157,10 @@ const joinSpans = (all: readonly Spans[], grain: number): Spans => {
   return joined;
 };
 
-/** The first and last voxel whose centre lies in the span; first > last when it holds none. */
+/** The first and last voxel whose centre lies in the span, ends included; first > last when it holds none. */
 const centresIn = ([from, to]: Span, grain: number): [number, number] => [
   Math.ceil(from / grain - 0.5),
-  Math.ceil(to / grain - 0.5) - 1,
+  Math.floor(to / grain - 0.5),
 ];
 
 /**

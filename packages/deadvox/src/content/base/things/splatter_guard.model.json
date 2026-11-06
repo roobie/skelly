@@ -1,0 +1,14 @@
+{
+  "id": "splatter_guard",
+  "file": "assets/models/splatter_guard.glb",
+  "parts": {
+    "splatter_guard": {
+      "node": "splatter_guard:compound",
+      "massKg": 0.3,
+      "centreOfMass": [0.050555307678007075, 0.004659973972857408, -2.1144698684893344e-19]
+    }
+  },
+  "grip": { "at": [0.247, 0.008, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

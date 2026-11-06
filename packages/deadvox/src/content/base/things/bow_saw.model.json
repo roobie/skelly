@@ -1,0 +1,14 @@
+{
+  "id": "bow_saw",
+  "file": "assets/models/bow_saw.glb",
+  "parts": {
+    "bow_saw": {
+      "node": "bow_saw:compound",
+      "massKg": 0.9,
+      "centreOfMass": [0.39321389903059295, 0, 0.10942439884174743]
+    }
+  },
+  "grip": { "at": [0.062, 0, 0.058], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

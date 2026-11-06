@@ -1,0 +1,11 @@
+{
+  "id": "gloves_leather_worn_fingers",
+  "file": "assets/models/gloves_leather_worn_fingers.glb",
+  "parts": {
+    "gloves_leather_worn_fingers": {
+      "node": "gloves_leather_worn_fingers:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0, -0.04, -0.002]
+    }
+  }
+}

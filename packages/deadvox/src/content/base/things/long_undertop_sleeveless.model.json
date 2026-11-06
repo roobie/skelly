@@ -1,0 +1,11 @@
+{
+  "id": "long_undertop_sleeveless",
+  "file": "assets/models/long_undertop_sleeveless.glb",
+  "parts": {
+    "long_undertop_sleeveless": {
+      "node": "long_undertop_sleeveless:compound",
+      "massKg": 0.2,
+      "centreOfMass": [-3.399139562576648e-20, 0.01571538935689336, 0.0013148962399835609]
+    }
+  }
+}

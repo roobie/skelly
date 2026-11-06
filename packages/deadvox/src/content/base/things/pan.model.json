@@ -1,0 +1,14 @@
+{
+  "id": "pan",
+  "file": "assets/models/pan.glb",
+  "parts": {
+    "pan": {
+      "node": "pan:compound",
+      "massKg": 4.4,
+      "centreOfMass": [0.008243128455805753, 0.017394182226139913, 4.808077570318075e-7]
+    }
+  },
+  "grip": { "at": [0.198, 0.042, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

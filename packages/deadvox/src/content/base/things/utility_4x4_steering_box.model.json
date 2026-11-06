@@ -1,0 +1,18 @@
+{
+  "id": "utility_4x4_steering_box",
+  "file": "assets/models/utility_4x4_steering_box.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 16,
+      "centreOfMass": [1.1153085443037976, 0.5935522151898734, -0.3720332278481013],
+      "collision": [
+        { "min": [1, 0.5625, -0.40625], "max": [1.15625, 0.6875, -0.3125] },
+        { "min": [1.09375, 0.46875, -0.4375], "max": [1.5, 0.5, -0.40625] },
+        { "min": [1.0625, 0.46875, -0.40625], "max": [1.125, 0.5625, -0.375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

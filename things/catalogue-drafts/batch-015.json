@@ -1,0 +1,104 @@
+[
+  {
+    "id": "ammo_box_army_3_clips",
+    "model": "ammo_box_army_3_clips",
+    "name": "Ammunition carton (3 clips)",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Military"], "tiers": ["Tier1", "Tier2"] },
+    "container": { "pockets": [{ "grid": [1, 1], "handlingSimSeconds": 0.4 }] },
+    "description": "A small open-topped cardboard carton that holds three clips of rifle rounds.",
+    "reference": "ammo_box_army_3_clips",
+    "variants": [],
+    "notes": "92 by 60 by 42 mm, which fits the reference's 235 ml, open on top with a thumb notch in the front wall and a black stencil strip. The reference has no lid, so none is drawn. The pocket grid is a placeholder; holding exactly three clips has no content field yet."
+  },
+  {
+    "id": "ammunition_box_grenade",
+    "model": "ammunition_box_grenade",
+    "name": "Grenade container",
+    "category": "misc",
+    "size": [1, 2],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "container": { "pockets": [{ "grid": [1, 1], "handlingSimSeconds": 0.8 }] },
+    "description": "A thick fibreboard tube with steel end caps that holds one hand grenade.",
+    "reference": "ammunition_box_grenade",
+    "variants": [],
+    "notes": "75 mm across the caps and 135 mm tall, standing on end, which fits the reference's 590 ml. The tube is paint-charcoal for black fibreboard, as no cardboard finish is black; the lid seam tape is cloth-olive-drab and the yellow band marks a high-explosive round. The reference mass of 411 g is kept, heavy for card, which the steel caps help explain. Holding only a grenade has no content field yet."
+  },
+  {
+    "id": "ammunition_tube_mortar",
+    "model": "ammunition_tube_mortar",
+    "name": "Mortar round container",
+    "category": "misc",
+    "size": [4, 1],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "container": { "pockets": [{ "grid": [4, 1], "handlingSimSeconds": 0.8 }] },
+    "description": "A long fibreboard tube with steel end caps that holds one mortar round.",
+    "reference": "ammunition_tube_mortar",
+    "variants": [],
+    "notes": "400 mm long and 76 mm across the caps, lying down: a container for one 60 mm round, which fits the reference's 1.8 L. It shares its construction with the grenade container but lies down and is three times as long, so the two read apart. paint-charcoal stands in for black fibreboard. Holding only a mortar round has no content field yet."
+  },
+  {
+    "id": "ammunition_can_carlgustav",
+    "model": "ammunition_can_carlgustav",
+    "name": "84 mm round container (double)",
+    "category": "misc",
+    "size": [10, 3],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "container": {
+      "pockets": [{ "grid": [10, 1], "handlingSimSeconds": 1.2 }, { "grid": [10, 1], "handlingSimSeconds": 1.2 }]
+    },
+    "description": "Two olive steel tubes clamped side by side, each holding one 84 mm recoilless rifle round. A handle on top.",
+    "reference": "ammunition_can_carlgustav",
+    "variants": [],
+    "notes": "950 mm long and 240 mm across both tubes, lying down, with tapered nose caps at one end so the pair reads as two rockets. The box is 1.8 times the reference's 23 L because it counts the gap between the tubes and the handle. The reference mass of 1.4 kg is kept, light for steel this size. Holding only 84 mm rounds has no content field yet; the pocket grids are placeholders."
+  },
+  {
+    "id": "magnetron",
+    "model": "magnetron",
+    "name": "Magnetron",
+    "category": "material",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "description": "The tube that makes the heat in a microwave oven: a steel frame round cooling fins, with an antenna on top and two terminals underneath. Holds strong magnets.",
+    "reference": "magnetron",
+    "variants": [],
+    "notes": "120 by 104 mm and 112 mm tall, the size of a domestic oven's magnetron: a steel yoke round seven aluminium fins, a mounting flange, a ceramic insulator under the domed antenna and a filter box with two brass terminal tabs. The box is 0.35 times the reference's 4 L, which reads as a packed volume; the drawn size is kept. The reference has no qualities; salvaging its magnets has no content field yet."
+  },
+  {
+    "id": "melchior_platter",
+    "model": "melchior_platter",
+    "name": "Supercomputer platter",
+    "category": "material",
+    "size": [4, 4],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier3"] },
+    "description": "A heavy gold-plated disc from a supercomputer's storage, 40 cm across, its face traced with copper circuit rings.",
+    "reference": "melchior_platter",
+    "variants": [],
+    "notes": "400 mm across and 8 mm thick, lying flat, which fits the reference's 1 L; the box is 2.6 times that because it counts the raised hub. Gold is foil-gold, the traces copper and the clamp hub steel-stainless. The reference mass of 12 kg is kept. Melting it down for gold has no content field yet."
+  },
+  {
+    "id": "bigmirror",
+    "model": "bigmirror",
+    "name": "Standing mirror",
+    "category": "misc",
+    "size": [5, 17],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A full-length mirror in a slim aluminium frame, on two feet, with a stand leg folded against its back.",
+    "reference": "bigmirror",
+    "variants": [],
+    "notes": "CHECK VOLUME (x36): 500 mm wide and 1650 mm tall to match the reference's longest side. The reference's 5.45 L is about the glass and frame alone; the model stands on two 240 mm feet so it can stand in the world, and the box counts them and the air round them. The mirror face is glass-grey because it is opaque; a silvered mirror finish would suit it better, and see-through glass would be wrong for a mirror. The stand leg is drawn folded flat, as the reference describes. The size is a placeholder for a thing too tall to carry in a pack."
+  },
+  {
+    "id": "piano",
+    "model": "piano",
+    "name": "Piano",
+    "category": "misc",
+    "size": [15, 12],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "An upright piano in a walnut case, with 88 keys and three pedals.",
+    "reference": "piano",
+    "variants": [],
+    "notes": "An upright, 1500 mm wide, 1230 mm tall and 600 mm deep, which fits the reference's 1000 L: fallboard open on 52 ivory and 36 black keys, a red key felt, a music desk, front legs on toe blocks and three brass pedals. The reference mass of 300 kg is kept. Playing it and breaking it down for wood and wire have no content field yet; it gives no crafting quality, so it has no workstation. The size is a placeholder for a thing too heavy to carry."
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "id": "gloves_plate",
+  "file": "assets/models/gloves_plate.glb",
+  "parts": {
+    "gloves_plate": {
+      "node": "gloves_plate:compound",
+      "massKg": 1.8,
+      "centreOfMass": [-1.0744502004257693e-18, 0.012244552058111367, 0.009782485875706215]
+    }
+  }
+}

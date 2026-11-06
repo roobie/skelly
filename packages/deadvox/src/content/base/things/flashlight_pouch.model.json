@@ -1,0 +1,11 @@
+{
+  "id": "flashlight_pouch",
+  "file": "assets/models/flashlight_pouch.glb",
+  "parts": {
+    "flashlight_pouch": {
+      "node": "flashlight_pouch:compound",
+      "massKg": 0.031,
+      "centreOfMass": [0, 0.06869672691744015, 0.000023058133854421147]
+    }
+  }
+}

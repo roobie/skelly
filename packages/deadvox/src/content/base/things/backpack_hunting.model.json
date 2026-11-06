@@ -1,0 +1,11 @@
+{
+  "id": "backpack_hunting",
+  "file": "assets/models/backpack_hunting.glb",
+  "parts": {
+    "backpack_hunting": {
+      "node": "backpack_hunting:compound",
+      "massKg": 1.7,
+      "centreOfMass": [0.0000027144119306388107, 0.35672306611455895, -0.0009075183888102366]
+    }
+  }
+}

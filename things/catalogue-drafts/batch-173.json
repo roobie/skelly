@@ -1,0 +1,280 @@
+[
+  {
+    "id": "lc_chainmail_hauberk",
+    "model": "mc_chainmail_hauberk",
+    "name": "Mild steel mail hauberk",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.2, "cut": 0.6, "pierce": 0.35 }
+    },
+    "finishes": { "mail": "steel-bright" },
+    "description": "A knee-length shirt of riveted mild steel rings with long sleeves, split at the hem so you can walk and ride. Wear something padded under it.",
+    "reference": "lc_chainmail_hauberk",
+    "variants": ["xl_lc_chainmail_hauberk", "lc_chainmail_hauberk_xs"],
+    "notes": "Rides on batch 174's `mc_chainmail_hauberk` model (the model lives in batch 174) with the mail in `steel-bright`. CHECK VOLUME LENGTH: the reference packs it into a tight roll; folded on a shelf it is wider and its box emptier. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the arms and legs slots once a slot can cover more than one region. The reference gives no warmth. Protection follows the mild steel mail leggings. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_chainmail_hauberk",
+    "model": "mc_chainmail_hauberk",
+    "name": "High-carbon steel mail hauberk",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.24, "cut": 0.68, "pierce": 0.42 }
+    },
+    "description": "A knee-length shirt of high-carbon steel rings, harder than the common kind, with long sleeves and a split hem. Wear something padded under it.",
+    "reference": "hc_chainmail_hauberk",
+    "variants": ["xl_hc_chainmail_hauberk", "hc_chainmail_hauberk_xs"],
+    "notes": "Rides on batch 174's `mc_chainmail_hauberk` model (the model lives in batch 174) with its own `steel-mail-dark` mail. CHECK VOLUME LENGTH: the reference packs it into a tight roll; folded on a shelf it is wider and its box emptier. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the arms and legs slots once a slot can cover more than one region. Protection follows the high-carbon mail leggings. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "chainmail_junk_hauberk",
+    "model": "mc_chainmail_hauberk",
+    "name": "Rusty mail hauberk",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Infected"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0, "blunt": 0.12, "cut": 0.55, "pierce": 0.28 }
+    },
+    "finishes": { "mail": "rust-red" },
+    "description": "A knee-length mail shirt with long sleeves, rusted through in places and missing rings here and there. It still turns a blade, mostly.",
+    "reference": "chainmail_junk_hauberk",
+    "variants": [],
+    "notes": "Rides on batch 174's `mc_chainmail_hauberk` model (the model lives in batch 174) with the mail in `rust-red`; missing rings do not show. CHECK VOLUME LENGTH: the reference packs it into a tight roll; folded on a shelf it is wider and its box emptier. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the arms and legs slots once a slot can cover more than one region. Protection follows the rusty mail leggings, a little under mild steel. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lc_chainmail_sjumpsuit",
+    "model": "mc_chainmail_sjumpsuit",
+    "name": "Mild steel sleeveless mail jumpsuit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.2, "cut": 0.6, "pierce": 0.35 }
+    },
+    "finishes": { "mail": "steel-bright" },
+    "description": "A one-piece suit of mild steel rings from the neck to the ankles, open at the shoulders so your arms move freely. Wear something padded under it.",
+    "reference": "lc_chainmail_sjumpsuit",
+    "variants": ["xl_lc_chainmail_sjumpsuit", "lc_chainmail_sjumpsuit_xs"],
+    "notes": "Rides on batch 174's `mc_chainmail_sjumpsuit` model (the model lives in batch 174) with the mail in `steel-bright`. CHECK VOLUME LENGTH: the reference packs it into a tight roll; folded on a shelf it is wider and its box emptier. The reference lists the arms as covered; the name and model leave them bare, so treat arm cover as the reference's and revisit with the worn model. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the legs slot once a slot can cover more than one region. The reference gives no warmth. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_chainmail_sjumpsuit",
+    "model": "mc_chainmail_sjumpsuit",
+    "name": "High-carbon steel sleeveless mail jumpsuit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.24, "cut": 0.68, "pierce": 0.42 }
+    },
+    "description": "A one-piece suit of hard high-carbon steel rings from the neck to the ankles, open at the shoulders. Wear something padded under it.",
+    "reference": "hc_chainmail_sjumpsuit",
+    "variants": ["xl_hc_chainmail_sjumpsuit", "hc_chainmail_sjumpsuit_xs"],
+    "notes": "Rides on batch 174's `mc_chainmail_sjumpsuit` model (the model lives in batch 174) with its own `steel-mail-dark` mail. CHECK VOLUME LENGTH: the reference packs it into a tight roll; folded on a shelf it is wider and its box emptier. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the legs slot once a slot can cover more than one region. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_chainmail_sjumpsuit",
+    "model": "mc_chainmail_sjumpsuit",
+    "name": "Hardened steel sleeveless mail jumpsuit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.05, "blunt": 0.26, "cut": 0.75, "pierce": 0.45 }
+    },
+    "description": "A one-piece suit of quenched, hardened steel rings from the neck to the ankles, open at the shoulders. Wear something padded under it.",
+    "reference": "ch_chainmail_sjumpsuit",
+    "variants": ["xl_ch_chainmail_sjumpsuit", "ch_chainmail_sjumpsuit_xs"],
+    "notes": "Rides on batch 174's `mc_chainmail_sjumpsuit` model (the model lives in batch 174) with its own `steel-mail-dark` mail, as the hardened mail leggings have it. CHECK VOLUME LENGTH: the reference packs it into a tight roll; folded on a shelf it is wider and its box emptier. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the legs slot once a slot can cover more than one region. Protection is a judgement a step above high-carbon mail. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lc_chainmail_jumpsuit",
+    "model": "mc_chainmail_jumpsuit",
+    "name": "Mild steel mail jumpsuit",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.2, "cut": 0.6, "pierce": 0.35 }
+    },
+    "finishes": { "mail": "steel-bright" },
+    "description": "A one-piece suit of mild steel rings with sleeves and legs, leaving the head bare. Wear something padded under it.",
+    "reference": "lc_chainmail_jumpsuit",
+    "variants": ["xl_lc_chainmail_jumpsuit", "lc_chainmail_jumpsuit_xs"],
+    "notes": "Rides on batch 174's `mc_chainmail_jumpsuit` model (the model lives in batch 174) with the mail in `steel-bright`. CHECK VOLUME LENGTH: the reference packs it into a tight roll; folded on a shelf it is wider and its box emptier. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the arms and legs slots once a slot can cover more than one region. The reference gives no warmth. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_chainmail_jumpsuit",
+    "model": "mc_chainmail_jumpsuit",
+    "name": "High-carbon steel mail jumpsuit",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.24, "cut": 0.68, "pierce": 0.42 }
+    },
+    "description": "A one-piece suit of hard high-carbon steel rings with sleeves and legs, leaving the head bare. Wear something padded under it.",
+    "reference": "hc_chainmail_jumpsuit",
+    "variants": ["xl_hc_chainmail_jumpsuit", "hc_chainmail_jumpsuit_xs"],
+    "notes": "Rides on batch 174's `mc_chainmail_jumpsuit` model (the model lives in batch 174) with its own `steel-mail-dark` mail. CHECK VOLUME LENGTH: the reference packs it into a tight roll; folded on a shelf it is wider and its box emptier. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the arms and legs slots once a slot can cover more than one region. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_chainmail_suit",
+    "model": "ch_chainmail_suit",
+    "name": "Hardened steel mail suit",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.05, "blunt": 0.26, "cut": 0.75, "pierce": 0.45 }
+    },
+    "description": "Head-to-ankle hardened steel mail: a coif, sleeves and legs in one suit. Heavy, but little gets a blade through it. Wear something padded under it.",
+    "reference": "ch_chainmail_suit",
+    "variants": ["xl_ch_chainmail_suit", "ch_chainmail_suit_xs"],
+    "notes": "The model's root: mail in `steel-mail-dark`. Folded with the coif laid face up at +z: sleeves rolled down each side, the legs folded up over the front, the face opening painted dark. CHECK VOLUME LENGTH: the reference packs it into a tight roll; folded on a shelf it is wider and its box emptier. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the head, arms and legs slots once a slot can cover more than one region. It covers the head as well, so it should not stack with a separate mail coif; left to the worn-coverage rules. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_chainmail_suit",
+    "model": "ch_chainmail_suit",
+    "name": "High-carbon steel mail suit",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.24, "cut": 0.68, "pierce": 0.42 }
+    },
+    "description": "Head-to-ankle high-carbon steel mail: a coif, sleeves and legs in one suit. Wear something padded under it.",
+    "reference": "hc_chainmail_suit",
+    "variants": ["xl_hc_chainmail_suit", "hc_chainmail_suit_xs"],
+    "notes": "Shares the hardened mail suit's model and its `steel-mail-dark` mail. CHECK VOLUME LENGTH: the reference packs it into a tight roll; folded on a shelf it is wider and its box emptier. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the head, arms and legs slots once a slot can cover more than one region. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "chainmail_junk_suit",
+    "model": "ch_chainmail_suit",
+    "name": "Rusty mail suit",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Infected"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0, "blunt": 0.12, "cut": 0.55, "pierce": 0.28 }
+    },
+    "finishes": { "mail": "rust-red" },
+    "description": "Head-to-ankle mail with a coif, rusted through in places and missing rings here and there. Heavy, stiff, and still better than skin.",
+    "reference": "chainmail_junk_suit",
+    "variants": [],
+    "notes": "Rides on the hardened mail suit's model with `rust-red` mail; missing rings do not show. CHECK VOLUME LENGTH: the reference packs it into a tight roll; folded on a shelf it is wider and its box emptier. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the head, arms and legs slots once a slot can cover more than one region. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "chainmail_suit_faraday",
+    "model": "chainmail_suit_faraday",
+    "name": "Faraday mail suit",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 30,
+      "warmth": 0,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.05, "blunt": 0.22, "cut": 0.72, "pierce": 0.42 }
+    },
+    "description": "Tempered steel mail from scalp to toes, mitts and socks included, with a wire grille over the face and every part bonded into one cage. Current that strikes it runs round you instead of through you. Worn over ordinary clothes.",
+    "reference": "chainmail_suit_faraday",
+    "variants": ["xl_chainmail_suit_faraday", "chainmail_suit_faraday_xs"],
+    "notes": "Its own model in `steel-heat-tint`, as the tempered mail leggings have it: the mail suit's pile with a coif face up at +z whose face opening is barred by a bright wire grille, mail mitts hanging over the front fold, mail socks on the leg ends and a braided bonding strap down the middle. CHECK VOLUME LENGTH: the reference packs it into a tight roll; folded on a shelf it is wider and its box emptier. Slot `vest`, the body armour slot; no slot spans the whole body, so it should also block the head, arms and legs slots once a slot can cover more than one region. Deadvox has no electric damage kind, so the shielding goes unmodelled; propose one when shocks exist. Protection is a judgement for tempered mail, a little under hardened because the cage gaps at the face. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cleansuit",
+    "model": "cleansuit",
+    "name": "Cleansuit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Industrial", "Medical"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "suit", "encumbrance": 25, "warmth": 10, "wearPerDamage": 0.004, "imperviousTo": ["acid"] },
+    "description": "A disposable hooded coverall of white spun plastic with elastic cuffs and booties. It keeps dust and fallout off your skin and clothes, but tears easily.",
+    "reference": "cleansuit",
+    "variants": [],
+    "notes": "Folded with the hood face up at +z: zip flap down the front, elastic cuffs, booties folded over the front fold. `cloth-bright-white` reads pale grey in the tiles. CHECK VOLUME LENGTH: the reference packs it into a tight roll; folded on a shelf it is wider and its box emptier. Slot `suit` is new: a one-piece protective coverall goes on over all other clothing and covers the whole body, so no earlier slot fits. The reference's radiation protection has no Deadvox damage kind; it is listed impervious to acid splashes as the rubber boots are. Wears fast. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "entry_suit",
+    "model": "entry_suit",
+    "name": "Entry suit",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "suit",
+      "encumbrance": 50,
+      "warmth": 30,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.2, "blunt": 0.1, "cut": 0.35, "pierce": 0.2 }
+    },
+    "description": "A firefighter's silvered whole-body suit with gauntlets and a hood behind a gold-faced visor, made to walk into flames for a short while. Bring your own air.",
+    "reference": "entry_suit",
+    "variants": ["xl_entry_suit", "entry_suit_xs"],
+    "notes": "Folded with the hood face up at +z: silvered cloth in `foil-alu`, a `foil-gold` visor in a turnout-cloth rim, a zip flap and attached gauntlets on top. CHECK LENGTH: the reference packs it tighter. Slot `suit` is new: a one-piece protective coverall goes on over all other clothing and covers the whole body, so no earlier slot fits. Heat and fire have no Deadvox damage kind; the protection is a judgement for its aramid layers. A breathing set or gas mask goes separately. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hazmat_suit",
+    "model": "hazmat_suit",
+    "name": "Hazmat suit",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Industrial", "Medical", "Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "slot": "suit", "encumbrance": 37, "warmth": 40, "wearPerDamage": 0.003, "imperviousTo": ["acid"] },
+    "description": "A sealed yellow suit with a broad face window, gloves and boots joined on, made to keep chemicals and contaminated dust off you entirely. Tight on the move and easy to tear. Wear a gas mask inside it.",
+    "reference": "hazmat_suit",
+    "variants": [],
+    "notes": "Folded with the hood face up at +z: `rubber-yellow` suit, a clear face window with a black rim, a zip flap, green gloves on top and black boots sealed to the legs standing out behind. The reference gives no longest side. Slot `suit` is new: a one-piece protective coverall goes on over all other clothing and covers the whole body, so no earlier slot fits. Impervious to acid, as the rubber boots are; the reference's radiation protection has no Deadvox damage kind. The worn look is pending: no worn model is authored."
+  }
+]

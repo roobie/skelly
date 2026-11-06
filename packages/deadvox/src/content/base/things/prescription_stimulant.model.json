@@ -1,0 +1,14 @@
+{
+  "id": "prescription_stimulant",
+  "file": "assets/models/prescription_stimulant.glb",
+  "parts": {
+    "prescription_stimulant": {
+      "node": "prescription_stimulant:vessel",
+      "massKg": 0.034,
+      "centreOfMass": [0, 0.03330769230769231, 0]
+    }
+  },
+  "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

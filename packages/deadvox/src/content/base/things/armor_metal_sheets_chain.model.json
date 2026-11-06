@@ -1,0 +1,11 @@
+{
+  "id": "armor_metal_sheets_chain",
+  "file": "assets/models/armor_metal_sheets_chain.glb",
+  "parts": {
+    "armor_metal_sheets_chain": {
+      "node": "armor_metal_sheets_chain:compound",
+      "massKg": 29,
+      "centreOfMass": [0.004577555816686259, 0.022340607688433732, -0.04580791505791493]
+    }
+  }
+}

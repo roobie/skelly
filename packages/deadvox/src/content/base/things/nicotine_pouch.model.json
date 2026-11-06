@@ -1,0 +1,14 @@
+{
+  "id": "nicotine_pouch",
+  "file": "assets/models/nicotine_pouch.glb",
+  "parts": {
+    "nicotine_pouch": {
+      "node": "nicotine_pouch:compound",
+      "massKg": 0.026,
+      "centreOfMass": [0, 0.011855397148676172, 0]
+    }
+  },
+  "grip": { "at": [0, 0.008, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

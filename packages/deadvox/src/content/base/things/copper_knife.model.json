@@ -1,0 +1,14 @@
+{
+  "id": "copper_knife",
+  "file": "assets/models/copper_knife.glb",
+  "parts": {
+    "copper_knife": {
+      "node": "copper_knife:compound",
+      "massKg": 0.51,
+      "centreOfMass": [-0.019141702330004756, 0, 0.0003347598668568712]
+    }
+  },
+  "grip": { "at": [-0.05, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

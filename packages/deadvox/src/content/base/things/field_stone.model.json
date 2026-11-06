@@ -1,0 +1,11 @@
+{
+  "id": "field_stone",
+  "file": "assets/models/field_stone.glb",
+  "parts": {
+    "field_stone": {
+      "node": "field_stone:compound",
+      "massKg": 3.8,
+      "centreOfMass": [0.006657838466444087, 0.017507221367745813, -0.006142851783771617]
+    }
+  }
+}

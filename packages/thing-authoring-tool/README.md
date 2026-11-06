@@ -4,9 +4,16 @@ read_if:
   - you inspect the thing tool's viewer or its assembly boundary
   - you change a tool item's mass, finish or geometry
   - you investigate skin authoring or voxel deformation topology
+  - you change how round or turned shapes are faceted
 ---
 
 # Thing authoring tool
+
+## Turned shapes
+
+Every turned shape has eight flat sides instead of a round section, so cylinders, tubes, discs and balls share
+one faceted look. A compound turned piece may set its own `sides`. The side count is part of the shape, so
+collision follows the flats too. See `src/families/shapes.ts`, `TURNED_SIDES`.
 
 ## Skinned export
 

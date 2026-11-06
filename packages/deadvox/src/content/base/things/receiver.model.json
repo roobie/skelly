@@ -1,0 +1,14 @@
+{
+  "id": "receiver",
+  "file": "assets/models/receiver.glb",
+  "parts": {
+    "receiver": {
+      "node": "receiver:compound",
+      "massKg": 0.18,
+      "centreOfMass": [0.0004230135179690077, 0.01832410154962084, 0.000942301351796901]
+    }
+  },
+  "grip": { "at": [0, 0.018000000000000002, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

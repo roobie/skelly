@@ -1,0 +1,11 @@
+{
+  "id": "thawb",
+  "file": "assets/models/thawb.glb",
+  "parts": {
+    "thawb": {
+      "node": "thawb:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-0.00014584955466509663, 0.027275575896841833, -0.0018754961353666176]
+    }
+  }
+}

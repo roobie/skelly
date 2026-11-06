@@ -1,0 +1,14 @@
+{
+  "id": "rake",
+  "file": "assets/models/rake.glb",
+  "parts": {
+    "rake": {
+      "node": "rake:compound",
+      "massKg": 2.4,
+      "centreOfMass": [0.8536895281529558, 0.021733029293106457, -0.00028486230485879683]
+    }
+  },
+  "grip": { "at": [0.56, 0.02, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

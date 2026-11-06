@@ -1,0 +1,11 @@
+{
+  "id": "lotus",
+  "file": "assets/models/lotus.glb",
+  "parts": {
+    "lotus": {
+      "node": "lotus:compound",
+      "massKg": 0.092,
+      "centreOfMass": [0.0012291831879460745, 0.023659000793021415, 0.000006872852233677626]
+    }
+  }
+}

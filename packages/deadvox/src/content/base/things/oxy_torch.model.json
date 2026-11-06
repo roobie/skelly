@@ -1,0 +1,14 @@
+{
+  "id": "oxy_torch",
+  "file": "assets/models/oxy_torch.glb",
+  "parts": {
+    "oxy_torch": {
+      "node": "oxy_torch:compound",
+      "massKg": 0.91,
+      "centreOfMass": [-0.05892540132200186, 0.017463644948064214, 0]
+    }
+  },
+  "grip": { "at": [-0.084, 0.016, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

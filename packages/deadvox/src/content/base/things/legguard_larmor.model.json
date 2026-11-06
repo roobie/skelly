@@ -1,0 +1,11 @@
+{
+  "id": "legguard_larmor",
+  "file": "assets/models/legguard_larmor.glb",
+  "parts": {
+    "legguard_larmor": {
+      "node": "legguard_larmor:compound",
+      "massKg": 1.2,
+      "centreOfMass": [0.00006542376046562061, 0.0374884372373867, -0.012927697718571973]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "chestguard_hard",
+  "file": "assets/models/chestguard_hard.glb",
+  "parts": {
+    "chestguard_hard": {
+      "node": "chestguard_hard:compound",
+      "massKg": 0.79,
+      "centreOfMass": [6.573838438780308e-19, 0.022559753634226295, -0.013637868803602767]
+    }
+  }
+}

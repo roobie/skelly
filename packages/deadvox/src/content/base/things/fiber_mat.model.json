@@ -1,0 +1,11 @@
+{
+  "id": "fiber_mat",
+  "file": "assets/models/fiber_mat.glb",
+  "parts": {
+    "fiber_mat": {
+      "node": "fiber_mat:compound",
+      "massKg": 0.85,
+      "centreOfMass": [-2.1146050042897099e-19, 0.049997571419441424, 0]
+    }
+  }
+}

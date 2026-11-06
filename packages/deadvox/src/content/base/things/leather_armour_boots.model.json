@@ -1,0 +1,11 @@
+{
+  "id": "leather_armour_boots",
+  "file": "assets/models/leather_armour_boots.glb",
+  "parts": {
+    "leather_armour_boots": {
+      "node": "leather_armour_boots:compound",
+      "massKg": 2.2,
+      "centreOfMass": [0.000007799720510015389, 0.0931754395467496, -0.03803254216723901]
+    }
+  }
+}

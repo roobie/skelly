@@ -1,0 +1,11 @@
+{
+  "id": "tarp",
+  "file": "assets/models/tarp.glb",
+  "parts": {
+    "tarp": {
+      "node": "tarp:compound",
+      "massKg": 1.2,
+      "centreOfMass": [0.0016158510102326229, 0.030290891402164656, -0.0009100258855822528]
+    }
+  }
+}

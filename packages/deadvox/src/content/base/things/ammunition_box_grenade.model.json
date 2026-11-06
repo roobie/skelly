@@ -1,0 +1,14 @@
+{
+  "id": "ammunition_box_grenade",
+  "file": "assets/models/ammunition_box_grenade.glb",
+  "parts": {
+    "ammunition_box_grenade": {
+      "node": "ammunition_box_grenade:compound",
+      "massKg": 0.14,
+      "centreOfMass": [0, 0.0686309067688378, 0]
+    }
+  },
+  "grip": { "at": [0, 0.068, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

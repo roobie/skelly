@@ -1,0 +1,11 @@
+{
+  "id": "archery_target_box",
+  "file": "assets/models/archery_target_box.glb",
+  "parts": {
+    "archery_target_box": {
+      "node": "archery_target_box:compound",
+      "massKg": 10,
+      "centreOfMass": [0.000004952947003467063, 0.22700594353640413, 0.0022005235972546527]
+    }
+  }
+}

@@ -1,0 +1,124 @@
+[
+  {
+    "id": "armor_cardboard",
+    "model": "armor_cardboard",
+    "name": "Cardboard armour",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 23,
+      "warmth": 15,
+      "wearPerDamage": 0.02,
+      "protects": { "acid": 0, "blunt": 0.05, "cut": 0.08, "pierce": 0.05 }
+    },
+    "description": "A full suit of corrugated cardboard: a chest-and-back shell, arm tubes and leg tubes, glued in layers and wrapped in grey tape. Stiff, hot and barely better than nothing.",
+    "reference": "armor_cardboard",
+    "variants": [],
+    "notes": "Laid out flat, front up: the chest-and-back shell with tape seams and bands, a square arm tube either side of it and two leg tubes below, 1200 mm from collar to ankle as the reference gives. CHECK VOLUME (x6.2): the model's box is the whole suit laid out, while the reference volume is the pieces stacked. Slot `vest` follows the earlier armour batches, though it also covers the arms and legs; Deadvox has no whole-body armour slot. Protection is a guess for a few layers of board and wears out fast. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_cardboard_cuirass",
+    "model": "armor_cardboard_cuirass",
+    "name": "Cardboard cuirass",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 12,
+      "warmth": 15,
+      "wearPerDamage": 0.02,
+      "protects": { "acid": 0, "blunt": 0.05, "cut": 0.08, "pierce": 0.05 }
+    },
+    "description": "A chest and back plate built up from layers of corrugated cardboard and held together with grey tape. Awkward to move in and soft under a blade.",
+    "reference": "armor_cardboard_cuirass",
+    "variants": [],
+    "notes": "Lying front up, neck towards -z: a front board curved across the chest over a flat back board, 600 mm from neck to hem and 460 mm across, tape at the shoulders and on the glued seams. The same shell is the chest piece of the cardboard armour. Box/volume x3.6 is the shell's curve standing over the flat back. Slot `vest` follows the earlier armour batches. Protection is a guess for layered board. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "badge_cardboard",
+    "model": "badge_cardboard",
+    "name": "Cardboard badge",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "badge", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.01 },
+    "description": "A shield-shaped badge cut from cardboard and lettered in marker, the letters squeezed smaller as each line runs out of room. A brass pin on the back fixes it to clothing.",
+    "reference": "badge_cardboard",
+    "variants": [],
+    "notes": "Lying face up: a 66 mm by 80 mm shield of board with a darker cut edge, three lines of black marker lettering that shrink along each line, and a brass safety pin behind. The reference lists brass as its only material, so the pin is brass and the mass stays at the reference's 60 g. CHECK VOLUME (x5.3): the reference volume is a few millilitres, smaller than the thin card's box. Slot `badge` is new: a pinned badge sits on whatever is worn over the torso and none of the existing slots fits. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cardboard_crown",
+    "model": "cardboard_crown",
+    "name": "Cardboard crown",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "head", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.02 },
+    "description": "A strip of cardboard cut into points along one edge and taped into a ring to wear as a crown.",
+    "reference": "cardboard_crown",
+    "variants": [],
+    "notes": "Standing upright: a band 190 mm across and 60 mm tall with eight points rising another 50 mm, the ends overlapping at the back under a strip of tape. CHECK VOLUME (x41): the crown is a hollow ring and the reference counts only the board. Slot `head` as Deadvox's riot helmet has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cardboard_crown_loose",
+    "model": "cardboard_crown_loose",
+    "name": "Loosened cardboard crown",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "head", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.02 },
+    "description": "A cardboard crown let out with an extra strip of board taped in at the back, wide enough to sit over a hat or helmet.",
+    "reference": "cardboard_crown_loose",
+    "variants": [],
+    "notes": "Its own model as a distinct state of the cardboard crown: the band is 220 mm across, with a darker strip of board taped in behind a longer seam at the back. CHECK VOLUME (x54): the crown is a hollow ring and the reference counts only the board. Slot `head` as the crown; worn over other headgear once Deadvox has layered headwear, which is pending. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_cardboard",
+    "model": "helmet_cardboard",
+    "name": "Cardboard great helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 15,
+      "warmth": 15,
+      "wearPerDamage": 0.02,
+      "protects": { "acid": 0, "blunt": 0.06, "cut": 0.08, "pierce": 0.05 }
+    },
+    "description": "A flat-topped cardboard helmet in the shape of a knight's great helm, with an eye slit, breathing holes and a lining of kitchen foil. It covers the whole face and protects it very little.",
+    "reference": "helmet_cardboard",
+    "variants": [],
+    "notes": "Standing upright, face on +z: a drum of board 260 mm across and 330 mm tall with a flat face plate, a dark eye slit under a brow band, breathing holes low on the right, a taped cross on the face and over the top, and the foil lining showing at the bottom edge. CHECK VOLUME (x8.9): the helm is hollow and the reference counts only its walls. Slot `head`; it also covers the eyes and mouth. Protection is a guess for layered board. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "american_flag",
+    "model": "american_flag",
+    "name": "American flag",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential", "Police", "Military"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "cloak", "encumbrance": 50, "warmth": 20, "wearPerDamage": 0.008 },
+    "description": "A large heavy cotton flag of the United States, folded into a tight triangle with the starred blue field outside. It can be wrapped round the body like a blanket.",
+    "reference": "american_flag",
+    "variants": [],
+    "notes": "Folded into the ceremonial triangle, 560 mm along the long edge, 280 mm deep and 40 mm thick: the blue field with rows of white stars on top, red and white stripes showing along the long edge. Box/volume x3.4 is the triangle's empty corners. Slot `cloak` is new, shared with the ferraiolo: a wrap or cape worn over everything else, which none of the existing slots fits. Wrapped round the body it covers the hands and feet too and hampers everything, so the encumbrance stays high. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cape_catholic",
+    "model": "cape_catholic",
+    "name": "Ferraiolo",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "cloak", "encumbrance": 6, "warmth": 15, "wearPerDamage": 0.006 },
+    "description": "A long crimson cape that falls to the ankles, worn over the shoulders and tied at the neck with ribbons, as priests wear for ceremonies.",
+    "reference": "cape_catholic",
+    "variants": [],
+    "notes": "Folded flat in four layers, 400 mm by 320 mm and 76 mm tall, with the standing collar folded on top and two darker ribbon ties running over the front edge. Slot `cloak` is new, shared with the flag: a cape worn over everything else, which none of the existing slots fits. The reference marks it as worn under a belt. The worn look is pending: no worn model is authored."
+  }
+]

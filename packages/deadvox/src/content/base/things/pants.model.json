@@ -1,0 +1,11 @@
+{
+  "id": "pants",
+  "file": "assets/models/pants.glb",
+  "parts": {
+    "pants": {
+      "node": "pants:compound",
+      "massKg": 0.69,
+      "centreOfMass": [0.000614169917540704, 0.029318461071270067, -0.00006993856432058724]
+    }
+  }
+}

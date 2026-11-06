@@ -1,0 +1,162 @@
+[
+  {
+    "id": "face_veil",
+    "model": "face_veil",
+    "name": "Cotton face veil",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "face", "encumbrance": 1, "warmth": 5, "wearPerDamage": 0.0012 },
+    "description": "A square of white cotton gathered along its top edge, with a row of small beads along the hem and a tie at each end, worn across the mouth and nose.",
+    "reference": "face_veil",
+    "variants": [],
+    "notes": "Folded flat, 200 mm by 160 mm and 14 mm thick, top edge at -z: a drawn channel with puckered gathers along the top, a rolled hem along the bottom edge with thirteen small `pearl` beads hanging from it, and two ties trailing 90 mm past the ends of the channel. Named apart from the black face veil (`niqab`) in batch 128. Slot `face`, as earlier batches use for veils and masks. CHECK VOLUME (x8.9): the trailing ties stretch the bounding box; the cloth itself folds small. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "fencing_mask",
+    "model": "fencing_mask",
+    "name": "Fencing mask",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 12,
+      "warmth": 15,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.5, "pierce": 0.4 }
+    },
+    "description": "A fencer's mask: a curved cage of fine steel mesh over the face, a padded cotton bib for the throat and a sprung tongue that grips the back of the head.",
+    "reference": "fencing_mask",
+    "variants": [],
+    "notes": "Standing on its bib, front on +z: a 230 mm wide dark mesh cage 260 mm tall with raised wire rings, a white padded edge, a white quilted bib below the chin and a padded tongue arching back over the crown. Mesh in `mesh-black`, which tiles draw opaque. Slot `head`, not `face`: the mask encloses the whole head and front of the neck, so no helmet or hat goes over it. CHECK VOLUME (x11.8): an open cage and an arching tongue fill little of their box. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mask_bal",
+    "model": "mask_bal",
+    "name": "Ballistic face mask",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "face",
+      "encumbrance": 20,
+      "warmth": 10,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0.2, "blunt": 0.4, "cut": 0.6, "pierce": 0.6 }
+    },
+    "description": "A rigid black mask of moulded aramid and plastic that covers the whole face, with smoked eye ports and a slotted mouth grille, held on by a webbing harness.",
+    "reference": "mask_bal",
+    "variants": [],
+    "notes": "Standing on its chin, front on +z: a 190 mm wide black shell 250 mm tall with a raised brow ridge over two smoked eye ports, a nose ridge, six breathing slots and two black webbing straps that drop from the sides and lie flat on the floor as loops behind. Aramid shell drawn in `plastic-matte-black`, as these masks are finished; `lens-smoke` ports draw opaque in tiles. Slot `face`. CHECK VOLUME (x10.9): a thin shell and an open strap loop fill little of their box. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mask_dust",
+    "model": "mask_dust",
+    "name": "Dust mask",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Industrial", "Residential", "Medical"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "face", "encumbrance": 1, "warmth": 5, "wearPerDamage": 0.0012 },
+    "description": "A pleated cotton cup that fits over the mouth and nose, with a bendable strip across the bridge and two elastic straps. Keeps out dust, ash and some airborne illness.",
+    "reference": "mask_dust",
+    "variants": [],
+    "notes": "Standing on its lower edge, front on +z: a 130 mm wide cream cloth cup 100 mm tall with three raised pleats, a foil nose strip and two thin elastic straps that drop from the sides and lie flat on the floor as loops behind. The filtering effect waits on Deadvox's air and sickness systems. Slot `face`. CHECK VOLUME (x15.4): the open strap loops stretch the bounding box; the reference counts the mask folded. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mask_hockey",
+    "model": "mask_hockey",
+    "name": "Goalie mask",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "face",
+      "encumbrance": 12,
+      "warmth": 5,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.3, "pierce": 0.2 }
+    },
+    "description": "A white moulded plastic mask that covers the whole face, with two eye holes, rows of breathing holes and three elastic straps. Made to stop a puck.",
+    "reference": "mask_hockey",
+    "variants": [],
+    "notes": "Standing on its chin, front on +z: a 185 mm wide white shell 250 mm tall with two eye holes, a ridge down the nose and over the chin, rows of small breathing holes painted black and two black straps that drop from the sides and lie flat on the floor as loops behind. Slot `face`. CHECK VOLUME (x9.5): a thin shell and an open strap loop fill little of their box. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mask_plague",
+    "model": "mask_plague",
+    "name": "Beaked leather mask",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "face",
+      "encumbrance": 10,
+      "warmth": 10,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.1, "blunt": 0.05, "cut": 0.15, "pierce": 0.05 }
+    },
+    "description": "A black leather mask with a long curved beak and two round glass eyes in brass rims, buckled on behind the head.",
+    "reference": "mask_plague",
+    "variants": [],
+    "notes": "Standing upright, front on +z: a 190 mm wide black leather face 220 mm tall, a beak reaching 190 mm forward and drooping to its tip, a tan seam along the beak and the brow, two smoked lenses in brass rims and two tan straps that drop from the sides and lie flat on the floor as loops behind. Mass follows the reference's 50 g, light for leather. Slot `face`. CHECK VOLUME (x15.8): the beak and strap loop stretch the bounding box round a thin shell. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mask_rioter",
+    "model": "mask_rioter",
+    "name": "Tied T-shirt mask",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "face", "encumbrance": 8, "warmth": 8, "wearPerDamage": 0.0012 },
+    "description": "A cotton T-shirt worn as a mask: the neck hole stretched over the eyes and the sleeves knotted behind the head, hiding the face.",
+    "reference": "mask_rioter",
+    "variants": [],
+    "notes": "Laid flat, outside up: a 300 mm wide navy shirt body creased across where it was pulled over the head, its charcoal ribbed neck band stretched round a wide black eye opening, the two sleeves pulled round to a knot at the back with their ends trailing; 520 mm overall. Slot `face`: it covers the head as well as the mouth, which one slot cannot express. CHECK VOLUME (x8.9): laid out flat its box is wide and thin; the reference counts it bundled. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mask_skull",
+    "model": "mask_skull",
+    "name": "Skull mask",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "face",
+      "encumbrance": 10,
+      "warmth": 5,
+      "wearPerDamage": 0.004,
+      "protects": { "acid": 0.05, "blunt": 0.05, "cut": 0.05, "pierce": 0 }
+    },
+    "description": "A thin plastic mask moulded as a grinning skull, with black eye sockets and nose hole and a row of teeth, held on by an elastic cord.",
+    "reference": "mask_skull",
+    "variants": [],
+    "notes": "Standing on its chin, front on +z: a 175 mm wide bone-white shell 240 mm tall with two black eye sockets, a triangular nose hole, raised cheekbones, a black mouth crossed by ten white teeth and a thin cord that drops from the sides and lies flat on the floor as a loop behind. Slot `face`. CHECK VOLUME (x6.5): a thin shell and an open cord loop fill little of their box. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "pumpkin_mask",
+    "model": "pumpkin_mask",
+    "name": "Pumpkin mask",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "head", "encumbrance": 14, "warmth": 5, "wearPerDamage": 0.004 },
+    "description": "A hollow orange plastic pumpkin that pulls down over the whole head, with triangle eyes, a triangle nose and a jagged grin to see and breathe through.",
+    "reference": "pumpkin_mask",
+    "variants": [],
+    "notes": "Standing upright, front on +z: an orange shell 265 mm across and 255 mm tall to the stalk, built of ten bulging lobes round a core, with black triangle eyes and nose, a jagged black grin and a green stalk. The face openings are painted flush, since compound pieces only add. Slot `head`: it is worn over the whole head, not just the face. CHECK VOLUME (x73.5): the shell is hollow in use and the model is solid; the reference counts only the thin plastic. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "santa_beard",
+    "model": "santa_beard",
+    "name": "Fake white beard",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "face", "encumbrance": 8, "warmth": 10, "wearPerDamage": 0.0015 },
+    "description": "A fluffy white costume beard with a curled moustache and a hole for the mouth, held on by an elastic cord over the ears.",
+    "reference": "santa_beard",
+    "variants": [],
+    "notes": "Laid flat, outside up, top edge at -z: a 200 mm wide beard hanging 230 mm to a point, with raised tufts, a curled moustache a shade greyer than the beard over a dark mouth hole, sideburns up to the ears and a cord across the top; 270 mm overall. Beard in `cloth-bright-white` so it reads white rather than beige, moustache in the greyer `plastic-bag`. Slot `face`. CHECK VOLUME (x10.2): laid flat its box is wide and thin; the reference counts it bunched. The worn look is pending: no worn model is authored."
+  }
+]

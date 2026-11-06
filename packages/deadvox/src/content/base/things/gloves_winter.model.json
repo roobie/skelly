@@ -1,0 +1,11 @@
+{
+  "id": "gloves_winter",
+  "file": "assets/models/gloves_winter.glb",
+  "parts": {
+    "gloves_winter": {
+      "node": "gloves_winter:compound",
+      "massKg": 0.19,
+      "centreOfMass": [1.0387573471304565e-17, 0.016225482379205868, 0.028062191038111944]
+    }
+  }
+}

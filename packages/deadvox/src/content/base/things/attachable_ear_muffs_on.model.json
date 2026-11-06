@@ -1,0 +1,11 @@
+{
+  "id": "attachable_ear_muffs_on",
+  "file": "assets/models/attachable_ear_muffs_on.glb",
+  "parts": {
+    "attachable_ear_muffs_on": {
+      "node": "attachable_ear_muffs_on:compound",
+      "massKg": 0.2,
+      "centreOfMass": [8.474754186307642e-18, 0.02468751685090321, -0.008387705581019143]
+    }
+  }
+}

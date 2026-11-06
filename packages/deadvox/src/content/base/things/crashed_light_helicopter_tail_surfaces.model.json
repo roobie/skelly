@@ -1,0 +1,18 @@
+{
+  "id": "crashed_light_helicopter_tail_surfaces",
+  "file": "assets/models/crashed_light_helicopter_tail_surfaces.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 3,
+      "centreOfMass": [-3.9575783169533167, 0.5046452702702703, 0],
+      "collision": [
+        { "min": [-4.40625, 0.3125, -0.03125], "max": [-3.84375, 0.96875, 0.03125] },
+        { "min": [-4.3125, 0, -0.03125], "max": [-3.90625, 0.34375, 0.03125] },
+        { "min": [-3.75, 0.46875, -0.46875], "max": [-3.46875, 0.5, 0.46875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "chain",
+  "file": "assets/models/chain.glb",
+  "parts": {
+    "chain": {
+      "node": "chain:compound",
+      "massKg": 3.5,
+      "centreOfMass": [0.0030105263157894735, 0.020000000000000028, 2.21636910540524e-18]
+    }
+  }
+}

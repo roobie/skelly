@@ -1,0 +1,11 @@
+{
+  "id": "planer",
+  "file": "assets/models/planer.glb",
+  "parts": {
+    "planer": {
+      "node": "planer:compound",
+      "massKg": 320,
+      "centreOfMass": [0.0011882216384629478, 0.434221241370884, -0.006452822408210641]
+    }
+  }
+}

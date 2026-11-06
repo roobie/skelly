@@ -1,0 +1,18 @@
+{
+  "id": "semi_trailer_kingpin",
+  "file": "assets/models/semi_trailer_kingpin.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 60,
+      "centreOfMass": [5.202885841836734, 1.0703125, 0],
+      "collision": [
+        { "min": [4.59375, 1.0625, -0.59375], "max": [5.8125, 1.09375, 0.59375] },
+        { "min": [5.15625, 0.875, -0.0625], "max": [5.25, 1.0625, 0.0625] },
+        { "min": [5.125, 0.84375, -0.09375], "max": [5.28125, 0.875, 0.09375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

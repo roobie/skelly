@@ -1,0 +1,11 @@
+{
+  "id": "mp3_player",
+  "file": "assets/models/mp3_player.glb",
+  "parts": {
+    "mp3_player": {
+      "node": "mp3_player:compound",
+      "massKg": 0.045,
+      "centreOfMass": [0.0000017714791851195764, 0.005408621198700916, -0.0009651609093593153]
+    }
+  }
+}

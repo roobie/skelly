@@ -1,0 +1,18 @@
+{
+  "id": "inverter_large",
+  "file": "assets/models/inverter_large.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 45,
+      "centreOfMass": [0.0011160714285714287, 0.1372260551948052, 0],
+      "collision": [
+        { "min": [-0.3125, 0, -0.21875], "max": [0.3125, 0.25, 0.21875] },
+        { "min": [-0.28125, 0.25, -0.1875], "max": [0.28125, 0.28125, 0.1875] },
+        { "min": [0.3125, 0.0625, -0.03125], "max": [0.375, 0.125, 0.03125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

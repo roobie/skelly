@@ -1,0 +1,11 @@
+{
+  "id": "balance_small",
+  "file": "assets/models/balance_small.glb",
+  "parts": {
+    "balance_small": {
+      "node": "balance_small:compound",
+      "massKg": 2,
+      "centreOfMass": [-0.008939724988488516, 0.02395627443368032, -0.00006866259175326596]
+    }
+  }
+}

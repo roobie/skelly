@@ -1,0 +1,11 @@
+{
+  "id": "toaster",
+  "file": "assets/models/toaster.glb",
+  "parts": {
+    "toaster": {
+      "node": "toaster:compound",
+      "massKg": 1.8,
+      "centreOfMass": [0.000474930504697331, 0.09880518478269427, 0.00047792293699355033]
+    }
+  }
+}

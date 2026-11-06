@@ -1,0 +1,11 @@
+{
+  "id": "ch_chainmail_hands",
+  "file": "assets/models/ch_chainmail_hands.glb",
+  "parts": {
+    "ch_chainmail_hands": {
+      "node": "ch_chainmail_hands:compound",
+      "massKg": 1.2,
+      "centreOfMass": [2.3000613845150336e-17, 0.010775856222448298, 0.03798869673335596]
+    }
+  }
+}

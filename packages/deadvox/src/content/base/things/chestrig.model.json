@@ -1,0 +1,11 @@
+{
+  "id": "chestrig",
+  "file": "assets/models/chestrig.glb",
+  "parts": {
+    "chestrig": {
+      "node": "chestrig:compound",
+      "massKg": 0.22,
+      "centreOfMass": [0.0015042246816613213, 0.019065333809353803, -0.011408544567416398]
+    }
+  }
+}

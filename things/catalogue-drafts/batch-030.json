@@ -1,0 +1,99 @@
+[
+  {
+    "id": "stock_pot",
+    "model": "stock_pot",
+    "name": "Stock pot",
+    "category": "tool",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "cooking": 3 } },
+    "description": "A tall stainless steel pot with a thick aluminium base and a loop handle each side. Holds about 12 litres.",
+    "reference": "stock_pot",
+    "variants": ["makeshift_pressure_cooker"],
+    "notes": "260 mm across and 244 mm tall with a rolled rim, a 10 mm aluminium base disc and riveted loop handles, 304 mm across the handles. cooking carries the reference's cooking and boiling qualities. CHECK VOLUME and longest side: the box includes the handles and the open mouth; the pot body matches the reference's 12.7 L and 250 mm. The makeshift pressure cooker variant shares this model for now, though its clamped lid is a distinct state that would deserve its own model."
+  },
+  {
+    "id": "tumbler_plastic",
+    "model": "tumbler_plastic",
+    "name": "Plastic tumbler",
+    "category": "misc",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A clear acrylic drinking tumbler with a heavy base. Hard to break.",
+    "reference": "tumbler_plastic",
+    "variants": [],
+    "notes": "110 mm tall, 80 mm across the mouth, holding about 260 ml. containing follows the other drinking vessels. CHECK VOLUME: the reference volume is the solid cup, the box includes its hollow. The tile draws the clear plastic as opaque."
+  },
+  {
+    "id": "wine_glass",
+    "model": "wine_glass",
+    "name": "Wine glass",
+    "category": "misc",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A thin glass bowl on a tall stem and a round foot.",
+    "reference": "wine_glass",
+    "variants": [],
+    "notes": "200 mm tall with a tulip bowl 88 mm across and a 74 mm foot. containing follows the other drinking vessels. CHECK VOLUME: the box includes the bowl's hollow and the space round the stem. The tile draws the glass as opaque. Fragile glass has no content field here."
+  },
+  {
+    "id": "envelope",
+    "model": "envelope",
+    "name": "Envelope",
+    "category": "misc",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A long white paper envelope with a gummed flap.",
+    "reference": "envelope",
+    "variants": [],
+    "notes": "Lying flat, the model is 2 mm thick, the finest voxel grain; the paper itself is a fraction of that. A 241 by 105 mm business envelope lying flap up. The reference calls it a container for letters; holding one letter or a few paper items needs a container block the drafts leave to the integration, since a paper pocket this small has no grid precedent."
+  },
+  {
+    "id": "gift_card",
+    "model": "gift_card",
+    "name": "Gift card",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A plastic card worth credit at a shop that no longer trades.",
+    "reference": "gift_card",
+    "variants": [],
+    "notes": "86 by 54 mm, bank-card size, in red with a white printed band and a gold logo patch. 2 mm thick, the finest voxel grain; a real card is under 1 mm."
+  },
+  {
+    "id": "greeting_card",
+    "model": "greeting_card",
+    "name": "Greeting card",
+    "category": "misc",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A folded card with a printed picture on the front and a message inside.",
+    "reference": "greeting_card",
+    "variants": [],
+    "notes": "177 by 127 mm, standing half open as a tent so it reads as a card rather than a sheet, with a blue printed panel and a red heart. CHECK VOLUME: the box is the open tent; folded flat it is near the reference's volume. Reading its message would need a readable-text field like the game's notes."
+  },
+  {
+    "id": "letter",
+    "model": "letter",
+    "name": "Letter",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A handwritten letter on a single sheet, addressed to someone else.",
+    "reference": "letter",
+    "variants": [],
+    "notes": "Lying flat, the model is 2 mm thick, the finest voxel grain; the paper itself is a fraction of that. One A4 sheet, 297 by 210 mm, lying flat face up with lines of writing. CHECK VOLUME follows from the 2 mm floor. Its text would be world-authored, read like the game's notes."
+  },
+  {
+    "id": "postcard",
+    "model": "postcard",
+    "name": "Postcard",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A picture postcard of green hills under a blue sky. The back is for writing.",
+    "reference": "postcard",
+    "variants": [],
+    "notes": "Lying flat, the model is 2 mm thick, the finest voxel grain; the paper itself is a fraction of that. 152 by 102 mm, lying picture up with a white border. CHECK VOLUME follows from the 2 mm floor and the raised print."
+  }
+]

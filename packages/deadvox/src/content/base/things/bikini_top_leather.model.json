@@ -1,0 +1,11 @@
+{
+  "id": "bikini_top_leather",
+  "file": "assets/models/bikini_top_leather.glb",
+  "parts": {
+    "bikini_top_leather": {
+      "node": "bikini_top_leather:compound",
+      "massKg": 0.08,
+      "centreOfMass": [1.7673945795410796e-18, 0.002961560076430256, 0.011950207935259074]
+    }
+  }
+}

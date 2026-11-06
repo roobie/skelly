@@ -1,0 +1,11 @@
+{
+  "id": "hunting_cap",
+  "file": "assets/models/hunting_cap.glb",
+  "parts": {
+    "hunting_cap": {
+      "node": "hunting_cap:compound",
+      "massKg": 0.14,
+      "centreOfMass": [1.6723107153316393e-7, 0.04506333876834319, 0.003311175216355203]
+    }
+  }
+}

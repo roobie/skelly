@@ -1,0 +1,11 @@
+{
+  "id": "apron_plastic",
+  "file": "assets/models/apron_plastic.glb",
+  "parts": {
+    "apron_plastic": {
+      "node": "apron_plastic:compound",
+      "massKg": 0.35,
+      "centreOfMass": [9.43731446152912e-20, 0.01334512264689104, -0.004727666856816883]
+    }
+  }
+}

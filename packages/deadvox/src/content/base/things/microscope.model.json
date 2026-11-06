@@ -1,0 +1,11 @@
+{
+  "id": "microscope",
+  "file": "assets/models/microscope.glb",
+  "parts": {
+    "microscope": {
+      "node": "microscope:compound",
+      "massKg": 5,
+      "centreOfMass": [-0.000019862261702764735, 0.09612606048507832, -0.014867950893302726]
+    }
+  }
+}

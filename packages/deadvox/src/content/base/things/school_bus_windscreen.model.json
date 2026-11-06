@@ -1,0 +1,17 @@
+{
+  "id": "school_bus_windscreen",
+  "file": "assets/models/school_bus_windscreen.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 30,
+      "centreOfMass": [3.576764807162534, 2.1659865702479335, 0],
+      "collision": [
+        { "min": [3.46875, 1.71875, -1.15625], "max": [3.6875, 2.625, 1.15625] },
+        { "min": [3.46875, 1.71875, -0.03125], "max": [3.71875, 2.625, 0.03125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

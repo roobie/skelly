@@ -1,0 +1,14 @@
+{
+  "id": "awl_bone",
+  "file": "assets/models/awl_bone.glb",
+  "parts": {
+    "awl_bone": {
+      "node": "awl_bone:compound",
+      "massKg": 0.04,
+      "centreOfMass": [-0.04000445673889657, 0.01715091439987706, 0.0004722606423851238]
+    }
+  },
+  "grip": { "at": [-0.038, 0.017, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

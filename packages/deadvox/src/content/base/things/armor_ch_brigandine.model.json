@@ -1,0 +1,11 @@
+{
+  "id": "armor_ch_brigandine",
+  "file": "assets/models/armor_ch_brigandine.glb",
+  "parts": {
+    "armor_ch_brigandine": {
+      "node": "armor_ch_brigandine:compound",
+      "massKg": 4.1,
+      "centreOfMass": [0.00003310134102867792, 0.014085893736207809, 0.04754447462230524]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "fencing_pants",
+  "file": "assets/models/fencing_pants.glb",
+  "parts": {
+    "fencing_pants": {
+      "node": "fencing_pants:compound",
+      "massKg": 0.79,
+      "centreOfMass": [0.00014684111332659581, 0.023486329245308794, 0.00017606730217694172]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "trowel",
+  "file": "assets/models/trowel.glb",
+  "parts": {
+    "trowel": {
+      "node": "trowel:compound",
+      "massKg": 0.39,
+      "centreOfMass": [0.09356215032838726, 0.02255874483094138, 0]
+    }
+  },
+  "grip": { "at": [0.055, 0.03, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

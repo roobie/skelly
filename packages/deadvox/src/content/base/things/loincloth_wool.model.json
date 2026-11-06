@@ -1,0 +1,11 @@
+{
+  "id": "loincloth_wool",
+  "file": "assets/models/loincloth_wool.glb",
+  "parts": {
+    "loincloth_wool": {
+      "node": "loincloth_wool:compound",
+      "massKg": 0.083,
+      "centreOfMass": [-0.001057577763070814, 0.004374586366644606, -0.01656677696889478]
+    }
+  }
+}

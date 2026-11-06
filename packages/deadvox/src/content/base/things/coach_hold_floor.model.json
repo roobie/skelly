@@ -1,0 +1,14 @@
+{
+  "id": "coach_hold_floor",
+  "file": "assets/models/coach_hold_floor.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 180,
+      "centreOfMass": [0.15625, 0.46875, 0],
+      "collision": [{ "min": [-2.28125, 0.4375, -1.1875], "max": [2.59375, 0.5, 1.1875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,10 @@
+{
+  "id": "eyedrops",
+  "file": "assets/models/eyedrops.glb",
+  "parts": {
+    "eyedrops": { "node": "eyedrops:compound", "massKg": 0.02, "centreOfMass": [0, 0.029837465564738295, 0] }
+  },
+  "grip": { "at": [0, 0.029, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

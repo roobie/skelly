@@ -1,0 +1,11 @@
+{
+  "id": "tactical_grenade_pouch",
+  "file": "assets/models/tactical_grenade_pouch.glb",
+  "parts": {
+    "tactical_grenade_pouch": {
+      "node": "tactical_grenade_pouch:compound",
+      "massKg": 0.05,
+      "centreOfMass": [0, 0.0561917544221901, -0.0006163534998967584]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "survivor_adhoc_leather_sleeves",
+  "file": "assets/models/survivor_adhoc_leather_sleeves.glb",
+  "parts": {
+    "survivor_adhoc_leather_sleeves": {
+      "node": "survivor_adhoc_leather_sleeves:compound",
+      "massKg": 0.4,
+      "centreOfMass": [-0.01908327903036623, 0.007892349797992963, -0.0000010426169685898705]
+    }
+  }
+}

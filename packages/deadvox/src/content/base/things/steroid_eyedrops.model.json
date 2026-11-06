@@ -1,0 +1,14 @@
+{
+  "id": "steroid_eyedrops",
+  "file": "assets/models/steroid_eyedrops.glb",
+  "parts": {
+    "steroid_eyedrops": {
+      "node": "steroid_eyedrops:compound",
+      "massKg": 0.012,
+      "centreOfMass": [0, 0.024919504643962847, 0]
+    }
+  },
+  "grip": { "at": [0, 0.02, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

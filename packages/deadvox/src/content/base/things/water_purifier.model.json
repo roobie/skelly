@@ -1,0 +1,11 @@
+{
+  "id": "water_purifier",
+  "file": "assets/models/water_purifier.glb",
+  "parts": {
+    "water_purifier": {
+      "node": "water_purifier:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0.012898886791726048, 0.10444736335272141, -0.002162397442317322]
+    }
+  }
+}

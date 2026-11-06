@@ -1,0 +1,11 @@
+{
+  "id": "wetsuit_gloves_thick",
+  "file": "assets/models/wetsuit_gloves_thick.glb",
+  "parts": {
+    "wetsuit_gloves_thick": {
+      "node": "wetsuit_gloves_thick:compound",
+      "massKg": 0.35,
+      "centreOfMass": [9.793401630016596e-18, 0.01030281115128893, 0.01875586142540534]
+    }
+  }
+}

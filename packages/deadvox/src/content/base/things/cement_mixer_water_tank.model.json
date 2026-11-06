@@ -1,0 +1,17 @@
+{
+  "id": "cement_mixer_water_tank",
+  "file": "assets/models/cement_mixer_water_tank.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 90,
+      "centreOfMass": [1.6042629570004154, 1.7125116846697133, 0.9341763606148733],
+      "collision": [
+        { "min": [1.34375, 1.25, 0.6875], "max": [1.875, 2.34375, 1.21875] },
+        { "min": [1.3125, 1.15625, 0.46875], "max": [1.90625, 1.25, 1.21875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

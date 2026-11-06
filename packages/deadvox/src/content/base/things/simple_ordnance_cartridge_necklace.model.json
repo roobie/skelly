@@ -1,0 +1,11 @@
+{
+  "id": "simple_ordnance_cartridge_necklace",
+  "file": "assets/models/simple_ordnance_cartridge_necklace.glb",
+  "parts": {
+    "simple_ordnance_cartridge_necklace": {
+      "node": "simple_ordnance_cartridge_necklace:compound",
+      "massKg": 0.046,
+      "centreOfMass": [1.785395465095524e-7, 0.012476879128727013, 0.10346777361185502]
+    }
+  }
+}

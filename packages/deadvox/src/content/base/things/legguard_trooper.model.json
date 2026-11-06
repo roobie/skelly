@@ -1,0 +1,11 @@
+{
+  "id": "legguard_trooper",
+  "file": "assets/models/legguard_trooper.glb",
+  "parts": {
+    "legguard_trooper": {
+      "node": "legguard_trooper:compound",
+      "massKg": 6.5,
+      "centreOfMass": [1.4904062549369703e-7, 0.39016928034243564, 0.003672271587789399]
+    }
+  }
+}

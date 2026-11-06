@@ -1,0 +1,14 @@
+{
+  "id": "menorah",
+  "file": "assets/models/menorah.glb",
+  "parts": {
+    "menorah": {
+      "node": "menorah:compound",
+      "massKg": 0.65,
+      "centreOfMass": [1.1199304258773732e-19, 0.04165312753858652, 0]
+    }
+  },
+  "grip": { "at": [0, 0.011, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

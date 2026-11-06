@@ -1,0 +1,11 @@
+{
+  "id": "jeans_mod",
+  "file": "assets/models/jeans_mod.glb",
+  "parts": {
+    "jeans_mod": {
+      "node": "jeans_mod:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0.0008132564902004009, 0.027805309734513273, -0.002845400434604603]
+    }
+  }
+}

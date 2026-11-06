@@ -1,0 +1,11 @@
+{
+  "id": "box_medium_folded",
+  "file": "assets/models/box_medium_folded.glb",
+  "parts": {
+    "box_medium_folded": {
+      "node": "box_medium_folded:compound",
+      "massKg": 0.55,
+      "centreOfMass": [-0.011467283542630538, 0.005000000000000003, -4.47869370656603e-18]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "oxygen_tank",
+  "file": "assets/models/oxygen_tank.glb",
+  "parts": {
+    "oxygen_tank": {
+      "node": "oxygen_tank:compound",
+      "massKg": 1.9,
+      "centreOfMass": [-0.000030451724635589533, 0.17345670370904892, 0.0007518400923654207]
+    }
+  }
+}

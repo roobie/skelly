@@ -1,0 +1,17 @@
+{
+  "id": "light_tactical_vehicle_steering_box",
+  "file": "assets/models/light_tactical_vehicle_steering_box.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 14,
+      "centreOfMass": [1.190625, 0.680625, -0.3772916666666667],
+      "collision": [
+        { "min": [1.09375, 0.625, -0.4375], "max": [1.21875, 0.75, -0.3125] },
+        { "min": [1.21875, 0.625, -0.40625], "max": [1.5625, 0.65625, -0.375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

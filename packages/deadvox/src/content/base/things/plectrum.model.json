@@ -1,0 +1,11 @@
+{
+  "id": "plectrum",
+  "file": "assets/models/plectrum.glb",
+  "parts": {
+    "plectrum": {
+      "node": "plectrum:compound",
+      "massKg": 0.0004,
+      "centreOfMass": [0.000008130081300813053, 0.001, -0.0017154471544715446]
+    }
+  }
+}

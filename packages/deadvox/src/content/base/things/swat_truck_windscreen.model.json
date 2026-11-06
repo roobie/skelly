@@ -1,0 +1,14 @@
+{
+  "id": "swat_truck_windscreen",
+  "file": "assets/models/swat_truck_windscreen.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 28,
+      "centreOfMass": [1.0012019230769231, 2.050480769230769, 0],
+      "collision": [{ "min": [0.90625, 1.75, -1.09375], "max": [1.09375, 2.375, 1.09375] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

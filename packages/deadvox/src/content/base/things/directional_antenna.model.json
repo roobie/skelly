@@ -1,0 +1,14 @@
+{
+  "id": "directional_antenna",
+  "file": "assets/models/directional_antenna.glb",
+  "parts": {
+    "directional_antenna": {
+      "node": "directional_antenna:compound",
+      "massKg": 0.26,
+      "centreOfMass": [-0.02985645345070265, 0.01234127214638397, 0.00006534998547778102]
+    }
+  },
+  "grip": { "at": [0, 0.011999999999999999, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

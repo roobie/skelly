@@ -1,0 +1,18 @@
+{
+  "id": "log_trailer_bolster",
+  "file": "assets/models/log_trailer_bolster.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 90,
+      "centreOfMass": [0, 1.095703125, 0],
+      "collision": [
+        { "min": [-0.09375, 0.96875, -1.1875], "max": [0.09375, 1.1875, 1.1875] },
+        { "min": [-0.09375, 1.1875, 0.59375], "max": [0.09375, 1.25, 1.1875] },
+        { "min": [-0.09375, 1.1875, -1.1875], "max": [0.09375, 1.25, -0.59375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

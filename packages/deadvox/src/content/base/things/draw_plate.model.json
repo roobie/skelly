@@ -1,0 +1,11 @@
+{
+  "id": "draw_plate",
+  "file": "assets/models/draw_plate.glb",
+  "parts": {
+    "draw_plate": {
+      "node": "draw_plate:compound",
+      "massKg": 0.32,
+      "centreOfMass": [-0.0003197860962566845, 0.004066462948815891, -0.00010007639419404126]
+    }
+  }
+}

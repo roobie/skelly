@@ -1,0 +1,11 @@
+{
+  "id": "anvil_crude",
+  "file": "assets/models/anvil_crude.glb",
+  "parts": {
+    "anvil_crude": {
+      "node": "anvil_crude:compound",
+      "massKg": 7.5,
+      "centreOfMass": [-0.0015312009656004827, 0.05805407362703681, 0]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "mag_immature_weaver",
+  "file": "assets/models/mag_immature_weaver.glb",
+  "parts": {
+    "mag_immature_weaver": {
+      "node": "mag_immature_weaver:compound",
+      "massKg": 0.02,
+      "centreOfMass": [-0.0000030487804878047617, 0.016680386178861792, -0.016357723577235764]
+    }
+  }
+}

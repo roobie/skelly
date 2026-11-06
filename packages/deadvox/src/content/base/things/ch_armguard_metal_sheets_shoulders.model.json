@@ -1,0 +1,11 @@
+{
+  "id": "ch_armguard_metal_sheets_shoulders",
+  "file": "assets/models/ch_armguard_metal_sheets_shoulders.glb",
+  "parts": {
+    "ch_armguard_metal_sheets_shoulders": {
+      "node": "ch_armguard_metal_sheets_shoulders:compound",
+      "massKg": 1.7,
+      "centreOfMass": [-0.0408558178752108, 0.03387942664418212, 1.2466992790375519e-17]
+    }
+  }
+}

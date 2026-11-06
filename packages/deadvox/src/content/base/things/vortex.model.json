@@ -1,0 +1,11 @@
+{
+  "id": "vortex",
+  "file": "assets/models/vortex.glb",
+  "parts": {
+    "vortex": {
+      "node": "vortex:compound",
+      "massKg": 6.8,
+      "centreOfMass": [0.000038907157564768455, 0.047503426657242075, 0.0028527613018224283]
+    }
+  }
+}

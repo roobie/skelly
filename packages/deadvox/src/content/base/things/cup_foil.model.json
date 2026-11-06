@@ -1,0 +1,14 @@
+{
+  "id": "cup_foil",
+  "file": "assets/models/cup_foil.glb",
+  "parts": {
+    "cup_foil": {
+      "node": "cup_foil:compound",
+      "massKg": 0.003,
+      "centreOfMass": [0.0006125478927203061, 0.02706609195402298, -0.0000459770114942531]
+    }
+  },
+  "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

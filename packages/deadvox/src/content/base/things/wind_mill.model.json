@@ -1,0 +1,11 @@
+{
+  "id": "wind_mill",
+  "file": "assets/models/wind_mill.glb",
+  "parts": {
+    "wind_mill": {
+      "node": "wind_mill:compound",
+      "massKg": 87,
+      "centreOfMass": [0.000037832330131894105, 0.5938304998396138, 0.01122940921184218]
+    }
+  }
+}

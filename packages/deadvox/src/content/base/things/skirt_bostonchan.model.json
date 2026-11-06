@@ -1,0 +1,11 @@
+{
+  "id": "skirt_bostonchan",
+  "file": "assets/models/skirt_bostonchan.glb",
+  "parts": {
+    "skirt_bostonchan": {
+      "node": "skirt_bostonchan:compound",
+      "massKg": 0.21,
+      "centreOfMass": [1.447131932388082e-19, 0.006895731280615815, -0.006916375087473758]
+    }
+  }
+}

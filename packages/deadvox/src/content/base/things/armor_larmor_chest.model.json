@@ -1,0 +1,11 @@
+{
+  "id": "armor_larmor_chest",
+  "file": "assets/models/armor_larmor_chest.glb",
+  "parts": {
+    "armor_larmor_chest": {
+      "node": "armor_larmor_chest:compound",
+      "massKg": 2.6,
+      "centreOfMass": [4.6410826972871174e-18, 0.032683029791339996, -0.013414425280424549]
+    }
+  }
+}

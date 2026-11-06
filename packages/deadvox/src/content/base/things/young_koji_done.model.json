@@ -1,0 +1,11 @@
+{
+  "id": "young_koji_done",
+  "file": "assets/models/young_koji_done.glb",
+  "parts": {
+    "young_koji_done": {
+      "node": "young_koji_done:compound",
+      "massKg": 0.2,
+      "centreOfMass": [-0.00003833970507919169, 0.030892626979792455, 0.000019115237575095568]
+    }
+  }
+}

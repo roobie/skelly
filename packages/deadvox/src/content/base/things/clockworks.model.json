@@ -1,0 +1,11 @@
+{
+  "id": "clockworks",
+  "file": "assets/models/clockworks.glb",
+  "parts": {
+    "clockworks": {
+      "node": "clockworks:compound",
+      "massKg": 0.036,
+      "centreOfMass": [0.001031212484993994, 0.0015858343337334909, 0.000911164465786312]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "hoodie_cropped",
+  "file": "assets/models/hoodie_cropped.glb",
+  "parts": {
+    "hoodie_cropped": {
+      "node": "hoodie_cropped:compound",
+      "massKg": 0.62,
+      "centreOfMass": [-9.9360004675764e-7, 0.028661737631140605, 0.0018597270522224504]
+    }
+  }
+}

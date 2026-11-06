@@ -1,0 +1,14 @@
+{
+  "id": "classic_small_car_windscreen",
+  "file": "assets/models/classic_small_car_windscreen.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 9,
+      "centreOfMass": [0.78125, 1.029017857142857, 0],
+      "collision": [{ "min": [0.65625, 0.875, -0.5], "max": [0.90625, 1.21875, 0.5] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

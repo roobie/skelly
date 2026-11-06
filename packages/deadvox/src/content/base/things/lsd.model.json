@@ -1,0 +1,14 @@
+{
+  "id": "lsd",
+  "file": "assets/models/lsd.glb",
+  "parts": {
+    "lsd": {
+      "node": "lsd:compound",
+      "massKg": 0.0013,
+      "centreOfMass": [-0.00008571428571428574, 0.001323809523809524, -0.002657142857142858]
+    }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

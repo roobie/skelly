@@ -1,0 +1,14 @@
+{
+  "id": "scythe",
+  "file": "assets/models/scythe.glb",
+  "parts": {
+    "scythe": {
+      "node": "scythe:compound",
+      "massKg": 3,
+      "centreOfMass": [0.7448869121399931, 0.017336492890995262, -0.012186219467736058]
+    }
+  },
+  "grip": { "at": [0.40800000000000003, 0.018000000000000002, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

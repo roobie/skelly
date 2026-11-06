@@ -1,0 +1,11 @@
+{
+  "id": "small_relic",
+  "file": "assets/models/small_relic.glb",
+  "parts": {
+    "small_relic": {
+      "node": "small_relic:compound",
+      "massKg": 0.04,
+      "centreOfMass": [0.000028473804100227812, 0.004318906605922552, 0.0016161731207289293]
+    }
+  }
+}

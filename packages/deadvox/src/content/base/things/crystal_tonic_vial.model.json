@@ -1,0 +1,11 @@
+{
+  "id": "crystal_tonic_vial",
+  "file": "assets/models/crystal_tonic_vial.glb",
+  "parts": {
+    "crystal_tonic_vial": {
+      "node": "crystal_tonic_vial:compound",
+      "massKg": 0.02,
+      "centreOfMass": [8.620689655172418e-7, 0.023575862068965517, 0.0000025862068965517237]
+    }
+  }
+}

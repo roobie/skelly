@@ -1,0 +1,11 @@
+{
+  "id": "tempered_mail_chausses",
+  "file": "assets/models/tempered_mail_chausses.glb",
+  "parts": {
+    "tempered_mail_chausses": {
+      "node": "tempered_mail_chausses:compound",
+      "massKg": 3.1,
+      "centreOfMass": [4.453471267039239e-17, 0.00706042707860062, -0.020473421172194414]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "pillow",
+  "file": "assets/models/pillow.glb",
+  "parts": {
+    "pillow": {
+      "node": "pillow:compound",
+      "massKg": 0.7,
+      "centreOfMass": [0, 0.09104067442630466, 0.00025673025494740595]
+    }
+  }
+}

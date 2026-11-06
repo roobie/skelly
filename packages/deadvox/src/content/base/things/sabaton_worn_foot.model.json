@@ -1,0 +1,11 @@
+{
+  "id": "sabaton_worn_foot",
+  "file": "assets/models/sabaton_worn_foot.glb",
+  "parts": {
+    "sabaton_worn_foot": {
+      "node": "sabaton_worn_foot:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0, -0.049918618471649294, 0.0577376774103335]
+    }
+  }
+}

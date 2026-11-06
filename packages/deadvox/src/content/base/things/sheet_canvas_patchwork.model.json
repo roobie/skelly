@@ -1,0 +1,11 @@
+{
+  "id": "sheet_canvas_patchwork",
+  "file": "assets/models/sheet_canvas_patchwork.glb",
+  "parts": {
+    "sheet_canvas_patchwork": {
+      "node": "sheet_canvas_patchwork:compound",
+      "massKg": 0.069,
+      "centreOfMass": [-0.00006286672254818894, 0.001050628667225482, 0.00014543168482816427]
+    }
+  }
+}

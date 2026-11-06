@@ -1,0 +1,11 @@
+{
+  "id": "cheerleader_dress",
+  "file": "assets/models/cheerleader_dress.glb",
+  "parts": {
+    "cheerleader_dress": {
+      "node": "cheerleader_dress:compound",
+      "massKg": 0.24,
+      "centreOfMass": [6.114129740210121e-20, 0.012922019365806779, -0.0020520363663241925]
+    }
+  }
+}

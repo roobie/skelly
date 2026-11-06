@@ -1,0 +1,11 @@
+{
+  "id": "jumpsuit_pocketless",
+  "file": "assets/models/jumpsuit_pocketless.glb",
+  "parts": {
+    "jumpsuit_pocketless": {
+      "node": "jumpsuit_pocketless:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-1.2148119068940983e-19, 0.03063011032988821, -0.01078666495327961]
+    }
+  }
+}

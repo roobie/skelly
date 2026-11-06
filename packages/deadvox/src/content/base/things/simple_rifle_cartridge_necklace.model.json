@@ -1,0 +1,11 @@
+{
+  "id": "simple_rifle_cartridge_necklace",
+  "file": "assets/models/simple_rifle_cartridge_necklace.glb",
+  "parts": {
+    "simple_rifle_cartridge_necklace": {
+      "node": "simple_rifle_cartridge_necklace:compound",
+      "massKg": 0.014,
+      "centreOfMass": [0.000001027749229188081, 0.004903391572456319, 0.06629701952723535]
+    }
+  }
+}

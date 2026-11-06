@@ -1,0 +1,11 @@
+{
+  "id": "deployment_bag",
+  "file": "assets/models/deployment_bag.glb",
+  "parts": {
+    "deployment_bag": {
+      "node": "deployment_bag:compound",
+      "massKg": 0.25,
+      "centreOfMass": [0.00002457242582897025, 0.0769824781849913, 0.0016122862129144863]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "hat_cotton",
+  "file": "assets/models/hat_cotton.glb",
+  "parts": {
+    "hat_cotton": {
+      "node": "hat_cotton:compound",
+      "massKg": 0.08,
+      "centreOfMass": [3.433538439567257e-21, 0.07152354386664005, 3.433538439567257e-20]
+    }
+  }
+}

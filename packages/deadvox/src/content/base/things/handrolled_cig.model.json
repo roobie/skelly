@@ -1,0 +1,14 @@
+{
+  "id": "handrolled_cig",
+  "file": "assets/models/handrolled_cig.glb",
+  "parts": {
+    "handrolled_cig": {
+      "node": "handrolled_cig:compound",
+      "massKg": 0.0008,
+      "centreOfMass": [-0.0036569343065693434, 0.00399756690997567, -0.0000024330900243308463]
+    }
+  },
+  "grip": { "at": [0, 0.004, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

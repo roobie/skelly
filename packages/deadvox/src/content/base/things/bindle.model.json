@@ -1,0 +1,14 @@
+{
+  "id": "bindle",
+  "file": "assets/models/bindle.glb",
+  "parts": {
+    "bindle": {
+      "node": "bindle:compound",
+      "massKg": 0.88,
+      "centreOfMass": [0.33482496021823144, 0.10052398272334624, 0]
+    }
+  },
+  "grip": { "at": [-0.07499999999999996, 0.13, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

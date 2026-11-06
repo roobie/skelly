@@ -41,6 +41,8 @@ export interface RecipeExport<Model extends NeutralModel = NeutralModel> {
   readonly source: string;
   readonly voxel: VoxelGrains;
   readonly generate: () => ModelExport<Model>;
+  /** The data that, with the generator code, fixes the output; a recipe without it is never cached. */
+  readonly inputs?: () => unknown;
 }
 export const recipeAsset = ({ id }: Pick<RecipeRow, 'id'>) => ({ id, file: `assets/models/${id}.glb` as const });
 export const recipeOptions = (row: RecipeRow) => (row.options === undefined ? {} : row.options);
@@ -61,6 +63,7 @@ const contextual = <T>(row: RecipeRow, work: () => T): T => {
 export const loadRecipe = <Model extends NeutralModel>(
   value: unknown,
   exporters: Readonly<Record<string, (row: RecipeRow) => () => ModelExport<Model>>>,
+  inputsOf?: (row: RecipeRow) => unknown,
 ): readonly RecipeExport<Model>[] =>
   parse(RecipeSchema, value).map((row) =>
     contextual(row, () => {
@@ -74,6 +77,7 @@ export const loadRecipe = <Model extends NeutralModel>(
         source: row.source,
         voxel: recipeVoxel(row),
         generate: () => contextual(row, generate),
+        ...(inputsOf ? { inputs: () => ({ row, data: inputsOf(row) }) } : {}),
       };
     }),
   );

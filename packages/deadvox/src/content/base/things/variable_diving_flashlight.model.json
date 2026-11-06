@@ -1,0 +1,14 @@
+{
+  "id": "variable_diving_flashlight",
+  "file": "assets/models/variable_diving_flashlight.glb",
+  "parts": {
+    "variable_diving_flashlight": {
+      "node": "variable_diving_flashlight:compound",
+      "massKg": 0.22,
+      "centreOfMass": [0.06702053359407739, -0.00043120547562508737, 0]
+    }
+  },
+  "grip": { "at": [0.047, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

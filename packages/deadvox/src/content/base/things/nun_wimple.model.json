@@ -1,0 +1,11 @@
+{
+  "id": "nun_wimple",
+  "file": "assets/models/nun_wimple.glb",
+  "parts": {
+    "nun_wimple": {
+      "node": "nun_wimple:compound",
+      "massKg": 0.15,
+      "centreOfMass": [0, 0.00948728382502543, -0.011459477789081044]
+    }
+  }
+}

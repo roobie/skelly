@@ -1,0 +1,17 @@
+{
+  "id": "box_truck_front_bumper",
+  "file": "assets/models/box_truck_front_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 40,
+      "centreOfMass": [3.7349938118811883, 0.6884282178217822, 0],
+      "collision": [
+        { "min": [3.65625, 0.4375, -1.25], "max": [3.8125, 0.9375, 1.25] },
+        { "min": [3.78125, 0.75, -0.5], "max": [3.8125, 0.8125, 0.5] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

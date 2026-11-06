@@ -1,0 +1,11 @@
+{
+  "id": "disinrag",
+  "file": "assets/models/disinrag.glb",
+  "parts": {
+    "disinrag": {
+      "node": "disinrag:compound",
+      "massKg": 0.065,
+      "centreOfMass": [-0.0001160507052312087, 0.010198535975718622, 0.000202463845741832]
+    }
+  }
+}

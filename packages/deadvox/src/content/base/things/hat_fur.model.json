@@ -1,0 +1,11 @@
+{
+  "id": "hat_fur",
+  "file": "assets/models/hat_fur.glb",
+  "parts": {
+    "hat_fur": {
+      "node": "hat_fur:compound",
+      "massKg": 0.46,
+      "centreOfMass": [1.2857539387731923e-19, 0.069844917173691, 1.4694330728836482e-19]
+    }
+  }
+}

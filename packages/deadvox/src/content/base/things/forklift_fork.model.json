@@ -1,0 +1,17 @@
+{
+  "id": "forklift_fork",
+  "file": "assets/models/forklift_fork.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 50,
+      "centreOfMass": [1.7053257042253522, 0.16879401408450703, 0.3125],
+      "collision": [
+        { "min": [1.375, 0.0625, 0.25], "max": [1.40625, 0.6875, 0.375] },
+        { "min": [1.375, 0.0625, 0.25], "max": [2.46875, 0.125, 0.375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

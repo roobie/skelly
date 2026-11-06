@@ -1,0 +1,11 @@
+{
+  "id": "birch_bark_shoes",
+  "file": "assets/models/birch_bark_shoes.glb",
+  "parts": {
+    "birch_bark_shoes": {
+      "node": "birch_bark_shoes:compound",
+      "massKg": 0.4,
+      "centreOfMass": [0.0009266614889603909, 0.03541102851436815, -0.012444735382225671]
+    }
+  }
+}

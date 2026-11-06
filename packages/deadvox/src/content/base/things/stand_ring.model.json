@@ -1,0 +1,11 @@
+{
+  "id": "stand_ring",
+  "file": "assets/models/stand_ring.glb",
+  "parts": {
+    "stand_ring": {
+      "node": "stand_ring:compound",
+      "massKg": 2.9,
+      "centreOfMass": [-0.01596627996906419, 0.0747597834493426, 0.00011415313225058004]
+    }
+  }
+}

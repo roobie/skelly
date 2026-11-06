@@ -1,0 +1,11 @@
+{
+  "id": "tie_skinny",
+  "file": "assets/models/tie_skinny.glb",
+  "parts": {
+    "tie_skinny": {
+      "node": "tie_skinny:compound",
+      "massKg": 0.04,
+      "centreOfMass": [-0.011395594158424031, 0.0026274214318985, -0.02716664383373984]
+    }
+  }
+}

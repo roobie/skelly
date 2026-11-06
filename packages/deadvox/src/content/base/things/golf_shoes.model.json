@@ -1,0 +1,11 @@
+{
+  "id": "golf_shoes",
+  "file": "assets/models/golf_shoes.glb",
+  "parts": {
+    "golf_shoes": {
+      "node": "golf_shoes:compound",
+      "massKg": 1,
+      "centreOfMass": [2.521073614266145e-18, 0.04906917116313038, -0.01827506186863564]
+    }
+  }
+}

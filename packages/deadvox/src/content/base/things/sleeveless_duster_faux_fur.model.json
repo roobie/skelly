@@ -1,0 +1,11 @@
+{
+  "id": "sleeveless_duster_faux_fur",
+  "file": "assets/models/sleeveless_duster_faux_fur.glb",
+  "parts": {
+    "sleeveless_duster_faux_fur": {
+      "node": "sleeveless_duster_faux_fur:compound",
+      "massKg": 2.3,
+      "centreOfMass": [6.448997096269655e-20, 0.04369793006665885, 0.006039020777297]
+    }
+  }
+}

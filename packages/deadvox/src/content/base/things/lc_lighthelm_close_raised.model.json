@@ -1,0 +1,11 @@
+{
+  "id": "lc_lighthelm_close_raised",
+  "file": "assets/models/lc_lighthelm_close_raised.glb",
+  "parts": {
+    "lc_lighthelm_close_raised": {
+      "node": "lc_lighthelm_close_raised:compound",
+      "massKg": 3.1,
+      "centreOfMass": [-0.00007398434000239773, 0.13492741004334544, 0.005635643214526818]
+    }
+  }
+}

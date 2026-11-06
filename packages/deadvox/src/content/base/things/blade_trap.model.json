@@ -1,0 +1,11 @@
+{
+  "id": "blade_trap",
+  "file": "assets/models/blade_trap.glb",
+  "parts": {
+    "blade_trap": {
+      "node": "blade_trap:compound",
+      "massKg": 6.5,
+      "centreOfMass": [-0.004181881488404488, 0.08279115240477564, 0.0026237298074896693]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "pyrometer",
+  "file": "assets/models/pyrometer.glb",
+  "parts": {
+    "pyrometer": {
+      "node": "pyrometer:compound",
+      "massKg": 0.35,
+      "centreOfMass": [0.00619817776561217, 0.015698236421225514, -0.003014272865913269]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "gauntlets_larmor",
+  "file": "assets/models/gauntlets_larmor.glb",
+  "parts": {
+    "gauntlets_larmor": {
+      "node": "gauntlets_larmor:compound",
+      "massKg": 0.47,
+      "centreOfMass": [-6.891038322878054e-18, 0.01423274528009904, 0.02038811513463324]
+    }
+  }
+}

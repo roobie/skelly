@@ -1,0 +1,14 @@
+{
+  "id": "toilet_paper",
+  "file": "assets/models/toilet_paper.glb",
+  "parts": {
+    "toilet_paper": {
+      "node": "toilet_paper:compound",
+      "massKg": 0.1,
+      "centreOfMass": [-0.00009050862811620204, 0.05027152588434861, 0.001689876284448076]
+    }
+  },
+  "grip": { "at": [0, 0.05, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,153 @@
+[
+  {
+    "id": "duffelbag_gym_xxs",
+    "model": "duffelbag_gym_xxs",
+    "name": "Small gym bag",
+    "category": "bag",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "back", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.002 },
+    "container": {
+      "pockets": [
+        { "grid": [3, 3], "handlingSimSeconds": 1.2, "name": "main" },
+        { "grid": [2, 1], "handlingSimSeconds": 0.8, "name": "end pocket" }
+      ]
+    },
+    "description": "A little zip-top holdall with two carry handles and a shoulder strap, just big enough for a towel and a change of clothes.",
+    "reference": "duffelbag_gym_xxs",
+    "variants": [],
+    "notes": "A blue polyester duffel 340 mm long and 180 mm by 180 mm across lying on its bottom: black end panels with steel D-rings, a zip end to end along the top, two black webbing bands wrapping the body and rising into a pair of carry handles with a grip wrap, a zipped black pocket on the front face and the shoulder strap lying coiled in front. CHECK VOLUME (x8.6): the reference counts the bag empty and squashed; the model stands full, with the strap laid out beside it. Slung over the shoulder, it takes the back slot as other shoulder bags do. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "duffelbag_l_poly",
+    "model": "duffelbag_l_poly",
+    "name": "Large duffel bag",
+    "category": "bag",
+    "size": [5, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "back", "encumbrance": 8, "warmth": 0, "wearPerDamage": 0.002 },
+    "container": {
+      "pockets": [
+        { "grid": [7, 6], "handlingSimSeconds": 1.8, "name": "main" },
+        { "grid": [3, 2], "handlingSimSeconds": 1, "name": "front pocket" }
+      ]
+    },
+    "description": "A long polyester holdall with a zip along its whole length. It swallows a lot, and swings against the legs when worn.",
+    "reference": "duffelbag_l_poly",
+    "variants": [],
+    "notes": "A navy polyester duffel 700 mm long and 340 mm by 340 mm across lying on its bottom: charcoal end panels with steel D-rings, a zip end to end along the top, two black webbing bands wrapping the body and rising into carry handles, a zipped charcoal pocket on the front face and the shoulder strap lying coiled in front. CHECK VOLUME (x19): the reference counts the bag empty and folded; the model stands full. Slung over the shoulder, it takes the back slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "duffelbag_xl_nylon",
+    "model": "duffelbag_xl_nylon",
+    "name": "Big duffel bag",
+    "category": "bag",
+    "size": [6, 3],
+    "economy": { "usage": ["Residential", "Military"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 10, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [8, 7], "handlingSimSeconds": 2, "name": "main" }] },
+    "description": "A huge green nylon kit bag with a long zip and webbing handles. It holds almost anything, but nobody walks far with it full.",
+    "reference": "duffelbag_xl_nylon",
+    "variants": [],
+    "notes": "A ranger-green nylon duffel 900 mm long and 400 mm by 400 mm across lying on its bottom: dark olive end panels with black D-rings, a zip end to end along the top, two dark olive webbing bands wrapping the body and rising into carry handles, and the shoulder strap lying coiled in front. No outer pocket, the plain kit-bag sort. CHECK VOLUME (x24.5): the reference counts the bag empty and folded; the model stands full. Slung over the shoulder, it takes the back slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "backpack_small",
+    "model": "backpack_small",
+    "name": "Small backpack",
+    "category": "bag",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "back", "encumbrance": 2, "warmth": 6, "wearPerDamage": 0.002 },
+    "container": {
+      "pockets": [
+        { "grid": [4, 4], "handlingSimSeconds": 1.4, "name": "main" },
+        { "grid": [2, 2], "handlingSimSeconds": 1, "name": "front" }
+      ]
+    },
+    "description": "A bright little backpack made for a child, with one main compartment, a zipped front pocket and short shoulder straps.",
+    "reference": "backpack_small",
+    "variants": [],
+    "notes": "A red nylon backpack 240 mm wide, 300 mm tall and 110 mm deep standing on its bottom, front on +z: a round-shouldered body with a zip running round it, a yellow front pocket with its own zip, black pulls, two black shoulder straps down the back with buckles near their feet, and a grab loop on top. CHECK VOLUME (x6.8): the reference counts it empty and flat; the model stands full. Warmth follows the reference, as the pack covers the back. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bodysuit_lycra",
+    "model": "bodysuit_lycra",
+    "name": "Stretch bodysuit",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 14, "warmth": 15, "wearPerDamage": 0.0025 },
+    "description": "A skin-tight stretch suit with a front zip, covering everything from the neck down to the toes. It has nowhere to put anything.",
+    "reference": "bodysuit_lycra",
+    "variants": [],
+    "notes": "Folded to 300 mm by 280 mm and 30 mm tall: purple lycra with a mock neck, a thin black zip down the front with a steel pull, sleeves folded along the sides, black side stripes, and the stirrup feet folded up over the hem. The reference covers torso, arms, hands, legs and feet; slot `torso` is the nearest existing slot, as no slot spans the whole body, and it should also block the legs, hands and feet slots once a slot can cover more than one region. No pockets. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bondage_suit",
+    "model": "bondage_suit",
+    "name": "Leather catsuit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 20,
+      "warmth": 20,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.05, "cut": 0.15, "pierce": 0.05 }
+    },
+    "description": "A close-fitting suit of black leather from collar to ankle, with a ring at the throat and zips running in places no zip needs to be. Not a single pocket.",
+    "reference": "bondage_suit",
+    "variants": [],
+    "notes": "Folded to 340 mm by 340 mm and 50 mm tall: black leather with a stand collar carrying a steel ring at the front, a front zip, five more zips running at odd angles over the bundle with steel pulls, sleeves folded along the sides and one charcoal strap buckled round it. The reference covers torso, arms and legs; slot `torso` is the nearest existing slot, as no slot spans the whole body, and it should also block the arms and legs slots once a slot can cover more than one region. The small `protects` values follow the thick leather. No pockets. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "clown_suit",
+    "model": "clown_suit",
+    "name": "Clown suit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 17, "warmth": 10, "wearPerDamage": 0.0025 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "left pocket" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "right pocket" }
+      ]
+    },
+    "description": "A baggy one-piece costume, half red and half yellow, with polka dots, pompom buttons and a frilled collar. The pockets are deep enough for a whole act.",
+    "reference": "clown_suit",
+    "variants": [],
+    "notes": "Folded to 380 mm by 360 mm and 70 mm tall: the left half red and the right half yellow, green polka dots, a blue placket with three orange pompom buttons, a cream ruff collar with pleats round its rim, and a blue patch pocket on the yellow half. Its plastic is the pompoms and trim. The reference covers torso, arms and legs; slot `torso` is the nearest existing slot, as no slot spans the whole body, and it should also block the arms and legs slots once a slot can cover more than one region. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "denim_overalls",
+    "model": "denim_overalls",
+    "name": "Denim overalls",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 14,
+      "warmth": 18,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.05, "cut": 0.1, "pierce": 0.05 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "bib pocket" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "back right" },
+        { "grid": [1, 3], "handlingSimSeconds": 0.6, "name": "hammer loop" }
+      ]
+    },
+    "description": "Heavy denim trousers with a bib front held up by shoulder straps, covered in pockets and a loop for a hammer.",
+    "reference": "denim_overalls",
+    "variants": [],
+    "notes": "Folded to 380 mm by 460 mm and 55 mm tall with the bib turned down over the legs: a crotch seam, a waistband with side buttons, a bib with a flapped pocket and a pen slot, faded denim shoulder straps lying down the legs with brass buckles at the bib's corners, saffron stitching down the sides and at the front pocket openings, and a hammer loop by the hem. The reference covers legs and torso; slot `legs` is the nearest existing slot, as fishing waders take it, and it should also block the torso slot once a slot can cover more than one region. The small `protects` values follow the thick denim. The hammer loop is a pocket sized for a hammer. The worn look is pending: no worn model is authored."
+  }
+]

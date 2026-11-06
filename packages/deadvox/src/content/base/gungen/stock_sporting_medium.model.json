@@ -7,7 +7,7 @@
       "item": "stock_sporting_medium",
       "node": "stock_sporting_medium:stock",
       "massKg": 0.5,
-      "centreOfMass": [-0.18056912056089008, -0.04658832495046486, -0.00005304069501600365]
+      "centreOfMass": [-0.17990476190476196, -0.04644464664846832, 0]
     }
   }
 }

@@ -1,0 +1,14 @@
+{
+  "id": "makeshift_funnel",
+  "file": "assets/models/makeshift_funnel.glb",
+  "parts": {
+    "makeshift_funnel": {
+      "node": "makeshift_funnel:compound",
+      "massKg": 0.015,
+      "centreOfMass": [0, 0.06890716949854954, 0]
+    }
+  },
+  "grip": { "at": [0, 0.05, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

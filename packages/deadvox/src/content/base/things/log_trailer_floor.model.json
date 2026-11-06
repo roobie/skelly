@@ -1,0 +1,14 @@
+{
+  "id": "log_trailer_floor",
+  "file": "assets/models/log_trailer_floor.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 160,
+      "centreOfMass": [-0.359375, 1.21875, 0],
+      "collision": [{ "min": [-4, 1.1875, -0.3125], "max": [3.28125, 1.25, 0.3125] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

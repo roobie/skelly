@@ -6,6 +6,7 @@ read_if:
   - you're integrating vehicle state with items, saves, collision, authored placement or region simulation
   - you're building the heavy-part-hoist vehicle or impact detachment
   - you're integrating the selected Rapier f64 build across driving, parked collision and presentation physics
+  - you're deciding what the parked fleet or a wreck blueprint means for the first loop
 ---
 
 # Slice 6 — Wheels
@@ -29,8 +30,12 @@ service parts and a freely placed capability-matched add-on. Two hosts expose
 accidental blueprint-specific restrictions; the add-on exposes a disguised fixed
 socket system. The motorbike follows after the four-wheel loop, rather than putting
 balance and lean on the first playtest's critical path. Each host is authored as
-content parts and a content blueprint, the hatchback remade from a real car, so no
-vehicle is authored twice; see `docs/vehicle-spike.md`, "The hatchback from content".
+content parts and a content blueprint, the hatchback remade from a real car, so what
+the game loads is authored once; see
+`docs/vehicle-spike.md`, "The hatchback from content".
+The content pickup holds only its service parts and bed, enough for shared parts and
+cargo; it must become a whole vehicle before
+`SLICE-6.md`, "Cabin, cargo and driving".
 
 Building starts from factory structures with compatible parts and add-ons, not raw
 rails and plates. Factory welded structure is one player-facing assembly while
@@ -48,11 +53,18 @@ workflow, with lifting, load ownership and clearance to prove. The hoist is requ
 utility content alongside the two transport hosts, not a third transport host that
 reopens the roster choice.
 
+The wider fleet does not reopen that choice either. Its vehicles, including other
+lifting vehicles, are parked content on the same export contract and stay off the
+loop's critical path; see `docs/vehicle-spike.md`, "The fleet from content".
+
 The world needs wrecks with recoverable parts and a convoy remnant, fuel, tools and lifting
 access within reach of the loop, cargo worth transporting, enemies that respond to
-engine noise, and a route with a meaningful dismount. Wrecks are vehicle instances
+engine noise, and a route with a meaningful dismount. A wreck is a vehicle instance
 with missing and damaged parts, not searchable furniture with a second future
-identity. Loose loot beside a wreck stays loose.
+identity. How much of it can be recovered depends on how ruined it is. A total wreck,
+such as a burnt-out carcass, holds no recoverable parts and is sawn down into scrap. A
+partial wreck also holds some parts that can be recovered, damaged or not. Loose loot
+beside a wreck stays loose.
 
 A useful trunk or bed cargo fitting starts the storage corpus. Contents belong to
 that fitted item, never to an invisible vehicle-wide inventory. This makes transport
@@ -263,8 +275,8 @@ leaving saves to an integration finale.
    placement when exiting a moving vehicle without arresting the vehicle. BR checks
    interior visibility. Compare mass-placement variants while holding
    total mass, power and silhouette fixed; do not pin tuned trajectories.
-5. **Heavy-part-hoist vehicle and heavy disassembly.** Build the hoist through the same
-   authoring, instance and driving path, then add its lifting operation. Prove field
+5. **Heavy-part-hoist vehicle and heavy disassembly.** Bring the authored hoist through
+   the same instance and driving path, then add its lifting operation. Prove field
    recovery, loaded clearance, load mass, release refusal and saved ownership through
    lift, transport and refit. Do not substitute a workshop-only transfer or a new
    equipment lifecycle for the vehicle. This follows driving because the means of
@@ -299,8 +311,9 @@ leaving saves to an integration finale.
 - **Handed parts:** the #322 content expansion that first needs physical left/right
   incompatibility. Unhanded recovered parts leave that expansion open rather than ruling
   every future part permanently interchangeable across sides.
-- **Motorbike driving and stand/lean behaviour:** the motorbike content round under
-  #322 after four-wheel handling is accepted. Bike balance is not car tuning.
+- **Motorbike driving and stand/lean behaviour:** the motorbike driving round under
+  #322 after four-wheel handling is accepted. Bike balance is not car tuning. A rider
+  seat waits for this too, because the seat check needs a way in that a bike lacks.
 - **Pickup reference refinement and wear appearance:** the content first-look under
   #322. Do not canonise an estimated bed length or a debug slider as a game rule.
 - **Additional storage compartments:** the #322 compartment-content follow-up after
@@ -314,11 +327,15 @@ leaving saves to an integration finale.
 - **Furniture on bonnets and loose objects riding empty cabin cells:** #322's first
   carried-world-object work package. Boarding and fitted cargo do not grant arbitrary
   furniture placement inside a car.
+- **Sawing total wrecks into scrap and service sites on the parked fleet's wrecks:**
+  #322. The first loop's part source is the wreck placements of its build order, so
+  neither is on its critical path.
 - **Finer collision grain:** #221 when its partial-block contract is settled. Preserve
   parked guarantees without pretending their rounding is exact geometry.
-- **Pipes, wiring topology, trailers, mounted weapons and mobile workshops:** #322
+- **Pipes, wiring topology, towing, mounted weapons and mobile workshops:** #322
   expansion work when a player decision needs that topology or interaction. The
   mobile hoist is in the first loop; it does not imply a complete mobile workshop.
+  A parked trailer or turret blueprint implies no coupling or firing.
 - **Full VAT UI and public launcher:** #323 after the export contract is proven.
   Productionising a tool is separate from declaring its output authoritative.
 

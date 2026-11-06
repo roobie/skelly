@@ -1,0 +1,11 @@
+{
+  "id": "faux_fur_cat_ears",
+  "file": "assets/models/faux_fur_cat_ears.glb",
+  "parts": {
+    "faux_fur_cat_ears": {
+      "node": "faux_fur_cat_ears:compound",
+      "massKg": 0.025,
+      "centreOfMass": [2.8703428195846373e-18, 0.08701577287066244, 0.00026687697160883276]
+    }
+  }
+}

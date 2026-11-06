@@ -1,0 +1,14 @@
+{
+  "id": "small_propane_tank",
+  "file": "assets/models/small_propane_tank.glb",
+  "parts": {
+    "small_propane_tank": {
+      "node": "small_propane_tank:compound",
+      "massKg": 0.98,
+      "centreOfMass": [0, 0.12539365841543174, 0]
+    }
+  },
+  "grip": { "at": [0, 0.132, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

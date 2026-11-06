@@ -1,0 +1,14 @@
+{
+  "id": "twin_spout_rune_lamp",
+  "file": "assets/models/twin_spout_rune_lamp.glb",
+  "parts": {
+    "twin_spout_rune_lamp": {
+      "node": "twin_spout_rune_lamp:compound",
+      "massKg": 2.3,
+      "centreOfMass": [0, 0.030017938331817796, -0.000683640572042655]
+    }
+  },
+  "grip": { "at": [0, 0.035, -0.077], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

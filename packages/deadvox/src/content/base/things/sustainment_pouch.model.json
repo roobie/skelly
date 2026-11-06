@@ -1,0 +1,11 @@
+{
+  "id": "sustainment_pouch",
+  "file": "assets/models/sustainment_pouch.glb",
+  "parts": {
+    "sustainment_pouch": {
+      "node": "sustainment_pouch:compound",
+      "massKg": 0.16,
+      "centreOfMass": [0, 0.12757646063080333, 0.0007804137312986983]
+    }
+  }
+}

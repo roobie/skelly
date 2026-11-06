@@ -1,0 +1,11 @@
+{
+  "id": "leather",
+  "file": "assets/models/leather.glb",
+  "parts": {
+    "leather": {
+      "node": "leather:compound",
+      "massKg": 0.04,
+      "centreOfMass": [0.000387653442447963, 0.001, 0.00030652908735100516]
+    }
+  }
+}

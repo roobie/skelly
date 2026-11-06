@@ -7,7 +7,7 @@
       "item": "front_sight_sporter",
       "node": "front_sight_sporter:front-sight",
       "massKg": 0.02,
-      "centreOfMass": [-0.000058201058201058184, 0.001756613756613757, 0.00014550264550264568]
+      "centreOfMass": [0, 0.0017787114845938376, 0.000002801120448179273]
     }
   }
 }

@@ -1,0 +1,11 @@
+{
+  "id": "faux_fur_collar",
+  "file": "assets/models/faux_fur_collar.glb",
+  "parts": {
+    "faux_fur_collar": {
+      "node": "faux_fur_collar:compound",
+      "massKg": 0.025,
+      "centreOfMass": [7.638871092178354e-19, 0.007959630606860156, 0.0037802110817941968]
+    }
+  }
+}

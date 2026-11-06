@@ -1,0 +1,11 @@
+{
+  "id": "onyx_gold_bracelet",
+  "file": "assets/models/onyx_gold_bracelet.glb",
+  "parts": {
+    "onyx_gold_bracelet": {
+      "node": "onyx_gold_bracelet:compound",
+      "massKg": 0.03,
+      "centreOfMass": [0, 0.0022100840336134455, 1.0861089975748785e-19]
+    }
+  }
+}

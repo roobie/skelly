@@ -1,0 +1,14 @@
+{
+  "id": "caravan_rear_window",
+  "file": "assets/models/caravan_rear_window.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 10,
+      "centreOfMass": [-2.546875, 1.625, 0],
+      "collision": [{ "min": [-2.5625, 1.34375, -0.71875], "max": [-2.53125, 1.90625, 0.71875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,5 @@
+{
+  "id": "lunchbox",
+  "file": "assets/models/lunchbox.glb",
+  "parts": { "lunchbox": { "node": "lunchbox:compound", "massKg": 0.4, "centreOfMass": [0, 0.043173039384544726, 0] } }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "suitcase_m",
+  "file": "assets/models/suitcase_m.glb",
+  "parts": {
+    "suitcase_m": {
+      "node": "suitcase_m:compound",
+      "massKg": 1.6,
+      "centreOfMass": [0, 0.30407518717705356, 0.006294948855847309]
+    }
+  }
+}

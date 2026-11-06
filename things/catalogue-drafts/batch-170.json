@@ -1,0 +1,291 @@
+[
+  {
+    "id": "armor_blarmor",
+    "model": "armor_blarmor",
+    "name": "Boiled leather armour",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 22,
+      "warmth": 20,
+      "wearPerDamage": 0.004,
+      "protects": { "acid": 0.1, "blunt": 0.3, "cut": 0.4, "pierce": 0.3 }
+    },
+    "description": "A suit of thick leather that was boiled and moulded until it set hard: a shaped cuirass, layered shoulder flaps, a skirt of strips and laced guards for the arms and legs. Light for what it stops.",
+    "reference": "armor_blarmor",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, 1230 mm long and 840 mm across: a moulded chestnut cuirass with raised chest lobes and a dark stitched edge, three layered flaps at each shoulder, a skirt of eight studded strips, and half-round arm, thigh and shin guards laced up their fronts with tan thongs, with a domed knee cup between thigh and shin. CHECK VOLUME LENGTH: the reference gives the suit packed into a 600 mm bundle; laid out flat its box is longer and emptier. Slot `vest`, as batch 110's cardboard armour and earlier armour batches have it, though the suit also covers the arms and legs; Deadvox has no whole-body armour slot. Protection is a judgement for hardened leather: fair against cuts and blows, weaker against points. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_ch_heavyplate",
+    "model": "armor_ch_heavyplate",
+    "name": "Heavy hardened steel plate armour",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 25,
+      "warmth": 20,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.25, "blunt": 0.6, "cut": 0.88, "pierce": 0.7 }
+    },
+    "description": "A heavy suit of hardened steel plate with a thick breastplate and a second plate riveted over the belly, broad pauldrons and full guards for the arms and legs. Almost nothing gets through, and every step shows it.",
+    "reference": "armor_ch_heavyplate",
+    "variants": ["xl_armor_ch_heavyplate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 1250 mm from the shoulder straps to the ankle and 840 mm across: a curved breastplate with a middle ridge and rolled neck and arm edges, four fauld lames and a mail skirt below it, domed pauldrons, and on each side an arm harness (upper guard, elbow cop with its fan, mail at the elbow, forearm guard) and below a leg harness (thigh guard, knee cop with its wing, mail behind the knee, greave), all strapped in black leather. CHECK VOLUME LENGTH: the reference gives the suit packed into a 600 mm bundle; laid out flat its box is far longer and emptier. The plackart riveted over the lower breastplate, four lames and broad pauldrons set it apart. Plate in `steel-hardened`. Slot `vest`, as batch 110's cardboard armour and earlier armour batches have it, though the suit also covers the arms and legs; Deadvox has no whole-body armour slot. Protection is a judgement for hardened plate over mail: very strong against cuts, strong against points and fair against blows. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_ch_lightplate",
+    "model": "armor_ch_lightplate",
+    "name": "Light hardened steel plate armour",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 15,
+      "warmth": 20,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.15, "blunt": 0.4, "cut": 0.7, "pierce": 0.5 }
+    },
+    "description": "A light suit of hardened steel plate with a thin breastplate, pauldrons and jointed guards for the arms and legs, mail filling the gaps at the elbows and knees. Thin enough to move in, hard enough to turn a blade.",
+    "reference": "armor_ch_lightplate",
+    "variants": ["xl_armor_ch_lightplate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 1250 mm from the shoulder straps to the ankle and 840 mm across: a curved breastplate with a middle ridge and rolled neck and arm edges, two fauld lames and a mail skirt below it, domed pauldrons, and on each side an arm harness (upper guard, elbow cop with its fan, mail at the elbow, forearm guard) and below a leg harness (thigh guard, knee cop with its wing, mail behind the knee, greave), all strapped in black leather. CHECK VOLUME LENGTH: the reference gives the suit packed into a 600 mm bundle; laid out flat its box is far longer and emptier. The thin breastplate and smaller pauldrons set it apart from the middle suit. Plate in `steel-hardened`. Slot `vest`, as batch 110's cardboard armour and earlier armour batches have it, though the suit also covers the arms and legs; Deadvox has no whole-body armour slot. Protection is a judgement for hardened plate over mail: very strong against cuts, strong against points and fair against blows. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_ch_metal_sheets",
+    "model": "armor_ch_metal_sheets",
+    "name": "Hardened sheet metal armour",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 21,
+      "warmth": 10,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.2, "blunt": 0.4, "cut": 0.7, "pierce": 0.5 }
+    },
+    "description": "A full suit hammered out of flat sheet steel and case-hardened: a chest sheet still showing locker vents, hip sheets and bent guards strapped over the arms and legs. Crude, heavy and very hard to bite through.",
+    "reference": "armor_ch_metal_sheets",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, about 1280 mm long and 840 mm across: a shallow chest sheet over a wider back sheet, two banks of louvre vents left from the lockers it was cut from, rows of rivets down each side, two hip sheets, a riveted shoulder sheet on each side, and arm and leg guards bent from flat stock in three facets, buckled on with tan leather straps. Steel in `steel-hardened`; the vents are dark slots under raised slats. The box is close to the reference length, as the reference gives the suit at 1200 mm. Slot `vest`, as batch 110's cardboard armour and earlier armour batches have it, though the suit also covers the arms and legs; Deadvox has no whole-body armour slot. Protection is a judgement for hardened sheet steel: strong against cuts, fair against points and blows. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_ch_metal_sheets_chain",
+    "model": "armor_ch_metal_sheets_chain",
+    "name": "Hardened scrap plate armour",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 25,
+      "warmth": 10,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.2, "blunt": 0.45, "cut": 0.78, "pierce": 0.58 }
+    },
+    "description": "Sheet steel armour joined with mail at the shoulders, elbows and knees and finished with a mail skirt, then case-hardened. Rough to look at but carefully built, with no gaps a bite could find.",
+    "reference": "armor_ch_metal_sheets_chain",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, about 1280 mm long and 840 mm across: a shallow chest sheet over a wider back sheet, two banks of louvre vents left from the lockers it was cut from, rows of rivets down each side, two hip sheets, a riveted shoulder sheet on each side, and arm and leg guards bent from flat stock in three facets, buckled on with tan leather straps. Mail joins the shoulders, elbows and knees, and a mail skirt hangs below the hip sheets. Steel in `steel-hardened`; the vents are dark slots under raised slats. The box is close to the reference length, as the reference gives the suit at 1200 mm. Slot `vest`, as batch 110's cardboard armour and earlier armour batches have it, though the suit also covers the arms and legs; Deadvox has no whole-body armour slot. Protection is a judgement for hardened sheet steel: strong against cuts, fair against points and blows. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_ch_metal_sheets_chain_heavy",
+    "model": "armor_ch_metal_sheets_chain_heavy",
+    "name": "Heavy hardened scrap plate armour",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 32,
+      "warmth": 10,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.2, "blunt": 0.55, "cut": 0.86, "pierce": 0.66 }
+    },
+    "description": "Mail-joined sheet steel armour with a doubled chest sheet, case-hardened all over. The best protection scrap can give, for someone willing to move like a cupboard.",
+    "reference": "armor_ch_metal_sheets_chain_heavy",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, about 1280 mm long and 840 mm across: a shallow chest sheet over a wider back sheet, two banks of louvre vents left from the lockers it was cut from, rows of rivets down each side, two hip sheets, a riveted shoulder sheet on each side, and arm and leg guards bent from flat stock in three facets, buckled on with tan leather straps. Mail joins the shoulders, elbows and knees, a mail skirt hangs below the hip sheets, and a second chest sheet is riveted over the first. Steel in `steel-hardened`; the vents are dark slots under raised slats. The box is close to the reference length, as the reference gives the suit at 1200 mm. Slot `vest`, as batch 110's cardboard armour and earlier armour batches have it, though the suit also covers the arms and legs; Deadvox has no whole-body armour slot. Protection is a judgement for hardened sheet steel: strong against cuts, fair against points and blows. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_ch_metal_sheets_heavy",
+    "model": "armor_ch_metal_sheets_heavy",
+    "name": "Heavy hardened sheet metal armour",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 30,
+      "warmth": 10,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.2, "blunt": 0.5, "cut": 0.8, "pierce": 0.6 }
+    },
+    "description": "Case-hardened sheet steel armour with a second sheet riveted over the chest, so the body is doubly covered. It stops almost anything aimed at the torso and makes the wearer slow.",
+    "reference": "armor_ch_metal_sheets_heavy",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, about 1280 mm long and 840 mm across: a shallow chest sheet over a wider back sheet, two banks of louvre vents left from the lockers it was cut from, rows of rivets down each side, two hip sheets, a riveted shoulder sheet on each side, and arm and leg guards bent from flat stock in three facets, buckled on with tan leather straps. A second chest sheet is riveted over the first, which sets it apart from the plain suit. Steel in `steel-hardened`; the vents are dark slots under raised slats. The box is close to the reference length, as the reference gives the suit at 1200 mm. Slot `vest`, as batch 110's cardboard armour and earlier armour batches have it, though the suit also covers the arms and legs; Deadvox has no whole-body armour slot. Protection is a judgement for hardened sheet steel: strong against cuts, fair against points and blows. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_ch_plate",
+    "model": "armor_ch_plate",
+    "name": "Hardened steel plate armour",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 20,
+      "warmth": 20,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.2, "blunt": 0.5, "cut": 0.8, "pierce": 0.6 }
+    },
+    "description": "A full suit of hardened steel plate: a ridged breastplate over a mail skirt, pauldrons, and jointed guards for the arms and legs with mail at the elbows and knees. Heavy, but few blades or teeth get through.",
+    "reference": "armor_ch_plate",
+    "variants": ["xl_armor_ch_plate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 1250 mm from the shoulder straps to the ankle and 840 mm across: a curved breastplate with a middle ridge and rolled neck and arm edges, three fauld lames and a mail skirt below it, domed pauldrons, and on each side an arm harness (upper guard, elbow cop with its fan, mail at the elbow, forearm guard) and below a leg harness (thigh guard, knee cop with its wing, mail behind the knee, greave), all strapped in black leather. CHECK VOLUME LENGTH: the reference gives the suit packed into a 600 mm bundle; laid out flat its box is far longer and emptier. Plate in `steel-hardened`. Slot `vest`, as batch 110's cardboard armour and earlier armour batches have it, though the suit also covers the arms and legs; Deadvox has no whole-body armour slot. Protection is a judgement for hardened plate over mail: very strong against cuts, strong against points and fair against blows. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_chitin",
+    "model": "armor_chitin",
+    "name": "Chitin armour",
+    "category": "clothing",
+    "size": [3, 6],
+    "economy": { "usage": ["Residential", "Infected"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 10,
+      "warmth": 10,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.3, "blunt": 0.3, "cut": 0.55, "pierce": 0.4 }
+    },
+    "description": "A cuirass and leg guards built from the shells of giant insects, overlapping like the plates on a beetle's back and laced together with rawhide. Light, stiff and hard to cut.",
+    "reference": "armor_chitin",
+    "variants": ["xl_armor_chitin", "armor_chitin_xs"],
+    "notes": "Laid out flat, front up, neck towards -z, 1120 mm long and 440 mm across: eight overlapping curved shell segments with a raised keel down the middle and rawhide lacing at each side, two rounded shoulder guards over the top corners, and each leg guard a run of eight shell rings that narrow towards the ankle, tied with rawhide. It covers the body and legs, not the arms, as the reference gives. CHECK LENGTH: the reference gives the suit packed into a 600 mm bundle; laid out flat it is longer. Slot `vest`, as batch 110's cardboard armour and earlier armour batches have it, though the suit also covers the legs; Deadvox has no whole-body armour slot. Protection is a judgement for thick insect shell: good against cuts, fair against points and blows, and it shrugs off acid better than metal. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_farmor",
+    "model": "armor_farmor",
+    "name": "Fur armour",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 17,
+      "warmth": 45,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0.05, "blunt": 0.25, "cut": 0.3, "pierce": 0.15 }
+    },
+    "description": "A heavy coat and leggings of layered fur and hide, tied shut with rawhide. It turns a bite or a scrape and keeps out the worst of the cold.",
+    "reference": "armor_farmor",
+    "variants": ["xl_armor_farmor", "armor_farmor_xs"],
+    "notes": "Folded on a shelf, 300 mm by 300 mm and 140 mm tall in four layers: a thick fur coat with its rolled sleeves along both sides, a deep fur collar, a rawhide strip and three pairs of rawhide ties down the front, and shaggy tufts standing up over the top; the leggings are folded inside. Slot `torso`, as the gambesons and other coats have it, though it also covers the arms and legs; Deadvox has no whole-body slot. Protection is a judgement for thick hide and fur: fair against bites and blows, weak against points. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_faux_farmor",
+    "model": "armor_farmor",
+    "name": "Faux fur armour",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 21,
+      "warmth": 40,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0.05, "blunt": 0.22, "cut": 0.28, "pierce": 0.12 }
+    },
+    "finishes": { "cloth": "fur-pale", "collar": "fur-pale", "sleeve": "fur-pale", "tuft": "fur-pale" },
+    "description": "A heavy coat and leggings of thick synthetic fur over padding, tied shut with cord. Warm and padded, if a little stiffer than the real thing.",
+    "reference": "armor_faux_farmor",
+    "variants": ["xl_armor_faux_farmor", "armor_faux_farmor_xs"],
+    "notes": "Shares the fur armour's model with the fur in `fur-pale`, which doubles as faux fur. Folded on a shelf, 300 mm by 300 mm and 140 mm tall in four layers: a thick fur coat with its rolled sleeves along both sides, a deep fur collar, a rawhide strip and three pairs of rawhide ties down the front, and shaggy tufts standing up over the top; the leggings are folded inside. Slot `torso`, as the gambesons and other coats have it, though it also covers the arms and legs; Deadvox has no whole-body slot. Protection is a judgement for thick hide and fur: fair against bites and blows, weak against points. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_hc_heavyplate",
+    "model": "armor_ch_heavyplate",
+    "name": "Heavy high steel plate armour",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 25,
+      "warmth": 20,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.25, "blunt": 0.6, "cut": 0.88, "pierce": 0.7 }
+    },
+    "finishes": { "plate": "steel-blued", "ridge": "steel-blued" },
+    "description": "A heavy suit of high-carbon steel plate with a thick breastplate and a second plate riveted over the belly, broad pauldrons and full guards for the arms and legs. Almost nothing gets through, and every step shows it.",
+    "reference": "armor_hc_heavyplate",
+    "variants": ["xl_armor_hc_heavyplate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 1250 mm from the shoulder straps to the ankle and 840 mm across: a curved breastplate with a middle ridge and rolled neck and arm edges, four fauld lames and a mail skirt below it, domed pauldrons, and on each side an arm harness (upper guard, elbow cop with its fan, mail at the elbow, forearm guard) and below a leg harness (thigh guard, knee cop with its wing, mail behind the knee, greave), all strapped in black leather. CHECK VOLUME LENGTH: the reference gives the suit packed into a 600 mm bundle; laid out flat its box is far longer and emptier. The plackart riveted over the lower breastplate, four lames and broad pauldrons set it apart. Shares the hardened steel suit's model with the plate drawn in `steel-blued`, the finish for high steel. Slot `vest`, as batch 110's cardboard armour and earlier armour batches have it, though the suit also covers the arms and legs; Deadvox has no whole-body armour slot. Protection is a judgement for high steel plate over mail, matching the hardened suit. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_hc_lightplate",
+    "model": "armor_ch_lightplate",
+    "name": "Light high steel plate armour",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 15,
+      "warmth": 20,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.15, "blunt": 0.4, "cut": 0.7, "pierce": 0.5 }
+    },
+    "finishes": { "plate": "steel-blued", "ridge": "steel-blued" },
+    "description": "A light suit of high-carbon steel plate with a thin breastplate, pauldrons and jointed guards for the arms and legs, mail filling the gaps at the elbows and knees. Thin enough to move in, hard enough to turn a blade.",
+    "reference": "armor_hc_lightplate",
+    "variants": ["xl_armor_hc_lightplate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 1250 mm from the shoulder straps to the ankle and 840 mm across: a curved breastplate with a middle ridge and rolled neck and arm edges, two fauld lames and a mail skirt below it, domed pauldrons, and on each side an arm harness (upper guard, elbow cop with its fan, mail at the elbow, forearm guard) and below a leg harness (thigh guard, knee cop with its wing, mail behind the knee, greave), all strapped in black leather. CHECK VOLUME LENGTH: the reference gives the suit packed into a 600 mm bundle; laid out flat its box is far longer and emptier. The thin breastplate and smaller pauldrons set it apart from the middle suit. Shares the hardened steel suit's model with the plate drawn in `steel-blued`, the finish for high steel. Slot `vest`, as batch 110's cardboard armour and earlier armour batches have it, though the suit also covers the arms and legs; Deadvox has no whole-body armour slot. Protection is a judgement for high steel plate over mail, matching the hardened suit. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_hc_plate",
+    "model": "armor_ch_plate",
+    "name": "High steel plate armour",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 20,
+      "warmth": 20,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.2, "blunt": 0.5, "cut": 0.8, "pierce": 0.6 }
+    },
+    "finishes": { "plate": "steel-blued", "ridge": "steel-blued" },
+    "description": "A full suit of high-carbon steel plate: a ridged breastplate over a mail skirt, pauldrons, and jointed guards for the arms and legs with mail at the elbows and knees. Heavy, but few blades or teeth get through.",
+    "reference": "armor_hc_plate",
+    "variants": ["xl_armor_hc_plate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 1250 mm from the shoulder straps to the ankle and 840 mm across: a curved breastplate with a middle ridge and rolled neck and arm edges, three fauld lames and a mail skirt below it, domed pauldrons, and on each side an arm harness (upper guard, elbow cop with its fan, mail at the elbow, forearm guard) and below a leg harness (thigh guard, knee cop with its wing, mail behind the knee, greave), all strapped in black leather. CHECK VOLUME LENGTH: the reference gives the suit packed into a 600 mm bundle; laid out flat its box is far longer and emptier. Shares the hardened steel suit's model with the plate drawn in `steel-blued`, the finish for high steel. Slot `vest`, as batch 110's cardboard armour and earlier armour batches have it, though the suit also covers the arms and legs; Deadvox has no whole-body armour slot. Protection is a judgement for high steel plate over mail, matching the hardened suit. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_junk_lightplate",
+    "model": "armor_junk_lightplate",
+    "name": "Rusted plate armour",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 35,
+      "warmth": 25,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.1, "blunt": 0.3, "cut": 0.55, "pierce": 0.4 }
+    },
+    "description": "An old suit of fluted plate armour, the kind once kept for show. Its steel is pitted with rust and its straps are cracked and fraying, but it still stops a blade.",
+    "reference": "armor_junk_lightplate",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, about 1250 mm from the shoulder straps to the ankle and 840 mm across: a curved breastplate with a middle ridge and rolled neck and arm edges, three fauld lames and a mail skirt below it, domed pauldrons, and on each side an arm harness (upper guard, elbow cop with its fan, mail at the elbow, forearm guard) and below a leg harness (thigh guard, knee cop with its wing, mail behind the knee, greave), all strapped in black leather. CHECK VOLUME LENGTH: the reference gives the suit packed into a 600 mm bundle; laid out flat its box is far longer and emptier. Fluted ridges fan down the breastplate in bright steel over dull iron-grey plate, with rust patches on the chest, an arm and a leg, mail gone rusty red, and frayed tan straps hanging loose off the arm and leg. Low-grade steel reads as `iron-dull`. Slot `vest`, as batch 110's cardboard armour and earlier armour batches have it, though the suit also covers the arms and legs; Deadvox has no whole-body armour slot. Protection is a judgement for thin, corroded mild steel: fair against cuts, weaker against points and blows, and it wears quickly. The worn look is pending: no worn model is authored."
+  }
+]

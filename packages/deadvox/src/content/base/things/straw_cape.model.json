@@ -1,0 +1,11 @@
+{
+  "id": "straw_cape",
+  "file": "assets/models/straw_cape.glb",
+  "parts": {
+    "straw_cape": {
+      "node": "straw_cape:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-2.1367274460523794e-19, 0.022860574749757844, 0.018556538585728168]
+    }
+  }
+}

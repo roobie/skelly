@@ -1,0 +1,10 @@
+{
+  "id": "alcohol_wipes",
+  "file": "assets/models/alcohol_wipes.glb",
+  "parts": {
+    "alcohol_wipes": { "node": "alcohol_wipes:compound", "massKg": 0.12, "centreOfMass": [0, 0.03205571310950507, 0] }
+  },
+  "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "chainmail_junk_vest",
+  "file": "assets/models/chainmail_junk_vest.glb",
+  "parts": {
+    "chainmail_junk_vest": {
+      "node": "chainmail_junk_vest:compound",
+      "massKg": 5.6,
+      "centreOfMass": [0.00008464998270095728, 0.03271011746873817, -0.003949223190602504]
+    }
+  }
+}

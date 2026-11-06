@@ -1,0 +1,11 @@
+{
+  "id": "skirt_leather",
+  "file": "assets/models/skirt_leather.glb",
+  "parts": {
+    "skirt_leather": {
+      "node": "skirt_leather:compound",
+      "massKg": 0.19,
+      "centreOfMass": [0.0005823442136498517, 0.00453560830860534, 0.001486646884272996]
+    }
+  }
+}

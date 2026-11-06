@@ -1,0 +1,19 @@
+{
+  "id": "military_ambulance_front_bumper",
+  "file": "assets/models/military_ambulance_front_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 110,
+      "centreOfMass": [3.3310141910265125, 1.0986892420122365, 0],
+      "collision": [
+        { "min": [3.25, 0.96875, -1.15625], "max": [3.40625, 1.1875, 1.15625] },
+        { "min": [3.28125, 1.1875, -0.25], "max": [3.40625, 1.34375, 0.25] },
+        { "min": [3.40625, 1.03125, 0.5], "max": [3.46875, 1.15625, 0.5625] },
+        { "min": [3.40625, 1.03125, -0.5625], "max": [3.46875, 1.15625, -0.5] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

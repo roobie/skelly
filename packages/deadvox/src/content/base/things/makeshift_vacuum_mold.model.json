@@ -1,0 +1,11 @@
+{
+  "id": "makeshift_vacuum_mold",
+  "file": "assets/models/makeshift_vacuum_mold.glb",
+  "parts": {
+    "makeshift_vacuum_mold": {
+      "node": "makeshift_vacuum_mold:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0.009164220183486215, 0.04232460383653035, -0.0023265221017514533]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "armguard_lightplate",
+  "file": "assets/models/armguard_lightplate.glb",
+  "parts": {
+    "armguard_lightplate": {
+      "node": "armguard_lightplate:compound",
+      "massKg": 2.5,
+      "centreOfMass": [0.013655783507623543, 0.02718879220882895, 0.0008851281232537489]
+    }
+  }
+}

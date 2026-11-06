@@ -1,0 +1,11 @@
+{
+  "id": "binder_top",
+  "file": "assets/models/binder_top.glb",
+  "parts": {
+    "binder_top": {
+      "node": "binder_top:compound",
+      "massKg": 0.13,
+      "centreOfMass": [1.8234713046155894e-19, 0.0027550620509470937, 0.008082625734813846]
+    }
+  }
+}

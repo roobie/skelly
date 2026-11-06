@@ -1,0 +1,11 @@
+{
+  "id": "mask_rioter",
+  "file": "assets/models/mask_rioter.glb",
+  "parts": {
+    "mask_rioter": {
+      "node": "mask_rioter:compound",
+      "massKg": 0.22,
+      "centreOfMass": [-0.0000075471698113205, 0.007692637809840917, -0.019809396966333714]
+    }
+  }
+}

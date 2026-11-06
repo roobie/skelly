@@ -1,0 +1,14 @@
+{
+  "id": "fishing_rod_tele_packed",
+  "file": "assets/models/fishing_rod_tele_packed.glb",
+  "parts": {
+    "fishing_rod_tele_packed": {
+      "node": "fishing_rod_tele_packed:compound",
+      "massKg": 0.42,
+      "centreOfMass": [-0.018809523809523804, 0.016369089390142026, 0.02253160679476469]
+    }
+  },
+  "grip": { "at": [-0.15000000000000002, 0.017, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

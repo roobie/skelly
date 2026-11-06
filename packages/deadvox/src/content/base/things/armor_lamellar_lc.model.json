@@ -1,0 +1,11 @@
+{
+  "id": "armor_lamellar_lc",
+  "file": "assets/models/armor_lamellar_lc.glb",
+  "parts": {
+    "armor_lamellar_lc": {
+      "node": "armor_lamellar_lc:compound",
+      "massKg": 12,
+      "centreOfMass": [-1.9255950408617135e-18, 0.017077884935151305, 0.06233628200864632]
+    }
+  }
+}

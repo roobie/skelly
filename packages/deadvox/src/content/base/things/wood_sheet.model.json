@@ -1,0 +1,7 @@
+{
+  "id": "wood_sheet",
+  "file": "assets/models/wood_sheet.glb",
+  "parts": {
+    "wood_sheet": { "node": "wood_sheet:compound", "massKg": 21, "centreOfMass": [0, 0.005999999999999999, 0] }
+  }
+}

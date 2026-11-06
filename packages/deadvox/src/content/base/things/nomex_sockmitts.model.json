@@ -1,0 +1,11 @@
+{
+  "id": "nomex_sockmitts",
+  "file": "assets/models/nomex_sockmitts.glb",
+  "parts": {
+    "nomex_sockmitts": {
+      "node": "nomex_sockmitts:compound",
+      "massKg": 0.08,
+      "centreOfMass": [1.1396811966836976e-18, 0.006265086800771562, -0.041216313033893635]
+    }
+  }
+}

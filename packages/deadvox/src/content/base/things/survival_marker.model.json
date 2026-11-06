@@ -1,0 +1,14 @@
+{
+  "id": "survival_marker",
+  "file": "assets/models/survival_marker.glb",
+  "parts": {
+    "survival_marker": {
+      "node": "survival_marker:compound",
+      "massKg": 0.0052,
+      "centreOfMass": [-0.015454712137880453, 3.667033370003751e-7, 3.667033370003751e-7]
+    }
+  },
+  "grip": { "at": [-0.024, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

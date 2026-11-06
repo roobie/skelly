@@ -1,0 +1,11 @@
+{
+  "id": "bra",
+  "file": "assets/models/bra.glb",
+  "parts": {
+    "bra": {
+      "node": "bra:compound",
+      "massKg": 0.051,
+      "centreOfMass": [8.65473394582729e-18, 0.011138708575333108, 0.007524256918346433]
+    }
+  }
+}

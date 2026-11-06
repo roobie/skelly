@@ -1,0 +1,11 @@
+{
+  "id": "krar_golden",
+  "file": "assets/models/krar_golden.glb",
+  "parts": {
+    "krar_golden": {
+      "node": "krar_golden:compound",
+      "massKg": 18,
+      "centreOfMass": [0, 0.38951178224111804, -0.039280750623075816]
+    }
+  }
+}

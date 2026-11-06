@@ -1,0 +1,14 @@
+{
+  "id": "heavy_flashlight",
+  "file": "assets/models/heavy_flashlight.glb",
+  "parts": {
+    "heavy_flashlight": {
+      "node": "heavy_flashlight:compound",
+      "massKg": 0.54,
+      "centreOfMass": [0, 0.08008207343412525, 0.0015460435892401332]
+    }
+  },
+  "grip": { "at": [0, 0.066, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

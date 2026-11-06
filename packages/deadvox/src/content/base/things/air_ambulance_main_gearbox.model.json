@@ -1,0 +1,14 @@
+{
+  "id": "air_ambulance_main_gearbox",
+  "file": "assets/models/air_ambulance_main_gearbox.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 130,
+      "centreOfMass": [0, 0.1384548611111111, 0],
+      "collision": [{ "min": [-0.25, 0, -0.25], "max": [0.25, 0.375, 0.25] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

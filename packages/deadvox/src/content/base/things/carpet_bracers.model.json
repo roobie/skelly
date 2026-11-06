@@ -1,0 +1,11 @@
+{
+  "id": "carpet_bracers",
+  "file": "assets/models/carpet_bracers.glb",
+  "parts": {
+    "carpet_bracers": {
+      "node": "carpet_bracers:compound",
+      "massKg": 0.3,
+      "centreOfMass": [0.11041376300283688, 0.034941878227977, 0.0170079290026915]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "tool_pouch",
+  "file": "assets/models/tool_pouch.glb",
+  "parts": {
+    "tool_pouch": {
+      "node": "tool_pouch:compound",
+      "massKg": 0.12,
+      "centreOfMass": [0.0000873965041398344, 0.09024103035878568, 0.0000510579576816928]
+    }
+  }
+}

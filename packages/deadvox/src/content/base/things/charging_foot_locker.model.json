@@ -1,0 +1,11 @@
+{
+  "id": "charging_foot_locker",
+  "file": "assets/models/charging_foot_locker.glb",
+  "parts": {
+    "charging_foot_locker": {
+      "node": "charging_foot_locker:compound",
+      "massKg": 53,
+      "centreOfMass": [0.000012938825991818092, 0.24181200646941295, 0.0009360669774521928]
+    }
+  }
+}

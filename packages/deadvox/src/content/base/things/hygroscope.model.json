@@ -1,0 +1,11 @@
+{
+  "id": "hygroscope",
+  "file": "assets/models/hygroscope.glb",
+  "parts": {
+    "hygroscope": {
+      "node": "hygroscope:compound",
+      "massKg": 0.8,
+      "centreOfMass": [0.00025492388406295706, 0.2027305409821967, 0.0024327857572890707]
+    }
+  }
+}

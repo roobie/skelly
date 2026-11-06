@@ -1,0 +1,11 @@
+{
+  "id": "union_suit",
+  "file": "assets/models/union_suit.glb",
+  "parts": {
+    "union_suit": {
+      "node": "union_suit:compound",
+      "massKg": 0.45,
+      "centreOfMass": [1.2278630089479761e-19, 0.02145982855234348, -0.016163654581214982]
+    }
+  }
+}

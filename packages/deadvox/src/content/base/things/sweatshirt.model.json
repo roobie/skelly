@@ -1,0 +1,11 @@
+{
+  "id": "sweatshirt",
+  "file": "assets/models/sweatshirt.glb",
+  "parts": {
+    "sweatshirt": {
+      "node": "sweatshirt:compound",
+      "massKg": 0.6,
+      "centreOfMass": [1.1705147338542062e-8, 0.043218037632048706, -0.00673667515289849]
+    }
+  }
+}

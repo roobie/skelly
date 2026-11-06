@@ -1,0 +1,14 @@
+{
+  "id": "esbit_stove",
+  "file": "assets/models/esbit_stove.glb",
+  "parts": {
+    "esbit_stove": {
+      "node": "esbit_stove:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0, 0.01784200567644276, 3.912869501196914e-19]
+    }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

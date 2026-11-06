@@ -1,0 +1,11 @@
+{
+  "id": "qt_light_leg_guard",
+  "file": "assets/models/qt_light_leg_guard.glb",
+  "parts": {
+    "qt_light_leg_guard": {
+      "node": "qt_light_leg_guard:compound",
+      "massKg": 3.1,
+      "centreOfMass": [-0.03393972550148765, 0.026066033208561285, 0.005802284288319412]
+    }
+  }
+}

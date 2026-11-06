@@ -1,0 +1,14 @@
+{
+  "id": "alarmclock",
+  "file": "assets/models/alarmclock.glb",
+  "parts": {
+    "alarmclock": {
+      "node": "alarmclock:compound",
+      "massKg": 0.5,
+      "centreOfMass": [0.000011288658181931868, 0.07162481628568754, 0.0020301135119922464]
+    }
+  },
+  "grip": { "at": [0, 0.07100000000000001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

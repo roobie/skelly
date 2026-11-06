@@ -1,0 +1,310 @@
+[
+  {
+    "id": "ch_brigandine_hands",
+    "model": "qt_brigandine_hands",
+    "name": "Hardened brigandine gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 12,
+      "warmth": 10,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.71, "pierce": 0.52 }
+    },
+    "finishes": { "plate": "steel-hardened", "rivet": "steel-hardened" },
+    "description": "Heavy canvas gloves with small plates of hardened steel riveted over the back of the hand and down each finger. Stiff in the fingers, but a blade skids off them.",
+    "reference": "ch_brigandine_hands",
+    "variants": ["xl_ch_brigandine_hands", "ch_brigandine_hands_xs"],
+    "notes": "Laid side by side, back up, thumbs inward: each glove is 240 mm from cuff to fingertip, canvas with a curved steel plate over the back of the hand, two plates down each finger and the thumb, and a buckled cuff strap. CHECK VOLUME: the model's box is the pair laid out flat, while the reference volume is the pair stacked. Slot `hands` follows batch 109's tempered gloves: no earlier slot covers the hands. Encumbrance follows the reference; warmth is a guess for canvas gloves. Rides on batch 109's `qt_brigandine_hands` model with plates and rivets in `steel-hardened`. Size variants share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_elbow_guards",
+    "model": "qt_elbow_guards",
+    "name": "Hardened elbow guards",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "elbows",
+      "encumbrance": 0,
+      "warmth": 1,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.1, "blunt": 0.39, "cut": 0.69, "pierce": 0.51 }
+    },
+    "finishes": { "plate": "steel-hardened", "rivet": "steel-hardened" },
+    "description": "A pair of small domed elbow cups of hardened steel, each with a side wing and two leather straps. Light enough to wear over vambraces or mail.",
+    "reference": "ch_elbow_guards",
+    "variants": ["xl_ch_elbow_guards", "ch_elbow_guards_xs"],
+    "notes": "Laid side by side, convex side up: each guard is a domed steel cup over the joint with a curved lame above and below it, a round wing on the outer side and two buckled leather straps behind, 150 mm from top to foot. Slot `elbows` follows batch 109's tempered elbow guards: `arms` is taken by vambraces and arm guards, which elbow guards are worn over. Encumbrance follows the reference; warmth is a guess for a bare plate. Rides on batch 109's `qt_elbow_guards` model with plates and rivets in `steel-hardened`. Size variants share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_greaves_brigandine",
+    "model": "qt_greaves_brigandine",
+    "name": "Hardened splint greaves",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 4,
+      "warmth": 8,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.1, "blunt": 0.42, "cut": 0.75, "pierce": 0.55 }
+    },
+    "finishes": { "rivet": "steel-hardened", "splint": "steel-hardened" },
+    "description": "Canvas shin guards lined with strips of hardened steel and closed with three buckled straps. They cover the leg from knee to ankle and fit over mail.",
+    "reference": "ch_greaves_brigandine",
+    "variants": ["xl_ch_greaves_brigandine", "xs_ch_greaves_brigandine"],
+    "notes": "Laid side by side, open side down: each greave is a canvas shell curved across the shin, 380 mm from knee to ankle and 160 mm across at the calf, with six steel splints riveted along it, leather binding at both ends and three buckled straps. CHECK VOLUME: the model's box is the pair laid out flat with their straps spread, while the reference volume is the pair stacked. Slot `shins` follows batch 109's tempered greaves: `legs` is taken by trousers, which greaves are worn over. Encumbrance follows the reference; warmth is a guess for padded canvas. Rides on batch 109's `qt_greaves_brigandine` model with splints and rivets in `steel-hardened`. Size variants share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_knee_guards",
+    "model": "mc_knee_guards",
+    "name": "Hardened knee guards",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "knees",
+      "encumbrance": 0,
+      "warmth": 1,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.1, "blunt": 0.39, "cut": 0.69, "pierce": 0.51 }
+    },
+    "finishes": { "plate": "steel-hardened", "rivet": "steel-hardened" },
+    "description": "A pair of thin domed knee cups of hardened steel, with a small wing to cover the side of the joint. They strap on over greaves or mail.",
+    "reference": "ch_knee_guards",
+    "variants": ["xl_ch_knee_guards", "ch_knee_guards_xs"],
+    "notes": "Laid side by side, convex side up: each guard is a domed steel cup over the joint with a curved lame above and below it, a round wing on the outer side and two buckled leather straps behind, 200 mm from top to foot and 190 mm across the wing. CHECK VOLUME: the model's box is the pair laid out flat with their straps spread, while the reference volume is the pair stacked. Slot `knees` follows batch 109's knee guards: `legs` is taken by trousers, and knee guards are worn over greaves. Encumbrance follows the reference; warmth is a guess for a bare plate. Rides on batch 109's `mc_knee_guards` model with plates and rivets in `steel-hardened`. Size variants share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_shoulder_guards",
+    "model": "mc_shoulder_guards",
+    "name": "Hardened shoulder guards",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 4,
+      "warmth": 2,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.1, "blunt": 0.42, "cut": 0.75, "pierce": 0.55 }
+    },
+    "fits": ["brigandine"],
+    "finishes": { "plate": "steel-hardened", "rivet": "steel-hardened" },
+    "description": "A pair of overlapping hardened steel shoulder plates with leather points at the collar, made to be laced onto a brigandine.",
+    "reference": "ch_shoulder_guards",
+    "variants": ["xl_ch_shoulder_guards", "ch_shoulder_guards_xs"],
+    "notes": "Laid side by side, convex side up: each guard is a cap plate and three overlapping riveted lames running down the arm, 190 mm from collar to arm and 175 mm across, with two leather lacing points at the collar. CHECK VOLUME: the model's box is the pair laid out flat, while the reference volume is the pair stacked. Worn by mounting on a brigandine's shoulder points, so it `fits` `brigandine` and its `wearable` has no slot. The reference gives no worn data: protection and wear follow the hardened steel vambraces, with the same encumbrance and less warmth for bare lames on leather. Rides on batch 109's `mc_shoulder_guards` model with plates and rivets in `steel-hardened`. Size variants share the model."
+  },
+  {
+    "id": "ch_vambrace_brigandine",
+    "model": "mc_vambrace_brigandine",
+    "name": "Hardened splint vambraces",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 4,
+      "warmth": 8,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.1, "blunt": 0.42, "cut": 0.75, "pierce": 0.55 }
+    },
+    "finishes": { "rivet": "steel-hardened", "splint": "steel-hardened" },
+    "description": "Canvas forearm guards with strips of hardened steel riveted between the layers, buckled on with two straps. They flex with the arm and fit over mail.",
+    "reference": "ch_vambrace_brigandine",
+    "variants": ["xl_ch_vambrace_brigandine", "xs_ch_vambrace_brigandine"],
+    "notes": "Laid side by side, open side down: each vambrace is a canvas shell curved across the forearm, 280 mm from elbow to wrist and 140 mm across at the elbow, with five steel splints riveted along it, leather binding at both ends and two buckled straps. CHECK LENGTH: the reference gives a 120 mm longest side, too short for any forearm guard; the model keeps a real vambrace's length. Slot `arms` follows the earlier batches' arm guards. Encumbrance follows the reference; warmth is a guess for padded canvas. Rides on batch 109's `mc_vambrace_brigandine` model with splints and rivets in `steel-hardened`. Size variants share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_brigandine_hands",
+    "model": "qt_brigandine_hands",
+    "name": "High steel brigandine gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 12,
+      "warmth": 10,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.38, "cut": 0.66, "pierce": 0.48 }
+    },
+    "finishes": { "plate": "steel-blued", "rivet": "steel-blued" },
+    "description": "Heavy canvas gloves with small plates of high carbon steel riveted over the back of the hand and down each finger. They make fine work clumsy.",
+    "reference": "hc_brigandine_hands",
+    "variants": ["xl_hc_brigandine_hands", "hc_brigandine_hands_xs"],
+    "notes": "Laid side by side, back up, thumbs inward: each glove is 240 mm from cuff to fingertip, canvas with a curved steel plate over the back of the hand, two plates down each finger and the thumb, and a buckled cuff strap. CHECK VOLUME: the model's box is the pair laid out flat, while the reference volume is the pair stacked. Slot `hands` follows batch 109's tempered gloves: no earlier slot covers the hands. Encumbrance follows the reference; warmth is a guess for canvas gloves. Rides on batch 109's `qt_brigandine_hands` model with plates and rivets in `steel-blued`, the run's finish for high carbon steel. Size variants share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_elbow_guards",
+    "model": "qt_elbow_guards",
+    "name": "High steel elbow guards",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "elbows",
+      "encumbrance": 0,
+      "warmth": 1,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.37, "cut": 0.65, "pierce": 0.47 }
+    },
+    "finishes": { "plate": "steel-blued", "rivet": "steel-blued" },
+    "description": "A pair of small domed elbow cups of high carbon steel, each with a side wing and two leather straps. They sit over vambraces or mail.",
+    "reference": "hc_elbow_guards",
+    "variants": ["xl_hc_elbow_guards", "hc_elbow_guards_xs"],
+    "notes": "Laid side by side, convex side up: each guard is a domed steel cup over the joint with a curved lame above and below it, a round wing on the outer side and two buckled leather straps behind, 150 mm from top to foot. Slot `elbows` follows batch 109's tempered elbow guards: `arms` is taken by vambraces and arm guards, which elbow guards are worn over. Encumbrance follows the reference; warmth is a guess for a bare plate. Rides on batch 109's `qt_elbow_guards` model with plates and rivets in `steel-blued`, the run's finish for high carbon steel. Size variants share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_greaves_brigandine",
+    "model": "qt_greaves_brigandine",
+    "name": "High steel splint greaves",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 4,
+      "warmth": 8,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.7, "pierce": 0.5 }
+    },
+    "finishes": { "rivet": "steel-blued", "splint": "steel-blued" },
+    "description": "Canvas shin guards with strips of high carbon steel riveted between the layers, closed with three buckled straps. They fit over mail.",
+    "reference": "hc_greaves_brigandine",
+    "variants": ["xl_hc_greaves_brigandine", "xs_hc_greaves_brigandine"],
+    "notes": "Laid side by side, open side down: each greave is a canvas shell curved across the shin, 380 mm from knee to ankle and 160 mm across at the calf, with six steel splints riveted along it, leather binding at both ends and three buckled straps. CHECK VOLUME: the model's box is the pair laid out flat with their straps spread, while the reference volume is the pair stacked. Slot `shins` follows batch 109's tempered greaves: `legs` is taken by trousers, which greaves are worn over. Encumbrance follows the reference; warmth is a guess for padded canvas. Rides on batch 109's `qt_greaves_brigandine` model with splints and rivets in `steel-blued`, the run's finish for high carbon steel. Size variants share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_knee_guards",
+    "model": "mc_knee_guards",
+    "name": "High steel knee guards",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "knees",
+      "encumbrance": 0,
+      "warmth": 1,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.37, "cut": 0.65, "pierce": 0.47 }
+    },
+    "finishes": { "plate": "steel-blued", "rivet": "steel-blued" },
+    "description": "A pair of thin domed knee cups of high carbon steel, with a small wing to cover the side of the joint. Light enough to wear over greaves.",
+    "reference": "hc_knee_guards",
+    "variants": ["xl_hc_knee_guards", "hc_knee_guards_xs"],
+    "notes": "Laid side by side, convex side up: each guard is a domed steel cup over the joint with a curved lame above and below it, a round wing on the outer side and two buckled leather straps behind, 200 mm from top to foot and 190 mm across the wing. CHECK VOLUME: the model's box is the pair laid out flat with their straps spread, while the reference volume is the pair stacked. Slot `knees` follows batch 109's knee guards: `legs` is taken by trousers, and knee guards are worn over greaves. Encumbrance follows the reference; warmth is a guess for a bare plate. Rides on batch 109's `mc_knee_guards` model with plates and rivets in `steel-blued`, the run's finish for high carbon steel. Size variants share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_shoulder_guards",
+    "model": "mc_shoulder_guards",
+    "name": "High steel shoulder guards",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "encumbrance": 4,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.7, "pierce": 0.5 }
+    },
+    "fits": ["brigandine"],
+    "finishes": { "plate": "steel-blued", "rivet": "steel-blued" },
+    "description": "A pair of overlapping high carbon steel shoulder plates, laced at the collar so they can be fixed to a brigandine.",
+    "reference": "hc_shoulder_guards",
+    "variants": ["xl_hc_shoulder_guards", "hc_shoulder_guards_xs"],
+    "notes": "Laid side by side, convex side up: each guard is a cap plate and three overlapping riveted lames running down the arm, 190 mm from collar to arm and 175 mm across, with two leather lacing points at the collar. CHECK VOLUME: the model's box is the pair laid out flat, while the reference volume is the pair stacked. Worn by mounting on a brigandine's shoulder points, so it `fits` `brigandine` and its `wearable` has no slot. The reference gives no worn data: protection and wear follow the high carbon steel vambraces, with the same encumbrance and less warmth for bare lames on leather. Rides on batch 109's `mc_shoulder_guards` model with plates and rivets in `steel-blued`, the run's finish for high carbon steel. Size variants share the model."
+  },
+  {
+    "id": "qt_brigandine",
+    "model": "lc_brigandine",
+    "name": "Tempered brigandine",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 12,
+      "warmth": 10,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0, "blunt": 0.37, "cut": 0.93, "pierce": 0.78 }
+    },
+    "attachPoints": [
+      { "id": "left_shoulder", "name": "left shoulder", "reachSimSeconds": 0.5, "standard": "brigandine" },
+      { "id": "right_shoulder", "name": "right shoulder", "reachSimSeconds": 0.5, "standard": "brigandine" }
+    ],
+    "finishes": { "rivet": "steel-heat-tint" },
+    "description": "A canvas vest lined with rows of tempered steel plates riveted through the cloth, bound in leather and buckled shut down the front. It fits over mail.",
+    "reference": "armor_qt_brigandine",
+    "variants": ["xl_armor_qt_brigandine", "armor_qt_brigandine_xs"],
+    "notes": "Laid flat, outside up, neck towards -z: canvas over rows of hidden plates, so the outside shows quilted bands studded with rivet heads, bound in leather and closed with three buckled straps. Rides on batch 106's mild steel model `lc_brigandine`; its rivet heads take `steel-heat-tint`, the run's finish for tempered steel. Slot vest: it is worn as the outer armour layer over a shirt or mail, as batch 106's brigandines are. Attach points: left and right shoulder are the laced points on the leather strap over the top of each front half, beside the neck opening, where shoulder guards mount. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_brigandine_shoulders",
+    "model": "lc_brigandine_shoulders",
+    "name": "Tempered brigandine with shoulder guards",
+    "category": "clothing",
+    "size": [5, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 13,
+      "warmth": 10,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0, "blunt": 0.37, "cut": 0.93, "pierce": 0.78 }
+    },
+    "finishes": { "guard": "steel-heat-tint", "rivet": "steel-heat-tint" },
+    "description": "A canvas vest lined with rows of tempered steel plates riveted through the cloth, buckled shut down the front, with a guard of overlapping tempered steel lames strapped over each shoulder. It fits over mail.",
+    "reference": "armor_qt_brigandine_shoulders",
+    "variants": ["xl_armor_qt_brigandine_shoulders", "armor_qt_brigandine_shoulders_xs"],
+    "notes": "Laid flat, outside up, neck towards -z: the brigandine vest with a guard of four overlapping curved lames strapped to each shoulder and spread out to the sides, 730 mm across in all, which is why its longest side runs past the reference's 600 mm. Rides on batch 106's mild steel model `lc_brigandine_shoulders`; its rivet heads and shoulder lames take `steel-heat-tint`, the run's finish for tempered steel. Slot vest: it is worn as the outer armour layer over a shirt or mail, as batch 106's brigandines are. The reference covers torso and arms; one slot cannot say that, so the extra cover waits for multi-part coverage. No attach points: its shoulder guards are built in. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_coat_brigandine",
+    "model": "lc_coat_brigandine",
+    "name": "Tempered brigandine coat",
+    "category": "clothing",
+    "size": [4, 5],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 15,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0, "blunt": 0.37, "cut": 0.93, "pierce": 0.78 }
+    },
+    "attachPoints": [
+      { "id": "left_shoulder", "name": "left shoulder", "reachSimSeconds": 0.5, "standard": "brigandine" },
+      { "id": "right_shoulder", "name": "right shoulder", "reachSimSeconds": 0.5, "standard": "brigandine" }
+    ],
+    "finishes": { "rivet": "steel-heat-tint" },
+    "description": "A long canvas coat lined with rows of tempered steel plates riveted through the cloth from collar to mid-thigh, its skirt split at the front for walking. It fits over mail.",
+    "reference": "armor_qt_coat_brigandine",
+    "variants": ["xl_armor_qt_coat_brigandine", "armor_qt_coat_brigandine_xs"],
+    "notes": "Laid flat, outside up, neck towards -z: the brigandine's body carried on into a skirt split at the front, 800 mm from collar to hem, riveted plates all the way down. Rides on batch 106's mild steel model `lc_coat_brigandine`; its rivet heads take `steel-heat-tint`, the run's finish for tempered steel. Slot vest: it is worn as the outer armour layer over a shirt or mail, as batch 106's brigandines are. The reference covers torso and legs; one slot cannot say that, so the extra cover waits for multi-part coverage. Attach points: left and right shoulder are the laced points on the leather strap over the top of each front half, beside the neck opening, where shoulder guards mount. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_coat_brigandine_shoulders",
+    "model": "lc_coat_brigandine_shoulders",
+    "name": "Tempered brigandine coat with shoulder guards",
+    "category": "clothing",
+    "size": [5, 5],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 15,
+      "warmth": 15,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0, "blunt": 0.37, "cut": 0.93, "pierce": 0.78 }
+    },
+    "finishes": { "guard": "steel-heat-tint", "rivet": "steel-heat-tint" },
+    "description": "A long canvas coat lined with rows of tempered steel plates riveted through the cloth from collar to mid-thigh, with a guard of overlapping tempered steel lames strapped over each shoulder. It fits over mail.",
+    "reference": "armor_qt_coat_brigandine_shoulders",
+    "variants": ["xl_armor_qt_coat_brigandine_shoulders", "armor_qt_coat_brigandine_shoulders_xs"],
+    "notes": "Laid flat, outside up, neck towards -z: the brigandine coat with a four-lame guard strapped to each shoulder and spread out to the sides, 730 mm across and 800 mm long, longer than the reference's 600 mm because the coat lies at full length. Rides on batch 106's mild steel model `lc_coat_brigandine_shoulders`; its rivet heads and shoulder lames take `steel-heat-tint`, the run's finish for tempered steel. Slot vest: it is worn as the outer armour layer over a shirt or mail, as batch 106's brigandines are. The reference covers torso, legs and arms; one slot cannot say that, so the extra cover waits for multi-part coverage. No attach points: its shoulder guards are built in. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  }
+]

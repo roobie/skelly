@@ -1,0 +1,11 @@
+{
+  "id": "wax_paraffin",
+  "file": "assets/models/wax_paraffin.glb",
+  "parts": {
+    "wax_paraffin": {
+      "node": "wax_paraffin:compound",
+      "massKg": 0.2,
+      "centreOfMass": [-0.002548203389830509, 0.0222726779661017, -0.002099796610169492]
+    }
+  }
+}

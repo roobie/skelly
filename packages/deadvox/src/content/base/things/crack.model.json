@@ -1,0 +1,8 @@
+{
+  "id": "crack",
+  "file": "assets/models/crack.glb",
+  "parts": { "crack": { "node": "crack:compound", "massKg": 0.0059, "centreOfMass": [0, 0.01547682119205298, 0] } },
+  "grip": { "at": [0, 0.012, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

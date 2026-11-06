@@ -1,0 +1,11 @@
+{
+  "id": "mitre_saw",
+  "file": "assets/models/mitre_saw.glb",
+  "parts": {
+    "mitre_saw": {
+      "node": "mitre_saw:compound",
+      "massKg": 21,
+      "centreOfMass": [0.008182952357811711, 0.11760354559557407, -0.04668569986729716]
+    }
+  }
+}

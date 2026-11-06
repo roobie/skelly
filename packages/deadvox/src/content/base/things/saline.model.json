@@ -1,0 +1,14 @@
+{
+  "id": "saline",
+  "file": "assets/models/saline.glb",
+  "parts": {
+    "saline": {
+      "node": "saline:compound",
+      "massKg": 0.24,
+      "centreOfMass": [-0.000618348623853211, 0.010691743119266057, 0]
+    }
+  },
+  "grip": { "at": [0, 0.01, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

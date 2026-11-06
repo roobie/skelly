@@ -1,0 +1,11 @@
+{
+  "id": "filter_port_40mm",
+  "file": "assets/models/filter_port_40mm.glb",
+  "parts": {
+    "filter_port_40mm": {
+      "node": "filter_port_40mm:compound",
+      "massKg": 0.024,
+      "centreOfMass": [0, 0.013394160583941607, 0]
+    }
+  }
+}

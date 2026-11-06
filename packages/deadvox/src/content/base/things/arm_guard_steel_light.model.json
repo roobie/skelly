@@ -1,0 +1,11 @@
+{
+  "id": "arm_guard_steel_light",
+  "file": "assets/models/arm_guard_steel_light.glb",
+  "parts": {
+    "arm_guard_steel_light": {
+      "node": "arm_guard_steel_light:compound",
+      "massKg": 3.8,
+      "centreOfMass": [0.28947216203069015, 0.03804263034537654, 0.00016353425021006812]
+    }
+  }
+}

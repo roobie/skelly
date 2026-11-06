@@ -1,0 +1,14 @@
+{
+  "id": "crude_firestarter",
+  "file": "assets/models/crude_firestarter.glb",
+  "parts": {
+    "crude_firestarter": {
+      "node": "crude_firestarter:compound",
+      "massKg": 0.031,
+      "centreOfMass": [0.035298872180451135, 0.006999999999999999, 0]
+    }
+  },
+  "grip": { "at": [0.03, 0.007, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

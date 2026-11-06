@@ -1,0 +1,11 @@
+{
+  "id": "ballistic_vest_esapi",
+  "file": "assets/models/ballistic_vest_esapi.glb",
+  "parts": {
+    "ballistic_vest_esapi": {
+      "node": "ballistic_vest_esapi:compound",
+      "massKg": 2.3,
+      "centreOfMass": [0, 0.02754206332416612, 0.011062830547916224]
+    }
+  }
+}

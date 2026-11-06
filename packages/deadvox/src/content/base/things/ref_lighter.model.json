@@ -1,0 +1,14 @@
+{
+  "id": "ref_lighter",
+  "file": "assets/models/ref_lighter.glb",
+  "parts": {
+    "ref_lighter": {
+      "node": "ref_lighter:compound",
+      "massKg": 0.057,
+      "centreOfMass": [0.003651267605633803, 0.030134647887323947, 0]
+    }
+  },
+  "grip": { "at": [0, 0.018000000000000002, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

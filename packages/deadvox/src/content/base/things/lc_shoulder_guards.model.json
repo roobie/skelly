@@ -1,0 +1,11 @@
+{
+  "id": "lc_shoulder_guards",
+  "file": "assets/models/lc_shoulder_guards.glb",
+  "parts": {
+    "lc_shoulder_guards": {
+      "node": "lc_shoulder_guards:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-0.004713550600343049, 0.029492281303602055, 1.028655135679151e-17]
+    }
+  }
+}

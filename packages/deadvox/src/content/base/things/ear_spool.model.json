@@ -1,0 +1,5 @@
+{
+  "id": "ear_spool",
+  "file": "assets/models/ear_spool.glb",
+  "parts": { "ear_spool": { "node": "ear_spool:compound", "massKg": 0.002, "centreOfMass": [0, 0.006, 0] } }
+}

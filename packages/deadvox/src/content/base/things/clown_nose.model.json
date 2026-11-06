@@ -1,0 +1,7 @@
+{
+  "id": "clown_nose",
+  "file": "assets/models/clown_nose.glb",
+  "parts": {
+    "clown_nose": { "node": "clown_nose:compound", "massKg": 0.003, "centreOfMass": [0, 0.02, -0.000488245931283906] }
+  }
+}

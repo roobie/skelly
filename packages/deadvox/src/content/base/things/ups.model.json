@@ -1,0 +1,11 @@
+{
+  "id": "ups",
+  "file": "assets/models/ups.glb",
+  "parts": {
+    "ups": {
+      "node": "ups:compound",
+      "massKg": 3.4,
+      "centreOfMass": [-0.00015910997306962162, 0.051171692199019916, 0.0014107103439141757]
+    }
+  }
+}

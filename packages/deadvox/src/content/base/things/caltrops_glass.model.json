@@ -1,0 +1,14 @@
+{
+  "id": "caltrops_glass",
+  "file": "assets/models/caltrops_glass.glb",
+  "parts": {
+    "caltrops_glass": {
+      "node": "caltrops_glass:compound",
+      "massKg": 0.04,
+      "centreOfMass": [0.00544186046511628, 0.007319379844961242, 0.002666666666666668]
+    }
+  },
+  "grip": { "at": [0, 0.008, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

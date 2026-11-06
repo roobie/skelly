@@ -1,0 +1,11 @@
+{
+  "id": "plastic_barrel",
+  "file": "assets/models/plastic_barrel.glb",
+  "parts": {
+    "plastic_barrel": {
+      "node": "plastic_barrel:compound",
+      "massKg": 5.1,
+      "centreOfMass": [0.000024353586239527963, 0.360328147179159, 0]
+    }
+  }
+}

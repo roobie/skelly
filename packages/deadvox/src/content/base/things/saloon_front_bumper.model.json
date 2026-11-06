@@ -1,0 +1,18 @@
+{
+  "id": "saloon_front_bumper",
+  "file": "assets/models/saloon_front_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 7,
+      "centreOfMass": [2.2840427360219984, 0.4715713794683776, 0],
+      "collision": [
+        { "min": [2.21875, 0.3125, -0.875], "max": [2.34375, 0.5625, 0.875] },
+        { "min": [2.25, 0.59375, -0.40625], "max": [2.3125, 0.78125, 0.40625] },
+        { "min": [2.34375, 0.34375, -0.40625], "max": [2.375, 0.4375, 0.40625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

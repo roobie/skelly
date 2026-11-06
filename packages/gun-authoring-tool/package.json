@@ -1,7 +1,7 @@
 {
   "name": "@skelly/gun-authoring-tool",
   "private": true,
-  "license": "EUPL-1.2",
+  "license": "EUPL-1.2 AND CC-BY-NC-SA-4.0",
   "version": "0.0.0",
   "type": "module",
   "scripts": {

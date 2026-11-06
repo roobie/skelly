@@ -1,0 +1,11 @@
+{
+  "id": "helmet_black_dragon_scale_raised",
+  "file": "assets/models/helmet_black_dragon_scale_raised.glb",
+  "parts": {
+    "helmet_black_dragon_scale_raised": {
+      "node": "helmet_black_dragon_scale_raised:compound",
+      "massKg": 1.6,
+      "centreOfMass": [0.00005651873287408097, 0.12799585136623198, 0.003339086788394071]
+    }
+  }
+}

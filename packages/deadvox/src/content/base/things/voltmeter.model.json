@@ -1,0 +1,11 @@
+{
+  "id": "voltmeter",
+  "file": "assets/models/voltmeter.glb",
+  "parts": {
+    "voltmeter": {
+      "node": "voltmeter:compound",
+      "massKg": 0.29,
+      "centreOfMass": [-0.00017242443288954925, 0.05463750642820415, -0.04077898405805383]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "training_dummy_light",
+  "file": "assets/models/training_dummy_light.glb",
+  "parts": {
+    "training_dummy_light": {
+      "node": "training_dummy_light:compound",
+      "massKg": 47,
+      "centreOfMass": [0, 1.0085191452394229, 0.008341904231310381]
+    }
+  }
+}

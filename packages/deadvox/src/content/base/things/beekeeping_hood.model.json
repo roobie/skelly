@@ -1,0 +1,11 @@
+{
+  "id": "beekeeping_hood",
+  "file": "assets/models/beekeeping_hood.glb",
+  "parts": {
+    "beekeeping_hood": {
+      "node": "beekeeping_hood:compound",
+      "massKg": 0.35,
+      "centreOfMass": [0, 0.2755938734159826, 0.00048463202719873613]
+    }
+  }
+}

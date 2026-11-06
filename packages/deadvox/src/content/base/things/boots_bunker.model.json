@@ -1,0 +1,11 @@
+{
+  "id": "boots_bunker",
+  "file": "assets/models/boots_bunker.glb",
+  "parts": {
+    "boots_bunker": {
+      "node": "boots_bunker:compound",
+      "massKg": 2.1,
+      "centreOfMass": [5.686933774200345e-18, 0.1398873585495944, -0.04765520819820986]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "gloves_fingerless_mod",
+  "file": "assets/models/gloves_fingerless_mod.glb",
+  "parts": {
+    "gloves_fingerless_mod": {
+      "node": "gloves_fingerless_mod:compound",
+      "massKg": 0.52,
+      "centreOfMass": [2.941179469613129e-18, 0.009122075712462784, 0.03064057847724373]
+    }
+  }
+}

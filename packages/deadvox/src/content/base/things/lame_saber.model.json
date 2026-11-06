@@ -1,0 +1,11 @@
+{
+  "id": "lame_saber",
+  "file": "assets/models/lame_saber.glb",
+  "parts": {
+    "lame_saber": {
+      "node": "lame_saber:compound",
+      "massKg": 0.45,
+      "centreOfMass": [0.0009478999528079285, 0.0040486078338839064, -0.04329740443605473]
+    }
+  }
+}

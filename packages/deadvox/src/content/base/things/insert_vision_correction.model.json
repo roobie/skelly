@@ -1,0 +1,11 @@
+{
+  "id": "insert_vision_correction",
+  "file": "assets/models/insert_vision_correction.glb",
+  "parts": {
+    "insert_vision_correction": {
+      "node": "insert_vision_correction:compound",
+      "massKg": 0.015,
+      "centreOfMass": [-2.4618470611697252e-18, 0.021240000000000005, 0.0017923809523809511]
+    }
+  }
+}

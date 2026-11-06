@@ -1,0 +1,11 @@
+{
+  "id": "clay_teapot",
+  "file": "assets/models/clay_teapot.glb",
+  "parts": {
+    "clay_teapot": {
+      "node": "clay_teapot:compound",
+      "massKg": 0.61,
+      "centreOfMass": [-0.00027255639097744386, 0.05227518796992481, 0]
+    }
+  }
+}

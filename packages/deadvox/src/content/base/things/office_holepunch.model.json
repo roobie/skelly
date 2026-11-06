@@ -1,0 +1,14 @@
+{
+  "id": "office_holepunch",
+  "file": "assets/models/office_holepunch.glb",
+  "parts": {
+    "office_holepunch": {
+      "node": "office_holepunch:compound",
+      "massKg": 0.16,
+      "centreOfMass": [0.0047440912795436024, 0.012810377614778594, 0]
+    }
+  },
+  "grip": { "at": [0, 0.003, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

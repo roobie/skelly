@@ -1,0 +1,18 @@
+{
+  "id": "log_trailer_stake",
+  "file": "assets/models/log_trailer_stake.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 28,
+      "centreOfMass": [0, 0.6964878318584071, 0],
+      "collision": [
+        { "min": [-0.09375, -0.0625, -0.0625], "max": [0.09375, 0.21875, 0.0625] },
+        { "min": [-0.0625, 0.21875, -0.0625], "max": [0.0625, 1.5, 0.0625] },
+        { "min": [-0.0625, 1.5, -0.0625], "max": [0.0625, 1.5625, 0.0625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

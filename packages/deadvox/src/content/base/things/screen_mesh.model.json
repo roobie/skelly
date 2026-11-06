@@ -1,0 +1,11 @@
+{
+  "id": "screen_mesh",
+  "file": "assets/models/screen_mesh.glb",
+  "parts": {
+    "screen_mesh": {
+      "node": "screen_mesh:compound",
+      "massKg": 0.16,
+      "centreOfMass": [4.6297206405923164e-20, 0.03181993087718807, 0.0020201631522241037]
+    }
+  }
+}

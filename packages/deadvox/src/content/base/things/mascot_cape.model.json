@@ -1,0 +1,11 @@
+{
+  "id": "mascot_cape",
+  "file": "assets/models/mascot_cape.glb",
+  "parts": {
+    "mascot_cape": {
+      "node": "mascot_cape:compound",
+      "massKg": 0.88,
+      "centreOfMass": [0, 0.023995735607675896, -0.0025473821369343752]
+    }
+  }
+}

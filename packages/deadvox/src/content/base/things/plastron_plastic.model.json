@@ -1,0 +1,11 @@
+{
+  "id": "plastron_plastic",
+  "file": "assets/models/plastron_plastic.glb",
+  "parts": {
+    "plastron_plastic": {
+      "node": "plastron_plastic:compound",
+      "massKg": 0.34,
+      "centreOfMass": [7.650225318409506e-19, 0.03606427745664742, -0.006283930635838151]
+    }
+  }
+}

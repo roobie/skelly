@@ -1,0 +1,11 @@
+{
+  "id": "makeshift_sling",
+  "file": "assets/models/makeshift_sling.glb",
+  "parts": {
+    "makeshift_sling": {
+      "node": "makeshift_sling:compound",
+      "massKg": 0.75,
+      "centreOfMass": [0.0007680250783699046, 0.09662695924764891, 0.0007962382445141064]
+    }
+  }
+}

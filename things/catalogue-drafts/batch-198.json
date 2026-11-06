@@ -1,0 +1,170 @@
+[
+  {
+    "id": "copper_circlet",
+    "model": "copper_circlet",
+    "name": "Copper circlet",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "tool": { "qualities": { "mana_focus": 1 } },
+    "wearable": { "slot": "hair", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.001 },
+    "description": "A band of polished wood bound in copper at both edges and studded round, with a pointed copper plaque that rests on the brow. It serves as a focus for spellcasting.",
+    "reference": "copper_circlet",
+    "variants": [],
+    "notes": "Standing on its lower edge, front on +z: an oak band 170 mm across and 25 mm tall with copper rims, eleven studs and a pointed plaque inset with wood at the front. CHECK VOLUME (box/volume x2.9): the ring encloses air. The mass of 700 g follows the reference, heavy for a circlet. `mana_focus` carries the reference's spell-focus quality and is a new quality name; Deadvox has no magic yet. Slot `hair`, the slot headbands use, so it can sit under a hat; `head` would clash with helmets. The silver circlet shares this model with its own finishes. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "silver_circlet",
+    "model": "copper_circlet",
+    "name": "Silver circlet",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "tool": { "qualities": { "mana_focus": 1 } },
+    "wearable": { "slot": "hair", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.001 },
+    "finishes": { "trim": "metal-silver" },
+    "description": "A band of polished wood bound in silver at both edges and studded round, with a pointed silver plaque that rests on the brow. It serves as a focus for spellcasting.",
+    "reference": "silver_circlet",
+    "variants": [],
+    "notes": "Shares the copper circlet's model; the finishes map turns the rims, studs and plaque to silver. Same 700 g as the copper one. CHECK VOLUME (box/volume x2.9): the ring encloses air. The mass of 700 g follows the reference, heavy for a circlet. `mana_focus` carries the reference's spell-focus quality and is a new quality name; Deadvox has no magic yet. Slot `hair`, the slot headbands use, so it can sit under a hat; `head` would clash with helmets. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "backpack_black_dragon_hide",
+    "model": "backpack_black_dragon_hide",
+    "name": "Dragonhide backpack",
+    "category": "bag",
+    "size": [3, 4],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": { "slot": "back", "encumbrance": 5, "warmth": 8, "wearPerDamage": 0.0008 },
+    "container": {
+      "pockets": [
+        { "grid": [5, 6], "handlingSimSeconds": 1.8, "name": "main" },
+        { "grid": [3, 2], "handlingSimSeconds": 1.2, "name": "front" },
+        { "grid": [2, 3], "handlingSimSeconds": 1.2, "name": "left side" },
+        { "grid": [2, 3], "handlingSimSeconds": 1.2, "name": "right side" }
+      ]
+    },
+    "attachPoints": [{ "id": "lid", "name": "lid straps", "reachSimSeconds": 2.5, "standard": "lash" }],
+    "description": "A squared black backpack of thick reptile hide, its front pocket covered in rows of hard raised scutes, closed under a deep strapped lid with buckles of carved bone.",
+    "reference": "backpack_black_dragon_hide",
+    "variants": [],
+    "notes": "Standing, front toward the iso view: black hide body, lid and side pockets, a red-brown back pad, shoulder straps and hip belt (`leather-chestnut`), charcoal scutes on the front pocket and bone buckles; 360 mm wide and 520 mm tall. Point: lid straps are the two straps down the front of the lid. CHECK VOLUME (x21): the reference volume is the empty bag packed down; the model stands at its real size. The hide is `hide-dragon-black`; protection is a guess above plain leather, as the reference gives none here. Encumbrance and warmth follow the reference. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "backpack_xl_black_dragon_hide",
+    "model": "backpack_xl_black_dragon_hide",
+    "name": "Large dragonhide backpack",
+    "category": "bag",
+    "size": [4, 5],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": { "slot": "back", "encumbrance": 8, "warmth": 9, "wearPerDamage": 0.0008 },
+    "container": {
+      "pockets": [
+        { "grid": [6, 8], "handlingSimSeconds": 1.8, "name": "main" },
+        { "grid": [3, 2], "handlingSimSeconds": 1.2, "name": "front" },
+        { "grid": [2, 3], "handlingSimSeconds": 1.2, "name": "left side" },
+        { "grid": [2, 3], "handlingSimSeconds": 1.2, "name": "right side" }
+      ]
+    },
+    "attachPoints": [{ "id": "lid", "name": "lid straps", "reachSimSeconds": 2.5, "standard": "lash" }],
+    "description": "A big squared backpack of thick black reptile hide, cut for a broad back, its front pocket covered in hard raised scutes and its lid held by bone-buckled straps.",
+    "reference": "backpack_xl_black_dragon_hide",
+    "variants": [],
+    "notes": "The dragonhide backpack's builder made larger: 440 mm wide and 640 mm tall, in the same finishes. Point: lid straps are the two straps down the front of the lid. CHECK VOLUME (x27): the reference volume is the empty bag packed down; the model stands at its real size. The reference shares the smaller pack's name; this name says it is the large one. The hide is `hide-dragon-black`; protection is a guess above plain leather, as the reference gives none here. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "boots_black_dragon_hide",
+    "model": "boots_black_dragon_hide",
+    "name": "Dragonhide boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 6,
+      "warmth": 10,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.3, "blunt": 0.15, "cut": 0.3, "pierce": 0.25 }
+    },
+    "description": "Tall boots of supple black reptile hide with a turned-down cuff and two bone-buckled straps round each shaft.",
+    "reference": "boots_black_dragon_hide",
+    "variants": [],
+    "notes": "A standing pair, 290 mm long and 300 mm tall, toes on +z: black hide feet and shafts, charcoal soles, red-brown toe rands, cuffs and straps (`leather-chestnut`, so the hide boots read apart from the scale boots), bone buckles on the outer sides. CHECK VOLUME: the bounding box of a standing pair takes in the air between and round the boots; the reference volume is the pair packed. The hide is `hide-dragon-black`; protection is a guess above plain leather, as the reference gives none here. Encumbrance and warmth are scaled down from the reference to sit beside Deadvox's rubber boots on the feet slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "boots_xlblack_dragon_hide",
+    "model": "boots_xlblack_dragon_hide",
+    "name": "Oversized dragonhide boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 8,
+      "warmth": 10,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.3, "blunt": 0.15, "cut": 0.3, "pierce": 0.25 }
+    },
+    "description": "Huge boots of black reptile hide, cut wide and deep for feet too big or too strange for ordinary footwear, strapped round the shaft with bone buckles.",
+    "reference": "boots_xlblack_dragon_hide",
+    "variants": [],
+    "notes": "The dragonhide boots' builder made larger: a standing pair 360 mm long and 360 mm tall in the same finishes. CHECK VOLUME: the bounding box of a standing pair takes in the air between and round the boots; the reference volume is the pair packed. The hide is `hide-dragon-black`; protection is a guess above plain leather, as the reference gives none here. Encumbrance and warmth are scaled down from the reference to sit beside Deadvox's rubber boots on the feet slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "boots_black_dragon_scale",
+    "model": "boots_black_dragon_scale",
+    "name": "Dragonscale boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 9,
+      "warmth": 12,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.4, "blunt": 0.25, "cut": 0.5, "pierce": 0.4 }
+    },
+    "description": "Black hide boots armoured from toe to knee in overlapping rows of glossy black scales.",
+    "reference": "boots_black_dragon_scale",
+    "variants": [],
+    "notes": "A standing pair, 300 mm long and 300 mm tall, toes on +z: stepped scale lames over the foot alternating with charcoal hide, and the shaft ringed with proud scale rows over charcoal hide bands, a scale collar at the top. CHECK VOLUME: the bounding box of a standing pair takes in the air between and round the boots; the reference volume is the pair packed. The scales and the collar take glossy `chitin-black`; the hide showing between the scale rows is `leather-charcoal` so the scales read apart from it, and the shaft is `hide-dragon-black`; protection is a guess above plain leather, as the reference gives none here. Encumbrance and warmth are scaled down from the reference to sit beside Deadvox's rubber boots on the feet slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "boots_xlblack_dragon_scale",
+    "model": "boots_xlblack_dragon_scale",
+    "name": "Oversized dragonscale boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 12,
+      "warmth": 12,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.4, "blunt": 0.25, "cut": 0.5, "pierce": 0.4 }
+    },
+    "description": "Huge scale-armoured boots of black hide, cut for feet too big or too strange for ordinary footwear, ringed in glossy black scales from toe to knee.",
+    "reference": "boots_xlblack_dragon_scale",
+    "variants": [],
+    "notes": "The dragonscale boots' builder made larger: a standing pair 370 mm long and 360 mm tall in the same finishes. CHECK VOLUME: the bounding box of a standing pair takes in the air between and round the boots; the reference volume is the pair packed. The scales and the collar take glossy `chitin-black`; the hide showing between the scale rows is `leather-charcoal` so the scales read apart from it, and the shaft is `hide-dragon-black`; protection is a guess above plain leather, as the reference gives none here. Encumbrance and warmth are scaled down from the reference to sit beside Deadvox's rubber boots on the feet slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gauntlets_black_dragon_scale",
+    "model": "gauntlets_black_dragon_scale",
+    "name": "Dragonscale gauntlets",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 12,
+      "warmth": 15,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.4, "blunt": 0.25, "cut": 0.5, "pierce": 0.4 }
+    },
+    "description": "Heavy black hide gauntlets with wide flared cuffs, the backs and fingers covered in rows of overlapping glossy scales.",
+    "reference": "gauntlets_black_dragon_scale",
+    "variants": [],
+    "notes": "Laid flat side by side, backs up, fingers to +z, 300 mm from cuff to fingertip: black hide gloves with scale rows over the back and fingers, a scale knuckle ridge and flared cuffs 110 mm long bound in red-brown `leather-chestnut`. Box/volume x2.65, no flag. The scales take glossy `chitin-black` against the matte hide. The hide is `hide-dragon-black`; protection is a guess above plain leather, as the reference gives none here. Slot `hands`, as earlier glove batches use; encumbrance and warmth are scaled down from the reference. The worn look is pending: no worn model is authored."
+  }
+]

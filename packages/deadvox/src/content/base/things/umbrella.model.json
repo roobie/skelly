@@ -1,0 +1,14 @@
+{
+  "id": "umbrella",
+  "file": "assets/models/umbrella.glb",
+  "parts": {
+    "umbrella": {
+      "node": "umbrella:compound",
+      "massKg": 0.28,
+      "centreOfMass": [-0.00034563817433226607, 0.03509652672695922, 0.0013102720202695568]
+    }
+  },
+  "grip": { "at": [-0.382, 0.036000000000000004, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

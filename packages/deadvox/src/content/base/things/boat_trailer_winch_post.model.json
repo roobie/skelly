@@ -1,0 +1,18 @@
+{
+  "id": "boat_trailer_winch_post",
+  "file": "assets/models/boat_trailer_winch_post.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 12,
+      "centreOfMass": [1.728236607142857, 0.8950892857142857, 0],
+      "collision": [
+        { "min": [1.71875, 0.53125, -0.03125], "max": [1.78125, 1.09375, 0.03125] },
+        { "min": [1.71875, 0.90625, -0.09375], "max": [1.84375, 1.03125, 0.09375] },
+        { "min": [1.5, 0.84375, -0.0625], "max": [1.71875, 0.90625, 0.0625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

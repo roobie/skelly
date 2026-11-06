@@ -1,0 +1,11 @@
+{
+  "id": "arcade_machine",
+  "file": "assets/models/arcade_machine.glb",
+  "parts": {
+    "arcade_machine": {
+      "node": "arcade_machine:compound",
+      "massKg": 64,
+      "centreOfMass": [-0.000009379306465674831, 0.8525491183170687, -0.10018678459937563]
+    }
+  }
+}

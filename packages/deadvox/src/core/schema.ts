@@ -1579,6 +1579,8 @@ const ItemSchema = strictObject({
         pivot: tuple([number(), number(), number()]),
         at: tuple([number(), number(), number()]),
         turn: tuple([number(), number(), number()]),
+        /** Stretches a rigid model round the wearer, as a round hat crown round the octagonal skull. */
+        scale: optional(tuple([Positive, Positive, Positive])),
       }),
     ),
   ),

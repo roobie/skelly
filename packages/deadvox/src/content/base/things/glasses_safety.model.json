@@ -1,0 +1,11 @@
+{
+  "id": "glasses_safety",
+  "file": "assets/models/glasses_safety.glb",
+  "parts": {
+    "glasses_safety": {
+      "node": "glasses_safety:compound",
+      "massKg": 0.027,
+      "centreOfMass": [-3.863524579883361e-19, 0.033585707613264834, -0.03289163942083139]
+    }
+  }
+}

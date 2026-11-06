@@ -1,0 +1,14 @@
+{
+  "id": "tongs",
+  "file": "assets/models/tongs.glb",
+  "parts": {
+    "tongs": {
+      "node": "tongs:compound",
+      "massKg": 0.17,
+      "centreOfMass": [0.14230693069306932, 0.010581958195819583, -4.5499483638780386e-20]
+    }
+  },
+  "grip": { "at": [0.13, 0.009000000000000001, 0.018000000000000002], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

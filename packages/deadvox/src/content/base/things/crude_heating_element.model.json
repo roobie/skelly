@@ -1,0 +1,11 @@
+{
+  "id": "crude_heating_element",
+  "file": "assets/models/crude_heating_element.glb",
+  "parts": {
+    "crude_heating_element": {
+      "node": "crude_heating_element:compound",
+      "massKg": 0.14,
+      "centreOfMass": [-0.001807352941176468, 0.017992156862745103, 0]
+    }
+  }
+}

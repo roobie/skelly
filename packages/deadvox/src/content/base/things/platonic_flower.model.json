@@ -1,0 +1,11 @@
+{
+  "id": "platonic_flower",
+  "file": "assets/models/platonic_flower.glb",
+  "parts": {
+    "platonic_flower": {
+      "node": "platonic_flower:compound",
+      "massKg": 0.048,
+      "centreOfMass": [0.0004738706820194868, 0.01796929436079126, 0.0000726306465899021]
+    }
+  }
+}

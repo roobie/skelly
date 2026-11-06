@@ -1,0 +1,87 @@
+[
+  {
+    "id": "crystal_mind_focus",
+    "model": "telepathic_focusing_tool",
+    "name": "Milky crystal focus",
+    "category": "tool",
+    "size": [3, 4],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier3", "Tier4"] },
+    "tool": { "qualities": { "mana_focus": 2 } },
+    "description": "A milky white crystal cluster gripped in a three-pronged steel claw on a heavy round foot. Splinters of the same crystal hang in the air above it and do not fall. Close to it, your own thoughts seem loud.",
+    "reference": "telepathic_focusing_tool",
+    "variants": [],
+    "notes": "144 by 240 by 148 mm, the cluster 48 mm across in a claw on a 140 mm foot. CHECK VOLUME (x6.82): the reference's 750 ml is the metal and crystal; the floating splinters and the open claw make its box mostly air. The splinters float clear of the crystal on purpose. The crystal is `pearl` because no glowing white crystal finish exists; the splinters are `gem-clear`, see-through in the game. The reference gives it no qualities; it is a crafting focus like batch 204's crystal focusing ring, so it takes `mana_focus` one level higher for telepathic work."
+  },
+  {
+    "id": "crystal_flashlight",
+    "model": "pyrokinetic_flashlight",
+    "name": "Crystal-cell flashlight",
+    "category": "light",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3", "Tier4"] },
+    "description": "A household flashlight whose battery tube has been swapped for a blue crystal rod, seen through a small glass window in its body. Its lens is cut from the same crystal. The light is a little dimmer than a battery bulb but lasts far longer.",
+    "reference": "pyrokinetic_flashlight",
+    "variants": [],
+    "notes": "140 mm long, 40 mm across the head. Off and on are one item with a switch, so the lit state shares this model and gets its light from a `light` block like the flashlight's, with a cooler blue colour and a slow crystal charge drain instead of a battery. That drain needs a crystal power source, which does not exist yet."
+  },
+  {
+    "id": "crystal_lantern",
+    "model": "pyrokinetic_lamp",
+    "name": "Crystal lantern",
+    "category": "light",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3", "Tier4"] },
+    "description": "A squat aluminium camp lantern with a domed lid hinged shut and a wire bail handle. A thin line of blue light leaks out under the lid; opening it lets out a wide, cold glow that lasts far longer than any battery lamp.",
+    "reference": "pyrokinetic_lamp",
+    "variants": [],
+    "notes": "116 by 172 by 120 mm with the handle and lugs, the canister 100 mm across. The covered state is modelled; the open state is a switch on the same item, so it rides on this model. Its glow needs a `light` block with a blue colour and a crystal power source, which does not exist yet. Box/volume x2.39: the reference's 1 l is the canister; the bail and lid stand clear of it."
+  },
+  {
+    "id": "crystal_floor_lamp",
+    "model": "standing_pyrokinetic_lamp",
+    "name": "Crystal floor lamp",
+    "category": "misc",
+    "size": [2, 9],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "description": "A tall floor lamp on a weighted steel base, its white cone shade hiding a blue crystal rod where the bulb should be. A power cord trails from its foot to a loose plug. Plugged in, it lights a room on a fraction of the power.",
+    "reference": "standing_pyrokinetic_lamp",
+    "variants": [],
+    "notes": "1.71 m tall, a 300 mm base and a 400 mm shade, 590 mm wide with the cord laid out. CHECK VOLUME (x201.78): the reference's 2 l is the metal and plastic; a floor lamp's box is almost all air. The disconnected state is modelled; plugged in and lit, it rides on the same model. Use as a placed light needs a mains power rule, which does not exist yet."
+  },
+  {
+    "id": "condensed_chaos_lump",
+    "model": "chaos_stone",
+    "name": "Lump of condensed chaos",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier4"] },
+    "description": "A lump of something like black glass, three swollen lobes run together, with an oily rainbow sheen and violet flecks sunk in its skin. It looks hard but gives under a finger, and it weighs almost nothing. The air round it tingles.",
+    "reference": "chaos_stone",
+    "variants": [],
+    "notes": "88 by 54 by 60 mm, 10 g. The reference gives no material; the model is `void-black` with `iridescent` patches and `crystal-glow-violet` flecks. It is a crafting reagent for crystal devices; it gets a recipe role once those recipes exist."
+  },
+  {
+    "id": "crystal_beacon",
+    "model": "psionic_transporter_beacon",
+    "name": "Crystal-topped beacon",
+    "category": "tool",
+    "size": [4, 4],
+    "economy": { "usage": ["Industrial", "Military"], "tiers": ["Tier4"] },
+    "description": "A stepped dark-grey pyramid on a steel plate, a blue crystal column on its peak, a sight tube of teal fluid across its front and a small control panel. Four lumps of black glassy stone are set round its foot like guard posts.",
+    "reference": "psionic_transporter_beacon",
+    "variants": [],
+    "notes": "388 by 364 by 312 mm with the stones, the pyramid 260 mm square and 240 mm tall. CHECK VOLUME (x22.03): the reference's 2 l is the solid parts; the stones stand apart at the corners and the pyramid tapers, so its box is mostly air. The stones are `chitin-black`, the closest glassy black; no dark glassy stone finish exists. It is placed and paired with the crystal handset to teleport the carrier to it, which needs a teleport action that does not exist yet."
+  },
+  {
+    "id": "crystal_handset",
+    "model": "psionic_transporter_remote",
+    "name": "Crystal-antenna handset",
+    "category": "tool",
+    "size": [1, 2],
+    "economy": { "usage": ["Industrial", "Military"], "tiers": ["Tier4"] },
+    "description": "A chunky handset like an old keypad phone crossed with a radio, with a small blank screen, nine rubber keys and a little window of teal fluid. A stubby blue crystal rod sticks out of its top like an antenna.",
+    "reference": "psionic_transporter_remote",
+    "variants": [],
+    "notes": "100 by 55 by 32 mm, 148 mm long with the crystal rod. It pairs with the crystal-topped beacon to teleport the carrier to it, which needs a teleport action that does not exist yet."
+  }
+]

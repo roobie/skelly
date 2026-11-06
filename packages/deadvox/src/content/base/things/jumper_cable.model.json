@@ -1,0 +1,11 @@
+{
+  "id": "jumper_cable",
+  "file": "assets/models/jumper_cable.glb",
+  "parts": {
+    "jumper_cable": {
+      "node": "jumper_cable:compound",
+      "massKg": 0.3,
+      "centreOfMass": [0.00009810731029692604, 0.007909185622503905, 0.03722069803785379]
+    }
+  }
+}

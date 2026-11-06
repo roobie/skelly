@@ -1,0 +1,11 @@
+{
+  "id": "heavy_duty_fridge",
+  "file": "assets/models/heavy_duty_fridge.glb",
+  "parts": {
+    "heavy_duty_fridge": {
+      "node": "heavy_duty_fridge:compound",
+      "massKg": 300,
+      "centreOfMass": [0.0000866733020202483, 1.1352604737770988, 0.0035345990310455856]
+    }
+  }
+}

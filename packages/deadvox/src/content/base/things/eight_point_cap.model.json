@@ -1,0 +1,11 @@
+{
+  "id": "eight_point_cap",
+  "file": "assets/models/eight_point_cap.glb",
+  "parts": {
+    "eight_point_cap": {
+      "node": "eight_point_cap:compound",
+      "massKg": 0.15,
+      "centreOfMass": [-2.55970800673327e-20, 0.05444093931249118, 0.003135379827415477]
+    }
+  }
+}

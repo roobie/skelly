@@ -1,0 +1,11 @@
+{
+  "id": "throat_guard_ballistic",
+  "file": "assets/models/throat_guard_ballistic.glb",
+  "parts": {
+    "throat_guard_ballistic": {
+      "node": "throat_guard_ballistic:compound",
+      "massKg": 0.3,
+      "centreOfMass": [0.00009419973833406181, 0.07415351068469254, 0.021603139991277782]
+    }
+  }
+}

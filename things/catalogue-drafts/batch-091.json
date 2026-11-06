@@ -1,0 +1,292 @@
+[
+  {
+    "id": "arm_guard_mild_steel_light",
+    "model": "arm_guard_steel_light",
+    "name": "Mild steel light arm guards",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 5,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.15, "cut": 0.5, "pierce": 0.4 }
+    },
+    "description": "A pair of forged arm guards in mild steel. A narrow plate rides over the upper arm and another down the forearm, on a chain sleeve that covers the elbow.",
+    "reference": "armor_lc_lightarmguard",
+    "variants": ["xl_armor_lc_lightarmguard"],
+    "notes": "A pair of guards 600 mm long laid side by side, convex side up: light grey plates on a darker chain sleeve with ridged rings at the bare elbow and wrist, held by brown leather straps with steel buckles. The xl variant shares the model. The reference covers both arms, so this is one item for the pair and takes a new arms slot: none of feet, legs, torso, vest, head, waist or back fits. The reference marks steel arm guards as sided; wearing one guard on one arm has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "arm_guard_mild_steel",
+    "model": "arm_guard_steel",
+    "name": "Mild steel arm guards",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 8,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.25, "cut": 0.6, "pierce": 0.5 }
+    },
+    "description": "A pair of forged arm guards in mild steel. Half-round plates cover the upper arm and forearm over a chain sleeve, with a domed cop over the elbow.",
+    "reference": "armor_lc_armguard",
+    "variants": ["xl_armor_lc_armguard"],
+    "notes": "A pair of guards 600 mm long laid side by side, convex side up: light grey plates on a darker chain sleeve with ridged rings at the bare elbow and wrist, held by brown leather straps with steel buckles. The box is x3.95 the reference volume, just inside the look check: the two guards lie side by side with their elbow cops up, a looser box than the reference's packed volume. The xl variant shares the model. The reference covers both arms, so this is one item for the pair and takes a new arms slot: none of feet, legs, torso, vest, head, waist or back fits. The reference marks steel arm guards as sided; wearing one guard on one arm has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "arm_guard_mild_steel_heavy",
+    "model": "arm_guard_steel_heavy",
+    "name": "Mild steel heavy arm guards",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 10,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.66, "pierce": 0.56 }
+    },
+    "description": "A pair of forged arm guards in mild steel. Thick half-round plates cover the whole arm over a chain sleeve, with lames at the shoulder, a domed elbow cop and a cuff over the wrist.",
+    "reference": "armor_lc_heavyarmguard",
+    "variants": ["xl_armor_lc_heavyarmguard"],
+    "notes": "A pair of guards 600 mm long laid side by side, convex side up: light grey plates on a darker chain sleeve with ridged rings at the bare elbow and wrist, held by brown leather straps with steel buckles. The box is x3.95 the reference volume, just inside the look check: the two guards lie side by side with their elbow cops up, a looser box than the reference's packed volume. The xl variant shares the model. The reference covers both arms, so this is one item for the pair and takes a new arms slot: none of feet, legs, torso, vest, head, waist or back fits. The reference marks steel arm guards as sided; wearing one guard on one arm has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "arm_guard_medium_steel_light",
+    "model": "arm_guard_steel_light",
+    "name": "Medium steel light arm guards",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 5,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.15, "cut": 0.58, "pierce": 0.48 }
+    },
+    "description": "A pair of forged arm guards in medium steel. A narrow plate rides over the upper arm and another down the forearm, on a chain sleeve that covers the elbow.",
+    "reference": "armor_mc_lightarmguard",
+    "variants": ["xl_armor_mc_lightarmguard"],
+    "notes": "A pair of guards 600 mm long laid side by side, convex side up: light grey plates on a darker chain sleeve with ridged rings at the bare elbow and wrist, held by brown leather straps with steel buckles. It shares the arm_guard_steel_light model with the other steels of its weight; the steels look alike, so it keeps that model's finishes. The xl variant shares the model. The reference covers both arms, so this is one item for the pair and takes a new arms slot: none of feet, legs, torso, vest, head, waist or back fits. The reference marks steel arm guards as sided; wearing one guard on one arm has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "arm_guard_medium_steel",
+    "model": "arm_guard_steel",
+    "name": "Medium steel arm guards",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 8,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.25, "cut": 0.68, "pierce": 0.58 }
+    },
+    "description": "A pair of forged arm guards in medium steel. Half-round plates cover the upper arm and forearm over a chain sleeve, with a domed cop over the elbow.",
+    "reference": "armor_mc_armguard",
+    "variants": ["xl_armor_mc_armguard"],
+    "notes": "A pair of guards 600 mm long laid side by side, convex side up: light grey plates on a darker chain sleeve with ridged rings at the bare elbow and wrist, held by brown leather straps with steel buckles. It shares the arm_guard_steel model with the other steels of its weight; the steels look alike, so it keeps that model's finishes. The box is x3.95 the reference volume, just inside the look check: the two guards lie side by side with their elbow cops up, a looser box than the reference's packed volume. The xl variant shares the model. The reference covers both arms, so this is one item for the pair and takes a new arms slot: none of feet, legs, torso, vest, head, waist or back fits. The reference marks steel arm guards as sided; wearing one guard on one arm has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "arm_guard_medium_steel_heavy",
+    "model": "arm_guard_steel_heavy",
+    "name": "Medium steel heavy arm guards",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 10,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.74, "pierce": 0.64 }
+    },
+    "description": "A pair of forged arm guards in medium steel. Thick half-round plates cover the whole arm over a chain sleeve, with lames at the shoulder, a domed elbow cop and a cuff over the wrist.",
+    "reference": "armor_mc_heavyarmguard",
+    "variants": ["xl_armor_mc_heavyarmguard"],
+    "notes": "A pair of guards 600 mm long laid side by side, convex side up: light grey plates on a darker chain sleeve with ridged rings at the bare elbow and wrist, held by brown leather straps with steel buckles. It shares the arm_guard_steel_heavy model with the other steels of its weight; the steels look alike, so it keeps that model's finishes. The box is x3.95 the reference volume, just inside the look check: the two guards lie side by side with their elbow cops up, a looser box than the reference's packed volume. The xl variant shares the model. The reference covers both arms, so this is one item for the pair and takes a new arms slot: none of feet, legs, torso, vest, head, waist or back fits. The reference marks steel arm guards as sided; wearing one guard on one arm has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "arm_guard_high_steel_light",
+    "model": "arm_guard_steel_light",
+    "name": "High steel light arm guards",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 5,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.15, "cut": 0.64, "pierce": 0.54 }
+    },
+    "description": "A pair of forged arm guards in high-carbon steel. A narrow plate rides over the upper arm and another down the forearm, on a chain sleeve that covers the elbow.",
+    "reference": "armor_hc_lightarmguard",
+    "variants": ["xl_armor_hc_lightarmguard"],
+    "notes": "A pair of guards 600 mm long laid side by side, convex side up: light grey plates on a darker chain sleeve with ridged rings at the bare elbow and wrist, held by brown leather straps with steel buckles. It shares the arm_guard_steel_light model with the other steels of its weight; the steels look alike, so it keeps that model's finishes. The xl variant shares the model. The reference covers both arms, so this is one item for the pair and takes a new arms slot: none of feet, legs, torso, vest, head, waist or back fits. The reference marks steel arm guards as sided; wearing one guard on one arm has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "arm_guard_high_steel",
+    "model": "arm_guard_steel",
+    "name": "High steel arm guards",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 8,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.25, "cut": 0.74, "pierce": 0.64 }
+    },
+    "description": "A pair of forged arm guards in high-carbon steel. Half-round plates cover the upper arm and forearm over a chain sleeve, with a domed cop over the elbow.",
+    "reference": "armor_hc_armguard",
+    "variants": ["xl_armor_hc_armguard"],
+    "notes": "A pair of guards 600 mm long laid side by side, convex side up: light grey plates on a darker chain sleeve with ridged rings at the bare elbow and wrist, held by brown leather straps with steel buckles. It shares the arm_guard_steel model with the other steels of its weight; the steels look alike, so it keeps that model's finishes. The box is x3.95 the reference volume, just inside the look check: the two guards lie side by side with their elbow cops up, a looser box than the reference's packed volume. The xl variant shares the model. The reference covers both arms, so this is one item for the pair and takes a new arms slot: none of feet, legs, torso, vest, head, waist or back fits. The reference marks steel arm guards as sided; wearing one guard on one arm has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "arm_guard_high_steel_heavy",
+    "model": "arm_guard_steel_heavy",
+    "name": "High steel heavy arm guards",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 10,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.8, "pierce": 0.7 }
+    },
+    "description": "A pair of forged arm guards in high-carbon steel. Thick half-round plates cover the whole arm over a chain sleeve, with lames at the shoulder, a domed elbow cop and a cuff over the wrist.",
+    "reference": "armor_hc_heavyarmguard",
+    "variants": ["xl_armor_hc_heavyarmguard"],
+    "notes": "A pair of guards 600 mm long laid side by side, convex side up: light grey plates on a darker chain sleeve with ridged rings at the bare elbow and wrist, held by brown leather straps with steel buckles. It shares the arm_guard_steel_heavy model with the other steels of its weight; the steels look alike, so it keeps that model's finishes. The box is x3.95 the reference volume, just inside the look check: the two guards lie side by side with their elbow cops up, a looser box than the reference's packed volume. The xl variant shares the model. The reference covers both arms, so this is one item for the pair and takes a new arms slot: none of feet, legs, torso, vest, head, waist or back fits. The reference marks steel arm guards as sided; wearing one guard on one arm has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "arm_guard_hardened_steel_light",
+    "model": "arm_guard_steel_light",
+    "name": "Hardened steel light arm guards",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 5,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.15, "cut": 0.68, "pierce": 0.58 }
+    },
+    "finishes": { "plate": "steel-grey" },
+    "description": "A pair of forged arm guards in quench-hardened mild steel, the plates left a dull grey. A narrow plate rides over the upper arm and another down the forearm, on a chain sleeve that covers the elbow.",
+    "reference": "armor_ch_lightarmguard",
+    "variants": ["xl_armor_ch_lightarmguard"],
+    "notes": "A pair of guards 600 mm long laid side by side, convex side up: light grey plates on a darker chain sleeve with ridged rings at the bare elbow and wrist, held by brown leather straps with steel buckles. It shares the arm_guard_steel_light model with the other steels of its weight, its plates recoloured steel-grey, a duller grey than the untreated steels. The xl variant shares the model. The reference covers both arms, so this is one item for the pair and takes a new arms slot: none of feet, legs, torso, vest, head, waist or back fits. The reference marks steel arm guards as sided; wearing one guard on one arm has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "arm_guard_hardened_steel_heavy",
+    "model": "arm_guard_steel_heavy",
+    "name": "Hardened steel heavy arm guards",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 10,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.84, "pierce": 0.74 }
+    },
+    "finishes": { "plate": "steel-grey" },
+    "description": "A pair of forged arm guards in quench-hardened mild steel, the plates left a dull grey. Thick half-round plates cover the whole arm over a chain sleeve, with lames at the shoulder, a domed elbow cop and a cuff over the wrist.",
+    "reference": "armor_ch_heavyarmguard",
+    "variants": ["xl_armor_ch_heavyarmguard"],
+    "notes": "A pair of guards 600 mm long laid side by side, convex side up: light grey plates on a darker chain sleeve with ridged rings at the bare elbow and wrist, held by brown leather straps with steel buckles. It shares the arm_guard_steel_heavy model with the other steels of its weight, its plates recoloured steel-grey, a duller grey than the untreated steels. The box is x3.95 the reference volume, just inside the look check: the two guards lie side by side with their elbow cops up, a looser box than the reference's packed volume. The xl variant shares the model. The reference covers both arms, so this is one item for the pair and takes a new arms slot: none of feet, legs, torso, vest, head, waist or back fits. The reference marks steel arm guards as sided; wearing one guard on one arm has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "arm_guard_tempered_steel_light",
+    "model": "arm_guard_steel_light",
+    "name": "Tempered steel light arm guards",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 5,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.15, "cut": 0.74, "pierce": 0.64 }
+    },
+    "finishes": { "chain": "steel-grey", "plate": "steel-blued" },
+    "description": "A pair of forged arm guards in quenched and tempered medium steel, the plates left a temper blue. A narrow plate rides over the upper arm and another down the forearm, on a chain sleeve that covers the elbow.",
+    "reference": "armor_qt_lightarmguard",
+    "variants": ["xl_armor_qt_lightarmguard"],
+    "notes": "A pair of guards 600 mm long laid side by side, convex side up: light grey plates on a darker chain sleeve with ridged rings at the bare elbow and wrist, held by brown leather straps with steel buckles. It shares the arm_guard_steel_light model with the other steels of its weight, its plates recoloured steel-blued and its chain steel-grey so the blue plates stand off the chain. The xl variant shares the model. The reference covers both arms, so this is one item for the pair and takes a new arms slot: none of feet, legs, torso, vest, head, waist or back fits. The reference marks steel arm guards as sided; wearing one guard on one arm has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "arm_guard_tempered_steel",
+    "model": "arm_guard_steel",
+    "name": "Tempered steel arm guards",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 8,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.25, "cut": 0.84, "pierce": 0.74 }
+    },
+    "finishes": { "chain": "steel-grey", "plate": "steel-blued" },
+    "description": "A pair of forged arm guards in quenched and tempered medium steel, the plates left a temper blue. Half-round plates cover the upper arm and forearm over a chain sleeve, with a domed cop over the elbow.",
+    "reference": "armor_qt_armguard",
+    "variants": ["xl_armor_qt_armguard"],
+    "notes": "A pair of guards 600 mm long laid side by side, convex side up: light grey plates on a darker chain sleeve with ridged rings at the bare elbow and wrist, held by brown leather straps with steel buckles. It shares the arm_guard_steel model with the other steels of its weight, its plates recoloured steel-blued and its chain steel-grey so the blue plates stand off the chain. The box is x3.95 the reference volume, just inside the look check: the two guards lie side by side with their elbow cops up, a looser box than the reference's packed volume. The xl variant shares the model. The reference covers both arms, so this is one item for the pair and takes a new arms slot: none of feet, legs, torso, vest, head, waist or back fits. The reference marks steel arm guards as sided; wearing one guard on one arm has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "arm_guard_tempered_steel_heavy",
+    "model": "arm_guard_steel_heavy",
+    "name": "Tempered steel heavy arm guards",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 10,
+      "warmth": 2,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.9, "pierce": 0.8 }
+    },
+    "finishes": { "chain": "steel-grey", "plate": "steel-blued" },
+    "description": "A pair of forged arm guards in quenched and tempered medium steel, the plates left a temper blue. Thick half-round plates cover the whole arm over a chain sleeve, with lames at the shoulder, a domed elbow cop and a cuff over the wrist.",
+    "reference": "armor_qt_heavyarmguard",
+    "variants": ["xl_armor_qt_heavyarmguard"],
+    "notes": "A pair of guards 600 mm long laid side by side, convex side up: light grey plates on a darker chain sleeve with ridged rings at the bare elbow and wrist, held by brown leather straps with steel buckles. It shares the arm_guard_steel_heavy model with the other steels of its weight, its plates recoloured steel-blued and its chain steel-grey so the blue plates stand off the chain. The box is x3.95 the reference volume, just inside the look check: the two guards lie side by side with their elbow cops up, a looser box than the reference's packed volume. The xl variant shares the model. The reference covers both arms, so this is one item for the pair and takes a new arms slot: none of feet, legs, torso, vest, head, waist or back fits. The reference marks steel arm guards as sided; wearing one guard on one arm has no content field. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "arm_guard_riot",
+    "model": "arm_guard_riot",
+    "name": "Riot arm guards",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Police"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 2,
+      "warmth": 2,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.2, "blunt": 0.55, "cut": 0.45, "pierce": 0.25 }
+    },
+    "description": "A pair of moulded plastic forearm shells with domed elbow cups and a foam lining, strapped on to turn thrown objects and baton blows.",
+    "reference": "armor_riot_arm",
+    "variants": [],
+    "notes": "A pair of guards 400 mm long laid side by side: charcoal shells with a mid-grey raised spine, ribs and elbow cup so the parts read apart, a grey foam liner showing at both ends and two grey hook-and-loop straps each. The reference covers both arms, so it takes the new arms slot that the steel arm guards in this batch name: none of the existing slots fits. The worn look is pending: no worn model is authored."
+  }
+]

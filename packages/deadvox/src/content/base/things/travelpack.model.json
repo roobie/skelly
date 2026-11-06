@@ -1,0 +1,14 @@
+{
+  "id": "travelpack",
+  "file": "assets/models/travelpack.glb",
+  "parts": {
+    "travelpack": {
+      "node": "travelpack:compound",
+      "massKg": 0.52,
+      "centreOfMass": [0.000011914646947312382, 0.19762581271835689, 0.0026982484450641555]
+    }
+  },
+  "grip": { "at": [0, 0.448, -0.05], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

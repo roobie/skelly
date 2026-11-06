@@ -1,0 +1,11 @@
+{
+  "id": "microscope_dissecting",
+  "file": "assets/models/microscope_dissecting.glb",
+  "parts": {
+    "microscope_dissecting": {
+      "node": "microscope_dissecting:compound",
+      "massKg": 4,
+      "centreOfMass": [-1.5502466594569278e-20, 0.11035923385434239, -0.017982158251808555]
+    }
+  }
+}

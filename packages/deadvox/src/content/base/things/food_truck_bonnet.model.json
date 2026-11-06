@@ -1,0 +1,14 @@
+{
+  "id": "food_truck_bonnet",
+  "file": "assets/models/food_truck_bonnet.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 20,
+      "centreOfMass": [2.7980324074074074, 1.1672453703703707, 0],
+      "collision": [{ "min": [2.40625, 1.03125, -0.90625], "max": [3.21875, 1.3125, 0.90625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

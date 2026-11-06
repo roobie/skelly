@@ -1,0 +1,18 @@
+{
+  "id": "cement_mixer_roller_stand",
+  "file": "assets/models/cement_mixer_roller_stand.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 70,
+      "centreOfMass": [-1.453125, 1.3913541666666667, 0.5989409722222222],
+      "collision": [
+        { "min": [-1.65625, 1.34375, 0.46875], "max": [-1.25, 1.5, 0.71875] },
+        { "min": [-1.6875, 1.1875, 0.46875], "max": [-1.21875, 1.34375, 0.75] },
+        { "min": [-1.625, 1.375, 0.46875], "max": [-1.28125, 1.625, 0.71875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

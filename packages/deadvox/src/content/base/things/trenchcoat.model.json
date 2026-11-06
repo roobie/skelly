@@ -1,0 +1,11 @@
+{
+  "id": "trenchcoat",
+  "file": "assets/models/trenchcoat.glb",
+  "parts": {
+    "trenchcoat": {
+      "node": "trenchcoat:compound",
+      "massKg": 2,
+      "centreOfMass": [-0.0000853274027363321, 0.032519255672540937, -0.0018444062834299833]
+    }
+  }
+}

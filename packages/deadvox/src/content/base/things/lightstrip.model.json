@@ -1,0 +1,14 @@
+{
+  "id": "lightstrip",
+  "file": "assets/models/lightstrip.glb",
+  "parts": {
+    "lightstrip": {
+      "node": "lightstrip:compound",
+      "massKg": 0.15,
+      "centreOfMass": [0.0018137432188065107, 0.0441600361663653, -0.0006329113924050636]
+    }
+  },
+  "grip": { "at": [0, 0.046000000000000006, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "gloves_wraps_fur",
+  "file": "assets/models/gloves_wraps_fur.glb",
+  "parts": {
+    "gloves_wraps_fur": {
+      "node": "gloves_wraps_fur:compound",
+      "massKg": 0.25,
+      "centreOfMass": [-6.438521769155072e-18, 0.02644189539806091, 0.027691110200737418]
+    }
+  }
+}

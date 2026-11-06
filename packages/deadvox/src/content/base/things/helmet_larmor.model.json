@@ -1,0 +1,11 @@
+{
+  "id": "helmet_larmor",
+  "file": "assets/models/helmet_larmor.glb",
+  "parts": {
+    "helmet_larmor": {
+      "node": "helmet_larmor:compound",
+      "massKg": 0.51,
+      "centreOfMass": [2.4639645189137176e-7, 0.09303461870149062, -0.0031371196254773885]
+    }
+  }
+}

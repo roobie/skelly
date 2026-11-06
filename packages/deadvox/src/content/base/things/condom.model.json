@@ -1,0 +1,5 @@
+{
+  "id": "condom",
+  "file": "assets/models/condom.glb",
+  "parts": { "condom": { "node": "condom:compound", "massKg": 0.0027, "centreOfMass": [0, 0.0013247863247863247, 0] } }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "weather_glass",
+  "file": "assets/models/weather_glass.glb",
+  "parts": {
+    "weather_glass": {
+      "node": "weather_glass:compound",
+      "massKg": 5.7,
+      "centreOfMass": [0, 0.1557909681801458, 0.0013499806609246904]
+    }
+  }
+}

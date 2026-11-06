@@ -1,0 +1,11 @@
+{
+  "id": "tobacco_raw",
+  "file": "assets/models/tobacco_raw.glb",
+  "parts": {
+    "tobacco_raw": {
+      "node": "tobacco_raw:compound",
+      "massKg": 0.13,
+      "centreOfMass": [-0.019741735630624525, 0.00717663817663818, -0.0028903812237145578]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "scrap_esapi_plate",
+  "file": "assets/models/scrap_esapi_plate.glb",
+  "parts": {
+    "scrap_esapi_plate": {
+      "node": "scrap_esapi_plate:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-0.014812112869924284, 0.01711080523055746, 0]
+    }
+  }
+}

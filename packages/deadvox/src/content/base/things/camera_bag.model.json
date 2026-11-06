@@ -1,0 +1,11 @@
+{
+  "id": "camera_bag",
+  "file": "assets/models/camera_bag.glb",
+  "parts": {
+    "camera_bag": {
+      "node": "camera_bag:compound",
+      "massKg": 0.6,
+      "centreOfMass": [-0.005232259837167936, 0.0956253705658631, 0.00354514034504201]
+    }
+  }
+}

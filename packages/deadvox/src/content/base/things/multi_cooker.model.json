@@ -1,0 +1,11 @@
+{
+  "id": "multi_cooker",
+  "file": "assets/models/multi_cooker.glb",
+  "parts": {
+    "multi_cooker": {
+      "node": "multi_cooker:compound",
+      "massKg": 5,
+      "centreOfMass": [-0.0000203993083663068, 0.11815456847367845, 0.0035944876535614584]
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "tow_truck_boom_ram",
+  "file": "assets/models/tow_truck_boom_ram.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 70,
+      "centreOfMass": [-0.9514180672268907, 1.566701680672269, 0],
+      "collision": [
+        { "min": [-1.15625, 1.0625, -0.09375], "max": [-0.6875, 1.90625, 0.09375] },
+        { "min": [-1.34375, 1.84375, -0.03125], "max": [-1.03125, 2.46875, 0.03125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

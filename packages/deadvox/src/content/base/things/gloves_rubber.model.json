@@ -1,0 +1,11 @@
+{
+  "id": "gloves_rubber",
+  "file": "assets/models/gloves_rubber.glb",
+  "parts": {
+    "gloves_rubber": {
+      "node": "gloves_rubber:compound",
+      "massKg": 0.08,
+      "centreOfMass": [-7.629098656058414e-18, 0.004852344296710981, -0.02516095171448564]
+    }
+  }
+}

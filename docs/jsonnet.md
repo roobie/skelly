@@ -46,4 +46,5 @@ additional generators.
 - Force critical assertions because Jsonnet evaluation is lazy; invalid authored data must fail before it reaches consumers.
 - Separate authored values from transformation rules and final output so one tuning change can update dependent data without duplicating definitions.
 - Cache height-invariant membership and reuse glyphs for ownership when expanding authored plans. Repeated interpreted list scans make content checks expensive without adding authoring flexibility; see `packages/deadvox/src/content/base/gauntlet-lab-level.libsonnet`, `build`.
+- Serve an unchanged compile and its formatting from an untracked cache, because a content edit otherwise recompiles and reformats every source and the wait falls on each rebuild. The key covers every file a compile can read and the runtime and formatter versions, so a hit is the output the compiler would give; set `SKELLY_JSONNET_CACHE=off` to rule the cache out. See `tools/jsonnet/cache.mjs`, `importClosureKey`.
 - Use the pinned go-jsonnet runtime so contributors and CI evaluate the same source without requiring a Go toolchain. See `tools/jsonnet/runtime.json` and `tools/jsonnet/setup.mjs`.

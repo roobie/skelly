@@ -1,0 +1,11 @@
+{
+  "id": "tent_kit",
+  "file": "assets/models/tent_kit.glb",
+  "parts": {
+    "tent_kit": {
+      "node": "tent_kit:compound",
+      "massKg": 0.71,
+      "centreOfMass": [0.002076951197221715, 0.050336806190215085, 0.00293029915311034]
+    }
+  }
+}

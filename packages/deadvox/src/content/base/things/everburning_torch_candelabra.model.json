@@ -1,0 +1,14 @@
+{
+  "id": "everburning_torch_candelabra",
+  "file": "assets/models/everburning_torch_candelabra.glb",
+  "parts": {
+    "everburning_torch_candelabra": {
+      "node": "everburning_torch_candelabra:compound",
+      "massKg": 49,
+      "centreOfMass": [1.1391857100492321e-7, 0.46119375270556584, 1.1391857100554077e-7]
+    }
+  },
+  "grip": { "at": [0, 0.52, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

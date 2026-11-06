@@ -1,0 +1,101 @@
+[
+  {
+    "id": "narrow_spectrum_antibiotic",
+    "model": "narrow_spectrum_antibiotic",
+    "name": "Blister card of narrow-spectrum antibiotics",
+    "category": "medical",
+    "size": [1, 1],
+    "economy": { "usage": ["Medical", "Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "Mild antibiotic tablets. Helps the body fight off an infection for twelve hours but rarely cures one alone.",
+    "reference": "weak_antibiotic",
+    "variants": [],
+    "notes": "Plain white tablets and a green band set it apart from batch 8's red and yellow broad-spectrum capsules. Infection resistance has no content field yet."
+  },
+  {
+    "id": "cannabis",
+    "model": "cannabis",
+    "name": "Bag of cannabis",
+    "category": "medical",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "Dried cannabis buds in a zip bag. Smoked to ease nausea and pain and lift the mood. Habit-forming.",
+    "reference": "weed",
+    "variants": [],
+    "notes": "plastic-clear draws the bag; it stays see-through in the game, so the olive buds inside show there, though the look tiles draw the bag opaque. Nausea, appetite, mood and habit have no content fields yet."
+  },
+  {
+    "id": "wintergreen_ointment",
+    "model": "wintergreen_ointment",
+    "name": "Jar of wintergreen ointment",
+    "category": "medical",
+    "size": [1, 1],
+    "economy": { "usage": ["Medical", "Residential"], "tiers": ["Tier1"] },
+    "description": "A jar of ointment smelling of wintergreen. Rubbed into a wound, it dulls the pain and keeps it a little cleaner.",
+    "reference": "wintergreen_oil",
+    "variants": [],
+    "notes": "An ointment, so the item is the whole 50 ml jar, as with the existing antiseptic, and the row carries 60 g with the jar against the reference's 40 g. The reference's 250 ml volume does not fit 40 g of ointment, so the jar follows the mass; the look step allows this as a per-unit reference. Pain relief and mild antisepsis should follow the existing antiseptic's fields when the refactor applies drafts."
+  },
+  {
+    "id": "fast_acting_sedative",
+    "model": "fast_acting_sedative",
+    "name": "Vial of fast-acting sedatives",
+    "category": "medical",
+    "size": [1, 1],
+    "economy": { "usage": ["Medical", "Residential"], "tiers": ["Tier2"] },
+    "description": "Strong anti-anxiety tablets. Calms quickly and brings on sleep, but blurs memory and is badly addictive.",
+    "reference": "xanax",
+    "variants": [],
+    "notes": "The id describes the drug instead of the reference's brand. A white cap sets the vial apart from batch 8's blue-capped painkillers. plastic-amber draws the vial; it stays see-through in the game. Sedation, memory loss and addiction have no content fields yet."
+  },
+  {
+    "id": "first_aid_box",
+    "model": "first_aid_box",
+    "name": "First aid case",
+    "category": "bag",
+    "size": [3, 2],
+    "economy": { "usage": ["Medical", "Residential", "Industrial"], "tiers": ["Tier1"] },
+    "container": { "rigid": true, "pockets": [{ "grid": [3, 2], "handlingSimSeconds": 0.4 }] },
+    "description": "An empty red plastic case with a white cross and a carry handle. Holds bandages and medicine.",
+    "reference": "1st_aid_box",
+    "variants": [],
+    "notes": "The empty case, which carries the reference's 200 g; its contents are separate items. The container follows the existing ammo can's fields; the pocket grid is a placeholder for the 2.9 L the reference gives."
+  },
+  {
+    "id": "plastic_barrel",
+    "model": "plastic_barrel",
+    "name": "Plastic barrel",
+    "category": "misc",
+    "size": [5, 7],
+    "economy": { "usage": ["Industrial", "Residential"], "tiers": ["Tier1"] },
+    "description": "A blue 30 gallon plastic barrel with screw bungs in the top. Holds water or fuel without leaking.",
+    "reference": "30gal_barrel",
+    "variants": ["30gal_drum_aluminum"],
+    "notes": "Closed-head with two bungs, the common blue drum, so it reads apart from the two steel drums. The reference's 'watertight lid' becomes the bungs. Liquid storage of about 115 L has no content field yet; the size is a placeholder for a thing too big to pocket. The aluminium tank variant rides on this model as the reference groups it."
+  },
+  {
+    "id": "steel_drum_100",
+    "model": "steel_drum_100",
+    "name": "Steel drum (100 L)",
+    "category": "misc",
+    "size": [5, 7],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "tool": { "qualities": { "cooking": 2 } },
+    "description": "A red 30 gallon steel drum with a lid held by a bolted clamp ring. Holds liquids and stands over a fire.",
+    "reference": "30gal_drum",
+    "variants": ["55gal_drum_aluminum", "30gal_firebarrel"],
+    "notes": "Open-head with a clamp ring, so it reads apart from the closed 200 L drum. The reference's 7.6 kg is kept though a real 30 gallon steel drum weighs nearer 14 kg; its box is 1.7 times the reference volume because the reference gives the contents, not the drum. cooking stands for the reference's boiling quality; liquid storage has no content field yet, and the size is a placeholder. The 200 L aluminium tank is a variant here as the reference groups it, though it would fit steel_drum_200's size better; the fire barrel rides here too."
+  },
+  {
+    "id": "steel_drum_200",
+    "model": "steel_drum_200",
+    "name": "Steel drum (200 L)",
+    "category": "misc",
+    "size": [6, 8],
+    "economy": { "usage": ["Industrial", "Military"], "tiers": ["Tier1", "Tier2"] },
+    "tool": { "qualities": { "cooking": 2 } },
+    "description": "An olive 55 gallon steel drum with two screw bungs in the top. Holds fuel or water and stands over a fire.",
+    "reference": "55gal_drum",
+    "variants": ["30gal_barrel_mutagen", "55gal_firebarrel", "oil_extractor_crude"],
+    "notes": "Closed-head with two bungs. Its box is 1.5 times the reference volume because the reference gives the contents, not the drum. cooking stands for the reference's boiling quality; liquid storage has no content field yet, and the size is a placeholder. The variants ride on this model as the reference groups them, though the 30 gallon barrel would fit plastic_barrel better and the oil extractor would want its own still parts."
+  }
+]

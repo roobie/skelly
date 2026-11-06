@@ -1,0 +1,11 @@
+{
+  "id": "medical_gauze",
+  "file": "assets/models/medical_gauze.glb",
+  "parts": {
+    "medical_gauze": {
+      "node": "medical_gauze:compound",
+      "massKg": 0.005,
+      "centreOfMass": [-0.000244390539721043, 0.007420861127956338, 0]
+    }
+  }
+}

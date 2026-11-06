@@ -1,0 +1,11 @@
+{
+  "id": "iotv_shoulder_plate",
+  "file": "assets/models/iotv_shoulder_plate.glb",
+  "parts": {
+    "iotv_shoulder_plate": {
+      "node": "iotv_shoulder_plate:compound",
+      "massKg": 0.6,
+      "centreOfMass": [-0.00936744692433315, 0.011395028125567046, 1.1913892419052179e-17]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "heels",
+  "file": "assets/models/heels.glb",
+  "parts": {
+    "heels": {
+      "node": "heels:compound",
+      "massKg": 0.5,
+      "centreOfMass": [-3.78591614777118e-18, 0.03354027664768105, 0.01919853539462978]
+    }
+  }
+}

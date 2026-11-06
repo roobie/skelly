@@ -1,0 +1,11 @@
+{
+  "id": "ch_chainmail_face",
+  "file": "assets/models/ch_chainmail_face.glb",
+  "parts": {
+    "ch_chainmail_face": {
+      "node": "ch_chainmail_face:compound",
+      "massKg": 0.83,
+      "centreOfMass": [-8.481728916206367e-19, 0.00325096129197641, 0.004112278902845418]
+    }
+  }
+}

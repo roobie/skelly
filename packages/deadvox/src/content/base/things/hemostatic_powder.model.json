@@ -1,0 +1,14 @@
+{
+  "id": "hemostatic_powder",
+  "file": "assets/models/hemostatic_powder.glb",
+  "parts": {
+    "hemostatic_powder": {
+      "node": "hemostatic_powder:compound",
+      "massKg": 0.03,
+      "centreOfMass": [-0.000021276595744680778, 0.0035737817433081683, 0]
+    }
+  },
+  "grip": { "at": [0, 0.003, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

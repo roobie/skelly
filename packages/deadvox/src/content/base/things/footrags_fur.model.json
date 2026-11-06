@@ -1,0 +1,11 @@
+{
+  "id": "footrags_fur",
+  "file": "assets/models/footrags_fur.glb",
+  "parts": {
+    "footrags_fur": {
+      "node": "footrags_fur:compound",
+      "massKg": 0.2,
+      "centreOfMass": [-0.0016660737578560487, 0.009220206332266105, 0.005444563026206573]
+    }
+  }
+}

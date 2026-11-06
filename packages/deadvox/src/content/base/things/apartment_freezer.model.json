@@ -1,0 +1,11 @@
+{
+  "id": "apartment_freezer",
+  "file": "assets/models/apartment_freezer.glb",
+  "parts": {
+    "apartment_freezer": {
+      "node": "apartment_freezer:compound",
+      "massKg": 110,
+      "centreOfMass": [0.00020192613977140005, 0.4765402804840602, -0.0009110853476205939]
+    }
+  }
+}

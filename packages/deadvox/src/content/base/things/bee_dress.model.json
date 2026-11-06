@@ -1,0 +1,11 @@
+{
+  "id": "bee_dress",
+  "file": "assets/models/bee_dress.glb",
+  "parts": {
+    "bee_dress": {
+      "node": "bee_dress:compound",
+      "massKg": 0.68,
+      "centreOfMass": [0, 0.021394217005439437, -0.010189389768548081]
+    }
+  }
+}

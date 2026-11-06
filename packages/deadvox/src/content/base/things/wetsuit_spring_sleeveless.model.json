@@ -1,0 +1,11 @@
+{
+  "id": "wetsuit_spring_sleeveless",
+  "file": "assets/models/wetsuit_spring_sleeveless.glb",
+  "parts": {
+    "wetsuit_spring_sleeveless": {
+      "node": "wetsuit_spring_sleeveless:compound",
+      "massKg": 0.9,
+      "centreOfMass": [-0.0003072413793103448, 0.006442528735632184, -0.2560704022988507]
+    }
+  }
+}

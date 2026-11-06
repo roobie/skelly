@@ -1,0 +1,11 @@
+{
+  "id": "steel_bracer",
+  "file": "assets/models/steel_bracer.glb",
+  "parts": {
+    "steel_bracer": {
+      "node": "steel_bracer:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0.014265240278485318, 0.026299201901850932, 0.0009628120224146727]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "armor_cardboard_cuirass",
+  "file": "assets/models/armor_cardboard_cuirass.glb",
+  "parts": {
+    "armor_cardboard_cuirass": {
+      "node": "armor_cardboard_cuirass:compound",
+      "massKg": 0.7,
+      "centreOfMass": [0, 0.03427549920213915, 0.025932375900288976]
+    }
+  }
+}

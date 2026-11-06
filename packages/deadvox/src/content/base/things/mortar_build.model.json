@@ -1,0 +1,11 @@
+{
+  "id": "mortar_build",
+  "file": "assets/models/mortar_build.glb",
+  "parts": {
+    "mortar_build": {
+      "node": "mortar_build:compound",
+      "massKg": 1.7,
+      "centreOfMass": [-0.0001265421618562535, 0.046052065647990935, 0.0002619128466327107]
+    }
+  }
+}

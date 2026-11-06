@@ -1,0 +1,11 @@
+{
+  "id": "shorts_denim",
+  "file": "assets/models/shorts_denim.glb",
+  "parts": {
+    "shorts_denim": {
+      "node": "shorts_denim:compound",
+      "massKg": 0.41,
+      "centreOfMass": [0.000009945184025058745, 0.01656758026624901, 0.002014408770555991]
+    }
+  }
+}

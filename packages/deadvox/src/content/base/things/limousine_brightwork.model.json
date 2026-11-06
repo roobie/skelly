@@ -1,0 +1,19 @@
+{
+  "id": "limousine_brightwork",
+  "file": "assets/models/limousine_brightwork.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 3,
+      "centreOfMass": [-0.05248397435897437, 0.9687500000000001, 0],
+      "collision": [
+        { "min": [-1.90625, 0.9375, 0.875], "max": [0.75, 1, 0.9375] },
+        { "min": [0.84375, 0.9375, 0.875], "max": [1.84375, 1, 0.9375] },
+        { "min": [-1.90625, 0.9375, -0.9375], "max": [0.75, 1, -0.875] },
+        { "min": [0.84375, 0.9375, -0.9375], "max": [1.84375, 1, -0.875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

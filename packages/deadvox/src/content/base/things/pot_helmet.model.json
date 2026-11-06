@@ -1,0 +1,11 @@
+{
+  "id": "pot_helmet",
+  "file": "assets/models/pot_helmet.glb",
+  "parts": {
+    "pot_helmet": {
+      "node": "pot_helmet:compound",
+      "massKg": 2.6,
+      "centreOfMass": [-2.4053639610137772e-20, 0.06377138038326205, 0.00025921079414929196]
+    }
+  }
+}

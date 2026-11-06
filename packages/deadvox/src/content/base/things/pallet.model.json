@@ -1,0 +1,11 @@
+{
+  "id": "pallet",
+  "file": "assets/models/pallet.glb",
+  "parts": {
+    "pallet": {
+      "node": "pallet:compound",
+      "massKg": 18,
+      "centreOfMass": [0, 0.09071428571428573, -1.3037544161682352e-17]
+    }
+  }
+}

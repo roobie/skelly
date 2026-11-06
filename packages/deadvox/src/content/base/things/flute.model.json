@@ -1,0 +1,14 @@
+{
+  "id": "flute",
+  "file": "assets/models/flute.glb",
+  "parts": {
+    "flute": {
+      "node": "flute:compound",
+      "massKg": 0.4,
+      "centreOfMass": [0.0017874363782480601, 0.01069421376908653, 0.000349584784355746]
+    }
+  },
+  "grip": { "at": [0.0020000000000000018, 0.01, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

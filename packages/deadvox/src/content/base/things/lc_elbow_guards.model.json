@@ -1,0 +1,11 @@
+{
+  "id": "lc_elbow_guards",
+  "file": "assets/models/lc_elbow_guards.glb",
+  "parts": {
+    "lc_elbow_guards": {
+      "node": "lc_elbow_guards:compound",
+      "massKg": 0.4,
+      "centreOfMass": [1.9162485232888673e-18, 0.008841698841698845, 0]
+    }
+  }
+}

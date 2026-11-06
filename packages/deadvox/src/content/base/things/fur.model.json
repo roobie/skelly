@@ -1,0 +1,11 @@
+{
+  "id": "fur",
+  "file": "assets/models/fur.glb",
+  "parts": {
+    "fur": {
+      "node": "fur:compound",
+      "massKg": 0.053,
+      "centreOfMass": [-0.0012041857006267933, 0.0031791139912886422, 0.0002149155423350684]
+    }
+  }
+}

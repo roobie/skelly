@@ -1,0 +1,5 @@
+{
+  "id": "cardboard_roll",
+  "file": "assets/models/cardboard_roll.glb",
+  "parts": { "cardboard_roll": { "node": "cardboard_roll:compound", "massKg": 0.001, "centreOfMass": [0, 0.021, 0] } }
+}

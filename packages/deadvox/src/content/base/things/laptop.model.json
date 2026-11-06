@@ -1,0 +1,7 @@
+{
+  "id": "laptop",
+  "file": "assets/models/laptop.glb",
+  "parts": {
+    "laptop": { "node": "laptop:compound", "massKg": 1.2, "centreOfMass": [0, 0.05720912887828163, -0.067868138424821] }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "id": "glass_tube_small",
+  "file": "assets/models/glass_tube_small.glb",
+  "parts": {
+    "glass_tube_small": { "node": "glass_tube_small:compound", "massKg": 0.005, "centreOfMass": [0, 0.006, 0] }
+  }
+}

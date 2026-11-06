@@ -1,0 +1,11 @@
+{
+  "id": "bat_anklet",
+  "file": "assets/models/bat_anklet.glb",
+  "parts": {
+    "bat_anklet": {
+      "node": "bat_anklet:compound",
+      "massKg": 0.0044,
+      "centreOfMass": [0.0000028571428571413707, 0.0013685714285714286, -0.0008171428571428583]
+    }
+  }
+}

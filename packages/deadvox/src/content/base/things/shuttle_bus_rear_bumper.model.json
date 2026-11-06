@@ -1,0 +1,14 @@
+{
+  "id": "shuttle_bus_rear_bumper",
+  "file": "assets/models/shuttle_bus_rear_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 35,
+      "centreOfMass": [-3.96875, 0.4375, 0],
+      "collision": [{ "min": [-4.03125, 0.28125, -1.21875], "max": [-3.90625, 0.59375, 1.21875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

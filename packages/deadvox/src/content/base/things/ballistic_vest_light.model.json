@@ -1,0 +1,11 @@
+{
+  "id": "ballistic_vest_light",
+  "file": "assets/models/ballistic_vest_light.glb",
+  "parts": {
+    "ballistic_vest_light": {
+      "node": "ballistic_vest_light:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0, 0.027742404153205436, 0.0022165493286522577]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "hat_boonie",
+  "file": "assets/models/hat_boonie.glb",
+  "parts": {
+    "hat_boonie": {
+      "node": "hat_boonie:compound",
+      "massKg": 0.1,
+      "centreOfMass": [1.964799554757784e-20, 0.0548976722090261, 3.929599109515568e-20]
+    }
+  }
+}

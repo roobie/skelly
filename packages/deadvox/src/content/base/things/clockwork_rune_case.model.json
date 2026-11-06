@@ -1,0 +1,14 @@
+{
+  "id": "clockwork_rune_case",
+  "file": "assets/models/clockwork_rune_case.glb",
+  "parts": {
+    "clockwork_rune_case": {
+      "node": "clockwork_rune_case:compound",
+      "massKg": 0.6,
+      "centreOfMass": [-0.0006816278783401053, 0.057427656692525524, 0.0038556212289126896]
+    }
+  },
+  "grip": { "at": [0, 0.057999999999999996, -0.0010000000000000009], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

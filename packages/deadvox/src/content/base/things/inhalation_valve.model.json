@@ -1,0 +1,11 @@
+{
+  "id": "inhalation_valve",
+  "file": "assets/models/inhalation_valve.glb",
+  "parts": {
+    "inhalation_valve": {
+      "node": "inhalation_valve:compound",
+      "massKg": 0.004,
+      "centreOfMass": [0, 0.0029130434782608694, 0]
+    }
+  }
+}

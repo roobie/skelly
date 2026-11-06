@@ -1,0 +1,14 @@
+{
+  "id": "excavator_windscreen",
+  "file": "assets/models/excavator_windscreen.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 18,
+      "centreOfMass": [0.984375, 2.203125, -0.78125],
+      "collision": [{ "min": [0.96875, 1.5, -1.1875], "max": [1, 2.90625, -0.375] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

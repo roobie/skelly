@@ -1,0 +1,11 @@
+{
+  "id": "bandolier_rifle",
+  "file": "assets/models/bandolier_rifle.glb",
+  "parts": {
+    "bandolier_rifle": {
+      "node": "bandolier_rifle:compound",
+      "massKg": 0.27,
+      "centreOfMass": [-0.02202117042189627, 0.005900196582489039, 0.008382579767125363]
+    }
+  }
+}

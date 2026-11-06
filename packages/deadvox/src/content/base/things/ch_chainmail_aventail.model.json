@@ -1,0 +1,11 @@
+{
+  "id": "ch_chainmail_aventail",
+  "file": "assets/models/ch_chainmail_aventail.glb",
+  "parts": {
+    "ch_chainmail_aventail": {
+      "node": "ch_chainmail_aventail:compound",
+      "massKg": 2.4,
+      "centreOfMass": [5.994062409804556e-18, 0.002982097186700778, 0.0184288150042626]
+    }
+  }
+}

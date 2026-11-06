@@ -1,0 +1,8 @@
+{
+  "id": "broom",
+  "file": "assets/models/broom.glb",
+  "parts": { "broom": { "node": "broom:compound", "massKg": 1.8, "centreOfMass": [1.1457034632034633, 0, 0] } },
+  "grip": { "at": [0.51, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

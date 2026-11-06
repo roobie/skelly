@@ -1,0 +1,11 @@
+{
+  "id": "memory_card",
+  "file": "assets/models/memory_card.glb",
+  "parts": {
+    "memory_card": {
+      "node": "memory_card:compound",
+      "massKg": 0.002,
+      "centreOfMass": [-0.00005142857142857142, 0.001137142857142857, 0.001302857142857143]
+    }
+  }
+}

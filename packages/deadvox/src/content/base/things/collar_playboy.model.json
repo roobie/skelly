@@ -1,0 +1,11 @@
+{
+  "id": "collar_playboy",
+  "file": "assets/models/collar_playboy.glb",
+  "parts": {
+    "collar_playboy": {
+      "node": "collar_playboy:compound",
+      "massKg": 0.02,
+      "centreOfMass": [1.0816657652785287e-7, 0.02035857220118983, 0.015007571660356949]
+    }
+  }
+}

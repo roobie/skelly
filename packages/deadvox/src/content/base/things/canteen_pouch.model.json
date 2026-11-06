@@ -1,0 +1,11 @@
+{
+  "id": "canteen_pouch",
+  "file": "assets/models/canteen_pouch.glb",
+  "parts": {
+    "canteen_pouch": {
+      "node": "canteen_pouch:compound",
+      "massKg": 0.18,
+      "centreOfMass": [0.002396103896103896, 0.08793051948051948, 0.00027012987012987026]
+    }
+  }
+}

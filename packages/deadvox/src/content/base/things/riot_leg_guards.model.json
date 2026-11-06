@@ -1,0 +1,11 @@
+{
+  "id": "riot_leg_guards",
+  "file": "assets/models/riot_leg_guards.glb",
+  "parts": {
+    "riot_leg_guards": {
+      "node": "riot_leg_guards:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0.0006013621557595473, 0.024600888362451882, 0.0059962096535386596]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "sickle",
+  "file": "assets/models/sickle.glb",
+  "parts": {
+    "sickle": {
+      "node": "sickle:compound",
+      "massKg": 0.8,
+      "centreOfMass": [0.19940129366106066, 0.017347994825355748, -0.023535834411384206]
+    }
+  },
+  "grip": { "at": [0.066, 0.018000000000000002, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

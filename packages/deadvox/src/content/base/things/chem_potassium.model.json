@@ -1,0 +1,14 @@
+{
+  "id": "chem_potassium",
+  "file": "assets/models/chem_potassium.glb",
+  "parts": {
+    "chem_potassium": {
+      "node": "chem_potassium:compound",
+      "massKg": 0.24,
+      "centreOfMass": [0.0000437171619941443, 0.044710985440981836, 0.000005374403401114994]
+    }
+  },
+  "grip": { "at": [0, 0.04, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

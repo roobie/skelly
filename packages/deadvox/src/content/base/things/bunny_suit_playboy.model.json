@@ -1,0 +1,11 @@
+{
+  "id": "bunny_suit_playboy",
+  "file": "assets/models/bunny_suit_playboy.glb",
+  "parts": {
+    "bunny_suit_playboy": {
+      "node": "bunny_suit_playboy:compound",
+      "massKg": 0.26,
+      "centreOfMass": [0, 0.007057854852812591, 0.011259593898766143]
+    }
+  }
+}

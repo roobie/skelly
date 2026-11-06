@@ -1,0 +1,14 @@
+{
+  "id": "refuse_truck_packer",
+  "file": "assets/models/refuse_truck_packer.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 420,
+      "centreOfMass": [-3.700892857142857, 1.7863707983193278, 0],
+      "collision": [{ "min": [-4, 1.4375, -1.09375], "max": [-3.5, 2.15625, 1.09375] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

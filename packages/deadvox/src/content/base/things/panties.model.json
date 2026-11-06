@@ -1,0 +1,11 @@
+{
+  "id": "panties",
+  "file": "assets/models/panties.glb",
+  "parts": {
+    "panties": {
+      "node": "panties:compound",
+      "massKg": 0.027,
+      "centreOfMass": [7.868917547117845e-20, 0.0022901445966514475, -0.031743150684931505]
+    }
+  }
+}

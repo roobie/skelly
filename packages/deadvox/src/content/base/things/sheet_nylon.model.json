@@ -1,0 +1,11 @@
+{
+  "id": "sheet_nylon",
+  "file": "assets/models/sheet_nylon.glb",
+  "parts": {
+    "sheet_nylon": {
+      "node": "sheet_nylon:compound",
+      "massKg": 0.015,
+      "centreOfMass": [0, 0.002959033330338694, -0.0002295391249663102]
+    }
+  }
+}

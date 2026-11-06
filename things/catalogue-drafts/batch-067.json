@@ -1,0 +1,99 @@
+[
+  {
+    "id": "toilet_travel",
+    "model": "toilet_travel",
+    "name": "Camp toilet",
+    "category": "tool",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A folding plastic toilet on four legs, with a seat ring, a lid and a bucket that takes a plastic bag.",
+    "reference": "toilet_travel",
+    "variants": [],
+    "notes": "Standing open: 33 cm square, seat at 30 cm, lid standing open at the back (-z) and a bucket hung under the seat. CHECK LENGTH (x1.76) is the open lid, which doubles the height; with it shut the iso read as a stool. Folding it swaps to toilet_travel_folded. Using it as a latrine needs a sanitation field the content pass adds."
+  },
+  {
+    "id": "toilet_travel_folded",
+    "model": "toilet_travel_folded",
+    "name": "Camp toilet (folded)",
+    "category": "tool",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A plastic camp toilet folded flat, lid shut and legs tucked under, with a carry handle.",
+    "reference": "toilet_travel_folded",
+    "variants": [],
+    "notes": "A distinct state of toilet_travel with its own model: 28 cm square and 4 cm thick, legs folded under the frame and the carry handle at +z. Unfolding it swaps to toilet_travel."
+  },
+  {
+    "id": "umbrella",
+    "model": "umbrella",
+    "name": "Umbrella",
+    "category": "tool",
+    "size": [1, 7],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A furled black umbrella with a wooden crook handle and a pointed steel tip. It keeps the rain off.",
+    "reference": "umbrella",
+    "variants": ["teleumbrella-extended"],
+    "notes": "1.01 m furled, crook at -x and ferrule at +x, strap round the canopy. CHECK VOLUME (x6.1) is the box round a thin rod and the crook. The extended telescoping umbrella is the same furled shape and length, so it rides on this model. Rain cover and a weak poke as a melee block are for the content pass."
+  },
+  {
+    "id": "vortex_stone",
+    "model": "vortex_stone",
+    "name": "Spiral stone",
+    "category": "misc",
+    "size": [2, 2],
+    "economy": { "usage": [], "tiers": [] },
+    "description": "A flat grey stone carved with a spiral and pierced round its rim. It weighs almost nothing, and the air stirs around it.",
+    "reference": "vortex_stone",
+    "variants": [],
+    "notes": "9 cm across and 3.5 cm thick, the spiral painted flush in a dark finish and twelve rim holes painted flush, since compound pieces cannot cut. Mass is the reference's 1 g on purpose: its lightness is the point. Economy is left empty because it is an anomaly drop rather than household loot; its source and any effect are for the content pass."
+  },
+  {
+    "id": "whistle_multitool",
+    "model": "whistle_multitool",
+    "name": "Whistle multitool",
+    "category": "tool",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "magnifying": 1 } },
+    "description": "A cheap orange whistle with a compass on top, a strip thermometer on its side and a small magnifying lens at the end.",
+    "reference": "whistle_multitool",
+    "variants": [],
+    "notes": "6 cm long with the mouthpiece at -x, compass on top, thermometer on +z, lens at +x and a lanyard loop. magnifying reuses the quality the magnifier draft declares; the lens is too small for fire_starting; a whistle sound and compass bearing need fields the content pass adds."
+  },
+  {
+    "id": "banjo",
+    "model": "banjo",
+    "name": "Banjo",
+    "category": "misc",
+    "size": [3, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A five-string banjo with a walnut resonator, a steel hoop round a white drum head and a dark fingerboard.",
+    "reference": "banjo",
+    "variants": [],
+    "notes": "Lying face up with the neck on +x, drawn at full size and scaled by 0.75 to 82 cm, the nearest a recognisable banjo comes to the reference's 72 cm. Strings are left out: at a 4 mm grain they merge into one strip. CHECK VOLUME (x4.1) is the box round a round pot and a long thin neck. Playing it for morale is for the content pass."
+  },
+  {
+    "id": "drum_percussion",
+    "model": "drum_percussion",
+    "name": "Tom drum",
+    "category": "misc",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A red lacquered drum with steel hoops, eight tension lugs and a white head on top.",
+    "reference": "drum_percussion",
+    "variants": [],
+    "notes": "28 cm across and 20 cm deep, standing on its bottom head. CHECK VOLUME (x0.28): the reference's 56.6 L is far more than a 28 cm drum fills; the model follows the 28 cm longest side. Playing it and the noise it makes are for the content pass."
+  },
+  {
+    "id": "drum_percussion_primitive",
+    "model": "drum_percussion_primitive",
+    "name": "Hide drum",
+    "category": "misc",
+    "size": [3, 3],
+    "economy": { "usage": [], "tiers": [] },
+    "description": "A carved wooden drum with a rawhide head tacked round the rim and laced down to a cord ring.",
+    "reference": "drum_percussion_primitive",
+    "variants": [],
+    "notes": "28 cm across and 25 cm tall, narrowing to a foot. Economy is empty because it is a hand-made item, crafted rather than found. The reference's 56.6 L volume is far more than the drum fills (box/volume x0.36), as for drum_percussion."
+  }
+]

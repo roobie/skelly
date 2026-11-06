@@ -1,0 +1,11 @@
+{
+  "id": "sheet_cotton",
+  "file": "assets/models/sheet_cotton.glb",
+  "parts": {
+    "sheet_cotton": {
+      "node": "sheet_cotton:compound",
+      "massKg": 0.02,
+      "centreOfMass": [0, 0.0030340929481428324, -0.0001650816436389735]
+    }
+  }
+}

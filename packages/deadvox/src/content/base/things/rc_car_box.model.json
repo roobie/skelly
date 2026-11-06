@@ -1,0 +1,11 @@
+{
+  "id": "rc_car_box",
+  "file": "assets/models/rc_car_box.glb",
+  "parts": {
+    "rc_car_box": {
+      "node": "rc_car_box:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0.0007172840105506742, 0.07651999287991323, 0.002094373513277344]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "face_shield",
+  "file": "assets/models/face_shield.glb",
+  "parts": {
+    "face_shield": {
+      "node": "face_shield:compound",
+      "massKg": 0.2,
+      "centreOfMass": [9.278526220448994e-19, 0.1523129556926529, -0.05970947840717893]
+    }
+  }
+}

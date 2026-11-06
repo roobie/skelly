@@ -1,0 +1,11 @@
+{
+  "id": "small_pressure_vessel",
+  "file": "assets/models/small_pressure_vessel.glb",
+  "parts": {
+    "small_pressure_vessel": {
+      "node": "small_pressure_vessel:compound",
+      "massKg": 19,
+      "centreOfMass": [-8.653127581188622e-7, 0.19543662895126715, 0.00044831067350176314]
+    }
+  }
+}

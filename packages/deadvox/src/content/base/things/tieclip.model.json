@@ -1,0 +1,11 @@
+{
+  "id": "tieclip",
+  "file": "assets/models/tieclip.glb",
+  "parts": {
+    "tieclip": {
+      "node": "tieclip:compound",
+      "massKg": 0.0084,
+      "centreOfMass": [-0.00020879120879120877, 0.0024285714285714284, 0]
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "news_helicopter_nose_cap",
+  "file": "assets/models/news_helicopter_nose_cap.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 6,
+      "centreOfMass": [2.306051587301587, 1.150297619047619, 0],
+      "collision": [
+        { "min": [2.28125, 1, -0.28125], "max": [2.3125, 1.375, 0.28125] },
+        { "min": [2.3125, 1, -0.15625], "max": [2.34375, 1.28125, 0.15625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "panoramic_eyepiece",
+  "file": "assets/models/panoramic_eyepiece.glb",
+  "parts": {
+    "panoramic_eyepiece": {
+      "node": "panoramic_eyepiece:compound",
+      "massKg": 0.034,
+      "centreOfMass": [-1.4164051584812117e-18, 0.032, -0.013506849315068493]
+    }
+  }
+}

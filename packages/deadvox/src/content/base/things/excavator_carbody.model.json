@@ -1,0 +1,18 @@
+{
+  "id": "excavator_carbody",
+  "file": "assets/models/excavator_carbody.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 2900,
+      "centreOfMass": [0, 0.7179655913072777, 0],
+      "collision": [
+        { "min": [-0.90625, 0.40625, -0.84375], "max": [0.90625, 0.875, 0.84375] },
+        { "min": [-0.1875, 0.40625, -0.90625], "max": [0.1875, 0.8125, 0.90625] },
+        { "min": [-0.875, 0.875, -0.875], "max": [0.875, 1.09375, 0.875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

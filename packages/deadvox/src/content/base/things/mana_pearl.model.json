@@ -1,0 +1,14 @@
+{
+  "id": "mana_pearl",
+  "file": "assets/models/mana_pearl.glb",
+  "parts": {
+    "mana_pearl": {
+      "node": "mana_pearl:compound",
+      "massKg": 0.14,
+      "centreOfMass": [-0.000013106796116504856, 0.024156796116504852, 0.0004019417475728155]
+    }
+  },
+  "grip": { "at": [0, 0.024, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

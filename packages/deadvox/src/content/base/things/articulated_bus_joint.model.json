@@ -1,0 +1,14 @@
+{
+  "id": "articulated_bus_joint",
+  "file": "assets/models/articulated_bus_joint.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 420,
+      "centreOfMass": [-1, 0.34375, 0],
+      "collision": [{ "min": [-1.625, 0.3125, -1.1875], "max": [-0.375, 0.375, 1.1875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

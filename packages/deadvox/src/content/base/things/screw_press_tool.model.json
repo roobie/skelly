@@ -1,0 +1,11 @@
+{
+  "id": "screw_press_tool",
+  "file": "assets/models/screw_press_tool.glb",
+  "parts": {
+    "screw_press_tool": {
+      "node": "screw_press_tool:compound",
+      "massKg": 200,
+      "centreOfMass": [-4.780163079356647e-20, 0.6752425259950052, 0.00011738314592474485]
+    }
+  }
+}

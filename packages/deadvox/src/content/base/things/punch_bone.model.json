@@ -1,0 +1,14 @@
+{
+  "id": "punch_bone",
+  "file": "assets/models/punch_bone.glb",
+  "parts": {
+    "punch_bone": {
+      "node": "punch_bone:compound",
+      "massKg": 0.084,
+      "centreOfMass": [-0.027617892724162214, 0.018206199054040452, 0.00014622119351917078]
+    }
+  },
+  "grip": { "at": [0, 0.018000000000000002, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

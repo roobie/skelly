@@ -1,0 +1,14 @@
+{
+  "id": "horse_box_roof",
+  "file": "assets/models/horse_box_roof.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 80,
+      "centreOfMass": [-0.171875, 2.4514802631578947, 0],
+      "collision": [{ "min": [-1.9375, 2.40625, -0.84375], "max": [1.59375, 2.5, 0.84375] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

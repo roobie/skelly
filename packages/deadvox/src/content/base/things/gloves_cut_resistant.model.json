@@ -1,0 +1,11 @@
+{
+  "id": "gloves_cut_resistant",
+  "file": "assets/models/gloves_cut_resistant.glb",
+  "parts": {
+    "gloves_cut_resistant": {
+      "node": "gloves_cut_resistant:compound",
+      "massKg": 0.08,
+      "centreOfMass": [-2.4737145617324072e-18, 0.007749687555793608, 0.024718086056061413]
+    }
+  }
+}

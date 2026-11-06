@@ -1,0 +1,98 @@
+[
+  {
+    "id": "speaker_cable",
+    "model": "speaker_cable",
+    "name": "Speaker cable",
+    "category": "misc",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A coil of red-and-black twin wire with banana plugs, for running an amplifier to a speaker.",
+    "reference": "cable_speaker",
+    "variants": [],
+    "notes": "A coil 190 mm across of red and black twin wire held by a white twist tie, with a red and a black banana plug on the loose ends. Mass is the reference weight, so the coil is drawn as about 3 m of wire. A salvage source of copper wire once disassembly is drafted."
+  },
+  {
+    "id": "xlr_cable",
+    "model": "xlr_cable",
+    "name": "Microphone cable",
+    "category": "misc",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A short coil of black balanced audio cable with a three-pin plug at one end and the matching socket at the other.",
+    "reference": "cable_xlr",
+    "variants": ["cable_instrument"],
+    "notes": "A black coil 120 mm across under a grey hook-and-loop strap, with a stainless male and female three-pin connector lying across it. The instrument cable variant shares this model: its quarter-inch jack plugs read the same at tile size. Mass is the reference weight, so the coil is a 1.5 m patch lead."
+  },
+  {
+    "id": "guitar_stand",
+    "model": "guitar_stand",
+    "name": "Guitar stand",
+    "category": "misc",
+    "size": [2, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A folding tripod stand of black aluminium tube with a padded cradle and a neck yoke, for holding a guitar upright.",
+    "reference": "guitar_stand",
+    "variants": [],
+    "notes": "A tripod 0.8 m tall with legs splayed 0.5 m, a rubber-padded cradle 0.26 m wide facing +z and a padded neck yoke at the top. CHECK VOLUME (x169): the reference volume is the stand folded; the model stands open, mostly empty space between thin tubes. It stays an item rather than furniture: it is light and folds."
+  },
+  {
+    "id": "headphones",
+    "model": "headphones",
+    "name": "Headphones",
+    "category": "misc",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "Closed-back studio headphones with a padded headband and cushioned ear cups.",
+    "reference": "headphones_circumaural",
+    "variants": [],
+    "notes": "Dark grey headband and ear cups with black cushions facing in and steel sliders and cup rims, standing on the cups, 0.26 m across. CHECK VOLUME (x12): the reference volume is the headphones folded flat; the model stands open as worn, and the bounding box counts the empty space under the band. No wearable is drafted: they are not hearing protection. The detachable cable and adapter are left out."
+  },
+  {
+    "id": "mic_stand",
+    "model": "mic_stand",
+    "name": "Microphone stand",
+    "category": "misc",
+    "size": [2, 8],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A telescoping black aluminium boom stand on a folding tripod, with a counterweighted boom and a mic clip.",
+    "reference": "mic_stand_tall",
+    "variants": [],
+    "notes": "Drawn closed: a tripod 0.7 m across, a mast 1 m tall with a clutch, and a boom 0.8 m long tilted up toward +z with a steel counterweight at the back and a clip at the front, 1.23 m tall overall. CHECK VOLUME (x321): the reference volume is the stand collapsed with its legs folded; the model stands set up, mostly empty space between tubes. Drawn at an 8 mm grain so the tall stand stays light to render."
+  },
+  {
+    "id": "xlr_microphone",
+    "model": "xlr_microphone",
+    "name": "Microphone",
+    "category": "misc",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A handheld dynamic microphone with a steel ball grille and a three-pin socket in its tail.",
+    "reference": "microphone_xlr_generic",
+    "variants": [],
+    "notes": "A black handle 130 mm long tapering to the tail, a stainless collar and a grey ball grille 52 mm across pointing to +x, with brass pins in the tail socket. Held by the handle like a hand tool. The clip in the reference is left out; the stand's model carries one."
+  },
+  {
+    "id": "mixer",
+    "model": "mixer",
+    "name": "Mixing desk",
+    "category": "misc",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "An eight-channel analogue mixing desk in a steel case, with a strip of knobs and a fader per channel and stereo master faders.",
+    "reference": "mixer_music",
+    "variants": [],
+    "notes": "A dark steel case 0.44 m by 0.36 m by 0.1 m with a charcoal face: eight channel strips of four knobs and a grey fader each, red master faders, green level meters and a raised rear panel of steel sockets; the faders face +z. Mass is the reference 40 kg, heavy for its size, as a steel-cased console. A salvage source of electronics and copper once disassembly is drafted."
+  },
+  {
+    "id": "plectrum",
+    "model": "plectrum",
+    "name": "Plectrum",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A small rounded triangle of tortoiseshell plastic for plucking guitar strings.",
+    "reference": "plectrum",
+    "variants": [],
+    "notes": "A red plastic pick 30 mm long and 26 mm across, tip toward +z; red rather than tortoiseshell so it reads as plastic in the tile. Real picks are under 1 mm thick; the model is one 2 mm voxel thick, the finest grain the build takes. One pick per item; no stack is drafted."
+  }
+]

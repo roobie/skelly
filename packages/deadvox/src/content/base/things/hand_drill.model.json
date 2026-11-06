@@ -1,0 +1,14 @@
+{
+  "id": "hand_drill",
+  "file": "assets/models/hand_drill.glb",
+  "parts": {
+    "hand_drill": {
+      "node": "hand_drill:compound",
+      "massKg": 0.9,
+      "centreOfMass": [-0.018358921729611385, 0.05145894909688013, 0.00480665024630542]
+    }
+  },
+  "grip": { "at": [-0.078, 0.051000000000000004, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

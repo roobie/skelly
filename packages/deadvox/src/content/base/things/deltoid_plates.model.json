@@ -1,0 +1,11 @@
+{
+  "id": "deltoid_plates",
+  "file": "assets/models/deltoid_plates.glb",
+  "parts": {
+    "deltoid_plates": {
+      "node": "deltoid_plates:compound",
+      "massKg": 0.4,
+      "centreOfMass": [-2.3976249639218186e-18, 0.024589492753623175, 0.006949275362318838]
+    }
+  }
+}

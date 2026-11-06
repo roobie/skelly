@@ -1,0 +1,14 @@
+{
+  "id": "curling_iron",
+  "file": "assets/models/curling_iron.glb",
+  "parts": {
+    "curling_iron": {
+      "node": "curling_iron:compound",
+      "massKg": 0.3,
+      "centreOfMass": [0.13160801781737197, 0.017746102449888643, 0]
+    }
+  },
+  "grip": { "at": [0.066, 0.016, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

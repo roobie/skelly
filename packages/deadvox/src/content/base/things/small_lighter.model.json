@@ -1,0 +1,14 @@
+{
+  "id": "small_lighter",
+  "file": "assets/models/small_lighter.glb",
+  "parts": {
+    "small_lighter": {
+      "node": "small_lighter:lighter",
+      "massKg": 0.011,
+      "centreOfMass": [0, 0.02189400921658986, -0.000013824884792626727]
+    }
+  },
+  "grip": { "at": [0, 0.02, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

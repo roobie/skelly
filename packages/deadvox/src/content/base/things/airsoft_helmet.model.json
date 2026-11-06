@@ -1,0 +1,11 @@
+{
+  "id": "airsoft_helmet",
+  "file": "assets/models/airsoft_helmet.glb",
+  "parts": {
+    "airsoft_helmet": {
+      "node": "airsoft_helmet:compound",
+      "massKg": 0.59,
+      "centreOfMass": [-4.366989595528523e-18, 0.07728317935181116, -0.0002226132864056313]
+    }
+  }
+}

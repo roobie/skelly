@@ -1,0 +1,205 @@
+[
+  {
+    "id": "flag_jumpsuit",
+    "model": "flag_jumpsuit",
+    "name": "Flag jumpsuit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 1, "warmth": 15, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "left hip" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "right hip" }
+      ]
+    },
+    "description": "A thin white cotton jumpsuit printed all over with red stripes, with a blue patch of white stars on the chest. Two hip pockets.",
+    "reference": "flag_jumpsuit",
+    "variants": [],
+    "notes": "Folded on a shelf, neck on +z: the body folded flat with a collar at +z, sleeves along both sides and the legs folded up over the lower half with their hems towards the chest and a seam between them, so a one-piece reads apart from a shirt. 360 mm by 344 mm and 72 mm tall: white cloth with red stripes across the legs, the right chest and both sleeves, and a navy corner with white stars on the left chest; the print runs over the front, so no zip is drawn. The hip pockets lie under the folded legs. Box/volume x2.6: folded cloth stands looser than the packed reference volume. Slot `torso`: a one-piece covers the torso, arms and legs, and one slot cannot say that, so the leg cover waits for multi-part coverage, as earlier one-pieces note. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "fursuit",
+    "model": "fursuit",
+    "name": "Animal costume",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 26, "warmth": 50, "wearPerDamage": 0.0012 },
+    "description": "A heavy full-body animal costume of faux fur, with paws, a tail and a big padded head with round ears. Very warm and very hard to move in.",
+    "reference": "fursuit",
+    "variants": [],
+    "notes": "Folded on a shelf, neck on +z: the body folded flat with a collar at +z, sleeves along both sides and the legs folded up over the lower half with their hems towards the chest and a seam between them, so a one-piece reads apart from a shirt. The body is folded thick, 460 mm by 400 mm, with fur paws sewn on the folded legs; the costume head, 260 mm across and 260 mm tall, sits on the chest with round ears, a pale muzzle, black eyes and nose, and a fluffy tail with a pale tip sticks out the right side, 648 mm across in all. No pockets, so no container. CHECK VOLUME (x10): the head stands round a head-sized space and the tail sticks out; the reference counts the suit packed. It also covers the head, eyes and mouth; one slot cannot say that either. Slot `torso`: a one-piece covers the torso, arms and legs, and one slot cannot say that, so the leg cover waits for multi-part coverage, as earlier one-pieces note. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jumpsuit",
+    "model": "jumpsuit",
+    "name": "Jumpsuit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Police"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 1, "warmth": 15, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "left chest" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "right chest" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "left hip" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "right hip" }
+      ]
+    },
+    "description": "A thin orange cotton jumpsuit with short sleeves and a zip front, the kind issued in prisons. Two chest pockets and two hip pockets.",
+    "reference": "jumpsuit",
+    "variants": ["jumpsuit_xl", "jumpsuit_xs"],
+    "notes": "Folded on a shelf, neck on +z: the body folded flat with a collar at +z, sleeves along both sides and the legs folded up over the lower half with their hems towards the chest and a seam between them, so a one-piece reads apart from a shirt. 360 mm by 344 mm and 72 mm tall, safety orange with a chestnut zip and crotch seam, two flapped chest pockets and short cuffed sleeves. The hip pockets lie under the folded legs. Usage `Police` stands for prisons and holding cells. The extra-large and extra-small sizes share this model; their masses are 0.81 kg and 0.4575 kg. Box/volume x2.6: folded cloth stands looser than the packed reference volume. Slot `torso`: a one-piece covers the torso, arms and legs, and one slot cannot say that, so the leg cover waits for multi-part coverage, as earlier one-pieces note. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jumpsuit_pocketless",
+    "model": "jumpsuit_pocketless",
+    "name": "Pocketless jumpsuit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Police"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 1, "warmth": 15, "wearPerDamage": 0.0015 },
+    "description": "A thin orange cotton jumpsuit with short sleeves and a zip front, made without a single pocket.",
+    "reference": "jumpsuit_pocketless",
+    "variants": [],
+    "notes": "Folded on a shelf, neck on +z: the body folded flat with a collar at +z, sleeves along both sides and the legs folded up over the lower half with their hems towards the chest and a seam between them, so a one-piece reads apart from a shirt. The jumpsuit's shape, 360 mm by 344 mm and 72 mm tall, without its chest pockets: its own row, since the pockets are part of the shape. No pockets, so no container. Box/volume x2.6: folded cloth stands looser than the packed reference volume. Slot `torso`: a one-piece covers the torso, arms and legs, and one slot cannot say that, so the leg cover waits for multi-part coverage, as earlier one-pieces note. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jumpsuit_skeleton",
+    "model": "jumpsuit_skeleton",
+    "name": "Skeleton jumpsuit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 1, "warmth": 10, "wearPerDamage": 0.0015 },
+    "description": "A black long-sleeved jumpsuit printed with white bones. Its hood, printed with a skull, is unzipped and hangs back.",
+    "reference": "jumpsuit_skeleton",
+    "variants": [],
+    "notes": "Folded on a shelf, neck on +z: the body folded flat with a collar at +z, sleeves along both sides and the legs folded up over the lower half with their hems towards the chest and a seam between them, so a one-piece reads apart from a shirt. 360 mm by 348 mm and 72 mm tall, in `cloth-charcoal` so the print reads: bone-coloured ribs either side of the zip, an arm bone down each sleeve and a thigh bone with a kneecap on each folded leg; the hood lies folded back behind the collar, draped over the +z edge. Unzipped and zipped are distinct states, so the zipped suit has its own model with the hood laid out face up; zipping and unzipping has no content field yet. Box/volume x2.6: folded cloth stands looser than the packed reference volume. Slot `torso`: a one-piece covers the torso, arms and legs, and one slot cannot say that, so the leg cover waits for multi-part coverage, as earlier one-pieces note. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jumpsuit_skeleton_zipped",
+    "model": "jumpsuit_skeleton_zipped",
+    "name": "Skeleton jumpsuit (zipped)",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 5, "warmth": 10, "wearPerDamage": 0.0015 },
+    "description": "A black long-sleeved jumpsuit printed with white bones, its hood zipped shut over the face to show a printed skull. The thin cloth can be seen through.",
+    "reference": "jumpsuit_skeleton_zipped",
+    "variants": [],
+    "notes": "Folded on a shelf, neck on +z: the body folded flat with a collar at +z, sleeves along both sides and the legs folded up over the lower half with their hems towards the chest and a seam between them, so a one-piece reads apart from a shirt. The skeleton jumpsuit's print, 360 mm by 344 mm and 88 mm tall, with the hood zipped shut and laid face up over the chest: a bone skull with dark eye sockets, a nose and a row of teeth. Its own model as the zipped state. Box/volume x3.2: folded cloth stands looser than the packed reference volume, and the hood lies on top. It also covers the head, eyes and mouth; one slot cannot say that either. Slot `torso`: a one-piece covers the torso, arms and legs, and one slot cannot say that, so the leg cover waits for multi-part coverage, as earlier one-pieces note. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mummy_jumpsuit",
+    "model": "mummy_jumpsuit",
+    "name": "Mummy jumpsuit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 2, "warmth": 10, "wearPerDamage": 0.0015 },
+    "description": "An off-white long-sleeved costume jumpsuit printed to look like loose, crossing bandage wraps. It gives no protection.",
+    "reference": "mummy_jumpsuit",
+    "variants": [],
+    "notes": "Folded on a shelf, neck on +z: the body folded flat with a collar at +z, sleeves along both sides and the legs folded up over the lower half with their hems towards the chest and a seam between them, so a one-piece reads apart from a shirt. 368 mm by 344 mm and 72 mm tall: cream cloth with khaki seams and greyish wrap strips crossing the chest, the sleeves and the folded legs at slants, two loose ends hanging off the sides. No pockets, so no container. Box/volume x2.6: folded cloth stands looser than the packed reference volume. Slot `torso`: a one-piece covers the torso, arms and legs, and one slot cannot say that, so the leg cover waits for multi-part coverage, as earlier one-pieces note. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "technician_coveralls",
+    "model": "technician_coveralls",
+    "name": "Work coveralls",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 5, "warmth": 15, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "left chest" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "right chest" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left thigh" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right thigh" }
+      ]
+    },
+    "description": "Navy canvas coveralls with long sleeves and a zip front, built for dirty work, with flapped pockets on the chest and thighs.",
+    "reference": "technician_coveralls",
+    "variants": [],
+    "notes": "Folded on a shelf, neck on +z: the body folded flat with a collar at +z, sleeves along both sides and the legs folded up over the lower half with their hems towards the chest and a seam between them, so a one-piece reads apart from a shirt. Folded in four, 360 mm by 344 mm and 88 mm tall: navy canvas with charcoal flaps and zip, flapped chest pockets with steel press studs and flapped thigh pockets on the folded legs. The hip pockets lie under the folds. The reference gives no armour figures, so no `protects`. CHECK VOLUME (x11): the reference volume of 1 L is far below what folded canvas coveralls of 1.3 kg take up. Slot `torso`: a one-piece covers the torso, arms and legs, and one slot cannot say that, so the leg cover waits for multi-part coverage, as earlier one-pieces note. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "technician_coveralls_h",
+    "model": "technician_coveralls_h",
+    "name": "Insulated work coveralls",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 7, "warmth": 30, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "left chest" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "right chest" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left thigh" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right thigh" }
+      ]
+    },
+    "description": "Brown duck canvas coveralls with a quilted lining and a fleece collar, for outdoor work in the cold. Double knees and plenty of flapped pockets.",
+    "reference": "technician_coveralls_h",
+    "variants": [],
+    "notes": "Folded on a shelf, neck on +z: the body folded flat with a collar at +z, sleeves along both sides and the legs folded up over the lower half with their hems towards the chest and a seam between them, so a one-piece reads apart from a shirt. The work coveralls' layout folded thicker, 360 mm by 348 mm and 104 mm tall: brown duck with suede-brown flaps, a pale fleece collar standing for the warm lining, brass press studs and double knee panels on the folded legs. The lining itself is hidden inside. The reference gives no armour figures, so no `protects`. CHECK VOLUME (x6.6): the reference volume of 2 L is below what lined coveralls of 2.4 kg take up. Slot `torso`: a one-piece covers the torso, arms and legs, and one slot cannot say that, so the leg cover waits for multi-part coverage, as earlier one-pieces note. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "union_suit",
+    "model": "union_suit",
+    "name": "Union suit",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 3, "warmth": 10, "wearPerDamage": 0.0015 },
+    "description": "One-piece red cotton long underwear that buttons up the front from a round neck, with ribbed cuffs at the wrists and ankles.",
+    "reference": "union_suit",
+    "variants": [],
+    "notes": "Folded on a shelf, neck on +z: the body folded flat with a collar at +z, sleeves along both sides and the legs folded up over the lower half with their hems towards the chest and a seam between them, so a one-piece reads apart from a shirt. Folded thin in two, 304 mm by 288 mm and 52 mm tall: red cotton, a crimson placket with five pearl buttons from a low round neck, crimson cuffs and ribs across the ankle cuffs. No pockets, so no container. CHECK VOLUME (x4.6): thin knit folds looser than the packed reference volume of 1 L. Worn under other clothes, but one slot cannot say that; the torso slot follows the other one-pieces. Slot `torso`: a one-piece covers the torso, arms and legs, and one slot cannot say that, so the leg cover waits for multi-part coverage, as earlier one-pieces note. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wool_suit",
+    "model": "wool_suit",
+    "name": "Thick wool onesie",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 20, "warmth": 50, "wearPerDamage": 0.0012 },
+    "description": "A bulky knitted wool onesie with a hood and footed legs, knitted in pale zigzag patterns. Very warm, and no protection beyond that.",
+    "reference": "wool_suit",
+    "variants": [],
+    "notes": "Folded on a shelf, neck on +z: the body folded flat with a collar at +z, sleeves along both sides and the legs folded up over the lower half with their hems towards the chest and a seam between them, so a one-piece reads apart from a shirt. Folded thick, 364 mm by 348 mm and 92 mm tall: navy knit with pale cream zigzag bands across the chest, the sleeves and the folded legs, a hood folded back over the collar, cream cuffs and a cream knit foot at the end of each leg. No pockets, so no container. Box/volume x3.9: thick knit folds looser than the packed reference volume. It also covers the head and feet; one slot cannot say that either. Slot `torso`: a one-piece covers the torso, arms and legs, and one slot cannot say that, so the leg cover waits for multi-part coverage, as earlier one-pieces note. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wool_suit_devil",
+    "model": "wool_suit_devil",
+    "name": "Devil onesie",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 20, "warmth": 50, "wearPerDamage": 0.0012 },
+    "description": "A bulky red wool onesie with footed legs, a hood with two little black horns and a pointed tail sewn on the back.",
+    "reference": "wool_suit_devil",
+    "variants": [],
+    "notes": "Folded on a shelf, neck on +z: the body folded flat with a collar at +z, sleeves along both sides and the legs folded up over the lower half with their hems towards the chest and a seam between them, so a one-piece reads apart from a shirt. The thick onesie's layout in red with crimson feet and cuffs, 396 mm by 348 mm and 120 mm tall: two black horns stand on the folded-back hood and a red tail with a black arrowhead tip lies across the folded legs and hangs off the right side. Its own row: the horns and tail are shape. No pockets, so no container. CHECK VOLUME (x5.5): the horns and the hanging tail add to the folded bundle. It also covers the head and feet; one slot cannot say that either. Slot `torso`: a one-piece covers the torso, arms and legs, and one slot cannot say that, so the leg cover waits for multi-part coverage, as earlier one-pieces note. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "zentai",
+    "model": "zentai",
+    "name": "Full-body stretch suit",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 0, "warmth": 20, "wearPerDamage": 0.002 },
+    "description": "A tight one-piece suit of thin stretch fabric that covers everything, face, hands and feet included. You can see out through the cloth.",
+    "reference": "zentai",
+    "variants": [],
+    "notes": "Folded on a shelf, neck on +z: the body folded flat with a collar at +z, sleeves along both sides and the legs folded up over the lower half with their hems towards the chest and a seam between them, so a one-piece reads apart from a shirt. Folded small, 204 mm by 188 mm and 44 mm tall, in green with a leaf-green seam: no collar or zip, short folded sleeves and legs, and the closed hood lying over the chest with a seam down its middle. Lycra has no finish of its own, so plain `cloth-green` stands in. No pockets, so no container. Box/volume x3.4: folded cloth stands looser than the packed reference volume. It also covers the head, face, hands and feet; one slot cannot say that either. Slot `torso`: a one-piece covers the torso, arms and legs, and one slot cannot say that, so the leg cover waits for multi-part coverage, as earlier one-pieces note. The worn look is pending: no worn model is authored."
+  }
+]

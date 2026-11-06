@@ -1,0 +1,11 @@
+{
+  "id": "slingpack",
+  "file": "assets/models/slingpack.glb",
+  "parts": {
+    "slingpack": {
+      "node": "slingpack:compound",
+      "massKg": 0.4,
+      "centreOfMass": [0.006911521419874727, 0.16444245566029445, 0.0033214424682122255]
+    }
+  }
+}

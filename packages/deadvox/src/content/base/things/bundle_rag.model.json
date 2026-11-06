@@ -1,0 +1,11 @@
+{
+  "id": "bundle_rag",
+  "file": "assets/models/bundle_rag.glb",
+  "parts": {
+    "bundle_rag": {
+      "node": "bundle_rag:compound",
+      "massKg": 0.21,
+      "centreOfMass": [-0.0004929848693259972, 0.01618723521320495, 0.0004929848693259972]
+    }
+  }
+}

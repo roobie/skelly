@@ -1,0 +1,11 @@
+{
+  "id": "heel_wheel_sneakers_out",
+  "file": "assets/models/heel_wheel_sneakers_out.glb",
+  "parts": {
+    "heel_wheel_sneakers_out": {
+      "node": "heel_wheel_sneakers_out:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-5.13432363726834e-19, 0.051322541400799455, -0.02376120366462249]
+    }
+  }
+}

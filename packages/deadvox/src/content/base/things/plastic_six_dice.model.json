@@ -1,0 +1,14 @@
+{
+  "id": "plastic_six_dice",
+  "file": "assets/models/plastic_six_dice.glb",
+  "parts": {
+    "plastic_six_dice": {
+      "node": "plastic_six_dice:compound",
+      "massKg": 0.0045,
+      "centreOfMass": [-0.00004697986577181214, 0.007765100671140947, -0.00014093959731543634]
+    }
+  },
+  "grip": { "at": [0, 0.008, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

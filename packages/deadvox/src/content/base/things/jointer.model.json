@@ -1,0 +1,11 @@
+{
+  "id": "jointer",
+  "file": "assets/models/jointer.glb",
+  "parts": {
+    "jointer": {
+      "node": "jointer:compound",
+      "massKg": 250,
+      "centreOfMass": [0, 0.4628253710685821, -0.0024461890898678]
+    }
+  }
+}

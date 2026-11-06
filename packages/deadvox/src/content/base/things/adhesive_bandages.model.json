@@ -1,0 +1,14 @@
+{
+  "id": "adhesive_bandages",
+  "file": "assets/models/adhesive_bandages.glb",
+  "parts": {
+    "adhesive_bandages": {
+      "node": "adhesive_bandages:compound",
+      "massKg": 0.05,
+      "centreOfMass": [0, 0.05276280393171237, 0.00027586652871184686]
+    }
+  },
+  "grip": { "at": [0, 0.048, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

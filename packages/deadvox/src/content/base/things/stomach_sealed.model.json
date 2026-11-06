@@ -1,0 +1,11 @@
+{
+  "id": "stomach_sealed",
+  "file": "assets/models/stomach_sealed.glb",
+  "parts": {
+    "stomach_sealed": {
+      "node": "stomach_sealed:compound",
+      "massKg": 1.7,
+      "centreOfMass": [-0.02845061689338817, 0.06993672888326478, 0.00003441948750395444]
+    }
+  }
+}

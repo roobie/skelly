@@ -1,0 +1,14 @@
+{
+  "id": "pipe_tobacco",
+  "file": "assets/models/pipe_tobacco.glb",
+  "parts": {
+    "pipe_tobacco": {
+      "node": "pipe_tobacco:compound",
+      "massKg": 0.04,
+      "centreOfMass": [0.018360572621532966, 0.021644199224575014, 0]
+    }
+  },
+  "grip": { "at": [-0.0019999999999999983, 0.012, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

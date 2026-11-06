@@ -1,0 +1,11 @@
+{
+  "id": "gold_nose_ring_stud",
+  "file": "assets/models/gold_nose_ring_stud.glb",
+  "parts": {
+    "gold_nose_ring_stud": {
+      "node": "gold_nose_ring_stud:compound",
+      "massKg": 0.0005,
+      "centreOfMass": [0.0013749999999999997, 0.006875, 0.001]
+    }
+  }
+}

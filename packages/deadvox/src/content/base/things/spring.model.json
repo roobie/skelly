@@ -1,0 +1,5 @@
+{
+  "id": "spring",
+  "file": "assets/models/spring.glb",
+  "parts": { "spring": { "node": "spring:coil", "massKg": 2.8, "centreOfMass": [0, 0.11875837563451777, 0] } }
+}

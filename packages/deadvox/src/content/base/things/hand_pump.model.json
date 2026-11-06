@@ -1,0 +1,14 @@
+{
+  "id": "hand_pump",
+  "file": "assets/models/hand_pump.glb",
+  "parts": {
+    "hand_pump": {
+      "node": "hand_pump:compound",
+      "massKg": 0.061,
+      "centreOfMass": [0.08145153006633854, 0.0002503744917611813, 0]
+    }
+  },
+  "grip": { "at": [0.09, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

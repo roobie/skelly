@@ -1,0 +1,14 @@
+{
+  "id": "popcan_stove",
+  "file": "assets/models/popcan_stove.glb",
+  "parts": {
+    "popcan_stove": {
+      "node": "popcan_stove:compound",
+      "massKg": 0.045,
+      "centreOfMass": [0.01811208529143579, 0.07588165462579788, 0.00003393070070842394]
+    }
+  },
+  "grip": { "at": [0.03, 0.094, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

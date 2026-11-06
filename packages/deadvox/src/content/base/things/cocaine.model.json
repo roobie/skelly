@@ -1,0 +1,10 @@
+{
+  "id": "cocaine",
+  "file": "assets/models/cocaine.glb",
+  "parts": {
+    "cocaine": { "node": "cocaine:compound", "massKg": 0.0036, "centreOfMass": [0, 0.0025, -0.000014705882352941363] }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

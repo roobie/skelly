@@ -1,0 +1,17 @@
+{
+  "id": "heavy_cargo_helicopter_console",
+  "file": "assets/models/heavy_cargo_helicopter_console.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 24,
+      "centreOfMass": [0.014826175869120656, 0.5086832183026585, 0],
+      "collision": [
+        { "min": [-0.1875, 0, -0.15625], "max": [0.1875, 0.40625, 0.15625] },
+        { "min": [-0.125, 0.40625, -0.90625], "max": [0.1875, 0.8125, 0.90625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

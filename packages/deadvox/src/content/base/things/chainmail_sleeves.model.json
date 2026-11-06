@@ -1,0 +1,11 @@
+{
+  "id": "chainmail_sleeves",
+  "file": "assets/models/chainmail_sleeves.glb",
+  "parts": {
+    "chainmail_sleeves": {
+      "node": "chainmail_sleeves:compound",
+      "massKg": 4.5,
+      "centreOfMass": [-0.006087992960563165, 0.005155267578593713, -5.611144384009018e-17]
+    }
+  }
+}

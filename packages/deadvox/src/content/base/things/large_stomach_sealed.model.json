@@ -1,0 +1,11 @@
+{
+  "id": "large_stomach_sealed",
+  "file": "assets/models/large_stomach_sealed.glb",
+  "parts": {
+    "large_stomach_sealed": {
+      "node": "large_stomach_sealed:compound",
+      "massKg": 3,
+      "centreOfMass": [-0.003341918110888628, 0.0781478975350411, 0.000008354622661050885]
+    }
+  }
+}

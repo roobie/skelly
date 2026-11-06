@@ -1,0 +1,11 @@
+{
+  "id": "waistcoat",
+  "file": "assets/models/waistcoat.glb",
+  "parts": {
+    "waistcoat": {
+      "node": "waistcoat:compound",
+      "massKg": 0.3,
+      "centreOfMass": [0.00009011789015620624, 0.007951112874864016, 0.00046773586583922334]
+    }
+  }
+}

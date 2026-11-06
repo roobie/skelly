@@ -1,0 +1,11 @@
+{
+  "id": "lc_chainmail_hood",
+  "file": "assets/models/lc_chainmail_hood.glb",
+  "parts": {
+    "lc_chainmail_hood": {
+      "node": "lc_chainmail_hood:compound",
+      "massKg": 3.3,
+      "centreOfMass": [0.000028630056673832364, 0.17615028336916266, 0.010039085401602543]
+    }
+  }
+}

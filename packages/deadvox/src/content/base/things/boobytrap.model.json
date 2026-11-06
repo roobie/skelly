@@ -1,0 +1,14 @@
+{
+  "id": "boobytrap",
+  "file": "assets/models/boobytrap.glb",
+  "parts": {
+    "boobytrap": {
+      "node": "boobytrap:compound",
+      "massKg": 0.65,
+      "centreOfMass": [0.00008285457622161407, 0.05560484258466166, 0.00034957277456285134]
+    }
+  },
+  "grip": { "at": [0, 0.055, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

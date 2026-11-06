@@ -1,0 +1,8 @@
+{
+  "id": "naproxen",
+  "file": "assets/models/naproxen.glb",
+  "parts": { "naproxen": { "node": "naproxen:vessel", "massKg": 0.05, "centreOfMass": [0, 0.03720373579818988, 0] } },
+  "grip": { "at": [0, 0.037, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

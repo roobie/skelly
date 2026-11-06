@@ -1,0 +1,11 @@
+{
+  "id": "bikini_top_fur",
+  "file": "assets/models/bikini_top_fur.glb",
+  "parts": {
+    "bikini_top_fur": {
+      "node": "bikini_top_fur:compound",
+      "massKg": 0.1,
+      "centreOfMass": [5.578289294673596e-18, 0.004783903957314361, 0.012376463613457832]
+    }
+  }
+}

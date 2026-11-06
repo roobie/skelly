@@ -1,0 +1,11 @@
+{
+  "id": "bundle_rebar",
+  "file": "assets/models/bundle_rebar.glb",
+  "parts": {
+    "bundle_rebar": {
+      "node": "bundle_rebar:compound",
+      "massKg": 11,
+      "centreOfMass": [-0.0015930152408669684, 0.022015853565137484, 0]
+    }
+  }
+}

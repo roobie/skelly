@@ -1,0 +1,11 @@
+{
+  "id": "armor_plarmor",
+  "file": "assets/models/armor_plarmor.glb",
+  "parts": {
+    "armor_plarmor": {
+      "node": "armor_plarmor:compound",
+      "massKg": 12,
+      "centreOfMass": [1.1929766107085588e-18, 0.0076730312153383004, -0.024381001426081406]
+    }
+  }
+}

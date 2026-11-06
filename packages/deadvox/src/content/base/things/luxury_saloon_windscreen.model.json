@@ -1,0 +1,19 @@
+{
+  "id": "luxury_saloon_windscreen",
+  "file": "assets/models/luxury_saloon_windscreen.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 12,
+      "centreOfMass": [0.6232773210831721, 1.254110251450677, 0],
+      "collision": [
+        { "min": [0.71875, 1, -0.75], "max": [0.9375, 1.15625, 0.75] },
+        { "min": [0.5625, 1.125, -0.71875], "max": [0.78125, 1.28125, 0.71875] },
+        { "min": [0.4375, 1.25, -0.6875], "max": [0.65625, 1.40625, 0.6875] },
+        { "min": [0.3125, 1.34375, -0.65625], "max": [0.53125, 1.5, 0.65625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

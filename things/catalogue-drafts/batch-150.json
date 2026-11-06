@@ -1,0 +1,307 @@
+[
+  {
+    "id": "fencing_pants",
+    "model": "fencing_pants",
+    "name": "Fencing breeches",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 7,
+      "warmth": 25,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.05, "blunt": 0.1, "cut": 0.25, "pierce": 0.25 }
+    },
+    "description": "White knee-length breeches of tough padded cloth, with braces to hold them up and straps to close them below the knee. Made to turn a sword point in a bout, and good against scrapes.",
+    "reference": "fencing_pants",
+    "variants": [],
+    "notes": "Folded on a shelf, 280 mm by 360 mm and 40 mm tall, waistband towards +z: white breeches with a padded front panel, black braces folded down over the top and strapped knee cuffs at the -z end. Slot `legs`, as the jeans have it. Protection is a judgement for padded cotton and nylon: fair against cuts and points, little against blows. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_chainmail_half_legs",
+    "model": "lc_chainmail_half_legs",
+    "name": "High-carbon steel mail half-leggings",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 11,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.22, "cut": 0.62, "pierce": 0.38 }
+    },
+    "finishes": { "mail": "steel-mail-dark" },
+    "description": "High-carbon steel mail, harder than the common kind, that wraps the front and sides of each leg and laces shut down the back of the calf. Lighter than full leggings, and they leave the feet free for boots.",
+    "reference": "hc_chainmail_half_legs",
+    "variants": ["xl_hc_chainmail_half_legs", "xs_hc_chainmail_half_legs"],
+    "notes": "Shares the mild steel half-leggings' model with the mail in `steel-mail-dark`. Laid flat side by side, back up, hip towards -z: each half-legging is a tapered sheet of mail 820 mm long, 260 mm across at the thigh and 150 mm at the ankle, its two flanks meeting down the middle of the calf where leather edges are laced together in a zigzag, with a leather band at the top. CHECK VOLUME LENGTH: the reference gives the half-leggings rolled up tight; laid out flat they are far longer and their box far emptier. Slot `shins`, as the splint leg guards have it, so it straps on over trousers; it guards the whole leg. The reference gives no warmth. Protection is a judgement for mail with an open back, a little under the full leggings. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_chainmail_legs",
+    "model": "lc_chainmail_legs",
+    "name": "High-carbon steel mail leggings",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.24, "cut": 0.68, "pierce": 0.42 }
+    },
+    "finishes": { "mail": "steel-mail-dark" },
+    "description": "Leggings of riveted high-carbon steel rings, harder than the common kind, tied to a belt at the top and held under the foot by a strap. They leave the toes and heels free, so they go on over any boots.",
+    "reference": "hc_chainmail_legs",
+    "variants": ["xl_hc_chainmail_legs", "xs_hc_chainmail_legs"],
+    "notes": "Shares the mild steel leggings' model with the mail in `steel-mail-dark`. Laid flat side by side, outside up, hip towards -z: each legging is a tapered sheet of mail 860 mm long, 240 mm across at the thigh and 130 mm at the ankle, ridged where the rows of rings lie, with a leather band and two tie points at the top and a strap under the instep. CHECK VOLUME LENGTH: the reference gives the leggings rolled up tight; laid out flat they are far longer and their box far emptier. Slot `shins`, as the splint leg guards have it, so it straps on over trousers; it guards the whole leg. The reference gives no warmth. Protection is a judgement for mail: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "improvised_legguard_tire",
+    "model": "improvised_legguard_tire",
+    "name": "Tyre leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Infected"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 4,
+      "warmth": 5,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.2, "blunt": 0.35, "cut": 0.35, "pierce": 0.3 }
+    },
+    "description": "Thick slabs cut from a car tyre and taped round the thighs and shins. Crude and heavy, but teeth and blades struggle to get through.",
+    "reference": "improvised_legguard_tire",
+    "variants": [],
+    "notes": "Laid side by side, open side down, thigh towards -z: each guard is three curved chunks of tyre, tread lugs up, 670 mm long and 170 mm across at the thigh, butted end to end and bound in grey tape at each joint and end with a tape strip down the middle. CHECK VOLUME: the curved chunks leave their box mostly empty; the reference volume is the guards packed flat. Slot `shins`, as the splint leg guards have it, so it straps on over trousers; it guards the whole leg. Protection is a judgement for thick rubber: good against bites and blows, fair against cuts. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jeans_mod",
+    "model": "jeans_mod",
+    "name": "Armoured jeans",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Infected"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 12,
+      "warmth": 20,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.05, "blunt": 0.3, "cut": 0.45, "pierce": 0.3 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" }
+      ]
+    },
+    "description": "Jeans with hard plastic pads sewn over the knees and sheets of mild steel riveted over the thighs and shins. Stiff and heavy, and the stitching gives out sooner than the steel.",
+    "reference": "jeans_mod",
+    "variants": [],
+    "notes": "The model's root: steel sheets in `steel-bright`. Folded in half lengthwise on a shelf, 260 mm by 420 mm and 50 mm tall, waistband towards +z, so one leg's front shows: blue denim with belt loops, a button, a fly seam and a riveted pocket mouth, then three faded denim patches sewn down the leg carrying a riveted steel sheet over the thigh, a flat oval charcoal plastic pad over the knee and a smaller riveted sheet over the shin. Slot `legs`, as the jeans have it; pockets as the jeans have them. Protection is a judgement for thin sheet steel over denim. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jeans_mod_ch",
+    "model": "jeans_mod",
+    "name": "Hardened armoured jeans",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Infected"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 12,
+      "warmth": 20,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.05, "blunt": 0.33, "cut": 0.55, "pierce": 0.38 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" }
+      ]
+    },
+    "finishes": { "sheet": "steel-hardened" },
+    "description": "Jeans with hard plastic pads sewn over the knees and sheets of hardened steel riveted over the thighs and shins. The plates hold up well; the denim and stitching do not.",
+    "reference": "jeans_mod_ch",
+    "variants": [],
+    "notes": "Shares the armoured jeans' model with the steel sheets in `steel-hardened`. Folded in half lengthwise on a shelf, 260 mm by 420 mm and 50 mm tall, waistband towards +z, so one leg's front shows: blue denim with belt loops, a button, a fly seam and a riveted pocket mouth, then three faded denim patches sewn down the leg carrying a riveted steel sheet over the thigh, a flat oval charcoal plastic pad over the knee and a smaller riveted sheet over the shin. Slot `legs`, as the jeans have it; pockets as the jeans have them. Protection is a judgement for thin hardened steel over denim. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "knee_pads",
+    "model": "knee_pads",
+    "name": "Knee pads",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "knees",
+      "encumbrance": 0,
+      "warmth": 0,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.05, "blunt": 0.35, "cut": 0.2, "pierce": 0.15 }
+    },
+    "description": "A pair of foam pads with hard plastic cups over the kneecaps, held on by elastic straps. They take the sting out of kneeling on rubble and the worst out of a fall.",
+    "reference": "knee_pads",
+    "variants": [],
+    "notes": "Laid side by side, cup up: each an oval charcoal foam pad 190 mm long and 120 mm across, curved to the knee, with a grey moulded plastic cup over it and two black elastic straps across, tail out to one side and buckle at the other. CHECK VOLUME: the curved pads and loose strap tails leave the bounding box mostly air; the reference volume is the pads squashed flat. Encumbrance 0 follows the reference. Protection is a judgement for moulded plastic over padding: good against blows to the knee, little against cuts. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lc_chainmail_half_legs",
+    "model": "lc_chainmail_half_legs",
+    "name": "Mild steel mail half-leggings",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 11,
+      "warmth": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.18, "cut": 0.55, "pierce": 0.32 }
+    },
+    "description": "Mild steel mail that wraps the front and sides of each leg and laces shut down the back of the calf. Lighter than full leggings, and they leave the feet free for boots.",
+    "reference": "lc_chainmail_half_legs",
+    "variants": ["xl_lc_chainmail_half_legs", "xs_lc_chainmail_half_legs"],
+    "notes": "The model's root: mail in `steel-mail`. Laid flat side by side, back up, hip towards -z: each half-legging is a tapered sheet of mail 820 mm long, 260 mm across at the thigh and 150 mm at the ankle, its two flanks meeting down the middle of the calf where leather edges are laced together in a zigzag, with a leather band at the top. CHECK VOLUME LENGTH: the reference gives the half-leggings rolled up tight; laid out flat they are far longer and their box far emptier. Slot `shins`, as the splint leg guards have it, so it straps on over trousers; it guards the whole leg. The reference gives no warmth. Protection is a judgement for mail with an open back, a little under the full leggings. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lc_chainmail_legs",
+    "model": "lc_chainmail_legs",
+    "name": "Mild steel mail leggings",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.2, "cut": 0.6, "pierce": 0.35 }
+    },
+    "description": "Leggings of riveted mild steel rings, tied to a belt at the top and held under the foot by a strap. They leave the toes and heels free, so they go on over any boots.",
+    "reference": "lc_chainmail_legs",
+    "variants": ["xl_lc_chainmail_legs", "xs_lc_chainmail_legs"],
+    "notes": "The model's root: mail in `steel-mail`. Laid flat side by side, outside up, hip towards -z: each legging is a tapered sheet of mail 860 mm long, 240 mm across at the thigh and 130 mm at the ankle, ridged where the rows of rings lie, with a leather band and two tie points at the top and a strap under the instep. CHECK VOLUME LENGTH: the reference gives the leggings rolled up tight; laid out flat they are far longer and their box far emptier. Slot `shins`, as the splint leg guards have it, so it straps on over trousers; it guards the whole leg. The reference gives no warmth. Protection is a judgement for mail: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leggings_thessalonian",
+    "model": "leggings_thessalonian",
+    "name": "Bronze laminar leggings",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier4"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 14,
+      "warmth": 18,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.75, "pierce": 0.55 }
+    },
+    "description": "Leg armour of curved bronze bands, each overlapping the next, riveted to leather straps from upper thigh to lower shin, with a domed cup over the knee. Old in design but finely made and still bright.",
+    "reference": "leggings_thessalonian",
+    "variants": [],
+    "notes": "Laid side by side, open side down, thigh towards -z: each legging is twelve curved bronze lames, 780 mm from thigh to shin, 220 mm across at the thigh and 130 mm at the shin, each overlapping the one below with a polished edge and two rivets, a domed cop over the knee and two leather ties at the top. CHECK VOLUME: the reference volume is far smaller than the laid-out pair, which reads as packed tight for storage; the model keeps the size the armour must have to cover a leg. Slot `shins`, as the splint leg guards have it, so it straps on over trousers; it guards the whole leg. The name avoids the reference's lore: it says what the armour is. Protection is a judgement for overlapping bronze plate. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "legguard_bronze",
+    "model": "legguard_bronze",
+    "name": "Bronze greaves",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 5,
+      "warmth": 15,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.55, "pierce": 0.4 }
+    },
+    "description": "A pair of bronze shin guards shaped to the calf, lined with leather. They spring round the leg and hold on without straps.",
+    "reference": "legguard_bronze",
+    "variants": ["xl_legguard_bronze", "xs_legguard_bronze"],
+    "notes": "The model's root: shell and rib in `bronze`. Laid side by side, open side down, knee towards -z: each greave is a sculpted shell 400 mm long, 150 mm across at the calf and 90 mm at the ankle, with a raised rib down the shin, over a leather lining that shows as a rim and is stitched along both sides. Protection is a judgement for sheet bronze. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "legguard_hard",
+    "model": "legguard_hard",
+    "name": "Hard leg guards",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Police"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 4,
+      "warmth": 20,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.15, "blunt": 0.45, "cut": 0.35, "pierce": 0.25 }
+    },
+    "description": "Moulded plastic shells over the shins and knees, backed with neoprene and closed with hook-and-loop straps. Made for riders and riot lines; they shrug off kicks and falls.",
+    "reference": "legguard_hard",
+    "variants": [],
+    "notes": "Laid side by side, open side down, knee towards -z: each guard is a white moulded shin shell 340 mm long on a black neoprene backing, a domed knee cup 130 mm across above it and two black straps with grey hook-and-loop ends. Slot `shins`, as the splint leg guards have it, so it straps on over trousers; it guards the whole leg. Protection is a judgement for hard plastic over neoprene: good against blows, fair against cuts. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "legguard_larmor",
+    "model": "legguard_larmor",
+    "name": "Leather leg guards",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 7,
+      "warmth": 25,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.1, "blunt": 0.25, "cut": 0.35, "pierce": 0.2 }
+    },
+    "description": "A pair of shin guards moulded from thick, hardened leather and fastened with three buckled straps. Light, quiet and comfortable to march in.",
+    "reference": "legguard_larmor",
+    "variants": ["xl_legguard_larmor", "xs_legguard_larmor"],
+    "notes": "Laid side by side, open side down, knee towards -z: each guard is a moulded leather shell 420 mm long and 160 mm across at the calf, with a rib down the shin, stitched along both sides over a darker lining, and three buckled straps. CHECK VOLUME: the curved shells and loose strap ends leave their box mostly empty; the reference volume is the pair nested. Slot `shins`, as the splint leg guards have it, so it straps on over trousers; it guards the whole leg. Protection is a judgement for hardened leather. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "legguard_lightplate",
+    "model": "legguard_lightplate",
+    "name": "Steel leg harness",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 8,
+      "warmth": 20,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.45, "cut": 0.8, "pierce": 0.6 }
+    },
+    "description": "A full set of steel leg armour: a plate over each thigh, a domed cup over the knee and a greave round the shin, each buckled on with leather straps.",
+    "reference": "legguard_lightplate",
+    "variants": ["xl_legguard_lightplate", "xs_legguard_lightplate"],
+    "notes": "Laid side by side, open side down, hip towards -z, each leg 740 mm long: a curved thigh plate 200 mm across, a domed knee cop with a side wing and a calf-shaped greave, each plate with two buckled leather straps. Plates in `steel-bright`. Slot `shins`, as the splint leg guards have it, so it straps on over trousers; it guards the whole leg. Protection is a judgement for plate: strong against cuts and points, good against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "legguard_metal",
+    "model": "legguard_bronze",
+    "name": "Iron greaves",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 3,
+      "warmth": 10,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.05, "blunt": 0.35, "cut": 0.55, "pierce": 0.4 }
+    },
+    "finishes": { "rib": "iron-dull", "shell": "iron-dull" },
+    "description": "A pair of iron shin guards shaped to the calf, lined with leather. Plain, heavy work, and they rust if left wet.",
+    "reference": "legguard_metal",
+    "variants": ["xl_legguard_metal", "xs_legguard_metal"],
+    "notes": "Shares the bronze greaves' model with shell and rib in `iron-dull`. Laid side by side, open side down, knee towards -z: each greave is a sculpted shell 400 mm long, 150 mm across at the calf and 90 mm at the ankle, with a raised rib down the shin, over a leather lining that shows as a rim and is stitched along both sides. Protection is a judgement for sheet iron. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  }
+]

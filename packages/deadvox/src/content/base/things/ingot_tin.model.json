@@ -1,0 +1,5 @@
+{
+  "id": "ingot_tin",
+  "file": "assets/models/ingot_tin.glb",
+  "parts": { "ingot_tin": { "node": "ingot_tin:compound", "massKg": 7.2, "centreOfMass": [0, 0.04008820512820511, 0] } }
+}

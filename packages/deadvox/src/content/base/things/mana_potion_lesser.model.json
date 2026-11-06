@@ -1,0 +1,14 @@
+{
+  "id": "mana_potion_lesser",
+  "file": "assets/models/mana_potion_lesser.glb",
+  "parts": {
+    "mana_potion_lesser": {
+      "node": "mana_potion_lesser:compound",
+      "massKg": 0.35,
+      "centreOfMass": [0, 0.03773684210526316, 0]
+    }
+  },
+  "grip": { "at": [0, 0.061, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

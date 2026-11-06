@@ -1,0 +1,14 @@
+{
+  "id": "chisel",
+  "file": "assets/models/chisel.glb",
+  "parts": {
+    "chisel": {
+      "node": "chisel:compound",
+      "massKg": 0.37,
+      "centreOfMass": [0.09000255754475706, 0.010924410343847684, 0]
+    }
+  },
+  "grip": { "at": [0.087, 0.011000000000000001, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

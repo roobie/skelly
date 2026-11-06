@@ -1,0 +1,7 @@
+{
+  "id": "stool_wood",
+  "file": "assets/models/stool_wood.glb",
+  "parts": {
+    "stool_wood": { "node": "stool_wood:compound", "massKg": 2.3, "centreOfMass": [0, 0.3386756756756757, 0] }
+  }
+}

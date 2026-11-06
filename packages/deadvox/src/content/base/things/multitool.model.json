@@ -1,0 +1,14 @@
+{
+  "id": "multitool",
+  "file": "assets/models/multitool.glb",
+  "parts": {
+    "multitool": {
+      "node": "multitool:compound",
+      "massKg": 0.32,
+      "centreOfMass": [-0.03854300291545189, 0.00828862973760933, 0]
+    }
+  },
+  "grip": { "at": [-0.046, 0.008, 0.018000000000000002], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

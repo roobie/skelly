@@ -1,0 +1,11 @@
+{
+  "id": "bundle_copper_pipe",
+  "file": "assets/models/bundle_copper_pipe.glb",
+  "parts": {
+    "bundle_copper_pipe": {
+      "node": "bundle_copper_pipe:compound",
+      "massKg": 3,
+      "centreOfMass": [-0.0005210142410559223, 0.03024313997915943, -3.8308700361376757e-19]
+    }
+  }
+}

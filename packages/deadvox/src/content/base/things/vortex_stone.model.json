@@ -1,0 +1,14 @@
+{
+  "id": "vortex_stone",
+  "file": "assets/models/vortex_stone.glb",
+  "parts": {
+    "vortex_stone": {
+      "node": "vortex_stone:compound",
+      "massKg": 0.43,
+      "centreOfMass": [-0.000018957345971563994, 0.01798492029297717, -0.00001536693953755566]
+    }
+  },
+  "grip": { "at": [0, 0.018000000000000002, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

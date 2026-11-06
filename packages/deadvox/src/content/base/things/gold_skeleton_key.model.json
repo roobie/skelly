@@ -1,0 +1,14 @@
+{
+  "id": "gold_skeleton_key",
+  "file": "assets/models/gold_skeleton_key.glb",
+  "parts": {
+    "gold_skeleton_key": {
+      "node": "gold_skeleton_key:compound",
+      "massKg": 0.05,
+      "centreOfMass": [-0.0036278026905829596, 0.0022152466367713003, 0.0015291479820627803]
+    }
+  },
+  "grip": { "at": [-0.02, 0.002, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

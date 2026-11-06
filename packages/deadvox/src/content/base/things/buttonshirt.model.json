@@ -1,0 +1,11 @@
+{
+  "id": "buttonshirt",
+  "file": "assets/models/buttonshirt.glb",
+  "parts": {
+    "buttonshirt": {
+      "node": "buttonshirt:compound",
+      "massKg": 0.32,
+      "centreOfMass": [1.9139724479453626e-20, 0.016534869730205, 0.004600397982322177]
+    }
+  }
+}

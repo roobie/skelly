@@ -1,0 +1,11 @@
+{
+  "id": "apron_leather",
+  "file": "assets/models/apron_leather.glb",
+  "parts": {
+    "apron_leather": {
+      "node": "apron_leather:compound",
+      "massKg": 1.4,
+      "centreOfMass": [0.000028202923473774723, 0.020187308684436803, -0.0034646259673258824]
+    }
+  }
+}

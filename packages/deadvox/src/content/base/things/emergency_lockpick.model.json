@@ -1,0 +1,11 @@
+{
+  "id": "emergency_lockpick",
+  "file": "assets/models/emergency_lockpick.glb",
+  "parts": {
+    "emergency_lockpick": {
+      "node": "emergency_lockpick:compound",
+      "massKg": 0.004,
+      "centreOfMass": [-0.0025375722543352595, 0.001, 0.0008728323699421966]
+    }
+  }
+}

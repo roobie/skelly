@@ -1,0 +1,11 @@
+{
+  "id": "pants_hiking",
+  "file": "assets/models/pants_hiking.glb",
+  "parts": {
+    "pants_hiking": {
+      "node": "pants_hiking:compound",
+      "massKg": 0.35,
+      "centreOfMass": [-0.0010561733837708691, 0.02760476691601011, -0.00009107198725788565]
+    }
+  }
+}

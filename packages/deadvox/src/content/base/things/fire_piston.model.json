@@ -1,0 +1,14 @@
+{
+  "id": "fire_piston",
+  "file": "assets/models/fire_piston.glb",
+  "parts": {
+    "fire_piston": {
+      "node": "fire_piston:compound",
+      "massKg": 0.078,
+      "centreOfMass": [0.09734751573213113, 0.015207382361228516, 0.0029097398328167563]
+    }
+  },
+  "grip": { "at": [0.07, 0.015, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,11 @@
+{
+  "id": "gambeson_nylon_vest",
+  "file": "assets/models/gambeson_nylon_vest.glb",
+  "parts": {
+    "gambeson_nylon_vest": {
+      "node": "gambeson_nylon_vest:compound",
+      "massKg": 2.5,
+      "centreOfMass": [-4.346033796842471e-20, 0.0496768069493336, -0.003489237990157442]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "survivor_shavingkit",
+  "file": "assets/models/survivor_shavingkit.glb",
+  "parts": {
+    "survivor_shavingkit": {
+      "node": "survivor_shavingkit:compound",
+      "massKg": 0.12,
+      "centreOfMass": [0.001869495339119254, 0.007608566377370618, -0.0029901157184185137]
+    }
+  }
+}

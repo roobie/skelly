@@ -1,0 +1,11 @@
+{
+  "id": "aketon_gloves_canvas",
+  "file": "assets/models/aketon_gloves_canvas.glb",
+  "parts": {
+    "aketon_gloves_canvas": {
+      "node": "aketon_gloves_canvas:compound",
+      "massKg": 0.17,
+      "centreOfMass": [5.996560222913592e-18, 0.009628922864697095, 0.016258190596620314]
+    }
+  }
+}

@@ -1,0 +1,200 @@
+[
+  {
+    "id": "trenchcoat_faux_fur",
+    "model": "trenchcoat_fur",
+    "name": "Faux fur trench coat",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 15, "warmth": 40, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right hip" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside right" }
+      ]
+    },
+    "finishes": {
+      "belt": "leather-brown",
+      "button": "leather-brown",
+      "cloth": "fur-pale",
+      "collar": "fur-pale",
+      "flap": "fur-pale",
+      "lapel": "fur-pale",
+      "lining": "cloth-khaki",
+      "pocket": "fur-pale"
+    },
+    "description": "A long, belted trench coat of thick synthetic fur over a cotton lining, double-breasted, with deep pockets at the hips and inside.",
+    "reference": "trenchcoat_faux_fur",
+    "variants": [],
+    "notes": "Rides on `trenchcoat_fur`, the same cut in pale synthetic fur with a khaki cotton edge, through `finishes`. Box/volume x2.2, as on its model. Slot `torso`, as the jacket has it; it also reaches the legs, and Deadvox has no long-coat slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "trenchcoat_fur",
+    "model": "trenchcoat_fur",
+    "name": "Fur trench coat",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 15, "warmth": 50, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right hip" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside right" }
+      ]
+    },
+    "description": "A long, belted trench coat of heavy brown fur, double-breasted, with deep pockets at the hips and inside. Warm to the knees.",
+    "reference": "trenchcoat_fur",
+    "variants": [],
+    "notes": "Folded thick in five layers, 420 mm by 360 mm and 80 mm tall: wide fur lapels and rolled collar at the back, two rows of buttons, a black leather belt with a brass buckle across the hem fold and two flapped hip pockets. Box/volume x2.2: a fur coat folds bulkier than the reference packs it. Slot `torso`, as the jacket has it; it also reaches the legs, and Deadvox has no long-coat slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "trenchcoat_leather",
+    "model": "trenchcoat_leather",
+    "name": "Leather trench coat",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 15, "warmth": 30, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right hip" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside right" }
+      ]
+    },
+    "description": "A long, belted trench coat of heavy brown leather, double-breasted, with deep pockets at the hips and inside. Shrugs off wind and rain.",
+    "reference": "trenchcoat_leather",
+    "variants": [],
+    "notes": "Folded in four layers, 400 mm by 340 mm and 60 mm tall: lapels and collar at the back, two rows of buttons, a self belt with a steel buckle across the hem fold and two flapped hip pockets. Box/volume x2.3: a folded stack has air between its layers. Slot `torso`, as the jacket has it; it also reaches the legs, and Deadvox has no long-coat slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "trenchcoat_steampunk",
+    "model": "trenchcoat_steampunk",
+    "name": "Brass-buckled leather coat",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 15, "warmth": 30, "wearPerDamage": 0.001 },
+    "description": "A long black leather coat closed with three buckled straps instead of buttons, with brass rivets down the front and a brass cog pinned to the lapel. It has no pockets at all.",
+    "reference": "trenchcoat_steampunk",
+    "variants": [],
+    "notes": "Folded in four layers, 400 mm by 340 mm and 60 mm tall: a high stand collar at the back, lapels, three oxblood straps with polished brass buckles across the front, a rivet row and a brass cog on the left lapel. No pockets, as the reference has none. Box/volume x2.1: a folded stack has air between its layers. Slot `torso`, as the jacket has it; it also reaches the legs, and Deadvox has no long-coat slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "tunic",
+    "model": "tunic",
+    "name": "Tunic",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 3, "warmth": 2, "wearPerDamage": 0.002 },
+    "description": "A plain, loose cotton garment with sleeves, long enough to reach the knees, tied at the neck with a cord.",
+    "reference": "tunic",
+    "variants": [],
+    "notes": "Folded in three layers, 300 mm by 240 mm and 20 mm tall: a slit neck with a cord tie at the back and a hem band at the front. Slot `torso`, as the jacket has it; it also reaches the legs, and Deadvox has no long-coat slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "tunic_rag",
+    "model": "tunic_rag",
+    "name": "Rag tunic",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 5, "warmth": 15, "wearPerDamage": 0.003 },
+    "description": "A long, sleeveless tunic pieced together from old rags and patches, held shut by a length of string tied at the waist.",
+    "reference": "tunic_rag",
+    "variants": [],
+    "notes": "Folded in three layers, 300 mm by 240 mm and 25 mm tall: darker patches sewn on crooked, a ragged hem of loose ends and the string belt coiled on top. Box/volume x2.6: rag cloth is dense for its weight, and the folded stack keeps air between its layers. Slot `torso`; it also reaches the legs. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "tux",
+    "model": "tux",
+    "name": "Tuxedo",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 13, "warmth": 30, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside" }] },
+    "description": "A black evening suit with satin lapels, a white dress shirt and a black bow tie: jacket, trousers and all.",
+    "reference": "tux",
+    "variants": [],
+    "notes": "The jacket folded over its trousers in four layers, 380 mm by 320 mm and 50 mm tall: satin lapels framing the white shirt front with three studs, the bow tie at the collar, one button, two welt pockets and the satin side stripe of the trousers on the bottom fold. Satin is drawn with the shiny `leather-patent` finish. One item covers torso, arms and legs as the reference has it; slot `torso`, as Deadvox has no whole-suit slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "vest_jean",
+    "model": "vest_jean",
+    "name": "Denim vest",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "vest", "encumbrance": 8, "warmth": 25, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "left chest" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "right chest" }
+      ]
+    },
+    "description": "A sleeveless denim jacket with metal buttons and two buttoned chest pockets.",
+    "reference": "vest_jean",
+    "variants": [],
+    "notes": "Folded in three layers, 300 mm by 240 mm and 25 mm tall: a shirt collar at the back, two flapped chest pockets with buttons, a stitched placket with five metal buttons and the waistband seam. Slot `vest`, as it goes over a shirt and covers only the torso. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "waistcoat",
+    "model": "waistcoat",
+    "name": "Waistcoat",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "vest", "encumbrance": 2, "warmth": 5, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "right" }
+      ]
+    },
+    "description": "A fitted, sleeveless grey vest with a satin back, worn over a shirt to dress it up.",
+    "reference": "waistcoat",
+    "variants": [],
+    "notes": "Folded in three layers, 280 mm by 220 mm and 15 mm tall: the deep V neck showing the black back panel, five small buttons, two welt pockets and a breast welt, and the pointed front tips at the hem. The reference also lists the arms; a waistcoat has no sleeves, so it takes slot `vest` over a shirt. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "winter_jacket_army",
+    "model": "winter_jacket_army",
+    "name": "Army winter jacket",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Military"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 10, "warmth": 50, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "left chest" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "right chest" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right hip" }
+      ]
+    },
+    "description": "A thickly padded olive drab jacket with a hood and pockets on the chest and hips, made for soldiers in the cold.",
+    "reference": "winter_jacket_army",
+    "variants": [],
+    "notes": "Folded in three layers, 380 mm by 320 mm and 50 mm tall: quilted baffles, the hood folded down at the back, a zip with a storm flap, two flapped chest pockets, two flapped hip pockets and a grey hook-and-loop patch on the left chest. Box/volume x2.8: padding folds bulky. Slot `torso`, as the jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "yukata",
+    "model": "yukata",
+    "name": "Summer robe",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 1, "warmth": 5, "wearPerDamage": 0.002 },
+    "description": "A light, wide-sleeved cotton robe wrapped left over right and tied with a sash. Cool to sleep or lounge in.",
+    "reference": "yukata",
+    "variants": [],
+    "notes": "Folded flat in three layers, 320 mm by 260 mm and 25 mm tall: navy cotton with the cream collar band crossing in a y down the front, and the folded crimson sash laid across the hem. Slot `torso`, as the jacket has it; it also reaches the legs, and Deadvox has no long-coat slot. The worn look is pending: no worn model is authored."
+  }
+]

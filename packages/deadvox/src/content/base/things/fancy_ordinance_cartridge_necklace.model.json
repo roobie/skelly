@@ -1,0 +1,11 @@
+{
+  "id": "fancy_ordinance_cartridge_necklace",
+  "file": "assets/models/fancy_ordinance_cartridge_necklace.glb",
+  "parts": {
+    "fancy_ordinance_cartridge_necklace": {
+      "node": "fancy_ordinance_cartridge_necklace:compound",
+      "massKg": 0.075,
+      "centreOfMass": [-7.044711339648106e-21, 0.012456395348837211, 0.10046002906976748]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "boots_trooper_worn_shaft",
+  "file": "assets/models/boots_trooper_worn_shaft.glb",
+  "parts": {
+    "boots_trooper_worn_shaft": {
+      "node": "boots_trooper_worn_shaft:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0, -0.22471668393782385, 0]
+    }
+  }
+}

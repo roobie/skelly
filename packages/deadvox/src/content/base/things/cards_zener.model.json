@@ -1,0 +1,14 @@
+{
+  "id": "cards_zener",
+  "file": "assets/models/cards_zener.glb",
+  "parts": {
+    "cards_zener": {
+      "node": "cards_zener:compound",
+      "massKg": 0.039,
+      "centreOfMass": [0.0016332563510392608, 0.004419399538106235, -0.0004997690531177829]
+    }
+  },
+  "grip": { "at": [0, 0.003, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

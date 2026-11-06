@@ -1,0 +1,11 @@
+{
+  "id": "bowling_ball",
+  "file": "assets/models/bowling_ball.glb",
+  "parts": {
+    "bowling_ball": {
+      "node": "bowling_ball:compound",
+      "massKg": 4.9,
+      "centreOfMass": [0, 0.10807829545718874, 0.00033202298155427884]
+    }
+  }
+}

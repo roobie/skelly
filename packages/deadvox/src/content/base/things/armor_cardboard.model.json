@@ -1,0 +1,11 @@
+{
+  "id": "armor_cardboard",
+  "file": "assets/models/armor_cardboard.glb",
+  "parts": {
+    "armor_cardboard": {
+      "node": "armor_cardboard:compound",
+      "massKg": 2,
+      "centreOfMass": [-3.7909324415366855e-18, 0.054551650324540804, 0.062455600055240985]
+    }
+  }
+}

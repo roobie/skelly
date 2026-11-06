@@ -1,0 +1,11 @@
+{
+  "id": "knee_guards_sheet_metal",
+  "file": "assets/models/knee_guards_sheet_metal.glb",
+  "parts": {
+    "knee_guards_sheet_metal": {
+      "node": "knee_guards_sheet_metal:compound",
+      "massKg": 0.79,
+      "centreOfMass": [-3.795799433521603e-20, 0.03627900146842878, -7.145592433604417e-18]
+    }
+  }
+}

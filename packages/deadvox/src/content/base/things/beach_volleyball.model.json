@@ -1,0 +1,11 @@
+{
+  "id": "beach_volleyball",
+  "file": "assets/models/beach_volleyball.glb",
+  "parts": {
+    "beach_volleyball": {
+      "node": "beach_volleyball:compound",
+      "massKg": 0.27,
+      "centreOfMass": [0, 0.1351191166321601, 0]
+    }
+  }
+}

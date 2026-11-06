@@ -1,0 +1,11 @@
+{
+  "id": "delay_fuze",
+  "file": "assets/models/delay_fuze.glb",
+  "parts": {
+    "delay_fuze": {
+      "node": "delay_fuze:compound",
+      "massKg": 0.03,
+      "centreOfMass": [-0.0030691358024691356, 0.007760493827160493, 0.0007283950617283949]
+    }
+  }
+}

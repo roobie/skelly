@@ -1,0 +1,14 @@
+{
+  "id": "soldering_iron",
+  "file": "assets/models/soldering_iron.glb",
+  "parts": {
+    "soldering_iron": {
+      "node": "soldering_iron:compound",
+      "massKg": 0.059,
+      "centreOfMass": [0.08382341719327534, 0.012041373554310245, -3.5769643495886535e-7]
+    }
+  },
+  "grip": { "at": [0.096, 0.012, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

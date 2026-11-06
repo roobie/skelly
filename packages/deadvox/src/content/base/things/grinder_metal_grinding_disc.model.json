@@ -1,0 +1,11 @@
+{
+  "id": "grinder_metal_grinding_disc",
+  "file": "assets/models/grinder_metal_grinding_disc.glb",
+  "parts": {
+    "grinder_metal_grinding_disc": {
+      "node": "grinder_metal_grinding_disc:compound",
+      "massKg": 0.41,
+      "centreOfMass": [0, 0.007180182794138982, 0]
+    }
+  }
+}

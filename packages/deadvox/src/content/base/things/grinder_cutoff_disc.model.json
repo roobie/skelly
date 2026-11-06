@@ -1,0 +1,11 @@
+{
+  "id": "grinder_cutoff_disc",
+  "file": "assets/models/grinder_cutoff_disc.glb",
+  "parts": {
+    "grinder_cutoff_disc": {
+      "node": "grinder_cutoff_disc:compound",
+      "massKg": 0.3,
+      "centreOfMass": [0, 0.0020773572377158034, 0]
+    }
+  }
+}

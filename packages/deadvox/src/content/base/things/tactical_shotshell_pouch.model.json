@@ -1,0 +1,11 @@
+{
+  "id": "tactical_shotshell_pouch",
+  "file": "assets/models/tactical_shotshell_pouch.glb",
+  "parts": {
+    "tactical_shotshell_pouch": {
+      "node": "tactical_shotshell_pouch:compound",
+      "massKg": 0.08,
+      "centreOfMass": [0.0000307342060330108, 0.051776323278315314, 0.0009630051223676719]
+    }
+  }
+}

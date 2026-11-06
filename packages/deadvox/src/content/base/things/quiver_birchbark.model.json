@@ -1,0 +1,11 @@
+{
+  "id": "quiver_birchbark",
+  "file": "assets/models/quiver_birchbark.glb",
+  "parts": {
+    "quiver_birchbark": {
+      "node": "quiver_birchbark:compound",
+      "massKg": 0.15,
+      "centreOfMass": [-0.008569221954305633, 0.04600176665791295, 0]
+    }
+  }
+}

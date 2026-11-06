@@ -1,0 +1,14 @@
+{
+  "id": "xacto",
+  "file": "assets/models/xacto.glb",
+  "parts": {
+    "xacto": {
+      "node": "xacto:compound",
+      "massKg": 0.0096,
+      "centreOfMass": [0.04339363817097416, -0.000029821073558648113, 0]
+    }
+  },
+  "grip": { "at": [0.036000000000000004, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

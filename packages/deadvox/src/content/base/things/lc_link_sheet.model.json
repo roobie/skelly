@@ -1,0 +1,11 @@
+{
+  "id": "lc_link_sheet",
+  "file": "assets/models/lc_link_sheet.glb",
+  "parts": {
+    "lc_link_sheet": {
+      "node": "lc_link_sheet:compound",
+      "massKg": 0.95,
+      "centreOfMass": [0.000002132923811961315, 0.005511458066717852, 0.023642368398600785]
+    }
+  }
+}

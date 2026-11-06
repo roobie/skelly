@@ -1,0 +1,11 @@
+{
+  "id": "denim_sneakers",
+  "file": "assets/models/denim_sneakers.glb",
+  "parts": {
+    "denim_sneakers": {
+      "node": "denim_sneakers:compound",
+      "massKg": 0.8,
+      "centreOfMass": [3.2062715126050028e-18, 0.04065670097760308, -0.015091191227434957]
+    }
+  }
+}

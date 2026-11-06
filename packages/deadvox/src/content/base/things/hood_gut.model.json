@@ -1,0 +1,11 @@
+{
+  "id": "hood_gut",
+  "file": "assets/models/hood_gut.glb",
+  "parts": {
+    "hood_gut": {
+      "node": "hood_gut:compound",
+      "massKg": 0.12,
+      "centreOfMass": [-0.000005810342026547978, 0.17675803939182555, 0.014701044523657057]
+    }
+  }
+}

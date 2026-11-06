@@ -1,0 +1,11 @@
+{
+  "id": "tefillin_head",
+  "file": "assets/models/tefillin_head.glb",
+  "parts": {
+    "tefillin_head": {
+      "node": "tefillin_head:compound",
+      "massKg": 0.038,
+      "centreOfMass": [-0.0034592192954617583, 0.0067337353221199655, -0.18480609330371311]
+    }
+  }
+}

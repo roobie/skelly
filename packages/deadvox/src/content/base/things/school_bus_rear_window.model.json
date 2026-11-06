@@ -1,0 +1,17 @@
+{
+  "id": "school_bus_rear_window",
+  "file": "assets/models/school_bus_rear_window.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 12,
+      "centreOfMass": [-5.453125, 2.09375, 0],
+      "collision": [
+        { "min": [-5.46875, 1.8125, 0.625], "max": [-5.4375, 2.375, 1.0625] },
+        { "min": [-5.46875, 1.8125, -1.0625], "max": [-5.4375, 2.375, -0.625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

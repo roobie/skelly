@@ -1,0 +1,7 @@
+{
+  "id": "rock_wool_bat",
+  "file": "assets/models/rock_wool_bat.glb",
+  "parts": {
+    "rock_wool_bat": { "node": "rock_wool_bat:compound", "massKg": 0.23, "centreOfMass": [0, 0.010141728624535318, 0] }
+  }
+}

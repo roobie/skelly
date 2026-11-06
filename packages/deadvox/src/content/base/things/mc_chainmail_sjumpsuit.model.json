@@ -1,0 +1,11 @@
+{
+  "id": "mc_chainmail_sjumpsuit",
+  "file": "assets/models/mc_chainmail_sjumpsuit.glb",
+  "parts": {
+    "mc_chainmail_sjumpsuit": {
+      "node": "mc_chainmail_sjumpsuit:compound",
+      "massKg": 13,
+      "centreOfMass": [2.656304540556537e-18, 0.035570982560991955, -0.008797288256545216]
+    }
+  }
+}

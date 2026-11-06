@@ -1,0 +1,8 @@
+{
+  "id": "clay_urn",
+  "file": "assets/models/clay_urn.glb",
+  "parts": { "clay_urn": { "node": "clay_urn:compound", "massKg": 2.1, "centreOfMass": [0, 0.14742979515828677, 0] } },
+  "grip": { "at": [0, 0.14200000000000002, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

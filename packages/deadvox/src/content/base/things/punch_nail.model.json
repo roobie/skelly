@@ -1,0 +1,14 @@
+{
+  "id": "punch_nail",
+  "file": "assets/models/punch_nail.glb",
+  "parts": {
+    "punch_nail": {
+      "node": "punch_nail:compound",
+      "massKg": 0.043,
+      "centreOfMass": [-0.008501013024602027, 0.01078929088277858, 9.647853352629188e-8]
+    }
+  },
+  "grip": { "at": [-0.009999999999999995, 0.017, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

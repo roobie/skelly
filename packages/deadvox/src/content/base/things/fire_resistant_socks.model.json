@@ -1,0 +1,11 @@
+{
+  "id": "fire_resistant_socks",
+  "file": "assets/models/fire_resistant_socks.glb",
+  "parts": {
+    "fire_resistant_socks": {
+      "node": "fire_resistant_socks:compound",
+      "massKg": 0.08,
+      "centreOfMass": [-0.022130232558139534, 0.006318425760286226, -0.03304042933810376]
+    }
+  }
+}

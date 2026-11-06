@@ -1,0 +1,14 @@
+{
+  "id": "oil_lamp_clay",
+  "file": "assets/models/oil_lamp_clay.glb",
+  "parts": {
+    "oil_lamp_clay": {
+      "node": "oil_lamp_clay:compound",
+      "massKg": 0.14,
+      "centreOfMass": [0, 0.01904972067039106, 0.005648603351955307]
+    }
+  },
+  "grip": { "at": [0, 0.019000000000000003, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

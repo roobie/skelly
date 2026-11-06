@@ -1,0 +1,11 @@
+{
+  "id": "bandsaw",
+  "file": "assets/models/bandsaw.glb",
+  "parts": {
+    "bandsaw": {
+      "node": "bandsaw:compound",
+      "massKg": 210,
+      "centreOfMass": [-0.008436550267622581, 0.8212756676516175, -0.028481341344060083]
+    }
+  }
+}

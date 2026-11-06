@@ -1,0 +1,11 @@
+{
+  "id": "plastic_bowl_kids",
+  "file": "assets/models/plastic_bowl_kids.glb",
+  "parts": {
+    "plastic_bowl_kids": {
+      "node": "plastic_bowl_kids:compound",
+      "massKg": 0.065,
+      "centreOfMass": [0, 0.020211817462410978, 0]
+    }
+  }
+}

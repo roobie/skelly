@@ -1,0 +1,11 @@
+{
+  "id": "clay_pot_flower",
+  "file": "assets/models/clay_pot_flower.glb",
+  "parts": {
+    "clay_pot_flower": {
+      "node": "clay_pot_flower:compound",
+      "massKg": 0.85,
+      "centreOfMass": [0, 0.07707140610254797, 0]
+    }
+  }
+}

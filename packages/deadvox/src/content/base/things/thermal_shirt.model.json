@@ -1,0 +1,11 @@
+{
+  "id": "thermal_shirt",
+  "file": "assets/models/thermal_shirt.glb",
+  "parts": {
+    "thermal_shirt": {
+      "node": "thermal_shirt:compound",
+      "massKg": 0.2,
+      "centreOfMass": [0, 0.013850050658561305, -0.0004093211752786226]
+    }
+  }
+}

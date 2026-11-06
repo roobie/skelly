@@ -1,0 +1,14 @@
+{
+  "id": "kelvinist_booster_1",
+  "file": "assets/models/kelvinist_booster_1.glb",
+  "parts": {
+    "kelvinist_booster_1": {
+      "node": "kelvinist_booster_1:compound",
+      "massKg": 0.22,
+      "centreOfMass": [0.00036927896049654857, 0.044311328963396956, 0.0007383838969777831]
+    }
+  },
+  "grip": { "at": [0, 0.045, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

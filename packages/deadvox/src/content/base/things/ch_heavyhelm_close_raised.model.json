@@ -1,0 +1,11 @@
+{
+  "id": "ch_heavyhelm_close_raised",
+  "file": "assets/models/ch_heavyhelm_close_raised.glb",
+  "parts": {
+    "ch_heavyhelm_close_raised": {
+      "node": "ch_heavyhelm_close_raised:compound",
+      "massKg": 4.2,
+      "centreOfMass": [-0.0000068408551068885685, 0.15208342042755338, 0.007661947743467935]
+    }
+  }
+}

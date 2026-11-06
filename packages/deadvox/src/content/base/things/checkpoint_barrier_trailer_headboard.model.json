@@ -1,0 +1,14 @@
+{
+  "id": "checkpoint_barrier_trailer_headboard",
+  "file": "assets/models/checkpoint_barrier_trailer_headboard.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 14,
+      "centreOfMass": [1.078125, 0.890625, 0],
+      "collision": [{ "min": [1.0625, 0.59375, -0.59375], "max": [1.09375, 1.1875, 0.59375] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

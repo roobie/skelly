@@ -1,0 +1,11 @@
+{
+  "id": "armor_metal_sheets_heavy",
+  "file": "assets/models/armor_metal_sheets_heavy.glb",
+  "parts": {
+    "armor_metal_sheets_heavy": {
+      "node": "armor_metal_sheets_heavy:compound",
+      "massKg": 30,
+      "centreOfMass": [0.004650818693501617, 0.02491885553470914, -0.06265857922565207]
+    }
+  }
+}

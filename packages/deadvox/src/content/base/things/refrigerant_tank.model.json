@@ -1,0 +1,14 @@
+{
+  "id": "refrigerant_tank",
+  "file": "assets/models/refrigerant_tank.glb",
+  "parts": {
+    "refrigerant_tank": {
+      "node": "refrigerant_tank:compound",
+      "massKg": 0.38,
+      "centreOfMass": [0.000006510681586978636, 0.0917318413021363, 0]
+    }
+  },
+  "grip": { "at": [0, 0.098, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

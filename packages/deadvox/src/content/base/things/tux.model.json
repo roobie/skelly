@@ -1,0 +1,7 @@
+{
+  "id": "tux",
+  "file": "assets/models/tux.glb",
+  "parts": {
+    "tux": { "node": "tux:compound", "massKg": 1.4, "centreOfMass": [0, 0.026285867684781944, -0.0018817236373759663] }
+  }
+}

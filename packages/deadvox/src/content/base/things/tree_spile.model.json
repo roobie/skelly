@@ -1,0 +1,14 @@
+{
+  "id": "tree_spile",
+  "file": "assets/models/tree_spile.glb",
+  "parts": {
+    "tree_spile": {
+      "node": "tree_spile:compound",
+      "massKg": 0.018,
+      "centreOfMass": [-0.009253246753246755, 0.007746753246753247, 0]
+    }
+  },
+  "grip": { "at": [0, 0.008, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

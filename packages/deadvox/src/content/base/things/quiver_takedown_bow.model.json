@@ -1,0 +1,11 @@
+{
+  "id": "quiver_takedown_bow",
+  "file": "assets/models/quiver_takedown_bow.glb",
+  "parts": {
+    "quiver_takedown_bow": {
+      "node": "quiver_takedown_bow:compound",
+      "massKg": 0.35,
+      "centreOfMass": [0.3342842272007242, 0.042030882685728736, -0.03899748412603331]
+    }
+  }
+}

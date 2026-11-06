@@ -1,0 +1,11 @@
+{
+  "id": "blade",
+  "file": "assets/models/blade.glb",
+  "parts": {
+    "blade": {
+      "node": "blade:compound",
+      "massKg": 0.4,
+      "centreOfMass": [0.006865877235379403, 0.0019166263895601743, 0.0010070082165297245]
+    }
+  }
+}

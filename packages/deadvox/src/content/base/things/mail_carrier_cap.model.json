@@ -1,0 +1,11 @@
+{
+  "id": "mail_carrier_cap",
+  "file": "assets/models/mail_carrier_cap.glb",
+  "parts": {
+    "mail_carrier_cap": {
+      "node": "mail_carrier_cap:compound",
+      "massKg": 0.15,
+      "centreOfMass": [-1.7193956460211594e-20, 0.05598190767593458, 0.0007568178794731936]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "metalworking_tongs",
+  "file": "assets/models/metalworking_tongs.glb",
+  "parts": {
+    "metalworking_tongs": {
+      "node": "metalworking_tongs:compound",
+      "massKg": 0.94,
+      "centreOfMass": [0.18880400421496316, 0.01035005268703899, 0]
+    }
+  },
+  "grip": { "at": [0.28200000000000003, 0.01, 0.018000000000000002], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

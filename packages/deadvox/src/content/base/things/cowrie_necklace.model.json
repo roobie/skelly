@@ -1,0 +1,11 @@
+{
+  "id": "cowrie_necklace",
+  "file": "assets/models/cowrie_necklace.glb",
+  "parts": {
+    "cowrie_necklace": {
+      "node": "cowrie_necklace:compound",
+      "massKg": 0.011,
+      "centreOfMass": [4.153796339303678e-18, 0.0032571075401730543, 0.025101359703337475]
+    }
+  }
+}

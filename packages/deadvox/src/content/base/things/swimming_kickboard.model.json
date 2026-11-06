@@ -1,0 +1,11 @@
+{
+  "id": "swimming_kickboard",
+  "file": "assets/models/swimming_kickboard.glb",
+  "parts": {
+    "swimming_kickboard": {
+      "node": "swimming_kickboard:compound",
+      "massKg": 0.13,
+      "centreOfMass": [0, 0.018085807316606015, -0.0021078720551618462]
+    }
+  }
+}

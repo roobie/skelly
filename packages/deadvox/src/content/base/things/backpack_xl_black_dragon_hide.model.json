@@ -1,0 +1,11 @@
+{
+  "id": "backpack_xl_black_dragon_hide",
+  "file": "assets/models/backpack_xl_black_dragon_hide.glb",
+  "parts": {
+    "backpack_xl_black_dragon_hide": {
+      "node": "backpack_xl_black_dragon_hide:compound",
+      "massKg": 3.5,
+      "centreOfMass": [1.0575409902615574e-18, 0.3199757070130266, -0.00010617293509610553]
+    }
+  }
+}

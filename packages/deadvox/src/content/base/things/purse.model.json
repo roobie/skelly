@@ -1,0 +1,11 @@
+{
+  "id": "purse",
+  "file": "assets/models/purse.glb",
+  "parts": {
+    "purse": {
+      "node": "purse:compound",
+      "massKg": 0.31,
+      "centreOfMass": [1.0231558921319886e-20, 0.10208678227741622, 0.0014225069885956012]
+    }
+  }
+}

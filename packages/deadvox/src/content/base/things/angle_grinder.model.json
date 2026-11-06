@@ -1,0 +1,14 @@
+{
+  "id": "angle_grinder",
+  "file": "assets/models/angle_grinder.glb",
+  "parts": {
+    "angle_grinder": {
+      "node": "angle_grinder:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-0.007860955518945627, 0.04599416333254885, 0.0035702518239585797]
+    }
+  },
+  "grip": { "at": [-0.064, 0.05, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

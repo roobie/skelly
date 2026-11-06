@@ -1,0 +1,11 @@
+{
+  "id": "long_blue_wig",
+  "file": "assets/models/long_blue_wig.glb",
+  "parts": {
+    "long_blue_wig": {
+      "node": "long_blue_wig:compound",
+      "massKg": 0.23,
+      "centreOfMass": [0.00007302231237322468, 0.02679808849314126, -0.1662262866572696]
+    }
+  }
+}

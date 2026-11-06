@@ -39,3 +39,7 @@ npm run dev --prefix packages/mobgen
 Run the repository-wide checks with `npm run ci` and `npm run test:site`. Each project's `package.json` lists its own checks, and CI runs the workflows under `.github/workflows/`.
 
 Contributing? Start with [AGENTS.md](AGENTS.md), [PILLARS.md](PILLARS.md) and [docs/PROCESS.md](docs/PROCESS.md).
+
+## Licence
+
+Code is licensed under EUPL-1.2 and game content under CC BY-NC-SA 4.0; third-party files keep their own licences. [LICENSE](LICENSE) summarises this and [docs/licensing.md](docs/licensing.md) says which licence covers what.

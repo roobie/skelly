@@ -1,0 +1,11 @@
+{
+  "id": "notched_stick",
+  "file": "assets/models/notched_stick.glb",
+  "parts": {
+    "notched_stick": {
+      "node": "notched_stick:compound",
+      "massKg": 0.24,
+      "centreOfMass": [0.1555300546448087, 0.025504691205278894, -0.000020414475719146297]
+    }
+  }
+}

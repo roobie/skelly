@@ -1,0 +1,11 @@
+{
+  "id": "sheet_leather",
+  "file": "assets/models/sheet_leather.glb",
+  "parts": {
+    "sheet_leather": {
+      "node": "sheet_leather:compound",
+      "massKg": 0.34,
+      "centreOfMass": [0.000007674208144796376, 0.0008943710407239818, 0.00018798190045248866]
+    }
+  }
+}

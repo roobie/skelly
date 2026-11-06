@@ -1,0 +1,11 @@
+{
+  "id": "drill_press",
+  "file": "assets/models/drill_press.glb",
+  "parts": {
+    "drill_press": {
+      "node": "drill_press:compound",
+      "massKg": 200,
+      "centreOfMass": [0.0009313740434742845, 0.8403248376573885, -0.12387777811652083]
+    }
+  }
+}

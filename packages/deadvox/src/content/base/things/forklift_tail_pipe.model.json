@@ -1,0 +1,14 @@
+{
+  "id": "forklift_tail_pipe",
+  "file": "assets/models/forklift_tail_pipe.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 6,
+      "centreOfMass": [0, 0.3125, 0],
+      "collision": [{ "min": [-0.03125, 0, -0.03125], "max": [0.03125, 0.625, 0.03125] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

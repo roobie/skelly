@@ -1,0 +1,11 @@
+{
+  "id": "shield_belt_cracked",
+  "file": "assets/models/shield_belt_cracked.glb",
+  "parts": {
+    "shield_belt_cracked": {
+      "node": "shield_belt_cracked:compound",
+      "massKg": 0.39,
+      "centreOfMass": [0.00763017430451345, 0.00899916887914118, 0.02106667436223018]
+    }
+  }
+}

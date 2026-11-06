@@ -1,0 +1,14 @@
+{
+  "id": "carding_paddles",
+  "file": "assets/models/carding_paddles.glb",
+  "parts": {
+    "carding_paddles": {
+      "node": "carding_paddles:compound",
+      "massKg": 0.54,
+      "centreOfMass": [0.05057405840033851, 0.009048666948793907, 2.9754698293274353e-18]
+    }
+  },
+  "grip": { "at": [-0.058, 0.012, -0.056], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,14 @@
+{
+  "id": "vitamin_c_fragment",
+  "file": "assets/models/vitamin_c_fragment.glb",
+  "parts": {
+    "vitamin_c_fragment": {
+      "node": "vitamin_c_fragment:compound",
+      "massKg": 0.0012,
+      "centreOfMass": [0.00002857142857142858, 0.003, 0.003742857142857143]
+    }
+  },
+  "grip": { "at": [0, 0.003, 0.005], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

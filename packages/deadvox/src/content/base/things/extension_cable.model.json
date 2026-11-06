@@ -1,0 +1,11 @@
+{
+  "id": "extension_cable",
+  "file": "assets/models/extension_cable.glb",
+  "parts": {
+    "extension_cable": {
+      "node": "extension_cable:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0.007938098336276607, 0.013891067943117391, 0.020991727855748675]
+    }
+  }
+}

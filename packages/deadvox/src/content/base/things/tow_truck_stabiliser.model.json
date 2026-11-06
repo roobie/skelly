@@ -1,0 +1,18 @@
+{
+  "id": "tow_truck_stabiliser",
+  "file": "assets/models/tow_truck_stabiliser.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 45,
+      "centreOfMass": [-3.25, 0.6518987341772152, 0.8856803797468354],
+      "collision": [
+        { "min": [-3.34375, 0.625, 0.8125], "max": [-3.15625, 1, 0.96875] },
+        { "min": [-3.3125, 0.4375, 0.84375], "max": [-3.1875, 0.625, 0.9375] },
+        { "min": [-3.40625, 0.375, 0.71875], "max": [-3.09375, 0.4375, 1.03125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "scrap_cast_iron",
+  "file": "assets/models/scrap_cast_iron.glb",
+  "parts": {
+    "scrap_cast_iron": {
+      "node": "scrap_cast_iron:compound",
+      "massKg": 0.037,
+      "centreOfMass": [-0.0044542772861356945, 0.004026548672566371, -0.004560471976401181]
+    }
+  }
+}

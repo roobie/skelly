@@ -1,0 +1,11 @@
+{
+  "id": "filter_liquid_makeshift",
+  "file": "assets/models/filter_liquid_makeshift.glb",
+  "parts": {
+    "filter_liquid_makeshift": {
+      "node": "filter_liquid_makeshift:compound",
+      "massKg": 0.12,
+      "centreOfMass": [0, 0.05693356713426857, 0.00006012024048096196]
+    }
+  }
+}

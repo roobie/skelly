@@ -1,0 +1,11 @@
+{
+  "id": "pants_army",
+  "file": "assets/models/pants_army.glb",
+  "parts": {
+    "pants_army": {
+      "node": "pants_army:compound",
+      "massKg": 0.85,
+      "centreOfMass": [-0.001057869666565319, 0.033898206141684394, 0.00223666768014594]
+    }
+  }
+}

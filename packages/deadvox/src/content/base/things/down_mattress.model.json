@@ -1,0 +1,7 @@
+{
+  "id": "down_mattress",
+  "file": "assets/models/down_mattress.glb",
+  "parts": {
+    "down_mattress": { "node": "down_mattress:compound", "massKg": 4.7, "centreOfMass": [0, 0.09163879645818061, 0] }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "legguard_trooper_worn_thigh",
+  "file": "assets/models/legguard_trooper_worn_thigh.glb",
+  "parts": {
+    "legguard_trooper_worn_thigh": {
+      "node": "legguard_trooper_worn_thigh:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0, -0.21767567457114545, 0.004035105285204901]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "crude_picklock",
+  "file": "assets/models/crude_picklock.glb",
+  "parts": {
+    "crude_picklock": {
+      "node": "crude_picklock:compound",
+      "massKg": 0.016,
+      "centreOfMass": [-0.011692307692307691, 0.0013956043956043958, 0.0015604395604395603]
+    }
+  }
+}

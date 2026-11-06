@@ -1,0 +1,11 @@
+{
+  "id": "mercury",
+  "file": "assets/models/mercury.glb",
+  "parts": {
+    "mercury": {
+      "node": "mercury:compound",
+      "massKg": 0.35,
+      "centreOfMass": [0, 0.02568392023759015, 0.00009673313534153583]
+    }
+  }
+}

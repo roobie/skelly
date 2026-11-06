@@ -1,0 +1,11 @@
+{
+  "id": "fishing_hook_bone",
+  "file": "assets/models/fishing_hook_bone.glb",
+  "parts": {
+    "fishing_hook_bone": {
+      "node": "fishing_hook_bone:compound",
+      "massKg": 0.002,
+      "centreOfMass": [0.0033660714285714288, 0.0020267857142857145, 0.011178571428571434]
+    }
+  }
+}

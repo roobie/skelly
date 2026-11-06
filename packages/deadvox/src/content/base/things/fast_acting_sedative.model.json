@@ -1,0 +1,14 @@
+{
+  "id": "fast_acting_sedative",
+  "file": "assets/models/fast_acting_sedative.glb",
+  "parts": {
+    "fast_acting_sedative": {
+      "node": "fast_acting_sedative:compound",
+      "massKg": 0.013,
+      "centreOfMass": [0, 0.02996685954760653, 0]
+    }
+  },
+  "grip": { "at": [0, 0.025, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

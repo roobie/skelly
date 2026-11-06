@@ -1,0 +1,11 @@
+{
+  "id": "poncho_makeshift",
+  "file": "assets/models/poncho_makeshift.glb",
+  "parts": {
+    "poncho_makeshift": {
+      "node": "poncho_makeshift:compound",
+      "massKg": 0.048,
+      "centreOfMass": [0, 0.002082126875493551, 0.02326138457488813]
+    }
+  }
+}

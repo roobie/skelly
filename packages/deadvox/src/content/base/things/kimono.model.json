@@ -1,0 +1,11 @@
+{
+  "id": "kimono",
+  "file": "assets/models/kimono.glb",
+  "parts": {
+    "kimono": {
+      "node": "kimono:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-0.000679580232074338, 0.027768942721094734, -0.0025209652813092333]
+    }
+  }
+}

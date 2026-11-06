@@ -1,0 +1,19 @@
+{
+  "id": "crashed_hatchback_flat_wheel",
+  "file": "assets/models/crashed_hatchback_flat_wheel.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 16,
+      "centreOfMass": [0, -0.02452506385696041, 0.00870051085568327],
+      "collision": [
+        { "min": [-0.34375, -0.25, -0.09375], "max": [0.34375, 0.3125, 0.09375] },
+        { "min": [-0.3125, -0.25, -0.125], "max": [0.3125, -0.15625, 0.125] },
+        { "min": [-0.1875, -0.1875, -0.0625], "max": [0.1875, 0.1875, 0.125] },
+        { "min": [-0.0625, -0.0625, 0.09375], "max": [0.0625, 0.0625, 0.15625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,14 @@
+{
+  "id": "shears",
+  "file": "assets/models/shears.glb",
+  "parts": {
+    "shears": {
+      "node": "shears:compound",
+      "massKg": 0.47,
+      "centreOfMass": [0.10175051831375258, 0.006500345542501728, 0]
+    }
+  },
+  "grip": { "at": [0.075, 0.006, 0.019000000000000003], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

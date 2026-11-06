@@ -1,0 +1,11 @@
+{
+  "id": "peephole",
+  "file": "assets/models/peephole.glb",
+  "parts": {
+    "peephole": {
+      "node": "peephole:compound",
+      "massKg": 0.04,
+      "centreOfMass": [-0.0042240300375469345, 0.010526908635794743, 0]
+    }
+  }
+}

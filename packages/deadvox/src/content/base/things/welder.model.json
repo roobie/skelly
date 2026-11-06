@@ -1,0 +1,11 @@
+{
+  "id": "welder",
+  "file": "assets/models/welder.glb",
+  "parts": {
+    "welder": {
+      "node": "welder:compound",
+      "massKg": 4.3,
+      "centreOfMass": [0.00031907700410679094, 0.09896311005772288, 0.012305240606694716]
+    }
+  }
+}

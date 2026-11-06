@@ -1,0 +1,11 @@
+{
+  "id": "accounting_records",
+  "file": "assets/models/accounting_records.glb",
+  "parts": {
+    "accounting_records": {
+      "node": "accounting_records:compound",
+      "massKg": 0.3,
+      "centreOfMass": [-0.000560756373879005, 0.003064991819066752, -0.003113373236957107]
+    }
+  }
+}

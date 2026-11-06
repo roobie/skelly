@@ -1,0 +1,17 @@
+{
+  "id": "tipper_truck_front_bumper",
+  "file": "assets/models/tipper_truck_front_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 40,
+      "centreOfMass": [3.9380151098901104, 0.8131868131868133, 0],
+      "collision": [
+        { "min": [3.875, 0.53125, -1.25], "max": [4, 1.09375, 1.25] },
+        { "min": [3.96875, 0.84375, -0.5], "max": [4, 0.90625, 0.5] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

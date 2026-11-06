@@ -1,0 +1,11 @@
+{
+  "id": "steel_armor",
+  "file": "assets/models/steel_armor.glb",
+  "parts": {
+    "steel_armor": {
+      "node": "steel_armor:compound",
+      "massKg": 2.7,
+      "centreOfMass": [-2.2531307117549274e-18, 0.015338525706503238, 0.006036218930881852]
+    }
+  }
+}

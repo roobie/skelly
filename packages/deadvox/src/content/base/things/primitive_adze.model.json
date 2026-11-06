@@ -1,0 +1,14 @@
+{
+  "id": "primitive_adze",
+  "file": "assets/models/primitive_adze.glb",
+  "parts": {
+    "primitive_adze": {
+      "node": "primitive_adze:compound",
+      "massKg": 0.7,
+      "centreOfMass": [0.3684722750043185, 0, 0.03024874762480566]
+    }
+  },
+  "grip": { "at": [0.09, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

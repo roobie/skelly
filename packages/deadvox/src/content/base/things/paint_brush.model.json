@@ -1,0 +1,14 @@
+{
+  "id": "paint_brush",
+  "file": "assets/models/paint_brush.glb",
+  "parts": {
+    "paint_brush": {
+      "node": "paint_brush:compound",
+      "massKg": 0.2,
+      "centreOfMass": [0.010603934077618287, 0.012885699096225414, 0]
+    }
+  },
+  "grip": { "at": [-0.066, 0.014, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

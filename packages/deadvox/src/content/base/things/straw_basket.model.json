@@ -1,0 +1,11 @@
+{
+  "id": "straw_basket",
+  "file": "assets/models/straw_basket.glb",
+  "parts": {
+    "straw_basket": {
+      "node": "straw_basket:compound",
+      "massKg": 0.35,
+      "centreOfMass": [-2.6646713781204096e-19, 0.09894644439075469, 0]
+    }
+  }
+}

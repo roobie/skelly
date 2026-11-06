@@ -1,0 +1,11 @@
+{
+  "id": "flintlock_pouch",
+  "file": "assets/models/flintlock_pouch.glb",
+  "parts": {
+    "flintlock_pouch": {
+      "node": "flintlock_pouch:compound",
+      "massKg": 0.35,
+      "centreOfMass": [0, 0.05726786254422075, 0.0007000749615328974]
+    }
+  }
+}

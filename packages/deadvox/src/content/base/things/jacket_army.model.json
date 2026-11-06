@@ -1,0 +1,11 @@
+{
+  "id": "jacket_army",
+  "file": "assets/models/jacket_army.glb",
+  "parts": {
+    "jacket_army": {
+      "node": "jacket_army:compound",
+      "massKg": 2.2,
+      "centreOfMass": [0, 0.03815678111315603, -0.0016399822301199464]
+    }
+  }
+}

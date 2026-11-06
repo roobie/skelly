@@ -1,0 +1,14 @@
+{
+  "id": "stirge_proboscis",
+  "file": "assets/models/stirge_proboscis.glb",
+  "parts": {
+    "stirge_proboscis": {
+      "node": "stirge_proboscis:compound",
+      "massKg": 0.03,
+      "centreOfMass": [0.06662632321806633, 0.018011291460832746, 3.5285815102330057e-7]
+    }
+  },
+  "grip": { "at": [0.159, 0.019000000000000003, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

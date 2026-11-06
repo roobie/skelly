@@ -1,0 +1,11 @@
+{
+  "id": "syringe",
+  "file": "assets/models/syringe.glb",
+  "parts": {
+    "syringe": {
+      "node": "syringe:compound",
+      "massKg": 0.0031,
+      "centreOfMass": [-0.0038854625550660787, 0.007422907488986784, 0]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "ammonia_machine_reactor",
+  "file": "assets/models/ammonia_machine_reactor.glb",
+  "parts": {
+    "ammonia_machine_reactor": {
+      "node": "ammonia_machine_reactor:compound",
+      "massKg": 580,
+      "centreOfMass": [-0.021506137593916546, 1.4210724177819039, 0.02863471512936049]
+    }
+  }
+}

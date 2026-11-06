@@ -1,0 +1,14 @@
+{
+  "id": "demon_spider_fang",
+  "file": "assets/models/demon_spider_fang.glb",
+  "parts": {
+    "demon_spider_fang": {
+      "node": "demon_spider_fang:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0.044647879272893556, 0.010676003201097517, 0.00009957699782782666]
+    }
+  },
+  "grip": { "at": [0.02, 0.012, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

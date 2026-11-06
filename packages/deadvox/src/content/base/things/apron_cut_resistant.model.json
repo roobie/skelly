@@ -1,0 +1,11 @@
+{
+  "id": "apron_cut_resistant",
+  "file": "assets/models/apron_cut_resistant.glb",
+  "parts": {
+    "apron_cut_resistant": {
+      "node": "apron_cut_resistant:compound",
+      "massKg": 0.39,
+      "centreOfMass": [0, 0.017880476410925463, -0.003912545768275746]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "parabolan_blouse",
+  "file": "assets/models/parabolan_blouse.glb",
+  "parts": {
+    "parabolan_blouse": {
+      "node": "parabolan_blouse:compound",
+      "massKg": 0.71,
+      "centreOfMass": [2.972262351969197e-20, 0.019103557312252984, 0.0002969457420050308]
+    }
+  }
+}

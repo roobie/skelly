@@ -1,0 +1,11 @@
+{
+  "id": "gas_charger",
+  "file": "assets/models/gas_charger.glb",
+  "parts": {
+    "gas_charger": {
+      "node": "gas_charger:compound",
+      "massKg": 1,
+      "centreOfMass": [0.0006687174100611477, 0.04237168473571674, 0.0006061447274637061]
+    }
+  }
+}

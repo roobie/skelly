@@ -1,0 +1,11 @@
+{
+  "id": "eclipse_glasses",
+  "file": "assets/models/eclipse_glasses.glb",
+  "parts": {
+    "eclipse_glasses": {
+      "node": "eclipse_glasses:compound",
+      "massKg": 0.01,
+      "centreOfMass": [0, 0.024975189524465886, 0.00045554789800137833]
+    }
+  }
+}

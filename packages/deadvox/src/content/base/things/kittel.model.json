@@ -1,0 +1,11 @@
+{
+  "id": "kittel",
+  "file": "assets/models/kittel.glb",
+  "parts": {
+    "kittel": {
+      "node": "kittel:compound",
+      "massKg": 1,
+      "centreOfMass": [0, 0.026593588652482267, -0.000639205673758865]
+    }
+  }
+}

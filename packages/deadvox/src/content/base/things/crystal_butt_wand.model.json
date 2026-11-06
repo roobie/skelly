@@ -1,0 +1,14 @@
+{
+  "id": "crystal_butt_wand",
+  "file": "assets/models/crystal_butt_wand.glb",
+  "parts": {
+    "crystal_butt_wand": {
+      "node": "crystal_butt_wand:compound",
+      "massKg": 0.09,
+      "centreOfMass": [-0.06629842715231789, 0.012020281456953644, 0]
+    }
+  },
+  "grip": { "at": [-0.105, 0.012, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

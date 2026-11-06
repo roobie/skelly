@@ -1,0 +1,11 @@
+{
+  "id": "oil_press_manual",
+  "file": "assets/models/oil_press_manual.glb",
+  "parts": {
+    "oil_press_manual": {
+      "node": "oil_press_manual:compound",
+      "massKg": 1.9,
+      "centreOfMass": [-0.010337254901960784, 0.08704999999999999, -0.0022941176470588237]
+    }
+  }
+}

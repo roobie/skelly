@@ -1,0 +1,99 @@
+[
+  {
+    "id": "twin_spout_rune_lamp",
+    "model": "twin_spout_rune_lamp",
+    "name": "Rune-carved twin-spout lamp",
+    "category": "light",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "description": "A squat cast-iron oil lamp with a wick in each of its two long spouts and a ring handle at the back. A carved band and a rune on its belly glow a cold blue.",
+    "reference": "kelvinist_booster_2",
+    "variants": [],
+    "notes": "220 mm across the spouts, 100 mm wide and 70 mm tall. CHECK VOLUME (x6.5): the reference 300 ml is the iron the lamp holds, not the box round two long spouts and a handle; the mass follows the reference. The reference is the unlit lamp; the light and its caster boost are left to the light and magic frameworks. The glowing rune uses crystal-glow-blue; the name avoids the mod's school name."
+  },
+  {
+    "id": "strung_rune_frame",
+    "model": "strung_rune_frame",
+    "name": "Strung rune frame",
+    "category": "tool",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "description": "A square of lashed wooden sticks with a bowed stick across the top, strung corner to corner with taut cord. The strings meet at a grey pebble marked with a violet rune.",
+    "reference": "magus_booster_1",
+    "variants": [],
+    "notes": "150 mm square and 32 mm deep with its pebble, 178 mm tall to the bowed stick. The model shows the unreleased contraption; the stored tension and its caster boost are left to the magic framework. The rune uses crystal-glow-violet; the name avoids the mod's school name."
+  },
+  {
+    "id": "clockwork_rune_case",
+    "model": "clockwork_rune_case",
+    "name": "Clockwork rune case",
+    "category": "tool",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "description": "A round brass case on two feet with a glass front over a train of brass and steel gears. A violet rune crystal sits caged in the middle, and a wind-up key stands from the top.",
+    "reference": "magus_booster_2",
+    "variants": [],
+    "notes": "104 mm across, 52 mm deep and 136 mm tall to the key. The gears sit flush with the glass front so they show in the game, where the glass is see-through; the tile draws the glass opaque. The wound-up state and its caster boost are left to the magic framework. The name avoids the mod's school name."
+  },
+  {
+    "id": "rune_clay_tablet",
+    "model": "rune_clay_tablet",
+    "name": "Rune clay tablet",
+    "category": "tool",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "description": "A heavy slab of fired red clay with a raised border. A rune of ring, spine and branching lines is glazed pale blue into its face.",
+    "reference": "technomancer_booster_1",
+    "variants": [],
+    "notes": "160 by 110 mm and 30 mm thick with its border. The rune is raised 3 mm as a glaze inlay, since compound pieces only add. Breaking it for its caster boost is left to the magic framework. The name avoids the mod's school name."
+  },
+  {
+    "id": "rune_engine_case",
+    "model": "rune_engine_case",
+    "name": "Rune engine",
+    "category": "tool",
+    "size": [4, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier4"] },
+    "description": "A steel case inscribed with brass runes, two copper coils and a carry handle on its lid, cables running down its side and a geared drum on one end. Through a porthole in the front, a rune-marked pebble sits dark.",
+    "reference": "technomancer_booster_2",
+    "variants": ["technomancer_booster_2_active"],
+    "notes": "400 mm wide, 250 mm tall to the lid, 320 mm to the coil caps and 200 mm deep. This is the switched-off engine; the running engine is the same model with its core lit (rune_engine_case_on). Its battery draw and caster boost are left to the electrical and magic frameworks. The name avoids the mod's school name."
+  },
+  {
+    "id": "rune_engine_case_on",
+    "model": "rune_engine_case",
+    "name": "Rune engine (running)",
+    "category": "tool",
+    "size": [4, 3],
+    "economy": { "usage": [], "tiers": [] },
+    "finishes": { "core": "crystal-glow-blue" },
+    "description": "A rune-inscribed steel case with copper coils on its lid, humming faintly. Behind the porthole in its front, a rune-marked pebble glows blue.",
+    "reference": "technomancer_booster_2_active",
+    "variants": [],
+    "notes": "The running state of rune_engine_case: same model, its core slot lit with crystal-glow-blue instead of dim aquamarine. Made by switching the engine on, so it never spawns."
+  },
+  {
+    "id": "rock_egg",
+    "model": "rock_egg",
+    "name": "Stone-shelled egg",
+    "category": "food",
+    "size": [2, 2],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier3"] },
+    "description": "A heavy egg as big as a melon with a knobbled grey shell like a field stone. It is warm to the touch, and a thin amber seam runs along its top.",
+    "reference": "egg_owlbear_rock",
+    "variants": [],
+    "notes": "200 mm long and 150 mm across, lying on its side; the shell and its knobs are stone-grey and whetstone. The amber seam marks where the shell will crack open. The name avoids the mod's creature name."
+  },
+  {
+    "id": "golem_heart",
+    "model": "golem_heart",
+    "name": "Golden metal heart",
+    "category": "material",
+    "size": [2, 2],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier4"] },
+    "description": "A heavy heart of red-gold metal with two short pipes on top and a dark band round its middle. A violet crystal is set in its front, and it hums when held to the ear.",
+    "reference": "golemcore",
+    "variants": [],
+    "notes": "112 mm across its lobes, 136 mm tall to its pipes and 92 mm deep. Polished bronze stands in for the reference's fantasy gold-red metal; an orichalcum finish would read better. The name describes the part rather than the mod's construct."
+  }
+]

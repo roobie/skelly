@@ -1,0 +1,11 @@
+{
+  "id": "stick_fiber",
+  "file": "assets/models/stick_fiber.glb",
+  "parts": {
+    "stick_fiber": {
+      "node": "stick_fiber:compound",
+      "massKg": 0.04,
+      "centreOfMass": [-0.04088962165914613, 0.008070808746962862, 0.0003339118361679973]
+    }
+  }
+}

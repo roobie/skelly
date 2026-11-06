@@ -1,0 +1,14 @@
+{
+  "id": "hoboreel",
+  "file": "assets/models/hoboreel.glb",
+  "parts": {
+    "hoboreel": {
+      "node": "hoboreel:compound",
+      "massKg": 0.093,
+      "centreOfMass": [0.01786927051502861, 0.030254069670537252, 0]
+    }
+  },
+  "grip": { "at": [-0.04, 0.031, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

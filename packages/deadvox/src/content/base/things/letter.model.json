@@ -1,0 +1,11 @@
+{
+  "id": "letter",
+  "file": "assets/models/letter.glb",
+  "parts": {
+    "letter": {
+      "node": "letter:compound",
+      "massKg": 0.005,
+      "centreOfMass": [-0.0005909943714821766, 0.001000000000000002, 0.0007359287054409001]
+    }
+  }
+}

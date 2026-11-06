@@ -1,0 +1,14 @@
+{
+  "id": "crackpipe",
+  "file": "assets/models/crackpipe.glb",
+  "parts": {
+    "crackpipe": {
+      "node": "crackpipe:compound",
+      "massKg": 0.01,
+      "centreOfMass": [0.029971000935453698, 0.00008138447146866231, 0]
+    }
+  },
+  "grip": { "at": [-0.015, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

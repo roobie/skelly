@@ -1,0 +1,11 @@
+{
+  "id": "wood_panel",
+  "file": "assets/models/wood_panel.glb",
+  "parts": {
+    "wood_panel": {
+      "node": "wood_panel:compound",
+      "massKg": 9.4,
+      "centreOfMass": [0.610045855978261, 0.015207201086956524, -0.0003299082880434782]
+    }
+  }
+}

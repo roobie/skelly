@@ -1,0 +1,11 @@
+{
+  "id": "tourist_table",
+  "file": "assets/models/tourist_table.glb",
+  "parts": {
+    "tourist_table": {
+      "node": "tourist_table:compound",
+      "massKg": 9,
+      "centreOfMass": [0.00004457831325301202, 0.02412650602409639, 0.0013198795180722892]
+    }
+  }
+}

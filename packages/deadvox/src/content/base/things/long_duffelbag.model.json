@@ -1,0 +1,11 @@
+{
+  "id": "long_duffelbag",
+  "file": "assets/models/long_duffelbag.glb",
+  "parts": {
+    "long_duffelbag": {
+      "node": "long_duffelbag:compound",
+      "massKg": 1,
+      "centreOfMass": [-0.002715813246070886, 0.12968267502419692, 0.004809190210628198]
+    }
+  }
+}

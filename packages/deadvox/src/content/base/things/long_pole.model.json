@@ -1,0 +1,14 @@
+{
+  "id": "long_pole",
+  "file": "assets/models/long_pole.glb",
+  "parts": {
+    "long_pole": {
+      "node": "long_pole:compound",
+      "massKg": 2.2,
+      "centreOfMass": [1.5200326797385624, 0.020000000000000004, 0]
+    }
+  },
+  "grip": { "at": [0.915, 0.02, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,11 @@
+{
+  "id": "bundle_javelin",
+  "file": "assets/models/bundle_javelin.glb",
+  "parts": {
+    "bundle_javelin": {
+      "node": "bundle_javelin:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-0.0365458243400299, 0.020255188444296864, -0.000006973269134982525]
+    }
+  }
+}

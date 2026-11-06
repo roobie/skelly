@@ -1,0 +1,14 @@
+{
+  "id": "primitive_knife",
+  "file": "assets/models/primitive_knife.glb",
+  "parts": {
+    "primitive_knife": {
+      "node": "primitive_knife:compound",
+      "massKg": 0.19,
+      "centreOfMass": [-0.035026832518880495, 0.0001011994669035984, 0.00012741003998223012]
+    }
+  },
+  "grip": { "at": [-0.065, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

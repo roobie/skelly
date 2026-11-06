@@ -1,0 +1,11 @@
+{
+  "id": "oven_cabinet",
+  "file": "assets/models/oven_cabinet.glb",
+  "parts": {
+    "oven_cabinet": {
+      "node": "oven_cabinet:compound",
+      "massKg": 46,
+      "centreOfMass": [-0.000008364603504937612, 0.34869283986725913, -0.05216468064249155]
+    }
+  }
+}

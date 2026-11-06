@@ -1,0 +1,11 @@
+{
+  "id": "cowl_wool",
+  "file": "assets/models/cowl_wool.glb",
+  "parts": {
+    "cowl_wool": {
+      "node": "cowl_wool:compound",
+      "massKg": 0.54,
+      "centreOfMass": [3.6856582903302783e-19, 0.030644493632678876, -1.1889220291387994e-18]
+    }
+  }
+}

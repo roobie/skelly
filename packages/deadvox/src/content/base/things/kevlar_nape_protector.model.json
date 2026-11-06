@@ -1,0 +1,11 @@
+{
+  "id": "kevlar_nape_protector",
+  "file": "assets/models/kevlar_nape_protector.glb",
+  "parts": {
+    "kevlar_nape_protector": {
+      "node": "kevlar_nape_protector:compound",
+      "massKg": 0.041,
+      "centreOfMass": [1.4863982256119088e-18, 0.002812219227313567, 0.012274932614555253]
+    }
+  }
+}

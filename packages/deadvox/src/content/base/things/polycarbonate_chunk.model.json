@@ -1,0 +1,11 @@
+{
+  "id": "polycarbonate_chunk",
+  "file": "assets/models/polycarbonate_chunk.glb",
+  "parts": {
+    "polycarbonate_chunk": {
+      "node": "polycarbonate_chunk:compound",
+      "massKg": 0.043,
+      "centreOfMass": [-0.0011461794019933555, 0.005999999999999999, 0.0007209302325581395]
+    }
+  }
+}

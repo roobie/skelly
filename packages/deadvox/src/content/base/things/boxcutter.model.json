@@ -1,0 +1,14 @@
+{
+  "id": "boxcutter",
+  "file": "assets/models/boxcutter.glb",
+  "parts": {
+    "boxcutter": {
+      "node": "boxcutter:compound",
+      "massKg": 0.016,
+      "centreOfMass": [0.051157910719708474, 0.006322805952019435, -0.000004555116914667477]
+    }
+  },
+  "grip": { "at": [0.05, 0.006, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

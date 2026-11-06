@@ -16,7 +16,7 @@ import {
   tuple,
   variant,
 } from 'valibot';
-import { requireConvex } from './shapes.ts';
+import { requireConvex, TURNED_SIDES } from './shapes.ts';
 
 const coordinate = pipe(number(), finite());
 const point2 = tuple([coordinate, coordinate]);
@@ -39,6 +39,7 @@ const Piece = variant('kind', [
     axis,
     origin: optional(point3),
     profile: pipe(array(point2), minLength(3)),
+    sides: optional(number()),
   }),
 ]);
 const Pieces = pipe(
@@ -92,6 +93,7 @@ export const compound = (params: Readonly<Record<string, string>>): Solid[] =>
       axis: piece.axis,
       profile: piece.profile,
       ...(piece.origin ? { origin: piece.origin } : {}),
+      sides: piece.sides ?? TURNED_SIDES,
       slot: piece.slot,
     };
   });

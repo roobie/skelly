@@ -1,0 +1,17 @@
+{
+  "id": "traction_pack_car",
+  "file": "assets/models/traction_pack_car.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 300,
+      "centreOfMass": [0.0007267441860465116, 0.06257899393326592, 0],
+      "collision": [
+        { "min": [-0.8125, 0, -0.59375], "max": [0.8125, 0.125, 0.59375] },
+        { "min": [0.6875, 0.125, -0.0625], "max": [0.75, 0.15625, 0.0625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

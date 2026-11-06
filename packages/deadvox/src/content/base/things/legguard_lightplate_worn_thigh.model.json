@@ -1,0 +1,11 @@
+{
+  "id": "legguard_lightplate_worn_thigh",
+  "file": "assets/models/legguard_lightplate_worn_thigh.glb",
+  "parts": {
+    "legguard_lightplate_worn_thigh": {
+      "node": "legguard_lightplate_worn_thigh:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0, -0.2219109054093145, 0]
+    }
+  }
+}

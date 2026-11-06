@@ -1,0 +1,14 @@
+{
+  "id": "leather_funnel",
+  "file": "assets/models/leather_funnel.glb",
+  "parts": {
+    "leather_funnel": {
+      "node": "leather_funnel:compound",
+      "massKg": 0.021,
+      "centreOfMass": [0.0005363703159441587, 0.07991036002939017, 0]
+    }
+  },
+  "grip": { "at": [0, 0.052000000000000005, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

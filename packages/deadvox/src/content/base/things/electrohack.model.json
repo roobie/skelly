@@ -1,0 +1,11 @@
+{
+  "id": "electrohack",
+  "file": "assets/models/electrohack.glb",
+  "parts": {
+    "electrohack": {
+      "node": "electrohack:compound",
+      "massKg": 0.28,
+      "centreOfMass": [0.0003776287717159402, 0.020690681194757695, -0.0010068576653459312]
+    }
+  }
+}

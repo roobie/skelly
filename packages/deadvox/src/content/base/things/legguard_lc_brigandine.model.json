@@ -1,0 +1,11 @@
+{
+  "id": "legguard_lc_brigandine",
+  "file": "assets/models/legguard_lc_brigandine.glb",
+  "parts": {
+    "legguard_lc_brigandine": {
+      "node": "legguard_lc_brigandine:compound",
+      "massKg": 4.2,
+      "centreOfMass": [0.00027229651468880595, 0.027891544698325752, -0.04084868905970307]
+    }
+  }
+}

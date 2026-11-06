@@ -1,0 +1,18 @@
+{
+  "id": "quad_bike_tank",
+  "file": "assets/models/quad_bike_tank.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 4,
+      "centreOfMass": [0.17815386836027713, 0.9050591801385681, 0],
+      "collision": [
+        { "min": [-0.0625, 0.75, -0.125], "max": [0.4375, 1.03125, 0.125] },
+        { "min": [0.125, 1, -0.0625], "max": [0.21875, 1.03125, 0.0625] },
+        { "min": [0.28125, 0.96875, -0.0625], "max": [0.40625, 1.0625, 0.0625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

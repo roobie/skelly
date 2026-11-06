@@ -1,0 +1,11 @@
+{
+  "id": "longshirt",
+  "file": "assets/models/longshirt.glb",
+  "parts": {
+    "longshirt": {
+      "node": "longshirt:compound",
+      "massKg": 0.3,
+      "centreOfMass": [-0.0003356525009402029, 0.022473611633446144, -0.00037840040115331595]
+    }
+  }
+}

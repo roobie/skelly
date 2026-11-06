@@ -1,0 +1,14 @@
+{
+  "id": "sauerkraut_ferment",
+  "file": "assets/models/sauerkraut_ferment.glb",
+  "parts": {
+    "sauerkraut_ferment": {
+      "node": "sauerkraut_ferment:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0, 0.057036892118501964, 0]
+    }
+  },
+  "grip": { "at": [0, 0.061, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

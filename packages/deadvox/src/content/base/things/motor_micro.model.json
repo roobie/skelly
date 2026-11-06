@@ -1,0 +1,11 @@
+{
+  "id": "motor_micro",
+  "file": "assets/models/motor_micro.glb",
+  "parts": {
+    "motor_micro": {
+      "node": "motor_micro:compound",
+      "massKg": 0.052,
+      "centreOfMass": [0.0012288, 0.013503999999999995, 0]
+    }
+  }
+}

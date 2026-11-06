@@ -1,0 +1,11 @@
+{
+  "id": "bundle_cotton",
+  "file": "assets/models/bundle_cotton.glb",
+  "parts": {
+    "bundle_cotton": {
+      "node": "bundle_cotton:compound",
+      "massKg": 0.44,
+      "centreOfMass": [-0.00039675289081464866, 0.020130693534494017, 0]
+    }
+  }
+}

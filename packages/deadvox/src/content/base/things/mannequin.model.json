@@ -1,0 +1,11 @@
+{
+  "id": "mannequin",
+  "file": "assets/models/mannequin.glb",
+  "parts": {
+    "mannequin": {
+      "node": "mannequin:compound",
+      "massKg": 14,
+      "centreOfMass": [0, 1.0331265369997769, 0.0039639068981792]
+    }
+  }
+}

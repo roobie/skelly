@@ -1,0 +1,11 @@
+{
+  "id": "toilet_travel_folded",
+  "file": "assets/models/toilet_travel_folded.glb",
+  "parts": {
+    "toilet_travel_folded": {
+      "node": "toilet_travel_folded:compound",
+      "massKg": 1.2,
+      "centreOfMass": [0, 0.02429071263184976, 0.0016408541291484436]
+    }
+  }
+}

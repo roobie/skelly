@@ -1,0 +1,128 @@
+[
+  {
+    "id": "touring_suit",
+    "model": "touring_suit",
+    "name": "Leather riding suit",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 25,
+      "warmth": 25,
+      "wearPerDamage": 0.0008,
+      "protects": { "blunt": 0.25, "cut": 0.4, "pierce": 0.1 }
+    },
+    "container": { "pockets": [{ "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "chest pocket" }] },
+    "description": "A one-piece suit of thick black leather made for racing motorcycles, zipped from crotch to collar, with hard pads sewn in over the shoulders, elbows and knees. Stiff and heavy, but it takes a slide across tarmac.",
+    "reference": "touring_suit",
+    "variants": [],
+    "notes": "Folded to 440 mm by 460 mm and 70 mm tall, legs folded up over the lower half: black leather with a white yoke, red stripes down the sleeves and legs, a dark zip with a steel pull and a stand collar, charcoal pads over the shoulders, elbows and knees, and ribbed stretch panels above the knees. CHECK VOLUME: the reference's 6.5 L is a tight roll; the folded bundle's box is about three times that. It covers the torso, arms and legs: slot `torso` is the nearest existing slot; it should also block the arms and legs slots once a slot can cover more than one region. Protection is a judgement for heavy leather with hard pads. The inside chest pocket is a judgement. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "xedra_enviro_suit",
+    "model": "robofac_enviro_suit",
+    "name": "Activity suit",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier4"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 25,
+      "warmth": 40,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.6, "blunt": 0.1, "cut": 0.35, "pierce": 0.2 }
+    },
+    "container": { "pockets": [{ "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "chest pocket" }] },
+    "finishes": { "flap": "cloth-orange", "yoke": "cloth-orange" },
+    "description": "A sealed one-piece suit of brown and orange flame-resistant cloth over an aramid lining, cut like a flight suit, with boots and gloves built in and a white patch on the shoulder. It seals at a neck ring; breathing protection needs a separate gas mask.",
+    "reference": "xedra_enviro_suit",
+    "variants": [],
+    "notes": "Rides on batch 174's `robofac_enviro_suit` model, which matches it in cut, built-in boots and gloves, neck seal and shoulder seals; only its shoulders and pocket flap differ in colour, so the `finishes` map recolours the `yoke` and `flap` slots to orange. The lettering across the back is not modelled: the folded bundle lies front up. The reference's name ties it to one research group from the source game; the name and text here leave that out. It covers the whole body, hands and feet: slot `torso` is the nearest existing slot; it should also block the arms, legs, hands and feet slots once a slot can cover more than one region. Protection matches the sealed suit it shares a model with. The worn-open state is `xedra_enviro_suit_casual`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "xedra_enviro_suit_casual",
+    "model": "robofac_enviro_suit_casual",
+    "name": "Activity suit (worn open)",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier4"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 25,
+      "warmth": 40,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.6, "blunt": 0.1, "cut": 0.35, "pierce": 0.2 }
+    },
+    "finishes": { "yoke": "cloth-orange" },
+    "description": "The activity suit with its top half peeled down and the sleeves knotted round the waist. It still covers the legs and feet.",
+    "reference": "xedra_enviro_suit_casual",
+    "variants": [],
+    "notes": "A distinct state of the activity suit. Rides on batch 174's `robofac_enviro_suit_casual` model, the same sealed suit worn open, with the rolled top half (slot `yoke`) recoloured orange. Changing between the two states is a use action yet to be designed. It covers legs and feet: slot `legs`, and it should also block the feet slot once a slot can cover more than one region. Protection matches the closed suit for the parts it covers. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bikini_bottom",
+    "model": "bikini_bottom",
+    "name": "Bikini bottoms",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "briefs", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.004 },
+    "description": "Blue stretch-fabric swimming briefs that tie at each hip. They dry fast and cover very little.",
+    "reference": "bikini_bottom",
+    "variants": [],
+    "notes": "Laid flat, 360 mm across with its ties and 160 mm long: a blue front panel narrowing to the crotch under a waistband, and a white tie knotted in a bow at each hip with its ends trailing. Slot `briefs` is new: no existing slot sits under trousers, and `legs` would stop trousers being worn over it; the matching top takes the new slot `bra`. The reference gives no warmth. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bikini_bottom_short",
+    "model": "bikini_bottom_short",
+    "name": "Thong bikini bottoms",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "briefs", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.005 },
+    "description": "Red swimming briefs cut down to a small triangle of stretch fabric on a string waistband, with a string at the back.",
+    "reference": "bikini_bottom_short",
+    "variants": [],
+    "notes": "Laid flat, 300 mm across the waist string and 136 mm long: a small red front panel narrowing to the crotch string, on a thin string waistband. Slot `briefs` is new, as for `bikini_bottom`. The reference gives no warmth. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bikini_top",
+    "model": "bikini_top",
+    "name": "Bikini top",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "bra", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.004 },
+    "description": "A blue swimming top of two lightly padded triangle cups on ties round the neck and back.",
+    "reference": "bikini_top",
+    "variants": [],
+    "notes": "Laid flat, 500 mm across its band strings and 250 mm tall with its neck strings: two padded blue triangle cups with a centre seam, a white hem, a tied centre bow, and white band and neck strings lying loose. CHECK VOLUME: the loose strings spread its box well past the cloth's own volume. Slot `bra` is new: no existing slot sits under a shirt, and `torso` would stop a shirt being worn over it. The reference gives no warmth. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bikini_top_short",
+    "model": "bikini_top_short",
+    "name": "Small bikini top",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "bra", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.005 },
+    "description": "A red swimming top cut down to two small triangles on thin strings. More for the sun than for the water.",
+    "reference": "bikini_top_short",
+    "variants": [],
+    "notes": "Laid flat, 424 mm across its strings and 214 mm tall: two small red triangle cups with darker centre seams on thin red band and neck strings. CHECK VOLUME: the loose strings spread its box well past the cloth's own volume. Slot `bra` is new, as for `bikini_top`. The reference gives no warmth. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "divemask_full_modular",
+    "model": "divemask_full_modular",
+    "name": "Full-face diving mask",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": { "slot": "face", "encumbrance": 10, "warmth": 10, "wearPerDamage": 0.002 },
+    "description": "A diving mask with one clear visor over the whole face, sealed by a rubber skirt and held on by a four-strap harness. A port on the chin takes a hose from an air tank or a breathing cartridge.",
+    "reference": "divemask_full_modular",
+    "variants": [],
+    "notes": "Standing on its chin, 200 mm across and 230 mm tall: a clear domed visor in an oval charcoal face-port frame over a black rubber skirt, an adapter port with an orange cap on the chin, an orange purge valve below it, and orange buckles where the black straps leave the frame. The four-strap spider harness drops down the skirt and lies slack on the floor behind, meeting at a back pad, out to 280 mm. The tiles draw the visor opaque; it stays see-through in the game. CHECK VOLUME: the harness lying on the floor spreads its box. It covers the eyes and mouth: slot `face`, and it should also block the `eyes` slot. Breathing from a tank or cartridge needs a connection standard for the chin port, proposed in the batch report rather than used here; until then it is a mask with no air supply. The worn look is pending: no worn model is authored."
+  }
+]

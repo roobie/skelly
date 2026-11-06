@@ -1,0 +1,11 @@
+{
+  "id": "ballistic_vest_light_operator",
+  "file": "assets/models/ballistic_vest_light_operator.glb",
+  "parts": {
+    "ballistic_vest_light_operator": {
+      "node": "ballistic_vest_light_operator:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-0.005172103229499591, 0.03052870295282161, -0.014376739970424072]
+    }
+  }
+}

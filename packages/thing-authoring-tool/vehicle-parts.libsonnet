@@ -224,14 +224,16 @@ local vanRoof = compound('box_van_roof', 40, [
 
 // Parts real cars share: each has its own frame, about its mount or centre, so any host can place it.
 local wheel = compound('wheel_205_55r16', 18, [
-  turned('tyre', 'tyre', 'z', [[-0.1025, 0.203], [-0.1025, 0.295], [-0.085, 0.316], [0.085, 0.316], [0.1025, 0.295], [0.1025, 0.203], [-0.1025, 0.203]]),
-  turned('rim', 'rim', 'z', disc(0.203, -0.07, 0.07)),
+  turned('tyre', 'tyre', 'z', [[-0.1025, 0.203], [-0.1025, 0.295], [-0.085, 0.316], [0.085, 0.316], [0.1025, 0.295], [0.1025, 0.203], [-0.1025, 0.203]]) + { sides: 24 },
+  turned('rim', 'rim', 'z', disc(0.203, -0.07, 0.07)) + { sides: 24 },
 ], { tyre: 'rubber-black', rim: 'steel-grey' }, { hub: ['rim', [0.5, 0.5, 0.5]] });
 local frontSeat = compound('front_seat', 16, [
   box('base', 'frame', [-0.25, 0, -0.24], [0.25, 0.1, 0.24]),
   box('cushion', 'cloth', [-0.26, 0.1, -0.25], [0.24, 0.24, 0.25]),
   prism('back', 'cloth', [[-0.3, 0.2], [-0.18, 0.2], [-0.3, 0.84], [-0.42, 0.84]], [-0.25, 0.25]),
-  box('headrest', 'cloth', [-0.45, 0.86, -0.13], [-0.35, 1.04, 0.13]),
+  box('headrest', 'cloth', [-0.45, 0.9, -0.13], [-0.35, 1.04, 0.13]),
+  box('post_near', 'frame', [-0.42, 0.82, 0.05], [-0.38, 0.92, 0.09]),
+  box('post_far', 'frame', [-0.42, 0.82, -0.09], [-0.38, 0.92, -0.05]),
 ], { frame: 'steel-grey', cloth: 'cloth-seat' }, { hips: ['cushion', [0.4, 1, 0.5]] });
 local doorMirror = compound('door_mirror', 1, [
   box('arm', 'housing', [-0.03, 0.02, 0], [0.03, 0.06, 0.06]),

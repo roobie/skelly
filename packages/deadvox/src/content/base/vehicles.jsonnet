@@ -1,56 +1,16 @@
 // Vehicle parts are items whose exported models carry mass, baked collision and datums; blueprints
 // place them by item id in the vehicle frame (metres; x forward, y up, z toward the near side).
-local part(id, name, size, capabilities, description=null) = {
-  id: id,
-  name: name,
-  category: 'misc',
-  model: id,
-  size: size,
-  vehicle: {
-    capabilities: capabilities,
-    obstruction: {
-      // Glazing retains body collision but admits sight and light.
-      sight: !std.member(capabilities, 'glazing'),
-      light: !std.member(capabilities, 'glazing'),
-      // Sound and combat remain explicit rather than inferred from a part name or model.
-      sound: true,
-      combat: true,
-    },
-  },
-} + (if description == null then {} else { description: description });
-local fitting(id, part, at, supportedBy=[], service=null) =
-  { id: id, part: part, at: at, supportedBy: supportedBy } +
-  if service == null then {} else { service: service };
-// A paired site's service names each side, since the opened vehicle lists both while empty.
-local service(mount, durationSimSeconds, qualities={}, near=null, far=null) = {
-  mount: mount,
-  durationSimSeconds: durationSimSeconds,
-  qualities: qualities,
-  names:: { near: near, far: far },
-};
-local sideService(service, side) =
-  if service == null then null else service + { name: service.names[side] };
-// A near-side fitting and its far-side twin, reflected across the centre plane. `0 - z` rather than `-z`
-// keeps a centred twin at 0: -0 doesn't survive a JSON round trip, so the admitted registry would differ.
-local pair(id, part, at, supportedBy, service=null) = [
-  fitting(id + '_near', part, at, [support + '_near' for support in supportedBy.paired] + supportedBy.shared, sideService(service, 'near')),
-  fitting(id + '_far', part, [at[0], at[1], 0 - at[2]], [support + '_far' for support in supportedBy.paired] + supportedBy.shared, sideService(service, 'far')) + { mirror: true },
-];
-local on(shared=[], paired=[]) = { shared: shared, paired: paired };
-local batteryBay(tray, at, supportedBy=[]) = [
-  fitting('battery_tray', tray, at, supportedBy),
-  fitting('battery', 'car_battery', [at[0], at[1] + 0.03, at[2]], ['battery_tray']),
-];
-local headlamps(x, y, z, supportedBy=[]) = pair('headlamp', 'car_headlamp', [x, y, z], on(supportedBy));
-// A factory cargo space: `at` is the centre of its footprint on the load floor, `cells` its size in inventory
-// cells along x, y and z (`src/core/cargoSpace.ts`).
-local cargoSpace(id, at, cells, floor) = fitting(id, 'cargo_space', at, [floor]) + { cargo: cells };
-// The hatchback's own panels are pressed for its body and authored where they sit on it, so they fit at
-// its origin; shared parts are placed by their own frames.
-local origin = [0, 0, 0];
-// `src/core/inventoryScale.ts`, `PILE_GRID`. A body panel is larger than a floor pile; the cap costs
-// nothing until a carrying design gives oversized parts their own class.
-local pileSize = [12, 6];
+local kit = import 'vehicle-kit.libsonnet';
+local part = kit.part;
+local fitting = kit.fitting;
+local service = kit.service;
+local pair = kit.pair;
+local on = kit.on;
+local batteryBay = kit.batteryBay;
+local headlamps = kit.headlamps;
+local cargoSpace = kit.cargoSpace;
+local origin = kit.origin;
+local pileSize = kit.pileSize;
 local hatchback = [
   fitting('shell', 'hatchback_shell', origin),
   fitting('windscreen', 'hatchback_windscreen', origin, ['shell']),
@@ -141,8 +101,9 @@ local boxVan = [
   fitting('box_roof', 'box_van_roof', origin, ['box_front', 'box_side_near', 'box_side_far']),
   cargoSpace('box_cargo', [-0.9, 1, 0], [42, 20, 20], 'box_floor'),
 ] + pair('box_side', 'box_van_side', origin, on(['box_floor']));
+local fleet = import 'vehicles/index.libsonnet';
 (import 'item-presentation.libsonnet').pack((import 'economy.libsonnet').pack({
-  models: [
+  models: fleet.models + [
     import 'things/car_battery.model.json',
     import 'things/car_headlamp.model.json',
     import 'things/hatchback_battery_tray.model.json',
@@ -218,7 +179,7 @@ local boxVan = [
     import 'things/box_van_front.model.json',
     import 'things/box_van_roof.model.json',
   ],
-  items: [
+  items: fleet.items + [
     part('car_battery', 'Car battery', [3, 2], ['electricity'], 'Twelve volts, if it still holds a charge.'),
     part('car_headlamp', 'Headlamp unit', [2, 2], ['light', 'glazing'], 'A sealed lamp and its lens.'),
     part('hatchback_battery_tray', 'Hatchback battery tray', [3, 2], ['structure'], 'A pressed steel shelf for a battery.'),
@@ -317,5 +278,5 @@ local boxVan = [
     { id: 'pickup', name: 'Pickup', fittings: pickup },
     { id: 'box_van', name: 'Box van', fittings: boxVan },
     { id: 'hoist', name: 'Crane truck', fittings: hoist },
-  ],
+  ] + fleet.blueprints,
 }))

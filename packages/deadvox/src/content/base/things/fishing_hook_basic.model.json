@@ -1,0 +1,11 @@
+{
+  "id": "fishing_hook_basic",
+  "file": "assets/models/fishing_hook_basic.glb",
+  "parts": {
+    "fishing_hook_basic": {
+      "node": "fishing_hook_basic:compound",
+      "massKg": 0.0005,
+      "centreOfMass": [0.0030000000000000005, 0.001, 0.010245901639344262]
+    }
+  }
+}

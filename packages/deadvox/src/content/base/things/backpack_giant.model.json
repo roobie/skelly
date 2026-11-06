@@ -1,0 +1,11 @@
+{
+  "id": "backpack_giant",
+  "file": "assets/models/backpack_giant.glb",
+  "parts": {
+    "backpack_giant": {
+      "node": "backpack_giant:compound",
+      "massKg": 1.9,
+      "centreOfMass": [-0.00003159083129113248, 0.5690431049921901, 0.004935344778728161]
+    }
+  }
+}

@@ -11,6 +11,7 @@ local segment(part, pivot) = { part: part, pivot: pivot };
 local frame(part, pivot=null) = {
   part: part, at: [0, 0, 0], turn: [0, 0, 0], insideView: false,
 } + if pivot == null then {} else { pivot: pivot };
+local measures = import 'packages/thing-authoring-tool/bust-measures.libsonnet';
 local bust = [model for model in (import 'models-items.jsonnet').models if model.id == 'player_bust'][0];
 local torsoFrame = frame('body', 'spine') + { at: [0 - value for value in bust.anchors.spine] };
 local handPose(fingers, thumbAcross, thumbIn) = {
@@ -79,7 +80,7 @@ local handPose(fingers, thumbAcross, thumbIn) = {
       },
       // Gear shares the body's anchors and camera mask so it cannot reveal a hidden body's interior.
       attachmentFrames: {
-        head: { part: 'body', pivot: 'head', at: [0, 0.0804, 0], turn: [0, 180, 0], insideView: true },
+        head: { part: 'body', pivot: 'head', at: [0, measures.headFrameRise, 0], turn: [0, 180, 0], insideView: true },
         torso: torsoFrame,
         clothing_body: torsoFrame,
         left_sleeve: frame('leftArm'),
@@ -92,6 +93,12 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         right_hem: frame('rightLeg', 'knee'),
         left_boot: frame('leftLeg', 'ankle'),
         right_boot: frame('rightLeg', 'ankle'),
+        left_glove: frame('leftArm', 'wrist'),
+        right_glove: frame('rightArm', 'wrist'),
+        left_fingers: frame('leftArm', 'knuckles'),
+        right_fingers: frame('rightArm', 'knuckles'),
+        left_thumb: frame('leftArm', 'thumb_root'),
+        right_thumb: frame('rightArm', 'thumb_root'),
       },
       holds: {
         // The chin-high guard must stay inside both view and world arm reach.

@@ -1,0 +1,11 @@
+{
+  "id": "drivebelt_makeshift",
+  "file": "assets/models/drivebelt_makeshift.glb",
+  "parts": {
+    "drivebelt_makeshift": {
+      "node": "drivebelt_makeshift:compound",
+      "massKg": 0.64,
+      "centreOfMass": [0.003873539199752334, 0.004671000696540514, 0.0024649794907514932]
+    }
+  }
+}

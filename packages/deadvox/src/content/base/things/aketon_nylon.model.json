@@ -1,0 +1,11 @@
+{
+  "id": "aketon_nylon",
+  "file": "assets/models/aketon_nylon.glb",
+  "parts": {
+    "aketon_nylon": {
+      "node": "aketon_nylon:compound",
+      "massKg": 1.5,
+      "centreOfMass": [2.82554198544343e-18, 0.03599851618288047, -0.006656898203963025]
+    }
+  }
+}

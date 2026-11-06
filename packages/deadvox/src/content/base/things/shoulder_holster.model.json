@@ -1,0 +1,11 @@
+{
+  "id": "shoulder_holster",
+  "file": "assets/models/shoulder_holster.glb",
+  "parts": {
+    "shoulder_holster": {
+      "node": "shoulder_holster:compound",
+      "massKg": 0.48,
+      "centreOfMass": [0.011927520177243243, 0.0132767843013135, -0.014669726222503558]
+    }
+  }
+}

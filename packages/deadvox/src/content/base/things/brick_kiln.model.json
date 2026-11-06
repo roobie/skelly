@@ -1,0 +1,11 @@
+{
+  "id": "brick_kiln",
+  "file": "assets/models/brick_kiln.glb",
+  "parts": {
+    "brick_kiln": {
+      "node": "brick_kiln:compound",
+      "massKg": 18,
+      "centreOfMass": [0.000021320336919234153, 0.22068591745265395, 0.0006022880881951781]
+    }
+  }
+}

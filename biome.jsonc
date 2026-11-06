@@ -110,6 +110,7 @@
         "tools/jsonnet/**",
         "tools/refresh-deadvox.mjs",
         "packages/thing-export/src/files.ts",
+        "packages/thing-export/src/cache.ts",
         "packages/deadvox/tools/publish-playtest.mjs",
         "packages/deadvox/tools/police-item-models.mjs",
         "packages/deadvox/tools/item-fuel-models.mjs",
@@ -129,6 +130,25 @@
         "packages/deadvox/tools/bench-expressions.mjs",
         "packages/deadvox/tools/probe-wasm-expressions.mjs",
         "packages/deadvox/tools/measure-ragdolls.mjs"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": { "noNodejsModules": "off" },
+          "suspicious": { "noConsole": "off" }
+        }
+      }
+    },
+    {
+      // Catalogue authoring CLIs: an authoring agent reads their printed report.
+      "includes": [
+        "tools/cdda-reference.mjs",
+        "tools/model-look.mjs",
+        "tools/vehicle-look.mjs",
+        "tools/vehicle-gallery.mjs",
+        "tools/vehicle-index.mjs",
+        "tools/usage-monitor.mjs",
+        "tools/model-sheet.mjs",
+        "tools/catalogue-batch.mjs"
       ],
       "linter": {
         "rules": {

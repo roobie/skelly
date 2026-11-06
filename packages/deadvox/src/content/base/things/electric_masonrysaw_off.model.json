@@ -1,0 +1,14 @@
+{
+  "id": "electric_masonrysaw_off",
+  "file": "assets/models/electric_masonrysaw_off.glb",
+  "parts": {
+    "electric_masonrysaw_off": {
+      "node": "electric_masonrysaw_off:compound",
+      "massKg": 4.2,
+      "centreOfMass": [-0.007267983941624936, 0.12504790051130493, -0.007201710452328332]
+    }
+  },
+  "grip": { "at": [-0.14800000000000002, 0.16399999999999998, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

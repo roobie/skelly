@@ -1,0 +1,11 @@
+{
+  "id": "ch_chainmail_half_legs",
+  "file": "assets/models/ch_chainmail_half_legs.glb",
+  "parts": {
+    "ch_chainmail_half_legs": {
+      "node": "ch_chainmail_half_legs:compound",
+      "massKg": 4.7,
+      "centreOfMass": [-0.04496976755019328, 0.0058308100805888165, 1.595252124642256e-17]
+    }
+  }
+}

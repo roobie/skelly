@@ -60,6 +60,15 @@ describe('time lint boundary and naming rules', () => {
     ]);
   });
 
+  it('matches a temporal word only where a name token starts', () => {
+    const findings = temporalNameFindings(
+      'fixture.json',
+      '{ "multimeter": 1, "filter_paper_qualitative": 2, "fuseBurnTime": 3, "multiTimer": 4 }',
+      'json',
+    );
+    expect(findings.map((finding) => finding.match(FIELD_NAME)?.[1])).toEqual(['fuseBurnTime', 'multiTimer']);
+  });
+
   it('catalogues action phases in standalone model records and packs without allowing unknown phases', () => {
     const action = {
       hand: { durationSimSeconds: 1, unlockSimSeconds: 0.1, lockSimSeconds: 0.1 },

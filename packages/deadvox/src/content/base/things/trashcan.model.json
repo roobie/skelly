@@ -1,0 +1,11 @@
+{
+  "id": "trashcan",
+  "file": "assets/models/trashcan.glb",
+  "parts": {
+    "trashcan": {
+      "node": "trashcan:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0, 0.33021091124728214, -0.0008634117414508798]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "circsaw_off",
+  "file": "assets/models/circsaw_off.glb",
+  "parts": {
+    "circsaw_off": {
+      "node": "circsaw_off:compound",
+      "massKg": 3,
+      "centreOfMass": [0.0099337005988024, 0.1149565508982036, -0.009978251497005989]
+    }
+  },
+  "grip": { "at": [-0.06, 0.21400000000000002, -0.009999999999999998], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

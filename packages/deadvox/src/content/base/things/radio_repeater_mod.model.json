@@ -1,0 +1,11 @@
+{
+  "id": "radio_repeater_mod",
+  "file": "assets/models/radio_repeater_mod.glb",
+  "parts": {
+    "radio_repeater_mod": {
+      "node": "radio_repeater_mod:compound",
+      "massKg": 1.6,
+      "centreOfMass": [0.0000470149915727846, 0.0424543008368078, -0.0011636653951920537]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "cheap_ammo_pouch_belt223",
+  "file": "assets/models/cheap_ammo_pouch_belt223.glb",
+  "parts": {
+    "cheap_ammo_pouch_belt223": {
+      "node": "cheap_ammo_pouch_belt223:compound",
+      "massKg": 0.059,
+      "centreOfMass": [0.0004206997084548106, 0.06868192419825075, 0.001061516034985423]
+    }
+  }
+}

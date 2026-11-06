@@ -1,0 +1,14 @@
+{
+  "id": "teargas_sprayer",
+  "file": "assets/models/teargas_sprayer.glb",
+  "parts": {
+    "teargas_sprayer": {
+      "node": "teargas_sprayer:compound",
+      "massKg": 0.06,
+      "centreOfMass": [7.573740916989303e-22, 0.03991293865523712, -0.00017171175997856961]
+    }
+  },
+  "grip": { "at": [0, 0.036000000000000004, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "fireman_belt",
+  "file": "assets/models/fireman_belt.glb",
+  "parts": {
+    "fireman_belt": {
+      "node": "fireman_belt:compound",
+      "massKg": 0.31,
+      "centreOfMass": [0.02535989629008275, 0.004721012696839137, 0.007115186639722425]
+    }
+  }
+}

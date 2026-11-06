@@ -330,6 +330,16 @@ describe('voxelize', () => {
     }
   });
 
+  it('draws a solid symmetric about the origin symmetrically when its faces lie on rows of voxel centres', () => {
+    // At a 2 mm grain, centres sit at odd millimetres, so a 33 mm half-width puts every face on a row of centres.
+    const { groups } = voxelize([box([-0.033, -0.033, -0.033], [0.033, 0.033, 0.033])], 0.002);
+    const positions = Array.from([...groups.values()][0]!.positions);
+    for (const axis of [0, 1, 2]) {
+      const values = positions.filter((_, i) => i % 3 === axis);
+      expect(Math.min(...values)).toBeCloseTo(-Math.max(...values), 9);
+    }
+  });
+
   it('refuses a grain that is not a positive number', () => {
     expect(() => voxelize([box([0, 0, 0], [1, 1, 1])], 0)).toThrow(POSITIVE);
     expect(() => voxelize([box([0, 0, 0], [1, 1, 1])], Number.NaN)).toThrow(POSITIVE);

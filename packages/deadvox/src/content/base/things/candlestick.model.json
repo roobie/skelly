@@ -1,0 +1,7 @@
+{
+  "id": "candlestick",
+  "file": "assets/models/candlestick.glb",
+  "parts": {
+    "candlestick": { "node": "candlestick:compound", "massKg": 0.97, "centreOfMass": [0, 0.09555306314797359, 0] }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "rolling_tobacco",
+  "file": "assets/models/rolling_tobacco.glb",
+  "parts": {
+    "rolling_tobacco": {
+      "node": "rolling_tobacco:compound",
+      "massKg": 0.044,
+      "centreOfMass": [-0.0013789141051422011, 0.009010916403332377, 0]
+    }
+  },
+  "grip": { "at": [0, 0.008, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

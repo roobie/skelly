@@ -1,0 +1,14 @@
+{
+  "id": "matrix_channeling_tool",
+  "file": "assets/models/matrix_channeling_tool.glb",
+  "parts": {
+    "matrix_channeling_tool": {
+      "node": "matrix_channeling_tool:compound",
+      "massKg": 1.4,
+      "centreOfMass": [0.0021100630517023955, 0.03899208070617906, 0.0018552837326607813]
+    }
+  },
+  "grip": { "at": [0, 0.004, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

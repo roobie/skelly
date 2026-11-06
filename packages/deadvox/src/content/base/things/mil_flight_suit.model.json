@@ -1,0 +1,11 @@
+{
+  "id": "mil_flight_suit",
+  "file": "assets/models/mil_flight_suit.glb",
+  "parts": {
+    "mil_flight_suit": {
+      "node": "mil_flight_suit:compound",
+      "massKg": 0.94,
+      "centreOfMass": [-0.00031266427380380427, 0.02978910776361529, -0.004836475143430461]
+    }
+  }
+}

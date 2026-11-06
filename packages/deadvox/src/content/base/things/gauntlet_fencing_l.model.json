@@ -1,0 +1,11 @@
+{
+  "id": "gauntlet_fencing_l",
+  "file": "assets/models/gauntlet_fencing_l.glb",
+  "parts": {
+    "gauntlet_fencing_l": {
+      "node": "gauntlet_fencing_l:compound",
+      "massKg": 0.19,
+      "centreOfMass": [-0.0037309103034344785, 0.012397465821940649, 0.005757585861953981]
+    }
+  }
+}

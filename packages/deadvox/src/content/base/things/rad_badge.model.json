@@ -1,0 +1,11 @@
+{
+  "id": "rad_badge",
+  "file": "assets/models/rad_badge.glb",
+  "parts": {
+    "rad_badge": {
+      "node": "rad_badge:compound",
+      "massKg": 0.017,
+      "centreOfMass": [2.088671149182459e-21, 0.005025856496444731, 0.0013335488041370392]
+    }
+  }
+}

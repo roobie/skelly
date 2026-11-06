@@ -1,0 +1,11 @@
+{
+  "id": "thermo_resin_chunk",
+  "file": "assets/models/thermo_resin_chunk.glb",
+  "parts": {
+    "thermo_resin_chunk": {
+      "node": "thermo_resin_chunk:compound",
+      "massKg": 0.042,
+      "centreOfMass": [0.001957650273224044, 0.008594262295081968, 0.0006571038251366121]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "hijab",
+  "file": "assets/models/hijab.glb",
+  "parts": {
+    "hijab": {
+      "node": "hijab:compound",
+      "massKg": 0.13,
+      "centreOfMass": [0.00008212330397524398, 0.012065460604617948, -0.00019471554391811496]
+    }
+  }
+}

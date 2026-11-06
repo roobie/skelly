@@ -1,0 +1,11 @@
+{
+  "id": "turban",
+  "file": "assets/models/turban.glb",
+  "parts": {
+    "turban": {
+      "node": "turban:compound",
+      "massKg": 0.2,
+      "centreOfMass": [-2.8073515752399107e-18, 0.07072917960394667, 0.001449941350997032]
+    }
+  }
+}

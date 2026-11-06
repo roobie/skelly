@@ -1,0 +1,11 @@
+{
+  "id": "gadget_pouch",
+  "file": "assets/models/gadget_pouch.glb",
+  "parts": {
+    "gadget_pouch": {
+      "node": "gadget_pouch:compound",
+      "massKg": 0.11,
+      "centreOfMass": [0, 0.07895462651079849, -0.0004458093917178521]
+    }
+  }
+}

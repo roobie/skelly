@@ -1,0 +1,11 @@
+{
+  "id": "knit_hat",
+  "file": "assets/models/knit_hat.glb",
+  "parts": {
+    "knit_hat": {
+      "node": "knit_hat:compound",
+      "massKg": 0.2,
+      "centreOfMass": [1.2280775096893911e-19, 0.07369733633167573, 1.309949343668684e-20]
+    }
+  }
+}

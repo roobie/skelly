@@ -1,0 +1,11 @@
+{
+  "id": "armor_trooper",
+  "file": "assets/models/armor_trooper.glb",
+  "parts": {
+    "armor_trooper": {
+      "node": "armor_trooper:compound",
+      "massKg": 16,
+      "centreOfMass": [0, 0.302189777504635, -0.009813850655349279]
+    }
+  }
+}

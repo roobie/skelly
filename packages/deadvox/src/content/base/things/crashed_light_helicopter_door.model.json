@@ -1,0 +1,17 @@
+{
+  "id": "crashed_light_helicopter_door",
+  "file": "assets/models/crashed_light_helicopter_door.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 7,
+      "centreOfMass": [0.09375, 0.034829851752021565, 1.4026701482479784],
+      "collision": [
+        { "min": [-0.3125, 0, 1.0625], "max": [0.5, 0.0625, 1.75] },
+        { "min": [-0.21875, 0.03125, 1.125], "max": [0.40625, 0.0625, 1.65625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

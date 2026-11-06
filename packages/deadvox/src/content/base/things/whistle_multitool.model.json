@@ -1,0 +1,14 @@
+{
+  "id": "whistle_multitool",
+  "file": "assets/models/whistle_multitool.glb",
+  "parts": {
+    "whistle_multitool": {
+      "node": "whistle_multitool:compound",
+      "massKg": 0.012,
+      "centreOfMass": [0.0002238805970149254, 0.00734888059701493, 0.0001455223880597016]
+    }
+  },
+  "grip": { "at": [0.0009999999999999974, 0.007, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

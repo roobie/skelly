@@ -1,0 +1,11 @@
+{
+  "id": "gloves_skeleton",
+  "file": "assets/models/gloves_skeleton.glb",
+  "parts": {
+    "gloves_skeleton": {
+      "node": "gloves_skeleton:compound",
+      "massKg": 0.04,
+      "centreOfMass": [1.1743538218832945e-17, 0.004025761564497931, 0.038128807822489674]
+    }
+  }
+}

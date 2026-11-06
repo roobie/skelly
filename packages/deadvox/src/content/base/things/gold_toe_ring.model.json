@@ -1,0 +1,11 @@
+{
+  "id": "gold_toe_ring",
+  "file": "assets/models/gold_toe_ring.glb",
+  "parts": {
+    "gold_toe_ring": {
+      "node": "gold_toe_ring:compound",
+      "massKg": 0.003,
+      "centreOfMass": [-0.000011235955056180145, 0.002123595505617978, 0.0007977528089887642]
+    }
+  }
+}

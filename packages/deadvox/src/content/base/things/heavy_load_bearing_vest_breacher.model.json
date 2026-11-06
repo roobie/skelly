@@ -1,0 +1,11 @@
+{
+  "id": "heavy_load_bearing_vest_breacher",
+  "file": "assets/models/heavy_load_bearing_vest_breacher.glb",
+  "parts": {
+    "heavy_load_bearing_vest_breacher": {
+      "node": "heavy_load_bearing_vest_breacher:compound",
+      "massKg": 2.2,
+      "centreOfMass": [0.0011225950604476724, 0.012400989506443767, 0.05567909667637567]
+    }
+  }
+}

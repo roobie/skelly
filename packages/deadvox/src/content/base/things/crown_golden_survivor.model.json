@@ -1,0 +1,11 @@
+{
+  "id": "crown_golden_survivor",
+  "file": "assets/models/crown_golden_survivor.glb",
+  "parts": {
+    "crown_golden_survivor": {
+      "node": "crown_golden_survivor:compound",
+      "massKg": 1.8,
+      "centreOfMass": [-7.892944776269347e-20, 0.03543454198473285, -5.525061343388543e-19]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "halligan",
+  "file": "assets/models/halligan.glb",
+  "parts": {
+    "halligan": {
+      "node": "halligan:compound",
+      "massKg": 5.4,
+      "centreOfMass": [0.3603840568515372, 0, 0.00013378649775992572]
+    }
+  },
+  "grip": { "at": [0.314, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

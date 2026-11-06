@@ -1,0 +1,11 @@
+{
+  "id": "char_forge",
+  "file": "assets/models/char_forge.glb",
+  "parts": {
+    "char_forge": {
+      "node": "char_forge:compound",
+      "massKg": 6,
+      "centreOfMass": [0.06731949273880139, 0.09212006545305787, -0.004873184700347719]
+    }
+  }
+}

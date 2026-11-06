@@ -1,0 +1,11 @@
+{
+  "id": "blazer",
+  "file": "assets/models/blazer.glb",
+  "parts": {
+    "blazer": {
+      "node": "blazer:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-0.00004397305245322066, 0.03139996904453513, -0.0013971178832978975]
+    }
+  }
+}

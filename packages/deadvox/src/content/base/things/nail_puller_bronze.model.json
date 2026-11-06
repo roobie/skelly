@@ -1,0 +1,14 @@
+{
+  "id": "nail_puller_bronze",
+  "file": "assets/models/nail_puller_bronze.glb",
+  "parts": {
+    "nail_puller_bronze": {
+      "node": "nail_puller_bronze:compound",
+      "massKg": 0.59,
+      "centreOfMass": [0.022699490662139228, 0.012176570458404075, 0.000010186757215619719]
+    }
+  },
+  "grip": { "at": [-0.0040000000000000036, 0.008, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

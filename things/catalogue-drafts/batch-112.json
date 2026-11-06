@@ -1,0 +1,119 @@
+[
+  {
+    "id": "optical_cloak",
+    "model": "optical_cloak",
+    "name": "Camera cloak",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": { "slot": "cloak", "encumbrance": 50, "warmth": 10, "wearPerDamage": 0.01 },
+    "description": "A cloak of thin plastic panels set with tiny cameras and lights that show what is behind the wearer on the side facing a watcher. It does nothing without a power pack.",
+    "reference": "optical_cloak",
+    "variants": [],
+    "notes": "Folded flat in three layers, 400 mm by 300 mm and 30 mm thick: dark plastic with a grid of black camera lenses alternating with green LEDs, and a power lead coiled on top ending in a grey plug. Slot `cloak` follows the earlier batches' capes and flags: a wrap worn over everything else. The reference makes it a powered tool that turns its wearer invisible while switched on, drawing from a carried power supply; Deadvox has no powered-wearable or invisibility rule, so the draft carries only the worn stats and the power draw and switch are pending a framework change. Box/volume x1.6 is the folded layers' air. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "poncho",
+    "model": "poncho",
+    "name": "Wool poncho",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "cloak", "encumbrance": 5, "warmth": 35, "wearPerDamage": 0.003 },
+    "description": "A square of heavy grey wool with a slit for the head, woven with red and cream bands and fringed along its edge. It hangs over the shoulders and arms.",
+    "reference": "poncho",
+    "variants": [],
+    "notes": "Folded flat in three layers, 320 mm by 240 mm and 36 mm tall: grey wool with red and cream bands woven across, the neck slit open on top with a red edge, and a knotted fringe along the front edge. Slot `cloak` follows the earlier batches' capes and flags: a wrap worn over everything else. Box/volume x2.8: the reference volume is the poncho rolled tight; folded flat it stands taller. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "poncho_makeshift",
+    "model": "poncho_makeshift",
+    "name": "Bin-bag poncho",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": [], "tiers": ["Tier1"] },
+    "wearable": { "slot": "cloak", "encumbrance": 0, "warmth": 2, "wearPerDamage": 0.02 },
+    "description": "A black plastic bin bag with holes torn for the head and arms. It keeps the rain off the body and tears on anything sharp.",
+    "reference": "poncho_makeshift",
+    "variants": [],
+    "notes": "Laid out flat, 600 mm across and 800 mm long: one black bag with a notch cut from the middle of its closed end for the head, one from each side for the arms, its seams and a crease in dark grey, and the yellow drawstring knotted at the open end. Usage is empty because it is improvised from a bin bag. CHECK VOLUME (x166): the bag is drawn laid out flat, while the reference volume is the bag crumpled into a ball; a flat sheet shows the head and arm holes and a ball would not. Slot `cloak` follows the earlier batches' capes: it is pulled on over whatever else is worn. Warmth is a little above zero because it stops wind. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "pride_flag",
+    "model": "pride_flag",
+    "name": "Rainbow flag",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "cloak", "encumbrance": 50, "warmth": 20, "wearPerDamage": 0.008 },
+    "description": "A large heavy cotton flag in six horizontal stripes of red, orange, yellow, green, blue and purple, with a canvas strip and brass grommets along one edge for hoisting. It can be wrapped round the body like a blanket.",
+    "reference": "pride_flag",
+    "variants": [],
+    "notes": "Folded into an oblong in four layers, 340 mm by 250 mm and 48 mm tall: the six stripes run across the top fold, with a cream canvas hoist strip and two brass grommets along the left end. The purple stripe uses `plant-purple`, the only purple finish; a purple cloth would match the other stripes better. Slot `cloak` follows the earlier batches' capes and flags: a wrap worn over everything else. Wrapped round the body it covers the hands and feet too and hampers everything, so encumbrance stays as the reference and the earlier flag give it. Box/volume x2.4 is the folds standing over the flat reference volume. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "snuggie",
+    "model": "snuggie",
+    "name": "Sleeved blanket",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "cloak", "encumbrance": 20, "warmth": 50, "wearPerDamage": 0.004 },
+    "description": "A long fleece blanket with two sleeves sewn into it, worn back to front so the arms stay free while the rest wraps the body and legs.",
+    "reference": "snuggie",
+    "variants": [],
+    "notes": "Folded flat in four layers, 320 mm by 260 mm and 40 mm tall: blue fleece with both sleeves folded back across the top, each ending in a navy ribbed cuff. Slot `cloak` follows the earlier batches' capes and flags: a wrap worn over everything else. It covers the legs as well, which the cloak slot cannot say, so warmth stands for all of it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "state_flag",
+    "model": "state_flag",
+    "name": "State flag",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential", "Police"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "cloak", "encumbrance": 50, "warmth": 20, "wearPerDamage": 0.008 },
+    "description": "A large heavy cotton flag, white with a blue shield bearing a gold star, hemmed with a canvas strip and brass grommets along one edge. It can be wrapped round the body like a blanket.",
+    "reference": "state_flag",
+    "variants": [],
+    "notes": "Folded into an oblong in four layers, 340 mm by 250 mm and 48 mm tall: a cream field (`cloth-white` renders greyish) with a blue shield and a five-pointed gold star on the top fold, a khaki canvas hoist strip and two brass grommets at the left end. The reference flag carries one state's arms; the model keeps a plain shield and star so it names no real state. It shares its fold helper with the rainbow flag. Slot `cloak` follows the earlier batches' capes and flags: a wrap worn over everything else. Encumbrance stays as the reference and the earlier flag give it. Box/volume x2.4 is the folds standing over the flat reference volume. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "abaya",
+    "model": "abaya",
+    "name": "Abaya",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 0, "warmth": 5, "wearPerDamage": 0.002 },
+    "description": "A loose black cotton robe that falls from the shoulders to the ankles, worn over other clothes, with fine gold trim along the front opening and cuffs.",
+    "reference": "abaya",
+    "variants": [],
+    "notes": "Folded flat in four layers, 320 mm by 240 mm and 32 mm tall: black cotton with the front opening and collar edged in a narrow gold trim, and one sleeve folded back across the top with a trimmed cuff. Slot `torso`, as Deadvox's jacket and hoodie take: it is a sleeved robe worn like a coat, not an open wrap, so the `cloak` slot does not fit. It covers the legs as well, which the slot cannot say. Box/volume x1.8 is the folded layers' air. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "bunker_coat",
+    "model": "bunker_coat",
+    "name": "Turnout coat",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 22,
+      "warmth": 30,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.3, "blunt": 0.15, "cut": 0.35, "pierce": 0.2 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "radio" }
+      ]
+    },
+    "description": "A heavy firefighter's coat with a tan flame-resistant shell, reflective bands round the body and sleeves, a high collar and a storm flap closed by steel hooks.",
+    "reference": "bunker_coat",
+    "variants": [],
+    "notes": "Folded flat in three layers, 420 mm by 320 mm and 60 mm tall: tan shell with a reflective yellow band with a silver centre stripe across the top and one round the hem, a big bellows pocket with a flap and reflective band, five steel hook clasps down the storm flap, the high collar with its throat tab on top, and one sleeve folded back with a reflective band and a black knit wristlet. The shell uses `cloth-khaki`; a tan flame-resistant shell finish would read truer. Slot `torso`, as Deadvox's jacket takes. Deadvox has no heat or fire damage kind, so its main protection, against heat and flame, is pending; `protects` gives what layered aramid and moisture barrier would stop of cuts, punctures, blows and splashes, as a guess. Pockets are the two bellows pockets, sized for gloves or a hood, and a chest pocket for a handheld radio; only one bellows pocket shows on the fold. Box/volume x2.3 is the folded layers standing over the reference volume. The worn look is pending: no worn model is authored."
+  }
+]

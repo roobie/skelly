@@ -1,0 +1,11 @@
+{
+  "id": "helmet_corinthian",
+  "file": "assets/models/helmet_corinthian.glb",
+  "parts": {
+    "helmet_corinthian": {
+      "node": "helmet_corinthian:compound",
+      "massKg": 1.9,
+      "centreOfMass": [-5.851546271106111e-8, 0.11990921911115016, -0.007073407647970982]
+    }
+  }
+}

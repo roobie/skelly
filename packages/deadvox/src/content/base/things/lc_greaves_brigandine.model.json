@@ -1,0 +1,11 @@
+{
+  "id": "lc_greaves_brigandine",
+  "file": "assets/models/lc_greaves_brigandine.glb",
+  "parts": {
+    "lc_greaves_brigandine": {
+      "node": "lc_greaves_brigandine:compound",
+      "massKg": 1.3,
+      "centreOfMass": [0.0005609806773322264, 0.0264271763972574, -0.0007683357573239159]
+    }
+  }
+}

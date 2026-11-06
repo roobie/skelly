@@ -1,0 +1,11 @@
+{
+  "id": "ballast",
+  "file": "assets/models/ballast.glb",
+  "parts": {
+    "ballast": {
+      "node": "ballast:compound",
+      "massKg": 0.28,
+      "centreOfMass": [-0.003939989869849589, 0.034201700103503714, -0.0016934308176793156]
+    }
+  }
+}

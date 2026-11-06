@@ -1,0 +1,11 @@
+{
+  "id": "lux_meter",
+  "file": "assets/models/lux_meter.glb",
+  "parts": {
+    "lux_meter": {
+      "node": "lux_meter:compound",
+      "massKg": 0.12,
+      "centreOfMass": [0.0008351354789466989, 0.01332922020099224, -0.000014247551202137132]
+    }
+  }
+}

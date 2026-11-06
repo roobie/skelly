@@ -1,0 +1,11 @@
+{
+  "id": "chaps_leather",
+  "file": "assets/models/chaps_leather.glb",
+  "parts": {
+    "chaps_leather": {
+      "node": "chaps_leather:compound",
+      "massKg": 2.3,
+      "centreOfMass": [1.9377216267959936e-7, 0.004238301005677523, 0.02037518166140252]
+    }
+  }
+}

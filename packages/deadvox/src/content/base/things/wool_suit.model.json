@@ -1,0 +1,11 @@
+{
+  "id": "wool_suit",
+  "file": "assets/models/wool_suit.glb",
+  "parts": {
+    "wool_suit": {
+      "node": "wool_suit:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-1.7219021756769149e-19, 0.04263589664757954, -0.00626127614875165]
+    }
+  }
+}

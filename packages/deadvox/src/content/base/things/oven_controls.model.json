@@ -1,0 +1,11 @@
+{
+  "id": "oven_controls",
+  "file": "assets/models/oven_controls.glb",
+  "parts": {
+    "oven_controls": {
+      "node": "oven_controls:compound",
+      "massKg": 1.8,
+      "centreOfMass": [-0.000010902153175251207, 0.05999046061597165, 0.010706186971926953]
+    }
+  }
+}

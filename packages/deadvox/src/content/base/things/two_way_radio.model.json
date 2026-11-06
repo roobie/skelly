@@ -1,0 +1,14 @@
+{
+  "id": "two_way_radio",
+  "file": "assets/models/two_way_radio.glb",
+  "parts": {
+    "two_way_radio": {
+      "node": "two_way_radio:compound",
+      "massKg": 0.23,
+      "centreOfMass": [-0.0005824613036843252, 0.0637610638761718, 0.00022732722912579027]
+    }
+  },
+  "grip": { "at": [0, 0.063, 0.003000000000000001], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

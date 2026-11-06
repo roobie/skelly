@@ -1,0 +1,14 @@
+{
+  "id": "electric_lighter",
+  "file": "assets/models/electric_lighter.glb",
+  "parts": {
+    "electric_lighter": {
+      "node": "electric_lighter:compound",
+      "massKg": 0.044,
+      "centreOfMass": [0, 0.03760197833254827, -0.0024319359397079604]
+    }
+  },
+  "grip": { "at": [0, 0.028, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

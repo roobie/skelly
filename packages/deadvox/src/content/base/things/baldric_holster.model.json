@@ -1,0 +1,11 @@
+{
+  "id": "baldric_holster",
+  "file": "assets/models/baldric_holster.glb",
+  "parts": {
+    "baldric_holster": {
+      "node": "baldric_holster:compound",
+      "massKg": 0.98,
+      "centreOfMass": [-0.0054769602305924535, 0.013186694192342153, 9.879416325480939e-18]
+    }
+  }
+}

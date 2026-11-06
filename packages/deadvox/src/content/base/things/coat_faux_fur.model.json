@@ -1,0 +1,11 @@
+{
+  "id": "coat_faux_fur",
+  "file": "assets/models/coat_faux_fur.glb",
+  "parts": {
+    "coat_faux_fur": {
+      "node": "coat_faux_fur:compound",
+      "massKg": 1.4,
+      "centreOfMass": [0, 0.03312431056427662, -0.009891575920426152]
+    }
+  }
+}

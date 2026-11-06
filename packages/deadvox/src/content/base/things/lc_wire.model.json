@@ -1,0 +1,11 @@
+{
+  "id": "lc_wire",
+  "file": "assets/models/lc_wire.glb",
+  "parts": {
+    "lc_wire": {
+      "node": "lc_wire:compound",
+      "massKg": 0.071,
+      "centreOfMass": [0, 0.005604651162790698, 0.0062015503875969]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "id": "lock",
+  "file": "assets/models/lock.glb",
+  "parts": {
+    "lock": { "node": "lock:compound", "massKg": 0.11, "centreOfMass": [0, 0.01701981981981982, 0.000336936936936937] }
+  }
+}

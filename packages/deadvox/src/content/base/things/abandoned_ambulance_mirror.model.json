@@ -1,0 +1,17 @@
+{
+  "id": "abandoned_ambulance_mirror",
+  "file": "assets/models/abandoned_ambulance_mirror.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 3,
+      "centreOfMass": [1.703125, 1.122767857142857, 1.1339285714285714],
+      "collision": [
+        { "min": [1.6875, 1.28125, 1], "max": [1.71875, 1.3125, 1.09375] },
+        { "min": [1.6875, 0.90625, 1.09375], "max": [1.71875, 1.3125, 1.1875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

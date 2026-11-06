@@ -1,0 +1,14 @@
+{
+  "id": "double_decker_dashboard",
+  "file": "assets/models/double_decker_dashboard.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 40,
+      "centreOfMass": [4.765625, 0.84375, -0.734375],
+      "collision": [{ "min": [4.4375, 0.375, -1.1875], "max": [5.09375, 1.3125, -0.28125] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

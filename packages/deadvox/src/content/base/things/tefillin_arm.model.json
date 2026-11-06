@@ -1,0 +1,11 @@
+{
+  "id": "tefillin_arm",
+  "file": "assets/models/tefillin_arm.glb",
+  "parts": {
+    "tefillin_arm": {
+      "node": "tefillin_arm:compound",
+      "massKg": 0.046,
+      "centreOfMass": [0.04367875217161409, 0.009050305914343967, -0.0074965631845305405]
+    }
+  }
+}

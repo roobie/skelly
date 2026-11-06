@@ -1,0 +1,14 @@
+{
+  "id": "comb_pocket",
+  "file": "assets/models/comb_pocket.glb",
+  "parts": {
+    "comb_pocket": {
+      "node": "comb_pocket:compound",
+      "massKg": 0.013,
+      "centreOfMass": [0.0005470899470899481, 0.002, 0.0026190476190476224]
+    }
+  },
+  "grip": { "at": [0, 0.002, 0.011], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

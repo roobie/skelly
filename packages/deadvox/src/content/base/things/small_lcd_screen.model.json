@@ -1,0 +1,11 @@
+{
+  "id": "small_lcd_screen",
+  "file": "assets/models/small_lcd_screen.glb",
+  "parts": {
+    "small_lcd_screen": {
+      "node": "small_lcd_screen:compound",
+      "massKg": 0.11,
+      "centreOfMass": [0.007826304503216584, 0.0031578270192994993, 0]
+    }
+  }
+}

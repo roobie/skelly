@@ -1,0 +1,11 @@
+{
+  "id": "display_freezer",
+  "file": "assets/models/display_freezer.glb",
+  "parts": {
+    "display_freezer": {
+      "node": "display_freezer:compound",
+      "massKg": 150,
+      "centreOfMass": [-0.002104180694129895, 0.30584862581869393, -0.00041035685866438207]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "bead_ear",
+  "file": "assets/models/bead_ear.glb",
+  "parts": {
+    "bead_ear": {
+      "node": "bead_ear:compound",
+      "massKg": 0.0014,
+      "centreOfMass": [0.0006071428571428577, 0.0022499999999999994, -0.0005714285714285714]
+    }
+  }
+}

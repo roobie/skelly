@@ -1,0 +1,14 @@
+{
+  "id": "radiocontrol",
+  "file": "assets/models/radiocontrol.glb",
+  "parts": {
+    "radiocontrol": {
+      "node": "radiocontrol:compound",
+      "massKg": 0.34,
+      "centreOfMass": [0.00011615368243962263, 0.020444132521206845, 0.0006508599284490883]
+    }
+  },
+  "grip": { "at": [0, 0.02, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

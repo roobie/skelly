@@ -1,0 +1,11 @@
+{
+  "id": "helmet_scrap",
+  "file": "assets/models/helmet_scrap.glb",
+  "parts": {
+    "helmet_scrap": {
+      "node": "helmet_scrap:compound",
+      "massKg": 2,
+      "centreOfMass": [-0.00011617791497123483, 0.07327122211309083, 0.0002612599971937689]
+    }
+  }
+}

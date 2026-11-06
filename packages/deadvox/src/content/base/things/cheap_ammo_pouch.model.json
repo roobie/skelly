@@ -1,0 +1,11 @@
+{
+  "id": "cheap_ammo_pouch",
+  "file": "assets/models/cheap_ammo_pouch.glb",
+  "parts": {
+    "cheap_ammo_pouch": {
+      "node": "cheap_ammo_pouch:compound",
+      "massKg": 0.063,
+      "centreOfMass": [-1.802750092058631e-18, 0.01391473132193693, -0.011322345569706464]
+    }
+  }
+}

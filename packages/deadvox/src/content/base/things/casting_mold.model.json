@@ -1,0 +1,11 @@
+{
+  "id": "casting_mold",
+  "file": "assets/models/casting_mold.glb",
+  "parts": {
+    "casting_mold": {
+      "node": "casting_mold:compound",
+      "massKg": 28,
+      "centreOfMass": [-0.0002353939610505627, 0.10022601393603715, 0.00006744684652492403]
+    }
+  }
+}

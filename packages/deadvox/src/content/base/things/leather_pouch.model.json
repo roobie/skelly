@@ -1,0 +1,11 @@
+{
+  "id": "leather_pouch",
+  "file": "assets/models/leather_pouch.glb",
+  "parts": {
+    "leather_pouch": {
+      "node": "leather_pouch:compound",
+      "massKg": 0.12,
+      "centreOfMass": [0.00008342224254432759, 0.07322775999593559, 0.0015854290504496264]
+    }
+  }
+}

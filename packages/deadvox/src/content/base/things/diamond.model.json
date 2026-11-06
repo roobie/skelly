@@ -1,0 +1,5 @@
+{
+  "id": "diamond",
+  "file": "assets/models/diamond.glb",
+  "parts": { "diamond": { "node": "diamond:compound", "massKg": 0.003, "centreOfMass": [0, 0.0016084337349397593, 0] } }
+}

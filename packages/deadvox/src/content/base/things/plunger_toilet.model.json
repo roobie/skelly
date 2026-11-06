@@ -1,0 +1,14 @@
+{
+  "id": "plunger_toilet",
+  "file": "assets/models/plunger_toilet.glb",
+  "parts": {
+    "plunger_toilet": {
+      "node": "plunger_toilet:compound",
+      "massKg": 0.26,
+      "centreOfMass": [0.38859073786838016, 0.07564591181032572, 0]
+    }
+  },
+  "grip": { "at": [0.226, 0.076, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,11 @@
+{
+  "id": "jacket_varsity",
+  "file": "assets/models/jacket_varsity.glb",
+  "parts": {
+    "jacket_varsity": {
+      "node": "jacket_varsity:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-0.00017234259428661048, 0.03740725020255613, -0.0008519693682862442]
+    }
+  }
+}

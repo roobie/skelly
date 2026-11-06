@@ -1,0 +1,11 @@
+{
+  "id": "cuirass_bronze",
+  "file": "assets/models/cuirass_bronze.glb",
+  "parts": {
+    "cuirass_bronze": {
+      "node": "cuirass_bronze:compound",
+      "massKg": 8,
+      "centreOfMass": [0.000028993288590604276, 0.029491812080536934, -0.0007151677852348996]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "tempered_sabaton",
+  "file": "assets/models/tempered_sabaton.glb",
+  "parts": {
+    "tempered_sabaton": {
+      "node": "tempered_sabaton:compound",
+      "massKg": 1.4,
+      "centreOfMass": [0.00004727361643165703, 0.042425136522944, 0.03950819137664031]
+    }
+  }
+}

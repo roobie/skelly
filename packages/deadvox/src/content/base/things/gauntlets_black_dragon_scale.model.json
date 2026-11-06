@@ -1,0 +1,11 @@
+{
+  "id": "gauntlets_black_dragon_scale",
+  "file": "assets/models/gauntlets_black_dragon_scale.glb",
+  "parts": {
+    "gauntlets_black_dragon_scale": {
+      "node": "gauntlets_black_dragon_scale:compound",
+      "massKg": 0.37,
+      "centreOfMass": [-4.8950597385653875e-18, 0.010697875612803984, 0.0017708353359607715]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "football_armor",
+  "file": "assets/models/football_armor.glb",
+  "parts": {
+    "football_armor": {
+      "node": "football_armor:compound",
+      "massKg": 1.8,
+      "centreOfMass": [-8.671903133525468e-18, 0.03172921851667502, -0.06030014932802385]
+    }
+  }
+}

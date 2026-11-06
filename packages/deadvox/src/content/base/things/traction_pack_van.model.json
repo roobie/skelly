@@ -1,0 +1,17 @@
+{
+  "id": "traction_pack_van",
+  "file": "assets/models/traction_pack_van.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 500,
+      "centreOfMass": [0.0011829652996845426, 0.07824001051524711, 0],
+      "collision": [
+        { "min": [-1.1875, 0, -0.625], "max": [1.1875, 0.15625, 0.625] },
+        { "min": [1.09375, 0.15625, -0.0625], "max": [1.15625, 0.21875, 0.0625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "beekeeping_gloves",
+  "file": "assets/models/beekeeping_gloves.glb",
+  "parts": {
+    "beekeeping_gloves": {
+      "node": "beekeeping_gloves:compound",
+      "massKg": 0.25,
+      "centreOfMass": [-0.00004013607565307201, 0.010503729596454545, -0.05202852595112513]
+    }
+  }
+}

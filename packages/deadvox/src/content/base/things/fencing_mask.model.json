@@ -1,0 +1,11 @@
+{
+  "id": "fencing_mask",
+  "file": "assets/models/fencing_mask.glb",
+  "parts": {
+    "fencing_mask": {
+      "node": "fencing_mask:compound",
+      "massKg": 0.32,
+      "centreOfMass": [-1.2508282109765317e-18, 0.16367242435379148, -0.04948156315080236]
+    }
+  }
+}

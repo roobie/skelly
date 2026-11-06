@@ -1,0 +1,11 @@
+{
+  "id": "ch_mitten_gaunt",
+  "file": "assets/models/ch_mitten_gaunt.glb",
+  "parts": {
+    "ch_mitten_gaunt": {
+      "node": "ch_mitten_gaunt:compound",
+      "massKg": 2,
+      "centreOfMass": [-3.1158512573802746e-19, 0.014947358508334143, 0.06620830586684247]
+    }
+  }
+}

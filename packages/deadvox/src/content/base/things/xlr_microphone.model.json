@@ -1,0 +1,14 @@
+{
+  "id": "xlr_microphone",
+  "file": "assets/models/xlr_microphone.glb",
+  "parts": {
+    "xlr_microphone": {
+      "node": "xlr_microphone:compound",
+      "massKg": 0.16,
+      "centreOfMass": [0.11019691749773346, 0.02657262012692657, 0]
+    }
+  },
+  "grip": { "at": [0.065, 0.027, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,11 @@
+{
+  "id": "parabolan_breeches",
+  "file": "assets/models/parabolan_breeches.glb",
+  "parts": {
+    "parabolan_breeches": {
+      "node": "parabolan_breeches:compound",
+      "massKg": 0.45,
+      "centreOfMass": [0, 0.016713526048538645, 0.0031615689096797404]
+    }
+  }
+}

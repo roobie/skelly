@@ -1,0 +1,14 @@
+{
+  "id": "mini_diving_flashlight",
+  "file": "assets/models/mini_diving_flashlight.glb",
+  "parts": {
+    "mini_diving_flashlight": {
+      "node": "mini_diving_flashlight:compound",
+      "massKg": 0.072,
+      "centreOfMass": [0.05309687699171448, 0, -0.000021032504780114725]
+    }
+  },
+  "grip": { "at": [0.045, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

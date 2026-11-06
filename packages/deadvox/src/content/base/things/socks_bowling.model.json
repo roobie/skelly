@@ -1,0 +1,11 @@
+{
+  "id": "socks_bowling",
+  "file": "assets/models/socks_bowling.glb",
+  "parts": {
+    "socks_bowling": {
+      "node": "socks_bowling:compound",
+      "massKg": 0.039,
+      "centreOfMass": [8.936113425460754e-18, 0.002136975132490827, -0.012752547900529964]
+    }
+  }
+}

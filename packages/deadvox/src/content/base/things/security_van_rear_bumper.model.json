@@ -1,0 +1,14 @@
+{
+  "id": "security_van_rear_bumper",
+  "file": "assets/models/security_van_rear_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 10,
+      "centreOfMass": [-2.828125, 0.5, 0],
+      "collision": [{ "min": [-2.90625, 0.40625, -1.0625], "max": [-2.75, 0.59375, 1.0625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

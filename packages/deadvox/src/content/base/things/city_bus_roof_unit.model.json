@@ -1,0 +1,17 @@
+{
+  "id": "city_bus_roof_unit",
+  "file": "assets/models/city_bus_roof_unit.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 180,
+      "centreOfMass": [0, 0.13137612107623317, 0],
+      "collision": [
+        { "min": [-1.09375, 0, -0.84375], "max": [1.09375, 0.25, 0.84375] },
+        { "min": [-0.8125, 0.21875, -0.5625], "max": [0.8125, 0.25, 0.5625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

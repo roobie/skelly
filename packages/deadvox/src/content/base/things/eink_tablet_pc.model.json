@@ -1,0 +1,11 @@
+{
+  "id": "eink_tablet_pc",
+  "file": "assets/models/eink_tablet_pc.glb",
+  "parts": {
+    "eink_tablet_pc": {
+      "node": "eink_tablet_pc:compound",
+      "massKg": 0.16,
+      "centreOfMass": [0.0007989700202317454, 0.004444178775059777, -0.00004193489056464963]
+    }
+  }
+}

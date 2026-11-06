@@ -1,0 +1,11 @@
+{
+  "id": "household_washing_machine",
+  "file": "assets/models/household_washing_machine.glb",
+  "parts": {
+    "household_washing_machine": {
+      "node": "household_washing_machine:compound",
+      "massKg": 45,
+      "centreOfMass": [0, 0.4824527495246238, -0.0077412720087460685]
+    }
+  }
+}

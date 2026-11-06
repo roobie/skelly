@@ -1,0 +1,11 @@
+{
+  "id": "ch_lighthelm_close",
+  "file": "assets/models/ch_lighthelm_close.glb",
+  "parts": {
+    "ch_lighthelm_close": {
+      "node": "ch_lighthelm_close:compound",
+      "massKg": 3.1,
+      "centreOfMass": [0.000059499214940914236, 0.17272638624907033, 0.01853979009999173]
+    }
+  }
+}

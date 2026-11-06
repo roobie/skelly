@@ -1,0 +1,5 @@
+{
+  "id": "rollmat",
+  "file": "assets/models/rollmat.glb",
+  "parts": { "rollmat": { "node": "rollmat:compound", "massKg": 0.4, "centreOfMass": [0, 0.08013562084494963, 0] } }
+}

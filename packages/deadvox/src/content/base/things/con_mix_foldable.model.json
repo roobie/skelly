@@ -1,0 +1,11 @@
+{
+  "id": "con_mix_foldable",
+  "file": "assets/models/con_mix_foldable.glb",
+  "parts": {
+    "con_mix_foldable": {
+      "node": "con_mix_foldable:compound",
+      "massKg": 51,
+      "centreOfMass": [-0.01342139175257732, 0.6014978846527911, -0.013784526356739928]
+    }
+  }
+}

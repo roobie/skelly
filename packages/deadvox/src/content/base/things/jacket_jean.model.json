@@ -1,0 +1,11 @@
+{
+  "id": "jacket_jean",
+  "file": "assets/models/jacket_jean.glb",
+  "parts": {
+    "jacket_jean": {
+      "node": "jacket_jean:compound",
+      "massKg": 1,
+      "centreOfMass": [4.5125768801009223e-20, 0.03127982123841278, -0.0044314369010002965]
+    }
+  }
+}

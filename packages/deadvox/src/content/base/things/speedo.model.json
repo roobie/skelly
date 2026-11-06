@@ -1,0 +1,11 @@
+{
+  "id": "speedo",
+  "file": "assets/models/speedo.glb",
+  "parts": {
+    "speedo": {
+      "node": "speedo:compound",
+      "massKg": 0.052,
+      "centreOfMass": [-0.000007733952049497307, 0.00471925754060325, 0.023838618200567156]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "stand_flyer",
+  "file": "assets/models/stand_flyer.glb",
+  "parts": {
+    "stand_flyer": {
+      "node": "stand_flyer:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0, 0.08081231107447101, -0.03521681780708985]
+    }
+  }
+}

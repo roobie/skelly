@@ -1,0 +1,14 @@
+{
+  "id": "radio",
+  "file": "assets/models/radio.glb",
+  "parts": {
+    "radio": {
+      "node": "radio:compound",
+      "massKg": 0.51,
+      "centreOfMass": [-0.00025497773889882595, 0.05971800864331317, 0.0007312869658314943]
+    }
+  },
+  "grip": { "at": [0, 0.058, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

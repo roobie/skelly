@@ -1,0 +1,11 @@
+{
+  "id": "jacket_leather_tire",
+  "file": "assets/models/jacket_leather_tire.glb",
+  "parts": {
+    "jacket_leather_tire": {
+      "node": "jacket_leather_tire:compound",
+      "massKg": 9.2,
+      "centreOfMass": [7.0131476496494935e-19, 0.04510008380922673, -0.002400101350692883]
+    }
+  }
+}

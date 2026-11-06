@@ -1,0 +1,11 @@
+{
+  "id": "sheath",
+  "file": "assets/models/sheath.glb",
+  "parts": {
+    "sheath": {
+      "node": "sheath:compound",
+      "massKg": 0.1,
+      "centreOfMass": [-0.00729861853641846, 0.008209871262991318, 0.000013985714896711005]
+    }
+  }
+}

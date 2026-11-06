@@ -1,0 +1,16 @@
+{
+  "id": "everburning_torch",
+  "file": "assets/models/everburning_torch.glb",
+  "parts": {
+    "everburning_torch": {
+      "node": "everburning_torch:compound",
+      "massKg": 0.8,
+      "centreOfMass": [0.08431256713211603, 0.000005370569280343724, 0.000005370569280343724]
+    }
+  },
+  "grip": { "at": [-0.08000000000000002, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "rest": "upright",
+  "roll": 0,
+  "anchors": { "flame": [0.28, 0, 0] }
+}

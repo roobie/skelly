@@ -1,0 +1,18 @@
+{
+  "id": "motorbike_headlamp",
+  "file": "assets/models/motorbike_headlamp.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0.41475474683544306, 0.8807357594936709, 0],
+      "collision": [
+        { "min": [0.34375, 0.78125, -0.09375], "max": [0.46875, 0.96875, 0.09375] },
+        { "min": [0.46875, 0.78125, -0.09375], "max": [0.5, 0.9375, 0.09375] },
+        { "min": [0.34375, 0.9375, -0.0625], "max": [0.4375, 1, 0.0625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

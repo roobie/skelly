@@ -1,0 +1,11 @@
+{
+  "id": "sheet_kevlar_layered",
+  "file": "assets/models/sheet_kevlar_layered.glb",
+  "parts": {
+    "sheet_kevlar_layered": {
+      "node": "sheet_kevlar_layered:compound",
+      "massKg": 0.35,
+      "centreOfMass": [0, 0.006042020888996842, 0.0005465144522710711]
+    }
+  }
+}

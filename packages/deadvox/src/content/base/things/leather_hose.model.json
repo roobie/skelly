@@ -1,0 +1,11 @@
+{
+  "id": "leather_hose",
+  "file": "assets/models/leather_hose.glb",
+  "parts": {
+    "leather_hose": {
+      "node": "leather_hose:compound",
+      "massKg": 0.3,
+      "centreOfMass": [-0.00025195419014724596, 0.010482821305217232, 0.003911288856571532]
+    }
+  }
+}

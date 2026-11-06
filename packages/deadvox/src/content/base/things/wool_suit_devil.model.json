@@ -1,0 +1,11 @@
+{
+  "id": "wool_suit_devil",
+  "file": "assets/models/wool_suit_devil.glb",
+  "parts": {
+    "wool_suit_devil": {
+      "node": "wool_suit_devil:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0.0006923508843572144, 0.04267890048748122, -0.006266736428370897]
+    }
+  }
+}

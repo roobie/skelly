@@ -1,0 +1,18 @@
+{
+  "id": "sports_car_bonnet",
+  "file": "assets/models/sports_car_bonnet.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 13,
+      "centreOfMass": [1.4570154607922392, 0.7120427445432498, 0],
+      "collision": [
+        { "min": [0.84375, 0.59375, -0.875], "max": [2.0625, 0.8125, 0.875] },
+        { "min": [0.84375, 0.65625, 0.09375], "max": [2.0625, 0.84375, 0.28125] },
+        { "min": [0.84375, 0.65625, -0.28125], "max": [2.0625, 0.84375, -0.09375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

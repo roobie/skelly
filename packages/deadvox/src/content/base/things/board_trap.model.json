@@ -1,0 +1,11 @@
+{
+  "id": "board_trap",
+  "file": "assets/models/board_trap.glb",
+  "parts": {
+    "board_trap": {
+      "node": "board_trap:compound",
+      "massKg": 2,
+      "centreOfMass": [-1.4552790509377678e-20, 0.027258972554539056, -0.00000633356790992259]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "wizard_hat_costume",
+  "file": "assets/models/wizard_hat_costume.glb",
+  "parts": {
+    "wizard_hat_costume": {
+      "node": "wizard_hat_costume:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0.000027904286850285582, 0.06367946215571463, 0.0005517241379310349]
+    }
+  }
+}

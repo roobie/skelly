@@ -1,0 +1,11 @@
+{
+  "id": "suspenders_leather",
+  "file": "assets/models/suspenders_leather.glb",
+  "parts": {
+    "suspenders_leather": {
+      "node": "suspenders_leather:compound",
+      "massKg": 0.15,
+      "centreOfMass": [8.058017727661467e-8, 0.0025871071716357746, 0.05829653505237711]
+    }
+  }
+}

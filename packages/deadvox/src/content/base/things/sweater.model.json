@@ -1,0 +1,11 @@
+{
+  "id": "sweater",
+  "file": "assets/models/sweater.glb",
+  "parts": {
+    "sweater": {
+      "node": "sweater:compound",
+      "massKg": 0.7,
+      "centreOfMass": [3.688549785176163e-7, 0.03904547162207402, -0.005549231893660484]
+    }
+  }
+}

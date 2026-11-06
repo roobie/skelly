@@ -1,0 +1,11 @@
+{
+  "id": "gold_anklet",
+  "file": "assets/models/gold_anklet.glb",
+  "parts": {
+    "gold_anklet": {
+      "node": "gold_anklet:compound",
+      "massKg": 0.004,
+      "centreOfMass": [-0.0006488095238095244, 0.0016011904761904765, -0.0037083333333333334]
+    }
+  }
+}

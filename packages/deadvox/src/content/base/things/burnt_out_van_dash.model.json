@@ -1,0 +1,18 @@
+{
+  "id": "burnt_out_van_dash",
+  "file": "assets/models/burnt_out_van_dash.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 14,
+      "centreOfMass": [1.3367412551440327, 0.8229381001371742, -0.03954475308641975],
+      "collision": [
+        { "min": [1.3125, 0.75, -0.875], "max": [1.40625, 0.875, 0.875] },
+        { "min": [1, 0.875, -0.53125], "max": [1.375, 0.90625, -0.46875] },
+        { "min": [0.96875, 0.8125, -0.6875], "max": [1, 1.15625, -0.34375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

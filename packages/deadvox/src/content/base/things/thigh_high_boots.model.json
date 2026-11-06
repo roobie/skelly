@@ -1,0 +1,11 @@
+{
+  "id": "thigh_high_boots",
+  "file": "assets/models/thigh_high_boots.glb",
+  "parts": {
+    "thigh_high_boots": {
+      "node": "thigh_high_boots:compound",
+      "massKg": 1.8,
+      "centreOfMass": [7.967575932022805e-18, 0.32352577569244745, -0.06235848039957619]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "bronze_pickaxe",
+  "file": "assets/models/bronze_pickaxe.glb",
+  "parts": {
+    "bronze_pickaxe": {
+      "node": "bronze_pickaxe:compound",
+      "massKg": 5.5,
+      "centreOfMass": [0.6171985921420099, 0.022243467615440535, -0.00945858678602854]
+    }
+  },
+  "grip": { "at": [0.45, 0.022, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

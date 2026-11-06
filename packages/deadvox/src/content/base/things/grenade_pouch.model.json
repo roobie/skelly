@@ -1,0 +1,11 @@
+{
+  "id": "grenade_pouch",
+  "file": "assets/models/grenade_pouch.glb",
+  "parts": {
+    "grenade_pouch": {
+      "node": "grenade_pouch:compound",
+      "massKg": 0.08,
+      "centreOfMass": [9.019142275769754e-19, 0.06320752945452345, -0.001180028470182028]
+    }
+  }
+}

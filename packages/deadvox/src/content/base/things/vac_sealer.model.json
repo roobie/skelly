@@ -1,0 +1,11 @@
+{
+  "id": "vac_sealer",
+  "file": "assets/models/vac_sealer.glb",
+  "parts": {
+    "vac_sealer": {
+      "node": "vac_sealer:compound",
+      "massKg": 2.3,
+      "centreOfMass": [0.000038920436419319845, 0.037795699610795624, -0.0012569386843616405]
+    }
+  }
+}

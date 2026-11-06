@@ -1,0 +1,11 @@
+{
+  "id": "gambeson_gloves_parabolan",
+  "file": "assets/models/gambeson_gloves_parabolan.glb",
+  "parts": {
+    "gambeson_gloves_parabolan": {
+      "node": "gambeson_gloves_parabolan:compound",
+      "massKg": 0.4,
+      "centreOfMass": [-6.5360786915421916e-18, 0.01313598519888991, 0.015906876349059497]
+    }
+  }
+}

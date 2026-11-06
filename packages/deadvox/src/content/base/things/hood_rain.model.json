@@ -1,0 +1,11 @@
+{
+  "id": "hood_rain",
+  "file": "assets/models/hood_rain.glb",
+  "parts": {
+    "hood_rain": {
+      "node": "hood_rain:compound",
+      "massKg": 0.15,
+      "centreOfMass": [0.00011581514177537973, 0.17669278688365625, 0.015973714956102704]
+    }
+  }
+}

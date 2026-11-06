@@ -1,0 +1,11 @@
+{
+  "id": "cowrie_hair_beads",
+  "file": "assets/models/cowrie_hair_beads.glb",
+  "parts": {
+    "cowrie_hair_beads": {
+      "node": "cowrie_hair_beads:compound",
+      "massKg": 0.004,
+      "centreOfMass": [0.0001746031746031741, 0.004791383219954648, 0.0025600907029478454]
+    }
+  }
+}

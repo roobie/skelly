@@ -1,0 +1,11 @@
+{
+  "id": "armor_cuirass",
+  "file": "assets/models/armor_cuirass.glb",
+  "parts": {
+    "armor_cuirass": {
+      "node": "armor_cuirass:compound",
+      "massKg": 6,
+      "centreOfMass": [-2.4862569851837183e-18, 0.026968378506894906, 0.007914407988587726]
+    }
+  }
+}

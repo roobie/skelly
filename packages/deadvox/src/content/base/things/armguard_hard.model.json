@@ -1,0 +1,11 @@
+{
+  "id": "armguard_hard",
+  "file": "assets/models/armguard_hard.glb",
+  "parts": {
+    "armguard_hard": {
+      "node": "armguard_hard:compound",
+      "massKg": 0.28,
+      "centreOfMass": [0.007936407432897455, 0.00634301445285616, 0.0006194081211286956]
+    }
+  }
+}

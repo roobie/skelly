@@ -1,0 +1,11 @@
+{
+  "id": "armor_chitin",
+  "file": "assets/models/armor_chitin.glb",
+  "parts": {
+    "armor_chitin": {
+      "node": "armor_chitin:compound",
+      "massKg": 4,
+      "centreOfMass": [-0.00002820966390466134, 0.04114058281351841, -0.01963867423889776]
+    }
+  }
+}

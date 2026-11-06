@@ -1,0 +1,19 @@
+{
+  "id": "abandoned_pickup_block_stack",
+  "file": "assets/models/abandoned_pickup_block_stack.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 24,
+      "centreOfMass": [-0.0006306053811659193, 0.18869114349775784, 0],
+      "collision": [
+        { "min": [-0.1875, 0, -0.09375], "max": [0.1875, 0.1875, 0.09375] },
+        { "min": [-0.09375, 0.1875, -0.1875], "max": [0.09375, 0.34375, 0.1875] },
+        { "min": [-0.15625, 0.15625, -0.0625], "max": [-0.125, 0.1875, 0.0625] },
+        { "min": [-0.125, 0.3125, -0.1875], "max": [0.125, 0.34375, 0.1875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

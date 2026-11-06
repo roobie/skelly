@@ -1,0 +1,17 @@
+{
+  "id": "light_helicopter_fuel_tank",
+  "file": "assets/models/light_helicopter_fuel_tank.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 8,
+      "centreOfMass": [0, 0.2503825612097936, 0.00029254680748919826],
+      "collision": [
+        { "min": [-0.15625, 0, -0.40625], "max": [0.15625, 0.5, 0.40625] },
+        { "min": [-0.03125, 0.5, 0.15625], "max": [0.03125, 0.53125, 0.25] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "colander_steel",
+  "file": "assets/models/colander_steel.glb",
+  "parts": {
+    "colander_steel": {
+      "node": "colander_steel:compound",
+      "massKg": 0.4,
+      "centreOfMass": [2.5514516118230336e-19, 0.0655731030228254, 0]
+    }
+  }
+}

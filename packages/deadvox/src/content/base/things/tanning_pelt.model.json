@@ -1,0 +1,11 @@
+{
+  "id": "tanning_pelt",
+  "file": "assets/models/tanning_pelt.glb",
+  "parts": {
+    "tanning_pelt": {
+      "node": "tanning_pelt:compound",
+      "massKg": 0.69,
+      "centreOfMass": [0.1298000911836781, 0.03520923234740981, 0.004061651564369978]
+    }
+  }
+}

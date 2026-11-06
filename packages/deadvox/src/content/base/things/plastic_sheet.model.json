@@ -1,0 +1,11 @@
+{
+  "id": "plastic_sheet",
+  "file": "assets/models/plastic_sheet.glb",
+  "parts": {
+    "plastic_sheet": {
+      "node": "plastic_sheet:compound",
+      "massKg": 0.4,
+      "centreOfMass": [0.0002898893887629808, 0.01316855528870548, 0.005784189696580185]
+    }
+  }
+}

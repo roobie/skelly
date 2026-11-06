@@ -1,0 +1,11 @@
+{
+  "id": "wrapped_rad_badge",
+  "file": "assets/models/wrapped_rad_badge.glb",
+  "parts": {
+    "wrapped_rad_badge": {
+      "node": "wrapped_rad_badge:compound",
+      "massKg": 0.014,
+      "centreOfMass": [1.9527436047646875e-7, 0.004355594610427651, 0.000007225151337629354]
+    }
+  }
+}

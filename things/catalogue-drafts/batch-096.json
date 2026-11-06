@@ -1,0 +1,160 @@
+[
+  {
+    "id": "xl_ballistic_vest",
+    "model": "xl_ballistic_vest",
+    "name": "Patchwork aramid vest",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military", "Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 8,
+      "warmth": 15,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.2, "cut": 0.6, "pierce": 0.6 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front webbing", "reachSimSeconds": 0.6, "standard": "pals" },
+      { "id": "left", "name": "left side webbing", "reachSimSeconds": 0.9, "standard": "pals" },
+      { "id": "right", "name": "right side webbing", "reachSimSeconds": 0.9, "standard": "pals" },
+      { "id": "back", "name": "back webbing", "reachSimSeconds": 1.8, "standard": "pals" }
+    ],
+    "description": "An outsized vest stitched together from salvaged aramid panels and covered in webbing for pouches.",
+    "reference": "xl_ballistic_vest",
+    "variants": [],
+    "notes": "Lying flat, front up: an oversized coyote front panel patched from nine salvaged panels in two shades, six rows of dark webbing across it, padded shoulder straps over the neck opening, a black drag handle at the back's collar and a wide cummerbund wing each side with four rows of webbing. Attach points: front on the front panel's webbing, left and right on the cummerbund wings, back on the back panel (underneath as it lies). No damage type for bullets exists, so pierce stands in for the ballistic layer, as the plate carriers do. It is built oversized for a very large wearer; Deadvox has no body sizes, so it is its own heavy, bulky item rather than a size variant. It has no plate pockets: the plated versions are their own items with the plates sewn in. Laid flat with its wings spread, its box is mostly air over the packed vest. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "xl_ballistic_vest_lc",
+    "model": "xl_ballistic_vest_lc",
+    "name": "Patchwork aramid vest with mild steel plates",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 20,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.3, "cut": 0.8, "pierce": 0.7 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front webbing", "reachSimSeconds": 0.6, "standard": "pals" },
+      { "id": "left", "name": "left side webbing", "reachSimSeconds": 0.9, "standard": "pals" },
+      { "id": "right", "name": "right side webbing", "reachSimSeconds": 0.9, "standard": "pals" },
+      { "id": "back", "name": "back webbing", "reachSimSeconds": 1.8, "standard": "pals" }
+    ],
+    "description": "The outsized patchwork aramid vest with ten home-cut mild steel plates sewn into pockets front, back and sides.",
+    "reference": "xl_ballistic_vest_lc",
+    "variants": [],
+    "notes": "Lying flat, front up: an oversized coyote front panel patched from nine salvaged panels in two shades, six rows of dark webbing across it, padded shoulder straps over the neck opening, a black drag handle at the back's collar and a wide cummerbund wing each side with four rows of webbing. Attach points: front on the front panel's webbing, left and right on the cummerbund wings, back on the back panel (underneath as it lies). No damage type for bullets exists, so pierce stands in for the ballistic layer, as the plate carriers do. It is built oversized for a very large wearer; Deadvox has no body sizes, so it is its own heavy, bulky item rather than a size variant. Four plate pockets bulge on the front in a block of four under the webbing and one on each wing, a grey steel edge showing at each pocket's mouth; the four back pockets lie underneath. The plates are sewn in and part of the item, so it has no plate pockets in its container and its protection already counts them. CHECK VOLUME (x4.5): as the plain vest, laid flat with its wings spread. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "xl_ballistic_vest_qt",
+    "model": "xl_ballistic_vest_lc",
+    "name": "Patchwork aramid vest with tempered steel plates",
+    "category": "clothing",
+    "size": [4, 4],
+    "weight": 18000,
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 20,
+      "warmth": 20,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.35, "cut": 0.9, "pierce": 0.8 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front webbing", "reachSimSeconds": 0.6, "standard": "pals" },
+      { "id": "left", "name": "left side webbing", "reachSimSeconds": 0.9, "standard": "pals" },
+      { "id": "right", "name": "right side webbing", "reachSimSeconds": 0.9, "standard": "pals" },
+      { "id": "back", "name": "back webbing", "reachSimSeconds": 1.8, "standard": "pals" }
+    ],
+    "finishes": { "plate": "steel-heat-tint" },
+    "description": "The outsized patchwork aramid vest with ten tempered steel plates sewn into pockets front, back and sides.",
+    "reference": "xl_ballistic_vest_qt",
+    "variants": [],
+    "notes": "Shares the mild steel version's model; the plate edges at the pocket mouths take the heat-tinted finish of hardened steel. Its weight of 18 kg overrides the shared model's 12.5 kg. The plates are sewn in and part of the item, so it has no plate pockets in its container and its protection already counts them. No damage type for bullets exists, so pierce stands in for the ballistic layer. Attach points as the mild steel version. CHECK VOLUME: as the mild steel version, laid flat with its wings spread. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "bandolier_pistol",
+    "model": "bandolier_pistol",
+    "name": "Embroidered pistol bandolier",
+    "category": "bag",
+    "size": [3, 1],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "vest", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [2, 1], "handlingSimSeconds": 0.8, "name": "loops" }] },
+    "description": "A leather sash worn over one shoulder, its loops sized for pistol cartridges and its shoulder stitched in red and gold.",
+    "reference": "bandolier_pistol",
+    "variants": [],
+    "notes": "Folded in half and laid flat: a brown leather strap with a rounded fold at one end and a brass buckle where the ends meet, 28 empty loops in pale hide down the upper run and a row of red and gold embroidery blocks down the other. It is shown empty, as it is found; cartridges are their own items in its loops. It is worn across the chest over clothing, so it takes the vest slot, as the chest pouches do. Its loops are one grid sized to two stacks of pistol cartridges. CHECK VOLUME (x5.6): the empty loops stand open round air and the doubled strap's box is larger than the reference's packed volume. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "bandolier_rifle",
+    "model": "bandolier_rifle",
+    "name": "Rifle bandolier",
+    "category": "bag",
+    "size": [3, 1],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "vest", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [2, 1], "handlingSimSeconds": 0.8, "name": "loops" }] },
+    "description": "A plain leather sash worn over one shoulder, with a row of loops for rifle cartridges.",
+    "reference": "bandolier_rifle",
+    "variants": [],
+    "notes": "Folded in half and laid flat: a brown leather strap with a rounded fold at one end and a brass buckle where the ends meet, 16 empty loops in pale hide down the upper run. It is shown empty, as it is found; cartridges are their own items in its loops. It is worn across the chest over clothing, so it takes the vest slot. Its loops are one grid sized to two stacks of rifle cartridges. CHECK VOLUME (x7.3): the empty loops stand open round air and the doubled strap's box is larger than the reference's packed volume. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "bandolier_shotgun",
+    "model": "bandolier_shotgun",
+    "name": "Shotgun shell belt",
+    "category": "bag",
+    "size": [3, 1],
+    "economy": { "usage": ["Residential", "Hunting", "Police"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "waist", "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [2, 1], "handlingSimSeconds": 0.7, "name": "loops" }] },
+    "attachPoints": [
+      { "id": "left", "name": "left hip", "reachSimSeconds": 0.6, "standard": "belt" },
+      { "id": "right", "name": "right hip", "reachSimSeconds": 0.6, "standard": "belt" }
+    ],
+    "description": "A leather belt with a row of loops for shotgun shells round its front.",
+    "reference": "bandolier_shotgun",
+    "variants": [],
+    "notes": "Folded in half and laid flat: a broad brown leather belt with a rounded fold at one end and a brass buckle where the ends meet, 20 empty shell loops in pale hide down the upper run. It is shown empty, as it is found; shells are their own items in its loops. It is worn round the waist, so it takes the waist slot and, as a belt, hosts gear: left and right hip are the bare stretches of belt either side of the shell loops (the plain lower run as it lies). Its loops are one grid sized to two stacks of shotgun shells. CHECK VOLUME (x4.8): the empty loops stand open round air. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "bandolier_wrist",
+    "model": "bandolier_wrist",
+    "name": "Wrist cartridge band",
+    "category": "bag",
+    "size": [1, 1],
+    "economy": { "usage": ["Hunting", "Military"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "arms", "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.002 },
+    "container": { "pockets": [{ "grid": [1, 1], "handlingSimSeconds": 0.4, "name": "loops" }] },
+    "description": "A canvas band that fastens round one wrist with five loops for rifle cartridges.",
+    "reference": "bandolier_wrist",
+    "variants": [],
+    "notes": "Laid flat: a canvas band with five empty cartridge loops across its middle and a grey hook and loop patch on top at one end, its mate underneath at the other. It is shown empty, as it is found. The reference covers one hand and is worn on one side; Deadvox has no hand or wrist slot and no sided wear, so it takes the arms slot that earlier arm guards named. Its loops are one grid sized to a stack of rifle cartridges. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "cheap_ammo_pouch",
+    "model": "cheap_ammo_pouch",
+    "name": "Cloth magazine bandolier",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": ["Military"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "vest", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.003 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "pocket 1" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "pocket 2" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "pocket 3" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "pocket 4" }
+      ]
+    },
+    "description": "A cheap cotton sling with four flapped pockets in a row, each holding one rifle magazine.",
+    "reference": "cheap_ammo_pouch",
+    "variants": [],
+    "notes": "Laid flat: four olive drab cotton pockets in a row on a backing panel, each under a darker flap with a black press stud, and its sling strap laid out in a loop from both ends to a black buckle. It is worn across the chest, so it takes the vest slot, as the chest pouches do. Each pocket is a grid sized to one rifle magazine; reloading from it is slower than from proper pouches. CHECK VOLUME (x158): the reference counts the empty cotton packed tight; the model is the bandolier laid out at its real size with its sling spread. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  }
+]

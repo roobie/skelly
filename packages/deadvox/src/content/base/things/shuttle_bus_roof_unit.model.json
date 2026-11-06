@@ -1,0 +1,17 @@
+{
+  "id": "shuttle_bus_roof_unit",
+  "file": "assets/models/shuttle_bus_roof_unit.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 110,
+      "centreOfMass": [-0.39215282245094885, 2.8967362898037954, 0],
+      "collision": [
+        { "min": [-1.1875, 2.8125, -0.6875], "max": [0.40625, 2.96875, 0.6875] },
+        { "min": [-1, 2.9375, -0.5], "max": [0.1875, 2.96875, 0.5] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

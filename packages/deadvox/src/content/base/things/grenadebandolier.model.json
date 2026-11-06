@@ -1,0 +1,11 @@
+{
+  "id": "grenadebandolier",
+  "file": "assets/models/grenadebandolier.glb",
+  "parts": {
+    "grenadebandolier": {
+      "node": "grenadebandolier:compound",
+      "massKg": 0.25,
+      "centreOfMass": [-1.0946564314582474e-18, 0.08706517348999447, -0.003116945107398568]
+    }
+  }
+}

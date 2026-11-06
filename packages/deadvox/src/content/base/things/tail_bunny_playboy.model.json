@@ -1,0 +1,11 @@
+{
+  "id": "tail_bunny_playboy",
+  "file": "assets/models/tail_bunny_playboy.glb",
+  "parts": {
+    "tail_bunny_playboy": {
+      "node": "tail_bunny_playboy:compound",
+      "massKg": 0.018,
+      "centreOfMass": [0.000016290288750611727, 0.03578897201053392, -0.00001260807755948631]
+    }
+  }
+}

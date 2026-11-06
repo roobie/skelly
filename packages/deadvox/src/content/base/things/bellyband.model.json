@@ -1,0 +1,11 @@
+{
+  "id": "bellyband",
+  "file": "assets/models/bellyband.glb",
+  "parts": {
+    "bellyband": {
+      "node": "bellyband:compound",
+      "massKg": 0.16,
+      "centreOfMass": [-0.00026856367781593585, 0.007644829875039652, 0]
+    }
+  }
+}

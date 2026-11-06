@@ -1,0 +1,14 @@
+{
+  "id": "hammer_bronze",
+  "file": "assets/models/hammer_bronze.glb",
+  "parts": {
+    "hammer_bronze": {
+      "node": "hammer_bronze:compound",
+      "massKg": 0.67,
+      "centreOfMass": [0.16420904556035917, 0.045, 0]
+    }
+  },
+  "grip": { "at": [0.123, 0.045, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

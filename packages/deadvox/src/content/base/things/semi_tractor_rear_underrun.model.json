@@ -1,0 +1,18 @@
+{
+  "id": "semi_tractor_rear_underrun",
+  "file": "assets/models/semi_tractor_rear_underrun.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 30,
+      "centreOfMass": [-3.6088315217391305, 0.5668478260869565, 0],
+      "collision": [
+        { "min": [-3.65625, 0.5, -1.15625], "max": [-3.5625, 0.625, 1.15625] },
+        { "min": [-3.625, 0.625, 0.375], "max": [-3.5625, 0.75, 0.4375] },
+        { "min": [-3.625, 0.625, -0.4375], "max": [-3.5625, 0.75, -0.375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

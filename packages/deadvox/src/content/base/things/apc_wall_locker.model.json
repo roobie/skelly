@@ -1,0 +1,17 @@
+{
+  "id": "apc_wall_locker",
+  "file": "assets/models/apc_wall_locker.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 30,
+      "centreOfMass": [0.23428133617072291, 1.7500468319146385, 0.9838130170243375],
+      "collision": [
+        { "min": [-0.1875, 1.3125, 0.8125], "max": [0.65625, 2.1875, 1.15625] },
+        { "min": [0.1875, 1.375, 0.78125], "max": [0.21875, 2.15625, 0.8125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

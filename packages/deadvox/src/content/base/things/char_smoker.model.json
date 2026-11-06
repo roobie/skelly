@@ -1,0 +1,11 @@
+{
+  "id": "char_smoker",
+  "file": "assets/models/char_smoker.glb",
+  "parts": {
+    "char_smoker": {
+      "node": "char_smoker:compound",
+      "massKg": 10,
+      "centreOfMass": [0, 0.32384131754891754, 0.002046555848616819]
+    }
+  }
+}

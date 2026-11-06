@@ -1,0 +1,10 @@
+{
+  "id": "rolling_pin",
+  "file": "assets/models/rolling_pin.glb",
+  "parts": {
+    "rolling_pin": { "node": "rolling_pin:compound", "massKg": 0.7, "centreOfMass": [0, 0.032011928429423464, 0] }
+  },
+  "grip": { "at": [-0.192, 0.032, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

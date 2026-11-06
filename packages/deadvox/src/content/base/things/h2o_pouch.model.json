@@ -1,0 +1,11 @@
+{
+  "id": "h2o_pouch",
+  "file": "assets/models/h2o_pouch.glb",
+  "parts": {
+    "h2o_pouch": {
+      "node": "h2o_pouch:compound",
+      "massKg": 0.14,
+      "centreOfMass": [0.00004657179818887452, 0.12536765847347994, 0.003877878395860285]
+    }
+  }
+}

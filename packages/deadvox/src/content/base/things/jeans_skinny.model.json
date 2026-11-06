@@ -1,0 +1,11 @@
+{
+  "id": "jeans_skinny",
+  "file": "assets/models/jeans_skinny.glb",
+  "parts": {
+    "jeans_skinny": {
+      "node": "jeans_skinny:compound",
+      "massKg": 0.77,
+      "centreOfMass": [0.00001176084025425169, 0.018266896293862384, -0.0014992012146070103]
+    }
+  }
+}

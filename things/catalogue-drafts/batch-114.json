@@ -1,0 +1,267 @@
+[
+  {
+    "id": "grim_reaper_robe_faceless",
+    "model": "grim_reaper_robe_faceless",
+    "name": "Hooded black robe",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "cloak", "encumbrance": 4, "warmth": 10, "wearPerDamage": 0.002 },
+    "description": "A long black cotton robe with a deep pointed hood, the kind worn as a costume of death. A pale cord ties it at the waist.",
+    "reference": "grim_reaper_robe_faceless",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 340 mm by 280 mm and 50 mm tall in four layers, the pointed hood laid over the top with its crown draped down the front edge, and a pale cord belt tied round the bundle. CHECK VOLUME (x15): the reference volume of 550 ml is a robe packed tight; a folded robe with its hood lies looser. Slot `cloak`, as the ferraiolo has it: a robe worn over everything, also covering the head with its hood. The reference's face-cover state is not modelled; this is the robe without it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hakama",
+    "model": "hakama",
+    "name": "Hakama",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 6, "warmth": 15, "wearPerDamage": 0.0015 },
+    "description": "Wide pleated trousers that hang like a skirt, tied at the waist with long straps and stiffened by a small board at the back. Worn over a kimono.",
+    "reference": "hakama",
+    "variants": [],
+    "notes": "Folded in a long bundle, 300 mm by 420 mm and 45 mm tall: dark pleat lines along its length, the trapezoid back board at the +z end, and the long ties crossed over the top and wrapped round it. CHECK VOLUME (x5.6): folded cloth with ties lies looser than the reference volume. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hakama_gi",
+    "model": "hakama_gi",
+    "name": "Black practice hakama",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 6, "warmth": 10, "wearPerDamage": 0.0015 },
+    "description": "Plain black hakama of lighter cotton, worn for kendo and other martial arts. Tied at the waist with long straps.",
+    "reference": "hakama_gi",
+    "variants": [],
+    "notes": "Its own row on the hakama's builder, because it is lighter (350 g against 500 g); the finishes are all black with charcoal pleat lines. Folded in a long bundle, 300 mm by 420 mm and 45 mm tall. CHECK VOLUME (x8.4): folded cloth with ties lies looser than the reference volume. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "haori",
+    "model": "haori",
+    "name": "Haori",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 3, "warmth": 10, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "left sleeve" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "right sleeve" }
+      ]
+    },
+    "description": "A loose black coat with wide sleeves, worn open over a kimono and held by a short gold cord. Sparse gold embroidery and crests mark the front and sleeves.",
+    "reference": "haori",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 380 mm by 340 mm and 40 mm tall: the collar band running down both front edges, the wide sleeves folded in along each side, a gold crest on each sleeve, a sprig of gold embroidery and the gold tie cord at the middle. Slot `torso`, as Deadvox's jacket has it. The sleeve pockets are the two pouches in the wide sleeves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "house_coat",
+    "model": "house_coat",
+    "name": "Bathrobe",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 5, "warmth": 20, "wearPerDamage": 0.002 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right" }
+      ]
+    },
+    "description": "A soft towelling robe with a wide shawl collar and a tie belt, worn to and from the bath. Long enough to cover the legs.",
+    "reference": "house_coat",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. Folded thick, 360 mm by 320 mm and 80 mm tall: a wide shawl collar meeting in a V, two patch pockets low on the front and a blue belt wrapped round the bundle and knotted on top. CHECK VOLUME (x7.2): thick towelling folded loose; the reference volume is the robe pressed flat. Slot `torso`, as Deadvox's jacket has it, though it also covers the legs. No terry-cloth finish exists, so `cloth-cream` stands in. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_army",
+    "model": "jacket_army",
+    "name": "Field jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Military", "Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 8, "warmth": 20, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left chest" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right chest" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right hip" }
+      ]
+    },
+    "description": "An olive military field jacket with a cotton lining, a waist drawstring, epaulettes and a hood that rolls away into the collar.",
+    "reference": "jacket_army",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 380 mm by 340 mm and 70 mm tall: a tall stand collar hiding the rolled hood, a storm flap with snaps down the front, four flapped patch pockets and buttoned epaulettes. CHECK VOLUME (x4.8): a lined jacket folded on a shelf lies looser than the reference volume. Slot `torso`, as Deadvox's jacket has it; the reference also covers the legs, which the long skirt reaches. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_army_modern",
+    "model": "jacket_army_modern",
+    "name": "Combat blouse",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Military"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 7, "warmth": 20, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left chest" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right chest" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.4, "name": "pen" }
+      ]
+    },
+    "description": "A grey-green military blouse with a mandarin collar, a zip front, angled breast pockets and hook-and-loop panels for name tapes and patches. A slot on the sleeve holds a pen.",
+    "reference": "jacket_army_modern",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 360 mm by 320 mm and 50 mm tall: a mandarin collar, a placket over the zip, two breast pockets with angled flaps, grey hook-and-loop panels above them and a rank panel between, and the pen slot at the left edge where the sleeve folds in. No camouflage print exists, so `cloth-ucp` stands in. Slot `torso`, as Deadvox's jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_chef",
+    "model": "jacket_chef",
+    "name": "Chef's jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 8, "warmth": 25, "wearPerDamage": 0.0015 },
+    "description": "A white double-breasted cotton jacket with a stand collar, made to shield the wearer from kitchen heat. Two rows of black knot buttons close it.",
+    "reference": "jacket_chef",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 360 mm by 320 mm and 50 mm tall: a stand collar, the front panel crossing over to the right, and two columns of black knot buttons. CHECK VOLUME (x5.0): the folded jacket lies looser than the reference volume. Slot `torso`, as Deadvox's jacket has it. No pockets: the reference has none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_evac",
+    "model": "jacket_evac",
+    "name": "Emergency jacket",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Medical"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 13, "warmth": 25, "wearPerDamage": 0.004 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right" }
+      ]
+    },
+    "description": "A thin, bright orange windbreaker issued in disasters, with a hood rolled into the collar and a reflective band. Cut in one size that fits nobody well.",
+    "reference": "jacket_evac",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. Folded small, 340 mm by 300 mm and 35 mm tall in two layers: the hood rolled into the collar, a dark zip down the front, slanted pocket zips and a yellow reflective band round the chest and sleeves. The reference lists no material; it reads as thin nylon. Slot `torso`, as Deadvox's jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_flannel",
+    "model": "jacket_flannel",
+    "name": "Flannel jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 9, "warmth": 35, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "left chest" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "right chest" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right" }
+      ]
+    },
+    "description": "A heavy checked flannel jacket with a corduroy collar and buttoned chest pockets, made for work outdoors.",
+    "reference": "jacket_flannel",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 360 mm by 320 mm and 70 mm tall: red cloth checked with dark stripes over the top and down the front edge, a brown corduroy collar, a button front and two flapped chest pockets. No check print exists, so the stripes are raised strips of `cloth-black`. Slot `torso`, as Deadvox's jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_jean",
+    "model": "jacket_jean",
+    "name": "Denim jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 8, "warmth": 15, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "left chest" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "right chest" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "right" }
+      ]
+    },
+    "description": "A short blue denim jacket with a pointed collar, a yoke seam, flapped chest pockets and metal buttons.",
+    "reference": "jacket_jean",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 360 mm by 320 mm and 60 mm tall: a pointed collar, a tan-stitched yoke seam, two chest pockets with pointed buttoned flaps and seams below them, a buttoned waistband and brass buttons down the front. Slot `torso`, as Deadvox's jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_leather",
+    "model": "jacket_leather",
+    "name": "Leather jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 12, "warmth": 25, "wearPerDamage": 0.0008 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "chest" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "inner" }
+      ]
+    },
+    "description": "A heavy black leather jacket with wide snapped lapels, an off-centre zip and a buckled belt at the hem. The hide turns scrapes better than cloth.",
+    "reference": "jacket_leather",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 360 mm by 300 mm and 70 mm tall: wide lapels with snap studs, a silver zip running off-centre down the front, slanted zip pockets and a buckled belt across the hem. CHECK VOLUME (x4.7): stiff leather folded holds more air than the reference volume. Slot `torso`, as Deadvox's jacket has it. The reference gives no protection values, so no `protects` block; Deadvox may want a small cut value for leather. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_light",
+    "model": "jacket_light",
+    "name": "Light jacket",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 4, "warmth": 15, "wearPerDamage": 0.002 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right" }
+      ]
+    },
+    "description": "A thin cotton zip jacket with a drawcord hood, for cool weather.",
+    "reference": "jacket_light",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 340 mm by 300 mm and 40 mm tall: the hood laid on top with its crown draped over the front edge and two pale drawcords, a zip down the front and two pocket welts. Slot `torso`, as Deadvox's jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_ninja",
+    "model": "jacket_ninja",
+    "name": "Black wrap jacket",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 6, "warmth": 10, "wearPerDamage": 0.002 },
+    "container": { "pockets": [{ "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "inner fold" }] },
+    "description": "A light black cotton jacket that wraps over at the front and ties with a sash, sold with a pair of cloth gauntlets that cover the hands and forearms.",
+    "reference": "jacket_ninja",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 320 mm by 280 mm and 30 mm tall in two layers: the collar band crossing the chest, a dark indigo sash tied round it, and the pair of gauntlets with thumb loops laid on top. Slot `torso`, as Deadvox's jacket has it; the reference also covers the hands and legs through the gauntlets and the long skirt, which one slot cannot show. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_varsity",
+    "model": "jacket_varsity",
+    "name": "Varsity jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 2, "warmth": 15, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right" }
+      ]
+    },
+    "description": "A red wool school jacket with white leather sleeves, a striped knit collar and hem, snap buttons and a large felt letter on the chest.",
+    "reference": "jacket_varsity",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z. 380 mm by 320 mm and 70 mm tall: white leather sleeves folded round the sides, a cream-striped knit collar and hem, a row of silver snaps and a cream felt letter on the chest. CHECK VOLUME (x8.3): the reference volume of 1.5 litres is small for a wool jacket with leather sleeves; the folded jacket keeps a believable thickness. The reference lists cotton only, but the sleeves read as leather. Slot `torso`, as Deadvox's jacket has it. The worn look is pending: no worn model is authored."
+  }
+]

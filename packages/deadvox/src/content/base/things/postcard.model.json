@@ -1,0 +1,11 @@
+{
+  "id": "postcard",
+  "file": "assets/models/postcard.glb",
+  "parts": {
+    "postcard": {
+      "node": "postcard:compound",
+      "massKg": 0.003,
+      "centreOfMass": [0.0003331488655229663, 0.0010309905921416715, -0.0002169341449916999]
+    }
+  }
+}

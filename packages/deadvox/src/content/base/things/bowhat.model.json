@@ -1,0 +1,5 @@
+{
+  "id": "bowhat",
+  "file": "assets/models/bowhat.glb",
+  "parts": { "bowhat": { "node": "bowhat:compound", "massKg": 0.14, "centreOfMass": [0, 0.0521442661563374, 0] } }
+}

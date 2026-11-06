@@ -1,0 +1,14 @@
+{
+  "id": "wrench_small",
+  "file": "assets/models/wrench_small.glb",
+  "parts": {
+    "wrench_small": {
+      "node": "wrench_small:compound",
+      "massKg": 0.075,
+      "centreOfMass": [0.08672738853503187, 0.002003821656050955, 0.000050955414012738835]
+    }
+  },
+  "grip": { "at": [0.056, 0.002, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

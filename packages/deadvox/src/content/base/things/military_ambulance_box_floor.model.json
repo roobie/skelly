@@ -1,0 +1,14 @@
+{
+  "id": "military_ambulance_box_floor",
+  "file": "assets/models/military_ambulance_box_floor.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 250,
+      "centreOfMass": [-1.53125, 1.4375, 0],
+      "collision": [{ "min": [-3.3125, 1.40625, -1.15625], "max": [0.25, 1.46875, 1.15625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

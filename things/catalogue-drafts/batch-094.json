@@ -1,0 +1,280 @@
+[
+  {
+    "id": "light_plate_carrier_pouch",
+    "model": "light_plate_carrier_pouch",
+    "name": "Light plate carrier with pouch",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 1,
+      "warmth": 0,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.05, "cut": 0.3, "pierce": 0.25 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [2, 3], "handlingSimSeconds": 4, "name": "front plate" },
+        { "grid": [2, 3], "handlingSimSeconds": 5, "name": "back plate" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.6, "name": "front pouch" }
+      ]
+    },
+    "attachPoints": [
+      { "id": "left_side", "name": "left side webbing", "reachSimSeconds": 0.9, "standard": "pals" },
+      { "id": "right_side", "name": "right side webbing", "reachSimSeconds": 0.9, "standard": "pals" }
+    ],
+    "description": "A thin nylon carrier with a pocket front and back for an armour plate, a small flapped pouch sewn on the front and webbing on the side wings.",
+    "reference": "ballistic_vest_light_pouches",
+    "variants": [],
+    "notes": "Lying flat, front up: a coyote front panel 280 mm by 340 mm over a slightly larger back panel, shoulder straps with dark pads at the top, a black binding at the neck, a flapped pouch low on the front and a cummerbund wing either side with three webbing rows each. The two attach points are those side wings, left and right; the front carries the sewn pouch instead of webbing. The plate pockets are grids sized for a 250 mm by 320 mm front plate. Its own soft lining protects a little; the plates do the rest. CHECK VOLUME (x4.2): the reference counts the carrier packed flat. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hardened_steel_front_plate",
+    "model": "forged_steel_front_plate",
+    "name": "Hardened steel front plate",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 1,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.3, "cut": 0.85, "pierce": 0.75 }
+    },
+    "description": "A front armour plate cut by hand from hardened steel, its edges a little crooked, strapped onto a nylon pad.",
+    "reference": "ch_esapi_plate",
+    "variants": [],
+    "notes": "Lying strike face up: a heat-tinted steel plate 250 mm by 300 mm and 4 mm thick with uneven shooter's cuts, curved across, on an olive nylon pad, held by two black webbing straps wrapped round both with a buckle on each. It shares forged_steel_front_plate with the high steel plate; the model's finishes are this hardened one. CHECK VOLUME (x8.6) is the bounding box of a thin curved plate with straps against the steel's own volume. It is an insert, not a garment: it has no slot and is carried in a plate carrier's plate pocket, which is a grid sized for it. Its protection should count only while it sits in such a pocket; a pocket that lends its contents' protection to the wearer has no content field yet, so `protects` records the plate's own figures for when it does. No damage type for bullets exists, so pierce stands in for it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hardened_steel_side_plate",
+    "model": "forged_steel_side_plate",
+    "name": "Hardened steel side plate",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 1,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.3, "cut": 0.85, "pierce": 0.75 }
+    },
+    "description": "A long six-sided plate of hardened steel for the side of a carrier, strapped onto a nylon pad.",
+    "reference": "ch_esbi_plate",
+    "variants": [],
+    "notes": "Lying face up: a heat-tinted steel hexagon 150 mm by 200 mm and 4 mm thick, its corners cut by hand, on a slightly larger olive nylon pad, with one black webbing strap and buckle round its middle. It shares forged_steel_side_plate with the high steel side plate. The reference gives it the same 1.3 kg as the front plate although it is smaller; the mass follows the reference. It is an insert, not a garment: it has no slot and is carried in a plate carrier's plate pocket, which is a grid sized for it. Its protection should count only while it sits in such a pocket; a pocket that lends its contents' protection to the wearer has no content field yet, so `protects` records the plate's own figures for when it does. No damage type for bullets exists, so pierce stands in for it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "deltoid_plates",
+    "model": "deltoid_plates",
+    "name": "Deltoid plates",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 8,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.2, "blunt": 0.35, "cut": 0.85, "pierce": 0.85 }
+    },
+    "description": "A pair of curved polyethylene plates in black covers, shaped to slip into the shoulder pockets of a carrier.",
+    "reference": "deltoid_plates",
+    "variants": [],
+    "notes": "The pair lying side by side, convex side up: each 165 mm by 210 mm and 22 mm thick, square at one end and rounded at the shoulder end, in matte black covers with a white label on the face. One item is the pair, so the length check counts the pair's width (CHECK LENGTH x1.7). The reference covers both upper arms; as an insert it gives no arms slot. It is an insert, not a garment: it has no slot and is carried in a plate carrier's plate pocket, which is a grid sized for it. Its protection should count only while it sits in such a pocket; a pocket that lends its contents' protection to the wearer has no content field yet, so `protects` records the plate's own figures for when it does. No damage type for bullets exists, so pierce stands in for it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cracked_ceramic_front_plate",
+    "model": "cracked_ceramic_front_plate",
+    "name": "Cracked ceramic front plate",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "encumbrance": 2,
+      "wearPerDamage": 0.004,
+      "protects": { "acid": 0.3, "blunt": 0.2, "cut": 0.35, "pierce": 0.25 }
+    },
+    "description": "A ceramic front plate cracked through from a hit, one corner broken off. It weighs as much as a whole one.",
+    "reference": "destroyed_large_ceramic_plate",
+    "variants": [],
+    "notes": "Lying strike face up: the 250 mm by 320 mm ceramic plate with a white backing, dark cracks running out from a point near its middle and its lower right corner broken off in a straight break, the broken piece lying beside it. A broken plate is a distinct state, so it has its own model rather than the whole plate's; it should come from a whole plate when hits break it, which has no content field yet. It is an insert, not a garment: it has no slot and is carried in a plate carrier's plate pocket, which is a grid sized for it. Its protection should count only while it sits in such a pocket; a pocket that lends its contents' protection to the wearer has no content field yet, so `protects` records the plate's own figures for when it does. No damage type for bullets exists, so pierce stands in for it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cracked_ceramic_side_plate",
+    "model": "cracked_ceramic_side_plate",
+    "name": "Cracked ceramic side plate",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "encumbrance": 1,
+      "wearPerDamage": 0.004,
+      "protects": { "acid": 0.3, "blunt": 0.2, "cut": 0.35, "pierce": 0.25 }
+    },
+    "description": "A ceramic side plate cracked through from a hit, one corner broken off.",
+    "reference": "destroyed_medium_ceramic_plate",
+    "variants": [],
+    "notes": "Lying strike face up: the 150 mm by 200 mm side plate with dark cracks from one point and a corner broken off, the broken piece lying beside it. Like the front plate, the broken state has its own model. It is an insert, not a garment: it has no slot and is carried in a plate carrier's plate pocket, which is a grid sized for it. Its protection should count only while it sits in such a pocket; a pocket that lends its contents' protection to the wearer has no content field yet, so `protects` records the plate's own figures for when it does. No damage type for bullets exists, so pierce stands in for it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "eod_plate",
+    "model": "eod_plate",
+    "name": "Bomb-suit chest plate",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.45, "cut": 0.8, "pierce": 0.55 }
+    },
+    "description": "A large curved chest plate from a bomb-disposal suit, built up from steel, polyethylene, foam and Kevlar. It stops fragments, not rifle fire.",
+    "reference": "eod_plate",
+    "variants": [],
+    "notes": "Lying steel face up: a polygonal plate 360 mm by 460 mm and 18 mm thick, gently curved across, its layers stepping in at the edge so they show: gold Kevlar, grey foam, white polyethylene and a grey steel face. It belongs in a bomb suit's chest pocket; no bomb suit exists in content yet. Its pierce figure is lower than a rifle plate's to keep it a fragment plate. It is an insert, not a garment: it has no slot and is carried in a plate carrier's plate pocket, which is a grid sized for it. Its protection should count only while it sits in such a pocket; a pocket that lends its contents' protection to the wearer has no content field yet, so `protects` records the plate's own figures for when it does. No damage type for bullets exists, so pierce stands in for it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "esapi_plate",
+    "model": "esapi_plate",
+    "name": "Ceramic front plate",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 2,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.3, "blunt": 0.5, "cut": 0.9, "pierce": 0.95 }
+    },
+    "description": "A curved ceramic plate for the front or back of a plate carrier, backed with polyethylene. It stops several rifle rounds before it breaks.",
+    "reference": "esapi_plate",
+    "variants": [],
+    "notes": "Lying strike face up: a grey ceramic plate 250 mm by 320 mm and 22 mm thick, curved across, with shooter's cuts at the top corners, a white backing layer showing at its edge and a white label on the face. It is an insert, not a garment: it has no slot and is carried in a plate carrier's plate pocket, which is a grid sized for it. Its protection should count only while it sits in such a pocket; a pocket that lends its contents' protection to the wearer has no content field yet, so `protects` records the plate's own figures for when it does. No damage type for bullets exists, so pierce stands in for it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "esbi_plate",
+    "model": "esbi_plate",
+    "name": "Ceramic side plate",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 1,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.3, "blunt": 0.5, "cut": 0.9, "pierce": 0.95 }
+    },
+    "description": "A small curved ceramic plate for the side pocket of a plate carrier.",
+    "reference": "esbi_plate",
+    "variants": [],
+    "notes": "Lying strike face up: a grey ceramic plate 150 mm by 200 mm and 22 mm thick with clipped corners, a white backing and a white label on the face. It is an insert, not a garment: it has no slot and is carried in a plate carrier's plate pocket, which is a grid sized for it. Its protection should count only while it sits in such a pocket; a pocket that lends its contents' protection to the wearer has no content field yet, so `protects` records the plate's own figures for when it does. No damage type for bullets exists, so pierce stands in for it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "agency_ballistic_vest",
+    "model": "agency_ballistic_vest",
+    "name": "Agency ballistic vest",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Police"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 4,
+      "warmth": 15,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.2, "cut": 0.6, "pierce": 0.6 }
+    },
+    "container": { "pockets": [{ "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "evidence pocket" }] },
+    "attachPoints": [
+      { "id": "front_left", "name": "front left webbing", "reachSimSeconds": 0.5, "standard": "pals" },
+      { "id": "front_right", "name": "front right webbing", "reachSimSeconds": 0.5, "standard": "pals" }
+    ],
+    "description": "A green soft armour vest with big yellow letters across the chest, rows of webbing on the front and a flapped pocket for evidence.",
+    "reference": "fbi_armor_vest",
+    "variants": [],
+    "notes": "Lying flat, front up: an olive front panel 400 mm by 460 mm over the back panel, shoulder straps at the top, wide side straps with black tabs, a yellow lettering band across the chest, and below it four webbing rows on the left, four on the right and a flapped pocket between them. The two attach points are those webbing columns, front left and front right. The id and name leave out the agency the reference names. The lettering is a plain yellow band, not letters. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "high_steel_front_plate",
+    "model": "forged_steel_front_plate",
+    "name": "High steel front plate",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 1,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0.1, "blunt": 0.3, "cut": 0.8, "pierce": 0.7 }
+    },
+    "finishes": { "plate": "steel-grey" },
+    "description": "A front armour plate cut by hand from high-carbon steel, its edges a little crooked, strapped onto a nylon pad.",
+    "reference": "hc_esapi_plate",
+    "variants": [],
+    "notes": "Shares forged_steel_front_plate with the hardened steel plate; only the steel's colour differs, plain grey here instead of heat-tinted. It is an insert, not a garment: it has no slot and is carried in a plate carrier's plate pocket, which is a grid sized for it. Its protection should count only while it sits in such a pocket; a pocket that lends its contents' protection to the wearer has no content field yet, so `protects` records the plate's own figures for when it does. No damage type for bullets exists, so pierce stands in for it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "high_steel_side_plate",
+    "model": "forged_steel_side_plate",
+    "name": "High steel side plate",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 1,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0.1, "blunt": 0.3, "cut": 0.8, "pierce": 0.7 }
+    },
+    "finishes": { "plate": "steel-grey" },
+    "description": "A long six-sided plate of high-carbon steel for the side of a carrier, strapped onto a nylon pad.",
+    "reference": "hc_esbi_plate",
+    "variants": [],
+    "notes": "Shares forged_steel_side_plate with the hardened steel side plate; only the steel's colour differs, plain grey here. The reference gives it the same 1.3 kg as the front plate; the mass follows the reference. It is an insert, not a garment: it has no slot and is carried in a plate carrier's plate pocket, which is a grid sized for it. Its protection should count only while it sits in such a pocket; a pocket that lends its contents' protection to the wearer has no content field yet, so `protects` records the plate's own figures for when it does. No damage type for bullets exists, so pierce stands in for it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "heavy_steel_plate",
+    "model": "heavy_steel_plate",
+    "name": "Heavy steel plate",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "encumbrance": 3,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.9, "pierce": 0.85 }
+    },
+    "description": "A thick curved plate of tempered steel for the front of a carrier, rated on its back against handgun and rifle rounds.",
+    "reference": "heavy_steel_ballistic_plate",
+    "variants": [],
+    "notes": "Lying face up: a bare grey steel plate 250 mm by 300 mm and 6.5 mm thick, curved across with shooter's cuts. The etched rating is on the back and not modelled. CHECK VOLUME (x7.8): the reference's 194 ml is less than the steel itself (about 500 ml for 3.9 kg), and the bounding box of a curved plate adds more. It is an insert, not a garment: it has no slot and is carried in a plate carrier's plate pocket, which is a grid sized for it. Its protection should count only while it sits in such a pocket; a pocket that lends its contents' protection to the wearer has no content field yet, so `protects` records the plate's own figures for when it does. No damage type for bullets exists, so pierce stands in for it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ballistic_groin_protector",
+    "model": "ballistic_groin_protector",
+    "name": "Ballistic groin protector",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 2,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.6, "pierce": 0.55 }
+    },
+    "fits": ["pals"],
+    "description": "A padded front flap and a broader back flap with soft armour inside, made to hang from the bottom of heavy body armour.",
+    "reference": "iotv_groin_plate",
+    "variants": [],
+    "notes": "Laid flat side by side: a coyote front flap 240 mm wide tapering to 140 mm over 220 mm, and a back flap 260 mm by 250 mm, each 14 mm thick, with a webbing hanger and two press studs along the straight top edge. It mounts on the webbing at the foot of a vest's front, so it fits pals and takes no slot; the reference covers both legs, which a mounted piece cannot claim, so its coverage of the groin needs the attach point to place it. CHECK VOLUME (x6.6): two thin flaps spread side by side fill little of their box. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ballistic_collar",
+    "model": "ballistic_collar",
+    "name": "Ballistic collar",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "encumbrance": 0,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.6, "pierce": 0.55 }
+    },
+    "description": "A padded front and back collar with soft armour inside, made to fasten round the neckline of heavy body armour.",
+    "reference": "iotv_neck_plate",
+    "variants": [],
+    "notes": "Laid flat: a coyote half-ring 300 mm across and a shorter curved back piece, both 25 mm thick with an olive edge binding on the inner curve and a webbing tab to fasten it. It fastens to a vest's neckline by hook-and-loop, which none of the standards covers, so it has no `fits` and no slot; the report proposes a collar standard. The reference covers the head; the neck is what it guards. CHECK VOLUME (x4.9): two curved pieces lying apart fill little of their box. The worn look is pending: no worn model is authored."
+  }
+]

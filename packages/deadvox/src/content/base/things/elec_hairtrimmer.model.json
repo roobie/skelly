@@ -1,0 +1,14 @@
+{
+  "id": "elec_hairtrimmer",
+  "file": "assets/models/elec_hairtrimmer.glb",
+  "parts": {
+    "elec_hairtrimmer": {
+      "node": "elec_hairtrimmer:compound",
+      "massKg": 0.17,
+      "centreOfMass": [0.002291151633826949, 0.014564068045526879, -0.00002692448904662837]
+    }
+  },
+  "grip": { "at": [-0.019999999999999997, 0.015, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

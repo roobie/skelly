@@ -1,0 +1,11 @@
+{
+  "id": "sombrero",
+  "file": "assets/models/sombrero.glb",
+  "parts": {
+    "sombrero": {
+      "node": "sombrero:compound",
+      "massKg": 0.9,
+      "centreOfMass": [0.00003241158611635349, 0.06729835070156724, 0.0003712972839911381]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "cured_pelt",
+  "file": "assets/models/cured_pelt.glb",
+  "parts": {
+    "cured_pelt": {
+      "node": "cured_pelt:compound",
+      "massKg": 0.17,
+      "centreOfMass": [-0.0004932111527071573, 0.03115930044141477, 0.00044655528859585404]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "rock_egg",
+  "file": "assets/models/rock_egg.glb",
+  "parts": {
+    "rock_egg": {
+      "node": "rock_egg:compound",
+      "massKg": 5.2,
+      "centreOfMass": [-0.002979699364636605, 0.07612159718993752, 0.0007309261842037296]
+    }
+  },
+  "grip": { "at": [0, 0.076, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

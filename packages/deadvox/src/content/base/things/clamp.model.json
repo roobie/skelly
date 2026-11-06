@@ -1,0 +1,11 @@
+{
+  "id": "clamp",
+  "file": "assets/models/clamp.glb",
+  "parts": {
+    "clamp": {
+      "node": "clamp:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-0.013084264671498716, 0.009045452419920504, -0.009511947626841242]
+    }
+  }
+}

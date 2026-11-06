@@ -1,0 +1,11 @@
+{
+  "id": "training_dummy_heavy",
+  "file": "assets/models/training_dummy_heavy.glb",
+  "parts": {
+    "training_dummy_heavy": {
+      "node": "training_dummy_heavy:compound",
+      "massKg": 64,
+      "centreOfMass": [0, 1.0238463784356397, 0.013080402361994486]
+    }
+  }
+}

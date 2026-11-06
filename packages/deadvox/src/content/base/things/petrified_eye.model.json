@@ -1,0 +1,11 @@
+{
+  "id": "petrified_eye",
+  "file": "assets/models/petrified_eye.glb",
+  "parts": {
+    "petrified_eye": {
+      "node": "petrified_eye:compound",
+      "massKg": 0.57,
+      "centreOfMass": [3.041640052316229e-8, 0.039076892660522555, 0.0010888767223286796]
+    }
+  }
+}

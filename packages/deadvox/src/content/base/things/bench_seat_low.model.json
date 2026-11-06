@@ -1,0 +1,17 @@
+{
+  "id": "bench_seat_low",
+  "file": "assets/models/bench_seat_low.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 14,
+      "centreOfMass": [-0.1287448347107438, 0.17884814049586778, 0],
+      "collision": [
+        { "min": [-0.28125, 0, -0.5], "max": [0.25, 0.125, 0.5] },
+        { "min": [-0.375, 0.09375, -0.5], "max": [-0.15625, 0.5625, 0.5] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

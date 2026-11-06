@@ -1,0 +1,14 @@
+{
+  "id": "carved_beetle_ball",
+  "file": "assets/models/carved_beetle_ball.glb",
+  "parts": {
+    "carved_beetle_ball": {
+      "node": "carved_beetle_ball:compound",
+      "massKg": 0.74,
+      "centreOfMass": [0, 0.061827275078302345, -2.3768874818339364e-19]
+    }
+  },
+  "grip": { "at": [0, 0.062, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

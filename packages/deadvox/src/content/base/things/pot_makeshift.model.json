@@ -1,0 +1,11 @@
+{
+  "id": "pot_makeshift",
+  "file": "assets/models/pot_makeshift.glb",
+  "parts": {
+    "pot_makeshift": {
+      "node": "pot_makeshift:compound",
+      "massKg": 0.9,
+      "centreOfMass": [-0.0012274143302180684, 0.038228971962616806, -0.0001396677050882659]
+    }
+  }
+}

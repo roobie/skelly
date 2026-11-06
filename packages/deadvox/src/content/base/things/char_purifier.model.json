@@ -1,0 +1,11 @@
+{
+  "id": "char_purifier",
+  "file": "assets/models/char_purifier.glb",
+  "parts": {
+    "char_purifier": {
+      "node": "char_purifier:compound",
+      "massKg": 1.9,
+      "centreOfMass": [0, 0.14662488922648437, 0.00008950500063299156]
+    }
+  }
+}

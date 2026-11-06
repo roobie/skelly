@@ -1,0 +1,11 @@
+{
+  "id": "ifak_pouch",
+  "file": "assets/models/ifak_pouch.glb",
+  "parts": {
+    "ifak_pouch": {
+      "node": "ifak_pouch:compound",
+      "massKg": 0.45,
+      "centreOfMass": [0, 0.06622578925546407, -0.000345791624711248]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "lump_cast_iron",
+  "file": "assets/models/lump_cast_iron.glb",
+  "parts": {
+    "lump_cast_iron": {
+      "node": "lump_cast_iron:compound",
+      "massKg": 0.75,
+      "centreOfMass": [-0.001361534905224226, 0.018811835413777164, -0.00010094005239636307]
+    }
+  }
+}

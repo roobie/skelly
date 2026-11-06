@@ -1,0 +1,14 @@
+{
+  "id": "hybrid_badge_rear",
+  "file": "assets/models/hybrid_badge_rear.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 0.1,
+      "centreOfMass": [-0.015625, 0.03125, 0],
+      "collision": [{ "min": [-0.03125, 0, -0.125], "max": [0, 0.0625, 0.125] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

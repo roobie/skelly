@@ -1,0 +1,11 @@
+{
+  "id": "jacket_army_modern",
+  "file": "assets/models/jacket_army_modern.glb",
+  "parts": {
+    "jacket_army_modern": {
+      "node": "jacket_army_modern:compound",
+      "massKg": 1,
+      "centreOfMass": [-0.00020337376051831075, 0.028220282068502363, 0.00039928100185675404]
+    }
+  }
+}

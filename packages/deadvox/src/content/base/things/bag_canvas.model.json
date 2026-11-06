@@ -1,0 +1,11 @@
+{
+  "id": "bag_canvas",
+  "file": "assets/models/bag_canvas.glb",
+  "parts": {
+    "bag_canvas": {
+      "node": "bag_canvas:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0.0000465135549448273, 0.19594841341085592, 0.00011110957661800788]
+    }
+  }
+}

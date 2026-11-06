@@ -1,0 +1,11 @@
+{
+  "id": "hardened_mail_chausses",
+  "file": "assets/models/hardened_mail_chausses.glb",
+  "parts": {
+    "hardened_mail_chausses": {
+      "node": "hardened_mail_chausses:compound",
+      "massKg": 3.1,
+      "centreOfMass": [4.453471267039239e-17, 0.00706042707860062, -0.020473421172194414]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "teleporter",
+  "file": "assets/models/teleporter.glb",
+  "parts": {
+    "teleporter": {
+      "node": "teleporter:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-0.024912264133474065, 0.09375780975131014, 0]
+    }
+  },
+  "grip": { "at": [-0.072, 0.038, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

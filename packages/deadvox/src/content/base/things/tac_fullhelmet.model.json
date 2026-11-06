@@ -1,0 +1,11 @@
+{
+  "id": "tac_fullhelmet",
+  "file": "assets/models/tac_fullhelmet.glb",
+  "parts": {
+    "tac_fullhelmet": {
+      "node": "tac_fullhelmet:compound",
+      "massKg": 1.9,
+      "centreOfMass": [-1.5282076810364922e-19, 0.13593058981109413, 0.003673714839961207]
+    }
+  }
+}

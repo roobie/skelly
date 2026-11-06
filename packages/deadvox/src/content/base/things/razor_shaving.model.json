@@ -1,0 +1,14 @@
+{
+  "id": "razor_shaving",
+  "file": "assets/models/razor_shaving.glb",
+  "parts": {
+    "razor_shaving": {
+      "node": "razor_shaving:compound",
+      "massKg": 0.13,
+      "centreOfMass": [-0.013083665338645415, 0.009011952191235057, 0]
+    }
+  },
+  "grip": { "at": [-0.012999999999999998, 0.009000000000000001, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

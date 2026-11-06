@@ -1,0 +1,11 @@
+{
+  "id": "bellywrap_wool",
+  "file": "assets/models/bellywrap_wool.glb",
+  "parts": {
+    "bellywrap_wool": {
+      "node": "bellywrap_wool:compound",
+      "massKg": 0.16,
+      "centreOfMass": [-0.00006152602505950493, 0.028784209817218298, -0.08654124938249425]
+    }
+  }
+}

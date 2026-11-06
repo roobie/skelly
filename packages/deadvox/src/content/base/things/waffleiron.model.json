@@ -1,0 +1,11 @@
+{
+  "id": "waffleiron",
+  "file": "assets/models/waffleiron.glb",
+  "parts": {
+    "waffleiron": {
+      "node": "waffleiron:compound",
+      "massKg": 1.3,
+      "centreOfMass": [-0.05468229184117944, 0.021453308761936685, 1.3857942914274213e-20]
+    }
+  }
+}

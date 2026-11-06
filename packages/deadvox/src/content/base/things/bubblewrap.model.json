@@ -1,0 +1,14 @@
+{
+  "id": "bubblewrap",
+  "file": "assets/models/bubblewrap.glb",
+  "parts": {
+    "bubblewrap": {
+      "node": "bubblewrap:compound",
+      "massKg": 0.021,
+      "centreOfMass": [-0.002326045058815718, 0.017549212467601574, 0.007973483086329532]
+    }
+  },
+  "grip": { "at": [0, 0.02, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,14 @@
+{
+  "id": "drill_rock_primitive",
+  "file": "assets/models/drill_rock_primitive.glb",
+  "parts": {
+    "drill_rock_primitive": {
+      "node": "drill_rock_primitive:compound",
+      "massKg": 0.076,
+      "centreOfMass": [0.0009322834645669291, 0.015874015748031496, 0]
+    }
+  },
+  "grip": { "at": [-0.006000000000000005, 0.016, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

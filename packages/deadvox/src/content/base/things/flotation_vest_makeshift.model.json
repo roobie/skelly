@@ -1,0 +1,11 @@
+{
+  "id": "flotation_vest_makeshift",
+  "file": "assets/models/flotation_vest_makeshift.glb",
+  "parts": {
+    "flotation_vest_makeshift": {
+      "node": "flotation_vest_makeshift:compound",
+      "massKg": 0.8,
+      "centreOfMass": [0.000008723474901144017, 0.05283386157143288, -0.014058921186875553]
+    }
+  }
+}

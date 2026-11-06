@@ -1,0 +1,14 @@
+{
+  "id": "sports_car_firewall",
+  "file": "assets/models/sports_car_firewall.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 18,
+      "centreOfMass": [-0.43750000000000006, 0.515625, 0],
+      "collision": [{ "min": [-0.46875, 0.25, -0.8125], "max": [-0.40625, 0.78125, 0.8125] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "electrolysis_kit",
+  "file": "assets/models/electrolysis_kit.glb",
+  "parts": {
+    "electrolysis_kit": {
+      "node": "electrolysis_kit:compound",
+      "massKg": 0.21,
+      "centreOfMass": [-0.006027015618404389, 0.0036838328408611244, -0.0013381173490924446]
+    }
+  }
+}

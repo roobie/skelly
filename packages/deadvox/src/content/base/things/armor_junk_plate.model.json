@@ -1,0 +1,11 @@
+{
+  "id": "armor_junk_plate",
+  "file": "assets/models/armor_junk_plate.glb",
+  "parts": {
+    "armor_junk_plate": {
+      "node": "armor_junk_plate:compound",
+      "massKg": 25,
+      "centreOfMass": [0.00006889539331775568, 0.043196799557742714, -0.05672941850076755]
+    }
+  }
+}

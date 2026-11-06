@@ -1,0 +1,14 @@
+{
+  "id": "box_small",
+  "file": "assets/models/box_small.glb",
+  "parts": {
+    "box_small": {
+      "node": "box_small:compound",
+      "massKg": 0.07,
+      "centreOfMass": [0.00034848772034334305, 0.04713097397850045, 0.00022663886707643984]
+    }
+  },
+  "grip": { "at": [0, 0.044, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

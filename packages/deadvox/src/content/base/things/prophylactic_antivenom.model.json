@@ -1,0 +1,14 @@
+{
+  "id": "prophylactic_antivenom",
+  "file": "assets/models/prophylactic_antivenom.glb",
+  "parts": {
+    "prophylactic_antivenom": {
+      "node": "prophylactic_antivenom:compound",
+      "massKg": 0.02,
+      "centreOfMass": [0, 0.0215878962536023, 0]
+    }
+  },
+  "grip": { "at": [0, 0.022, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

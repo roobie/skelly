@@ -1,0 +1,17 @@
+{
+  "id": "abandoned_ambulance_bumper",
+  "file": "assets/models/abandoned_ambulance_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 18,
+      "centreOfMass": [2.671875, 0.33854166666666663, -0.022604166666666665],
+      "collision": [
+        { "min": [2.59375, 0.03125, -0.3125], "max": [2.75, 0.53125, 1] },
+        { "min": [2.59375, 0.375, -1], "max": [2.75, 0.53125, -0.3125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

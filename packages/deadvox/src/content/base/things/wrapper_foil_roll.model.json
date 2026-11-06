@@ -1,0 +1,11 @@
+{
+  "id": "wrapper_foil_roll",
+  "file": "assets/models/wrapper_foil_roll.glb",
+  "parts": {
+    "wrapper_foil_roll": {
+      "node": "wrapper_foil_roll:compound",
+      "massKg": 0.36,
+      "centreOfMass": [0, 0.025689331770222746, 0.0034232121922626027]
+    }
+  }
+}

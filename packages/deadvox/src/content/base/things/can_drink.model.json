@@ -1,0 +1,14 @@
+{
+  "id": "can_drink",
+  "file": "assets/models/can_drink.glb",
+  "parts": {
+    "can_drink": {
+      "node": "can_drink:compound",
+      "massKg": 0.37,
+      "centreOfMass": [-0.000001861427094105481, 0.05998857865103988, 0]
+    }
+  },
+  "grip": { "at": [0, 0.06, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "glowplug",
+  "file": "assets/models/glowplug.glb",
+  "parts": {
+    "glowplug": {
+      "node": "glowplug:compound",
+      "massKg": 0.048,
+      "centreOfMass": [-0.0059031600407747215, 0.007002038735983692, 0.0000030581039755351725]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "refuse_truck_windscreen",
+  "file": "assets/models/refuse_truck_windscreen.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 28,
+      "centreOfMass": [4.690784072249589, 2.489044540229885, 0],
+      "collision": [{ "min": [4.5625, 2.125, -1.15625], "max": [4.8125, 2.84375, 1.15625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "gambeson_parabolan_vest",
+  "file": "assets/models/gambeson_parabolan_vest.glb",
+  "parts": {
+    "gambeson_parabolan_vest": {
+      "node": "gambeson_parabolan_vest:compound",
+      "massKg": 1.9,
+      "centreOfMass": [3.766017388279604e-20, 0.030698829921235904, -0.008794834049140268]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "scraper_steel",
+  "file": "assets/models/scraper_steel.glb",
+  "parts": {
+    "scraper_steel": {
+      "node": "scraper_steel:compound",
+      "massKg": 0.51,
+      "centreOfMass": [0, 0.014010844444444445, -0.0571816888888889]
+    }
+  },
+  "grip": { "at": [-0.14, 0.014, -0.08700000000000001], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,11 @@
+{
+  "id": "fishing_waders",
+  "file": "assets/models/fishing_waders.glb",
+  "parts": {
+    "fishing_waders": {
+      "node": "fishing_waders:compound",
+      "massKg": 2.3,
+      "centreOfMass": [-8.450992455906605e-18, 0.030517882810518305, -0.2604663059102055]
+    }
+  }
+}

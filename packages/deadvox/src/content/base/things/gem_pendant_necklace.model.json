@@ -1,0 +1,11 @@
+{
+  "id": "gem_pendant_necklace",
+  "file": "assets/models/gem_pendant_necklace.glb",
+  "parts": {
+    "gem_pendant_necklace": {
+      "node": "gem_pendant_necklace:compound",
+      "massKg": 0.045,
+      "centreOfMass": [0, 0.0019600000000000004, 0.041890000000000004]
+    }
+  }
+}

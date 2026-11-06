@@ -1,0 +1,11 @@
+{
+  "id": "wire",
+  "file": "assets/models/wire.glb",
+  "parts": {
+    "wire": {
+      "node": "wire:compound",
+      "massKg": 0.17,
+      "centreOfMass": [0.00014830256104824267, 0.008463371054198927, 0.00313936867182847]
+    }
+  }
+}

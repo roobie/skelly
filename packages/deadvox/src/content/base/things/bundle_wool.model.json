@@ -1,0 +1,11 @@
+{
+  "id": "bundle_wool",
+  "file": "assets/models/bundle_wool.glb",
+  "parts": {
+    "bundle_wool": {
+      "node": "bundle_wool:compound",
+      "massKg": 0.29,
+      "centreOfMass": [-0.0003959462644355409, 0.030194168546513578, 0]
+    }
+  }
+}

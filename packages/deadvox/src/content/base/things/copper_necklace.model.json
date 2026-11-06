@@ -1,0 +1,11 @@
+{
+  "id": "copper_necklace",
+  "file": "assets/models/copper_necklace.glb",
+  "parts": {
+    "copper_necklace": {
+      "node": "copper_necklace:compound",
+      "massKg": 0.014,
+      "centreOfMass": [-4.514367876522953e-18, 0.0009999999999999992, 0.007052631578947368]
+    }
+  }
+}

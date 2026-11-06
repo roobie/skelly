@@ -1,0 +1,11 @@
+{
+  "id": "large_pressure_vessel",
+  "file": "assets/models/large_pressure_vessel.glb",
+  "parts": {
+    "large_pressure_vessel": {
+      "node": "large_pressure_vessel:compound",
+      "massKg": 290,
+      "centreOfMass": [0.0027145266614758915, 0.5512217918885571, 0.00007897713455785071]
+    }
+  }
+}

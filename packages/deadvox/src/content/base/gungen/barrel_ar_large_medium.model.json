@@ -7,7 +7,7 @@
       "item": "barrel_ar_large_medium",
       "node": "barrel_ar_large_medium:barrel",
       "massKg": 1.15,
-      "centreOfMass": [0.18857473800330946, 0, -0.000005515719801434078]
+      "centreOfMass": [0.18869900771775083, 0, 0]
     }
   }
 }

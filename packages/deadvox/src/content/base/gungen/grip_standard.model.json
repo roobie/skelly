@@ -7,7 +7,7 @@
       "item": "grip_standard",
       "node": "grip_standard:grip",
       "massKg": 0.1,
-      "centreOfMass": [0.000258148631029987, -0.04801825293350717, 0]
+      "centreOfMass": [0.0002805194805194806, -0.04782337662337662, 0]
     }
   }
 }

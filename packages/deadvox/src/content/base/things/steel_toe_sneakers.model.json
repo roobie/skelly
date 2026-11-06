@@ -1,0 +1,11 @@
+{
+  "id": "steel_toe_sneakers",
+  "file": "assets/models/steel_toe_sneakers.glb",
+  "parts": {
+    "steel_toe_sneakers": {
+      "node": "steel_toe_sneakers:compound",
+      "massKg": 1.4,
+      "centreOfMass": [-7.214853120601408e-18, 0.041085, -0.013293333333333334]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "makeshift_pillow",
+  "file": "assets/models/makeshift_pillow.glb",
+  "parts": {
+    "makeshift_pillow": {
+      "node": "makeshift_pillow:compound",
+      "massKg": 0.55,
+      "centreOfMass": [0, 0.10000000000000002, 0]
+    }
+  }
+}

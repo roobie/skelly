@@ -1,0 +1,11 @@
+{
+  "id": "wall_light",
+  "file": "assets/models/wall_light.glb",
+  "parts": {
+    "wall_light": {
+      "node": "wall_light:compound",
+      "massKg": 1,
+      "centreOfMass": [-5.7757555898295414e-21, 0.09972561724946938, -0.010135627304211822]
+    }
+  }
+}

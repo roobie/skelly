@@ -1,0 +1,8 @@
+{
+  "id": "rebar",
+  "file": "assets/models/rebar.glb",
+  "parts": { "rebar": { "node": "rebar:compound", "massKg": 1.1, "centreOfMass": [0, 0.008, 0] } },
+  "grip": { "at": [0, 0.008, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

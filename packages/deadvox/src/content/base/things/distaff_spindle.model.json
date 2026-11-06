@@ -1,0 +1,14 @@
+{
+  "id": "distaff_spindle",
+  "file": "assets/models/distaff_spindle.glb",
+  "parts": {
+    "distaff_spindle": {
+      "node": "distaff_spindle:compound",
+      "massKg": 0.26,
+      "centreOfMass": [0.10265735792679424, 0.04017663621214733, -0.022074240073550532]
+    }
+  },
+  "grip": { "at": [-0.006000000000000005, 0.042, -0.036000000000000004], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,11 @@
+{
+  "id": "fish_trap",
+  "file": "assets/models/fish_trap.glb",
+  "parts": {
+    "fish_trap": {
+      "node": "fish_trap:compound",
+      "massKg": 0.05,
+      "centreOfMass": [0.1479507434944238, 0.0008080855018587362, 0.00005808550185873608]
+    }
+  }
+}

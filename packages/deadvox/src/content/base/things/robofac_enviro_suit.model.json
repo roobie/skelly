@@ -1,0 +1,11 @@
+{
+  "id": "robofac_enviro_suit",
+  "file": "assets/models/robofac_enviro_suit.glb",
+  "parts": {
+    "robofac_enviro_suit": {
+      "node": "robofac_enviro_suit:compound",
+      "massKg": 3.9,
+      "centreOfMass": [0.00015301896592871168, 0.08075226369800512, -0.033595262495379]
+    }
+  }
+}

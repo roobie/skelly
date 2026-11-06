@@ -1,0 +1,187 @@
+[
+  {
+    "id": "radio_pouch",
+    "model": "radio_pouch",
+    "name": "Radio pouch",
+    "category": "bag",
+    "size": [1, 2],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [1, 2], "handlingSimSeconds": 0.5 }] },
+    "fits": ["belt", "pals"],
+    "description": "A narrow nylon pouch that holds a handheld radio upright, its top held shut by a cord and toggle.",
+    "reference": "radio_pouch",
+    "variants": [],
+    "notes": "A coyote pouch 80 mm by 160 mm by 50 mm, open-topped, with a black shock cord over the top to a toggle on the front, a hole in the top for the aerial, a webbing row across its front and two straps on its back. CHECK VOLUME (x3.5) is near the limit: the reference counts it packed flat. Its one pocket is sized for a handheld radio. The reference covers the torso; it mounts on a vest's webbing or a belt by the two straps on its back. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "sustainment_pouch",
+    "model": "sustainment_pouch",
+    "name": "Sustainment pouch",
+    "category": "bag",
+    "size": [2, 3],
+    "economy": { "usage": ["Military"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [2, 3], "handlingSimSeconds": 0.8 }] },
+    "fits": ["belt", "pals"],
+    "description": "A big nylon pouch with a drawcord collar under a buckled lid, sized to carry three ration packs.",
+    "reference": "sustainment_pouch",
+    "variants": [],
+    "notes": "An olive pouch 180 mm by 230 mm by 100 mm built on the shared pouch helper, with a darker drawcord collar showing under its lid, a lid strap down the front to a black buckle, two webbing rows across its front and two straps on its back. CHECK VOLUME (x16.5): the reference's 0.3 L is the empty pouch folded; standing open at its real size it holds three ration packs. It mounts on a vest's webbing or a belt by the two straps on its back. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "tactical_grenade_pouch",
+    "model": "tactical_grenade_pouch",
+    "name": "Grenade pouch",
+    "category": "bag",
+    "size": [1, 1],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2"] },
+    "wearable": { "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [1, 1], "handlingSimSeconds": 0.6 }] },
+    "fits": ["belt", "pals"],
+    "description": "A small round nylon pouch that holds one hand grenade under a snapped lid.",
+    "reference": "tactical_grenade_pouch",
+    "variants": [],
+    "notes": "A round olive pouch 70 mm across and 115 mm tall with a domed lid whose tab snaps down the front with a black press stud, and one webbing strap on its back. CHECK VOLUME (x6.5): the reference's 0.1 L is the pouch flattened; standing it is shaped round a grenade. Its one pocket is sized for a grenade. It mounts on a vest's webbing or a belt by the strap on its back. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "tactical_shotshell_pouch",
+    "model": "tactical_shotshell_pouch",
+    "name": "Shotshell pouch",
+    "category": "bag",
+    "size": [2, 1],
+    "economy": { "usage": ["Military", "Police", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [2, 1], "handlingSimSeconds": 0.5 }] },
+    "fits": ["belt", "pals"],
+    "description": "A black nylon pouch for loose shotgun shells or rifle rounds, with a snapped flap and an elastic band of shell loops across its front.",
+    "reference": "tactical_shotshell_pouch",
+    "variants": [],
+    "notes": "A charcoal pouch 120 mm by 100 mm by 60 mm under a black snapped flap, a black elastic band stitched in grey into six shell loops across its front and two grey straps on its back; charcoal rather than black so the parts read apart. CHECK VOLUME (x4): the reference counts the pouch packed flat. The front loops are drawn empty and the pouch has one pocket. It mounts on a vest's webbing or a belt by the two straps on its back. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "tool_pouch",
+    "model": "tool_pouch",
+    "name": "Tool pouch",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": ["Military", "Police", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "encumbrance": 1, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 0.6 }] },
+    "fits": ["belt", "pals"],
+    "description": "A flat zip-round nylon pouch with elastic loops across its face, for keeping small tools to hand on the chest.",
+    "reference": "tool_pouch",
+    "variants": [],
+    "notes": "A coyote pouch 140 mm by 180 mm by 40 mm with a black zip round its top and sides and a pull at one corner, a band of elastic tool loops and a webbing row across its front, and two straps on its back. CHECK VOLUME (x5.8): the reference counts it packed flat. It mounts on a vest's webbing or a belt by the two straps on its back. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "triple_stacker_pouch",
+    "model": "triple_stacker_pouch",
+    "name": "Triple magazine pouch",
+    "category": "bag",
+    "size": [3, 2],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier2"] },
+    "wearable": { "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "cell 1" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "cell 2" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "cell 3" }
+      ]
+    },
+    "fits": ["belt", "pals"],
+    "description": "Three tall nylon cells side by side, each taking two rifle magazines one behind the other under its own flap.",
+    "reference": "triple_stacker_pouch",
+    "variants": [],
+    "notes": "An olive pouch 240 mm by 190 mm by 90 mm: three cells on a shared back panel with gaps between them, each under a darker flap with a black pull tab and a webbing band at its foot, and a strap behind each cell. CHECK VOLUME (x9.2): the reference counts it packed flat. Each cell is one pocket two magazines deep. It mounts on a vest's webbing or a belt by the straps behind its cells. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "quiver_simple_cloth",
+    "model": "quiver_simple_cloth",
+    "name": "Cloth quiver",
+    "category": "bag",
+    "size": [1, 4],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "back", "encumbrance": 6, "warmth": 0, "wearPerDamage": 0.003 },
+    "container": { "pockets": [{ "grid": [1, 4], "handlingSimSeconds": 1.2 }] },
+    "description": "A plain cotton tube with a stiffened mouth and a shoulder strap, for carrying arrows, bolts or short spears.",
+    "reference": "quiver_simple_cloth",
+    "variants": [],
+    "notes": "A canvas tube 600 mm long and 80 mm across lying on its side, open at one end under a khaki cuff, a khaki foot, a tie cord round its middle and a shoulder strap lying flat beside it. CHECK VOLUME (x12.7): the reference counts the cloth bundled; the model is the tube standing open. Worn over the shoulder, it takes the back slot; the reference covers the torso on one side, and the side has no content field. Adjusting it to the length of what it holds has no content field; the slower draw is the longer handling time. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "quiver_takedown_bow",
+    "model": "quiver_takedown_bow",
+    "name": "Bow and arrow quiver",
+    "category": "bag",
+    "size": [2, 4],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 3, "warmth": 0, "wearPerDamage": 0.0025 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 4], "handlingSimSeconds": 0.6, "name": "quiver" },
+        { "grid": [1, 4], "handlingSimSeconds": 1.5, "name": "bow bag" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.6, "name": "pouch" }
+      ]
+    },
+    "description": "A roomy cotton quiver for about sixteen arrows, with a long bag strapped along its side for a takedown bow and a small pouch for archery odds and ends.",
+    "reference": "quiver_takedown_bow",
+    "variants": [],
+    "notes": "An olive quiver 700 mm long and 100 mm across lying on its side with a flat bow bag 700 mm by 110 mm beside it, two darker bands binding them, a zip along the bag and a flapped pouch on top of the quiver. CHECK VOLUME (x13.4): the reference counts it packed down. Worn over the shoulder, it takes the back slot. The bow bag is a plain pocket sized for a takedown bow. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "tactical_holster",
+    "model": "tactical_holster",
+    "name": "Drop-leg holster",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "thigh", "encumbrance": 3, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": { "pockets": [{ "grid": [2, 3], "handlingSimSeconds": 0.9 }] },
+    "description": "A nylon pistol holster on a webbing panel, worn hanging low on the thigh, with a strap over the grip that locks the gun in.",
+    "reference": "tactical_holster",
+    "variants": [],
+    "notes": "A coyote holster 230 mm tall standing on its muzzle end, narrow along the barrel and bulging round the trigger guard, a darker rim round its open mouth and a darker toe, a black retention hood arching over the grip space and snapping down the front with a release stud, a webbing back panel and a leg strap lying looped behind it with a black buckle. CHECK VOLUME (x18.9): the leg strap spread on the floor adds air the reference does not count. The reference covers either leg; a leg pouch takes the thigh slot, as the gas mask pouch does, and the side has no content field. Its pocket is sized for one full-size pistol; the awkward draw is the longer handling time. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "tacvest",
+    "model": "tacvest",
+    "name": "Tactical vest",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Police", "Military"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "vest", "encumbrance": 2, "warmth": 1, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "rifle magazine 1" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "rifle magazine 2" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "rifle magazine 3" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.4, "name": "pistol magazine 1" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.4, "name": "pistol magazine 2" }
+      ]
+    },
+    "description": "A light black vest carrying three rifle magazine pouches and two pistol magazine pouches across its front, with no armour in it.",
+    "reference": "tacvest",
+    "variants": ["xl_tacvest", "xs_tacvest"],
+    "notes": "Folded in two on the floor, 420 mm by 340 mm and 60 mm deep, its front face up with three rifle magazine pouches and two narrower pistol magazine pouches, black on the charcoal vest under grey hook-and-loop flaps, a shoulder strap folded over and a black side buckle. CHECK VOLUME (x12.5): the reference counts the vest packed down; folded loosely it holds air. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "xlkevlar",
+    "model": "xlkevlar",
+    "name": "Oversized ballistic vest",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential", "Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 6,
+      "warmth": 4,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.2, "cut": 0.6, "pierce": 0.6 }
+    },
+    "description": "A heavy home-made bullet-resistant vest cut for a very large wearer, its layered panels stitched into a black nylon cover.",
+    "reference": "xlkevlar",
+    "variants": [],
+    "notes": "Lying flat front up: a back panel and a front panel 600 mm wide and 520 mm long, 50 mm thick together, the front's padded panel black on the charcoal vest and quilted in four grey rows, wide grey shoulder straps at the collar and grey side straps hanging loose with black tabs. It is stiff, so it lies flat instead of folding. The reference gives it a ballistic layer; no damage type for bullets exists, so pierce stands in for it and cut follows the stab vest's order. Its large size has no content field; it fits anyone. The worn look is pending: no worn model is authored."
+  }
+]

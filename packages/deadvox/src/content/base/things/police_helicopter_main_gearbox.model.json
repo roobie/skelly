@@ -1,0 +1,14 @@
+{
+  "id": "police_helicopter_main_gearbox",
+  "file": "assets/models/police_helicopter_main_gearbox.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 85,
+      "centreOfMass": [0, 0.13511652542372882, 0],
+      "collision": [{ "min": [-0.25, 0, -0.25], "max": [0.25, 0.375, 0.25] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

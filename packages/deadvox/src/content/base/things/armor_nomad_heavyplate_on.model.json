@@ -1,0 +1,11 @@
+{
+  "id": "armor_nomad_heavyplate_on",
+  "file": "assets/models/armor_nomad_heavyplate_on.glb",
+  "parts": {
+    "armor_nomad_heavyplate_on": {
+      "node": "armor_nomad_heavyplate_on:compound",
+      "massKg": 28,
+      "centreOfMass": [0.002316556016428601, 0.03986732554778986, -0.03660990194122981]
+    }
+  }
+}

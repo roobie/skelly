@@ -1,0 +1,209 @@
+[
+  {
+    "id": "wetsuit_gloves_thick",
+    "model": "wetsuit_gloves_thick",
+    "name": "Thick diving gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "hands", "encumbrance": 16, "warmth": 50, "wearPerDamage": 0.0015 },
+    "description": "Five-finger neoprene gloves thick enough for cold water, with long gauntlet cuffs and a strap that cinches each wrist shut. Clumsy for fine work.",
+    "reference": "wetsuit_gloves_thick",
+    "variants": ["xl_wetsuit_gloves_thick", "xs_wetsuit_gloves_thick"],
+    "notes": "Lying flat as a pair, backs up, 352 mm across the pair and 264 mm long: thick gloves with flared gauntlet cuffs bound in grey, a darker grip patch over the knuckles and a black wrist strap with a grey hook-and-loop tab. CHECK VOLUME (x5.2): laid flat, the pair spans a wider box than the reference packs it into. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wetsuit_hood",
+    "model": "wetsuit_hood",
+    "name": "Wetsuit hood",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hood", "encumbrance": 0, "warmth": 30, "wearPerDamage": 0.0015 },
+    "description": "A snug neoprene hood that closes round the face and keeps cold water off the head and neck.",
+    "reference": "wetsuit_hood",
+    "variants": ["xl_wetsuit_hood", "xs_wetsuit_hood"],
+    "notes": "Standing upright as on a shelf, 224 mm across and 308 mm tall: a snug turned hood with a grey-bound face opening on +z, a grey flatlock seam up the back and a short neck collar. CHECK VOLUME (x15): the model stands hollow round a head-sized space, while the reference counts the hood bunched up. Slot `hood`: it is worn under a helmet or mask strap, which takes `head`. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wetsuit_hood_thick",
+    "model": "wetsuit_hood_thick",
+    "name": "Thick wetsuit hood",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "hood", "encumbrance": 0, "warmth": 50, "wearPerDamage": 0.0015 },
+    "description": "A thick neoprene hood for cold water, with a wide bib that tucks under a suit collar to seal out the chill.",
+    "reference": "wetsuit_hood_thick",
+    "variants": ["xl_wetsuit_hood_thick", "xs_wetsuit_hood_thick"],
+    "notes": "Standing upright, 312 mm tall: the snug hood with a short neck flare and its bib slumped on the floor in a long front flap and a shorter back flap, 416 mm from front to back, a blue-bound face opening, grey flatlock seams up the back and round the neck, and a small vent valve on the crown that sets it apart from the thin hood. CHECK VOLUME (x33): the model stands hollow over its bib flaps, while the reference counts the hood bunched up. Slot `hood`, as the thin hood. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wetsuit_jacket",
+    "model": "wetsuit_jacket",
+    "name": "Wetsuit jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 8, "warmth": 20, "wearPerDamage": 0.0015 },
+    "description": "A long-sleeved neoprene jacket that zips up to a tall collar. It sheds wind and spray and keeps the chest warm when wet.",
+    "reference": "wetsuit_jacket",
+    "variants": ["xl_wetsuit_jacket", "xs_wetsuit_jacket"],
+    "notes": "Folded flat, 360 mm by 344 mm and 80 mm tall to the top of its stand collar: a grey zip up the front with a steel pull, a blue stand collar and side panels, long sleeves folded flat along both sides and grey flatlock seams. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wetsuit_pants",
+    "model": "wetsuit_pants",
+    "name": "Wetsuit pants",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 7, "warmth": 20, "wearPerDamage": 0.0015 },
+    "description": "Stretchy neoprene pants with a drawcord waist and a rubbery patch at the knees, made for surfing and wading.",
+    "reference": "wetsuit_pants",
+    "variants": ["xl_wetsuit_pants", "xs_wetsuit_pants"],
+    "notes": "Folded in four layers, 248 mm by 364 mm and 48 mm tall: a grey waistband with a white drawcord at +z, grey flatlock seams, a charcoal knee patch and the two grey ankle cuffs side by side at the fold, split at the middle so the legs read. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wetsuit_pants_thin",
+    "model": "wetsuit_pants_thin",
+    "name": "Thin wetsuit pants",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 5, "warmth": 15, "wearPerDamage": 0.0015 },
+    "description": "Light, thin neoprene pants with a drawcord waist. They take the edge off cold water without slowing the legs much.",
+    "reference": "wetsuit_pants_thin",
+    "variants": ["xl_wetsuit_pants_thin", "xs_wetsuit_pants_thin"],
+    "notes": "Folded in three layers, 224 mm by 344 mm and 32 mm tall: a blue drawcord waist, grey flatlock seams and the two blue ankle cuffs side by side at the fold, no knee patch, flatter than the standard pants. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wetsuit_shorts",
+    "model": "wetsuit_shorts",
+    "name": "Wetsuit shorts",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 2, "warmth": 8, "wearPerDamage": 0.0015 },
+    "description": "Short neoprene shorts with a drawcord waist, for the beach or a quick swim.",
+    "reference": "wetsuit_shorts",
+    "variants": ["xl_wetsuit_shorts", "xs_wetsuit_shorts"],
+    "notes": "Folded in three layers, 260 mm by 220 mm and 40 mm tall: a drawcord waist and a blue side seam. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wetsuit_shorts_technical",
+    "model": "wetsuit_shorts_technical",
+    "name": "Technical wetsuit shorts",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "legs", "encumbrance": 4, "warmth": 11, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "left thigh" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "right thigh" }
+      ]
+    },
+    "description": "Neoprene shorts with a big flapped pocket on each thigh. They can be worn alone or pulled snug over a wetsuit.",
+    "reference": "wetsuit_shorts_technical",
+    "variants": ["xl_wetsuit_shorts_technical", "xs_wetsuit_shorts_technical"],
+    "notes": "Folded in three layers, 280 mm by 240 mm and 56 mm tall: a grey drawcord waist and a bellows pocket on each side under a grey flap, each with a steel press stud and a drain eyelet. Pockets in `nylon-black` over the neoprene. Pockets are a judgement: each thigh pocket holds a small flat item. The loose state shares this model. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wetsuit_shorts_technical_loose",
+    "model": "wetsuit_shorts_technical",
+    "name": "Technical wetsuit shorts (loose)",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "legs", "encumbrance": 4, "warmth": 11, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "left thigh" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "right thigh" }
+      ]
+    },
+    "description": "The same pocketed neoprene shorts let out at the waist so they pull on over a wetsuit.",
+    "reference": "wetsuit_shorts_technical_loose",
+    "variants": ["xl_wetsuit_shorts_technical_loose", "xs_wetsuit_shorts_technical_loose"],
+    "notes": "Rides on `wetsuit_shorts_technical`: the loose fit is a waist adjustment that does not show when folded. Folded in three layers, 280 mm by 240 mm and 56 mm tall. In Deadvox the tight and loose states would better be one item with a toggle; that needs a wearable-state mechanism, so it stays a separate draft. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wetsuit_spring",
+    "model": "wetsuit_spring",
+    "name": "Spring suit",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 5, "warmth": 10, "wearPerDamage": 0.0015 },
+    "description": "A long-sleeved neoprene wetsuit cut off above the knee, with pink side panels and a zip across the chest. Lighter and freer than a full suit.",
+    "reference": "wetsuit_spring",
+    "variants": ["xl_wetsuit_spring", "xs_wetsuit_spring"],
+    "notes": "Laid flat, front up, neck towards -z, 1240 mm across the sleeves and 960 mm from collar to leg hem: long sleeves, short legs, a black zip across the chest, and pink side panels, collar and flatlock seams. Pink in `plastic-pink`. CHECK VOLUME (x6): laid flat its box is wide and empty, while the reference counts the suit rolled. Slot `torso`, as whole-body suits take; it should also block `legs` (the legs to the knee). The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wetsuit_spring_sleeveless",
+    "model": "wetsuit_spring_sleeveless",
+    "name": "Sleeveless spring suit",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 5, "warmth": 8, "wearPerDamage": 0.0015 },
+    "description": "A sleeveless ocean-blue neoprene suit cut off above the knee, black at the sides. It keeps the core warm and leaves the arms free.",
+    "reference": "wetsuit_spring_sleeveless",
+    "variants": ["xl_wetsuit_spring_sleeveless", "xs_wetsuit_spring_sleeveless"],
+    "notes": "Laid flat, front up, neck towards -z, 436 mm across and 960 mm from collar to leg hem: ocean-blue body in `cloth-blue` with black side panels, collar and bound armholes, short legs, and the back zip pull strap flipped over the shoulder. Box/volume x2.8. Slot `torso`, as whole-body suits take; it should also block `legs` (the legs to the knee). The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wetsuit_thick",
+    "model": "wetsuit_thick",
+    "name": "Thick wetsuit",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 20, "warmth": 50, "wearPerDamage": 0.0012 },
+    "description": "A full-length suit of thick, lined neoprene for cold water, with padded knees and a back zip on a long pull strap. Warm when wet, stiff when dry.",
+    "reference": "wetsuit_thick",
+    "variants": ["xl_wetsuit_thick", "xs_wetsuit_thick"],
+    "notes": "Laid flat, front up, neck towards -z, 1240 mm across the sleeves and 1500 mm from the pull strap to the ankles: 5 mm neoprene, charcoal side panels and collar, grey flatlock seams down arms and legs, charcoal knee pads and the back zip pull strap flipped over the shoulder onto the chest. CHECK VOLUME (x7.4): laid flat its box is far larger and emptier than the reference counts the suit rolled. Slot `torso`, as whole-body suits take; it should also block `legs` and `arms` where the figure has them. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wetsuit_top",
+    "model": "wetsuit_top",
+    "name": "Wetsuit shirt",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 5, "warmth": 15, "wearPerDamage": 0.0015 },
+    "description": "A short-sleeved neoprene shirt for the beach. It keeps the chest warm in the water and the sun off it out of it.",
+    "reference": "wetsuit_top",
+    "variants": ["xl_wetsuit_top", "xs_wetsuit_top"],
+    "notes": "Folded flat, 304 mm by 320 mm and 36 mm tall: a grey crew neck, grey side panels and grey flatlock seams across the shoulders; the short sleeves are folded under. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wetsuit_top_sleeved",
+    "model": "wetsuit_top_sleeved",
+    "name": "Long-sleeved wetsuit shirt",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 7, "warmth": 20, "wearPerDamage": 0.0015 },
+    "description": "A long-sleeved neoprene shirt for surfing and other water sports, with blue panels down the sides.",
+    "reference": "wetsuit_top_sleeved",
+    "variants": ["xl_wetsuit_top_sleeved", "xs_wetsuit_top_sleeved"],
+    "notes": "Folded flat, 320 mm by 328 mm and 48 mm tall: a blue crew neck, long sleeves folded flat along both sides, blue side panels inside them and grey flatlock seams. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wetsuit_top_sleeved_thin",
+    "model": "wetsuit_top_sleeved_thin",
+    "name": "Thin long-sleeved wetsuit shirt",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 5, "warmth": 15, "wearPerDamage": 0.0015 },
+    "description": "A thin long-sleeved neoprene shirt that layers under other clothes or works alone on warm water.",
+    "reference": "wetsuit_top_sleeved_thin",
+    "variants": ["xl_wetsuit_top_sleeved_thin", "xs_wetsuit_top_sleeved_thin"],
+    "notes": "Folded flat, 304 mm by 320 mm and 36 mm tall: a blue crew neck, grey side panels, long sleeves folded flat along both sides and grey flatlock seams, flatter than the standard long-sleeved shirt. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  }
+]

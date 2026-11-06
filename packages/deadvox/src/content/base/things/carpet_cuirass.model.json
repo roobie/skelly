@@ -1,0 +1,11 @@
+{
+  "id": "carpet_cuirass",
+  "file": "assets/models/carpet_cuirass.glb",
+  "parts": {
+    "carpet_cuirass": {
+      "node": "carpet_cuirass:compound",
+      "massKg": 2.5,
+      "centreOfMass": [0.0005556049327852464, 0.01399355627152539, 0.011787301410954344]
+    }
+  }
+}

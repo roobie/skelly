@@ -1,0 +1,11 @@
+{
+  "id": "flame_ward_belt",
+  "file": "assets/models/flame_ward_belt.glb",
+  "parts": {
+    "flame_ward_belt": {
+      "node": "flame_ward_belt:compound",
+      "massKg": 0.39,
+      "centreOfMass": [0.007337040875071961, 0.0090085664939551, 0.021247599309153715]
+    }
+  }
+}

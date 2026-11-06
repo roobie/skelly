@@ -1,0 +1,11 @@
+{
+  "id": "engineering_robotics_kit",
+  "file": "assets/models/engineering_robotics_kit.glb",
+  "parts": {
+    "engineering_robotics_kit": {
+      "node": "engineering_robotics_kit:compound",
+      "massKg": 2,
+      "centreOfMass": [-0.000012637410779879946, 0.046429038410988804, 0.0004299415646125537]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "scissors",
+  "file": "assets/models/scissors.glb",
+  "parts": {
+    "scissors": {
+      "node": "scissors:compound",
+      "massKg": 0.053,
+      "centreOfMass": [-0.011241922120961065, 0.004560066280033136, 5.3540584387494025e-20]
+    }
+  },
+  "grip": { "at": [-0.019, 0.004, -0.004], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,11 @@
+{
+  "id": "polo_shirt",
+  "file": "assets/models/polo_shirt.glb",
+  "parts": {
+    "polo_shirt": {
+      "node": "polo_shirt:compound",
+      "massKg": 0.25,
+      "centreOfMass": [0.000038654259126700064, 0.01949105225483178, 0.006980672870436648]
+    }
+  }
+}

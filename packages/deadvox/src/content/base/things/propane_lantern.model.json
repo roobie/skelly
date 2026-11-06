@@ -1,0 +1,14 @@
+{
+  "id": "propane_lantern",
+  "file": "assets/models/propane_lantern.glb",
+  "parts": {
+    "propane_lantern": {
+      "node": "propane_lantern:compound",
+      "massKg": 0.55,
+      "centreOfMass": [0.00017927170868347326, 0.08538468720821656, 0.0005630252100840332]
+    }
+  },
+  "grip": { "at": [0, 0.034, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

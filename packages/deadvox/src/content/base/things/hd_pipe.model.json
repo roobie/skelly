@@ -1,0 +1,11 @@
+{
+  "id": "hd_pipe",
+  "file": "assets/models/hd_pipe.glb",
+  "parts": {
+    "hd_pipe": {
+      "node": "hd_pipe:compound",
+      "massKg": 4.2,
+      "centreOfMass": [0.007991848832901074, 0.023999999999999997, 0]
+    }
+  }
+}

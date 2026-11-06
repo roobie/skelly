@@ -1,0 +1,17 @@
+{
+  "id": "air_ambulance_console",
+  "file": "assets/models/air_ambulance_console.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 12,
+      "centreOfMass": [0.0035511363636363635, 0.3888494318181819, 0],
+      "collision": [
+        { "min": [-0.125, 0, -0.1875], "max": [0.125, 0.375, 0.1875] },
+        { "min": [-0.09375, 0.34375, -0.5625], "max": [0.15625, 0.65625, 0.5625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

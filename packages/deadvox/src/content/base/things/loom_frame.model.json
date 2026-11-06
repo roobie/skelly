@@ -1,0 +1,11 @@
+{
+  "id": "loom_frame",
+  "file": "assets/models/loom_frame.glb",
+  "parts": {
+    "loom_frame": {
+      "node": "loom_frame:compound",
+      "massKg": 3.5,
+      "centreOfMass": [-1.0596728318639873e-19, 0.3301027414809125, 0.00023059185242121468]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "cell_phone",
+  "file": "assets/models/cell_phone.glb",
+  "parts": {
+    "cell_phone": {
+      "node": "cell_phone:compound",
+      "massKg": 0.079,
+      "centreOfMass": [0.00008240732509556406, 0.008380567161525469, -0.0004198595430704949]
+    }
+  }
+}

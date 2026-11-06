@@ -1,0 +1,11 @@
+{
+  "id": "torso_bandolier_grenade",
+  "file": "assets/models/torso_bandolier_grenade.glb",
+  "parts": {
+    "torso_bandolier_grenade": {
+      "node": "torso_bandolier_grenade:compound",
+      "massKg": 0.4,
+      "centreOfMass": [0.008752642706131077, 0.01344862579281184, 0.03056405919661734]
+    }
+  }
+}

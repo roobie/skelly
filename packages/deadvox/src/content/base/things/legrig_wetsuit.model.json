@@ -1,0 +1,11 @@
+{
+  "id": "legrig_wetsuit",
+  "file": "assets/models/legrig_wetsuit.glb",
+  "parts": {
+    "legrig_wetsuit": {
+      "node": "legrig_wetsuit:compound",
+      "massKg": 0.49,
+      "centreOfMass": [0.00031286853971557773, 0.07427078274945081, -0.014363047751185111]
+    }
+  }
+}

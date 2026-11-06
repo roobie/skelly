@@ -1,0 +1,11 @@
+{
+  "id": "gloves_eod",
+  "file": "assets/models/gloves_eod.glb",
+  "parts": {
+    "gloves_eod": {
+      "node": "gloves_eod:compound",
+      "massKg": 0.12,
+      "centreOfMass": [-2.460219931585343e-18, 0.013075567305573915, 0.06383079973562457]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "hc_chainmail_vest",
+  "file": "assets/models/hc_chainmail_vest.glb",
+  "parts": {
+    "hc_chainmail_vest": {
+      "node": "hc_chainmail_vest:compound",
+      "massKg": 8.5,
+      "centreOfMass": [2.079527568178766e-20, 0.032349612844836256, -0.0024189320551067633]
+    }
+  }
+}

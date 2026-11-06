@@ -1,0 +1,11 @@
+{
+  "id": "single_point_sling",
+  "file": "assets/models/single_point_sling.glb",
+  "parts": {
+    "single_point_sling": {
+      "node": "single_point_sling:compound",
+      "massKg": 0.19,
+      "centreOfMass": [0.14243918273820885, 0.004758831392018331, 0.00466946725224365]
+    }
+  }
+}

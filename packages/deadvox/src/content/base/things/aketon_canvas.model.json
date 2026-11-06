@@ -1,0 +1,11 @@
+{
+  "id": "aketon_canvas",
+  "file": "assets/models/aketon_canvas.glb",
+  "parts": {
+    "aketon_canvas": {
+      "node": "aketon_canvas:compound",
+      "massKg": 2.5,
+      "centreOfMass": [0, 0.04279854783932537, -0.0011827614474762837]
+    }
+  }
+}

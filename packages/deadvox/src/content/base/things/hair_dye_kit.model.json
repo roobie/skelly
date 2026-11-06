@@ -1,0 +1,11 @@
+{
+  "id": "hair_dye_kit",
+  "file": "assets/models/hair_dye_kit.glb",
+  "parts": {
+    "hair_dye_kit": {
+      "node": "hair_dye_kit:compound",
+      "massKg": 0.2,
+      "centreOfMass": [0.0002552236228630633, 0.11254236870019979, 0.0011851395021831904]
+    }
+  }
+}

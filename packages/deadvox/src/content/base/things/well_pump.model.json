@@ -1,0 +1,11 @@
+{
+  "id": "well_pump",
+  "file": "assets/models/well_pump.glb",
+  "parts": {
+    "well_pump": {
+      "node": "well_pump:compound",
+      "massKg": 3.5,
+      "centreOfMass": [0.005550819894677896, 0.07917699996040521, -0.007799916285331264]
+    }
+  }
+}

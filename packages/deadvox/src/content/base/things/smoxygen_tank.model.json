@@ -1,0 +1,11 @@
+{
+  "id": "smoxygen_tank",
+  "file": "assets/models/smoxygen_tank.glb",
+  "parts": {
+    "smoxygen_tank": {
+      "node": "smoxygen_tank:compound",
+      "massKg": 0.56,
+      "centreOfMass": [-0.00003423900650751611, 0.08522037852344286, 0.0009764606830260828]
+    }
+  }
+}

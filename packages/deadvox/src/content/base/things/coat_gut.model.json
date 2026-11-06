@@ -1,0 +1,11 @@
+{
+  "id": "coat_gut",
+  "file": "assets/models/coat_gut.glb",
+  "parts": {
+    "coat_gut": {
+      "node": "coat_gut:compound",
+      "massKg": 0.5,
+      "centreOfMass": [0, 0.016978830283458927, -0.005129709364908505]
+    }
+  }
+}

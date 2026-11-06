@@ -1,0 +1,147 @@
+[
+  {
+    "id": "cheap_ammo_pouch_belt223",
+    "model": "cheap_ammo_pouch_belt223",
+    "name": "Machine-gun belt pouch",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": ["Military"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "encumbrance": 4, "warmth": 0, "wearPerDamage": 0.002 },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 0.8 }] },
+    "fits": ["belt", "pals"],
+    "description": "A soft cotton pouch that holds a coiled belt of rifle rounds for a light machine gun, its end fed out through a slit in the side.",
+    "reference": "cheap_ammo_pouch_belt223",
+    "variants": [],
+    "notes": "An olive pouch 150 mm by 130 mm by 80 mm on the shared pouch helper, with a flap over half its front, a darker closing tab to a black fastener, a black feed slit in its right side, a webbing row across its foot and two straps on its back. CHECK VOLUME (x51): the reference's 40 ml is the empty cloth folded; standing open it is the size of a 200-round belt. Its one pocket is sized for that belt. The reference covers the torso; it mounts on a belt or a vest's webbing by the two straps on its back. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cheap_ammo_pouch_belt308",
+    "model": "cheap_ammo_pouch_belt308",
+    "name": "Heavy machine-gun belt pouch",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": ["Military"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "encumbrance": 4, "warmth": 0, "wearPerDamage": 0.002 },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 0.8 }] },
+    "fits": ["belt", "pals"],
+    "description": "A larger cotton pouch for a coiled belt of heavy rifle rounds, with a slit in its side to feed the belt straight into the gun.",
+    "reference": "cheap_ammo_pouch_belt308",
+    "variants": [],
+    "notes": "The light belt pouch's shape scaled to 190 mm by 150 mm by 95 mm, the size of a 100-round belt of the heavier round; its own row so the two read apart by size. CHECK VOLUME (x80): the reference's 40 ml is the empty cloth folded; the model is the pouch standing open. The reference covers the torso; it mounts on a belt or a vest's webbing by the two straps on its back. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "flintlock_pouch",
+    "model": "flintlock_pouch",
+    "name": "Cartridge box",
+    "category": "bag",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [2, 1], "handlingSimSeconds": 0.7 }] },
+    "fits": ["belt"],
+    "description": "A stiff black leather box worn on the belt, its deep flap keeping rolled paper cartridges dry for a muzzle-loading gun.",
+    "reference": "flintlock_pouch",
+    "variants": [],
+    "notes": "A black leather box 180 mm by 110 mm by 55 mm whose flap covers its whole front, a round brass plate on the flap, a brown closing tab with a brass stud at its foot and two brown belt loops on its back. The reference covers the torso; worn at the waist on its loops, it mounts on a belt and not on webbing. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "grenade_pouch",
+    "model": "grenade_pouch",
+    "name": "Grenade cartridge pouch",
+    "category": "bag",
+    "size": [1, 1],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2"] },
+    "wearable": { "encumbrance": 4, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 1], "handlingSimSeconds": 0.6, "name": "cell 1" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.6, "name": "cell 2" }
+      ]
+    },
+    "fits": ["belt", "pals"],
+    "description": "A small two-cell nylon pouch, each cell holding one launcher grenade cartridge under a snapped flap.",
+    "reference": "grenade_pouch",
+    "variants": [],
+    "notes": "Two round olive cells 50 mm across and 120 mm tall side by side, each under a darker flap with a black press stud, on a darker back panel with one strap. Each cell is sized for one 40 mm cartridge. The reference covers one leg; it mounts on a belt or webbing by its back strap, so it takes no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "grenadebandolier",
+    "model": "grenadebandolier",
+    "name": "Four-grenade pouch",
+    "category": "bag",
+    "size": [3, 2],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 1], "handlingSimSeconds": 0.7, "name": "cell 1" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.7, "name": "cell 2" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.7, "name": "cell 3" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.7, "name": "cell 4" }
+      ]
+    },
+    "fits": ["belt", "pals"],
+    "description": "A row of four round nylon cells on one back panel, each holding a hand grenade under a buckled lid.",
+    "reference": "grenadebandolier",
+    "variants": [],
+    "notes": "A coyote pouch 330 mm by 170 mm by 85 mm: four round cells 80 mm across under lids with lid straps down their fronts to black buckles, on a darker back panel with two strap rows. CHECK VOLUME (x4.5): the cells stand open round air the reference does not count. Each cell is sized for one hand grenade. The reference gives it no encumbrance; four grenades on a belt get in the way, so it takes 2. It mounts on a belt or a vest's webbing by its back straps. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leather_stone_pouch",
+    "model": "leather_stone_pouch",
+    "name": "Leather stone pouch",
+    "category": "bag",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1"] },
+    "wearable": { "encumbrance": 4, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [1, 1], "handlingSimSeconds": 0.5 }] },
+    "fits": ["belt", "pals"],
+    "description": "A heavy leather pouch with a doubled foot and a studded flap, for keeping a handful of throwing stones or sling shot at the hip.",
+    "reference": "leather_stone_pouch",
+    "variants": [],
+    "notes": "A brown leather pouch 120 mm by 130 mm by 65 mm with a black leather flap, a black doubled foot to take the stones' wear, a brass stud and one black strap on its back. The reference covers one leg; it mounts on a belt or webbing by its back strap, so it takes no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "stone_pouch",
+    "model": "stone_pouch",
+    "name": "Stone pouch",
+    "category": "bag",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1"] },
+    "wearable": { "encumbrance": 4, "warmth": 0, "wearPerDamage": 0.002 },
+    "container": { "pockets": [{ "grid": [1, 1], "handlingSimSeconds": 0.5 }] },
+    "fits": ["belt", "pals"],
+    "description": "A cotton duck pouch with a leather flap and foot, for keeping a handful of throwing stones or sling shot at the hip.",
+    "reference": "stone_pouch",
+    "variants": [],
+    "notes": "The leather stone pouch's shape with a canvas body, a brown leather flap, foot and strap and a steel stud; its own row rather than a finishes map so the two can part if one gains a drawstring. The reference covers one leg; it mounts on a belt or webbing by its back strap, so it takes no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "torso_bandolier_grenade",
+    "model": "torso_bandolier_grenade",
+    "name": "Grenade bandolier",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "vest", "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [4, 1], "handlingSimSeconds": 0.5 }] },
+    "description": "A broad leather sash worn over one shoulder and across the chest, with a row of wide loops for launcher grenade cartridges.",
+    "reference": "torso_bandolier_grenade",
+    "variants": [],
+    "notes": "A brown strap 65 mm wide lying flat as a closed loop 560 mm by 200 mm, its ends angled, a brass buckle near one end and eight empty black loops 48 mm across on its front run. CHECK VOLUME (x11): the reference counts the strap rolled up; laid flat its loop spans air. Its one pocket is sized for eight 40 mm cartridges. Worn across the torso over the shirt, it takes the vest slot as chest rigs do, so it does not go on with a load vest. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "torso_bandolier_shotgun",
+    "model": "torso_bandolier_shotgun",
+    "name": "Shotgun shell bandolier",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential", "Hunting", "Police"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "vest", "encumbrance": 3, "warmth": 0, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [3, 1], "handlingSimSeconds": 0.4 }] },
+    "description": "A leather sash worn over one shoulder and across the chest, with a row of loops that keep shotgun shells close to hand.",
+    "reference": "torso_bandolier_shotgun",
+    "variants": [],
+    "notes": "A brown strap 50 mm wide lying flat as a closed loop 640 mm by 200 mm, its ends angled, a brass buckle near one end and eighteen empty black shell loops on its front run. Its one pocket is sized for that many shells. Worn across the torso over the shirt, it takes the vest slot as chest rigs do, so it does not go on with a load vest. The worn look is pending: no worn model is authored."
+  }
+]

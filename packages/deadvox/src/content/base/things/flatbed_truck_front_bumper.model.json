@@ -1,0 +1,17 @@
+{
+  "id": "flatbed_truck_front_bumper",
+  "file": "assets/models/flatbed_truck_front_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 40,
+      "centreOfMass": [4.53176510989011, 0.8131868131868133, 0],
+      "collision": [
+        { "min": [4.46875, 0.53125, -1.25], "max": [4.59375, 1.09375, 1.25] },
+        { "min": [4.5625, 0.84375, -0.5], "max": [4.59375, 0.90625, 0.5] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

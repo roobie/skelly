@@ -1,0 +1,11 @@
+{
+  "id": "cloth_vest_padded",
+  "file": "assets/models/cloth_vest_padded.glb",
+  "parts": {
+    "cloth_vest_padded": {
+      "node": "cloth_vest_padded:compound",
+      "massKg": 0.69,
+      "centreOfMass": [0.00048562500000000016, 0.03146725694444445, -0.004970069444444444]
+    }
+  }
+}

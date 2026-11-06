@@ -1,0 +1,62 @@
+[
+  {
+    "id": "shark_plushie",
+    "model": "shark_plushie",
+    "name": "Shark plushie",
+    "category": "misc",
+    "size": [4, 8],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A stuffed cloth shark as long as a child is tall. Soft enough to sleep on.",
+    "reference": "shark_plushie",
+    "variants": [],
+    "notes": "CHECK VOLUME: the bounding box counts the fins and tail around a round stuffed body; the body itself holds about the reference 30 L. Comfort and morale have no content field yet."
+  },
+  {
+    "id": "teddy_bear",
+    "model": "teddy_bear",
+    "name": "Teddy bear",
+    "category": "misc",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A stuffed brown bear with a red ribbon at its neck.",
+    "reference": "teddy_bear",
+    "variants": [],
+    "notes": "The reference is a default plush toy whose variants are other animals; none are listed for this batch, so this model draws the bear. CHECK VOLUME: a sitting bear with its legs out fills a fifth of its box."
+  },
+  {
+    "id": "toy_figurine",
+    "model": "toy_figurine",
+    "name": "Action figure",
+    "category": "misc",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A plastic hero in a blue suit and red boots, on a round peg stand.",
+    "reference": "toy_figurine",
+    "variants": [],
+    "notes": "CHECK VOLUME: a standing figure with arms out fills a fraction of its box; its plastic body is near the reference 200 ml."
+  },
+  {
+    "id": "toy_figurine_large",
+    "model": "toy_figurine_large",
+    "name": "Collectible knight figure",
+    "category": "misc",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2", "Tier3"] },
+    "description": "A painted knight in grey armour and a red cape, sword planted before him, on a black plinth with a brass plaque.",
+    "reference": "toy_figurine_large",
+    "variants": [],
+    "notes": "Built from the small figure's shape at twice the size with a cape, sword and plinth, so the two read as one toy line. CHECK VOLUME: the figure and cape fill a small share of the plinth's box."
+  },
+  {
+    "id": "yoyo",
+    "model": "yoyo",
+    "name": "Yo-yo",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A red plastic yo-yo with its string wound on.",
+    "reference": "yoyo",
+    "variants": [],
+    "notes": "CHECK LENGTH: the reference 70 mm is the yo-yo itself; the model lays the string's tail and finger loop flat on the floor beside it, bent towards the front, which takes the footprint to 92 by 90 mm. CHECK VOLUME follows from the loose tail and the round body."
+  }
+]

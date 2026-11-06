@@ -1,0 +1,14 @@
+{
+  "id": "bulette_pearl",
+  "file": "assets/models/bulette_pearl.glb",
+  "parts": {
+    "bulette_pearl": {
+      "node": "bulette_pearl:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0.0009518837948252382, 0.0189470419125435, 0.000718868210016644]
+    }
+  },
+  "grip": { "at": [0, 0.019999999999999997, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "toilet_travel",
+  "file": "assets/models/toilet_travel.glb",
+  "parts": {
+    "toilet_travel": {
+      "node": "toilet_travel:compound",
+      "massKg": 1,
+      "centreOfMass": [0, 0.22573903262092238, -0.012254024281447578]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "sleeping_bag_roll",
+  "file": "assets/models/sleeping_bag_roll.glb",
+  "parts": {
+    "sleeping_bag_roll": {
+      "node": "sleeping_bag_roll:compound",
+      "massKg": 1.1,
+      "centreOfMass": [6.253728075550222e-20, 0.10035586300748467, 0.00000982838134119604]
+    }
+  }
+}

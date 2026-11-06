@@ -1,0 +1,11 @@
+{
+  "id": "qt_brigandine_hands",
+  "file": "assets/models/qt_brigandine_hands.glb",
+  "parts": {
+    "qt_brigandine_hands": {
+      "node": "qt_brigandine_hands:compound",
+      "massKg": 0.52,
+      "centreOfMass": [-2.606097832272405e-18, 0.012971052106208834, 0.017150329407067292]
+    }
+  }
+}

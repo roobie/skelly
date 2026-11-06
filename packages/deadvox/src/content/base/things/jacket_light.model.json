@@ -1,0 +1,11 @@
+{
+  "id": "jacket_light",
+  "file": "assets/models/jacket_light.glb",
+  "parts": {
+    "jacket_light": {
+      "node": "jacket_light:compound",
+      "massKg": 0.5,
+      "centreOfMass": [-0.0000022907587439937514, 0.022216616381718624, 0.006369985473237234]
+    }
+  }
+}

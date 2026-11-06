@@ -1,0 +1,11 @@
+{
+  "id": "ch_chainmail_suit",
+  "file": "assets/models/ch_chainmail_suit.glb",
+  "parts": {
+    "ch_chainmail_suit": {
+      "node": "ch_chainmail_suit:compound",
+      "massKg": 18,
+      "centreOfMass": [-3.072873155791579e-18, 0.05634303844992984, -0.0043998409882287206]
+    }
+  }
+}

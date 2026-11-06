@@ -1,0 +1,11 @@
+{
+  "id": "cot",
+  "file": "assets/models/cot.glb",
+  "parts": {
+    "cot": {
+      "node": "cot:compound",
+      "massKg": 7,
+      "centreOfMass": [-1.0186561324493698e-19, 0.08905811044833555, 0.00013276890513757935]
+    }
+  }
+}

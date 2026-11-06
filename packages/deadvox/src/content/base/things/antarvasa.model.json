@@ -1,0 +1,11 @@
+{
+  "id": "antarvasa",
+  "file": "assets/models/antarvasa.glb",
+  "parts": {
+    "antarvasa": {
+      "node": "antarvasa:compound",
+      "massKg": 0.45,
+      "centreOfMass": [0.00020389916801192106, 0.016054105834560323, -0.0001724645651132673]
+    }
+  }
+}

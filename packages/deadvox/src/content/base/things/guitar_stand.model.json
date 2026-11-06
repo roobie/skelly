@@ -1,0 +1,11 @@
+{
+  "id": "guitar_stand",
+  "file": "assets/models/guitar_stand.glb",
+  "parts": {
+    "guitar_stand": {
+      "node": "guitar_stand:compound",
+      "massKg": 0.34,
+      "centreOfMass": [-2.081612110860088e-18, 0.3026341616860648, 0.02627052532242843]
+    }
+  }
+}

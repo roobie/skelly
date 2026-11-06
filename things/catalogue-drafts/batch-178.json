@@ -1,0 +1,294 @@
+[
+  {
+    "id": "armor_aztec",
+    "model": "armor_aztec",
+    "name": "Quilted cotton armour",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 40,
+      "warmth": 80,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.05, "blunt": 0.5, "cut": 0.5, "pierce": 0.4 }
+    },
+    "description": "A sleeveless jacket of raw cotton packed thick between two quilted layers and stiffened with salt, its neck and armholes bound in leather. Very heavy and very hot.",
+    "reference": "armor_aztec",
+    "variants": [],
+    "notes": "Laid out flat, front up, collar towards +z, 480 mm across, 600 mm long and 40 mm thick: a sleeveless vest with a diamond lattice of khaki quilting over the cream cotton, deep armholes, a neck notch showing the khaki inside, and leather binding round the neck, down both armholes and along the hem. Box/volume x0.8: the padding is laid out flat rather than folded. Slot `torso`, as the gambesons have it: it is meant to be worn as the outer layer by itself. Protection is a judgement for very thick salted padding: strong against blows and cuts, fair against points. The mass follows the reference, which makes it heavier than a gambeson. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_lc_light_chestplate",
+    "model": "armor_lc_light_chestplate",
+    "name": "Mild steel light chestplate",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 15,
+      "warmth": 20,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.3, "cut": 0.55, "pierce": 0.35 }
+    },
+    "description": "A thin mild steel breastplate and backplate strapped together, with a single lame at the hips and small guards for the shoulders.",
+    "reference": "armor_lc_light_chestplate",
+    "variants": ["xl_armor_lc_light_chestplate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 600 mm from the shoulder straps to the fauld and 600 mm across the shoulder guards: a thin breastplate with one fauld lame below it and a single arched lame against each shoulder, a middle ridge and rolled neck and arm edges, the backplate's edge showing round the sides, tan leather shoulder straps buckled on the chest and side straps hanging loose. Box/volume runs x2 to x3.4 and longest x1.14 to x1.22 because the breastplate lies over its backplate with the guards spread beside it, where the reference packs them. Plate in `steel-bright`, the finish for mild steel. Slot `vest`, as the cuirasses and plate suits of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers the arms and upper legs too, through the shoulder guards and fauld; Deadvox gives a wearable one slot. Protection is a judgement for mild steel plate. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_lc_chestplate",
+    "model": "armor_lc_chestplate",
+    "name": "Mild steel chestplate",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 20,
+      "warmth": 20,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.15, "blunt": 0.4, "cut": 0.7, "pierce": 0.5 }
+    },
+    "description": "A mild steel breastplate and backplate a few millimetres thick, strapped at the shoulders and sides, with lames over the hips and guards for the shoulders.",
+    "reference": "armor_lc_chestplate",
+    "variants": ["xl_armor_lc_chestplate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 600 mm from the shoulder straps to the fauld and 650 mm across the shoulder guards: a breastplate with two fauld lames below it and a guard of two arched lames against each shoulder, a middle ridge and rolled neck and arm edges, the backplate's edge showing round the sides, tan leather shoulder straps buckled on the chest and side straps hanging loose. Box/volume runs x2 to x3.4 and longest x1.14 to x1.22 because the breastplate lies over its backplate with the guards spread beside it, where the reference packs them. Plate in `steel-bright`, the finish for mild steel. Slot `vest`, as the cuirasses and plate suits of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers the arms and upper legs too, through the shoulder guards and fauld; Deadvox gives a wearable one slot. Protection is a judgement for mild steel plate. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_lc_heavy_chestplate",
+    "model": "armor_lc_heavy_chestplate",
+    "name": "Mild steel heavy chestplate",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 25,
+      "warmth": 20,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.2, "blunt": 0.5, "cut": 0.8, "pierce": 0.6 }
+    },
+    "description": "A thick mild steel breastplate with a second plate riveted over the belly, a backplate, three lames over the hips and broad shoulder guards.",
+    "reference": "armor_lc_heavy_chestplate",
+    "variants": ["xl_armor_lc_heavy_chestplate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 600 mm from the shoulder straps to the fauld and 700 mm across the shoulder guards: a thick breastplate with a plackart riveted over the belly, three fauld lames and broad shoulder guards of three arched lames, a middle ridge and rolled neck and arm edges, the backplate's edge showing round the sides, tan leather shoulder straps buckled on the chest and side straps hanging loose. Box/volume runs x2 to x3.4 and longest x1.14 to x1.22 because the breastplate lies over its backplate with the guards spread beside it, where the reference packs them. Plate in `steel-bright`, the finish for mild steel. Slot `vest`, as the cuirasses and plate suits of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers the arms and upper legs too, through the shoulder guards and fauld; Deadvox gives a wearable one slot. Protection is a judgement for mild steel plate. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_ch_light_chestplate",
+    "model": "armor_lc_light_chestplate",
+    "name": "Hardened steel light chestplate",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 15,
+      "warmth": 20,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.11, "blunt": 0.34, "cut": 0.62, "pierce": 0.39 }
+    },
+    "finishes": { "back": "steel-hardened", "plate": "steel-hardened", "ridge": "steel-hardened" },
+    "description": "A thin hardened steel breastplate and backplate strapped together, with a single lame at the hips and small guards for the shoulders.",
+    "reference": "armor_ch_light_chestplate",
+    "variants": ["xl_armor_ch_light_chestplate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 600 mm from the shoulder straps to the fauld and 600 mm across the shoulder guards: a thin breastplate with one fauld lame below it and a single arched lame against each shoulder, a middle ridge and rolled neck and arm edges, the backplate's edge showing round the sides, tan leather shoulder straps buckled on the chest and side straps hanging loose. Box/volume runs x2 to x3.4 and longest x1.14 to x1.22 because the breastplate lies over its backplate with the guards spread beside it, where the reference packs them. Shares the mild steel model with the plate drawn in `steel-hardened`, the finish for hardened steel. Slot `vest`, as the cuirasses and plate suits of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers the arms and upper legs too, through the shoulder guards and fauld; Deadvox gives a wearable one slot. Protection is a judgement for hardened steel plate. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_ch_chestplate",
+    "model": "armor_lc_chestplate",
+    "name": "Hardened steel chestplate",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 20,
+      "warmth": 20,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.17, "blunt": 0.45, "cut": 0.78, "pierce": 0.56 }
+    },
+    "finishes": { "back": "steel-hardened", "plate": "steel-hardened", "ridge": "steel-hardened" },
+    "description": "A hardened steel breastplate and backplate a few millimetres thick, strapped at the shoulders and sides, with lames over the hips and guards for the shoulders.",
+    "reference": "armor_ch_chestplate",
+    "variants": ["xl_armor_ch_chestplate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 600 mm from the shoulder straps to the fauld and 650 mm across the shoulder guards: a breastplate with two fauld lames below it and a guard of two arched lames against each shoulder, a middle ridge and rolled neck and arm edges, the backplate's edge showing round the sides, tan leather shoulder straps buckled on the chest and side straps hanging loose. Box/volume runs x2 to x3.4 and longest x1.14 to x1.22 because the breastplate lies over its backplate with the guards spread beside it, where the reference packs them. Shares the mild steel model with the plate drawn in `steel-hardened`, the finish for hardened steel. Slot `vest`, as the cuirasses and plate suits of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers the arms and upper legs too, through the shoulder guards and fauld; Deadvox gives a wearable one slot. Protection is a judgement for hardened steel plate. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_ch_heavy_chestplate",
+    "model": "armor_lc_heavy_chestplate",
+    "name": "Hardened steel heavy chestplate",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 25,
+      "warmth": 20,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.22, "blunt": 0.56, "cut": 0.9, "pierce": 0.67 }
+    },
+    "finishes": { "back": "steel-hardened", "plate": "steel-hardened", "ridge": "steel-hardened" },
+    "description": "A thick hardened steel breastplate with a second plate riveted over the belly, a backplate, three lames over the hips and broad shoulder guards.",
+    "reference": "armor_ch_heavy_chestplate",
+    "variants": ["xl_armor_ch_heavy_chestplate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 600 mm from the shoulder straps to the fauld and 700 mm across the shoulder guards: a thick breastplate with a plackart riveted over the belly, three fauld lames and broad shoulder guards of three arched lames, a middle ridge and rolled neck and arm edges, the backplate's edge showing round the sides, tan leather shoulder straps buckled on the chest and side straps hanging loose. Box/volume runs x2 to x3.4 and longest x1.14 to x1.22 because the breastplate lies over its backplate with the guards spread beside it, where the reference packs them. Shares the mild steel model with the plate drawn in `steel-hardened`, the finish for hardened steel. Slot `vest`, as the cuirasses and plate suits of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers the arms and upper legs too, through the shoulder guards and fauld; Deadvox gives a wearable one slot. Protection is a judgement for hardened steel plate. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_hc_light_chestplate",
+    "model": "armor_lc_light_chestplate",
+    "name": "High steel light chestplate",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 15,
+      "warmth": 20,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.12, "blunt": 0.35, "cut": 0.65, "pierce": 0.41 }
+    },
+    "finishes": { "back": "steel-blued", "plate": "steel-blued", "ridge": "steel-blued" },
+    "description": "A thin high-carbon steel breastplate and backplate strapped together, with a single lame at the hips and small guards for the shoulders.",
+    "reference": "armor_hc_light_chestplate",
+    "variants": ["xl_armor_hc_light_chestplate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 600 mm from the shoulder straps to the fauld and 600 mm across the shoulder guards: a thin breastplate with one fauld lame below it and a single arched lame against each shoulder, a middle ridge and rolled neck and arm edges, the backplate's edge showing round the sides, tan leather shoulder straps buckled on the chest and side straps hanging loose. Box/volume runs x2 to x3.4 and longest x1.14 to x1.22 because the breastplate lies over its backplate with the guards spread beside it, where the reference packs them. Shares the mild steel model with the plate drawn in `steel-blued`, the finish for high steel. Slot `vest`, as the cuirasses and plate suits of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers the arms and upper legs too, through the shoulder guards and fauld; Deadvox gives a wearable one slot. Protection is a judgement for high steel plate. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_hc_chestplate",
+    "model": "armor_lc_chestplate",
+    "name": "High steel chestplate",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 20,
+      "warmth": 20,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.18, "blunt": 0.47, "cut": 0.83, "pierce": 0.59 }
+    },
+    "finishes": { "back": "steel-blued", "plate": "steel-blued", "ridge": "steel-blued" },
+    "description": "A high-carbon steel breastplate and backplate a few millimetres thick, strapped at the shoulders and sides, with lames over the hips and guards for the shoulders.",
+    "reference": "armor_hc_chestplate",
+    "variants": ["xl_armor_hc_chestplate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 600 mm from the shoulder straps to the fauld and 650 mm across the shoulder guards: a breastplate with two fauld lames below it and a guard of two arched lames against each shoulder, a middle ridge and rolled neck and arm edges, the backplate's edge showing round the sides, tan leather shoulder straps buckled on the chest and side straps hanging loose. Box/volume runs x2 to x3.4 and longest x1.14 to x1.22 because the breastplate lies over its backplate with the guards spread beside it, where the reference packs them. Shares the mild steel model with the plate drawn in `steel-blued`, the finish for high steel. Slot `vest`, as the cuirasses and plate suits of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers the arms and upper legs too, through the shoulder guards and fauld; Deadvox gives a wearable one slot. Protection is a judgement for high steel plate. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_hc_heavy_chestplate",
+    "model": "armor_lc_heavy_chestplate",
+    "name": "High steel heavy chestplate",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 25,
+      "warmth": 20,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.24, "blunt": 0.59, "cut": 0.9, "pierce": 0.71 }
+    },
+    "finishes": { "back": "steel-blued", "plate": "steel-blued", "ridge": "steel-blued" },
+    "description": "A thick high-carbon steel breastplate with a second plate riveted over the belly, a backplate, three lames over the hips and broad shoulder guards.",
+    "reference": "armor_hc_heavy_chestplate",
+    "variants": ["xl_armor_hc_heavy_chestplate"],
+    "notes": "Laid out flat, front up, neck towards -z, about 600 mm from the shoulder straps to the fauld and 700 mm across the shoulder guards: a thick breastplate with a plackart riveted over the belly, three fauld lames and broad shoulder guards of three arched lames, a middle ridge and rolled neck and arm edges, the backplate's edge showing round the sides, tan leather shoulder straps buckled on the chest and side straps hanging loose. Box/volume runs x2 to x3.4 and longest x1.14 to x1.22 because the breastplate lies over its backplate with the guards spread beside it, where the reference packs them. Shares the mild steel model with the plate drawn in `steel-blued`, the finish for high steel. Slot `vest`, as the cuirasses and plate suits of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers the arms and upper legs too, through the shoulder guards and fauld; Deadvox gives a wearable one slot. Protection is a judgement for high steel plate. The xl size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_cuirass",
+    "model": "armor_cuirass",
+    "name": "Bronze bell cuirass",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 15,
+      "warmth": 15,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.15, "blunt": 0.35, "cut": 0.55, "pierce": 0.4 }
+    },
+    "description": "An old-style bronze breastplate and backplate, the chest and belly hammered in raised lines and the hem flared out like a bell.",
+    "reference": "armor_cuirass",
+    "variants": ["xl_armor_cuirass", "xs_armor_cuirass"],
+    "notes": "Laid out flat, front up, neck towards -z, 500 mm from the neck to the flared hem and 440 mm across it: a polished bronze breastplate over its duller backplate, raised lines under the chest and down the belly, a rolled rim round the neck and armholes, a flared band at the hem, two pins down each side and tan leather ties over the shoulders. Box/volume x2.9: the backplate fills the breast's curve, so the pair lies as one closed body taller than the packed reference. Slot `vest`, as the cuirasses and plate suits of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. Protection is a judgement for hammered bronze plate. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_lamellar",
+    "model": "armor_lamellar",
+    "name": "Leather lamellar cuirass",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 8,
+      "warmth": 20,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0.05, "blunt": 0.25, "cut": 0.4, "pierce": 0.25 }
+    },
+    "description": "Rows of small hardened leather plates laced together into a cuirass, with short laced runs over the shoulders.",
+    "reference": "armor_lamellar",
+    "variants": ["xl_armor_lamellar", "xs_armor_lamellar"],
+    "notes": "Laid out flat, front up, neck towards -z, 560 mm from neck to hem and 740 mm across its shoulder guards: nine overlapping rows of chestnut leather plates laced across in tan, the neck open between two shoulder runs and bound in oxblood, the hem bound too, and a shorter laced panel either side for the shoulders. Box/volume x1.6, longest x1.23: laid out flat rather than packed. Slot `vest`, as the cuirasses and plate suits of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers the arms too, through the shoulder panels. Protection is a judgement for laced hardened leather. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_lamellar_lc",
+    "model": "armor_lamellar_lc",
+    "name": "Mild steel lamellar cuirass",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 22,
+      "warmth": 20,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.15, "blunt": 0.35, "cut": 0.65, "pierce": 0.45 }
+    },
+    "description": "Hundreds of small mild steel strips laced together in overlapping rows, with laced panels over the shoulders and thighs.",
+    "reference": "armor_lamellar_lc",
+    "variants": ["xl_armor_lamellar_lc", "xs_armor_lamellar_lc"],
+    "notes": "Laid out flat, front up, neck towards -z, 760 mm from neck to the hem of its thigh panels and 740 mm across its shoulder guards: nine overlapping rows of steel plates laced across in oxblood leather, the neck open between two shoulder runs and bound in black, a shorter laced panel either side for the shoulders, and two hanging panels of four rows over the thighs. Box/volume x2.25, longest x1.23: laid out flat rather than packed. Plates in `steel-bright`, the finish for mild steel. Slot `vest`, as the cuirasses and plate suits of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers the arms and legs too, through the shoulder and thigh panels. Protection is a judgement for laced mild steel lamellar, between mail and plate. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_lamellar_ch",
+    "model": "armor_lamellar_lc",
+    "name": "Hardened steel lamellar cuirass",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 22,
+      "warmth": 20,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.17, "blunt": 0.39, "cut": 0.73, "pierce": 0.5 }
+    },
+    "finishes": { "lame": "steel-hardened" },
+    "description": "Hundreds of small hardened steel strips laced together in overlapping rows, with laced panels over the shoulders and thighs. The plates were heat-treated after cutting.",
+    "reference": "armor_lamellar_ch",
+    "variants": ["xl_armor_lamellar_ch", "xs_armor_lamellar_ch"],
+    "notes": "Laid out flat, front up, neck towards -z, 760 mm from neck to the hem of its thigh panels and 740 mm across its shoulder guards: nine overlapping rows of steel plates laced across in oxblood leather, the neck open between two shoulder runs and bound in black, a shorter laced panel either side for the shoulders, and two hanging panels of four rows over the thighs. Box/volume x2.25, longest x1.23: laid out flat rather than packed. Shares the mild steel lamellar's model with the plates drawn in `steel-hardened`, the finish for hardened steel. Slot `vest`, as the cuirasses and plate suits of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers the arms and legs too, through the shoulder and thigh panels. Protection is a judgement for laced hardened steel lamellar, between mail and plate. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "armor_larmor_chest",
+    "model": "armor_larmor_chest",
+    "name": "Leather cuirass",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 17,
+      "warmth": 25,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0.08, "blunt": 0.3, "cut": 0.4, "pierce": 0.25 }
+    },
+    "description": "A breastplate of thick moulded leather laced to its backplate at the sides, with layered leather flaps hanging over each shoulder.",
+    "reference": "armor_larmor_chest",
+    "variants": ["xl_armor_larmor_chest", "armor_larmor_chest_xs"],
+    "notes": "Laid out flat, front up, neck towards -z, 490 mm from neck to waist and 660 mm across the shoulder flaps: a curved chestnut breastplate with faint raised chest lobes and a black stitched edge, its backplate showing round the sides, four tan thongs lacing each side, and three overlapping flaps over each shoulder, the top one bound and studded. CHECK VOLUME x7.15: the reference packs the cuirass tight; laid out with the shoulder flaps spread and the curved breast over the back, its box is mostly air. Slot `vest`, as the cuirasses and plate suits of earlier armour batches have it, so a padded or cloth `torso` layer goes under it. The reference covers the arms too, through the shoulder flaps. Protection is a judgement for moulded leather. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  }
+]

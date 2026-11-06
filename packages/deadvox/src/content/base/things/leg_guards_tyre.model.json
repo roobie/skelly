@@ -1,0 +1,11 @@
+{
+  "id": "leg_guards_tyre",
+  "file": "assets/models/leg_guards_tyre.glb",
+  "parts": {
+    "leg_guards_tyre": {
+      "node": "leg_guards_tyre:compound",
+      "massKg": 3,
+      "centreOfMass": [0.2732891698428932, 0.027900976108580444, -0.00013345728362930878]
+    }
+  }
+}

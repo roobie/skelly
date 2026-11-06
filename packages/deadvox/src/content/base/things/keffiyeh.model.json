@@ -1,0 +1,11 @@
+{
+  "id": "keffiyeh",
+  "file": "assets/models/keffiyeh.glb",
+  "parts": {
+    "keffiyeh": {
+      "node": "keffiyeh:compound",
+      "massKg": 0.29,
+      "centreOfMass": [0.0002045519747537534, 0.017229702591565456, 0.0008076886296260886]
+    }
+  }
+}

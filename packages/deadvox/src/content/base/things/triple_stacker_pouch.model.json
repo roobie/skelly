@@ -1,0 +1,11 @@
+{
+  "id": "triple_stacker_pouch",
+  "file": "assets/models/triple_stacker_pouch.glb",
+  "parts": {
+    "triple_stacker_pouch": {
+      "node": "triple_stacker_pouch:compound",
+      "massKg": 0.25,
+      "centreOfMass": [-1.0954946363646362e-18, 0.09846723835380591, 0.0002385855709697706]
+    }
+  }
+}

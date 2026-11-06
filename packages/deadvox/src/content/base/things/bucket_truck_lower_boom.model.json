@@ -1,0 +1,17 @@
+{
+  "id": "bucket_truck_lower_boom",
+  "file": "assets/models/bucket_truck_lower_boom.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 330,
+      "centreOfMass": [-0.5281585720680394, 2.46875, 0.002140219337511191],
+      "collision": [
+        { "min": [-2.25, 2.3125, -0.15625], "max": [1.1875, 2.625, 0.15625] },
+        { "min": [-1.65625, 2.4375, 0.125], "max": [1, 2.5, 0.15625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

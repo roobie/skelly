@@ -1,0 +1,14 @@
+{
+  "id": "glass_cutter",
+  "file": "assets/models/glass_cutter.glb",
+  "parts": {
+    "glass_cutter": {
+      "node": "glass_cutter:compound",
+      "massKg": 0.041,
+      "centreOfMass": [0.06313174839029223, -0.00007478949975235264, 0]
+    }
+  },
+  "grip": { "at": [0.059000000000000004, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

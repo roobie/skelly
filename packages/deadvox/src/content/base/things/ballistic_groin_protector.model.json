@@ -1,0 +1,11 @@
+{
+  "id": "ballistic_groin_protector",
+  "file": "assets/models/ballistic_groin_protector.glb",
+  "parts": {
+    "ballistic_groin_protector": {
+      "node": "ballistic_groin_protector:compound",
+      "massKg": 0.47,
+      "centreOfMass": [0.013201383268339372, 0.008187918475461704, -0.012013979839599735]
+    }
+  }
+}

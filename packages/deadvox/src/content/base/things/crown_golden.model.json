@@ -1,0 +1,11 @@
+{
+  "id": "crown_golden",
+  "file": "assets/models/crown_golden.glb",
+  "parts": {
+    "crown_golden": {
+      "node": "crown_golden:compound",
+      "massKg": 1.9,
+      "centreOfMass": [5.600288064371419e-19, 0.04472883724993441, 6.503560332818422e-19]
+    }
+  }
+}

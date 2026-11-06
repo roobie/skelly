@@ -1,0 +1,14 @@
+{
+  "id": "lug_wrench",
+  "file": "assets/models/lug_wrench.glb",
+  "parts": {
+    "lug_wrench": {
+      "node": "lug_wrench:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0.04851169927119295, 0.011986958189489834, 0.03158036056770234]
+    }
+  },
+  "grip": { "at": [-0.014000000000000012, 0.012, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

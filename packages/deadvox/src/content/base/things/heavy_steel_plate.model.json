@@ -1,0 +1,11 @@
+{
+  "id": "heavy_steel_plate",
+  "file": "assets/models/heavy_steel_plate.glb",
+  "parts": {
+    "heavy_steel_plate": {
+      "node": "heavy_steel_plate:compound",
+      "massKg": 3.2,
+      "centreOfMass": [-8.195993188536315e-19, 0.016283874163983157, 0.006663859301461482]
+    }
+  }
+}

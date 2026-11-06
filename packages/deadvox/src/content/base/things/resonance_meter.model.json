@@ -1,0 +1,11 @@
+{
+  "id": "resonance_meter",
+  "file": "assets/models/resonance_meter.glb",
+  "parts": {
+    "resonance_meter": {
+      "node": "resonance_meter:compound",
+      "massKg": 0.95,
+      "centreOfMass": [0.004669705469845724, 0.04226764843384761, -0.0003749415614773259]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "mre_bag_spread",
+  "file": "assets/models/mre_bag_spread.glb",
+  "parts": {
+    "mre_bag_spread": {
+      "node": "mre_bag_spread:compound",
+      "massKg": 0.018,
+      "centreOfMass": [0, 0.003408163265306123, 0]
+    }
+  }
+}

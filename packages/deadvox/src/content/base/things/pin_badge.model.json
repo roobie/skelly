@@ -1,0 +1,7 @@
+{
+  "id": "pin_badge",
+  "file": "assets/models/pin_badge.glb",
+  "parts": {
+    "pin_badge": { "node": "pin_badge:compound", "massKg": 0.003, "centreOfMass": [0, 0.002326086956521739, 0] }
+  }
+}

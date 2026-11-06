@@ -1,0 +1,11 @@
+{
+  "id": "gold_lip_ring_stud",
+  "file": "assets/models/gold_lip_ring_stud.glb",
+  "parts": {
+    "gold_lip_ring_stud": {
+      "node": "gold_lip_ring_stud:compound",
+      "massKg": 0.003,
+      "centreOfMass": [0.001, 0.0052727272727272735, 0.001]
+    }
+  }
+}

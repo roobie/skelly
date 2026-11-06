@@ -1,0 +1,11 @@
+{
+  "id": "boots_fur",
+  "file": "assets/models/boots_fur.glb",
+  "parts": {
+    "boots_fur": {
+      "node": "boots_fur:compound",
+      "massKg": 1.3,
+      "centreOfMass": [1.4701543814748336e-18, 0.09790707220312085, -0.04495583179053161]
+    }
+  }
+}

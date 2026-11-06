@@ -1,0 +1,11 @@
+{
+  "id": "sunflower",
+  "file": "assets/models/sunflower.glb",
+  "parts": {
+    "sunflower": {
+      "node": "sunflower:compound",
+      "massKg": 0.66,
+      "centreOfMass": [-0.010632622793497552, 0.016098234798034145, -1.9244030884997896e-19]
+    }
+  }
+}

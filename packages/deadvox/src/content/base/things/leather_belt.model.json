@@ -1,0 +1,11 @@
+{
+  "id": "leather_belt",
+  "file": "assets/models/leather_belt.glb",
+  "parts": {
+    "leather_belt": {
+      "node": "leather_belt:compound",
+      "massKg": 0.12,
+      "centreOfMass": [0.01332025582283314, 0.002113211149293622, 0.0024510309278350526]
+    }
+  }
+}

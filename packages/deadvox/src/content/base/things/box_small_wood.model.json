@@ -1,0 +1,14 @@
+{
+  "id": "box_small_wood",
+  "file": "assets/models/box_small_wood.glb",
+  "parts": {
+    "box_small_wood": {
+      "node": "box_small_wood:compound",
+      "massKg": 0.71,
+      "centreOfMass": [0, 0.0573852480082241, -0.00004077786344555816]
+    }
+  },
+  "grip": { "at": [0, 0.042, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

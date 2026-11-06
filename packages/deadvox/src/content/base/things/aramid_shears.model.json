@@ -1,0 +1,14 @@
+{
+  "id": "aramid_shears",
+  "file": "assets/models/aramid_shears.glb",
+  "parts": {
+    "aramid_shears": {
+      "node": "aramid_shears:compound",
+      "massKg": 0.088,
+      "centreOfMass": [-0.019518584070796464, 0.00436637168141593, -0.002269026548672566]
+    }
+  },
+  "grip": { "at": [-0.073, 0.004, 0.019000000000000003], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

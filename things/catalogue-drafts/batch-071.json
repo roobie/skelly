@@ -1,0 +1,101 @@
+[
+  {
+    "id": "metal_funnel",
+    "model": "metal_funnel",
+    "name": "Steel rain funnel",
+    "category": "tool",
+    "size": [5, 5],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A wide galvanised steel funnel for gathering rainwater into a container set beneath it.",
+    "reference": "metal_funnel",
+    "variants": [],
+    "notes": "0.5 m across the rim and 0.43 m tall, standing on its spout, a rolled rim, a hanging tab and a coarse strainer in the throat. CHECK VOLUME (x31): the funnel is a thin hollow cone, so its bounding box is mostly air; the reference's 4 L is about the steel's packed bulk. Mass matches the reference. Setting it up outside to catch rain has no field in this draft. The size is a placeholder."
+  },
+  {
+    "id": "tarp_raincatcher",
+    "model": "tarp_raincatcher",
+    "name": "Rain catcher kit",
+    "category": "tool",
+    "size": [2, 8],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A tarpaulin rolled up with a bundle of poles and cord, ready to be rigged into a sheet that runs rain into a container.",
+    "reference": "tarp_raincatcher",
+    "variants": [],
+    "notes": "A blue tarp rolled to 0.9 m by 0.13 m with grommets along its edge, two cord ties, a spare hank of cord on top and four 1.2 m bark poles lashed alongside. CHECK VOLUME (x9): the poles stretch the bounding box; their own bulk and the roll come near the reference's 4 L. Modelled packed, as a player carries it; the rigged state would need item states. Mass matches the reference. The size is a placeholder."
+  },
+  {
+    "id": "balance_small",
+    "model": "balance_small",
+    "name": "Triple-beam balance",
+    "category": "tool",
+    "size": [4, 2],
+    "economy": { "usage": ["Medical", "Industrial"], "tiers": ["Tier2"] },
+    "tool": { "qualities": { "weighing": 1 } },
+    "description": "A mechanical balance with a steel pan and three beams carrying sliding weights, for weighing small samples precisely.",
+    "reference": "balance_small",
+    "variants": [],
+    "notes": "0.36 m long: a dark cast base, a 140 mm pan on the left, three stainless beams with brass riders, a scale of ticks, a pointer and a zero mark at the right. weighing is a new quality name for measuring out chemistry and cooking ingredients; the reference lists none. Mass matches the reference."
+  },
+  {
+    "id": "barometer",
+    "model": "barometer",
+    "name": "Pocket barometer",
+    "category": "tool",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A small plastic dial that reads air pressure, so falling weather can be seen coming.",
+    "reference": "barometer",
+    "variants": [],
+    "notes": "A 64 mm dark plastic case 14 mm deep with a hanging lug, a white dial with ticks, a red needle and blue and yellow marks for rain and fair. The clear cover is left off so the dial shows. Mass matches the reference. Reading the weather waits on the refactor."
+  },
+  {
+    "id": "canister_goo",
+    "model": "canister_goo",
+    "name": "Sealed hazard canister",
+    "category": "misc",
+    "size": [1, 2],
+    "economy": { "usage": ["Industrial", "Military"], "tiers": ["Tier3", "Tier4"] },
+    "description": "A heavy steel canister with a bolted lid and a hazard band. Through its narrow sight glass something green shifts as you turn it.",
+    "reference": "canister_goo",
+    "variants": [],
+    "notes": "60 mm across and 100 mm tall: stainless body, eight bolts on a domed lid, a hi-vis band with black chevrons and a teal sight glass; the tiles show the glass opaque. The reference's 1.6 kg is kept; it is heavy for its size, as a thick-walled container would be. Opening it and what comes out wait on the refactor."
+  },
+  {
+    "id": "ammonia_machine_pipework",
+    "model": "ammonia_machine_pipework",
+    "name": "Ammonia plant pipework",
+    "category": "misc",
+    "size": [10, 4],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier3", "Tier4"] },
+    "description": "A skid of thick-walled pipe runs, two electric compressors and a control cabinet, built to feed gas to an ammonia reactor and power its smaller electrics.",
+    "reference": "ammonia_machine_pipework",
+    "variants": [],
+    "notes": "3 m by 0.9 m and 1.1 m tall: a yellow skid with pipe posts, three flanged steel pipe runs with two gauges, two blue compressors on charcoal motors with risers to the pipes, a white control cabinet with a green screen and a red switch, and cables running to the compressors. The pipes end in open flanges at +x to meet the reactor's inlet and outlet. CHECK VOLUME (x29): an open frame of pipes leaves its box mostly air. Mass and length match the reference. It is one half of a placed machine with the reactor; whether it gets its own workstation entry or only counts as the reactor's required neighbour waits on the refactor. The size is a placeholder. The iso tile renders dark at this size; the front and side tiles read."
+  },
+  {
+    "id": "ammonia_machine_reactor",
+    "model": "ammonia_machine_reactor",
+    "name": "Ammonia reactor",
+    "category": "misc",
+    "size": [5, 5],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier3", "Tier4"] },
+    "workstation": { "id": "ammonia_machine_reactor", "qualities": { "ammonia_synthesis": 1 } },
+    "description": "A salvaged electric pressure vessel rigged to make ammonia from nitrogen and hydrogen. Crude, slow and hungry for power.",
+    "reference": "ammonia_machine_reactor",
+    "variants": [],
+    "notes": "2.9 m tall: a 0.7 m steel vessel with domed heads on four legs over a yellow skid, four aluminium heating jacket bands, a red relief valve, a gauge and a thermowell on top, flanged inlet and outlet at +x facing the pipework, a hazard plate, and a white power cabinet with conduit to the jacket. CHECK VOLUME (x25): the round vessel, legs and cabinet leave much of the 1.3 m square box empty. Mass and height match the reference. ammonia_synthesis is a new quality name for recipes that make ammonia; the reference lists none. It needs the pipework beside it and electric power, which wait on the refactor. The size is a placeholder; the iso tile renders dark at this size."
+  },
+  {
+    "id": "analytical_set_basic",
+    "model": "analytical_set_basic",
+    "name": "Field chemistry analysis kit",
+    "category": "tool",
+    "size": [4, 4],
+    "economy": { "usage": ["Industrial", "Medical"], "tiers": ["Tier2", "Tier3"] },
+    "tool": { "qualities": { "analysis": 1 } },
+    "description": "A hard case of basic lab instruments for checking what a chemical really is: a balance, a spectrophotometer, a melting point block, a pH meter, cuvettes and chromatography paper.",
+    "reference": "analytical_set_basic",
+    "variants": [],
+    "notes": "An aluminium case 0.44 m by 0.32 m and 0.14 m deep, modelled open with its foam-lined lid up behind, the instruments in black foam: a white digital balance, a grey spectrophotometer with screen and keys, a white melting point block with a thermometer, a grey pH meter and probe, a rack of six frosted cuvettes and a stack of paper. CHECK VOLUME (x15): the raised lid makes the box mostly air; the closed case is about 20 L against the reference's 5 L, which is small for these instruments. Mass matches the reference. analysis is a new quality name for the reference's ANALYSIS quality."
+  }
+]

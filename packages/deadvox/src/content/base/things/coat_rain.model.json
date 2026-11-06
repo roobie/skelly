@@ -1,0 +1,11 @@
+{
+  "id": "coat_rain",
+  "file": "assets/models/coat_rain.glb",
+  "parts": {
+    "coat_rain": {
+      "node": "coat_rain:compound",
+      "massKg": 0.87,
+      "centreOfMass": [-1.720604498290229e-19, 0.015150494019760785, -0.004678523140925637]
+    }
+  }
+}

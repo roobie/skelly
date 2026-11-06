@@ -1,0 +1,11 @@
+{
+  "id": "bunker_coat",
+  "file": "assets/models/bunker_coat.glb",
+  "parts": {
+    "bunker_coat": {
+      "node": "bunker_coat:compound",
+      "massKg": 2.1,
+      "centreOfMass": [-0.0013524410881387008, 0.03480461261646925, -0.003180524805522299]
+    }
+  }
+}

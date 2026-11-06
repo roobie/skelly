@@ -1,0 +1,11 @@
+{
+  "id": "lowtops",
+  "file": "assets/models/lowtops.glb",
+  "parts": {
+    "lowtops": {
+      "node": "lowtops:compound",
+      "massKg": 0.8,
+      "centreOfMass": [9.604146533790362e-18, 0.03708456644839557, -0.017750471884976585]
+    }
+  }
+}

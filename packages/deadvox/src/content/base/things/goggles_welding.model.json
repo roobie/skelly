@@ -1,0 +1,11 @@
+{
+  "id": "goggles_welding",
+  "file": "assets/models/goggles_welding.glb",
+  "parts": {
+    "goggles_welding": {
+      "node": "goggles_welding:compound",
+      "massKg": 0.18,
+      "centreOfMass": [-1.290763169270119e-18, 0.030198895690793422, -0.021667626935541955]
+    }
+  }
+}

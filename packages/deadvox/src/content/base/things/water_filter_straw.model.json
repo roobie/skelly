@@ -1,0 +1,14 @@
+{
+  "id": "water_filter_straw",
+  "file": "assets/models/water_filter_straw.glb",
+  "parts": {
+    "water_filter_straw": {
+      "node": "water_filter_straw:compound",
+      "massKg": 0.065,
+      "centreOfMass": [-0.0032746867167919823, 0, 0]
+    }
+  },
+  "grip": { "at": [-0.0020000000000000018, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

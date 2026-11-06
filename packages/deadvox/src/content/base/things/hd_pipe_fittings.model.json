@@ -1,0 +1,11 @@
+{
+  "id": "hd_pipe_fittings",
+  "file": "assets/models/hd_pipe_fittings.glb",
+  "parts": {
+    "hd_pipe_fittings": {
+      "node": "hd_pipe_fittings:compound",
+      "massKg": 3.5,
+      "centreOfMass": [0.005159172832479603, 0.023954088408271672, 0.001268450009485869]
+    }
+  }
+}

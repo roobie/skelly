@@ -1,0 +1,11 @@
+{
+  "id": "hot_pants",
+  "file": "assets/models/hot_pants.glb",
+  "parts": {
+    "hot_pants": {
+      "node": "hot_pants:compound",
+      "massKg": 0.18,
+      "centreOfMass": [0.000026428694010640116, 0.010333962587952635, 0.0012785309764887592]
+    }
+  }
+}

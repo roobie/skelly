@@ -1,0 +1,14 @@
+{
+  "id": "mop",
+  "file": "assets/models/mop.glb",
+  "parts": {
+    "mop": {
+      "node": "mop:compound",
+      "massKg": 0.52,
+      "centreOfMass": [0.23738483824239495, 0.012257267020762914, 0.00012322549492998415]
+    }
+  },
+  "grip": { "at": [-0.14600000000000002, 0.016, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

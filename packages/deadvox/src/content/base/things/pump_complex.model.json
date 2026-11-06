@@ -1,0 +1,11 @@
+{
+  "id": "pump_complex",
+  "file": "assets/models/pump_complex.glb",
+  "parts": {
+    "pump_complex": {
+      "node": "pump_complex:compound",
+      "massKg": 4,
+      "centreOfMass": [0.0025280054139819497, 0.04595437355338063, 0.012322922412861622]
+    }
+  }
+}

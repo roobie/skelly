@@ -1,0 +1,11 @@
+{
+  "id": "gloves_tactical",
+  "file": "assets/models/gloves_tactical.glb",
+  "parts": {
+    "gloves_tactical": {
+      "node": "gloves_tactical:compound",
+      "massKg": 0.15,
+      "centreOfMass": [-3.2925186187442525e-18, 0.009076285812909904, 0.037138419054193995]
+    }
+  }
+}

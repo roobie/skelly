@@ -1,0 +1,11 @@
+{
+  "id": "shelter_kit",
+  "file": "assets/models/shelter_kit.glb",
+  "parts": {
+    "shelter_kit": {
+      "node": "shelter_kit:compound",
+      "massKg": 6.5,
+      "centreOfMass": [0.00011513896561728736, 0.08766178475332756, -0.0006409548148118701]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "foot_protectors_eod",
+  "file": "assets/models/foot_protectors_eod.glb",
+  "parts": {
+    "foot_protectors_eod": {
+      "node": "foot_protectors_eod:compound",
+      "massKg": 3.2,
+      "centreOfMass": [4.0363348800788186e-18, 0.06898545641690333, -0.027720603091702718]
+    }
+  }
+}

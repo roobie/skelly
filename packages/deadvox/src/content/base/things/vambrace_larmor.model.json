@@ -1,0 +1,11 @@
+{
+  "id": "vambrace_larmor",
+  "file": "assets/models/vambrace_larmor.glb",
+  "parts": {
+    "vambrace_larmor": {
+      "node": "vambrace_larmor:compound",
+      "massKg": 0.2,
+      "centreOfMass": [-0.0015684774292272355, 0.019479724560061196, 0.0038010711553175106]
+    }
+  }
+}

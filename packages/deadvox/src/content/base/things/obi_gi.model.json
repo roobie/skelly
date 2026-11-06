@@ -1,0 +1,11 @@
+{
+  "id": "obi_gi",
+  "file": "assets/models/obi_gi.glb",
+  "parts": {
+    "obi_gi": {
+      "node": "obi_gi:compound",
+      "massKg": 0.11,
+      "centreOfMass": [-4.304729159488841e-18, 0.0042645958692470315, 0.09728264758497315]
+    }
+  }
+}

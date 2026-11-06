@@ -1,0 +1,14 @@
+{
+  "id": "jet_injector",
+  "file": "assets/models/jet_injector.glb",
+  "parts": {
+    "jet_injector": {
+      "node": "jet_injector:compound",
+      "massKg": 0.25,
+      "centreOfMass": [-0.0071696858049329635, 0.05225944120356155, 0]
+    }
+  },
+  "grip": { "at": [-0.035, 0.025, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

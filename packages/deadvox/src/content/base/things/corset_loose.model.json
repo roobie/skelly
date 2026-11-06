@@ -1,0 +1,11 @@
+{
+  "id": "corset_loose",
+  "file": "assets/models/corset_loose.glb",
+  "parts": {
+    "corset_loose": {
+      "node": "corset_loose:compound",
+      "massKg": 0.67,
+      "centreOfMass": [0.000004938630256389539, 0.006953591400973213, 0.0002485293049604166]
+    }
+  }
+}

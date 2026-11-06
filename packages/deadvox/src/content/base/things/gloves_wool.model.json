@@ -1,0 +1,11 @@
+{
+  "id": "gloves_wool",
+  "file": "assets/models/gloves_wool.glb",
+  "parts": {
+    "gloves_wool": {
+      "node": "gloves_wool:compound",
+      "massKg": 0.1,
+      "centreOfMass": [-2.0633577849226293e-17, 0.007286930766382819, 0.029326915957052935]
+    }
+  }
+}

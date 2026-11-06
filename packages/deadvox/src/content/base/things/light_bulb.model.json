@@ -1,0 +1,7 @@
+{
+  "id": "light_bulb",
+  "file": "assets/models/light_bulb.glb",
+  "parts": {
+    "light_bulb": { "node": "light_bulb:compound", "massKg": 0.029, "centreOfMass": [0, 0.06655415195987369, 0] }
+  }
+}

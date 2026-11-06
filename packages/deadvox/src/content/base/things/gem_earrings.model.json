@@ -1,0 +1,11 @@
+{
+  "id": "gem_earrings",
+  "file": "assets/models/gem_earrings.glb",
+  "parts": {
+    "gem_earrings": {
+      "node": "gem_earrings:compound",
+      "massKg": 0.004,
+      "centreOfMass": [0, 0.0017692307692307693, 0.0023076923076923083]
+    }
+  }
+}

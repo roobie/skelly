@@ -1,0 +1,14 @@
+{
+  "id": "throw_extinguisher",
+  "file": "assets/models/throw_extinguisher.glb",
+  "parts": {
+    "throw_extinguisher": {
+      "node": "throw_extinguisher:compound",
+      "massKg": 0.4,
+      "centreOfMass": [0, 0.04473185751032817, 0]
+    }
+  },
+  "grip": { "at": [0, 0.042, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "winter_jacket_army",
+  "file": "assets/models/winter_jacket_army.glb",
+  "parts": {
+    "winter_jacket_army": {
+      "node": "winter_jacket_army:compound",
+      "massKg": 1.6,
+      "centreOfMass": [0.000051440124022012063, 0.028936493114421175, -0.005193131646464738]
+    }
+  }
+}

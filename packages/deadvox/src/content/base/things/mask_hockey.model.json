@@ -1,0 +1,11 @@
+{
+  "id": "mask_hockey",
+  "file": "assets/models/mask_hockey.glb",
+  "parts": {
+    "mask_hockey": {
+      "node": "mask_hockey:compound",
+      "massKg": 0.2,
+      "centreOfMass": [1.7583553865384726e-18, 0.10903552991193435, -0.035177042210750055]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "footrags_leather",
+  "file": "assets/models/footrags_leather.glb",
+  "parts": {
+    "footrags_leather": {
+      "node": "footrags_leather:compound",
+      "massKg": 0.24,
+      "centreOfMass": [-0.00044696651254028374, 0.004296763345943673, 0.005410956984727477]
+    }
+  }
+}

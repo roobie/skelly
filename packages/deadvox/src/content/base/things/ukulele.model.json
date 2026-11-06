@@ -1,0 +1,14 @@
+{
+  "id": "ukulele",
+  "file": "assets/models/ukulele.glb",
+  "parts": {
+    "ukulele": {
+      "node": "ukulele:compound",
+      "massKg": 0.36,
+      "centreOfMass": [-0.14098453281623374, 0.032312776585971655, 2.2139601639858195e-7]
+    }
+  },
+  "grip": { "at": [0.06, 0.047, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,11 @@
+{
+  "id": "karate_gi",
+  "file": "assets/models/karate_gi.glb",
+  "parts": {
+    "karate_gi": {
+      "node": "karate_gi:compound",
+      "massKg": 0.69,
+      "centreOfMass": [0.0017621172807472758, 0.021361245459263104, 0.0015560352880124547]
+    }
+  }
+}

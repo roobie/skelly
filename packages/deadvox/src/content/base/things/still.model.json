@@ -1,0 +1,11 @@
+{
+  "id": "still",
+  "file": "assets/models/still.glb",
+  "parts": {
+    "still": {
+      "node": "still:compound",
+      "massKg": 18,
+      "centreOfMass": [-0.016509567089635222, 0.16717343592820713, 0.000227951220373083]
+    }
+  }
+}

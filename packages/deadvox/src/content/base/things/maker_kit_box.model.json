@@ -1,0 +1,11 @@
+{
+  "id": "maker_kit_box",
+  "file": "assets/models/maker_kit_box.glb",
+  "parts": {
+    "maker_kit_box": {
+      "node": "maker_kit_box:compound",
+      "massKg": 0.27,
+      "centreOfMass": [0.00004673371939449353, 0.027879264451894734, -0.00019611906938941378]
+    }
+  }
+}

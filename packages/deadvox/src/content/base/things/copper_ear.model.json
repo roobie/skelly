@@ -1,0 +1,11 @@
+{
+  "id": "copper_ear",
+  "file": "assets/models/copper_ear.glb",
+  "parts": {
+    "copper_ear": {
+      "node": "copper_ear:compound",
+      "massKg": 0.016,
+      "centreOfMass": [-2.3357886273146487e-19, 0.0021084337349397595, 0.0010120481927710845]
+    }
+  }
+}

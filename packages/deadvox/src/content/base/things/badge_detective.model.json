@@ -1,0 +1,11 @@
+{
+  "id": "badge_detective",
+  "file": "assets/models/badge_detective.glb",
+  "parts": {
+    "badge_detective": {
+      "node": "badge_detective:compound",
+      "massKg": 0.1,
+      "centreOfMass": [-4.710050198871664e-19, 0.005043236565781347, -0.0021266213712167995]
+    }
+  }
+}

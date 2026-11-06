@@ -7,7 +7,7 @@
       "item": "revolver_ejector",
       "node": "revolver_ejector:revolver-ejector",
       "massKg": 0.025,
-      "centreOfMass": [0.03951111111111112, -6.320921253135755e-20, -0.00004444444444444446]
+      "centreOfMass": [0.03800000000000002, -2.0611699738486156e-20, -2.0611699738486156e-20]
     }
   }
 }

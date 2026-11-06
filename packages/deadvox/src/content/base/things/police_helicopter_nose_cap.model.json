@@ -1,0 +1,17 @@
+{
+  "id": "police_helicopter_nose_cap",
+  "file": "assets/models/police_helicopter_nose_cap.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 8,
+      "centreOfMass": [2.398177083333333, 1.1015625, 0],
+      "collision": [
+        { "min": [2.375, 0.96875, -0.34375], "max": [2.40625, 1.28125, 0.34375] },
+        { "min": [2.40625, 1, -0.1875], "max": [2.4375, 1.1875, 0.1875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

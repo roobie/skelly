@@ -1,0 +1,11 @@
+{
+  "id": "armor_scrapsuit",
+  "file": "assets/models/armor_scrapsuit.glb",
+  "parts": {
+    "armor_scrapsuit": {
+      "node": "armor_scrapsuit:compound",
+      "massKg": 9.7,
+      "centreOfMass": [-0.0008580125890001032, 0.00504127541017439, -0.030933959343720976]
+    }
+  }
+}

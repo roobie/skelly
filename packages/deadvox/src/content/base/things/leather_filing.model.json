@@ -1,0 +1,14 @@
+{
+  "id": "leather_filing",
+  "file": "assets/models/leather_filing.glb",
+  "parts": {
+    "leather_filing": {
+      "node": "leather_filing:compound",
+      "massKg": 0.036,
+      "centreOfMass": [0.0007064748201438848, 0.003123741007194244, 0.00037985611510791363]
+    }
+  },
+  "grip": { "at": [0, 0.002, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

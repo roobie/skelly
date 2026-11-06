@@ -1,0 +1,14 @@
+{
+  "id": "balthazar_radio",
+  "file": "assets/models/balthazar_radio.glb",
+  "parts": {
+    "balthazar_radio": {
+      "node": "balthazar_radio:compound",
+      "massKg": 1,
+      "centreOfMass": [0.0031012360350396225, 0.059738703016254946, -0.0012807758605474797]
+    }
+  },
+  "grip": { "at": [0, 0.058, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

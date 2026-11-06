@@ -1,0 +1,14 @@
+{
+  "id": "advanced_ecig",
+  "file": "assets/models/advanced_ecig.glb",
+  "parts": {
+    "advanced_ecig": {
+      "node": "advanced_ecig:compound",
+      "massKg": 0.15,
+      "centreOfMass": [0, 0.05333220338983052, 0.00016610169491525426]
+    }
+  },
+  "grip": { "at": [0, 0.043000000000000003, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

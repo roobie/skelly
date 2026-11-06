@@ -1,0 +1,103 @@
+[
+  {
+    "id": "bone_fossil",
+    "model": "bone_fossil",
+    "name": "Fossil bone",
+    "category": "material",
+    "size": [4, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A long leg bone turned to brown stone, cracked in rings along the shaft.",
+    "reference": "bone_fossil",
+    "variants": [],
+    "notes": "A thigh bone 400 mm long with a ball head and knob at one end and two knuckles at the other, ringed with darker cracks. clay-wet draws the stone and stone-whet the cracks. CHECK VOLUME (x6): the box counts the air round a long thin bone; the solid is close to the reference's 250 ml."
+  },
+  {
+    "id": "bone_plaster",
+    "model": "bone_fossil",
+    "name": "Plaster bone",
+    "category": "material",
+    "size": [4, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "finishes": { "band": "chalk-white", "bone": "chalk-white" },
+    "description": "A white plaster cast of a long leg bone.",
+    "reference": "bone_plaster",
+    "variants": [],
+    "notes": "Same shape as the fossil bone, recoloured: chalk-white on every slot, so the cracks vanish and it reads as a smooth cast."
+  },
+  {
+    "id": "field_stone",
+    "model": "field_stone",
+    "name": "Field stone",
+    "category": "material",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "hammering": 1 } },
+    "description": "A flat stone about the size of a dinner plate, the kind stacked into dry walls.",
+    "reference": "field_stone",
+    "variants": [],
+    "notes": "A flat stone 350 by 230 mm and 35 mm thick, its edges thinning, with a darker raised patch on top. Hammering 1 because any rock this size can knock in a stake."
+  },
+  {
+    "id": "large_bone_fossil",
+    "model": "large_bone_fossil",
+    "name": "Huge fossil bone",
+    "category": "material",
+    "size": [20, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "description": "A leg bone two metres long, turned to stone.",
+    "reference": "large_bone_fossil",
+    "variants": [],
+    "notes": "The fossil bone's shape scaled to 2 m. The reference names it a replica though it is the stone one; this draft names it as the fossil. CHECK VOLUME (x5): the box counts the air round a long thin bone. The size is a placeholder for a thing too long for a pack."
+  },
+  {
+    "id": "large_bone_plaster",
+    "model": "large_bone_fossil",
+    "name": "Huge plaster bone",
+    "category": "material",
+    "size": [20, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "finishes": { "band": "chalk-white", "bone": "chalk-white" },
+    "description": "A white plaster cast of a leg bone two metres long.",
+    "reference": "large_bone_plaster",
+    "variants": [],
+    "notes": "Same shape as the huge fossil bone, recoloured chalk-white on every slot. The reference gives the cast the stone one's weight; a real plaster cast would be lighter, kept at the reference's 70 kg. The size is a placeholder."
+  },
+  {
+    "id": "rock_large",
+    "model": "rock_large",
+    "name": "Large rock",
+    "category": "material",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "anvil": 1, "hammering": 1 } },
+    "description": "A big lumpy rock with a flattish top.",
+    "reference": "rock_large",
+    "variants": [],
+    "notes": "A rock 310 by 230 mm and 180 mm high built from three swelling lobes, a paler spur at one side. Anvil 1 follows the reference: a flat top to beat on."
+  },
+  {
+    "id": "rock_wool_bat",
+    "model": "rock_wool_bat",
+    "name": "Mineral wool batt",
+    "category": "material",
+    "size": [5, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "description": "A slab of fireproof mineral wool wrapped in foil, from inside an oven or dishwasher.",
+    "reference": "rock_wool_bat",
+    "variants": [],
+    "notes": "A batt 500 by 300 by 20 mm, foil on both faces and long sides with a taped seam, the fibre showing at both cut ends. paperboard-tan draws the fibre. The reference gives no longest side; the size fits its 3 L."
+  },
+  {
+    "id": "canvas_patch",
+    "model": "canvas_patch",
+    "name": "Canvas patch",
+    "category": "material",
+    "size": [1, 1],
+    "stack": 20,
+    "economy": { "usage": ["Residential", "Industrial", "Military"], "tiers": ["Tier1"] },
+    "description": "A square of heavy canvas with its edges turned and stitched.",
+    "reference": "canvas_patch",
+    "variants": [],
+    "notes": "A patch 150 mm square with a turned hem and a pale stitch line. CHECK VOLUME (x23): cloth is thinner than the 2 mm grain, so the box is mostly air over a thin sheet; folded in a pack it takes far less. Stack 20, since patches pile flat."
+  }
+]

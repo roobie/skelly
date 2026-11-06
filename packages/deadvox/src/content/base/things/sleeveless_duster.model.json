@@ -1,0 +1,11 @@
+{
+  "id": "sleeveless_duster",
+  "file": "assets/models/sleeveless_duster.glb",
+  "parts": {
+    "sleeveless_duster": {
+      "node": "sleeveless_duster:compound",
+      "massKg": 1.7,
+      "centreOfMass": [-1.0714080856849013e-19, 0.029664723787319502, 0.0020334175247717135]
+    }
+  }
+}

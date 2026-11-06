@@ -1,0 +1,11 @@
+{
+  "id": "swim_fins",
+  "file": "assets/models/swim_fins.glb",
+  "parts": {
+    "swim_fins": {
+      "node": "swim_fins:compound",
+      "massKg": 1.6,
+      "centreOfMass": [-4.613245863967312e-19, 0.02903491866769946, 0.0483773199070488]
+    }
+  }
+}

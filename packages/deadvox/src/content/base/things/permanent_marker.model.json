@@ -1,0 +1,14 @@
+{
+  "id": "permanent_marker",
+  "file": "assets/models/permanent_marker.glb",
+  "parts": {
+    "permanent_marker": {
+      "node": "permanent_marker:compound",
+      "massKg": 0.024,
+      "centreOfMass": [-0.002637209302325582, 0.0002411960132890366, 0]
+    }
+  },
+  "grip": { "at": [-0.016, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

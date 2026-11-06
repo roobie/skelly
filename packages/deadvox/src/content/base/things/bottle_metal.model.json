@@ -1,0 +1,7 @@
+{
+  "id": "bottle_metal",
+  "file": "assets/models/bottle_metal.glb",
+  "parts": {
+    "bottle_metal": { "node": "bottle_metal:compound", "massKg": 0.35, "centreOfMass": [0, 0.11274672207725267, 0] }
+  }
+}

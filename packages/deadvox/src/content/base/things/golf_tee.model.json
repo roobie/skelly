@@ -1,0 +1,11 @@
+{
+  "id": "golf_tee",
+  "file": "assets/models/golf_tee.glb",
+  "parts": {
+    "golf_tee": {
+      "node": "golf_tee:compound",
+      "massKg": 0.00095,
+      "centreOfMass": [-0.015036697247706421, 0.005706422018348624, 0.00000917431192660545]
+    }
+  }
+}

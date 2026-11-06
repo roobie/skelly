@@ -1,0 +1,11 @@
+{
+  "id": "filter_liquid",
+  "file": "assets/models/filter_liquid.glb",
+  "parts": {
+    "filter_liquid": {
+      "node": "filter_liquid:compound",
+      "massKg": 1.1,
+      "centreOfMass": [3.3293055488372413e-22, 0.04999598155637413, 0.005917931016717756]
+    }
+  }
+}

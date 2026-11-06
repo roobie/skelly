@@ -1,0 +1,11 @@
+{
+  "id": "dump_pouch",
+  "file": "assets/models/dump_pouch.glb",
+  "parts": {
+    "dump_pouch": {
+      "node": "dump_pouch:compound",
+      "massKg": 0.27,
+      "centreOfMass": [0.00042732998485210883, 0.06321036966169709, 0.0007840761115097399]
+    }
+  }
+}

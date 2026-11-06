@@ -1,0 +1,18 @@
+{
+  "id": "tipper_truck_tip_ram",
+  "file": "assets/models/tipper_truck_tip_ram.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 150,
+      "centreOfMass": [2.00587354862119, 1.3476279027576197, 0],
+      "collision": [
+        { "min": [1.90625, 1, -0.09375], "max": [2.09375, 1.8125, 0.09375] },
+        { "min": [1.96875, 1.8125, -0.0625], "max": [2.0625, 2.34375, 0.0625] },
+        { "min": [1.875, 0.96875, -0.46875], "max": [2.125, 1.03125, 0.46875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

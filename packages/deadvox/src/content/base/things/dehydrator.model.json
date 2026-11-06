@@ -1,0 +1,11 @@
+{
+  "id": "dehydrator",
+  "file": "assets/models/dehydrator.glb",
+  "parts": {
+    "dehydrator": {
+      "node": "dehydrator:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0, 0.11902085590465875, 0.00011782231852654388]
+    }
+  }
+}

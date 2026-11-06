@@ -1,0 +1,11 @@
+{
+  "id": "socks_wool",
+  "file": "assets/models/socks_wool.glb",
+  "parts": {
+    "socks_wool": {
+      "node": "socks_wool:compound",
+      "massKg": 0.15,
+      "centreOfMass": [-2.238544024266312e-18, 0.00647331093691676, -0.023324374766703997]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "crystal_dust_vial",
+  "file": "assets/models/crystal_dust_vial.glb",
+  "parts": {
+    "crystal_dust_vial": {
+      "node": "crystal_dust_vial:compound",
+      "massKg": 0.0085,
+      "centreOfMass": [0, 0.022920454545454546, 0]
+    }
+  }
+}

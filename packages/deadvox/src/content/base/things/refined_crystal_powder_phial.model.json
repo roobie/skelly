@@ -1,0 +1,11 @@
+{
+  "id": "refined_crystal_powder_phial",
+  "file": "assets/models/refined_crystal_powder_phial.glb",
+  "parts": {
+    "refined_crystal_powder_phial": {
+      "node": "refined_crystal_powder_phial:compound",
+      "massKg": 0.0047,
+      "centreOfMass": [0, 0.011539130434782609, 0]
+    }
+  }
+}

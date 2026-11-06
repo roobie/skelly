@@ -1,0 +1,14 @@
+{
+  "id": "biomancer_booster_2",
+  "file": "assets/models/biomancer_booster_2.glb",
+  "parts": {
+    "biomancer_booster_2": {
+      "node": "biomancer_booster_2:compound",
+      "massKg": 0.13,
+      "centreOfMass": [-0.004729776247848536, 0.01362822719449225, 0]
+    }
+  },
+  "grip": { "at": [0, 0.013, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

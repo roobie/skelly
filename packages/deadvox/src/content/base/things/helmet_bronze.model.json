@@ -1,0 +1,11 @@
+{
+  "id": "helmet_bronze",
+  "file": "assets/models/helmet_bronze.glb",
+  "parts": {
+    "helmet_bronze": {
+      "node": "helmet_bronze:compound",
+      "massKg": 2.2,
+      "centreOfMass": [-8.642988911500385e-20, 0.12197158002693717, -0.003944667548097714]
+    }
+  }
+}

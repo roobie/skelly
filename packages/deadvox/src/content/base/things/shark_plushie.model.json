@@ -1,0 +1,11 @@
+{
+  "id": "shark_plushie",
+  "file": "assets/models/shark_plushie.glb",
+  "parts": {
+    "shark_plushie": {
+      "node": "shark_plushie:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0, 0.1326731118246545, 0.11454174228675142]
+    }
+  }
+}

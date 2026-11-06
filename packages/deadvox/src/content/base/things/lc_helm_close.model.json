@@ -1,0 +1,11 @@
+{
+  "id": "lc_helm_close",
+  "file": "assets/models/lc_helm_close.glb",
+  "parts": {
+    "lc_helm_close": {
+      "node": "lc_helm_close:compound",
+      "massKg": 3.6,
+      "centreOfMass": [-0.00007133201371119584, 0.140887558538116, 0.005274899821368217]
+    }
+  }
+}

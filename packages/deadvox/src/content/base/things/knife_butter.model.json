@@ -1,0 +1,14 @@
+{
+  "id": "knife_butter",
+  "file": "assets/models/knife_butter.glb",
+  "parts": {
+    "knife_butter": {
+      "node": "knife_butter:compound",
+      "massKg": 0.093,
+      "centreOfMass": [0.08375950848449387, 0.0029999999999999996, 0.000036863662960795774]
+    }
+  },
+  "grip": { "at": [0.048, 0.003, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

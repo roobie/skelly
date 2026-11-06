@@ -1,0 +1,14 @@
+{
+  "id": "steering_column",
+  "file": "assets/models/steering_column.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 3,
+      "centreOfMass": [0, 0.140625, 0],
+      "collision": [{ "min": [-0.03125, 0, -0.03125], "max": [0.03125, 0.28125, 0.03125] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

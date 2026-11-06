@@ -1,0 +1,5 @@
+{
+  "id": "stool_log",
+  "file": "assets/models/stool_log.glb",
+  "parts": { "stool_log": { "node": "stool_log:compound", "massKg": 19, "centreOfMass": [0, 0.20886920742543133, 0] } }
+}

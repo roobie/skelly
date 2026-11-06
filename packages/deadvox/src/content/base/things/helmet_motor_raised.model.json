@@ -1,0 +1,11 @@
+{
+  "id": "helmet_motor_raised",
+  "file": "assets/models/helmet_motor_raised.glb",
+  "parts": {
+    "helmet_motor_raised": {
+      "node": "helmet_motor_raised:compound",
+      "massKg": 1.4,
+      "centreOfMass": [1.7130325913601448e-19, 0.12012787988609915, -0.001955475019414966]
+    }
+  }
+}

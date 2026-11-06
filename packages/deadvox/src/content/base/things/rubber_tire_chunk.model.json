@@ -1,0 +1,11 @@
+{
+  "id": "rubber_tire_chunk",
+  "file": "assets/models/rubber_tire_chunk.glb",
+  "parts": {
+    "rubber_tire_chunk": {
+      "node": "rubber_tire_chunk:compound",
+      "massKg": 0.9,
+      "centreOfMass": [0.0006854061121098264, 0.030926295146265718, -0.0014675600588331425]
+    }
+  }
+}

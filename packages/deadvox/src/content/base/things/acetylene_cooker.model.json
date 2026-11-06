@@ -1,0 +1,11 @@
+{
+  "id": "acetylene_cooker",
+  "file": "assets/models/acetylene_cooker.glb",
+  "parts": {
+    "acetylene_cooker": {
+      "node": "acetylene_cooker:compound",
+      "massKg": 0.76,
+      "centreOfMass": [0.01516264428121721, 0.03715469944536052, 0.000012891620446709655]
+    }
+  }
+}

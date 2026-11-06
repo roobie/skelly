@@ -1,0 +1,11 @@
+{
+  "id": "robe_wizard",
+  "file": "assets/models/robe_wizard.glb",
+  "parts": {
+    "robe_wizard": {
+      "node": "robe_wizard:compound",
+      "massKg": 0.97,
+      "centreOfMass": [0.000006809297633558912, 0.024933714429826396, -0.002601235761422386]
+    }
+  }
+}

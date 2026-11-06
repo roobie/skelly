@@ -1,0 +1,14 @@
+{
+  "id": "makeshift_hammer",
+  "file": "assets/models/makeshift_hammer.glb",
+  "parts": {
+    "makeshift_hammer": {
+      "node": "makeshift_hammer:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0.04896607205316546, 0.018972367960825465, 0.003064008394543547]
+    }
+  },
+  "grip": { "at": [0, 0.018000000000000002, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

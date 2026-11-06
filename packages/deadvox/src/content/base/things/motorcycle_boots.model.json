@@ -1,0 +1,11 @@
+{
+  "id": "motorcycle_boots",
+  "file": "assets/models/motorcycle_boots.glb",
+  "parts": {
+    "motorcycle_boots": {
+      "node": "motorcycle_boots:compound",
+      "massKg": 2.7,
+      "centreOfMass": [-0.00007448111981584958, 0.1229163851037761, -0.04684368618423495]
+    }
+  }
+}

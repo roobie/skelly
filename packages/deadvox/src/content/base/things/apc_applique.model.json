@@ -1,0 +1,18 @@
+{
+  "id": "apc_applique",
+  "file": "assets/models/apc_applique.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 50,
+      "centreOfMass": [0, 0.359375, -0.014618457473578258],
+      "collision": [
+        { "min": [-0.53125, 0, -0.09375], "max": [0.53125, 0.71875, 0.0625] },
+        { "min": [-0.5, 0.65625, 0.03125], "max": [0.5, 0.6875, 0.0625] },
+        { "min": [-0.5, 0.03125, 0.03125], "max": [0.5, 0.0625, 0.0625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

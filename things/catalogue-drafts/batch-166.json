@@ -1,0 +1,268 @@
+[
+  {
+    "id": "plastic_shopping_bag",
+    "model": "bag_plastic",
+    "name": "Shopping bag",
+    "category": "bag",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "container": { "pockets": [{ "grid": [3, 3], "handlingSimSeconds": 0.4 }] },
+    "description": "A thin plastic carrier bag with two loop handles, for bringing shopping home.",
+    "reference": "plastic_shopping_bag",
+    "variants": [],
+    "notes": "Rides on batch 010's `bag_plastic` model, the same two-handled carrier bag standing open; no row of its own. Its mass is 2 g. It is carried in the hand, not worn, so it has no wearable block; Deadvox has no carried-bag slot, and the reference's arm and hand encumbrance is the cost of hauling it."
+  },
+  {
+    "id": "purse",
+    "model": "purse",
+    "name": "Handbag",
+    "category": "bag",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "shoulder_bag", "encumbrance": 2, "warmth": 0, "wearPerDamage": 0.0012 },
+    "container": { "pockets": [{ "grid": [3, 2], "handlingSimSeconds": 0.8 }] },
+    "description": "A stiff leather handbag with a front flap, a gold clasp and two rolled handles.",
+    "reference": "purse",
+    "variants": [],
+    "notes": "Standing on its gold feet, 280 mm across the base, 190 mm tall and 100 mm deep, flap and clasp on the front. CHECK VOLUME (x8.4): the reference volume is the inside of the bag, the box includes the handles above it. It hangs from one shoulder, so it takes a new `shoulder_bag` slot: `back` would stop it being worn with a backpack, and `waist` is the belt. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "ragpouch",
+    "model": "ragpouch",
+    "name": "Rag pouch",
+    "category": "bag",
+    "size": [2, 2],
+    "economy": { "usage": [], "tiers": [] },
+    "wearable": { "slot": "shoulder_bag", "encumbrance": 5, "warmth": 0, "wearPerDamage": 0.002 },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 0.8 }] },
+    "description": "A sack sewn from cloth scraps, drawn shut with a cord and hung from a cloth strap. Bulky for what it holds.",
+    "reference": "ragpouch",
+    "variants": [],
+    "notes": "A brown cloth sack 190 mm across and 230 mm tall, drawn shut under a frilled mouth, with khaki and cream patches and its strap lying in a loop behind. CHECK VOLUME (x51): the strap loop lying out behind adds a long box of air, and the reference volume is the pouch packed flat. A crafted item, so it has no loot economy. It hangs from one shoulder, so it takes a new `shoulder_bag` slot: `back` would stop it being worn with a backpack, and `waist` is the belt. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "rifle_case_soft",
+    "model": "rifle_case_soft",
+    "name": "Soft rifle case",
+    "category": "bag",
+    "size": [3, 10],
+    "economy": { "usage": ["Hunting", "Police", "Military"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "shoulder_bag", "encumbrance": 2, "warmth": 1, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 9], "handlingSimSeconds": 1.5, "name": "rifle" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "pocket" }
+      ]
+    },
+    "description": "A padded olive canvas case for one rifle, with a zip round the edge, a small accessory pocket, a carry handle and a shoulder strap.",
+    "reference": "rifle_case_soft",
+    "variants": [],
+    "notes": "Lying flat on the floor, butt end at -x and tapering toward the muzzle end, 1.12 m long, 280 mm wide at the butt and 70 mm thick with its padded top, with its shoulder strap lying alongside, clipped to rings at both ends. CHECK VOLUME: the reference volume counts the empty case rolled up; the model is the padded case laid out at its real length. Grid cells follow Deadvox's rifle size, 2 by 8 or longer. One pocket near the butt and a handle at the balance point. It hangs from one shoulder, so it takes a new `shoulder_bag` slot: `back` would stop it being worn with a backpack, and `waist` is the belt. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "rifle_case_soft_2",
+    "model": "rifle_case_soft_2",
+    "name": "Double rifle case",
+    "category": "bag",
+    "size": [4, 10],
+    "economy": { "usage": ["Hunting", "Police", "Military"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "shoulder_bag", "encumbrance": 2, "warmth": 1, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 9], "handlingSimSeconds": 1.5, "name": "upper rifle" },
+        { "grid": [2, 9], "handlingSimSeconds": 1.8, "name": "lower rifle" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "pocket left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "pocket middle" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "pocket right" }
+      ]
+    },
+    "description": "A wide padded canvas case for two rifles side by side, with three accessory pockets along its top and a shoulder strap.",
+    "reference": "rifle_case_soft_2",
+    "variants": [],
+    "notes": "Lying flat on the floor, butt end at -x and tapering toward the muzzle end, 1.16 m long, 340 mm wide and 100 mm thick, with its shoulder strap lying alongside, clipped to rings at both ends. CHECK VOLUME: the reference volume counts the empty case rolled up; the model is the padded case laid out at its real length. Grid cells follow Deadvox's rifle size, 2 by 8 or longer. Three pockets in a row on top and no handle, as the reference has it; khaki so it reads apart from the single case. It hangs from one shoulder, so it takes a new `shoulder_bag` slot: `back` would stop it being worn with a backpack, and `waist` is the belt. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "rifle_case_soft_leather",
+    "model": "rifle_case_soft_leather",
+    "name": "Leather rifle case",
+    "category": "bag",
+    "size": [3, 10],
+    "economy": { "usage": ["Hunting", "Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "shoulder_bag", "encumbrance": 2, "warmth": 1, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 9], "handlingSimSeconds": 1.5, "name": "rifle" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "pocket" }
+      ]
+    },
+    "description": "A tan leather case for one rifle, lined and padded, with a small pocket, a carry handle and a shoulder strap.",
+    "reference": "rifle_case_soft_leather",
+    "variants": [],
+    "notes": "Lying flat on the floor, butt end at -x and tapering toward the muzzle end, 1.12 m long, 280 mm wide and 70 mm thick, with its shoulder strap lying alongside, clipped to rings at both ends. CHECK VOLUME: the reference volume counts the empty case rolled up; the model is the padded case laid out at its real length. Grid cells follow Deadvox's rifle size, 2 by 8 or longer. It shares the canvas case's shape with leather finishes and brass hardware; it has its own row because leather is heavier. It hangs from one shoulder, so it takes a new `shoulder_bag` slot: `back` would stop it being worn with a backpack, and `waist` is the belt. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "rifle_case_soft_leather_2",
+    "model": "rifle_case_soft_leather_2",
+    "name": "Leather double rifle case",
+    "category": "bag",
+    "size": [4, 10],
+    "economy": { "usage": ["Hunting", "Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "slot": "shoulder_bag", "encumbrance": 2, "warmth": 1, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 9], "handlingSimSeconds": 1.5, "name": "upper rifle" },
+        { "grid": [2, 9], "handlingSimSeconds": 1.8, "name": "lower rifle" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "pocket left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "pocket middle" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "pocket right" }
+      ]
+    },
+    "description": "A wide chestnut leather case for two rifles, with three pockets along its top and a shoulder strap.",
+    "reference": "rifle_case_soft_leather_2",
+    "variants": [],
+    "notes": "Lying flat on the floor, butt end at -x and tapering toward the muzzle end, 1.16 m long, 340 mm wide and 100 mm thick, with its shoulder strap lying alongside, clipped to rings at both ends. CHECK VOLUME: the reference volume counts the empty case rolled up; the model is the padded case laid out at its real length. Grid cells follow Deadvox's rifle size, 2 by 8 or longer. The reference gives it the single leather case's weight and volume; the model keeps the double case's size, and the mass follows the reference. It hangs from one shoulder, so it takes a new `shoulder_bag` slot: `back` would stop it being worn with a backpack, and `waist` is the belt. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "rifle_case_xl_soft_leather",
+    "model": "rifle_case_xl_soft_leather",
+    "name": "Long leather rifle case",
+    "category": "bag",
+    "size": [3, 12],
+    "economy": { "usage": ["Hunting", "Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "slot": "shoulder_bag", "encumbrance": 2, "warmth": 1, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 11], "handlingSimSeconds": 1.5, "name": "rifle" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "pocket" }
+      ]
+    },
+    "description": "An extra-long oxblood leather case for a long-barrelled rifle, with a small pocket, a carry handle and a shoulder strap.",
+    "reference": "rifle_case_xl_soft_leather",
+    "variants": [],
+    "notes": "Lying flat on the floor, butt end at -x and tapering toward the muzzle end, 1.34 m long, 280 mm wide and 70 mm thick, with its shoulder strap lying alongside, clipped to rings at both ends. CHECK VOLUME: the reference volume counts the empty case rolled up; the model is the padded case laid out at its real length. Grid cells follow Deadvox's rifle size, 2 by 8 or longer. Oxblood so it reads apart from the tan single case. It hangs from one shoulder, so it takes a new `shoulder_bag` slot: `back` would stop it being worn with a backpack, and `waist` is the belt. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "rope_loop",
+    "model": "rope_loop",
+    "name": "Rope loop",
+    "category": "bag",
+    "size": [3, 3],
+    "economy": { "usage": [], "tiers": [] },
+    "wearable": { "slot": "shoulder_bag", "encumbrance": 3, "warmth": 0, "wearPerDamage": 0.002 },
+    "container": { "pockets": [{ "grid": [4, 6], "handlingSimSeconds": 3, "name": "bundle" }] },
+    "description": "A length of rope tied into a loop with a sliding knot, for slinging a bundle of large things over the shoulder. Slow to untie.",
+    "reference": "rope_loop",
+    "variants": [],
+    "notes": "Three turns of 12 mm cotton rope about 460 mm across, lying flat, with the sliding knot and its loose tail toward the front. CHECK VOLUME (x36): the reference volume is the rope alone; the box is the open loop. The bundle pocket is slow to reach because the knot must be worked loose; a knot pulled undone in a fight needs a rule Deadvox does not have. A crafted item, so it has no loot economy. It hangs from one shoulder, so it takes a new `shoulder_bag` slot: `back` would stop it being worn with a backpack, and `waist` is the belt. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "rucksack",
+    "model": "rucksack",
+    "name": "Military rucksack",
+    "category": "bag",
+    "size": [5, 6],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": { "slot": "back", "encumbrance": 10, "warmth": 8, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [7, 9], "handlingSimSeconds": 1.8, "name": "main" },
+        { "grid": [3, 2], "handlingSimSeconds": 1, "name": "lid" },
+        { "grid": [3, 3], "handlingSimSeconds": 1.2, "name": "front" },
+        { "grid": [1, 3], "handlingSimSeconds": 1, "name": "side left" },
+        { "grid": [1, 3], "handlingSimSeconds": 1, "name": "side right" }
+      ]
+    },
+    "attachPoints": [
+      { "id": "front_webbing", "name": "front webbing", "reachSimSeconds": 0.9, "standard": "pals" },
+      { "id": "side_left", "name": "left side straps", "reachSimSeconds": 0.9, "standard": "lash" },
+      { "id": "side_right", "name": "right side straps", "reachSimSeconds": 0.9, "standard": "lash" }
+    ],
+    "description": "A big olive military pack with a strapped lid, a front pocket under webbing, two side pockets, a padded harness and a hip belt.",
+    "reference": "rucksack",
+    "variants": [],
+    "notes": "Standing, front on +z: lid with two buckled straps, a front pocket carrying three webbing rows, side pockets with compression straps, and shoulder straps, back pad and hip belt behind. CHECK VOLUME (x14): the reference volume is the empty pack packed down; the model is the pack standing full at its real size. It is a host: `front_webbing` is the webbing rows on the front pocket, and `side_left` and `side_right` are the compression straps over each side pocket, all slow to reach on the back. Worn on the back, the `back` slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "runner_bag",
+    "model": "runner_bag",
+    "name": "Running pack",
+    "category": "bag",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 1, "warmth": 2, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [3, 4], "handlingSimSeconds": 1.2, "name": "main" },
+        { "grid": [3, 2], "handlingSimSeconds": 0.8, "name": "mesh" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.4, "name": "strap" }
+      ]
+    },
+    "description": "A slim, light blue pack for runners, with a stretch mesh pocket, reflective strips and wide vest straps that keep it from bouncing.",
+    "reference": "runner_bag",
+    "variants": [],
+    "notes": "Standing, front on +z: a rounded slim pack 240 mm wide, 420 mm tall and 80 mm deep, a mesh pocket and a crossed bungee on the front, reflective strips at the sides, and vest straps with a chest strap and a bottle pocket behind. CHECK VOLUME (x8.3): the reference volume is the empty pack folded. The mesh draws opaque in the tiles and stays see-through in the game. The strap bottle pocket is quick to reach when worn. Worn on the back, the `back` slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "slingpack",
+    "model": "slingpack",
+    "name": "Sling pack",
+    "category": "bag",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Police"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "back", "encumbrance": 2, "warmth": 2, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [3, 4], "handlingSimSeconds": 0.9, "name": "main" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "front" }
+      ]
+    },
+    "description": "A teardrop pack on a single padded strap, swung round to the front to reach into it. Holds less than a backpack.",
+    "reference": "slingpack",
+    "variants": [],
+    "notes": "Standing, front on +z: a black teardrop 240 mm wide, 420 mm tall and 120 mm deep with a zipped charcoal front pocket and a grab handle, its padded strap arching from the top to the lower corner behind. CHECK VOLUME (x13): the strap's arch adds air, and the reference volume is the empty pack folded. Its pockets are quicker to reach than a backpack's because it swings round to the chest. Worn across the back, the `back` slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "straw_basket",
+    "model": "straw_basket",
+    "name": "Straw basket",
+    "category": "bag",
+    "size": [3, 3],
+    "economy": { "usage": [], "tiers": [] },
+    "container": { "pockets": [{ "grid": [4, 4], "handlingSimSeconds": 0.5 }] },
+    "description": "A handmade basket of woven straw with a tall bail handle. Light, but awkward to carry about.",
+    "reference": "straw_basket",
+    "variants": [],
+    "notes": "Upright, 300 mm across the rim and 190 mm deep, with woven bands, a rolled rim and a lashed bail handle. A crafted item, so it has no loot economy. It is carried in the hand, not worn, so it has no wearable block; Deadvox has no carried-bag slot, and the reference's arm and hand encumbrance is the cost of hauling it."
+  },
+  {
+    "id": "suitcase_l",
+    "model": "suitcase_l",
+    "name": "Large suitcase",
+    "category": "bag",
+    "size": [5, 8],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "container": { "pockets": [{ "grid": [7, 10], "handlingSimSeconds": 2.5, "name": "main" }] },
+    "description": "A big blue hard-shell suitcase on four spinner wheels, with a pull handle and carry handles. Holds a lot, but slow to haul about.",
+    "reference": "suitcase_l",
+    "variants": [],
+    "notes": "Standing on its wheels, front on +z: ribbed shells 500 mm wide, 780 mm tall and 300 mm deep meeting at a zipped seam, a lock, the pull handle retracted at the back and handles on top and side. The reference names both suitcases \"suitcase\"; the drafts call this one large. It is carried in the hand, not worn, so it has no wearable block; Deadvox has no carried-bag slot, and the reference's arm and hand encumbrance is the cost of hauling it."
+  },
+  {
+    "id": "suitcase_m",
+    "model": "suitcase_m",
+    "name": "Suitcase",
+    "category": "bag",
+    "size": [4, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "container": {
+      "pockets": [
+        { "grid": [5, 7], "handlingSimSeconds": 2, "name": "main" },
+        { "grid": [4, 5], "handlingSimSeconds": 1.2, "name": "front" }
+      ]
+    },
+    "description": "A navy fabric suitcase on two wheels, with a zipped front pocket, a pull handle and a top carry handle.",
+    "reference": "suitcase_m",
+    "variants": [],
+    "notes": "Standing on its wheels and feet, front on +z: a soft case 400 mm wide, 600 mm tall and 220 mm deep, piped edges, a zipped front pocket, the pull handle retracted in its housing behind and a carry handle on top. It is carried in the hand, not worn, so it has no wearable block; Deadvox has no carried-bag slot, and the reference's arm and hand encumbrance is the cost of hauling it."
+  }
+]

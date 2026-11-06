@@ -1,0 +1,11 @@
+{
+  "id": "cash_register",
+  "file": "assets/models/cash_register.glb",
+  "parts": {
+    "cash_register": {
+      "node": "cash_register:compound",
+      "massKg": 8.2,
+      "centreOfMass": [-0.0000023951968883666447, 0.09580577708771613, -0.012412281213071827]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "pale_bush_berries",
+  "file": "assets/models/pale_bush_berries.glb",
+  "parts": {
+    "pale_bush_berries": {
+      "node": "pale_bush_berries:compound",
+      "massKg": 0.025,
+      "centreOfMass": [-0.0008680781758957656, 0.012565689467969599, 0.000979370249728556]
+    }
+  }
+}

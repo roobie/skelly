@@ -1,0 +1,127 @@
+[
+  {
+    "id": "toilet_paper",
+    "model": "toilet_paper",
+    "name": "Toilet paper",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Industrial", "Medical"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A roll of soft two-ply paper on a card core.",
+    "reference": "toilet_paper",
+    "variants": [],
+    "notes": "Modelled as a standard 110 mm roll. The look step flags volume (box x5): the reference's 250 mL is far smaller than a real roll's 1 L bounding box, so the model keeps real dimensions."
+  },
+  {
+    "id": "toothbrush_electric",
+    "model": "toothbrush_electric",
+    "name": "Electric toothbrush",
+    "category": "misc",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A battery toothbrush with a round spinning head.",
+    "reference": "toothbrush_electric",
+    "variants": [],
+    "notes": "Battery-powered; its battery and any charge behaviour are left to the electrical items framework. Disassembly could yield a small motor and scrap plastic once those items exist."
+  },
+  {
+    "id": "toothbrush",
+    "model": "toothbrush",
+    "name": "Toothbrush",
+    "category": "misc",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential", "Medical"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "cleaning": 1 } },
+    "description": "A plastic toothbrush with soft bristles.",
+    "reference": "toothbrush_plain",
+    "variants": [],
+    "notes": "Id drops the reference's _plain suffix; the electric one is toothbrush_electric. cleaning is a new quality name, for brushes, sponges and mops."
+  },
+  {
+    "id": "hammock",
+    "model": "hammock",
+    "name": "Hammock",
+    "category": "tool",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A canvas hammock rolled up, with a rope loop at each end for tying between two supports.",
+    "reference": "hammock",
+    "variants": [],
+    "notes": "Modelled rolled for carrying, the state a player picks up; a hung hammock would be a deployed furniture state with its own model once items can be set up. Sleeping comfort without warmth belongs to that deployed state."
+  },
+  {
+    "id": "hammock_net",
+    "model": "hammock_net",
+    "name": "Net hammock",
+    "category": "tool",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A cord net hammock gathered into a bundle, with a rope loop at each end.",
+    "reference": "hammock_net",
+    "variants": [],
+    "notes": "Bundled netting for carrying, drawn as a cord bundle so it reads apart from the canvas hammock's roll. Same deployed-state note as the hammock."
+  },
+  {
+    "id": "bowl_pewter",
+    "model": "bowl_pewter",
+    "name": "Pewter bowl",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "tool": { "qualities": { "cooking": 2 } },
+    "vessel": {
+      "capacityMicrolitres": 250000,
+      "pour": { "incrementMicrolitres": 10000, "microlitresPerSimSecond": 50000 }
+    },
+    "description": "A small pewter serving bowl on a low foot. Holds a cup of liquid.",
+    "reference": "bowl_pewter",
+    "variants": [],
+    "notes": "No pewter finish exists; alu-bare stands in for the dull grey metal, with a steel-grey rim. The vessel block omits accepts so any liquid fits."
+  },
+  {
+    "id": "plastic_food_tub",
+    "model": "bowl_plastic",
+    "name": "Plastic food tub",
+    "category": "misc",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "vessel": {
+      "capacityMicrolitres": 750000,
+      "pour": { "incrementMicrolitres": 10000, "microlitresPerSimSecond": 50000 }
+    },
+    "description": "A frosted plastic food tub with a snap-on watertight lid.",
+    "reference": "bowl_plastic",
+    "variants": [
+      "clay bowl",
+      "wooden bowl",
+      "large wooden bowl",
+      "coconut bowl",
+      "skull bowl",
+      "clay canister",
+      "clay hydria",
+      "large clay pot",
+      "large clay pot (no lid)",
+      "clay jug",
+      "wooden tankard",
+      "steel tankard",
+      "large charcoal water purifier"
+    ],
+    "notes": "Item id avoids the brand-like reference name; the model keeps the reference id bowl_plastic. The reference lumps many unrelated vessels under this root as variants: none of them looks like a lidded plastic tub, and their sizes run from a 300 mL bowl to a 44 L pot, so each needs its own model and mass (bowls, jug and tankards share a turned-vessel shape; the hydria, large pot and purifier are large furniture-sized pots). They are listed here so the count stays whole, not because the tub model suits them."
+  },
+  {
+    "id": "casserole",
+    "model": "casserole",
+    "name": "Casserole pot",
+    "category": "tool",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "tool": { "qualities": { "cooking": 3 } },
+    "vessel": {
+      "capacityMicrolitres": 2500000,
+      "pour": { "incrementMicrolitres": 10000, "microlitresPerSimSecond": 50000 }
+    },
+    "description": "A glazed ceramic pot with a domed lid and lug handles, for cooking and serving one-pot meals.",
+    "reference": "casserole",
+    "variants": [],
+    "notes": "No glaze finish exists; paint-oxblood stands in for the coloured outer glaze and ceramic-white for the rim and knob. Capacity 2.5 L is a judgement from the 200 mm pot."
+  }
+]

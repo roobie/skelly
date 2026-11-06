@@ -1,0 +1,11 @@
+{
+  "id": "log",
+  "file": "assets/models/log.glb",
+  "parts": {
+    "log": {
+      "node": "log:compound",
+      "massKg": 23,
+      "centreOfMass": [0.6916538529987547, 0.11047641929168897, 0.00021071365011567908]
+    }
+  }
+}

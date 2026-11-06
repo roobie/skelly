@@ -1,0 +1,11 @@
+{
+  "id": "first_aid_box",
+  "file": "assets/models/first_aid_box.glb",
+  "parts": {
+    "first_aid_box": {
+      "node": "first_aid_box:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0, 0.08714977973568282, 0.0002067095899695012]
+    }
+  }
+}

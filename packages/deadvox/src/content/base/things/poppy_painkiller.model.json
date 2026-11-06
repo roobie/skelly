@@ -1,0 +1,14 @@
+{
+  "id": "poppy_painkiller",
+  "file": "assets/models/poppy_painkiller.glb",
+  "parts": {
+    "poppy_painkiller": {
+      "node": "poppy_painkiller:compound",
+      "massKg": 0.022,
+      "centreOfMass": [0, 0.024036344755970922, 0]
+    }
+  },
+  "grip": { "at": [0, 0.024, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "gold_lip_ring_loop",
+  "file": "assets/models/gold_lip_ring_loop.glb",
+  "parts": {
+    "gold_lip_ring_loop": {
+      "node": "gold_lip_ring_loop:compound",
+      "massKg": 0.0025,
+      "centreOfMass": [1.9131952901360119e-19, 0.0012105263157894735, 0.001]
+    }
+  }
+}

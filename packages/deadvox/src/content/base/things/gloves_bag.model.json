@@ -1,0 +1,11 @@
+{
+  "id": "gloves_bag",
+  "file": "assets/models/gloves_bag.glb",
+  "parts": {
+    "gloves_bag": {
+      "node": "gloves_bag:compound",
+      "massKg": 0.012,
+      "centreOfMass": [-0.00035899718142708744, 0.0028206794244177436, 0.07392855659397718]
+    }
+  }
+}

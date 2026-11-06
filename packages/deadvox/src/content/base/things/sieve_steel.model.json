@@ -1,0 +1,11 @@
+{
+  "id": "sieve_steel",
+  "file": "assets/models/sieve_steel.glb",
+  "parts": {
+    "sieve_steel": {
+      "node": "sieve_steel:compound",
+      "massKg": 0.61,
+      "centreOfMass": [1.7069348174845797e-19, 0.015224515063970278, 0.0012518915944421517]
+    }
+  }
+}

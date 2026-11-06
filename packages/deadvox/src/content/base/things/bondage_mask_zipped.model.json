@@ -1,0 +1,11 @@
+{
+  "id": "bondage_mask_zipped",
+  "file": "assets/models/bondage_mask_zipped.glb",
+  "parts": {
+    "bondage_mask_zipped": {
+      "node": "bondage_mask_zipped:compound",
+      "massKg": 0.35,
+      "centreOfMass": [0.00010933142652842338, 0.12737947801215577, 0.0013565963532356092]
+    }
+  }
+}

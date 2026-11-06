@@ -1,0 +1,11 @@
+{
+  "id": "epoxy_chunk",
+  "file": "assets/models/epoxy_chunk.glb",
+  "parts": {
+    "epoxy_chunk": {
+      "node": "epoxy_chunk:compound",
+      "massKg": 0.062,
+      "centreOfMass": [-0.0008415841584158416, 0.013261707251806263, -0.000036928017126036906]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "fish_bowl",
+  "file": "assets/models/fish_bowl.glb",
+  "parts": {
+    "fish_bowl": {
+      "node": "fish_bowl:compound",
+      "massKg": 8.5,
+      "centreOfMass": [0.0000014728339651015872, 0.09157063014038436, 0.00005263443485810407]
+    }
+  }
+}

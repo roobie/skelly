@@ -1,0 +1,14 @@
+{
+  "id": "tour_bus_open_top_windscreen",
+  "file": "assets/models/tour_bus_open_top_windscreen.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 30,
+      "centreOfMass": [5.14501953125, 1.51611328125, 0],
+      "collision": [{ "min": [5.09375, 0.9375, -1.1875], "max": [5.1875, 2.15625, 1.1875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

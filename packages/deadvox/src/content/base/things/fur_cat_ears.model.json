@@ -1,0 +1,11 @@
+{
+  "id": "fur_cat_ears",
+  "file": "assets/models/fur_cat_ears.glb",
+  "parts": {
+    "fur_cat_ears": {
+      "node": "fur_cat_ears:compound",
+      "massKg": 0.025,
+      "centreOfMass": [1.4624834026750838e-18, 0.13017727487034414, 0.00028429985855728425]
+    }
+  }
+}

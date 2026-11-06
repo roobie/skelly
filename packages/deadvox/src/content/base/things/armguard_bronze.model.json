@@ -1,0 +1,11 @@
+{
+  "id": "armguard_bronze",
+  "file": "assets/models/armguard_bronze.glb",
+  "parts": {
+    "armguard_bronze": {
+      "node": "armguard_bronze:compound",
+      "massKg": 1,
+      "centreOfMass": [0.004840495649881361, 0.028998154495122608, 0.0006453994199842051]
+    }
+  }
+}

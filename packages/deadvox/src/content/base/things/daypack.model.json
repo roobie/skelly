@@ -1,0 +1,11 @@
+{
+  "id": "daypack",
+  "file": "assets/models/daypack.glb",
+  "parts": {
+    "daypack": {
+      "node": "daypack:compound",
+      "massKg": 0.75,
+      "centreOfMass": [0.000004713949003642629, 0.20883250516119597, 0.002818458545478045]
+    }
+  }
+}

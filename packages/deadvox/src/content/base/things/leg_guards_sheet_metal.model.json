@@ -1,0 +1,11 @@
+{
+  "id": "leg_guards_sheet_metal",
+  "file": "assets/models/leg_guards_sheet_metal.glb",
+  "parts": {
+    "leg_guards_sheet_metal": {
+      "node": "leg_guards_sheet_metal:compound",
+      "massKg": 2.2,
+      "centreOfMass": [0.28187812348863495, 0.033248750604546205, 0.00020796388844106044]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "striped_pants",
+  "file": "assets/models/striped_pants.glb",
+  "parts": {
+    "striped_pants": {
+      "node": "striped_pants:compound",
+      "massKg": 0.5,
+      "centreOfMass": [0.00000946658352701095, 0.02520106569922341, -0.00370557224647129]
+    }
+  }
+}

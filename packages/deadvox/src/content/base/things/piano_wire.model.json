@@ -1,0 +1,11 @@
+{
+  "id": "piano_wire",
+  "file": "assets/models/piano_wire.glb",
+  "parts": {
+    "piano_wire": {
+      "node": "piano_wire:compound",
+      "massKg": 0.02,
+      "centreOfMass": [0.001883248730964467, 0.003974619289340102, 0.00018274111675126907]
+    }
+  }
+}

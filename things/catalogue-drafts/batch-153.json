@@ -1,0 +1,277 @@
+[
+  {
+    "id": "leggings",
+    "model": "leggings",
+    "name": "Leggings",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 20, "wearPerDamage": 0.002 },
+    "description": "Skin-tight stretch leggings that hold warmth against the legs and leave no room for pockets.",
+    "reference": "leggings",
+    "variants": [],
+    "notes": "Folded in three layers, 220 mm by 200 mm and 24 mm tall, black lycra with a charcoal elastic waistband. Slot `legs`: Deadvox has no under-trouser layer, so leggings take the trouser slot until one exists. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "loincloth",
+    "model": "loincloth",
+    "name": "Rag loincloth",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.0025 },
+    "description": "A flap of mismatched cotton scraps hung from a tie cord. It covers the bare minimum.",
+    "reference": "loincloth",
+    "variants": [],
+    "notes": "Laid flat: a 180 mm by 300 mm rag flap with two sewn-on patches and a ragged hem, the cotton tie cord trailing down both sides. Slot `legs`: Deadvox has no underwear slot, so it takes the trouser slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "loincloth_fur",
+    "model": "loincloth_fur",
+    "name": "Fur loincloth",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 5, "wearPerDamage": 0.0015 },
+    "description": "A whole small pelt, leg tabs and tail still on, tied around the waist with a rawhide thong.",
+    "reference": "loincloth_fur",
+    "variants": [],
+    "notes": "Laid flat: a 200 mm by 300 mm brown pelt with its four leg tabs, tail and a pale belly stripe, its rawhide thong trailing down both sides. Box/volume x6.8: a pelt lies flat over a wider area than the reference packs it. Slot `legs`: Deadvox has no underwear slot, so it takes the trouser slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "loincloth_leather",
+    "model": "loincloth_leather",
+    "name": "Leather loincloth",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.0008 },
+    "description": "Square leather patches stitched into a flap and hung from a leather thong.",
+    "reference": "loincloth_leather",
+    "variants": [],
+    "notes": "Laid flat: a 200 mm by 300 mm flap of four leather squares joined by cross stitching, on a tan leather thong trailing down both sides. Slot `legs`: Deadvox has no underwear slot, so it takes the trouser slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "loincloth_wool",
+    "model": "loincloth_wool",
+    "name": "Wool loincloth",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 5, "wearPerDamage": 0.0025 },
+    "description": "Scraps of knitted wool sewn into a flap and hung from a cord.",
+    "reference": "loincloth_wool",
+    "variants": [],
+    "notes": "Laid flat: a 170 mm by 280 mm grey wool flap with two felt patches and a ragged hem, on a cotton cord trailing down both sides. Slot `legs`: Deadvox has no underwear slot, so it takes the trouser slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "nanoskirt",
+    "model": "nanoskirt",
+    "name": "Nanoskirt",
+    "category": "clothing",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.0015 },
+    "description": "A denim skirt so short it barely counts as one.",
+    "reference": "nanoskirt",
+    "variants": [],
+    "notes": "Laid flat: a flared denim skirt 360 mm across the hem and 140 mm long, with a waistband, button, fly seam, side seams and pale hem stitching. Denim is cotton, as the reference has it. Slot `legs`, as skirts have no slot of their own. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "pants",
+    "model": "pants",
+    "name": "Khaki trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 7, "warmth": 15, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" }
+      ]
+    },
+    "description": "Plain khaki cotton trousers, a little warmer than jeans.",
+    "reference": "pants",
+    "variants": [],
+    "notes": "Folded in four layers, 260 mm by 340 mm and 56 mm tall: waistband with belt loops and a brass button at the back edge, centre seam, and one back pocket on top. Pockets as the jeans have them. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "pants_army",
+    "model": "pants_army",
+    "name": "Army trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Military"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "legs", "encumbrance": 3, "warmth": 20, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left cargo" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right cargo" }
+      ]
+    },
+    "description": "Tough olive field trousers with flapped back pockets and bellows cargo pockets on both thighs.",
+    "reference": "pants_army",
+    "variants": [],
+    "notes": "Folded in four layers, 270 mm by 340 mm and 64 mm tall: waistband with belt loops, a flapped back pocket and a cargo pocket with flap and press stud on top. Box/volume x3.1: the cargo pocket stands proud of the stack. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "pants_checkered",
+    "model": "pants_checkered",
+    "name": "Checkered trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 2, "warmth": 15, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" }
+      ]
+    },
+    "description": "Cotton trousers in a small grey and charcoal check.",
+    "reference": "pants_checkered",
+    "variants": [],
+    "notes": "Folded in three layers, 260 mm by 320 mm and 40 mm tall. No checked print exists, so a small check of raised 16 mm `cloth-heather-grey` squares over `cloth-charcoal` stands in for it, small and soft enough not to read as a chessboard. Box/volume x3.3: a folded stack has air between its layers. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "pants_faux_fur",
+    "model": "pants_faux_fur",
+    "name": "Faux fur trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 16, "warmth": 70, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" }
+      ]
+    },
+    "description": "Long cotton trousers lined with thick synthetic fur.",
+    "reference": "pants_faux_fur",
+    "variants": [],
+    "notes": "Folded thick in four layers, 280 mm by 360 mm and 90 mm tall: charcoal cotton with pale synthetic fur showing at the waist and along both folded sides; belt loops, a button and a back pocket. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "pants_fur",
+    "model": "pants_fur",
+    "name": "Fur trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "legs", "encumbrance": 16, "warmth": 80, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" }
+      ]
+    },
+    "description": "Heavy trousers lined with real fur and drawn shut at the waist with a cord.",
+    "reference": "pants_fur",
+    "variants": [],
+    "notes": "Folded thick in four layers, 280 mm by 360 mm and 90 mm tall: brown cotton with brown fur showing at the waist and both folded sides, a rawhide drawcord instead of belt loops. Two front pockets only. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "pants_hiking",
+    "model": "pants_hiking",
+    "name": "Hiking trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "legs", "encumbrance": 1, "warmth": 5, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "left cargo" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "right cargo" }
+      ]
+    },
+    "description": "Light, water-resistant nylon trousers that flex with the stride, with plenty of pockets.",
+    "reference": "pants_hiking",
+    "variants": [],
+    "notes": "Folded in four layers, 250 mm by 330 mm and 50 mm tall, grey-green nylon: belt loops, a flapped back pocket, a slim flapped cargo pocket and the zip line where the lower leg comes off. Box/volume x3.4: the stack is light cloth with air between its layers. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "pants_leather",
+    "model": "pants_leather",
+    "name": "Leather trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 15,
+      "warmth": 25,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0, "blunt": 0.05, "cut": 0.3, "pierce": 0.1 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" }
+      ]
+    },
+    "description": "Heavy black leather trousers. Very tough, but stiff, with only two shallow pockets.",
+    "reference": "pants_leather",
+    "variants": [],
+    "notes": "Folded in three layers, 270 mm by 340 mm and 60 mm tall: belt loops, a steel button and a charcoal centre seam; no pocket shows on top. The leather resists scrapes and cuts, so it gets light protection. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "pants_ski",
+    "model": "pants_ski",
+    "name": "Ski trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "legs", "encumbrance": 6, "warmth": 70, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" }
+      ]
+    },
+    "description": "Insulated trousers for alpine skiing, with an elastic waist and padded knees.",
+    "reference": "pants_ski",
+    "variants": [],
+    "notes": "Folded in three layers, 270 mm by 340 mm and 60 mm tall, navy with black padded knee panels and a drawcord waist. The reference names cotton; navy cloth stands in for the insulated shell. Box/volume x3.1: insulated cloth folds bulky. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "pants_tactical",
+    "model": "pants_tactical",
+    "name": "Tactical trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Police", "Military"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "legs", "encumbrance": 2, "warmth": 5, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left cargo" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right cargo" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "left thigh" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "right thigh" }
+      ]
+    },
+    "description": "Rugged, water-repellent combat trousers with double-stitched seams, reinforced belt loops, articulated knees and pockets everywhere.",
+    "reference": "pants_tactical",
+    "variants": [],
+    "notes": "Folded in four layers, 270 mm by 340 mm and 64 mm tall, coyote nylon: black webbing belt loops, a flapped back pocket, a cargo pocket with flap and press stud, and an articulated knee panel with darts. Box/volume x3.1: the cargo pocket stands proud of the stack. The worn look is pending: no worn model is authored."
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "id": "pilot_light",
+  "file": "assets/models/pilot_light.glb",
+  "parts": {
+    "pilot_light": {
+      "node": "pilot_light:compound",
+      "massKg": 0.0053,
+      "centreOfMass": [-0.004010526315789473, 0.00707157894736842, 0]
+    }
+  }
+}

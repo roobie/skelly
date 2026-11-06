@@ -1,0 +1,11 @@
+{
+  "id": "aketon_nylon_vest",
+  "file": "assets/models/aketon_nylon_vest.glb",
+  "parts": {
+    "aketon_nylon_vest": {
+      "node": "aketon_nylon_vest:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-4.107071421387004e-21, 0.029161486365712728, -0.002258823062104029]
+    }
+  }
+}

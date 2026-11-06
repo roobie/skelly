@@ -1,0 +1,14 @@
+{
+  "id": "fire_drill",
+  "file": "assets/models/fire_drill.glb",
+  "parts": {
+    "fire_drill": {
+      "node": "fire_drill:compound",
+      "massKg": 0.19,
+      "centreOfMass": [-0.03362894394768976, 0.07079005002560367, 0.01556666797967464]
+    }
+  },
+  "grip": { "at": [-0.187, 0.101, 0.07100000000000001], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

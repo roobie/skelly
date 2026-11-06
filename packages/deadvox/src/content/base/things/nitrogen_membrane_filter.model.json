@@ -1,0 +1,11 @@
+{
+  "id": "nitrogen_membrane_filter",
+  "file": "assets/models/nitrogen_membrane_filter.glb",
+  "parts": {
+    "nitrogen_membrane_filter": {
+      "node": "nitrogen_membrane_filter:compound",
+      "massKg": 2.1,
+      "centreOfMass": [0.000709834617610331, 0.03331909968629122, 6.091432400328942e-8]
+    }
+  }
+}

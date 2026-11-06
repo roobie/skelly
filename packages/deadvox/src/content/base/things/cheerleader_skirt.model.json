@@ -1,0 +1,11 @@
+{
+  "id": "cheerleader_skirt",
+  "file": "assets/models/cheerleader_skirt.glb",
+  "parts": {
+    "cheerleader_skirt": {
+      "node": "cheerleader_skirt:compound",
+      "massKg": 0.2,
+      "centreOfMass": [-2.4819761834911945e-19, 0.006811341984847348, -0.009296676918460735]
+    }
+  }
+}

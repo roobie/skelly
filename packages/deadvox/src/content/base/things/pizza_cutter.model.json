@@ -1,0 +1,14 @@
+{
+  "id": "pizza_cutter",
+  "file": "assets/models/pizza_cutter.glb",
+  "parts": {
+    "pizza_cutter": {
+      "node": "pizza_cutter:compound",
+      "massKg": 0.18,
+      "centreOfMass": [0.09313580473481373, 0.011072306845292715, 0]
+    }
+  },
+  "grip": { "at": [0.065, 0.013000000000000001, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

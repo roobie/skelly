@@ -1,0 +1,11 @@
+{
+  "id": "arc_furnace",
+  "file": "assets/models/arc_furnace.glb",
+  "parts": {
+    "arc_furnace": {
+      "node": "arc_furnace:compound",
+      "massKg": 1600,
+      "centreOfMass": [0.012888296399679897, 0.6247736762859774, 0]
+    }
+  }
+}

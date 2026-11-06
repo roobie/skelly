@@ -1,0 +1,11 @@
+{
+  "id": "armor_ch_plate",
+  "file": "assets/models/armor_ch_plate.glb",
+  "parts": {
+    "armor_ch_plate": {
+      "node": "armor_ch_plate:compound",
+      "massKg": 28,
+      "centreOfMass": [1.73712281373369e-17, 0.03823018745610718, -0.09731192264059203]
+    }
+  }
+}

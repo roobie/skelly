@@ -1,0 +1,7 @@
+{
+  "id": "garnet",
+  "file": "assets/models/garnet.glb",
+  "parts": {
+    "garnet": { "node": "garnet:compound", "massKg": 0.0009, "centreOfMass": [0.001, 0.0024166666666666672, 0.001] }
+  }
+}

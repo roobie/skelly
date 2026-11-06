@@ -1,0 +1,11 @@
+{
+  "id": "forge",
+  "file": "assets/models/forge.glb",
+  "parts": {
+    "forge": {
+      "node": "forge:compound",
+      "massKg": 5.6,
+      "centreOfMass": [-0.00025769358522612486, 0.13814661557585034, 0.004471713425721416]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "id": "basketball",
+  "file": "assets/models/basketball.glb",
+  "parts": {
+    "basketball": { "node": "basketball:compound", "massKg": 0.41, "centreOfMass": [0, 0.11954575995113509, 0] }
+  }
+}

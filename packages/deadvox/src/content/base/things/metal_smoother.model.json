@@ -1,0 +1,14 @@
+{
+  "id": "metal_smoother",
+  "file": "assets/models/metal_smoother.glb",
+  "parts": {
+    "metal_smoother": {
+      "node": "metal_smoother:compound",
+      "massKg": 0.3,
+      "centreOfMass": [0.0014122187551322055, 0.02614189522089013, 0.0007933979306946952]
+    }
+  },
+  "grip": { "at": [0, 0.048, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

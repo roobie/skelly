@@ -1,0 +1,10 @@
+{
+  "id": "heavy_crowbar",
+  "file": "assets/models/heavy_crowbar.glb",
+  "parts": {
+    "heavy_crowbar": { "node": "heavy_crowbar:compound", "massKg": 5.5, "centreOfMass": [0.77574016, 0.01283392, 0] }
+  },
+  "grip": { "at": [0.72, 0.014, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

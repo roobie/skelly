@@ -1,0 +1,11 @@
+{
+  "id": "tailors_kit",
+  "file": "assets/models/tailors_kit.glb",
+  "parts": {
+    "tailors_kit": {
+      "node": "tailors_kit:compound",
+      "massKg": 0.11,
+      "centreOfMass": [-0.0029555433862697277, 0.006389057599442433, -0.0019193508239159667]
+    }
+  }
+}

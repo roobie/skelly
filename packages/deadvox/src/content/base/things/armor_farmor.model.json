@@ -1,0 +1,11 @@
+{
+  "id": "armor_farmor",
+  "file": "assets/models/armor_farmor.glb",
+  "parts": {
+    "armor_farmor": {
+      "node": "armor_farmor:compound",
+      "massKg": 3,
+      "centreOfMass": [0.00023512321101904662, 0.06645027440008609, -0.004441364467879052]
+    }
+  }
+}

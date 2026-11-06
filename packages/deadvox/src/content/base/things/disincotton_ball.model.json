@@ -1,0 +1,11 @@
+{
+  "id": "disincotton_ball",
+  "file": "assets/models/disincotton_ball.glb",
+  "parts": {
+    "disincotton_ball": {
+      "node": "disincotton_ball:compound",
+      "massKg": 0.0084,
+      "centreOfMass": [0, 0.008776889981561153, -0.0006963736939151808]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "hardened_sheet_sabatons",
+  "file": "assets/models/hardened_sheet_sabatons.glb",
+  "parts": {
+    "hardened_sheet_sabatons": {
+      "node": "hardened_sheet_sabatons:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0.00004759242992893153, 0.043005988980276286, 0.043954483749900186]
+    }
+  }
+}

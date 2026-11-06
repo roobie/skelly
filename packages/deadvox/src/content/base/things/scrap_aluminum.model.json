@@ -1,0 +1,11 @@
+{
+  "id": "scrap_aluminum",
+  "file": "assets/models/scrap_aluminum.glb",
+  "parts": {
+    "scrap_aluminum": {
+      "node": "scrap_aluminum:compound",
+      "massKg": 0.03,
+      "centreOfMass": [0.0038558659217877095, 0.002888268156424581, -0.0024636871508379884]
+    }
+  }
+}

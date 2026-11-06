@@ -1,0 +1,11 @@
+{
+  "id": "ch_chainmail_hauberk",
+  "file": "assets/models/ch_chainmail_hauberk.glb",
+  "parts": {
+    "ch_chainmail_hauberk": {
+      "node": "ch_chainmail_hauberk:compound",
+      "massKg": 12,
+      "centreOfMass": [8.057496374401398e-19, 0.03312944726244652, -0.0040617954170181015]
+    }
+  }
+}

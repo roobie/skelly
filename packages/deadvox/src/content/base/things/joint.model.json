@@ -1,0 +1,14 @@
+{
+  "id": "joint",
+  "file": "assets/models/joint.glb",
+  "parts": {
+    "joint": {
+      "node": "joint:compound",
+      "massKg": 0.0014,
+      "centreOfMass": [-0.0019072164948453613, 0.005020618556701031, 0]
+    }
+  },
+  "grip": { "at": [0, 0.005, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

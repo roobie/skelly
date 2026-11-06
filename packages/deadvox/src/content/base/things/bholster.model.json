@@ -1,0 +1,11 @@
+{
+  "id": "bholster",
+  "file": "assets/models/bholster.glb",
+  "parts": {
+    "bholster": {
+      "node": "bholster:compound",
+      "massKg": 0.12,
+      "centreOfMass": [-0.0017717134610338505, 0.008026764628706379, 0.020971923379690373]
+    }
+  }
+}

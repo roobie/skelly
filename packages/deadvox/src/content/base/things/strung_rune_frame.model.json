@@ -1,0 +1,14 @@
+{
+  "id": "strung_rune_frame",
+  "file": "assets/models/strung_rune_frame.glb",
+  "parts": {
+    "strung_rune_frame": {
+      "node": "strung_rune_frame:compound",
+      "massKg": 0.12,
+      "centreOfMass": [0, 0.0794710650754335, 0.0000598964197252871]
+    }
+  },
+  "grip": { "at": [0, 0.006, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

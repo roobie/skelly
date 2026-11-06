@@ -1,0 +1,11 @@
+{
+  "id": "ceramic_cup",
+  "file": "assets/models/ceramic_cup.glb",
+  "parts": {
+    "ceramic_cup": {
+      "node": "ceramic_cup:compound",
+      "massKg": 0.14,
+      "centreOfMass": [0.003978426966292134, 0.024989213483146068, 0]
+    }
+  }
+}

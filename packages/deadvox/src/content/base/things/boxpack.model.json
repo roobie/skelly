@@ -1,0 +1,11 @@
+{
+  "id": "boxpack",
+  "file": "assets/models/boxpack.glb",
+  "parts": {
+    "boxpack": {
+      "node": "boxpack:compound",
+      "massKg": 3.5,
+      "centreOfMass": [9.398945264694853e-20, 0.1964484391182128, -0.0014891256102973812]
+    }
+  }
+}

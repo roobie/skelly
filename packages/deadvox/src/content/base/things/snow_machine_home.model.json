@@ -1,0 +1,11 @@
+{
+  "id": "snow_machine_home",
+  "file": "assets/models/snow_machine_home.glb",
+  "parts": {
+    "snow_machine_home": {
+      "node": "snow_machine_home:compound",
+      "massKg": 1.4,
+      "centreOfMass": [0.00003266097903758982, 0.13175688354876383, -0.026878679308774918]
+    }
+  }
+}

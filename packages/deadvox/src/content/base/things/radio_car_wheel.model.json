@@ -1,0 +1,11 @@
+{
+  "id": "radio_car_wheel",
+  "file": "assets/models/radio_car_wheel.glb",
+  "parts": {
+    "radio_car_wheel": {
+      "node": "radio_car_wheel:compound",
+      "massKg": 0.15,
+      "centreOfMass": [4.353397541044561e-18, 0.015221407972858352, 0.000009363867684474663]
+    }
+  }
+}

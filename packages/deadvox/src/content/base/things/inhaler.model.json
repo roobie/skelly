@@ -1,0 +1,14 @@
+{
+  "id": "inhaler",
+  "file": "assets/models/inhaler.glb",
+  "parts": {
+    "inhaler": {
+      "node": "inhaler:compound",
+      "massKg": 0.03,
+      "centreOfMass": [0, 0.03694505494505495, 0.00481456043956044]
+    }
+  },
+  "grip": { "at": [0, 0.033, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

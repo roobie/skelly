@@ -1,0 +1,11 @@
+{
+  "id": "sheet_canvas",
+  "file": "assets/models/sheet_canvas.glb",
+  "parts": {
+    "sheet_canvas": {
+      "node": "sheet_canvas:compound",
+      "massKg": 0.071,
+      "centreOfMass": [0.0013884351519111392, 0.0011221822933681802, -0.0007557170859196343]
+    }
+  }
+}

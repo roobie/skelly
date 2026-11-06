@@ -1,0 +1,11 @@
+{
+  "id": "long_glove_white",
+  "file": "assets/models/long_glove_white.glb",
+  "parts": {
+    "long_glove_white": {
+      "node": "long_glove_white:compound",
+      "massKg": 0.06,
+      "centreOfMass": [-3.508400562209885e-18, 0.0042859912748424624, -0.13316173856842786]
+    }
+  }
+}

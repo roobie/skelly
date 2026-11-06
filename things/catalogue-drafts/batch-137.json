@@ -1,0 +1,363 @@
+[
+  {
+    "id": "mc_lighthelm_close",
+    "model": "lc_lighthelm_close",
+    "name": "Medium steel light close helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 10,
+      "warmth": 5,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0.1, "blunt": 0.55, "cut": 0.85, "pierce": 0.6 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "back", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "finishes": { "plate": "steel-grey" },
+    "description": "A medium steel helm that closes round the whole head, with a pivoting visor over a chin guard and a low comb and one gorget plate. With the visor down you look out through a narrow slit and breathe through the slots on the right cheek.",
+    "reference": "mc_lighthelm_close",
+    "variants": ["xl_mc_lighthelm_close"],
+    "notes": "Shares batch 136's mild steel model `lc_lighthelm_close` with the plates in `steel-grey`, the medium grade; it differs only in colour, as the reference copies the mild helm. No row of its own, so the look step did not check this colouring. Slot `head`; it also covers the eyes and mouth, which the head slot is taken to include. Encumbrance and warmth follow the reference. Protection is a guess for a full steel helm graded by steel and weight, above the mild steel helm of the same pattern; the reference gives none. The xl size shares the model. Host for helmet add-ons: `helmet` points at the left side, right side and back of the rim; no front mount, because the visor covers the face and nothing that rides there could be used with it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_lighthelm_close_raised",
+    "model": "lc_lighthelm_close_raised",
+    "name": "Medium steel light close helm, visor up",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0.09, "blunt": 0.47, "cut": 0.72, "pierce": 0.51 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "back", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "finishes": { "plate": "steel-grey" },
+    "description": "A medium steel helm that closes round the whole head, with a pivoting visor over a chin guard and a low comb and one gorget plate. The visor is swung up, so you can see and breathe freely, but the face is open.",
+    "reference": "mc_lighthelm_close_raised",
+    "variants": ["xl_mc_lighthelm_close_raised"],
+    "notes": "Shares batch 136's mild steel model `lc_lighthelm_close_raised` with the plates in `steel-grey`, the medium grade; it differs only in colour, as the reference copies the mild helm. No row of its own, so the look step did not check this colouring. The raised visor is a visible state, so it has its own model, as batch 136's mild steel helms do. Encumbrance and warmth follow the reference: none with the visor up. Protection is cut by 15% with the face open, because the reference drops the eyes and mouth from what it covers. Protection is a guess for a full steel helm graded by steel and weight, above the mild steel helm of the same pattern; the reference gives none. The xl size shares the model. Host for helmet add-ons: `helmet` points at the left side, right side and back of the rim; no front mount, because the visor covers the face and nothing that rides there could be used with it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "pickelhaube",
+    "model": "pickelhaube",
+    "name": "Spiked leather helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 15,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.1, "blunt": 0.3, "cut": 0.35, "pierce": 0.2 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "back", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "An old officer's helmet of hardened black leather with a peak front and back, a tall spike on a cross-shaped base, a shield-shaped plate on the front and scaled chin straps. The spike is for show.",
+    "reference": "pickelhaube",
+    "variants": [],
+    "notes": "Standing on its rim, front on +z, 232 mm across, 268 mm front to back with the peaks and 244 mm tall to the spike tip: a black leather shell in `leather-black`, a front peak trimmed in metal and a deeper neck peak, a fluted spike on a round boss with four arms down the shell, a shield-shaped front plate, rosettes each side and a run of chin scales resting over the front peak. The reference gives iron fittings; they are in `brass-polished` because polished fittings are how the helmet is known and steel would not read against the trim at this grain. The id keeps the reference's word for the helmet, which is a common noun, not a brand. CHECK VOLUME (x8.7): a helmet is a hollow shell with a spike, and the reference volume counts the leather rather than the box round the head it encloses. Slot `head`; encumbrance and warmth follow the reference. Protection is a guess for hardened leather; the reference gives none. Host for helmet add-ons: `helmet` points at the left side, right side and back of the rim; no front mount, because the front plate takes the brow. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "pot_helmet",
+    "model": "pot_helmet",
+    "name": "Pot helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "cooking": 3 } },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.1, "blunt": 0.3, "cut": 0.4, "pierce": 0.2 }
+    },
+    "description": "An iron soup pot worn upside down, with a leather strap run through its side handles to buckle under the chin. Poor armour, but it still cooks.",
+    "reference": "pot_helmet",
+    "variants": ["pot_helmet_xs"],
+    "notes": "Upside down on its rim, front on +z: an iron pot 200 mm across and 130 mm deep in `iron-cast` with a rolled rim, a loop handle each side near the rim and a brown strap dropping from both handles and lying out in a loop in front with its buckle, 256 mm across with the handles. cooking 3, the pot grade, carries the reference's cooking and boiling qualities; its container and chemistry qualities are not carried over. Slot `head`; encumbrance and warmth follow the reference. Protection is a guess for a thin iron pot; the reference gives none. No `helmet` points: a pot has no rails or rim laces to take add-ons. The xs size shares the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "pot_xlhelmet",
+    "model": "pot_xlhelmet",
+    "name": "Canning pot helmet",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "cooking": 3 } },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.15, "blunt": 0.35, "cut": 0.45, "pierce": 0.25 }
+    },
+    "description": "A huge enamelled canning pot worn upside down, with a strap through its handles. It swallows an ordinary head whole and still cooks.",
+    "reference": "pot_xlhelmet",
+    "variants": [],
+    "notes": "Upside down on its rim, front on +z: a steel canner 330 mm across and 260 mm deep, enamelled in `paint-drum-blue` with a `steel-grey` rim and handles, and a brown strap through both handles lying out in a loop in front, 384 mm across with the handles. Built by the same pot helper as `pot_helmet`, larger and in another finish. The reference's name is the same as the smaller pot helmet's, so the name says which pot it is. cooking 3, the pot grade, carries the reference's cooking and boiling qualities; its container and chemistry qualities are not carried over. Slot `head`; encumbrance and warmth follow the reference, though a pot this size would surely hinder. Protection is a guess for thicker steel than the soup pot; the reference gives none. No `helmet` points: a pot has no rails or rim laces to take add-ons. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_heavyhelm_close",
+    "model": "lc_heavyhelm_close",
+    "name": "Tempered steel heavy close helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 10,
+      "warmth": 5,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.1, "blunt": 0.8, "cut": 0.95, "pierce": 0.85 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "back", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "finishes": { "plate": "steel-heat-tint" },
+    "description": "A tempered steel helm that closes round the whole head, with a pivoting visor over a chin guard and the tallest comb, three gorget plates and a riveted plate over the chin. With the visor down you look out through a narrow slit and breathe through the slots on the right cheek.",
+    "reference": "qt_heavyhelm_close",
+    "variants": ["xl_qt_heavyhelm_close"],
+    "notes": "Shares batch 136's mild steel model `lc_heavyhelm_close` with the plates in `steel-heat-tint`, the tempered grade; it differs only in colour, as the reference copies the mild helm. No row of its own, so the look step did not check this colouring. Slot `head`; it also covers the eyes and mouth, which the head slot is taken to include. Encumbrance and warmth follow the reference. Protection is a guess for a full steel helm graded by steel and weight, above the medium steel helm of the same pattern; the reference gives none. The xl size shares the model. Host for helmet add-ons: `helmet` points at the left side, right side and back of the rim; no front mount, because the visor covers the face and nothing that rides there could be used with it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_heavyhelm_close_raised",
+    "model": "lc_heavyhelm_close_raised",
+    "name": "Tempered steel heavy close helm, visor up",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.09, "blunt": 0.68, "cut": 0.81, "pierce": 0.72 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "back", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "finishes": { "plate": "steel-heat-tint" },
+    "description": "A tempered steel helm that closes round the whole head, with a pivoting visor over a chin guard and the tallest comb, three gorget plates and a riveted plate over the chin. The visor is swung up, so you can see and breathe freely, but the face is open.",
+    "reference": "qt_heavyhelm_close_raised",
+    "variants": ["xl_qt_heavyhelm_close_raised"],
+    "notes": "Shares batch 136's mild steel model `lc_heavyhelm_close_raised` with the plates in `steel-heat-tint`, the tempered grade; it differs only in colour, as the reference copies the mild helm. No row of its own, so the look step did not check this colouring. The raised visor is a visible state, so it has its own model, as batch 136's mild steel helms do. Encumbrance and warmth follow the reference: none with the visor up. Protection is cut by 15% with the face open, because the reference drops the eyes and mouth from what it covers. Protection is a guess for a full steel helm graded by steel and weight, above the medium steel helm of the same pattern; the reference gives none. The xl size shares the model. Host for helmet add-ons: `helmet` points at the left side, right side and back of the rim; no front mount, because the visor covers the face and nothing that rides there could be used with it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_helm_close",
+    "model": "lc_helm_close",
+    "name": "Tempered steel close helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 10,
+      "warmth": 5,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.1, "blunt": 0.7, "cut": 0.92, "pierce": 0.75 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "back", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "finishes": { "plate": "steel-heat-tint" },
+    "description": "A tempered steel helm that closes round the whole head, with a pivoting visor over a chin guard and a comb and two gorget plates. With the visor down you look out through a narrow slit and breathe through the slots on the right cheek.",
+    "reference": "qt_helm_close",
+    "variants": ["xl_qt_helm_close"],
+    "notes": "Shares batch 136's mild steel model `lc_helm_close` with the plates in `steel-heat-tint`, the tempered grade; it differs only in colour, as the reference copies the mild helm. No row of its own, so the look step did not check this colouring. Slot `head`; it also covers the eyes and mouth, which the head slot is taken to include. Encumbrance and warmth follow the reference. Protection is a guess for a full steel helm graded by steel and weight, above the medium steel helm of the same pattern; the reference gives none. The xl size shares the model. Host for helmet add-ons: `helmet` points at the left side, right side and back of the rim; no front mount, because the visor covers the face and nothing that rides there could be used with it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_helm_close_raised",
+    "model": "lc_helm_close_raised",
+    "name": "Tempered steel close helm, visor up",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.09, "blunt": 0.59, "cut": 0.78, "pierce": 0.64 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "back", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "finishes": { "plate": "steel-heat-tint" },
+    "description": "A tempered steel helm that closes round the whole head, with a pivoting visor over a chin guard and a comb and two gorget plates. The visor is swung up, so you can see and breathe freely, but the face is open.",
+    "reference": "qt_helm_close_raised",
+    "variants": ["xl_qt_helm_close_raised"],
+    "notes": "Shares batch 136's mild steel model `lc_helm_close_raised` with the plates in `steel-heat-tint`, the tempered grade; it differs only in colour, as the reference copies the mild helm. No row of its own, so the look step did not check this colouring. The raised visor is a visible state, so it has its own model, as batch 136's mild steel helms do. Encumbrance and warmth follow the reference: none with the visor up. Protection is cut by 15% with the face open, because the reference drops the eyes and mouth from what it covers. Protection is a guess for a full steel helm graded by steel and weight, above the medium steel helm of the same pattern; the reference gives none. The xl size shares the model. Host for helmet add-ons: `helmet` points at the left side, right side and back of the rim; no front mount, because the visor covers the face and nothing that rides there could be used with it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_lighthelm_close",
+    "model": "lc_lighthelm_close",
+    "name": "Tempered steel light close helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 10,
+      "warmth": 5,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.1, "blunt": 0.6, "cut": 0.9, "pierce": 0.65 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "back", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "finishes": { "plate": "steel-heat-tint" },
+    "description": "A tempered steel helm that closes round the whole head, with a pivoting visor over a chin guard and a low comb and one gorget plate. With the visor down you look out through a narrow slit and breathe through the slots on the right cheek.",
+    "reference": "qt_lighthelm_close",
+    "variants": ["xl_qt_lighthelm_close"],
+    "notes": "Shares batch 136's mild steel model `lc_lighthelm_close` with the plates in `steel-heat-tint`, the tempered grade; it differs only in colour, as the reference copies the mild helm. No row of its own, so the look step did not check this colouring. Slot `head`; it also covers the eyes and mouth, which the head slot is taken to include. Encumbrance and warmth follow the reference. Protection is a guess for a full steel helm graded by steel and weight, above the medium steel helm of the same pattern; the reference gives none. The xl size shares the model. Host for helmet add-ons: `helmet` points at the left side, right side and back of the rim; no front mount, because the visor covers the face and nothing that rides there could be used with it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_lighthelm_close_raised",
+    "model": "lc_lighthelm_close_raised",
+    "name": "Tempered steel light close helm, visor up",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.09, "blunt": 0.51, "cut": 0.77, "pierce": 0.55 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "back", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "finishes": { "plate": "steel-heat-tint" },
+    "description": "A tempered steel helm that closes round the whole head, with a pivoting visor over a chin guard and a low comb and one gorget plate. The visor is swung up, so you can see and breathe freely, but the face is open.",
+    "reference": "qt_lighthelm_close_raised",
+    "variants": ["xl_qt_lighthelm_close_raised"],
+    "notes": "Shares batch 136's mild steel model `lc_lighthelm_close_raised` with the plates in `steel-heat-tint`, the tempered grade; it differs only in colour, as the reference copies the mild helm. No row of its own, so the look step did not check this colouring. The raised visor is a visible state, so it has its own model, as batch 136's mild steel helms do. Encumbrance and warmth follow the reference: none with the visor up. Protection is cut by 15% with the face open, because the reference drops the eyes and mouth from what it covers. Protection is a guess for a full steel helm graded by steel and weight, above the medium steel helm of the same pattern; the reference gives none. The xl size shares the model. Host for helmet add-ons: `helmet` points at the left side, right side and back of the rim; no front mount, because the visor covers the face and nothing that rides there could be used with it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_helmet_nasal",
+    "model": "lc_helmet_nasal",
+    "name": "Tempered steel nasal helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 10,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.05, "blunt": 0.55, "cut": 0.8, "pierce": 0.55 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "back", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "finishes": { "plate": "steel-heat-tint" },
+    "description": "A pointed round helmet of tempered steel with banded crown, a leather lining and a bar that runs down over the nose. A modern copy of an early medieval design: it leaves the eyes clear and still turns a blow aimed at the face.",
+    "reference": "qt_helmet_nasal",
+    "variants": ["xl_qt_helmet_nasal", "xs_qt_helmet_nasal"],
+    "notes": "Shares batch 136's mild steel model `lc_helmet_nasal` with the skull in `steel-heat-tint`, the tempered grade; the bands keep the model's `steel-grey` so they still read against it. It differs only in colour, as the reference copies the mild helm. No row of its own, so the look step did not check this colouring. Slot `head`; it also covers the mouth through the nasal bar. Encumbrance and warmth follow the reference. Protection is a guess graded above the medium steel nasal helm; the reference gives none. The xl and xs sizes share the model. Host for helmet add-ons: `helmet` points at the left side, right side and back of the rim, and a front mount above the brow for goggles. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_helmet_turban",
+    "model": "lc_helmet_turban",
+    "name": "Tempered steel turban helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 3,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.05, "blunt": 0.6, "cut": 0.85, "pierce": 0.6 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "back", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "finishes": { "band": "steel-heat-tint", "plate": "steel-heat-tint" },
+    "description": "A tall, bulbous fluted helmet of tempered steel rising to a spike, with hinged ear guards and a nasal bar that slides up and down in a bracket. A modern copy of an old design from the Middle East.",
+    "reference": "qt_helmet_turban",
+    "variants": ["xl_qt_helmet_turban", "xs_qt_helmet_turban"],
+    "notes": "Shares batch 136's mild steel model `lc_helmet_turban` with the steel in `steel-heat-tint`, the tempered grade; it differs only in colour, as the reference copies the mild helm. No row of its own, so the look step did not check this colouring. Slot `head`; it also covers the mouth through the nasal bar. Encumbrance and warmth follow the reference. Protection is a guess graded above the medium steel turban helmet; the reference gives none. The xl and xs sizes share the model. Host for helmet add-ons: `helmet` points at the left side, right side and back of the rim, and a front mount above the brow for goggles. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "stockpot_helmet",
+    "model": "stockpot_helmet",
+    "name": "Stock pot great helm",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "cooking": 3 } },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 30,
+      "warmth": 70,
+      "wearPerDamage": 0.0025,
+      "protects": { "acid": 0.15, "blunt": 0.45, "cut": 0.5, "pierce": 0.3 }
+    },
+    "description": "A tall aluminium stock pot turned upside down into a closed helm, with a T hacked through the front to see and breathe, a blanket stuffed inside for padding and cords tied to the handles to hold it on. Hot, stifling and hard to see out of.",
+    "reference": "stockpot_helmet",
+    "variants": [],
+    "notes": "Upside down on its rim, front on +z: an aluminium stock pot 260 mm across and 290 mm deep in `alu-bare`, a T cut through the front wall with the dark blanket showing through it, a grey blanket bunched out under the rim all round, and a cotton cord tied to each side handle hanging to the floor and trailing forward, 328 mm across with the cords. cooking 3, the pot grade, carries the reference's cooking and boiling qualities, though the T in the wall would let a full pot leak. Slot `head`; it also covers the eyes and mouth, which the head slot is taken to include. Encumbrance and warmth follow the reference. Protection is a guess for an aluminium pot over a blanket; the reference gives none. No `helmet` points: a pot has no rails or rim laces to take add-ons. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "tac_fullhelmet",
+    "model": "tac_fullhelmet",
+    "name": "Tactical full helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Police", "Military"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 20,
+      "warmth": 25,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.4, "blunt": 0.7, "cut": 0.8, "pierce": 0.7 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "back", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "A charcoal-grey ballistic helmet that closes over the whole head and neck, with a moulded chin bar, a smoked visor curving round the face, black accessory rails along the sides and a mount over the brow.",
+    "reference": "tac_fullhelmet",
+    "variants": [],
+    "notes": "Standing on its neck guard, front on +z, 272 mm across and 304 mm tall: a rounded shell in `plastic-charcoal` with a chin bar and a row of black vents, a smoked visor in `lens-smoke` curving close round the shell to its pivots, with a black rim across its top, visor pivots each side, accessory rails curved along the sides behind the pivots, trim in `plastic-matte-black`, a mount shroud above the brow and a guard flaring out over the back of the neck. Tiles draw the visor opaque; it stays see-through in the game. CHECK VOLUME (x10): a helmet is a hollow shell, and the reference volume counts the shell rather than the box round the head it encloses. Slot `head`; it also covers the eyes and mouth, which the head slot is taken to include. Encumbrance and warmth follow the reference. Protection is a guess for rigid aramid with a plastic visor; the reference gives none. Host for helmet add-ons: `helmet` points on the left and right rails and at the back of the shell, and the shroud above the brow as the front mount for goggles. The worn look is pending: no worn model is authored."
+  }
+]

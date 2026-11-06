@@ -1,0 +1,11 @@
+{
+  "id": "bodypillow",
+  "file": "assets/models/bodypillow.glb",
+  "parts": {
+    "bodypillow": {
+      "node": "bodypillow:compound",
+      "massKg": 1.7,
+      "centreOfMass": [0.000516735173223723, 0.1600770698766882, 0]
+    }
+  }
+}

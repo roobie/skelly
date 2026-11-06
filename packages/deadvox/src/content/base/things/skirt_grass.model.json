@@ -1,0 +1,11 @@
+{
+  "id": "skirt_grass",
+  "file": "assets/models/skirt_grass.glb",
+  "parts": {
+    "skirt_grass": {
+      "node": "skirt_grass:compound",
+      "massKg": 0.25,
+      "centreOfMass": [0.00013563651845995418, 0.004053889666078707, 0.01427273280214099]
+    }
+  }
+}

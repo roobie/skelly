@@ -1,0 +1,10 @@
+{
+  "id": "panacea",
+  "file": "assets/models/panacea.glb",
+  "parts": {
+    "panacea": { "node": "panacea:compound", "massKg": 0.0012, "centreOfMass": [0, 0.005428571428571429, 0] }
+  },
+  "grip": { "at": [0, 0.006, -0.007], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

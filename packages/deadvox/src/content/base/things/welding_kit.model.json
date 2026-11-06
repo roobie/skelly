@@ -1,0 +1,11 @@
+{
+  "id": "welding_kit",
+  "file": "assets/models/welding_kit.glb",
+  "parts": {
+    "welding_kit": {
+      "node": "welding_kit:compound",
+      "massKg": 10,
+      "centreOfMass": [-0.022249641884670678, 0.11383490073665874, 0.0025236879277142654]
+    }
+  }
+}

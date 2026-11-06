@@ -1,0 +1,18 @@
+{
+  "id": "tow_truck_boom_stage",
+  "file": "assets/models/tow_truck_boom_stage.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 130,
+      "centreOfMass": [-3.1592149301513386, 3.234320430733411, 0],
+      "collision": [
+        { "min": [-3.78125, 2.78125, -0.125], "max": [-2.28125, 3.59375, 0.125] },
+        { "min": [-3.90625, 3.34375, -0.125], "max": [-3.625, 3.625, 0.125] },
+        { "min": [-3.65625, 3.59375, -0.09375], "max": [-3.5625, 3.65625, 0.09375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

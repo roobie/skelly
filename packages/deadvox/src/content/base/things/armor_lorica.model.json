@@ -1,0 +1,11 @@
+{
+  "id": "armor_lorica",
+  "file": "assets/models/armor_lorica.glb",
+  "parts": {
+    "armor_lorica": {
+      "node": "armor_lorica:compound",
+      "massKg": 9,
+      "centreOfMass": [4.1370211765966434e-18, 0.019318734793187343, -0.08450756961340897]
+    }
+  }
+}

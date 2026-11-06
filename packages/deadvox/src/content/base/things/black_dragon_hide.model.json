@@ -1,0 +1,14 @@
+{
+  "id": "black_dragon_hide",
+  "file": "assets/models/black_dragon_hide.glb",
+  "parts": {
+    "black_dragon_hide": {
+      "node": "black_dragon_hide:compound",
+      "massKg": 1.8,
+      "centreOfMass": [-1.7565950574496237e-19, 0.04874262051390953, 0.0025168825653004885]
+    }
+  },
+  "grip": { "at": [0, 0.05, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

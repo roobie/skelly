@@ -1,0 +1,14 @@
+{
+  "id": "boltcutters",
+  "file": "assets/models/boltcutters.glb",
+  "parts": {
+    "boltcutters": {
+      "node": "boltcutters:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0.25892592592592595, 0, 0.0002592592592592592]
+    }
+  },
+  "grip": { "at": [0.095, 0, 0.03], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

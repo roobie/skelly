@@ -1,0 +1,140 @@
+[
+  {
+    "id": "straw_hat",
+    "model": "straw_hat",
+    "name": "Straw hat",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "head", "encumbrance": 0, "warmth": 2, "wearPerDamage": 0.03 },
+    "description": "A light hat of woven straw with a wide brim that shades the eyes and neck from the sun. It does nothing against a blow.",
+    "reference": "straw_hat",
+    "variants": [],
+    "notes": "Sitting on its brim, 400 mm across and 124 mm tall: a rounded woven crown on a brim that droops at the edge, raised rings of plait across the brim and a brown cloth band with a bow on the crown. CHECK VOLUME (x26): the model stands as a hollow hat round a head-sized space, while the reference volume is the straw itself. Slot `head`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "tophat",
+    "model": "tophat",
+    "name": "Top hat",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "head", "encumbrance": 0, "warmth": 8, "wearPerDamage": 0.02 },
+    "description": "A tall black silk hat with a flat top, a narrow rolled brim and a matt band. Formal wear from another age, and it crushes easily.",
+    "reference": "tophat",
+    "variants": [],
+    "notes": "Sitting on its brim, 300 mm across the brim and 165 mm tall: a glossy black crown that waists a little and flares to a flat top, a flat brim with a rolled edge, and a charcoal band above the brim. CHECK VOLUME (x5.8): the model stands as a hollow crown round a head-sized space, while the reference volume is the packed cloth. Slot `head`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "tricorne",
+    "model": "tricorne",
+    "name": "Tricorne",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 7,
+      "wearPerDamage": 0.012,
+      "protects": { "blunt": 0.05, "cut": 0.05 }
+    },
+    "description": "A three-cornered hat of oiled black leather, its wide brim pinned up into three walls round a round crown, edged with gold braid and a black cockade on one side. It sheds rain.",
+    "reference": "tricorne",
+    "variants": [],
+    "notes": "Sitting on its brim, 376 mm corner to corner and 128 mm tall, one corner to the front (+z): a domed crown inside three brim walls that rise from low middles to pinned-up corners, gold braid along the wall tops and a black cockade with a gold button on the left wall. CHECK VOLUME (x7.6): the model stands hollow round a head-sized space, while the reference volume is the leather itself. The walls step in 14 segments per side because prisms stand straight up; the steps read as the brim's curve at play distance. Light protection is a judgement for thick oiled leather. Slot `head`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "turban",
+    "model": "turban",
+    "name": "Turban",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "head", "encumbrance": 0, "warmth": 8, "wearPerDamage": 0.025 },
+    "description": "A long length of plain cotton wound round the head into a close, rounded crown, its folds crossing over the forehead. It keeps off sun and dust and holds warmth.",
+    "reference": "turban",
+    "variants": [],
+    "notes": "Set down already wound, 232 mm across and 144 mm tall: a rounded cream crown with two folds a side climbing from a V over the forehead (+z) round to the back, drawn a shade lighter so the wraps read. CHECK VOLUME (x30): the model stands as a wound hollow round a head-sized space, while the reference volume is the cloth itself. Slot `head`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "wizard_hat_costume",
+    "model": "wizard_hat_costume",
+    "name": "Wizard hat",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "head", "encumbrance": 0, "warmth": 8, "wearPerDamage": 0.03 },
+    "description": "A tall pointed costume hat of blue cotton with a wide brim, a gold band and gold stars stitched all over. It casts no spells.",
+    "reference": "wizard_hat_costume",
+    "variants": [],
+    "notes": "Standing on its brim, 380 mm across and 336 mm tall: a blue cone on a wide flat brim, a gold band at its foot and gold five-pointed stars on the cone and brim. CHECK VOLUME (x24): the model stands as a hollow cone, while the reference volume is the packed cloth. Slot `head`. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "zucchetto",
+    "model": "zucchetto",
+    "name": "Skullcap",
+    "category": "clothing",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "head", "encumbrance": 0, "warmth": 3, "wearPerDamage": 0.03 },
+    "description": "A small round cap of crimson silk that sits on the crown of the head, with a short stem at its top. Worn by clergy.",
+    "reference": "zucchetto",
+    "variants": [],
+    "notes": "Lying crown up, 174 mm across and 56 mm tall: a shallow crimson cap with a bound rim and a short stem at the crown. Grain 2 mm keeps the thin cap whole and its curve smooth. CHECK VOLUME (x5.7): the model is a hollow cap, while the reference volume is the folded cloth. Slot `head`; it is small enough to sit under a helmet, which one head slot cannot express. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "panoramic_night_vision_goggles",
+    "model": "panoramic_nvg",
+    "name": "Panoramic night-vision goggles",
+    "category": "light",
+    "size": [2, 2],
+    "economy": { "usage": ["Military"], "tiers": ["Tier4"] },
+    "wearable": { "encumbrance": 15, "warmth": 0, "wearPerDamage": 0.01 },
+    "fits": ["helmet"],
+    "light": {
+      "color": "#7dff86",
+      "intensity": 0.8,
+      "nightVision": {
+        "edge": { "darkening": 0.6, "inner": 0.42, "outer": 0.62 },
+        "flare": {
+          "blastIntensity": 40,
+          "distanceMetres": 3,
+          "haloRadius": 0.12,
+          "recoverRealSeconds": 0.6,
+          "strength": 0.15
+        },
+        "gain": 7,
+        "grain": 0.06,
+        "tint": "#d8f4ff"
+      },
+      "power": {
+        "battery": "aa_battery",
+        "chargePerGameHour": 0.3,
+        "compatibleBatteries": ["rechargeable_aa_battery"],
+        "swapSimSeconds": 4
+      },
+      "radius": 16,
+      "seenFrom": 8,
+      "wornSwitch": true
+    },
+    "description": "Four-tube night-vision goggles for a helmet mount: the inner pair for the eyes, the outer pair angled out to widen the view to the sides. Heavy at the front, hungry for batteries, and nothing else sees as wide in the dark.",
+    "reference": "advanced_gpnvg_on",
+    "variants": ["advanced_gpnvg"],
+    "notes": "As they come off a helmet, front on +z, 178 mm across, 132 mm deep and 92 mm tall: four black image tubes on one housing, the inner pair longer with rubber eyecups at the back, the outer pair set back and wider, green-coated objective lenses at the front, focus knobs, a power switch, a cable plug and the helmet mount shoe on top. The reference row is the switched-on state; Deadvox's night-vision goggles switch with `wornSwitch`, so on and off are one item and the plain `advanced_gpnvg` id rides here as a variant. The light block mirrors Deadvox's night-vision goggles (`night_vision_goggles`) with a wider, less darkened edge for the panoramic view, a white-phosphor tint, and a faster drain from four tubes; tuning is a judgement. It hangs from a helmet mount, so it `fits` `helmet` and its `wearable` has no slot, where Deadvox's goggles take `eyes`. The outer tubes point straight ahead because turned pieces only lie along x, y or z. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "attachable_ear_muffs",
+    "model": "attachable_ear_muffs",
+    "name": "Helmet ear muffs",
+    "category": "clothing",
+    "size": [2, 1],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier2"] },
+    "wearable": { "encumbrance": 0, "warmth": 8, "wearPerDamage": 0.02 },
+    "fits": ["helmet"],
+    "description": "A pair of padded ear cups on sprung wire arms that clip into the side slots of a hard hat or helmet. Swung down, they shut out most noise; swung up, they leave the ears open.",
+    "reference": "attachable_ear_muffs",
+    "variants": [],
+    "notes": "As they come off a hard hat, 200 mm across and 140 mm tall: two yellow cups standing face to face on the edges of their black foam cushions, each on a twin steel wire arm ending in a flat black clip blade and tongue. CHECK VOLUME (x9.4): the cups stand apart round a head-sized gap, while the reference volume is the pair packed together. The worn-down `attachable_ear_muffs_on` state is drafted by its own batch; it should ride on this model, switched like a worn light rather than swapped as another item. It clips into a helmet's side slots, so it `fits` `helmet` and its `wearable` has no slot. Hearing protection is a wearable property, not a tool quality; it belongs on the `wearable` block once Deadvox has a field for it. The worn look is pending: no worn model is authored."
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "id": "meth",
+  "file": "assets/models/meth.glb",
+  "parts": {
+    "meth": {
+      "node": "meth:compound",
+      "massKg": 0.0027,
+      "centreOfMass": [-0.00009273182957393486, 0.0017894736842105263, -0.0025588972431077697]
+    }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

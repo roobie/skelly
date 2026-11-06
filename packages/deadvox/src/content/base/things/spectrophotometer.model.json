@@ -1,0 +1,11 @@
+{
+  "id": "spectrophotometer",
+  "file": "assets/models/spectrophotometer.glb",
+  "parts": {
+    "spectrophotometer": {
+      "node": "spectrophotometer:compound",
+      "massKg": 5,
+      "centreOfMass": [0.0009811005964928021, 0.05434609140243084, -0.031507933802753726]
+    }
+  }
+}

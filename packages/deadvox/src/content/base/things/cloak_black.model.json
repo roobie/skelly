@@ -1,0 +1,11 @@
+{
+  "id": "cloak_black",
+  "file": "assets/models/cloak_black.glb",
+  "parts": {
+    "cloak_black": {
+      "node": "cloak_black:compound",
+      "massKg": 0.6,
+      "centreOfMass": [-1.0969866806264692e-21, 0.018064505177389244, -0.004270921745034801]
+    }
+  }
+}

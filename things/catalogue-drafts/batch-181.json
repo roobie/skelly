@@ -1,0 +1,330 @@
+[
+  {
+    "id": "jacket_jean_mod",
+    "model": "jacket_jean_mod",
+    "name": "Plated denim jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 15,
+      "warmth": 25,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.05, "blunt": 0.3, "cut": 0.45, "pierce": 0.3 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "right" }
+      ]
+    },
+    "description": "A denim jacket with mild steel plates riveted over the chest, the belly and down the sleeves. It stops a fair blow, but the denim between the plates tears easily.",
+    "reference": "jacket_jean_mod",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z, 420 mm by 340 mm and 80 mm tall, the sleeves folded flat along both sides. Two riveted plates each side of the button placket, one over the belly each side, and a long plate down each sleeve; brass buttons. Plates in `steel-bright`, the mild steel finish. CHECK: box/volume x2.5: folded cloth with plates holds more air than the reference volume. Slot `torso`, as the denim jacket has it. Protection is a judgement for mild plate on denim: fair against cuts and blows, weaker against points; wear is fast because the reference calls it not very sturdy. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_jean_mod_ch",
+    "model": "jacket_jean_mod",
+    "name": "Hardened plated denim jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 15,
+      "warmth": 25,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.05, "blunt": 0.35, "cut": 0.6, "pierce": 0.4 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "right" }
+      ]
+    },
+    "finishes": { "plate": "steel-hardened" },
+    "description": "A denim jacket with hardened steel plates riveted over the chest, the belly and down the sleeves. The plates turn a blade well; the denim between them still tears.",
+    "reference": "jacket_jean_mod_ch",
+    "variants": [],
+    "notes": "Rides on `jacket_jean_mod` with its plates in `steel-hardened`. Protection is a judgement: the hardened plates guard better than mild ones; wear stays fast because the denim gives out first. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_leather_mod",
+    "model": "jacket_leather_mod",
+    "name": "Plated motorcycle jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 20,
+      "warmth": 35,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.4, "cut": 0.55, "pierce": 0.35 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "inner" }
+      ]
+    },
+    "description": "A thick black leather motorcycle jacket with mild steel plates bolted through it over the chest, the shoulders and the elbows.",
+    "reference": "jacket_leather_mod",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z, 420 mm by 340 mm and 80 mm tall, the sleeves folded flat along both sides. Wide lapels, an off-centre silver zip, and six hexagonal plates with hex bolt heads: one each side of the chest, one over each shoulder and one over each elbow. Plates in `steel-bright`. CHECK: box/volume x3.3: stiff leather folded with plates holds more air than the reference volume. Slot `torso`, as the leather jacket has it. Protection is a judgement for mild plate over thick leather. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_leather_mod_ch",
+    "model": "jacket_leather_mod",
+    "name": "Hardened plated motorcycle jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 20,
+      "warmth": 35,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.05, "blunt": 0.45, "cut": 0.7, "pierce": 0.45 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "inner" }
+      ]
+    },
+    "finishes": { "plate": "steel-hardened" },
+    "description": "A thick black leather motorcycle jacket with hardened steel plates bolted through it over the chest, the shoulders and the elbows. Hard to cut through.",
+    "reference": "jacket_leather_mod_ch",
+    "variants": [],
+    "notes": "Rides on `jacket_leather_mod` with its plates in `steel-hardened`. Protection is a judgement: the hardened plates guard better than mild ones. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_leather_tire",
+    "model": "jacket_leather_tire",
+    "name": "Tyre-plated motorcycle jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 20,
+      "warmth": 40,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.55, "cut": 0.4, "pierce": 0.25 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "inner" }
+      ]
+    },
+    "description": "A brown leather motorcycle jacket with slabs of thick tyre tread stitched over the chest, the belly, the shoulders and the arms. It soaks up blows well.",
+    "reference": "jacket_leather_tire",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z, 420 mm by 340 mm and 80 mm tall, the sleeves folded flat along both sides. Treaded rubber slabs 12 mm thick with rows of lugs: one each side of the chest, a wide one across the belly, one on each shoulder and a long one down each sleeve. Brown leather so the black tread reads against it. CHECK: box/volume x2.4: folded leather with rubber slabs holds more air than the reference volume. Slot `torso`. Protection is a judgement: strong against blows, fair against cuts, weak against points. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jacket_leather_bone",
+    "model": "jacket_leather_bone",
+    "name": "Carved bone jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Infected"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 20,
+      "warmth": 35,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.35, "cut": 0.45, "pierce": 0.3 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.5, "name": "right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.7, "name": "inner" }
+      ]
+    },
+    "description": "A thick black leather jacket covered in carved bone: a breastbone and ribs across the chest, knuckle bones at the shoulders and long bones down the arms. The carvings are hard to look at for long.",
+    "reference": "jacket_leather_bone",
+    "variants": [],
+    "notes": "Folded flat on a shelf, collar at the +z end and the hem folded under at -z, 420 mm by 340 mm and 80 mm tall, the sleeves folded flat along both sides. A bone breastbone down the front with four curved ribs off each side, three knuckle bones over each shoulder and a knobbed long bone down each sleeve, all scored with dark carving lines. The reference's shifting carvings are left to the description; the model shows fixed carving. CHECK: box/volume x2.4: folded leather with bone pieces holds more air than the reference volume. Slot `torso`. Usage includes `Infected` for its eerie make. Protection is a judgement for bone over thick leather. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "kevlar",
+    "model": "kevlar",
+    "name": "Concealable ballistic vest",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Police", "Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 3,
+      "warmth": 15,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.5, "pierce": 0.55 }
+    },
+    "description": "A thin navy ballistic vest made to wear under a coat, its layered panels sewn into a soft cover with hook-and-loop shoulders and elastic side straps.",
+    "reference": "kevlar",
+    "variants": [],
+    "notes": "Lying flat, front up, collar at +z: a navy front panel 460 mm across and 560 mm long with armholes cut in, over a back panel, 24 mm thick together, with hook-and-loop shoulder tabs, a cream label on the chest and two elastic side straps hanging loose each side with hook-and-loop ends, 720 mm across the straps. It is stiff, so it lies flat instead of folding. Slot `vest`, as the other ballistic vests have it. No damage type for bullets exists, so pierce stands in for the ballistic layer, as batch 089's oversized vest has it; its own model is lighter and thinner than that one's. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lame_foil",
+    "model": "lame_foil",
+    "name": "Foil fencing vest",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 8,
+      "warmth": 10,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0, "cut": 0.1, "pierce": 0.05 }
+    },
+    "description": "A thin sleeveless fencing vest of woven cotton and stainless steel thread, zipped up the back, with a flap at the groin and a clip at the hip for the scoring wire.",
+    "reference": "lame_foil",
+    "variants": [],
+    "notes": "Lying flat, front up, collar at +z: a sleeveless top 400 mm across and 560 mm long in `cloth-shimmer` for the metal weave, armholes cut in, a groin flap tapering 120 mm below the hem, a cream binding at the neck and a small steel clip on a tab at the hip; the zip runs up the back, out of sight. Slot `vest`: it is worn over the fencing jacket. Protection is a token cut value for the steel thread; it is made for scoring, not for armour. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lame_saber",
+    "model": "lame_saber",
+    "name": "Sabre fencing jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 8,
+      "warmth": 10,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0, "cut": 0.1, "pierce": 0.05 }
+    },
+    "description": "A thin long-sleeved fencing jacket of woven cotton and stainless steel thread, cut at the waist, with a stand collar and a clip at the hip for the scoring wire.",
+    "reference": "lame_saber",
+    "variants": [],
+    "notes": "Lying flat, front up, collar at +z: a body 400 mm across and 480 mm long in `cloth-shimmer` for the metal weave, its sleeves laid out to the sides at 35 degrees, 560 mm long with cream cuffs, a cream stand collar and a small steel clip on a tab at the hip; 1056 mm across the sleeves. CHECK VOLUME (x4.1): a thin top laid out flat fills little of its box. Slot `vest`: it is worn over the fencing jacket, though it has sleeves. Protection is a token cut value for the steel thread. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "motorbike_armor",
+    "model": "motorbike_armor",
+    "name": "Motorcycle mesh jacket",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 10,
+      "warmth": 15,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.4, "cut": 0.15, "pierce": 0.1 }
+    },
+    "description": "A light black stretch-mesh motorcycle jacket with moulded plastic pads over the chest, the shoulders, the elbows and the forearms. Cool to ride in; the cloth between the pads stops nothing.",
+    "reference": "motorbike_armor",
+    "variants": [],
+    "notes": "Lying flat, front up, collar at +z: black stretch cloth 460 mm across and 560 mm long with open mesh panels down the sides, the sleeves laid out to the sides at 32 degrees, 600 mm long, a silver zip down the front and grey moulded pads with dark vents on the chest (two), the shoulders, the elbows and the forearms; 1120 mm across the sleeves. Laid flat instead of folded so the pads show. CHECK VOLUME (x7.4): a thin jacket laid out flat fills little of its box. Slot `torso`. Protection is a judgement: the pads take blows, the cloth guards little else. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lc_chainmail_vest",
+    "model": "lc_chainmail_vest",
+    "name": "Mild steel mail vest",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.15, "cut": 0.6, "pierce": 0.3 }
+    },
+    "description": "A sleeveless vest of mild steel rings with leather straps over the shoulders and round the waist to spread its weight.",
+    "reference": "lc_chainmail_vest",
+    "variants": ["xl_lc_chainmail_vest", "xs_lc_chainmail_vest"],
+    "notes": "Lying flat, front up, collar at +z: 440 mm across and 600 mm long, armholes cut in, ridged across where its rows of rings lie, with leather straps over the shoulders, a buckled leather strap round the waist and a leather binding at the neck. Rings in `steel-mail`. CHECK VOLUME LENGTH: the reference gives the vest bundled into a 100 mm, 1 litre heap; laid out flat its box is far longer, and flat shows what it is. Slot `vest`, as earlier armour batches have it; the reference also covers the arms and legs, which the slot cannot say. Protection is a judgement for mail: strong against cuts, weak against points and blows. The xl and xs sizes share the model and carry their own mass. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_chainmail_vest",
+    "model": "lc_chainmail_vest",
+    "name": "Medium steel mail vest",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.05, "blunt": 0.15, "cut": 0.65, "pierce": 0.35 }
+    },
+    "finishes": { "cloth": "steel-grey", "rings": "steel-grey" },
+    "description": "A sleeveless vest of medium steel rings with leather straps over the shoulders and round the waist to spread its weight. Tougher than mild steel mail.",
+    "reference": "mc_chainmail_vest",
+    "variants": ["xl_mc_chainmail_vest", "xs_mc_chainmail_vest"],
+    "notes": "Rides on `lc_chainmail_vest` with its rings in `steel-grey`, the medium steel finish. Protection is a judgement: a little better than mild steel mail. The xl and xs sizes share the model and carry their own mass. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lc_mirror_armor",
+    "model": "lc_mirror_armor",
+    "name": "Mild steel mirror armour",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 5,
+      "warmth": 20,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.3, "cut": 0.55, "pierce": 0.4 }
+    },
+    "description": "A set of four leather-backed panels faced with crude square steel plates, a round mirror plate on the chest and the back, strapped together round the torso. It goes on over mail or a brigandine.",
+    "reference": "lc_mirror_armor",
+    "variants": ["xl_lc_mirror_armor", "xs_lc_mirror_armor"],
+    "notes": "Laid out as a set, front up, 480 mm across and 556 mm long: the front and back panels side by side, 220 by 270 mm, each with a domed round mirror 136 mm across in the middle, the two side panels below them, 180 by 200 mm, all on brown leather backings, joined by tan buckled straps, with shoulder straps off the front and back. Crude square plates riveted on in a grid round the mirrors, in `steel-bright`. Slot `vest`; worn over other armour, which Deadvox's slots cannot yet layer. Protection is a judgement for plates over leather. CHECK: box/volume x3.2: flat panels fill little of their box. The xl size's reference mass is far above the others'; it shares the model and carries its own mass. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_mirror_armor",
+    "model": "mc_mirror_armor",
+    "name": "Medium steel mirror armour",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 5,
+      "warmth": 20,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.05, "blunt": 0.3, "cut": 0.6, "pierce": 0.45 }
+    },
+    "description": "A set of four leather-backed panels faced with rows of rectangular steel plates, a round mirror plate on the chest and the back, strapped together round the torso. It goes on over mail or a brigandine.",
+    "reference": "mc_mirror_armor",
+    "variants": ["xl_mc_mirror_armor", "xs_mc_mirror_armor"],
+    "notes": "Laid out as a set, front up, 480 mm across and 556 mm long: the front and back panels side by side, 220 by 270 mm, each with a domed round mirror 136 mm across in the middle, the two side panels below them, 180 by 200 mm, all on brown leather backings, joined by tan buckled straps, with shoulder straps off the front and back. Rectangular plates riveted on in rows, in `steel-grey`, the medium steel finish. Its own model because its plates differ in shape from the mild set's. Slot `vest`. Protection is a judgement, a step above the mild set. CHECK: box/volume x3.2: flat panels fill little of their box. The xl and xs sizes share the model and carry their own mass. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_mirror_armor",
+    "model": "hc_mirror_armor",
+    "name": "High steel mirror armour",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Military", "Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 5,
+      "warmth": 20,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.05, "blunt": 0.35, "cut": 0.7, "pierce": 0.5 }
+    },
+    "description": "A neat set of four leather-backed panels, each faced with one well-formed steel plate inside a polished bead, a polished round mirror on the chest and the back, strapped together round the torso.",
+    "reference": "hc_mirror_armor",
+    "variants": ["xl_hc_mirror_armor", "xs_hc_mirror_armor"],
+    "notes": "Laid out as a set, front up, 480 mm across and 556 mm long: the front and back panels side by side, 220 by 270 mm, each with a domed round mirror 136 mm across in the middle, the two side panels below them, 180 by 200 mm, all on brown leather backings, joined by tan buckled straps, with shoulder straps off the front and back. One plate per panel in `steel-blued`, the high steel finish, inside a `mirror-silver` bead with a rivet at each corner, and polished `mirror-silver` mirrors. Its own model because its plates differ in shape from the other sets'. Slot `vest`. Protection is a judgement, a step above the medium set. CHECK: box/volume x3.2: flat panels fill little of their box. The xl and xs sizes share the model and carry their own mass. The worn look is pending: no worn model is authored."
+  }
+]

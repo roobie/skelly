@@ -1,0 +1,7 @@
+{
+  "id": "lens_crude",
+  "file": "assets/models/lens_crude.glb",
+  "parts": {
+    "lens_crude": { "node": "lens_crude:compound", "massKg": 0.036, "centreOfMass": [0, 0.006035250463821892, 0] }
+  }
+}

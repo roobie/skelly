@@ -1,0 +1,11 @@
+{
+  "id": "soft_adobe_brick",
+  "file": "assets/models/soft_adobe_brick.glb",
+  "parts": {
+    "soft_adobe_brick": {
+      "node": "soft_adobe_brick:compound",
+      "massKg": 4.7,
+      "centreOfMass": [0.000012336344462573122, 0.03189510127740858, 0.0000060487882526165025]
+    }
+  }
+}

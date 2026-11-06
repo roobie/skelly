@@ -1,0 +1,11 @@
+{
+  "id": "apartment_fridge",
+  "file": "assets/models/apartment_fridge.glb",
+  "parts": {
+    "apartment_fridge": {
+      "node": "apartment_fridge:compound",
+      "massKg": 58,
+      "centreOfMass": [0.00013666699870505032, 0.7617769034100343, -0.0008509147657469173]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "bathroom_scale",
+  "file": "assets/models/bathroom_scale.glb",
+  "parts": {
+    "bathroom_scale": {
+      "node": "bathroom_scale:compound",
+      "massKg": 2.5,
+      "centreOfMass": [0, 0.02606973126642709, -0.0008764683795526471]
+    }
+  }
+}

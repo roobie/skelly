@@ -1,0 +1,18 @@
+{
+  "id": "military_transport_helicopter_turbine",
+  "file": "assets/models/military_transport_helicopter_turbine.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 210,
+      "centreOfMass": [0.0074713931659987345, -0.01977430921746467, 0],
+      "collision": [
+        { "min": [-0.8125, -0.34375, -0.34375], "max": [0.8125, 0.34375, 0.34375] },
+        { "min": [-0.875, -0.1875, -0.1875], "max": [-0.8125, 0.1875, 0.1875] },
+        { "min": [-0.3125, -0.40625, -0.15625], "max": [0.3125, -0.21875, 0.15625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

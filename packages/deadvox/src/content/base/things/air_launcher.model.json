@@ -1,0 +1,14 @@
+{
+  "id": "air_launcher",
+  "file": "assets/models/air_launcher.glb",
+  "parts": {
+    "air_launcher": {
+      "node": "air_launcher:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0.05538710708577519, 0.006514011720831115, 0]
+    }
+  },
+  "grip": { "at": [0.026000000000000002, -0.06, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

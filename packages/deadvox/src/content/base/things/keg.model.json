@@ -1,0 +1,11 @@
+{
+  "id": "keg",
+  "file": "assets/models/keg.glb",
+  "parts": {
+    "keg": {
+      "node": "keg:compound",
+      "massKg": 63,
+      "centreOfMass": [-1.431282438753464e-20, 0.2611047651233524, -2.146923658130196e-20]
+    }
+  }
+}

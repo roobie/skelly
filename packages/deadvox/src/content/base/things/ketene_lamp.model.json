@@ -1,0 +1,11 @@
+{
+  "id": "ketene_lamp",
+  "file": "assets/models/ketene_lamp.glb",
+  "parts": {
+    "ketene_lamp": {
+      "node": "ketene_lamp:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0.006781324010375549, 0.06034600202999888, 0.0019246644862975079]
+    }
+  }
+}

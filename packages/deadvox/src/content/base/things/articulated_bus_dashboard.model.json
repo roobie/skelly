@@ -1,0 +1,14 @@
+{
+  "id": "articulated_bus_dashboard",
+  "file": "assets/models/articulated_bus_dashboard.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 40,
+      "centreOfMass": [8.515625, 0.84375, -0.734375],
+      "collision": [{ "min": [8.1875, 0.375, -1.1875], "max": [8.84375, 1.3125, -0.28125] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

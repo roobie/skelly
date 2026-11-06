@@ -1,0 +1,14 @@
+{
+  "id": "black_dragon_tanning_hide",
+  "file": "assets/models/black_dragon_tanning_hide.glb",
+  "parts": {
+    "black_dragon_tanning_hide": {
+      "node": "black_dragon_tanning_hide:compound",
+      "massKg": 2,
+      "centreOfMass": [-0.0011651083941230866, 0.04962293229220179, 0.0020523990547621496]
+    }
+  },
+  "grip": { "at": [0, 0.05, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

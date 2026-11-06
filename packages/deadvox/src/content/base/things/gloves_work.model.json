@@ -1,0 +1,11 @@
+{
+  "id": "gloves_work",
+  "file": "assets/models/gloves_work.glb",
+  "parts": {
+    "gloves_work": {
+      "node": "gloves_work:compound",
+      "massKg": 0.2,
+      "centreOfMass": [3.5644734179500245e-18, 0.009198491785618098, 0.027368704551575543]
+    }
+  }
+}

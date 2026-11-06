@@ -1,0 +1,11 @@
+{
+  "id": "gloves_white",
+  "file": "assets/models/gloves_white.glb",
+  "parts": {
+    "gloves_white": {
+      "node": "gloves_white:compound",
+      "massKg": 0.068,
+      "centreOfMass": [-2.1363296746175913e-18, 0.004857331372770803, 0.03502729706292652]
+    }
+  }
+}

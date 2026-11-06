@@ -1,0 +1,14 @@
+{
+  "id": "luxury_saloon_bonnet",
+  "file": "assets/models/luxury_saloon_bonnet.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 13,
+      "centreOfMass": [1.7539427570093458, 0.9297605140186915, 0],
+      "collision": [{ "min": [0.9375, 0.84375, -0.875], "max": [2.5625, 1, 0.875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "evaporator_coil",
+  "file": "assets/models/evaporator_coil.glb",
+  "parts": {
+    "evaporator_coil": {
+      "node": "evaporator_coil:compound",
+      "massKg": 3,
+      "centreOfMass": [0.00105301975724717, 0.15148201333431002, 0.000026033653259090993]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "spare_tire_carrier",
+  "file": "assets/models/spare_tire_carrier.glb",
+  "parts": {
+    "spare_tire_carrier": {
+      "node": "spare_tire_carrier:compound",
+      "massKg": 6,
+      "centreOfMass": [0.0247790726782188, 0.02256785247406337, -0.000016521569827274497]
+    }
+  }
+}

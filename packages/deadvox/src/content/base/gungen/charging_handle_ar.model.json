@@ -7,7 +7,7 @@
       "item": "charging_handle_ar",
       "node": "charging_handle_ar:ar-charging-handle",
       "massKg": 0.06,
-      "centreOfMass": [-0.1380701754385965, 0.022000000000000002, 0.00017543859649122814]
+      "centreOfMass": [-0.1380701754385965, 0.022000000000000002, -0.00017543859649122814]
     }
   }
 }

@@ -1,0 +1,11 @@
+{
+  "id": "footrags",
+  "file": "assets/models/footrags.glb",
+  "parts": {
+    "footrags": {
+      "node": "footrags:compound",
+      "massKg": 0.079,
+      "centreOfMass": [-0.00044696651254028374, 0.004296763345943673, 0.005410956984727477]
+    }
+  }
+}

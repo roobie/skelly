@@ -1,0 +1,267 @@
+[
+  {
+    "id": "cassock",
+    "model": "cassock",
+    "name": "Cassock",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 10, "warmth": 20, "wearPerDamage": 0.0015 },
+    "description": "A long black robe buttoned from the collar to the hem, with a standing collar and a white tab at the throat, as a priest wears it.",
+    "reference": "cassock",
+    "variants": [],
+    "notes": "Folded in four layers, 360 mm by 300 mm and 60 mm tall, with the thirteen small buttons down the front, the standing collar along the back and the white collar tab before it. Slot `torso`, as the jacket has it; it also reaches the legs, and Deadvox has no long-coat slot. The reference marks it as worn under a belt. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "coat_faux_fur",
+    "model": "coat_faux_fur",
+    "name": "Faux fur coat",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 26, "warmth": 70, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "right" }
+      ]
+    },
+    "description": "A loud pink coat of synthetic fur with a rolled collar, toggles down the front and two small pockets. Not as warm as real fur, but hard to miss.",
+    "reference": "coat_faux_fur",
+    "variants": ["xl_coat_faux_fur", "xs_coat_faux_fur"],
+    "notes": "Folded in three layers, 380 mm by 320 mm and 60 mm tall, with the shawl collar rolled along the back, a cream lining edge with three toggles down the front and two patch pockets. The pink is one of many loud colours; a colour variant would give its own `finishes`. Slot `torso`, as the jacket has it; it also reaches the legs. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "coat_fur",
+    "model": "coat_fur",
+    "name": "Fur coat",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 26, "warmth": 80, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "right" }
+      ]
+    },
+    "description": "A heavy brown fur coat lined with cotton, with a deep collar and two small pockets. Very warm.",
+    "reference": "coat_fur",
+    "variants": ["xl_coat_fur", "xs_coat_fur"],
+    "notes": "Folded in three layers, 380 mm by 320 mm and 60 mm tall, with the deep fur collar rolled along the back, a leather-bound front edge with three buttons and two patch pockets. Slot `torso`, as the jacket has it; it also reaches the legs. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "coat_gut",
+    "model": "coat_gut",
+    "name": "Gutskin parka",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 12, "warmth": 10, "wearPerDamage": 0.002 },
+    "description": "A hooded parka sewn from bands of split and dried intestine. Light, translucent and fully waterproof, but thin.",
+    "reference": "coat_gut",
+    "variants": [],
+    "notes": "Folded thin in three layers, 300 mm by 240 mm and 30 mm tall, with the sewn seams between the bands of gut running across it and the hood folded down on top with a dark bound rim. Gut is drawn with the `skin-rawhide` finish. Box/volume x2.6: the reference packs the parka tighter than a folded stack. Slot `torso`, as the jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "coat_lab",
+    "model": "coat_lab",
+    "name": "Lab coat",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Medical", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 2, "warmth": 15, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "right hip" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "breast" }
+      ]
+    },
+    "description": "A long white cotton coat with lapels, two large hip pockets and a breast pocket fitted with a plastic pocket protector.",
+    "reference": "coat_lab",
+    "variants": [],
+    "notes": "Folded in three layers, 340 mm by 280 mm and 30 mm tall, with notched lapels either side of the buttoned front, two hip pockets and a breast pocket whose clear pocket protector holds a blue and a red pen. The pens are part of the model, not items in the pocket. Slot `torso`, as the jacket has it. Box/volume x2.1: the folded stack holds air the reference's packed volume does not. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "coat_rain",
+    "model": "coat_rain",
+    "name": "Rain coat",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 7, "warmth": 10, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 3], "handlingSimSeconds": 0.7, "name": "left" },
+        { "grid": [2, 3], "handlingSimSeconds": 0.7, "name": "right" }
+      ]
+    },
+    "description": "A hooded yellow vinyl coat that snaps shut down the front, with two very large flapped pockets. Keeps the rain off and not much else.",
+    "reference": "coat_rain",
+    "variants": [],
+    "notes": "Folded in three layers, 320 mm by 260 mm and 25 mm tall, with the hood folded down on top, four steel snaps down the front and two large flapped pockets. The reference lists no materials; vinyl is drawn with `plastic-yellow`. Slot `torso`, as the jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "coat_winter",
+    "model": "coat_winter",
+    "name": "Winter coat",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 18, "warmth": 70, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right" }
+      ]
+    },
+    "description": "A padded, quilted coat with a fur-trimmed hood, a zip up the front and two deep pockets. Very warm.",
+    "reference": "coat_winter",
+    "variants": [],
+    "notes": "Folded in three layers, 380 mm by 320 mm and 65 mm tall, with quilted baffles across the body, the hood folded down on top with its fur-trimmed rim, a black zip and two flapped pockets. Slot `torso`, as the jacket has it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "duster",
+    "model": "duster",
+    "name": "Duster",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 7, "warmth": 15, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right hip" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside right" }
+      ]
+    },
+    "description": "A full-length coat of heavy canvas with a short shoulder cape, buttoned down the front and full of pockets.",
+    "reference": "duster",
+    "variants": ["xl_duster", "xs_duster"],
+    "notes": "Folded in five layers, 380 mm by 320 mm and 60 mm tall, with the shoulder cape lying over the back half, the collar rolled along the back, three buttons and two flapped hip pockets; the two inside pockets are not drawn. Slot `torso`, as the jacket has it; it also reaches the legs. The reference marks it as worn under a belt. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "duster_faux_fur",
+    "model": "duster_faux_fur",
+    "name": "Faux fur duster",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "torso", "encumbrance": 13, "warmth": 40, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right hip" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside right" }
+      ]
+    },
+    "description": "A thick knee-length duster of synthetic fur lined with cotton, with a deep collar and plenty of pockets.",
+    "reference": "duster_faux_fur",
+    "variants": ["xl_duster_faux_fur", "xs_duster_faux_fur"],
+    "notes": "Folded thick in five layers, 420 mm by 360 mm and 80 mm tall, with the shawl collar rolled along the back, a khaki lining edge with toggles down the front and two flapped pockets; the two inside pockets are not drawn. Pale faux fur uses `fur-pale`. Slot `torso`, as the jacket has it; it also reaches the legs. The reference marks it as worn under a belt. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "duster_fur",
+    "model": "duster_fur",
+    "name": "Fur duster",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 13, "warmth": 50, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right hip" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside right" }
+      ]
+    },
+    "description": "A thick full-length duster of brown fur with a deep collar and plenty of pockets.",
+    "reference": "duster_fur",
+    "variants": ["xl_duster_fur", "xs_duster_fur"],
+    "notes": "Folded thick in five layers, 420 mm by 360 mm and 80 mm tall, with the deep fur collar rolled along the back, a black leather front edge with four buttons and two flapped pockets; the two inside pockets are not drawn. Slot `torso`, as the jacket has it; it also reaches the legs. The reference marks it as worn under a belt. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "duster_leather",
+    "model": "duster_leather",
+    "name": "Leather duster",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 15, "warmth": 30, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right hip" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside right" }
+      ]
+    },
+    "description": "A full-length coat of thick brown leather with a shoulder cape and brass buttons, and plenty of pockets.",
+    "reference": "duster_leather",
+    "variants": ["xl_duster_leather", "xs_duster_leather"],
+    "notes": "Folded in five layers, 400 mm by 340 mm and 60 mm tall, with the shoulder cape over the back half, a wide collar along the back, four brass buttons and two flapped pockets; the two inside pockets are not drawn. Slot `torso`, as the jacket has it; it also reaches the legs. The reference marks it as worn under a belt. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ghost_robe",
+    "model": "ghost_robe",
+    "name": "Ghost robe",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "cloak", "encumbrance": 4, "warmth": 8, "wearPerDamage": 0.003 },
+    "description": "A thin white hooded robe made as a ghost costume, long enough to cover the wearer from head to foot.",
+    "reference": "ghost_robe",
+    "variants": [],
+    "notes": "Folded small in three layers, 260 mm by 200 mm and 12 mm tall, with the pointed hood folded down on top. Drawn in `cloth-cream`, as `cloth-white` renders grey. Box/volume x2.3: the reference volume is the robe packed tight. Slot `cloak`, as the cape and the flag have it: a costume worn over everything else. The reference marks it as worn under a belt. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ghost_robe_sheet",
+    "model": "ghost_robe_sheet",
+    "name": "Bedsheet ghost costume",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "cloak", "encumbrance": 10, "warmth": 5, "wearPerDamage": 0.003 },
+    "description": "A white bed sheet with two eye holes cut in it, worn over the head as a ghost costume. A hat under it keeps it from sliding off.",
+    "reference": "ghost_robe_sheet",
+    "variants": [],
+    "notes": "Folded in four layers, 300 mm by 240 mm and 20 mm tall, with the two eye holes showing as dark ovals on the top fold. The hat worn under the sheet is not drawn; it is any hat the wearer has. Drawn in `cloth-cream`, as `cloth-white` renders grey. Box/volume x2.6: the reference volume is the sheet packed tight. Slot `cloak`, as the cape and the flag have it; it also covers the eyes and mouth. The reference marks it as worn under a belt. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "greatcoat",
+    "model": "greatcoat",
+    "name": "Greatcoat",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Military", "Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 11, "warmth": 50, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left hip" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right hip" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.9, "name": "inside" }
+      ]
+    },
+    "description": "A heavy full-length wool coat, double-breasted with two rows of brass buttons, a wide collar and deep pockets. Warm, but slow to move in.",
+    "reference": "greatcoat",
+    "variants": [],
+    "notes": "Folded in five layers, 400 mm by 340 mm and 70 mm tall, with the wide collar and lapels along the back, two rows of four brass buttons and two flapped hip pockets; the inside pocket is not drawn. Slot `torso`, as the jacket has it; it also reaches the legs. The reference marks it as worn under a belt. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "grim_reaper_robe",
+    "model": "grim_reaper_robe",
+    "name": "Reaper robe",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "cloak", "encumbrance": 5, "warmth": 10, "wearPerDamage": 0.003 },
+    "description": "A black hooded robe made as a costume of death, with a dark mesh panel that hides the face and a cord to tie at the waist. It can be worn with the face panel up or down.",
+    "reference": "grim_reaper_robe",
+    "variants": [],
+    "notes": "Folded small in three layers, 260 mm by 200 mm and 14 mm tall, with the deep hood folded down on top showing its dark mesh face cover and a grey cord laid across. Lifting the face cover is a use action pending in Deadvox; one model serves both states. Box/volume x2.3: the reference volume is the robe packed tight. Slot `cloak`, as the cape and the flag have it; it also covers the head, eyes and mouth. The reference marks it as worn under a belt. The worn look is pending: no worn model is authored."
+  }
+]

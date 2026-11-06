@@ -1,0 +1,5 @@
+{
+  "id": "hand_axe",
+  "file": "assets/models/hand_axe.glb",
+  "parts": { "hand_axe": { "node": "hand_axe:compound", "massKg": 0.9, "centreOfMass": [0, 0, 0.003712649572649572] } }
+}

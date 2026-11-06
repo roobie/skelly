@@ -1,0 +1,14 @@
+{
+  "id": "coupe_tail_lamp",
+  "file": "assets/models/coupe_tail_lamp.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 1,
+      "centreOfMass": [-2.125, 0.7343749999999999, 0.7343749999999999],
+      "collision": [{ "min": [-2.15625, 0.625, 0.625], "max": [-2.09375, 0.84375, 0.84375] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

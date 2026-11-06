@@ -1,0 +1,11 @@
+{
+  "id": "hc_mirror_armor",
+  "file": "assets/models/hc_mirror_armor.glb",
+  "parts": {
+    "hc_mirror_armor": {
+      "node": "hc_mirror_armor:compound",
+      "massKg": 7.5,
+      "centreOfMass": [1.1732678377533231e-17, 0.005434455958549221, -0.004234455958549204]
+    }
+  }
+}

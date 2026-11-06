@@ -1,0 +1,17 @@
+{
+  "id": "sports_car_side_intake",
+  "file": "assets/models/sports_car_side_intake.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 3,
+      "centreOfMass": [-0.6460129310344828, 0.5317887931034483, 0],
+      "collision": [
+        { "min": [-0.9375, 0.40625, 0.90625], "max": [-0.4375, 0.6875, 0.96875] },
+        { "min": [-0.9375, 0.40625, -0.96875], "max": [-0.4375, 0.6875, -0.90625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

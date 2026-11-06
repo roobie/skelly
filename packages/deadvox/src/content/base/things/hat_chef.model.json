@@ -1,0 +1,11 @@
+{
+  "id": "hat_chef",
+  "file": "assets/models/hat_chef.glb",
+  "parts": {
+    "hat_chef": {
+      "node": "hat_chef:compound",
+      "massKg": 0.08,
+      "centreOfMass": [-7.14047005069773e-20, 0.13855868236594038, -1.7137128121674551e-19]
+    }
+  }
+}

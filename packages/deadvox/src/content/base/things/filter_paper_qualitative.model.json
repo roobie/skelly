@@ -1,0 +1,11 @@
+{
+  "id": "filter_paper_qualitative",
+  "file": "assets/models/filter_paper_qualitative.glb",
+  "parts": {
+    "filter_paper_qualitative": {
+      "node": "filter_paper_qualitative:compound",
+      "massKg": 0.15,
+      "centreOfMass": [-0.010722715189636453, 0.008468718409524878, 0]
+    }
+  }
+}

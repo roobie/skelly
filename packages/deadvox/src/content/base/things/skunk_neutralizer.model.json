@@ -1,0 +1,14 @@
+{
+  "id": "skunk_neutralizer",
+  "file": "assets/models/skunk_neutralizer.glb",
+  "parts": {
+    "skunk_neutralizer": {
+      "node": "skunk_neutralizer:compound",
+      "massKg": 0.26,
+      "centreOfMass": [0.0003594104308390022, 0.07817913832199548, 0]
+    }
+  },
+  "grip": { "at": [0, 0.07200000000000001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

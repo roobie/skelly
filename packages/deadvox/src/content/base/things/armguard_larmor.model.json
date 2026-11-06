@@ -1,0 +1,11 @@
+{
+  "id": "armguard_larmor",
+  "file": "assets/models/armguard_larmor.glb",
+  "parts": {
+    "armguard_larmor": {
+      "node": "armguard_larmor:compound",
+      "massKg": 0.3,
+      "centreOfMass": [0.006184237461617206, 0.030975435005117742, 1.033182027897766e-17]
+    }
+  }
+}

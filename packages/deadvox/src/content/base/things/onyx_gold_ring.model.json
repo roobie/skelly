@@ -1,0 +1,5 @@
+{
+  "id": "onyx_gold_ring",
+  "file": "assets/models/onyx_gold_ring.glb",
+  "parts": { "onyx_gold_ring": { "node": "onyx_gold_ring:compound", "massKg": 0.007, "centreOfMass": [0, 0.0146, 0] } }
+}

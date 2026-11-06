@@ -1,0 +1,11 @@
+{
+  "id": "box_large_folded",
+  "file": "assets/models/box_large_folded.glb",
+  "parts": {
+    "box_large_folded": {
+      "node": "box_large_folded:compound",
+      "massKg": 3.7,
+      "centreOfMass": [-0.009931685100845779, 0.004999999999999999, 2.351338478606602e-17]
+    }
+  }
+}

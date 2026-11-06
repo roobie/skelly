@@ -1,0 +1,11 @@
+{
+  "id": "radioisotope_generator",
+  "file": "assets/models/radioisotope_generator.glb",
+  "parts": {
+    "radioisotope_generator": {
+      "node": "radioisotope_generator:compound",
+      "massKg": 1200,
+      "centreOfMass": [0.0014275922843434842, 0.24372662293155778, 0]
+    }
+  }
+}

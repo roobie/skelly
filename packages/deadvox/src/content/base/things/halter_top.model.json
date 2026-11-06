@@ -1,0 +1,11 @@
+{
+  "id": "halter_top",
+  "file": "assets/models/halter_top.glb",
+  "parts": {
+    "halter_top": {
+      "node": "halter_top:compound",
+      "massKg": 0.094,
+      "centreOfMass": [-0.000018400566171266835, 0.005013163481953293, -0.015889879688605807]
+    }
+  }
+}

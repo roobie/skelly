@@ -1,0 +1,11 @@
+{
+  "id": "welder_crude",
+  "file": "assets/models/welder_crude.glb",
+  "parts": {
+    "welder_crude": {
+      "node": "welder_crude:compound",
+      "massKg": 16,
+      "centreOfMass": [-0.003970582201616539, 0.04851864768391254, 0.0014010175193862073]
+    }
+  }
+}

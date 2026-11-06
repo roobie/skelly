@@ -1,0 +1,11 @@
+{
+  "id": "house_coat",
+  "file": "assets/models/house_coat.glb",
+  "parts": {
+    "house_coat": {
+      "node": "house_coat:compound",
+      "massKg": 1.2,
+      "centreOfMass": [0.000013119244331526471, 0.042395522817885674, -0.004803166537607434]
+    }
+  }
+}

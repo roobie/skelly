@@ -1,0 +1,14 @@
+{
+  "id": "hi_q_wax",
+  "file": "assets/models/hi_q_wax.glb",
+  "parts": {
+    "hi_q_wax": {
+      "node": "hi_q_wax:compound",
+      "massKg": 0.026,
+      "centreOfMass": [-0.002551020408163266, 0.006257653061224491, 0]
+    }
+  },
+  "grip": { "at": [-0.014000000000000002, 0.01, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

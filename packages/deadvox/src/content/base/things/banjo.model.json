@@ -1,0 +1,14 @@
+{
+  "id": "banjo",
+  "file": "assets/models/banjo.glb",
+  "parts": {
+    "banjo": {
+      "node": "banjo:compound",
+      "massKg": 4.5,
+      "centreOfMass": [-0.09449971745272766, 0.02839617474462075, 0.000006955009780482509]
+    }
+  },
+  "grip": { "at": [0.188, 0.042, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

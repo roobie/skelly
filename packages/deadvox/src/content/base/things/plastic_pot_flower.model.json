@@ -1,0 +1,11 @@
+{
+  "id": "plastic_pot_flower",
+  "file": "assets/models/plastic_pot_flower.glb",
+  "parts": {
+    "plastic_pot_flower": {
+      "node": "plastic_pot_flower:compound",
+      "massKg": 0.11,
+      "centreOfMass": [0, 0.0748065573770492, 0]
+    }
+  }
+}

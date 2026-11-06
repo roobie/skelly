@@ -1,0 +1,11 @@
+{
+  "id": "javelin_bag",
+  "file": "assets/models/javelin_bag.glb",
+  "parts": {
+    "javelin_bag": {
+      "node": "javelin_bag:compound",
+      "massKg": 0.6,
+      "centreOfMass": [-0.0393039652814934, 0.09455573390404856, 0.008048154093097917]
+    }
+  }
+}

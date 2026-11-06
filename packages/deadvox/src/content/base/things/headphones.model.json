@@ -1,0 +1,11 @@
+{
+  "id": "headphones",
+  "file": "assets/models/headphones.glb",
+  "parts": {
+    "headphones": {
+      "node": "headphones:compound",
+      "massKg": 0.18,
+      "centreOfMass": [-0.00005398972259915912, 0.07969637176606675, 0]
+    }
+  }
+}

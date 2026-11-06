@@ -1,0 +1,11 @@
+{
+  "id": "jumpsuit_skeleton",
+  "file": "assets/models/jumpsuit_skeleton.glb",
+  "parts": {
+    "jumpsuit_skeleton": {
+      "node": "jumpsuit_skeleton:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-1.1611793329281483e-19, 0.03160599413921988, -0.007304462264647569]
+    }
+  }
+}

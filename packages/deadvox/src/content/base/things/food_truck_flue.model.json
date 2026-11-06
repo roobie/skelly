@@ -1,0 +1,14 @@
+{
+  "id": "food_truck_flue",
+  "file": "assets/models/food_truck_flue.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 8,
+      "centreOfMass": [-1.2002172085201794, 3.139013452914798, -0.5053601457399103],
+      "collision": [{ "min": [-1.40625, 2.9375, -0.71875], "max": [-0.96875, 3.28125, -0.28125] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

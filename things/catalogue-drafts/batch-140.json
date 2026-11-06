@@ -1,0 +1,192 @@
+[
+  {
+    "id": "lc_chainmail_hood",
+    "model": "lc_chainmail_hood",
+    "name": "Mild steel mail coif",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "hood",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.7, "pierce": 0.3 }
+    },
+    "description": "A close hood of interlinked mild steel rings that covers the head and neck and spreads over the shoulders. Made to be worn under a helmet.",
+    "reference": "lc_chainmail_hood",
+    "variants": ["xl_lc_chainmail_hood", "xs_lc_chainmail_hood"],
+    "notes": "Mail in `steel-mail`, the dull rings of mild steel. Standing upright as on a shelf, 292 mm across the shoulder curtain and 308 mm tall: a close hood of rings over the crown whose mail mantle slumps onto the shelf, wider at the sides, hanging lower at the front and back, its hem uneven and its mail falling in folds; the face opening at +z is drawn as a dark patch with a mail rim, and the rings show as rows of short dark links, each row staggered against the next, broken across the face. CHECK VOLUME (x56): the model stands as a hollow hood round a head-sized space, while the reference counts the mail bunched up. Slot `hood`: a coif is worn under a helmet, which takes `head`. Protection follows the same grade's mail aventail: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_chainmail_hood",
+    "model": "lc_chainmail_hood",
+    "name": "Medium steel mail coif",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "hood",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.0009,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.75, "pierce": 0.35 }
+    },
+    "finishes": { "mail": "steel-grey" },
+    "description": "A close hood of interlinked medium-carbon steel rings that covers the head and neck and spreads over the shoulders. Made to be worn under a helmet.",
+    "reference": "mc_chainmail_hood",
+    "variants": ["xl_mc_chainmail_hood", "xs_mc_chainmail_hood"],
+    "notes": "Shares the mild steel coif's model with the mail in `steel-grey`. Standing upright as on a shelf, 292 mm across the shoulder curtain and 308 mm tall: a close hood of rings over the crown whose mail mantle slumps onto the shelf, wider at the sides, hanging lower at the front and back, its hem uneven and its mail falling in folds; the face opening at +z is drawn as a dark patch with a mail rim, and the rings show as rows of short dark links, each row staggered against the next, broken across the face. CHECK VOLUME (x56): the model stands as a hollow hood round a head-sized space, while the reference counts the mail bunched up. Slot `hood`: a coif is worn under a helmet, which takes `head`. Protection follows the same grade's mail aventail: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_chainmail_hood",
+    "model": "lc_chainmail_hood",
+    "name": "High steel mail coif",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hood",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.05, "blunt": 0.2, "cut": 0.7, "pierce": 0.35 }
+    },
+    "finishes": { "mail": "steel-blued" },
+    "description": "A close hood of interlinked high-carbon steel rings that covers the head and neck and spreads over the shoulders. Made to be worn under a helmet.",
+    "reference": "hc_chainmail_hood",
+    "variants": ["xl_hc_chainmail_hood", "xs_hc_chainmail_hood"],
+    "notes": "Shares the mild steel coif's model with the mail in `steel-blued`, the high steel grade. Standing upright as on a shelf, 292 mm across the shoulder curtain and 308 mm tall: a close hood of rings over the crown whose mail mantle slumps onto the shelf, wider at the sides, hanging lower at the front and back, its hem uneven and its mail falling in folds; the face opening at +z is drawn as a dark patch with a mail rim, and the rings show as rows of short dark links, each row staggered against the next, broken across the face. CHECK VOLUME (x56): the model stands as a hollow hood round a head-sized space, while the reference counts the mail bunched up. Slot `hood`: a coif is worn under a helmet, which takes `head`. Protection follows the same grade's mail aventail: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_chainmail_hood",
+    "model": "lc_chainmail_hood",
+    "name": "Hardened steel mail coif",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "hood",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.85, "pierce": 0.4 }
+    },
+    "finishes": { "mail": "steel-mail-dark" },
+    "description": "A close hood of interlinked hardened steel rings that covers the head and neck and spreads over the shoulders. Made to be worn under a helmet.",
+    "reference": "ch_chainmail_hood",
+    "variants": ["xl_ch_chainmail_hood", "xs_ch_chainmail_hood"],
+    "notes": "Shares the mild steel coif's model with the mail in `steel-mail-dark`, the hardened mail that still shows its rings. Standing upright as on a shelf, 292 mm across the shoulder curtain and 308 mm tall: a close hood of rings over the crown whose mail mantle slumps onto the shelf, wider at the sides, hanging lower at the front and back, its hem uneven and its mail falling in folds; the face opening at +z is drawn as a dark patch with a mail rim, and the rings show as rows of short dark links, each row staggered against the next, broken across the face. CHECK VOLUME (x56): the model stands as a hollow hood round a head-sized space, while the reference counts the mail bunched up. Slot `hood`: a coif is worn under a helmet, which takes `head`. Protection follows the same grade's mail aventail: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_chainmail_hood",
+    "model": "lc_chainmail_hood",
+    "name": "Tempered steel mail coif",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "hood",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.85, "pierce": 0.4 }
+    },
+    "finishes": { "mail": "steel-heat-tint" },
+    "description": "A close hood of interlinked tempered steel rings that covers the head and neck and spreads over the shoulders. Made to be worn under a helmet.",
+    "reference": "qt_chainmail_hood",
+    "variants": ["xl_qt_chainmail_hood", "xs_qt_chainmail_hood"],
+    "notes": "Shares the mild steel coif's model with the mail in `steel-heat-tint`, the tempered grade. Standing upright as on a shelf, 292 mm across the shoulder curtain and 308 mm tall: a close hood of rings over the crown whose mail mantle slumps onto the shelf, wider at the sides, hanging lower at the front and back, its hem uneven and its mail falling in folds; the face opening at +z is drawn as a dark patch with a mail rim, and the rings show as rows of short dark links, each row staggered against the next, broken across the face. CHECK VOLUME (x56): the model stands as a hollow hood round a head-sized space, while the reference counts the mail bunched up. Slot `hood`: a coif is worn under a helmet, which takes `head`. Protection follows the same grade's mail aventail: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "chainmail_junk_hood",
+    "model": "lc_chainmail_hood",
+    "name": "Scrap mail coif",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "hood",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.0016,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.55, "pierce": 0.22 }
+    },
+    "finishes": { "mail": "rust-red" },
+    "description": "A close hood of rough rings cut from scrap wire, covering the head and neck and spreading over the shoulders. Heavy and rusty, but it still turns a blade.",
+    "reference": "chainmail_junk_hood",
+    "variants": [],
+    "notes": "Shares the mild steel coif's model with the mail in `rust-red`: rings cut from scrap wire, rusty and uneven. It has no xl or xs sizes in the reference. Standing upright as on a shelf, 292 mm across the shoulder curtain and 308 mm tall: a close hood of rings over the crown whose mail mantle slumps onto the shelf, wider at the sides, hanging lower at the front and back, its hem uneven and its mail falling in folds; the face opening at +z is drawn as a dark patch with a mail rim, and the rings show as rows of short dark links, each row staggered against the next, broken across the face. CHECK VOLUME (x56): the model stands as a hollow hood round a head-sized space, while the reference counts the mail bunched up. Slot `hood`: a coif is worn under a helmet, which takes `head`. Protection follows the same grade's mail aventail: strong against cuts, fair against points, weak against blows. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "beekeeping_hood",
+    "model": "beekeeping_hood",
+    "name": "Beekeeping veil",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "head", "encumbrance": 5, "warmth": 10, "wearPerDamage": 0.0015 },
+    "description": "A wide-brimmed cotton hat with a fine mesh veil hanging all round it, and a cloth skirt at the foot to tuck into a collar. Keeps stinging insects off the face and neck while letting air through.",
+    "reference": "beekeeping_hood",
+    "variants": [],
+    "notes": "Standing upright as on a shelf, 440 mm across the brim and 408 mm tall: a white cotton hat with a stiff brim, a tube of black mesh veil under it, a white cotton skirt at the foot with a cream band and hem, and two cream ties at the front (+z). The veil is `mesh-black`, which stays see-through in the game though the tile draws it opaque. CHECK VOLUME (x53): the model stands as the open veil hangs, while the reference counts it packed flat. Slot `head`: the hat carries the veil, so it takes the head slot as hats do; it covers the eyes and mouth as well. It gives no armour; the protection from stings is left to Deadvox's sting rules. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hood_gut",
+    "model": "hood_gut",
+    "name": "Gutskin hood",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "hood", "encumbrance": 0, "warmth": 10, "wearPerDamage": 0.002 },
+    "description": "A loose hood sewn from cleaned and split strips of animal gut. Light, translucent and waterproof, made to go with a gutskin parka.",
+    "reference": "hood_gut",
+    "variants": [],
+    "notes": "Standing upright as on a shelf, 336 mm across and 320 mm tall: a loose hood in `gut-translucent` sewn from horizontal strips, its short mantle slumping unevenly onto the shelf in folds, the rawhide seams shown as raised rows broken across the face, a seam up the back and over the crown, the face opening at +z bound in rawhide, and the sinew drawstring's knotted ends sitting at the lower corners of the opening. CHECK VOLUME (x150): the model stands as a hollow hood round a head-sized space, as on a shelf or head form, while the reference volume is the cloth packed flat. Slot `hood`: a hood worn on the head under or without a hat, as the coifs and headscarves have it. No `imperviousTo`: gutskin sheds rain, which is weather, not one of Deadvox's damage kinds. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hood_ninja",
+    "model": "hood_ninja",
+    "name": "Ninja hood",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "hood", "encumbrance": 5, "warmth": 8, "wearPerDamage": 0.0015 },
+    "description": "A black cotton hood with a cloth wrapped across the mouth and nose, leaving only a slit for the eyes.",
+    "reference": "hood_ninja",
+    "variants": [],
+    "notes": "Standing upright as on a shelf, 256 mm across and 308 mm tall: a snug hood whose short mantle slumps unevenly onto the shelf, in dark grey `felt-grey` so its black eye slit, wrap folds and the wrap's tail down the back read against it; a black hood in the game, drawn grey so it does not read black on black. CHECK VOLUME (x22): the model stands as a hollow hood round a head-sized space, as on a shelf or head form, while the reference volume is the cloth packed flat. Slot `hood`, as balaclavas take; it covers the mouth too. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hood_rain",
+    "model": "hood_rain",
+    "name": "Rain hood",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "hood", "encumbrance": 0, "warmth": 8, "wearPerDamage": 0.0012 },
+    "description": "A loose yellow vinyl hood with a stiffened peak and a drawstring at the chin, for keeping the head dry in bad weather.",
+    "reference": "hood_rain",
+    "variants": [],
+    "notes": "Standing upright as on a shelf, 336 mm across and 320 mm tall: a loose hood in `vinyl-yellow` whose short mantle slumps unevenly onto the shelf in folds, a seam up the back and over the crown, the face opening at +z bound in `rubber-yellow`, a stiffened peak jutting over the face and the black drawstring's toggles sitting at the lower corners of the opening. Vinyl stays see-through in the game though the tile draws it opaque. CHECK VOLUME (x50): the model stands as a hollow hood round a head-sized space, as on a shelf or head form, while the reference volume is the cloth packed flat. Slot `hood`: a hood, as the coifs and headscarves take; it does not stack over a hat in one slot, which needs a layer once Deadvox has one. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "nomex_hood",
+    "model": "nomex_hood",
+    "name": "Flame-resistant hood",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "hood",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.1, "blunt": 0, "cut": 0.05, "pierce": 0 }
+    },
+    "description": "A snug hood of thin flame-resistant knit that covers the head and neck, with a long bib that tucks under a collar. Light enough to wear under a helmet.",
+    "reference": "nomex_hood",
+    "variants": [],
+    "notes": "Standing upright as on a shelf, 344 mm front to back across the bib and 308 mm tall: a snug hood in `knit-fr` with the face opening at +z bound in dark elastic, ribbing where it gathers at the neck, and a long bib that slumps onto the shelf in folds, longest at the front and back and riding up at the sides. CHECK VOLUME (x56): the model stands as a hollow hood round a head-sized space, as on a shelf or head form, while the reference volume is the cloth packed flat. Slot `hood`: worn under a helmet, as balaclavas take. Flame resistance has no damage kind in Deadvox yet, so `protects` carries only a little cut and acid protection; give it fire protection once Deadvox has fire damage. The worn look is pending: no worn model is authored."
+  }
+]

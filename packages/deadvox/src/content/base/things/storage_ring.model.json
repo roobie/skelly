@@ -1,0 +1,7 @@
+{
+  "id": "storage_ring",
+  "file": "assets/models/storage_ring.glb",
+  "parts": {
+    "storage_ring": { "node": "storage_ring:compound", "massKg": 0.013, "centreOfMass": [0, 0.014741935483870967, 0] }
+  }
+}

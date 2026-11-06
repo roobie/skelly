@@ -1,0 +1,11 @@
+{
+  "id": "technician_pants_gray",
+  "file": "assets/models/technician_pants_gray.glb",
+  "parts": {
+    "technician_pants_gray": {
+      "node": "technician_pants_gray:compound",
+      "massKg": 1.6,
+      "centreOfMass": [0.0006005757026795735, 0.030695177656512196, -0.0025444057925914374]
+    }
+  }
+}

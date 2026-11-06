@@ -1,0 +1,11 @@
+{
+  "id": "piano",
+  "file": "assets/models/piano.glb",
+  "parts": {
+    "piano": {
+      "node": "piano:compound",
+      "massKg": 200,
+      "centreOfMass": [0.000005840600782640548, 0.6197473940161525, -0.11428179054376027]
+    }
+  }
+}

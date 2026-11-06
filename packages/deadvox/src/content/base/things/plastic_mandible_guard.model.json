@@ -1,0 +1,11 @@
+{
+  "id": "plastic_mandible_guard",
+  "file": "assets/models/plastic_mandible_guard.glb",
+  "parts": {
+    "plastic_mandible_guard": {
+      "node": "plastic_mandible_guard:compound",
+      "massKg": 0.15,
+      "centreOfMass": [1.5895092477959783e-18, 0.030863950807071446, -0.03991852421214448]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "gambeson_pants",
+  "file": "assets/models/gambeson_pants.glb",
+  "parts": {
+    "gambeson_pants": {
+      "node": "gambeson_pants:compound",
+      "massKg": 1.4,
+      "centreOfMass": [-0.0003351990969600251, 0.03363305437701918, -0.0020930442567436047]
+    }
+  }
+}

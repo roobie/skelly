@@ -1,0 +1,11 @@
+{
+  "id": "roller_skates",
+  "file": "assets/models/roller_skates.glb",
+  "parts": {
+    "roller_skates": {
+      "node": "roller_skates:compound",
+      "massKg": 3,
+      "centreOfMass": [-0.00006544394137056638, 0.1235111656818357, -0.029784820811910074]
+    }
+  }
+}

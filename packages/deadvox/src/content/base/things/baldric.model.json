@@ -1,0 +1,11 @@
+{
+  "id": "baldric",
+  "file": "assets/models/baldric.glb",
+  "parts": {
+    "baldric": {
+      "node": "baldric:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-0.057140182648401816, 0.011777168949771684, -0.011422222222222224]
+    }
+  }
+}

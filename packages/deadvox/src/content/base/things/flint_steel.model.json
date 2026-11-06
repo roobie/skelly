@@ -1,0 +1,14 @@
+{
+  "id": "flint_steel",
+  "file": "assets/models/flint_steel.glb",
+  "parts": {
+    "flint_steel": {
+      "node": "flint_steel:compound",
+      "massKg": 0.16,
+      "centreOfMass": [-0.0027321304649548916, 0.009602359472588478, 0.03004371963913948]
+    }
+  },
+  "grip": { "at": [0, 0.003, -0.012], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

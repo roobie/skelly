@@ -1,0 +1,11 @@
+{
+  "id": "bottle_folding",
+  "file": "assets/models/bottle_folding.glb",
+  "parts": {
+    "bottle_folding": {
+      "node": "bottle_folding:compound",
+      "massKg": 0.027,
+      "centreOfMass": [0.0068198005698005704, 0.00447863247863248, 0]
+    }
+  }
+}

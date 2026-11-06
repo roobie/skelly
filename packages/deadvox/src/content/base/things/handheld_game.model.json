@@ -1,0 +1,11 @@
+{
+  "id": "handheld_game",
+  "file": "assets/models/handheld_game.glb",
+  "parts": {
+    "handheld_game": {
+      "node": "handheld_game:compound",
+      "massKg": 0.36,
+      "centreOfMass": [-0.00006460544531610522, 0.012947854176280579, -0.0005279187817258887]
+    }
+  }
+}

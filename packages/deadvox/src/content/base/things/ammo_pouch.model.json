@@ -1,0 +1,11 @@
+{
+  "id": "ammo_pouch",
+  "file": "assets/models/ammo_pouch.glb",
+  "parts": {
+    "ammo_pouch": {
+      "node": "ammo_pouch:compound",
+      "massKg": 0.13,
+      "centreOfMass": [0, 0.057635716133482805, 0.00025391049409329995]
+    }
+  }
+}

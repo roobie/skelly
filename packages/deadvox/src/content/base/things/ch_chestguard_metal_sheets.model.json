@@ -1,0 +1,11 @@
+{
+  "id": "ch_chestguard_metal_sheets",
+  "file": "assets/models/ch_chestguard_metal_sheets.glb",
+  "parts": {
+    "ch_chestguard_metal_sheets": {
+      "node": "ch_chestguard_metal_sheets:compound",
+      "massKg": 12,
+      "centreOfMass": [0.0016566950681012502, 0.023203607189501815, 0.03778137943901979]
+    }
+  }
+}

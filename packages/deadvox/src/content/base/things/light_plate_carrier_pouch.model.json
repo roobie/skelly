@@ -1,0 +1,11 @@
+{
+  "id": "light_plate_carrier_pouch",
+  "file": "assets/models/light_plate_carrier_pouch.glb",
+  "parts": {
+    "light_plate_carrier_pouch": {
+      "node": "light_plate_carrier_pouch:compound",
+      "massKg": 0.6,
+      "centreOfMass": [1.5448686589060858e-19, 0.025011462589004305, 0.010451686704797474]
+    }
+  }
+}

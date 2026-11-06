@@ -1,0 +1,11 @@
+{
+  "id": "recovery_pump",
+  "file": "assets/models/recovery_pump.glb",
+  "parts": {
+    "recovery_pump": {
+      "node": "recovery_pump:compound",
+      "massKg": 29,
+      "centreOfMass": [-0.00031987058987003903, 0.15693613127682388, -0.0006762937735794653]
+    }
+  }
+}

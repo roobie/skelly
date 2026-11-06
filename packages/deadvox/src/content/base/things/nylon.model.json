@@ -1,0 +1,11 @@
+{
+  "id": "nylon",
+  "file": "assets/models/nylon.glb",
+  "parts": {
+    "nylon": {
+      "node": "nylon:foldedSheet",
+      "massKg": 0.0023,
+      "centreOfMass": [0.00034605809128630463, 0.0030451452282157683, 0.0004217427385892105]
+    }
+  }
+}

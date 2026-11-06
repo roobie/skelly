@@ -1,0 +1,281 @@
+[
+  {
+    "id": "gauntlets_xlblack_dragon_scale",
+    "model": "gauntlets_xlblack_dragon_scale",
+    "name": "Oversized dragonscale gauntlets",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 16,
+      "warmth": 20,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.4, "blunt": 0.25, "cut": 0.5, "pierce": 0.4 }
+    },
+    "description": "Heavy black hide gauntlets cut wide for big or misshapen hands, the backs and fingers covered in rows of overlapping glossy scales above flared cuffs.",
+    "reference": "gauntlets_xlblack_dragon_scale",
+    "variants": [],
+    "notes": "Laid flat side by side, backs up, fingers to +z, 360 mm from cuff to fingertip: batch 198's dragonscale gauntlets (`gauntlets_black_dragon_scale`, built from the same `g.glovePair` options) scaled by 1.2. The oversized cut is its own row, the base model scaled up by 1.2, as batch 198 gave its oversized boots and pack their own rows. Box/volume x2.24, no flag. The hide is `hide-dragon-black` and the scales glossy `chitin-black`, matching batch 198's dragonhide and dragonscale gear; where scales cover the hide, the hide between them is `leather-charcoal` so the scales read apart. Slot `hands`, as earlier glove batches use. Encumbrance is about half the reference, as batch 198 scaled its dragon gear; warmth follows the reference. Protection is a guess above plain leather for the hide and above it again for the scales, as the reference gives none here. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_black_dragon_hide",
+    "model": "gloves_black_dragon_hide",
+    "name": "Dragonhide gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 4,
+      "warmth": 13,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.3, "blunt": 0.15, "cut": 0.35, "pierce": 0.25 }
+    },
+    "description": "Supple black hide gloves with short bound cuffs, a dark strip over the knuckles and a strap buttoned round each wrist with a bone button.",
+    "reference": "gloves_black_dragon_hide",
+    "variants": [],
+    "notes": "Laid flat side by side, backs up, fingers to +z, 250 mm from cuff to fingertip: black hide gloves with red-brown bound cuffs, a red-brown knuckle strip and a red-brown wrist strap fastened with a bone button. Box/volume x2.28, no flag. The hide is `hide-dragon-black` with `leather-chestnut` trim, matching batch 198's dragonhide and dragonscale gear. Slot `hands`, as earlier glove batches use. Encumbrance is about half the reference, as batch 198 scaled its dragon gear; warmth follows the reference. Protection is a guess above plain leather for the hide and above it again for the scales, as the reference gives none here. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_xlblack_dragon_hide",
+    "model": "gloves_xlblack_dragon_hide",
+    "name": "Oversized dragonhide gloves",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 9,
+      "warmth": 13,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.3, "blunt": 0.15, "cut": 0.35, "pierce": 0.25 }
+    },
+    "description": "Supple black hide gloves cut wide for big or misshapen hands, with bound cuffs, a dark knuckle strip and bone-buttoned wrist straps.",
+    "reference": "gloves_xlblack_dragon_hide",
+    "variants": [],
+    "notes": "The dragonhide gloves scaled by 1.2, 300 mm from cuff to fingertip, in the same finishes. The oversized cut is its own row, the base model scaled up by 1.2, as batch 198 gave its oversized boots and pack their own rows. Box/volume x2.28, no flag. The hide is `hide-dragon-black` with `leather-chestnut` trim, matching batch 198's dragonhide and dragonscale gear. Slot `hands`. Encumbrance is about half the reference, as batch 198 scaled its dragon gear; warmth follows the reference. Protection is a guess above plain leather for the hide and above it again for the scales, as the reference gives none here. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_black_dragon_hide",
+    "model": "helmet_black_dragon_hide",
+    "name": "Dragonhide helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 10,
+      "warmth": 15,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.3, "blunt": 0.15, "cut": 0.35, "pierce": 0.25 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" },
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "An open-faced helmet of thick black hide, with a raised ridge over the crown, a dark brow band and a bone-riveted chin strap.",
+    "reference": "helmet_black_dragon_hide",
+    "variants": [],
+    "notes": "Standing upright, front on +z, 270 mm tall and 220 mm across the chin-strap rivets: a black hide skull with a red-brown keel from brow to nape, red-brown brow band and rolled lower edge, stitched seams down the sides and back, bone rivets at the temples holding a chin strap. The face opening is drawn flush in `screen-black` so it reads from the side-on iso view. CHECK VOLUME: the model is the helmet's outside, standing, while the reference volume counts only the bulk of the hide, so the closed shape fills its box several times over. The hide is `hide-dragon-black` with `leather-chestnut` trim framing the face opening, so the dark opening reads against the black hide and the hide gear reads apart from the scale gear. It is a helmet host with four `helmet` points: left side and right side at the temples, rear at the nape, and the front mount above the brow, since the face is open. Slot `head`. Encumbrance is about half the reference, as batch 198 scaled its dragon gear; warmth follows the reference. Protection is a guess above plain leather for the hide and above it again for the scales, as the reference gives none here. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_black_dragon_scale",
+    "model": "helmet_black_dragon_scale",
+    "name": "Dragonscale helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 16,
+      "warmth": 25,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.4, "blunt": 0.25, "cut": 0.5, "pierce": 0.4 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A closed helmet covered in rows of overlapping black scales, with a crest of scale fins over the crown and a hinged visor pierced by a thin eye slit.",
+    "reference": "helmet_black_dragon_scale",
+    "variants": [],
+    "notes": "Standing upright, front on +z, 300 mm tall to the crest and 240 mm across the visor: a charcoal hide skull covered in rows of separate glossy black scale tabs, each row offset half a tab from the one below, six scale fins down the crown, and a curved scale visor hinged on bone bosses at the temples, with a ridge down its middle, a dark eye slit framed in red-brown `leather-chestnut` and three breathing holes each side. CHECK VOLUME: the model is the helmet's outside, standing, while the reference volume counts only the bulk of the hide, so the closed shape fills its box several times over. The hide is `hide-dragon-black` and the scales glossy `chitin-black`, matching batch 198's dragonhide and dragonscale gear; where scales cover the hide, the hide between them is `leather-charcoal` so the scales read apart. The raised-visor state is its own model, `helmet_black_dragon_scale_raised`. It is a helmet host with three `helmet` points: left side and right side at the temples and rear at the nape; no front mount, since the visor covers the face. Slot `head`. Encumbrance is about half the reference, as batch 198 scaled its dragon gear; warmth follows the reference. Protection is a guess above plain leather for the hide and above it again for the scales, as the reference gives none here. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_black_dragon_scale_raised",
+    "model": "helmet_black_dragon_scale_raised",
+    "name": "Dragonscale helmet (visor up)",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 16,
+      "warmth": 25,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.4, "blunt": 0.25, "cut": 0.5, "pierce": 0.4 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A closed helmet covered in rows of overlapping black scales, with a crest of scale fins over the crown; its visor is swung up over the brow, baring the face.",
+    "reference": "helmet_black_dragon_scale_raised",
+    "variants": [],
+    "notes": "The dragonscale helmet with its visor swung up: the same skull, scales and crest, the visor swung up 75 degrees on its temple bosses so it juts up and forward over the brow, above the bared face opening, drawn flush in `screen-black`. 300 mm tall to the crest. CHECK VOLUME: the model is the helmet's outside, standing, while the reference volume counts only the bulk of the hide, so the closed shape fills its box several times over. The hide is `hide-dragon-black` and the scales glossy `chitin-black`, matching batch 198's dragonhide and dragonscale gear; where scales cover the hide, the hide between them is `leather-charcoal` so the scales read apart. A distinct state, so it has its own model. Protection is listed as for the closed helmet; the face is bare in this state, which the protection model cannot express per body part. It is a helmet host with three `helmet` points: left side, right side and rear. Slot `head`. Encumbrance is about half the reference, as batch 198 scaled its dragon gear; warmth follows the reference. Protection is a guess above plain leather for the hide and above it again for the scales, as the reference gives none here. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_xlblack_dragon_hide",
+    "model": "helmet_xlblack_dragon_hide",
+    "name": "Oversized dragonhide helmet",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 13,
+      "warmth": 15,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.3, "blunt": 0.15, "cut": 0.35, "pierce": 0.25 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" },
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "An open-faced black hide helmet cut large for big or misshapen heads, with a raised ridge over the crown and a bone-riveted chin strap.",
+    "reference": "helmet_xlblack_dragon_hide",
+    "variants": [],
+    "notes": "The dragonhide helmet scaled by 1.2, 320 mm tall and 270 mm across, in the same finishes. The oversized cut is its own row, the base model scaled up by 1.2, as batch 198 gave its oversized boots and pack their own rows. CHECK VOLUME: the model is the helmet's outside, standing, while the reference volume counts only the bulk of the hide, so the closed shape fills its box several times over. Four `helmet` points as on the dragonhide helmet: left side, right side, rear, and the front mount above the brow. Slot `head`. Encumbrance is about half the reference, as batch 198 scaled its dragon gear; warmth follows the reference. Protection is a guess above plain leather for the hide and above it again for the scales, as the reference gives none here. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_xlblack_dragon_scale",
+    "model": "helmet_xlblack_dragon_scale",
+    "name": "Oversized dragonscale helmet",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 21,
+      "warmth": 25,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.4, "blunt": 0.25, "cut": 0.5, "pierce": 0.4 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A closed helmet of overlapping black scales cut large for big or misshapen heads, with a finned crest and a hinged visor pierced by a thin eye slit.",
+    "reference": "helmet_xlblack_dragon_scale",
+    "variants": [],
+    "notes": "The dragonscale helmet scaled by 1.2, 365 mm tall to the crest, visor down. The oversized cut is its own row, the base model scaled up by 1.2, as batch 198 gave its oversized boots and pack their own rows. CHECK VOLUME: the model is the helmet's outside, standing, while the reference volume counts only the bulk of the hide, so the closed shape fills its box several times over. The hide is `hide-dragon-black` and the scales glossy `chitin-black`, matching batch 198's dragonhide and dragonscale gear; where scales cover the hide, the hide between them is `leather-charcoal` so the scales read apart. Its raised-visor state is `helmet_xlblack_dragon_scale_raised`. Three `helmet` points: left side, right side and rear. Slot `head`. Encumbrance is about half the reference, as batch 198 scaled its dragon gear; warmth follows the reference. Protection is a guess above plain leather for the hide and above it again for the scales, as the reference gives none here. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_xlblack_dragon_scale_raised",
+    "model": "helmet_xlblack_dragon_scale_raised",
+    "name": "Oversized dragonscale helmet (visor up)",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 21,
+      "warmth": 25,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.4, "blunt": 0.25, "cut": 0.5, "pierce": 0.4 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A closed helmet of overlapping black scales cut large for big or misshapen heads, its visor swung up over the brow, baring the face.",
+    "reference": "helmet_xlblack_dragon_scale_raised",
+    "variants": [],
+    "notes": "The raised-visor dragonscale helmet scaled by 1.2, 365 mm tall to the crest. The oversized cut is its own row, the base model scaled up by 1.2, as batch 198 gave its oversized boots and pack their own rows. CHECK VOLUME: the model is the helmet's outside, standing, while the reference volume counts only the bulk of the hide, so the closed shape fills its box several times over. The hide is `hide-dragon-black` and the scales glossy `chitin-black`, matching batch 198's dragonhide and dragonscale gear; where scales cover the hide, the hide between them is `leather-charcoal` so the scales read apart. A distinct state, so it has its own model. Three `helmet` points: left side, right side and rear. Slot `head`. Encumbrance is about half the reference, as batch 198 scaled its dragon gear; warmth follows the reference. Protection is a guess above plain leather for the hide and above it again for the scales, as the reference gives none here. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "suit_black_dragon_hide",
+    "model": "suit_black_dragon_hide",
+    "name": "Dragonhide suit",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 9,
+      "warmth": 15,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.3, "blunt": 0.15, "cut": 0.35, "pierce": 0.25 }
+    },
+    "description": "A one-piece suit of light, flexible black hide covering the body, arms and legs, with dark pads at the shoulders, elbows and knees, a bone-toggled front and a buckled belt.",
+    "reference": "suit_black_dragon_hide",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, 1390 mm from collar to ankle and 1020 mm across the sleeves: a black hide body panel with sleeves angled out from the shoulders and legs down to red-brown ankle bands, a red-brown collar round the dark neck opening, a red-brown placket with four bone toggles, red-brown pads at the shoulders, elbows and knees, side seams and a red-brown belt with a bone buckle. Box/volume x3.87, no flag. The hide is `hide-dragon-black` with `leather-chestnut` trim, matching batch 198's dragonhide and dragonscale gear. Slot `vest`, as batch 170's whole-body armour suits have it, though it also covers the arms and legs; Deadvox has no whole-body armour slot, and worn it should block `legs` too. Encumbrance is about half the reference, as batch 198 scaled its dragon gear; warmth follows the reference. Protection is a guess above plain leather for the hide and above it again for the scales, as the reference gives none here. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "suit_black_dragon_scale",
+    "model": "suit_black_dragon_scale",
+    "name": "Dragonscale suit",
+    "category": "clothing",
+    "size": [4, 6],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 13,
+      "warmth": 25,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.4, "blunt": 0.25, "cut": 0.5, "pierce": 0.4 }
+    },
+    "description": "A one-piece hide suit covered from collar to ankle in rows of overlapping pointed black scales, with a scaled gorget, a red-brown belt and a bone buckle.",
+    "reference": "suit_black_dragon_scale",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, 1390 mm from collar to ankle and 1020 mm across the sleeves: the dragonhide suit's cut in charcoal hide, covered in rows of pointed glossy black scales on the body, sleeves and legs, each row offset half a scale and alternate rows standing proud, a scale gorget below the collar, red-brown cuffs and ankle bands and a belt with a bone buckle. Box/volume x3.54, no flag. The hide under the scales is `leather-charcoal` so the glossy `chitin-black` scales read against it. Slot `vest`, as batch 170's whole-body armour suits have it, though it also covers the arms and legs; worn it should block `legs` too. Encumbrance is about half the reference, as batch 198 scaled its dragon gear; warmth follows the reference. Protection is a guess above plain leather for the hide and above it again for the scales, as the reference gives none here. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "suit_xlblack_dragon_hide",
+    "model": "suit_xlblack_dragon_hide",
+    "name": "Oversized dragonhide suit",
+    "category": "clothing",
+    "size": [5, 7],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 13,
+      "warmth": 15,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.3, "blunt": 0.15, "cut": 0.35, "pierce": 0.25 }
+    },
+    "description": "A one-piece suit of light black hide cut large for big or misshapen bodies, padded at the shoulders, elbows and knees, with a bone-toggled front and a buckled belt.",
+    "reference": "suit_xlblack_dragon_hide",
+    "variants": [],
+    "notes": "The dragonhide suit scaled by 1.2, laid out flat, 1670 mm from collar to ankle and 1220 mm across, in the same finishes. The oversized cut is its own row, the base model scaled up by 1.2, as batch 198 gave its oversized boots and pack their own rows. CHECK VOLUME (box/volume x4.34): laid out flat the suit's box is wide and thin; the reference gives it packed. The hide is `hide-dragon-black` with `leather-chestnut` trim, matching batch 198's dragonhide and dragonscale gear. Slot `vest`, as on the dragonhide suit; worn it should block `legs` too. Encumbrance is about half the reference, as batch 198 scaled its dragon gear; warmth follows the reference. Protection is a guess above plain leather for the hide and above it again for the scales, as the reference gives none here. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "suit_xlblack_dragon_scale",
+    "model": "suit_xlblack_dragon_scale",
+    "name": "Oversized dragonscale suit",
+    "category": "clothing",
+    "size": [5, 7],
+    "economy": { "usage": ["Hunting"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 18,
+      "warmth": 25,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.4, "blunt": 0.25, "cut": 0.5, "pierce": 0.4 }
+    },
+    "description": "A one-piece hide suit cut large for big or misshapen bodies, covered from collar to ankle in rows of overlapping pointed black scales.",
+    "reference": "suit_xlblack_dragon_scale",
+    "variants": [],
+    "notes": "The dragonscale suit scaled by 1.2, laid out flat, 1670 mm from collar to ankle and 1220 mm across, in the same finishes. The oversized cut is its own row, the base model scaled up by 1.2, as batch 198 gave its oversized boots and pack their own rows. CHECK VOLUME (box/volume x4.34): laid out flat the suit's box is wide and thin; the reference gives it packed. The hide is `hide-dragon-black` and the scales glossy `chitin-black`, matching batch 198's dragonhide and dragonscale gear; where scales cover the hide, the hide between them is `leather-charcoal` so the scales read apart. Slot `vest`, as on the dragonscale suit; worn it should block `legs` too. Encumbrance is about half the reference, as batch 198 scaled its dragon gear; warmth follows the reference. Protection is a guess above plain leather for the hide and above it again for the scales, as the reference gives none here. The worn look is pending: no worn model is authored."
+  }
+]

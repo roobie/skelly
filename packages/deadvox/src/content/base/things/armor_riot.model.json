@@ -1,0 +1,11 @@
+{
+  "id": "armor_riot",
+  "file": "assets/models/armor_riot.glb",
+  "parts": {
+    "armor_riot": {
+      "node": "armor_riot:compound",
+      "massKg": 3,
+      "centreOfMass": [1.3187546508881557e-18, 0.029566182405165467, 0.037826472962066184]
+    }
+  }
+}

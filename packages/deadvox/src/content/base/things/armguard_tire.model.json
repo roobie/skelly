@@ -1,0 +1,11 @@
+{
+  "id": "armguard_tire",
+  "file": "assets/models/armguard_tire.glb",
+  "parts": {
+    "armguard_tire": {
+      "node": "armguard_tire:compound",
+      "massKg": 0.6,
+      "centreOfMass": [-0.00017517704062617207, 0.036330972791651116, 0.00045396943719715817]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "fur_rollmat",
+  "file": "assets/models/fur_rollmat.glb",
+  "parts": {
+    "fur_rollmat": {
+      "node": "fur_rollmat:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0.0002965702416535793, 0.06598689565496398, 0.00002918080956482092]
+    }
+  }
+}

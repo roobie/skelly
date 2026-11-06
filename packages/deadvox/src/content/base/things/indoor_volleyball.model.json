@@ -1,0 +1,11 @@
+{
+  "id": "indoor_volleyball",
+  "file": "assets/models/indoor_volleyball.glb",
+  "parts": {
+    "indoor_volleyball": {
+      "node": "indoor_volleyball:compound",
+      "massKg": 0.25,
+      "centreOfMass": [0, 0.10552334995014957, 0]
+    }
+  }
+}

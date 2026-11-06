@@ -1,0 +1,11 @@
+{
+  "id": "bikini_top",
+  "file": "assets/models/bikini_top.glb",
+  "parts": {
+    "bikini_top": {
+      "node": "bikini_top:compound",
+      "massKg": 0.022,
+      "centreOfMass": [7.89586850563511e-18, 0.003499501353469153, 0.018073087334378114]
+    }
+  }
+}

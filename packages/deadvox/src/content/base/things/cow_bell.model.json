@@ -1,0 +1,14 @@
+{
+  "id": "cow_bell",
+  "file": "assets/models/cow_bell.glb",
+  "parts": {
+    "cow_bell": {
+      "node": "cow_bell:compound",
+      "massKg": 0.53,
+      "centreOfMass": [3.997045695310065e-21, 0.037598991050892004, 0.07887823028007035]
+    }
+  },
+  "grip": { "at": [0, 0.038000000000000006, 0.07100000000000001], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

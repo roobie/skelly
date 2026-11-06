@@ -1,0 +1,11 @@
+{
+  "id": "jacket_chef",
+  "file": "assets/models/jacket_chef.glb",
+  "parts": {
+    "jacket_chef": {
+      "node": "jacket_chef:compound",
+      "massKg": 1.4,
+      "centreOfMass": [0.001600679711023442, 0.028029951009132383, -0.0015325496119486042]
+    }
+  }
+}

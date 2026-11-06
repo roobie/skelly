@@ -1,0 +1,19 @@
+{
+  "id": "heavy_cargo_helicopter_front_gear",
+  "file": "assets/models/heavy_cargo_helicopter_front_gear.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 200,
+      "centreOfMass": [4.609082943925233, 0.546875, 0],
+      "collision": [
+        { "min": [4.5625, 0.46875, 1.3125], "max": [4.65625, 0.71875, 1.9375] },
+        { "min": [4.5625, 0.4375, 1.875], "max": [4.65625, 0.5, 2.09375] },
+        { "min": [4.5625, 0.46875, -1.9375], "max": [4.65625, 0.71875, -1.3125] },
+        { "min": [4.5625, 0.4375, -2.09375], "max": [4.65625, 0.5, -1.875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

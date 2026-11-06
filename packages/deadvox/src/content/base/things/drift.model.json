@@ -1,0 +1,14 @@
+{
+  "id": "drift",
+  "file": "assets/models/drift.glb",
+  "parts": {
+    "drift": {
+      "node": "drift:compound",
+      "massKg": 0.93,
+      "centreOfMass": [0.09003045191193511, 4.634994206252692e-8, 4.634994206252692e-8]
+    }
+  },
+  "grip": { "at": [0.117, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

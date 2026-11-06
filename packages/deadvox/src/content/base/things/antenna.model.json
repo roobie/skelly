@@ -1,0 +1,7 @@
+{
+  "id": "antenna",
+  "file": "assets/models/antenna.glb",
+  "parts": {
+    "antenna": { "node": "antenna:compound", "massKg": 0.072, "centreOfMass": [-0.040176470588235286, 0.006, 0] }
+  }
+}

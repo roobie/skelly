@@ -1,0 +1,11 @@
+{
+  "id": "goggles_ski",
+  "file": "assets/models/goggles_ski.glb",
+  "parts": {
+    "goggles_ski": {
+      "node": "goggles_ski:compound",
+      "massKg": 0.12,
+      "centreOfMass": [-9.047916277317995e-19, 0.050746353913466186, -0.03390726786582401]
+    }
+  }
+}

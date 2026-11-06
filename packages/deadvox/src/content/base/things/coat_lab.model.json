@@ -1,0 +1,11 @@
+{
+  "id": "coat_lab",
+  "file": "assets/models/coat_lab.glb",
+  "parts": {
+    "coat_lab": {
+      "node": "coat_lab:compound",
+      "massKg": 0.69,
+      "centreOfMass": [0.0011112552929927607, 0.016650730774484365, -0.0016800983472203242]
+    }
+  }
+}

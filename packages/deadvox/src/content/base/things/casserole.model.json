@@ -1,0 +1,5 @@
+{
+  "id": "casserole",
+  "file": "assets/models/casserole.glb",
+  "parts": { "casserole": { "node": "casserole:compound", "massKg": 2.7, "centreOfMass": [0, 0.05501746624971398, 0] } }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "wintergreen_ointment",
+  "file": "assets/models/wintergreen_ointment.glb",
+  "parts": {
+    "wintergreen_ointment": {
+      "node": "wintergreen_ointment:compound",
+      "massKg": 0.05,
+      "centreOfMass": [0, 0.019937429917021753, 0]
+    }
+  },
+  "grip": { "at": [0, 0.016, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "duster_leather",
+  "file": "assets/models/duster_leather.glb",
+  "parts": {
+    "duster_leather": {
+      "node": "duster_leather:compound",
+      "massKg": 2.6,
+      "centreOfMass": [0, 0.033640814727771265, -0.008254266689049298]
+    }
+  }
+}

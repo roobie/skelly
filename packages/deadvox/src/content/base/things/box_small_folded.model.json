@@ -1,0 +1,11 @@
+{
+  "id": "box_small_folded",
+  "file": "assets/models/box_small_folded.glb",
+  "parts": {
+    "box_small_folded": {
+      "node": "box_small_folded:compound",
+      "massKg": 0.06,
+      "centreOfMass": [-0.0054766817994222, 0.004000000000000001, 0]
+    }
+  }
+}

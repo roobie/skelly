@@ -1,0 +1,11 @@
+{
+  "id": "chestwrap",
+  "file": "assets/models/chestwrap.glb",
+  "parts": {
+    "chestwrap": {
+      "node": "chestwrap:compound",
+      "massKg": 0.092,
+      "centreOfMass": [0.0003037974683544305, 0.0281113924050633, -0.10210886075949374]
+    }
+  }
+}

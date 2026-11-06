@@ -1,0 +1,11 @@
+{
+  "id": "boots_xlblack_dragon_hide",
+  "file": "assets/models/boots_xlblack_dragon_hide.glb",
+  "parts": {
+    "boots_xlblack_dragon_hide": {
+      "node": "boots_xlblack_dragon_hide:compound",
+      "massKg": 3.5,
+      "centreOfMass": [0.00007465781833263816, 0.12649211945250932, -0.05474491912069682]
+    }
+  }
+}

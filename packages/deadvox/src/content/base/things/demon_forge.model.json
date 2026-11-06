@@ -1,0 +1,14 @@
+{
+  "id": "demon_forge",
+  "file": "assets/models/demon_forge.glb",
+  "parts": {
+    "demon_forge": {
+      "node": "demon_forge:compound",
+      "massKg": 11,
+      "centreOfMass": [0.0019187301303004519, 0.10411158375498142, 0.0001029866117404743]
+    }
+  },
+  "grip": { "at": [0, 0.178, 0.168], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,17 @@
+{
+  "id": "heavy_cargo_helicopter_mast",
+  "file": "assets/models/heavy_cargo_helicopter_mast.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 110,
+      "centreOfMass": [0, 0.35027985074626866, 0],
+      "collision": [
+        { "min": [-0.09375, 0, -0.09375], "max": [0.09375, 0.625, 0.09375] },
+        { "min": [-0.25, 0.375, -0.25], "max": [0.25, 0.4375, 0.25] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "santa_belt",
+  "file": "assets/models/santa_belt.glb",
+  "parts": {
+    "santa_belt": {
+      "node": "santa_belt:compound",
+      "massKg": 0.45,
+      "centreOfMass": [0.012601586862985029, 0.002220423952946749, 0.007334070185134012]
+    }
+  }
+}

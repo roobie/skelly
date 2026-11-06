@@ -1,0 +1,11 @@
+{
+  "id": "firefly_terrarium",
+  "file": "assets/models/firefly_terrarium.glb",
+  "parts": {
+    "firefly_terrarium": {
+      "node": "firefly_terrarium:compound",
+      "massKg": 17,
+      "centreOfMass": [0.00027049275941942003, 0.08509775200386611, -0.0002541452115516006]
+    }
+  }
+}

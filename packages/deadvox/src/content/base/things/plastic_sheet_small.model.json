@@ -1,0 +1,11 @@
+{
+  "id": "plastic_sheet_small",
+  "file": "assets/models/plastic_sheet_small.glb",
+  "parts": {
+    "plastic_sheet_small": {
+      "node": "plastic_sheet_small:foldedSheet",
+      "massKg": 0.01,
+      "centreOfMass": [0.00026560823857541395, 0.011277837373954089, -0.00007080025745548032]
+    }
+  }
+}

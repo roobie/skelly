@@ -1,0 +1,359 @@
+[
+  {
+    "id": "helmet_kabuto",
+    "model": "helmet_kabuto",
+    "name": "Kabuto",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 10,
+      "warmth": 25,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.2, "blunt": 0.45, "cut": 0.75, "pierce": 0.5 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "An old Japanese iron helmet: a ribbed bowl, a laced neck guard of flaring plates, gilt horns over the brow and a red half mask with a scowling face.",
+    "reference": "helmet_kabuto",
+    "variants": ["xl_helmet_kabuto", "helmet_kabuto_xs"],
+    "notes": "Standing on its neck guard, front on +z, 356 mm across the turned-back wings and 368 mm to the horn tips: a black ribbed bowl with a gilt band, four black lames laced in crimson round the back and sides, gilt horns and a red half mask with a white moustache over a laced throat guard. Iron in `steel-parkerized`, lacquered plates in `leather-black`. It covers the eyes and mouth as well as the head, through the mask. CHECK VOLUME (x11.8): the model is a hollow helmet round a head-sized space, while the reference volume is the shell packed down. The xl and xs sizes share the model. A `helmet` host: the front point is the brow above the face where goggles mount, the side points sit over the ears and the rear point at the back of the rim. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_kettle",
+    "model": "helmet_kettle",
+    "name": "Kettle helmet",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.2, "blunt": 0.45, "cut": 0.7, "pierce": 0.45 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "A steel war hat with a round riveted bowl and a wide brim that sheds blows from above. The face is left open.",
+    "reference": "helmet_kettle",
+    "variants": ["xl_helmet_kettle"],
+    "notes": "Standing on its brim, front on +z, 408 mm across and 184 mm tall: a steel bowl with a raised comb front to back and a ring of rivets, on a brim sloping to a rolled edge, a tan leather lining band inside. CHECK VOLUME (x14.9): the model is a hollow helmet round a head-sized space, while the reference volume is the shell packed down. The xl size shares the model. A `helmet` host: the front point is the brow above the face where goggles mount, the side points sit over the ears and the rear point at the back of the rim. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_larmor",
+    "model": "helmet_larmor",
+    "name": "Leather helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 10,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.15, "blunt": 0.3, "cut": 0.4, "pierce": 0.25 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "A cap of thick hardened leather panels stitched together, with cheek flaps and a short neck flap.",
+    "reference": "helmet_larmor",
+    "variants": ["xl_helmet_larmor", "helmet_larmor_xs"],
+    "notes": "Sitting on its flaps, front on +z, 232 mm across and 188 mm tall: six brown panels with raised chestnut seams, a rolled brow band, cheek flaps with rawhide laces and a neck flap. CHECK VOLUME (x5): the model is a hollow helmet round a head-sized space, while the reference volume is the shell packed down. The xl and xs sizes share the model. A `helmet` host: the front point is the brow above the face where goggles mount, the side points sit over the ears and the rear point at the back of the rim. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_liner",
+    "model": "helmet_liner",
+    "name": "Helmet liner",
+    "category": "clothing",
+    "size": [2, 1],
+    "economy": { "usage": ["Military", "Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "hood", "encumbrance": 0, "warmth": 30, "wearPerDamage": 0.003 },
+    "description": "A thin cotton skullcap with ear and neck flaps, worn under a helmet to keep the head warm.",
+    "reference": "helmet_liner",
+    "variants": [],
+    "notes": "Sitting on its flaps, front on +z, 200 mm across and 176 mm tall: an olive cotton cap stitched in four panels with ear flaps and a neck flap. Slot `hood`, the slot earlier batches gave to caps worn under a helmet. CHECK VOLUME (x28): the model stands as a cap round a head-sized space, while the reference volume is the cloth folded. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_metal_sheets",
+    "model": "helmet_metal_sheets",
+    "name": "Sheet metal helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 4,
+      "warmth": 35,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.2, "blunt": 0.4, "cut": 0.6, "pierce": 0.4 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "A crude bucket of riveted sheet steel with the face cut out, padded with cotton and resting on a flared collar that takes the weight onto the shoulders.",
+    "reference": "helmet_metal_sheets",
+    "variants": [],
+    "notes": "Standing on its collar, front on +z, 296 mm across and 292 mm tall: a riveted bright steel bucket open from chin to brow at the front, a cream cotton pad showing round the opening, a riveted seam at the back, on a flared collar. Encumbrance 4, not the reference's 0: the collar rests on the shoulders and the bucket weighs 3.7 kg. CHECK VOLUME (x12.8): the model is a hollow helmet round a head-sized space, while the reference volume is the shell packed down. A `helmet` host: the front point is the brow above the face where goggles mount, the side points sit over the ears and the rear point at the back of the rim. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_metal_sheets_full",
+    "model": "helmet_metal_sheets_full",
+    "name": "Sheet metal great helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 25,
+      "warmth": 40,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.25, "blunt": 0.45, "cut": 0.65, "pierce": 0.45 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "A riveted sheet steel bucket closed over the whole face, with a narrow eye slit and breathing holes, padded with cotton and resting on a flared collar.",
+    "reference": "helmet_metal_sheets_full",
+    "variants": [],
+    "notes": "Standing on its collar, front on +z, 296 mm across and 292 mm tall: the same riveted bucket as the sheet metal helmet, closed at the front with an eye slit, dark padding showing through it, and rows of breathing holes below. It covers the eyes and mouth. CHECK VOLUME (x12.8): the model is a hollow helmet round a head-sized space, while the reference volume is the shell packed down. A `helmet` host: the front point is the brow above the face where goggles mount, the side points sit over the ears and the rear point at the back of the rim. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_motor",
+    "model": "helmet_motor",
+    "name": "Full-face motorcycle helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 5,
+      "warmth": 30,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.4, "blunt": 0.6, "cut": 0.55, "pierce": 0.35 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "A padded shell that closes round the whole head and jaw, with a smoked visor lowered over the eyes.",
+    "reference": "helmet_motor",
+    "variants": [],
+    "notes": "Standing on its neck roll, front on +z, 288 mm across and 276 mm tall: a glossy red shell with a white stripe front to back, a smoked visor down over the eye window on a pivot boss each side, and a black chin vent. Visor down: the visor-up state `helmet_motor_raised` is its own reference item with its own model, and switching between them waits on Deadvox item states. Longest side x0.87: the reference's 330 mm is front to back, and the model's shell is round. CHECK VOLUME (x10.2): the model is a hollow helmet round a head-sized space, while the reference volume is the shell packed down. A `helmet` host: the front point is the brow above the face where goggles mount, the side points sit over the ears and the rear point at the back of the rim. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_motor_raised",
+    "model": "helmet_motor_raised",
+    "name": "Full-face motorcycle helmet (visor up)",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 3,
+      "warmth": 30,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.2, "blunt": 0.55, "cut": 0.5, "pierce": 0.3 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "A padded shell that closes round the whole head and jaw, its smoked visor swung up over the brow and the eyes uncovered.",
+    "reference": "helmet_motor_raised",
+    "variants": [],
+    "notes": "The visor-up state of `helmet_motor`, with its own model: the same shell with the smoked visor lying up over the brow and the eye window open onto the dark padding. It covers the head and mouth, not the eyes. Longest side x0.87: the reference's 330 mm is front to back, and the model's shell is round. CHECK VOLUME (x10.2): the model is a hollow helmet round a head-sized space, while the reference volume is the shell packed down. A `helmet` host: the front point is the brow above the face where goggles mount, the side points sit over the ears and the rear point at the back of the rim. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_nasal",
+    "model": "helmet_nasal",
+    "name": "Nasal helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 10,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.15, "blunt": 0.35, "cut": 0.65, "pierce": 0.4 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "A pointed iron helmet on a riveted brow band, with a flat bar running down over the nose.",
+    "reference": "helmet_nasal",
+    "variants": ["xl_helmet_nasal", "helmet_nasal_xs"],
+    "notes": "Front on +z, 216 mm across and 240 mm tall with its nose bar: a grey iron cone with four dark ribs meeting at the point, a dark brow band riveted round and a nose bar hanging from the front; it stands on the tip of the bar and the back of the rim, since the bar reaches below the rim. A leather lining edge shows inside. CHECK VOLUME (x5.7): the model is a hollow helmet round a head-sized space, while the reference volume is the shell packed down. The xl and xs sizes share the model. A `helmet` host: the front point is the brow above the face where goggles mount, the side points sit over the ears and the rear point at the back of the rim. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_plate",
+    "model": "helmet_plate",
+    "name": "Great helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 30,
+      "warmth": 10,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.25, "blunt": 0.5, "cut": 0.8, "pierce": 0.55 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "A flat-topped steel drum closed round the whole head, seen out of through two narrow eye slits and breathed through a block of small holes.",
+    "reference": "helmet_plate",
+    "variants": ["xl_helmet_plate", "helmet_plate_xs"],
+    "notes": "Standing on its rim, front on +z, 240 mm across and 308 mm tall: a grey steel drum with a domed top, two eye slits either side of a centre bar under a riveted brass brow band, a brass strip down the face and a block of breathing holes on the right cheek, dark padding behind the slits and a tan lining edge at the rim. It covers the eyes and mouth. CHECK VOLUME (x6.5): the model is a hollow helmet round a head-sized space, while the reference volume is the shell packed down. The xl and xs sizes share the model. A `helmet` host: the front point is the brow above the face where goggles mount, the side points sit over the ears and the rear point at the back of the rim. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_riding",
+    "model": "helmet_riding",
+    "name": "Riding helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 20,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.15, "blunt": 0.5, "cut": 0.35, "pierce": 0.2 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "A round padded helmet under a black velvet cover, with a short peak against glare and a harness that buckles under the chin.",
+    "reference": "helmet_riding",
+    "variants": [],
+    "notes": "Standing on its harness, front on +z, 220 mm across, 268 mm front to back with the peak and 196 mm tall: a black cloth-covered shell with a button on top, leather piping, four seams, a stiff peak, and black harness straps at both sides and the back down to a buckled chin strap lying underneath. Longest side x0.96 against the reference's 280 mm. CHECK VOLUME (x6.4): the model is a hollow helmet round a head-sized space, while the reference volume is the shell packed down. A `helmet` host: the front point is the brow above the face where goggles mount, the side points sit over the ears and the rear point at the back of the rim. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_riding_peakless",
+    "model": "helmet_riding_peakless",
+    "name": "Jockey skull cap",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 20,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.15, "blunt": 0.5, "cut": 0.35, "pierce": 0.2 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "A round padded helmet with no peak, worn by jockeys under a cloth cap cover, held on by a harness that buckles under the chin.",
+    "reference": "helmet_riding_peakless",
+    "variants": [],
+    "notes": "Standing on its harness, front on +z, 220 mm across and 196 mm tall: the riding helmet's shell bare in white, with black seams and piping and no peak, the same harness and chin strap. It has its own model because it has no peak. Longest side x0.79: the reference's 280 mm is front to back, and the model's shell is round. CHECK VOLUME (x5.4): the model is a hollow helmet round a head-sized space, while the reference volume is the shell packed down. A `helmet` host: the front point is the brow above the face where goggles mount, the side points sit over the ears and the rear point at the back of the rim. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_scrap",
+    "model": "helmet_scrap",
+    "name": "Scrap helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 10,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.15, "blunt": 0.35, "cut": 0.55, "pierce": 0.35 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "A dome of mismatched scrap steel plates lashed together with cord over a rag lining.",
+    "reference": "helmet_scrap",
+    "variants": ["xl_helmet_scrap", "helmet_scrap_xs"],
+    "notes": "Standing on its rim, front on +z, 232 mm across and 168 mm tall: a rusty dome patched with overlapping plates of galvanised, bright and rusted steel, a bolted round plate on the crown, cord lashings over the plates and round the middle, and a ragged cloth lining hanging below the rim. The xl and xs sizes share the model. A `helmet` host: the front point is the brow above the face where goggles mount, the side points sit over the ears and the rear point at the back of the rim. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_skid",
+    "model": "helmet_skid",
+    "name": "Skid lid",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 10,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.2, "blunt": 0.45, "cut": 0.55, "pierce": 0.3 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left_side", "name": "left side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "right_side", "name": "right side", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.5, "standard": "helmet" }
+    ],
+    "description": "A small round steel helmet, shaped like a pudding basin, with a plastic rim and a buckled chin strap.",
+    "reference": "helmet_skid",
+    "variants": [],
+    "notes": "Standing on its chin strap, front on +z, 208 mm across and 128 mm tall: a low polished steel dome with a black plastic bead round the rim, black straps riveted on at both sides down to a buckled strap lying underneath. CHECK VOLUME (x4.4): the model is a hollow helmet round a head-sized space, while the reference volume is the shell packed down. A `helmet` host: the front point is the brow above the face where goggles mount, the side points sit over the ears and the rear point at the back of the rim. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "helmet_skull",
+    "model": "helmet_skull",
+    "name": "Wolf skull helmet",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 0,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0.1, "blunt": 0.25, "cut": 0.35, "pierce": 0.2 }
+    },
+    "description": "The top of a huge wolf's skull, strapped on with leather and carved all over with fine winding grooves.",
+    "reference": "helmet_skull",
+    "variants": [],
+    "notes": "Lying on its teeth, front (the muzzle) on +z, 340 mm from the back of the braincase to the nose, 140 mm tall and 376 mm across with its straps laid out: a bone braincase with a ridge down the middle, cheekbones round dark eye sockets, a long muzzle with the nose opening and upper teeth and fangs, chestnut grooves carved over the bone, and a brown leather strap from each cheekbone to a brass buckle. The reference gives no warmth, so warmth is 0. CHECK VOLUME (x4.5): the straps lie out flat, and the reference counts them coiled. It takes no `helmet` attach points: bone and straps give nothing to mount gear on. The worn look is pending: no worn model is authored."
+  }
+]

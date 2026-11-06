@@ -1,0 +1,111 @@
+[
+  {
+    "id": "golf_ball",
+    "model": "golf_ball",
+    "name": "Golf ball",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A hard white ball covered in shallow dimples. Small, dense and easy to throw.",
+    "reference": "golf_ball",
+    "variants": [],
+    "notes": "The dimples are grey dots flush with the cover: pieces only add, so they cannot be cut in. The reference's 250 ml is its smallest volume step, so the box/volume ratio says nothing about the ball."
+  },
+  {
+    "id": "golf_tee",
+    "model": "golf_tee",
+    "name": "Golf tee",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A small wooden peg with a cupped head, for setting a ball just off the ground.",
+    "reference": "golf_tee",
+    "variants": [],
+    "notes": "CHECK VOLUME: the reference's 250 ml is its smallest volume step, far above a 70 mm peg; the model keeps the real size."
+  },
+  {
+    "id": "indoor_volleyball",
+    "model": "indoor_volleyball",
+    "name": "Volleyball",
+    "category": "misc",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A soft-skinned volleyball in blue, yellow and white panels. Light and bouncy.",
+    "reference": "indoor_volleyball",
+    "variants": [],
+    "notes": "CHECK VOLUME (x9.5): the reference's 1 L is far under a 210 mm ball, which holds about 4.8 L; the model keeps the regulation size. The 18 panels are drawn as three colour groups, caps proud of the white ball, which reads as a volleyball at play distance. The reference's longest side of 260 mm is larger than a regulation ball."
+  },
+  {
+    "id": "mannequin",
+    "model": "mannequin",
+    "name": "Mannequin",
+    "category": "misc",
+    "size": [4, 10],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A faceless white display figure of an adult on a round steel stand. From a distance it passes for a person.",
+    "reference": "mannequin",
+    "variants": [],
+    "notes": "CHECK VOLUME (x5.1): a standing figure fills little of its bounding box, so the ratio is the pose, not a size error. The mass is the reference's 81.5 kg, far heavier than a real fibreglass mannequin of 10 to 20 kg; worth revisiting with the decoy. Deadvox has no field for a decoy drawing the infected's eye. The size is a placeholder for a thing too big to carry far."
+  },
+  {
+    "id": "mannequin_decoy",
+    "model": "mannequin_decoy",
+    "name": "Mannequin decoy",
+    "category": "misc",
+    "size": [4, 10],
+    "economy": { "usage": [], "tiers": [] },
+    "description": "A display mannequin with a talking doll wired into its arms. Switched on, it stands and chatters to draw the dead toward it.",
+    "reference": "mannequin_decoy",
+    "variants": [],
+    "notes": "Crafted from a mannequin and a talking doll, so it has no loot economy. The model is the mannequin with its forearms slanting forward to hold the talking doll at the waist; the doll's pieces are the talking doll's. CHECK VOLUME (x6.3) is the standing pose, as on the mannequin, and the mass is the reference's. Running on batteries and making noise to lure the infected have no content field yet."
+  },
+  {
+    "id": "puck",
+    "model": "puck",
+    "name": "Hockey puck",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A thick disc of hard black rubber. Heavy enough to hurt when thrown.",
+    "reference": "puck",
+    "variants": [],
+    "notes": "A plain grey disc stands in for the printed face; no logo. Throwing damage has no content field here."
+  },
+  {
+    "id": "shuttlecock",
+    "model": "shuttlecock",
+    "name": "Shuttlecock",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A badminton shuttle: a rounded cork nose and a flared plastic skirt. Weighs next to nothing.",
+    "reference": "shuttlecock",
+    "variants": [],
+    "notes": "Stands on its cork, a nylon skirt with two blue bands, as it rests on a shelf. The skirt is solid white rather than a lattice, which a 2 mm grain cannot draw."
+  },
+  {
+    "id": "swimming_kickboard",
+    "model": "swimming_kickboard",
+    "name": "Swimming kickboard",
+    "category": "misc",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "description": "A flat slab of buoyant foam with a rounded nose and two hand holes. Floats well, and the foam can be cut up for padding.",
+    "reference": "swimming_kickboard",
+    "variants": [],
+    "notes": "Lies flat, nose on +z. The hand holes are painted flush in dark grey because pieces only add. Floating and foam salvage have no content field yet."
+  },
+  {
+    "id": "talking_doll",
+    "model": "talking_doll",
+    "name": "Talking doll",
+    "category": "misc",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "tool": { "qualities": { "noise_making": 1 } },
+    "description": "A child's doll in a red dress with a speaker in its chest. Press the button and it says a few words. Runs on batteries you can take out.",
+    "reference": "talking_doll",
+    "variants": ["creepy_doll"],
+    "notes": "CHECK VOLUME (x10.7): a standing figure fills little of its bounding box, and the reference's 725 ml is the doll's own bulk. noise_making is a new quality name for its sound, used by the mannequin decoy. Battery use has no field in this draft. The reference's second talking doll is the same toy, so it rides here."
+  }
+]

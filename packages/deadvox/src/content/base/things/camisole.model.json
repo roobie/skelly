@@ -1,0 +1,11 @@
+{
+  "id": "camisole",
+  "file": "assets/models/camisole.glb",
+  "parts": {
+    "camisole": {
+      "node": "camisole:compound",
+      "massKg": 0.067,
+      "centreOfMass": [0, 0.0011439865078528514, 0.044244228944871934]
+    }
+  }
+}

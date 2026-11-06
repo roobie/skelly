@@ -1,0 +1,11 @@
+{
+  "id": "cottonwood_tree_boll",
+  "file": "assets/models/cottonwood_tree_boll.glb",
+  "parts": {
+    "cottonwood_tree_boll": {
+      "node": "cottonwood_tree_boll:compound",
+      "massKg": 0.0011,
+      "centreOfMass": [0.0027874038187517816, 0.02151695639783414, 0.001548446850954688]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "foot_locker_aluminum",
+  "file": "assets/models/foot_locker_aluminum.glb",
+  "parts": {
+    "foot_locker_aluminum": {
+      "node": "foot_locker_aluminum:compound",
+      "massKg": 7,
+      "centreOfMass": [2.0004534198589084e-20, 0.1557950190789072, -0.00015288632236211156]
+    }
+  }
+}

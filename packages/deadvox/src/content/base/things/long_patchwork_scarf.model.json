@@ -1,0 +1,11 @@
+{
+  "id": "long_patchwork_scarf",
+  "file": "assets/models/long_patchwork_scarf.glb",
+  "parts": {
+    "long_patchwork_scarf": {
+      "node": "long_patchwork_scarf:compound",
+      "massKg": 0.22,
+      "centreOfMass": [5.509814718689879e-19, 0.019386050052336123, 0.002108859073175373]
+    }
+  }
+}

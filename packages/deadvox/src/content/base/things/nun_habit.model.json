@@ -1,0 +1,11 @@
+{
+  "id": "nun_habit",
+  "file": "assets/models/nun_habit.glb",
+  "parts": {
+    "nun_habit": {
+      "node": "nun_habit:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-0.0003024500565397665, 0.028462419901997753, 0.0016839803995476826]
+    }
+  }
+}

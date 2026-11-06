@@ -1,0 +1,11 @@
+{
+  "id": "magnetron",
+  "file": "assets/models/magnetron.glb",
+  "parts": {
+    "magnetron": {
+      "node": "magnetron:compound",
+      "massKg": 0.96,
+      "centreOfMass": [0.0000924018029620091, 0.04522343850611719, 0]
+    }
+  }
+}

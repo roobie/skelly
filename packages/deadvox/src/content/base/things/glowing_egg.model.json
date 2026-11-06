@@ -1,0 +1,11 @@
+{
+  "id": "glowing_egg",
+  "file": "assets/models/glowing_egg.glb",
+  "parts": {
+    "glowing_egg": {
+      "node": "glowing_egg:compound",
+      "massKg": 0.06,
+      "centreOfMass": [0.0010000000000000002, 0.02088547289368693, 0.001]
+    }
+  }
+}

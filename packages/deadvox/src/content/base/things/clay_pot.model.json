@@ -1,0 +1,5 @@
+{
+  "id": "clay_pot",
+  "file": "assets/models/clay_pot.glb",
+  "parts": { "clay_pot": { "node": "clay_pot:compound", "massKg": 0.68, "centreOfMass": [0, 0.06227423981640849, 0] } }
+}

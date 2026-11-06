@@ -1,0 +1,11 @@
+{
+  "id": "necklace_teeth",
+  "file": "assets/models/necklace_teeth.glb",
+  "parts": {
+    "necklace_teeth": {
+      "node": "necklace_teeth:compound",
+      "massKg": 0.017,
+      "centreOfMass": [0.00000226757369614582, 0.0024557823129251703, 0.035487528344671206]
+    }
+  }
+}

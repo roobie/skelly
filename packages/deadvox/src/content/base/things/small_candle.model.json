@@ -1,0 +1,10 @@
+{
+  "id": "small_candle",
+  "file": "assets/models/small_candle.glb",
+  "parts": {
+    "small_candle": { "node": "small_candle:compound", "massKg": 0.014, "centreOfMass": [0, 0.07160489510489511, 0] }
+  },
+  "grip": { "at": [0, 0.074, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

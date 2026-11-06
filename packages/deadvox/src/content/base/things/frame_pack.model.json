@@ -1,0 +1,11 @@
+{
+  "id": "frame_pack",
+  "file": "assets/models/frame_pack.glb",
+  "parts": {
+    "frame_pack": {
+      "node": "frame_pack:compound",
+      "massKg": 4.4,
+      "centreOfMass": [0.00021057249396797545, 0.23954551436718585, 0.061493309936389594]
+    }
+  }
+}

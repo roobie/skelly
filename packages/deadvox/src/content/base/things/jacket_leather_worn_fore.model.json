@@ -1,0 +1,11 @@
+{
+  "id": "jacket_leather_worn_fore",
+  "file": "assets/models/jacket_leather_worn_fore.glb",
+  "parts": {
+    "jacket_leather_worn_fore": {
+      "node": "jacket_leather_worn_fore:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0, -0.12867669172932333, 0]
+    }
+  }
+}

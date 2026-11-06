@@ -1,0 +1,11 @@
+{
+  "id": "fanblade_metal",
+  "file": "assets/models/fanblade_metal.glb",
+  "parts": {
+    "fanblade_metal": {
+      "node": "fanblade_metal:compound",
+      "massKg": 0.45,
+      "centreOfMass": [0.000013422021617768046, 0.00831369521320822, 0.000007958189808763908]
+    }
+  }
+}

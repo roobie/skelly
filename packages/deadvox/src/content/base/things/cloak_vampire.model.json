@@ -1,0 +1,11 @@
+{
+  "id": "cloak_vampire",
+  "file": "assets/models/cloak_vampire.glb",
+  "parts": {
+    "cloak_vampire": {
+      "node": "cloak_vampire:compound",
+      "massKg": 0.8,
+      "centreOfMass": [0, 0.020509853567962186, -0.004566400810229141]
+    }
+  }
+}

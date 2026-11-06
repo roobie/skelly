@@ -1,0 +1,11 @@
+{
+  "id": "cutting_board",
+  "file": "assets/models/cutting_board.glb",
+  "parts": {
+    "cutting_board": {
+      "node": "cutting_board:compound",
+      "massKg": 1.4,
+      "centreOfMass": [-0.0026758753613877273, 0.009999999999999998, 0]
+    }
+  }
+}

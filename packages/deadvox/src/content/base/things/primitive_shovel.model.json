@@ -1,0 +1,14 @@
+{
+  "id": "primitive_shovel",
+  "file": "assets/models/primitive_shovel.glb",
+  "parts": {
+    "primitive_shovel": {
+      "node": "primitive_shovel:compound",
+      "massKg": 1.8,
+      "centreOfMass": [0.8017303557517528, 0.021257543495196058, -1.374696421796774e-18]
+    }
+  },
+  "grip": { "at": [0.368, 0.034, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

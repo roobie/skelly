@@ -1,0 +1,11 @@
+{
+  "id": "jacket_flannel",
+  "file": "assets/models/jacket_flannel.glb",
+  "parts": {
+    "jacket_flannel": {
+      "node": "jacket_flannel:compound",
+      "massKg": 0.8,
+      "centreOfMass": [1.9011548949003e-19, 0.037899734252675454, -0.0012218918336565356]
+    }
+  }
+}

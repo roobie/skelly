@@ -1,0 +1,11 @@
+{
+  "id": "hard_steel_armor",
+  "file": "assets/models/hard_steel_armor.glb",
+  "parts": {
+    "hard_steel_armor": {
+      "node": "hard_steel_armor:compound",
+      "massKg": 4.1,
+      "centreOfMass": [-2.8572732730674532e-18, 0.010024179620034544, 0.007260794473229708]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "desk_fan",
+  "file": "assets/models/desk_fan.glb",
+  "parts": {
+    "desk_fan": {
+      "node": "desk_fan:compound",
+      "massKg": 1.3,
+      "centreOfMass": [-0.0002464038160542599, 0.14371610643213842, -0.029243795185212796]
+    }
+  }
+}

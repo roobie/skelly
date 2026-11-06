@@ -1,0 +1,11 @@
+{
+  "id": "bookstrap",
+  "file": "assets/models/bookstrap.glb",
+  "parts": {
+    "bookstrap": {
+      "node": "bookstrap:compound",
+      "massKg": 0.13,
+      "centreOfMass": [0.001566433566433567, 0.011664335664335664, 0.0015664335664335662]
+    }
+  }
+}

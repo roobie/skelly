@@ -1,0 +1,18 @@
+{
+  "id": "skid_steer_chain_case",
+  "file": "assets/models/skid_steer_chain_case.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 180,
+      "centreOfMass": [0, 0.40625, 0.5519622093023255],
+      "collision": [
+        { "min": [-0.75, 0.3125, 0.5], "max": [0.75, 0.5, 0.59375] },
+        { "min": [0.46875, 0.3125, 0.53125], "max": [0.65625, 0.5, 0.625] },
+        { "min": [-0.65625, 0.3125, 0.53125], "max": [-0.46875, 0.5, 0.625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

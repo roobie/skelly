@@ -1,0 +1,11 @@
+{
+  "id": "fursuit",
+  "file": "assets/models/fursuit.glb",
+  "parts": {
+    "fursuit": {
+      "node": "fursuit:compound",
+      "massKg": 4.4,
+      "centreOfMass": [0.011735211609647564, 0.1153459519978858, 0.01019812969963412]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "motorcycle_jeans",
+  "file": "assets/models/motorcycle_jeans.glb",
+  "parts": {
+    "motorcycle_jeans": {
+      "node": "motorcycle_jeans:compound",
+      "massKg": 1.4,
+      "centreOfMass": [-0.0000694634178650968, 0.031130953859400744, -0.003750411895713802]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "ammo_box_army_3_clips",
+  "file": "assets/models/ammo_box_army_3_clips.glb",
+  "parts": {
+    "ammo_box_army_3_clips": {
+      "node": "ammo_box_army_3_clips:compound",
+      "massKg": 0.012,
+      "centreOfMass": [0, 0.014804922515952596, 0.00038286235186873324]
+    }
+  }
+}

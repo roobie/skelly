@@ -1,0 +1,11 @@
+{
+  "id": "torso_bandolier_shotgun",
+  "file": "assets/models/torso_bandolier_shotgun.glb",
+  "parts": {
+    "torso_bandolier_shotgun": {
+      "node": "torso_bandolier_shotgun:compound",
+      "massKg": 0.28,
+      "centreOfMass": [0.008866180048661803, 0.0083007299270073, 0.035244768856447686]
+    }
+  }
+}

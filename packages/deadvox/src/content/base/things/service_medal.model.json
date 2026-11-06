@@ -1,0 +1,11 @@
+{
+  "id": "service_medal",
+  "file": "assets/models/service_medal.glb",
+  "parts": {
+    "service_medal": {
+      "node": "service_medal:compound",
+      "massKg": 0.035,
+      "centreOfMass": [-0.0000011025358324145532, 0.0017012127894156562, 0.014095920617420068]
+    }
+  }
+}

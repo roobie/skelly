@@ -1,0 +1,11 @@
+{
+  "id": "ballistic_mandible_guard",
+  "file": "assets/models/ballistic_mandible_guard.glb",
+  "parts": {
+    "ballistic_mandible_guard": {
+      "node": "ballistic_mandible_guard:compound",
+      "massKg": 0.35,
+      "centreOfMass": [1.5356075728088386e-18, 0.026967821782178228, -0.05192326732673269]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "corded_powerdrill",
+  "file": "assets/models/corded_powerdrill.glb",
+  "parts": {
+    "corded_powerdrill": {
+      "node": "corded_powerdrill:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-0.013680043849196894, 0.1303693818216482, 0.00007969114913493162]
+    }
+  },
+  "grip": { "at": [-0.03, 0.085, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,11 @@
+{
+  "id": "long_knit_scarf",
+  "file": "assets/models/long_knit_scarf.glb",
+  "parts": {
+    "long_knit_scarf": {
+      "node": "long_knit_scarf:compound",
+      "massKg": 0.45,
+      "centreOfMass": [-0.00010096793102955254, 0.03714976480848693, 0.000053271950016440575]
+    }
+  }
+}

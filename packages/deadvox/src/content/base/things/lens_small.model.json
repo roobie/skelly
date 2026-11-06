@@ -1,0 +1,7 @@
+{
+  "id": "lens_small",
+  "file": "assets/models/lens_small.glb",
+  "parts": {
+    "lens_small": { "node": "lens_small:compound", "massKg": 0.0011, "centreOfMass": [0, 0.0014705882352941178, 0] }
+  }
+}

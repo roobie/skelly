@@ -1,0 +1,11 @@
+{
+  "id": "melting_point",
+  "file": "assets/models/melting_point.glb",
+  "parts": {
+    "melting_point": {
+      "node": "melting_point:compound",
+      "massKg": 3,
+      "centreOfMass": [0.000028641370869033057, 0.0576950632394941, -0.010496695226438188]
+    }
+  }
+}

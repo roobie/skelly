@@ -1,0 +1,11 @@
+{
+  "id": "tactical_holster",
+  "file": "assets/models/tactical_holster.glb",
+  "parts": {
+    "tactical_holster": {
+      "node": "tactical_holster:compound",
+      "massKg": 0.25,
+      "centreOfMass": [0.0004223307377590075, 0.1144687871189125, -0.016723505345123395]
+    }
+  }
+}

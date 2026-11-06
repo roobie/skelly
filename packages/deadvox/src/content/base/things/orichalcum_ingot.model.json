@@ -1,0 +1,11 @@
+{
+  "id": "orichalcum_ingot",
+  "file": "assets/models/orichalcum_ingot.glb",
+  "parts": {
+    "orichalcum_ingot": {
+      "node": "orichalcum_ingot:compound",
+      "massKg": 1.7,
+      "centreOfMass": [-0.0000014135702746365104, 0.01312924071082391, 0.00000518309100700054]
+    }
+  }
+}

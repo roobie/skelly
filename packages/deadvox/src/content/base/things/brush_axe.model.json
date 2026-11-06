@@ -1,0 +1,14 @@
+{
+  "id": "brush_axe",
+  "file": "assets/models/brush_axe.glb",
+  "parts": {
+    "brush_axe": {
+      "node": "brush_axe:compound",
+      "massKg": 2,
+      "centreOfMass": [0.7072787467362925, 0, -0.0006481462140992168]
+    }
+  },
+  "grip": { "at": [0.6, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

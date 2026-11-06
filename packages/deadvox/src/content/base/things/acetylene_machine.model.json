@@ -1,0 +1,11 @@
+{
+  "id": "acetylene_machine",
+  "file": "assets/models/acetylene_machine.glb",
+  "parts": {
+    "acetylene_machine": {
+      "node": "acetylene_machine:compound",
+      "massKg": 4.9,
+      "centreOfMass": [0.000322056007327024, 0.16408492686852988, 0.0005448641447642309]
+    }
+  }
+}

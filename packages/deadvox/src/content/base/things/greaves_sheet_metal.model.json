@@ -1,0 +1,11 @@
+{
+  "id": "greaves_sheet_metal",
+  "file": "assets/models/greaves_sheet_metal.glb",
+  "parts": {
+    "greaves_sheet_metal": {
+      "node": "greaves_sheet_metal:compound",
+      "massKg": 1.6,
+      "centreOfMass": [0.17420764552562992, 0.03801607298001741, 0.00028366637706338807]
+    }
+  }
+}

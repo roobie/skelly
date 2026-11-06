@@ -1,0 +1,11 @@
+{
+  "id": "mask_dust",
+  "file": "assets/models/mask_dust.glb",
+  "parts": {
+    "mask_dust": {
+      "node": "mask_dust:compound",
+      "massKg": 0.008,
+      "centreOfMass": [-6.470436581297144e-19, 0.045329161451814697, -0.027091364205256548]
+    }
+  }
+}

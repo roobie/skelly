@@ -1,0 +1,11 @@
+{
+  "id": "paint_red",
+  "file": "assets/models/paint_red.glb",
+  "parts": {
+    "paint_red": {
+      "node": "paint_red:compound",
+      "massKg": 4.6,
+      "centreOfMass": [0.00003838410951550128, 0.0978246678298215, 0.0002945108039189371]
+    }
+  }
+}

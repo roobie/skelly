@@ -1,0 +1,14 @@
+{
+  "id": "food_truck_rear_bumper",
+  "file": "assets/models/food_truck_rear_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 10,
+      "centreOfMass": [-2.609375, 0.5, 0],
+      "collision": [{ "min": [-2.6875, 0.40625, -0.96875], "max": [-2.53125, 0.59375, 0.96875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

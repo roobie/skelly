@@ -1,0 +1,14 @@
+{
+  "id": "toothbrush_electric",
+  "file": "assets/models/toothbrush_electric.glb",
+  "parts": {
+    "toothbrush_electric": {
+      "node": "toothbrush_electric:compound",
+      "massKg": 0.089,
+      "centreOfMass": [0.08169046039538279, 0.014655035159877936, 0]
+    }
+  },
+  "grip": { "at": [0.08600000000000001, 0.015, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

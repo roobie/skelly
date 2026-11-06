@@ -1,0 +1,14 @@
+{
+  "id": "classic_4x4_tail_lamp",
+  "file": "assets/models/classic_4x4_tail_lamp.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 1,
+      "centreOfMass": [-2.046875, 1, 0.7656250000000001],
+      "collision": [{ "min": [-2.09375, 0.84375, 0.65625], "max": [-2, 1.15625, 0.875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

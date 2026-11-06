@@ -1,0 +1,10 @@
+{
+  "id": "calcium_tablets",
+  "file": "assets/models/calcium_tablets.glb",
+  "parts": {
+    "calcium_tablets": { "node": "calcium_tablets:vessel", "massKg": 0.15, "centreOfMass": [0, 0.05490902054182793, 0] }
+  },
+  "grip": { "at": [0, 0.055, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

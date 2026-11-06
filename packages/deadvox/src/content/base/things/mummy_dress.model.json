@@ -1,0 +1,11 @@
+{
+  "id": "mummy_dress",
+  "file": "assets/models/mummy_dress.glb",
+  "parts": {
+    "mummy_dress": {
+      "node": "mummy_dress:compound",
+      "massKg": 0.4,
+      "centreOfMass": [-0.00004267495346368637, 0.01726557235819887, 0.0010666276941064259]
+    }
+  }
+}

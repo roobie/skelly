@@ -1,0 +1,11 @@
+{
+  "id": "straw_sandals",
+  "file": "assets/models/straw_sandals.glb",
+  "parts": {
+    "straw_sandals": {
+      "node": "straw_sandals:compound",
+      "massKg": 0.12,
+      "centreOfMass": [-1.438574978353092e-17, 0.00862373678025852, -0.008614336075205642]
+    }
+  }
+}

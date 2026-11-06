@@ -1,0 +1,11 @@
+{
+  "id": "gambeson_parabolan",
+  "file": "assets/models/gambeson_parabolan.glb",
+  "parts": {
+    "gambeson_parabolan": {
+      "node": "gambeson_parabolan:compound",
+      "massKg": 2.5,
+      "centreOfMass": [1.942982433927672e-18, 0.03593047641525336, -0.010959483911572629]
+    }
+  }
+}

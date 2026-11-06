@@ -1,0 +1,11 @@
+{
+  "id": "tank_crew_helmet",
+  "file": "assets/models/tank_crew_helmet.glb",
+  "parts": {
+    "tank_crew_helmet": {
+      "node": "tank_crew_helmet:compound",
+      "massKg": 0.59,
+      "centreOfMass": [0.00004584594586651823, 0.12016287066153358, 0.00011925823610662106]
+    }
+  }
+}

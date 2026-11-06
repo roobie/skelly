@@ -1,0 +1,14 @@
+{
+  "id": "city_car_rear_bumper",
+  "file": "assets/models/city_car_rear_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 6,
+      "centreOfMass": [-1.734375, 0.40625, 0],
+      "collision": [{ "min": [-1.8125, 0.3125, -0.78125], "max": [-1.65625, 0.5, 0.78125] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

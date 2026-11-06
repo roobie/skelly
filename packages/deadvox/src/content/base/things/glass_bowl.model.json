@@ -1,0 +1,7 @@
+{
+  "id": "glass_bowl",
+  "file": "assets/models/glass_bowl.glb",
+  "parts": {
+    "glass_bowl": { "node": "glass_bowl:compound", "massKg": 0.29, "centreOfMass": [0, 0.027216560509554136, 0] }
+  }
+}

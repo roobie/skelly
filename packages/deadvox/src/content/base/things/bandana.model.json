@@ -1,0 +1,11 @@
+{
+  "id": "bandana",
+  "file": "assets/models/bandana.glb",
+  "parts": {
+    "bandana": {
+      "node": "bandana:compound",
+      "massKg": 0.056,
+      "centreOfMass": [7.572889057176067e-7, 0.004071185157137445, 0.03501022340022718]
+    }
+  }
+}

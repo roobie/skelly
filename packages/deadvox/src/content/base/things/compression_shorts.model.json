@@ -1,0 +1,11 @@
+{
+  "id": "compression_shorts",
+  "file": "assets/models/compression_shorts.glb",
+  "parts": {
+    "compression_shorts": {
+      "node": "compression_shorts:compound",
+      "massKg": 0.093,
+      "centreOfMass": [0, 0.004073746312684366, 0.011701081612586029]
+    }
+  }
+}

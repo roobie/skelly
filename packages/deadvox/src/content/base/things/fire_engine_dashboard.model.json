@@ -1,0 +1,17 @@
+{
+  "id": "fire_engine_dashboard",
+  "file": "assets/models/fire_engine_dashboard.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 25,
+      "centreOfMass": [3.6832627118644066, 1.7171610169491525, 0],
+      "collision": [
+        { "min": [3.59375, 1.21875, -1.15625], "max": [3.8125, 1.9375, 1.15625] },
+        { "min": [3.40625, 1.9375, -1.15625], "max": [3.875, 2.09375, 1.15625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

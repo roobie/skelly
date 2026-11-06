@@ -1,0 +1,14 @@
+{
+  "id": "morphic_serum_syringe",
+  "file": "assets/models/morphic_serum_syringe.glb",
+  "parts": {
+    "morphic_serum_syringe": {
+      "node": "morphic_serum_syringe:compound",
+      "massKg": 0.029,
+      "centreOfMass": [-0.006356116889549283, 0.012009410599306587, 9.905894006934127e-7]
+    }
+  },
+  "grip": { "at": [0, 0.012, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

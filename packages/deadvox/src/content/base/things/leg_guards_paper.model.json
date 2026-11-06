@@ -1,0 +1,11 @@
+{
+  "id": "leg_guards_paper",
+  "file": "assets/models/leg_guards_paper.glb",
+  "parts": {
+    "leg_guards_paper": {
+      "node": "leg_guards_paper:compound",
+      "massKg": 0.59,
+      "centreOfMass": [0.23578083889418494, 0.03803374642516685, 0.00008589132507150213]
+    }
+  }
+}

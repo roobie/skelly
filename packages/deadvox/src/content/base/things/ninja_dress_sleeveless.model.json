@@ -1,0 +1,11 @@
+{
+  "id": "ninja_dress_sleeveless",
+  "file": "assets/models/ninja_dress_sleeveless.glb",
+  "parts": {
+    "ninja_dress_sleeveless": {
+      "node": "ninja_dress_sleeveless:compound",
+      "massKg": 0.59,
+      "centreOfMass": [-0.0002627386669790328, 0.02115374253250558, 0.00041454843621881296]
+    }
+  }
+}

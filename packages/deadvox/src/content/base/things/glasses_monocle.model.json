@@ -1,0 +1,11 @@
+{
+  "id": "glasses_monocle",
+  "file": "assets/models/glasses_monocle.glb",
+  "parts": {
+    "glasses_monocle": {
+      "node": "glasses_monocle:compound",
+      "massKg": 0.008,
+      "centreOfMass": [0.020969645868465427, 0.0013777403035413135, 0.0044603709949409785]
+    }
+  }
+}

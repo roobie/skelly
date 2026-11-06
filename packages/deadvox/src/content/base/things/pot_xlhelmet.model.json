@@ -1,0 +1,11 @@
+{
+  "id": "pot_xlhelmet",
+  "file": "assets/models/pot_xlhelmet.glb",
+  "parts": {
+    "pot_xlhelmet": {
+      "node": "pot_xlhelmet:compound",
+      "massKg": 2,
+      "centreOfMass": [2.2602045285839166e-21, 0.12895770214440297, 0.00009777690340350188]
+    }
+  }
+}

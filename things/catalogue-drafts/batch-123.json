@@ -1,0 +1,246 @@
+[
+  {
+    "id": "gloves_light",
+    "model": "gloves_light",
+    "name": "Cotton gloves",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hands", "encumbrance": 2, "warmth": 10, "wearPerDamage": 0.002 },
+    "description": "Plain white cotton gloves. They keep the hands clean and a little warm.",
+    "reference": "gloves_light",
+    "variants": ["xl_gloves_light", "xs_gloves_light"],
+    "notes": "The model's root, in `cloth-cream`. Laid flat side by side, backs up, thumbs towards each other, fingers towards +z. Thin gloves 210 mm from cuff to fingertip with a short hemmed cuff. CHECK VOLUME: box/volume x4.4 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. The xl and xs sizes share the model. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_black",
+    "model": "gloves_light",
+    "name": "Black cotton gloves",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hands", "encumbrance": 2, "warmth": 10, "wearPerDamage": 0.002 },
+    "finishes": { "cuff": "cloth-black", "hand": "cloth-black", "hem": "cloth-charcoal" },
+    "description": "Plain black cotton gloves. They keep the hands clean and a little warm.",
+    "reference": "gloves_black",
+    "notes": "Shares the `gloves_light` model, recoloured `cloth-black` with a `cloth-charcoal` hem so the cuff reads. Laid flat side by side, backs up, thumbs towards each other, fingers towards +z. CHECK VOLUME: box/volume x4.4 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_liner",
+    "model": "gloves_light",
+    "name": "Glove liners",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hands", "encumbrance": 1, "warmth": 5, "wearPerDamage": 0.003 },
+    "finishes": { "cuff": "cloth-white", "hand": "cloth-white", "hem": "cloth-white" },
+    "description": "Very thin cotton gloves, worn under other gloves for a little extra warmth.",
+    "reference": "gloves_liner",
+    "variants": ["xl_gloves_liner", "xs_gloves_liner"],
+    "notes": "Shares the `gloves_light` model, recoloured `cloth-white`, which renders greyish and so reads apart from the cream cotton gloves. Laid flat side by side, backs up, thumbs towards each other, fingers towards +z. CHECK VOLUME: box/volume x4.4 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Liners go under other gloves, which also take `hands`, so wearing both waits on layered slots. The xl and xs sizes share the model. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_leather",
+    "model": "gloves_leather",
+    "name": "Leather gloves",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 10,
+      "warmth": 25,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.05, "cut": 0.1, "pierce": 0.05 }
+    },
+    "description": "Thin black leather gloves. Warm, and tough enough for rough work.",
+    "reference": "gloves_leather",
+    "variants": ["xl_gloves_leather", "xs_gloves_leather"],
+    "notes": "The model's root, in `leather-black` with `cloth-charcoal` stitching and hem. Laid flat side by side, backs up, thumbs towards each other, fingers towards +z. Dress gloves 220 mm from cuff to fingertip with three raised points down the back of the hand. CHECK VOLUME: box/volume x4.7 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. The xl and xs sizes share the model. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_denim",
+    "model": "gloves_leather",
+    "name": "Denim gloves",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 5,
+      "warmth": 15,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.05, "cut": 0.05, "pierce": 0.02 }
+    },
+    "finishes": { "cuff": "cloth-denim", "hand": "cloth-denim", "hem": "cloth-khaki", "stitch": "cloth-khaki" },
+    "description": "Gloves sewn from denim. Stiff, but warmer and sturdier than cotton.",
+    "reference": "gloves_denim",
+    "notes": "Shares the `gloves_leather` model, recoloured `cloth-denim` with `cloth-khaki` stitching and hem. Laid flat side by side, backs up, thumbs towards each other, fingers towards +z. CHECK VOLUME: box/volume x4.7 because the pair lies spread flat with the thumbs out; the reference volume is larger than the leather pair, as denim is bulkier, but the model is shared. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_golf",
+    "model": "gloves_golf",
+    "name": "Golf gloves",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "hands", "encumbrance": 5, "warmth": 20, "wearPerDamage": 0.0015 },
+    "description": "Thin black leather gloves made for a firm grip on a club.",
+    "reference": "gloves_golf",
+    "notes": "Own model, in `leather-black` with a `leather-white` wrist tab and a `metal-silver` stud. Laid flat side by side, backs up, thumbs towards each other, fingers towards +z. Gloves 190 mm from wrist to fingertip with a short wrist and a strap across the back of the wrist. CHECK VOLUME: box/volume x4.2 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_fingerless",
+    "model": "gloves_fingerless",
+    "name": "Fingerless leather gloves",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hands", "encumbrance": 0, "warmth": 10, "wearPerDamage": 0.0012 },
+    "description": "Brown leather gloves with the fingers cut off past the first joint. The fingers stay free for fine work.",
+    "reference": "gloves_fingerless",
+    "notes": "The model's root, in `leather-brown` with `leather-black` hems. Laid flat side by side, backs up, thumbs towards each other, fingers towards +z. Gloves 160 mm long, the finger stubs hemmed at the first joint. No volume flag. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_denim_fingerless",
+    "model": "gloves_fingerless",
+    "name": "Fingerless denim gloves",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hands", "encumbrance": 0, "warmth": 10, "wearPerDamage": 0.0015 },
+    "finishes": { "cuff": "cloth-denim", "hand": "cloth-denim", "hem": "cloth-khaki" },
+    "description": "Denim gloves with the fingers cut off past the first joint. Light, but less warm.",
+    "reference": "gloves_denim_fingerless",
+    "notes": "Shares the `gloves_fingerless` model, recoloured `cloth-denim` with `cloth-khaki` hems. Laid flat side by side, backs up, thumbs towards each other, fingers towards +z. No volume flag. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_fingerless_mod",
+    "model": "gloves_fingerless_mod",
+    "name": "Armoured fingerless gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 3,
+      "warmth": 5,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.3, "cut": 0.3, "pierce": 0.15 }
+    },
+    "description": "Fingerless leather gloves with steel slats riveted across the backs. Rough work, but they turn a blow.",
+    "reference": "gloves_fingerless_mod",
+    "notes": "Own model: the fingerless gloves in `leather-brown` with three `steel-grey` slats per hand and `steel-bright` rivets. Laid flat side by side, backs up, thumbs towards each other, fingers towards +z. Gloves 160 mm long. No volume flag. A crude home job, so it spawns as Residential. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_claws",
+    "model": "gloves_claws",
+    "name": "Claw gloves",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 15,
+      "warmth": 5,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.02, "cut": 0.05, "pierce": 0 }
+    },
+    "description": "Glossy black vinyl gloves with hooked steel claws on every fingertip. Made for the stage, sharp enough to scratch.",
+    "reference": "gloves_claws",
+    "notes": "Own model, in `leather-patent` for the stretch vinyl with `steel-parkerized` claws. Laid flat side by side, backs up, thumbs towards each other, fingers towards +z. Gloves 250 mm from cuff to fingertip, a 30 mm hooked claw fixed by a ring on each finger and thumb. CHECK VOLUME: box/volume x5.1 because the pair lies spread flat with the thumbs and claws out; the reference volume is the pair stacked. The reference gives no warmth; 5 is a guess for thin vinyl. The claws would suit an unarmed cutting attack once worn items can change unarmed damage; that needs a framework change, so no quality is set. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_cut_resistant",
+    "model": "gloves_cut_resistant",
+    "name": "Cut-resistant gloves",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Industrial", "Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 20,
+      "warmth": 10,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0, "blunt": 0.05, "cut": 0.6, "pierce": 0.1 }
+    },
+    "description": "Knitted aramid gloves that stop a slipping blade. Made for butchers and glass handlers.",
+    "reference": "gloves_cut_resistant",
+    "notes": "Own model, in `aramid-gold` with a ribbed knit cuff and a `cloth-orange` overlocked edge. Laid flat side by side, backs up, thumbs towards each other, fingers towards +z. Gloves 230 mm from cuff to fingertip. CHECK VOLUME: box/volume x6.0 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_eod",
+    "model": "gloves_eod",
+    "name": "Overhand blast protectors",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Military", "Police"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 10,
+      "warmth": 10,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0, "blunt": 0.3, "cut": 0.5, "pierce": 0.6 }
+    },
+    "description": "Stiff padded shields strapped over the backs of the hands. They stop fragments from a blast.",
+    "reference": "gloves_eod",
+    "notes": "Own model, in `nylon-ranger-green` with `webbing-olive-dark` flex seams, `webbing-black` straps and a `hook-loop-grey` tab. Laid flat side by side, outside up, fingers towards +z: shields 210 mm long and 110 mm wide over the back of the hand and closed fingers, with a thumb guard, an elastic finger loop and a wrist strap. No volume flag. Slot `hands`: worn over gloves, which also take `hands`, so wearing both waits on layered slots. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_fur",
+    "model": "gloves_fur",
+    "name": "Fur gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 30,
+      "warmth": 70,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.05, "pierce": 0.02 }
+    },
+    "description": "Thick fur gloves with wide gauntlet cuffs. Very warm, and clumsy.",
+    "reference": "gloves_fur",
+    "variants": ["xl_gloves_fur", "xs_gloves_fur"],
+    "notes": "The model's root, in `fur-brown`. Laid flat side by side, backs up, thumbs towards each other, fingers towards +z. Gloves 300 mm from cuff to fingertip and 100 mm across the knuckles, with a wide flared gauntlet cuff and a raised ruff round its opening. CHECK VOLUME: box/volume x4.7 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. The xl and xs sizes share the model. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_faux_fur",
+    "model": "gloves_fur",
+    "name": "Faux fur gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 30,
+      "warmth": 55,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.05, "pierce": 0.02 }
+    },
+    "finishes": { "cuff": "fur-pale", "hand": "fur-pale", "hem": "fur-pale" },
+    "description": "Thick gloves of pale fake fur with wide gauntlet cuffs. Warm, and clumsy.",
+    "reference": "gloves_faux_fur",
+    "variants": ["xl_gloves_faux_fur", "xs_gloves_faux_fur"],
+    "notes": "Shares the `gloves_fur` model, recoloured `fur-pale`, which doubles as faux fur. Laid flat side by side, backs up, thumbs towards each other, fingers towards +z. CHECK VOLUME: box/volume x4.7 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. The xl and xs sizes share the model. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_medical",
+    "model": "gloves_medical",
+    "name": "Examination gloves",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Medical"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 1,
+      "warmth": 0,
+      "wearPerDamage": 0.02,
+      "protects": { "acid": 0.3, "blunt": 0, "cut": 0, "pierce": 0 }
+    },
+    "description": "Thin latex gloves that keep germs off the hands. They tear at the first rough touch.",
+    "reference": "gloves_medical",
+    "notes": "Own model, in `plastic-frosted` for pale latex; tiles draw it opaque. Laid flat side by side, backs up, thumbs towards each other, fingers towards +z. Gloves 260 mm from the rolled cuff to the fingertips, 6 mm thick so they stay visible at the 2 mm grain. CHECK VOLUME: box/volume x136 because the reference volume is the 5 ml of the latex itself, while the model lies spread flat at a thickness the grain can draw. A single pair, not a dispenser box. Easily torn, so `wearPerDamage` is high. Slot `hands`, as earlier clothing batches name it for gloves. The worn look is pending: no worn model is authored."
+  }
+]

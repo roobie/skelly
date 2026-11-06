@@ -1,0 +1,11 @@
+{
+  "id": "strap_cotton",
+  "file": "assets/models/strap_cotton.glb",
+  "parts": {
+    "strap_cotton": {
+      "node": "strap_cotton:compound",
+      "massKg": 0.065,
+      "centreOfMass": [9.72295753809025e-19, 0.0014590067587422868, 0.0018660005877167217]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "weather_reader",
+  "file": "assets/models/weather_reader.glb",
+  "parts": {
+    "weather_reader": {
+      "node": "weather_reader:compound",
+      "massKg": 2,
+      "centreOfMass": [-0.000062180608196844, 0.07000604250165013, -0.04028365734660688]
+    }
+  }
+}

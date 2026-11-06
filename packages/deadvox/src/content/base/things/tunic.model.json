@@ -1,0 +1,11 @@
+{
+  "id": "tunic",
+  "file": "assets/models/tunic.glb",
+  "parts": {
+    "tunic": {
+      "node": "tunic:compound",
+      "massKg": 0.32,
+      "centreOfMass": [0, 0.010107815364105982, -0.0006320168860745428]
+    }
+  }
+}

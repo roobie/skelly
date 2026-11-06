@@ -1,0 +1,11 @@
+{
+  "id": "badge_swat",
+  "file": "assets/models/badge_swat.glb",
+  "parts": {
+    "badge_swat": {
+      "node": "badge_swat:compound",
+      "massKg": 0.085,
+      "centreOfMass": [-0.000005037783375315116, 0.004052896725440807, -0.001416456759026029]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "processor",
+  "file": "assets/models/processor.glb",
+  "parts": {
+    "processor": {
+      "node": "processor:compound",
+      "massKg": 0.095,
+      "centreOfMass": [-0.0004405201714201275, 0.0022815132259494625, -0.0007895670164031331]
+    }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

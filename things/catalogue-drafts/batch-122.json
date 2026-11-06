@@ -1,0 +1,266 @@
+[
+  {
+    "id": "beekeeping_gloves",
+    "model": "beekeeping_gloves",
+    "name": "Beekeeping gloves",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 10,
+      "warmth": 30,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0, "cut": 0.1, "pierce": 0.15 }
+    },
+    "description": "White leather gloves with canvas sleeves that reach up the forearm and close with elastic.",
+    "reference": "beekeeping_gloves",
+    "notes": "Laid flat side by side, backs up, fingers towards +z: white leather gloves with cream canvas sleeves 220 mm long and a white elastic band at the open end. CHECK VOLUME: box/volume x14.73 because the long sleeves lie spread flat; the reference volume is the pair folded. Slot `hands`, as earlier glove batches use. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "boxing_gloves",
+    "model": "boxing_gloves",
+    "name": "Boxing gloves",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 70,
+      "warmth": 20,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.3, "cut": 0.05, "pierce": 0 }
+    },
+    "description": "Thick padded leather gloves for punching, strapped at the wrist.",
+    "reference": "boxing_gloves",
+    "notes": "Lying palm down side by side, fingers towards +z: padded red fists turned round z with the thumb along the outer side, a white strap round each cuff and dark lining in the opening. The shell uses `plastic-red` because no bright red leather exists. CHECK VOLUME: box/volume x12.77 because the padded fists stand 130 mm tall and are drawn as solid; the reference volume packs the pair together. Slot `hands`, as earlier glove batches use. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_chainmail_hands",
+    "model": "ch_chainmail_hands",
+    "name": "Hardened steel mail gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0, "blunt": 0.14, "cut": 0.85, "pierce": 0.4 }
+    },
+    "description": "Gloves of hardened steel rings that close over every finger, tied at the cuff with a leather thong.",
+    "reference": "ch_chainmail_hands",
+    "variants": ["xl_ch_chainmail_hands", "xs_ch_chainmail_hands"],
+    "notes": "The model's root: mail in `steel-hardened`. Laid flat side by side, backs up, fingers towards +z: mail gloves 270 mm from cuff to fingertip, ridged where the rows of rings lie, with a leather thong round each flared cuff. CHECK VOLUME: box/volume x4.46 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. The xl and xs sizes share the model. Warmth 0 because the reference gives none. Slot `hands`, as earlier glove batches use. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "chainmail_junk_hands",
+    "model": "ch_chainmail_hands",
+    "name": "Rusty mail gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0016,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.7, "pierce": 0.28 }
+    },
+    "finishes": { "mail": "rust-red" },
+    "description": "Mail gloves of cheap steel rings, pitted and orange with rust.",
+    "reference": "chainmail_junk_hands",
+    "notes": "Shares the hardened steel mail gloves' model with the mail in `rust-red`. Laid flat side by side, backs up, fingers towards +z: mail gloves 270 mm from cuff to fingertip with a leather thong round each cuff. CHECK VOLUME: box/volume x4.46 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Warmth 0 because the reference gives none. Slot `hands`, as earlier glove batches use. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_demi_gaunt",
+    "model": "ch_demi_gaunt",
+    "name": "Hardened steel demi-gauntlets",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 10,
+      "warmth": 15,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.05, "blunt": 0.3, "cut": 0.8, "pierce": 0.45 }
+    },
+    "description": "Leather gloves with mail over the fingers and palm and hardened steel plates over the back of the hand and the wrist.",
+    "reference": "ch_demi_gaunt",
+    "variants": ["xl_ch_demi_gaunt"],
+    "notes": "Laid flat side by side, backs up, fingers towards +z: leather gloves 230 mm from cuff to fingertip with mail fingers and thumb, a riveted plate curved over the back of the hand, a lame over the knuckles and a flared steel cuff over the wrist. Plates use `steel-hardened`; mail uses `steel-mail` so the rings read apart from the plates. The mail palm lies face down and does not show. CHECK VOLUME: box/volume x5.33 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. The xl size shares the model. Slot `hands`, as earlier glove batches use. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_mitten_gaunt",
+    "model": "ch_mitten_gaunt",
+    "name": "Hardened steel mitten gauntlets",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 20,
+      "warmth": 15,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.05, "blunt": 0.38, "cut": 0.88, "pierce": 0.55 }
+    },
+    "description": "Leather mittens with a mail thumb, overlapping hardened steel lames over the fingers and plates over the back of the hand and the wrist.",
+    "reference": "ch_mitten_gaunt",
+    "variants": ["xl_ch_mitten_gaunt"],
+    "notes": "Laid flat side by side, backs up, fingers towards +z: leather mittens 260 mm from cuff to tip with a mail thumb, a riveted plate over the back of the hand, four overlapping lames and a tip plate over the fingers, and a flared steel cuff. Plates use `steel-hardened`; mail uses `steel-mail`. Box/volume x3.86 because the pair lies spread flat. The xl size shares the model. Slot `hands`, as earlier glove batches use. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_mitten_gaunt_metal_sheets",
+    "model": "ch_mitten_gaunt_metal_sheets",
+    "name": "Hardened sheet metal gauntlets",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 25,
+      "warmth": 5,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.3, "cut": 0.7, "pierce": 0.45 }
+    },
+    "description": "Crude mittens covered in bent sheets of hardened steel, bolted and bound with wire.",
+    "reference": "ch_mitten_gaunt_metal_sheets",
+    "notes": "Laid flat side by side, backs up, fingers towards +z: rag mittens 280 mm from cuff to tip under one bent sheet over the back and fingers, a second over the knuckles, a sheet on the thumb and a rolled sheet cuff bound with two turns of wire. Sheets use `steel-hardened`. The rag lining shows only at the edges; the reference lists steel alone. CHECK VOLUME: box/volume x4.22 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands`, as earlier glove batches use. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "fire_gauntlets",
+    "model": "fire_gauntlets",
+    "name": "Fire gauntlets",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 50,
+      "warmth": 25,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.2, "blunt": 0.05, "cut": 0.2, "pierce": 0.1 }
+    },
+    "description": "Heavy leather gloves with long flame-resistant cuffs, made for firefighting and hot metalwork.",
+    "reference": "fire_gauntlets",
+    "notes": "Laid flat side by side, backs up, fingers towards +z: tan leather gloves 100 mm across the knuckles with a padded knuckle panel, and flame-resistant gauntlet cuffs 120 mm long with a reflective band. Box/volume x3.86 because the pair lies spread flat. Fire protection is not a `protects` key yet; heat resistance is pending a damage type for it. Slot `hands`, as earlier glove batches use. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gauntlet_fencing",
+    "model": "gauntlet_fencing",
+    "name": "Fencing gauntlet",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 4,
+      "warmth": 15,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.05, "cut": 0.15, "pierce": 0.15 }
+    },
+    "description": "A right-hand suede glove with a padded back and a wide cotton cuff, worn for fencing.",
+    "reference": "gauntlet_fencing",
+    "notes": "A single right-hand glove laid flat, back up, fingers towards +z, thumb on +x: suede glove 230 mm from cuff to fingertip with a padded back, a white wrist strap and a cotton gauntlet cuff 130 mm long. CHECK VOLUME: box/volume x7.05 because the wide cuff lies spread flat; the reference volume is the glove rolled. The reference covers the right hand only; the slot is still `hands` because no per-hand slot exists. Slot `hands`, as earlier glove batches use. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gauntlet_fencing_l",
+    "model": "gauntlet_fencing_l",
+    "name": "Left-hand fencing gauntlet",
+    "category": "clothing",
+    "size": [1, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 4,
+      "warmth": 15,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.05, "cut": 0.15, "pierce": 0.15 }
+    },
+    "description": "A left-hand suede glove with a padded back and a wide cotton cuff, worn for fencing.",
+    "reference": "gauntlet_fencing_l",
+    "notes": "Its own model, the mirror of the right-hand gauntlet: thumb on -x. CHECK VOLUME: box/volume x7.05 because the wide cuff lies spread flat; the reference volume is the glove rolled. The reference covers the left hand only; the slot is still `hands` because no per-hand slot exists. Slot `hands`, as earlier glove batches use. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gauntlets_chitin",
+    "model": "gauntlets_chitin",
+    "name": "Chitin gauntlets",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 12,
+      "warmth": 20,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.3, "blunt": 0.3, "cut": 0.7, "pierce": 0.45 }
+    },
+    "description": "Gauntlets plated with the shell of giant insects: a ridged shell over the back of the hand, jointed plates down each finger and a bracer laced over the wrist.",
+    "reference": "gauntlets_chitin",
+    "variants": ["xl_gauntlets_chitin", "xs_gauntlets_chitin"],
+    "notes": "Laid flat side by side, backs up, fingers towards +z: dark leather gloves 250 mm from cuff to fingertip under a domed chitin shell over the back of the hand with a ridge down its middle, three segments down each finger and two on the thumb, and a shell bracer over the wrist laced with rawhide. The reference lists chitin alone; the dark glove under the plates is `leather-black` so the shell reads. Box/volume x2.48. The xl and xs sizes share the model. Slot `hands`, as earlier glove batches use. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gauntlets_larmor",
+    "model": "gauntlets_larmor",
+    "name": "Leather armour gauntlets",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 4,
+      "warmth": 15,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.05, "blunt": 0.15, "cut": 0.35, "pierce": 0.2 }
+    },
+    "description": "Heavy fingerless leather gloves with a padded back, a thick knuckle roll and a buckled cuff.",
+    "reference": "gauntlets_larmor",
+    "variants": ["xl_gauntlets_larmor", "xs_gauntlets_larmor"],
+    "notes": "Laid flat side by side, backs up, fingers towards +z: thick brown leather gloves 200 mm from cuff to finger stubs with a padded back panel and knuckle roll in a redder leather, and a flared cuff with a black buckled strap. Box/volume x3.39 because the pair lies spread flat. The xl and xs sizes share the model. Slot `hands`, as earlier glove batches use. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "glove_jackson",
+    "model": "glove_jackson",
+    "name": "Rhinestone glove",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hands", "encumbrance": 0, "warmth": 20, "wearPerDamage": 0.0015 },
+    "description": "A single white cotton glove covered in rhinestones.",
+    "reference": "glove_jackson",
+    "notes": "A single right-hand glove laid flat, back up, fingers towards +z: white cotton 220 mm from cuff to fingertip with rows of clear rhinestones over the back, fingers and cuff, at `voxelGrain: 0.002` so the stones show. Tiles draw the `gem-clear` stones opaque; they stay see-through in the game. The reference covers both hands with one glove; the slot is `hands`. Box/volume x2.52. Slot `hands`, as earlier glove batches use. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_airsoft",
+    "model": "gloves_airsoft",
+    "name": "Airsoft gloves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 4,
+      "warmth": 5,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.15, "pierce": 0.1 }
+    },
+    "description": "Fingerless leather gloves with moulded plastic guards over the knuckles and backs of the hands.",
+    "reference": "gloves_airsoft",
+    "notes": "Laid flat side by side, backs up, fingers towards +z: tan leather gloves 160 mm from cuff to finger stubs with a black moulded guard over the knuckles, a second over the back of the hand, a small guard on each finger stub and a grey hook-and-loop wrist strap. CHECK VOLUME: box/volume x6.42 because the pair lies spread flat with the thumbs out; the reference volume is the pair stacked. Slot `hands`, as earlier glove batches use. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gloves_bag",
+    "model": "gloves_bag",
+    "name": "Bag gloves",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hands", "encumbrance": 7, "warmth": 0, "wearPerDamage": 0.004 },
+    "description": "Two plastic bags taped shut at the wrists to keep the hands clean.",
+    "reference": "gloves_bag",
+    "notes": "Two thin plastic bags laid flat side by side, 170 mm wide and 330 mm long, closed at the fingers and gathered at the wrist under a band of grey tape, at `voxelGrain: 0.002` for the thin film. CHECK VOLUME: box/volume x4.81 because the bags lie spread flat; the reference volume is the pair crumpled. Warmth 0 because the reference gives none. Acid protection is left out: a bag would keep splashes off but tears at once. Slot `hands`, as earlier glove batches use. The worn look is pending: no worn model is authored."
+  }
+]

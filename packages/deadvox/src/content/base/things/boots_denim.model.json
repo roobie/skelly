@@ -1,0 +1,11 @@
+{
+  "id": "boots_denim",
+  "file": "assets/models/boots_denim.glb",
+  "parts": {
+    "boots_denim": {
+      "node": "boots_denim:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-3.891406530901713e-18, 0.07738933991081202, -0.0420399875855535]
+    }
+  }
+}

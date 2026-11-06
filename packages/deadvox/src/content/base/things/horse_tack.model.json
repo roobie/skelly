@@ -1,0 +1,11 @@
+{
+  "id": "horse_tack",
+  "file": "assets/models/horse_tack.glb",
+  "parts": {
+    "horse_tack": {
+      "node": "horse_tack:compound",
+      "massKg": 15,
+      "centreOfMass": [6.819465146105854e-19, 0.24368184100418402, -0.023414811715481185]
+    }
+  }
+}

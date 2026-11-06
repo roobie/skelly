@@ -1,0 +1,14 @@
+{
+  "id": "dragon_black_scale",
+  "file": "assets/models/dragon_black_scale.glb",
+  "parts": {
+    "dragon_black_scale": {
+      "node": "dragon_black_scale:compound",
+      "massKg": 0.085,
+      "centreOfMass": [-0.0015197554092191883, 0.022412511759172152, -1.8238048548176467e-20]
+    }
+  },
+  "grip": { "at": [0.008, 0.026, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

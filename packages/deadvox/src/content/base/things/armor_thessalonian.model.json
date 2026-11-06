@@ -1,0 +1,11 @@
+{
+  "id": "armor_thessalonian",
+  "file": "assets/models/armor_thessalonian.glb",
+  "parts": {
+    "armor_thessalonian": {
+      "node": "armor_thessalonian:compound",
+      "massKg": 7.7,
+      "centreOfMass": [0.0008066027409255969, 0.00877682910810458, -0.06142458076097902]
+    }
+  }
+}

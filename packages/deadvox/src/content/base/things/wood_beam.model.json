@@ -1,0 +1,11 @@
+{
+  "id": "wood_beam",
+  "file": "assets/models/wood_beam.glb",
+  "parts": {
+    "wood_beam": {
+      "node": "wood_beam:compound",
+      "massKg": 41,
+      "centreOfMass": [0.00007044546581672903, 0.0901725131185112, 0.000013838620395997442]
+    }
+  }
+}

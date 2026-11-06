@@ -1,0 +1,381 @@
+[
+  {
+    "id": "ch_helm_close_raised",
+    "model": "ch_helm_close_raised",
+    "name": "Hardened steel close helm (visor raised)",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.45, "cut": 0.85, "pierce": 0.6 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A full steel helmet with a hinged visor and a chin bevor, the visor swung up to leave the face clear.",
+    "reference": "ch_helm_close_raised",
+    "variants": ["xl_ch_helm_close_raised"],
+    "notes": "Standing on its gorget edge, face on +z: a round skull with a comb, a neck guard tucked in round the back and flaring at the foot, a bevor over the chin with a keel, and a visor pivoting on bosses at the temples. The visor lies up over the brow, leaving the face open between the bevor and the skull. This is the visor-raised state, a distinct state with its own model; lowering the visor waits on Deadvox item states. CHECK VOLUME (x8.3): the reference volume is the helmet packed away, while the box is the hollow helmet standing upright with the air inside it. Hardened steel is `steel-hardened`; the high-carbon steel helms use `steel-blued`. Slot `head`, as Deadvox's riot helmet has it. Covers head per the reference; encumbrance and warmth follow it. Helmet host: four `helmet` points, the front mount on the brow where goggles go, the left and right sides at the temples and the rear on the nape, reach slower at the sides and back. The xl sizes share the model. Protection is a guess for a plate helmet; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_helmet_metal_sheets",
+    "model": "ch_helmet_metal_sheets",
+    "name": "Hardened sheet steel helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 35,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.8, "pierce": 0.55 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A crude open-faced helmet riveted together from hardened sheet steel over a padded cotton lining.",
+    "reference": "ch_helmet_metal_sheets",
+    "variants": [],
+    "notes": "Sitting on its rim, front on +z: a deep bowl crossed front to back and side to side by riveted straps, a riveted brow band and a canvas lining rolled at the rim. CHECK VOLUME (x5.6): the reference volume is the helmet packed away, while the box is the hollow helmet standing upright with the air inside it. Hardened steel is `steel-hardened`; the high-carbon steel helms use `steel-blued`. Slot `head`, as Deadvox's riot helmet has it. Covers head per the reference; encumbrance and warmth follow it. Helmet host: four `helmet` points, the front mount on the brow where goggles go, the left and right sides at the temples and the rear on the nape, reach slower at the sides and back. Protection is a guess for crude riveted plate; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_helmet_metal_sheets_full",
+    "model": "ch_helmet_metal_sheets_full",
+    "name": "Hardened sheet steel great helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 25,
+      "warmth": 40,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.45, "cut": 0.85, "pierce": 0.6 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A flat-topped steel bucket of a helmet with eye slits and breathing holes, riveted from hardened sheet over a cotton lining.",
+    "reference": "ch_helmet_metal_sheets_full",
+    "variants": [],
+    "notes": "Standing on its rim, face on +z: a straight drum riveted at a back seam, a shallow domed lid, two eye slits either side of a centre strap running down the face as a cross under a riveted brow band, three breathing holes low on the wearer's right and a canvas lining at the rim. CHECK VOLUME (x9.4): the reference volume is the helmet packed away, while the box is the hollow helmet standing upright with the air inside it. Hardened steel is `steel-hardened`; the high-carbon steel helms use `steel-blued`. Slot `head`, as Deadvox's riot helmet has it. Covers head, eyes, mouth per the reference; encumbrance and warmth follow it. Helmet host: four `helmet` points, the front mount on the brow where goggles go, the left and right sides at the temples and the rear on the nape, reach slower at the sides and back. Protection is a guess for crude riveted plate; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_helmet_nasal",
+    "model": "ch_helmet_nasal",
+    "name": "Hardened steel nasal helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 10,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.45, "cut": 0.85, "pierce": 0.6 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A pointed steel helmet with crossing bands over the crown, a riveted rim and a bar down over the nose.",
+    "reference": "ch_helmet_nasal",
+    "variants": ["xl_ch_helmet_nasal", "xs_ch_helmet_nasal"],
+    "notes": "Set level on its nasal bar and leather chin straps, nasal on +z: a conical bowl with four bands meeting at the point, a band of twelve rivets at the rim and a leather liner. CHECK VOLUME (x5.9): the reference volume is the helmet packed away, while the box is the hollow helmet standing upright with the air inside it. Hardened steel is `steel-hardened`; the high-carbon steel helms use `steel-blued`. Slot `head`, as Deadvox's riot helmet has it. Covers head, mouth per the reference; encumbrance and warmth follow it. Helmet host: four `helmet` points, the front mount on the brow where goggles go, the left and right sides at the temples and the rear on the nape, reach slower at the sides and back. The xl and xs sizes share the model. Protection is a guess for a plate helmet; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_helmet_turban",
+    "model": "ch_helmet_turban",
+    "name": "Hardened steel turban helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 3,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.45, "cut": 0.85, "pierce": 0.6 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A tall fluted steel helmet with a spike at the crown, a sliding nose bar and guards over the ears.",
+    "reference": "ch_helmet_turban",
+    "variants": ["xl_ch_helmet_turban", "xs_ch_helmet_turban"],
+    "notes": "Standing on its ear guards and nasal bar, nasal on +z: an onion-shaped bowl twisted with twelve spiral flutes, a spike finial, a banded rim, a nasal bar in a bracket over the brow and a curved guard over each ear. CHECK VOLUME (x11.6): the reference volume is the helmet packed away, while the box is the hollow helmet standing upright with the air inside it. Hardened steel is `steel-hardened`; the high-carbon steel helms use `steel-blued`. Slot `head`, as Deadvox's riot helmet has it. Covers head, mouth per the reference; encumbrance and warmth follow it. Helmet host: four `helmet` points, the front mount on the brow where goggles go, the left and right sides at the temples and the rear on the nape, reach slower at the sides and back. The xl and xs sizes share the model. Protection is a guess for a plate helmet; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_lighthelm_close",
+    "model": "ch_lighthelm_close",
+    "name": "Hardened steel light close helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 10,
+      "warmth": 5,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.8, "pierce": 0.55 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A light full steel helmet with its visor lowered and a narrow eye slit, closing the face behind steel.",
+    "reference": "ch_lighthelm_close",
+    "variants": ["xl_ch_lighthelm_close"],
+    "notes": "Standing on its gorget edge, face on +z: a round skull with a comb, a neck guard tucked in round the back and flaring at the foot, a bevor over the chin with a keel, and a visor pivoting on bosses at the temples. The visor is down: a pointed lower plate and an upper plate with an eye slit between them. The light helm is close-fitting with a low comb and no rivets on the bevor. This is the visor-down state; the raised state is its own reference item with its own model, and switching between them waits on Deadvox item states. CHECK VOLUME (x7.7): the reference volume is the helmet packed away, while the box is the hollow helmet standing upright with the air inside it. Hardened steel is `steel-hardened`; the high-carbon steel helms use `steel-blued`. Slot `head`, as Deadvox's riot helmet has it. Covers head, mouth, eyes per the reference; encumbrance and warmth follow it. Helmet host: four `helmet` points, the front mount on the brow where goggles go, the left and right sides at the temples and the rear on the nape, reach slower at the sides and back. The xl sizes share the model. Protection is a guess for a plate helmet; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_lighthelm_close_raised",
+    "model": "ch_lighthelm_close_raised",
+    "name": "Hardened steel light close helm (visor raised)",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.8, "pierce": 0.55 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A light full steel helmet with a hinged visor and a chin bevor, the visor swung up to leave the face clear.",
+    "reference": "ch_lighthelm_close_raised",
+    "variants": ["xl_ch_lighthelm_close_raised"],
+    "notes": "Standing on its gorget edge, face on +z: a round skull with a comb, a neck guard tucked in round the back and flaring at the foot, a bevor over the chin with a keel, and a visor pivoting on bosses at the temples. The visor lies up over the brow, leaving the face open between the bevor and the skull. The light helm is close-fitting with a low comb and no rivets on the bevor. This is the visor-raised state, a distinct state with its own model; lowering the visor waits on Deadvox item states. CHECK VOLUME (x7.0): the reference volume is the helmet packed away, while the box is the hollow helmet standing upright with the air inside it. Hardened steel is `steel-hardened`; the high-carbon steel helms use `steel-blued`. Slot `head`, as Deadvox's riot helmet has it. Covers head per the reference; encumbrance and warmth follow it. Helmet host: four `helmet` points, the front mount on the brow where goggles go, the left and right sides at the temples and the rear on the nape, reach slower at the sides and back. The xl sizes share the model. Protection is a guess for a plate helmet; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "firehelmet",
+    "model": "firehelmet",
+    "name": "Firefighter helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 15,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.3, "blunt": 0.5, "cut": 0.45, "pierce": 0.3 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A red firefighter's helmet with a long sloping back brim, a brass-edged rim and a leather front shield.",
+    "reference": "firehelmet",
+    "variants": [],
+    "notes": "Sitting on its brim, shield on +z: a domed crown with a ridge and side ribs, a brim short at the front and long and sloping at the back, a brass edge, a brass holder on the brow and a black leather shield with a white number plate. The fire-resistant neck flap is tucked away under the brim and not modelled. CHECK VOLUME (x14.9): the wide brim spans air the reference volume leaves out. Longest side 304 mm against the reference 300. Slot `head`, as Deadvox's riot helmet has it. Covers head per the reference; encumbrance and warmth follow it. Helmet host: four `helmet` points, the front mount on the brow above the shield where goggles go, the left and right sides at the brim and the rear on the back brim, reach slower at the sides and back. Protection is a guess for a composite shell; the reference gives none, and heat protection waits on a damage type for it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_heavyhelm_close",
+    "model": "hc_heavyhelm_close",
+    "name": "High-carbon steel heavy close helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 10,
+      "warmth": 5,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.55, "cut": 0.95, "pierce": 0.7 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A heavy full steel helmet with a tall comb and a brow reinforce, its visor lowered over the face.",
+    "reference": "hc_heavyhelm_close",
+    "variants": ["xl_hc_heavyhelm_close"],
+    "notes": "Standing on its gorget edge, face on +z: a round skull with a comb, a neck guard tucked in round the back and flaring at the foot, a bevor over the chin with a keel, and a visor pivoting on bosses at the temples. The visor is down: a pointed lower plate and an upper plate with an eye slit between them. The heavy helm adds a tall comb, a brow reinforce and a second gorget lame. This is the visor-down state; the raised state is its own reference item with its own model, and switching between them waits on Deadvox item states. CHECK VOLUME (x9.6): the reference volume is the helmet packed away, while the box is the hollow helmet standing upright with the air inside it. Hardened steel is `steel-hardened`; the high-carbon steel helms use `steel-blued`. Slot `head`, as Deadvox's riot helmet has it. Covers head, mouth, eyes per the reference; encumbrance and warmth follow it. Helmet host: four `helmet` points, the front mount on the brow where goggles go, the left and right sides at the temples and the rear on the nape, reach slower at the sides and back. The xl sizes share the model. Protection is a guess for a plate helmet; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_heavyhelm_close_raised",
+    "model": "hc_heavyhelm_close_raised",
+    "name": "High-carbon steel heavy close helm (visor raised)",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.55, "cut": 0.95, "pierce": 0.7 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A heavy full steel helmet with a tall comb and a brow reinforce, its visor swung up to leave the face clear.",
+    "reference": "hc_heavyhelm_close_raised",
+    "variants": ["xl_hc_heavyhelm_close_raised"],
+    "notes": "Standing on its gorget edge, face on +z: a round skull with a comb, a neck guard tucked in round the back and flaring at the foot, a bevor over the chin with a keel, and a visor pivoting on bosses at the temples. The visor lies up over the brow, leaving the face open between the bevor and the skull. The heavy helm adds a tall comb, a brow reinforce and a second gorget lame. This is the visor-raised state, a distinct state with its own model; lowering the visor waits on Deadvox item states. CHECK VOLUME (x9.0): the reference volume is the helmet packed away, while the box is the hollow helmet standing upright with the air inside it. Hardened steel is `steel-hardened`; the high-carbon steel helms use `steel-blued`. Slot `head`, as Deadvox's riot helmet has it. Covers head per the reference; encumbrance and warmth follow it. Helmet host: four `helmet` points, the front mount on the brow where goggles go, the left and right sides at the temples and the rear on the nape, reach slower at the sides and back. The xl sizes share the model. Protection is a guess for a plate helmet; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_helm_close",
+    "model": "hc_helm_close",
+    "name": "High-carbon steel close helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 10,
+      "warmth": 5,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.5, "cut": 0.9, "pierce": 0.65 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "description": "A full steel helmet with its visor lowered and a narrow eye slit, closing the face behind steel.",
+    "reference": "hc_helm_close",
+    "variants": ["xl_hc_helm_close"],
+    "notes": "Standing on its gorget edge, face on +z: a round skull with a comb, a neck guard tucked in round the back and flaring at the foot, a bevor over the chin with a keel, and a visor pivoting on bosses at the temples. The visor is down: a pointed lower plate and an upper plate with an eye slit between them. This is the visor-down state; the raised state is its own reference item with its own model, and switching between them waits on Deadvox item states. CHECK VOLUME (x8.9): the reference volume is the helmet packed away, while the box is the hollow helmet standing upright with the air inside it. Hardened steel is `steel-hardened`; the high-carbon steel helms use `steel-blued`. Slot `head`, as Deadvox's riot helmet has it. Covers head, mouth, eyes per the reference; encumbrance and warmth follow it. Helmet host: four `helmet` points, the front mount on the brow where goggles go, the left and right sides at the temples and the rear on the nape, reach slower at the sides and back. The xl sizes share the model. Protection is a guess for a plate helmet; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_helm_close_raised",
+    "model": "ch_helm_close_raised",
+    "name": "High-carbon steel close helm (visor raised)",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.5, "cut": 0.9, "pierce": 0.65 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "finishes": { "steel": "steel-blued" },
+    "description": "A full steel helmet with a hinged visor and a chin bevor, the visor swung up to leave the face clear.",
+    "reference": "hc_helm_close_raised",
+    "variants": ["xl_hc_helm_close_raised"],
+    "notes": "Standing on its gorget edge, face on +z: a round skull with a comb, a neck guard tucked in round the back and flaring at the foot, a bevor over the chin with a keel, and a visor pivoting on bosses at the temples. The visor lies up over the brow, leaving the face open between the bevor and the skull. This is the visor-raised state, a distinct state with its own model; lowering the visor waits on Deadvox item states. CHECK VOLUME (x8.3): the reference volume is the helmet packed away, while the box is the hollow helmet standing upright with the air inside it. Shares `ch_helm_close_raised`'s model with its steel in `steel-blued` for high-carbon steel. Hardened steel is `steel-hardened`; the high-carbon steel helms use `steel-blued`. Slot `head`, as Deadvox's riot helmet has it. Covers head per the reference; encumbrance and warmth follow it. Helmet host: four `helmet` points, the front mount on the brow where goggles go, the left and right sides at the temples and the rear on the nape, reach slower at the sides and back. The xl sizes share the model. Protection is a guess for a plate helmet; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_helmet_nasal",
+    "model": "ch_helmet_nasal",
+    "name": "High-carbon steel nasal helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 10,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.5, "cut": 0.9, "pierce": 0.65 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "finishes": { "steel": "steel-blued" },
+    "description": "A pointed steel helmet with crossing bands over the crown, a riveted rim and a bar down over the nose.",
+    "reference": "hc_helmet_nasal",
+    "variants": ["xl_hc_helmet_nasal", "xs_hc_helmet_nasal"],
+    "notes": "Shares `ch_helmet_nasal`'s model with its steel in `steel-blued` for high-carbon steel. CHECK VOLUME (x5.9): the reference volume is the helmet packed away, while the box is the hollow helmet standing upright with the air inside it. Slot `head`, as Deadvox's riot helmet has it. Covers head, mouth per the reference; encumbrance and warmth follow it. Helmet host: four `helmet` points, the front mount on the brow where goggles go, the left and right sides at the temples and the rear on the nape, reach slower at the sides and back. The xl and xs sizes share the model. Protection is a guess for a plate helmet; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_helmet_turban",
+    "model": "ch_helmet_turban",
+    "name": "High-carbon steel turban helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 3,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.5, "cut": 0.9, "pierce": 0.65 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "finishes": { "steel": "steel-blued" },
+    "description": "A tall fluted steel helmet with a spike at the crown, a sliding nose bar and guards over the ears.",
+    "reference": "hc_helmet_turban",
+    "variants": ["xl_hc_helmet_turban", "xs_hc_helmet_turban"],
+    "notes": "Shares `ch_helmet_turban`'s model with its steel in `steel-blued` for high-carbon steel. CHECK VOLUME (x11.6): the reference volume is the helmet packed away, while the box is the hollow helmet standing upright with the air inside it. Slot `head`, as Deadvox's riot helmet has it. Covers head, mouth per the reference; encumbrance and warmth follow it. Helmet host: four `helmet` points, the front mount on the brow where goggles go, the left and right sides at the temples and the rear on the nape, reach slower at the sides and back. The xl and xs sizes share the model. Protection is a guess for a plate helmet; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_lighthelm_close",
+    "model": "ch_lighthelm_close",
+    "name": "High-carbon steel light close helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 10,
+      "warmth": 5,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.45, "cut": 0.85, "pierce": 0.6 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "right", "name": "right side", "reachSimSeconds": 0.7, "standard": "helmet" },
+      { "id": "rear", "name": "rear", "reachSimSeconds": 0.9, "standard": "helmet" }
+    ],
+    "finishes": { "steel": "steel-blued" },
+    "description": "A light full steel helmet with its visor lowered and a narrow eye slit, closing the face behind steel.",
+    "reference": "hc_lighthelm_close",
+    "variants": ["xl_hc_lighthelm_close"],
+    "notes": "Standing on its gorget edge, face on +z: a round skull with a comb, a neck guard tucked in round the back and flaring at the foot, a bevor over the chin with a keel, and a visor pivoting on bosses at the temples. The visor is down: a pointed lower plate and an upper plate with an eye slit between them. The light helm is close-fitting with a low comb and no rivets on the bevor. This is the visor-down state; the raised state is its own reference item with its own model, and switching between them waits on Deadvox item states. CHECK VOLUME (x7.7): the reference volume is the helmet packed away, while the box is the hollow helmet standing upright with the air inside it. Shares `ch_lighthelm_close`'s model with its steel in `steel-blued` for high-carbon steel. Hardened steel is `steel-hardened`; the high-carbon steel helms use `steel-blued`. Slot `head`, as Deadvox's riot helmet has it. Covers head, mouth, eyes per the reference; encumbrance and warmth follow it. Helmet host: four `helmet` points, the front mount on the brow where goggles go, the left and right sides at the temples and the rear on the nape, reach slower at the sides and back. The xl sizes share the model. Protection is a guess for a plate helmet; the reference gives none. The worn look is pending: no worn model is authored."
+  }
+]

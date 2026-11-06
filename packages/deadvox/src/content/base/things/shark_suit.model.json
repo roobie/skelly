@@ -1,0 +1,11 @@
+{
+  "id": "shark_suit",
+  "file": "assets/models/shark_suit.glb",
+  "parts": {
+    "shark_suit": {
+      "node": "shark_suit:compound",
+      "massKg": 9.1,
+      "centreOfMass": [-1.9576429399424515e-17, 0.006257649995377651, 0.02338790792271426]
+    }
+  }
+}

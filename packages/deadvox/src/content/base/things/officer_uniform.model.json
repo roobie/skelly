@@ -1,0 +1,11 @@
+{
+  "id": "officer_uniform",
+  "file": "assets/models/officer_uniform.glb",
+  "parts": {
+    "officer_uniform": {
+      "node": "officer_uniform:compound",
+      "massKg": 1.3,
+      "centreOfMass": [-0.0011026321257544337, 0.04813649169094869, 0.007890646216591038]
+    }
+  }
+}

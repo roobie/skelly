@@ -1,0 +1,11 @@
+{
+  "id": "misc_repairkit",
+  "file": "assets/models/misc_repairkit.glb",
+  "parts": {
+    "misc_repairkit": {
+      "node": "misc_repairkit:compound",
+      "massKg": 0.35,
+      "centreOfMass": [-0.020969853574504742, 0.004215905828308931, 0.013640539764570773]
+    }
+  }
+}

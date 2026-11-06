@@ -1,0 +1,11 @@
+{
+  "id": "skirt_sheet_metal",
+  "file": "assets/models/skirt_sheet_metal.glb",
+  "parts": {
+    "skirt_sheet_metal": {
+      "node": "skirt_sheet_metal:compound",
+      "massKg": 2,
+      "centreOfMass": [0.003813046402151986, 0.007850033624747812, 0.02925622057834566]
+    }
+  }
+}

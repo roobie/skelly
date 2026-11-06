@@ -1,0 +1,14 @@
+{
+  "id": "reciprocating_saw",
+  "file": "assets/models/reciprocating_saw.glb",
+  "parts": {
+    "reciprocating_saw": {
+      "node": "reciprocating_saw:compound",
+      "massKg": 2.4,
+      "centreOfMass": [0.014143536070913652, 0.08913323009558392, 0]
+    }
+  },
+  "grip": { "at": [-0.1, 0.15000000000000002, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

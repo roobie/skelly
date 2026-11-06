@@ -1,0 +1,11 @@
+{
+  "id": "helmet_riding_peakless",
+  "file": "assets/models/helmet_riding_peakless.glb",
+  "parts": {
+    "helmet_riding_peakless": {
+      "node": "helmet_riding_peakless:compound",
+      "massKg": 0.46,
+      "centreOfMass": [0.0003137198207315307, 0.09968367789504104, -0.0017235795865259494]
+    }
+  }
+}

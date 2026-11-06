@@ -1,0 +1,11 @@
+{
+  "id": "aketon_hood_canvas",
+  "file": "assets/models/aketon_hood_canvas.glb",
+  "parts": {
+    "aketon_hood_canvas": {
+      "node": "aketon_hood_canvas:compound",
+      "massKg": 0.4,
+      "centreOfMass": [0, 0.1110779494484092, 0.006254647461519454]
+    }
+  }
+}

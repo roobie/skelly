@@ -1,0 +1,11 @@
+{
+  "id": "fur_cat_tail",
+  "file": "assets/models/fur_cat_tail.glb",
+  "parts": {
+    "fur_cat_tail": {
+      "node": "fur_cat_tail:compound",
+      "massKg": 0.1,
+      "centreOfMass": [-0.06995007863629445, 0.0203864847039724, 0.014504692811120686]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "ski_jacket",
+  "file": "assets/models/ski_jacket.glb",
+  "parts": {
+    "ski_jacket": {
+      "node": "ski_jacket:compound",
+      "massKg": 1.2,
+      "centreOfMass": [0.000020853890777904176, 0.041189224861256875, 0.0033718818153821014]
+    }
+  }
+}

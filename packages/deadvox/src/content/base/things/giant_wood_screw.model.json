@@ -1,0 +1,11 @@
+{
+  "id": "giant_wood_screw",
+  "file": "assets/models/giant_wood_screw.glb",
+  "parts": {
+    "giant_wood_screw": {
+      "node": "giant_wood_screw:compound",
+      "massKg": 16,
+      "centreOfMass": [0.5679304971170328, 0.09031556802244038, 0]
+    }
+  }
+}

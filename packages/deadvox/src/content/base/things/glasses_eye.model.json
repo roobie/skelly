@@ -1,0 +1,11 @@
+{
+  "id": "glasses_eye",
+  "file": "assets/models/glasses_eye.glb",
+  "parts": {
+    "glasses_eye": {
+      "node": "glasses_eye:compound",
+      "massKg": 0.024,
+      "centreOfMass": [-0.001463677130044841, 0.02200627802690584, -0.0010107623318385672]
+    }
+  }
+}

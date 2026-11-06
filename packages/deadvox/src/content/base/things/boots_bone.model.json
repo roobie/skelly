@@ -1,0 +1,11 @@
+{
+  "id": "boots_bone",
+  "file": "assets/models/boots_bone.glb",
+  "parts": {
+    "boots_bone": {
+      "node": "boots_bone:compound",
+      "massKg": 1.2,
+      "centreOfMass": [1.413993101765767e-17, 0.06597303242837547, -0.030087838712182017]
+    }
+  }
+}

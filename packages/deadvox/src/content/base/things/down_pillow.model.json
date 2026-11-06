@@ -1,0 +1,11 @@
+{
+  "id": "down_pillow",
+  "file": "assets/models/down_pillow.glb",
+  "parts": {
+    "down_pillow": {
+      "node": "down_pillow:compound",
+      "massKg": 0.66,
+      "centreOfMass": [0.00009209264081129233, 0.09007564752638066, 0]
+    }
+  }
+}

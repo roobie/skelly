@@ -1,0 +1,17 @@
+{
+  "id": "classic_small_car_grille",
+  "file": "assets/models/classic_small_car_grille.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 3,
+      "centreOfMass": [1.75390625, 0.5625, 0],
+      "collision": [
+        { "min": [1.71875, 0.40625, -0.1875], "max": [1.78125, 0.71875, 0.1875] },
+        { "min": [1.75, 0.4375, -0.15625], "max": [1.78125, 0.6875, 0.15625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,14 @@
+{
+  "id": "crystallizing_sugar",
+  "file": "assets/models/crystallizing_sugar.glb",
+  "parts": {
+    "crystallizing_sugar": {
+      "node": "crystallizing_sugar:compound",
+      "massKg": 0.13,
+      "centreOfMass": [0.0000043520988347606305, 0.026805980626140667, 0.000005475221114698861]
+    }
+  },
+  "grip": { "at": [0, 0.031, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

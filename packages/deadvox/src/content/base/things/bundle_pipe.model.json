@@ -1,0 +1,11 @@
+{
+  "id": "bundle_pipe",
+  "file": "assets/models/bundle_pipe.glb",
+  "parts": {
+    "bundle_pipe": {
+      "node": "bundle_pipe:compound",
+      "massKg": 7.2,
+      "centreOfMass": [-0.0005975180021449368, 0.029068944384862877, 0]
+    }
+  }
+}

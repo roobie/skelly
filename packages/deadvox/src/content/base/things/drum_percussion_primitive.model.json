@@ -1,0 +1,14 @@
+{
+  "id": "drum_percussion_primitive",
+  "file": "assets/models/drum_percussion_primitive.glb",
+  "parts": {
+    "drum_percussion_primitive": {
+      "node": "drum_percussion_primitive:compound",
+      "massKg": 2.1,
+      "centreOfMass": [-7.967844250026408e-21, 0.1443812941720424, 1.365916157147384e-20]
+    }
+  },
+  "grip": { "at": [0, 0.12, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

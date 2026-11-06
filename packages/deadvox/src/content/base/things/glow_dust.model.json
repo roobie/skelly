@@ -1,0 +1,10 @@
+{
+  "id": "glow_dust",
+  "file": "assets/models/glow_dust.glb",
+  "parts": {
+    "glow_dust": { "node": "glow_dust:compound", "massKg": 0.035, "centreOfMass": [0, 0.02556433408577878, 0] }
+  },
+  "grip": { "at": [0, 0.028, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,14 @@
+{
+  "id": "flu_shot",
+  "file": "assets/models/flu_shot.glb",
+  "parts": {
+    "flu_shot": {
+      "node": "flu_shot:compound",
+      "massKg": 0.011,
+      "centreOfMass": [-0.01060430548436699, 0.004638134290107638, 5.125576627370579e-7]
+    }
+  },
+  "grip": { "at": [-0.002999999999999999, 0.008, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,11 @@
+{
+  "id": "ring_wedding",
+  "file": "assets/models/ring_wedding.glb",
+  "parts": {
+    "ring_wedding": {
+      "node": "ring_wedding:compound",
+      "massKg": 0.0091,
+      "centreOfMass": [-1.5804656744601838e-19, 0.012043478260869567, 0]
+    }
+  }
+}

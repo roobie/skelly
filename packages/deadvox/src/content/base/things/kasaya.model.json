@@ -1,0 +1,11 @@
+{
+  "id": "kasaya",
+  "file": "assets/models/kasaya.glb",
+  "parts": {
+    "kasaya": {
+      "node": "kasaya:compound",
+      "massKg": 1.8,
+      "centreOfMass": [6.244474903394286e-21, 0.03648921232618183, -0.0012217776637023841]
+    }
+  }
+}

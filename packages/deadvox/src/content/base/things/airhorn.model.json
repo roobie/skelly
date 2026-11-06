@@ -1,0 +1,14 @@
+{
+  "id": "airhorn",
+  "file": "assets/models/airhorn.glb",
+  "parts": {
+    "airhorn": {
+      "node": "airhorn:compound",
+      "massKg": 0.25,
+      "centreOfMass": [0, 0.08281052147293541, 0.0036027993559004114]
+    }
+  },
+  "grip": { "at": [0, 0.07100000000000001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

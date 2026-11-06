@@ -1,0 +1,11 @@
+{
+  "id": "load_bearing_vest",
+  "file": "assets/models/load_bearing_vest.glb",
+  "parts": {
+    "load_bearing_vest": {
+      "node": "load_bearing_vest:compound",
+      "massKg": 0.9,
+      "centreOfMass": [3.8667980836323587e-19, 0.0082038741344553, 0.047815759488123576]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "lc_coat_brigandine",
+  "file": "assets/models/lc_coat_brigandine.glb",
+  "parts": {
+    "lc_coat_brigandine": {
+      "node": "lc_coat_brigandine:compound",
+      "massKg": 7.3,
+      "centreOfMass": [0.00002246417097574755, 0.01682867502718232, 0.1513178783510536]
+    }
+  }
+}

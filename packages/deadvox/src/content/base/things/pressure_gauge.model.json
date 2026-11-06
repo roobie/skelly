@@ -1,0 +1,11 @@
+{
+  "id": "pressure_gauge",
+  "file": "assets/models/pressure_gauge.glb",
+  "parts": {
+    "pressure_gauge": {
+      "node": "pressure_gauge:compound",
+      "massKg": 3.6,
+      "centreOfMass": [0.0018404998602627066, 0.0701253842775582, 0.0001288577474348226]
+    }
+  }
+}

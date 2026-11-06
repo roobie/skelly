@@ -1,0 +1,11 @@
+{
+  "id": "bronze_medal",
+  "file": "assets/models/bronze_medal.glb",
+  "parts": {
+    "bronze_medal": {
+      "node": "bronze_medal:compound",
+      "massKg": 0.1,
+      "centreOfMass": [-2.2629554197791003e-7, 0.00197397601267255, -0.016383118352568452]
+    }
+  }
+}

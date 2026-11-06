@@ -1,0 +1,11 @@
+{
+  "id": "tent_pole",
+  "file": "assets/models/tent_pole.glb",
+  "parts": {
+    "tent_pole": {
+      "node": "tent_pole:compound",
+      "massKg": 0.22,
+      "centreOfMass": [0.005570904204765181, 0.011555959754858585, 0.000001015960410316883]
+    }
+  }
+}

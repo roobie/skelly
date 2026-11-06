@@ -1,0 +1,11 @@
+{
+  "id": "hooded_robe",
+  "file": "assets/models/hooded_robe.glb",
+  "parts": {
+    "hooded_robe": {
+      "node": "hooded_robe:compound",
+      "massKg": 0.83,
+      "centreOfMass": [0.0003324073446710482, 0.022684124940714145, -0.002704858052713599]
+    }
+  }
+}

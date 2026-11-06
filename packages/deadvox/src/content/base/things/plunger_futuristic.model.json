@@ -1,0 +1,14 @@
+{
+  "id": "plunger_futuristic",
+  "file": "assets/models/plunger_futuristic.glb",
+  "parts": {
+    "plunger_futuristic": {
+      "node": "plunger_futuristic:compound",
+      "massKg": 0.55,
+      "centreOfMass": [0.43790343507391255, 0.08021021659753981, 0]
+    }
+  },
+  "grip": { "at": [0.19, 0.08, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

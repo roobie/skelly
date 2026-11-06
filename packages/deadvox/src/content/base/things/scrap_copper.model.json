@@ -1,0 +1,11 @@
+{
+  "id": "scrap_copper",
+  "file": "assets/models/scrap_copper.glb",
+  "parts": {
+    "scrap_copper": {
+      "node": "scrap_copper:compound",
+      "massKg": 0.17,
+      "centreOfMass": [0.00018367346938775412, 0.007010204081632654, 0]
+    }
+  }
+}

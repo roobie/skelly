@@ -1,0 +1,11 @@
+{
+  "id": "fencing_jacket",
+  "file": "assets/models/fencing_jacket.glb",
+  "parts": {
+    "fencing_jacket": {
+      "node": "fencing_jacket:compound",
+      "massKg": 0.81,
+      "centreOfMass": [0.0000557128804364027, 0.03250344293081351, -0.0025548931350046224]
+    }
+  }
+}

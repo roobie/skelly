@@ -1,0 +1,11 @@
+{
+  "id": "small_space_heater",
+  "file": "assets/models/small_space_heater.glb",
+  "parts": {
+    "small_space_heater": {
+      "node": "small_space_heater:compound",
+      "massKg": 2,
+      "centreOfMass": [0.00012637461691004153, 0.1302502253470345, 0.0019236524247340924]
+    }
+  }
+}

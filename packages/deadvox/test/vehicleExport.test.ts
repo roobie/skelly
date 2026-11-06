@@ -10,9 +10,26 @@ const HOSTS = ['hatchback', 'pickup', 'hoist'];
 const MOD = 'mods/vehicle-fixture.json';
 
 // A mod case needs the vehicle content it refers to, not the whole base: a full rebuild per case grows with every
-// content file and times out on loaded runners. Cargo spaces are measured in the inventory's cell size.
+// content file and every fleet vehicle, and times out on loaded runners. So it keeps only the host vehicles and the
+// parts they fit. Cargo spaces are measured in the inventory's cell size.
 const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json'];
-const fixtureSources = baseSources.filter(({ source }) => FIXTURE_BASE.some((file) => source.endsWith(`/${file}`)));
+interface FleetData {
+  items: { id: string; model: string }[];
+  models: { id: string }[];
+  vehicleBlueprints: { id: string; fittings: { part: string }[] }[];
+}
+const hostsOnly = (data: FleetData): FleetData => {
+  const vehicleBlueprints = data.vehicleBlueprints.filter(({ id }) => HOSTS.includes(id));
+  const parts = new Set(vehicleBlueprints.flatMap(({ fittings }) => fittings.map(({ part }) => part)));
+  const items = data.items.filter(({ id }) => parts.has(id));
+  const models = new Set(items.map(({ model }) => model));
+  return { items, models: data.models.filter(({ id }) => models.has(id)), vehicleBlueprints };
+};
+const fixtureSources = baseSources
+  .filter(({ source }) => FIXTURE_BASE.some((file) => source.endsWith(`/${file}`)))
+  .map((entry) =>
+    entry.source.endsWith('/vehicles.json') ? { ...entry, data: hostsOnly(entry.data as FleetData) } : entry,
+  );
 
 const withMod = (data: object) => buildRegistry([...fixtureSources, { source: MOD, data } satisfies ContentSource]);
 
@@ -162,13 +179,13 @@ describe('vehicle export contract', () => {
       .map((id) => loadVehicleBlueprint(base.registry, id))
       .filter(({ fittings }) => fittings.some(({ capabilities }) => capabilities.includes('seat')));
     expect(seated.map(({ id }) => id)).toContain(HOSTS[0]);
-    for (const { fittings } of seated) {
+    for (const { id, fittings } of seated) {
       const entries = fittings.filter(({ capabilities }) => capabilities.includes('entry'));
       expect(entries.length).toBeGreaterThan(0);
-      for (const { collision } of entries) {
+      for (const { id: entry, collision } of entries) {
         const span = (axis: 0 | 2) =>
           Math.max(...collision.map(({ max }) => max[axis])) - Math.min(...collision.map(({ min }) => min[axis]));
-        expect(Math.max(span(0), span(2))).toBeGreaterThanOrEqual(2 * PLAYER.halfWidth);
+        expect(Math.max(span(0), span(2)), `${id} ${entry}`).toBeGreaterThanOrEqual(2 * PLAYER.halfWidth);
       }
     }
   });

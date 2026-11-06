@@ -1,0 +1,14 @@
+{
+  "id": "enchanted_wood",
+  "file": "assets/models/enchanted_wood.glb",
+  "parts": {
+    "enchanted_wood": {
+      "node": "enchanted_wood:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-0.021038160152084213, 0.02600343116798814, 0.00008485185700375578]
+    }
+  },
+  "grip": { "at": [0, 0.026000000000000002, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

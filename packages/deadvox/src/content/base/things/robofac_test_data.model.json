@@ -1,0 +1,14 @@
+{
+  "id": "robofac_test_data",
+  "file": "assets/models/robofac_test_data.glb",
+  "parts": {
+    "robofac_test_data": {
+      "node": "robofac_test_data:compound",
+      "massKg": 0.006,
+      "centreOfMass": [-0.0010027816411682898, 0.001, -0.000019471488178024982]
+    }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

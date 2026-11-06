@@ -1,0 +1,11 @@
+{
+  "id": "leggings",
+  "file": "assets/models/leggings.glb",
+  "parts": {
+    "leggings": {
+      "node": "leggings:compound",
+      "massKg": 0.16,
+      "centreOfMass": [0, 0.012877231895308861, -0.0035450815126982357]
+    }
+  }
+}

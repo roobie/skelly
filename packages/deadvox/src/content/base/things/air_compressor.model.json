@@ -1,0 +1,11 @@
+{
+  "id": "air_compressor",
+  "file": "assets/models/air_compressor.glb",
+  "parts": {
+    "air_compressor": {
+      "node": "air_compressor:compound",
+      "massKg": 63,
+      "centreOfMass": [0.0012263529007108455, 0.4710827505159368, 0.00017627837651914698]
+    }
+  }
+}

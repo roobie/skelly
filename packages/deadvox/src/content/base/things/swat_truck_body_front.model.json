@@ -1,0 +1,14 @@
+{
+  "id": "swat_truck_body_front",
+  "file": "assets/models/swat_truck_body_front.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 260,
+      "centreOfMass": [-0.28125, 1.84375, 0],
+      "collision": [{ "min": [-0.3125, 0.96875, -1.21875], "max": [-0.25, 2.71875, 1.21875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

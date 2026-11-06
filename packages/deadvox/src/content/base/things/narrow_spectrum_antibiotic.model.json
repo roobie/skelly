@@ -1,0 +1,14 @@
+{
+  "id": "narrow_spectrum_antibiotic",
+  "file": "assets/models/narrow_spectrum_antibiotic.glb",
+  "parts": {
+    "narrow_spectrum_antibiotic": {
+      "node": "narrow_spectrum_antibiotic:compound",
+      "massKg": 0.0054,
+      "centreOfMass": [-0.0013486973947895793, 0.0016853707414829664, -5.180239307070564e-20]
+    }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

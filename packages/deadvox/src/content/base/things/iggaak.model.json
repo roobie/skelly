@@ -1,0 +1,11 @@
+{
+  "id": "iggaak",
+  "file": "assets/models/iggaak.glb",
+  "parts": {
+    "iggaak": {
+      "node": "iggaak:compound",
+      "massKg": 0.04,
+      "centreOfMass": [3.8013814915120727e-19, 0.019378676470588187, -0.023060661764705878]
+    }
+  }
+}

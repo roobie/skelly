@@ -1,0 +1,11 @@
+{
+  "id": "glasses_reading",
+  "file": "assets/models/glasses_reading.glb",
+  "parts": {
+    "glasses_reading": {
+      "node": "glasses_reading:compound",
+      "massKg": 0.018,
+      "centreOfMass": [-0.0019411764705882372, 0.011389705882352944, -0.0022990196078431393]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "boots",
+  "file": "assets/models/boots.glb",
+  "parts": {
+    "boots": {
+      "node": "boots:compound",
+      "massKg": 1,
+      "centreOfMass": [-1.4591001259202794e-17, 0.05986499386335741, -0.026972971498704493]
+    }
+  }
+}

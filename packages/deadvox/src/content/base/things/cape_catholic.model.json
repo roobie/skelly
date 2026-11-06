@@ -1,0 +1,11 @@
+{
+  "id": "cape_catholic",
+  "file": "assets/models/cape_catholic.glb",
+  "parts": {
+    "cape_catholic": {
+      "node": "cape_catholic:compound",
+      "massKg": 1.9,
+      "centreOfMass": [-0.0000015574896930829136, 0.03265167201099403, -0.0034713696747595045]
+    }
+  }
+}

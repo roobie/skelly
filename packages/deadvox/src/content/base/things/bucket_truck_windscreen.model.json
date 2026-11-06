@@ -1,0 +1,14 @@
+{
+  "id": "bucket_truck_windscreen",
+  "file": "assets/models/bucket_truck_windscreen.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 28,
+      "centreOfMass": [3.5810860829103213, 2.346578891708968, 0],
+      "collision": [{ "min": [3.4375, 1.96875, -1.15625], "max": [3.71875, 2.71875, 1.15625] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

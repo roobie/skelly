@@ -1,0 +1,11 @@
+{
+  "id": "churn",
+  "file": "assets/models/churn.glb",
+  "parts": {
+    "churn": {
+      "node": "churn:compound",
+      "massKg": 13,
+      "centreOfMass": [0.005419509496588608, 0.2758085930296884, 0.011861515766181082]
+    }
+  }
+}

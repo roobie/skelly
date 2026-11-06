@@ -1,0 +1,11 @@
+{
+  "id": "shirt_straw",
+  "file": "assets/models/shirt_straw.glb",
+  "parts": {
+    "shirt_straw": {
+      "node": "shirt_straw:compound",
+      "massKg": 0.91,
+      "centreOfMass": [0.000057308149442240755, 0.04771599864438498, -0.0045033245982081084]
+    }
+  }
+}

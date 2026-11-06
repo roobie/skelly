@@ -1,0 +1,11 @@
+{
+  "id": "hammock",
+  "file": "assets/models/hammock.glb",
+  "parts": {
+    "hammock": {
+      "node": "hammock:compound",
+      "massKg": 0.82,
+      "centreOfMass": [0.00003452527743526237, 0.04579909576654348, -1.0624494098759616e-21]
+    }
+  }
+}

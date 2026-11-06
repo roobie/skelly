@@ -1,0 +1,11 @@
+{
+  "id": "glassblowers_crucible",
+  "file": "assets/models/glassblowers_crucible.glb",
+  "parts": {
+    "glassblowers_crucible": {
+      "node": "glassblowers_crucible:compound",
+      "massKg": 86,
+      "centreOfMass": [0.009789836797402671, 0.6810831376641446, 0]
+    }
+  }
+}

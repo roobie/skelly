@@ -1,0 +1,100 @@
+[
+  {
+    "id": "wind_mill",
+    "model": "wind_mill",
+    "name": "Wind mill",
+    "category": "tool",
+    "size": [6, 6],
+    "economy": { "usage": ["Industrial", "Residential"], "tiers": ["Tier2"] },
+    "workstation": { "id": "wind_mill", "qualities": { "milling": 3 } },
+    "description": "A small steel wind-driven grist mill. Set up in the open, it grinds grain and other starchy crops into flour.",
+    "reference": "wind_mill",
+    "variants": [],
+    "notes": "1.5 m to the top of the rotor: a splayed four-leg galvanised tower with braces, a deck carrying a green millstone housing, hopper and flour spout, a drive shaft up to a gearbox on a turntable, a six-blade white rotor facing +z and a red tail vane. 120 kg follows the reference. It is meant to be placed and then used where it stands, hence the workstation block; whether Deadvox carries it in a grid at all or only as a placeable is for the content pass. The box counts the open tower and rotor disc (box/volume x45); the reference's 22.5 L is the steel packed down, not the standing frame. Rendered at --size 512."
+  },
+  {
+    "id": "camera",
+    "model": "camera",
+    "name": "Camera",
+    "category": "tool",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A pocket digital camera with a zoom lens, a flash and a screen on the back for looking over the pictures it holds.",
+    "reference": "camera",
+    "variants": ["waterproof_camera_case"],
+    "notes": "100 by 60 by 30 mm body in bare aluminium with a charcoal grip strip, a protruding lens barrel toward +z, flash window, optical finder, shutter button and a back screen. 0.907 kg follows the reference, heavy for a real compact. The waterproof case variant rides on this model for now; a clear housing around a camera would want its own row. The lens barrel pushes the box past the reference volume (x1.38)."
+  },
+  {
+    "id": "camera_pro",
+    "model": "camera_pro",
+    "name": "Professional camera",
+    "category": "tool",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "description": "A heavy single-lens reflex camera with a zoom lens, an optical viewfinder and a screen on the back.",
+    "reference": "camera_pro",
+    "variants": [],
+    "notes": "140 by 100 by 75 mm black body with a rubber grip on the camera's right, prism hump with hot shoe, mode dial and an eyecup, and a 110 mm zoom lens toward +z with rubber zoom and focus rings. The lens doubles the box over the body (box/volume x2.35)."
+  },
+  {
+    "id": "cell_phone",
+    "model": "cell_phone",
+    "name": "Mobile phone",
+    "category": "tool",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Infected"], "tiers": ["Tier1"] },
+    "description": "A sturdy old keypad mobile phone. Its screen gives a little light, and it keeps the time and an alarm.",
+    "reference": "cell_phone",
+    "variants": ["waterproof_smart_phone_case", "smart_phone", "smart_phone_locked"],
+    "notes": "110 by 48 by 16 mm candy-bar phone lying screen up, earpiece toward -z: charcoal body, aluminium face, green LCD, two soft keys, a round navigation key, twelve keys and a stub antenna. The smartphone variants are a flat touchscreen slab and the waterproof case a clear shell, so they ride on this model only until each gets its own row."
+  },
+  {
+    "id": "directional_antenna",
+    "model": "directional_antenna",
+    "name": "Directional antenna",
+    "category": "tool",
+    "size": [1, 5],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "description": "A hand-built beam antenna of copper rods on a wooden boom. Pointed at a station, it lets a radio pick up faint signals.",
+    "reference": "directional_antenna",
+    "variants": ["xedra_antenna"],
+    "notes": "600 mm square pine boom pointing toward +x with copper rods across it: a 340 mm reflector, a split driven element with its terminal block and coax lead, and four shortening directors; a mast clamp near the back. It lies along x and takes its grip on the boom. The box counts the air between the rods (box/volume x12); the copper and boom alone are close to the reference's 0.5 L. The deployable antenna variant is a heavier 3.2 kg folding mast unit and rides on this model only until it gets a row."
+  },
+  {
+    "id": "eink_tablet_pc",
+    "model": "eink_tablet_pc",
+    "name": "E-ink tablet",
+    "category": "tool",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A thin tablet with a paper-like screen that sips power. It runs on ordinary batteries and reads books and files.",
+    "reference": "eink_tablet_pc",
+    "variants": [],
+    "notes": "158 by 115 by 8 mm lying screen up: an aluminium back, a charcoal bezel wider at -x carrying two page buttons, a pale paper-white screen and a power key on the top edge."
+  },
+  {
+    "id": "electrohack",
+    "model": "electrohack",
+    "name": "Electrohack",
+    "category": "tool",
+    "size": [1, 2],
+    "economy": { "usage": ["Military", "Police", "Industrial"], "tiers": ["Tier3"] },
+    "tool": { "qualities": { "hacking": 2 } },
+    "description": "A hand-built probe bristling with plugs and leads. It can talk its way into most control panels and electronic locks, though not full computers.",
+    "reference": "electrohack",
+    "variants": [],
+    "notes": "125 by 75 by 45 mm olive box with black rubber end bumpers, lying face up with its top end toward -z: a small green display, an exposed circuit board under a nine-key pad, a row of plugs and sockets across the top end and down one side, and two red flying leads with clips. hacking is a new quality name taken from the reference's HACK level."
+  },
+  {
+    "id": "emf_detector",
+    "model": "emf_detector",
+    "name": "EMF detector",
+    "category": "tool",
+    "size": [1, 2],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier2"] },
+    "description": "A handheld meter that reads electromagnetic fields. It beeps louder near a source, which is enough to find its direction.",
+    "reference": "emf_detector",
+    "variants": [],
+    "notes": "160 by 65 by 35 mm yellow meter lying face up with a round charcoal sensor head toward -z, black rubber end bumpers, a row of green, amber and red signal lamps, a green display and a selector knob. The off and on states share this model. The sensor head and knob push the box past the reference volume (x1.57)."
+  }
+]

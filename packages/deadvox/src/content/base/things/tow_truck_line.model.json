@@ -1,0 +1,17 @@
+{
+  "id": "tow_truck_line",
+  "file": "assets/models/tow_truck_line.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 25,
+      "centreOfMass": [-1.4197682584269664, 2.694112827715356, 0],
+      "collision": [
+        { "min": [-0.15625, 1.625, -0.03125], "max": [0.90625, 2.25, 0.03125] },
+        { "min": [-3.78125, 2.1875, -0.03125], "max": [-0.15625, 3.65625, 0.03125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

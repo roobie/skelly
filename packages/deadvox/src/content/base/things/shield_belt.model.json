@@ -1,0 +1,11 @@
+{
+  "id": "shield_belt",
+  "file": "assets/models/shield_belt.glb",
+  "parts": {
+    "shield_belt": {
+      "node": "shield_belt:compound",
+      "massKg": 0.39,
+      "centreOfMass": [0.007343171562759002, 0.009011741412653103, 0.021299567179298286]
+    }
+  }
+}

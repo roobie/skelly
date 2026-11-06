@@ -1,0 +1,11 @@
+{
+  "id": "armor_aztec",
+  "file": "assets/models/armor_aztec.glb",
+  "parts": {
+    "armor_aztec": {
+      "node": "armor_aztec:compound",
+      "massKg": 4,
+      "centreOfMass": [7.987838467993121e-20, 0.020452030322051083, -0.04274675293322388]
+    }
+  }
+}

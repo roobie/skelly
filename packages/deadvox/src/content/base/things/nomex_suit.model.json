@@ -1,0 +1,11 @@
+{
+  "id": "nomex_suit",
+  "file": "assets/models/nomex_suit.glb",
+  "parts": {
+    "nomex_suit": {
+      "node": "nomex_suit:compound",
+      "massKg": 0.41,
+      "centreOfMass": [0, 0.018795635155972008, -0.010173644881983157]
+    }
+  }
+}

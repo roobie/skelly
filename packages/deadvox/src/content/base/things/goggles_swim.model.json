@@ -1,0 +1,11 @@
+{
+  "id": "goggles_swim",
+  "file": "assets/models/goggles_swim.glb",
+  "parts": {
+    "goggles_swim": {
+      "node": "goggles_swim:compound",
+      "massKg": 0.03,
+      "centreOfMass": [-1.6755853056442153e-18, 0.023193112761647542, -0.012282916948008106]
+    }
+  }
+}

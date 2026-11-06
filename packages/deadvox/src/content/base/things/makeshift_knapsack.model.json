@@ -1,0 +1,11 @@
+{
+  "id": "makeshift_knapsack",
+  "file": "assets/models/makeshift_knapsack.glb",
+  "parts": {
+    "makeshift_knapsack": {
+      "node": "makeshift_knapsack:compound",
+      "massKg": 0.46,
+      "centreOfMass": [-7.514472535191856e-19, 0.15988447620633786, -0.015105424924674852]
+    }
+  }
+}

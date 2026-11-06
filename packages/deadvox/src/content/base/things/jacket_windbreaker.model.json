@@ -1,0 +1,11 @@
+{
+  "id": "jacket_windbreaker",
+  "file": "assets/models/jacket_windbreaker.glb",
+  "parts": {
+    "jacket_windbreaker": {
+      "node": "jacket_windbreaker:compound",
+      "massKg": 0.3,
+      "centreOfMass": [0, 0.019535233463911027, -0.005200864514386059]
+    }
+  }
+}

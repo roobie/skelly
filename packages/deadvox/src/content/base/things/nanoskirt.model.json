@@ -1,0 +1,11 @@
+{
+  "id": "nanoskirt",
+  "file": "assets/models/nanoskirt.glb",
+  "parts": {
+    "nanoskirt": {
+      "node": "nanoskirt:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0.0003913578558731027, 0.004578968959387392, -0.006741692875700806]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "mag_adult_weaver",
+  "file": "assets/models/mag_adult_weaver.glb",
+  "parts": {
+    "mag_adult_weaver": {
+      "node": "mag_adult_weaver:compound",
+      "massKg": 0.039,
+      "centreOfMass": [1.3431833445247136e-7, 0.020299932840832764, -0.02059032907991941]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "minivan_bonnet",
+  "file": "assets/models/minivan_bonnet.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 13,
+      "centreOfMass": [1.818655303030303, 0.9545454545454546, 0],
+      "collision": [{ "min": [1.3125, 0.78125, -0.875], "max": [2.34375, 1.125, 0.875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

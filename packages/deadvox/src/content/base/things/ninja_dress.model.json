@@ -1,0 +1,11 @@
+{
+  "id": "ninja_dress",
+  "file": "assets/models/ninja_dress.glb",
+  "parts": {
+    "ninja_dress": {
+      "node": "ninja_dress:compound",
+      "massKg": 0.63,
+      "centreOfMass": [-0.00025025801232880546, 0.02232685280745306, -0.0015094139633483033]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "rune_iron_preservation_chest",
+  "file": "assets/models/rune_iron_preservation_chest.glb",
+  "parts": {
+    "rune_iron_preservation_chest": {
+      "node": "rune_iron_preservation_chest:compound",
+      "massKg": 48,
+      "centreOfMass": [-0.00008234307283657201, 0.2063212172049022, 0.0005443403700079218]
+    }
+  }
+}

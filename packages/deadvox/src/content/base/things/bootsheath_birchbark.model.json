@@ -1,0 +1,11 @@
+{
+  "id": "bootsheath_birchbark",
+  "file": "assets/models/bootsheath_birchbark.glb",
+  "parts": {
+    "bootsheath_birchbark": {
+      "node": "bootsheath_birchbark:compound",
+      "massKg": 0.03,
+      "centreOfMass": [-0.0027448210452752945, 0.008263215694104724, 0.001635651175560325]
+    }
+  }
+}

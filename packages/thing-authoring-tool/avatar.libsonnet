@@ -4,25 +4,8 @@ local hip(x) = { part: 'pelvis', solid: 'pelvis', fraction: [x, 0.12, 0.5] };
 // Shared finishes keep exposed skin continuous across separately posed parts.
 local skin = 'body-skin-player';
 local underwear = 'cloth-pants-player';
-// The arm's measures; shoulder to fingertip reaches mid-thigh on the standing figure.
-local arm = {
-  upperLength: 0.3, upperWidth: 0.085, upperDepth: 0.09,
-  foreLength: 0.25, foreWidth: 0.08, wristWidth: 0.06,
-  palmLength: 0.1, palmWidth: 0.085, palmThickness: 0.032, fingerLength: 0.08, thumbLength: 0.06,
-  seamOverlap: 0.01, handOverlap: 0.005, armChamfer: 0.03, wristChamfer: 0.02,
-  foreDepthExtra: 0.004, wristDepthExtra: 0.006, wristShare: 0.45,
-  fingerThicknessShare: 0.8, thumbThicknessShare: 0.7, fingerFrontShare: 0.9, thumbRootShare: 0.3,
-  thumbInset: 0.004, thumbProjection: 0.014,
-};
-// The leg's measures; `length` is hip joint to sole, so it matches the figure row's hip height and the shoe stands on
-// the ground.
-local leg = {
-  length: 0.82, thighLength: 0.42, thighWidth: 0.15, thighDepth: 0.16,
-  shinWidth: 0.11, shinDepth: 0.12,
-  shoeHeight: 0.09, shoeWidth: 0.1, toeReach: 0.21, heelReach: 0.06,
-  thighChamfer: 0.04, shinChamfer: 0.03, shoeChamfer: 0.04, kneeOverlap: 0.02, ankleOverlap: 0.01,
-  upperSideInset: 0.004, upperLengthInset: 0.008, upperBackShift: 0.004,
-};
+local arm = import 'arm-measures.libsonnet';
+local leg = import 'leg-measures.libsonnet';
 // A limb joint: the socket on the segment above, at the joint, faces down; the pin at the segment's own origin faces
 // up, so mated the lower segment hangs straight from the joint.
 local jointSocket(id, pos) = { id: id, mount: 'assembly-joint', gender: 'female', pos: pos, normal: [0, -1, 0], up: [0, 0, 1], required: true };

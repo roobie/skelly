@@ -1,0 +1,11 @@
+{
+  "id": "methanol_fuel_cell",
+  "file": "assets/models/methanol_fuel_cell.glb",
+  "parts": {
+    "methanol_fuel_cell": {
+      "node": "methanol_fuel_cell:compound",
+      "massKg": 9.5,
+      "centreOfMass": [-0.006687884725768458, 0.12003127288561645, 0.005831086831739994]
+    }
+  }
+}

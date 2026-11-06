@@ -1,0 +1,11 @@
+{
+  "id": "mittens",
+  "file": "assets/models/mittens.glb",
+  "parts": {
+    "mittens": {
+      "node": "mittens:compound",
+      "massKg": 0.13,
+      "centreOfMass": [5.704437308282877e-19, 0.01095073684841762, 0.02638428556436743]
+    }
+  }
+}

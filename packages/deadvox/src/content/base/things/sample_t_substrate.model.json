@@ -1,0 +1,14 @@
+{
+  "id": "sample_t_substrate",
+  "file": "assets/models/sample_t_substrate.glb",
+  "parts": {
+    "sample_t_substrate": {
+      "node": "sample_t_substrate:compound",
+      "massKg": 0.18,
+      "centreOfMass": [8.94774516821761e-7, 0.02799588403722262, 0]
+    }
+  },
+  "grip": { "at": [0, 0.028, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

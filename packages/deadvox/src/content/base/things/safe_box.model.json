@@ -1,0 +1,11 @@
+{
+  "id": "safe_box",
+  "file": "assets/models/safe_box.glb",
+  "parts": {
+    "safe_box": {
+      "node": "safe_box:compound",
+      "massKg": 2.7,
+      "centreOfMass": [-0.00012718452276579568, 0.06516587760827629, 0.0004242796189140217]
+    }
+  }
+}

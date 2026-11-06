@@ -1,0 +1,11 @@
+{
+  "id": "shotgun_trap",
+  "file": "assets/models/shotgun_trap.glb",
+  "parts": {
+    "shotgun_trap": {
+      "node": "shotgun_trap:compound",
+      "massKg": 2.7,
+      "centreOfMass": [0.00020952380952380948, 0.02148318194329756, -0.022164932562620428]
+    }
+  }
+}

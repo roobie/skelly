@@ -1,0 +1,11 @@
+{
+  "id": "router_table",
+  "file": "assets/models/router_table.glb",
+  "parts": {
+    "router_table": {
+      "node": "router_table:compound",
+      "massKg": 400,
+      "centreOfMass": [0.00020385669359813138, 0.49448166199832166, 0.0034470757957253467]
+    }
+  }
+}

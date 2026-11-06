@@ -1,0 +1,17 @@
+{
+  "id": "beacon_amber",
+  "file": "assets/models/beacon_amber.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 2,
+      "centreOfMass": [0, 0.06985294117647059, 0],
+      "collision": [
+        { "min": [-0.09375, 0, -0.09375], "max": [0.09375, 0.03125, 0.09375] },
+        { "min": [-0.09375, 0.03125, -0.09375], "max": [0.09375, 0.1875, 0.09375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

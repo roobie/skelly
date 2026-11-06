@@ -1,0 +1,300 @@
+[
+  {
+    "id": "qt_light_leg_guard",
+    "model": "qt_light_leg_guard",
+    "name": "Tempered steel leg guards",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 10,
+      "warmth": 20,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.5, "cut": 0.9, "pierce": 0.7 }
+    },
+    "description": "Quenched and tempered steel plates for the thighs and shins with domed knee cops and mail at the joints, strapped on with leather.",
+    "reference": "armor_qt_light_leg_guard",
+    "variants": ["xl_armor_qt_light_leg_guard"],
+    "notes": "Per leg a thigh plate and a shin plate crown up, a domed knee cop with a side wing, mail gussets beside the knee and a mail fringe at the hip, two buckled straps per plate. Slot shins follows the full brigandine leg guards of earlier batches. CHECK VOLUME: the reference volume is the pair packed together, while the model's box is the pair laid out side by side. The large size shares this model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "riot_leg_guards",
+    "model": "riot_leg_guards",
+    "name": "Riot leg guards",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Police"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 3,
+      "warmth": 20,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.3, "blunt": 0.6, "cut": 0.6, "pierce": 0.5 }
+    },
+    "description": "Moulded plastic shin shells with knee cups and hinged instep guards, padded inside and fastened with hook-and-loop straps.",
+    "reference": "armor_riot_leg",
+    "variants": [],
+    "notes": "Per leg a domed knee cup, a grey shin shell with a black raised ridge and dark padding along its edges, a hinged black instep guard and two black hook-and-loop straps. The reference also covers the feet; the instep guard stands for that, and the slot stays shins. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "bunker_pants",
+    "model": "bunker_pants",
+    "name": "Turnout trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 24,
+      "warmth": 30,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.2, "blunt": 0.2, "cut": 0.4, "pierce": 0.2 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left cargo" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right cargo" }
+      ]
+    },
+    "description": "Heavy flame-resistant firefighting trousers with reflective bands, knee patches and red braces.",
+    "reference": "bunker_pants",
+    "variants": [],
+    "notes": "Folded with reflective bands at the cuff end, a bellows cargo pocket, a black knee patch and red braces laid over the top. Heat protection is pending a fire damage type, so protects lists only the existing damage kinds. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "canvas_pants_padded",
+    "model": "canvas_pants_padded",
+    "name": "Patch-padded canvas trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 6,
+      "warmth": 25,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.25, "pierce": 0.1 }
+    },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" }
+      ]
+    },
+    "description": "Tough canvas trousers with a layer of cotton padding quilted over them in diamond stitching.",
+    "reference": "canvas_pants_padded",
+    "variants": [],
+    "notes": "Folded with the raised padding layer over the top face, quilted in diamonds with stitching a shade lighter than the cloth. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "carpet_greaves",
+    "model": "carpet_greaves",
+    "name": "Carpet greaves",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Infected"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 3,
+      "warmth": 10,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0, "blunt": 0.2, "cut": 0.3, "pierce": 0.2 }
+    },
+    "description": "Squares of carpet curled round the shins, open at the back, and held on with duct tape.",
+    "reference": "carpet_greaves",
+    "variants": [],
+    "notes": "Per leg one open carpet roll, its open back turned up to show the pile over the jute backing, taped twice. CHECK VOLUME: the reference volume is the pair packed together, while the model's box is the pair laid out side by side. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "carpet_legguards",
+    "model": "carpet_legguards",
+    "name": "Carpet leg guards",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Infected"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 5,
+      "warmth": 10,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0, "blunt": 0.2, "cut": 0.3, "pierce": 0.2 }
+    },
+    "description": "Squares of carpet curled round the shins and thighs, open at the back, and held on with duct tape.",
+    "reference": "carpet_legguards",
+    "variants": [],
+    "notes": "Per leg an open shin roll and a wider open thigh roll, each taped twice, open backs turned up to show the pile over the jute backing. Slot shins follows the full leg guards of earlier batches. CHECK VOLUME: the reference volume is the pair packed together, while the model's box is the pair laid out side by side. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "ch_chainmail_half_legs",
+    "model": "ch_chainmail_half_legs",
+    "name": "Hardened mail half-leggings",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "overlegs",
+      "encumbrance": 11,
+      "warmth": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.85, "pierce": 0.4 }
+    },
+    "description": "Hardened steel mail leggings that cover only the fronts and sides of the legs, laced closed up the back. They stop short of the feet, so they go on over footwear.",
+    "reference": "ch_chainmail_half_legs",
+    "variants": ["xl_ch_chainmail_half_legs", "xs_ch_chainmail_half_legs"],
+    "notes": "Laid flat, ridged in rows of rings, with leather-bound open edges and a zigzag lace each side. CHECK LENGTH: the reference longest side is 100 mm, the mail bundled up; laid out, the leggings run 760 mm. CHECK VOLUME: the reference volume is the mail bundled; the model's box is it laid flat. Slot overlegs is new: chaps and mail leggings go over trousers and under leg plates, and no earlier slot covers that layer. The large and small sizes share this model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "ch_chainmail_legs",
+    "model": "ch_chainmail_legs",
+    "name": "Hardened mail leggings",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "overlegs",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.85, "pierce": 0.4 }
+    },
+    "description": "Hardened steel mail leggings held up by straps from the belt. They stop short of the toes and heels, so they go on over footwear.",
+    "reference": "ch_chainmail_legs",
+    "variants": ["xl_ch_chainmail_legs", "xs_ch_chainmail_legs"],
+    "notes": "Laid flat, ridged in rows of rings, with a leather garter and belt point at the top and a stirrup strap under the open instep. CHECK LENGTH: the reference longest side is 110 mm, the mail bundled up; laid out, the leggings run 960 mm with the belt points. CHECK VOLUME: the reference volume is the mail bundled; the model's box is it laid flat. Slot overlegs is new: chaps and mail leggings go over trousers and under leg plates, and no earlier slot covers that layer. The large and small sizes share this model. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "chainmail_junk_legs",
+    "model": "ch_chainmail_legs",
+    "name": "Rusty mail leggings",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Infected"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "overlegs",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.65, "pierce": 0.3 }
+    },
+    "finishes": { "mail": "rust-red" },
+    "description": "Mail leggings held up by straps from the belt, rusted through in places and missing rings here and there.",
+    "reference": "chainmail_junk_legs",
+    "variants": [],
+    "notes": "Rides on the hardened mail leggings' model with rust-red mail; missing rings do not show. CHECK LENGTH and CHECK VOLUME as for the hardened leggings. Slot overlegs is new: chaps and mail leggings go over trousers and under leg plates, and no earlier slot covers that layer. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "ch_legguard_metal_sheets",
+    "model": "ch_legguard_metal_sheets",
+    "name": "Hardened sheet steel leg guards",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 7,
+      "warmth": 10,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.85, "pierce": 0.6 }
+    },
+    "description": "Crude guards of hardened sheet steel bent round the thighs and shins, with domed knee cops, riveted and strapped on with leather.",
+    "reference": "ch_legguard_metal_sheets",
+    "variants": [],
+    "notes": "Per leg a thigh plate and a shin plate bent in four facets, a domed knee cop, rivets at the plate ends and two buckled straps per plate. Hardened steel uses `steel-hardened`. CHECK VOLUME: the reference volume is the pair packed together, while the model's box is the pair laid out side by side. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "ch_legguard_metal_sheets_greaves",
+    "model": "ch_legguard_metal_sheets_greaves",
+    "name": "Hardened sheet steel greaves",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 3,
+      "warmth": 10,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.85, "pierce": 0.6 }
+    },
+    "description": "Crude hardened sheet steel plates bent round the shins, riveted and strapped on with leather.",
+    "reference": "ch_legguard_metal_sheets_greaves",
+    "variants": [],
+    "notes": "Per leg one shin plate bent in four facets, riveted at its ends, with two buckled straps. CHECK VOLUME: the reference volume is the pair packed together, while the model's box is the pair laid out side by side. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "ch_legguard_metal_sheets_hip",
+    "model": "ch_legguard_metal_sheets_hip",
+    "name": "Hardened sheet steel skirt",
+    "category": "clothing",
+    "size": [4, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "hips",
+      "encumbrance": 12,
+      "warmth": 5,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.4, "cut": 0.85, "pierce": 0.6 }
+    },
+    "description": "A loose skirt of cut-down hardened steel sheets riveted to a leather belt, hanging over the hips and upper thighs.",
+    "reference": "ch_legguard_metal_sheets_hip",
+    "variants": [],
+    "notes": "Laid flat, outside up: five overlapping plates with rolled hems, riveted to a buckled belt. Slot hips is new: the skirt hangs from the waist over the hips and thighs, under neither a belt's waist slot nor the leg guards' shins slot. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "ch_legguard_metal_sheets_knees",
+    "model": "ch_legguard_metal_sheets_knees",
+    "name": "Hardened sheet steel knee guards",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "knees",
+      "encumbrance": 2,
+      "warmth": 5,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.1, "blunt": 0.5, "cut": 0.85, "pierce": 0.6 }
+    },
+    "description": "Faceted cops of hardened sheet steel over the kneecaps, each with a side wing and a leather strap.",
+    "reference": "ch_legguard_metal_sheets_knees",
+    "variants": [],
+    "notes": "Standing dome up with a riveted boss, a wing on the outer side and a strap each way. CHECK VOLUME: the reference volume is the pair packed together, while the model's box is the pair laid out side by side. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "chaps_cut_resistant",
+    "model": "chaps_cut_resistant",
+    "name": "Chainsaw chaps",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "overlegs",
+      "encumbrance": 3,
+      "warmth": 10,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.8, "pierce": 0.3 }
+    },
+    "description": "Orange chaps of layered aramid that fray and clog a chainsaw's chain on contact, buckled round the backs of the legs.",
+    "reference": "chaps_cut_resistant",
+    "variants": [],
+    "notes": "Laid flat, outside up: two front panels quilted lengthwise, four buckled leg straps on each outer edge, a label patch and a webbing waist belt. CHECK VOLUME: the reference volume is the chaps folded; the model's box is them laid out. Slot overlegs is new: chaps and mail leggings go over trousers and under leg plates, and no earlier slot covers that layer. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  },
+  {
+    "id": "chaps_leather",
+    "model": "chaps_leather",
+    "name": "Leather chaps",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "overlegs",
+      "encumbrance": 3,
+      "warmth": 10,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.45, "pierce": 0.2 }
+    },
+    "description": "Black leather chaps buckled at the waist and zipped down the outside of each leg. Tough and light, with no pockets.",
+    "reference": "chaps_leather",
+    "variants": [],
+    "notes": "Laid flat, outside up: two leg panels with a tan-whipstitched welt and a zip down each outer edge, a buckled belt and a laced front. CHECK VOLUME: the reference volume is the chaps folded; the model's box is them laid out. Slot overlegs is new: chaps and mail leggings go over trousers and under leg plates, and no earlier slot covers that layer. The worn look is pending: clothing gets inventory and ground models only until a fitted worn family exists."
+  }
+]

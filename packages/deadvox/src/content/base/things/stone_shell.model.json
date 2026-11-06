@@ -1,0 +1,14 @@
+{
+  "id": "stone_shell",
+  "file": "assets/models/stone_shell.glb",
+  "parts": {
+    "stone_shell": {
+      "node": "stone_shell:compound",
+      "massKg": 0.14,
+      "centreOfMass": [0.0034453937063932743, 0.023331482272533108, -0.0021311405382315246]
+    }
+  },
+  "grip": { "at": [0.005, 0.029, -0.0020000000000000018], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

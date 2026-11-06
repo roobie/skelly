@@ -1,0 +1,10 @@
+{
+  "id": "poppy_bud",
+  "file": "assets/models/poppy_bud.glb",
+  "parts": {
+    "poppy_bud": { "node": "poppy_bud:compound", "massKg": 0.006, "centreOfMass": [0, 0.030158333333333318, 0] }
+  },
+  "grip": { "at": [0, 0.022, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

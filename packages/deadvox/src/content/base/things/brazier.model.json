@@ -1,0 +1,11 @@
+{
+  "id": "brazier",
+  "file": "assets/models/brazier.glb",
+  "parts": {
+    "brazier": {
+      "node": "brazier:compound",
+      "massKg": 18,
+      "centreOfMass": [0, 0.32465567765567765, -0.0022710622710622724]
+    }
+  }
+}

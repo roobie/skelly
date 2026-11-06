@@ -1,0 +1,11 @@
+{
+  "id": "mixer",
+  "file": "assets/models/mixer.glb",
+  "parts": {
+    "mixer": {
+      "node": "mixer:compound",
+      "massKg": 4.2,
+      "centreOfMass": [-0.00003867380632598853, 0.03514121159158503, -0.009467270370609328]
+    }
+  }
+}

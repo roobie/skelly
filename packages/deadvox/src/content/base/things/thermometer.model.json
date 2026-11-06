@@ -1,0 +1,11 @@
+{
+  "id": "thermometer",
+  "file": "assets/models/thermometer.glb",
+  "parts": {
+    "thermometer": {
+      "node": "thermometer:compound",
+      "massKg": 0.018,
+      "centreOfMass": [-0.0012847301951779578, 0.002769230769230774, 7.419458709036205e-21]
+    }
+  }
+}

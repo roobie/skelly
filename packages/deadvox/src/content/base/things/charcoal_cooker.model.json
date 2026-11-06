@@ -1,0 +1,11 @@
+{
+  "id": "charcoal_cooker",
+  "file": "assets/models/charcoal_cooker.glb",
+  "parts": {
+    "charcoal_cooker": {
+      "node": "charcoal_cooker:compound",
+      "massKg": 1.6,
+      "centreOfMass": [-0.0000635456017269293, 0.07911279007015652, -0.005550053966540744]
+    }
+  }
+}

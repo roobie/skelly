@@ -1,0 +1,11 @@
+{
+  "id": "rotovap",
+  "file": "assets/models/rotovap.glb",
+  "parts": {
+    "rotovap": {
+      "node": "rotovap:compound",
+      "massKg": 10,
+      "centreOfMass": [-0.02241266851357376, 0.13528825276910825, 0.0019436008676789597]
+    }
+  }
+}

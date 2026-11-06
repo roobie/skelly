@@ -1,0 +1,11 @@
+{
+  "id": "suspenders_cloth",
+  "file": "assets/models/suspenders_cloth.glb",
+  "parts": {
+    "suspenders_cloth": {
+      "node": "suspenders_cloth:compound",
+      "massKg": 0.21,
+      "centreOfMass": [8.064516129014716e-8, 0.002676451612903225, 0.06274862903225806]
+    }
+  }
+}

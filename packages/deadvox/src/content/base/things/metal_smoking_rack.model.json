@@ -1,0 +1,11 @@
+{
+  "id": "metal_smoking_rack",
+  "file": "assets/models/metal_smoking_rack.glb",
+  "parts": {
+    "metal_smoking_rack": {
+      "node": "metal_smoking_rack:compound",
+      "massKg": 5.8,
+      "centreOfMass": [-0.006229022704837119, 0.026438795656465952, 0.0002986179664363278]
+    }
+  }
+}

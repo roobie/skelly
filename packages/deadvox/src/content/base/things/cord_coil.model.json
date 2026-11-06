@@ -1,11 +1,5 @@
 {
   "id": "cord_coil",
   "file": "assets/models/cord_coil.glb",
-  "parts": {
-    "nylon_cord": {
-      "node": "nylon_cord:coil",
-      "massKg": 0.06,
-      "centreOfMass": [0.0017857142857142857, 0.010714285714285714, 0.0017857142857142857]
-    }
-  }
+  "parts": { "nylon_cord": { "node": "nylon_cord:coil", "massKg": 0.06, "centreOfMass": [0, 0.01357142857142857, 0] } }
 }

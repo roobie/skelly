@@ -1,0 +1,14 @@
+{
+  "id": "fishing_rod_2pc_packed",
+  "file": "assets/models/fishing_rod_2pc_packed.glb",
+  "parts": {
+    "fishing_rod_2pc_packed": {
+      "node": "fishing_rod_2pc_packed:compound",
+      "massKg": 0.45,
+      "centreOfMass": [-0.15929738001309104, 0.012130574769579136, 0.01750662515258194]
+    }
+  },
+  "grip": { "at": [-0.36, 0.012, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

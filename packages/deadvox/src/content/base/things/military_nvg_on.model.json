@@ -1,0 +1,11 @@
+{
+  "id": "military_nvg_on",
+  "file": "assets/models/military_nvg_on.glb",
+  "parts": {
+    "military_nvg_on": {
+      "node": "military_nvg_on:compound",
+      "massKg": 0.42,
+      "centreOfMass": [0.00238727959697733, 0.030326826196473557, 0.0010188916876574315]
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "forklift_steer_axle",
+  "file": "assets/models/forklift_steer_axle.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 60,
+      "centreOfMass": [0, 0.033967391304347824, 0],
+      "collision": [
+        { "min": [-0.0625, -0.0625, -0.40625], "max": [0.0625, 0.0625, 0.40625] },
+        { "min": [-0.09375, 0, -0.125], "max": [0.09375, 0.15625, 0.125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

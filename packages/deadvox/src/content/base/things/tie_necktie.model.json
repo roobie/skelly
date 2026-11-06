@@ -1,0 +1,11 @@
+{
+  "id": "tie_necktie",
+  "file": "assets/models/tie_necktie.glb",
+  "parts": {
+    "tie_necktie": {
+      "node": "tie_necktie:compound",
+      "massKg": 0.06,
+      "centreOfMass": [0.002294489538964347, 0.028924562672453094, 0.007836347075999896]
+    }
+  }
+}

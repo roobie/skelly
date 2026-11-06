@@ -1,0 +1,14 @@
+{
+  "id": "electric_lantern",
+  "file": "assets/models/electric_lantern.glb",
+  "parts": {
+    "electric_lantern": {
+      "node": "electric_lantern:compound",
+      "massKg": 0.45,
+      "centreOfMass": [-2.7446797772650355e-21, 0.07387088553833085, 0.00006880441707368866]
+    }
+  },
+  "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,10 @@
+{
+  "id": "oxycodone",
+  "file": "assets/models/oxycodone.glb",
+  "parts": {
+    "oxycodone": { "node": "oxycodone:vessel", "massKg": 0.041, "centreOfMass": [0, 0.033727272727272724, 0] }
+  },
+  "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

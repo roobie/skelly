@@ -396,11 +396,10 @@ export class PlayerMeshes {
       // The body arm bends on the same parts and pivots as the first-person rig, so both views share one arm.
       arm: [
         { name: FIGURE_PIVOT.elbow, parts: [armRig.fore.part], pivot: armRig.fore.pivot },
-        {
-          name: FIGURE_PIVOT.wrist,
-          parts: [armRig.hand.part, armRig.fingers.part, armRig.thumb.part],
-          pivot: armRig.hand.pivot,
-        },
+        { name: FIGURE_PIVOT.wrist, parts: [armRig.hand.part], pivot: armRig.hand.pivot },
+        // The world hand never curls, so knuckles and thumb stay straight; they are pivots so gloves can ride them.
+        { name: 'figure-knuckles', parts: [armRig.fingers.part], pivot: armRig.fingers.pivot },
+        { name: 'figure-thumb', parts: [armRig.thumb.part], pivot: armRig.thumb.pivot },
       ],
     };
     this.stancePoses = figure.stancePoses;

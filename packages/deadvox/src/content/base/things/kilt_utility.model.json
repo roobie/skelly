@@ -1,0 +1,11 @@
+{
+  "id": "kilt_utility",
+  "file": "assets/models/kilt_utility.glb",
+  "parts": {
+    "kilt_utility": {
+      "node": "kilt_utility:compound",
+      "massKg": 0.77,
+      "centreOfMass": [0.00043029124516594263, 0.02343861565688567, -0.0010508422731543199]
+    }
+  }
+}

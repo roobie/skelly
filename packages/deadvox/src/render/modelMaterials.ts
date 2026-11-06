@@ -33,6 +33,9 @@ const sheenable = (material: MeshStandardMaterial): MeshPhysicalMaterial => {
   return physical;
 };
 
+/** The highest metalness a model draws with; why is in `GRAPHICS.md`, "Look decisions". */
+export const DRAWN_METALLIC_LIMIT = 0.6;
+
 const applyMaterial = (loaded: Material, table: Readonly<Record<string, MaterialDef>>): Material => {
   if (!(Object.hasOwn(loaded.userData, 'materialId') || Object.hasOwn(loaded.userData, 'colourMultiplier'))) {
     return loaded;
@@ -58,7 +61,7 @@ const applyMaterial = (loaded: Material, table: Readonly<Record<string, Material
     definition.colour[2] * colourMultiplier[2],
     SRGBColorSpace,
   );
-  material.metalness = definition.finish.metallic;
+  material.metalness = Math.min(definition.finish.metallic, DRAWN_METALLIC_LIMIT);
   material.roughness = definition.finish.roughness;
   material.opacity = opacity;
   material.transparent = transparent;

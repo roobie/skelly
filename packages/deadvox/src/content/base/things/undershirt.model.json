@@ -1,0 +1,11 @@
+{
+  "id": "undershirt",
+  "file": "assets/models/undershirt.glb",
+  "parts": {
+    "undershirt": {
+      "node": "undershirt:compound",
+      "massKg": 0.15,
+      "centreOfMass": [0, 0.012629029229517433, 0.006372034800025038]
+    }
+  }
+}

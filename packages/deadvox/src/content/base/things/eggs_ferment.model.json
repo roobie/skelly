@@ -1,0 +1,14 @@
+{
+  "id": "eggs_ferment",
+  "file": "assets/models/eggs_ferment.glb",
+  "parts": {
+    "eggs_ferment": {
+      "node": "eggs_ferment:compound",
+      "massKg": 1.3,
+      "centreOfMass": [0.00013404074277991888, 0.0603230391911507, 0.00021872966614945694]
+    }
+  },
+  "grip": { "at": [0, 0.066, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

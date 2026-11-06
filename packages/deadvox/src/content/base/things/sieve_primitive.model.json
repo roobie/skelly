@@ -1,0 +1,11 @@
+{
+  "id": "sieve_primitive",
+  "file": "assets/models/sieve_primitive.glb",
+  "parts": {
+    "sieve_primitive": {
+      "node": "sieve_primitive:compound",
+      "massKg": 0.11,
+      "centreOfMass": [9.108413946517951e-20, 0.010935913670649123, 4.5542069732589755e-20]
+    }
+  }
+}

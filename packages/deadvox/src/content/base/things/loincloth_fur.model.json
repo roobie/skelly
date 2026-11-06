@@ -1,0 +1,11 @@
+{
+  "id": "loincloth_fur",
+  "file": "assets/models/loincloth_fur.glb",
+  "parts": {
+    "loincloth_fur": {
+      "node": "loincloth_fur:compound",
+      "massKg": 0.15,
+      "centreOfMass": [0, 0.008036438075742067, -0.003986898669396112]
+    }
+  }
+}

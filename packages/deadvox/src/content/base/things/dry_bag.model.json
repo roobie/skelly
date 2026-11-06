@@ -1,0 +1,11 @@
+{
+  "id": "dry_bag",
+  "file": "assets/models/dry_bag.glb",
+  "parts": {
+    "dry_bag": {
+      "node": "dry_bag:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0, 0.19426774227464322, -0.0024245338023188017]
+    }
+  }
+}

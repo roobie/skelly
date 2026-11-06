@@ -1,0 +1,7 @@
+{
+  "id": "wine_glass",
+  "file": "assets/models/wine_glass.glb",
+  "parts": {
+    "wine_glass": { "node": "wine_glass:compound", "massKg": 0.15, "centreOfMass": [0, 0.10551424287856072, 0] }
+  }
+}

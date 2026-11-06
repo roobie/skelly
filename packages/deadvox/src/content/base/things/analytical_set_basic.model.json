@@ -1,0 +1,11 @@
+{
+  "id": "analytical_set_basic",
+  "file": "assets/models/analytical_set_basic.glb",
+  "parts": {
+    "analytical_set_basic": {
+      "node": "analytical_set_basic:compound",
+      "massKg": 7,
+      "centreOfMass": [-0.0006870481936226231, 0.11932885143291715, -0.05747941727755654]
+    }
+  }
+}

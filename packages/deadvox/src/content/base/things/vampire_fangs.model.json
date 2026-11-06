@@ -1,0 +1,11 @@
+{
+  "id": "vampire_fangs",
+  "file": "assets/models/vampire_fangs.glb",
+  "parts": {
+    "vampire_fangs": {
+      "node": "vampire_fangs:compound",
+      "massKg": 0.007,
+      "centreOfMass": [5.882289438193151e-19, 0.006302149178255374, 0.011735777496839446]
+    }
+  }
+}

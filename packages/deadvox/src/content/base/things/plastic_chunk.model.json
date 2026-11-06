@@ -1,0 +1,11 @@
+{
+  "id": "plastic_chunk",
+  "file": "assets/models/plastic_chunk.glb",
+  "parts": {
+    "plastic_chunk": {
+      "node": "plastic_chunk:compound",
+      "massKg": 0.038,
+      "centreOfMass": [-0.004402724130920918, 0.006771498272006505, -0.00815592600121976]
+    }
+  }
+}

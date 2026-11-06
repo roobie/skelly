@@ -1,13 +1,7 @@
 {
   "id": "chocolate_bar",
   "file": "assets/models/chocolate_bar.glb",
-  "parts": {
-    "package": {
-      "node": "package:carton",
-      "massKg": 0.1,
-      "centreOfMass": [-0.0016666666666666666, 0.005000000000000001, -0.0015555555555555555]
-    }
-  },
+  "parts": { "package": { "node": "package:carton", "massKg": 0.1, "centreOfMass": [0, 0.004999999999999999, 0] } },
   "grip": { "at": [0, 0.005, 0], "turn": [0, 0, -90] },
   "hold": "upright",
   "roll": 0

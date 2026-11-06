@@ -1,0 +1,17 @@
+{
+  "id": "motorbike_shock",
+  "file": "assets/models/motorbike_shock.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-0.6006944444444444, 0.4913194444444444, 0.125],
+      "collision": [
+        { "min": [-0.6875, 0.3125, 0.09375], "max": [-0.53125, 0.65625, 0.15625] },
+        { "min": [-0.65625, 0.40625, 0.09375], "max": [-0.53125, 0.59375, 0.15625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

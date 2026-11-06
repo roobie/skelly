@@ -1,0 +1,14 @@
+{
+  "id": "rune_clay_tablet",
+  "file": "assets/models/rune_clay_tablet.glb",
+  "parts": {
+    "rune_clay_tablet": {
+      "node": "rune_clay_tablet:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-0.00005553370049829532, 0.013680566483084187, -0.00002445580907421978]
+    }
+  },
+  "grip": { "at": [0, 0.013000000000000001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

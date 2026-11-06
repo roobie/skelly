@@ -1,0 +1,11 @@
+{
+  "id": "microcentrifuge",
+  "file": "assets/models/microcentrifuge.glb",
+  "parts": {
+    "microcentrifuge": {
+      "node": "microcentrifuge:compound",
+      "massKg": 1.7,
+      "centreOfMass": [0, 0.05212058360529854, -0.026022384334805145]
+    }
+  }
+}

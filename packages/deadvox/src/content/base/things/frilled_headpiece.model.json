@@ -1,0 +1,11 @@
+{
+  "id": "frilled_headpiece",
+  "file": "assets/models/frilled_headpiece.glb",
+  "parts": {
+    "frilled_headpiece": {
+      "node": "frilled_headpiece:compound",
+      "massKg": 0.0088,
+      "centreOfMass": [0.00044144616190725666, 0.005084097458737227, 0.015319622740372013]
+    }
+  }
+}

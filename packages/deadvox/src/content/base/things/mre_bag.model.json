@@ -1,0 +1,5 @@
+{
+  "id": "mre_bag",
+  "file": "assets/models/mre_bag.glb",
+  "parts": { "mre_bag": { "node": "mre_bag:compound", "massKg": 0.24, "centreOfMass": [0, 0.010504038772213247, 0] } }
+}

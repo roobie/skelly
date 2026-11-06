@@ -1,0 +1,11 @@
+{
+  "id": "block_and_tackle",
+  "file": "assets/models/block_and_tackle.glb",
+  "parts": {
+    "block_and_tackle": {
+      "node": "block_and_tackle:compound",
+      "massKg": 1.6,
+      "centreOfMass": [-0.0008415673395430511, 0.01738436057869257, -0.00021502788709266496]
+    }
+  }
+}

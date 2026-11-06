@@ -1,0 +1,14 @@
+{
+  "id": "funnel",
+  "file": "assets/models/funnel.glb",
+  "parts": {
+    "funnel": {
+      "node": "funnel:compound",
+      "massKg": 0.03,
+      "centreOfMass": [0.0025242018537590116, 0.10297610710607621, 0]
+    }
+  },
+  "grip": { "at": [0, 0.07100000000000001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "hood_ninja",
+  "file": "assets/models/hood_ninja.glb",
+  "parts": {
+    "hood_ninja": {
+      "node": "hood_ninja:compound",
+      "massKg": 0.13,
+      "centreOfMass": [0.00002452516599551802, 0.16604819038011612, 0.00537183822982216]
+    }
+  }
+}

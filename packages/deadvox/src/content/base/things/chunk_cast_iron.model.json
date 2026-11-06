@@ -1,0 +1,11 @@
+{
+  "id": "chunk_cast_iron",
+  "file": "assets/models/chunk_cast_iron.glb",
+  "parts": {
+    "chunk_cast_iron": {
+      "node": "chunk_cast_iron:compound",
+      "massKg": 0.19,
+      "centreOfMass": [-0.0008948633223190147, 0.011763592670471612, 0.0002766596575548212]
+    }
+  }
+}

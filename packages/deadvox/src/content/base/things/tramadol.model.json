@@ -1,0 +1,8 @@
+{
+  "id": "tramadol",
+  "file": "assets/models/tramadol.glb",
+  "parts": { "tramadol": { "node": "tramadol:vessel", "massKg": 0.035, "centreOfMass": [0, 0.034125, 0] } },
+  "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "two_by_shin_guards",
+  "file": "assets/models/two_by_shin_guards.glb",
+  "parts": {
+    "two_by_shin_guards": {
+      "node": "two_by_shin_guards:compound",
+      "massKg": 0.49,
+      "centreOfMass": [0.1370003763643207, 0.01197929996236357, -0.00008129469326308662]
+    }
+  }
+}

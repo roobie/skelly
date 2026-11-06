@@ -1,0 +1,14 @@
+{
+  "id": "rune_stitched_satchel",
+  "file": "assets/models/rune_stitched_satchel.glb",
+  "parts": {
+    "rune_stitched_satchel": {
+      "node": "rune_stitched_satchel:compound",
+      "massKg": 0.9,
+      "centreOfMass": [0.0000023512814483894982, 0.12152010345638373, -0.004463907829767228]
+    }
+  },
+  "grip": { "at": [0, 0.12, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

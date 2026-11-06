@@ -1,0 +1,11 @@
+{
+  "id": "coffeemaker",
+  "file": "assets/models/coffeemaker.glb",
+  "parts": {
+    "coffeemaker": {
+      "node": "coffeemaker:compound",
+      "massKg": 1.2,
+      "centreOfMass": [0.0001156530408773679, 0.12252506995143604, -0.013095745022995526]
+    }
+  }
+}

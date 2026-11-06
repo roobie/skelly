@@ -1,0 +1,14 @@
+{
+  "id": "leather_bellow",
+  "file": "assets/models/leather_bellow.glb",
+  "parts": {
+    "leather_bellow": {
+      "node": "leather_bellow:compound",
+      "massKg": 1.5,
+      "centreOfMass": [-0.026478883469959538, 0.03957092456158555, 5.188336619279812e-7]
+    }
+  },
+  "grip": { "at": [-0.21600000000000003, 0.07400000000000001, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

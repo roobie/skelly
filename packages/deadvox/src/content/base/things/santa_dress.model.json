@@ -1,0 +1,11 @@
+{
+  "id": "santa_dress",
+  "file": "assets/models/santa_dress.glb",
+  "parts": {
+    "santa_dress": {
+      "node": "santa_dress:compound",
+      "massKg": 1.2,
+      "centreOfMass": [0, 0.03407464105580354, -0.004677087194031295]
+    }
+  }
+}

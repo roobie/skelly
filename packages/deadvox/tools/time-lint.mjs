@@ -18,6 +18,7 @@ const CLOCK_TOKENS = new Set(['sim', 'game', 'real']);
 const UNIT_TOKENS = new Set(['ms', 'milliseconds', 'seconds', 'minutes', 'hours', 'rpm', 'timestamp']);
 const TEMPORAL_SEMANTIC =
   /(?:time|duration|elapsed|interval|cooldown|windup|burntime|burnremaining|rotsafter|lastplayedat|startedat|expiresat|litat|timestamp)/;
+const TEMPORAL_SEMANTIC_START = new RegExp(`^${TEMPORAL_SEMANTIC.source}`);
 const nameTokens = (name) => (name.match(NAME_TOKEN) ?? []).map((token) => token.toLowerCase());
 const isUnitToken = (tokens, index) => {
   const token = tokens[index];
@@ -31,7 +32,11 @@ const isUnitToken = (tokens, index) => {
 };
 const hasTemporalName = (name) => {
   const tokens = nameTokens(name);
-  return tokens.some((_, index) => isUnitToken(tokens, index)) || TEMPORAL_SEMANTIC.test(tokens.join(''));
+  if (tokens.some((_, index) => isUnitToken(tokens, index))) {
+    return true;
+  }
+  // A temporal word must start where a name token starts, so `multimeter` and `qualitative` are not times.
+  return tokens.some((_, index) => TEMPORAL_SEMANTIC_START.test(tokens.slice(index).join('')));
 };
 const hasClockUnit = (name) => {
   const tokens = nameTokens(name);

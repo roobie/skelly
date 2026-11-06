@@ -1,0 +1,142 @@
+[
+  {
+    "id": "steel_bracer",
+    "model": "steel_bracer",
+    "name": "Steel arm harness",
+    "category": "clothing",
+    "size": [2, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "arms",
+      "encumbrance": 10,
+      "warmth": 10,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.15, "blunt": 0.45, "cut": 0.8, "pierce": 0.65 }
+    },
+    "description": "Steel plates for one arm: a forearm guard, a rounded elbow cup and an upper-arm plate, buckled on with leather straps. A row of strange marks is etched along the forearm.",
+    "reference": "mbracer_steel_single",
+    "variants": [],
+    "notes": "Laid out flat along x, wrist at -x, open side down, 560 mm long: a tapering forearm plate, an elbow cop with a side wing and an upper-arm plate, each with buckled brown leather straps, and five dark etched marks along the forearm plate as the magic made material (`steel-blued`). One guard for one arm: the reference marks it sided and the `arms` slot has no side, so a pair needs a sided slot or two items, as batch 090's arm guard notes. CHECK VOLUME (x5.5): the open shells lie apart along the arm with their straps out, a far looser box than the reference's packed volume. Id `steel_bracer` because the reference id reads poorly. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gambeson_gloves_parabolan",
+    "model": "gambeson_gloves_parabolan",
+    "name": "Shimmering wool arming mittens",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "hands",
+      "encumbrance": 15,
+      "warmth": 5,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.05, "blunt": 0.35, "cut": 0.45, "pierce": 0.45 }
+    },
+    "description": "Thick quilted mitts of a silvery wool that shimmers with faint colours, with long flared cuffs. Lighter and cooler than ordinary wool, and an arrow struggles to get through them.",
+    "reference": "gambeson_gloves_parabolan",
+    "variants": ["xl_gambeson_gloves_parabolan", "xs_gambeson_gloves_parabolan"],
+    "notes": "Laid flat side by side, backs up, fingers towards +z, each mitt 270 mm from cuff to fingertip: quilted in lines along the back and cuff, the flared cuff bound at its mouth. Built on `g.glovePair` with `mitten: true`. CHECK VOLUME (x11.9): the pair lies spread flat with thumbs out, while the reference volume is the thin pair stacked. Slot `hands`, as earlier clothing batches named it. Protection values are a judgement for wool quilting made to stop arrows: better against points than ordinary padding, fair against cuts and blows. The silvery wool is `cloth-shimmer`, with quilting, binding and laces in `cloth-purple` so the cloth reads as iridescent; an iridescent cloth finish that shifts hue with the view angle would suit it better. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gambeson_pants_parabolan",
+    "model": "gambeson_pants_parabolan",
+    "name": "Shimmering wool arming pants",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 13,
+      "warmth": 6,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.05, "blunt": 0.35, "cut": 0.45, "pierce": 0.45 }
+    },
+    "description": "Heavy trousers quilted from layers of a silvery wool that shimmers with faint colours, laced to a padded coat at the waist. Light for their thickness, and made to stop arrows.",
+    "reference": "gambeson_pants_parabolan",
+    "variants": ["xl_gambeson_pants_parabolan", "xs_gambeson_pants_parabolan"],
+    "notes": "Folded in a long bundle, 260 mm by 420 mm and 40 mm tall: the waistband at the far end with a fly below it and four lacing points lying over it and hanging down its edge, quilted lines along the legs, and the legs parted by a dark split (`velvet-black`, drawn flush) from the crotch to two bound cuffs at the near edge, so the bundle reads as trousers rather than a quilted mat. Slot `legs`, as the jeans have it. Protection values are a judgement for wool quilting made to stop arrows: better against points than ordinary padding, fair against cuts and blows. The silvery wool is `cloth-shimmer`, with quilting, binding and laces in `cloth-purple` so the cloth reads as iridescent; an iridescent cloth finish that shifts hue with the view angle would suit it better. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gambeson_parabolan",
+    "model": "gambeson_parabolan",
+    "name": "Shimmering wool gambeson",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 13,
+      "warmth": 6,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.05, "blunt": 0.35, "cut": 0.45, "pierce": 0.45 }
+    },
+    "description": "A long padded greatcoat quilted from a silvery wool that shimmers with faint colours. Half as thick as an ordinary gambeson, yet it stops arrows as well.",
+    "reference": "gambeson_parabolan",
+    "variants": ["xl_gambeson_parabolan", "xs_gambeson_parabolan"],
+    "notes": "Folded flat on a shelf, 400 mm by 380 mm and 60 mm tall, collar at +z: quilted lines down the body, a stand collar, a front closed with tied laces, sleeves quilted in rings along both sides and the long skirt folded back up over the hem end. Built on `g.jacket` and `g.quilt`. Slot `torso`, as batch 120's gambesons; its skirt covers the legs too, so encumbrance stays as the reference gives it. The reference layer is belted: it goes over other clothes. Protection values are a judgement for wool quilting made to stop arrows: better against points than ordinary padding, fair against cuts and blows. The silvery wool is `cloth-shimmer`, with quilting, binding and laces in `cloth-purple` so the cloth reads as iridescent; an iridescent cloth finish that shifts hue with the view angle would suit it better. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gambeson_parabolan_thinsleeved",
+    "model": "gambeson_parabolan_thinsleeved",
+    "name": "Thin-sleeved shimmering wool gambeson",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 12,
+      "warmth": 6,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.05, "blunt": 0.35, "cut": 0.45, "pierce": 0.45 }
+    },
+    "description": "A long quilted greatcoat of a silvery wool that shimmers with faint colours, its sleeves cut thin so the arms move freely. The skirt hangs below the knees.",
+    "reference": "gambeson_parabolan_thinsleeved",
+    "variants": ["xl_gambeson_parabolan_thinsleeved", "xs_gambeson_parabolan_thinsleeved"],
+    "notes": "Folded as the full gambeson, 380 mm by 380 mm and 58 mm tall, with thinner quilted sleeves along the sides. Its own row because it is narrower and heavier (3.15 kg against 1.66 kg, as the reference gives it). Slot `torso`, as batch 120's gambesons. Protection values are a judgement for wool quilting made to stop arrows: better against points than ordinary padding, fair against cuts and blows. The silvery wool is `cloth-shimmer`, with quilting, binding and laces in `cloth-purple` so the cloth reads as iridescent; an iridescent cloth finish that shifts hue with the view angle would suit it better. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "gambeson_parabolan_vest",
+    "model": "gambeson_parabolan_vest",
+    "name": "Sleeveless shimmering wool gambeson",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 9,
+      "warmth": 6,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.05, "blunt": 0.35, "cut": 0.45, "pierce": 0.45 }
+    },
+    "description": "A long sleeveless surcoat quilted from a silvery wool that shimmers with faint colours. The arms are bare, but the body and legs are covered against arrows.",
+    "reference": "gambeson_parabolan_vest",
+    "variants": ["xl_gambeson_parabolan_vest", "xs_gambeson_parabolan_vest"],
+    "notes": "Folded as the full gambeson, 360 mm by 380 mm and 55 mm tall, with bound armholes at both shoulders and no sleeves. Slot `torso`, as batch 120's sleeveless gambesons: it is padding, not a load vest. Protection values are a judgement for wool quilting made to stop arrows: better against points than ordinary padding, fair against cuts and blows. The silvery wool is `cloth-shimmer`, with quilting, binding and laces in `cloth-purple` so the cloth reads as iridescent; an iridescent cloth finish that shifts hue with the view angle would suit it better. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "parabolan_blouse",
+    "model": "parabolan_blouse",
+    "name": "Shimmering wool blouse",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "torso", "encumbrance": 1, "warmth": 5, "wearPerDamage": 0.002 },
+    "description": "A loose, old-fashioned blouse with wide sleeves and a laced neck, of a silvery wool that shimmers with faint colours. Look too long and its sheen seems to hold reflections of things that are not there.",
+    "reference": "parabolan_blouse",
+    "variants": [],
+    "notes": "Folded flat, 300 mm by 300 mm and 30 mm tall, collar at +z: a ruffled stand collar, a deep slit neck laced across with a violet cord whose ends hang loose, wide sleeves folded flat along the sides and ruffled cuffs at the hem end. Built on `g.jacket`. CHECK VOLUME (x5.4): a thin blouse folded flat has a looser box than the reference's packed volume. Slot `torso`, as the shirts have it. The reference gives no warmth; 5 is a judgement for thin wool. The silvery wool is `cloth-shimmer`, with quilting, binding and laces in `cloth-purple` so the cloth reads as iridescent; an iridescent cloth finish that shifts hue with the view angle would suit it better. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "parabolan_breeches",
+    "model": "parabolan_breeches",
+    "name": "Shimmering wool breeches",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "legs", "encumbrance": 2, "warmth": 5, "wearPerDamage": 0.002 },
+    "description": "Old-fashioned knee breeches of a silvery wool that shimmers with faint colours, buttoned at the front and the knees. Comfortable, but there are no pockets.",
+    "reference": "parabolan_breeches",
+    "variants": [],
+    "notes": "Folded flat, 240 mm by 340 mm and 30 mm tall, waistband at +z: a deep waistband with one button, a buttoned fall flap at the front, an inseam line and buttoned knee bands at the hem end. No pockets, so no `container`. Slot `legs`, as the jeans have it. The reference gives no warmth; 5 is a judgement for thin wool. The silvery wool is `cloth-shimmer`, with quilting, binding and laces in `cloth-purple` so the cloth reads as iridescent; an iridescent cloth finish that shifts hue with the view angle would suit it better. The worn look is pending: no worn model is authored."
+  }
+]

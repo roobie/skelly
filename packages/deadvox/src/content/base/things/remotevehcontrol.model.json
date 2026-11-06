@@ -1,0 +1,14 @@
+{
+  "id": "remotevehcontrol",
+  "file": "assets/models/remotevehcontrol.glb",
+  "parts": {
+    "remotevehcontrol": {
+      "node": "remotevehcontrol:compound",
+      "massKg": 0.79,
+      "centreOfMass": [-0.00047696170884687923, 0.02505399359621036, -0.0009881464099302602]
+    }
+  },
+  "grip": { "at": [0, 0.023, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

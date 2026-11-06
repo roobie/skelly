@@ -1,0 +1,11 @@
+{
+  "id": "tool_belt",
+  "file": "assets/models/tool_belt.glb",
+  "parts": {
+    "tool_belt": {
+      "node": "tool_belt:compound",
+      "massKg": 0.68,
+      "centreOfMass": [-0.018113040664437485, 0.02665890051414807, 0.06359982741883292]
+    }
+  }
+}

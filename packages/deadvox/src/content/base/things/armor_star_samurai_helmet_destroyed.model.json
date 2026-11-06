@@ -1,0 +1,11 @@
+{
+  "id": "armor_star_samurai_helmet_destroyed",
+  "file": "assets/models/armor_star_samurai_helmet_destroyed.glb",
+  "parts": {
+    "armor_star_samurai_helmet_destroyed": {
+      "node": "armor_star_samurai_helmet_destroyed:compound",
+      "massKg": 24,
+      "centreOfMass": [-1.830084624443361e-17, 0.13560507563445431, 0.000019127390923865515]
+    }
+  }
+}

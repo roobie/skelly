@@ -1,0 +1,14 @@
+{
+  "id": "nicotine_gum",
+  "file": "assets/models/nicotine_gum.glb",
+  "parts": {
+    "nicotine_gum": {
+      "node": "nicotine_gum:compound",
+      "massKg": 0.01,
+      "centreOfMass": [-0.0009783913565426167, 0.0020804321728691492, -0.00036014405762304903]
+    }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

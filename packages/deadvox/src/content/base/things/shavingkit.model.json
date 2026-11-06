@@ -1,0 +1,14 @@
+{
+  "id": "shavingkit",
+  "file": "assets/models/shavingkit.glb",
+  "parts": {
+    "shavingkit": {
+      "node": "shavingkit:compound",
+      "massKg": 0.13,
+      "centreOfMass": [-0.0004117001828153567, 0.02017550274223036, 0.00006361974405850094]
+    }
+  },
+  "grip": { "at": [0, 0.02, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

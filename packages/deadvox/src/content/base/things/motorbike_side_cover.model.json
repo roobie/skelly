@@ -1,0 +1,17 @@
+{
+  "id": "motorbike_side_cover",
+  "file": "assets/models/motorbike_side_cover.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 0.5,
+      "centreOfMass": [-0.28125, 0.5625, 0.1265625],
+      "collision": [
+        { "min": [-0.375, 0.46875, 0.09375], "max": [-0.1875, 0.65625, 0.15625] },
+        { "min": [-0.34375, 0.53125, 0.125], "max": [-0.21875, 0.59375, 0.15625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

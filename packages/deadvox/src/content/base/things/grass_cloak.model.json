@@ -1,0 +1,11 @@
+{
+  "id": "grass_cloak",
+  "file": "assets/models/grass_cloak.glb",
+  "parts": {
+    "grass_cloak": {
+      "node": "grass_cloak:compound",
+      "massKg": 0.61,
+      "centreOfMass": [0.0006740213523131616, 0.009423487544483987, -0.025910320284697513]
+    }
+  }
+}

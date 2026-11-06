@@ -1,0 +1,11 @@
+{
+  "id": "chair_wood",
+  "file": "assets/models/chair_wood.glb",
+  "parts": {
+    "chair_wood": {
+      "node": "chair_wood:compound",
+      "massKg": 7.1,
+      "centreOfMass": [0, 0.45926166021215675, 0.03621407644384577]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "bookplate",
+  "file": "assets/models/bookplate.glb",
+  "parts": {
+    "bookplate": {
+      "node": "bookplate:compound",
+      "massKg": 9.2,
+      "centreOfMass": [0.00013919479836809736, 0.036960895415659334, -0.01671426305084424]
+    }
+  }
+}

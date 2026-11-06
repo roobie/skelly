@@ -1,0 +1,11 @@
+{
+  "id": "jersey",
+  "file": "assets/models/jersey.glb",
+  "parts": {
+    "jersey": {
+      "node": "jersey:compound",
+      "massKg": 0.2,
+      "centreOfMass": [-0.00005810970617665835, 0.016737305558082418, 0.006491949422359682]
+    }
+  }
+}

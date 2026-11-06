@@ -1,0 +1,11 @@
+{
+  "id": "rigid_plastic_sheet",
+  "file": "assets/models/rigid_plastic_sheet.glb",
+  "parts": {
+    "rigid_plastic_sheet": {
+      "node": "rigid_plastic_sheet:compound",
+      "massKg": 13,
+      "centreOfMass": [-0.00029612091218200916, 0.006013515389956028, -0.00029612091218200916]
+    }
+  }
+}

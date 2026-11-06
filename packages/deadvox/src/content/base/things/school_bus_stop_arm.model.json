@@ -1,0 +1,17 @@
+{
+  "id": "school_bus_stop_arm",
+  "file": "assets/models/school_bus_stop_arm.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 3,
+      "centreOfMass": [-0.10827205882352942, 0, 0],
+      "collision": [
+        { "min": [-0.03125, -0.03125, -0.03125], "max": [0.1875, 0.03125, 0.03125] },
+        { "min": [-0.34375, -0.21875, -0.03125], "max": [0.09375, 0.21875, 0.03125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

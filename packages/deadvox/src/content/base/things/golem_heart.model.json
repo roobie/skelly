@@ -1,0 +1,14 @@
+{
+  "id": "golem_heart",
+  "file": "assets/models/golem_heart.glb",
+  "parts": {
+    "golem_heart": {
+      "node": "golem_heart:compound",
+      "massKg": 1.6,
+      "centreOfMass": [-0.00017037459593078532, 0.07613424605438297, 0.0003434112949229892]
+    }
+  },
+  "grip": { "at": [0, 0.046, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

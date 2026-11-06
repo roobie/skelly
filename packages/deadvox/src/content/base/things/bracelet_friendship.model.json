@@ -1,0 +1,11 @@
+{
+  "id": "bracelet_friendship",
+  "file": "assets/models/bracelet_friendship.glb",
+  "parts": {
+    "bracelet_friendship": {
+      "node": "bracelet_friendship:compound",
+      "massKg": 0.003,
+      "centreOfMass": [0, 0.0026077586206896546, 0.00030172413793103575]
+    }
+  }
+}

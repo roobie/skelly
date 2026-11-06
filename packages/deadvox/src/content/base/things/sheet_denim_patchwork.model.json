@@ -1,0 +1,11 @@
+{
+  "id": "sheet_denim_patchwork",
+  "file": "assets/models/sheet_denim_patchwork.glb",
+  "parts": {
+    "sheet_denim_patchwork": {
+      "node": "sheet_denim_patchwork:compound",
+      "massKg": 0.045,
+      "centreOfMass": [-4.8166572935929415e-19, 0.005978552018633542, -0.00037548524844720487]
+    }
+  }
+}

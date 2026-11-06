@@ -1,0 +1,11 @@
+{
+  "id": "mc_chainmail_arms",
+  "file": "assets/models/mc_chainmail_arms.glb",
+  "parts": {
+    "mc_chainmail_arms": {
+      "node": "mc_chainmail_arms:compound",
+      "massKg": 4.5,
+      "centreOfMass": [-0.006087992960563165, 0.005155267578593713, -5.611144384009018e-17]
+    }
+  }
+}

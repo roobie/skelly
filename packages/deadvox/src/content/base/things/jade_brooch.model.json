@@ -1,0 +1,11 @@
+{
+  "id": "jade_brooch",
+  "file": "assets/models/jade_brooch.glb",
+  "parts": {
+    "jade_brooch": {
+      "node": "jade_brooch:compound",
+      "massKg": 0.015,
+      "centreOfMass": [0.00008216432865731464, 0.005877755511022042, 6.4752991338382065e-21]
+    }
+  }
+}

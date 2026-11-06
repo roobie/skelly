@@ -1,0 +1,11 @@
+{
+  "id": "eboshi",
+  "file": "assets/models/eboshi.glb",
+  "parts": {
+    "eboshi": {
+      "node": "eboshi:compound",
+      "massKg": 0.17,
+      "centreOfMass": [0, 0.09839661995935392, 0.0004492459086533318]
+    }
+  }
+}

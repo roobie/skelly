@@ -1,0 +1,11 @@
+{
+  "id": "cowrie_bracelet",
+  "file": "assets/models/cowrie_bracelet.glb",
+  "parts": {
+    "cowrie_bracelet": {
+      "node": "cowrie_bracelet:compound",
+      "massKg": 0.0062,
+      "centreOfMass": [-1.1555192745722137e-18, 0.002569536423841059, -0.0007814569536423864]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "can_sealer",
+  "file": "assets/models/can_sealer.glb",
+  "parts": {
+    "can_sealer": {
+      "node": "can_sealer:compound",
+      "massKg": 15,
+      "centreOfMass": [0.005806944638993947, 0.16269738992389227, -0.053186876468848746]
+    }
+  }
+}

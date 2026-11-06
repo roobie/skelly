@@ -1,0 +1,11 @@
+{
+  "id": "santa_shorts",
+  "file": "assets/models/santa_shorts.glb",
+  "parts": {
+    "santa_shorts": {
+      "node": "santa_shorts:compound",
+      "massKg": 0.42,
+      "centreOfMass": [0.0000025656078098841172, 0.014989454917052595, -0.007987606809731916]
+    }
+  }
+}

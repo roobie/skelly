@@ -1,0 +1,17 @@
+{
+  "id": "combine_harvester_rear_axle",
+  "file": "assets/models/combine_harvester_rear_axle.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 320,
+      "centreOfMass": [-2.802806399132321, 0.6222546095444685, 0],
+      "collision": [
+        { "min": [-2.90625, 0.4375, -1.09375], "max": [-2.71875, 0.59375, 1.09375] },
+        { "min": [-3, 0.5, -0.34375], "max": [-2.59375, 0.875, 0.34375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

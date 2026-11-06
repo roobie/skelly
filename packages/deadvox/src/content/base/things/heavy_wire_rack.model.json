@@ -1,0 +1,11 @@
+{
+  "id": "heavy_wire_rack",
+  "file": "assets/models/heavy_wire_rack.glb",
+  "parts": {
+    "heavy_wire_rack": {
+      "node": "heavy_wire_rack:compound",
+      "massKg": 0.89,
+      "centreOfMass": [3.9585911667542696e-18, 0.005971485543369891, 0]
+    }
+  }
+}

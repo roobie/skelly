@@ -1,0 +1,7 @@
+{
+  "id": "denim_patch",
+  "file": "assets/models/denim_patch.glb",
+  "parts": {
+    "denim_patch": { "node": "denim_patch:compound", "massKg": 0.012, "centreOfMass": [0, 0.0010581395348837203, 0] }
+  }
+}

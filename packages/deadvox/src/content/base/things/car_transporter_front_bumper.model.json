@@ -1,0 +1,17 @@
+{
+  "id": "car_transporter_front_bumper",
+  "file": "assets/models/car_transporter_front_bumper.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 40,
+      "centreOfMass": [5.43801510989011, 0.8131868131868133, 0],
+      "collision": [
+        { "min": [5.375, 0.53125, -1.25], "max": [5.5, 1.09375, 1.25] },
+        { "min": [5.46875, 0.84375, -0.5], "max": [5.5, 0.90625, 0.5] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

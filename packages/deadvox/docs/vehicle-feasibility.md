@@ -4,6 +4,7 @@ read_if:
   - you're building or evaluating the project-owned double-precision Rapier bindings
   - you're promoting physics into simulation identity, saves or residency
   - you're checking the driving spike's findings and remaining integration obligations
+  - you're judging whether a parked fleet blueprint counts as driving evidence
 ---
 
 # Vehicle feasibility admission
@@ -32,7 +33,7 @@ Cross-runtime evidence uses the same module in Node and each supported browser; 
 
 The f64 0.36 build agreed bit for bit across Node, Chromium, Firefox and WebKit. The slope probe climbed and reversed; the edge probe lost support and kept falling; the thin obstacle stopped forward travel without tunnelling; the scrape retained forward travel while removing inward lateral motion. These are narrow findings, not complete vehicle handling evidence.
 
-`src/vehicles/feasibility/driving.ts`, `rapierDriver` and `runDriving`, uses a rotation-locked sphere against authored boxes. The proxy provides no wheels, steering, rollover or evidence about mass- and load-dependent handling. `src/config/vehicleFeasibility.jsonnet`, `driving`, owns probe geometry, inputs, expected behaviours and working bounds so tuning does not require another solver mechanism.
+`src/vehicles/feasibility/driving.ts`, `rapierDriver` and `runDriving`, uses a rotation-locked sphere against authored boxes. The proxy provides no wheels, steering, rollover or evidence about mass- and load-dependent handling. A parked fleet blueprint adds none either, because the probes read no vehicle content; its mass and capabilities are authored, not tested in motion. `src/config/vehicleFeasibility.jsonnet`, `driving`, owns probe geometry, inputs, expected behaviours and working bounds so tuning does not require another solver mechanism.
 
 The authored probes stay within their working penetration target. The separate higher-speed `test/vehicleDrivingFeasibility.test.ts`, `fixture`, exceeds that target while still stopping on the approach side: its assertion protects no tunnelling, not universal penetration acceptance. Edge departure leaves the supported envelope. Neither result proves an acceptable drop, recovery or speed policy.
 

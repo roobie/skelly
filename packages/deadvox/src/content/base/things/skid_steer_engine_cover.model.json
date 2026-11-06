@@ -1,0 +1,17 @@
+{
+  "id": "skid_steer_engine_cover",
+  "file": "assets/models/skid_steer_engine_cover.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 90,
+      "centreOfMass": [-0.8063092051070839, 0.9527002677100493, 0],
+      "collision": [
+        { "min": [-1.25, 0.5, -0.46875], "max": [-0.375, 1.40625, 0.46875] },
+        { "min": [-1, 1.40625, -0.3125], "max": [-0.5625, 1.4375, 0.3125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

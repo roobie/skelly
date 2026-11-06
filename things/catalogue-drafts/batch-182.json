@@ -1,0 +1,215 @@
+[
+  {
+    "id": "plastron_cotton",
+    "model": "plastron_cotton",
+    "name": "Fencing underarm protector",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.003,
+      "protects": { "acid": 0, "blunt": 0.05, "cut": 0.1, "pierce": 0.08 }
+    },
+    "description": "A quilted cotton half vest for fencing, worn under the jacket on the sword-arm side. It covers half the chest, the armpit and the upper arm, and ties at the waist.",
+    "reference": "plastron_cotton",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, 400 mm from shoulder to waist and 600 mm from the waist tie to the sleeve hem: a white quilted panel over one side of the chest with a short sleeve off its top corner, cream binding down the centre and along the waist, a strap running up over the far shoulder and a tie with a ring round the far side. CHECK VOLUME (x7.2): laid flat its box is much emptier than the reference packs the soft cloth. Cotton in `cloth-bright-white`. Slot `torso`, as it is worn next to the body under a fencing jacket. Protection is a judgement for a few layers of cotton: a little against cuts and points. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "plastron_plastic",
+    "model": "plastron_plastic",
+    "name": "Plastic chest protector",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 2,
+      "warmth": 5,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.1, "blunt": 0.3, "cut": 0.3, "pierce": 0.2 }
+    },
+    "description": "A rigid plastic plate with two moulded cups, strapped over the chest under a fencing jacket so a hard thrust glances off.",
+    "reference": "plastron_plastic",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, 260 mm tall and 300 mm across the plate, 540 mm across the side straps: a white plate curved across the chest with two domed cups, rolled rims at the neck and hem, black webbing straps over the shoulders and round the sides with black buckles. CHECK VOLUME (x19.9): laid flat with its straps out, its box is far emptier than the reference packs it. Plastic in `enamel-white`. Slot `torso`, as it is worn under a fencing jacket; it covers only the chest, but Deadvox has no smaller torso slot. Protection is a judgement for thin hard plastic: fair against blows and cuts, weak against points. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_chainmail_vest",
+    "model": "ch_chainmail_vest",
+    "name": "Tempered mail vest",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.05, "blunt": 0.15, "cut": 0.8, "pierce": 0.45 }
+    },
+    "finishes": { "mail": "steel-heat-tint", "ring": "steel-mail" },
+    "description": "A sleeveless shirt of tempered steel rings, made to measure, its leather straps spreading the weight over the shoulders and hips. Springier and tougher than hardened mail.",
+    "reference": "qt_chainmail_vest",
+    "variants": ["xl_qt_chainmail_vest", "xs_qt_chainmail_vest"],
+    "notes": "Rides on batch 179's `ch_chainmail_vest` model, laid out front up, neck towards -z, with the mail in `steel-heat-tint`, the tempered steel grade; the ring rows stay `steel-mail`. CHECK VOLUME LENGTH, as on the hardened vest: the reference gives the vest bundled up (100 mm, 1 L). Slot `vest`, as the other mail vests have it: it goes over clothes. The reference also lists the arms and legs, as straps and a short hem; Deadvox gives a wearable one slot. The reference gives no warmth. Protection is a judgement a step above the hardened mail vest. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_mirror_armor",
+    "model": "ch_mirror_armor",
+    "name": "Tempered steel mirror armour",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Military"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 5,
+      "warmth": 20,
+      "wearPerDamage": 0.0007,
+      "protects": { "acid": 0.1, "blunt": 0.38, "cut": 0.65, "pierce": 0.45 }
+    },
+    "finishes": { "plate": "steel-heat-tint" },
+    "description": "A leather jerkin set with a large mirror-polished disc over the chest and a smaller one over the belly, framed by riveted plates of tempered steel and finely decorated. Made to go on over mail or a brigandine.",
+    "reference": "qt_mirror_armor",
+    "variants": ["xl_qt_mirror_armor", "xs_qt_mirror_armor"],
+    "notes": "Rides on batch 180's `ch_mirror_armor` model, laid out flat, front up, neck towards -z, with the plates in `steel-heat-tint`, the tempered steel grade; the discs stay `mirror-silver` and the rims and studs `brass-dull`. CHECK VOLUME as on the hardened set: laid out flat its box is wider than the folded reference volume. The reference weight of 1 kg is kept, though real steel mirror armour weighs several times that. Slot `vest`, as the hardened set has it; it is meant to go over mail or a brigandine, which also take `vest` here, and layering both needs an outer armour layer Deadvox does not have yet. Protection is a judgement a step above the hardened set. The xl and xs sizes share the model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "survivor_adhoc_leather_shirt",
+    "model": "survivor_adhoc_leather_shirt",
+    "name": "Leather-padded shirt",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 8,
+      "warmth": 35,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.05, "blunt": 0.15, "cut": 0.3, "pierce": 0.15 }
+    },
+    "description": "A thick cotton shirt with pieces cut from old leather clothes pulled tight and sewn over the chest, shoulders and arms. The elbows are left bare so it still bends.",
+    "reference": "survivor_adhoc_leather_shirt",
+    "variants": [],
+    "notes": "Folded on a shelf, neck at +z, 380 mm by 330 mm and 90 mm tall: a khaki shirt with its sleeves folded along both sides, a round collar, leather panels in two shades sewn over the chest and the hem and over each sleeve above and below the elbow, each stitched along its edges. CHECK VOLUME (x4.8): the folded box is emptier than the reference packs it. Cotton in `cloth-khaki`, leather in `leather-chestnut` and `leather-tan`. Slot `torso`, as it is a shirt. Protection is a judgement for patched leather over thick cotton. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "survivor_adhoc_leather_torso",
+    "model": "survivor_adhoc_leather_torso",
+    "name": "Leather-padded sleeveless shirt",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "torso",
+      "encumbrance": 8,
+      "warmth": 35,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.05, "blunt": 0.15, "cut": 0.3, "pierce": 0.15 }
+    },
+    "description": "A thick cotton shirt with the sleeves cut off and leather from old clothes pulled tight and sewn over the chest and sides.",
+    "reference": "survivor_adhoc_leather_torso",
+    "variants": [],
+    "notes": "Folded on a shelf, neck at +z, 360 mm by 320 mm and 80 mm tall: a khaki shirt with a scooped neck and bound armholes, leather panels in two shades sewn over the chest, sides and hem, each stitched along its edges. CHECK VOLUME (x4.6): the folded box is emptier than the reference packs it. Slot `torso`, as it is a shirt. The reference keeps the sleeved shirt's warmth; it is copied as given. Protection is a judgement for patched leather over thick cotton. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "tireplate",
+    "model": "tireplate",
+    "name": "Tyre plate",
+    "category": "clothing",
+    "size": [4, 5],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 20,
+      "warmth": 10,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0.2, "blunt": 0.45, "cut": 0.45, "pierce": 0.3 }
+    },
+    "description": "Chunks cut from a car tyre, overlapped tread side out over the chest and bent over the shoulders, all held together with a lot of grey tape. Heavy and stiff, but it soaks up a blow.",
+    "reference": "tireplate",
+    "variants": [],
+    "notes": "Laid out flat, front up, neck towards -z, 560 mm from the shoulder chunks to the hem and 600 mm across the side tapes: rows of lugged tread chunks overlapping on a khaki cloth backing, a curved chunk over each shoulder, and bands of `tape-silver` across the rows, down the middle, over the shoulders and out to each side. CHECK LENGTH (x1.5): the reference gives a 400 mm longest side, short of a torso laid out with its shoulder pieces. Rubber in `rubber-offblack` with `rubber-tread` lugs. Slot `vest`, as batch 180's tyre cuirass and the other torso armour have it. Protection is a judgement for thick rubber: good against blows, fair against cuts. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "vest_jean_mod",
+    "model": "vest_jean_mod",
+    "name": "Armoured denim vest",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 15,
+      "warmth": 20,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.05, "blunt": 0.25, "cut": 0.5, "pierce": 0.35 }
+    },
+    "description": "A denim vest with steel plates riveted over the chest and belly. It stops a blade well enough, but the denim tears loose long before the plates give.",
+    "reference": "vest_jean_mod",
+    "variants": [],
+    "notes": "Folded on a shelf, neck at +z, 340 mm by 280 mm and 50 mm tall: a denim vest with a scooped neck and faded bound armholes, two tall steel plates over the chest panels and two short ones over the belly, each riveted at its corners, and metal buttons down the placket between them. Plates in `steel-bright`, the finish for mild steel. Slot `vest`, as the plain denim vest has it. Protection is a judgement for mild steel plates on denim; the high wear per damage stands for the cloth giving way. The plain vest's chest pockets are covered by the plates, so it carries none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "vest_jean_mod_ch",
+    "model": "vest_jean_mod",
+    "name": "Hardened armoured denim vest",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 15,
+      "warmth": 20,
+      "wearPerDamage": 0.002,
+      "protects": { "acid": 0.05, "blunt": 0.3, "cut": 0.6, "pierce": 0.45 }
+    },
+    "finishes": { "plate": "steel-hardened", "rivet": "steel-hardened" },
+    "description": "A denim vest with hardened steel plates riveted over the chest and belly. The plates will outlast the cloth by years.",
+    "reference": "vest_jean_mod_ch",
+    "variants": [],
+    "notes": "Shares the `vest_jean_mod` model with the plates and rivets in `steel-hardened`. Slot `vest`, as the plain denim vest has it. Protection is a judgement a step above the mild steel version; the wear per damage is the same because the denim is what fails. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "vest_leather_mod",
+    "model": "vest_leather_mod",
+    "name": "Armoured leather vest",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 12,
+      "warmth": 20,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0.08, "blunt": 0.25, "cut": 0.55, "pierce": 0.4 }
+    },
+    "description": "A thick leather vest laced up the front, with two columns of steel plates riveted down the chest and belly.",
+    "reference": "vest_leather_mod",
+    "variants": [],
+    "notes": "Folded on a shelf, neck at +z, 360 mm by 300 mm and 50 mm tall: a black leather vest with a scooped neck and bound armholes, six steel plates in two columns either side of the opening, each riveted at its corners, and tan laces across the opening. Plates in `steel-bright`. Slot `vest`, as the other armoured vests have it. Protection is a judgement for mild steel plates on thick leather. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "vest_leather_mod_ch",
+    "model": "vest_leather_mod",
+    "name": "Hardened armoured leather vest",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "vest",
+      "encumbrance": 12,
+      "warmth": 20,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.08, "blunt": 0.3, "cut": 0.65, "pierce": 0.5 }
+    },
+    "finishes": { "plate": "steel-hardened", "rivet": "steel-hardened" },
+    "description": "A thick leather vest laced up the front, with two columns of hardened steel plates riveted down the chest and belly.",
+    "reference": "vest_leather_mod_ch",
+    "variants": [],
+    "notes": "Shares the `vest_leather_mod` model with the plates and rivets in `steel-hardened`. The reference lists mild steel for both vests but names this one hardened; the hardened finish follows the name. Slot `vest`. Protection is a judgement a step above the mild steel version. The worn look is pending: no worn model is authored."
+  }
+]

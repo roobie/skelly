@@ -1,0 +1,14 @@
+{
+  "id": "ecig",
+  "file": "assets/models/ecig.glb",
+  "parts": {
+    "ecig": {
+      "node": "ecig:compound",
+      "massKg": 0.011,
+      "centreOfMass": [0.00005720823798627017, 0.004853546910755148, 0]
+    }
+  },
+  "grip": { "at": [-0.011000000000000003, 0.005, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

@@ -1,0 +1,11 @@
+{
+  "id": "helmet_cardboard",
+  "file": "assets/models/helmet_cardboard.glb",
+  "parts": {
+    "helmet_cardboard": {
+      "node": "helmet_cardboard:compound",
+      "massKg": 0.64,
+      "centreOfMass": [0.000006850760404960425, 0.1558319600732187, 0.021989890711723338]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "armguard_scrap",
+  "file": "assets/models/armguard_scrap.glb",
+  "parts": {
+    "armguard_scrap": {
+      "node": "armguard_scrap:compound",
+      "massKg": 0.8,
+      "centreOfMass": [-0.001998533455545369, 0.02847479376718607, 1.1202193905106312e-17]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "chainmail_chausses",
+  "file": "assets/models/chainmail_chausses.glb",
+  "parts": {
+    "chainmail_chausses": {
+      "node": "chainmail_chausses:compound",
+      "massKg": 2,
+      "centreOfMass": [2.481556140576319e-18, 0.06572707623675064, -0.0386078882299033]
+    }
+  }
+}

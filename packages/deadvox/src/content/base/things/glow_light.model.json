@@ -1,0 +1,14 @@
+{
+  "id": "glow_light",
+  "file": "assets/models/glow_light.glb",
+  "parts": {
+    "glow_light": {
+      "node": "glow_light:compound",
+      "massKg": 0.52,
+      "centreOfMass": [0, 0.04217680646588122, -0.008916120471269454]
+    }
+  },
+  "grip": { "at": [0, 0.006, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

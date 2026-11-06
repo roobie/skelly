@@ -1,0 +1,11 @@
+{
+  "id": "chestwrap_leather",
+  "file": "assets/models/chestwrap_leather.glb",
+  "parts": {
+    "chestwrap_leather": {
+      "node": "chestwrap_leather:compound",
+      "massKg": 0.47,
+      "centreOfMass": [-0.000043143573218761096, 0.034579663444325115, -0.09910526315789477]
+    }
+  }
+}

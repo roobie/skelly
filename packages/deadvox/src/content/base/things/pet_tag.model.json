@@ -1,0 +1,7 @@
+{
+  "id": "pet_tag",
+  "file": "assets/models/pet_tag.glb",
+  "parts": {
+    "pet_tag": { "node": "pet_tag:compound", "massKg": 0.0024, "centreOfMass": [-0.0020967741935483874, 0.001, 0] }
+  }
+}

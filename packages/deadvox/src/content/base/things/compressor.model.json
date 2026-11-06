@@ -1,0 +1,11 @@
+{
+  "id": "compressor",
+  "file": "assets/models/compressor.glb",
+  "parts": {
+    "compressor": {
+      "node": "compressor:compound",
+      "massKg": 7.5,
+      "centreOfMass": [-0.000028876829468837368, 0.0953260319026476, 0.0015015293537247163]
+    }
+  }
+}

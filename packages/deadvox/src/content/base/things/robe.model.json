@@ -1,0 +1,11 @@
+{
+  "id": "robe",
+  "file": "assets/models/robe.glb",
+  "parts": {
+    "robe": {
+      "node": "robe:compound",
+      "massKg": 1,
+      "centreOfMass": [-0.000003954414389674582, 0.024221392283399697, -0.0004905121515858848]
+    }
+  }
+}

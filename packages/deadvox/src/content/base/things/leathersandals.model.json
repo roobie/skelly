@@ -1,0 +1,11 @@
+{
+  "id": "leathersandals",
+  "file": "assets/models/leathersandals.glb",
+  "parts": {
+    "leathersandals": {
+      "node": "leathersandals:compound",
+      "massKg": 0.9,
+      "centreOfMass": [1.7988939411864147e-18, 0.019795356405281957, 0.0003202953876963486]
+    }
+  }
+}

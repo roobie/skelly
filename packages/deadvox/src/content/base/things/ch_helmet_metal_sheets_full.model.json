@@ -1,0 +1,11 @@
+{
+  "id": "ch_helmet_metal_sheets_full",
+  "file": "assets/models/ch_helmet_metal_sheets_full.glb",
+  "parts": {
+    "ch_helmet_metal_sheets_full": {
+      "node": "ch_helmet_metal_sheets_full:compound",
+      "massKg": 3.2,
+      "centreOfMass": [0.00009935777438585297, 0.1312535783198455, 0.0022320076030296868]
+    }
+  }
+}

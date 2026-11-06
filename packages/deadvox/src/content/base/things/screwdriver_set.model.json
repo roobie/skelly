@@ -1,0 +1,11 @@
+{
+  "id": "screwdriver_set",
+  "file": "assets/models/screwdriver_set.glb",
+  "parts": {
+    "screwdriver_set": {
+      "node": "screwdriver_set:compound",
+      "massKg": 0.29,
+      "centreOfMass": [-0.01573365759080045, 0.011605843320129035, 0.013805428805428809]
+    }
+  }
+}

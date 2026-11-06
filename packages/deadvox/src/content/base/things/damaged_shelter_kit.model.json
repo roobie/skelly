@@ -1,0 +1,11 @@
+{
+  "id": "damaged_shelter_kit",
+  "file": "assets/models/damaged_shelter_kit.glb",
+  "parts": {
+    "damaged_shelter_kit": {
+      "node": "damaged_shelter_kit:compound",
+      "massKg": 6.3,
+      "centreOfMass": [-0.002077284270039766, 0.08834995927363323, -0.00006610448309456495]
+    }
+  }
+}

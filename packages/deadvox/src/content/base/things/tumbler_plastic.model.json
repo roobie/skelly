@@ -1,0 +1,11 @@
+{
+  "id": "tumbler_plastic",
+  "file": "assets/models/tumbler_plastic.glb",
+  "parts": {
+    "tumbler_plastic": {
+      "node": "tumbler_plastic:compound",
+      "massKg": 0.058,
+      "centreOfMass": [0, 0.041646651270207856, 0]
+    }
+  }
+}

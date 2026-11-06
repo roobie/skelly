@@ -1,0 +1,11 @@
+{
+  "id": "mbag",
+  "file": "assets/models/mbag.glb",
+  "parts": {
+    "mbag": {
+      "node": "mbag:compound",
+      "massKg": 0.38,
+      "centreOfMass": [-0.00013891696220209117, 0.14738490656180514, -0.007230627882618844]
+    }
+  }
+}

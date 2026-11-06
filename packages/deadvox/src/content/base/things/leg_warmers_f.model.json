@@ -1,0 +1,11 @@
+{
+  "id": "leg_warmers_f",
+  "file": "assets/models/leg_warmers_f.glb",
+  "parts": {
+    "leg_warmers_f": {
+      "node": "leg_warmers_f:compound",
+      "massKg": 0.72,
+      "centreOfMass": [0.0001022917307718165, 0.017962433274914043, 0.005612666729099496]
+    }
+  }
+}

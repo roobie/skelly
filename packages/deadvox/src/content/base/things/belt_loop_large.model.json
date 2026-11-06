@@ -1,0 +1,11 @@
+{
+  "id": "belt_loop_large",
+  "file": "assets/models/belt_loop_large.glb",
+  "parts": {
+    "belt_loop_large": {
+      "node": "belt_loop_large:compound",
+      "massKg": 0.015,
+      "centreOfMass": [0.0024300911854103343, 0.014214792299898683, 0]
+    }
+  }
+}

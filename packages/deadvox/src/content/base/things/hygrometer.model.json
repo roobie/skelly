@@ -1,0 +1,11 @@
+{
+  "id": "hygrometer",
+  "file": "assets/models/hygrometer.glb",
+  "parts": {
+    "hygrometer": {
+      "node": "hygrometer:compound",
+      "massKg": 0.019,
+      "centreOfMass": [1.8291567587342205e-7, 0.026031644411926104, -0.00013407719041521872]
+    }
+  }
+}

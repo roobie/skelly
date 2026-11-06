@@ -1,0 +1,14 @@
+{
+  "id": "fishing_rod_basic",
+  "file": "assets/models/fishing_rod_basic.glb",
+  "parts": {
+    "fishing_rod_basic": {
+      "node": "fishing_rod_basic:compound",
+      "massKg": 0.38,
+      "centreOfMass": [-0.12147042963993736, 0.022601774221603747, 0.0000360758392763959]
+    }
+  },
+  "grip": { "at": [0, 0.023, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

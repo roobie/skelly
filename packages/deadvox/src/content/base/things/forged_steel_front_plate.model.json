@@ -1,0 +1,11 @@
+{
+  "id": "forged_steel_front_plate",
+  "file": "assets/models/forged_steel_front_plate.glb",
+  "parts": {
+    "forged_steel_front_plate": {
+      "node": "forged_steel_front_plate:compound",
+      "massKg": 2,
+      "centreOfMass": [0.00118402024584237, 0.01544613159797542, 0.008464569775849608]
+    }
+  }
+}

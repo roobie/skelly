@@ -1,0 +1,11 @@
+{
+  "id": "clownshoes",
+  "file": "assets/models/clownshoes.glb",
+  "parts": {
+    "clownshoes": {
+      "node": "clownshoes:compound",
+      "massKg": 2,
+      "centreOfMass": [-1.2903657520740155e-17, 0.04350420892274211, 0.022857662676822627]
+    }
+  }
+}

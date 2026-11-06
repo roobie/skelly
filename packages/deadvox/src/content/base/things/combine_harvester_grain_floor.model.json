@@ -1,0 +1,14 @@
+{
+  "id": "combine_harvester_grain_floor",
+  "file": "assets/models/combine_harvester_grain_floor.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 80,
+      "centreOfMass": [-0.359375, 2.8125, 0],
+      "collision": [{ "min": [-1.5625, 2.78125, -0.9375], "max": [0.84375, 2.84375, 0.9375] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

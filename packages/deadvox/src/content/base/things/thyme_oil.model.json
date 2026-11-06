@@ -1,0 +1,10 @@
+{
+  "id": "thyme_oil",
+  "file": "assets/models/thyme_oil.glb",
+  "parts": {
+    "thyme_oil": { "node": "thyme_oil:compound", "massKg": 0.035, "centreOfMass": [0, 0.03169383003492434, 0] }
+  },
+  "grip": { "at": [0, 0.031, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

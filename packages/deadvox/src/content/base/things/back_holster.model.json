@@ -1,0 +1,11 @@
+{
+  "id": "back_holster",
+  "file": "assets/models/back_holster.glb",
+  "parts": {
+    "back_holster": {
+      "node": "back_holster:compound",
+      "massKg": 0.7,
+      "centreOfMass": [0.07035859748100856, 0.028068146388538346, 0.003624576250216516]
+    }
+  }
+}

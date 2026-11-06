@@ -1,0 +1,7 @@
+{
+  "id": "aquarium_medium",
+  "file": "assets/models/aquarium_medium.glb",
+  "parts": {
+    "aquarium_medium": { "node": "aquarium_medium:compound", "massKg": 35, "centreOfMass": [0, 0.17710300429184553, 0] }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "caltrops_teeth",
+  "file": "assets/models/caltrops_teeth.glb",
+  "parts": {
+    "caltrops_teeth": {
+      "node": "caltrops_teeth:compound",
+      "massKg": 0.03,
+      "centreOfMass": [0.001946826758147516, 0.007822184105202974, 0.004463693539165238]
+    }
+  },
+  "grip": { "at": [0, 0.008, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

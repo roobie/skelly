@@ -1,0 +1,11 @@
+{
+  "id": "cassock",
+  "file": "assets/models/cassock.glb",
+  "parts": {
+    "cassock": {
+      "node": "cassock:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0, 0.030611476347005888, -0.0033805202229526964]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "boots_winter",
+  "file": "assets/models/boots_winter.glb",
+  "parts": {
+    "boots_winter": {
+      "node": "boots_winter:compound",
+      "massKg": 2.7,
+      "centreOfMass": [-1.13656165038883e-17, 0.08843201314278784, -0.03811578348003847]
+    }
+  }
+}

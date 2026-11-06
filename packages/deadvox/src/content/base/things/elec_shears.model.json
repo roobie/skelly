@@ -1,0 +1,14 @@
+{
+  "id": "elec_shears",
+  "file": "assets/models/elec_shears.glb",
+  "parts": {
+    "elec_shears": {
+      "node": "elec_shears:compound",
+      "massKg": 0.87,
+      "centreOfMass": [-0.004007399914821119, 0.03441215928449744, 0.0000047913117546848366]
+    }
+  },
+  "grip": { "at": [-0.02500000000000001, 0.035, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

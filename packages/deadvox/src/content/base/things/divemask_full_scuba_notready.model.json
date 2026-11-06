@@ -1,0 +1,11 @@
+{
+  "id": "divemask_full_scuba_notready",
+  "file": "assets/models/divemask_full_scuba_notready.glb",
+  "parts": {
+    "divemask_full_scuba_notready": {
+      "node": "divemask_full_scuba_notready:compound",
+      "massKg": 0.6,
+      "centreOfMass": [7.877116975189656e-7, 0.098090114218196, -0.01426230799527372]
+    }
+  }
+}

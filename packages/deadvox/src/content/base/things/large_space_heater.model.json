@@ -1,0 +1,11 @@
+{
+  "id": "large_space_heater",
+  "file": "assets/models/large_space_heater.glb",
+  "parts": {
+    "large_space_heater": {
+      "node": "large_space_heater:compound",
+      "massKg": 4.2,
+      "centreOfMass": [-0.00002062440774504787, 0.15562518306062162, 0.0014937037281024018]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "gambeson_gloves_canvas",
+  "file": "assets/models/gambeson_gloves_canvas.glb",
+  "parts": {
+    "gambeson_gloves_canvas": {
+      "node": "gambeson_gloves_canvas:compound",
+      "massKg": 0.4,
+      "centreOfMass": [1.7902275622288064e-18, 0.015298320540197365, -0.013553298320540197]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "tanbark",
+  "file": "assets/models/tanbark.glb",
+  "parts": {
+    "tanbark": {
+      "node": "tanbark:compound",
+      "massKg": 0.26,
+      "centreOfMass": [-0.001103337783711615, 0.016389242799923705, -0.0014285332824718667]
+    }
+  }
+}

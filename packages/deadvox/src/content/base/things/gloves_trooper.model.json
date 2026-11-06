@@ -1,0 +1,11 @@
+{
+  "id": "gloves_trooper",
+  "file": "assets/models/gloves_trooper.glb",
+  "parts": {
+    "gloves_trooper": {
+      "node": "gloves_trooper:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-0.00006529546196539337, 0.22269692023071044, -0.00018979214277941005]
+    }
+  }
+}

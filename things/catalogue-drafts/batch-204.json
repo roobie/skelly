@@ -1,0 +1,101 @@
+[
+  {
+    "id": "noetic_scanner",
+    "model": "psi_noetic_resonance_detector",
+    "name": "Crystal eye-test scanner",
+    "category": "tool",
+    "size": [6, 6],
+    "economy": { "usage": ["Medical"], "tiers": ["Tier3", "Tier4"] },
+    "description": "A heavy white bench machine like an eye-test rig: two eyepieces over a chin cup, a violet crystal set in its lid beside a sight glass of green fluid, a wired headband on a hook at one side and an arm cuff at the other.",
+    "reference": "psi_noetic_resonance_detector",
+    "variants": [],
+    "notes": "A housing 300 by 230 by 240 mm on a 340 by 350 mm base, 360 by 330 by 350 mm overall with the headband, cuff and sight glass. CHECK VOLUME (x4.25): the reference's 10 l is the housing alone; the eyepieces, chin rest, headband and cuff stand out round it, so the bounding box is far larger than the volume. The reference gives it no qualities; its use is a psychic diagnosis action that does not exist yet. It is carried, not a workstation: at 11 kg it moves like a heavy case."
+  },
+  {
+    "id": "morphic_reinforcement_serum",
+    "model": "morphic_serum_syringe",
+    "name": "Syringe of thick amber serum",
+    "category": "medical",
+    "size": [1, 2],
+    "economy": { "usage": ["Medical"], "tiers": ["Tier3", "Tier4"] },
+    "description": "A sealed, capped syringe of slow amber serum with violet crystal flecks hanging in it. Its label says it hardens the body against further mutation.",
+    "reference": "psionic_instability_remover",
+    "variants": [],
+    "notes": "One dose, so the whole syringe is one item and its 20 g includes the syringe: 10 ml in a barrel 70 mm long and 16 mm across, its plunger drawn back, 152 mm overall with plunger and needle cap. Box/volume x14.6 is the syringe round its 10 ml dose with the plunger drawn out. The barrel and dose are see-through in the game; the tile draws them opaque. Its effect needs a mutation-resistance status rule, which does not exist yet."
+  },
+  {
+    "id": "morphic_reversion_serum",
+    "model": "morphic_serum_syringe",
+    "name": "Syringe of glowing green serum",
+    "category": "medical",
+    "size": [1, 2],
+    "economy": { "usage": ["Medical"], "tiers": ["Tier3", "Tier4"] },
+    "finishes": { "cap": "plastic-charcoal", "dose": "syrup-green" },
+    "description": "A sealed, capped syringe of faintly glowing green serum with violet crystal flecks hanging in it. Its label says it undoes mutation and returns the body to its natural form.",
+    "reference": "psionic_purifier_vita",
+    "variants": [],
+    "notes": "Shares the thick serum's syringe, with a green dose and a dark cap so the two read apart; 20 g with the syringe as one item. The glow is only the green finish because no emissive liquid finish exists. Its effect needs a mutation-reversal rule, which does not exist yet."
+  },
+  {
+    "id": "symbol_test_cards",
+    "model": "cards_zener",
+    "name": "Deck of symbol test cards",
+    "category": "misc",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A deck of twenty-five white cards, each printed with one of five plain symbols: circle, cross, wavy lines, square or star. Once used to test people for the power to read minds.",
+    "reference": "cards_zener",
+    "variants": [],
+    "notes": "A deck 88 by 63 mm and 8 mm thick, blue backs, with its top card slid aside to show a circle. The name avoids the inventor's name."
+  },
+  {
+    "id": "field_projector",
+    "model": "force_field_generator",
+    "name": "Crystal field projector",
+    "category": "tool",
+    "size": [1, 2],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier3", "Tier4"] },
+    "description": "A flat device the size of two phones stacked, dark plastic on an aluminium tray, with a toggle switch at one end, a printed label and a violet crystal seated in a socket on its face.",
+    "reference": "force_field_generator",
+    "variants": [],
+    "notes": "150 by 75 by 18 mm, 168 mm with the toggle. The reference shows the label and the crystal socket on opposite faces; the model puts both on the face so the crystal shows. The name describes the device instead of its serial number and maker's mark. Its use, a personal shield, needs a shield effect that does not exist yet."
+  },
+  {
+    "id": "field_projector_broken",
+    "model": "force_field_generator_broken",
+    "name": "Melted crystal field projector",
+    "category": "misc",
+    "size": [1, 2],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier3", "Tier4"] },
+    "description": "A crystal field projector that has cooked from the inside: one end sags and drips, the shell is blistered brown and the toggle is bent stuck.",
+    "reference": "force_field_generator_broken",
+    "variants": [],
+    "notes": "A distinct state, so it has its own model: the projector's shape with a sagging -x end, three drips, scorched blisters and a bent toggle. It is scrap now; salvage could give back the crystal once a recipe needs it."
+  },
+  {
+    "id": "crystal_focusing_ring",
+    "model": "matrix_aligning_tool",
+    "name": "Crystal focusing ring",
+    "category": "tool",
+    "size": [3, 4],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier3", "Tier4"] },
+    "tool": { "qualities": { "mana_focus": 1 } },
+    "description": "An upright steel ring on a round foot, with six cut blue crystal shards clamped round its rim, all pointing at an empty point in its middle where the air ripples like heat haze.",
+    "reference": "matrix_aligning_tool",
+    "variants": [],
+    "notes": "252 mm tall, a ring 184 mm across on a 140 mm foot. CHECK VOLUME (x8.66): the reference's 750 ml is the metal and crystal; the ring is open, so its box is mostly air. The shimmer at the focal point is not modelled: no finish shows heat haze."
+  },
+  {
+    "id": "crystal_channeling_cluster",
+    "model": "matrix_channeling_tool",
+    "name": "Crystal channeling cluster",
+    "category": "tool",
+    "size": [2, 2],
+    "economy": { "usage": ["Infected"], "tiers": ["Tier3", "Tier4"] },
+    "tool": { "qualities": { "mana_channeling": 1 } },
+    "description": "Five violet crystal columns of different heights held upright on a steel plate in a soldered cage of straps, bands and wire. One column sits loose in its band, not quite touching the metal.",
+    "reference": "matrix_channeling_tool",
+    "variants": [],
+    "notes": "152 by 138 by 80 mm, the tallest column 140 mm with its point. The loose column stands 8 mm clear of the plate."
+  }
+]

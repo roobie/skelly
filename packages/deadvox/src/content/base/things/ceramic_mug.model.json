@@ -1,0 +1,11 @@
+{
+  "id": "ceramic_mug",
+  "file": "assets/models/ceramic_mug.glb",
+  "parts": {
+    "ceramic_mug": {
+      "node": "ceramic_mug:compound",
+      "massKg": 0.31,
+      "centreOfMass": [0.004059311981020167, 0.03590431000395414, 0]
+    }
+  }
+}

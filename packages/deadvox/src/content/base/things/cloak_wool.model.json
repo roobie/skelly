@@ -1,0 +1,11 @@
+{
+  "id": "cloak_wool",
+  "file": "assets/models/cloak_wool.glb",
+  "parts": {
+    "cloak_wool": {
+      "node": "cloak_wool:compound",
+      "massKg": 1.2,
+      "centreOfMass": [7.148899665193153e-8, 0.03025516805871631, -0.003555552907814941]
+    }
+  }
+}

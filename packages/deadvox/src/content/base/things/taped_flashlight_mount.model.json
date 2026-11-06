@@ -5,7 +5,7 @@
     "taped_flashlight_mount": {
       "node": "taped_flashlight_mount:compound",
       "massKg": 0.12,
-      "centreOfMass": [0.004458850574712642, 0.0181967816091954, -0.00016091954022988511]
+      "centreOfMass": [0.006395816572807723, 0.018630732099758653, 0]
     }
   }
 }

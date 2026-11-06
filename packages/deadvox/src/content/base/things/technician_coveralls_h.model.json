@@ -1,0 +1,11 @@
+{
+  "id": "technician_coveralls_h",
+  "file": "assets/models/technician_coveralls_h.glb",
+  "parts": {
+    "technician_coveralls_h": {
+      "node": "technician_coveralls_h:compound",
+      "massKg": 2,
+      "centreOfMass": [-1.1761140489865072e-19, 0.04676978127443773, -0.010247067466053689]
+    }
+  }
+}

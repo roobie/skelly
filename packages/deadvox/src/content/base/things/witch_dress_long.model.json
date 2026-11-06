@@ -1,0 +1,11 @@
+{
+  "id": "witch_dress_long",
+  "file": "assets/models/witch_dress_long.glb",
+  "parts": {
+    "witch_dress_long": {
+      "node": "witch_dress_long:compound",
+      "massKg": 1,
+      "centreOfMass": [0.0014010636255103145, 0.03309944147137645, -0.005207674133195303]
+    }
+  }
+}

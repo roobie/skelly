@@ -1,0 +1,11 @@
+{
+  "id": "plastron_cotton",
+  "file": "assets/models/plastron_cotton.glb",
+  "parts": {
+    "plastron_cotton": {
+      "node": "plastron_cotton:compound",
+      "massKg": 0.18,
+      "centreOfMass": [0.0712391996635222, 0.004374812233371386, -0.01739265757375473]
+    }
+  }
+}

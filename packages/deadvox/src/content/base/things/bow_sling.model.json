@@ -1,0 +1,11 @@
+{
+  "id": "bow_sling",
+  "file": "assets/models/bow_sling.glb",
+  "parts": {
+    "bow_sling": {
+      "node": "bow_sling:compound",
+      "massKg": 0.51,
+      "centreOfMass": [-0.144993986305448, 0.013077344447752305, 0.012003572491813039]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "sheath_birchbark",
+  "file": "assets/models/sheath_birchbark.glb",
+  "parts": {
+    "sheath_birchbark": {
+      "node": "sheath_birchbark:compound",
+      "massKg": 0.045,
+      "centreOfMass": [-0.025439244807173616, 0.007036918981400396, 0.00432761217555781]
+    }
+  }
+}

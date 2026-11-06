@@ -1,0 +1,14 @@
+{
+  "id": "box_snack",
+  "file": "assets/models/box_snack.glb",
+  "parts": {
+    "box_snack": {
+      "node": "box_snack:compound",
+      "massKg": 0.12,
+      "centreOfMass": [0, 0.060053333697821266, 0.0005123698094639294]
+    }
+  },
+  "grip": { "at": [0, 0.059000000000000004, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

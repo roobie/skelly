@@ -1,0 +1,11 @@
+{
+  "id": "bunny_ears_black",
+  "file": "assets/models/bunny_ears_black.glb",
+  "parts": {
+    "bunny_ears_black": {
+      "node": "bunny_ears_black:compound",
+      "massKg": 0.026,
+      "centreOfMass": [0, 0.1384864804964539, 0.0002792553191489362]
+    }
+  }
+}

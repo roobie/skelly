@@ -1,0 +1,14 @@
+{
+  "id": "cannabis",
+  "file": "assets/models/cannabis.glb",
+  "parts": {
+    "cannabis": {
+      "node": "cannabis:compound",
+      "massKg": 0.0055,
+      "centreOfMass": [0.0008688212927756658, 0.005634980988593154, -0.0003288973384030418]
+    }
+  },
+  "grip": { "at": [0, 0.001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

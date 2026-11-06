@@ -1,0 +1,11 @@
+{
+  "id": "tshirt_cropped",
+  "file": "assets/models/tshirt_cropped.glb",
+  "parts": {
+    "tshirt_cropped": {
+      "node": "tshirt_cropped:compound",
+      "massKg": 0.12,
+      "centreOfMass": [0, 0.010742142331546299, 0.00015704824976348186]
+    }
+  }
+}

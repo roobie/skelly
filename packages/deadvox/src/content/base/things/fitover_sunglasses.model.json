@@ -1,0 +1,11 @@
+{
+  "id": "fitover_sunglasses",
+  "file": "assets/models/fitover_sunglasses.glb",
+  "parts": {
+    "fitover_sunglasses": {
+      "node": "fitover_sunglasses:compound",
+      "massKg": 0.062,
+      "centreOfMass": [-0.002185694249649366, 0.03356213183730714, -0.0003189340813464228]
+    }
+  }
+}

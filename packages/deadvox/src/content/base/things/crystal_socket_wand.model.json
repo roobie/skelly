@@ -1,0 +1,14 @@
+{
+  "id": "crystal_socket_wand",
+  "file": "assets/models/crystal_socket_wand.glb",
+  "parts": {
+    "crystal_socket_wand": {
+      "node": "crystal_socket_wand:compound",
+      "massKg": 0.14,
+      "centreOfMass": [-0.055836817015034845, 0, 0]
+    }
+  },
+  "grip": { "at": [-0.085, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

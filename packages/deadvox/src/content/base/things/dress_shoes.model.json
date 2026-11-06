@@ -1,0 +1,11 @@
+{
+  "id": "dress_shoes",
+  "file": "assets/models/dress_shoes.glb",
+  "parts": {
+    "dress_shoes": {
+      "node": "dress_shoes:compound",
+      "massKg": 0.95,
+      "centreOfMass": [-1.2894599112524601e-17, 0.04128422600808923, -0.0170740286799853]
+    }
+  }
+}

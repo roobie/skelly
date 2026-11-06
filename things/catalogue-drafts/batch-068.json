@@ -1,0 +1,163 @@
+[
+  {
+    "id": "flute",
+    "model": "flute",
+    "name": "Flute",
+    "category": "tool",
+    "size": [1, 7],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A silver concert flute with a lip plate and a row of keys.",
+    "reference": "flute",
+    "variants": ["bone_flute", "clarinet", "trumpet"],
+    "notes": "660 mm long and 19 mm across: a silver tube with a crown cap, an oval lip plate with its mouth hole, two joint rings and twelve key cups on a side rod. metal-silver draws the tube and keys, steel-mirror the cups. The clarinet and trumpet ride on this model as the reference lists them, but a clarinet's bell and a trumpet's coiled tube want their own rows; the bone flute and clarinet have their own drafts recolouring it. No tool quality: playing music has no mechanic yet."
+  },
+  {
+    "id": "bone_flute",
+    "model": "flute",
+    "name": "Bone flute",
+    "category": "tool",
+    "size": [1, 7],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "finishes": { "body": "bone", "cup": "bone", "hole": "plastic-matte-black", "keys": "bone" },
+    "description": "A long flute carved from bone, its holes cut by hand.",
+    "reference": "bone_flute",
+    "variants": [],
+    "notes": "Rides on the flute model with every slot in bone and the cups in bone too, so they read as raised finger holes rather than keys. A real bone flute is shorter and has no key work; the reference's 250 g is lighter than the flute model's, so set the mass at 0.25 kg when variant masses exist."
+  },
+  {
+    "id": "clarinet",
+    "model": "flute",
+    "name": "Clarinet",
+    "category": "tool",
+    "size": [1, 7],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "finishes": {
+      "body": "lacquer-black",
+      "cup": "metal-silver",
+      "hole": "plastic-matte-black",
+      "keys": "metal-silver"
+    },
+    "description": "A black woodwind with silver keys.",
+    "reference": "clarinet",
+    "variants": [],
+    "notes": "Rides on the flute model with the body and joints in lacquer-black and the keys in metal-silver. A clarinet has a mouthpiece, a reed and a flared bell, which this model lacks; it wants its own row. The reference weighs 550 g."
+  },
+  {
+    "id": "kantele",
+    "model": "kantele",
+    "name": "Kantele",
+    "category": "tool",
+    "size": [5, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A small wooden zither with five steel strings, played on the lap.",
+    "reference": "kantele",
+    "variants": [],
+    "notes": "460 mm long, 150 mm across the pin end and 70 mm across the tail, 55 mm deep, plus a short tail wing: a birch box with a pine soundboard, a round sound hole, five tuning pins in a slanted row and a steel tail bar. Strings are 2 mm strips, the finest grain. No tool quality: playing music has no mechanic yet."
+  },
+  {
+    "id": "krar_golden",
+    "model": "krar_golden",
+    "name": "Golden lyre",
+    "category": "tool",
+    "size": [8, 10],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier4"] },
+    "description": "A bowl lyre cast all in gold, strung with six steel strings. Very heavy.",
+    "reference": "krar_golden",
+    "variants": ["krar"],
+    "notes": "960 mm tall and 760 mm across the yoke: a round bowl sound box 360 mm across with a brass-coloured face, two arms splaying up to a crossbar, a bridge and tailpiece, six pegs and six strings. Standing upright, face on +z. CHECK VOLUME (x8.5): the box counts the open frame between the arms; the solid parts are near the reference's 12 L. The 13 kg mass is the reference's solid-gold figure. The size is a placeholder for a thing too big for a pack. The plain wooden krar has its own draft recolouring this model."
+  },
+  {
+    "id": "krar",
+    "model": "krar_golden",
+    "name": "Lyre",
+    "category": "tool",
+    "size": [8, 10],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "finishes": { "bowl": "wood-walnut", "frame": "wood-oak", "skin": "skin-rawhide", "string": "cord-cotton" },
+    "description": "A bowl lyre of carved wood with a skin face and six strings.",
+    "reference": "krar",
+    "variants": [],
+    "notes": "Rides on the golden lyre's model with the bowl and frame in wood and the face in rawhide. The reference weighs 2.5 kg against the golden model's 13 kg; set that mass when variant masses exist. CHECK VOLUME as the golden lyre."
+  },
+  {
+    "id": "ukulele",
+    "model": "ukulele",
+    "name": "Ukulele",
+    "category": "tool",
+    "size": [2, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A small four-string guitar with a pale wooden top.",
+    "reference": "ukulele",
+    "variants": [],
+    "notes": "580 mm long: a figure-eight body 240 mm long, 165 mm across and 60 mm deep with a pine top, a sound hole and a dark bridge, a walnut fingerboard with twelve frets, a bone nut, a headstock with four tuner posts and white buttons beneath, and four strings. Lying top up, head on +x, held by the neck. The box is 2.6 times the reference's 2.5 L because of the neck and headstock. No tool quality: playing music has no mechanic yet."
+  },
+  {
+    "id": "violin",
+    "model": "violin",
+    "name": "Violin",
+    "category": "tool",
+    "size": [3, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A factory-made violin with an arched top, black fittings and four steel strings.",
+    "reference": "violin",
+    "variants": [],
+    "notes": "600 mm long: a body 355 mm long and 205 mm across with ribs, a stepped arched top, two f-holes and a bridge, a black tailpiece, chin rest and fingerboard, a pegbox with four pegs and a scroll. Lying top up, scroll on +x, held by the neck. The reference mentions a holder for a bow; a bow is 750 mm, longer than the violin, so it is not drawn. The box is 3 times the reference's 2.5 L because of the neck and the round body's corners. No tool quality: playing music has no mechanic yet."
+  },
+  {
+    "id": "violin_golden",
+    "model": "violin",
+    "name": "Golden fiddle",
+    "category": "tool",
+    "size": [3, 6],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier4"] },
+    "finishes": {
+      "bridge": "brass-polished",
+      "ebony": "metal-gold",
+      "hole": "plastic-matte-black",
+      "ribs": "metal-gold",
+      "string": "steel-mirror",
+      "top": "metal-gold"
+    },
+    "description": "A fiddle made all of gold, heavy in the hand and finely worked.",
+    "reference": "violin_golden",
+    "variants": [],
+    "notes": "Rides on the violin model with every wooden and black slot in metal-gold, the f-holes kept dark and the strings in steel. The reference's 13 kg is far more than the 0.5 kg violin model; set that mass when variant masses exist, or give it its own row then."
+  },
+  {
+    "id": "dog_whistle",
+    "model": "dog_whistle",
+    "name": "Dog whistle",
+    "category": "tool",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "description": "A small steel whistle pitched too high for people to hear. Dogs hear it.",
+    "reference": "dog_whistle",
+    "variants": ["dog_whistle_wood"],
+    "notes": "70 mm long and 12 mm across: a polished steel tube with a flattened mouthpiece, a sound window, a darker tuning sleeve and a lanyard ring. Directing pets with it needs a pet-command mechanic that does not exist yet; no tool quality."
+  },
+  {
+    "id": "dog_whistle_wood",
+    "model": "dog_whistle",
+    "name": "Wooden dog whistle",
+    "category": "tool",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1"] },
+    "finishes": { "body": "wood-oak", "hole": "plastic-matte-black", "sleeve": "wood-walnut" },
+    "description": "A small turned wooden whistle pitched too high for people to hear.",
+    "reference": "dog_whistle_wood",
+    "variants": [],
+    "notes": "Rides on the dog whistle model with the tube in oak and the sleeve in walnut. The reference weighs 50 g against the steel whistle's 22 g; set that mass when variant masses exist."
+  },
+  {
+    "id": "elec_shears",
+    "model": "elec_shears",
+    "name": "Electric shears",
+    "category": "tool",
+    "size": [2, 5],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1", "Tier2"] },
+    "description": "Corded clippers with a toothed comb, made for shearing livestock. Dead without mains power.",
+    "reference": "elec_shears",
+    "variants": [],
+    "notes": "330 mm body plus a short cord stub and plug, 476 mm overall, 80 mm across: a blue moulded motor body with a rubber grip band and a slide switch, a head carrying a ten-tooth comb under a cutter plate and a tension nut. The cord is drawn as a short straight stub; a full cord would be coiled. It carries no quality: `shearing` is left out until Deadvox has livestock shearing. It needs mains power to run."
+  }
+]

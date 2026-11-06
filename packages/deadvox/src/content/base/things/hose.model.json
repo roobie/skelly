@@ -1,0 +1,11 @@
+{
+  "id": "hose",
+  "file": "assets/models/hose.glb",
+  "parts": {
+    "hose": {
+      "node": "hose:compound",
+      "massKg": 0.42,
+      "centreOfMass": [0.0028406567204850466, 0.0379103481163567, 0.002241978336398937]
+    }
+  }
+}

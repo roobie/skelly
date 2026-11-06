@@ -1,0 +1,11 @@
+{
+  "id": "boots_scrap",
+  "file": "assets/models/boots_scrap.glb",
+  "parts": {
+    "boots_scrap": {
+      "node": "boots_scrap:compound",
+      "massKg": 2.1,
+      "centreOfMass": [-0.00019686728758697123, 0.07434497042153959, -0.03684459216449841]
+    }
+  }
+}

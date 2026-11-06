@@ -1,0 +1,11 @@
+{
+  "id": "suit_xlblack_dragon_scale",
+  "file": "assets/models/suit_xlblack_dragon_scale.glb",
+  "parts": {
+    "suit_xlblack_dragon_scale": {
+      "node": "suit_xlblack_dragon_scale:compound",
+      "massKg": 8,
+      "centreOfMass": [1.8276857841765036e-7, 0.014578535658149637, -0.0619338743283253]
+    }
+  }
+}

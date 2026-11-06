@@ -1,0 +1,11 @@
+{
+  "id": "zentai",
+  "file": "assets/models/zentai.glb",
+  "parts": {
+    "zentai": {
+      "node": "zentai:compound",
+      "massKg": 0.2,
+      "centreOfMass": [2.500294042981443e-19, 0.019762821158690175, -0.010978539042821157]
+    }
+  }
+}

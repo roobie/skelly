@@ -1,0 +1,11 @@
+{
+  "id": "improvised_oven",
+  "file": "assets/models/improvised_oven.glb",
+  "parts": {
+    "improvised_oven": {
+      "node": "improvised_oven:compound",
+      "massKg": 2.1,
+      "centreOfMass": [0.004884341342170672, 0.0728583264291632, -0.020833305716652848]
+    }
+  }
+}

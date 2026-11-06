@@ -1,0 +1,14 @@
+{
+  "id": "power_supply",
+  "file": "assets/models/power_supply.glb",
+  "parts": {
+    "power_supply": {
+      "node": "power_supply:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0.0000544165054803354, 0.030656608639587364, 0.000844100580270793]
+    }
+  },
+  "grip": { "at": [0, 0.03, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

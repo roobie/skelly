@@ -1,0 +1,239 @@
+[
+  {
+    "id": "antarvasa",
+    "model": "antarvasa",
+    "name": "Monk's wrap skirt",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 7, "warmth": 8, "wearPerDamage": 0.0012 },
+    "description": "A long rectangle of saffron cotton, sewn together from strips, that wraps round the waist and falls to the ankles, held up by a cloth belt.",
+    "reference": "antarvasa",
+    "variants": [],
+    "notes": "Folded flat, 340 mm by 280 mm and 30 mm tall: saffron cloth with raised yellow seams laid out in a grid of patches like paddy fields and a border along the front edge, the brown cloth belt lying across the top. Slot `legs`, as the jeans have it. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "b_shorts",
+    "model": "b_shorts",
+    "name": "Basketball shorts",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 5, "wearPerDamage": 0.0012 },
+    "description": "Loose knee-length sports shorts in light mesh with an elastic waist and a drawstring. No pockets.",
+    "reference": "b_shorts",
+    "variants": [],
+    "notes": "Folded once, 360 mm by 300 mm and 30 mm tall: navy with a white stripe down each side, a wide elastic waistband and a white drawstring hanging from two eyelets. No pockets, so no container. Slot `legs`. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "breeches",
+    "model": "breeches",
+    "name": "Breeches",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "legs", "encumbrance": 8, "warmth": 10, "wearPerDamage": 0.0012 },
+    "description": "Old-fashioned baggy cotton trousers that end at the knee in buttoned bands. They have no pockets.",
+    "reference": "breeches",
+    "variants": [],
+    "notes": "Folded at the knee, 340 mm by 400 mm and 45 mm tall: khaki cotton with a brown waistband, a buttoned fly with brass buttons, and brown knee bands each closed with a button at the hem end. No pockets, so no container. Slot `legs`. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cheerleader_skirt",
+    "model": "cheerleader_skirt",
+    "name": "Cheerleading skirt",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 2, "wearPerDamage": 0.0012 },
+    "description": "A short pleated red skirt with white bands near the hem, cut to swing freely when you kick or jump.",
+    "reference": "cheerleader_skirt",
+    "variants": [],
+    "notes": "Laid flat, 340 mm across the waist, 500 mm across the hem and 300 mm long: red cloth with darker red pleats fanning from waist to hem and two white bands near the hem. Slot `legs`. The skirt is two thin layers of cloth, so its bounding box is far above the packed reference volume. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "cheerleader_skirt_short",
+    "model": "cheerleader_skirt_short",
+    "name": "Short cheerleading skirt",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.0012 },
+    "description": "A very short pleated red skirt with a white band at the hem. It flips up at every move.",
+    "reference": "cheerleader_skirt_short",
+    "variants": [],
+    "notes": "Laid flat, 340 mm across the waist, 440 mm across the hem and 200 mm long, with one white band near the hem; the same builder as the cheerleading skirt. The reference gives no warmth, so warmth is 0. Slot `legs`. The skirt is two thin layers of cloth, so its bounding box is far above the packed reference volume. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "fishing_waders",
+    "model": "fishing_waders",
+    "name": "Chest waders",
+    "category": "clothing",
+    "size": [4, 5],
+    "economy": { "usage": ["Residential", "Hunting"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "legs", "encumbrance": 19, "warmth": 5, "wearPerDamage": 0.002, "imperviousTo": ["acid"] },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 0.8, "name": "bib pocket" }] },
+    "description": "Waterproof plastic overalls that rise to the chest, with rubber boots joined on at the feet and a big pocket on the bib.",
+    "reference": "fishing_waders",
+    "variants": [],
+    "notes": "Laid flat on their back, 620 mm wide across the turned-out boots, 1.6 m from boot heel to brace buckle and 100 mm tall: two tapering olive PVC legs with a gap between them, a bib with a flapped chest pocket, a black wading belt with a buckle at the waist, two black braces running off the top of the bib onto the floor, and black rubber boots lying on their sides with the toes turned out. The reference covers torso, legs and feet; slot `legs` is the nearest existing slot, as no slot spans the whole body, and the joined boots mean it should also block the `feet` slot once slots can cover more than one region. `imperviousTo` acid follows the rubber boots. Box/volume CHECK: laid out flat at full length, the box is far above the reference's rolled-up volume. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hot_pants",
+    "model": "hot_pants",
+    "name": "Short shorts",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "front right" }
+      ]
+    },
+    "description": "Very short cotton shorts with a zip fly and two small front pockets.",
+    "reference": "hot_pants",
+    "variants": [],
+    "notes": "Folded flat, 300 mm by 200 mm and 20 mm tall: denim-blue cotton with a waistband, belt loops, a zip fly with a brass button and front pocket openings. The reference gives no warmth, so warmth is 0. Slot `legs`. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hot_pants_fur",
+    "model": "hot_pants_fur",
+    "name": "Fur short shorts",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 10, "wearPerDamage": 0.0015 },
+    "description": "Very short shorts sewn from fur with a leather waistband.",
+    "reference": "hot_pants_fur",
+    "variants": [],
+    "notes": "Folded flat, 300 mm by 200 mm and 26 mm tall: the short-shorts cut in brown fur with a tan leather waistband and belt loops, no pockets. Slot `legs`. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hot_pants_leather",
+    "model": "hot_pants_leather",
+    "name": "Leather short shorts",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 5, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "front right" }
+      ]
+    },
+    "description": "Very short black leather shorts with a zip fly and two small front pockets.",
+    "reference": "hot_pants_leather",
+    "variants": [],
+    "notes": "Folded flat, 300 mm by 200 mm and 20 mm tall: black leather with belt loops, a zip fly with a steel button and front pocket openings. Slot `legs`. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jeans_ripped",
+    "model": "jeans_ripped",
+    "name": "Ripped jeans",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 7, "warmth": 10, "wearPerDamage": 0.0015 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" }
+      ]
+    },
+    "description": "Jeans torn open across both knees. The torn cloth wears through faster.",
+    "reference": "jeans_ripped",
+    "variants": [],
+    "notes": "Folded at the knee, 380 mm by 460 mm and 50 mm tall: the jeans fold with waistband, belt loops, zip fly, brass button and front pocket openings, and a dark tear across each knee with white threads running across it. Wear per damage is above the jeans' to reflect the weakened cloth. Slot `legs`, four pockets as the jeans have them. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jeans_skinny",
+    "model": "jeans_skinny",
+    "name": "Skinny jeans",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 5, "warmth": 6, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "front right" }
+      ]
+    },
+    "description": "Tight dark jeans cut close to the leg, with two small front pockets.",
+    "reference": "jeans_skinny",
+    "variants": [],
+    "notes": "Folded at the knee, 320 mm by 480 mm and 36 mm tall: the jeans fold, narrower and thinner, in dark navy denim. Two front pockets only. Slot `legs`. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jeans_vintage",
+    "model": "jeans_vintage",
+    "name": "Faded jeans",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "legs", "encumbrance": 8, "warmth": 15, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" }
+      ]
+    },
+    "description": "Old jeans of heavy, thick denim whose blue has faded with years of washing.",
+    "reference": "jeans_vintage",
+    "variants": [],
+    "notes": "Folded at the knee, 390 mm by 460 mm and 58 mm tall: the jeans fold, thicker, with a wider waistband. No faded-denim finish exists, so the body uses the brighter `cloth-blue` against a `cloth-denim` waistband to read as washed out. Slot `legs`, four pockets as the jeans have them. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "kilt",
+    "model": "kilt",
+    "name": "Kilt",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 20, "wearPerDamage": 0.0012 },
+    "description": "A heavy wool kilt in tartan, pleated at the back with a flat fringed apron at the front, fastened with leather straps and held down with a pin. It has no pockets.",
+    "reference": "kilt",
+    "variants": [],
+    "notes": "Folded in half, 320 mm by 360 mm and 40 mm tall: green wool with knife pleats over one half, a flat apron over the other with crossing raised navy and red strips standing in for tartan (no tartan finish exists), a fringed apron edge, a steel kilt pin near the hem and two black leather straps with buckles at the waist. No pockets, so no container. Slot `legs`. Box/volume x3.7, under the CHECK threshold. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "kilt_leather",
+    "model": "kilt_leather",
+    "name": "Leather kilt",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "legs",
+      "encumbrance": 0,
+      "warmth": 10,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0.05, "blunt": 0.05, "cut": 0.15, "pierce": 0.05 }
+    },
+    "description": "A pleated kilt of thick black leather, fastened with buckled straps. Heavy and stiff.",
+    "reference": "kilt_leather",
+    "variants": [],
+    "notes": "Folded in half, 320 mm by 360 mm and 44 mm tall: black leather with charcoal pleats, a plain apron and two charcoal straps with steel buckles. The protection is a judgement for thick leather; the reference gives none. No pockets. Slot `legs`. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "kilt_utility",
+    "model": "kilt_utility",
+    "name": "Utility kilt",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 20, "wearPerDamage": 0.0012 },
+    "container": { "pockets": [{ "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "cargo pocket" }] },
+    "description": "A pleated kilt of tough cotton canvas with belt loops and a big flapped cargo pocket on the front.",
+    "reference": "kilt_utility",
+    "variants": [],
+    "notes": "Folded in half, 320 mm by 360 mm and 44 mm tall: khaki canvas with pleats, belt loops, black webbing straps with steel buckles and a cargo pocket with a brown flap and press stud on the apron. Slot `legs`. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. The worn look is pending: no worn model is authored."
+  }
+]

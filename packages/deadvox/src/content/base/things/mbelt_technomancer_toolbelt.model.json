@@ -1,0 +1,11 @@
+{
+  "id": "mbelt_technomancer_toolbelt",
+  "file": "assets/models/mbelt_technomancer_toolbelt.glb",
+  "parts": {
+    "mbelt_technomancer_toolbelt": {
+      "node": "mbelt_technomancer_toolbelt:compound",
+      "massKg": 2,
+      "centreOfMass": [0.08403761473778816, 0.009138583991270315, -0.009818730342127234]
+    }
+  }
+}

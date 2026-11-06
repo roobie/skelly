@@ -1,0 +1,11 @@
+{
+  "id": "manual_tire_changer",
+  "file": "assets/models/manual_tire_changer.glb",
+  "parts": {
+    "manual_tire_changer": {
+      "node": "manual_tire_changer:compound",
+      "massKg": 46,
+      "centreOfMass": [-0.009216797312430011, 0.3041888017917132, 0.023038521836506155]
+    }
+  }
+}

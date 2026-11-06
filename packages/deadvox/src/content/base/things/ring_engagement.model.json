@@ -1,0 +1,11 @@
+{
+  "id": "ring_engagement",
+  "file": "assets/models/ring_engagement.glb",
+  "parts": {
+    "ring_engagement": {
+      "node": "ring_engagement:compound",
+      "massKg": 0.012,
+      "centreOfMass": [-7.785962091048826e-20, 0.016349397590361442, -1.9464905227622064e-20]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "knee_pads",
+  "file": "assets/models/knee_pads.glb",
+  "parts": {
+    "knee_pads": {
+      "node": "knee_pads:compound",
+      "massKg": 0.23,
+      "centreOfMass": [0.0002291957611106741, 0.024630082970508508, -0.00001035077630822188]
+    }
+  }
+}

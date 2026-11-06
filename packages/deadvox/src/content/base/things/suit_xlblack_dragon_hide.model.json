@@ -1,0 +1,11 @@
+{
+  "id": "suit_xlblack_dragon_hide",
+  "file": "assets/models/suit_xlblack_dragon_hide.glb",
+  "parts": {
+    "suit_xlblack_dragon_hide": {
+      "node": "suit_xlblack_dragon_hide:compound",
+      "massKg": 6,
+      "centreOfMass": [-3.9536638688120813e-19, 0.011698095593726662, -0.069126213592233]
+    }
+  }
+}

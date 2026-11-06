@@ -1,0 +1,17 @@
+{
+  "id": "classic_small_car_dashboard",
+  "file": "assets/models/classic_small_car_dashboard.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 8,
+      "centreOfMass": [0.7742537313432836, 0.7458022388059702, -0.01189365671641791],
+      "collision": [
+        { "min": [0.71875, 0.625, -0.5], "max": [0.84375, 0.875, 0.5] },
+        { "min": [0.5, 0.625, -0.3125], "max": [0.75, 0.6875, -0.21875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "beanbag",
+  "file": "assets/models/beanbag.glb",
+  "parts": {
+    "beanbag": {
+      "node": "beanbag:compound",
+      "massKg": 5.2,
+      "centreOfMass": [0, 0.2627692960135708, 0.05378838275485484]
+    }
+  }
+}

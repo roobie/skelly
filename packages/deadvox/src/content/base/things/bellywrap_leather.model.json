@@ -1,0 +1,11 @@
+{
+  "id": "bellywrap_leather",
+  "file": "assets/models/bellywrap_leather.glb",
+  "parts": {
+    "bellywrap_leather": {
+      "node": "bellywrap_leather:compound",
+      "massKg": 0.59,
+      "centreOfMass": [-0.00034311260128527533, 0.03399622799664708, -0.09140905280804693]
+    }
+  }
+}

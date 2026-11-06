@@ -1,0 +1,11 @@
+{
+  "id": "pastaextruder",
+  "file": "assets/models/pastaextruder.glb",
+  "parts": {
+    "pastaextruder": {
+      "node": "pastaextruder:compound",
+      "massKg": 2,
+      "centreOfMass": [0, 0.11136978810663022, -0.008954203691045796]
+    }
+  }
+}

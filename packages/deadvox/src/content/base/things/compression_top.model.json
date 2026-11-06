@@ -1,0 +1,11 @@
+{
+  "id": "compression_top",
+  "file": "assets/models/compression_top.glb",
+  "parts": {
+    "compression_top": {
+      "node": "compression_top:compound",
+      "massKg": 0.2,
+      "centreOfMass": [0, 0.013661454792658059, -0.001643099932019035]
+    }
+  }
+}

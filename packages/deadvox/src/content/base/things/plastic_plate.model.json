@@ -1,0 +1,7 @@
+{
+  "id": "plastic_plate",
+  "file": "assets/models/plastic_plate.glb",
+  "parts": {
+    "plastic_plate": { "node": "plastic_plate:compound", "massKg": 0.18, "centreOfMass": [0, 0.008949944382647384, 0] }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "gasoline_cooker",
+  "file": "assets/models/gasoline_cooker.glb",
+  "parts": {
+    "gasoline_cooker": {
+      "node": "gasoline_cooker:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0.0012094553429998793, 0.06240648227123191, 0.00037139027659315244]
+    }
+  }
+}

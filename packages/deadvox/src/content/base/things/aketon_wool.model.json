@@ -1,0 +1,11 @@
+{
+  "id": "aketon_wool",
+  "file": "assets/models/aketon_wool.glb",
+  "parts": {
+    "aketon_wool": {
+      "node": "aketon_wool:compound",
+      "massKg": 2.2,
+      "centreOfMass": [2.7005290853444066e-18, 0.03800957262937076, -0.005220598880238718]
+    }
+  }
+}

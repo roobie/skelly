@@ -1,0 +1,11 @@
+{
+  "id": "shark_suit_faraday",
+  "file": "assets/models/shark_suit_faraday.glb",
+  "parts": {
+    "shark_suit_faraday": {
+      "node": "shark_suit_faraday:compound",
+      "massKg": 10,
+      "centreOfMass": [0.0020890122383468014, 0.006515548719320542, 0.02734227245368824]
+    }
+  }
+}

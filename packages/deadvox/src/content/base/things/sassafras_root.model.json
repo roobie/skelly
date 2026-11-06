@@ -1,0 +1,14 @@
+{
+  "id": "sassafras_root",
+  "file": "assets/models/sassafras_root.glb",
+  "parts": {
+    "sassafras_root": {
+      "node": "sassafras_root:compound",
+      "massKg": 0.063,
+      "centreOfMass": [-0.036466134159263176, 0.01570975629635667, 0.0003138805118591572]
+    }
+  },
+  "grip": { "at": [-0.0010000000000000009, 0.016, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

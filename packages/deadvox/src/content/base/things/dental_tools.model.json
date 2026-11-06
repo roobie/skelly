@@ -1,0 +1,11 @@
+{
+  "id": "dental_tools",
+  "file": "assets/models/dental_tools.glb",
+  "parts": {
+    "dental_tools": {
+      "node": "dental_tools:compound",
+      "massKg": 0.19,
+      "centreOfMass": [-0.006133471825499869, 0.004276032199428721, 0.008172163074526098]
+    }
+  }
+}

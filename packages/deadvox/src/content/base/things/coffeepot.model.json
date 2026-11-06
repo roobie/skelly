@@ -1,0 +1,11 @@
+{
+  "id": "coffeepot",
+  "file": "assets/models/coffeepot.glb",
+  "parts": {
+    "coffeepot": {
+      "node": "coffeepot:compound",
+      "massKg": 0.39,
+      "centreOfMass": [0.007179401197604791, 0.09365892215568863, 0]
+    }
+  }
+}

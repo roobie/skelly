@@ -1,0 +1,11 @@
+{
+  "id": "scrap_nomex",
+  "file": "assets/models/scrap_nomex.glb",
+  "parts": {
+    "scrap_nomex": {
+      "node": "scrap_nomex:compound",
+      "massKg": 0.00067,
+      "centreOfMass": [0.000051063829787233976, 0.0024893617021276597, -0.0009319148936170211]
+    }
+  }
+}

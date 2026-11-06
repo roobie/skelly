@@ -1,0 +1,11 @@
+{
+  "id": "evacuation_records_drive",
+  "file": "assets/models/evacuation_records_drive.glb",
+  "parts": {
+    "evacuation_records_drive": {
+      "node": "evacuation_records_drive:compound",
+      "massKg": 0.21,
+      "centreOfMass": [0.0005681048446473274, 0.009311441613900752, 0.00009689294654690033]
+    }
+  }
+}

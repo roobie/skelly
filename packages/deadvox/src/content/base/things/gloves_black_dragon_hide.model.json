@@ -1,0 +1,11 @@
+{
+  "id": "gloves_black_dragon_hide",
+  "file": "assets/models/gloves_black_dragon_hide.glb",
+  "parts": {
+    "gloves_black_dragon_hide": {
+      "node": "gloves_black_dragon_hide:compound",
+      "massKg": 0.27,
+      "centreOfMass": [-7.197426624017801e-18, 0.00802246479987344, 0.023184622686283816]
+    }
+  }
+}

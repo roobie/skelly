@@ -1,0 +1,11 @@
+{
+  "id": "household_dishwasher",
+  "file": "assets/models/household_dishwasher.glb",
+  "parts": {
+    "household_dishwasher": {
+      "node": "household_dishwasher:compound",
+      "massKg": 36,
+      "centreOfMass": [0.0000023167889976026303, 0.42592211559769794, -0.0009365535581178265]
+    }
+  }
+}

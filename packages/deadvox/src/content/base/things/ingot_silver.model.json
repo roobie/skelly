@@ -1,0 +1,7 @@
+{
+  "id": "ingot_silver",
+  "file": "assets/models/ingot_silver.glb",
+  "parts": {
+    "ingot_silver": { "node": "ingot_silver:compound", "massKg": 10, "centreOfMass": [0, 0.04008820512820511, 0] }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "crucible",
+  "file": "assets/models/crucible.glb",
+  "parts": {
+    "crucible": {
+      "node": "crucible:compound",
+      "massKg": 1,
+      "centreOfMass": [0, 0.0707212614445575, 0.00031586978636826053]
+    }
+  }
+}

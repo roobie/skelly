@@ -1,0 +1,14 @@
+{
+  "id": "saw_bronze",
+  "file": "assets/models/saw_bronze.glb",
+  "parts": {
+    "saw_bronze": {
+      "node": "saw_bronze:compound",
+      "massKg": 0.5,
+      "centreOfMass": [0.19439341692789983, 0.00801097178683386, -0.0045250783699059575]
+    }
+  },
+  "grip": { "at": [0.06, 0.004, -0.0020000000000000018], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

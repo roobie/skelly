@@ -1,0 +1,18 @@
+{
+  "id": "mobile_crane_power_cowl",
+  "file": "assets/models/mobile_crane_power_cowl.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 300,
+      "centreOfMass": [-3.062336200797066, 2.1124127306725966, -0.8948242159297658],
+      "collision": [
+        { "min": [-4.3125, 1.71875, -1.15625], "max": [-1.8125, 2.5, -0.625] },
+        { "min": [-4, 2, -1.1875], "max": [-2.59375, 2.34375, -1.15625] },
+        { "min": [-2.1875, 2.5, -1], "max": [-2.09375, 2.84375, -0.875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

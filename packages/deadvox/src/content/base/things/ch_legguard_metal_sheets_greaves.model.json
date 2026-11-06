@@ -1,0 +1,11 @@
+{
+  "id": "ch_legguard_metal_sheets_greaves",
+  "file": "assets/models/ch_legguard_metal_sheets_greaves.glb",
+  "parts": {
+    "ch_legguard_metal_sheets_greaves": {
+      "node": "ch_legguard_metal_sheets_greaves:compound",
+      "massKg": 1.6,
+      "centreOfMass": [0.0015641735918744224, 0.026153277931671274, 0.0065983379501384975]
+    }
+  }
+}

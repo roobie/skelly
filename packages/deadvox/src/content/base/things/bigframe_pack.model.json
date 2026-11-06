@@ -1,0 +1,11 @@
+{
+  "id": "bigframe_pack",
+  "file": "assets/models/bigframe_pack.glb",
+  "parts": {
+    "bigframe_pack": {
+      "node": "bigframe_pack:compound",
+      "massKg": 5.5,
+      "centreOfMass": [0.0004063270933101142, 0.34016760992599054, 0.06581700769119142]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "sleeping_pills",
+  "file": "assets/models/sleeping_pills.glb",
+  "parts": {
+    "sleeping_pills": {
+      "node": "sleeping_pills:compound",
+      "massKg": 0.013,
+      "centreOfMass": [0, 0.039211078105888524, 0.00005189585881530666]
+    }
+  },
+  "grip": { "at": [0, 0.043000000000000003, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

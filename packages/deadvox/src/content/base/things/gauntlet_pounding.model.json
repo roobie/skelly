@@ -1,0 +1,11 @@
+{
+  "id": "gauntlet_pounding",
+  "file": "assets/models/gauntlet_pounding.glb",
+  "parts": {
+    "gauntlet_pounding": {
+      "node": "gauntlet_pounding:compound",
+      "massKg": 0.8,
+      "centreOfMass": [0.004069767441860463, 0.012401073345259377, 0.004244722719141321]
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "id": "swim_cap",
+  "file": "assets/models/swim_cap.glb",
+  "parts": { "swim_cap": { "node": "swim_cap:compound", "massKg": 0.091, "centreOfMass": [0, 0.05433384853168469, 0] } }
+}

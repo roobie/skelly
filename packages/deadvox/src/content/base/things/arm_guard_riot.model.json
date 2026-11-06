@@ -1,0 +1,11 @@
+{
+  "id": "arm_guard_riot",
+  "file": "assets/models/arm_guard_riot.glb",
+  "parts": {
+    "arm_guard_riot": {
+      "node": "arm_guard_riot:compound",
+      "massKg": 0.44,
+      "centreOfMass": [0.16854616161238464, 0.03674284859589429, -0.00008503159705345304]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "handflare",
+  "file": "assets/models/handflare.glb",
+  "parts": {
+    "handflare": { "node": "handflare:compound", "massKg": 0.12, "centreOfMass": [0.16025400641025642, 0, 0] }
+  },
+  "grip": { "at": [0.018000000000000002, 0, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

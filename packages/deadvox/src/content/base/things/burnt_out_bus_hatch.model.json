@@ -1,0 +1,17 @@
+{
+  "id": "burnt_out_bus_hatch",
+  "file": "assets/models/burnt_out_bus_hatch.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 40,
+      "centreOfMass": [-6.225340639810426, 0.5679058056872037, -0.3078347156398104],
+      "collision": [
+        { "min": [-6.4375, 0.03125, -0.71875], "max": [-6, 1.15625, 0.09375] },
+        { "min": [-6.40625, 0.125, -0.5], "max": [-6.0625, 0.9375, -0.09375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

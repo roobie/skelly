@@ -1,0 +1,10 @@
+{
+  "id": "antifungal",
+  "file": "assets/models/antifungal.glb",
+  "parts": {
+    "antifungal": { "node": "antifungal:carton", "massKg": 0.04, "centreOfMass": [0, 0.02973170731707317, 0] }
+  },
+  "grip": { "at": [0, 0.029, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

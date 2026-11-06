@@ -1,0 +1,151 @@
+[
+  {
+    "id": "scarf_long_loose",
+    "model": "scarf_wool_long",
+    "name": "Long wool scarf",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "face", "encumbrance": 2, "warmth": 20, "wearPerDamage": 0.0015 },
+    "description": "A very long navy knitted scarf with two cream stripes and a fringe at each end. Worn loosely over the mouth and nose, it keeps out the cold, and there is enough of it left to wrap the head as well.",
+    "reference": "scarf_long_loose",
+    "variants": [],
+    "notes": "Folded in four, 270 mm by 224 mm and 52 mm tall with its fringe: `cloth-navy` knit with rib lines, two `cloth-cream` stripes across the top fold. Slot `face`, as the cowl and bandanas over the face take. Wearing it as a headwrap is the draft `scarf_long_headwrap` on the same model. CHECK VOLUME (x2.5): the fold stack's box against the reference's packed bulk; loose wool. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "scarf_long_headwrap",
+    "model": "scarf_wool_long",
+    "name": "Long wool scarf (head wrap)",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "hood", "encumbrance": 3, "warmth": 45, "wearPerDamage": 0.0015 },
+    "description": "A very long navy knitted scarf wrapped round the head as well as the face, warm enough for a hard frost.",
+    "reference": "scarf_long_headwrap",
+    "variants": [],
+    "notes": "The same scarf as `scarf_long_loose`, worn wrapped over the head and mouth, so it rides on the `scarf_wool_long` model: off the body both look the same folded scarf. Slot `hood`, as headscarves take; it covers the face too, which one slot cannot express. Switching between the two ways of wearing it needs a wear-mode action in Deadvox, not authored here. CHECK VOLUME (x2.5) as for the loose scarf. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "scarf_loose",
+    "model": "scarf_wool",
+    "name": "Wool scarf",
+    "category": "clothing",
+    "size": [2, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "face", "encumbrance": 2, "warmth": 20, "wearPerDamage": 0.0015 },
+    "description": "A plain grey knitted scarf with a short fringe. Wound over the mouth and nose, it takes the bite out of cold air.",
+    "reference": "scarf_loose",
+    "variants": [],
+    "notes": "Folded in three, 200 mm by 184 mm and 38 mm tall with its fringe: `wool-grey` knit with `plastic-charcoal` rib lines. Slot `face`, as for the long scarf. CHECK VOLUME (x1.8): the fold stack's box against the reference's packed bulk. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "tallit_gadol",
+    "model": "tallit_gadol",
+    "name": "Prayer shawl",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "cloak", "encumbrance": 5, "warmth": 45, "wearPerDamage": 0.0015 },
+    "description": "A large cream wool shawl banded in black near each end, with a woven silver neckband and knotted white fringes at its corners. It is worn over the shoulders and wraps the upper body.",
+    "reference": "tallit_gadol",
+    "variants": [],
+    "notes": "Folded square, 378 mm by 330 mm with its fringes and 36 mm tall: `cloth-cream` wool, three `cloth-black` bands near each end, a `cloth-shimmer` neckband along the back, two knotted `cloth-bright-white` fringes at the front corners, each a knot, a cord over the edge and six thin strands fanning out on the floor (the other two lie under the fold). Slot `cloak`, as wraps worn over everything take. CHECK VOLUME (x4.5): the box counts the fringes fanning out past the fold; folded wool. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "throat_guard_nylon",
+    "model": "throat_guard",
+    "name": "Nylon throat guard",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "neck",
+      "encumbrance": 0,
+      "warmth": 8,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.3, "pierce": 0.1 }
+    },
+    "description": "A padded black nylon collar with a rounded bib over the throat, closed at the back with a hook-and-loop tab. Made for hockey, it stops a skate blade or a slash across the neck.",
+    "reference": "throat_guard_nylon",
+    "variants": [],
+    "notes": "Standing on its edge, 134 mm across and 86 mm tall: a padded `nylon-black` band open at the back, the bib dropping 45 mm at the front, `cloth-charcoal` binding, `hook-loop-grey` tabs at the opening. Slot `neck`, as collars take; one slot means a necklace and a throat guard cannot be worn together (a separate `throat` slot would fix that, proposed in the report). The reference lists it as head cover with no encumbrance. CHECK VOLUME (x2.8): the open collar's box includes the neck hole. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "throat_guard_canvas",
+    "model": "throat_guard",
+    "name": "Canvas throat guard",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "neck",
+      "encumbrance": 0,
+      "warmth": 8,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.25, "pierce": 0.08 }
+    },
+    "finishes": { "binding": "cloth-brown", "cloth": "cloth-khaki" },
+    "description": "A padded khaki canvas collar with a rounded bib over the throat, closed at the back with a hook-and-loop tab. It guards the neck in rough sports.",
+    "reference": "throat_guard_canvas",
+    "variants": [],
+    "notes": "Rides on the `throat_guard` model, recoloured: khaki canvas with brown binding. Slot `neck`, as collars take; one slot means a necklace and a throat guard cannot be worn together (a separate `throat` slot would fix that, proposed in the report). The reference lists it as head cover with no encumbrance. CHECK VOLUME (x2.8) as for the nylon guard. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "throat_guard_cut_resistant",
+    "model": "throat_guard",
+    "name": "Cut-resistant throat guard",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential", "Industrial", "Police"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "neck",
+      "encumbrance": 0,
+      "warmth": 8,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0, "blunt": 0.1, "cut": 0.7, "pierce": 0.3 }
+    },
+    "finishes": { "binding": "webbing-black", "cloth": "aramid-gold" },
+    "description": "A padded collar of gold aramid fibre with a bib over the throat, closed at the back with a hook-and-loop tab. Welders and guards wear it against blades and flying sparks.",
+    "reference": "throat_guard_cut_resistant",
+    "variants": [],
+    "notes": "Rides on the `throat_guard` model, recoloured: `aramid-gold` with `webbing-black` binding. Slot `neck`, as collars take; one slot means a necklace and a throat guard cannot be worn together (a separate `throat` slot would fix that, proposed in the report). The reference lists it as head cover with no encumbrance. CHECK VOLUME (x2.8) as for the nylon guard. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "throat_guard_mercenary",
+    "model": "throat_guard_ballistic",
+    "name": "Ballistic throat guard",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Police", "Military"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "neck",
+      "encumbrance": 0,
+      "warmth": 10,
+      "wearPerDamage": 0.0006,
+      "protects": { "acid": 0.05, "blunt": 0.3, "cut": 0.8, "pierce": 0.65 }
+    },
+    "description": "A thick ballistic collar in a coyote nylon cover with a nylon throat guard sewn inside it, the front flap dropping over the throat. Taken off a body armour vest and made to be worn alone.",
+    "reference": "throat_guard_mercenary",
+    "variants": [],
+    "notes": "Standing on its edge, 176 mm across and 112 mm tall: a 14 mm `nylon-coyote` ballistic collar open at the back, its throat flap dropping 52 mm with a `hook-loop-grey` patch, the `nylon-black` inner guard showing above the top edge, hook-and-loop tabs at the opening. Slot `neck`, as collars take; one slot means a necklace and a throat guard cannot be worn together (a separate `throat` slot would fix that, proposed in the report). The reference lists it as head cover with no encumbrance. CHECK VOLUME (x3.2): the open collar's box includes the neck hole. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "throat_guard_plastic",
+    "model": "gorget_fencing",
+    "name": "Fencing gorget",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "neck",
+      "encumbrance": 0,
+      "warmth": 10,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.5, "cut": 0.55, "pierce": 0.4 }
+    },
+    "description": "A stiff collar of thick rubber under black nylon, flaring at the front into a broad bib over the collarbones, bound in red. Sword fencers wear it against thrusts to the throat; the back of the neck is barely covered.",
+    "reference": "throat_guard_plastic",
+    "variants": [],
+    "notes": "Standing on its lower edge, 280 mm across and 172 mm tall: a `nylon-black` collar open at the back, a bib sloping smoothly down from the collar over the front, flaps over the sides of the nape reaching round to meet the bib, `cloth-red` binding and a `hook-loop-grey` closure. The id says plastic; the shell is thick rubber under nylon, so the model shows only the nylon cover. Slot `neck`, as collars take; one slot means a necklace and a throat guard cannot be worn together (a separate `throat` slot would fix that, proposed in the report). The reference lists it as head cover with no encumbrance. CHECK VOLUME (x2.6): the open collar's box includes the neck hole. The worn look is pending: no worn model is authored."
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "id": "clock",
+  "file": "assets/models/clock.glb",
+  "parts": {
+    "clock": {
+      "node": "clock:compound",
+      "massKg": 0.61,
+      "centreOfMass": [0.000001857838763001385, 0.08501427756403694, -0.0020867332757939713]
+    }
+  }
+}

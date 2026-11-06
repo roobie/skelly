@@ -1,0 +1,15 @@
+[
+  {
+    "id": "xssports_bra",
+    "model": "sports_bra",
+    "name": "Small sports bra",
+    "category": "clothing",
+    "size": [1, 1],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "bra", "encumbrance": 0, "warmth": 5, "wearPerDamage": 0.004 },
+    "description": "A snug stretch top in an extra-small size, cut to hold firm through running and climbing.",
+    "reference": "xssports_bra",
+    "variants": [],
+    "notes": "Extra-small size of the sports bra, so it has no row of its own and rides on batch 189's `sports_bra` model, which that batch authors from the `sports_bra` reference; check that id when the batches merge. Mass 0.069 kg from the reference. Slot `bra` as batch 175's bikini tops use it, so a shirt can still go over it. The worn look is pending: no worn model is authored."
+  }
+]

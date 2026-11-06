@@ -1,0 +1,7 @@
+{
+  "id": "zucchetto",
+  "file": "assets/models/zucchetto.glb",
+  "parts": {
+    "zucchetto": { "node": "zucchetto:compound", "massKg": 0.021, "centreOfMass": [0, 0.016690112938379235, 0] }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "rubber_tire_strip",
+  "file": "assets/models/rubber_tire_strip.glb",
+  "parts": {
+    "rubber_tire_strip": {
+      "node": "rubber_tire_strip:compound",
+      "massKg": 6.5,
+      "centreOfMass": [0.013009259259259267, 0.07000000000000002, -0.017314814814814818]
+    }
+  }
+}

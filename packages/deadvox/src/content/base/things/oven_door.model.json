@@ -1,0 +1,11 @@
+{
+  "id": "oven_door",
+  "file": "assets/models/oven_door.glb",
+  "parts": {
+    "oven_door": {
+      "node": "oven_door:compound",
+      "massKg": 17,
+      "centreOfMass": [0, 0.025064035703540252, 0.0011815264266372477]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "makeshift_antiseptic",
+  "file": "assets/models/makeshift_antiseptic.glb",
+  "parts": {
+    "makeshift_antiseptic": {
+      "node": "makeshift_antiseptic:compound",
+      "massKg": 0.27,
+      "centreOfMass": [0, 0.05585792349726776, 0]
+    }
+  },
+  "grip": { "at": [0, 0.076, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

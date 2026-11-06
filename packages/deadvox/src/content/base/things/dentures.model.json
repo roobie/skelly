@@ -1,0 +1,11 @@
+{
+  "id": "dentures",
+  "file": "assets/models/dentures.glb",
+  "parts": {
+    "dentures": {
+      "node": "dentures:compound",
+      "massKg": 0.032,
+      "centreOfMass": [-7.945510494553925e-20, 0.0181219262295082, 0.013157786885245895]
+    }
+  }
+}

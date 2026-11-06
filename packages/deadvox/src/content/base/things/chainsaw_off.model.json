@@ -1,0 +1,14 @@
+{
+  "id": "chainsaw_off",
+  "file": "assets/models/chainsaw_off.glb",
+  "parts": {
+    "chainsaw_off": {
+      "node": "chainsaw_off:compound",
+      "massKg": 7.6,
+      "centreOfMass": [-0.0026592585216122966, 0.11701073731936056, -0.000710232964097638]
+    }
+  },
+  "grip": { "at": [-0.19, 0.16399999999999998, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

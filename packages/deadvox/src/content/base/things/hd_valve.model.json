@@ -1,0 +1,11 @@
+{
+  "id": "hd_valve",
+  "file": "assets/models/hd_valve.glb",
+  "parts": {
+    "hd_valve": {
+      "node": "hd_valve:compound",
+      "massKg": 7.9,
+      "centreOfMass": [-1.1088211964517794e-20, 0.09964718498659518, 0]
+    }
+  }
+}

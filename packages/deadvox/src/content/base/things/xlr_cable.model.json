@@ -1,0 +1,11 @@
+{
+  "id": "xlr_cable",
+  "file": "assets/models/xlr_cable.glb",
+  "parts": {
+    "xlr_cable": {
+      "node": "xlr_cable:compound",
+      "massKg": 0.15,
+      "centreOfMass": [0.00001606777680397334, 0.010544259421560037, 0.003454572012854222]
+    }
+  }
+}

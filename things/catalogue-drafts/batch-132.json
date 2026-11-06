@@ -1,0 +1,172 @@
+[
+  {
+    "id": "qt_chainmail_face",
+    "model": "ch_chainmail_face",
+    "name": "Tempered steel mail half aventail",
+    "category": "clothing",
+    "size": [3, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier4"] },
+    "wearable": {
+      "encumbrance": 5,
+      "warmth": 3,
+      "wearPerDamage": 0.0005,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.88, "pierce": 0.45 }
+    },
+    "fits": ["helmet"],
+    "finishes": { "mail": "steel-heat-tint" },
+    "description": "A short ring of tempered steel mail laced to a helmet's rim, hanging down over the face and neck. Its rings carry the straw and blue sheen of the tempering.",
+    "reference": "qt_chainmail_face",
+    "variants": ["xl_qt_chainmail_face", "xs_qt_chainmail_face"],
+    "notes": "Rides on batch 130's `ch_chainmail_face` model, laid out flat, outside up: it differs from the hardened steel half aventail only in steel grade, so the draft swaps the `mail` slot to `steel-heat-tint`, the tempered grade, and keeps the leather band and lacing holes. No mail finish exists in the tempered grade, so the rings show as the plain tempered colour. The xl and xs sizes share the model. It mounts on a helmet: `fits: [\"helmet\"]` and a `wearable` with no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "qt_steel_facemask",
+    "model": "ch_steel_facemask",
+    "name": "Gilded tempered steel half mask",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier4"] },
+    "wearable": {
+      "encumbrance": 7,
+      "warmth": 3,
+      "wearPerDamage": 0.0005,
+      "protects": { "acid": 0.1, "blunt": 0.55, "cut": 0.92, "pierce": 0.75 }
+    },
+    "fits": ["helmet"],
+    "finishes": { "plate": "steel-heat-tint", "ridge": "steel-heat-tint" },
+    "description": "A tempered steel plate that hooks onto a cap helmet and guards the jaw and mouth, inlaid with gold along its edges. Whoever made it cared as much about the look as the protection.",
+    "reference": "qt_steel_facemask",
+    "variants": ["xl_qt_steel_facemask", "xs_qt_steel_facemask"],
+    "notes": "Rides on batch 130's `ch_steel_facemask` model, standing on its chin edge, front on +z: the same gilded half mask in a finer steel, so the draft swaps the `plate` and `ridge` slots to `steel-heat-tint`, the tempered grade, and keeps the `metal-gold` inlay. The reference's empty gem setting is not modelled, as on the hardened mask. The xl and xs sizes share the model. It mounts on a helmet: `fits: [\"helmet\"]` and a `wearable` with no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "shield_visor",
+    "model": "shield_visor",
+    "name": "Shield visor",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1"] },
+    "wearable": {
+      "encumbrance": 2,
+      "warmth": 0,
+      "wearPerDamage": 0.01,
+      "protects": { "acid": 0.3, "blunt": 0.05, "cut": 0.15, "pierce": 0.1 }
+    },
+    "fits": ["helmet"],
+    "description": "A short, thin clear plastic visor on a brow strip that clips onto a hard hat, keeping dust and chips out of the eyes.",
+    "reference": "shield_visor",
+    "variants": [],
+    "notes": "Standing on its lower edge, front on +z: a clear visor 2 mm thick, 260 mm round the curve and 120 mm tall, on a thin black brow strip whose arms reach back to a slot clip at each side, after batch 130's face shield but smaller and lighter. CHECK VOLUME (x27): a thin curved visor fills almost none of its box. Tiles draw the visor opaque; it stays see-through in the game. It mounts on a helmet: `fits: [\"helmet\"]` and a `wearable` with no slot. Protection is a guess for thin plastic over the eyes; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "sun_shield",
+    "model": "sun_shield",
+    "name": "Hard hat sun brim",
+    "category": "clothing",
+    "size": [4, 4],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1"] },
+    "wearable": { "encumbrance": 0, "warmth": 0, "wearPerDamage": 0.01 },
+    "fits": ["helmet"],
+    "description": "A wide white plastic brim that clips round a hard hat, shading the face and the back of the neck from the sun.",
+    "reference": "sun_shield",
+    "variants": [],
+    "notes": "Lying flat, collar up, back flap on -z: a 3 mm white brim 430 mm across round a 236 mm collar that slips over a hard hat's rim, a deeper flap at the back reaching 310 mm from the centre, a black hem and four black clips inside the collar. CHECK VOLUME (x32): a thin flat brim fills almost none of its box. The reference gives no worn data, so encumbrance and warmth are 0 and it protects nothing. It mounts on a helmet: `fits: [\"helmet\"]` and a `wearable` with no slot. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "airsoft_helmet",
+    "model": "airsoft_helmet",
+    "name": "Airsoft helmet",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 15,
+      "wearPerDamage": 0.004,
+      "protects": { "acid": 0.05, "blunt": 0.15, "cut": 0.1, "pierce": 0.05 }
+    },
+    "attachPoints": [
+      { "id": "front", "name": "front mount", "reachSimSeconds": 0.5, "standard": "helmet" },
+      { "id": "left", "name": "left rail", "reachSimSeconds": 0.75, "standard": "helmet" },
+      { "id": "right", "name": "right rail", "reachSimSeconds": 0.75, "standard": "helmet" },
+      { "id": "rear", "name": "rear patch", "reachSimSeconds": 1, "standard": "helmet" }
+    ],
+    "description": "A tan plastic helmet made to look like a military one, with side rails and a brow shroud for mounting gear. It stops plastic pellets and little else.",
+    "reference": "airsoft_helmet",
+    "variants": [],
+    "notes": "Standing on its rim, front on +z: a tan high-cut shell 240 mm across and 135 mm tall, a black rail along each side with dark slots, a black mount shroud on the brow, hook-and-loop patches on the crown and back, and a black chin strap hanging from the rails' ends and lying on the floor under the rim. Shell in `polymer-fde`. CHECK VOLUME (x5.3): a hollow shell fills little of its box. Slot `head`, as the hard hat has it. It hosts helmet add-ons through four `helmet` points: the brow shroud (front, where goggles go), the left and right side rails, and the hook-and-loop patch on the back; reach is quickest at the front and slowest at the back. Encumbrance and warmth follow the reference; protection is a guess for a thin plastic shell. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_heavyhelm_close",
+    "model": "ch_heavyhelm_close",
+    "name": "Hardened steel heavy close helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 10,
+      "warmth": 5,
+      "wearPerDamage": 0.0004,
+      "protects": { "acid": 0.2, "blunt": 0.7, "cut": 0.95, "pierce": 0.85 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left temple", "reachSimSeconds": 0.75, "standard": "helmet" },
+      { "id": "right", "name": "right temple", "reachSimSeconds": 0.75, "standard": "helmet" },
+      { "id": "rear", "name": "rear of skull", "reachSimSeconds": 1, "standard": "helmet" }
+    ],
+    "description": "A thick, fully enclosed steel helm with a pointed visor, a chin guard and three plates round the neck. You see the world through one narrow slit. Raise the visor to open the face.",
+    "reference": "ch_heavyhelm_close",
+    "variants": ["xl_ch_heavyhelm_close"],
+    "notes": "Standing on its neck, front on +z: 250 mm across, 280 mm deep and 300 mm tall. A domed skull with a raised comb from brow to nape, side and back walls narrowing to the neck, a bevor over the chin, a pointed visor of six lapped layers with a dark eye slit across it, pivots at the temples, a riveted brow reinforce and three gorget lames. Steel in `steel-hardened`. CHECK VOLUME (x6.9): a hollow helm fills little of its box. Raising the visor swaps it to `ch_heavyhelm_close_raised`, a separate model; the action is not drafted here. The xl size shares the model. Slot `head`. Protection is a guess for thick hardened plate; the reference gives none. It hosts helmet add-ons through three `helmet` points: the left and right temples beside the visor pivots and the rear of the skull above the lames; it has no front mount because the visor fills the face, so goggles have nowhere to go. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_heavyhelm_close_raised",
+    "model": "ch_heavyhelm_close_raised",
+    "name": "Hardened steel heavy close helm (raised)",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": [], "tiers": [] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 0,
+      "warmth": 5,
+      "wearPerDamage": 0.0004,
+      "protects": { "acid": 0.1, "blunt": 0.65, "cut": 0.9, "pierce": 0.8 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left temple", "reachSimSeconds": 0.75, "standard": "helmet" },
+      { "id": "right", "name": "right temple", "reachSimSeconds": 0.75, "standard": "helmet" },
+      { "id": "rear", "name": "rear of skull", "reachSimSeconds": 1, "standard": "helmet" }
+    ],
+    "description": "A thick, fully enclosed steel helm with its pointed visor swung up over the brow, leaving the face open to see and breathe. Lower the visor to close it again.",
+    "reference": "ch_heavyhelm_close_raised",
+    "variants": ["xl_ch_heavyhelm_close_raised"],
+    "notes": "The heavy close helm's raised state, its own model: the same helm with the visor swung a quarter turn up about the temple pivots so it stands over the skull, and the dark inner face showing in the opening. 250 mm across, 250 mm deep and 340 mm tall. CHECK VOLUME (x7.0): a hollow helm fills little of its box. It never spawns (empty economy): it only exists when a player raises the closed helm's visor. Protection covers the head only, as the reference's worn data has it, so mouth and eyes lose cover. The xl size shares the model. Slot `head`. It hosts helmet add-ons through three `helmet` points: the left and right temples beside the visor pivots and the rear of the skull above the lames; it has no front mount because the visor fills the face, so goggles have nowhere to go. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "ch_helm_close",
+    "model": "ch_helm_close",
+    "name": "Hardened steel close helm",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3", "Tier4"] },
+    "wearable": {
+      "slot": "head",
+      "encumbrance": 10,
+      "warmth": 5,
+      "wearPerDamage": 0.0005,
+      "protects": { "acid": 0.2, "blunt": 0.6, "cut": 0.9, "pierce": 0.8 }
+    },
+    "attachPoints": [
+      { "id": "left", "name": "left temple", "reachSimSeconds": 0.75, "standard": "helmet" },
+      { "id": "right", "name": "right temple", "reachSimSeconds": 0.75, "standard": "helmet" },
+      { "id": "rear", "name": "rear of skull", "reachSimSeconds": 1, "standard": "helmet" }
+    ],
+    "description": "A fully enclosed steel helm with a pointed visor and a chin guard, closed at the neck by a single plate. You see the world through one narrow slit.",
+    "reference": "ch_helm_close",
+    "variants": ["xl_ch_helm_close"],
+    "notes": "Standing on its neck, front on +z: 250 mm across, 280 mm deep and 300 mm tall. The heavy close helm's skull, comb, bevor and pointed slit visor, on a single deep neck lame and without the riveted brow reinforce, so the two read apart. Steel in `steel-hardened`. CHECK VOLUME (x7.0): a hollow helm fills little of its box. Its raised state (`ch_helm_close_raised`) is not in this batch; when it is drafted it can reuse `closeHelm` in this batch's file with `raised` set. The xl size shares the model. Slot `head`. Protection is a guess for hardened plate; the reference gives none. It hosts helmet add-ons through three `helmet` points: the left and right temples beside the visor pivots and the rear of the skull above the lames; it has no front mount because the visor fills the face, so goggles have nowhere to go. The worn look is pending: no worn model is authored."
+  }
+]

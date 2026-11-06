@@ -1,0 +1,14 @@
+{
+  "id": "pressurized_canister",
+  "file": "assets/models/pressurized_canister.glb",
+  "parts": {
+    "pressurized_canister": {
+      "node": "pressurized_canister:compound",
+      "massKg": 0.25,
+      "centreOfMass": [0.00005472532098505579, 0.051655019995790384, 0]
+    }
+  },
+  "grip": { "at": [0, 0.052000000000000005, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

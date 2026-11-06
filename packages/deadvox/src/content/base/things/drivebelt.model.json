@@ -1,0 +1,11 @@
+{
+  "id": "drivebelt",
+  "file": "assets/models/drivebelt.glb",
+  "parts": {
+    "drivebelt": {
+      "node": "drivebelt:compound",
+      "massKg": 0.52,
+      "centreOfMass": [0, 0.011150803998261625, 0.0036158192090395484]
+    }
+  }
+}

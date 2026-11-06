@@ -1,0 +1,11 @@
+{
+  "id": "entry_suit",
+  "file": "assets/models/entry_suit.glb",
+  "parts": {
+    "entry_suit": {
+      "node": "entry_suit:compound",
+      "massKg": 4.5,
+      "centreOfMass": [7.882649569591506e-20, 0.06298828462349391, -0.000471366714512892]
+    }
+  }
+}

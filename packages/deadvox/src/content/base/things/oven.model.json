@@ -1,0 +1,7 @@
+{
+  "id": "oven",
+  "file": "assets/models/oven.glb",
+  "parts": {
+    "oven": { "node": "oven:compound", "massKg": 93, "centreOfMass": [0, 0.3540766333715408, 0.0038053053872605202] }
+  }
+}

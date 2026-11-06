@@ -1,0 +1,11 @@
+{
+  "id": "railroad_track_item_half",
+  "file": "assets/models/railroad_track_item_half.glb",
+  "parts": {
+    "railroad_track_item_half": {
+      "node": "railroad_track_item_half:compound",
+      "massKg": 33,
+      "centreOfMass": [-0.0005746297631593544, 0.08502823229241778, 0]
+    }
+  }
+}

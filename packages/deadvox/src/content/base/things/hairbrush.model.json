@@ -1,0 +1,14 @@
+{
+  "id": "hairbrush",
+  "file": "assets/models/hairbrush.glb",
+  "parts": {
+    "hairbrush": {
+      "node": "hairbrush:compound",
+      "massKg": 0.11,
+      "centreOfMass": [0.0339639247510144, 0.009735226853559573, 4.767501686145725e-21]
+    }
+  },
+  "grip": { "at": [-0.065, 0.007, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

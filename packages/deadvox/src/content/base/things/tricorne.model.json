@@ -1,0 +1,11 @@
+{
+  "id": "tricorne",
+  "file": "assets/models/tricorne.glb",
+  "parts": {
+    "tricorne": {
+      "node": "tricorne:compound",
+      "massKg": 0.62,
+      "centreOfMass": [0.0023549224968579803, 0.03879765395894431, -0.0010515291160452477]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "storage_line",
+  "file": "assets/models/storage_line.glb",
+  "parts": {
+    "storage_line": {
+      "node": "storage_line:compound",
+      "massKg": 0.14,
+      "centreOfMass": [0, 0.005626544440015961, 0.004644081307293746]
+    }
+  }
+}

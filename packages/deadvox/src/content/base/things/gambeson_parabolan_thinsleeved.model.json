@@ -1,0 +1,11 @@
+{
+  "id": "gambeson_parabolan_thinsleeved",
+  "file": "assets/models/gambeson_parabolan_thinsleeved.glb",
+  "parts": {
+    "gambeson_parabolan_thinsleeved": {
+      "node": "gambeson_parabolan_thinsleeved:compound",
+      "massKg": 2.2,
+      "centreOfMass": [-1.1491754770143048e-18, 0.034655784068074236, -0.01165233570666602]
+    }
+  }
+}

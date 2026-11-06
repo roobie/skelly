@@ -1,0 +1,11 @@
+{
+  "id": "jack_makeshift",
+  "file": "assets/models/jack_makeshift.glb",
+  "parts": {
+    "jack_makeshift": {
+      "node": "jack_makeshift:scissorJack",
+      "massKg": 1.1,
+      "centreOfMass": [0.001404786680541103, 0.03154630593132154, 4.3037492848752733e-19]
+    }
+  }
+}

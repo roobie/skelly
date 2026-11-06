@@ -1,0 +1,11 @@
+{
+  "id": "usb_drive_nano",
+  "file": "assets/models/usb_drive_nano.glb",
+  "parts": {
+    "usb_drive_nano": {
+      "node": "usb_drive_nano:compound",
+      "massKg": 0.062,
+      "centreOfMass": [-0.001867924528301887, 0.008947169811320755, 0]
+    }
+  }
+}

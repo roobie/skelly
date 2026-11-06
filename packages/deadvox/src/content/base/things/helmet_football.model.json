@@ -1,0 +1,11 @@
+{
+  "id": "helmet_football",
+  "file": "assets/models/helmet_football.glb",
+  "parts": {
+    "helmet_football": {
+      "node": "helmet_football:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0, 0.10207747072256347, -0.010644189085225126]
+    }
+  }
+}

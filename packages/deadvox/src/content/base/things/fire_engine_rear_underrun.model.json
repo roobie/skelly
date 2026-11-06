@@ -1,0 +1,18 @@
+{
+  "id": "fire_engine_rear_underrun",
+  "file": "assets/models/fire_engine_rear_underrun.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 30,
+      "centreOfMass": [-4.046875, 0.5689102564102565, 0],
+      "collision": [
+        { "min": [-4.09375, 0.5, -1.15625], "max": [-4, 0.625, 1.15625] },
+        { "min": [-4.09375, 0.625, 0.375], "max": [-4, 0.75, 0.4375] },
+        { "min": [-4.09375, 0.625, -0.4375], "max": [-4, 0.75, -0.375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

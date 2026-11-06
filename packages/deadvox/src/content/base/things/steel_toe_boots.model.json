@@ -1,0 +1,11 @@
+{
+  "id": "steel_toe_boots",
+  "file": "assets/models/steel_toe_boots.glb",
+  "parts": {
+    "steel_toe_boots": {
+      "node": "steel_toe_boots:compound",
+      "massKg": 2,
+      "centreOfMass": [-2.2310590703846103e-17, 0.06374541702271742, -0.029315415249181773]
+    }
+  }
+}

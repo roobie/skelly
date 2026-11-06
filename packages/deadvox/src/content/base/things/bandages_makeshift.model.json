@@ -1,0 +1,11 @@
+{
+  "id": "bandages_makeshift",
+  "file": "assets/models/bandages_makeshift.glb",
+  "parts": {
+    "bandages_makeshift": {
+      "node": "bandages_makeshift:compound",
+      "massKg": 0.0083,
+      "centreOfMass": [-0.0001027355623100304, 0.011891185410334347, 0.0018273556231003037]
+    }
+  }
+}

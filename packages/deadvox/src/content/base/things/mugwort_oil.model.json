@@ -1,0 +1,10 @@
+{
+  "id": "mugwort_oil",
+  "file": "assets/models/mugwort_oil.glb",
+  "parts": {
+    "mugwort_oil": { "node": "mugwort_oil:compound", "massKg": 0.1, "centreOfMass": [0, 0.03890079123554473, 0] }
+  },
+  "grip": { "at": [0, 0.038, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

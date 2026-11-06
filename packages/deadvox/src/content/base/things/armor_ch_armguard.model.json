@@ -1,0 +1,11 @@
+{
+  "id": "armor_ch_armguard",
+  "file": "assets/models/armor_ch_armguard.glb",
+  "parts": {
+    "armor_ch_armguard": {
+      "node": "armor_ch_armguard:compound",
+      "massKg": 3,
+      "centreOfMass": [0.011376761499601155, 0.028679606487636213, 0.0007960648763626686]
+    }
+  }
+}

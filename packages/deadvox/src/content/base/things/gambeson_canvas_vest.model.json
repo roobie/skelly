@@ -1,0 +1,11 @@
+{
+  "id": "gambeson_canvas_vest",
+  "file": "assets/models/gambeson_canvas_vest.glb",
+  "parts": {
+    "gambeson_canvas_vest": {
+      "node": "gambeson_canvas_vest:compound",
+      "massKg": 2.8,
+      "centreOfMass": [-1.9648182228644158e-20, 0.04389531491985671, -0.00983471576927097]
+    }
+  }
+}

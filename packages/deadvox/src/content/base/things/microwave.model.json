@@ -1,0 +1,11 @@
+{
+  "id": "microwave",
+  "file": "assets/models/microwave.glb",
+  "parts": {
+    "microwave": {
+      "node": "microwave:compound",
+      "massKg": 11,
+      "centreOfMass": [-0.000011293345052320899, 0.120022337938011, 0.0014827117294903892]
+    }
+  }
+}

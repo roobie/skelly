@@ -1,0 +1,18 @@
+{
+  "id": "forklift_drive_wheel",
+  "file": "assets/models/forklift_drive_wheel.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 58,
+      "centreOfMass": [0, 0, 0.00041118421052631577],
+      "collision": [
+        { "min": [-0.34375, -0.34375, -0.125], "max": [0.34375, 0.34375, 0.125] },
+        { "min": [-0.15625, -0.15625, -0.09375], "max": [0.15625, 0.15625, 0.09375] },
+        { "min": [-0.0625, -0.0625, 0.0625], "max": [0.0625, 0.0625, 0.09375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": { "hub": [0, 0, 0] }
+}

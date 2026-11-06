@@ -1,0 +1,5 @@
+{
+  "id": "hinge",
+  "file": "assets/models/hinge.glb",
+  "parts": { "hinge": { "node": "hinge:compound", "massKg": 0.23, "centreOfMass": [0, 0.0027638152914458737, 0] } }
+}

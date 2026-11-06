@@ -1,0 +1,11 @@
+{
+  "id": "gas_forge",
+  "file": "assets/models/gas_forge.glb",
+  "parts": {
+    "gas_forge": {
+      "node": "gas_forge:compound",
+      "massKg": 15,
+      "centreOfMass": [0, 0.2613213374527125, 0.00017720575678067477]
+    }
+  }
+}

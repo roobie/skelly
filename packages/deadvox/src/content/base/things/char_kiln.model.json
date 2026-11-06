@@ -1,0 +1,11 @@
+{
+  "id": "char_kiln",
+  "file": "assets/models/char_kiln.glb",
+  "parts": {
+    "char_kiln": {
+      "node": "char_kiln:compound",
+      "massKg": 40,
+      "centreOfMass": [0.0003237895716945995, 0.43406486654252, 0]
+    }
+  }
+}

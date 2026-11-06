@@ -1,0 +1,18 @@
+{
+  "id": "military_transport_helicopter_crew_seat",
+  "file": "assets/models/military_transport_helicopter_crew_seat.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 22,
+      "centreOfMass": [-0.07114239926739926, 0.31690705128205127, 0],
+      "collision": [
+        { "min": [-0.25, 0, -0.25], "max": [0.25, 0.3125, 0.25] },
+        { "min": [-0.25, 0.3125, -0.25], "max": [0.25, 0.40625, 0.25] },
+        { "min": [-0.375, 0.34375, -0.25], "max": [-0.25, 1, 0.25] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

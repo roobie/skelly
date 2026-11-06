@@ -1,0 +1,17 @@
+{
+  "id": "military_transport_helicopter_mast",
+  "file": "assets/models/military_transport_helicopter_mast.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 80,
+      "centreOfMass": [0, 0.3482603092783505, 0],
+      "collision": [
+        { "min": [-0.09375, 0, -0.09375], "max": [0.09375, 0.625, 0.09375] },
+        { "min": [-0.21875, 0.375, -0.21875], "max": [0.21875, 0.4375, 0.21875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,18 @@
+{
+  "id": "jackknifed_lorry_cab_loose_wheel",
+  "file": "assets/models/jackknifed_lorry_cab_loose_wheel.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 85,
+      "centreOfMass": [0, 0.12312974984167195, 0],
+      "collision": [
+        { "min": [-0.53125, 0, -0.53125], "max": [0.53125, 0.25, 0.53125] },
+        { "min": [-0.28125, 0.03125, -0.28125], "max": [0.28125, 0.1875, 0.28125] },
+        { "min": [-0.125, 0.1875, -0.125], "max": [0.125, 0.25, 0.125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "load_bearing_vest_sling",
+  "file": "assets/models/load_bearing_vest_sling.glb",
+  "parts": {
+    "load_bearing_vest_sling": {
+      "node": "load_bearing_vest_sling:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0.0008642243177835292, 0.008981891012267422, 0.041916214637403124]
+    }
+  }
+}

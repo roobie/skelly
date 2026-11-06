@@ -1,0 +1,11 @@
+{
+  "id": "material_aluminium_ingot",
+  "file": "assets/models/material_aluminium_ingot.glb",
+  "parts": {
+    "material_aluminium_ingot": {
+      "node": "material_aluminium_ingot:compound",
+      "massKg": 0.22,
+      "centreOfMass": [0, 0.01617688679245283, 0]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "amplifier",
+  "file": "assets/models/amplifier.glb",
+  "parts": {
+    "amplifier": {
+      "node": "amplifier:compound",
+      "massKg": 0.058,
+      "centreOfMass": [-0.000977426636568847, 0.007711060948081268, -0.005410835214446955]
+    }
+  }
+}

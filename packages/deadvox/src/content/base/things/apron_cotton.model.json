@@ -1,0 +1,11 @@
+{
+  "id": "apron_cotton",
+  "file": "assets/models/apron_cotton.glb",
+  "parts": {
+    "apron_cotton": {
+      "node": "apron_cotton:compound",
+      "massKg": 0.31,
+      "centreOfMass": [9.43731446152912e-20, 0.01334512264689104, -0.004727666856816883]
+    }
+  }
+}

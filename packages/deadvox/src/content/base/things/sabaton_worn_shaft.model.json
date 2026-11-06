@@ -1,0 +1,11 @@
+{
+  "id": "sabaton_worn_shaft",
+  "file": "assets/models/sabaton_worn_shaft.glb",
+  "parts": {
+    "sabaton_worn_shaft": {
+      "node": "sabaton_worn_shaft:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0, -0.2810844062947067, 0]
+    }
+  }
+}

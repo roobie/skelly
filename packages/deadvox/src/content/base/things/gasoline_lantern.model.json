@@ -1,0 +1,14 @@
+{
+  "id": "gasoline_lantern",
+  "file": "assets/models/gasoline_lantern.glb",
+  "parts": {
+    "gasoline_lantern": {
+      "node": "gasoline_lantern:compound",
+      "massKg": 0.88,
+      "centreOfMass": [-0.00003859731701576843, 0.08277006354436339, 0.00036337961873381987]
+    }
+  },
+  "grip": { "at": [0, 0.038, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

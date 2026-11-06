@@ -1,0 +1,11 @@
+{
+  "id": "vacutainer",
+  "file": "assets/models/vacutainer.glb",
+  "parts": {
+    "vacutainer": {
+      "node": "vacutainer:compound",
+      "massKg": 0.018,
+      "centreOfMass": [-0.005040790712268594, 0.005505491057420775, -0.0022500784436774394]
+    }
+  }
+}

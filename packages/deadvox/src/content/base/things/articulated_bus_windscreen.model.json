@@ -1,0 +1,14 @@
+{
+  "id": "articulated_bus_windscreen",
+  "file": "assets/models/articulated_bus_windscreen.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 30,
+      "centreOfMass": [8.857831790123456, 1.683449074074074, 0],
+      "collision": [{ "min": [8.78125, 0.90625, -1.1875], "max": [8.9375, 2.5, 1.1875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

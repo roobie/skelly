@@ -1,0 +1,11 @@
+{
+  "id": "bondage_suit",
+  "file": "assets/models/bondage_suit.glb",
+  "parts": {
+    "bondage_suit": {
+      "node": "bondage_suit:compound",
+      "massKg": 2.5,
+      "centreOfMass": [0.000020375158752638253, 0.02815249390115765, -0.0007808162855080534]
+    }
+  }
+}

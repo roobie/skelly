@@ -1,0 +1,11 @@
+{
+  "id": "qt_elbow_guards",
+  "file": "assets/models/qt_elbow_guards.glb",
+  "parts": {
+    "qt_elbow_guards": {
+      "node": "qt_elbow_guards:compound",
+      "massKg": 0.8,
+      "centreOfMass": [-9.918232764424789e-19, 0.013999999999999993, -0.0008792965627498]
+    }
+  }
+}

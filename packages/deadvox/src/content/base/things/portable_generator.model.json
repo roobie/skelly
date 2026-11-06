@@ -1,0 +1,11 @@
+{
+  "id": "portable_generator",
+  "file": "assets/models/portable_generator.glb",
+  "parts": {
+    "portable_generator": {
+      "node": "portable_generator:compound",
+      "massKg": 37,
+      "centreOfMass": [-0.006379529210475479, 0.22912230593040264, -0.003641443828131468]
+    }
+  }
+}

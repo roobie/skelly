@@ -1,0 +1,17 @@
+{
+  "id": "heavy_cargo_helicopter_landing_lamp",
+  "file": "assets/models/heavy_cargo_helicopter_landing_lamp.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 5,
+      "centreOfMass": [0, -0.010937500000000001, 0],
+      "collision": [
+        { "min": [-0.15625, -0.09375, -0.15625], "max": [0.15625, 0.09375, 0.15625] },
+        { "min": [-0.125, -0.125, -0.125], "max": [0.125, -0.09375, 0.125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

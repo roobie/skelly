@@ -1,0 +1,265 @@
+[
+  {
+    "id": "police_breeches",
+    "model": "police_breeches",
+    "name": "Police breeches",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Police"], "tiers": ["Tier2"] },
+    "wearable": { "slot": "legs", "encumbrance": 2, "warmth": 15, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" }
+      ]
+    },
+    "description": "Close-fitting navy riding breeches with a thin gold stripe down each leg, cut for an officer on a motorcycle. They tuck into tall boots and leave the knees free.",
+    "reference": "police_breeches",
+    "variants": [],
+    "notes": "Folded at the knee, 360 mm by 460 mm and 46 mm tall: navy cotton with belt loops, a zip fly, a steel button, front pocket openings and a narrow gold stripe down each outer seam. Two front and two back pockets, as the jeans have them. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "postman_shorts",
+    "model": "postman_shorts",
+    "name": "Mail carrier shorts",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 5, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" }
+      ]
+    },
+    "description": "Navy uniform shorts with a thin red stripe down each side, the sort worn by people who once walked the same street every day.",
+    "reference": "postman_shorts",
+    "variants": [],
+    "notes": "Folded once, 360 mm by 280 mm and 30 mm tall: navy cotton with belt loops, a zip fly, front pocket openings and a red side stripe. Two front and two back pockets. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "santa_pants",
+    "model": "santa_pants",
+    "name": "Santa trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 13, "warmth": 30, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "deep left" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.6, "name": "deep right" }
+      ]
+    },
+    "description": "Baggy red costume trousers with an elastic waist, thick white faux-fur cuffs and two deep pockets. Warm, if hard to move quietly in.",
+    "reference": "santa_pants",
+    "variants": [],
+    "notes": "Folded at the knee, 400 mm by 460 mm and 60 mm tall: red cotton with a drawstring waist and pale fur cuffs wrapped round the rolled hems. Two deep front pockets. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "santa_shorts",
+    "model": "santa_shorts",
+    "name": "Santa shorts",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 2, "warmth": 5, "wearPerDamage": 0.0012 },
+    "description": "Short red costume shorts with a drawstring waist and white trim round the legs. No pockets.",
+    "reference": "santa_shorts",
+    "variants": [],
+    "notes": "Folded once, 360 mm by 260 mm and 28 mm tall: red cotton, a white drawstring and narrow cream cuffs round the rolled hems. No pockets, so no container. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "shorts",
+    "model": "shorts",
+    "name": "Shorts",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 2, "warmth": 5, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" }
+      ]
+    },
+    "description": "Plain khaki cotton shorts that stop above the knee, with belt loops and a zip fly.",
+    "reference": "shorts",
+    "variants": [],
+    "notes": "Folded once, 360 mm by 280 mm and 28 mm tall: khaki cotton with belt loops, a zip fly, a brass button and front pocket openings. Two front and two back pockets. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "shorts_cargo",
+    "model": "shorts_cargo",
+    "name": "Cargo shorts",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 2, "warmth": 5, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "left cargo" },
+        { "grid": [2, 2], "handlingSimSeconds": 0.7, "name": "right cargo" }
+      ]
+    },
+    "description": "Olive cotton shorts with a big flapped pocket on each leg as well as the usual four.",
+    "reference": "shorts_cargo",
+    "variants": [],
+    "notes": "Folded once, 380 mm by 340 mm and 34 mm tall: olive cotton with belt loops, a zip fly, front pocket openings and a bellows pocket on each leg under a darker flap with a press stud. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "shorts_denim",
+    "model": "shorts_denim",
+    "name": "Denim cut-offs",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 1, "warmth": 5, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" }
+      ]
+    },
+    "description": "Jeans cut off above the knee, the hems left to fray. Four pockets and orange stitching.",
+    "reference": "shorts_denim",
+    "variants": [],
+    "notes": "Folded once, 370 mm by 260 mm and 30 mm tall: denim with orange top-stitching, a brass button, belt loops and cream threads frayed out of the cut hems. Two front and two back pockets. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "skirt",
+    "model": "skirt",
+    "name": "Skirt",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 5, "wearPerDamage": 0.0012 },
+    "container": { "pockets": [{ "grid": [1, 1], "handlingSimSeconds": 0.5, "name": "hip pocket" }] },
+    "description": "A short, light cotton skirt that is easy to move in. It has one small pocket on the hip.",
+    "reference": "skirt",
+    "variants": [],
+    "notes": "Laid flat, 340 mm across the waist, 440 mm across the hem and 260 mm long: green cotton with a few soft gathers and a patch pocket on the right hip. Box/volume CHECK: the skirt lies flat as two thin layers of cloth, so its bounding box is well above the packed reference volume. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "skirt_bostonchan",
+    "model": "skirt_bostonchan",
+    "name": "Costume pleated skirt",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 5, "warmth": 10, "wearPerDamage": 0.0012 },
+    "description": "A short navy pleated skirt with two white bands near the hem, sold as part of a cartoon mascot costume.",
+    "reference": "skirt_bostonchan",
+    "variants": [],
+    "notes": "Laid flat, 340 mm across the waist, 480 mm across the hem and 260 mm long: navy cloth with charcoal knife pleats all round and two cream bands near the hem. Named for what it is, not the mascot. No pockets. Box/volume CHECK: the skirt lies flat as two thin layers of cloth, so its bounding box is well above the packed reference volume. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "skirt_denim",
+    "model": "skirt_denim",
+    "name": "Denim skirt",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 7, "wearPerDamage": 0.001 },
+    "container": { "pockets": [{ "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "patch pocket" }] },
+    "description": "A knee-length blue denim skirt with a zip front, a brass button and a patch pocket.",
+    "reference": "skirt_denim",
+    "variants": [],
+    "notes": "Laid flat, 340 mm across the waist, 420 mm across the hem and 400 mm long: denim with an orange-stitched front seam and hem, a zip fly with a brass button and a faded patch pocket. Box/volume CHECK: the skirt lies flat as two thin layers of cloth, so its bounding box is well above the packed reference volume. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "skirt_grass",
+    "model": "skirt_grass",
+    "name": "Grass skirt",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 1, "wearPerDamage": 0.004 },
+    "description": "A fringe of dried grass blades knotted onto a cord and tied round the waist. It rustles, keeps off nothing and comes apart easily.",
+    "reference": "skirt_grass",
+    "variants": [],
+    "notes": "Laid flat, 450 mm across the hem and 400 mm long: a twisted straw cord no wider than the skirt, with its tie ends hanging down the sides, and 55 dried grass blades in two shades and two overlapping layers fanning out to a ragged hem. Wear per damage is high because the blades snap off. Box/volume CHECK: the skirt lies flat as two thin layers of cloth, so its bounding box is well above the packed reference volume. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "skirt_leather",
+    "model": "skirt_leather",
+    "name": "Leather miniskirt",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 10, "warmth": 10, "wearPerDamage": 0.0008 },
+    "description": "A very short, stiff black leather skirt with a zip front and a slit at the hem. It looks sharp and fights every step.",
+    "reference": "skirt_leather",
+    "variants": [],
+    "notes": "Laid flat, 320 mm across the waist, 380 mm across the hem and 220 mm long: black leather with a charcoal centre seam, a zip fly with a steel button and a short slit up from the hem. No pockets. Box/volume CHECK: the skirt lies flat as two thin layers of cloth, so its bounding box is well above the packed reference volume. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "skirt_long",
+    "model": "skirt_long",
+    "name": "Long skirt",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 0, "warmth": 10, "wearPerDamage": 0.0012 },
+    "description": "An ankle-length brown cotton skirt with soft gathers and a cream band at the hem. Warmer than a short skirt and a little more in the way.",
+    "reference": "skirt_long",
+    "variants": [],
+    "notes": "An 800 mm skirt folded in half at the knee and laid flat: 340 mm across the waist, 520 mm across the fold and 420 mm long, brown cotton with gathers down to the fold and the cream hem band showing at it. No pockets. Box/volume CHECK: the skirt lies flat as two thin layers of cloth, so its bounding box is well above the packed reference volume. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "striped_pants",
+    "model": "striped_pants",
+    "name": "Striped trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 2, "warmth": 15, "wearPerDamage": 0.0012 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" }
+      ]
+    },
+    "description": "Cotton trousers in broad black and white crosswise stripes, loud enough to be a costume.",
+    "reference": "striped_pants",
+    "variants": [],
+    "notes": "Folded at the knee, 380 mm by 460 mm and 48 mm tall: cream cotton with nine black bands across the top and black bands round the rolled hems, a black waistband with belt loops and a zip fly. No print finish exists, so the stripes are raised bands. Two front and two back pockets. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "technician_pants_gray",
+    "model": "technician_pants_gray",
+    "name": "Work trousers",
+    "category": "clothing",
+    "size": [3, 3],
+    "economy": { "usage": ["Industrial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "legs", "encumbrance": 4, "warmth": 15, "wearPerDamage": 0.001 },
+    "container": {
+      "pockets": [
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.5, "name": "front right" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back left" },
+        { "grid": [1, 2], "handlingSimSeconds": 0.6, "name": "back right" },
+        { "grid": [1, 3], "handlingSimSeconds": 0.6, "name": "rule pocket" },
+        { "grid": [1, 3], "handlingSimSeconds": 0.6, "name": "hammer loop" }
+      ]
+    },
+    "description": "Heavy grey canvas work trousers with doubled knees, a hammer loop and a rule pocket on the right leg. Built to be knelt in.",
+    "reference": "technician_pants_gray",
+    "variants": [],
+    "notes": "Folded at the knee, 400 mm by 460 mm and 60 mm tall: grey canvas with charcoal knee patches, a rule pocket and hammer loop on the right leg, belt loops and a zip fly. The hammer loop is cloth on the trousers, so it is listed as a pocket sized for a hammer rather than an attach point. Box/volume CHECK: folded cloth stands looser and its bounding box is larger than the packed reference volume, as for every folded garment. Slot `legs`, as the jeans have it. The worn look is pending: no worn model is authored."
+  }
+]

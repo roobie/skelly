@@ -1,0 +1,14 @@
+{
+  "id": "crashed_hatchback_tail_lamp",
+  "file": "assets/models/crashed_hatchback_tail_lamp.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 1,
+      "centreOfMass": [-2.015625, 0.703125, 0.734375],
+      "collision": [{ "min": [-2.0625, 0.5625, 0.625], "max": [-1.96875, 0.84375, 0.84375] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

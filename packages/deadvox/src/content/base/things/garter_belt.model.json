@@ -1,0 +1,11 @@
+{
+  "id": "garter_belt",
+  "file": "assets/models/garter_belt.glb",
+  "parts": {
+    "garter_belt": {
+      "node": "garter_belt:compound",
+      "massKg": 0.097,
+      "centreOfMass": [-1.0004975775204096e-18, 0.0022782533184468436, -0.019975313236571157]
+    }
+  }
+}

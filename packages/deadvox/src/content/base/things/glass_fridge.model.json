@@ -1,0 +1,11 @@
+{
+  "id": "glass_fridge",
+  "file": "assets/models/glass_fridge.glb",
+  "parts": {
+    "glass_fridge": {
+      "node": "glass_fridge:compound",
+      "massKg": 130,
+      "centreOfMass": [0.00026885330826274215, 0.9757569783542295, -0.013516294285248321]
+    }
+  }
+}

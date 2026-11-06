@@ -1,0 +1,11 @@
+{
+  "id": "xl_propane_tank",
+  "file": "assets/models/xl_propane_tank.glb",
+  "parts": {
+    "xl_propane_tank": {
+      "node": "xl_propane_tank:compound",
+      "massKg": 160,
+      "centreOfMass": [0.000002733248602626698, 0.5968044907274541, 0]
+    }
+  }
+}

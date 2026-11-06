@@ -1,0 +1,11 @@
+{
+  "id": "veil_wedding",
+  "file": "assets/models/veil_wedding.glb",
+  "parts": {
+    "veil_wedding": {
+      "node": "veil_wedding:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0.000013675783855903558, 0.004749166110740498, 0.024603624638648024]
+    }
+  }
+}

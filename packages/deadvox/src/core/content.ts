@@ -2078,7 +2078,7 @@ const attachmentPivots = (figure: FigureDef, part: FigureDef['attachmentFrames']
     return [figure.body.spine.pivot, figure.body.neck.pivot, figure.body.head.pivot];
   }
   if (part.endsWith('Arm')) {
-    return [figure.armRig.fore.pivot, figure.armRig.hand.pivot];
+    return [figure.armRig.fore.pivot, figure.armRig.hand.pivot, figure.armRig.fingers.pivot, figure.armRig.thumb.pivot];
   }
   return LEG_SEGMENTS.map((segment) => figure.legRig[segment].pivot);
 };

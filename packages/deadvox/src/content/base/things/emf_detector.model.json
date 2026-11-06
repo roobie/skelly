@@ -1,0 +1,14 @@
+{
+  "id": "emf_detector",
+  "file": "assets/models/emf_detector.glb",
+  "parts": {
+    "emf_detector": {
+      "node": "emf_detector:compound",
+      "massKg": 0.19,
+      "centreOfMass": [-5.614402814687279e-7, 0.01817984803683049, 0.004967885615899988]
+    }
+  },
+  "grip": { "at": [0, 0.018000000000000002, 0.010000000000000009], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

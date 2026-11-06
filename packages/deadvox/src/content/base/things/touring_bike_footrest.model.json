@@ -1,0 +1,17 @@
+{
+  "id": "touring_bike_footrest",
+  "file": "assets/models/touring_bike_footrest.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 0.5,
+      "centreOfMass": [-0.234375, 0.359375, 0.265625],
+      "collision": [
+        { "min": [-0.28125, 0.34375, 0.1875], "max": [-0.1875, 0.375, 0.25] },
+        { "min": [-0.28125, 0.34375, 0.25], "max": [-0.1875, 0.375, 0.34375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

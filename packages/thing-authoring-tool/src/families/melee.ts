@@ -1,6 +1,6 @@
 import type { BoxSolid, ExtrudedPolygonSolid, RevolvedSolid } from '@skelly/engine/shapes/solid.ts';
 import { parse, strictObject } from 'valibot';
-import { positive, revolve, scalar, strip } from './shapes.ts';
+import { positive, revolve, scalar, strip, TURNED_SIDES } from './shapes.ts';
 
 /** A turned shaft along x: `profile` is (position along x, radius), closed back to the axis. */
 const turnedAlongX = (id: string, profile: readonly (readonly [number, number])[], slot: string): RevolvedSolid => ({
@@ -8,6 +8,7 @@ const turnedAlongX = (id: string, profile: readonly (readonly [number, number])[
   kind: 'revolved',
   axis: 'x',
   profile: [[profile[0]![0], 0], ...profile, [profile.at(-1)![0], 0], [profile[0]![0], 0]],
+  sides: TURNED_SIDES,
   slot,
 });
 

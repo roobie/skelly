@@ -1,0 +1,10 @@
+{
+  "id": "hoe",
+  "file": "assets/models/hoe.glb",
+  "parts": {
+    "hoe": { "node": "hoe:compound", "massKg": 1.8, "centreOfMass": [0.792107162749248, 0.10343254984961568, 0] }
+  },
+  "grip": { "at": [0.4592, 0.11, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

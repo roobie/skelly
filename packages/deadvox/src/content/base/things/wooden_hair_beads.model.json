@@ -1,0 +1,11 @@
+{
+  "id": "wooden_hair_beads",
+  "file": "assets/models/wooden_hair_beads.glb",
+  "parts": {
+    "wooden_hair_beads": {
+      "node": "wooden_hair_beads:compound",
+      "massKg": 0.0046,
+      "centreOfMass": [0.0010374037403740371, 0.005396039603960397, -0.0016512651265126516]
+    }
+  }
+}

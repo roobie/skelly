@@ -1,0 +1,11 @@
+{
+  "id": "bead_necklace",
+  "file": "assets/models/bead_necklace.glb",
+  "parts": {
+    "bead_necklace": {
+      "node": "bead_necklace:compound",
+      "massKg": 0.021,
+      "centreOfMass": [-2.1706099413470473e-7, 0.005049924028652053, 0.010014543086607338]
+    }
+  }
+}

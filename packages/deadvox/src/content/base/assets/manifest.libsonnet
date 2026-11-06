@@ -6,8 +6,8 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
     {
       title: 'Gungen authored model exports',
       url: 'https://github.com/roobie/skelly/blob/main/packages/gun-authoring-tool/exports/deadvox.jsonnet',
-      author: 'Skelly contributors',
-      licence: 'CC0-1.0',
+      author: 'Björn Roberg',
+      licence: 'CC-BY-NC-SA-4.0',
       download: null,
       files: exportFiles(recipe),
       changes: 'Original project-built geometry exported from the authored recipe in metres, +x forward and +y up. Cartridge dimensions come from the recipe sources; unsupported internal dimensions remain visual proxies.',
@@ -16,8 +16,8 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
     {
       title: 'Thing tool authored models',
       url: 'https://github.com/roobie/skelly/blob/main/packages/thing-authoring-tool/exports/deadvox.jsonnet',
-      author: 'Skelly contributors',
-      licence: 'CC0-1.0',
+      author: 'Björn Roberg',
+      licence: 'CC-BY-NC-SA-4.0',
       download: null,
       files: exportFiles(things),
       changes: 'Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.',
@@ -371,9 +371,9 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
     },
     {
       "title": "BR csound gunshot synthesis",
-      "url": null,
-      "author": "BR",
-      "licence": "NONE",
+      "url": "https://github.com/roobie/skelly",
+      "author": "Björn Roberg",
+      "licence": "CC-BY-NC-SA-4.0",
       "download": null,
       "files": [
         "assets/audio/gunshot-akm-01.ogg",
@@ -385,9 +385,9 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
     },
     {
       "title": "BR M4 shot synthesis",
-      "url": null,
-      "author": "BR",
-      "licence": "CC0-1.0",
+      "url": "https://github.com/roobie/skelly",
+      "author": "Björn Roberg",
+      "licence": "CC-BY-NC-SA-4.0",
       "download": "m4sup1_single_sc_field_v2.wav",
       "files": ["assets/audio/gunshot-m4-suppressed-01.ogg"],
       "changes": "BR's original synthesised suppressed M4 shot. Trimmed trailing silence only, then converted from 48 kHz 16-bit stereo WAV to 48 kHz stereo Opus in Ogg without gain processing."
@@ -395,8 +395,8 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
     {
       "title": "Project-built low-poly hand-tool and content stand-ins",
       "url": "https://github.com/roobie/skelly",
-      "author": "Skelly contributors",
-      "licence": "CC0-1.0",
+      "author": "Björn Roberg",
+      "licence": "CC-BY-NC-SA-4.0",
       "download": null,
       "files": [
         "assets/models/lamp_oil_bottle.glb",
@@ -434,8 +434,8 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
     {
       "title": "BR project-recorded nope voice",
       "url": "https://github.com/roobie/skelly",
-      "author": "BR",
-      "licence": "CC0-1.0",
+      "author": "Björn Roberg",
+      "licence": "CC-BY-NC-SA-4.0",
       "download": null,
       "files": ["assets/audio/player-nope-01.ogg"],
       "changes": "Recorded by BR for the project; converted from 48 kHz stereo PCM WAV to 48 kHz mono Opus in an Ogg container without gain processing."

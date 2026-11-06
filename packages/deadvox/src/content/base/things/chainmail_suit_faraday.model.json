@@ -1,0 +1,11 @@
+{
+  "id": "chainmail_suit_faraday",
+  "file": "assets/models/chainmail_suit_faraday.glb",
+  "parts": {
+    "chainmail_suit_faraday": {
+      "node": "chainmail_suit_faraday:compound",
+      "massKg": 25,
+      "centreOfMass": [-2.8423289099602983e-18, 0.056952185332827615, -0.007758285800167474]
+    }
+  }
+}

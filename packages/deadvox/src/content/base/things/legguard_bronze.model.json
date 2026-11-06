@@ -1,0 +1,11 @@
+{
+  "id": "legguard_bronze",
+  "file": "assets/models/legguard_bronze.glb",
+  "parts": {
+    "legguard_bronze": {
+      "node": "legguard_bronze:compound",
+      "massKg": 3,
+      "centreOfMass": [2.9383012446980926e-17, 0.036906398104265416, -0.012732227488151657]
+    }
+  }
+}

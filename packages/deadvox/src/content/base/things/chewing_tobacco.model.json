@@ -1,0 +1,14 @@
+{
+  "id": "chewing_tobacco",
+  "file": "assets/models/chewing_tobacco.glb",
+  "parts": {
+    "chewing_tobacco": {
+      "node": "chewing_tobacco:compound",
+      "massKg": 0.052,
+      "centreOfMass": [0, 0.01190609222484012, 0]
+    }
+  },
+  "grip": { "at": [0, 0.008, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

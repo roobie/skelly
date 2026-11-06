@@ -1,0 +1,11 @@
+{
+  "id": "chair_folding",
+  "file": "assets/models/chair_folding.glb",
+  "parts": {
+    "chair_folding": {
+      "node": "chair_folding:compound",
+      "massKg": 5.1,
+      "centreOfMass": [0, 0.5124201824401368, 0.006927023945267961]
+    }
+  }
+}

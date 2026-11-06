@@ -1,0 +1,11 @@
+{
+  "id": "tie_bow",
+  "file": "assets/models/tie_bow.glb",
+  "parts": {
+    "tie_bow": {
+      "node": "tie_bow:compound",
+      "massKg": 0.02,
+      "centreOfMass": [5.81538675866864e-20, 0.005452193475815523, -0.010584926884139478]
+    }
+  }
+}

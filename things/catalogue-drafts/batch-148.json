@@ -1,0 +1,298 @@
+[
+  {
+    "id": "two_by_shin_guards",
+    "model": "two_by_shin_guards",
+    "name": "Plank shin guards",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 4,
+      "warmth": 1,
+      "wearPerDamage": 0.004,
+      "protects": { "acid": 0, "blunt": 0.2, "cut": 0.25, "pierce": 0.1 }
+    },
+    "description": "Two split lengths of plank, padded with rags and tied on over the shins with string.",
+    "reference": "2byshin_guard",
+    "variants": [],
+    "notes": "A pair laid flat side by side: each guard is a split pine plank 260 mm long, 80 mm wide and 15 mm thick with a splintered end, a rag pad wrapped round it near each end and string lashed twice round each pad, the loose ends hanging off the outer edge. The reference covers both legs; the planks guard only the shins, so it takes the `shins` slot the splint greaves use. Protection and wear are guesses for thin softwood; the reference gives none. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_light_mild",
+    "model": "leg_guard_steel_light",
+    "name": "Mild steel light leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 5,
+      "warmth": 3,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.15, "cut": 0.5, "pierce": 0.4 }
+    },
+    "description": "A pair of forged leg guards in mild steel. A narrow plate rides down each thigh and another down each shin, on chain legs left bare at the knee.",
+    "reference": "armor_lc_light_leg_guard",
+    "variants": ["xl_armor_lc_light_leg_guard"],
+    "notes": "The model's root: plates in `steel-bright`. A pair of guards 600 mm long laid side by side, convex side up, each a chain leg from hip to ankle with a narrow plate 120 degrees round down the thigh and another down the shin, bare chain showing at the knee and ankle, held on by two buckled leather straps; the chain is `steel-mail-dark` so it reads apart from the plates. CHECK VOLUME: box/volume x5.85 because the two half-round guards lie open side down at full length and enclose air; the reference volume is the pair packed. The xl size shares the model. The reference covers both whole legs, but `legs` is the trousers' slot and plate goes on over them, so it takes `shins`, as the full-length splint leg guards do; a slot for whole-leg armour over trousers is open. The reference marks the guards as sided; wearing one guard on one leg has no content field. Protection follows the steel arm guards of the same weight and steel. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_mild",
+    "model": "leg_guard_steel",
+    "name": "Mild steel leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 8,
+      "warmth": 3,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.25, "cut": 0.6, "pierce": 0.5 }
+    },
+    "description": "A pair of forged leg guards in mild steel. Half-round plates cover the thighs and shins over chain legs, with a domed cop and a side wing over each knee.",
+    "reference": "armor_lc_leg_guard",
+    "variants": ["xl_armor_lc_leg_guard"],
+    "notes": "The model's root: plates in `steel-bright`. A pair of guards 600 mm long laid side by side, convex side up, each a chain leg from hip to ankle with half-round plates over the thigh and shin and a domed knee cop with a wing on the outer side, held on by two buckled leather straps; the chain is `steel-mail-dark` so it reads apart from the plates. CHECK VOLUME: box/volume x8.1 because the two half-round guards lie open side down at full length and enclose air; the reference volume is the pair packed. The xl size shares the model. The reference covers both whole legs, but `legs` is the trousers' slot and plate goes on over them, so it takes `shins`, as the full-length splint leg guards do; a slot for whole-leg armour over trousers is open. The reference marks the guards as sided; wearing one guard on one leg has no content field. Protection follows the steel arm guards of the same weight and steel. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_heavy_mild",
+    "model": "leg_guard_steel_heavy",
+    "name": "Mild steel heavy leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 10,
+      "warmth": 3,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.66, "pierce": 0.56 }
+    },
+    "description": "A pair of forged leg guards in mild steel. Thick plates wrap the thighs and shins over chain legs, with a rolled edge at the hip, lames either side of a domed knee cop and a flare over the ankle.",
+    "reference": "armor_lc_heavy_leg_guard",
+    "variants": ["xl_armor_lc_heavy_leg_guard"],
+    "notes": "The model's root: plates in `steel-bright`. A pair of guards 600 mm long laid side by side, convex side up, each a chain leg from hip to ankle with thicker plates wrapping 200 degrees round the thigh and shin, a rolled hip edge, lames either side of a domed knee cop with a side wing and a flare over the ankle, held on by two buckled leather straps; the chain is `steel-mail-dark` so it reads apart from the plates. CHECK VOLUME: box/volume x8.1 because the two half-round guards lie open side down at full length and enclose air; the reference volume is the pair packed. The xl size shares the model. The reference covers both whole legs, but `legs` is the trousers' slot and plate goes on over them, so it takes `shins`, as the full-length splint leg guards do; a slot for whole-leg armour over trousers is open. The reference marks the guards as sided; wearing one guard on one leg has no content field. Protection follows the steel arm guards of the same weight and steel. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_light_medium",
+    "model": "leg_guard_steel_light",
+    "name": "Medium steel light leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 5,
+      "warmth": 3,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.15, "cut": 0.58, "pierce": 0.48 }
+    },
+    "finishes": { "plate": "steel-grey" },
+    "description": "A pair of forged leg guards in medium steel, tougher than mild. A narrow plate rides down each thigh and another down each shin, on chain legs left bare at the knee.",
+    "reference": "armor_mc_light_leg_guard",
+    "variants": ["xl_armor_mc_light_leg_guard"],
+    "notes": "Shares the leg_guard_steel_light model with plates in `steel-grey`. A pair of guards 600 mm long laid side by side, convex side up, each a chain leg from hip to ankle with a narrow plate 120 degrees round down the thigh and another down the shin, bare chain showing at the knee and ankle, held on by two buckled leather straps; the chain is `steel-mail-dark` so it reads apart from the plates. CHECK VOLUME: box/volume x5.85 because the two half-round guards lie open side down at full length and enclose air; the reference volume is the pair packed. The xl size shares the model. The reference covers both whole legs, but `legs` is the trousers' slot and plate goes on over them, so it takes `shins`, as the full-length splint leg guards do; a slot for whole-leg armour over trousers is open. The reference marks the guards as sided; wearing one guard on one leg has no content field. Protection follows the steel arm guards of the same weight and steel. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_medium",
+    "model": "leg_guard_steel",
+    "name": "Medium steel leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 8,
+      "warmth": 3,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.25, "cut": 0.68, "pierce": 0.58 }
+    },
+    "finishes": { "plate": "steel-grey" },
+    "description": "A pair of forged leg guards in medium steel, tougher than mild. Half-round plates cover the thighs and shins over chain legs, with a domed cop and a side wing over each knee.",
+    "reference": "armor_mc_leg_guard",
+    "variants": ["xl_armor_mc_leg_guard"],
+    "notes": "Shares the leg_guard_steel model with plates in `steel-grey`. A pair of guards 600 mm long laid side by side, convex side up, each a chain leg from hip to ankle with half-round plates over the thigh and shin and a domed knee cop with a wing on the outer side, held on by two buckled leather straps; the chain is `steel-mail-dark` so it reads apart from the plates. CHECK VOLUME: box/volume x8.1 because the two half-round guards lie open side down at full length and enclose air; the reference volume is the pair packed. The xl size shares the model. The reference covers both whole legs, but `legs` is the trousers' slot and plate goes on over them, so it takes `shins`, as the full-length splint leg guards do; a slot for whole-leg armour over trousers is open. The reference marks the guards as sided; wearing one guard on one leg has no content field. Protection follows the steel arm guards of the same weight and steel. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_heavy_medium",
+    "model": "leg_guard_steel_heavy",
+    "name": "Medium steel heavy leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 10,
+      "warmth": 3,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.74, "pierce": 0.64 }
+    },
+    "finishes": { "plate": "steel-grey" },
+    "description": "A pair of forged leg guards in medium steel, tougher than mild. Thick plates wrap the thighs and shins over chain legs, with a rolled edge at the hip, lames either side of a domed knee cop and a flare over the ankle.",
+    "reference": "armor_mc_heavy_leg_guard",
+    "variants": ["xl_armor_mc_heavy_leg_guard"],
+    "notes": "Shares the leg_guard_steel_heavy model with plates in `steel-grey`. A pair of guards 600 mm long laid side by side, convex side up, each a chain leg from hip to ankle with thicker plates wrapping 200 degrees round the thigh and shin, a rolled hip edge, lames either side of a domed knee cop with a side wing and a flare over the ankle, held on by two buckled leather straps; the chain is `steel-mail-dark` so it reads apart from the plates. CHECK VOLUME: box/volume x8.1 because the two half-round guards lie open side down at full length and enclose air; the reference volume is the pair packed. The xl size shares the model. The reference covers both whole legs, but `legs` is the trousers' slot and plate goes on over them, so it takes `shins`, as the full-length splint leg guards do; a slot for whole-leg armour over trousers is open. The reference marks the guards as sided; wearing one guard on one leg has no content field. Protection follows the steel arm guards of the same weight and steel. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_light_high_carbon",
+    "model": "leg_guard_steel_light",
+    "name": "High-carbon steel light leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 5,
+      "warmth": 3,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.15, "cut": 0.64, "pierce": 0.54 }
+    },
+    "finishes": { "plate": "steel-blued" },
+    "description": "A pair of forged leg guards in high-carbon steel, harder than the common kinds. A narrow plate rides down each thigh and another down each shin, on chain legs left bare at the knee.",
+    "reference": "armor_hc_light_leg_guard",
+    "variants": ["xl_armor_hc_light_leg_guard"],
+    "notes": "Shares the leg_guard_steel_light model with plates in `steel-blued`. A pair of guards 600 mm long laid side by side, convex side up, each a chain leg from hip to ankle with a narrow plate 120 degrees round down the thigh and another down the shin, bare chain showing at the knee and ankle, held on by two buckled leather straps; the chain is `steel-mail-dark` so it reads apart from the plates. CHECK VOLUME: box/volume x5.85 because the two half-round guards lie open side down at full length and enclose air; the reference volume is the pair packed. The xl size shares the model. The reference covers both whole legs, but `legs` is the trousers' slot and plate goes on over them, so it takes `shins`, as the full-length splint leg guards do; a slot for whole-leg armour over trousers is open. The reference marks the guards as sided; wearing one guard on one leg has no content field. Protection follows the steel arm guards of the same weight and steel. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_high_carbon",
+    "model": "leg_guard_steel",
+    "name": "High-carbon steel leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 8,
+      "warmth": 3,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.25, "cut": 0.74, "pierce": 0.64 }
+    },
+    "finishes": { "plate": "steel-blued" },
+    "description": "A pair of forged leg guards in high-carbon steel, harder than the common kinds. Half-round plates cover the thighs and shins over chain legs, with a domed cop and a side wing over each knee.",
+    "reference": "armor_hc_leg_guard",
+    "variants": ["xl_armor_hc_leg_guard"],
+    "notes": "Shares the leg_guard_steel model with plates in `steel-blued`. A pair of guards 600 mm long laid side by side, convex side up, each a chain leg from hip to ankle with half-round plates over the thigh and shin and a domed knee cop with a wing on the outer side, held on by two buckled leather straps; the chain is `steel-mail-dark` so it reads apart from the plates. CHECK VOLUME: box/volume x8.1 because the two half-round guards lie open side down at full length and enclose air; the reference volume is the pair packed. The xl size shares the model. The reference covers both whole legs, but `legs` is the trousers' slot and plate goes on over them, so it takes `shins`, as the full-length splint leg guards do; a slot for whole-leg armour over trousers is open. The reference marks the guards as sided; wearing one guard on one leg has no content field. Protection follows the steel arm guards of the same weight and steel. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_heavy_high_carbon",
+    "model": "leg_guard_steel_heavy",
+    "name": "High-carbon steel heavy leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 10,
+      "warmth": 3,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.8, "pierce": 0.7 }
+    },
+    "finishes": { "plate": "steel-blued" },
+    "description": "A pair of forged leg guards in high-carbon steel, harder than the common kinds. Thick plates wrap the thighs and shins over chain legs, with a rolled edge at the hip, lames either side of a domed knee cop and a flare over the ankle.",
+    "reference": "armor_hc_heavy_leg_guard",
+    "variants": ["xl_armor_hc_heavy_leg_guard"],
+    "notes": "Shares the leg_guard_steel_heavy model with plates in `steel-blued`. A pair of guards 600 mm long laid side by side, convex side up, each a chain leg from hip to ankle with thicker plates wrapping 200 degrees round the thigh and shin, a rolled hip edge, lames either side of a domed knee cop with a side wing and a flare over the ankle, held on by two buckled leather straps; the chain is `steel-mail-dark` so it reads apart from the plates. CHECK VOLUME: box/volume x8.1 because the two half-round guards lie open side down at full length and enclose air; the reference volume is the pair packed. The xl size shares the model. The reference covers both whole legs, but `legs` is the trousers' slot and plate goes on over them, so it takes `shins`, as the full-length splint leg guards do; a slot for whole-leg armour over trousers is open. The reference marks the guards as sided; wearing one guard on one leg has no content field. Protection follows the steel arm guards of the same weight and steel. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_light_hardened",
+    "model": "leg_guard_steel_light",
+    "name": "Hardened steel light leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 5,
+      "warmth": 3,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.15, "cut": 0.68, "pierce": 0.58 }
+    },
+    "finishes": { "plate": "steel-parkerized" },
+    "description": "A pair of forged leg guards in hardened steel. A narrow plate rides down each thigh and another down each shin, on chain legs left bare at the knee.",
+    "reference": "armor_ch_light_leg_guard",
+    "variants": ["xl_armor_ch_light_leg_guard"],
+    "notes": "Shares the leg_guard_steel_light model with plates in `steel-parkerized`. A pair of guards 600 mm long laid side by side, convex side up, each a chain leg from hip to ankle with a narrow plate 120 degrees round down the thigh and another down the shin, bare chain showing at the knee and ankle, held on by two buckled leather straps; the chain is `steel-mail-dark` so it reads apart from the plates. CHECK VOLUME: box/volume x5.85 because the two half-round guards lie open side down at full length and enclose air; the reference volume is the pair packed. The xl size shares the model. The reference covers both whole legs, but `legs` is the trousers' slot and plate goes on over them, so it takes `shins`, as the full-length splint leg guards do; a slot for whole-leg armour over trousers is open. The reference marks the guards as sided; wearing one guard on one leg has no content field. Protection follows the steel arm guards of the same weight and steel. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_hardened",
+    "model": "leg_guard_steel",
+    "name": "Hardened steel leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 8,
+      "warmth": 3,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.25, "cut": 0.78, "pierce": 0.68 }
+    },
+    "finishes": { "plate": "steel-parkerized" },
+    "description": "A pair of forged leg guards in hardened steel. Half-round plates cover the thighs and shins over chain legs, with a domed cop and a side wing over each knee.",
+    "reference": "armor_ch_leg_guard",
+    "variants": ["xl_armor_ch_leg_guard"],
+    "notes": "Shares the leg_guard_steel model with plates in `steel-parkerized`. A pair of guards 600 mm long laid side by side, convex side up, each a chain leg from hip to ankle with half-round plates over the thigh and shin and a domed knee cop with a wing on the outer side, held on by two buckled leather straps; the chain is `steel-mail-dark` so it reads apart from the plates. CHECK VOLUME: box/volume x8.1 because the two half-round guards lie open side down at full length and enclose air; the reference volume is the pair packed. The xl size shares the model. The reference covers both whole legs, but `legs` is the trousers' slot and plate goes on over them, so it takes `shins`, as the full-length splint leg guards do; a slot for whole-leg armour over trousers is open. The reference marks the guards as sided; wearing one guard on one leg has no content field. Protection follows the steel arm guards of the same weight and steel. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_heavy_hardened",
+    "model": "leg_guard_steel_heavy",
+    "name": "Hardened steel heavy leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 10,
+      "warmth": 3,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.84, "pierce": 0.74 }
+    },
+    "finishes": { "plate": "steel-parkerized" },
+    "description": "A pair of forged leg guards in hardened steel. Thick plates wrap the thighs and shins over chain legs, with a rolled edge at the hip, lames either side of a domed knee cop and a flare over the ankle.",
+    "reference": "armor_ch_heavy_leg_guard",
+    "variants": ["xl_armor_ch_heavy_leg_guard"],
+    "notes": "Shares the leg_guard_steel_heavy model with plates in `steel-parkerized`. A pair of guards 600 mm long laid side by side, convex side up, each a chain leg from hip to ankle with thicker plates wrapping 200 degrees round the thigh and shin, a rolled hip edge, lames either side of a domed knee cop with a side wing and a flare over the ankle, held on by two buckled leather straps; the chain is `steel-mail-dark` so it reads apart from the plates. CHECK VOLUME: box/volume x8.1 because the two half-round guards lie open side down at full length and enclose air; the reference volume is the pair packed. The xl size shares the model. The reference covers both whole legs, but `legs` is the trousers' slot and plate goes on over them, so it takes `shins`, as the full-length splint leg guards do; a slot for whole-leg armour over trousers is open. The reference marks the guards as sided; wearing one guard on one leg has no content field. Protection follows the steel arm guards of the same weight and steel. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_tempered",
+    "model": "leg_guard_steel",
+    "name": "Tempered steel leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 8,
+      "warmth": 3,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.25, "cut": 0.84, "pierce": 0.74 }
+    },
+    "finishes": { "plate": "steel-heat-tint" },
+    "description": "A pair of forged leg guards in tempered steel, hard without being brittle. Half-round plates cover the thighs and shins over chain legs, with a domed cop and a side wing over each knee.",
+    "reference": "armor_qt_leg_guard",
+    "variants": ["xl_armor_qt_leg_guard"],
+    "notes": "Shares the leg_guard_steel model with plates in `steel-heat-tint`. A pair of guards 600 mm long laid side by side, convex side up, each a chain leg from hip to ankle with half-round plates over the thigh and shin and a domed knee cop with a wing on the outer side, held on by two buckled leather straps; the chain is `steel-mail-dark` so it reads apart from the plates. CHECK VOLUME: box/volume x8.1 because the two half-round guards lie open side down at full length and enclose air; the reference volume is the pair packed. The xl size shares the model. The reference covers both whole legs, but `legs` is the trousers' slot and plate goes on over them, so it takes `shins`, as the full-length splint leg guards do; a slot for whole-leg armour over trousers is open. The reference marks the guards as sided; wearing one guard on one leg has no content field. Protection follows the steel arm guards of the same weight and steel. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leg_guards_heavy_tempered",
+    "model": "leg_guard_steel_heavy",
+    "name": "Tempered steel heavy leg guards",
+    "category": "clothing",
+    "size": [3, 4],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "shins",
+      "encumbrance": 10,
+      "warmth": 3,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0.1, "blunt": 0.35, "cut": 0.9, "pierce": 0.8 }
+    },
+    "finishes": { "plate": "steel-heat-tint" },
+    "description": "A pair of forged leg guards in tempered steel, hard without being brittle. Thick plates wrap the thighs and shins over chain legs, with a rolled edge at the hip, lames either side of a domed knee cop and a flare over the ankle.",
+    "reference": "armor_qt_heavy_leg_guard",
+    "variants": ["xl_armor_qt_heavy_leg_guard"],
+    "notes": "Shares the leg_guard_steel_heavy model with plates in `steel-heat-tint`. A pair of guards 600 mm long laid side by side, convex side up, each a chain leg from hip to ankle with thicker plates wrapping 200 degrees round the thigh and shin, a rolled hip edge, lames either side of a domed knee cop with a side wing and a flare over the ankle, held on by two buckled leather straps; the chain is `steel-mail-dark` so it reads apart from the plates. CHECK VOLUME: box/volume x8.1 because the two half-round guards lie open side down at full length and enclose air; the reference volume is the pair packed. The xl size shares the model. The reference covers both whole legs, but `legs` is the trousers' slot and plate goes on over them, so it takes `shins`, as the full-length splint leg guards do; a slot for whole-leg armour over trousers is open. The reference marks the guards as sided; wearing one guard on one leg has no content field. Protection follows the steel arm guards of the same weight and steel. The worn look is pending: no worn model is authored."
+  }
+]

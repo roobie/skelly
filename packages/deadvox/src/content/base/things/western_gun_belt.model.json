@@ -1,0 +1,11 @@
+{
+  "id": "western_gun_belt",
+  "file": "assets/models/western_gun_belt.glb",
+  "parts": {
+    "western_gun_belt": {
+      "node": "western_gun_belt:compound",
+      "massKg": 0.95,
+      "centreOfMass": [0.08917491513310709, 0.0087243165981776, 0.08244452385206366]
+    }
+  }
+}

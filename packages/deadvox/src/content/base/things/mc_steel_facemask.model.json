@@ -1,0 +1,11 @@
+{
+  "id": "mc_steel_facemask",
+  "file": "assets/models/mc_steel_facemask.glb",
+  "parts": {
+    "mc_steel_facemask": {
+      "node": "mc_steel_facemask:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-4.2662165876234526e-19, 0.057417854463615886, -0.0275483870967742]
+    }
+  }
+}

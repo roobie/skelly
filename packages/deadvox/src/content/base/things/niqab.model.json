@@ -1,0 +1,11 @@
+{
+  "id": "niqab",
+  "file": "assets/models/niqab.glb",
+  "parts": {
+    "niqab": {
+      "node": "niqab:compound",
+      "massKg": 0.11,
+      "centreOfMass": [0, 0.01220086317508457, -0.0008270150472413392]
+    }
+  }
+}

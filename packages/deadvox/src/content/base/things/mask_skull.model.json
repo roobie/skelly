@@ -1,0 +1,11 @@
+{
+  "id": "mask_skull",
+  "file": "assets/models/mask_skull.glb",
+  "parts": {
+    "mask_skull": {
+      "node": "mask_skull:compound",
+      "massKg": 0.098,
+      "centreOfMass": [0.00008861320336730199, 0.11140186087727078, -0.0214612317235268]
+    }
+  }
+}

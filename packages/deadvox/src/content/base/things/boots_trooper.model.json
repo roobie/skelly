@@ -1,0 +1,11 @@
+{
+  "id": "boots_trooper",
+  "file": "assets/models/boots_trooper.glb",
+  "parts": {
+    "boots_trooper": {
+      "node": "boots_trooper:compound",
+      "massKg": 2.6,
+      "centreOfMass": [0, 0.10244028041324058, 0.03735099093400802]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "ugl_buttstock",
+  "file": "assets/models/ugl_buttstock.glb",
+  "parts": {
+    "ugl_buttstock": {
+      "node": "ugl_buttstock:compound",
+      "massKg": 0.32,
+      "centreOfMass": [0.1432918340026774, 0.04147523427041499, 0]
+    }
+  }
+}

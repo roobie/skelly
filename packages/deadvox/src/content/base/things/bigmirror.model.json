@@ -1,0 +1,11 @@
+{
+  "id": "bigmirror",
+  "file": "assets/models/bigmirror.glb",
+  "parts": {
+    "bigmirror": {
+      "node": "bigmirror:compound",
+      "massKg": 13,
+      "centreOfMass": [0, 0.821411235955056, -0.002104119850187266]
+    }
+  }
+}

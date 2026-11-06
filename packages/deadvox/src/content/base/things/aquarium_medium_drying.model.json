@@ -1,0 +1,11 @@
+{
+  "id": "aquarium_medium_drying",
+  "file": "assets/models/aquarium_medium_drying.glb",
+  "parts": {
+    "aquarium_medium_drying": {
+      "node": "aquarium_medium_drying:compound",
+      "massKg": 44,
+      "centreOfMass": [2.6804840102984185e-19, 0.19998734177215188, -4.467473350497364e-20]
+    }
+  }
+}

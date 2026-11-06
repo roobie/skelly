@@ -1,0 +1,11 @@
+{
+  "id": "wetsuit_gloves",
+  "file": "assets/models/wetsuit_gloves.glb",
+  "parts": {
+    "wetsuit_gloves": {
+      "node": "wetsuit_gloves:compound",
+      "massKg": 0.2,
+      "centreOfMass": [-1.20379714924557e-17, 0.00619126819126819, 0.02977380457380457]
+    }
+  }
+}

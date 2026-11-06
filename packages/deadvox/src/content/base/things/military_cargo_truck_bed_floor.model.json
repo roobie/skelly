@@ -1,0 +1,14 @@
+{
+  "id": "military_cargo_truck_bed_floor",
+  "file": "assets/models/military_cargo_truck_bed_floor.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 320,
+      "centreOfMass": [-1.5625, 1.4375, 0],
+      "collision": [{ "min": [-3.375, 1.40625, -1.1875], "max": [0.25, 1.46875, 1.1875] }],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

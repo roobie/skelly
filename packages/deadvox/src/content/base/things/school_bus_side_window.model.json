@@ -1,0 +1,17 @@
+{
+  "id": "school_bus_side_window",
+  "file": "assets/models/school_bus_side_window.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 6.566,
+      "centreOfMass": [0, 0.32927852348993286, 0],
+      "collision": [
+        { "min": [-0.375, -0.03125, -0.03125], "max": [0.375, 0.6875, 0.03125] },
+        { "min": [-0.34375, 0.3125, -0.03125], "max": [0.34375, 0.375, 0.03125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

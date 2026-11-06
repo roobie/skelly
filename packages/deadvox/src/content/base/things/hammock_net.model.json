@@ -1,0 +1,11 @@
+{
+  "id": "hammock_net",
+  "file": "assets/models/hammock_net.glb",
+  "parts": {
+    "hammock_net": {
+      "node": "hammock_net:compound",
+      "massKg": 0.4,
+      "centreOfMass": [-8.074431142057755e-19, 0.026746203904555326, -2.803621924325609e-21]
+    }
+  }
+}

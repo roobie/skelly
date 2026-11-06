@@ -1,0 +1,11 @@
+{
+  "id": "elbow_pads",
+  "file": "assets/models/elbow_pads.glb",
+  "parts": {
+    "elbow_pads": {
+      "node": "elbow_pads:compound",
+      "massKg": 0.18,
+      "centreOfMass": [0, 0.05834588701684838, -8.198023910337242e-19]
+    }
+  }
+}

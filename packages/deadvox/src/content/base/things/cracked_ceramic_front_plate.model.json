@@ -1,0 +1,11 @@
+{
+  "id": "cracked_ceramic_front_plate",
+  "file": "assets/models/cracked_ceramic_front_plate.glb",
+  "parts": {
+    "cracked_ceramic_front_plate": {
+      "node": "cracked_ceramic_front_plate:compound",
+      "massKg": 2.7,
+      "centreOfMass": [-0.0023254498503914407, 0.021823420912407267, 0.0058039103168422345]
+    }
+  }
+}

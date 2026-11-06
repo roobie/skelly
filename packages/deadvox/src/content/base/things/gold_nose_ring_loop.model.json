@@ -1,0 +1,11 @@
+{
+  "id": "gold_nose_ring_loop",
+  "file": "assets/models/gold_nose_ring_loop.glb",
+  "parts": {
+    "gold_nose_ring_loop": {
+      "node": "gold_nose_ring_loop:compound",
+      "massKg": 0.0005,
+      "centreOfMass": [3.0292258760486853e-19, 0.0009999999999999998, 0.00016666666666666672]
+    }
+  }
+}

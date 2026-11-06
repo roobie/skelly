@@ -1,0 +1,11 @@
+{
+  "id": "arm_warmers",
+  "file": "assets/models/arm_warmers.glb",
+  "parts": {
+    "arm_warmers": {
+      "node": "arm_warmers:compound",
+      "massKg": 0.08,
+      "centreOfMass": [-1.6258697925508775e-18, 0.004151254211905652, 0.009554473979782855]
+    }
+  }
+}

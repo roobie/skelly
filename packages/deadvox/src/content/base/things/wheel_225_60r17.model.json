@@ -1,0 +1,17 @@
+{
+  "id": "wheel_225_60r17",
+  "file": "assets/models/wheel_225_60r17.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 26,
+      "centreOfMass": [0, 0, 0],
+      "collision": [
+        { "min": [-0.34375, -0.34375, -0.125], "max": [0.34375, 0.34375, 0.125] },
+        { "min": [-0.21875, -0.21875, -0.09375], "max": [0.21875, 0.21875, 0.09375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": { "hub": [0, 0, 0] }
+}

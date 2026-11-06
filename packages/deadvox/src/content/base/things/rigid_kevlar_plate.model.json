@@ -1,0 +1,11 @@
+{
+  "id": "rigid_kevlar_plate",
+  "file": "assets/models/rigid_kevlar_plate.glb",
+  "parts": {
+    "rigid_kevlar_plate": {
+      "node": "rigid_kevlar_plate:compound",
+      "massKg": 1.6,
+      "centreOfMass": [0, 0.00519958988380041, 0]
+    }
+  }
+}

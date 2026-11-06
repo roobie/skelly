@@ -1,0 +1,11 @@
+{
+  "id": "armor_riot_torso",
+  "file": "assets/models/armor_riot_torso.glb",
+  "parts": {
+    "armor_riot_torso": {
+      "node": "armor_riot_torso:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-2.7868793010841103e-18, 0.025505074752579498, -0.015222320488523913]
+    }
+  }
+}

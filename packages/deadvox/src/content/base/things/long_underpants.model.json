@@ -1,0 +1,11 @@
+{
+  "id": "long_underpants",
+  "file": "assets/models/long_underpants.glb",
+  "parts": {
+    "long_underpants": {
+      "node": "long_underpants:compound",
+      "massKg": 0.25,
+      "centreOfMass": [-8.843972707660672e-20, 0.020277575306805507, -0.0012364447750092974]
+    }
+  }
+}

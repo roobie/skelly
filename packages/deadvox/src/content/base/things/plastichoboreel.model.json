@@ -1,0 +1,14 @@
+{
+  "id": "plastichoboreel",
+  "file": "assets/models/plastichoboreel.glb",
+  "parts": {
+    "plastichoboreel": {
+      "node": "plastichoboreel:compound",
+      "massKg": 0.12,
+      "centreOfMass": [0.015551125020234173, 0.040311498408244745, 0]
+    }
+  },
+  "grip": { "at": [-0.041, 0.039999999999999994, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

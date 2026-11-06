@@ -1,0 +1,11 @@
+{
+  "id": "armor_ch_lightplate",
+  "file": "assets/models/armor_ch_lightplate.glb",
+  "parts": {
+    "armor_ch_lightplate": {
+      "node": "armor_ch_lightplate:compound",
+      "massKg": 15,
+      "centreOfMass": [1.6391143224743706e-17, 0.03535744623474692, -0.07813975594957173]
+    }
+  }
+}

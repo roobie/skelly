@@ -1,0 +1,11 @@
+{
+  "id": "uttarasanga",
+  "file": "assets/models/uttarasanga.glb",
+  "parts": {
+    "uttarasanga": {
+      "node": "uttarasanga:compound",
+      "massKg": 0.43,
+      "centreOfMass": [0, 0.020493057247259455, -0.0013948842874543243]
+    }
+  }
+}

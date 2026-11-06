@@ -1,0 +1,11 @@
+{
+  "id": "grim_reaper_robe_faceless",
+  "file": "assets/models/grim_reaper_robe_faceless.glb",
+  "parts": {
+    "grim_reaper_robe_faceless": {
+      "node": "grim_reaper_robe_faceless:compound",
+      "massKg": 0.8,
+      "centreOfMass": [0.00031578229746619704, 0.029457970685149416, 0.005755027837745712]
+    }
+  }
+}

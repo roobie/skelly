@@ -1,0 +1,11 @@
+{
+  "id": "metal_butcher_rack",
+  "file": "assets/models/metal_butcher_rack.glb",
+  "parts": {
+    "metal_butcher_rack": {
+      "node": "metal_butcher_rack:compound",
+      "massKg": 2.8,
+      "centreOfMass": [-0.0010813650722319983, 0.03135925666477246, -0.000161976764165534]
+    }
+  }
+}

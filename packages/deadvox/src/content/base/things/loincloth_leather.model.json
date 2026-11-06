@@ -1,0 +1,11 @@
+{
+  "id": "loincloth_leather",
+  "file": "assets/models/loincloth_leather.glb",
+  "parts": {
+    "loincloth_leather": {
+      "node": "loincloth_leather:compound",
+      "massKg": 0.2,
+      "centreOfMass": [0, 0.00465487377925189, -0.016508199742030587]
+    }
+  }
+}

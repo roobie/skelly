@@ -1,0 +1,11 @@
+{
+  "id": "face_shield_eod",
+  "file": "assets/models/face_shield_eod.glb",
+  "parts": {
+    "face_shield_eod": {
+      "node": "face_shield_eod:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0, 0.11337637795275586, -0.04981867266591674]
+    }
+  }
+}

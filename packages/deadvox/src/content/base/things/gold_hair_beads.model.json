@@ -1,0 +1,11 @@
+{
+  "id": "gold_hair_beads",
+  "file": "assets/models/gold_hair_beads.glb",
+  "parts": {
+    "gold_hair_beads": {
+      "node": "gold_hair_beads:compound",
+      "massKg": 0.01,
+      "centreOfMass": [0.0007139423076923076, 0.004144230769230768, 0.0056875]
+    }
+  }
+}

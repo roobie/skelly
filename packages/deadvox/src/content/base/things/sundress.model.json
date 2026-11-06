@@ -1,0 +1,11 @@
+{
+  "id": "sundress",
+  "file": "assets/models/sundress.glb",
+  "parts": {
+    "sundress": {
+      "node": "sundress:compound",
+      "massKg": 0.4,
+      "centreOfMass": [0.0001986696762079778, 0.016444759602900334, -0.0005144318159119503]
+    }
+  }
+}

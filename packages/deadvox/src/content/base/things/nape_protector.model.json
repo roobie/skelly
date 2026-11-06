@@ -1,0 +1,11 @@
+{
+  "id": "nape_protector",
+  "file": "assets/models/nape_protector.glb",
+  "parts": {
+    "nape_protector": {
+      "node": "nape_protector:compound",
+      "massKg": 0.04,
+      "centreOfMass": [3.328694617919628e-18, 0.002382293762575453, 0.01630784708249497]
+    }
+  }
+}

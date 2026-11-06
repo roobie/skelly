@@ -1,0 +1,11 @@
+{
+  "id": "cloak",
+  "file": "assets/models/cloak.glb",
+  "parts": {
+    "cloak": {
+      "node": "cloak:compound",
+      "massKg": 1,
+      "centreOfMass": [8.101211131064203e-8, 0.02828691789422518, -0.003046676478133481]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "quiver_simple_cloth",
+  "file": "assets/models/quiver_simple_cloth.glb",
+  "parts": {
+    "quiver_simple_cloth": {
+      "node": "quiver_simple_cloth:compound",
+      "massKg": 0.12,
+      "centreOfMass": [0.2821882134427117, 0.03931919668769105, 0.0009328638315984985]
+    }
+  }
+}

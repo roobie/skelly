@@ -1,0 +1,11 @@
+{
+  "id": "mbelt_pockets_greater",
+  "file": "assets/models/mbelt_pockets_greater.glb",
+  "parts": {
+    "mbelt_pockets_greater": {
+      "node": "mbelt_pockets_greater:compound",
+      "massKg": 3,
+      "centreOfMass": [0.017576218542884405, 0.020891535620827115, 0.0142210863557436]
+    }
+  }
+}

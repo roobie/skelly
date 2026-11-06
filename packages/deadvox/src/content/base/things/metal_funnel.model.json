@@ -1,0 +1,11 @@
+{
+  "id": "metal_funnel",
+  "file": "assets/models/metal_funnel.glb",
+  "parts": {
+    "metal_funnel": {
+      "node": "metal_funnel:compound",
+      "massKg": 1.5,
+      "centreOfMass": [0.00461926091825308, 0.30037513997760357, 0]
+    }
+  }
+}

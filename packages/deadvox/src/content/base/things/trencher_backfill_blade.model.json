@@ -1,0 +1,18 @@
+{
+  "id": "trencher_backfill_blade",
+  "file": "assets/models/trencher_backfill_blade.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 110,
+      "centreOfMass": [1.707435344827586, 0.27882543103448276, 0],
+      "collision": [
+        { "min": [1.625, 0.03125, -0.84375], "max": [1.8125, 0.59375, 0.84375] },
+        { "min": [1.59375, 0, -0.84375], "max": [1.71875, 0.0625, 0.84375] },
+        { "min": [1.5625, 0.34375, -0.1875], "max": [1.6875, 0.5, 0.1875] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

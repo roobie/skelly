@@ -1,0 +1,14 @@
+{
+  "id": "rubber_cement",
+  "file": "assets/models/rubber_cement.glb",
+  "parts": {
+    "rubber_cement": {
+      "node": "rubber_cement:compound",
+      "massKg": 0.25,
+      "centreOfMass": [0, 0.043390899689762126, -2.004865109277309e-21]
+    }
+  },
+  "grip": { "at": [0, 0.042, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

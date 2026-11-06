@@ -1,0 +1,11 @@
+{
+  "id": "helmet_skull",
+  "file": "assets/models/helmet_skull.glb",
+  "parts": {
+    "helmet_skull": {
+      "node": "helmet_skull:compound",
+      "massKg": 1.1,
+      "centreOfMass": [0.0003234206662302969, 0.05852739398871341, -0.01647287137120316]
+    }
+  }
+}

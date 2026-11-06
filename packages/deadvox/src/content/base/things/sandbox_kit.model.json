@@ -1,0 +1,14 @@
+{
+  "id": "sandbox_kit",
+  "file": "assets/models/sandbox_kit.glb",
+  "parts": {
+    "sandbox_kit": {
+      "node": "sandbox_kit:compound",
+      "massKg": 0.2,
+      "centreOfMass": [-0.0007065365410803454, 0.07487993645029506, -0.0004435510018805525]
+    }
+  },
+  "grip": { "at": [0, 0.065, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

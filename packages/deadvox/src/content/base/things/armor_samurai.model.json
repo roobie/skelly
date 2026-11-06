@@ -1,0 +1,11 @@
+{
+  "id": "armor_samurai",
+  "file": "assets/models/armor_samurai.glb",
+  "parts": {
+    "armor_samurai": {
+      "node": "armor_samurai:compound",
+      "massKg": 12,
+      "centreOfMass": [0.0017418281319331594, 0.017462209732288105, -0.10088115663363414]
+    }
+  }
+}

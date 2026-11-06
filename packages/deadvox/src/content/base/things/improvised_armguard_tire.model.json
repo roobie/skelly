@@ -1,0 +1,11 @@
+{
+  "id": "improvised_armguard_tire",
+  "file": "assets/models/improvised_armguard_tire.glb",
+  "parts": {
+    "improvised_armguard_tire": {
+      "node": "improvised_armguard_tire:compound",
+      "massKg": 1.2,
+      "centreOfMass": [-0.018831534019583165, 0.052110168214913204, 1.2252989239424674e-17]
+    }
+  }
+}

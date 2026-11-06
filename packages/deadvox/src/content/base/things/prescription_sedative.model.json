@@ -1,0 +1,14 @@
+{
+  "id": "prescription_sedative",
+  "file": "assets/models/prescription_sedative.glb",
+  "parts": {
+    "prescription_sedative": {
+      "node": "prescription_sedative:vessel",
+      "massKg": 0.03,
+      "centreOfMass": [0, 0.02934782608695653, 0]
+    }
+  },
+  "grip": { "at": [0, 0.026000000000000002, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

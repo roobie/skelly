@@ -1,0 +1,11 @@
+{
+  "id": "plastic_chin_guard",
+  "file": "assets/models/plastic_chin_guard.glb",
+  "parts": {
+    "plastic_chin_guard": {
+      "node": "plastic_chin_guard:compound",
+      "massKg": 0.02,
+      "centreOfMass": [-2.20463915925647e-19, 0.02, -0.014782515991471214]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "sieve_steel_makeshift",
+  "file": "assets/models/sieve_steel_makeshift.glb",
+  "parts": {
+    "sieve_steel_makeshift": {
+      "node": "sieve_steel_makeshift:compound",
+      "massKg": 0.15,
+      "centreOfMass": [-0.0489075018208303, 0.002767662053896576, -0.000037144938091769916]
+    }
+  },
+  "grip": { "at": [0.07100000000000001, 0.002, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

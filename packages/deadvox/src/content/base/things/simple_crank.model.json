@@ -1,0 +1,11 @@
+{
+  "id": "simple_crank",
+  "file": "assets/models/simple_crank.glb",
+  "parts": {
+    "simple_crank": {
+      "node": "simple_crank:compound",
+      "massKg": 0.81,
+      "centreOfMass": [0.04698191593352885, 0.012, 0.0723264907135875]
+    }
+  }
+}

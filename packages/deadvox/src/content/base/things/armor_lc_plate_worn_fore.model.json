@@ -1,0 +1,11 @@
+{
+  "id": "armor_lc_plate_worn_fore",
+  "file": "assets/models/armor_lc_plate_worn_fore.glb",
+  "parts": {
+    "armor_lc_plate_worn_fore": {
+      "node": "armor_lc_plate_worn_fore:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0, -0.09908189456962503, -0.00047155219263408715]
+    }
+  }
+}

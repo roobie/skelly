@@ -1,0 +1,11 @@
+{
+  "id": "bench_vise",
+  "file": "assets/models/bench_vise.glb",
+  "parts": {
+    "bench_vise": {
+      "node": "bench_vise:compound",
+      "massKg": 12,
+      "centreOfMass": [0, 0.10264127412820717, -0.026758678211136703]
+    }
+  }
+}

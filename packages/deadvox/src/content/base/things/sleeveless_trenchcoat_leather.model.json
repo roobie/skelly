@@ -1,0 +1,11 @@
+{
+  "id": "sleeveless_trenchcoat_leather",
+  "file": "assets/models/sleeveless_trenchcoat_leather.glb",
+  "parts": {
+    "sleeveless_trenchcoat_leather": {
+      "node": "sleeveless_trenchcoat_leather:compound",
+      "massKg": 1.8,
+      "centreOfMass": [-0.00023951776597707736, 0.027171221782543636, 0.0007618559448875401]
+    }
+  }
+}

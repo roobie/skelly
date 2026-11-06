@@ -1,0 +1,11 @@
+{
+  "id": "household_water_heater",
+  "file": "assets/models/household_water_heater.glb",
+  "parts": {
+    "household_water_heater": {
+      "node": "household_water_heater:compound",
+      "massKg": 65,
+      "centreOfMass": [0.00042341744492821655, 0.5914253111697395, 0.0024255053979249956]
+    }
+  }
+}

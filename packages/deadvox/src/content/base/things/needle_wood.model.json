@@ -1,0 +1,14 @@
+{
+  "id": "needle_wood",
+  "file": "assets/models/needle_wood.glb",
+  "parts": {
+    "needle_wood": {
+      "node": "needle_wood:compound",
+      "massKg": 0.0014,
+      "centreOfMass": [0.03480368098159509, 0.0038834355828220864, 0.000010224948875255642]
+    }
+  },
+  "grip": { "at": [0.05, 0.004, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

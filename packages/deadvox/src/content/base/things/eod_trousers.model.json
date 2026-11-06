@@ -1,0 +1,11 @@
+{
+  "id": "eod_trousers",
+  "file": "assets/models/eod_trousers.glb",
+  "parts": {
+    "eod_trousers": {
+      "node": "eod_trousers:compound",
+      "massKg": 6.9,
+      "centreOfMass": [0.00042254680904139273, 0.07516828004775966, -0.00724898704532079]
+    }
+  }
+}

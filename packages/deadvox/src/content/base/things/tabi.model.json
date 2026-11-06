@@ -1,0 +1,11 @@
+{
+  "id": "tabi",
+  "file": "assets/models/tabi.glb",
+  "parts": {
+    "tabi": {
+      "node": "tabi:compound",
+      "massKg": 0.1,
+      "centreOfMass": [6.50340538776602e-18, 0.007250317662007626, -0.03439008894536213]
+    }
+  }
+}

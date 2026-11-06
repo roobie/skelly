@@ -1,0 +1,11 @@
+{
+  "id": "duffelbag_gym_xxs",
+  "file": "assets/models/duffelbag_gym_xxs.glb",
+  "parts": {
+    "duffelbag_gym_xxs": {
+      "node": "duffelbag_gym_xxs:compound",
+      "massKg": 0.55,
+      "centreOfMass": [0.000007202693180928676, 0.09481124246457379, 0.0038954043685899956]
+    }
+  }
+}

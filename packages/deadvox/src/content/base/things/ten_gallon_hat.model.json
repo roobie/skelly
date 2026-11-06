@@ -1,0 +1,11 @@
+{
+  "id": "ten_gallon_hat",
+  "file": "assets/models/ten_gallon_hat.glb",
+  "parts": {
+    "ten_gallon_hat": {
+      "node": "ten_gallon_hat:compound",
+      "massKg": 0.5,
+      "centreOfMass": [0.000057818365174519605, 0.06339107699777767, -0.0005339234691019107]
+    }
+  }
+}

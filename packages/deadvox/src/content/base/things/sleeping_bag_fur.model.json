@@ -1,0 +1,11 @@
+{
+  "id": "sleeping_bag_fur",
+  "file": "assets/models/sleeping_bag_fur.glb",
+  "parts": {
+    "sleeping_bag_fur": {
+      "node": "sleeping_bag_fur:compound",
+      "massKg": 2.2,
+      "centreOfMass": [0.009770320353353304, 0.027443468548509934, -0.21570030969183124]
+    }
+  }
+}

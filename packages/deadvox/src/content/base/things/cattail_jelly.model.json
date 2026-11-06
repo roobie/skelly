@@ -1,0 +1,10 @@
+{
+  "id": "cattail_jelly",
+  "file": "assets/models/cattail_jelly.glb",
+  "parts": {
+    "cattail_jelly": { "node": "cattail_jelly:compound", "massKg": 0.32, "centreOfMass": [0, 0.036263394529786434, 0] }
+  },
+  "grip": { "at": [0, 0.036000000000000004, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

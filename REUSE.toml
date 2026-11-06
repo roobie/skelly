@@ -1,0 +1,340 @@
+# Licensing by path. The rule and its reasons are in `docs/licensing.md`.
+# When several annotations match a file, the last one wins, so this file runs from the
+# default, through content and the code inside content folders, to third-party files.
+# Our own annotations override what a file seems to say about itself, since a stray "©" in
+# code would otherwise read as a copyright notice; a third-party file's own notice wins.
+version = 1
+
+# Code, docs, tests and build config.
+[[annotations]]
+path = "**"
+precedence = "override"
+SPDX-License-Identifier = "EUPL-1.2"
+SPDX-FileCopyrightText = "Björn Roberg"
+
+# Content: models, their authoring sources, game data, maps and our own media.
+[[annotations]]
+path = [
+  "assets/**",
+  "site/assets/**",
+  "things/catalogue-drafts/**",
+  "packages/deadvox/src/content/**",
+  "packages/deadvox/src/config/bundled/**",
+  "packages/deadvox/maps/**.tmj",
+  "packages/deadvox/public/favicon.svg",
+  "packages/deadvox/playtests/*/assets/**",
+  "packages/gun-authoring-tool/cartridges/**",
+  "packages/gun-authoring-tool/designs/**",
+  "packages/gun-authoring-tool/exports/**",
+  "packages/gun-authoring-tool/references/**",
+  "packages/gun-authoring-tool/src/gun/*.json",
+  "packages/gun-authoring-tool/src/gun/*.jsonnet",
+  "packages/gun-authoring-tool/fixtures/archetype-*.json",
+  "packages/gun-authoring-tool/fixtures/ak-standard-handguard.json",
+  "packages/thing-authoring-tool/*.libsonnet",
+  "packages/thing-authoring-tool/items.json",
+  "packages/thing-authoring-tool/items.jsonnet",
+  "packages/thing-authoring-tool/catalogue/**",
+  "packages/thing-authoring-tool/experiments/**",
+  "packages/thing-authoring-tool/exports/**",
+  "packages/thing-authoring-tool/vehicles/**",
+  "packages/thing-core/src/materials.json",
+  "packages/thing-core/src/materials.jsonnet",
+  "packages/mobgen/src/mob/*.json",
+  "packages/mobgen/src/mob/*.jsonnet",
+]
+precedence = "override"
+SPDX-License-Identifier = "CC-BY-NC-SA-4.0"
+SPDX-FileCopyrightText = "Björn Roberg"
+
+# Code inside content folders: libraries that build models or entries from parameters, and docs.
+[[annotations]]
+path = [
+  "**.md",
+  "packages/deadvox/src/content/base/authored-site-kit.libsonnet",
+  "packages/deadvox/src/content/base/vehicle-kit.libsonnet",
+  "packages/deadvox/src/content/base/vehicle-powertrain.libsonnet",
+  "packages/thing-authoring-tool/compound.libsonnet",
+  "packages/thing-authoring-tool/footwear.libsonnet",
+  "packages/thing-authoring-tool/garments.libsonnet",
+  "packages/thing-authoring-tool/worn-fit.libsonnet",
+  "packages/thing-authoring-tool/vehicles/bus-body.libsonnet",
+  "packages/thing-authoring-tool/vehicles/car-body.libsonnet",
+  "packages/thing-authoring-tool/vehicles/car-shape.libsonnet",
+  "packages/thing-authoring-tool/vehicles/helicopter-kit.libsonnet",
+  "packages/thing-authoring-tool/vehicles/kit.libsonnet",
+  "packages/thing-authoring-tool/vehicles/machine-kit.libsonnet",
+  "packages/thing-authoring-tool/vehicles/military-kit.libsonnet",
+  "packages/thing-authoring-tool/vehicles/trailer-frame.libsonnet",
+  "packages/thing-authoring-tool/vehicles/truck-cab.libsonnet",
+  "packages/thing-authoring-tool/vehicles/van-body.libsonnet",
+]
+precedence = "override"
+SPDX-License-Identifier = "EUPL-1.2"
+SPDX-FileCopyrightText = "Björn Roberg"
+
+# Third-party files, as received. Each declares its source's own licence and authors.
+
+# Rapier's TypeScript bindings and LICENSE, from dimforge/rapier.js at the revision in
+# provenance.json, built by packages/deadvox/tools/rapier-f64.
+[[annotations]]
+path = "packages/deadvox/vendor/rapier-f64/**"
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = "2020 Sébastien Crozet"
+
+# The WebAssembly module statically links the Rust crates pinned in
+# packages/deadvox/tools/rapier-f64/Cargo.lock; besides Apache-2.0, some of them are MIT or Zlib only.
+[[annotations]]
+path = "packages/deadvox/vendor/rapier-f64/rapier_wasm3d_bg.wasm"
+SPDX-License-Identifier = "Apache-2.0 AND MIT AND Zlib"
+SPDX-FileCopyrightText = ["2020 Sébastien Crozet", "The authors of the crates pinned in packages/deadvox/tools/rapier-f64/Cargo.lock"]
+
+# Written by our build script, not received from Rapier.
+[[annotations]]
+path = [
+  "packages/deadvox/vendor/rapier-f64/package.json",
+  "packages/deadvox/vendor/rapier-f64/provenance.json",
+]
+precedence = "override"
+SPDX-License-Identifier = "EUPL-1.2"
+SPDX-FileCopyrightText = "Björn Roberg"
+
+# Reference figures from OpenGameArt; sources in packages/mobgen/reference/README.md.
+[[annotations]]
+path = "packages/mobgen/reference/human_male.blend"
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "VideroBoy"
+
+[[annotations]]
+path = "packages/mobgen/reference/fgc_skeleton.blend"
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "Gord Goodwin"
+
+# Sounds and the cursor from the asset manifest's third-party sources: each source's
+# title, page and changes are in packages/deadvox/src/content/base/assets/manifest.libsonnet.
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/gunshot-ar15-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/gunshot-ar15-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/gunshot-sw642-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/gunshot-sw642-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/gunshot-tikka-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/gunshot-tikka-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/revolver-crane-close-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/revolver-crane-open-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/revolver-dry-click-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/revolver-eject-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/revolver-hammer-cock-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/revolver-round-insert-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/revolver-round-insert-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shotgun-model12-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shotgun-model12-02.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/shotgun-rack-back.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shotgun-rack-forward.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "SpringySpringo"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/shotgun-insert-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shotgun-insert-02.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "zer0_sol"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/revolver-case-pick-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/rifle-bolt-close-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/rifle-bolt-open-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shotgun-hull-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shotgun-hull-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shotgun-hull-03.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "LFA"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/firearm-dry-click-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/firearm-dry-click-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/firearm-dry-click-03.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shotgun-dry-click-01.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "Rvgerxini"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/grenade-blast-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/grenade-blast-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/melee-swing-light-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/melee-swing-light-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/melee-swing-light-03.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "florianreichelt"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/melee-swing-heavy-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/player-hurt-heavy-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/player-hurt-heavy-05.ogg",
+  "packages/deadvox/src/content/base/assets/audio/player-hurt-heavy-08.ogg",
+  "packages/deadvox/src/content/base/assets/audio/player-hurt-light-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/player-hurt-light-03.ogg",
+  "packages/deadvox/src/content/base/assets/audio/player-hurt-light-06.ogg",
+  "packages/deadvox/src/content/base/assets/audio/player-strain-09.ogg",
+  "packages/deadvox/src/content/base/assets/audio/player-strain-12.ogg",
+  "packages/deadvox/src/content/base/assets/audio/player-strain-14.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "qubodup"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/melee-hit-metal-01.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "Rickplayer"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/melee-hit-metal-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/melee-hit-metal-03.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "colorsCrimsonTears"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/magazine-clipload-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/magazine-clipload-02.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "BMacZero"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/door-close-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/door-close-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/door-close-03.ogg",
+  "packages/deadvox/src/content/base/assets/audio/door-open-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/door-open-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/door-open-03.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-mud-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-mud-03.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-mud-04.ogg",
+  "packages/deadvox/src/content/base/assets/audio/item_drop_wood-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/item_drop_wood-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/melee-swing-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/melee-swing-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/melee-swing-03.ogg",
+  "packages/deadvox/src/content/base/assets/audio/melee_hit_fist-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/player-block-full-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/pouch_take-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shambler-hurt-01.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "rubberduck"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/shambler-alert-04.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shambler-alert-05.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shambler-alert-06.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shambler-attack-07.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shambler-attack-08.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shambler-attack-09.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shambler-idle-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shambler-idle-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shambler-idle-03.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "artisticdude"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/melee-hit-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/melee-hit-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/melee-hit-03.ogg",
+  "packages/deadvox/src/content/base/assets/audio/melee-hit-04.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shambler-hit-05.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shambler-hit-06.ogg",
+  "packages/deadvox/src/content/base/assets/audio/shambler-hit-07.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "Independent.nu"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/footstep-leaves-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-leaves-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-mud-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-stone-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-wood-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-wood-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-wood-03.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "TinyWorlds"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/footstep-grass-sand-01.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-grass-sand-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-grass-sand-03.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-grass-sand-04.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-grass-sand-05.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-grass-sand-06.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-stone-02.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-stone-03.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-stone-04.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-stone-05.ogg",
+  "packages/deadvox/src/content/base/assets/audio/footstep-stone-06.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "Fantozzi"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/player-landing-hard-01.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "MentalSanityOff"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/cursors/cursor.png",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "Ivan Voirol"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/melee_swing-01.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = ["remaxim", "qubodup"]
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/door_blocked_close-01.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "Jordan Irwin (AntumDeluge)"
+
+[[annotations]]
+path = [
+  "packages/deadvox/src/content/base/assets/audio/heartbeat-fast-beat.ogg",
+  "packages/deadvox/src/content/base/assets/audio/heartbeat-slow-beat.ogg",
+]
+SPDX-License-Identifier = "CC0-1.0"
+SPDX-FileCopyrightText = "bart"

@@ -1,0 +1,248 @@
+[
+  {
+    "id": "golf_shoes",
+    "model": "golf_shoes",
+    "name": "Golf shoes",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Commercial", "Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "feet", "encumbrance": 12, "warmth": 15, "wearPerDamage": 0.0012 },
+    "description": "A pair of laced white leather sports shoes with brown toe caps and saddles, their soles set with short metal spikes for grip on grass.",
+    "reference": "golf_shoes",
+    "variants": [],
+    "notes": "A standing pair, each shoe 290 mm long and 100 mm wide, toes on +z: white uppers, brown toe caps and side saddles, white laces over three rungs, black soles lifted on eight short steel spikes. CHECK VOLUME (x5.8): the reference counts the shoes packed; the box spans the air inside and between the pair. The reference's cotton lining has no part of its own. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lc_chainmail_feet",
+    "model": "chainmail_chausses",
+    "name": "Mild steel mail chausses",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0015,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.8, "pierce": 0.35 }
+    },
+    "description": "A pair of mail booties of riveted mild steel rings, worn over socks to turn blades from the feet.",
+    "reference": "lc_chainmail_feet",
+    "variants": ["xl_lc_chainmail_feet", "xs_lc_chainmail_feet"],
+    "notes": "A standing pair of soft mail booties, each 280 mm long, 105 mm wide and 160 mm tall, toes on +z, with no stiff sole, three rows of rings standing proud round the ankle, a turned cuff and a leather tie round each ankle. CHECK VOLUME (x23): the reference counts the mail bundled flat; standing, the box spans the air inside the booties and between the pair. At 4 mm grain single rings cannot show, so the mail reads as a ribbed grey shell. The xl_ and xs_ sizes share this model. Mild steel takes the dull steel-mail finish. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_chainmail_feet",
+    "model": "chainmail_chausses",
+    "name": "Medium steel mail chausses",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.82, "pierce": 0.38 }
+    },
+    "finishes": { "collar": "steel", "sole": "steel", "toe": "steel", "upper": "steel" },
+    "description": "A pair of mail booties of riveted medium steel rings, worn over socks to turn blades from the feet.",
+    "reference": "mc_chainmail_feet",
+    "variants": ["xl_mc_chainmail_feet", "xs_mc_chainmail_feet"],
+    "notes": "Shares the mail chausses model; the finishes map gives it plain steel rings. A standing pair of soft mail booties, each 280 mm long, 105 mm wide and 160 mm tall, toes on +z, with no stiff sole, three rows of rings standing proud round the ankle, a turned cuff and a leather tie round each ankle. CHECK VOLUME (x23): the reference counts the mail bundled flat; standing, the box spans the air inside the booties and between the pair. At 4 mm grain single rings cannot show, so the mail reads as a ribbed grey shell. The xl_ and xs_ sizes share this model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_chainmail_feet",
+    "model": "chainmail_chausses",
+    "name": "High steel mail chausses",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 14,
+      "warmth": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.15, "cut": 0.85, "pierce": 0.4 }
+    },
+    "finishes": {
+      "collar": "steel-galvanised",
+      "sole": "steel-galvanised",
+      "toe": "steel-galvanised",
+      "upper": "steel-galvanised"
+    },
+    "description": "A pair of mail booties of riveted high carbon steel rings, worn over socks to turn blades from the feet.",
+    "reference": "hc_chainmail_feet",
+    "variants": ["xl_hc_chainmail_feet", "xs_hc_chainmail_feet"],
+    "notes": "Shares the mail chausses model; the finishes map gives it bright galvanised-looking rings, matching the high steel mail sleeves. A standing pair of soft mail booties, each 280 mm long, 105 mm wide and 160 mm tall, toes on +z, with no stiff sole, three rows of rings standing proud round the ankle, a turned cuff and a leather tie round each ankle. CHECK VOLUME (x23): the reference counts the mail bundled flat; standing, the box spans the air inside the booties and between the pair. At 4 mm grain single rings cannot show, so the mail reads as a ribbed grey shell. The xl_ and xs_ sizes share this model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lc_sabaton",
+    "model": "sabaton",
+    "name": "Mild steel sabatons",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 10,
+      "warmth": 0,
+      "wearPerDamage": 0.0012,
+      "protects": { "acid": 0, "blunt": 0.4, "cut": 0.7, "pierce": 0.5 }
+    },
+    "description": "A pair of jointed steel foot covers, the lames sliding over each other as the foot flexes, strapped on over a shoe.",
+    "reference": "lc_sabaton",
+    "variants": ["xl_lc_sabaton"],
+    "notes": "A standing pair of foot covers over a shoe that is not there, each 280 mm long and 110 mm wide, toes on +z: six lames stepping down the instep to a pointed toe cap, a heel cup with an open ankle ring showing the leather lining, and a leather strap under the arch buckled on the outer side. CHECK VOLUME (x15): the reference counts the plates nested; the box spans the hollow where the shoe goes and the gap between the pair. The reference wears sabatons on an outer layer over other footwear; no outer foot slot exists, so this takes feet and cannot be worn over shoes until one does. The xl_ size shares this model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mc_sabaton",
+    "model": "sabaton",
+    "name": "Medium steel sabatons",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 10,
+      "warmth": 0,
+      "wearPerDamage": 0.001,
+      "protects": { "acid": 0, "blunt": 0.42, "cut": 0.75, "pierce": 0.55 }
+    },
+    "finishes": { "plate": "steel", "toe": "steel" },
+    "description": "A pair of jointed medium steel foot covers, the lames sliding over each other as the foot flexes, strapped on over a shoe.",
+    "reference": "mc_sabaton",
+    "variants": ["xl_mc_sabaton"],
+    "notes": "Shares the sabaton model; the finishes map gives it bright steel plates. A standing pair of foot covers over a shoe that is not there, each 280 mm long and 110 mm wide, toes on +z: six lames stepping down the instep to a pointed toe cap, a heel cup with an open ankle ring showing the leather lining, and a leather strap under the arch buckled on the outer side. CHECK VOLUME (x15): the reference counts the plates nested; the box spans the hollow where the shoe goes and the gap between the pair. The reference wears sabatons on an outer layer over other footwear; no outer foot slot exists, so this takes feet and cannot be worn over shoes until one does. The xl_ size shares this model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "hc_sabaton",
+    "model": "sabaton",
+    "name": "High steel sabatons",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 10,
+      "warmth": 0,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0, "blunt": 0.45, "cut": 0.8, "pierce": 0.6 }
+    },
+    "finishes": { "plate": "steel-heat-tint", "toe": "steel-heat-tint" },
+    "description": "A pair of jointed hardened steel foot covers, the lames sliding over each other as the foot flexes, strapped on over a shoe.",
+    "reference": "hc_sabaton",
+    "variants": ["xl_hc_sabaton"],
+    "notes": "Shares the sabaton model; the finishes map gives it tempered steel plates. A standing pair of foot covers over a shoe that is not there, each 280 mm long and 110 mm wide, toes on +z: six lames stepping down the instep to a pointed toe cap, a heel cup with an open ankle ring showing the leather lining, and a leather strap under the arch buckled on the outer side. CHECK VOLUME (x15): the reference counts the plates nested; the box spans the hollow where the shoe goes and the gap between the pair. The reference wears sabatons on an outer layer over other footwear; no outer foot slot exists, so this takes feet and cannot be worn over shoes until one does. The xl_ size shares this model. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "heels",
+    "model": "heels",
+    "name": "High heels",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Commercial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "feet", "encumbrance": 50, "warmth": 0, "wearPerDamage": 0.002 },
+    "description": "A pair of glossy red leather pumps on tall, thin heels. They make walking slow and running near impossible.",
+    "reference": "heels",
+    "variants": [],
+    "notes": "A standing pair, each shoe 240 mm long and 75 mm wide, toes on +z: red uppers over a closed toe, low quarters round the open back showing a brown insole, the sole sloping from an 85 mm black stiletto heel down to the ball. CHECK VOLUME (x8.1): the box spans the air under the arch and between the pair. Glossy red leather has no finish, so the upper uses paint-red. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jikatabi",
+    "model": "jikatabi",
+    "name": "Split-toe boots",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Industrial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "feet", "encumbrance": 4, "warmth": 20, "wearPerDamage": 0.002 },
+    "description": "A pair of thin black leather boots with the big toe parted from the rest, closed up the inner side by small brass clasps.",
+    "reference": "jikatabi",
+    "variants": [],
+    "notes": "A standing pair, each boot 270 mm long, 95 mm wide and 200 mm tall, toes on +z: black leather shafts, a thin rubber sole, the big toe split from the others at the front, and five brass clasps up the inner side. CHECK VOLUME (x25): the reference counts the soft boots folded flat; standing, the box spans the shaft's air and the gap between the pair. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "jikatabi_sneakers",
+    "model": "jikatabi_sneakers",
+    "name": "Split-toe sneakers",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Commercial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "feet", "encumbrance": 2, "warmth": 20, "wearPerDamage": 0.002 },
+    "description": "A pair of navy canvas shoes with the big toe parted from the rest, laced over a thick, grippy rubber sole.",
+    "reference": "jikatabi_sneakers",
+    "variants": [],
+    "notes": "A standing pair, each shoe 270 mm long, 95 mm wide and 110 mm tall, toes on +z: navy canvas uppers with the big toe split from the others, white laces over two rungs, black rubber soles and collars. CHECK VOLUME (x15): the reference counts the shoes squashed flat; the box spans the air inside and between the pair. Canvas uses the cloth-navy finish. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "knee_high_boots",
+    "model": "knee_high_boots",
+    "name": "Knee-high boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Residential", "Commercial"], "tiers": ["Tier1", "Tier2"] },
+    "wearable": { "slot": "feet", "encumbrance": 20, "warmth": 20, "wearPerDamage": 0.0012 },
+    "description": "A pair of brown leather boots that reach the knee, on a low block heel, zipped down the inner side.",
+    "reference": "knee_high_boots",
+    "variants": [],
+    "notes": "A standing pair, each boot 290 mm long, 100 mm wide and 420 mm tall, toes on +z: brown leather with a wider calf, a black block heel and sole, a silver zip down the inner side and a dark lining in the opening. CHECK VOLUME (x8.3): the box spans the air inside the shafts and between the pair. CHECK LONGEST (x1.27): the reference's 330 mm longest side is short for a boot that reaches the knee; 420 mm keeps the top at the knee. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "leathersandals",
+    "model": "leathersandals",
+    "name": "Leather sandals",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Commercial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "feet", "encumbrance": 8, "warmth": 0, "wearPerDamage": 0.0015 },
+    "description": "A pair of sturdy leather hiking sandals on thick treaded soles, strapped over the toes, instep and ankle and round the heel.",
+    "reference": "leathersandals",
+    "variants": [],
+    "notes": "A standing pair, each sandal 280 mm long and 100 mm wide, toes on +z: 26 mm black rubber soles with lugs along the edges, a brown leather footbed, leather straps over the toes, instep and ankle, a heel strap and a dull brass buckle on the outer side of the ankle strap. CHECK VOLUME (x28): the reference counts the sandals stacked flat; the box spans the air under the straps and between the pair. The reference names no material; the sandals are leather on rubber. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "lowtops",
+    "model": "lowtops",
+    "name": "Canvas tennis shoes",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential", "Commercial"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "feet", "encumbrance": 0, "warmth": 5, "wearPerDamage": 0.002 },
+    "description": "A pair of light red canvas low-tops with white rubber soles and toe caps.",
+    "reference": "lowtops",
+    "variants": [],
+    "notes": "A standing pair, each shoe 280 mm long and 95 mm wide, toes on +z: red canvas uppers and collars, white rubber soles and toe caps, white laces over three rungs. CHECK VOLUME (x9.1): the box spans the air inside and between the pair. The reference names no material; the shoes are canvas on rubber. The reference mass of 114 g is light for a pair but is kept. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "mocassins",
+    "model": "mocassins",
+    "name": "Moccasins",
+    "category": "clothing",
+    "size": [2, 2],
+    "economy": { "usage": ["Residential"], "tiers": ["Tier1"] },
+    "wearable": { "slot": "feet", "encumbrance": 2, "warmth": 20, "wearPerDamage": 0.002 },
+    "description": "A pair of soft leather slip-ons sewn with a gathered panel over the toes, a fur cuff and a lace round the ankle.",
+    "reference": "mocassins",
+    "variants": [],
+    "notes": "A standing pair, each 270 mm long and 95 mm wide, toes on +z: brown leather with a thin leather sole, a pale rawhide panel over the toes, a dark fur cuff round the opening and a cord tie across the instep. CHECK VOLUME (x12): the reference counts the soft shoes flat; standing, the box spans the air inside and between the pair. The worn look is pending: no worn model is authored."
+  },
+  {
+    "id": "motor_police_boots",
+    "model": "motor_police_boots",
+    "name": "Motorcycle police boots",
+    "category": "clothing",
+    "size": [2, 3],
+    "economy": { "usage": ["Police"], "tiers": ["Tier2", "Tier3"] },
+    "wearable": {
+      "slot": "feet",
+      "encumbrance": 15,
+      "warmth": 20,
+      "wearPerDamage": 0.0008,
+      "protects": { "acid": 0, "blunt": 0.2, "cut": 0.35, "pierce": 0.25 }
+    },
+    "description": "A pair of tall black leather riding boots made for motorcycle officers, on thick lugged soles, with buckled straps over the instep and round the calf.",
+    "reference": "motor_police_boots",
+    "variants": [],
+    "notes": "A standing pair, each boot 290 mm long, 100 mm wide and 420 mm tall, toes on +z: black leather with a wider calf, a black rubber sole and heel, a strap over the instep and a strap round the calf top, each with a silver buckle on the outer side. CHECK VOLUME (x8.9): the box spans the air inside the shafts and between the pair. The reference names no material; the boots are leather on rubber. It shares the knee-high boots' shape but keeps its own row for the straps. The worn look is pending: no worn model is authored."
+  }
+]

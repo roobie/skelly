@@ -1,0 +1,14 @@
+{
+  "id": "scissors_medical",
+  "file": "assets/models/scissors_medical.glb",
+  "parts": {
+    "scissors_medical": {
+      "node": "scissors_medical:compound",
+      "massKg": 0.039,
+      "centreOfMass": [-0.010228464419475653, 0.0033071161048689145, -0.005967540574282148]
+    }
+  },
+  "grip": { "at": [-0.045, 0.003, 0.016], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

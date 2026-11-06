@@ -1,0 +1,11 @@
+{
+  "id": "poncho",
+  "file": "assets/models/poncho.glb",
+  "parts": {
+    "poncho": {
+      "node": "poncho:compound",
+      "massKg": 0.64,
+      "centreOfMass": [-0.0002907639206553831, 0.019155071318667612, 0.0007128539942612383]
+    }
+  }
+}

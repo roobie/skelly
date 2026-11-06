@@ -1,0 +1,11 @@
+{
+  "id": "wooden_barrel",
+  "file": "assets/models/wooden_barrel.glb",
+  "parts": {
+    "wooden_barrel": {
+      "node": "wooden_barrel:compound",
+      "massKg": 30,
+      "centreOfMass": [0, 0.3600106264869151, 0.000031086439333862015]
+    }
+  }
+}

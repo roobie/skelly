@@ -1,0 +1,7 @@
+{
+  "id": "sheet_felt",
+  "file": "assets/models/sheet_felt.glb",
+  "parts": {
+    "sheet_felt": { "node": "sheet_felt:compound", "massKg": 0.024, "centreOfMass": [0, 0.003, -0.0009480519480519479] }
+  }
+}

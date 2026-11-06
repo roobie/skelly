@@ -1,0 +1,18 @@
+{
+  "id": "street_sweeper_rear_underrun",
+  "file": "assets/models/street_sweeper_rear_underrun.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 30,
+      "centreOfMass": [-3.0468749999999996, 0.44640031645569617, 0],
+      "collision": [
+        { "min": [-3.09375, 0.375, -1.15625], "max": [-3, 0.5, 1.15625] },
+        { "min": [-3.09375, 0.5, 0.375], "max": [-3, 0.65625, 0.4375] },
+        { "min": [-3.09375, 0.5, -0.4375], "max": [-3, 0.65625, -0.375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

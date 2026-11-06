@@ -1,0 +1,11 @@
+{
+  "id": "lc_vambrace_brigandine",
+  "file": "assets/models/lc_vambrace_brigandine.glb",
+  "parts": {
+    "lc_vambrace_brigandine": {
+      "node": "lc_vambrace_brigandine:compound",
+      "massKg": 0.43,
+      "centreOfMass": [-0.00006692531522793128, 0.01752667313288068, -0.0015761396702230828]
+    }
+  }
+}

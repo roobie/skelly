@@ -1,0 +1,10 @@
+{
+  "id": "cough_syrup",
+  "file": "assets/models/cough_syrup.glb",
+  "parts": {
+    "cough_syrup": { "node": "cough_syrup:vessel", "massKg": 0.35, "centreOfMass": [0, 0.0624772873631545, 0] }
+  },
+  "grip": { "at": [0, 0.066, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

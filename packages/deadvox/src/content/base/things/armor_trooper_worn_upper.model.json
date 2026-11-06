@@ -1,0 +1,11 @@
+{
+  "id": "armor_trooper_worn_upper",
+  "file": "assets/models/armor_trooper_worn_upper.glb",
+  "parts": {
+    "armor_trooper_worn_upper": {
+      "node": "armor_trooper_worn_upper:compound",
+      "massKg": 0.1,
+      "centreOfMass": [0, -0.06243379678137103, 0.000026135172998363606]
+    }
+  }
+}

@@ -8,6 +8,7 @@ read_if:
   - you're adding or evaluating GPU quality options, including cached surface noise and its comparison against the arithmetic shader
   - you're interpreting or changing debug draw submission counters
   - you're changing crowd pose texture transfers
+  - you're changing how metal finishes on models draw
 ---
 
 # Deadvox graphics
@@ -17,6 +18,8 @@ The graphics direction is driven by atmosphere and readability, not realism. The
 ## Look decisions
 
 The default look is tone mapping off, low exposure, the mood pass off and no weathering, because it was judged by eye to look better and costs less. Content owns it, so a mod can change it; every part stays tunable through URL parameters and the debug panel. See `src/core/schema.ts`, `LookDefaultsSchema`, and `src/core/lookDefaults.ts`, `lookDefaultsOf`.
+
+Models draw with a limited metalness. A fully metallic surface shows only what it reflects, and the scene gives it nothing to reflect: it is lit by direct and hemisphere light, so polished steel and brass would draw near black. An environment map would light metal where the sky cannot reach, which the fog and mist rule below forbids, so a metal finish draws as a strongly specular coloured surface instead. The shared material table keeps the authored value for viewers that do reflect an environment. See `src/render/modelMaterials.ts`, `DRAWN_METALLIC_LIMIT`.
 
 Tone mapping can follow the solar cycle instead: neutral in bright daylight, shifting toward ACES at dawn and dusk and using ACES at night, which gives daylight a natural palette while retaining depth in darkness. Weathering adds render-only age without replacing material identity; named profiles let authored scenes vary it. See `src/render/autoTone.ts`.
 

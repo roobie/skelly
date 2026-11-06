@@ -1,0 +1,11 @@
+{
+  "id": "chestpouch",
+  "file": "assets/models/chestpouch.glb",
+  "parts": {
+    "chestpouch": {
+      "node": "chestpouch:compound",
+      "massKg": 0.075,
+      "centreOfMass": [0.005957731115353148, 0.10018598309244611, 0.00013607853831469854]
+    }
+  }
+}

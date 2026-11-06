@@ -1,0 +1,11 @@
+{
+  "id": "waist_apron_long",
+  "file": "assets/models/waist_apron_long.glb",
+  "parts": {
+    "waist_apron_long": {
+      "node": "waist_apron_long:compound",
+      "massKg": 0.21,
+      "centreOfMass": [0.00012194082032915492, 0.011319007418777175, -0.001200136437281487]
+    }
+  }
+}

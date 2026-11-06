@@ -1,0 +1,11 @@
+{
+  "id": "vest_leather_mod",
+  "file": "assets/models/vest_leather_mod.glb",
+  "parts": {
+    "vest_leather_mod": {
+      "node": "vest_leather_mod:compound",
+      "massKg": 3,
+      "centreOfMass": [-7.103135645264062e-20, 0.02358362442364123, -0.001237203670066604]
+    }
+  }
+}

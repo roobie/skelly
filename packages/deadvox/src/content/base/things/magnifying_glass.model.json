@@ -1,0 +1,14 @@
+{
+  "id": "magnifying_glass",
+  "file": "assets/models/magnifying_glass.glb",
+  "parts": {
+    "magnifying_glass": {
+      "node": "magnifying_glass:compound",
+      "massKg": 0.17,
+      "centreOfMass": [0.04905428587551493, 0.006025450031036623, 5.643022402796974e-8]
+    }
+  },
+  "grip": { "at": [0.124, 0.006, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

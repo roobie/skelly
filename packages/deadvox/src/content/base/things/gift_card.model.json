@@ -1,0 +1,11 @@
+{
+  "id": "gift_card",
+  "file": "assets/models/gift_card.glb",
+  "parts": {
+    "gift_card": {
+      "node": "gift_card:compound",
+      "massKg": 0.005,
+      "centreOfMass": [-0.0009489051094890513, 0.001, 0.00027250608272506074]
+    }
+  }
+}

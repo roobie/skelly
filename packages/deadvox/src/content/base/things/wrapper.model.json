@@ -1,0 +1,11 @@
+{
+  "id": "wrapper",
+  "file": "assets/models/wrapper.glb",
+  "parts": {
+    "wrapper": {
+      "node": "wrapper:compound",
+      "massKg": 0.0048,
+      "centreOfMass": [0, 0.0067777777777777775, -0.004063492063492063]
+    }
+  }
+}

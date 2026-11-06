@@ -1,0 +1,11 @@
+{
+  "id": "gorget_fencing",
+  "file": "assets/models/gorget_fencing.glb",
+  "parts": {
+    "gorget_fencing": {
+      "node": "gorget_fencing:compound",
+      "massKg": 0.26,
+      "centreOfMass": [-0.00012318710832587393, 0.0533928976424948, 0.03877361981498061]
+    }
+  }
+}

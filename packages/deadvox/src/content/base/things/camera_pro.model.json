@@ -1,0 +1,14 @@
+{
+  "id": "camera_pro",
+  "file": "assets/models/camera_pro.glb",
+  "parts": {
+    "camera_pro": {
+      "node": "camera_pro:compound",
+      "massKg": 1.3,
+      "centreOfMass": [0.00013744824990590896, 0.043213398569815584, 0.042239819345126085]
+    }
+  },
+  "grip": { "at": [-0.05600000000000001, 0.04, 0.046], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

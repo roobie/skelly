@@ -1,0 +1,14 @@
+{
+  "id": "caltrops",
+  "file": "assets/models/caltrops.glb",
+  "parts": {
+    "caltrops": {
+      "node": "caltrops:compound",
+      "massKg": 0.083,
+      "centreOfMass": [-0.00024760293288211973, 0.005534686971235198, -0.0016068809926677971]
+    }
+  },
+  "grip": { "at": [0, 0.015000000000000001, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

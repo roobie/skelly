@@ -1,0 +1,11 @@
+{
+  "id": "engineering_makerspace_kit",
+  "file": "assets/models/engineering_makerspace_kit.glb",
+  "parts": {
+    "engineering_makerspace_kit": {
+      "node": "engineering_makerspace_kit:compound",
+      "massKg": 0.6,
+      "centreOfMass": [0.0017665647928050321, 0.0358297060064418, -0.01372873769024174]
+    }
+  }
+}

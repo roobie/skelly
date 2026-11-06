@@ -1,0 +1,11 @@
+{
+  "id": "deck_chair",
+  "file": "assets/models/deck_chair.glb",
+  "parts": {
+    "deck_chair": {
+      "node": "deck_chair:compound",
+      "massKg": 6.1,
+      "centreOfMass": [-0.03755960930767023, 0.05082878483194487, 0]
+    }
+  }
+}

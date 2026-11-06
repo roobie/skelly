@@ -1,0 +1,11 @@
+{
+  "id": "armguard_metal",
+  "file": "assets/models/armguard_metal.glb",
+  "parts": {
+    "armguard_metal": {
+      "node": "armguard_metal:compound",
+      "massKg": 2.1,
+      "centreOfMass": [-0.013463825399553195, 0.030865784499054846, 0.0022027839835023397]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "ch_armguard_metal_sheets_bracer",
+  "file": "assets/models/ch_armguard_metal_sheets_bracer.glb",
+  "parts": {
+    "ch_armguard_metal_sheets_bracer": {
+      "node": "ch_armguard_metal_sheets_bracer:compound",
+      "massKg": 0.8,
+      "centreOfMass": [0.007485342019543975, 0.02265870430691278, 0.007487513572204125]
+    }
+  }
+}

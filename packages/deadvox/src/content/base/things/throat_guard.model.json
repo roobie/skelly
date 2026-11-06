@@ -1,0 +1,11 @@
+{
+  "id": "throat_guard",
+  "file": "assets/models/throat_guard.glb",
+  "parts": {
+    "throat_guard": {
+      "node": "throat_guard:compound",
+      "massKg": 0.041,
+      "centreOfMass": [0.00022220702857924182, 0.062475728155339895, 0.015701034687086914]
+    }
+  }
+}

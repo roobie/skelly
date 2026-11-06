@@ -1,0 +1,11 @@
+{
+  "id": "hotplate_induction",
+  "file": "assets/models/hotplate_induction.glb",
+  "parts": {
+    "hotplate_induction": {
+      "node": "hotplate_induction:compound",
+      "massKg": 2.5,
+      "centreOfMass": [0.00031471125750993126, 0.028739885531686722, 0.004188730452292103]
+    }
+  }
+}

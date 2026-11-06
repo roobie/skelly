@@ -1,0 +1,7 @@
+{
+  "id": "bundle_nylon",
+  "file": "assets/models/bundle_nylon.glb",
+  "parts": {
+    "bundle_nylon": { "node": "bundle_nylon:compound", "massKg": 0.071, "centreOfMass": [0, 0.012329565638624255, 0] }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "curler_hair",
+  "file": "assets/models/curler_hair.glb",
+  "parts": {
+    "curler_hair": {
+      "node": "curler_hair:compound",
+      "massKg": 0.0057,
+      "centreOfMass": [-0.00041316904120138623, 0.013234886407393145, 0]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "railroad_track_item",
+  "file": "assets/models/railroad_track_item.glb",
+  "parts": {
+    "railroad_track_item": {
+      "node": "railroad_track_item:compound",
+      "massKg": 66,
+      "centreOfMass": [-0.0008302288451303883, 0.0850501106411585, 0]
+    }
+  }
+}

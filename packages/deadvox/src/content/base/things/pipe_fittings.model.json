@@ -1,0 +1,11 @@
+{
+  "id": "pipe_fittings",
+  "file": "assets/models/pipe_fittings.glb",
+  "parts": {
+    "pipe_fittings": {
+      "node": "pipe_fittings:compound",
+      "massKg": 0.8,
+      "centreOfMass": [0.004551188924070281, 0.014988017632085442, -0.004009933569255595]
+    }
+  }
+}

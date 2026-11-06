@@ -1,0 +1,11 @@
+{
+  "id": "toolbox_empty",
+  "file": "assets/models/toolbox_empty.glb",
+  "parts": {
+    "toolbox_empty": {
+      "node": "toolbox_empty:compound",
+      "massKg": 5.3,
+      "centreOfMass": [0, 0.09285850682504107, 0.00009963669905897773]
+    }
+  }
+}

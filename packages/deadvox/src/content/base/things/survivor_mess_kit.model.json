@@ -1,0 +1,11 @@
+{
+  "id": "survivor_mess_kit",
+  "file": "assets/models/survivor_mess_kit.glb",
+  "parts": {
+    "survivor_mess_kit": {
+      "node": "survivor_mess_kit:compound",
+      "massKg": 1.3,
+      "centreOfMass": [0.041614106437369285, 0.04642480052676428, -0.009129928731892474]
+    }
+  }
+}

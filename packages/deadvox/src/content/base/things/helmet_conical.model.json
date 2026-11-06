@@ -1,0 +1,11 @@
+{
+  "id": "helmet_conical",
+  "file": "assets/models/helmet_conical.glb",
+  "parts": {
+    "helmet_conical": {
+      "node": "helmet_conical:compound",
+      "massKg": 2.3,
+      "centreOfMass": [2.395295639391771e-8, 0.1395551696468135, -0.0028634082661652517]
+    }
+  }
+}

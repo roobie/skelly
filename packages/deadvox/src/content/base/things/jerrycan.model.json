@@ -1,0 +1,11 @@
+{
+  "id": "jerrycan",
+  "file": "assets/models/jerrycan.glb",
+  "parts": {
+    "jerrycan": {
+      "node": "jerrycan:compound",
+      "massKg": 1,
+      "centreOfMass": [-0.0009249774028321784, 0.14663936998057164, 0]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "armguard_paper",
+  "file": "assets/models/armguard_paper.glb",
+  "parts": {
+    "armguard_paper": {
+      "node": "armguard_paper:compound",
+      "massKg": 0.23,
+      "centreOfMass": [-0.00021353265145554687, 0.006581431943351692, 0.0007616050354051953]
+    }
+  }
+}

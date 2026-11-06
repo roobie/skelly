@@ -1,0 +1,11 @@
+{
+  "id": "bouquet",
+  "file": "assets/models/bouquet.glb",
+  "parts": {
+    "bouquet": {
+      "node": "bouquet:compound",
+      "massKg": 0.19,
+      "centreOfMass": [0.07571177860276744, 0.019065329540523604, 0.0005472253025408609]
+    }
+  }
+}

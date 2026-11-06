@@ -1,0 +1,11 @@
+{
+  "id": "jikatabi_sneakers",
+  "file": "assets/models/jikatabi_sneakers.glb",
+  "parts": {
+    "jikatabi_sneakers": {
+      "node": "jikatabi_sneakers:compound",
+      "massKg": 0.8,
+      "centreOfMass": [1.2114755440422316e-17, 0.04225508002609001, -0.03271948221363704]
+    }
+  }
+}

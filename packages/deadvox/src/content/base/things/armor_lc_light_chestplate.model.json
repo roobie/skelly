@@ -1,0 +1,11 @@
+{
+  "id": "armor_lc_light_chestplate",
+  "file": "assets/models/armor_lc_light_chestplate.glb",
+  "parts": {
+    "armor_lc_light_chestplate": {
+      "node": "armor_lc_light_chestplate:compound",
+      "massKg": 16,
+      "centreOfMass": [1.271142786778675e-18, 0.02832395183519512, -0.04047018714638042]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "briefs",
+  "file": "assets/models/briefs.glb",
+  "parts": {
+    "briefs": {
+      "node": "briefs:compound",
+      "massKg": 0.043,
+      "centreOfMass": [0, 0.002339060939060939, -0.02391721611721612]
+    }
+  }
+}

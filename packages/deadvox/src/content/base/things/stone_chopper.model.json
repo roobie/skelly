@@ -1,0 +1,14 @@
+{
+  "id": "stone_chopper",
+  "file": "assets/models/stone_chopper.glb",
+  "parts": {
+    "stone_chopper": {
+      "node": "stone_chopper:compound",
+      "massKg": 0.4,
+      "centreOfMass": [-0.0020254358388110895, 0.023947889873297133, 0]
+    }
+  },
+  "grip": { "at": [-0.008, 0.024, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

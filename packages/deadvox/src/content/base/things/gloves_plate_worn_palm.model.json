@@ -1,0 +1,11 @@
+{
+  "id": "gloves_plate_worn_palm",
+  "file": "assets/models/gloves_plate_worn_palm.glb",
+  "parts": {
+    "gloves_plate_worn_palm": {
+      "node": "gloves_plate_worn_palm:compound",
+      "massKg": 0.1,
+      "centreOfMass": [-0.00012335526315789474, 0.023956414473684216, 0.00004111842105263158]
+    }
+  }
+}

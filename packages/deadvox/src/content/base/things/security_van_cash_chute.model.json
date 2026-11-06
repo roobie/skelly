@@ -1,0 +1,18 @@
+{
+  "id": "security_van_cash_chute",
+  "file": "assets/models/security_van_cash_chute.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 28,
+      "centreOfMass": [-2.25, 1.434253246753247, 1.109375],
+      "collision": [
+        { "min": [-2.5, 1.1875, 1.09375], "max": [-2, 1.65625, 1.125] },
+        { "min": [-2.40625, 1.40625, 1.09375], "max": [-2.09375, 1.59375, 1.125] },
+        { "min": [-2.3125, 1.28125, 1.09375], "max": [-2.1875, 1.34375, 1.125] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

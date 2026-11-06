@@ -1,0 +1,17 @@
+{
+  "id": "burnt_out_bus_mirror",
+  "file": "assets/models/burnt_out_bus_mirror.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 12,
+      "centreOfMass": [5.959643404907975, 1.5664302147239264, 1.3348351226993866],
+      "collision": [
+        { "min": [5.84375, 1.625, 1.28125], "max": [6, 2.21875, 1.3125] },
+        { "min": [5.9375, 1.3125, 1.25], "max": [6, 1.65625, 1.4375] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "lycra_patch",
+  "file": "assets/models/lycra_patch.glb",
+  "parts": {
+    "lycra_patch": {
+      "node": "lycra_patch:foldedSheet",
+      "massKg": 0.0047,
+      "centreOfMass": [0.00011751592356687734, 0.002779936305732484, 0.00006369426751592439]
+    }
+  }
+}

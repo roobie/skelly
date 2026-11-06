@@ -1,0 +1,11 @@
+{
+  "id": "onyx_gold_pendant_necklace",
+  "file": "assets/models/onyx_gold_pendant_necklace.glb",
+  "parts": {
+    "onyx_gold_pendant_necklace": {
+      "node": "onyx_gold_pendant_necklace:compound",
+      "massKg": 0.05,
+      "centreOfMass": [0, 0.0015253164556962024, 0.03204430379746836]
+    }
+  }
+}

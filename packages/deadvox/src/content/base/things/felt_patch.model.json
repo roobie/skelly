@@ -1,0 +1,5 @@
+{
+  "id": "felt_patch",
+  "file": "assets/models/felt_patch.glb",
+  "parts": { "felt_patch": { "node": "felt_patch:compound", "massKg": 0.012, "centreOfMass": [0, 0.001, 0] } }
+}

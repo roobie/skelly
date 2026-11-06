@@ -1,0 +1,11 @@
+{
+  "id": "stab_plate",
+  "file": "assets/models/stab_plate.glb",
+  "parts": {
+    "stab_plate": {
+      "node": "stab_plate:compound",
+      "massKg": 0.15,
+      "centreOfMass": [0.0003335709194583037, 0.008240912330719887, 0.0002309337134711333]
+    }
+  }
+}

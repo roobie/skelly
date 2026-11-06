@@ -1,0 +1,11 @@
+{
+  "id": "chainmail_leggings",
+  "file": "assets/models/chainmail_leggings.glb",
+  "parts": {
+    "chainmail_leggings": {
+      "node": "chainmail_leggings:compound",
+      "massKg": 6,
+      "centreOfMass": [0.33770506196340483, 0.006292451730701994, 1.529614123675231e-17]
+    }
+  }
+}

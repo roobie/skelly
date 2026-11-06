@@ -1,0 +1,11 @@
+{
+  "id": "toecaps",
+  "file": "assets/models/toecaps.glb",
+  "parts": {
+    "toecaps": {
+      "node": "toecaps:compound",
+      "massKg": 0.88,
+      "centreOfMass": [0.00007043139227770754, 0.030093573135454656, 0.0720037731103006]
+    }
+  }
+}

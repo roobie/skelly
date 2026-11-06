@@ -1,0 +1,11 @@
+{
+  "id": "chair_plywood",
+  "file": "assets/models/chair_plywood.glb",
+  "parts": {
+    "chair_plywood": {
+      "node": "chair_plywood:compound",
+      "massKg": 4.1,
+      "centreOfMass": [0, 0.4664198135354484, 0.03569233348983836]
+    }
+  }
+}

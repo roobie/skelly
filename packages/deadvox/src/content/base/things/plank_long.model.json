@@ -1,0 +1,14 @@
+{
+  "id": "plank_long",
+  "file": "assets/models/plank_long.glb",
+  "parts": {
+    "plank_long": {
+      "node": "plank_long:compound",
+      "massKg": 4.2,
+      "centreOfMass": [1.2252564406980886, 0.020981241837824998, -0.0002819660453520124]
+    }
+  },
+  "grip": { "at": [0.1952, 0.02, 0], "turn": [0, 0, 0] },
+  "hold": "upright",
+  "roll": 90
+}

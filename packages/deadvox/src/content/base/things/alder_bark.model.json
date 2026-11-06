@@ -1,0 +1,11 @@
+{
+  "id": "alder_bark",
+  "file": "assets/models/alder_bark.glb",
+  "parts": {
+    "alder_bark": {
+      "node": "alder_bark:compound",
+      "massKg": 0.095,
+      "centreOfMass": [-0.0014971552627638957, 0.016280955232819277, -0.0007702500374307537]
+    }
+  }
+}

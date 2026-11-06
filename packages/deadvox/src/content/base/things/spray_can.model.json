@@ -1,0 +1,10 @@
+{
+  "id": "spray_can",
+  "file": "assets/models/spray_can.glb",
+  "parts": {
+    "spray_can": { "node": "spray_can:compound", "massKg": 0.47, "centreOfMass": [0, 0.0959677732008723, 0] }
+  },
+  "grip": { "at": [0, 0.081, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "cuffs",
+  "file": "assets/models/cuffs.glb",
+  "parts": {
+    "cuffs": {
+      "node": "cuffs:compound",
+      "massKg": 0.03,
+      "centreOfMass": [0.00004214383875400735, 0.043981676591846104, 0]
+    }
+  }
+}

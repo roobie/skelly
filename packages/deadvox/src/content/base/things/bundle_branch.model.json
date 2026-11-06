@@ -1,0 +1,11 @@
+{
+  "id": "bundle_branch",
+  "file": "assets/models/bundle_branch.glb",
+  "parts": {
+    "bundle_branch": {
+      "node": "bundle_branch:compound",
+      "massKg": 6,
+      "centreOfMass": [-0.0015651001319791137, 0.05959402077236472, -0.001791186090549148]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "makeshift_welding_blanket",
+  "file": "assets/models/makeshift_welding_blanket.glb",
+  "parts": {
+    "makeshift_welding_blanket": {
+      "node": "makeshift_welding_blanket:compound",
+      "massKg": 1,
+      "centreOfMass": [0.0011676603863582159, 0.03613940983890899, -0.0030423866617522704]
+    }
+  }
+}

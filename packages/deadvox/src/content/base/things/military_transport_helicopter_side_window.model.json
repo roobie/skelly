@@ -1,0 +1,17 @@
+{
+  "id": "military_transport_helicopter_side_window",
+  "file": "assets/models/military_transport_helicopter_side_window.glb",
+  "parts": {
+    "body": {
+      "node": "body:compound",
+      "massKg": 6,
+      "centreOfMass": [1.546875, 2.1875, 1.047554347826087],
+      "collision": [
+        { "min": [1.1875, 2.1875, 0.90625], "max": [1.90625, 2.46875, 1.09375] },
+        { "min": [1.1875, 1.90625, 1.03125], "max": [1.90625, 2.21875, 1.15625] }
+      ],
+      "voxelGrain": 0.03125
+    }
+  },
+  "anchors": {}
+}

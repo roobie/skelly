@@ -1,0 +1,14 @@
+{
+  "id": "mortar_pestle",
+  "file": "assets/models/mortar_pestle.glb",
+  "parts": {
+    "mortar_pestle": {
+      "node": "mortar_pestle:compound",
+      "massKg": 1.1,
+      "centreOfMass": [-0.0003911997008926485, 0.03614513716876198, 0.001526685984016451]
+    }
+  },
+  "grip": { "at": [0, 0.035, 0], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}

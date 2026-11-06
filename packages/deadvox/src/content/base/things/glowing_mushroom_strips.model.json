@@ -1,0 +1,14 @@
+{
+  "id": "glowing_mushroom_strips",
+  "file": "assets/models/glowing_mushroom_strips.glb",
+  "parts": {
+    "glowing_mushroom_strips": {
+      "node": "glowing_mushroom_strips:compound",
+      "massKg": 0.055,
+      "centreOfMass": [-0.0000033587786259541985, 0.0056903816793893135, 0.003173740458015267]
+    }
+  },
+  "grip": { "at": [0, 0.003, -0.007], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}
