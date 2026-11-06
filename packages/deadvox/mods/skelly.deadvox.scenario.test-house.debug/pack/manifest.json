@@ -4,6 +4,10 @@
     {
       "kind": "content",
       "path": "layouts.json"
+    },
+    {
+      "kind": "content",
+      "path": "catalogue.json"
     }
   ],
   "id": "skelly.deadvox.scenario.test-house.debug",

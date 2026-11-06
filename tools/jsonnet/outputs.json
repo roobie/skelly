@@ -389,6 +389,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.stairs/templates-stairs.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/catalogue.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/catalogue.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/layouts.json"
     },

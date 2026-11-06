@@ -9,7 +9,7 @@ read_if:
   - you name body-plan mechanisms descriptively or separate anatomy, leg cuts and figure builds
   - you change settlement role claims or melee pose selection
   - you change skill providers, combat policy, starts or pack save identity
-  - you add a debug mod or change how opt-in folder mods are selected
+  - you add a debug mod, change how opt-in folder mods are selected or add catalogue rows
   - you plan the gated SkellyEngine runtime and content extraction (#1532)
   - you place a recipe, power tuning, a manual or a household electrical device in a mod
 ---
@@ -401,6 +401,16 @@ cycle, and folder packs never pass through the single-file mod reader. See
 The build hashes marked packs beside the default ones and keeps their identities in a
 separate define, so a selection reuses the build's hashes. See
 `tools/readBundledPacks.ts`, `bundledPackDefines`.
+
+Each debug mod depends only on its own scenario and the tiers below, so none may override
+the test-house layout. Debug furniture therefore goes in catalogue rows, a content section
+any mod can add to without an edge to the test house, and the test-house debug showroom
+is the one view of every loaded row. The section is an engine mechanism, not a mod's row,
+so using it adds no dependency; a row's furniture still constrains placement like any
+reference, and rows override by id like other entries.
+A debug mod's rows show only when the test-house debug mod is selected too, and the grid
+lays rows out in load order. See `src/core/schema/catalogueRows.ts`, `CatalogueRowSchema`,
+and `src/core/showroom.ts`, `ShowroomCatalogue`.
 
 ## Save identity
 

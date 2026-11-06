@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { actionText, fillText } from '../src/core/actionText.ts';
-import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
+import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { propCentre, type ShowroomProp, slotProps } from '../src/core/showroom.ts';
 import { rectsOverlap } from '../src/core/site.ts';
 import { cellsOf } from '../src/core/templates.ts';
+import { availablePackInputs } from '../src/game/bundledContent.ts';
 import { selectBundledMods } from '../src/game/bundledMods.ts';
 import { configFromUrl } from '../src/game/config.ts';
 import { playerStartFromWorld } from '../src/game/worldSetup.ts';
@@ -44,7 +45,7 @@ const aim = (from: readonly number[], yaw: number, target: readonly number[]): n
 };
 
 describe('test house showroom', () => {
-  it('shows only the hand-listed furniture, not unlisted additions to content', () => {
+  it('shows only furniture in loaded catalogue rows, not unlisted additions to content', () => {
     const layout = registry.layouts.get(config.site)!;
     const fixture = 'unlisted_showroom_fixture';
     const source = registry.furniture.values().next().value!;
@@ -52,23 +53,66 @@ describe('test house showroom', () => {
     const authored = new AuthoredSite(7, extended, config.scale, layout);
     expect(authored.catalogue!.props.length).toBeGreaterThan(0);
     expect(new Set(authored.catalogue!.props.map(({ furniture: type }) => type))).toEqual(
-      new Set(layout.showroom!.catalogue!.furniture),
+      new Set([...registry.catalogueRows.values()].flatMap((row) => row.furniture)),
     );
     expect(authored.catalogue!.props.some(({ furniture: type }) => type === fixture)).toBe(false);
   });
 
-  it('rejects a hand-listed furniture reference missing from content', () => {
-    const layout = registry.layouts.get(config.site)!;
-    const showroom = layout.showroom!;
-    const unknown = 'missing_catalogue_fixture';
-    const issues = authoredLayoutIssues(
-      {
-        ...layout,
-        showroom: { ...showroom, catalogue: { ...showroom.catalogue!, furniture: [unknown] } },
+  it('shows rows from other mods in load order, overridden in place, with no edge to the showroom host', () => {
+    const listed = new Set([...registry.catalogueRows.values()].flatMap((row) => row.furniture));
+    // Neither the showroom's host nor the host's dependency is an edge the fixture mods may lean on.
+    const hosts = new Set(['skelly.deadvox.scenario.test-house.debug', 'skelly.deadvox.residual']);
+    const ownerOf = (type: string) => {
+      const origin = registry.contentOrigins.get(`furniture:${type}`)?.source;
+      return availablePackInputs.find((pack) => origin?.startsWith(`${pack.source}/`))?.manifest.id;
+    };
+    // Each fixture mod brings its own furniture, copied from a plain piece whose owner it depends on.
+    const source = [...registry.furniture.values()].find((def) => {
+      const owner = ownerOf(def.id);
+      return owner !== undefined && !hosts.has(owner) && !def.door && !def.power && !def.charger && !def.corpse;
+    })!;
+    const mod = (id: string, row: string, type: string, extra: { dependencies?: string[]; overrides?: object[] }) => ({
+      id,
+      data: {
+        id,
+        version: '1',
+        tier: 'scenario',
+        product: false,
+        dependencies: [ownerOf(source.id)!, ...(extra.dependencies ?? [])],
+        overrides: extra.overrides ?? [],
+        furniture: [{ ...source, id: type }],
+        catalogueRows: [{ id: row, furniture: [type] }],
       },
-      registry,
-    );
-    expect(issues).toContainEqual(['.showroom.catalogue.furniture[0]', `no furniture "${unknown}"`]);
+    });
+    const mods = [
+      mod('fixture.rows-a', 'fixture_row_a', 'fixture_furniture_a', {}),
+      mod('fixture.rows-b', 'fixture_row_b', 'fixture_furniture_b', {}),
+      mod('fixture.rows-b-override', 'fixture_row_b', 'fixture_furniture_c', {
+        dependencies: ['fixture.rows-b'],
+        overrides: [{ pack: 'fixture.rows-b', entry: 'catalogueRows:fixture_row_b' }],
+      }),
+    ];
+    const withRows = withReusedBuilds(() => selectBundledMods(['skelly.deadvox.scenario.test-house.debug'], mods));
+    expect(withRows.issues).toEqual([]);
+    const rowsConfig = configFromUrl(new URLSearchParams('site=testHouse'), withRows.content);
+    const rowsRegistry = rowsConfig.content.registry;
+    const authored = new AuthoredSite(7, rowsRegistry, rowsConfig.scale, rowsRegistry.layouts.get('testHouse')!);
+    const shown = authored.catalogue!.props.map(({ furniture: type }) => type);
+    expect(shown.slice(-2)).toEqual(['fixture_furniture_a', 'fixture_furniture_c']);
+    expect(shown).not.toContain('fixture_furniture_b');
+    expect(new Set(shown.slice(0, -2))).toEqual(listed);
+  });
+
+  it('reports a catalogue row that names furniture missing from content', () => {
+    const unknown = 'missing_catalogue_fixture';
+    const { issues } = buildRegistry([
+      { source: 'rows-fixture.json', data: { catalogueRows: [{ id: 'fixture_row', furniture: [unknown] }] } },
+    ]);
+    expect(issues).toContainEqual({
+      source: 'rows-fixture.json',
+      path: 'catalogueRows[0].furniture[0]',
+      message: `no furniture "${unknown}"`,
+    });
   });
 
   it('keeps vegetation grounded and out of the admitted catalogue floor', () => {

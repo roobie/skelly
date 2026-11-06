@@ -106,7 +106,7 @@ const HalfMetrePosition = tuple([HalfMetres, HalfMetres, HalfMetres]);
 
 const PositiveHalfMetres = pipe(HalfMetres, minValue(0.5));
 
-/** Authored feature slots and an optional furniture catalogue. */
+/** Authored feature slots and an optional floor that shows every loaded catalogue row. */
 const ShowroomSchema = strictObject({
   /** The west end of the packed row's front line, feet on the deck; row slots run east from here. */
   row: HalfMetrePosition,
@@ -131,7 +131,6 @@ const ShowroomSchema = strictObject({
   focusDistance: PositiveHalfMetres,
   catalogue: optional(
     strictObject({
-      furniture: pipe(array(Id), nonEmpty()),
       /** The floor's north-west corner, feet height; rows run east and each next row lies further south. */
       position: HalfMetrePosition,
       /** How far east a row may run. */

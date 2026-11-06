@@ -1844,6 +1844,16 @@ const checkLayoutGuidance = (layout: SiteLayoutDef, registry: Registry, report: 
   }
 };
 
+const checkCatalogueRows = (registry: Registry, report: Report): void => {
+  for (const row of registry.catalogueRows.values()) {
+    row.furniture.forEach((furniture, i) => {
+      if (!registry.furniture.has(furniture)) {
+        report('catalogueRows', row.id, `.furniture[${i}]`, `no furniture "${furniture}"`);
+      }
+    });
+  }
+};
+
 const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report: Report): void => {
   if (layout.attemptPolicy?.exportFormat === 'attempt') {
     report('layouts', layout.id, '.attemptPolicy.exportFormat', 'attempt reports require scenario run state');
@@ -2307,6 +2317,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkSkillAndUiReferences(registry, report);
   checkHeartbeatSounds(registry, report);
   checkActionSounds(registry, report);
+  checkCatalogueRows(registry, report);
   for (const layout of registry.layouts.values()) {
     checkLayoutReferences(layout, registry, report);
   }

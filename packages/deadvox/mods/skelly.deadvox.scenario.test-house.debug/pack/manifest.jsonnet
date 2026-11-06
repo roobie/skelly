@@ -4,7 +4,7 @@ manifest(
   id='skelly.deadvox.scenario.test-house.debug',
   tier='scenario',
   optIn=true,
-  content=['layouts'],
+  content=['layouts', 'catalogue'],
   dependencies=['skelly.deadvox.residual'],
   overrides=[{ pack: 'skelly.deadvox.residual', entry: 'layouts:' + layout.id }],
 )

@@ -135,7 +135,7 @@ generator. See `mods/skelly.deadvox.residual/templates-test-house.jsonnet`, `tem
 The showroom pavilion and its slot row belong in normal mode. A look request must work
 in the profile BR plays without debug keys, and a slot holds ordinary furniture that a
 player meets in the world anyway; the demo rule keeps its fixture stock out of world
-supply. The authored catalogue must join the debug scenario mod so evaluation equipment
+supply. The catalogue floor must join the debug scenario mod so evaluation equipment
 cannot turn the ordinary haven into a warehouse. Accept a hand edit per new furniture
 piece and silent absence until listed. Focus follows admitted props in either profile
 because it only chooses a fresh session's start; scenario identity must not choose its
@@ -174,13 +174,16 @@ staging overlay. Content owns the placement; see
 `ShowroomSchema`; and `src/core/showroom.ts`, `slotProps` and `slotPlacement`.
 
 The catalogue needs no per-feature slot because it exposes evaluation pieces rather than
-staging a feature's supplies. Its hand-kept list belongs to the debug scenario mod, so
-unlisted furniture stays absent instead of being discovered from the registry. See
-`mods/skelly.deadvox.scenario.test-house.debug/test-house-catalogue.libsonnet` and `src/core/showroom.ts`,
-`ShowroomCatalogue`. Keep it beyond the startup ring to avoid delaying every fixture
-visit, and separate it from the haven to preserve the home's view. Empty catalogue pieces
-must stay off the house grid so evaluation cannot change house supply. Item and vehicle
-looks still belong to a slot or their owning zone.
+staging a feature's supplies. It shows every loaded catalogue row, hand-kept content
+that any mod may add, so unlisted furniture stays absent instead of being discovered
+from the registry; `docs/pack-split.md`, "Debug mods", gives the reason rows are their
+own section. The debug scenario mod's layout override hosts the floor, so no row shows
+without it. See `mods/skelly.deadvox.scenario.test-house.debug/catalogue.jsonnet`,
+`catalogueRows`, and `src/core/showroom.ts`, `ShowroomCatalogue`. Keep the floor beyond
+the startup ring to avoid delaying every fixture visit, and separate it from the haven
+to preserve the home's view. Empty catalogue pieces must stay off the house grid so
+evaluation cannot change house supply. Item and vehicle looks still belong to a slot or
+their owning zone.
 
 ## Focus
 

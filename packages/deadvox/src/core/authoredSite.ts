@@ -24,8 +24,9 @@ import type { SiteLayoutDef } from './schema.ts';
 import { HORDE_MEMBERS, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import {
   focusPose,
+  loadedCatalogue,
   propCentre,
-  ShowroomCatalogue,
+  type ShowroomCatalogue,
   type ShowroomDef,
   type ShowroomProp,
   slotPlacement,
@@ -143,7 +144,7 @@ const showroomOf = (registry: Registry, layout: SiteLayoutDef) => {
   return {
     showroom,
     props: showroom ? slotProps(registry, showroom) : [],
-    catalogue: showroom?.catalogue ? new ShowroomCatalogue(registry, showroom.catalogue) : undefined,
+    catalogue: showroom?.catalogue ? loadedCatalogue(registry, showroom.catalogue) : undefined,
   };
 };
 

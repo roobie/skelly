@@ -4,6 +4,7 @@ import { PowerDeviceSchema, PowerTuningSchema } from '../powerContent.ts';
 import { ActorSchema, actorAcidSpitMatchesAbility, actorRegionsMatchModel } from './actors.ts';
 import { BlockMaterialSchema, BlockSchema, FootstepSoundSchema } from './blocks.ts';
 import { BodyTuningSchema } from './body.ts';
+import { CatalogueRowSchema } from './catalogueRows.ts';
 import { CombatPolicySchema, RangedTuningSchema } from './combat.ts';
 import { CompressionTuningSchema } from './compression.ts';
 import { ControlSchema } from './controls.ts';
@@ -118,6 +119,7 @@ const SECTION_DESCRIPTOR = {
   recipeCategories: { schema: optional(array(RecipeCategorySchema)), label: 'recipe categories', order: 10.1 },
   recipeTags: { schema: optional(array(RecipeTagSchema)), label: 'recipe tags', order: 10.2 },
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
+  catalogueRows: { schema: optional(array(CatalogueRowSchema)), label: 'catalogue rows', order: 11.1 },
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
   player: { schema: optional(array(PlayerSchema)), label: 'player tuning', order: 13.5 },

@@ -15,7 +15,7 @@ import { placementLootIssues } from './placementLoot.ts';
 import { WORLD_BOTTOM_M, WORLD_TOP_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
-import { ShowroomCatalogue, slotPlacement, slotProps } from './showroom.ts';
+import { loadedCatalogue, slotPlacement, slotProps } from './showroom.ts';
 import { grow, type Rect, rectDistance, rectsOverlap } from './site.ts';
 import { actorBodyDimensions, spawnOverlappingSolidBlock } from './spawnClearance.ts';
 import {
@@ -57,11 +57,6 @@ const showroomIssues = (
     if (!registry.blockIds.has(catalogue.floor)) {
       issues.push(['.showroom.catalogue.floor', `no block "${catalogue.floor}"`]);
     }
-    catalogue.furniture.forEach((furniture, i) => {
-      if (!registry.furniture.has(furniture)) {
-        issues.push([`.showroom.catalogue.furniture[${i}]`, `no furniture "${furniture}"`]);
-      }
-    });
     if (showroom.focusDistance >= catalogue.spacing) {
       issues.push(['.showroom.focusDistance', 'must be less than the catalogue spacing, so focus stands in an aisle']);
     }
@@ -77,12 +72,20 @@ const showroomIssues = (
   if (issues.length > 0) {
     return issues;
   }
-  if (catalogue) {
+  // An unknown row id is the row's own issue; the floor is measured once the rows resolve.
+  const rowsResolve = [...registry.catalogueRows.values()].every(({ furniture }) =>
+    furniture.every((id) => registry.furniture.has(id)),
+  );
+  const shown = catalogue && rowsResolve ? loadedCatalogue(registry, catalogue) : undefined;
+  if (shown) {
     // Streaming whole columns, the startup ring can reach one column past its radius.
     const ready = claimed(registry.graphics, 'graphics')?.readyRadiusM;
-    const { rect } = new ShowroomCatalogue(registry, catalogue);
     const [px, , pz] = layout.player.position;
-    const distance = rectDistance(rect, Math.floor(px / TEMPLATE_BLOCK_SIZE), Math.floor(pz / TEMPLATE_BLOCK_SIZE));
+    const distance = rectDistance(
+      shown.rect,
+      Math.floor(px / TEMPLATE_BLOCK_SIZE),
+      Math.floor(pz / TEMPLATE_BLOCK_SIZE),
+    );
     if (ready !== undefined && distance * TEMPLATE_BLOCK_SIZE <= ready + CHUNK * TEMPLATE_BLOCK_SIZE) {
       issues.push(['.showroom.catalogue.position', 'must lie beyond the startup ring, so it cannot delay the start']);
     }

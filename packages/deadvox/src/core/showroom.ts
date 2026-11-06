@@ -111,25 +111,28 @@ export const slotPlacement = (registry: Registry, layout: SiteLayoutDef): Placem
 };
 
 /**
- * Listed furniture, deepest first so each row holds pieces of like depth, then by id. Rows run east
- * up to the content width; each faces south onto its own aisle.
+ * Every loaded catalogue row in load order, each starting a new line. Within a catalogue row, deepest first so
+ * each line holds pieces of like depth, then by id. Lines run east up to the content width; each faces south
+ * onto its own aisle.
  */
 const catalogueProps = (registry: Registry, catalogue: CatalogueDef): ShowroomProp[] => {
   const [x0, y, z0] = catalogue.position.map(toBlocks) as Vec3;
   const width = toBlocks(catalogue.width);
   const gap = toBlocks(catalogue.spacing);
-  const pieces = catalogue.furniture
-    .map((id) => ({ furniture: id, size: sizeOf(registry, id) }))
-    .sort((a, b) => b.size[2] - a.size[2] || a.furniture.localeCompare(b.furniture));
   const rows: { furniture: string; size: Vec3 }[][] = [];
-  let used = Number.POSITIVE_INFINITY;
-  for (const piece of pieces) {
-    if (used + piece.size[0] > width) {
-      rows.push([]);
-      used = 0;
+  for (const { furniture } of registry.catalogueRows.values()) {
+    const pieces = furniture
+      .map((id) => ({ furniture: id, size: sizeOf(registry, id) }))
+      .sort((a, b) => b.size[2] - a.size[2] || a.furniture.localeCompare(b.furniture));
+    let used = Number.POSITIVE_INFINITY;
+    for (const piece of pieces) {
+      if (used + piece.size[0] > width) {
+        rows.push([]);
+        used = 0;
+      }
+      rows.at(-1)!.push(piece);
+      used += piece.size[0] + gap;
     }
-    rows.at(-1)!.push(piece);
-    used += piece.size[0] + gap;
   }
   const props: ShowroomProp[] = [];
   let back = z0;
@@ -145,7 +148,11 @@ const catalogueProps = (registry: Registry, catalogue: CatalogueDef): ShowroomPr
   return props;
 };
 
-/** The catalogue: its props and the flat floor they stand on. Coordinates are blocks. */
+/** The catalogue a showroom floor hosts, or none while no catalogue row is loaded. */
+export const loadedCatalogue = (registry: Registry, catalogue: CatalogueDef): ShowroomCatalogue | undefined =>
+  registry.catalogueRows.size > 0 ? new ShowroomCatalogue(registry, catalogue) : undefined;
+
+/** The catalogue: every loaded catalogue row's props and the flat floor they stand on. Coordinates are blocks. */
 export class ShowroomCatalogue {
   readonly props: readonly ShowroomProp[];
   /** The floor, including each row's aisle. */
