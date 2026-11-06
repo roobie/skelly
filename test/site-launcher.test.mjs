@@ -5,9 +5,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { bundledModCatalogueIssues } from '../packages/deadvox/src/core/bundledModCatalogue.ts';
+import { bundledModCatalogueIssues, launcherModCatalogue } from '../packages/deadvox/src/core/bundledModCatalogue.ts';
 import { tutorialRequested } from '../packages/deadvox/src/game/tutorialUrl.ts';
 import { gitEnvironment, playtestRound, publishPlaytest } from '../packages/deadvox/tools/publish-playtest.mjs';
+import { readAvailablePacks } from '../packages/deadvox/tools/readBundledPacks.ts';
 import { loadPlaytestText } from '../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
 
@@ -344,18 +345,70 @@ describe('site launchers track the games’ URL parameters', () => {
       numericDetail: { mods: [{ ...row('a'), detail: 7 }] },
       missingPresentation: { mods: [{ id: 'a' }] },
       notAList: { mods: row('a') },
+      folderIds: { mods: [row('a')], folderMods: ['b'] },
+      folderIdClash: { mods: [row('a')], folderMods: ['a'] },
+      folderIdNotText: { mods: [row('a')], folderMods: [7] },
+      folderIdsNotAList: { mods: [row('a')], folderMods: 'b' },
     };
     await Promise.all(
       Object.entries(catalogues).map(async ([name, catalogue]) => {
         const gameAdmits = bundledModCatalogueIssues(catalogue).length === 0;
         const shown = await loadBundledMods(async () => ({ ok: true, json: async () => catalogue }), 'x');
-        assert.deepEqual(shown, gameAdmits ? catalogue.mods : [], `${name}: launcher agrees with the game schema`);
+        const folderRows = () => (catalogue.folderMods ?? []).map((id) => ({ id, label: id, detail: id }));
+        assert.deepEqual(
+          shown,
+          gameAdmits ? [...catalogue.mods, ...folderRows()] : [],
+          `${name}: launcher agrees with the game schema`,
+        );
       }),
     );
     assert.equal(bundledModCatalogueIssues(catalogues.valid).length, 0, 'the valid fixture passes the schema');
     assert.notEqual(bundledModCatalogueIssues(catalogues.duplicateIds).length, 0, 'duplicate ids fail the schema');
     const failed = await loadBundledMods(async () => ({ ok: false, json: async () => catalogues.valid }), 'x');
     assert.deepEqual(failed, [], 'a failed fetch hides the control');
+  });
+
+  it('offers a newly shipped opt-in folder mod by id and links it when picked', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'launcher-opt-in-'));
+    try {
+      const ship = (id, extra) => {
+        mkdirSync(join(root, 'mods', id, 'pack'), { recursive: true });
+        writeFileSync(
+          join(root, 'mods', id, 'pack/manifest.json'),
+          JSON.stringify({
+            id,
+            version: '1',
+            tier: 'scenario',
+            product: false,
+            dependencies: [],
+            overrides: [],
+            files: [],
+            ...extra,
+          }),
+        );
+      };
+      ship('fixture.default', {});
+      ship('fixture.debug', { optIn: true });
+      const catalogue = launcherModCatalogue(
+        JSON.parse(read('packages/deadvox/src/config/bundled-mods.json')),
+        readAvailablePacks(root),
+      );
+      const loadBundledMods = new Function(`${extractDeclaration('loadBundledMods')}\nreturn loadBundledMods;`)();
+      const shown = await loadBundledMods(async () => ({ ok: true, json: async () => catalogue }), 'x');
+      const ids = shown.map(({ id }) => id);
+      assert.ok(ids.includes('fixture.debug'), 'the opt-in pack is offered by its id');
+      assert.ok(!ids.includes('fixture.default'), 'a default pack is not offered');
+
+      const makeDeadvox = makeDeadvoxForTest();
+      const model = launcherModelForTest();
+      onInputForTest(model)({
+        currentTarget: { id: 'deadvox-form' },
+        target: { dataset: { modId: 'fixture.debug' }, type: 'checkbox', checked: true },
+      });
+      assert.equal(makeDeadvox(model.deadvox).searchParams.get('mods'), 'fixture.debug', 'picking it requests its id');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it('composes a practice tutorial URL the game accepts from the launcher', () => {

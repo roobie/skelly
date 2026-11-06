@@ -91,8 +91,11 @@ closure rather than this intake; see `docs/pack-split.md`, "Debug mods".
 The game and the site launcher must offer the same mods, and the launcher is a static page
 that cannot import game modules, so the list is one schema-checked content file rather than
 two copies. The launcher is a developer entry point, so a missing or invalid list only hides
-its control instead of breaking it. See `src/core/bundledModCatalogue.ts`,
-`bundledModCatalogue`, and `site/launcher.js`, `loadBundledMods`.
+its control instead of breaking it. It also lists every shipped opt-in folder mod by its id,
+so a developer reaches each debug mod from the launcher; the build reads them from the
+shipped packs, so a new debug mod shows without a list edit. Players therefore see debug
+mods in the launcher too. See `src/core/bundledModCatalogue.ts`, `launcherModCatalogue`,
+and `site/launcher.js`, `loadBundledMods`.
 
 Beginner mode (`?mods=skelly.deadvox.beginner`) scales every hostile kind, not a list of ids. Light
 spotting counts as detection, so a beginner carrying a torch or flashlight at night does not draw

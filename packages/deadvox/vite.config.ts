@@ -8,7 +8,7 @@ import { configDefaults, defineConfig } from 'vitest/config';
 import { pagesAnalyticsPlugin } from '../../pagesAnalyticsPlugin.ts';
 import { TEST_POOL } from '../../testPool.ts';
 import { buildRevisionFromGit } from './src/core/buildRevision.ts';
-import { bundledModCatalogue } from './src/core/bundledModCatalogue.ts';
+import { launcherModCatalogue } from './src/core/bundledModCatalogue.ts';
 import { bundleStampPlugin, UNSTAMPED_BUNDLE_DEFINES } from './tools/bundleStampPlugin.ts';
 import { bundledPackDefines, readAvailablePacks } from './tools/readBundledPacks.ts';
 import {
@@ -153,8 +153,8 @@ function simulationFingerprintPlugin() {
 
 // The site launcher is a static page outside this bundle, so it reads the bundled mod list as a file beside the game.
 function bundledModListPlugin() {
-  const source = readFileSync(resolve(packageRoot, 'src/config/bundled-mods.json'), 'utf8');
-  bundledModCatalogue(JSON.parse(source));
+  const catalogue = JSON.parse(readFileSync(resolve(packageRoot, 'src/config/bundled-mods.json'), 'utf8'));
+  const source = `${JSON.stringify(launcherModCatalogue(catalogue, readAvailablePacks(packageRoot)), null, 2)}\n`;
   return {
     name: 'skelly:bundled-mod-list',
     generateBundle(this: { emitFile: (file: { type: 'asset'; fileName: string; source: string }) => string }) {
