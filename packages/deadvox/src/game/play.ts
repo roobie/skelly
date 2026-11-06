@@ -12,8 +12,7 @@ import { getBuildRevision } from '../core/buildInfo.ts';
 import { claimed } from '../core/capabilities.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { CitySite } from '../core/citySite.ts';
-import { formatClock, nextTimeOfDay, skipTarget } from '../core/clock.ts';
-import { SKIP_COMPRESSION } from '../core/compression.ts';
+import { formatClock, nextTimeOfDay } from '../core/clock.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { coreMessage } from '../core/coreText.ts';
 import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
@@ -133,7 +132,7 @@ import type { Engine } from './engine.ts';
 import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
-import { advanceLiveFrame, observeRealFrame, realNow, startRealFrames } from './frameDriver.ts';
+import { observeRealFrame } from './frameDriver.ts';
 import { freeLookAllowsCommand, freeLookAllowsUse } from './freeLook.ts';
 import { FurnitureActionSelection, furnitureActionsFor } from './furnitureActions.ts';
 import { GuidedSteps } from './guidedSteps.ts';
@@ -153,8 +152,6 @@ import {
   type ReplayGeneratedColumn,
   type ReplayInputData,
   type ReplayStartState,
-  replayStateFingerprint,
-  rolloverInputReplayRecorder,
   stashInputReplay,
   withReplayExportGuard,
 } from './inputReplay.ts';
@@ -184,12 +181,19 @@ import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
 import { stopReadingOnClose as stopReadingPageOnClose } from './readingClose.ts';
+import { realNow, startRealFrames } from './realFrames.ts';
 import { RELOAD_GESTURE_MS, type ReloadBinding, reloadTarget } from './reloadInput.ts';
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
 import { Sharpening } from './sharpening.ts';
+import {
+  createSimulationStepper,
+  type InputRecording,
+  type InputReplayVerification,
+  inputReplayStoppedStatus,
+} from './simulationStepper.ts';
 import { SpectatorCamera } from './spectatorCamera.ts';
 import { requireStart } from './startSelection.ts';
 import {
@@ -297,8 +301,6 @@ const guardDebugErrorFrame = (
     return frame(now);
   };
 };
-/** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
-const SKIP_SLACK = 1e-6;
 const QUICKBAR_ACTION = /^quickbar\.(tap|hold)\.(\d+)$/;
 const PIN_LINES: Readonly<Record<PinState, string>> = {
   in: 'Pin: in',
@@ -372,11 +374,6 @@ const dispatchDebugCommand = (
   options.syncMenuState();
   return true;
 };
-
-type InputReplayVerification = 'matched' | 'diverged' | 'unavailable' | undefined;
-const INPUT_REPLAY_COLUMN_OVERFLOW_STOP_REASON =
-  'a streamed-column batch exceeded the recording window; the recent replay was discarded';
-const inputReplayStoppedStatus = (reason: string): string => `Recording stopped: ${reason}`;
 
 const createReviewMapFrame = (debug: boolean): HTMLIFrameElement | undefined => {
   if (!debug) {
@@ -797,14 +794,9 @@ export const startPlay = (
   let playtestObserver: PlaytestObserver | undefined;
   let debugLaserEnabled = true;
   const firearmTrigger = new FirearmTrigger();
-  let inputRecorder: InputReplayRecorder | undefined;
-  let previousInputRecorder: InputReplayRecorder | undefined;
-  let inputReplayStoppedReason: string | undefined;
+  const inputRecording: InputRecording = { recorder: undefined, previous: undefined, stoppedReason: undefined };
   let replaySample: ReplayControlSample | undefined;
   let dispatchReplayAction: (action: ReplayAction, sample: ReplayControlSample) => void = () => undefined;
-  let replayVerification: 'matched' | 'diverged' | 'unavailable' | undefined;
-  let replayVerificationTick: number | undefined;
-  let replayVerificationStarted = false;
   replayPlayer = createInputReplayPlayer(options.replay?.inputs, (action, sample) =>
     dispatchReplayAction(action, sample),
   );
@@ -822,8 +814,8 @@ export const startPlay = (
         headPitch: input.freeLook.pitch,
         freeLooking: input.freeLooking,
       };
-      if (inputRecorder && !inputRecorder.recordTick(sample, compressionAtTick)) {
-        stopInputRecordingForColumnOverflow();
+      if (inputRecording.recorder && !inputRecording.recorder.recordTick(sample, compressionAtTick)) {
+        stepper.stopRecordingForColumnOverflow();
       }
       pendingPlayerTickActions.applyAtNextTick();
       return live;
@@ -1253,8 +1245,8 @@ export const startPlay = (
       return;
     }
     applyColumnLoad(cx, cz);
-    if (inputRecorder) {
-      inputRecorder.queueColumnChange(cx, cz, true);
+    if (inputRecording.recorder) {
+      inputRecording.recorder.queueColumnChange(cx, cz, true);
     }
   };
   streamer.onColumnUnload = (cx, cz) => {
@@ -1262,8 +1254,8 @@ export const startPlay = (
       return;
     }
     applyColumnUnload(cx, cz);
-    if (inputRecorder) {
-      inputRecorder.queueColumnChange(cx, cz, false);
+    if (inputRecording.recorder) {
+      inputRecording.recorder.queueColumnChange(cx, cz, false);
     }
   };
   const view = createPlayView(
@@ -1556,6 +1548,19 @@ export const startPlay = (
     },
   });
   const captureReplayStartState = (): ReplayStartState => replayPlayState.capture();
+  const stepper = createSimulationStepper({
+    sim,
+    advance: (simDt, until) => session.frame(simDt, until),
+    worldReady: () => worldLoading.ready,
+    gameFrozen: () => debugTools?.frozen ?? false,
+    replayPlayer,
+    replayDriver,
+    replay: options.replay,
+    recording: inputRecording,
+    captureSnapshot,
+    generatedColumns: () => streamer.generatedColumns(),
+    captureReplayStartState,
+  });
 
   const importReplay = (bytes: Uint8Array): void => {
     stashInputReplay(() => sessionStorage, bytes);
@@ -1568,17 +1573,18 @@ export const startPlay = (
   const inputReplayHooks: DebugHooks['inputReplay'] = {
     state: (): InputReplayStatusState => {
       if (!replayPlayer) {
-        if (inputRecorder) {
+        if (inputRecording.recorder) {
           return 'recording';
         }
-        return inputReplayStoppedReason ? 'stopped' : 'idle';
+        return inputRecording.stoppedReason ? 'stopped' : 'idle';
       }
-      switch (replayVerification) {
+      const verification = stepper.replayVerification;
+      switch (verification) {
         case 'matched':
           return 'verified';
         case 'diverged':
         case 'unavailable':
-          return replayVerification;
+          return verification;
         default:
           return 'playing';
       }
@@ -1586,23 +1592,23 @@ export const startPlay = (
     status: () =>
       inputReplayStatus({
         replayPlayer,
-        inputRecorder,
-        previousRecorder: previousInputRecorder,
+        inputRecorder: inputRecording.recorder,
+        previousRecorder: inputRecording.previous,
         total: options.replay?.inputs.frames.length ?? 0,
-        verification: replayVerification,
-        verificationTick: replayVerificationTick,
-        stoppedReason: inputReplayStoppedReason,
+        verification: stepper.replayVerification,
+        verificationTick: stepper.replayVerificationTick,
+        stoppedReason: inputRecording.stoppedReason,
       }),
     export: () => {
-      if (inputReplayStoppedReason) {
-        throw new Error(inputReplayStoppedStatus(inputReplayStoppedReason));
+      if (inputRecording.stoppedReason) {
+        throw new Error(inputReplayStoppedStatus(inputRecording.stoppedReason));
       }
       return withReplayExportGuard(session.hasFirearmHandlingOverrides(), () =>
         encodeRecentInputReplay(
           {
-            previousRecorder: previousInputRecorder,
-            recorder: inputRecorder,
-            stoppedReason: inputReplayStoppedReason,
+            previousRecorder: inputRecording.previous,
+            recorder: inputRecording.recorder,
+            stoppedReason: inputRecording.stoppedReason,
           },
           {
             blockSize: s,
@@ -1846,7 +1852,7 @@ export const startPlay = (
       keyboardInput.cancel();
       sim.paused = syncMenuState().paused || (debugTools?.frozen ?? false);
       replayPlayState.restore(options.replay?.startState);
-      inputRecorder = createInputReplayRecorder(
+      inputRecording.recorder = createInputReplayRecorder(
         Boolean(options.replay),
         captureSnapshot,
         streamer.generatedColumns(),
@@ -1904,15 +1910,6 @@ export const startPlay = (
     }
   };
 
-  /** Debug time skip: the simulation time it runs to, while one is running. */
-  let skipUntil: number | undefined;
-  /** Ends the skip exactly on target: snapping c to 1 keeps the ramp-down from running past it. */
-  const endSkip = (): void => {
-    skipUntil = undefined;
-    compression.stop();
-    compression.snap();
-  };
-
   /**
    * Debug: fast-forwards the real clock by `hours` game hours through the same compressed
    * stepping as rest (needs, scheduler and shamblers all run). Another call
@@ -1925,19 +1922,7 @@ export const startPlay = (
       rest.stop();
     }
     queue.cancel();
-    skipUntil = skipTarget(sim.clock, skipUntil ?? sim.time, hours);
-    sim.compress(SKIP_COMPRESSION);
-  };
-
-  /** Ends the skip when it arrives, is interrupted, the player dies or the debug T key stops compression. */
-  const updateSkip = (until: number): void => {
-    const { interruption } = compression;
-    if (interruption !== undefined) {
-      showNotice(`Time skip stopped: ${interruption}`);
-    }
-    if (interruption !== undefined || sim.dead || !compression.active || until - sim.time <= SKIP_SLACK) {
-      endSkip();
-    }
+    stepper.skipGameHours(hours);
   };
 
   const actOnWork = (uid: number, operation: WorkOperation, choices: RecoveryChoices = {}): string | undefined => {
@@ -2095,7 +2080,7 @@ export const startPlay = (
   };
   const dispatchScreenCommandWithCompletion = createScreenCommandDispatcher({
     isReplaying: () => replayPlayer !== undefined,
-    inputRecorder: () => inputRecorder,
+    inputRecorder: () => inputRecording.recorder,
     inputContext: () => inputContext(),
     pendingPlayerTickActions,
     apply: applyScreenCommand,
@@ -2169,16 +2154,16 @@ export const startPlay = (
     }
   };
   const quickbarTap = (slot: number) => {
-    if (!replayPlayer && inputRecorder) {
-      inputRecorder.queueAction(`quickbar.tap.${slot + 1}`, 'down', inputContext());
+    if (!replayPlayer && inputRecording.recorder) {
+      inputRecording.recorder.queueAction(`quickbar.tap.${slot + 1}`, 'down', inputContext());
       pendingPlayerTickActions.enqueue(() => runQuickbarAction(slot, false));
       return;
     }
     runQuickbarAction(slot, false);
   };
   const quickbarHold = (slot: number) => {
-    if (!replayPlayer && inputRecorder) {
-      inputRecorder.queueAction(`quickbar.hold.${slot + 1}`, 'down', inputContext());
+    if (!replayPlayer && inputRecording.recorder) {
+      inputRecording.recorder.queueAction(`quickbar.hold.${slot + 1}`, 'down', inputContext());
       pendingPlayerTickActions.enqueue(() => runQuickbarAction(slot, true));
       return;
     }
@@ -2188,7 +2173,7 @@ export const startPlay = (
   const requestStanceAction = (action: StanceReplayAction): void => {
     withUnlockedInput(() => {
       if (!replayPlayer) {
-        inputRecorder?.queueAction(action, 'down', inputContext());
+        inputRecording.recorder?.queueAction(action, 'down', inputContext());
       }
       input.requestStanceToggle(action === 'player.crouch-toggle' ? 'crouch' : 'prone');
     });
@@ -2253,7 +2238,7 @@ export const startPlay = (
       if (reason) {
         showRefusal(reason, sim.time);
       } else {
-        inputRecorder?.queueAction(action, 'down', inputContext());
+        inputRecording.recorder?.queueAction(action, 'down', inputContext());
       }
       return reason === undefined;
     };
@@ -2409,7 +2394,11 @@ export const startPlay = (
         input.startFreeLook();
         break;
       case 'movement.walk-toggle':
-        input.walking = toggleWalking(input.walking, replayPlayer ? undefined : inputRecorder, inputContext());
+        input.walking = toggleWalking(
+          input.walking,
+          replayPlayer ? undefined : inputRecording.recorder,
+          inputContext(),
+        );
         break;
       case 'player.crouch-toggle':
         withUnlockedInput(() => crouchProneInput.keyDown(action, at));
@@ -2566,7 +2555,7 @@ export const startPlay = (
     // Gameplay records this press after toggling saved state; recording it here too duplicates the live press.
     const walkToggleHandledByGameplay = action === 'movement.walk-toggle' && phase === 'down';
     if (!(fromReplay || isGestureAction(action) || payloadBackedScreenAction || walkToggleHandledByGameplay)) {
-      inputRecorder?.queueAction(action, phase, context);
+      inputRecording.recorder?.queueAction(action, phase, context);
     }
     const slot = quickbarSlotFor(action);
     if (context === 'inventory' && screen.onInputCommand({ action, phase, at })) {
@@ -2972,7 +2961,7 @@ export const startPlay = (
     throwingStance = !throwingStance;
     automaticFireUid = undefined;
     if (!replayPlayer) {
-      inputRecorder?.queueAction('throw.stance.toggle', 'down', inputContext(), { inSnapshot: true });
+      inputRecording.recorder?.queueAction('throw.stance.toggle', 'down', inputContext(), { inSnapshot: true });
     }
     if (!throwingStance) {
       cancelItemThrow();
@@ -2989,7 +2978,7 @@ export const startPlay = (
 
   function toggleWornLights(): void {
     if (!replayPlayer) {
-      inputRecorder?.queueAction('light.worn-toggle', 'down', inputContext());
+      inputRecording.recorder?.queueAction('light.worn-toggle', 'down', inputContext());
       pendingPlayerTickActions.enqueue(toggleWornLightsNow);
       return;
     }
@@ -3005,7 +2994,7 @@ export const startPlay = (
 
   function useForwardButton(): void {
     if (!replayPlayer) {
-      inputRecorder?.queueAction('hand.use-forward', 'down', inputContext());
+      inputRecording.recorder?.queueAction('hand.use-forward', 'down', inputContext());
       pendingPlayerTickActions.enqueue(useForwardButtonNow);
       return;
     }
@@ -3033,7 +3022,7 @@ export const startPlay = (
       if (!inventory.hands[session.throwCharge.throwHand()]) {
         return;
       }
-      inputRecorder?.queueAction('item.drop', 'down', inputContext());
+      inputRecording.recorder?.queueAction('item.drop', 'down', inputContext());
       pendingPlayerTickActions.enqueue(dropHeldItemForThrowingStanceNow);
       return;
     }
@@ -3118,7 +3107,7 @@ export const startPlay = (
     }
     const distance = throwDistanceForItem(item, registry, itemThrowTuning, heldSimSeconds);
     if (!replayPlayer) {
-      inputRecorder?.queueAction('item.throw', 'down', inputContext(), {
+      inputRecording.recorder?.queueAction('item.throw', 'down', inputContext(), {
         payload: {
           kind: 'item.throw',
           itemUid: uid,
@@ -3952,24 +3941,6 @@ export const startPlay = (
     });
   };
 
-  const verifyReplayEndState = (): void => {
-    if (!(replayPlayer?.finished && !replayVerificationStarted)) {
-      return;
-    }
-    replayVerificationStarted = true;
-    replayVerificationTick = replayPlayer.tickCount;
-    const finalSnapshot = captureSnapshot();
-    sim.paused = true;
-    replayStateFingerprint(finalSnapshot).then(
-      (actual) => {
-        replayVerification = actual === options.replay?.endStateFingerprint ? 'matched' : 'diverged';
-      },
-      () => {
-        replayVerification = 'unavailable';
-      },
-    );
-  };
-
   const cancelItemThrowOnRightClick = (): void => {
     if (sim.body.actionRefusal && session.throwCharge.active) {
       cancelItemThrow();
@@ -3981,76 +3952,18 @@ export const startPlay = (
     }
   };
 
-  const stepReplaySimulation = (realDt: RealSeconds, menuPaused: boolean, gameFrozen: boolean): void => {
-    sim.paused = menuPaused || gameFrozen || replayPlayer?.finished === true || replayVerification === 'unavailable';
-    if (sim.paused || !replayPlayer || !replayDriver) {
-      return;
-    }
-    if (replayDriver.advanceFrame(realDt).kind === 'unavailable') {
-      replayVerification = 'unavailable';
-      sim.paused = true;
-      return;
-    }
-    if (replayPlayer.finished) {
-      replayDriver.advanceEndRemainder(options.replay!.endSimTimestamp);
-    }
-    verifyReplayEndState();
-  };
-
-  const stopInputRecordingForColumnOverflow = (): void => {
-    inputReplayStoppedReason = INPUT_REPLAY_COLUMN_OVERFLOW_STOP_REASON;
-    inputRecorder = undefined;
-    previousInputRecorder = undefined;
-    showNotice(`Replay ${inputReplayStoppedStatus(inputReplayStoppedReason).toLowerCase()}.`);
-  };
-
-  const rollInputRecorderWindow = (): void => {
-    if (!inputRecorder) {
-      return;
-    }
-    const previousRecorder = inputRecorder;
-    previousInputRecorder = previousRecorder;
-    inputRecorder = rolloverInputReplayRecorder(
-      previousRecorder,
-      captureSnapshot(),
-      streamer.generatedColumns(),
-      captureReplayStartState(),
-    );
-  };
-
-  const handleInputRecorderColumnOverflow = (): void => {
-    if (replayPlayer || !inputRecorder?.columnChangesWouldOverflow) {
-      return;
-    }
-    if (inputRecorder.pendingColumnChangesExceedWindow) {
-      stopInputRecordingForColumnOverflow();
-    } else {
-      rollInputRecorderWindow();
-    }
-  };
-
   /** Advances the simulation one frame; returns whether the debug game freeze (M) is on. */
   const stepSimulation = (realDt: RealSeconds, menuPaused: boolean): boolean => {
-    if (!worldLoading.ready) {
-      sim.paused = true;
+    const worldReady = worldLoading.ready;
+    if (worldReady) {
+      cancelItemThrowOnRightClick();
+    }
+    const { gameFrozen, events } = stepper.step(realDt, { menuPaused });
+    for (const event of events) {
+      showNotice(event.text);
+    }
+    if (!worldReady) {
       return false;
-    }
-    cancelItemThrowOnRightClick();
-    handleInputRecorderColumnOverflow();
-    // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
-    const gameFrozen = debugTools?.frozen ?? false;
-    if (replayPlayer) {
-      stepReplaySimulation(realDt, menuPaused, gameFrozen);
-    } else {
-      sim.paused = menuPaused || gameFrozen;
-      advanceLiveFrame(sim, realDt, skipUntil, (simDt, until) => session.frame(simDt, until));
-    }
-    // A running time skip simply waits out the freeze: a paused sim.frame leaves its target and compression alone.
-    if (skipUntil !== undefined) {
-      updateSkip(skipUntil);
-    }
-    if (!replayPlayer && inputRecorder?.full) {
-      rollInputRecorderWindow();
     }
     stepFrozenNoclip(realDt, gameFrozen && !menuPaused);
     if (spectator.body && input.locked && !input.menuPointer) {

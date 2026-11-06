@@ -48,6 +48,14 @@ const observation = {
         '    globalThis.saveControllerConstructed = true;\n    this.environmentProblem = saveEnvironmentProblem();',
       );
     }
+    if (id.endsWith('/src/game/simulationStepper.ts')) {
+      const stepperMarker = '    step,\n';
+      assert(code.includes(stepperMarker), 'stepper roll observation point exists');
+      return code.replace(
+        stepperMarker,
+        `${stepperMarker}    rollFullReplayWindow: () => { if (recording.recorder?.full) rollInputRecorderWindow(); },\n`,
+      );
+    }
     if (!id.endsWith('/src/game/play.ts')) {
       return;
     }
@@ -55,7 +63,7 @@ const observation = {
     assert(code.includes(marker), 'game-ready observation point exists');
     return code.replace(
       marker,
-      '  Object.assign(globalThis, { saveControllerPlayStarted: true, worldLoadWitness: { engine, session, worldLoading, frame }, tutorialSession: options.tutorial ? session : undefined, gauntletWitness: { engine, session, recording, measureSnapshot, input, eye, lookedAt, manual: false, rollReplay: () => { if (inputRecorder?.full) rollInputRecorderWindow(); } } });\n  startRealFrames((now) => globalThis.gauntletWitness.manual ? true : frame(now));',
+      '  Object.assign(globalThis, { saveControllerPlayStarted: true, worldLoadWitness: { engine, session, worldLoading, frame }, tutorialSession: options.tutorial ? session : undefined, gauntletWitness: { engine, session, recording, measureSnapshot, input, eye, lookedAt, manual: false, rollReplay: () => stepper.rollFullReplayWindow() } });\n  startRealFrames((now) => globalThis.gauntletWitness.manual ? true : frame(now));',
     );
   },
 };

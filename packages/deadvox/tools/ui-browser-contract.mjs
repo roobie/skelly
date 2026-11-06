@@ -71,7 +71,7 @@ try {
               '  globalThis.uiContractRuntime = { sim, session, inventory, quickbar, screen, eye: () => [...eye()] };\n',
             ],
             [
-              '/src/game/play.ts',
+              '/src/game/simulationStepper.ts',
               '      advanceLiveFrame',
               '      if (!sim.paused) globalThis.__uiContractSimulationResumes += 1;\n',
             ],

@@ -46,6 +46,7 @@ import {
   type ReplayActionPayload,
 } from '../src/game/replayCommands.ts';
 import { PHYSICS_RATE } from '../src/game/session.ts';
+import { createSimulationStepper, type InputRecording } from '../src/game/simulationStepper.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { rifleAmmunition } from './rifleFixture.ts';
@@ -1419,6 +1420,39 @@ describe('input replay', () => {
     expect(pendingInputReplay(reloadedStash)).toEqual(bytes);
     clearPendingInputReplay(reloadedStash);
     expect(pendingInputReplay(reloadedStash)).toBeUndefined();
+  });
+
+  it("a recorder window that fills during a frame rolls after that frame's step", () => {
+    const start = capture(createRuntime());
+    const recording: InputRecording = { recorder: undefined, previous: undefined, stoppedReason: undefined };
+    const runtime = createRuntime(start, false, undefined, {
+      sampleAtPlayerTick: (_tick, live, _time, compression) => {
+        recording.recorder?.recordTick(live, compression);
+        return live;
+      },
+    });
+    const filling = new InputReplayRecorder(start, 1, []);
+    recording.recorder = filling;
+    const stepper = createSimulationStepper({
+      sim: runtime.sim,
+      advance: (simDt, until) => runtime.session.frame(simDt, until),
+      worldReady: () => true,
+      gameFrozen: () => false,
+      replayPlayer: undefined,
+      replayDriver: undefined,
+      replay: undefined,
+      recording,
+      captureSnapshot: () => capture(runtime),
+      generatedColumns: () => [],
+      captureReplayStartState: () => DEFAULT_REPLAY_START_STATE,
+    });
+
+    stepper.step(realDuration(1 / 30), { menuPaused: false });
+
+    expect(filling.full).toBe(true);
+    expect(recording.previous).toBe(filling);
+    expect(recording.recorder).not.toBe(filling);
+    expect(recording.recorder?.tickCount).toBe(0);
   });
 
   it('bounds the always-on recording window and retained buffers', () => {

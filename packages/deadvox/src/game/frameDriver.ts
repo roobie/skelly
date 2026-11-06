@@ -1,13 +1,6 @@
 import type { Compression } from '../core/compression.ts';
 import type { Simulation } from '../core/sim.ts';
-import {
-  type RealSeconds,
-  type RealTimestamp,
-  realSeconds,
-  realTimestamp,
-  type SimSeconds,
-  simSeconds,
-} from '../core/time.ts';
+import { type RealSeconds, type RealTimestamp, realSeconds, type SimSeconds, simSeconds } from '../core/time.ts';
 
 const RAMP_PROFILES = {
   normal: { up: realSeconds(1.5) },
@@ -56,9 +49,6 @@ export const advanceLiveFrame = (
   return advanceStep(sim, planRealFrame(sim.compression, elapsed), until, advance);
 };
 
-/** Monotonic Real timestamp in milliseconds; only the outer frame/presentation adapter reads it. */
-export const realNow = (): RealTimestamp => realTimestamp(performance.now());
-
 export interface RealFrameObserver {
   before: () => number | undefined;
   after: (startedRealMs: number) => void;
@@ -74,16 +64,3 @@ export const observeRealFrame =
     }
     return continuing;
   };
-
-/** Browser RAF wiring lives outside the simulation and forwards branded Real timestamps. */
-export const startRealFrames = (
-  frame: (now: RealTimestamp) => boolean,
-  request: (callback: FrameRequestCallback) => number = (callback) => requestAnimationFrame(callback),
-): void => {
-  const tick: FrameRequestCallback = (now) => {
-    if (frame(realTimestamp(now))) {
-      request(tick);
-    }
-  };
-  request(tick);
-};

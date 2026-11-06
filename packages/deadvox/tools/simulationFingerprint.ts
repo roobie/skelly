@@ -65,13 +65,16 @@ export const SIMULATION_ENTRIES = [
   'src/game/play.ts',
   'src/game/quickbar.ts',
   'src/game/session.ts',
+  'src/game/simulationStepper.ts',
   'src/game/worldSetup.ts',
 ] as const;
 
 export const SIMULATION_EXCLUSIONS = [
-  // Includes playView's owned meshes/camera/draw/disposal and playFrames' RAF wiring.
-  // play.ts retains timestamp-to-dt policy, input sampling, actions and simulation advancement.
+  // Includes playView's owned meshes/camera/draw/disposal.
+  // play.ts retains timestamp-to-dt policy, input sampling and actions; simulationStepper.ts advances the simulation.
   'src/render',
+  // The browser's Real clock and frame requests; the stepper receives each frame's Real seconds.
+  'src/game/realFrames.ts',
   'src/debug',
   // Pointer-event quirks of the Mouse 5 side button (input handling); what the button does is in core/lights.ts.
   'src/core/sideButton.ts',

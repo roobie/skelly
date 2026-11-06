@@ -191,7 +191,7 @@ export const observationPlugin = {
     quickbar,
     screen,
     dispatchScreenCommand,
-    get inputRecorder() { return inputRecorder; },
+    get inputRecorder() { return inputRecording.recorder; },
     captureSnapshot,
     dropAfterNextThrowCommit: false,
     quickbarTapAfterNextThrowCommit: undefined,
@@ -201,8 +201,8 @@ export const observationPlugin = {
     adsToggleObservations: [],
     throwSpawnObservations: {},
     startInputReplayRecording: () => {
-      previousInputRecorder = undefined;
-      inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns(), {
+      inputRecording.previous = undefined;
+      inputRecording.recorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns(), {
         startState: captureReplayStartState(),
       });
     },
