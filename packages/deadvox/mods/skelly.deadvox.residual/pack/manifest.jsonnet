@@ -1,13 +1,11 @@
 local manifest = import '../../../../../tools/jsonnet/lib/pack-manifest.libsonnet';
 local content = [
-  'footstep-sounds',
-  'furniture-playtest', 'gauntlet-look', 'gauntlet-start',
-  'gauntlet', 'item-economy', 'items-playtest',
-  'ladders', 'layouts-playtest',
+  'footstep-sounds', 'gauntlet-look', 'gauntlet-start',
+  'gauntlet', 'item-economy',
   'layouts-test-house',
   'models-items', 'scenarios',
   'starts',
-  'templates-playtest', 'templates-test-house',
+  'templates-test-house',
 ];
 local things = import '../things/index.json';
 local assets = import '../assets/manifest.json';
@@ -25,8 +23,7 @@ manifest(
     'skelly.electronics', 'skelly.electric-power', 'skelly.household-electrical', 'skelly.ground-vehicles',
     'skelly.firearms', 'skelly.manuals', 'skelly.deadvox.site-generation', 'skelly.deadvox.combat-policy',
     'skelly.deadvox.loot', 'skelly.deadvox.actors', 'skelly.deadvox.buildings', 'skelly.deadvox.camp',
-    'skelly.deadvox.rural-sites', 'skelly.deadvox.crisis-hq', 'skelly.deadvox.woods',
-    'skelly.deadvox.labs.underground',
+    'skelly.deadvox.rural-sites', 'skelly.deadvox.crisis-hq', 'skelly.deadvox.labs.underground',
   ],
   content=content,
   things=things,

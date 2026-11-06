@@ -4,11 +4,7 @@
       "author": "Skelly contributors",
       "changes": "Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.",
       "download": null,
-      "files": [
-        "assets/models/baseball_cap.glb",
-        "assets/models/dad_cabin_key.glb",
-        "assets/models/gauntlet_lab_entry_card.glb"
-      ],
+      "files": ["assets/models/gauntlet_lab_entry_card.glb"],
       "licence": "CC0-1.0",
       "title": "Thing tool authored models",
       "url": "https://github.com/roobie/skelly/blob/main/packages/deadvox/mods/skelly.deadvox.residual/exports/things.jsonnet"

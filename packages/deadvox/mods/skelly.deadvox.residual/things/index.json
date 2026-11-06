@@ -1,33 +1,5 @@
 [
   {
-    "id": "baseball_cap",
-    "file": "assets/models/baseball_cap.glb",
-    "parts": {
-      "baseball_cap": {
-        "node": "baseball_cap:cap",
-        "massKg": 0.08,
-        "centreOfMass": [-0.0017582350424738742, 0.038684348835788064, -0.006347613518303491]
-      }
-    },
-    "grip": { "at": [-0.0020000000000000018, 0.04, 0], "turn": [0, 0, -90] },
-    "hold": "upright",
-    "roll": 0
-  },
-  {
-    "id": "dad_cabin_key",
-    "file": "assets/models/dad_cabin_key.glb",
-    "parts": {
-      "dad_cabin_key": {
-        "node": "dad_cabin_key:key",
-        "massKg": 0.01,
-        "centreOfMass": [0.028, 0.0029999999999999996, 0.003999999999999999]
-      }
-    },
-    "grip": { "at": [0.03, 0.005, 0], "turn": [0, 0, -90] },
-    "hold": "upright",
-    "roll": 0
-  },
-  {
     "id": "gauntlet_lab_entry_card",
     "file": "assets/models/gauntlet_lab_entry_card.glb",
     "parts": {

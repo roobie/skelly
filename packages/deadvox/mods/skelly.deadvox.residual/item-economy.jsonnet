@@ -1,8 +1,4 @@
 local economy = import 'tools/jsonnet/lib/economy.libsonnet';
-local sources = [
-  import 'gauntlet.jsonnet',
-  import 'items-playtest.jsonnet',
-];
 {
-  itemEconomy: economy.itemEconomy(std.flattenArrays([source.items for source in sources])),
+  itemEconomy: economy.itemEconomy((import 'gauntlet.jsonnet').items),
 }

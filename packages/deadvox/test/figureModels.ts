@@ -15,7 +15,7 @@ const MOD_ROOTS = [
   new URL('../../mods/skelly.wearables/', import.meta.url),
   new URL('../../mods/skelly.electric-power/', import.meta.url),
   new URL('../../mods/skelly.firearms/', import.meta.url),
-  new URL('../mods/skelly.deadvox.residual/', import.meta.url),
+  new URL('../mods/skelly.deadvox.scenario.playtest/', import.meta.url),
 ];
 
 /** `worn` names further models to load beside the figure's, such as the head gear a test puts on. */

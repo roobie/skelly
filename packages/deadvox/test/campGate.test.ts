@@ -397,7 +397,9 @@ describe('camp gate templates', () => {
   });
 
   it('keeps the placed north entrance passable through gate 2 and blocks bypasses around its closed leaf', () => {
-    const { layouts } = JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts-playtest.json', 'utf8')) as {
+    const { layouts } = JSON.parse(
+      readFileSync('mods/skelly.deadvox.scenario.playtest/layouts-playtest.json', 'utf8'),
+    ) as {
       layouts: SiteLayoutDef[];
     };
     const camp = layouts.find(({ buildings }) => buildings.some(({ template }) => template === 'camp_gate'))!;
@@ -455,7 +457,9 @@ describe('camp gate templates', () => {
   });
 
   it('blocks each zombie body unless its existing collision size fits the east opening', () => {
-    const { layouts } = JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts-playtest.json', 'utf8')) as {
+    const { layouts } = JSON.parse(
+      readFileSync('mods/skelly.deadvox.scenario.playtest/layouts-playtest.json', 'utf8'),
+    ) as {
       layouts: SiteLayoutDef[];
     };
     const camp = layouts.find(({ buildings }) => buildings.some(({ template }) => template === 'camp_gate'))!;
@@ -515,7 +519,9 @@ describe('camp gate templates', () => {
   });
 
   it('hides the finale from approach tracks and near ground except through the southern breach', () => {
-    const { layouts } = JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts-playtest.json', 'utf8')) as {
+    const { layouts } = JSON.parse(
+      readFileSync('mods/skelly.deadvox.scenario.playtest/layouts-playtest.json', 'utf8'),
+    ) as {
       layouts: SiteLayoutDef[];
     };
     const camp = layouts.find(({ buildings }) => buildings.some(({ template }) => template === 'camp_gate'))!;

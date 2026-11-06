@@ -13,7 +13,7 @@ import { defaultStartOf } from './fixtures/scenario.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const registry = baseRegistry();
-const playtest = JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts-playtest.json', 'utf8')) as {
+const playtest = JSON.parse(readFileSync('mods/skelly.deadvox.scenario.playtest/layouts-playtest.json', 'utf8')) as {
   layouts: SiteLayoutDef[];
 };
 const camp = registry.layouts.get(playtest.layouts[0]!.id)!;

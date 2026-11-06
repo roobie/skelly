@@ -42,11 +42,11 @@ function content() {
     'skelly.deadvox.scenario.cabins/templates-cabins.json',
     'skelly.deadvox.woods/templates.json',
     'skelly.deadvox.scenario.stairs/templates-stairs.json',
-    'skelly.deadvox.residual/templates-playtest.json',
+    'skelly.deadvox.scenario.playtest/templates-playtest.json',
     'skelly.deadvox.rural-sites/templates-medical.json',
     'skelly.deadvox.buildings/templates-workshop.json',
     'skelly.deadvox.camp/camp.json',
-    'skelly.deadvox.residual/ladders.json',
+    'skelly.deadvox.scenario.playtest/ladders.json',
   ];
   const templates = [];
   for (const file of templateFiles) {

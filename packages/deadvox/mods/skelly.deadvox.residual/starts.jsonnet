@@ -1,8 +1,4 @@
 local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
-local layouts = std.flattenArrays([
-  (import 'layouts-test-house.jsonnet').layouts,
-  (import 'layouts-playtest.json').layouts,
-]);
 {
-  starts: kit.fromLayouts(layouts) + [kit.common + { id: 'gauntlet', site: 'gauntlet' }],
+  starts: kit.fromLayouts((import 'layouts-test-house.jsonnet').layouts) + [kit.common + { id: 'gauntlet', site: 'gauntlet' }],
 }

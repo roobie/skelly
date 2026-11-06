@@ -39,7 +39,9 @@ import { PLAYER, physicsFor } from './playerFixture.ts';
 
 const sources = baseContentSources().filter(({ source }) => !source.startsWith('layouts') && source !== 'starts.json');
 const layout = (
-  JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts-playtest.json', 'utf8')) as { layouts: SiteLayoutDef[] }
+  JSON.parse(readFileSync('mods/skelly.deadvox.scenario.playtest/layouts-playtest.json', 'utf8')) as {
+    layouts: SiteLayoutDef[];
+  }
 ).layouts[0]!;
 const result = buildRegistry([...sources, { source: 'playtest-layout-test.json', data: { layouts: [layout] } }]);
 const scale = makeScale(0.5);

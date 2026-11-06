@@ -1,29 +1,5 @@
 [
   {
-    "id": "baseball_cap",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "baseball_cap",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.0040000000000000001
-    }
-  },
-  {
-    "id": "dad_cabin_key",
-    "kind": "item",
-    "options": {
-      "mass": "parts"
-    },
-    "source": "dad_cabin_key",
-    "voxel": {
-      "detailGrain": 0.002,
-      "grain": 0.01
-    }
-  },
-  {
     "id": "gauntlet_lab_entry_card",
     "kind": "item",
     "options": {

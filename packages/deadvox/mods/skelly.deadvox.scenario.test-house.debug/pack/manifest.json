@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.deadvox.residual"],
+  "dependencies": ["skelly.deadvox.residual", "skelly.deadvox.woods"],
   "files": [
     {
       "kind": "content",

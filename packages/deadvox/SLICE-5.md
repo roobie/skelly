@@ -257,9 +257,9 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
    changing source visibility through the opening. BR approves flame/smoke readability and
    what the player can do about a burning shelter.
 7. **Event rules, scenario wave and region integration.** #313's rules and their
-   one-shot state are in `DESIGN.md`, "Scenario events". The playtest scenario
-   adopts the wave from `mods/skelly.deadvox.residual/holding-wave.libsonnet`, `rule`, with its
-   own arrival point. Cross the catch-up horizon with a working and
+   one-shot state are in `DESIGN.md`, "Scenario events". The wave lives in the playtest
+   scenario mod because the playtest adopts it, with its own arrival point; see
+   `mods/skelly.deadvox.scenario.playtest/holding-wave.libsonnet`, `rule`. Cross the catch-up horizon with a working and
    a burning base. Prove canonical coarse outcomes, persisted damage, traps, processes
    and nearby/background light attention. Exercise preparation, the wave and recovery
    with charged attacks and stagger available; ordinary ambient attention remains

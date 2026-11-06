@@ -5,6 +5,6 @@ manifest(
   tier='scenario',
   optIn=true,
   content=['layouts', 'catalogue'],
-  dependencies=['skelly.deadvox.residual'],
+  dependencies=['skelly.deadvox.residual', 'skelly.deadvox.woods'],
   overrides=[{ pack: 'skelly.deadvox.residual', entry: 'layouts:' + layout.id }],
 )

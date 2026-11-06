@@ -32,7 +32,7 @@ const PAGES_ASSEMBLY_LOOP_PATTERN = /for P in ([^;]+); do/;
 const WHITESPACE_PATTERN = /\s+/;
 const HREF_PATTERN = /\bhref="([^"]+)"/;
 const LAYOUT_FILE_PATTERN = /^layouts.*\.json$/;
-const DEADVOX_CONTENT = 'packages/deadvox/mods/skelly.deadvox.residual';
+const DEADVOX_MODS = 'packages/deadvox/mods';
 const RESOURCE_URL_PATTERNS = [
   /\b(?:href|src)\s*=\s*["']([^"']+)["']/g,
   /url\(\s*["']?([^"')\s]+)["']?\s*\)/g,
@@ -52,9 +52,11 @@ const filesUnder = (directory) =>
   });
 
 const authoredLayoutIds = () =>
-  readdirSync(join(ROOT, DEADVOX_CONTENT))
-    .filter((name) => LAYOUT_FILE_PATTERN.test(name))
-    .flatMap((name) => JSON.parse(read(`${DEADVOX_CONTENT}/${name}`)).layouts.map((layout) => layout.id));
+  readdirSync(join(ROOT, DEADVOX_MODS)).flatMap((mod) =>
+    readdirSync(join(ROOT, DEADVOX_MODS, mod))
+      .filter((name) => LAYOUT_FILE_PATTERN.test(name))
+      .flatMap((name) => JSON.parse(read(`${DEADVOX_MODS}/${mod}/${name}`)).layouts.map((layout) => layout.id)),
+  );
 
 const intentionallyUnofferedDeadvoxParams = {
   start: 'An admitted start-row selector; a player start picker is separate UI work.',

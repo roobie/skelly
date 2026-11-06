@@ -506,7 +506,7 @@ Fixture descriptions keep showcase stock from defining production eligibility. T
 
 Procedural `appearance` detail must not change occupied cells or expose hidden contents, so refining how a fixture reads cannot change gameplay. A `shape` is the exception: it is both what is drawn and what blocks (see "Furniture solidity" below).
 
-Wall mounting is an explicit content contract because text alone cannot distinguish a hung plaque from a freestanding board. Reject unsupported mount kinds and missing hosts rather than rendering an apparently attached object in empty space. Keep plaque dimensions and board legs in content shapes instead of renderer guesses. See `src/core/schema/furniture.ts`, `FurnitureSchema`; `src/core/content.ts`, `checkPaletteThing`; and `mods/skelly.deadvox.residual/furniture-playtest.jsonnet`, `plaque`.
+Wall mounting is an explicit content contract because text alone cannot distinguish a hung plaque from a freestanding board. Reject unsupported mount kinds and missing hosts rather than rendering an apparently attached object in empty space. Keep plaque dimensions and board legs in content shapes instead of renderer guesses. See `src/core/schema/furniture.ts`, `FurnitureSchema`; `src/core/content.ts`, `checkPaletteThing`; and `mods/skelly.deadvox.scenario.playtest/furniture-playtest.jsonnet`, `plaque`.
 
 A heap of mixed materials is one shape with a colour per box, not several pieces of furniture: it must stay a single container with one pick target, and the colours are content so a new heap needs no code. See `src/core/schema/furniture.ts`, `FurnitureShapeBoxSchema`, and `mods/skelly.deadvox.buildings/furniture-workshop.jsonnet`, `workshop_scrap_pile`.
 

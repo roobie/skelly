@@ -292,7 +292,7 @@ describe('Tiled spawn-window export', () => {
       'horde_id',
     );
     const committed = JSON.parse(
-      readFileSync(join(mapsPath, '../mods/skelly.deadvox.residual/layouts-playtest.json'), 'utf8'),
+      readFileSync(join(mapsPath, '../mods/skelly.deadvox.scenario.playtest/layouts-playtest.json'), 'utf8'),
     ) as unknown;
     expect(exported).toEqual(committed);
   });

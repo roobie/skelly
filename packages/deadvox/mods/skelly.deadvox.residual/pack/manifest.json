@@ -46,17 +46,12 @@
     "skelly.deadvox.camp",
     "skelly.deadvox.rural-sites",
     "skelly.deadvox.crisis-hq",
-    "skelly.deadvox.woods",
     "skelly.deadvox.labs.underground"
   ],
   "files": [
     {
       "kind": "content",
       "path": "footstep-sounds.json"
-    },
-    {
-      "kind": "content",
-      "path": "furniture-playtest.json"
     },
     {
       "kind": "content",
@@ -76,18 +71,6 @@
     },
     {
       "kind": "content",
-      "path": "items-playtest.json"
-    },
-    {
-      "kind": "content",
-      "path": "ladders.json"
-    },
-    {
-      "kind": "content",
-      "path": "layouts-playtest.json"
-    },
-    {
-      "kind": "content",
       "path": "layouts-test-house.json"
     },
     {
@@ -104,19 +87,7 @@
     },
     {
       "kind": "content",
-      "path": "templates-playtest.json"
-    },
-    {
-      "kind": "content",
       "path": "templates-test-house.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/baseball_cap.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/dad_cabin_key.model.json"
     },
     {
       "kind": "json",
@@ -177,14 +148,6 @@
     {
       "kind": "asset",
       "path": "assets/manifest.libsonnet"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/baseball_cap.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/dad_cabin_key.glb"
     },
     {
       "kind": "asset",

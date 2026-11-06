@@ -367,7 +367,9 @@ const siteWorld = (site: AuthoredSite, columns: [number, number][], seed: number
 
 describe('authored layout acceptance', () => {
   it('keeps the fixed camp amalgam clear of authored vehicle routes', () => {
-    const playtest = JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts-playtest.json', 'utf8')) as {
+    const playtest = JSON.parse(
+      readFileSync('mods/skelly.deadvox.scenario.playtest/layouts-playtest.json', 'utf8'),
+    ) as {
       layouts: SiteLayoutDef[];
     };
     const camp = playtest.layouts[0]!;

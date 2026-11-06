@@ -157,10 +157,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/footstep-sounds.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/furniture-playtest.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/furniture-playtest.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet-look.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/gauntlet-look.json"
     },
@@ -175,14 +171,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/item-economy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/item-economy.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/items-playtest.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/items-playtest.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/ladders.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/ladders.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-test-house.jsonnet",
@@ -203,10 +191,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/starts.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-playtest.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-playtest.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-test-house.jsonnet",
@@ -355,6 +339,54 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.lone-house/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.lone-house/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest.debug/catalogue.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest.debug/catalogue.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest.debug/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest.debug/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/assets/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/assets/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/exports/things.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/exports/things.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/furniture-playtest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/furniture-playtest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/item-economy.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/item-economy.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/items-playtest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/items-playtest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/ladders.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/ladders.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/models-playtest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/models-playtest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/templates-playtest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/templates-playtest.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.rural-medical-post/pack/manifest.jsonnet",

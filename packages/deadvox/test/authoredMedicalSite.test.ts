@@ -13,7 +13,9 @@ import { PLAYER } from './playerFixture.ts';
 
 const sources = baseContentSources().filter(({ source }) => !source.startsWith('layouts'));
 const layout = (
-  JSON.parse(readFileSync('mods/skelly.deadvox.residual/layouts-playtest.json', 'utf8')) as { layouts: SiteLayoutDef[] }
+  JSON.parse(readFileSync('mods/skelly.deadvox.scenario.playtest/layouts-playtest.json', 'utf8')) as {
+    layouts: SiteLayoutDef[];
+  }
 ).layouts[0]!;
 const result = buildRegistry([...sources, { source: 'medical-layout-test.json', data: { layouts: [layout] } }]);
 const required = <T>(value: T | undefined, label: string): T => {

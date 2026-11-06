@@ -34,7 +34,7 @@ import { type MoveIntent, PLAYER, physicsFor, type StanceToggle } from './player
 import { chargedRifle } from './rifleFixture.ts';
 import { encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
-const BASE = 'mods/skelly.deadvox.residual';
+const BASE = 'mods/skelly.deadvox.scenario.playtest';
 const registry = baseRegistry();
 const [FIREARM_TYPE] = [...registry.items].find(([, def]) => def.firearm)!;
 const [DOOR_TYPE] = [...registry.furniture].find(([, def]) => def.door && !def.door.hatch)!;
