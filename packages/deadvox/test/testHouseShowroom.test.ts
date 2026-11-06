@@ -14,7 +14,7 @@ import { withReusedBuilds } from './bundledContentReuse.ts';
 import { content as baseContent } from './fixtures/startupContent.ts';
 import { testHouseSite } from './testHouseSite.ts';
 
-const selected = withReusedBuilds(() => selectBundledMods(['test-house-debug']));
+const selected = withReusedBuilds(() => selectBundledMods(['skelly.deadvox.scenario.test-house.debug']));
 const config = configFromUrl(new URLSearchParams('site=testHouse'), selected.content);
 const { registry } = config.content;
 const area = (authored: AuthoredSite) => {

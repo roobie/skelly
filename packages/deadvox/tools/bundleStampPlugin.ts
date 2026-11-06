@@ -6,7 +6,7 @@ import process from 'node:process';
 import type { Plugin } from 'vite';
 import type { BundleStamp } from '../src/core/bundleAdmission.ts';
 import { admitPacks, packContentHash } from '../src/core/packAdmission.ts';
-import { bundledPackDefines, readBundledPacks } from './readBundledPacks.ts';
+import { bundledPackDefines, readAvailablePacks } from './readBundledPacks.ts';
 import { fingerprintSimulationSources } from './simulationFingerprint.ts';
 
 const BUNDLE_STAMP_DEFINE = '__SKELLY_BUNDLE_STAMP__';
@@ -36,7 +36,7 @@ export function bundleStampPlugin(packageRoot: string): Plugin {
           readFile: async (path) => readFileSync(path, 'utf8'),
         });
       proofHash = await fingerprint();
-      const selected = admitPacks(readBundledPacks(packageRoot));
+      const selected = admitPacks(readAvailablePacks(packageRoot));
       if (selected.issues.length > 0) {
         throw new Error(JSON.stringify(selected.issues));
       }
@@ -77,7 +77,7 @@ export function bundleStampPlugin(packageRoot: string): Plugin {
     },
     async generateBundle() {
       if (packHashes) {
-        const selected = admitPacks(readBundledPacks(packageRoot));
+        const selected = admitPacks(readAvailablePacks(packageRoot));
         const current = await Promise.all(selected.packs.map(packContentHash));
         if (selected.issues.length > 0) {
           this.error('Pack admission changed during bundle validation');

@@ -2,7 +2,7 @@ import { basename } from 'node:path';
 import process from 'node:process';
 import { expect, it } from 'vitest';
 import type { PackInput } from '../src/core/packAdmission.ts';
-import { readBundledPacks } from '../tools/readBundledPacks.ts';
+import { readAvailablePacks } from '../tools/readBundledPacks.ts';
 
 const folderIssues = (packs: readonly PackInput[]): string[] =>
   packs.flatMap(({ source, manifest }) => {
@@ -24,7 +24,7 @@ const tierIssues = (packs: readonly PackInput[]): string[] => {
 };
 
 it('keeps shipped mod folders equal to their full manifest ids within the path budget', () => {
-  const packs = readBundledPacks(process.cwd());
+  const packs = readAvailablePacks(process.cwd());
   expect(packs.length).toBeGreaterThan(0);
   expect(folderIssues(packs)).toEqual([]);
   const fixture = { ...packs[0]!, source: 'mods/fixture.mod', manifest: { ...packs[0]!.manifest, id: 'fixture.mod' } };
@@ -35,7 +35,7 @@ it('keeps shipped mod folders equal to their full manifest ids within the path b
 });
 
 it('keeps shipped mod dependencies, other than the entry pack selecting the stack, from pointing to a higher tier without privileging loader tiers', () => {
-  const packs = readBundledPacks(process.cwd());
+  const packs = readAvailablePacks(process.cwd());
   expect(packs.length).toBeGreaterThan(0);
   expect(tierIssues(packs)).toEqual([]);
   const owner: PackInput = {

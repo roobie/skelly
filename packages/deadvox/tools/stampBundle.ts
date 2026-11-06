@@ -24,6 +24,10 @@ export async function stampPacks(
     throw new Error(`Pack admission failed: ${JSON.stringify(admitted.issues)}`);
   }
   await stampBundle(admitted.sources, proofHash);
+  // A stamp lets startup trust the default set, so that set is validated without the opt-in packs too.
+  if (inputs.some(({ manifest }) => manifest.optIn)) {
+    await stampBundle(admitPacks(inputs.filter(({ manifest }) => !manifest.optIn)).sources, proofHash);
+  }
   return Object.fromEntries(
     await Promise.all(
       admitted.packs.map(async (pack) => [pack.manifest.id, { sourceHash: await packContentHash(pack), proofHash }]),

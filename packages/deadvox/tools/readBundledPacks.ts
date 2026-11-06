@@ -6,7 +6,8 @@ import { parse } from 'valibot';
 import { canonicalJson } from '../src/core/canonicalJson.ts';
 import { admitPacks, type PackInput, PackManifestSchema, packContentHash } from '../src/core/packAdmission.ts';
 
-export const readBundledPacks = (packageRoot: string, stack?: string): PackInput[] => {
+/** Every shipped pack, opt-in ones included, as the bundle stamp and file hashes cover them. */
+export const readAvailablePacks = (packageRoot: string): PackInput[] => {
   const roots = ['mods', '../mods']
     .flatMap((root) => {
       const directory = resolve(packageRoot, root);
@@ -55,8 +56,14 @@ export const readBundledPacks = (packageRoot: string, stack?: string): PackInput
       }),
     };
   });
+  return inputs;
+};
+
+/** The default packs, or the named stack's closure, which may include opt-in packs it names. */
+export const readBundledPacks = (packageRoot: string, stack?: string): PackInput[] => {
+  const inputs = readAvailablePacks(packageRoot);
   if (stack === undefined) {
-    return inputs;
+    return inputs.filter(({ manifest }) => !manifest.optIn);
   }
   const selected = new Set<string>();
   const visit = (id: string): void => {
@@ -89,20 +96,30 @@ export const readStackContentSources = (packageRoot: string, stack: string) =>
     .sort((left, right) => left.source.localeCompare(right.source));
 
 const CONTENT_PACKS_DEFINE = '__SKELLY_CONTENT_PACKS__';
+const OPT_IN_PACKS_DEFINE = '__SKELLY_OPT_IN_PACKS__';
 const FILE_HASHES_DEFINE = '__SKELLY_FILE_HASHES__';
 
-export const bundledPackDefines = async (inputs: readonly PackInput[]): Promise<Record<string, string>> => {
+const admitted = (inputs: readonly PackInput[]): PackInput[] => {
   const { packs, issues } = admitPacks(inputs);
   if (issues.length > 0) {
     throw new Error(JSON.stringify(issues));
   }
-  const identities = await Promise.all(
+  return packs;
+};
+
+const identities = (packs: readonly PackInput[]) =>
+  Promise.all(
     packs.map(async (pack) => ({
       id: pack.manifest.id,
       version: pack.manifest.version,
       canonicalHash: await packContentHash(pack),
     })),
   );
+
+/** Identities of the default packs and, separately, of the opt-in packs, plus every available pack's file hashes. */
+export const bundledPackDefines = async (inputs: readonly PackInput[]): Promise<Record<string, string>> => {
+  const packs = admitted(inputs);
+  const defaults = admitted(inputs.filter(({ manifest }) => !manifest.optIn));
   const hashes = Object.fromEntries(
     packs.flatMap((pack) =>
       pack.manifest.files
@@ -111,7 +128,8 @@ export const bundledPackDefines = async (inputs: readonly PackInput[]): Promise<
     ),
   );
   return {
-    [CONTENT_PACKS_DEFINE]: JSON.stringify(identities),
+    [CONTENT_PACKS_DEFINE]: JSON.stringify(await identities(defaults)),
+    [OPT_IN_PACKS_DEFINE]: JSON.stringify(await identities(packs.filter(({ manifest }) => manifest.optIn))),
     [FILE_HASHES_DEFINE]: JSON.stringify(hashes),
   };
 };

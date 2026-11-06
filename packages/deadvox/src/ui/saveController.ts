@@ -12,6 +12,7 @@ import {
   decodeSave,
   readSaveVersionMetadata,
   type SaveContentKind,
+  type SaveVersionComponents,
   type SaveVersionIdentity,
   type SaveWorldIdentity,
   type SaveWorldOptions,
@@ -162,8 +163,15 @@ export class SaveController {
   constructor(
     text: Pick<ScreenText, 'save' | 'menu'>,
     { backend = 'auto', savingEnabled = true }: { backend?: SaveBackendPreference; savingEnabled?: boolean } = {},
-    bundledMods: readonly ActiveBundledMod[] = [],
-    browserMods: readonly ActiveBrowserMod[] = [],
+    {
+      bundledMods = [],
+      browserMods = [],
+      folderPacks = [],
+    }: {
+      bundledMods?: readonly ActiveBundledMod[];
+      browserMods?: readonly ActiveBrowserMod[];
+      folderPacks?: SaveVersionComponents['contentPacks'];
+    } = {},
   ) {
     this.text = text.save;
     this.goLabels = text.menu;
@@ -172,7 +180,7 @@ export class SaveController {
     this.savingEnabled = savingEnabled;
     this.environmentProblem = savingEnabled ? saveEnvironmentProblem(text.save) : text.save.debugRun;
     if (!this.environmentProblem) {
-      this.identity = currentSaveVersionIdentity(bundledMods, browserMods);
+      this.identity = currentSaveVersionIdentity(bundledMods, browserMods, folderPacks);
     }
     // A debug run without saves still exports metrics that name its world and character.
     const canMintIds = !this.environmentProblem || this.environmentProblem === text.save.debugRun;

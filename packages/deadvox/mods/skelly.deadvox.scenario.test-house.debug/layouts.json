@@ -1,6 +1,4 @@
 {
-  "dependencies": ["skelly.deadvox.residual"],
-  "id": "test-house-debug",
   "layouts": [
     {
       "attemptPolicy": {
@@ -1188,13 +1186,6 @@
       ]
     }
   ],
-  "overrides": [
-    {
-      "entry": "layouts:testHouse",
-      "pack": "skelly.deadvox.residual"
-    }
-  ],
-  "product": false,
   "templates": [
     {
       "id": "test_house_range",
@@ -1437,7 +1428,5 @@
       },
       "size": [82, 5, 40]
     }
-  ],
-  "tier": "scenario",
-  "version": "1"
+  ]
 }

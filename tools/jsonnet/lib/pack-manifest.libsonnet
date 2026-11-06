@@ -1,10 +1,11 @@
-function(id, tier, content=[], guns=[], things=[], assets={ sources: [] }, json=[], dependencies=[], overrides=[], product=false, defaultStart=null)
+function(id, tier, content=[], guns=[], things=[], assets={ sources: [] }, json=[], dependencies=[], overrides=[], product=false, defaultStart=null, optIn=false)
 {
   id: id,
   version: '1',
   tier: tier,
   product: product,
   [if defaultStart != null then 'defaultStart']: defaultStart,
+  [if optIn then 'optIn']: true,
   dependencies: dependencies,
   overrides: overrides,
   files: [{ path: name + '.json', kind: 'content' } for name in content] +

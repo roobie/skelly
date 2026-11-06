@@ -1192,8 +1192,8 @@ completeness checker. Authored evaluation saves must require their admitted mod.
 
 The range exists only with the debug mod. Its lane sits east of the hill so the
 foundation fits the normal 1 m limit, keeping one grading rule for every row without
-changing the haven's landscape. See `src/config/bundled/test-house-debug.jsonnet`, `layouts`,
-and `src/config/bundled/test-house-range.libsonnet`. The stock boundary and maintenance
+changing the haven's landscape. See `mods/skelly.deadvox.scenario.test-house.debug/layouts.jsonnet`, `layouts`,
+and `mods/skelly.deadvox.scenario.test-house.debug/test-house-range.libsonnet`. The stock boundary and maintenance
 reasons belong in `docs/test-house.md`, "Normal and debug additions", and
 `docs/test-house.md`, "Garage".
 

@@ -1,7 +1,8 @@
 import { expect, test } from 'vitest';
-import { admitPacks } from '../src/core/packAdmission.ts';
+import { admitPacks, admitWithFolderPacks, packContentHash, selectFolderClosure } from '../src/core/packAdmission.ts';
 import { currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/core/saveFormat.ts';
-import { bundledPackInputs } from '../src/game/bundledContent.ts';
+import { availablePackInputs, bundledPackInputs } from '../src/game/bundledContent.ts';
+import { folderChain } from './fixtures/folderPacks.ts';
 import { capture, contentLookup, createRuntime, formatWorldOptions } from './snapshotTestSupport.ts';
 
 const mods = [
@@ -46,6 +47,29 @@ test('Continue refuses missing, changed and reordered mods with a named reason',
     const running = await currentSaveVersionIdentity([], selected);
     await expect(decodeSave(bytes, { version: running.components, contentLookup })).rejects.toThrow(reason);
   }
+});
+
+test('a selected opt-in closure follows the default packs in the identity once each, in admission order', async () => {
+  const { a, b, c, defaults, available } = folderChain();
+  const admission = admitWithFolderPacks(defaults, selectFolderClosure([a.manifest.id], available, defaults));
+  expect(admission.issues).toEqual([]);
+  const entries = await Promise.all(
+    admission.folderPacks.map(async (pack) => ({
+      id: pack.manifest.id,
+      version: pack.manifest.version,
+      canonicalHash: await packContentHash(pack),
+    })),
+  );
+  const normal = await currentSaveVersionIdentity();
+  const selected = await currentSaveVersionIdentity([], [], entries);
+  expect(selected.components.contentPacks).toEqual([...normal.components.contentPacks, ...entries]);
+  expect(entries.map(({ id }) => id)).toEqual([c, b, a].map(({ manifest }) => manifest.id));
+  expect(selected.digest).not.toBe(normal.digest);
+  const optIn = new Set(
+    availablePackInputs.filter(({ manifest }) => manifest.optIn).map(({ manifest }) => manifest.id),
+  );
+  expect(optIn.size).toBeGreaterThan(0);
+  expect(normal.components.contentPacks.filter(({ id }) => optIn.has(id))).toEqual([]);
 });
 
 test('JSON object key order does not change a browser pack hash', async () => {

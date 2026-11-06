@@ -7,7 +7,7 @@ export const sweepFromUrl = (params: URLSearchParams, config: GameConfig): Parti
   if (
     config.debug &&
     config.site === 'testHouse' &&
-    bundledModIdsFromUrl(params).includes('test-house-debug') &&
+    bundledModIdsFromUrl(params).includes('skelly.deadvox.scenario.test-house.debug') &&
     params.has('ragdollSweep')
   ) {
     const seed = Number(params.get('ragdollSweep'));

@@ -45,13 +45,15 @@ it('restricts handedness overrides to debug URL configuration', () => {
 });
 
 it('requires explicit debug mod selection for ragdoll staging and viewer placement', () => {
-  const selected = configFromUrl(new URLSearchParams('debug=1&site=testHouse&mods=test-house-debug&ragdollSweep=19'));
+  const selected = configFromUrl(
+    new URLSearchParams('debug=1&site=testHouse&mods=skelly.deadvox.scenario.test-house.debug&ragdollSweep=19'),
+  );
   expect(selected.ragdollSweep).toBe(19);
   expect(selected.debugStart).toBeDefined();
   for (const query of [
-    'site=testHouse&mods=test-house-debug&ragdollSweep=19',
-    'debug=1&mods=test-house-debug&ragdollSweep=19',
-    'debug=1&site=testHouse&mods=test-house-debug&ragdollSweep=no',
+    'site=testHouse&mods=skelly.deadvox.scenario.test-house.debug&ragdollSweep=19',
+    'debug=1&mods=skelly.deadvox.scenario.test-house.debug&ragdollSweep=19',
+    'debug=1&site=testHouse&mods=skelly.deadvox.scenario.test-house.debug&ragdollSweep=no',
     'debug=1&site=testHouse&ragdollSweep=19',
   ]) {
     expect(configFromUrl(new URLSearchParams(query)).ragdollSweep).toBeUndefined();

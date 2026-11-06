@@ -85,6 +85,8 @@ diagnostics instead of being ignored. A bundled mod's Jsonnet source derives its
 rows from core content at build time, so its transformation remains beside its content.
 A bundled mod's file name matches its mod id, so the file is found by id. See
 `src/config/bundled/skelly.deadvox.beginner.jsonnet` and `src/game/bundledMods.ts`, `selectBundledMods`.
+The same parameter names an opt-in folder mod, which joins through pack admission with its
+closure rather than this intake; see `docs/pack-split.md`, "Debug mods".
 
 The game and the site launcher must offer the same mods, and the launcher is a static page
 that cannot import game modules, so the list is one schema-checked content file rather than
@@ -196,7 +198,7 @@ they report broken data to a developer, and play only offers fits that already p
 The range uses ordinary authored templates and building rows rather than a separate
 geometry mechanism, so its grading, vegetation clearing and admission share the same
 owner as other evaluation fixtures. Stagger targets laterally so nearer boards do not
-hide farther ones from the firing line. See `src/config/bundled/test-house-range.libsonnet`
+hide farther ones from the firing line. See `mods/skelly.deadvox.scenario.test-house.debug/test-house-range.libsonnet`
 and `docs/test-house.md`, "Normal and debug additions".
 
 ## Weathering profiles

@@ -1,16 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import debugMod from '../src/config/bundled/test-house-debug.json' with { type: 'json' };
+import debugMod from '../mods/skelly.deadvox.scenario.test-house.debug/layouts.json' with { type: 'json' };
+import debugManifest from '../mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json' with { type: 'json' };
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { placedPoint } from '../src/core/templates.ts';
+import { bundledPackInputs } from '../src/game/bundledContent.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';
 import { withReusedBuilds } from './bundledContentReuse.ts';
-import { makeConfig } from './fixtures/startupContent.ts';
+import { content as baseContent, makeConfig } from './fixtures/startupContent.ts';
 
 const selected = withReusedBuilds(() =>
-  selectBundledMods(bundledModIdsFromUrl(new URLSearchParams({ mods: debugMod.id }))),
+  selectBundledMods(bundledModIdsFromUrl(new URLSearchParams({ mods: debugManifest.id }))),
 );
 
 const totals = (items: { item: string; count: number; condition: number; liquidContents?: unknown }[]) => {
@@ -25,7 +27,15 @@ const totals = (items: { item: string; count: number; condition: number; liquidC
 describe('authored debug scenario mod', () => {
   it('admits its selected rows and resolves every listed reference', () => {
     expect(selected.issues).toEqual([]);
-    expect(selected.admitted.some(({ id }) => id === debugMod.id)).toBe(true);
+    expect(selected.admittedFolderPacks.map(({ id }) => id)).toEqual([debugManifest.id]);
+    expect(selected.admitted).toEqual([]);
+  });
+
+  it('stays out of the default packs and content unless selected', () => {
+    expect(bundledPackInputs.some(({ manifest }) => manifest.id === debugManifest.id)).toBe(false);
+    const [template] = debugMod.templates;
+    expect(baseContent.registry.templates.has(template!.id)).toBe(false);
+    expect(selected.content.registry.templates.has(template!.id)).toBe(true);
   });
 
   it('keeps authored fixed stock inside the startup ring independently of landscape bounds', () => {

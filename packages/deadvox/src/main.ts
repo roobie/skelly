@@ -224,8 +224,11 @@ if (bench === 'report') {
     const saveController = new SaveController(
       screenText,
       { backend, savingEnabled: savingEnabledFromUrl(params) },
-      bundled.admitted,
-      browserSelection?.admitted,
+      {
+        bundledMods: bundled.admitted,
+        browserMods: browserSelection?.admitted ?? [],
+        folderPacks: bundled.admittedFolderPacks,
+      },
     );
     startupScreen.append(saveStatus);
     if (params.get('save-test') === '1') {
@@ -236,6 +239,7 @@ if (bench === 'report') {
             return saveController.namespace;
           },
           controller: saveController,
+          identity: () => (saveController as unknown as { identity: Promise<unknown> | undefined }).identity,
           saveState: () => {
             const { savedGeneration, failure } = saveController as unknown as {
               savedGeneration: number;

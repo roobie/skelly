@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { perceivePlayer } from '../src/core/agentPerception.ts';
+import { admitWithFolderPacks, type PackInput, selectFolderClosure } from '../src/core/packAdmission.ts';
 import { currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/core/saveFormat.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';
 import { startupContent } from './baseRegistry.ts';
 import { reuseBundledBuilds, withReusedBuilds } from './bundledContentReuse.ts';
+import { fixturePack, folderChain } from './fixtures/folderPacks.ts';
 import { capture, contentLookup, createRuntime, formatWorldOptions } from './snapshotTestSupport.ts';
 
 const base = buildBundledContent().registry;
@@ -63,6 +65,36 @@ describe('beginner bundled mod', () => {
 
   it('keeps the mods panel switch out of the bundled id list', () => {
     expect(bundledModIdsFromUrl(new URLSearchParams('mods=1'))).toEqual([]);
+  });
+});
+
+describe('opt-in folder pack selection', () => {
+  const ids = (packs: readonly PackInput[]) => packs.map(({ manifest }) => manifest.id);
+
+  it('admits a requested root with its whole opt-in closure once, after the defaults it already has', () => {
+    const { a, b, c, d, defaults, available } = folderChain();
+    const admission = admitWithFolderPacks(defaults, selectFolderClosure([a.manifest.id], available, defaults));
+    expect(admission.issues).toEqual([]);
+    expect(ids(admission.packs)).toEqual(ids([d, c, b, a]));
+    expect(ids(admission.folderPacks)).toEqual(ids([c, b, a]));
+  });
+
+  it('leaves a dependency missing from every inventory to admission, which refuses it', () => {
+    const { a, b, defaults, available } = folderChain();
+    const without = available.filter((pack) => pack !== b);
+    const admission = admitWithFolderPacks(defaults, selectFolderClosure([a.manifest.id], without, defaults));
+    expect(admission.issues).toEqual([
+      expect.objectContaining({ message: expect.stringContaining(`missing dependency ${b.manifest.id}`) }),
+    ]);
+  });
+
+  it('hands a cycle among selected packs to admission, which refuses it', () => {
+    const first = fixturePack('fixture.first', ['fixture.second'], true);
+    const second = fixturePack('fixture.second', ['fixture.first'], true);
+    const admission = admitWithFolderPacks([], selectFolderClosure(['fixture.first'], [first, second], []));
+    expect(admission.issues).toEqual([
+      expect.objectContaining({ message: expect.stringContaining('dependency cycle') }),
+    ]);
   });
 });
 

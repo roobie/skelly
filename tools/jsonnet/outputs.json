@@ -389,6 +389,14 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.stairs/templates-stairs.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.voice-size/layouts-voice-size.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.voice-size/layouts-voice-size.json"
     },
@@ -451,10 +459,6 @@
     {
       "source": "packages/deadvox/src/config/bundled/skelly.deadvox.beginner.jsonnet",
       "output": "packages/deadvox/src/config/bundled/skelly.deadvox.beginner.json"
-    },
-    {
-      "source": "packages/deadvox/src/config/bundled/test-house-debug.jsonnet",
-      "output": "packages/deadvox/src/config/bundled/test-house-debug.json"
     },
     {
       "source": "packages/deadvox/src/config/perf-baseline.jsonnet",

@@ -10,7 +10,7 @@ import { TEST_POOL } from '../../testPool.ts';
 import { buildRevisionFromGit } from './src/core/buildRevision.ts';
 import { bundledModCatalogue } from './src/core/bundledModCatalogue.ts';
 import { bundleStampPlugin, UNSTAMPED_BUNDLE_DEFINES } from './tools/bundleStampPlugin.ts';
-import { bundledPackDefines, readBundledPacks } from './tools/readBundledPacks.ts';
+import { bundledPackDefines, readAvailablePacks } from './tools/readBundledPacks.ts';
 import {
   fingerprintAfterHotChange,
   fingerprintSimulationSources,
@@ -19,7 +19,7 @@ import {
 } from './tools/simulationFingerprint.ts';
 
 const packageRoot = fileURLToPath(new URL('.', import.meta.url));
-const packDefines = await bundledPackDefines(readBundledPacks(packageRoot));
+const packDefines = await bundledPackDefines(readAvailablePacks(packageRoot));
 const filesUnder = (directory: string, prefix: string): { name: string; path: string }[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const relative = `${prefix}${entry.name}`;

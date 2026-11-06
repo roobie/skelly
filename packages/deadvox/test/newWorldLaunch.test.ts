@@ -104,7 +104,7 @@ const title = (mods: readonly ActiveBrowserMod[] = []) => {
     throw new Error('Title fixture needs the actual body markup');
   }
   document.body.innerHTML = body.replace(SCRIPT_MARKUP, '');
-  return new SaveController(screenText, {}, [], mods);
+  return new SaveController(screenText, {}, { browserMods: mods });
 };
 
 const browserMods = [{ id: 'fixture-mod', version: '1', data: { items: [] } }];

@@ -5,7 +5,7 @@ import { expect, it } from 'vitest';
 import { validate } from '../src/cli/validate.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { admitPacks, packContentHash } from '../src/core/packAdmission.ts';
-import { bundledPackDefines, readBundledPacks } from '../tools/readBundledPacks.ts';
+import { bundledPackDefines, readAvailablePacks, readBundledPacks } from '../tools/readBundledPacks.ts';
 import { stampPacks } from '../tools/stampBundle.ts';
 
 it('injects exporter JSON digests without model payloads while preserving runtime pack identity', async () => {
@@ -57,6 +57,33 @@ it('injects exporter JSON digests without model payloads while preserving runtim
     expect(await packContentHash(readBundledPacks(root)[0]!)).toBe(original);
     writeFileSync(modelPath, JSON.stringify({ fixtureGeometry: 2, fixtureMaterial: 'plain' }));
     expect(await packContentHash(readBundledPacks(root)[0]!)).not.toBe(original);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+it('keeps opt-in packs out of the default identity and no-stack set while hashing them for selection', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'opt-in-packs-'));
+  try {
+    const write = (id: string, extra: object) => {
+      mkdirSync(join(root, 'mods', id, 'pack'), { recursive: true });
+      writeFileSync(
+        join(root, 'mods', id, 'pack/manifest.json'),
+        JSON.stringify({ id, version: '1', tier: 'scenario', product: false, overrides: [], files: [], ...extra }),
+      );
+    };
+    write('fixture.default', { dependencies: [] });
+    write('fixture.opt-in', { optIn: true, dependencies: ['fixture.default'] });
+    const ids = (packs: readonly { manifest: { id: string } }[]) => packs.map(({ manifest }) => manifest.id);
+    expect(ids(readBundledPacks(root))).toEqual(['fixture.default']);
+    expect(ids(readBundledPacks(root, 'fixture.opt-in'))).toEqual(['fixture.default', 'fixture.opt-in']);
+    const available = readAvailablePacks(root);
+    const defines = await bundledPackDefines(available);
+    const listed = (define: string) => JSON.parse(defines[define]!).map(({ id }: { id: string }) => id);
+    expect(listed('__SKELLY_CONTENT_PACKS__')).toEqual(['fixture.default']);
+    expect(listed('__SKELLY_OPT_IN_PACKS__')).toEqual(['fixture.opt-in']);
+    const optIn = available.find(({ manifest }) => manifest.optIn)!;
+    expect(JSON.parse(defines.__SKELLY_OPT_IN_PACKS__!)[0].canonicalHash).toBe(await packContentHash(optIn));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -9,6 +9,7 @@ read_if:
   - you name body-plan mechanisms descriptively or separate anatomy, leg cuts and figure builds
   - you change settlement role claims or melee pose selection
   - you change skill providers, combat policy, starts or pack save identity
+  - you add a debug mod or change how opt-in folder mods are selected
   - you plan the gated SkellyEngine runtime and content extraction (#1532)
   - you place a recipe, power tuning, a manual or a household electrical device in a mod
 ---
@@ -31,9 +32,10 @@ its sandbox campaign scenario. An ordinary top-level entry pack declares the pro
 dependencies and chooses its default scenario and start. Metadata marks the entry as
 a product; anyone can author one.
 
-The Deadvox entry depends on every scenario mod except debug ones. The browser loads
-every bundled mod folder while the CLI and tests load the entry's closure, so one set
-keeps them in step without a second loading path. The cost is that the entry stack
+The Deadvox entry depends on every scenario mod without the opt-in marker of
+`docs/pack-split.md`, "Debug mods". The browser loads every unmarked bundled mod folder
+while the CLI and tests load the entry's closure, so one set keeps them in step without a
+second loading path. The cost is that the entry stack
 carries every demo. See `src/game/bundledPacks.ts`, `bundledPacks`, and
 `tools/readBundledPacks.ts`, `readBundledPacks`. The entry is therefore the one pack
 whose dependencies may sit in a higher tier than its own: it selects the stack rather
@@ -380,11 +382,34 @@ The refactor's acceptance includes the unit suite, full-stack validation, save r
 trip and independent and mixed ground-based stacks. Space feasibility is deferred
 under `docs/decisions/0009-content-defined-products.md`, "Saves and proof scope".
 
+## Debug mods
+
+A debug mod is a folder mod whose folder equals its id, like any other, but its manifest
+carries the opt-in marker; see `src/core/packAdmission.ts`, `PackManifestSchema`. Without
+the marker every folder under a mod root loads for everyone, so a debug mod's overrides
+would change normal play. The marker only withholds a pack from the default set: it is
+not a tier, grants no privilege and is never inferred from the id.
+
+A marked pack loads only when `?mods=` or a CLI stack names it. Selection walks the named
+pack's dependencies over every shipped pack and drops those the default set already
+holds, so a marked pack may depend on another marked pack and each loads once.
+Selection invents nothing: ordinary admission then refuses a missing dependency or a
+cycle, and folder packs never pass through the single-file mod reader. See
+`src/core/packAdmission.ts`, `selectFolderClosure`, and `src/game/bundledMods.ts`,
+`selectBundledMods`.
+
+The build hashes marked packs beside the default ones and keeps their identities in a
+separate define, so a selection reuses the build's hashes. See
+`tools/readBundledPacks.ts`, `bundledPackDefines`.
+
 ## Save identity
 
 Record each admitted pack separately and in order so a refusal can identify the
 changed pack; see `src/core/saveFormat.ts`, `currentSaveVersionIdentity` and
 `contentPackDifferences`. Scenario and product topic packs use the same identity rule.
+The identity records only admitted packs: the default packs, then each selected marked
+pack once under its own id, in admission order. A normal save therefore names no debug
+mod, and a world saved with one resumes only with it.
 This remains pack-list identity until #1395 implements evaluated-content identity
 under `docs/decisions/0008-deterministic-world.md`, "Decision". Generator identity
 follows body plans rather than setting model names, so renaming an actor does not

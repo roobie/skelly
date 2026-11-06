@@ -66,6 +66,30 @@ export const selectFixtureMods = async (page) => {
   return fixture;
 };
 
+const OPT_IN_MOD = JSON.parse(
+  readFileSync(
+    fileURLToPath(new URL('../../mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json', import.meta.url)),
+    'utf8',
+  ),
+).id;
+
+const startupContentPacks = async (page, url) => {
+  await page.goto(url);
+  await page.waitForFunction(() => globalThis.skellySaveTest?.identity !== undefined, null, { timeout: 30_000 });
+  return page.evaluate(async () =>
+    (await globalThis.skellySaveTest.identity()).components.contentPacks.map(({ id }) => id),
+  );
+};
+
+/** `src/main.ts` must hand the admitted opt-in packs to the save controller, which no helper test sees. */
+export const assertOptInModIdentity = async (page, urlFor) => {
+  const query = 'save-test=1&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0';
+  const selected = await startupContentPacks(page, urlFor(`mods=${OPT_IN_MOD}&${query}`));
+  assert.equal(selected.filter((id) => id === OPT_IN_MOD).length, 1, 'a selected opt-in pack is in the identity once');
+  const normal = await startupContentPacks(page, urlFor(query));
+  assert.equal(normal.includes(OPT_IN_MOD), false, 'a normal startup identity names no opt-in pack');
+};
+
 export const assertFixtureMods = async (page, fixture) => {
   const [item] = fixture.items;
   const [actor] = fixture.actors;

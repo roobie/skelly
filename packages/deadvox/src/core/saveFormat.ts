@@ -1208,8 +1208,10 @@ export type ActiveBrowserMod = ActiveBundledMod;
 export async function currentSaveVersionIdentity(
   bundledMods: readonly ActiveBundledMod[] = [],
   browserMods: readonly ActiveBrowserMod[] = [],
+  folderPacks: SaveVersionComponents['contentPacks'] = [],
 ): Promise<SaveVersionIdentity> {
   const components = structuredClone(defaultVersion());
+  components.contentPacks.push(...folderPacks);
   const packs = await Promise.all(
     bundledMods.map(async (mod) => ({
       id: `bundled.${mod.id}`,

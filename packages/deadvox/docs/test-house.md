@@ -24,9 +24,16 @@ house in `mods/skelly.deadvox.residual/templates-test-house.jsonnet`, `templates
 explicitly selected debug scenario mod rather than a runtime overlay: no scenario id
 or debug check may select it in game logic. Range geometry must be authored templates
 and building rows; catalogue furniture, rack items and garage stock must be hand-kept
-content rather than runtime synthesis. See `src/config/bundled/test-house-debug.jsonnet`,
-`layouts`, and `src/config/bundled/test-house-range.libsonnet`. The admission reason is in
+content rather than runtime synthesis. See
+`mods/skelly.deadvox.scenario.test-house.debug/layouts.jsonnet`, `layouts`, and
+`mods/skelly.deadvox.scenario.test-house.debug/test-house-range.libsonnet`. The admission reason is in
 `docs/test-house.md`, "Normal and debug additions".
+
+The debug scenario mod is a scenario-tier folder mod that depends on the pack owning the
+test house, because it only stages that scenario; its id extends the test house's scenario
+id. Its opt-in marker keeps it out of normal play until a URL names it, as in
+`?site=testHouse&mods=skelly.deadvox.scenario.test-house.debug`. See `docs/pack-split.md`,
+"Debug mods".
 
 The charging corner belongs to the same template and layout sources, rather than a
 separate runtime look-piece overlay, so furniture, fixture loot and power share one
@@ -91,20 +98,20 @@ ordinary inventory choices be inspected without privileged setup. See
 `mods/skelly.deadvox.residual/layouts-test-house.jsonnet`, `liquidRecoveryStock`.
 Garage evaluation stock requires explicit mod selection, and its saves require the same
 admitted mod. A URL selects it through `?mods=` rather than inferring it from the scene or
-debug profile. See `src/config/bundled/test-house-debug.jsonnet`, `layouts`.
+debug profile. See `mods/skelly.deadvox.scenario.test-house.debug/layouts.jsonnet`, `layouts`.
 
 The range exists only with the debug scenario mod because it is evaluation space, not
 an ordinary play reward. The lane sits east of the hill so its foundation fits the normal
 1 m limit, keeping one grading rule for every building row without changing the haven's
 landscape. Its authored lot also keeps trees out of the firing corridor. See
-`src/config/bundled/test-house-debug.jsonnet`, `layouts`, and
-`src/config/bundled/test-house-range.libsonnet`.
+`mods/skelly.deadvox.scenario.test-house.debug/layouts.jsonnet`, `layouts`, and
+`mods/skelly.deadvox.scenario.test-house.debug/test-house-range.libsonnet`.
 
 For the authored rack, accept a list edit per new gun, magazine, ammunition package or mod
 item, and silent absence until listed. That maintenance cost is preferable to retaining
 runtime compatibility synthesis or implying a completeness checker. Its fixed stock uses
 ordinary authored spawning so admission and restoration share the same owner as other
-fixture supplies. See `src/config/bundled/test-house-rack.libsonnet` and `DESIGN.md`,
+fixture supplies. See `mods/skelly.deadvox.scenario.test-house.debug/test-house-rack.libsonnet` and `DESIGN.md`,
 "Debug scenes".
 
 Repair looks wait for the crafting requirements view in #1469 rather than keeping a
@@ -169,7 +176,7 @@ staging overlay. Content owns the placement; see
 The catalogue needs no per-feature slot because it exposes evaluation pieces rather than
 staging a feature's supplies. Its hand-kept list belongs to the debug scenario mod, so
 unlisted furniture stays absent instead of being discovered from the registry. See
-`src/config/bundled/test-house-catalogue.libsonnet` and `src/core/showroom.ts`,
+`mods/skelly.deadvox.scenario.test-house.debug/test-house-catalogue.libsonnet` and `src/core/showroom.ts`,
 `ShowroomCatalogue`. Keep it beyond the startup ring to avoid delaying every fixture
 visit, and separate it from the haven to preserve the home's view. Empty catalogue pieces
 must stay off the house grid so evaluation cannot change house supply. Item and vehicle
@@ -201,8 +208,8 @@ Evaluation stock is hand-kept `buildings[].fixedLoot` in the debug scenario mod,
 runtime synthesis. This keeps scenario identity and debug checks out of stock admission.
 Accept an author edit for each new tool or changed recipe: an unlisted tool is silently
 absent, and recipe changes do not replenish or rearrange the shelves. No completeness
-checker is implied. See `src/config/bundled/test-house-debug.jsonnet`, `layouts`, and
-`src/config/bundled/test-house-garage.libsonnet`.
+checker is implied. See `mods/skelly.deadvox.scenario.test-house.debug/layouts.jsonnet`, `layouts`, and
+`mods/skelly.deadvox.scenario.test-house.debug/test-house-garage.libsonnet`.
 
 Repair targets and components must remain within reach of their stations. Their authored
 conditions and contents belong with their container destinations, not a second runtime

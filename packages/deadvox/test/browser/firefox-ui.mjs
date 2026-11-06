@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
-import { assertFixtureMods, selectFixtureMods } from './mods-startup.mjs';
+import { assertFixtureMods, assertOptInModIdentity, selectFixtureMods } from './mods-startup.mjs';
 import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { measureWeatheringMaterials } from './weatheringPixels.mjs';
@@ -88,6 +88,9 @@ try {
     };
     requestAnimationFrame(frame);
   });
+  await assertOptInModIdentity(page, (query) =>
+    browserStageUrl('firefox-ui', `http://127.0.0.1:${address.port}/?${query}`),
+  );
   await page.goto(
     browserStageUrl(
       'firefox-ui',

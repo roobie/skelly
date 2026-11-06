@@ -2,6 +2,7 @@ import {
   array,
   boolean,
   type InferOutput,
+  literal,
   minLength,
   optional,
   picklist,
@@ -24,6 +25,7 @@ export const PackManifestSchema = strictObject({
   tier: picklist(['core', 'theme', 'product', 'scenario']),
   product: boolean(),
   defaultStart: optional(name),
+  optIn: optional(literal(true)),
   dependencies: array(name),
   overrides: array(strictObject({ pack: name, entry: name })),
   files: array(strictObject({ path: filePath, kind: picklist(['content', 'json', 'asset']) })),
@@ -34,6 +36,39 @@ export interface PackInput {
   manifest: PackManifest;
   files: ContentSource[];
 }
+
+// An id in no inventory stays out of the closure, so admission reports it as a missing dependency.
+export const selectFolderClosure = (
+  requested: readonly string[],
+  available: readonly PackInput[],
+  defaults: readonly PackInput[],
+): PackInput[] => {
+  const byId = new Map(available.map((pack) => [pack.manifest.id, pack]));
+  const loaded = new Set(defaults.map(({ manifest }) => manifest.id));
+  const visited = new Set<string>();
+  const selected: PackInput[] = [];
+  const visit = (id: string): void => {
+    const pack = byId.get(id);
+    if (visited.has(id) || loaded.has(id) || !pack) {
+      return;
+    }
+    visited.add(id);
+    selected.push(pack);
+    pack.manifest.dependencies.forEach(visit);
+  };
+  requested.forEach(visit);
+  return selected;
+};
+
+/** Ordinary admission of the defaults, selected folder packs and other mods; also returns the kept folder packs. */
+export const admitWithFolderPacks = (
+  defaults: readonly PackInput[],
+  folderPacks: readonly PackInput[],
+  others: readonly PackInput[] = [],
+) => {
+  const admission = admitPacks([...defaults, ...folderPacks, ...others]);
+  return { ...admission, folderPacks: admission.packs.filter((pack) => folderPacks.includes(pack)) };
+};
 
 export const packStartIssues = (packs: readonly PackInput[], registry: Registry): ContentIssue[] =>
   packs.flatMap((pack) => {
