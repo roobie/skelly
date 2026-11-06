@@ -71,6 +71,19 @@
       "licence": "CC0-1.0",
       "title": "75 CC0 Breaking/Falling/Hit SFX",
       "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx"
+    },
+    {
+      "author": "rubberduck",
+      "changes": "Selected three blade, three wood and three metal variants; converted to 24 kHz mono Opus in Ogg containers; unused source files excluded",
+      "download": "80-CC0-RPG-SFX.zip",
+      "files": [
+        "assets/audio/melee-swing-01.ogg",
+        "assets/audio/melee-swing-02.ogg",
+        "assets/audio/melee-swing-03.ogg"
+      ],
+      "licence": "CC0-1.0",
+      "title": "80 CC0 RPG SFX",
+      "url": "https://opengameart.org/content/80-cc0-rpg-sfx"
     }
   ]
 }

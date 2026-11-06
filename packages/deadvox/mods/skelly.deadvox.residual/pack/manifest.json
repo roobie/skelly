@@ -7,38 +7,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/audio/door-close-01.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/door-close-02.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/door-close-03.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/door-open-01.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/door-open-02.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/melee-swing-01.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/melee-swing-02.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/audio/melee-swing-03.ogg"
-    },
-    {
-      "kind": "asset",
       "path": "assets/manifest.jsonnet"
     },
     {

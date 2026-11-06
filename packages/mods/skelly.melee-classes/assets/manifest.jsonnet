@@ -72,5 +72,18 @@
       files: ['assets/audio/melee_hit_fist-01.ogg'],
       changes: 'Selected two wooden item-drop clips, a pouch-handling clip, and a placeholder fist hit; trimmed leading silence, faded tails, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting. The fist-hit placeholder is wired to the live and restored melee-action path when the fists profile is active.',
     },
+    {
+      title: '80 CC0 RPG SFX',
+      url: 'https://opengameart.org/content/80-cc0-rpg-sfx',
+      author: 'rubberduck',
+      licence: 'CC0-1.0',
+      download: '80-CC0-RPG-SFX.zip',
+      files: [
+        'assets/audio/melee-swing-01.ogg',
+        'assets/audio/melee-swing-02.ogg',
+        'assets/audio/melee-swing-03.ogg',
+      ],
+      changes: 'Selected three blade, three wood and three metal variants; converted to 24 kHz mono Opus in Ogg containers; unused source files excluded',
+    },
   ],
 }

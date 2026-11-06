@@ -47,6 +47,18 @@
     },
     {
       "kind": "asset",
+      "path": "assets/audio/melee-swing-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-swing-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-swing-03.ogg"
+    },
+    {
+      "kind": "asset",
       "path": "assets/audio/melee-swing-heavy-01.ogg"
     },
     {
