@@ -4,7 +4,6 @@ import type { Vec3 } from '../core/coords.ts';
 import type { FirearmsSkillZeroHandling } from '../core/firearmsSkill.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Body } from '../core/physics.ts';
-import type { Scale } from '../core/scale.ts';
 import type { Simulation } from '../core/sim.ts';
 import type { Weather } from '../core/weather.ts';
 import type { DrawSubmission } from '../render/drawCounters.ts';
@@ -23,7 +22,7 @@ export type SkyRouteAttachment = (hooks: {
   active: () => boolean;
 }) => RealFrameObserver | undefined;
 
-import type { MoveIntent } from './player.ts';
+import type { DebugNoclipStep } from './debugNoclipStep.ts';
 import type { SnapshotMeasurement } from './playtestTools.ts';
 
 export type InputReplayStatusState =
@@ -89,16 +88,6 @@ export interface DebugHooks {
   readonly firearmsSkillZeroHandling: () => FirearmsSkillZeroHandling;
   readonly firearmsSkillZeroTarget: () => string | undefined;
   readonly setFirearmsSkillZeroHandling: (value: FirearmsSkillZeroHandling) => void;
-}
-
-export interface DebugNoclipStep {
-  body: Body;
-  scale: Scale;
-  yaw: number;
-  pitch: number;
-  intent: MoveIntent;
-  descend: boolean;
-  dt: number;
 }
 
 export interface DebugReadout {

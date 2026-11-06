@@ -146,7 +146,7 @@ import { actorVoiceLaw } from './actorAudio.ts';
 import { applyActorPlayerHit } from './actorPlayerHit.ts';
 import { firearmShotSound } from './audioPresentation.ts';
 import { interruptDisarm, registerTrapActions } from './bearTrapActions.ts';
-import type { DebugNoclipStep } from './debugInterface.ts';
+import type { DebugNoclipStep } from './debugNoclipStep.ts';
 import { registerDoorAction } from './doorAction.ts';
 import { type DownedBodyWay, downedBodyPlan, queueDownedBody, registerDownedBodyAction } from './downedBody.ts';
 import { FirearmAttachmentHandling, isAttachmentWorkAction } from './firearmAttachmentHandling.ts';

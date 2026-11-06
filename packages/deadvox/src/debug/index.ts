@@ -22,11 +22,11 @@ import type { WeatheringUrlState } from '../core/weatheringUrl.ts';
 import type {
   DebugHooks,
   DebugModule,
-  DebugNoclipStep,
   DebugReadout,
   DebugRuntime,
   InputReplayStatusState,
 } from '../game/debugInterface.ts';
+import type { DebugNoclipStep } from '../game/debugNoclipStep.ts';
 import { firearmBoreTarget } from '../game/firearmAim.ts';
 import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
