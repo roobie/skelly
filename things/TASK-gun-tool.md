@@ -45,7 +45,7 @@ The lead re-points #135, #333, #362, #364, #414, #447 and #649 without renumberi
 Deferred geometry reasons travel with `packages/gun-authoring-tool/src/gun/parts.ts`,
 `magazineGeometryFor`, and
 `packages/gun-authoring-tool/docs/decisions/0001-calibre-driven-sizing.md`.
-Engine motion remains engine work and separately carded work stays separate.
+Construct motion remains construct work and separately carded work stays separate.
 
 ## Invariants
 

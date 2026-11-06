@@ -59,7 +59,7 @@ const placeBox = (three: ThreeRuntime, obj: Three.Object3D, obb: Obb) => {
   obj.matrix.copy(matrixOf(three, obb.r, obb.center));
 };
 
-/** Converts an engine TriangleMesh to a renderer-owned BufferGeometry. */
+/** Converts a construct TriangleMesh to a renderer-owned BufferGeometry. */
 const triangleGeometry = (three: ThreeRuntime, mesh: ReturnType<typeof meshForSolid>) => {
   const geometry = new three.BufferGeometry();
   geometry.setAttribute('position', new three.BufferAttribute(mesh.positions, 3));

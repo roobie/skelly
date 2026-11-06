@@ -93,8 +93,8 @@ PRs and commits. A clone or contributor using only git and GitHub must be able t
 GitHub artifact without private tooling, so references point only from the private side.
 
 - **Feature:** `<subproject><number>` (`g` gungen, `d` deadvox, `m` mobgen, `r` repo-wide
-  or docs), one PR on one branch; engine work uses the `g` prefix because gungen is the
-  engine's only consumer. Numbers count up per subproject; new work always gets a new
+  or docs), one PR on one branch; `packages/construct` work uses the `g` prefix because
+  gungen is its only consumer. Numbers count up per subproject; new work always gets a new
   number, even when it grows out of another feature.
 - **Round:** each dispatched piece of work on a feature is a round and its mail item
   (`g26-1`, `g26-2`, …). The first round is `-1`; BR's feedback, review fixes or a

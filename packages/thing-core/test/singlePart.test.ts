@@ -3,7 +3,7 @@ import { validate } from '@skelly/construct/assembly/validate.ts';
 import { expect, it } from 'vitest';
 import { singlePart } from '../src/singlePart.ts';
 
-it('wraps an authored part without losing its mass or engine validity', () => {
+it('wraps an authored part without losing its mass or construct validity', () => {
   const part: PartDef = {
     family: 'fixture',
     material: 'fixture-material',

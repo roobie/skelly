@@ -124,23 +124,12 @@ The open questions below remain unsettled.
 
 ## Target structure
 
-The package homes follow `things/WORK.md`, "Decisions". The single gun-tool move keeps
-one implementation and one authored-source owner.
-
-| Area | Home |
-|---|---|
-| Math, conventions, RNG | `packages/construct/foundation` |
-| Solids, mesh, volume, collision | `packages/construct/shapes` |
-| Parts, ports, templates, resolving, validation, generation | `packages/construct/assembly` |
-| Material table, anchors, neutral model envelope | `thing-core` |
-| GLB and model-entry writing, per-part mass and centre of mass | the export package |
-| Scene, camera, parameter panel, URL state | `packages/tool-ui` |
-| Generic parts and rules | `packages/thing-authoring-tool` |
-| Gun parts, rules, cycling, ammo UI | `packages/gun-authoring-tool` |
-| Gameplay and content fields | `deadvox` |
-
-Imports run one way: foundation, shapes, assembly, thing-core, the export package, tools.
-Deadvox depends on `thing-core` for the schema and on nothing above it.
+Each concern has one package home, and imports run one way from the domain-neutral
+geometry up to the tools. A lower package then never learns a kind of thing, and the
+game never loads authoring geometry. The homes follow `things/WORK.md`, "Decisions"; the
+layer order inside construct is `packages/construct/README.md`, "Layers", enforced by
+`packages/construct/test/constructImportBoundary.test.ts`, `constructLayers`, and the
+package edges by the same test's `packageEdges`.
 
 ## Open questions
 

@@ -10,7 +10,7 @@ const box = (id: string, center: Vec3, size: Vec3, slot = 'body'): BoxSolid => (
   box: { center, half: [size[0] / 2, size[1] / 2, size[2] / 2] },
 });
 
-/** A convex (z, x) quad extruded up the Y axis, wound counter-clockwise as the engine requires. */
+/** A convex (z, x) quad extruded up the Y axis, wound counter-clockwise as construct requires. */
 const slab = (id: string, quad: readonly Vec2[], [bottom, top]: readonly [number, number]): ExtrudedPolygonSolid => {
   const area = quad.reduce((sum, [z, x], index) => {
     const [nz, nx] = quad[(index + 1) % quad.length]!;

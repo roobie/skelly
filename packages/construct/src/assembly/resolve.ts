@@ -1,4 +1,4 @@
-// Loop-closing connections are checked rather than solved because the engine does not solve constraints.
+// Loop-closing connections are checked rather than solved because this package does not solve constraints.
 
 import type { Issue } from '../foundation/issue.ts';
 import {

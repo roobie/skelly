@@ -48,7 +48,7 @@ A muzzle device fits only a muzzle cut for the bore it was built for, because fi
 
 A removable muzzle device, such as the AK's compensator, is an attachment fitted at the barrel's muzzle rather than part of the gun. The player can fit or remove it like any other muzzle attachment, so the rifle and the device are separate items, and a suppressor can take its place. The device offers no muzzle of its own because the export lists only hosts that validate, and a suppressor threaded on the device would cross the barrel's keep-out. The gun therefore fires from its barrel whichever device is fitted.
 
-A port's `size` names its thread pattern, which the engine matches only when both sides declare one. A device cut for one pattern declares it and threads only on that barrel, while a suppressor that declares none fits any muzzle of its bore. See `src/gun/parts.ts`, `akMuzzleDevice`, and `src/gun/attachments.ts`, `akMuzzleDevices`.
+A port's `size` names its thread pattern, which construct matches only when both sides declare one. A device cut for one pattern declares it and threads only on that barrel, while a suppressor that declares none fits any muzzle of its bore. See `src/gun/parts.ts`, `akMuzzleDevice`, and `src/gun/attachments.ts`, `akMuzzleDevices`.
 
 ## Viewer previews
 

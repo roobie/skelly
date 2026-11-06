@@ -19,7 +19,7 @@ Its home is a new workspace package, planned at `packages/mod-authoring-tool`, c
 a deliberate SkellyEngine authoring API. This keeps authoring separate from play and geometry
 tools without a later package extraction. The runtime must not import the tool; the tool must
 not reach into arbitrary game internals or import other authoring tools, gungen or the
-geometry engine. Existing boundaries still apply under `things/WORK.md`, "Decisions";
+`packages/construct` geometry library. Existing boundaries still apply under `things/WORK.md`, "Decisions";
 the schema's transitive neutral thing-core contract is not a direct geometry-tool import.
 Thing and gun tools still own geometry and model export; this tool links their outputs.
 

@@ -87,7 +87,7 @@ export interface GlbExportInput {
   readonly asset: GlbAssetIdentity;
   /** Optional exporter identity placed in the glTF asset record. */
   readonly generator?: string;
-  /** Namespace for the engine's root assembly metadata in glTF extras. */
+  /** Namespace for construct's root assembly metadata in glTF extras. */
   readonly metadataNamespace?: string;
   /** Facets of every revolved solid in the file: a level of detail baked in at export. Defaults to the mesh default. */
   readonly revolveFacets?: number;
