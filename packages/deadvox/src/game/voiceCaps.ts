@@ -16,10 +16,10 @@ export class VoiceCaps<V extends { stopAt?: number }> {
   private readonly active = new Map<SoundId, Set<V>>();
   // Up to one cap's worth of 10ms tails: a 40-shot cold burst can fade every retiree.
   private readonly retiring = new Map<SoundId, Set<V>>();
-  private readonly fadeSeconds: number;
+  private readonly fadeRealSeconds: number;
 
-  constructor(fadeSeconds: number) {
-    this.fadeSeconds = fadeSeconds;
+  constructor(fadeRealSeconds: number) {
+    this.fadeRealSeconds = fadeRealSeconds;
   }
 
   /** Before a new voice of `event` starts: retire its oldest voice once the cap is reached. */
@@ -46,7 +46,7 @@ export class VoiceCaps<V extends { stopAt?: number }> {
     active.delete(oldest);
     tails.add(oldest);
     this.retiring.set(event, tails);
-    oldest.stopAt = now + this.fadeSeconds;
+    oldest.stopAt = now + this.fadeRealSeconds;
     act.fade(oldest, now, oldest.stopAt);
   }
 
