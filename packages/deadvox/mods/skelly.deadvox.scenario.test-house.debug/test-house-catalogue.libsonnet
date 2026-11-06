@@ -123,7 +123,7 @@
   'gauntlet_lab_bulkhead',
   'gauntlet_lab_dead_lift',
   'gauntlet_lab_dead_researcher',
-  'gauntlet_lab_fixture',
+  'lab_fixture',
   'gauntlet_lab_fixture_broken',
   'gauntlet_lab_fridge',
   'gauntlet_lab_generator',

@@ -66,8 +66,6 @@ local cabinetShape = [
       { position: [3.7, 0, 0], size: [0.3, 5, 2] }, { position: [0, 4.7, 0], size: [4, 0.3, 2] },
       { position: [1.8, 0, 0], size: [0.4, 5, 0.3] },
     ] },
-    { id: 'gauntlet_lab_fixture', name: 'Strip light', power: { device: 'lab_light', fuelLitres: 0, enabled: true, light: { color: '#d9eee8', intensity: 60, radius: 8 } }, size: [2, 1, 1], color: '#a5b8ba', solid: false,
-      shape: [{ position: [0, 0.7, 0], size: [2, 0.3, 1] }] },
     { id: 'gauntlet_lab_fixture_broken', name: 'Broken strip light', power: { device: 'lab_light', fuelLitres: 0, enabled: false, light: { color: '#d9eee8', intensity: 60, radius: 8 } }, size: [2, 1, 1], color: '#555c61', solid: false,
       shape: [{ position: [0, 0.7, 0], size: [2, 0.3, 1] }, { position: [0.2, 0, 0.3], size: [0.2, 0.7, 0.2] }] },
     { id: 'gauntlet_look_archive', name: 'Prototype archive shelves', size: [4, 5, 2], color: '#a0a6a0', shape: cabinetShape + [{ position: [0.3, 2.3, 0], size: [3.4, 0.3, 2] }] },

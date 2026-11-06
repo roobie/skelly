@@ -45,16 +45,14 @@
     "skelly.deadvox.buildings",
     "skelly.deadvox.camp",
     "skelly.deadvox.rural-sites",
-    "skelly.deadvox.crisis-hq"
+    "skelly.deadvox.crisis-hq",
+    "skelly.deadvox.woods",
+    "skelly.deadvox.labs.underground"
   ],
   "files": [
     {
       "kind": "content",
       "path": "footstep-sounds.json"
-    },
-    {
-      "kind": "content",
-      "path": "furniture-cabins.json"
     },
     {
       "kind": "content",
@@ -86,10 +84,6 @@
     },
     {
       "kind": "content",
-      "path": "layouts-cabins.json"
-    },
-    {
-      "kind": "content",
       "path": "layouts-playtest.json"
     },
     {
@@ -107,10 +101,6 @@
     {
       "kind": "content",
       "path": "starts.json"
-    },
-    {
-      "kind": "content",
-      "path": "templates-cabins.json"
     },
     {
       "kind": "content",

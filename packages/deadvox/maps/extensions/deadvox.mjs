@@ -39,7 +39,8 @@ function content() {
   const mods = `${root}/../mods`;
   const templateFiles = [
     'skelly.deadvox.buildings/templates.json',
-    'skelly.deadvox.residual/templates-cabins.json',
+    'skelly.deadvox.scenario.cabins/templates-cabins.json',
+    'skelly.deadvox.woods/templates.json',
     'skelly.deadvox.scenario.stairs/templates-stairs.json',
     'skelly.deadvox.residual/templates-playtest.json',
     'skelly.deadvox.rural-sites/templates-medical.json',

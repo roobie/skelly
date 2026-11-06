@@ -163,7 +163,7 @@ local stair = {
       {
         id: prefix + '_bay_' + d.id, size: [4, height - 1, 4], style: 'concrete_lab', lootContext: level.context,
         palette: { '.': { role: 'opening', material: 'air' }, p: { role: 'interior_floor', material: d.room.finish.floor }, '=': { role: 'shell', material: d.room.finish.wall },
-          L: { furniture: if d.fixture == 'broken' then 'gauntlet_lab_fixture_broken' else 'gauntlet_lab_fixture' },
+          L: { furniture: if d.fixture == 'broken' then 'gauntlet_lab_fixture_broken' else 'lab_fixture' },
         } + { [glyph]: { furniture: if std.type(kit.furniture[glyph]) == 'object' then kit.furniture[glyph].id else kit.furniture[glyph],
                      loot: std.get(d, 'loot', 'd41_empty') }
                      + (if std.objectHas(d, 'lootUsage') then { lootUsage: d.lootUsage } else if std.objectHas(d.room, 'lootUsage') then { lootUsage: d.room.lootUsage } else {})

@@ -1,31 +1,19 @@
 {
   "templates": [
     {
-      "access": {
-        "entrance": [13, 7, 3],
-        "ground": "ground",
-        "stairs": [
-          {
-            "block": "planks",
-            "from": "cellar",
-            "lower": [3, 1, 6],
-            "to": "ground",
-            "upper": [10, 7, 6],
-            "width": 2
-          }
-        ],
-        "storeys": [
-          {
-            "floor": 1,
-            "id": "cellar"
-          },
-          {
-            "floor": 7,
-            "id": "ground"
-          }
-        ]
-      },
       "id": "dads_cabin",
+      "size": [16, 15, 16],
+      "palette": {
+        ".": "air",
+        "s": "stone",
+        "p": "planks",
+        "^": "roof",
+        "D": { "furniture": "dad_front_door" },
+        "G": { "furniture": "gun_cabinet" },
+        "B": { "furniture": "bed" },
+        "S": { "furniture": "shelf", "loot": "d41_empty" },
+        "C": { "furniture": "crate", "loot": "d41_empty" }
+      },
       "layers": [
         [
           "ssssssssssssssss",
@@ -298,378 +286,170 @@
           "^^^^^^^^^^^^^^^^"
         ]
       ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Residential"]
-      },
-      "palette": {
-        ".": "air",
-        "B": {
-          "furniture": "bed"
-        },
-        "C": {
-          "furniture": "crate",
-          "loot": "d41_empty"
-        },
-        "D": {
-          "furniture": "dad_front_door"
-        },
-        "G": {
-          "furniture": "gun_cabinet",
-          "loot": "hunting_cache",
-          "lootUsage": ["Hunting"]
-        },
-        "S": {
-          "furniture": "shelf",
-          "loot": "d41_empty"
-        },
-        "^": "roof",
-        "p": "planks",
-        "s": "stone"
-      },
-      "size": [16, 15, 16]
+      "access": {
+        "ground": "ground",
+        "entrance": [13, 7, 3],
+        "storeys": [{ "id": "cellar", "floor": 1 }, { "id": "ground", "floor": 7 }],
+        "stairs": [
+          { "from": "cellar", "to": "ground", "lower": [3, 1, 6], "upper": [10, 7, 6], "width": 2, "block": "planks" }
+        ]
+      }
     },
     {
-      "access": {
-        "entrance": [3, 1, 2],
-        "ground": "ground",
-        "stairs": [],
-        "storeys": [
-          {
-            "floor": 1,
-            "id": "ground"
-          }
-        ]
-      },
       "id": "hunter_cabin",
-      "layers": [
-        [
-          "pppppppppppp",
-          "pppppppppppp",
-          "pppppppppppp",
-          "pppppppppppp",
-          "pppppppppppp",
-          "pppppppppppp",
-          "pppppppppppp",
-          "pppppppppppp",
-          "pppppppppppp",
-          "pppppppppppp",
-          "pppppppppppp",
-          "pppppppppppp",
-          "pppppppppppp",
-          "pppppppppppp"
-        ],
-        [
-          "ppDDpppppppp",
-          "p..........p",
-          "p......BB..p",
-          "p......BB..p",
-          "p......BB..p",
-          "p......BB..p",
-          "p..........p",
-          "p..........p",
-          "ppppppppDDpp",
-          "p..........p",
-          "p..........p",
-          "pCCC.......p",
-          "pCCC.......p",
-          "pppppppppppp"
-        ],
-        [
-          "ppDDpppppppp",
-          "p..........p",
-          "p......BB..p",
-          "p......BB..p",
-          "p......BB..p",
-          "p......BB..p",
-          "p..........p",
-          "p..........p",
-          "ppppppppDDpp",
-          "p..........p",
-          "p..........p",
-          "pCCC.......p",
-          "pCCC.......p",
-          "pppppppppppp"
-        ],
-        [
-          "ppDDpppppppp",
-          "p..........p",
-          "p......BB..p",
-          "p......BB..p",
-          "p......BB..p",
-          "p......BB..p",
-          "p..........p",
-          "p..........p",
-          "ppppppppDDpp",
-          "p..........p",
-          "p..........p",
-          "pCCC.......p",
-          "pCCC.......p",
-          "pppppppppppp"
-        ],
-        [
-          "ppDDpppppppp",
-          "p..........p",
-          "p......BB..p",
-          "p......BB..p",
-          "p......BB..p",
-          "p......BB..p",
-          "p..........p",
-          "p..........p",
-          "ppppppppDDpp",
-          "p..........p",
-          "p..........p",
-          "pCCC.......p",
-          "pCCC.......p",
-          "pppppppppppp"
-        ],
-        [
-          "pppppppppppp",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "pppppppppppp",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "pppppppppppp"
-        ],
-        [
-          "pppppppppppp",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "pppppppppppp",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "pppppppppppp"
-        ],
-        [
-          "pppppppppppp",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "pppppppppppp",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "p..........p",
-          "pppppppppppp"
-        ],
-        [
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^"
-        ],
-        [
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^"
-        ],
-        [
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^",
-          "^^^^^^^^^^^^"
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Residential"]
-      },
+      "size": [12, 11, 14],
       "palette": {
         ".": "air",
-        "B": {
-          "furniture": "bed"
-        },
-        "C": {
-          "furniture": "hunting_crate",
-          "loot": "hunting_cache",
-          "lootUsage": ["Hunting"]
-        },
-        "D": {
-          "furniture": "wood_door"
-        },
+        "p": "planks",
         "^": "roof",
-        "p": "planks"
+        "D": { "furniture": "wood_door" },
+        "B": { "furniture": "bed" },
+        "C": { "furniture": "crate", "loot": "d41_empty" }
       },
-      "size": [12, 11, 14]
-    },
-    {
-      "access": {
-        "entrance": [4, 1, 2],
-        "ground": "ground",
-        "stairs": [],
-        "storeys": [
-          {
-            "floor": 1,
-            "id": "ground"
-          }
-        ]
-      },
-      "id": "woodshed",
       "layers": [
         [
-          "pppppppp",
-          "pppppppp",
-          "pppppppp",
-          "pppppppp",
-          "pppppppp",
-          "pppppppp",
-          "pppppppp",
-          "pppppppp",
-          "pppppppp",
-          "pppppppp"
+          "pppppppppppp",
+          "pppppppppppp",
+          "pppppppppppp",
+          "pppppppppppp",
+          "pppppppppppp",
+          "pppppppppppp",
+          "pppppppppppp",
+          "pppppppppppp",
+          "pppppppppppp",
+          "pppppppppppp",
+          "pppppppppppp",
+          "pppppppppppp",
+          "pppppppppppp",
+          "pppppppppppp"
         ],
         [
-          "pppDDppp",
-          "p......p",
-          "p......p",
-          "p......p",
-          "p......p",
-          "p......p",
-          "pCC....p",
-          "pCC....p",
-          "p......p",
-          "pppppppp"
+          "ppDDpppppppp", "p..........p", "p......BB..p", "p......BB..p",
+          "p......BB..p", "p......BB..p", "p..........p", "p..........p",
+          "ppppppppDDpp", "p..........p", "p..........p", "pCCC.......p",
+          "pCCC.......p", "pppppppppppp"
         ],
         [
-          "pppDDppp",
-          "p......p",
-          "p......p",
-          "p......p",
-          "p......p",
-          "p......p",
-          "pCC....p",
-          "pCC....p",
-          "p......p",
-          "pppppppp"
+          "ppDDpppppppp", "p..........p", "p......BB..p", "p......BB..p",
+          "p......BB..p", "p......BB..p", "p..........p", "p..........p",
+          "ppppppppDDpp", "p..........p", "p..........p", "pCCC.......p",
+          "pCCC.......p", "pppppppppppp"
         ],
         [
-          "pppDDppp",
-          "p......p",
-          "p......p",
-          "p......p",
-          "p......p",
-          "p......p",
-          "pCC....p",
-          "pCC....p",
-          "p......p",
-          "pppppppp"
+          "ppDDpppppppp", "p..........p", "p......BB..p", "p......BB..p",
+          "p......BB..p", "p......BB..p", "p..........p", "p..........p",
+          "ppppppppDDpp", "p..........p", "p..........p", "pCCC.......p",
+          "pCCC.......p", "pppppppppppp"
         ],
         [
-          "pppDDppp",
-          "p......p",
-          "p......p",
-          "p......p",
-          "p......p",
-          "p......p",
-          "pCC....p",
-          "pCC....p",
-          "p......p",
-          "pppppppp"
+          "ppDDpppppppp", "p..........p", "p......BB..p", "p......BB..p",
+          "p......BB..p", "p......BB..p", "p..........p", "p..........p",
+          "ppppppppDDpp", "p..........p", "p..........p", "pCCC.......p",
+          "pCCC.......p", "pppppppppppp"
         ],
         [
-          "pppppppp",
-          "p......p",
-          "p......p",
-          "p......p",
-          "p......p",
-          "p......p",
-          "p......p",
-          "p......p",
-          "p......p",
-          "pppppppp"
+          "pppppppppppp",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "pppppppppppp",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "pppppppppppp"
         ],
         [
-          "gggggggg",
-          "gggggggg",
-          "gggggggg",
-          "gggggggg",
-          "gggggggg",
-          "gggggggg",
-          "gggggggg",
-          "gggggggg",
-          "gggggggg",
-          "gggggggg"
+          "pppppppppppp",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "pppppppppppp",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "pppppppppppp"
         ],
         [
-          "gggggggg",
-          "gggggggg",
-          "gggggggg",
-          "gggggggg",
-          "gggggggg",
-          "gggggggg",
-          "gggggggg",
-          "gggggggg",
-          "gggggggg",
-          "gggggggg"
+          "pppppppppppp",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "pppppppppppp",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "p..........p",
+          "pppppppppppp"
+        ],
+        [
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^"
+        ],
+        [
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^"
+        ],
+        [
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^",
+          "^^^^^^^^^^^^"
         ]
       ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Industrial"]
-      },
-      "palette": {
-        ".": "air",
-        "C": {
-          "furniture": "crate",
-          "loot": "d41_empty"
-        },
-        "D": {
-          "furniture": "wood_door"
-        },
-        "g": "galvanized",
-        "p": "planks"
-      },
-      "size": [8, 8, 10]
+      "access": {
+        "ground": "ground",
+        "entrance": [3, 1, 2],
+        "storeys": [{ "id": "ground", "floor": 1 }],
+        "stairs": []
+      }
     }
   ]
 }

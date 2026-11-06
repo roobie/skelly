@@ -117,6 +117,14 @@
       "output": "packages/deadvox/mods/skelly.deadvox.crisis-hq/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.labs.underground/furniture.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.labs.underground/furniture.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.labs.underground/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.labs.underground/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.loot/item-economy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.loot/item-economy.json"
     },
@@ -149,10 +157,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/footstep-sounds.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/furniture-cabins.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/furniture-cabins.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/furniture-playtest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/furniture-playtest.json"
     },
@@ -181,10 +185,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/ladders.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-cabins.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-cabins.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/layouts-test-house.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/layouts-test-house.json"
     },
@@ -203,10 +203,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.residual/starts.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-cabins.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-cabins.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.residual/templates-playtest.jsonnet",
@@ -279,6 +275,22 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.benchmark-city/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.benchmark-city/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.cabins/layouts-cabins.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.cabins/layouts-cabins.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.cabins/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.cabins/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.cabins/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.cabins/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.cabins/templates-cabins.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.cabins/templates-cabins.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.city/pack/manifest.jsonnet",
@@ -447,6 +459,18 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.weathering/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.weathering/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.woods/furniture.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.woods/furniture.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.woods/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.woods/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.woods/templates.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.woods/templates.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox/pack/manifest.jsonnet",

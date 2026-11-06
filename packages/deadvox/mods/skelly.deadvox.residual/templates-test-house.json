@@ -1085,7 +1085,7 @@
         },
         "I": {
           "fixed": true,
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "b": "brick",
         "d": "dressed_stone",

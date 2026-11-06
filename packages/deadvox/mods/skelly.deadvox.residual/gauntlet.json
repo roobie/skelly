@@ -21210,7 +21210,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -21262,7 +21262,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -21314,7 +21314,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -21367,7 +21367,7 @@
           "tip": "back"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -21419,7 +21419,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -21471,7 +21471,7 @@
           "loot": "gauntlet_lab_entry_margin"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "floor",
@@ -21527,7 +21527,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "floor",
@@ -21583,7 +21583,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "floor",
@@ -21687,7 +21687,7 @@
           "loot": "armoury_arms"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "hazard",
@@ -21739,7 +21739,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "hazard",
@@ -21791,7 +21791,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -21843,7 +21843,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -21951,7 +21951,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "floor",
@@ -22055,7 +22055,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "carpet",
@@ -22107,7 +22107,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "carpet",
@@ -23617,7 +23617,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "floor",
@@ -23669,7 +23669,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "floor",
@@ -23722,7 +23722,7 @@
           "tip": "back"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "floor",
@@ -23826,7 +23826,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "carpet",
@@ -23930,7 +23930,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "carpet",
@@ -23982,7 +23982,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "carpet",
@@ -24034,7 +24034,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "carpet",
@@ -24145,7 +24145,7 @@
           "lootUsage": ["Residential"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -24198,7 +24198,7 @@
           "lootUsage": ["Residential"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -24251,7 +24251,7 @@
           "lootUsage": ["Residential"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -24304,7 +24304,7 @@
           "lootUsage": ["Residential"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -24409,7 +24409,7 @@
           "lootUsage": ["Military"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -24462,7 +24462,7 @@
           "lootUsage": ["Residential"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "planks",
@@ -24520,7 +24520,7 @@
           "lootUsage": ["Residential"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "planks",
@@ -24624,7 +24624,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "carpet",
@@ -24676,7 +24676,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "hazard",
@@ -24729,7 +24729,7 @@
           "lootUsage": ["Residential"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "carpet",
@@ -24782,7 +24782,7 @@
           "lootUsage": ["Residential"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "carpet",
@@ -24840,7 +24840,7 @@
           "lootUsage": ["Residential"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "carpet",
@@ -24956,7 +24956,7 @@
           "lootUsage": ["Industrial"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "floor",
@@ -25072,7 +25072,7 @@
           "lootUsage": ["Industrial"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "floor",
@@ -25184,7 +25184,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -26826,7 +26826,7 @@
           "loot": "gauntlet_lab_research_margin"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -26878,7 +26878,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -26931,7 +26931,7 @@
           "lootUsage": ["Industrial"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "floor",
@@ -26989,7 +26989,7 @@
           "lootUsage": ["Industrial"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "floor",
@@ -27100,7 +27100,7 @@
           "lootUsage": ["Industrial"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "floor",
@@ -27259,7 +27259,7 @@
           "lootUsage": ["Medical"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -27312,7 +27312,7 @@
           "lootUsage": ["Medical"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -27472,7 +27472,7 @@
           "lootUsage": ["Medical"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -27530,7 +27530,7 @@
           "lootUsage": ["Medical"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -27583,7 +27583,7 @@
           "lootUsage": ["Medical"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -27636,7 +27636,7 @@
           "lootUsage": ["Medical"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -27742,7 +27742,7 @@
           "lootUsage": ["Medical"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -27800,7 +27800,7 @@
           "lootUsage": ["Medical"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -27911,7 +27911,7 @@
           "lootUsage": ["Medical"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -27967,7 +27967,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "hazard",
@@ -28076,7 +28076,7 @@
           "lootUsage": ["Residential"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "T": {
           "furniture": "range_table",
@@ -28137,7 +28137,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -29656,7 +29656,7 @@
           "lootUsage": ["Industrial"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -29709,7 +29709,7 @@
           "lootUsage": ["Industrial"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -29762,7 +29762,7 @@
           "lootUsage": ["Military"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "tiles",
@@ -29973,7 +29973,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "floor",
@@ -30029,7 +30029,7 @@
           "loot": "gauntlet_lab_special_margin"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "floor",
@@ -30134,7 +30134,7 @@
           "lootUsage": ["Industrial"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "hazard",
@@ -30192,7 +30192,7 @@
           "lootUsage": ["Industrial"]
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "hazard",
@@ -30244,7 +30244,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "carpet",
@@ -30296,7 +30296,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "carpet",
@@ -30352,7 +30352,7 @@
           "loot": "d41_empty"
         },
         "L": {
-          "furniture": "gauntlet_lab_fixture"
+          "furniture": "lab_fixture"
         },
         "p": {
           "material": "carpet",

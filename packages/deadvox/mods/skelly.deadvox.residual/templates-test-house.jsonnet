@@ -32,7 +32,7 @@ local palette = {
   o: { furniture: 'crate' }, q: { furniture: 'crate' },
   // The engine hoist never spawns as loot, so it stands on the floor by the bays by placement.
   j: { groundLoot: { kind: 'fixed', items: [{ item: 'engine_hoist' }] } },
-  I: { furniture: 'gauntlet_lab_fixture', fixed: true }, Y: { furniture: 'ladder', facing: 'w' },
+  I: { furniture: 'lab_fixture', fixed: true }, Y: { furniture: 'ladder', facing: 'w' },
 };
 // The garage's back wall is z 0 and its two bay doors open south onto one shared floor, kept clear for driving
 // out; the repair stock stands along the back wall and the crates beside the east bay. Strip lights hang under
