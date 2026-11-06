@@ -231,10 +231,10 @@ live in a product section keyed by family and block, because a core block cannot
 product's actor. A block-adding mod must add rows for every family a loaded actor walks
 with, because a silent footstep is a bug that must be refused at load; a block that authors
 no footsteps and a family no loaded actor uses need none. Rows merge across mods, and a
-scenario's own blocks take their rows from that scenario's mod; the gauntlet's shop-front
-rows sit in `skelly.deadvox.residual` until #1532 extracts that scenario. See `src/core/footsteps.ts`,
-`footstepEventForBlock`; `src/core/content.ts`, `checkFootstepCoverage`; and
-`mods/skelly.deadvox.actors/footstep-sounds.jsonnet`, `footstepSounds`.
+scenario's own blocks take their rows from that scenario's mod. See `src/core/footsteps.ts`,
+`footstepEventForBlock`; `src/core/content.ts`, `checkFootstepCoverage`;
+`mods/skelly.deadvox.actors/footstep-sounds.jsonnet`, `footstepSounds`; and
+`mods/skelly.deadvox.scenario.gauntlet.city/footstep-sounds.jsonnet`, `footstepSounds`.
 A sound row's file lives in the row's own pack, copied with its credit when packs share it,
 so each mod loads with only its declared dependencies. The cost is duplicate bytes, and
 replacing a file in one pack leaves the other copies. See `src/core/assets.ts`,
@@ -379,7 +379,9 @@ These workstreams preserve #637's proof obligations within that one refactor:
   entry pack selects its default. Reused scenario content moves to product topic mods,
   never a shared-scenario pack. A scenario row names no start, and each start row
   carries its own placement, so another start can reuse the city and the only edge
-  runs from start to city.
+  runs from start to city. A scenario's city and its start may therefore be separate
+  mods, so that another start can reuse the city without loading the first start; the
+  gauntlet is split this way.
   Validation follows that ownership: the scenario row answers for its city and each
   start row for its placement. City checks certify without a start, while playable-run
   checks need the selected start. See `src/core/schema/starts.ts`, `StartSchema`;
@@ -415,7 +417,8 @@ separate define, so a selection reuses the build's hashes. See
 `tools/readBundledPacks.ts`, `bundledPackDefines`.
 
 Each debug mod depends only on its own scenario and the tiers below, so none may override
-the test-house layout. Debug furniture therefore goes in catalogue rows, a content section
+the test-house layout. A scenario split into city and start mods keeps one debug mod that
+depends on both halves and covers the whole scenario, as the gauntlet's does. Debug furniture therefore goes in catalogue rows, a content section
 any mod can add to without an edge to the test house, and the test-house debug showroom
 is the one view of every loaded row. The section is an engine mechanism, not a mod's row,
 so using it adds no dependency; a row's furniture still constrains placement like any
