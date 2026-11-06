@@ -51,7 +51,7 @@
         "/src/spikes/expressions/luau.ts",
         "/src/spikes/expressions/benchmark.ts",
         "/test/expressionWasmCases.ts",
-        "/src/vehicles/feasibility/runner.ts",
+        "/src/feasibility/runner.ts",
         "/tools/rapier-f64/candidate.ts"
       ],
       "entry": [

@@ -1,4 +1,4 @@
-import envelope from '../../config/vehicleFeasibility.json' with { type: 'json' };
+import envelope from '../config/vehicleFeasibility.json' with { type: 'json' };
 import type { Adapter, Candidate, Fields, Tier, Work } from './contract.ts';
 import { movingBody } from './movingBody.ts';
 import { firstDivergence, type Trace, trace } from './trace.ts';

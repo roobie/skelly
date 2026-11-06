@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import envelope from '../src/config/vehicleFeasibility.json' with { type: 'json' };
-import type { Candidate, Observation } from '../src/vehicles/feasibility/contract.ts';
-import { movingBody } from '../src/vehicles/feasibility/movingBody.ts';
-import { runProbe, runSuite, TickDispatch } from '../src/vehicles/feasibility/runner.ts';
-import { firstDivergence, trace } from '../src/vehicles/feasibility/trace.ts';
+import type { Candidate, Observation } from '../src/feasibility/contract.ts';
+import { movingBody } from '../src/feasibility/movingBody.ts';
+import { runProbe, runSuite, TickDispatch } from '../src/feasibility/runner.ts';
+import { firstDivergence, trace } from '../src/feasibility/trace.ts';
 
 const create = () => movingBody.create(envelope.probe, envelope.tickHz);
 
