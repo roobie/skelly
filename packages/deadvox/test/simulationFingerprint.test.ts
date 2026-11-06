@@ -73,7 +73,8 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/playerState.ts': 'Type-only contract; the imported interface erases from runtime code.',
   'src/game/debugNoclipStep.ts': 'Type-only contract; the imported interface erases from runtime code.',
   'src/game/mesherProtocol.ts': 'Type-only mesher messages; the imported types erase from runtime code.',
-  'src/game/storageContract.ts': 'Type-only save and mod storage contracts; the imported types erase from runtime code.',
+  'src/game/storageContract.ts':
+    'Type-only save and mod storage contracts; the imported types erase from runtime code.',
   'src/game/debugInterface.ts': 'Type-only contracts; the imported interfaces erase from runtime code.',
   'src/game/indexedDbCommit.ts': 'IndexedDB commit policy runs only in the save worker, outside simulation state.',
   'src/game/mapSliceInput.ts':
