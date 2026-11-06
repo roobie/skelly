@@ -7,7 +7,7 @@ local content = [
   'layouts-test-house',
   'models-items', 'scenarios',
   'starts',
-  'templates-playtest', 'templates-test-house', 'tutorial',
+  'templates-playtest', 'templates-test-house',
 ];
 local things = import '../things/index.json';
 local assets = import '../assets/manifest.json';

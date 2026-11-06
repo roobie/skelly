@@ -213,10 +213,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.residual/templates-test-house.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.residual/tutorial.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.residual/tutorial.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/assets/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/assets/manifest.json"
     },
@@ -411,6 +407,18 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.tutorial/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.tutorial/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.tutorial/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.tutorial/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.tutorial/tutorial.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.tutorial/tutorial.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.voice-size/layouts-voice-size.jsonnet",

@@ -12,7 +12,7 @@ const observation = {
   name: 'save-controller-game-ready',
   enforce: 'pre',
   transform(code, id) {
-    if (id.endsWith('/mods/skelly.deadvox.residual/tutorial.json')) {
+    if (id.endsWith('/mods/skelly.deadvox.scenario.tutorial/tutorial.json')) {
       // Independent content identities catch runtime dispatch by scenario-specific names.
       const content = JSON.parse(code);
       for (const layout of content.layouts) {

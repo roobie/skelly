@@ -111,10 +111,6 @@
       "path": "templates-test-house.json"
     },
     {
-      "kind": "content",
-      "path": "tutorial.json"
-    },
-    {
       "kind": "json",
       "path": "things/baseball_cap.model.json"
     },

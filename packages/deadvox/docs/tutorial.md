@@ -7,7 +7,7 @@ read_if:
 
 Practice is a separate authored place, not a guided replacement world. Guaranteed
 supplies and a compact route let a newcomer learn ordinary interactions without
-depending on random scavenging. See `mods/skelly.deadvox.residual/tutorial.jsonnet` and
+depending on random scavenging. See `mods/skelly.deadvox.scenario.tutorial/tutorial.jsonnet` and
 `src/core/authoredSite.ts`, `AuthoredSite`.
 
 Keep the essentials short so entry remains cheap. Optional modules must not lengthen
@@ -17,19 +17,19 @@ ammunition make acquiring and carrying supplies part of learning rather than gra
 a working gun. Case picking is not partial loading because the lesson requires
 insertion followed by usable closure below capacity. Ready and sighted discharges
 establish that sights are not a firing prerequisite. See
-`mods/skelly.deadvox.residual/guidance.libsonnet`, `gunStep`.
+`mods/skelly.deadvox.scenario.tutorial/guidance.libsonnet`, `gunStep`.
 
 Static targets provide an aiming reference without requiring injury, a kill or target
 scoring. Completion should demonstrate handling rather than accuracy. Empty-hand
 practice likewise must not require another living target. Finite supplies retain
 ordinary scarcity; replacing the whole attempt avoids hidden restocking and a second
-reset owner. See `mods/skelly.deadvox.residual/tutorial.jsonnet`, `tutorial_range`,
-and `mods/skelly.deadvox.residual/guidance.libsonnet`, `gunStep`.
+reset owner. See `mods/skelly.deadvox.scenario.tutorial/tutorial.jsonnet`, `tutorial_range`,
+and `mods/skelly.deadvox.scenario.tutorial/guidance.libsonnet`, `gunStep`.
 
 A newcomer whose light dies may not know that batteries can be swapped. Optional
 light practice makes discovering that action cheap without delaying the essentials.
 Outcomes before choosing the module must not silently complete the lesson the player
-has yet to see. See `mods/skelly.deadvox.residual/guidance.libsonnet`, `gunStep`, and
+has yet to see. See `mods/skelly.deadvox.scenario.tutorial/guidance.libsonnet`, `gunStep`, and
 `src/game/guidedSteps.ts`, `GuidedSteps`.
 
 Action labels need live bindings because outcome nouns alone leave newcomers without
@@ -48,8 +48,8 @@ framework boundary is in `docs/decisions/0009-content-defined-products.md`,
 Avoidance teaches that fighting is optional. Naming a destination makes leaving the
 threat legible without changing ordinary senses or damage. Injury must not become a
 graduation requirement, and lost supplies must not trap the learner. See
-`mods/skelly.deadvox.residual/guidance-text.libsonnet`, `exitPath`, and
-`mods/skelly.deadvox.residual/tutorial.jsonnet`, `tutorial_range`.
+`mods/skelly.deadvox.scenario.tutorial/guidance-text.libsonnet`, `exitPath`, and
+`mods/skelly.deadvox.scenario.tutorial/tutorial.jsonnet`, `tutorial_range`.
 
 Practice must never touch the player's save: disposable learning must not share a
 normal world's persistence identity. See `src/game/tutorialUrl.ts`,
