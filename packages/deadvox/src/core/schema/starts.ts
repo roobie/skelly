@@ -40,7 +40,6 @@ export const StartSchema = strictObject({
   storeys: optional(pipe(Count, minValue(1))),
   density: optional(nullable(Fraction)),
   startTimeGameTimeOfDay: optional(GameTimeOfDay),
-  /** Where this start sits in its scenario city: building, cell, roof spawn and ways down. */
   placement: optional(
     strictObject({
       template: Id,

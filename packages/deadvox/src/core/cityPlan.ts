@@ -538,7 +538,6 @@ const fixedServiceIssues = (registry: Registry, { city, serviceTemplate }: Scena
   return issues;
 };
 
-/** The start's own reservation in its scenario city: its block clears the service cell and every authored lot. */
 export const startReservationIssues = (
   registry: Registry,
   scenario: ScenarioDef,

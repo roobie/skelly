@@ -1,7 +1,7 @@
 import { lotChoices, type PlannedLot } from './cityLots.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import { type PlacementLootSource, placementLootIssues } from './placementLoot.ts';
+import { type PlacementLootSource, pieceItemIssues, placementLootIssues } from './placementLoot.ts';
 import { composeStart, type ScenarioStart, type StartPlacementDef, startTemplate } from './scenarioStart.ts';
 import type { StartDef } from './schema/starts.ts';
 import type { FixedLootOverrideDef, ScenarioDef } from './schema.ts';
@@ -18,6 +18,8 @@ import {
   placedPoint,
   templateResolves,
 } from './templates.ts';
+
+const PIECE_PATH = /^\.pieces\[(\d+)\]/;
 
 export interface ScenarioComposition {
   /** Absent in a city-only build: no start is selected, so nothing roots a playable run. */
@@ -431,27 +433,41 @@ const scenarioBuildingSources = (registry: Registry, scenario: ScenarioDef): str
 
 /** The start's promised stock, checked at its template-local anchors; paths are on the start row. */
 export const startFixedLootIssues = (registry: Registry, scenario: ScenarioDef, start: StartPlacementDef): Issue[] => {
-  if (!start.fixedLoot) {
+  const { fixedLoot } = start;
+  if (!fixedLoot) {
     return [];
   }
+  let template: CompiledTemplate;
   try {
-    const template = startTemplate(registry, start.template, 0, `scenario:${scenario.id}:start`);
-    return placementLootIssues(
-      { registry, context: template.lootContext },
-      template,
-      start.fixedLoot,
-      '.placement.fixedLoot',
-    );
+    template = startTemplate(registry, start.template, 0, `scenario:${scenario.id}:start`);
   } catch {
-    // An unresolved start template is reported once, by `scenarioStartIssues`.
+    // `scenarioStartIssues` reports an unresolved start template once.
     return [];
   }
+  const path = '.placement.fixedLoot';
+  const issues = placementLootIssues({ registry, context: template.lootContext }, template, fixedLoot, path);
+  // A template's own stock errors belong to the template; only those the override's context causes belong here.
+  const own = new Set(pieceItemIssues(registry, template).map((issue) => issue.join('\0')));
+  return issues.flatMap(([at, message]): Issue[] => {
+    if (at.startsWith(path)) {
+      return [[at, message]];
+    }
+    const piece = PIECE_PATH.exec(at);
+    if (!piece || own.has([at, message].join('\0'))) {
+      return [];
+    }
+    const { furniture, pos } = template.pieces[Number(piece[1])]!;
+    const index = fixedLoot.findIndex((override) => override.at.join(',') === pos.join(','));
+    const field = fixedLoot[index]!.lootUsage ? 'lootUsage' : 'lootTier';
+    return [
+      [
+        `${path}[${index}].${field}`,
+        `template "${template.id}" piece "${furniture}" at ${pos.join(',')} under this override: ${message}`,
+      ],
+    ];
+  });
 };
 
-/**
- * Templates and promised stock a world of these scenarios can hold. Start placements come from the given start rows
- * on those scenarios, so a caller scopes them to one selected start or to every start.
- */
 export const scenarioSources = (
   registry: Registry,
   scenarios: Iterable<ScenarioDef> = registry.scenarios.values(),

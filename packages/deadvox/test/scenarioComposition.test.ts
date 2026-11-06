@@ -14,9 +14,10 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 const PROMISED_STOCK_ERROR = /Promised stock/;
+const OVERRIDE_STOCK_ERROR = /fixture_start.*2,1,2.*fixture_home_token/;
 
 import { fixtureLootContext } from './economyFixtures.ts';
-import { defaultStartOf, composedFixture as fixture, fixtureStart } from './fixtures/scenario.ts';
+import { defaultStartOf, composedFixture as fixture, fixtureStart, fixtureStartRow } from './fixtures/scenario.ts';
 
 const eventFixture = () => {
   const { profile, registry } = fixture();
@@ -339,6 +340,32 @@ describe('promised stop stock', () => {
         start: defaultStartOf(registry, profile),
       }),
     ).toThrow(PROMISED_STOCK_ERROR);
+  });
+
+  it('reports an item that only the start override puts out of context on that override, not the template', () => {
+    const { registry } = fixture([fixtureStartRow()]);
+    const row = [...registry.starts.values()][0]!;
+    const template = structuredClone(registry.templates.get(row.placement!.template)!);
+    registry.items.set('fixture_home_token', { ...registry.items.get('fixture_token')!, id: 'fixture_home_token' });
+    registry.itemEconomy.set('fixture_home_token', {
+      id: 'fixture_home_token',
+      usage: ['Residential'],
+      tiers: ['Tier1'],
+      notLoot: false,
+    });
+    template.palette.C = { furniture: 'fixture_crate', items: [{ item: 'fixture_home_token' }] };
+    template.layers[1]![2] = '..C.....==';
+    registry.templates.set(template.id, template);
+    const issues = () => startIssues(registry).filter(({ id }) => id === row.id);
+    expect(issues()).toEqual([]);
+    row.placement!.fixedLoot = [{ at: [2, 1, 2], lootUsage: ['Military'], items: [] }];
+    expect(issues()).toEqual([
+      {
+        id: row.id,
+        path: '.placement.fixedLoot[0].lootUsage',
+        message: expect.stringMatching(OVERRIDE_STOCK_ERROR),
+      },
+    ]);
   });
 });
 

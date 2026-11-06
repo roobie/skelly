@@ -62,7 +62,6 @@ export const defaultStartOf = (registry: Pick<Registry, 'starts'>, scenario: Sce
   return placement;
 };
 
-/** A bare start row on a fixture scenario: no kit, wounds, skills or recipes, so only its placement is under test. */
 export const fixtureStartRow = (
   placement: StartPlacementDef | null = fixtureStart(),
   { id = 'fixture_start_row', site = 'fixture_scenario' } = {},
@@ -135,10 +134,6 @@ export const fixtureStart = (): StartPlacementDef => ({
   descents: [{ kind: 'ladder', ladder: [4, 1, 3], upper: [6.5, 7, 4], lower: [3, 1, 4] }],
 });
 
-/**
- * A fixture scenario with a full composition (fixed loot, two leads, two landmarks, a resource and a descent) and the
- * given start rows, admitted with no issues.
- */
 export const composedFixture = (starts: StartDef[] = []) => {
   const profile = fixtureScenario();
   profile.city.street = 8;

@@ -90,7 +90,6 @@ const skylineIssues = (
   });
 };
 
-/** A start's placement checked against the composed scenario it starts on; paths are on the start row. */
 export const scenarioStartIssues = (
   registry: Registry,
   scenario: ScenarioDef,

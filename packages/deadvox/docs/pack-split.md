@@ -378,8 +378,8 @@ These workstreams preserve #637's proof obligations within that one refactor:
   recipe knowledge, belong to scenarios; several starts can share one scenario. The
   entry pack selects its default. Reused scenario content moves to product topic mods,
   never a shared-scenario pack. A scenario row names no start, and each start row
-  carries its own placement (building, cell, roof spawn, ways down and promised stock),
-  so another start can reuse the city and the only edge runs from start to city.
+  carries its own placement, so another start can reuse the city and the only edge
+  runs from start to city.
   Validation follows that ownership: the scenario row answers for its city and each
   start row for its placement. City checks certify without a start, while playable-run
   checks need the selected start. See `src/core/schema/starts.ts`, `StartSchema`;
