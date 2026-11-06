@@ -207,8 +207,6 @@
   'substation_switchgear',
   'substation_transformer',
   'tarp',
-  'tutorial_cabinet',
-  'tutorial_range_cabinet',
   'wardrobe',
   'weed_tuft',
   'wood_door',

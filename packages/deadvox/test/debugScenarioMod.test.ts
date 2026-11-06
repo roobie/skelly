@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest';
 import debugMod from '../mods/skelly.deadvox.scenario.test-house.debug/layouts.json' with { type: 'json' };
 import debugManifest from '../mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json' with { type: 'json' };
 import { AuthoredSite } from '../src/core/authoredSite.ts';
+import { buildRegistry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { admitPacks } from '../src/core/packAdmission.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { placedPoint } from '../src/core/templates.ts';
 import { bundledPackInputs } from '../src/game/bundledContent.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';
+import { readAvailablePacks, readBundledPacks } from '../tools/readBundledPacks.ts';
 import { withReusedBuilds } from './bundledContentReuse.ts';
 import { content as baseContent, makeConfig } from './fixtures/startupContent.ts';
 
@@ -29,6 +32,43 @@ describe('authored debug scenario mod', () => {
     expect(selected.issues).toEqual([]);
     expect(selected.admittedFolderPacks.map(({ id }) => id)).toEqual([debugManifest.id]);
     expect(selected.admitted).toEqual([]);
+  });
+
+  it('builds every debug mod from its own closure with its catalogue rows', () => {
+    // Selection supplies the default stack, which would hide a row whose owner the debug mod does not declare.
+    const debugPacks = readAvailablePacks('.').filter(({ manifest }) => manifest.optIn);
+    expect(debugPacks.map(({ manifest }) => manifest.id)).toContain(debugManifest.id);
+    for (const { manifest, files } of debugPacks) {
+      const admitted = admitPacks(readBundledPacks('.', manifest.id));
+      expect(admitted.issues, manifest.id).toEqual([]);
+      const { registry, issues } = buildRegistry(admitted.sources);
+      expect(issues, manifest.id).toEqual([]);
+      const rows = files.flatMap(({ data }) => (data as { catalogueRows?: { id: string }[] }).catalogueRows ?? []);
+      expect(rows.length, manifest.id).toBeGreaterThan(0);
+      for (const { id } of rows) {
+        expect(registry.catalogueRows.has(id), `${manifest.id} ${id}`).toBe(true);
+      }
+    }
+  });
+
+  it('loads two selected debug folder mods together', () => {
+    const tutorialDebug = 'skelly.deadvox.scenario.tutorial.debug';
+    const both = withReusedBuilds(() =>
+      selectBundledMods(bundledModIdsFromUrl(new URLSearchParams({ mods: `${debugManifest.id},${tutorialDebug}` }))),
+    );
+    expect(both.issues).toEqual([]);
+    expect(both.admittedFolderPacks.map(({ id }) => id).sort()).toEqual([debugManifest.id, tutorialDebug].sort());
+    const owners = readAvailablePacks('.').filter(({ manifest }) =>
+      [debugManifest.id, tutorialDebug].includes(manifest.id),
+    );
+    expect(owners.length).toBe(2);
+    for (const { manifest, files } of owners) {
+      for (const { data } of files) {
+        for (const { id } of (data as { catalogueRows?: { id: string }[] }).catalogueRows ?? []) {
+          expect(both.content.registry.catalogueRows.has(id), `${manifest.id} ${id}`).toBe(true);
+        }
+      }
+    }
   });
 
   it('stays out of the default packs and content unless selected', () => {

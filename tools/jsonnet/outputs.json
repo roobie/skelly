@@ -409,6 +409,14 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.tutorial.debug/catalogue.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.tutorial.debug/catalogue.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.tutorial.debug/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.tutorial.debug/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.tutorial/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.tutorial/pack/manifest.json"
     },

@@ -84,7 +84,8 @@ references. Reclassifying the referenced content requires its own consumer justi
 not a side effect of moving its referrer. A scenario's exclusive entries stay in its
 scenario mods; reuse by two or more scenarios moves them down to product topic mods.
 Each shared topic gets its own topic-sized product mod rather than joining a broad one such
-as buildings or rural sites, so a scenario that shares one topic loads that topic alone; see
+as buildings or rural sites, so a scenario that shares one topic loads it without also
+importing an unrelated topic; see
 `mods/skelly.deadvox.woods/pack/manifest.jsonnet` and
 `mods/skelly.deadvox.labs.underground/pack/manifest.jsonnet`.
 An id that moves into a product mod drops the scenario's name in the same move, with no
