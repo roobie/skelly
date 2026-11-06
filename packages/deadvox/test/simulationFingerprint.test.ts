@@ -69,6 +69,10 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
     'Presentation-only hand-role projection; it does not alter simulation or save identity.',
   'src/core/firearmAimPose.ts':
     'Presentation-only hand-pose projection; it does not alter simulation or save identity.',
+  'src/core/percentile.ts': 'Timing summary for the debug frame readout and the benchmark, not game runtime.',
+  'src/core/playerState.ts': 'Type-only contract; the imported interface erases from runtime code.',
+  'src/game/debugNoclipStep.ts': 'Type-only contract; the imported interface erases from runtime code.',
+  'src/game/mesherProtocol.ts': 'Type-only mesher messages; the imported types erase from runtime code.',
   'src/game/debugInterface.ts': 'Type-only contracts; the imported interfaces erase from runtime code.',
   'src/game/indexedDbCommit.ts': 'IndexedDB commit policy runs only in the save worker, outside simulation state.',
   'src/game/mapSliceInput.ts':

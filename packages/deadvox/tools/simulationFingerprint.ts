@@ -379,7 +379,7 @@ async function resolveTrackableModule(
   }
   if (
     extension === '.json' &&
-    ['src/config/', 'mobgen/', 'thing-core/'].some((prefix) => relativePath.startsWith(prefix))
+    ['src/config/', 'src/feasibility/', 'mobgen/', 'thing-core/'].some((prefix) => relativePath.startsWith(prefix))
   ) {
     return { file, relativePath };
   }
