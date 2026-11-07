@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadConfigFromFile } from 'vite';
 import { describe, expect, it } from 'vitest';
 import { runtimeClosureViolations, STAGE_ONE_POLICY } from '../tools/runtimeClosure.ts';
 
@@ -11,12 +12,16 @@ type Tree = Record<string, string>;
 // A fixture repository laid out like the real one, whose runtime reaches only allowed targets.
 const cleanTree: Tree = {
   'package.json': JSON.stringify({
+    type: 'module',
     workspaces: ['packages/deadvox', 'packages/mobgen', 'packages/thing-core', 'packages/presentation'],
   }),
   'packages/deadvox/package.json': JSON.stringify({
     name: '@skelly/deadvox',
+    type: 'module',
     dependencies: { '@skelly/presentation': '*' },
   }),
+  'packages/deadvox/tsconfig.json':
+    '{\n  // The one supported alias.\n  "compilerOptions": { "moduleResolution": "Bundler", "paths": { "@mobgen/*": ["../mobgen/src/*"] } },\n}\n',
   'packages/deadvox/src/core/sim.ts':
     "import { rule } from './rule.ts';\nimport { pose } from '@mobgen/pose.ts';\nimport { schema } from '@skelly/thing-core/schema';\nimport { join } from 'node:path';\nexport const tick = () => [rule, pose, schema, join];\n",
   'packages/deadvox/src/core/rule.ts': 'export const rule = 1;\n',
@@ -24,15 +29,17 @@ const cleanTree: Tree = {
   'packages/deadvox/src/game/session.ts': "import { tick } from '../core/sim.ts';\nexport const session = tick;\n",
   'packages/deadvox/src/render/view.ts':
     "import { session } from '../game/session.ts';\nexport const view = session;\n",
-  'packages/mobgen/package.json': JSON.stringify({ name: 'mobgen' }),
+  'packages/mobgen/package.json': JSON.stringify({ name: 'mobgen', type: 'module' }),
   'packages/mobgen/src/pose.ts': 'export const pose = 1;\n',
   'packages/thing-core/package.json': JSON.stringify({
     name: '@skelly/thing-core',
+    type: 'module',
     exports: { './schema': './src/schema.ts' },
   }),
   'packages/thing-core/src/schema.ts': 'export const schema = 1;\n',
   'packages/presentation/package.json': JSON.stringify({
     name: '@skelly/presentation',
+    type: 'module',
     exports: { './*': './src/*.ts' },
   }),
   'packages/presentation/src/hud.ts': 'export const hud = 1;\n',
@@ -67,6 +74,24 @@ const oddlyNamedRender: Tree = {
 describe('runtime closure, stage 1', () => {
   it('keeps the runtime and the libraries it follows from reaching presentation, render, UI, three or Lit', () => {
     expect(runtimeClosureViolations(repoRoot, STAGE_ONE_POLICY)).toEqual([]);
+  });
+
+  // The loaded config is checked, not the file's text: the file computes its alias target, and a plugin's
+  // config or resolveId hook could change resolution, so the test also requires there be none.
+  it('runs on a Vite config whose resolution adds only the policy aliases', async () => {
+    const projectRoot = join(repoRoot, STAGE_ONE_POLICY.viteRoot);
+    const loaded = await loadConfigFromFile(
+      { command: 'build', mode: 'production' },
+      join(projectRoot, 'vite.config.ts'),
+      projectRoot,
+      'silent',
+    );
+    const aliases = Object.entries(STAGE_ONE_POLICY.aliases).map(([prefix, dir]) => [prefix, join(repoRoot, dir)]);
+    expect(loaded?.config.resolve).toEqual({ alias: Object.fromEntries(aliases) });
+    const hooks = (loaded?.config.plugins ?? [])
+      .flat(Number.POSITIVE_INFINITY)
+      .flatMap((plugin) => (plugin && typeof plugin === 'object' ? Object.keys(plugin) : []));
+    expect(hooks.filter((hook) => ['config', 'configEnvironment', 'resolveId'].includes(hook))).toEqual([]);
   });
 
   it('passes the clean fixture, so each witness fails for its own edge', () => {
@@ -282,44 +307,62 @@ describe('runtime closure, stage 1', () => {
     const violations = violationsIn({
       'packages/thing-core/package.json': JSON.stringify({
         name: '@skelly/thing-core',
-        exports: { './schema': { types: './src/types.d.ts', import: './src/schema.js' } },
+        type: 'module',
+        exports: { './schema': { types: './src/types.ts', import: './src/schema.ts' } },
       }),
-      'packages/thing-core/src/schema.js': 'export const schema = 1;\n',
-      'packages/thing-core/src/types.d.ts': "export type V = import('three').Vector3;\n",
+      'packages/thing-core/src/types.ts': "export type V = import('three').Vector3;\n",
       [catalog]: "export type { V } from '@skelly/thing-core/schema';\n",
     });
-    expect(violations.map((v) => [v.importer, v.target])).toEqual([['packages/thing-core/src/types.d.ts', 'three']]);
+    expect(violations.map((v) => [v.importer, v.target])).toEqual([['packages/thing-core/src/types.ts', 'three']]);
   });
 
-  it('follows the TypeScript source a .js specifier also names', () => {
+  it('follows the TypeScript source an .mjs specifier also names', () => {
     const violations = violationsIn({
-      'packages/mobgen/src/rig.js': 'export const rig = 1;\n',
-      'packages/mobgen/src/rig.ts': "export type V = import('three').Vector3;\n",
-      [catalog]: "export type { V } from '../../../mobgen/src/rig.js';\n",
+      'packages/mobgen/src/rig.mjs': 'export const rig = 1;\n',
+      'packages/mobgen/src/rig.mts': "export type V = import('three').Vector3;\n",
+      [catalog]: "export type { V } from '../../../mobgen/src/rig.mjs';\n",
     });
-    expect(violations.map((v) => [v.importer, v.target])).toEqual([['packages/mobgen/src/rig.ts', 'three']]);
+    expect(violations.map((v) => [v.importer, v.target])).toEqual([['packages/mobgen/src/rig.mts', 'three']]);
   });
 
-  it('fails a workspace whose types tsc remaps through typesVersions', () => {
+  // Each forbidden dependency sits only in the implementation file tsc substitutes for the named one.
+  it.each([
+    ['.d.ts', 'rig.d.ts', 'rig.ts'],
+    ['.d.mts', 'rig.d.mts', 'rig.mts'],
+    ['.d.cts', 'rig.d.cts', 'rig.cts'],
+    ['.js', 'rig.js', 'rig.ts'],
+    ['none (a directory with its own package.json)', 'kit', 'kit/types.ts'],
+  ])('fails a specifier extension outside the supported set: %s', (_name, named, substitute) => {
     const violations = violationsIn({
-      'packages/thing-core/package.json': JSON.stringify({
-        name: '@skelly/thing-core',
-        exports: { './schema': './src/schema.ts' },
-        typesVersions: { '*': { schema: ['src/types.d.ts'] } },
-      }),
-      'packages/thing-core/src/types.d.ts': "export type V = import('three').Vector3;\n",
-    });
-    expect(importers(violations)).toEqual(['packages/deadvox/src/core/sim.ts']);
-  });
-
-  it('fails a directory import whose own package.json can redirect it', () => {
-    const violations = violationsIn({
-      'packages/mobgen/src/kit/package.json': JSON.stringify({ types: './types.d.ts' }),
-      'packages/mobgen/src/kit/index.ts': 'export const kit = 1;\n',
-      'packages/mobgen/src/kit/types.d.ts': "export type V = import('three').Vector3;\n",
-      [catalog]: "export { kit } from '../../../mobgen/src/kit';\n",
+      [`packages/mobgen/src/${named === 'kit' ? 'kit/index.ts' : named}`]: 'export type V = number;\n',
+      'packages/mobgen/src/kit/package.json': JSON.stringify({ types: './types.ts' }),
+      [`packages/mobgen/src/${substitute}`]: "export type V = import('three').Vector3;\n",
+      [catalog]: `export type { V } from '../../../mobgen/src/${named}';\n`,
     });
     expect(importers(violations)).toEqual([catalog]);
+  });
+
+  it.each([
+    ['a browser map', { browser: { './src/clean.ts': './src/browser.ts' } }],
+    ['typesVersions without exports', { typesVersions: { '*': { 'src/clean.ts': ['src/browser.ts'] } } }],
+    ['an unknown key', { frobnicate: true }],
+  ])('fails a reached package whose manifest has %s', (_name, extra) => {
+    const violations = violationsIn({
+      'packages/mobgen/package.json': JSON.stringify({ name: 'mobgen', type: 'module', ...extra }),
+      'packages/mobgen/src/clean.ts': 'export const V = 1;\n',
+      'packages/mobgen/src/browser.ts': "import { Vector3 } from 'three';\nexport const V = Vector3;\n",
+      [catalog]: "export { V } from 'mobgen/src/clean.ts';\n",
+    });
+    expect(violations.map((v) => v.target)).toEqual(['packages/mobgen/package.json']);
+  });
+
+  it('fails a tsconfig that sets resolution the check does not model', () => {
+    const violations = violationsIn({
+      'packages/deadvox/tsconfig.json': JSON.stringify({
+        compilerOptions: { moduleResolution: 'Bundler', baseUrl: '.', paths: { '@mobgen/*': ['../mobgen/src/*'] } },
+      }),
+    });
+    expect(importers(violations)).toEqual(['packages/deadvox/tsconfig.json']);
   });
 
   it.each([

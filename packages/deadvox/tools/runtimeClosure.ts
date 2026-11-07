@@ -18,6 +18,8 @@ export interface RuntimeClosurePolicy {
   readonly aliases: Readonly<Record<string, string>>;
   /** The Vite project root, where a glob pattern or base with a leading slash starts. */
   readonly viteRoot: string;
+  /** The compiler config for the start set; it may set only resolution the check models. */
+  readonly tsconfig: string;
 }
 
 export interface RuntimeClosureViolation {
@@ -41,27 +43,58 @@ export const STAGE_ONE_POLICY: RuntimeClosurePolicy = {
   // Mirrors packages/deadvox/tsconfig.json, compilerOptions.paths, and packages/deadvox/vite.config.ts, resolve.alias.
   aliases: { '@mobgen/': 'packages/mobgen/src/' },
   viteRoot: 'packages/deadvox',
+  tsconfig: 'packages/deadvox/tsconfig.json',
 };
 
 const SOURCE_FILE = /\.(?:[cm]?[jt]sx?)$/;
-// Every extension tsc (bundler resolution) or Vite tries for a specifier, so resolution follows their union.
-const RESOLVE_EXTENSIONS = [
-  '.ts',
-  '.tsx',
-  '.d.ts',
-  '.mts',
-  '.d.mts',
-  '.cts',
-  '.d.cts',
-  '.js',
-  '.jsx',
-  '.mjs',
-  '.cjs',
-  '.json',
-];
-// tsc reads a `.js`-family specifier as its TypeScript source or declaration too.
-const JS_EXTENSION = /\.(?:js|jsx|mjs|cjs)$/;
-const TS_SUBSTITUTES = ['.ts', '.tsx', '.d.ts', '.mts', '.d.mts', '.cts', '.d.cts'];
+// The specifier extensions the runtime uses. Each names exactly the file it spells, except that tsc also
+// reads `x.mjs` as `x.mts` or `x.d.mts`; any other extension, or none, is outside what the check models.
+const SPECIFIER_EXTENSION = /\.(?:ts|mjs|json)$/;
+const MJS_EXTENSION = /\.mjs$/;
+// Package keys that cannot change how a specifier resolves; `exports` is resolved, `type` must be `module`.
+const PACKAGE_KEYS = new Set([
+  'name',
+  'version',
+  'private',
+  'license',
+  'description',
+  'type',
+  'workspaces',
+  'scripts',
+  'dependencies',
+  'devDependencies',
+  'peerDependencies',
+  'overrides',
+  'exports',
+]);
+// The compiler options the check models: none of them changes resolution beyond the checked values below.
+const TSCONFIG_KEYS = new Set(['compilerOptions', 'include']);
+const COMPILER_OPTIONS = new Set([
+  'target',
+  'module',
+  'moduleResolution',
+  'lib',
+  'types',
+  'paths',
+  'strict',
+  'noUncheckedIndexedAccess',
+  'noImplicitOverride',
+  'noUnusedLocals',
+  'noUnusedParameters',
+  'exactOptionalPropertyTypes',
+  'verbatimModuleSyntax',
+  'erasableSyntaxOnly',
+  'allowImportingTsExtensions',
+  'resolveJsonModule',
+  'noEmit',
+  'skipLibCheck',
+  'noImplicitReturns',
+  'noFallthroughCasesInSwitch',
+  'noUncheckedSideEffectImports',
+  'allowUnreachableCode',
+  'allowUnusedLabels',
+  'forceConsistentCasingInFileNames',
+]);
 // Comment readers: a triple-slash directive and its attributes. In JavaScript any comment naming `import`
 // fails closed, since tsc's JSDoc reader finds module references across line breaks and leading asterisks.
 const TRIPLE_SLASH = /^\/\s*<reference\b/;
@@ -78,8 +111,6 @@ interface Workspace {
   readonly name: string;
   readonly dir: string;
   readonly exports: unknown;
-  /** tsc remaps type resolution through `typesVersions`; the check does not model it. */
-  readonly typesVersions: boolean;
 }
 
 const within = (path: string, dir: string): boolean => path === dir || path.startsWith(`${dir}/`);
@@ -95,14 +126,8 @@ function workspacesOf(repoRoot: string): Workspace[] {
       const manifest = JSON.parse(readFileSync(join(repoRoot, dir, 'package.json'), 'utf8')) as {
         name: string;
         exports?: unknown;
-        typesVersions?: unknown;
       };
-      return {
-        name: manifest.name,
-        dir: dir.split(sep).join('/'),
-        exports: manifest.exports,
-        typesVersions: manifest.typesVersions !== undefined,
-      };
+      return { name: manifest.name, dir: dir.split(sep).join('/'), exports: manifest.exports };
     });
 }
 
@@ -122,9 +147,6 @@ function exportTargets(value: unknown): string[] {
  * matching pattern; or why the check cannot resolve it conservatively.
  */
 function workspacePaths(workspace: Workspace, subpath: string): string[] | string {
-  if (workspace.typesVersions) {
-    return `a workspace with typesVersions: ${workspace.name}`;
-  }
   if (workspace.exports === undefined) {
     // Without exports the root resolves through main, module or types fields, which the check does not model.
     return subpath === '' ? `a workspace root without exports: ${workspace.name}` : [`${workspace.dir}${subpath}`];
@@ -153,22 +175,83 @@ function workspacePaths(workspace: Workspace, subpath: string): string[] | strin
 const isFile = (absolute: string): boolean => existsSync(absolute) && statSync(absolute).isFile();
 
 /**
- * Every existing file tsc or Vite could take a path to mean: the path itself, each extension appended,
- * tsc's TypeScript substitutes for a `.js`-family name, and a directory's index files; or why not.
+ * Every existing file tsc or Vite could take a path to mean, for the extensions the check supports; or
+ * why the path is outside them. A declaration name (`x.d.ts`) is outside: tsc also reads it as `x.ts`.
  */
 function existingFiles(repoRoot: string, path: string): string[] | string {
-  const absolute = join(repoRoot, path);
-  if (existsSync(absolute) && statSync(absolute).isDirectory() && existsSync(join(absolute, 'package.json'))) {
-    return `a directory with its own package.json: ${path}`;
+  if (DECLARATION_FILE.test(path) || !SPECIFIER_EXTENSION.test(path)) {
+    return `a specifier extension outside .ts, .mjs and .json: ${path}`;
   }
-  const base = path.replace(JS_EXTENSION, '');
-  const candidates = [
-    path,
-    ...RESOLVE_EXTENSIONS.map((extension) => `${path}${extension}`),
-    ...(base === path ? [] : TS_SUBSTITUTES.map((extension) => `${base}${extension}`)),
-    ...RESOLVE_EXTENSIONS.map((extension) => `${path}/index${extension}`),
+  const candidates = MJS_EXTENSION.test(path)
+    ? [path, path.replace(MJS_EXTENSION, '.mts'), path.replace(MJS_EXTENSION, '.d.mts')]
+    : [path];
+  return candidates.filter((candidate) => isFile(join(repoRoot, candidate)));
+}
+
+/** A JSON-with-comments document's value, read as a literal expression; undefined if it holds anything else. */
+function literalValue(node: unknown): unknown {
+  if (!isNode(node)) {
+    return undefined;
+  }
+  if (node.type === 'Literal') {
+    return node.value;
+  }
+  if (node.type === 'ArrayExpression') {
+    return (node.elements as unknown[]).map(literalValue);
+  }
+  if (node.type !== 'ObjectExpression') {
+    return undefined;
+  }
+  const entries = (node.properties as AstNode[]).map((property) => {
+    const key = property.key as AstNode | undefined;
+    return [key?.name ?? key?.value, literalValue(property.value)];
+  });
+  return Object.fromEntries(entries);
+}
+
+/** Why a tsconfig sets resolution the check does not model, if it does; only the policy alias paths pass. */
+function unsupportedTsconfig(
+  text: string,
+  aliases: Readonly<Record<string, string>>,
+  tsconfigDir: string,
+): string | undefined {
+  const parsed = parseSync('tsconfig.js', `(${text})`, { lang: 'js' });
+  const body = parsed.program.body[0] as AstNode | undefined;
+  const wrapped = body?.expression as AstNode | undefined;
+  const expression = wrapped?.type === 'ParenthesizedExpression' ? wrapped.expression : wrapped;
+  const config = parsed.errors.length === 0 ? literalValue(expression) : undefined;
+  if (!(config && typeof config === 'object')) {
+    return 'a tsconfig the check cannot read';
+  }
+  const options = ((config as Record<string, unknown>).compilerOptions ?? {}) as Record<string, unknown>;
+  const unknownKeys = [
+    ...Object.keys(config).filter((key) => !TSCONFIG_KEYS.has(key)),
+    ...Object.keys(options).filter((key) => !COMPILER_OPTIONS.has(key)),
   ];
-  return [...new Set(candidates)].filter((candidate) => isFile(join(repoRoot, candidate)));
+  // The policy aliases must be the only path mappings, each `p/` → `dir/` spelled `p/*` → `<dir from here>/*`.
+  const paths = JSON.stringify(options.paths ?? {});
+  const expected = JSON.stringify(
+    Object.fromEntries(
+      Object.entries(aliases).map(([prefix, dir]) => [`${prefix}*`, [`${posix.relative(tsconfigDir, dir)}/*`]]),
+    ),
+  );
+  if (unknownKeys.length > 0) {
+    return `tsconfig options the check does not model: ${unknownKeys.join(', ')}`;
+  }
+  if (options.moduleResolution !== 'Bundler' || paths !== expected) {
+    return 'tsconfig resolution other than Bundler with the policy aliases';
+  }
+  return undefined;
+}
+
+/** Why a package.json could change resolution in ways the check does not model, if it could. */
+function unsupportedManifest(text: string): string | undefined {
+  const manifest = JSON.parse(text) as Record<string, unknown>;
+  const unknownKeys = Object.keys(manifest).filter((key) => !PACKAGE_KEYS.has(key));
+  if (unknownKeys.length > 0) {
+    return `package keys the check does not model: ${unknownKeys.join(', ')}`;
+  }
+  return manifest.type === 'module' ? undefined : 'a package whose type is not module';
 }
 
 function sourceFilesUnder(repoRoot: string, dir: string): string[] {
@@ -565,6 +648,9 @@ class ClosureWalk {
   readonly violations: RuntimeClosureViolation[] = [];
   private readonly visited = new Set<string>();
   private readonly symlinks = new Map<string, boolean>();
+  /** Each directory's nearest package.json, and the manifests already judged. */
+  private readonly nearestManifest = new Map<string, string | undefined>();
+  private readonly judgedManifests = new Set<string>();
   private readonly queue: string[];
   private readonly workspaces: readonly Workspace[];
   private readonly root: string;
@@ -616,7 +702,47 @@ class ClosureWalk {
     return workspace ? this.found(workspacePaths(workspace, specifier.slice(name.length))) : { npm: name };
   }
 
+  /** The nearest package.json above a repository-relative directory, inside the repository. */
+  private manifestFor(dir: string): string | undefined {
+    if (!this.nearestManifest.has(dir)) {
+      const here = posix.join(dir, 'package.json');
+      const parent = posix.dirname(dir);
+      let found: string | undefined;
+      if (isFile(join(this.root, here))) {
+        found = here;
+      } else if (dir !== '.' && dir !== '' && !dir.startsWith('..')) {
+        found = this.manifestFor(parent);
+      }
+      this.nearestManifest.set(dir, found);
+    }
+    return this.nearestManifest.get(dir);
+  }
+
+  /** Reports, once per manifest, a package.json that could change how this file resolves or loads. */
+  private judgeManifest(importer: string, specifier: string, file: string): void {
+    const manifest = this.manifestFor(posix.dirname(file));
+    if (manifest === undefined || this.judgedManifests.has(manifest)) {
+      return;
+    }
+    this.judgedManifests.add(manifest);
+    const reason = unsupportedManifest(readFileSync(join(this.root, manifest), 'utf8'));
+    if (reason !== undefined) {
+      this.violations.push({ importer, specifier, target: manifest, reason });
+    }
+  }
+
+  private judgeTsconfig(): void {
+    const { tsconfig, aliases } = this.policy;
+    const text = isFile(join(this.root, tsconfig)) ? readFileSync(join(this.root, tsconfig), 'utf8') : undefined;
+    const reason =
+      text === undefined ? 'a missing tsconfig' : unsupportedTsconfig(text, aliases, posix.dirname(tsconfig));
+    if (reason !== undefined) {
+      this.violations.push({ importer: tsconfig, specifier: '', target: '', reason });
+    }
+  }
+
   run(): void {
+    this.judgeTsconfig();
     for (let file = this.queue.shift(); file !== undefined; file = this.queue.shift()) {
       if (!this.visited.has(file)) {
         this.visited.add(file);
@@ -626,6 +752,7 @@ class ClosureWalk {
   }
 
   private visit(file: string): void {
+    this.judgeManifest(file, '', file);
     const edges = edgesOf(file, readFileSync(join(this.root, file), 'utf8'));
     if (typeof edges === 'string') {
       this.violations.push({ importer: file, specifier: '', target: '', reason: `uses ${edges}` });
@@ -737,6 +864,7 @@ class ClosureWalk {
 
   private reach(importer: string, specifier: string, target: string): void {
     const { start, followed, forbidden } = this.policy;
+    this.judgeManifest(importer, specifier, target);
     // Classification is by path, so a symlink could hide the owner the bundler resolves it to.
     const link = this.symlinkOnPath(target);
     if (link !== undefined) {
