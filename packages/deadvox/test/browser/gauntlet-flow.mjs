@@ -174,23 +174,23 @@ export const gauntletFlow = async (browser, baseUrl) => {
         throw new Error('No public clue');
       }
       w.manual = true;
-      const oldIntent = input.intent;
-      input.intent = () => IDLE;
+      const oldIntent = input.controls.intent;
+      input.controls.intent = () => IDLE;
       const walkPoint = async (point) => {
         const distance = () => Math.hypot(point[0] - session.body.pos[0], point[2] - session.body.pos[2]);
         const frames = Math.ceil((distance() / 2 + 3) * 60);
-        input.intent = () => ({ ...IDLE, forward: 1, walk: true });
+        input.controls.intent = () => ({ ...IDLE, forward: 1, walk: true });
         for (let n = 0; n < frames && distance() >= 0.04; n++) {
           engine.streamer.update(session.body.pos[0], session.body.pos[2]);
           openDoors();
-          input.yaw = Math.atan2(session.body.pos[0] - point[0], session.body.pos[2] - point[2]);
-          input.pitch = 0;
+          input.controls.yaw = Math.atan2(session.body.pos[0] - point[0], session.body.pos[2] - point[2]);
+          input.controls.pitch = 0;
           session.frame(1 / 60);
           if (n % 120 === 0) {
             await new Promise(requestAnimationFrame);
           }
         }
-        input.intent = () => IDLE;
+        input.controls.intent = () => IDLE;
         if (distance() >= 0.04) {
           throw new Error('Could not walk beside the public-paper support');
         }
@@ -208,13 +208,13 @@ export const gauntletFlow = async (browser, baseUrl) => {
         for (let n = 0; n < 60; n++) {
           session.frame(1 / 60);
         }
-        input.pitch = 0;
+        input.controls.pitch = 0;
         foot = leaveRoof(session, certificate.space, engine.site.plan.composition.start, {
           intent: (value) => {
-            input.intent = () => value;
+            input.controls.intent = () => value;
           },
           yaw: (value) => {
-            input.yaw = value;
+            input.controls.yaw = value;
           },
           frame: () => session.frame(1 / 60),
           blockSize: engine.config.scale.blockSize,
@@ -242,7 +242,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
         }
         session.quickbar.assign(0, paper);
       } finally {
-        input.intent = oldIntent;
+        input.controls.intent = oldIntent;
         w.manual = false;
       }
     });
@@ -332,8 +332,8 @@ export const gauntletFlow = async (browser, baseUrl) => {
       }
       const { space } = certificate;
       let intent = { ...IDLE };
-      const originalIntent = input.intent;
-      input.intent = () => intent;
+      const originalIntent = input.controls.intent;
+      input.controls.intent = () => intent;
       w.manual = true;
       const { routeDoorOpener } = await import('/test/browser/gauntlet-doors.mjs');
       const openDoors = routeDoorOpener(engine, session);
@@ -376,8 +376,8 @@ export const gauntletFlow = async (browser, baseUrl) => {
               openDoors();
               const dx = target[0] - session.body.pos[0];
               const dz = target[2] - session.body.pos[2];
-              input.yaw = Math.atan2(-dx, -dz);
-              input.pitch = 0;
+              input.controls.yaw = Math.atan2(-dx, -dz);
+              input.controls.pitch = 0;
               const remaining = Math.hypot(dx, dz);
               const sprint = target[1] === plan.floor + 1 && remaining > 2;
               intent = { ...IDLE, forward: 1, sprint, walk: !sprint };
@@ -542,7 +542,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
         if (refusal) {
           throw new Error(refusal);
         }
-        input.yaw = Math.atan2(-ox, -oz);
+        input.controls.yaw = Math.atan2(-ox, -oz);
         intent = { ...IDLE, forward: 1, walk: true };
         const travel =
           ((descent.upper[1] - descent.lower[1]) * engine.config.scale.blockSize) /
@@ -566,8 +566,8 @@ export const gauntletFlow = async (browser, baseUrl) => {
         const at = goal.pos.map((v, axis) => v + goal.size[axis] / 2);
         const origin = w.eye();
         const [dx, dy, dz] = at.map((v, axis) => v - origin[axis]);
-        input.yaw = Math.atan2(-dx, -dz);
-        input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+        input.controls.yaw = Math.atan2(-dx, -dz);
+        input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
         if (w.lookedAt() !== goal) {
           throw new Error('Goal not visible');
         }
@@ -590,7 +590,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
         aimGoal();
         return { resourceTypes, run: session.scenarioRun };
       } finally {
-        input.intent = originalIntent;
+        input.controls.intent = originalIntent;
         w.manual = false;
       }
     });

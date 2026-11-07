@@ -79,7 +79,7 @@ const heldCompassCardChange = (page) =>
     const r = globalThis.primaryActionTest;
     const { sim } = r.session;
     sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, noon));
-    r.input.pitch = 0;
+    r.input.controls.pitch = 0;
     r.setHand(r.dominant, r.inventory.create('compass'));
     const { held } = r.view;
     const { scene, camera } = r.engine;
@@ -150,7 +150,7 @@ const heldCompassCardChange = (page) =>
 const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) => {
   const r = globalThis.primaryActionTest;
   const { inventory, engine } = r;
-  r.input.pitch = 0;
+  r.input.controls.pitch = 0;
   const { sim } = r.session;
   sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, 12 * 3600));
   if (withGear) {
@@ -492,7 +492,7 @@ const heldItemChecks = async (chromium, port) => {
   const baselineShot = await timePhase('glowstick-pixel-assertions', async () => {
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      r.input.pitch = -0.55;
+      r.input.controls.pitch = -0.55;
       const item = r.inventory.create('glowstick');
       if (!r.inventory.add(item, { kind: 'pile', pos: r.feet() })) {
         throw new Error('Could not place dropped-glowstick pixel fixture');
@@ -600,7 +600,7 @@ const heldItemChecks = async (chromium, port) => {
           };
         });
       }
-      r.input.pitch = -1.3;
+      r.input.controls.pitch = -1.3;
       return r.frames;
     });
     await page.waitForFunction((start) => globalThis.primaryActionTest.frames > start + 1, frame);
@@ -610,7 +610,7 @@ const heldItemChecks = async (chromium, port) => {
     assert.ok(own.body > 0, 'looking down draws the canonical world legs');
     const externalFrame = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      r.input.pitch = 0;
+      r.input.controls.pitch = 0;
       r.thirdPerson.toggle();
       return r.frames;
     });
@@ -624,7 +624,7 @@ const heldItemChecks = async (chromium, port) => {
         throw new Error(result.reason);
       }
       r.thirdPerson.toggle();
-      r.input.pitch = -0.55;
+      r.input.controls.pitch = -0.55;
     }, uid);
   });
   await timePhase('held-compass-pixel-assertion', async () => {
@@ -651,7 +651,7 @@ const heldItemChecks = async (chromium, port) => {
 const adsAcquisitionMotionRecord = async () => {
   const r = globalThis.primaryActionTest;
   const { inventory, session } = r;
-  r.input.pitch = 0;
+  r.input.controls.pitch = 0;
   const rifle = inventory.create('rifle_assault');
   r.setHand(r.dominant, rifle);
   const scope = inventory.create('optic_fixed_prism_4x');
@@ -954,7 +954,7 @@ const lakeSurfaceCheck = (chromium, port) =>
           new Promise((done) => {
             body.pos = [x / s, (eyeAt - eye) / s, z / s];
             body.vel = [0, 0, 0];
-            r.input.pitch = pitch;
+            r.input.controls.pitch = pitch;
             const { held } = r.view;
             const { render } = held;
             let renders = 0;

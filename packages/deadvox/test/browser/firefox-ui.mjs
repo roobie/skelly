@@ -447,7 +447,7 @@ try {
   const avatarBeforeLook = await drawnAvatar();
   assert.ok(avatarBeforeLook.length > 0, 'the avatar draws');
   await page.evaluate(() => {
-    globalThis.firefoxUiTest.input.yaw += 1;
+    globalThis.firefoxUiTest.input.controls.yaw += 1;
   });
   assert.deepEqual(await drawnAvatar(), avatarBeforeLook, 'look input while detached must not turn the drawn avatar');
   await pressAction(page, 'debug.perception-labels-toggle');

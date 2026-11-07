@@ -251,7 +251,7 @@ try {
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
   await page.evaluate(() => {
-    globalThis.fullAutoRuntime.input.pitch = (-20 * Math.PI) / 180;
+    globalThis.fullAutoRuntime.input.controls.pitch = (-20 * Math.PI) / 180;
   });
   await page.waitForFunction(
     () =>
@@ -670,7 +670,7 @@ try {
         state.frame.yaw,
         state.frame.pitch,
       ].every(Number.isFinite),
-      pitch: input.pitch,
+      pitch: input.controls.pitch,
     };
   });
   assert.ok(recoilState.finite, 'the skill-zero burst keeps aim state finite');

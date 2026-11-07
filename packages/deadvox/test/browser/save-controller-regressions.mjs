@@ -468,7 +468,7 @@ try {
                 reached = true;
                 break;
               }
-              input.yaw = Math.atan2(-dx, -dz);
+              input.controls.yaw = Math.atan2(-dx, -dz);
               engine.streamer.update(session.body.pos[0], session.body.pos[2]);
               session.frame(1 / 60);
               observe();

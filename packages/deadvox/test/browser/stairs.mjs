@@ -495,8 +495,8 @@ try {
         session.body.pos = [...position];
         session.body.vel = [0, 0, 0];
         session.body.onGround = true;
-        input.yaw = yaw;
-        input.pitch = pitch;
+        input.controls.yaw = yaw;
+        input.controls.pitch = pitch;
         return shouldCaptureFrame ? engine.renderer.info.render.frame : null;
       },
       { position: fixturePosition, yaw: fixtureYaw, pitch: fixturePitch, captureFrame },
@@ -813,7 +813,7 @@ try {
       await stage([125, 43.0001, 118]);
       await waitForSkyFields([[62.5, 21.5, 59]]);
       await page.evaluate(() => {
-        globalThis.stairsWitness.input.pitch = -0.3;
+        globalThis.stairsWitness.input.controls.pitch = -0.3;
       });
       await waitForRenderedFrame();
       const outdoor = await shot('outdoor-normal', true);
@@ -852,7 +852,7 @@ try {
       );
       assert.equal(raisedCabinVisibility, 0, 'raised cabin field is resident at the atlas stage');
       await page.evaluate(() => {
-        globalThis.stairsWitness.input.pitch = Math.atan2(3.25, 7);
+        globalThis.stairsWitness.input.controls.pitch = Math.atan2(3.25, 7);
       });
       await waitForRenderedFrame();
       const secondWall = await shot('second-slot-wall-normal', true);
@@ -1073,8 +1073,8 @@ try {
       const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
       const dz = panel.pivot[2] - s * panel.center[0] + c * panel.center[2] - body.pos[2] * 0.5;
       const dy = panel.pivot[1] + panel.center[1] - (body.pos[1] * 0.5 + 1.62);
-      input.yaw = Math.atan2(-dx, -dz);
-      input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      input.controls.yaw = Math.atan2(-dx, -dz);
+      input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
     }, approach.uid);
     const started = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
     await pressAction(page, 'world.interact');
@@ -1092,8 +1092,8 @@ try {
   const walkTo = async (target, label) => {
     const start = await page.evaluate((destination) => {
       const { input, session, body } = globalThis.stairsWitness;
-      input.yaw = Math.atan2(-(destination[0] - body.pos[0]), -(destination[2] - body.pos[2]));
-      input.pitch = 0;
+      input.controls.yaw = Math.atan2(-(destination[0] - body.pos[0]), -(destination[2] - body.pos[2]));
+      input.controls.pitch = 0;
       return session.sim.time;
     }, target);
     const releaseForward = await holdAction(page, 'movement.forward');
@@ -1104,7 +1104,7 @@ try {
           const { body, session, input, engine } = globalThis.stairsWitness;
           const dx = destination[0] - body.pos[0];
           const dz = destination[2] - body.pos[2];
-          input.yaw = Math.atan2(-dx, -dz);
+          input.controls.yaw = Math.atan2(-dx, -dz);
           const distance = Math.hypot(dx, dz);
           const reached = distance < 0.5;
           const terminal = reached || session.sim.paused || session.sim.time - from >= seconds;
@@ -1118,7 +1118,7 @@ try {
           ];
           const playerSupport = supportCell(body.pos);
           const targetSupport = supportCell(destination);
-          const intent = input.intent();
+          const intent = input.controls.intent();
           return {
             time: session.sim.time,
             paused: session.sim.paused,
@@ -1132,7 +1132,7 @@ try {
               from: [body.pos[0], body.pos[2]],
               to: [destination[0], destination[2]],
               delta: [dx, dz],
-              yaw: input.yaw,
+              yaw: input.controls.yaw,
               forward: intent.forward,
               sprint: intent.sprint,
             },
@@ -1222,13 +1222,13 @@ try {
       const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
       const dz = panel.pivot[2] - s * panel.center[0] + c * panel.center[2] - body.pos[2] * 0.5;
       const dy = panel.pivot[1] + panel.center[1] - (body.pos[1] * 0.5 + 1.62);
-      input.yaw = Math.atan2(-dx, -dz);
-      input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      input.controls.yaw = Math.atan2(-dx, -dz);
+      input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
       return door.uid;
     });
     const releaseSprint = await holdAction(page, 'movement.sprint');
     try {
-      assert.equal(await page.evaluate(() => globalThis.stairsWitness.input.intent().sprint), true);
+      assert.equal(await page.evaluate(() => globalThis.stairsWitness.input.controls.intent().sprint), true);
       await pressAction(page, 'world.interact');
     } finally {
       await releaseSprint();
@@ -1255,8 +1255,8 @@ try {
       const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
       const dz = panel.pivot[2] - s * panel.center[0] + c * panel.center[2] - body.pos[2] * 0.5;
       const dy = panel.pivot[1] + panel.center[1] - (body.pos[1] * 0.5 + 1.62);
-      input.yaw = Math.atan2(-dx, -dz);
-      input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      input.controls.yaw = Math.atan2(-dx, -dz);
+      input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
     }, sprintDoor);
     await pressAction(page, 'world.interact');
     const doorValue = async (propertyName, expectedValue) => {
@@ -1408,8 +1408,8 @@ try {
     await walkTo([117, 51, 116], 'return through the open door to the stair hall');
     await walkTo([121, 51, 115], 'return to upper stair landing');
     await page.evaluate(() => {
-      globalThis.stairsWitness.input.yaw = -Math.PI / 2;
-      globalThis.stairsWitness.input.pitch = 0;
+      globalThis.stairsWitness.input.controls.yaw = -Math.PI / 2;
+      globalThis.stairsWitness.input.controls.pitch = 0;
     });
     await walk('movement.back', 112, false, 43);
     await state('house downstairs walked');

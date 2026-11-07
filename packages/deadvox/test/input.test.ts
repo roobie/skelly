@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ModelDef } from '../src/core/content.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
-import { Input, nextMenuCursor, requestInputLock } from '../src/game/input.ts';
 import { keyboardInput, shouldCancelInputForViewerFocus } from '../src/game/inputBindings.ts';
+import { Input, nextMenuCursor, requestInputLock } from '../src/presentation/input.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { createPlayerBody, PLAYER, steer } from './playerFixture.ts';
 

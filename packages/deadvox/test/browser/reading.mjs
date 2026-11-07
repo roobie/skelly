@@ -281,7 +281,7 @@ try {
     };
     // Spawn faces the showroom's newest slot; the route runs east along the path to the house door.
     await page.evaluate(() => {
-      globalThis.readingWitness.input.yaw = -Math.PI / 2;
+      globalThis.readingWitness.input.controls.yaw = -Math.PI / 2;
     });
     const startX = await page.evaluate(() => globalThis.readingWitness.body.pos[0]);
     await walk('movement.forward', startX + 10, true);
@@ -295,9 +295,16 @@ try {
           const at = entity.pos.map((value, axis) => value + entity.size[axis] / 2);
           const origin = eye();
           const [dx, dy, dz] = at.map((value, axis) => value - origin[axis]);
-          input.yaw = Math.atan2(-dx, -dz);
-          input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-          return { pos: entity.pos, size: entity.size, origin, aim: [dx, dy, dz], yaw: input.yaw, pitch: input.pitch };
+          input.controls.yaw = Math.atan2(-dx, -dz);
+          input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+          return {
+            pos: entity.pos,
+            size: entity.size,
+            origin,
+            aim: [dx, dy, dz],
+            yaw: input.controls.yaw,
+            pitch: input.controls.pitch,
+          };
         },
         { id: type, uid: targetUid },
       );
@@ -534,8 +541,8 @@ try {
     assert.equal(awakened.interruption, undefined);
     assert.equal(awakened.locksInput, false);
     await page.evaluate(() => {
-      globalThis.readingWitness.input.yaw = -Math.PI / 2;
-      globalThis.readingWitness.input.pitch = 0;
+      globalThis.readingWitness.input.controls.yaw = -Math.PI / 2;
+      globalThis.readingWitness.input.controls.pitch = 0;
     });
     // A walk ends when the stage releases the key, a wall-clock-dependent time after its condition holds, so it
     // overshoots. Stopping abreast of the crate keeps any overshoot inside use reach.
@@ -742,7 +749,7 @@ try {
         return {
           time: session.sim.time,
           position: [...body.pos],
-          walking: input.walking,
+          walking: input.controls.walking,
           uid: item.uid,
           count: item.count,
           open: reading.isOpen,
@@ -868,8 +875,8 @@ try {
     // Face along the clear lane before walking away, not at the crate the last aim chose: the walk's length
     // depends on when the stage releases the key, and the walk to the sign must start on the lane.
     await page.evaluate(() => {
-      globalThis.readingWitness.input.yaw = -Math.PI / 2;
-      globalThis.readingWitness.input.pitch = 0;
+      globalThis.readingWitness.input.controls.yaw = -Math.PI / 2;
+      globalThis.readingWitness.input.controls.pitch = 0;
     });
     const beforeMove = await page.evaluate(() => ({
       position: [...globalThis.readingWitness.body.pos],
@@ -1249,8 +1256,8 @@ try {
       }, index);
       if (index > 0) {
         await page.evaluate(() => {
-          globalThis.readingWitness.input.yaw = -Math.PI / 2;
-          globalThis.readingWitness.input.pitch = 0;
+          globalThis.readingWitness.input.controls.yaw = -Math.PI / 2;
+          globalThis.readingWitness.input.controls.pitch = 0;
         });
         await walk('movement.forward', source.x, true);
       }
@@ -1259,8 +1266,8 @@ try {
         const entity = engine.entities.byUid(uid);
         const origin = eye();
         const [dx, dy, dz] = entity.pos.map((value, axis) => value + entity.size[axis] / 2 - origin[axis]);
-        input.yaw = Math.atan2(-dx, -dz);
-        input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+        input.controls.yaw = Math.atan2(-dx, -dz);
+        input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
       }, source.uid);
       const aimed = await record('aim at sheet source');
       assert.equal(

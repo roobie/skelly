@@ -59,6 +59,7 @@ import { fillText as fillScreenText } from '../core/textTemplate.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
 import { GameAudio } from '../presentation/audio.ts';
 import type { Engine } from '../presentation/engine.ts';
+import { Input } from '../presentation/input.ts';
 import { realNow, startRealFrames } from '../presentation/realFrames.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { worldGrabProgress } from '../render/grabPose.ts';
@@ -137,7 +138,6 @@ import { observeRealFrame } from './frameDriver.ts';
 import { freeLookAllowsCommand, freeLookAllowsUse } from './freeLook.ts';
 import { FurnitureActionSelection, furnitureActionsFor } from './furnitureActions.ts';
 import { GuidedSteps } from './guidedSteps.ts';
-import { Input } from './input.ts';
 import {
   type InputCancellationReason,
   type InputCommand,

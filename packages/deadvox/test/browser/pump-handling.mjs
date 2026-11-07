@@ -300,7 +300,7 @@ try {
   const moveTo = async (waypoint) => {
     const { currentPosition, yaw } = await page.evaluate(({ axis }) => {
       const { input, session } = globalThis.pumpHandlingTest;
-      return { currentPosition: session.body.pos[axis], yaw: input.yaw };
+      return { currentPosition: session.body.pos[axis], yaw: input.controls.yaw };
     }, waypoint);
     const moveDirection = Math.sign(waypoint.target - currentPosition);
     if (!moveDirection) {
@@ -394,14 +394,14 @@ try {
   });
   const { lockerUid: routeLockerUid } = routeInputs;
   assert.ok(lockerRoute.waypoints.length > 0);
-  const wasWalking = await page.evaluate(() => globalThis.pumpHandlingTest.input.walking);
+  const wasWalking = await page.evaluate(() => globalThis.pumpHandlingTest.input.controls.walking);
   if (!wasWalking) {
     await pressAction(page, 'movement.walk-toggle');
-    await page.waitForFunction(() => globalThis.pumpHandlingTest.input.walking);
+    await page.waitForFunction(() => globalThis.pumpHandlingTest.input.controls.walking);
   }
   // Spawn faces the showroom's slots, off the route's axes; face east so each leg's key moves along one axis.
   await page.evaluate(() => {
-    globalThis.pumpHandlingTest.input.yaw = -Math.PI / 2;
+    globalThis.pumpHandlingTest.input.controls.yaw = -Math.PI / 2;
   });
   await page.evaluate(() => globalThis.pumpManualFrames.enable());
   let routeStop;
@@ -425,7 +425,7 @@ try {
   await page.evaluate(() => globalThis.pumpManualFrames.disable());
   if (!wasWalking) {
     await pressAction(page, 'movement.walk-toggle');
-    await page.waitForFunction(() => !globalThis.pumpHandlingTest.input.walking);
+    await page.waitForFunction(() => !globalThis.pumpHandlingTest.input.controls.walking);
   }
   assert.ok(routeStop, 'route settled at the rack-facing stop');
   const rackApproach = {
@@ -858,7 +858,7 @@ try {
         jobs: session.queue.jobs.length,
         rest: session.rest.action?.kind ?? null,
         fov: camera.fov,
-        ads: globalThis.pumpHandlingTest.input.aimingDownSights,
+        ads: globalThis.pumpHandlingTest.input.controls.aimingDownSights,
         paused: session.sim.paused,
         dead: session.sim.dead ?? null,
         sounds: globalThis.pumpHandlingTest.audio.heardSounds,

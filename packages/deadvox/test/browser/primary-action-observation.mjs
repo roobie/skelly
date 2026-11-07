@@ -111,7 +111,7 @@ export const observationPlugin = {
       });`;
     const playerTickMarker = '      pendingPlayerTickActions.applyAtNextTick();';
     const adsToggleMarker = `      case 'aim.ads-toggle':
-        input.toggleAimingDownSights(replayPlayer !== undefined);
+        input.controls.toggleAimingDownSights(replayPlayer !== undefined);
         break;`;
     assert(code.includes(marker), 'game-loop observation point exists');
     assert(code.includes(adsToggleMarker), 'ADS replay observation point exists');
@@ -140,10 +140,10 @@ export const observationPlugin = {
     observedCode = observedCode.replace(
       adsToggleMarker,
       `      case 'aim.ads-toggle': {
-        const before = input.aimingDownSights;
+        const before = input.controls.aimingDownSights;
         const replaying = replayPlayer !== undefined;
-        input.toggleAimingDownSights(replaying);
-        proof.adsToggleObservations.push({ before, after: input.aimingDownSights, replaying, locked: input.locked });
+        input.controls.toggleAimingDownSights(replaying);
+        proof.adsToggleObservations.push({ before, after: input.controls.aimingDownSights, replaying, locked: input.locked });
         break;
       }`,
     );

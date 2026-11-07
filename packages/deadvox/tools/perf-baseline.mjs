@@ -28,8 +28,8 @@ async function captureLook(page, directory, { route, mode, repeat }) {
       'cam',
       [
         ...perf.session.body.pos.map((value) => value * config.scale.blockSize),
-        (perf.input.yaw * 180) / Math.PI,
-        (perf.input.pitch * 180) / Math.PI,
+        (perf.input.controls.yaw * 180) / Math.PI,
+        (perf.input.controls.pitch * 180) / Math.PI,
         0,
       ].join(','),
     );
@@ -219,7 +219,7 @@ try {
             }
             perf.session.body.pos[1] += (workload.liftMetres ?? 0) / perf.engine.config.scale.blockSize;
           }
-          const { yaw } = perf.input;
+          const { yaw } = perf.input.controls;
           let frame = 0;
           perf.resetPath = () => {
             frame = 0;
@@ -229,7 +229,7 @@ try {
               perf.debug.handleAction('debug.freeze-game');
             }
             if (workload.driver === 'orbit') {
-              perf.input.yaw =
+              perf.input.controls.yaw =
                 yaw +
                 ((workload.yawAmplitudeDegrees * Math.PI) / 180) *
                   Math.sin((2 * Math.PI * workload.yawCycles * frame) / sampling.sampleFrames);
