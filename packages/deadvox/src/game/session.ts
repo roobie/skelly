@@ -1307,7 +1307,8 @@ export const createSession = (options: SessionOptions) => {
     const { yaw, pitch } = sampledInput();
     return { yaw, pitch };
   };
-  const playerLookDirection = (look: PlayerLook = playerLook()): Vec3 => aimDirection(look.yaw, look.pitch, NEUTRAL_AIM);
+  const playerLookDirection = (look: PlayerLook = playerLook()): Vec3 =>
+    aimDirection(look.yaw, look.pitch, NEUTRAL_AIM);
   /** The eye the simulation aims and picks from; the drawn view's ADS blend never moves it. */
   const playerEye = (look: PlayerLook = playerLook()): Vec3 =>
     playerEyePosition({
