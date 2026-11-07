@@ -119,6 +119,7 @@ import { createRefusalPresenter, handlingMoveCompleteCue, handlingMoveStartCue }
 import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
 import { openingTargetForHand } from './canOpening.ts';
 import { columnArrival } from './columnArrival.ts';
+import { createCommandRouter } from './commandRouter.ts';
 import { continueActionResumesJob } from './continueAction.ts';
 import { CrouchProneInput, dispatchReplayStanceAction, type StanceReplayAction } from './crouchProneInput.ts';
 import { DebugGunPose } from './debugGunPose.ts';
@@ -133,7 +134,6 @@ import { debugTargetRay } from './debugTargetRay.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
-import { FirearmTrigger } from './firearmTrigger.ts';
 import { observeRealFrame } from './frameDriver.ts';
 import { freeLookAllowsCommand, freeLookAllowsUse } from './freeLook.ts';
 import { FurnitureActionSelection, furnitureActionsFor } from './furnitureActions.ts';
@@ -156,7 +156,7 @@ import {
   stashInputReplay,
   withReplayExportGuard,
 } from './inputReplay.ts';
-import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from './inputReplayActions.ts';
+import { createReplayPlayStateBinding, toggleWalking } from './inputReplayActions.ts';
 import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample } from './inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import type { ItemAction } from './itemActions.ts';
@@ -171,8 +171,7 @@ import {
 } from './melee.ts';
 import { routeModalCommand } from './modalCommand.ts';
 import { OpticZoom } from './opticZoom.ts';
-import { type MoveIntent, playerTuning } from './player.ts';
-import { adjustLookPitch } from './playerControls.ts';
+import { playerTuning } from './player.ts';
 import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
 import { bleedingStatusRows } from './playStatus.ts';
 import { createAttemptRecording, type PlaytestObserver } from './playtestObserver.ts';
@@ -794,7 +793,6 @@ export const startPlay = (
 
   let playtestObserver: PlaytestObserver | undefined;
   let debugLaserEnabled = true;
-  const firearmTrigger = new FirearmTrigger();
   const inputRecording: InputRecording = { recorder: undefined, previous: undefined, stoppedReason: undefined };
   let replaySample: ReplayControlSample | undefined;
   let dispatchReplayAction: (action: ReplayAction, sample: ReplayControlSample) => void = () => undefined;
@@ -825,60 +823,42 @@ export const startPlay = (
     replaySample = replayInput.recordedSample;
     return replayInput.input;
   };
-  let automaticFireUid: number | undefined;
-  const automaticFireWeapon = (): Item | undefined => {
-    if (debugTools?.buildOn || queue.busy) {
-      return undefined;
-    }
-    const action = selectPrimaryAction(inventory);
-    if (
-      throwingStance ||
-      action.kind !== 'firearm' ||
-      action.item.firearm?.cylinder ||
-      !firearmHandlingFor(action.item, registry).action.fire
-    ) {
-      return undefined;
-    }
-    return action.item;
-  };
-  const updateAutomaticFireUid = (automaticItem: Item | undefined, pressed: boolean): void => {
-    if (pressed) {
-      automaticFireUid =
-        automaticItem && isFirearmReady(automaticItem.uid) && !session.sprinting ? automaticItem.uid : undefined;
-    }
-  };
-  const readyAutomaticWeapon = (automaticItem: Item | undefined): Item | undefined =>
-    automaticItem && automaticItem.uid === automaticFireUid && isFirearmReady(automaticItem.uid) && !session.sprinting
-      ? automaticItem
-      : undefined;
-  const advanceAutomaticTrigger = (time: number, pressed: boolean, triggerHeld: boolean, weapon?: Item): void => {
-    const acceptedPress = pressed && weapon !== undefined;
-    const deadlines = firearmTrigger.advance(
-      time,
-      triggerWeapon(weapon, acceptedPress),
-      acceptedPress,
-      triggerHeld && automaticFireUid !== undefined,
-    );
-    if (weapon) {
-      for (const deadline of deadlines) {
-        fireWeapon(weapon, deadline);
-      }
-    }
-  };
-  const handleHeldDominantUse = (time: number, pressed: boolean, triggerHeld: boolean): void => {
-    const automaticItem = automaticFireWeapon();
-    updateAutomaticFireUid(automaticItem, pressed);
-    advanceAutomaticTrigger(time, pressed, triggerHeld, readyAutomaticWeapon(automaticItem));
-    if (!triggerHeld) {
-      automaticFireUid = undefined;
-    }
-  };
   const spectator = new SpectatorCamera();
   const debugGunPose = new DebugGunPose(config.debug);
   let thirdPersonViewEnabled = false;
   const thirdPersonOrbit = new ThirdPersonOrbit();
   let backquoteGesture: BackquoteOrbitGesture | undefined;
   let perceptionLabelsEnabled = false;
+  const router = createCommandRouter({
+    controls: input.controls,
+    registry,
+    inventory: () => inventory,
+    sim: () => sim,
+    presentation: { refusal: (reason, atSimSeconds) => showRefusal(reason, atSimSeconds) },
+    active: () => worldLoading.ready && (Boolean(options.replay) || (input.locked && !input.menuPointer)),
+    sampleAtPlayerTick: samplePlayerInput,
+    replaySample: () => replaySample,
+    setReplaySample: (sample) => {
+      replaySample = sample;
+    },
+    firearmReady: (uid) => isFirearmReady(uid),
+    aimingDownSights: () => debugGunPose.aimingDownSights(input.controls.aimingDownSights) && isAimingDownSights(),
+    blocking: () => shouldPlayerBlock(),
+    buildMode: () => Boolean(debugTools?.buildOn),
+    handlingBusy: () => queue.busy,
+    sprinting: () => session.sprinting,
+    throwingStance: () => throwingStance,
+    beginItemThrow,
+    // Temporary until the item-throw path moves into the router (4b-3).
+    releaseItemThrow,
+    performHandUse: (hand) => performHandUse(hand),
+    advanceHeldStrip: (uid, time, held) => magazines.advanceHeldStrip(uid, time, held),
+    selectedMagazineAction: (item) => survival.selectedItemAction(item)?.magazine,
+    firearmShotInput: (uid, atSimSeconds) => session.firearmShotInput(uid, atSimSeconds),
+    fire: (shot) => firearms.fire(shot),
+    fireReason: (uid) => firearms.fireReason(uid),
+    descending: () => keyboardInput.held('noclip.descend'),
+  });
   const session = createSession({
     registry,
     scenario: engine.scenario,
@@ -906,93 +886,7 @@ export const startPlay = (
     ...(options.restore ? { restore: options.restore } : {}),
     ready: (x, z) => streamer.isReady(x, z),
     actorReady: (x, z) => replayPlayer?.isReady(x, z) ?? streamer.isReady(x, z),
-    controls: debugGunPose.guard(
-      spectator.guard({
-        active: () => worldLoading.ready && (Boolean(options.replay) || (input.locked && !input.menuPointer)),
-        intent: (): MoveIntent => input.controls.intent(),
-        sampleAtPlayerTick: samplePlayerInput,
-        freeLooking: () => input.controls.freeLooking,
-        readyHeld: () => input.controls.rightMouseHeld,
-        firearmReady: (uid) => isFirearmReady(uid),
-        aimingDownSights: () => debugGunPose.aimingDownSights(input.controls.aimingDownSights) && isAimingDownSights(),
-        blocking: () => shouldPlayerBlock(),
-        consumeDominantUse: () => input.controls.consumeDominantUse(),
-        consumeOffUse: () => input.controls.consumeOffUse(),
-        consumeStanceToggle: () => input.controls.consumeStanceToggle(),
-        useDominant: () =>
-          routeDominantUse(throwingStance, beginItemThrow, () => {
-            // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
-            const action = selectPrimaryAction(inventory);
-            if (
-              !(
-                debugTools?.buildOn ||
-                (action.kind === 'firearm' &&
-                  !action.item.firearm?.cylinder &&
-                  firearmHandlingFor(action.item, registry).action.fire !== undefined)
-              )
-            ) {
-              performHandUse(dominantSide(inventory.character));
-            }
-          }),
-        heldDominantUse: (time, pressed, triggerHeld) => {
-          if (throwingStance) {
-            magazines.advanceHeldStrip(undefined, time, false);
-            if (!triggerHeld) {
-              releaseItemThrow();
-            }
-            return;
-          }
-          if (sim.body.actionRefusal) {
-            magazines.advanceHeldStrip(undefined, time, false);
-            firearmTrigger.advance(time, undefined, pressed, triggerHeld);
-            if (pressed) {
-              showRefusal(sim.body.actionRefusal, sim.time);
-            }
-            return;
-          }
-          handleHeldDominantUse(time, pressed, triggerHeld);
-          const action = selectPrimaryAction(inventory);
-          if (!freeLookAllowsUse(input.controls.freeLooking, action.kind)) {
-            magazines.advanceHeldStrip(undefined, time, false);
-            return;
-          }
-          const stripUid =
-            action.kind === 'magazine' && survival.selectedItemAction(action.item)?.magazine === 'strip'
-              ? action.item.uid
-              : undefined;
-          refusalReason(magazines.advanceHeldStrip(stripUid, time, triggerHeld));
-        },
-        automaticFireHeld: () => {
-          const weapon = automaticFireWeapon();
-          return Boolean(
-            (replaySample?.intent.useDominantHeld ?? input.controls.dominantUseHeld) &&
-              !sim.body.actionRefusal &&
-              weapon &&
-              automaticFireUid === weapon.uid &&
-              isFirearmReady(weapon.uid) &&
-              !session.sprinting,
-          );
-        },
-        adjustPitch: (delta) => {
-          if (!replaySample) {
-            return input.controls.adjustPitch(delta);
-          }
-          const adjusted = adjustLookPitch(replaySample.pitch, delta);
-          replaySample = { ...replaySample, pitch: adjusted.pitch };
-          applyReplayLook(input.controls, replaySample);
-          return adjusted.applied;
-        },
-        useOff: () => {
-          if (!debugTools?.buildOn) {
-            performHandUse(offSide(inventory.character));
-          }
-        },
-        yaw: () => input.controls.yaw,
-        pitch: () => input.controls.pitch,
-        walking: () => input.controls.walking,
-        descending: () => keyboardInput.held('noclip.descend'),
-      }),
-    ),
+    controls: debugGunPose.guard(spectator.guard(router.controls)),
     // The session works in blocks; playback is in metres.
     audio: {
       play: playSessionSound,
@@ -2960,7 +2854,7 @@ export const startPlay = (
       return;
     }
     throwingStance = !throwingStance;
-    automaticFireUid = undefined;
+    router.clearAutomaticFire();
     if (!replayPlayer) {
       inputRecording.recorder?.queueAction('throw.stance.toggle', 'down', inputContext(), { inSnapshot: true });
     }
@@ -3314,29 +3208,6 @@ export const startPlay = (
     }
   };
 
-  const fireWeapon = (item: Item, time: number): boolean => {
-    const shot = session.firearmShotInput(item.uid, time);
-    return shot !== undefined && firearms.fire(shot);
-  };
-
-  const triggerWeapon = (weapon: Item | undefined, pressed: boolean) => {
-    if (!weapon) {
-      return;
-    }
-    const reason = firearms.fireReason(weapon.uid);
-    if (reason) {
-      if (pressed) {
-        fireWeapon(weapon, sim.time);
-        showRefusal(reason, sim.time);
-      }
-      return;
-    }
-    const { roundsPerSimSecond, action } = firearmHandlingFor(weapon, registry);
-    return roundsPerSimSecond === undefined
-      ? undefined
-      : { uid: weapon.uid, roundsPerSimSecond, triggerMode: action.triggerMode };
-  };
-
   const refusalReason = (reason: string | undefined): void => {
     if (reason) {
       showRefusal(reason, sim.time);
@@ -3385,7 +3256,7 @@ export const startPlay = (
     showRefusal(primaryActionHint(registry, item), sim.time);
   };
   const fireHeldItem = (item: Item): void => {
-    if (!isFirearmReady(item.uid) || session.sprinting || fireWeapon(item, sim.time)) {
+    if (!isFirearmReady(item.uid) || session.sprinting || router.fireWeapon(item, sim.time)) {
       return;
     }
     showRefusal(firearms.fireReason(item.uid) ?? lines.play.gunNotReady, sim.time);
