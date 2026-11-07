@@ -88,7 +88,8 @@ describe('runtime closure, stage 1', () => {
     );
     const aliases = Object.entries(STAGE_ONE_POLICY.aliases).map(([prefix, dir]) => [prefix, join(repoRoot, dir)]);
     expect(loaded?.config.resolve).toEqual({ alias: Object.fromEntries(aliases) });
-    const hooks = (loaded?.config.plugins ?? [])
+    const plugins: unknown[] = [...(loaded?.config.plugins ?? [])];
+    const hooks = plugins
       .flat(Number.POSITIVE_INFINITY)
       .flatMap((plugin) => (plugin && typeof plugin === 'object' ? Object.keys(plugin) : []));
     expect(hooks.filter((hook) => ['config', 'configEnvironment', 'resolveId'].includes(hook))).toEqual([]);

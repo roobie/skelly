@@ -228,7 +228,7 @@ function unsupportedTsconfig(
     ...Object.keys(config).filter((key) => !TSCONFIG_KEYS.has(key)),
     ...Object.keys(options).filter((key) => !COMPILER_OPTIONS.has(key)),
   ];
-  // The policy aliases must be the only path mappings, each `p/` → `dir/` spelled `p/*` → `<dir from here>/*`.
+  // The policy aliases must be the only path mappings, each prefix mapped to its directory relative to the tsconfig.
   const paths = JSON.stringify(options.paths ?? {});
   const expected = JSON.stringify(
     Object.fromEntries(
