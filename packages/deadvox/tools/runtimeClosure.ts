@@ -1,3 +1,5 @@
+// The runtime closure check catches honest edits that let the runtime reach presentation code; the routes
+// it accepts or never sees are in `packages/deadvox/docs/runtime-closure-limits.md`, "Not checked".
 // biome-ignore lint/correctness/noNodejsModules: This check reads the source tree in Node.js.
 import { existsSync, globSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
 // biome-ignore lint/correctness/noNodejsModules: This check reads the source tree in Node.js.

@@ -1,8 +1,9 @@
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadConfigFromFile } from 'vite';
+import { isDeepStrictEqual } from 'node:util';
+import { loadConfigFromFile, type UserConfig } from 'vite';
 import { describe, expect, it } from 'vitest';
 import { runtimeClosureViolations, STAGE_ONE_POLICY } from '../tools/runtimeClosure.ts';
 
@@ -62,6 +63,40 @@ function violationsIn(changes: Tree, links: Tree = {}) {
   }
 }
 
+const viteRoot = join(repoRoot, STAGE_ONE_POLICY.viteRoot);
+const policyAliases = Object.fromEntries(
+  Object.entries(STAGE_ONE_POLICY.aliases).map(([prefix, dir]) => [prefix, join(repoRoot, dir)]),
+);
+const resolutionHooks = new Set(['config', 'configEnvironment', 'resolveId']);
+
+/** Vite awaits and flattens the plugin option; so does the gate before it reads hooks. */
+async function settledPlugins(option: unknown): Promise<unknown[]> {
+  const settled = await option;
+  return Array.isArray(settled) ? (await Promise.all(settled.map(settledPlugins))).flat() : [settled];
+}
+
+/**
+ * What in a loaded Vite config could resolve differently from the closure check: resolution options other
+ * than the policy aliases, a root other than the policy root (it anchors `/` specifiers and globs), or a
+ * plugin hook that edits config or resolves ids. See `packages/deadvox/docs/runtime-closure-limits.md`.
+ */
+async function viteGateIssues(config: UserConfig): Promise<string[]> {
+  const issues: string[] = [];
+  if (!isDeepStrictEqual(config.resolve, { alias: policyAliases })) {
+    issues.push('resolve');
+  }
+  // An absent root is the working directory, which the package's scripts set to the policy root.
+  if (config.root !== undefined && resolve(viteRoot, config.root) !== viteRoot) {
+    issues.push('root');
+  }
+  for (const plugin of await settledPlugins(config.plugins ?? [])) {
+    if (plugin && typeof plugin === 'object') {
+      issues.push(...Object.keys(plugin).filter((hook) => resolutionHooks.has(hook)));
+    }
+  }
+  return issues;
+}
+
 const importers = (violations: ReturnType<typeof violationsIn>) => violations.map((v) => v.importer);
 const catalog = 'packages/deadvox/src/core/catalog.ts';
 // Literal file names that Vite's matcher reaches through syntax Node's globSync reads differently.
@@ -76,23 +111,24 @@ describe('runtime closure, stage 1', () => {
     expect(runtimeClosureViolations(repoRoot, STAGE_ONE_POLICY)).toEqual([]);
   });
 
-  // The loaded config is checked, not the file's text: the file computes its alias target, and a plugin's
-  // config or resolveId hook could change resolution, so the test also requires there be none.
+  // The loaded config is checked, not the file's text: the file computes its alias target.
   it('runs on a Vite config whose resolution adds only the policy aliases', async () => {
-    const projectRoot = join(repoRoot, STAGE_ONE_POLICY.viteRoot);
     const loaded = await loadConfigFromFile(
       { command: 'build', mode: 'production' },
-      join(projectRoot, 'vite.config.ts'),
-      projectRoot,
+      join(viteRoot, 'vite.config.ts'),
+      viteRoot,
       'silent',
     );
-    const aliases = Object.entries(STAGE_ONE_POLICY.aliases).map(([prefix, dir]) => [prefix, join(repoRoot, dir)]);
-    expect(loaded?.config.resolve).toEqual({ alias: Object.fromEntries(aliases) });
-    const plugins: unknown[] = [...(loaded?.config.plugins ?? [])];
-    const hooks = plugins
-      .flat(Number.POSITIVE_INFINITY)
-      .flatMap((plugin) => (plugin && typeof plugin === 'object' ? Object.keys(plugin) : []));
-    expect(hooks.filter((hook) => ['config', 'configEnvironment', 'resolveId'].includes(hook))).toEqual([]);
+    expect(loaded).not.toBeNull();
+    expect(await viteGateIssues(loaded?.config ?? {})).toEqual([]);
+  });
+
+  it('fails a Vite config whose root is not the policy root, and one whose promised plugin resolves ids', async () => {
+    const policyConfig: UserConfig = { resolve: { alias: policyAliases } };
+    expect(await viteGateIssues({ ...policyConfig, root: '.' })).toEqual([]);
+    expect(await viteGateIssues({ ...policyConfig, root: 'src/render' })).toEqual(['root']);
+    const redirect = { name: 'redirect', resolveId: () => null };
+    expect(await viteGateIssues({ ...policyConfig, plugins: [Promise.resolve([redirect])] })).toEqual(['resolveId']);
   });
 
   it('passes the clean fixture, so each witness fails for its own edge', () => {

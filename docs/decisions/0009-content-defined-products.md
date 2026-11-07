@@ -251,7 +251,9 @@ are in `packages/construct/README.md`, "Name".
 Runtime code (`packages/deadvox/src/core`, `packages/deadvox/src/vehicles`,
 `packages/deadvox/src/game` and the shared libraries it follows) never imports presentation, render or UI code, not even for
 types, because the presentation side moves out of the runtime package whole. See
-`packages/deadvox/tools/runtimeClosure.ts`, `STAGE_ONE_POLICY`.
+`packages/deadvox/tools/runtimeClosure.ts`, `STAGE_ONE_POLICY`. The check guards honest
+edits, not deliberate bypasses; what it does not check is in
+`packages/deadvox/docs/runtime-closure-limits.md`, "Not checked".
 
 The #1532 gate is closure or merge of every PR in its frozen in-flight set: #1531,
 #1529, #1528, #1527, #1526, #1524, #1520, #1509, #1503, #1496, #1493, #1488, #1477,
