@@ -174,10 +174,11 @@ import {
 } from './player.ts';
 import { Quickbar } from './quickbar.ts';
 import { RestController } from './rest.ts';
+import { Sharpening } from './sharpening.ts';
 import { ACTIVE_ACTOR_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
 import { ThrowCharge } from './throwCharge.ts';
-import { UNPACK_ACTION } from './unpacking.ts';
+import { UNPACK_ACTION, Unpacking } from './unpacking.ts';
 
 export const PHYSICS_RATE = 60;
 export const HANDLING_RATE = 20;
@@ -529,6 +530,10 @@ export interface SessionOptions {
   onDischarge?: (item: Item, sighted: boolean) => void;
   onCompletedSwing?: (isFist: boolean) => void;
   onBatterySwapped?: ((lightType: string) => void) | undefined;
+  /** An unpack opened a container in place; called with the container's type. */
+  onOpened?: ((type: string) => void) | undefined;
+  /** An unpack delivered its contents; called with their item type. */
+  onUnpacked?: ((type: string) => void) | undefined;
   /** Output only, called after the simulation has committed the case transition. */
   onFirearmEjection?: (effect: FirearmShotEffect) => void;
   /** Output only, after the simulation inserts an ejected item into its landing pile. */
@@ -1217,6 +1222,16 @@ export const createSession = (options: SessionOptions) => {
       const book = item && registry.items.get(item.type)?.book;
       return Boolean(book?.recipes.every((recipe) => character.knownRecipes.has(recipe)));
     },
+  });
+  const unpacking = new Unpacking(inventory, queue, feet, {
+    calendar: () => sim.calendar,
+    opened: (type) => options.onOpened?.(type),
+    unpacked: (type) => options.onUnpacked?.(type),
+  });
+  const sharpening = new Sharpening(inventory, queue, {
+    character,
+    reach: () => reach(),
+    clockRatio: sim.clock.ratio,
   });
   sim.actions.craft = craftActionHooks(inventory, character, reach, { feet, calendar: () => sim.calendar });
   sim.actions.reading = bookReadingHooks(inventory, character, () => readingLight());
@@ -2738,6 +2753,8 @@ export const createSession = (options: SessionOptions) => {
       queueDownedBody({ queue, player: reachPlayer, actors: actorSystem }, id, way),
     crafting: new CraftCommands({ inventory, character, sim, queue, reach }),
     survival,
+    unpacking,
+    sharpening,
     rest,
     actors: actorSystem,
     playerCombat,

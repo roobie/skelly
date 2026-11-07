@@ -47,7 +47,6 @@ import {
 } from '../src/game/replayCommands.ts';
 import { PHYSICS_RATE } from '../src/game/session.ts';
 import { createSimulationStepper, type InputRecording } from '../src/game/simulationStepper.ts';
-import { Unpacking } from '../src/game/unpacking.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { rifleAmmunition } from './rifleFixture.ts';
 import {
@@ -1877,8 +1876,7 @@ describe('input replay', () => {
       if (!held) {
         throw new Error('Replay unpack fixture lost its held box');
       }
-      const unpacking = new Unpacking(runtime.inventory, runtime.handling, () => runtime.player.body.pos);
-      const refusal = unpacking.activate(held);
+      const refusal = runtime.session.unpacking.activate(held);
       if (refusal) {
         throw new Error(`Replay unpack was refused: ${refusal}`);
       }

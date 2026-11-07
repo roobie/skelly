@@ -1,5 +1,6 @@
 // Routes the player's controls into the simulation: bound input commands and what a replay records of them, the
-// session controls and trigger at the player tick, replayed actions, screen commands, furniture use and the item throw.
+// session controls and trigger at the player tick, replayed actions, screen commands, furniture use and the item throw,
+// with the firearm and melee readiness gate those read.
 
 import { actionText, fillText } from '../core/actionText.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
@@ -23,15 +24,18 @@ import type { Simulation } from '../core/sim.ts';
 import { fillText as fillScreenText } from '../core/textTemplate.ts';
 import { continueActionResumesJob } from './continueAction.ts';
 import { dispatchReplayStanceAction, type StanceReplayAction } from './crouchProneInput.ts';
+import type { DebugGunPose } from './debugGunPose.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import { type FirearmShotInput, firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { freeLookAllowsCommand, freeLookAllowsUse } from './freeLook.ts';
 import { furnitureActionsFor } from './furnitureActions.ts';
+import { createHandUse, type HandUse, type InteractionPickWorld } from './handUse.ts';
 import type { InputReplayRecorder, ReplayAction, ReplayControlSample } from './inputReplay.ts';
 import { routeDominantUse, toggleWalking } from './inputReplayActions.ts';
 import { applyReplayLook } from './inputReplayPlayer.ts';
 import type { ItemAction } from './itemActions.ts';
+import { shouldEnterMeleeGuard } from './melee.ts';
 import type { MoveIntent } from './player.ts';
 import { adjustLookPitch, type PlayerControls } from './playerControls.ts';
 import { applyToHeldItem, type PlayerTickActions } from './playerTickActions.ts';
@@ -160,9 +164,8 @@ export interface CommandRouterPorts {
   pendingPlayerTickActions: Pick<PlayerTickActions, 'enqueue'>;
   /** Applies a screen command now, or records it and applies it at the next player tick. */
   dispatchScreenCommand: (payload: ReplayActionPayload) => string | undefined;
-  firearmReady: (uid: number) => boolean;
-  aimingDownSights: () => boolean;
-  blocking: () => boolean;
+  /** The debug gun pose's latch; outside debug it passes the live input through. */
+  gunPose: Pick<DebugGunPose, 'active' | 'readyHeld' | 'aimingDownSights'>;
   /** The debug block editor owns canvas clicks. */
   buildMode: () => boolean;
   handlingBusy: () => boolean;
@@ -172,7 +175,7 @@ export interface CommandRouterPorts {
   scale: { readonly blockSize: number; readonly minCy: number };
   eye: () => Vec3;
   lookDir: () => Vec3;
-  performHandUse: (hand: 'right' | 'left') => void;
+  pick: InteractionPickWorld;
   advanceHeldStrip: (uid: number | undefined, atSimSeconds: number, held: boolean) => string | undefined;
   selectedMagazineAction: (item: Item) => string | undefined;
   firearmShotInput: (uid: number, atSimSeconds: number) => FirearmShotInput | undefined;
@@ -217,6 +220,22 @@ export interface CommandRouter {
   reloadBinding: () => ReloadBinding | undefined;
   /** Sets a held bar across the door or lifts the bar off it, from the side the player stands on. */
   enqueueDoorBar: (entity: BlockEntity, barring: boolean) => string | undefined;
+  /** The held item's primary use in this hand, as the player tick runs it. */
+  performHandUse: HandUse['perform'];
+  interactionTargetAt: HandUse['interactionTargetAt'];
+  lookedAt: HandUse['lookedAt'];
+  refusePrimaryUseWhileHandling: HandUse['refusePrimaryUseWhileHandling'];
+  meleeSelection: HandUse['meleeSelection'];
+  /** The firearm and melee readiness gate the simulation reads; presentation reads it too. */
+  readiness: ReadinessGate;
+}
+
+/** Whether the raised gun may fire or aim and whether the player blocks, from the input that reaches the world. */
+interface ReadinessGate {
+  hasGunPoseInput: () => boolean;
+  isFirearmReady: (uid: number) => boolean;
+  isAimingDownSights: () => boolean;
+  shouldPlayerBlock: () => boolean;
 }
 
 export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
@@ -231,6 +250,52 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       presentation.refusal(reason, ports.sim().time);
     }
   };
+
+  // ---- readiness gate ----
+
+  const { gunPose } = ports;
+  const hasActiveFirearmInput = (): boolean => {
+    const replaySample = ports.replaySample();
+    return ports.replaying()
+      ? replaySample?.active === true && !replaySample.inputLocked
+      : ports.pointerLocked() && !ports.menuPointer();
+  };
+  const hasGunPoseInput = (): boolean => gunPose.active || hasActiveFirearmInput();
+  const isFirearmReady = (uid: number): boolean =>
+    gunPose.readyHeld(controls.rightMouseActionHeld) &&
+    hasGunPoseInput() &&
+    !ports.session().sim.compression.locksInput &&
+    ports.session().firearms.isReady(uid);
+  const isAimingDownSights = (): boolean => {
+    const action = selectPrimaryAction(ports.inventory());
+    return (
+      gunPose.aimingDownSights(controls.aimingDownSights) &&
+      gunPose.readyHeld(controls.rightMouseActionHeld) &&
+      hasGunPoseInput() &&
+      action.kind === 'firearm' &&
+      isFirearmReady(action.item.uid) &&
+      !ports.sprinting()
+    );
+  };
+  controls.setAimingDownSightsAllowed(() => {
+    const action = selectPrimaryAction(ports.inventory());
+    return action.kind === 'firearm' && isFirearmReady(action.item.uid) && !ports.sprinting();
+  });
+  const meleeReadiness = (meleeWeaponHeld: boolean, emptyHand?: HandSide) => ({
+    rightMouseHeld: controls.rightMouseActionHeld && ports.pointerLocked() && !ports.menuPointer(),
+    meleeWeaponHeld,
+    handsEmpty:
+      emptyHand === undefined
+        ? !(ports.inventory().hands.right || ports.inventory().hands.left)
+        : !ports.inventory().hands[emptyHand],
+    debugBuild: ports.buildMode(),
+    inputLocked: ports.session().sim.compression.locksInput,
+  });
+  const shouldPlayerBlock = (): boolean => {
+    const action = selectPrimaryAction(ports.inventory());
+    return shouldEnterMeleeGuard({ ...meleeReadiness(false), firearmHeld: action.kind === 'firearm' });
+  };
+
   const fireWeapon = (item: Item, atSimSeconds: number): boolean => {
     const shot = ports.firearmShotInput(item.uid, atSimSeconds);
     return shot !== undefined && ports.fire(shot);
@@ -270,14 +335,11 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
   const updateAutomaticFireUid = (automaticItem: Item | undefined, pressed: boolean): void => {
     if (pressed) {
       automaticFireUid =
-        automaticItem && ports.firearmReady(automaticItem.uid) && !ports.sprinting() ? automaticItem.uid : undefined;
+        automaticItem && isFirearmReady(automaticItem.uid) && !ports.sprinting() ? automaticItem.uid : undefined;
     }
   };
   const readyAutomaticWeapon = (automaticItem: Item | undefined): Item | undefined =>
-    automaticItem &&
-    automaticItem.uid === automaticFireUid &&
-    ports.firearmReady(automaticItem.uid) &&
-    !ports.sprinting()
+    automaticItem && automaticItem.uid === automaticFireUid && isFirearmReady(automaticItem.uid) && !ports.sprinting()
       ? automaticItem
       : undefined;
   const advanceAutomaticTrigger = (
@@ -1204,15 +1266,35 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
 
   // ---- player tick ----
 
+  const handUse = createHandUse({
+    registry,
+    controls,
+    session: ports.session,
+    inventory: ports.inventory,
+    sim: ports.sim,
+    replaySample: ports.replaySample,
+    refusal: presentation.refusal,
+    notice: presentation.notice,
+    blockSize: ports.scale.blockSize,
+    eye: ports.eye,
+    lookDir: ports.lookDir,
+    pick: ports.pick,
+    firearmReady: isFirearmReady,
+    sprinting: ports.sprinting,
+    meleeReadiness,
+    fireWeapon,
+    enqueueDoorBar,
+    dispatchScreenCommand: ports.dispatchScreenCommand,
+  });
   const sessionControls: SessionControls = {
     active: () => ports.active(),
     intent: (): MoveIntent => controls.intent(),
     sampleAtPlayerTick: ports.sampleAtPlayerTick,
     freeLooking: () => controls.freeLooking,
     readyHeld: () => controls.rightMouseHeld,
-    firearmReady: (uid) => ports.firearmReady(uid),
-    aimingDownSights: () => ports.aimingDownSights(),
-    blocking: () => ports.blocking(),
+    firearmReady: (uid) => isFirearmReady(uid),
+    aimingDownSights: () => gunPose.aimingDownSights(controls.aimingDownSights) && isAimingDownSights(),
+    blocking: () => shouldPlayerBlock(),
     consumeDominantUse: () => controls.consumeDominantUse(),
     consumeOffUse: () => controls.consumeOffUse(),
     consumeStanceToggle: () => controls.consumeStanceToggle(),
@@ -1228,7 +1310,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
               firearmHandlingFor(action.item, registry).action.fire !== undefined)
           )
         ) {
-          ports.performHandUse(dominantSide(ports.inventory().character));
+          handUse.perform(dominantSide(ports.inventory().character));
         }
       }),
     heldDominantUse: (atSimSeconds, pressed, triggerHeld) => {
@@ -1267,7 +1349,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
           !ports.sim().body.actionRefusal &&
           weapon &&
           automaticFireUid === weapon.uid &&
-          ports.firearmReady(weapon.uid) &&
+          isFirearmReady(weapon.uid) &&
           !ports.sprinting(),
       );
     },
@@ -1284,7 +1366,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     },
     useOff: () => {
       if (!ports.buildMode()) {
-        ports.performHandUse(offSide(ports.inventory().character));
+        handUse.perform(offSide(ports.inventory().character));
       }
     },
     yaw: () => controls.yaw,
@@ -1320,5 +1402,11 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     compress,
     reloadBinding,
     enqueueDoorBar,
+    performHandUse: handUse.perform,
+    interactionTargetAt: handUse.interactionTargetAt,
+    lookedAt: handUse.lookedAt,
+    refusePrimaryUseWhileHandling: handUse.refusePrimaryUseWhileHandling,
+    meleeSelection: handUse.meleeSelection,
+    readiness: { hasGunPoseInput, isFirearmReady, isAimingDownSights, shouldPlayerBlock },
   };
 }

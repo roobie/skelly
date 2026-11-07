@@ -10,7 +10,6 @@ import { reachTuning } from '../src/core/reach.ts';
 import { skillActivityPractice } from '../src/core/skillTraining.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { MagazineHandling } from '../src/game/magazineHandling.ts';
-import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { advance, capture, createRuntime } from './snapshotTestSupport.ts';
@@ -185,7 +184,7 @@ describe('Inventory Management skill', () => {
       if (!runtime.inventory.add(box, { kind: 'hand', side: 'right' })) {
         throw new Error('Could not hold the unpack fixture box');
       }
-      const unpacking = new Unpacking(runtime.inventory, runtime.handling, () => runtime.player.body.pos);
+      const { unpacking } = runtime.session;
       const initial = runtime.session.character.snapshotState();
 
       expect(unpacking.activate(box)).toBeUndefined();

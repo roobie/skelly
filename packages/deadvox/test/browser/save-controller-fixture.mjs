@@ -63,7 +63,7 @@ const observation = {
     assert(code.includes(marker), 'game-ready observation point exists');
     return code.replace(
       marker,
-      '  Object.assign(globalThis, { saveControllerPlayStarted: true, worldLoadWitness: { engine, session, worldLoading, frame }, tutorialSession: options.tutorial ? session : undefined, gauntletWitness: { engine, session, recording, measureSnapshot, input, eye, lookedAt, manual: false, rollReplay: () => stepper.rollFullReplayWindow() } });\n  startRealFrames((now) => globalThis.gauntletWitness.manual ? true : frame(now));',
+      '  Object.assign(globalThis, { saveControllerPlayStarted: true, worldLoadWitness: { engine, session, worldLoading, frame }, tutorialSession: options.tutorial ? session : undefined, gauntletWitness: { engine, session, recording, measureSnapshot, input, eye, lookedAt: router.lookedAt, manual: false, rollReplay: () => stepper.rollFullReplayWindow() } });\n  startRealFrames((now) => globalThis.gauntletWitness.manual ? true : frame(now));',
     );
   },
 };

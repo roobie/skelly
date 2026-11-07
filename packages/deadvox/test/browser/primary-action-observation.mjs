@@ -154,6 +154,8 @@ export const observationPlugin = {
     observedCode = `import { QuickbarActions as PrimaryActionQuickbarActions } from './quickbarActions.ts';\n${observedCode}`;
     // The landing probe measures a throw as the router does.
     observedCode = `import { throwDistanceForItem as primaryActionThrowDistance } from '../core/itemThrow.ts';\n${observedCode}`;
+    // The ignition probe finds the hand's target as the router's hand use does.
+    observedCode = `import { ignitionTargetForHand as primaryActionIgnitionTarget } from './primaryAction.ts';\n${observedCode}`;
     return observedCode.replace(
       marker,
       `
@@ -178,7 +180,7 @@ export const observationPlugin = {
     audio,
     feet,
     scale,
-    performHandUse,
+    performHandUse: router.performHandUse,
     // The router builds its own quickbar actions; this one has the same owners and holds no state of its own.
     quickbarActions: new PrimaryActionQuickbarActions({
       inventory,
@@ -250,7 +252,7 @@ export const observationPlugin = {
     }),
     selectPrimaryAction,
     nextTimeOfDay,
-    ignitionTargetForHand,
+    ignitionTargetForHand: primaryActionIgnitionTarget,
     interactionTargetAt,
     useTarget: router.useTarget,
     useText,

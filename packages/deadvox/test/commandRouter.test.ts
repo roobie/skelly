@@ -72,9 +72,7 @@ const routerPorts = (ports: Partial<CommandRouterPorts>): CommandRouterPorts => 
   inputContext: unused,
   pendingPlayerTickActions: { enqueue: unused },
   dispatchScreenCommand: unused,
-  firearmReady: () => true,
-  aimingDownSights: () => false,
-  blocking: () => false,
+  gunPose: { active: false, readyHeld: (live) => live, aimingDownSights: (live) => live },
   buildMode: () => false,
   handlingBusy: () => false,
   sprinting: () => false,
@@ -88,7 +86,7 @@ const routerPorts = (ports: Partial<CommandRouterPorts>): CommandRouterPorts => 
   scale: { blockSize: 1, minCy: 0 },
   eye: unused,
   lookDir: unused,
-  performHandUse: () => undefined,
+  pick: { worldSeed: 0, isSolid: unused, isOpaque: unused, hasModel: unused },
   advanceHeldStrip: () => undefined,
   selectedMagazineAction: () => undefined,
   firearmShotInput: unused,
@@ -111,9 +109,20 @@ describe('command router', () => {
     const { inventory, roundsPerSimSecond } = automaticRifleInHand();
     // The router reads only the clock and the body's action refusal.
     const sim = { time: 0, body: { actionRefusal: undefined } } as unknown as Pick<Simulation, 'time' | 'body'>;
+    // The gun is raised with the pointer in play, and the session holds it ready.
+    const controls = new PlayerControls({ playing: () => true, viewerInputAllowed: () => true, held: () => false });
+    controls.rightMouseHeld = true;
+    const session = {
+      sim: { compression: { locksInput: false } },
+      firearms: { isReady: () => true },
+    } as unknown as Session;
     const shots: number[] = [];
     const router = createCommandRouter(
       routerPorts({
+        controls,
+        session: () => session,
+        pointerLocked: () => true,
+        menuPointer: () => false,
         inventory: () => inventory,
         sim: () => sim,
         firearmShotInput: (_uid, atSimSeconds) => ({ simTime: atSimSeconds }) as FirearmShotInput,

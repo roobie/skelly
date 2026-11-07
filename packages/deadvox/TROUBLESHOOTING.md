@@ -39,7 +39,7 @@ See `src/debug/index.ts`, `GUN_POSES`;
 
 Use transient world-space primitives for spatial diagnostics rather than a one-off visualizer or permanent scene objects. Keep producers behind a debug group. Primitives without a duration retire at the next rendered frame; durations use the same frame Real clock, so simulation speed and pause do not affect expiry. The draw owner copies caller coordinates and releases its scene resources on disposal. Its bounded queue drops the oldest entry and counts overload. See `src/debug/transientDraw.ts`, `TransientDebugDraw`.
 
-The Diagnostics interaction-ray toggle draws to the nearer of an opaque hit or the target F would pick, within reach. Its cross sits outside the hit: along the surface normal for blocks, or back along the ray for targets without a normal. See `src/debug/index.ts`, `drawInteractionRay`, and `src/game/play.ts`, `interactionTargetAt`.
+The Diagnostics interaction-ray toggle draws to the nearer of an opaque hit or the target F would pick, within reach. Its cross sits outside the hit: along the surface normal for blocks, or back along the ray for targets without a normal. See `src/debug/index.ts`, `drawInteractionRay`, and `src/game/handUse.ts`, `interactionTargetAt`.
 
 Look and camera parameters are copied from the URL, making a reported pose reproducible. Use `tools/render-probe.mjs` with a `cam=` pose for headless shader reproduction; inspect the screenshot and pixel scan. SwiftShader is not a GPU, so a clean run cannot rule out driver-specific defects. Flip one debug toggle at a time before theorizing; see `src/debug/lookUrl.ts`, `src/debug/camUrl.ts`, and `src/core/weatheringUrl.ts`.
 

@@ -4,7 +4,6 @@
 
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import { PLAYER_CHEST_METRES } from '../core/actorMotion.ts';
-import type { MeleeWeapon } from '../core/actorSystem.ts';
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import type { BodyRegion } from '../core/body.ts';
@@ -21,12 +20,11 @@ import { sightedFirearmModel } from '../core/firearmSight.ts';
 import { heldFirearmTransform } from '../core/heldPose.ts';
 import { type InputContext, inventoryTabForAction } from '../core/inputActions.ts';
 import { interactionAffordance } from '../core/interactionAffordance.ts';
-import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
+import type { InteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile } from '../core/inventory.ts';
 import { damageWord, defOf, type Item } from '../core/items.ts';
 import { chargeShare, wornNightVision } from '../core/lights.ts';
 import type { LongJob } from '../core/longAction.ts';
-import type { MeleeProfile } from '../core/meleePose.ts';
 import { doorOptions, doorPlan, heldDoorBar } from '../core/options.ts';
 import { playerAdsPose } from '../core/playerAdsPose.ts';
 import { playerEyePosition, playerHeldSeatFrame, playerLookPose } from '../core/playerLookPose.ts';
@@ -96,7 +94,6 @@ import {
   renderPlayHud,
 } from '../ui/playHud.ts';
 import { playReadout } from '../ui/playReadout.ts';
-import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { mountReading } from '../ui/reading.ts';
 import { renderRest, type WaitViewAction } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
@@ -105,7 +102,6 @@ import { showWin } from '../ui/win.ts';
 import { mountWorldLoading } from '../ui/worldLoading.ts';
 import { createRefusalPresenter, handlingMoveCompleteCue, handlingMoveStartCue } from './audioPresentation.ts';
 import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
-import { openingTargetForHand } from './canOpening.ts';
 import { columnArrival } from './columnArrival.ts';
 import { createCommandRouter } from './commandRouter.ts';
 import { CrouchProneInput } from './crouchProneInput.ts';
@@ -118,11 +114,9 @@ import type {
   SkyRouteAttachment,
 } from './debugInterface.ts';
 import { debugTargetRay } from './debugTargetRay.ts';
-import { DOOR_ACTION } from './doorAction.ts';
 import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { observeRealFrame } from './frameDriver.ts';
-import { freeLookAllowsUse } from './freeLook.ts';
 import { FurnitureActionSelection, furnitureActionsFor } from './furnitureActions.ts';
 import { GuidedSteps } from './guidedSteps.ts';
 import {
@@ -148,14 +142,7 @@ import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample }
 import { InputReplayPlayer } from './inputReplayPlayer.ts';
 import type { ItemAction } from './itemActions.ts';
 import { registerLayoutVehicles } from './layoutVehicles.ts';
-import {
-  meleeProfileForWeapon,
-  meleeWeaponFromContent,
-  resolvePlayerMeleeWeapon,
-  shouldEnterMeleeGuard,
-  startPlayerMelee,
-  unarmedMeleeWeapon,
-} from './melee.ts';
+import { unarmedMeleeWeapon } from './melee.ts';
 import { routeModalCommand } from './modalCommand.ts';
 import { OpticZoom } from './opticZoom.ts';
 import { playerTuning } from './player.ts';
@@ -164,7 +151,7 @@ import { bleedingStatusRows } from './playStatus.ts';
 import { createAttemptRecording, type PlaytestObserver } from './playtestObserver.ts';
 import { createSnapshotHistory, downloadFile, type HandBackFile, replayFile } from './playtestTools.ts';
 import { PressHoldInput } from './pressHoldInput.ts';
-import { ignitionTargetForHand, primaryMeleeAction, selectPrimaryAction } from './primaryAction.ts';
+import { selectPrimaryAction } from './primaryAction.ts';
 import { QuickbarInput } from './quickbarInput.ts';
 import { stopReadingOnClose as stopReadingPageOnClose } from './readingClose.ts';
 import { RELOAD_GESTURE_MS } from './reloadInput.ts';
@@ -172,7 +159,6 @@ import type { ReplayActionPayload } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
-import { Sharpening } from './sharpening.ts';
 import {
   createSimulationStepper,
   type InputRecording,
@@ -190,7 +176,6 @@ import {
 } from './thirdPersonOrbit.ts';
 import { TierNotice } from './tierNotice.ts';
 import { tutorialUrl } from './tutorialUrl.ts';
-import { Unpacking } from './unpacking.ts';
 import { finishLoadingFrame, WorldLoading } from './worldLoading.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
@@ -724,7 +709,6 @@ export const startPlay = (
     () => worldLoading.ready && replayPlayer === undefined,
   );
   input.controls.yaw = playerStart.yaw;
-  let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
   const playerSenseTuning = claimed(registry.senses, 'player');
   if (!playerSenseTuning) {
     throw new Error('Missing player sense tuning');
@@ -832,9 +816,7 @@ export const startPlay = (
     inputContext: () => inputContext(),
     pendingPlayerTickActions,
     dispatchScreenCommand: (payload) => dispatchScreenCommand(payload),
-    firearmReady: (uid) => isFirearmReady(uid),
-    aimingDownSights: () => debugGunPose.aimingDownSights(input.controls.aimingDownSights) && isAimingDownSights(),
-    blocking: () => shouldPlayerBlock(),
+    gunPose: debugGunPose,
     buildMode: () => Boolean(debugTools?.buildOn),
     handlingBusy: () => queue.busy,
     sprinting: () => session.sprinting,
@@ -843,7 +825,12 @@ export const startPlay = (
     scale,
     eye: () => eye(),
     lookDir: () => lookDir(),
-    performHandUse: (hand) => performHandUse(hand),
+    pick: {
+      worldSeed: config.seed,
+      isSolid: engine.isSolid,
+      isOpaque: engine.isOpaque,
+      hasModel: (id) => view.models.has(id),
+    },
     advanceHeldStrip: (uid, time, held) => magazines.advanceHeldStrip(uid, time, held),
     selectedMagazineAction: (item) => survival.selectedItemAction(item)?.magazine,
     firearmShotInput: (uid, atSimSeconds) => session.firearmShotInput(uid, atSimSeconds),
@@ -949,6 +936,8 @@ export const startPlay = (
       }
     },
     onBatterySwapped: (lightType) => guide?.batterySwapped(lightType),
+    onOpened: (type) => guide?.opened(type),
+    onUnpacked: (type) => guide?.weapons.unpackedAmmo(type),
     onFirearmEjection: (effect) =>
       caseEffects.spawn({
         ...effect,
@@ -1043,25 +1032,7 @@ export const startPlay = (
     const selected = selectPrimaryAction(inventory);
     return selected.kind === 'firearm' ? selected.item : undefined;
   };
-  const hasActiveFirearmInput = (): boolean =>
-    replayPlayer ? replaySample?.active === true && !replaySample.inputLocked : input.locked && !input.menuPointer;
-  const hasGunPoseInput = (): boolean => debugGunPose.active || hasActiveFirearmInput();
-  const isFirearmReady = (uid: number): boolean =>
-    debugGunPose.readyHeld(input.controls.rightMouseActionHeld) &&
-    hasGunPoseInput() &&
-    !compression.locksInput &&
-    firearms.isReady(uid);
-  const isAimingDownSights = (): boolean => {
-    const action = selectPrimaryAction(inventory);
-    return (
-      debugGunPose.aimingDownSights(input.controls.aimingDownSights) &&
-      debugGunPose.readyHeld(input.controls.rightMouseActionHeld) &&
-      hasGunPoseInput() &&
-      action.kind === 'firearm' &&
-      isFirearmReady(action.item.uid) &&
-      !session.sprinting
-    );
-  };
+  const { hasGunPoseInput, isFirearmReady, isAimingDownSights, shouldPlayerBlock } = router.readiness;
   /** Effective ADS: wanted and, for a long gun, acquired through its Combat-owned acquisition time. */
   const isAimedDownSights = (): boolean => {
     const action = selectPrimaryAction(inventory);
@@ -1093,10 +1064,6 @@ export const startPlay = (
   /** The aim is in view while it is wanted or still settling back; the pose blends by the share shown. */
   const adsViewActive = (): boolean => isAimingDownSights() || adsAimShown > 0;
   const adsViewPose = () => playerAdsPose(inventory, adsViewActive(), aim.frame, adsAimShown);
-  input.controls.setAimingDownSightsAllowed(() => {
-    const action = selectPrimaryAction(inventory);
-    return action.kind === 'firearm' && isFirearmReady(action.item.uid) && !session.sprinting;
-  });
   const { lookSensitivityRadiansPerPixel, freeLook } = playerTuning(registry).aim;
   input.controls.setFreeLook(freeLook, () => spectator.enabled || isAimingDownSights());
   input.setLookSensitivity(
@@ -1104,16 +1071,6 @@ export const startPlay = (
     () => 1 + (opticZoom.appliedPower(zoomFirearm(), adsViewActive()) - 1) * adsAimShown,
   );
   const { compression } = sim;
-  const unpacking = new Unpacking(inventory, queue, feet, {
-    calendar: () => sim.calendar,
-    opened: (type) => guide?.opened(type),
-    unpacked: (type) => guide?.weapons.unpackedAmmo(type),
-  });
-  const sharpening = new Sharpening(inventory, queue, {
-    character: session.character,
-    reach: () => session.reach(),
-    clockRatio: sim.clock.ratio,
-  });
   if (session.restoredLook) {
     input.controls.yaw = session.restoredLook.yaw;
     input.controls.pitch = session.restoredLook.pitch;
@@ -1257,38 +1214,6 @@ export const startPlay = (
     return tier === undefined ? undefined : sim.body.tuning.pain.tiers[tier];
   };
   const showRefusal = createPlayRefusalPresenter(registry, audio, showNotice);
-
-  // ---- furniture: searching and doors ----
-
-  const activateKey = (item: Item) => {
-    const entity = lookedAt();
-    if (!(entity && entities.defOf(entity).door)) {
-      return;
-    }
-    const lock = registry.items.get(item.type)?.key?.lock;
-    if (lock === undefined) {
-      return;
-    }
-    const operation = entity.lock?.locked ? 'unlock' : 'lock';
-    const plan = doorPlan(inventory, entity, operation, [lock]);
-    if (!plan.ok) {
-      showRefusal(plan.reason, sim.time);
-      return;
-    }
-    const label = fillText(operation === 'lock' ? lines.doors.lock : lines.doors.unlock, { door: nameOf(entity) });
-    queue.enqueueAction(DOOR_ACTION, label, plan.time, {
-      entityUid: entity.uid,
-      locked: operation === 'lock',
-    });
-  };
-
-  const activateBar = () => {
-    const entity = lookedAt();
-    const reason = entity && entities.defOf(entity).door ? router.enqueueDoorBar(entity, true) : undefined;
-    if (reason) {
-      showRefusal(reason, sim.time);
-    }
-  };
 
   const hooks: ScreenHooks = {
     charger: (entity) => chargerPanel(entity, session.power, session.reach()),
@@ -2066,30 +1991,7 @@ export const startPlay = (
   /** Part boxes for picking: the same projection vehicle reach measures to. */
   const currentVehicleParts = () => session.vehicleParts.all();
 
-  /** The nearest visible furniture panel, cell or vehicle part in the crosshair. */
-  const interactionTargetAt = (): InteractionTarget | undefined =>
-    pickInteractionTarget({
-      inventory,
-      entities,
-      origin: eye(),
-      direction: lookDir(),
-      maxDistance: reachTuning(registry).useReachMetres / s,
-      blockSize: s,
-      worldSeed: config.seed,
-      // Vehicles take part through their part boxes, so the cell queries leave them out.
-      isSolid: engine.isSolid,
-      isOpaque: engine.isOpaque,
-      vehicleParts: currentVehicleParts(),
-      throughLadders: session.ladderHold.on,
-      hasModel: (id) => view.models.has(id),
-      downedBodies: [...session.actorStore.entries()]
-        .filter(([, actor]) => actor.incapacitated)
-        .map(([id, actor]) => ({ id, body: actor.body })),
-    });
-  const lookedAt = (): BlockEntity | undefined => {
-    const target = interactionTargetAt();
-    return target?.kind === 'furniture' ? target.entity : undefined;
-  };
+  const interactionTargetAt = (): InteractionTarget | undefined => router.interactionTargetAt();
 
   /** The open cell in front of the surface in the crosshair, or at the end of reach when none is near. */
   const aimedCell = (): [number, number, number] => {
@@ -2295,236 +2197,7 @@ export const startPlay = (
   }
 
   inputTarget.addEventListener('contextmenu', (e) => e.preventDefault());
-  const handUids = () => ({
-    right: inventory.hands.right?.uid ?? null,
-    left: inventory.hands.left?.uid ?? null,
-  });
-  const meleeSelection = (
-    preferredHand?: 'right' | 'left',
-  ): {
-    weapon: MeleeWeapon;
-    profile: MeleeProfile;
-    hand?: 'right' | 'left';
-    twoHanded: boolean;
-    item?: (typeof inventory.hands)['right'];
-  } => {
-    const handOrder: readonly ('right' | 'left')[] = preferredHand
-      ? [preferredHand]
-      : [dominantSide(inventory.character), offSide(inventory.character)];
-    for (const hand of handOrder) {
-      const item = inventory.hands[hand];
-      const weapon = item && registry.items.get(item.type)?.weapon?.melee;
-      if (item && weapon) {
-        return {
-          weapon: meleeWeaponFromContent(weapon),
-          profile: meleeProfileForWeapon(registry.meleeClasses, weapon.type),
-          hand,
-          twoHanded: registry.items.get(item.type)?.twoHanded ?? false,
-          item,
-        };
-      }
-    }
-    return {
-      weapon: unarmedMeleeWeapon(registry.meleeClasses),
-      profile: 'fists',
-      ...(preferredHand === undefined ? {} : { hand: preferredHand }),
-      twoHanded: false,
-    };
-  };
-  const meleeWeapon = () => meleeSelection().weapon;
-
-  const swing = (preferredHand?: 'right' | 'left') => {
-    if (sim.body.actionRefusal) {
-      showRefusal(sim.body.actionRefusal, sim.time);
-      return;
-    }
-    const selected = meleeSelection(preferredHand);
-    const classTuning =
-      selected.profile === 'fists'
-        ? claimed(registry.meleeClasses, 'unarmed')
-        : registry.meleeClasses.get(selected.weapon.type!);
-    if (classTuning === undefined) {
-      throw new Error(`Missing melee class tuning for ${selected.profile}`);
-    }
-    const swingWeapon = resolvePlayerMeleeWeapon(
-      selected.weapon,
-      classTuning,
-      session.sim.body.consequences.swingSlowdown * session.sim.body.pain.effects.handlingSlowdown,
-    );
-    const result = startPlayerMelee(
-      playerCombat,
-      sim.needs,
-      {
-        origin: eye(),
-        direction: lookDir(),
-        weapon: swingWeapon,
-        profile: selected.profile,
-        ...(selected.hand === undefined ? {} : { hand: selected.hand }),
-        twoHanded: selected.twoHanded,
-        hands: handUids(),
-        aimYaw: input.controls.yaw,
-        aimPitch: input.controls.pitch,
-      },
-      sim.body.tuning.staminaRegenDelaySimSeconds,
-    );
-    if (result === 'too-tired') {
-      showRefusal(lines.melee.tooTired, sim.time);
-    }
-  };
-
-  const refusalReason = (reason: string | undefined): void => {
-    if (reason) {
-      showRefusal(reason, sim.time);
-    }
-  };
-  const refusePrimaryUseWhileHandling = (): boolean => {
-    if (!(queue.busy || firearms.busy)) {
-      return false;
-    }
-    showRefusal(lines.common.busy, sim.time);
-    return true;
-  };
-
-  const meleeReadiness = (meleeWeaponHeld: boolean, emptyHand?: HandSide) => ({
-    rightMouseHeld: input.controls.rightMouseActionHeld && input.locked && !input.menuPointer,
-    meleeWeaponHeld,
-    handsEmpty:
-      emptyHand === undefined ? !(inventory.hands.right || inventory.hands.left) : !inventory.hands[emptyHand],
-    debugBuild: debugTools?.buildOn ?? false,
-    inputLocked: compression.locksInput,
-  });
-  const shouldPlayerBlock = (): boolean => {
-    const action = selectPrimaryAction(inventory);
-    return shouldEnterMeleeGuard({ ...meleeReadiness(false), firearmHeld: action.kind === 'firearm' });
-  };
-
-  const startPrimaryMelee = (action: ReturnType<typeof selectPrimaryAction>): void => {
-    const selected = primaryMeleeAction(
-      action,
-      meleeReadiness(action.kind === 'melee', action.kind === 'fists' ? action.hand : undefined),
-    );
-    if (!selected) {
-      return;
-    }
-    // On a ladder only the free hand swings.
-    swing(session.ladderHold.freeHand(selected.hand));
-  };
-
-  const activateIgniter = (item: Item, hand: HandSide): void => {
-    const target = ignitionTargetForHand(inventory, hand);
-    const usable = target ?? (registry.items.get(item.type)?.light ? item : undefined);
-    if (usable) {
-      refusalReason(survival.use(usable));
-      return;
-    }
-    showRefusal(primaryActionHint(registry, item), sim.time);
-  };
-  const fireHeldItem = (item: Item): void => {
-    if (!isFirearmReady(item.uid) || session.sprinting || router.fireWeapon(item, sim.time)) {
-      return;
-    }
-    showRefusal(firearms.fireReason(item.uid) ?? lines.play.gunNotReady, sim.time);
-  };
-  const togglePin = (item: Item): void => {
-    const state = session.fuses.togglePin(item);
-    if (state === 'pulled') {
-      showNotice(lines.play.pinPulled);
-    } else if (state === 'in') {
-      showNotice(lines.play.pinIn);
-    } else if (state === 'burning') {
-      showRefusal(lines.play.fuseBurning, sim.time);
-    }
-  };
-  const openHeldCan = (hand: HandSide): void => {
-    const target = openingTargetForHand(inventory, hand);
-    refusalReason(target ? unpacking.activate(target) : lines.unpacking.noCan);
-  };
-  const sharpenAtWheel = (hand: HandSide): boolean => {
-    const held = inventory.hands[hand];
-    const station = lookedAt();
-    if (!(held && sharpening.wheelMethod(held, station))) {
-      return false;
-    }
-    refusalReason(sharpening.activate(hand, station));
-    return true;
-  };
-  performHandUse = (hand: 'right' | 'left') => {
-    if (sim.body.actionRefusal) {
-      showRefusal(sim.body.actionRefusal, sim.time);
-      return;
-    }
-    if (refusePrimaryUseWhileHandling()) {
-      return;
-    }
-    const held = inventory.hands[hand];
-    const action = selectPrimaryAction(inventory, hand, held && survival.selectedItemAction(held)?.id);
-    if (!freeLookAllowsUse(input.controls.freeLooking, action.kind)) {
-      return;
-    }
-    if (sharpenAtWheel(hand)) {
-      return;
-    }
-    switch (action.kind) {
-      case 'sharpen':
-        refusalReason(sharpening.activate(hand));
-        return;
-      case 'open-can':
-        openHeldCan(hand);
-        return;
-      case 'continue-work':
-        dispatchScreenCommand({ kind: 'craft.continue' });
-        return;
-      case 'unpack':
-        refusalReason(unpacking.activate(action.item));
-        return;
-      case 'pin':
-        togglePin(action.item);
-        return;
-      case 'melee':
-        startPrimaryMelee(action);
-        return;
-      case 'ignite':
-        activateIgniter(action.item, action.hand);
-        return;
-      case 'light':
-      case 'read':
-      case 'use':
-        refusalReason(survival.use(action.item));
-        return;
-      case 'firearm':
-        fireHeldItem(action.item);
-        return;
-      case 'magazine':
-        refusalReason(
-          survival.selectedItemAction(action.item)?.magazine === 'strip'
-            ? magazines.strip(
-                action.item.uid,
-                sim.time,
-                replaySample?.intent.useDominantHeld ?? input.controls.dominantUseHeld,
-              )
-            : lines.magazine.empty,
-        );
-        return;
-      case 'fists':
-        startPrimaryMelee(action);
-        return;
-      case 'noop':
-        return;
-      case 'key':
-        activateKey(action.item);
-        return;
-      case 'bar':
-        activateBar();
-        return;
-      case 'none':
-        showRefusal(primaryActionHint(registry, action.item), sim.time);
-        return;
-      default: {
-        const unhandled: never = action;
-        throw new Error(`Unhandled primary action ${String(unhandled)}`);
-      }
-    }
-  };
+  const meleeWeapon = () => router.meleeSelection().weapon;
   // Buttons 3 and 4 are the browser's history Back/Forward; swallow every phase of them so a press never navigates away.
   // Listened on the document (capture) in case the pointer-lock target isn't the canvas; the mouse and pointer
   // events can both arrive for one press, so the forward press is deduped.
@@ -2545,7 +2218,7 @@ export const startPlay = (
     if (!input.locked || input.menuPointer || compression.locksInput || spectator.enabled || debugTools?.buildOn) {
       return;
     }
-    if (refusePrimaryUseWhileHandling()) {
+    if (router.refusePrimaryUseWhileHandling()) {
       return;
     }
     router.useForwardButton();
