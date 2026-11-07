@@ -95,4 +95,33 @@ describe('runtime closure, stage 1', () => {
       ['packages/deadvox/src/game/session.ts', 'packages/presentation/src/hud.ts'],
     ]);
   });
+
+  it('fails a project-root glob that matches a render file', () => {
+    const violations = violationsIn({
+      'packages/deadvox/src/core/catalog.ts': "export const views = import.meta.glob('/src/render/*.ts');\n",
+    });
+    expect(violations.map((v) => [v.importer, v.target])).toEqual([
+      ['packages/deadvox/src/core/catalog.ts', 'packages/deadvox/src/render/view.ts'],
+    ]);
+  });
+
+  it('follows an alias glob into a followed library that imports three', () => {
+    const violations = violationsIn({
+      'packages/deadvox/src/core/catalog.ts': "export const rigs = import.meta.glob('@mobgen/rig/*.ts');\n",
+      'packages/mobgen/src/rig/arm.ts': "import { Vector3 } from 'three';\nexport const arm = Vector3;\n",
+    });
+    expect(violations.map((v) => [v.importer, v.target])).toEqual([['packages/mobgen/src/rig/arm.ts', 'three']]);
+  });
+
+  it('fails a glob whose base does not resolve, but passes a resolvable glob that matches nothing', () => {
+    const unresolved = violationsIn({
+      'packages/deadvox/src/core/catalog.ts': "export const parts = import.meta.glob('parts/*.ts');\n",
+    });
+    expect(importers(unresolved)).toEqual(['packages/deadvox/src/core/catalog.ts']);
+    expect(
+      violationsIn({
+        'packages/deadvox/src/core/catalog.ts': "export const parts = import.meta.glob('./parts/*.ts');\n",
+      }),
+    ).toEqual([]);
+  });
 });

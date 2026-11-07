@@ -1,7 +1,7 @@
 // biome-ignore lint/correctness/noNodejsModules: This check reads the source tree in Node.js.
 import { existsSync, globSync, readdirSync, readFileSync, statSync } from 'node:fs';
 // biome-ignore lint/correctness/noNodejsModules: This check reads the source tree in Node.js.
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, posix, relative, resolve, sep } from 'node:path';
 import { parseSync } from 'vite';
 
 /** Where the runtime starts, what it may follow, and what it may never reach. Paths are repository-relative. */
@@ -16,6 +16,8 @@ export interface RuntimeClosurePolicy {
   readonly forbiddenPackages: readonly string[];
   /** Import-specifier prefixes that resolve to a directory, as the compiler's path mapping does. */
   readonly aliases: Readonly<Record<string, string>>;
+  /** The Vite project root, where a glob pattern or base with a leading slash starts. */
+  readonly viteRoot: string;
 }
 
 export interface RuntimeClosureViolation {
@@ -36,15 +38,13 @@ export const STAGE_ONE_POLICY: RuntimeClosurePolicy = {
     'packages/presentation',
   ],
   forbiddenPackages: ['three', 'lit', 'lit-html'],
-  // Mirrors packages/deadvox/tsconfig.json, compilerOptions.paths.
+  // Mirrors packages/deadvox/tsconfig.json, compilerOptions.paths, and packages/deadvox/vite.config.ts, resolve.alias.
   aliases: { '@mobgen/': 'packages/mobgen/src/' },
+  viteRoot: 'packages/deadvox',
 };
 
 const SOURCE_FILE = /\.(?:[cm]?[jt]sx?)$/;
 const RESOLVE_SUFFIXES = ['', '.ts', '.tsx', '.mts', '.js', '.mjs', '/index.ts', '/index.js'];
-const GLOB_REFERENCE = /\bimport\.meta\.glob\b/g;
-const GLOB_CALL = /\bimport\.meta\.glob(?:<[^>]*>)?\s*\(\s*(\[[^\]]*\]|(['"`])[^'"`]*\2)/g;
-const GLOB_PATTERN = /(['"`])([^'"`]*)\1/g;
 const LITERAL = /^(['"`])([^'"`]*)\1$/;
 const IMPORT_CALL = /\bimport\s*\(\s*(['"`])([^'"`$]*)\1\s*[,)]/g;
 const URL_CALL = /\bnew\s+URL\s*\(\s*(['"`])([^'"`]*)\1\s*,\s*import\.meta\.url\s*\)/g;
@@ -143,6 +143,112 @@ function sourceFilesUnder(repoRoot: string, dir: string): string[] {
 interface Edge {
   readonly specifier: string;
   readonly glob: boolean;
+  /** An `import.meta.glob` call's `base` option. */
+  readonly base?: string;
+}
+
+interface AstNode {
+  readonly type?: string;
+  readonly [key: string]: unknown;
+}
+
+const isNode = (value: unknown): value is AstNode => typeof value === 'object' && value !== null;
+
+const isGlobMember = (node: AstNode): boolean => {
+  const object = node.object as AstNode | undefined;
+  const meta = object?.meta as AstNode | undefined;
+  const metaProperty = object?.property as AstNode | undefined;
+  const property = node.property as AstNode | undefined;
+  return (
+    node.type === 'MemberExpression' &&
+    !node.computed &&
+    object?.type === 'MetaProperty' &&
+    meta?.name === 'import' &&
+    metaProperty?.name === 'meta' &&
+    property?.name === 'glob'
+  );
+};
+
+/** A string literal or a template literal without holes. */
+const staticString = (node: unknown): string | undefined => {
+  if (!isNode(node)) {
+    return undefined;
+  }
+  if (node.type === 'Literal' && typeof node.value === 'string') {
+    return node.value;
+  }
+  const quasis = node.quasis as { value: { cooked?: string } }[] | undefined;
+  const expressions = node.expressions as unknown[] | undefined;
+  return node.type === 'TemplateLiteral' && expressions?.length === 0 ? quasis?.[0]?.value.cooked : undefined;
+};
+
+/** The `base` option of an `import.meta.glob` call; a string when it is absent or literal. */
+function globBase(options: unknown): { readonly base?: string } | string {
+  if (options === undefined) {
+    return {};
+  }
+  if (!(isNode(options) && options.type === 'ObjectExpression')) {
+    return 'an import.meta.glob whose options are not an object literal';
+  }
+  for (const property of options.properties as AstNode[]) {
+    const key = property.key as AstNode | undefined;
+    if (property.type !== 'Property' || property.computed) {
+      return 'an import.meta.glob option the check cannot read';
+    }
+    if ((key?.name ?? key?.value) === 'base') {
+      const base = staticString(property.value);
+      return base === undefined ? 'an import.meta.glob base that is not a literal' : { base };
+    }
+  }
+  return {};
+}
+
+/** The patterns of one `import.meta.glob` call, with its base. */
+function globCallEdges(call: AstNode): Edge[] | string {
+  const [patterns, options, ...rest] = call.arguments as unknown[];
+  const list = isNode(patterns) && patterns.type === 'ArrayExpression' ? (patterns.elements as unknown[]) : [patterns];
+  const specifiers = list.map(staticString);
+  const base = globBase(options);
+  if (rest.length > 0 || specifiers.some((specifier) => specifier === undefined)) {
+    return 'an import.meta.glob pattern that is not a literal';
+  }
+  if (typeof base === 'string') {
+    return base;
+  }
+  // Negated patterns only narrow the match, so checking without them over-approximates.
+  return (specifiers as string[])
+    .filter((specifier) => !specifier.startsWith('!'))
+    .map((specifier) => ({ specifier, glob: true, ...base }));
+}
+
+/** The glob edges of one syntax node; a call's callee is recorded so it is not read as a bare reference. */
+function globNodeEdges(node: AstNode, callees: Set<AstNode>): Edge[] | string {
+  if (node.type === 'CallExpression' && isNode(node.callee) && isGlobMember(node.callee)) {
+    callees.add(node.callee);
+    return globCallEdges(node);
+  }
+  return isGlobMember(node) && !callees.has(node) ? 'an import.meta.glob form the check cannot read' : [];
+}
+
+/** Every `import.meta.glob` call; any other use of `import.meta.glob` fails closed. */
+function globEdges(program: unknown): Edge[] | string {
+  const edges: Edge[] = [];
+  const callees = new Set<AstNode>();
+  // A parent is read before its children, so a call records its callee before the walk reaches it.
+  const pending: unknown[] = [program];
+  for (let node = pending.pop(); node !== undefined; node = pending.pop()) {
+    if (Array.isArray(node)) {
+      pending.push(...node);
+    } else if (isNode(node)) {
+      const found = globNodeEdges(node, callees);
+      if (typeof found === 'string') {
+        return found;
+      }
+      edges.push(...found);
+      pending.push(...Object.values(node));
+    }
+  }
+  return edges;
 }
 
 const languageOf = (file: string): 'js' | 'jsx' | 'ts' | 'tsx' | 'dts' => {
@@ -175,33 +281,21 @@ function moduleEdges(file: string, source: string): Edge[] | string {
     const glob = literal.includes('${');
     edges.push({ specifier: glob ? literal.replace(TEMPLATE_HOLE, '*') : literal, glob });
   }
-  return edges;
+  const globs = globEdges(parsed.program);
+  return typeof globs === 'string' ? globs : [...edges, ...globs];
 }
 
-/** Type-position `import('…')`, `import.meta.glob` patterns and `new URL('…', import.meta.url)`. */
-function metaEdges(source: string): Edge[] | string {
-  const globCalls = [...source.matchAll(GLOB_CALL)];
-  if (globCalls.length !== [...source.matchAll(GLOB_REFERENCE)].length) {
-    return 'an import.meta.glob form the check cannot read';
-  }
-  const globs = globCalls
-    .flatMap((call) => [...call[1]!.matchAll(GLOB_PATTERN)].map((pattern) => pattern[2]!))
-    .filter((pattern) => !pattern.startsWith('!'))
-    .map((specifier) => ({ specifier, glob: true }));
-  const literals = [...source.matchAll(IMPORT_CALL), ...source.matchAll(URL_CALL)].map((call) => ({
+/** Type-position `import('…')` and `new URL('…', import.meta.url)`. */
+function metaEdges(source: string): Edge[] {
+  return [...source.matchAll(IMPORT_CALL), ...source.matchAll(URL_CALL)].map((call) => ({
     specifier: call[2]!,
     glob: false,
   }));
-  return [...globs, ...literals];
 }
 
 function edgesOf(file: string, source: string): Edge[] | string {
   const modules = moduleEdges(file, source);
-  const metas = metaEdges(source);
-  if (typeof modules === 'string' || typeof metas === 'string') {
-    return typeof modules === 'string' ? modules : (metas as string);
-  }
-  return [...modules, ...metas];
+  return typeof modules === 'string' ? modules : [...modules, ...metaEdges(source)];
 }
 
 const packageName = (specifier: string): string => {
@@ -262,13 +356,40 @@ class ClosureWalk {
       this.violations.push({ importer: file, specifier: '', target: '', reason: `uses ${edges}` });
       return;
     }
-    for (const { specifier, glob } of edges) {
+    for (const { specifier, glob, base } of edges) {
       if (glob) {
-        for (const match of globSync(specifier, { cwd: join(this.root, dirname(file)) })) {
-          this.reach(file, specifier, join(dirname(file), match).split(sep).join('/'));
-        }
+        this.resolveGlob(file, specifier, base);
       } else {
         this.resolveEdge(file, specifier);
+      }
+    }
+  }
+
+  /** A glob pattern as a repository-relative pattern, by Vite's `toAbsoluteGlob` rules; undefined if Vite would reject it. */
+  private globPattern(importer: string, pattern: string, base: string | undefined): string | undefined {
+    const { viteRoot, aliases } = this.policy;
+    const importerDir = posix.dirname(importer);
+    const dir = base === undefined ? importerDir : posix.join(base.startsWith('/') ? viteRoot : importerDir, base);
+    if (pattern.startsWith('/')) {
+      return posix.join(viteRoot, pattern.slice(1));
+    }
+    if (pattern.startsWith('./') || pattern.startsWith('../')) {
+      return posix.join(dir, pattern);
+    }
+    const alias = Object.entries(aliases).find(([prefix]) => pattern.startsWith(prefix));
+    return alias ? `${alias[1]}${pattern.slice(alias[0].length)}` : undefined;
+  }
+
+  private resolveGlob(importer: string, specifier: string, base: string | undefined): void {
+    const pattern = this.globPattern(importer, specifier, base);
+    if (pattern === undefined) {
+      this.violations.push({ importer, specifier, target: '', reason: 'uses a glob that does not resolve' });
+      return;
+    }
+    for (const match of globSync(pattern, { cwd: this.root })) {
+      const target = posix.normalize(match.split(sep).join('/'));
+      if (statSync(join(this.root, target)).isFile()) {
+        this.reach(importer, specifier, target);
       }
     }
   }
