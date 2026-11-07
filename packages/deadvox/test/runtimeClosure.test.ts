@@ -188,14 +188,21 @@ describe('runtime closure, stage 1', () => {
     expect(importers(violations)).toEqual([catalog]);
   });
 
-  it('expands a dynamic import template from its syntax tree, whatever its holes contain', () => {
+  it('expands a dynamic import hole that is a plain name to one file-name wildcard', () => {
+    const violations = violationsIn({
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: fixture source text holding a template literal.
+      [catalog]: 'export const load = (kind: { name: string }) => import(`../render/${kind.name}.ts`);\n',
+    });
+    expect(violations.map((v) => [v.importer, v.target])).toEqual([[catalog, 'packages/deadvox/src/render/view.ts']]);
+  });
+
+  it('fails a dynamic import hole that is not a plain name, even one whose braces stay in one segment', () => {
     const violations = violationsIn({
       // biome-ignore lint/suspicious/noTemplateCurlyInString: fixture source text holding a template literal.
       [catalog]: 'export const view = import(`../render/${({ x: 1 }).x}.ts`);\n',
       'packages/deadvox/src/render/1.ts': 'export const one = 1;\n',
     });
-    expect([...new Set(importers(violations))]).toEqual([catalog]);
-    expect(violations.map((v) => v.target)).toContain('packages/deadvox/src/render/1.ts');
+    expect(importers(violations)).toEqual([catalog]);
   });
 
   it('fails a dynamic import template with a query', () => {
@@ -204,6 +211,23 @@ describe('runtime closure, stage 1', () => {
       [catalog]: 'export const load = (name: string) => import(`../render/${name}.ts?raw`);\n',
     });
     expect(importers(violations)).toEqual([catalog]);
+  });
+
+  it('fails a dynamic import hole that can add a directory', () => {
+    const violations = violationsIn({
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: fixture source text holding a template literal.
+      [catalog]: 'export const load = (name: string) => import(`../${"render/" + name}.ts`);\n',
+    });
+    expect(importers(violations)).toEqual([catalog]);
+  });
+
+  it.each([
+    ['a forbidden package root', "export const raw = import('three?raw');\n"],
+    ['a forbidden workspace root', "import '@skelly/presentation?raw';\n"],
+  ])('fails a queried bare specifier naming %s', (_name, source) => {
+    const violations = violationsIn({ [catalog]: source });
+    // The type-position import scan also reads a literal import() call, so one edge can report twice.
+    expect([...new Set(importers(violations))]).toEqual([catalog]);
   });
 
   it.each([

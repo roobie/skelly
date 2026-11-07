@@ -50,6 +50,7 @@ const URL_CALL = /\bnew\s+URL\s*\(\s*(['"`])([^'"`]*)\1\s*,\s*import\.meta\.url\
 // The glob subset the check matches exactly as the bundler does: literal name characters and `*` within a
 // segment, `**` as a whole segment. Brackets, groups, braces, `?`, escapes and queries fall outside it.
 const GLOB_SEGMENT = /^[A-Za-z0-9._*-]+$/;
+const QUERY_OR_HASH = /[?#]/;
 const DECLARATION_FILE = /\.d\.[cm]?ts$/;
 const TS_FILE = /\.[cm]?ts$/;
 
@@ -183,13 +184,38 @@ const globText = (node: unknown): string | undefined => {
   return node.type === 'TemplateLiteral' && expressions?.length === 0 ? quasis?.[0]?.value.raw : undefined;
 };
 
-/** A dynamic import's target: a literal specifier, or a template as a glob with one `*` per hole. */
+/** An identifier, or a non-computed member chain of identifiers (`a.b.c`, `this.a`). */
+const plainName = (node: unknown): boolean => {
+  if (!isNode(node)) {
+    return false;
+  }
+  if (node.type === 'Identifier' || node.type === 'ThisExpression') {
+    return true;
+  }
+  const property = node.property as AstNode | undefined;
+  return (
+    node.type === 'MemberExpression' &&
+    !node.computed &&
+    !node.optional &&
+    property?.type === 'Identifier' &&
+    plainName(node.object)
+  );
+};
+
+/**
+ * A dynamic import's target: a literal specifier, or a template as a glob with one `*` per hole. Vite
+ * turns an identifier or member hole into one `*`, which stays within one path segment; literals, calls,
+ * concatenation and nested templates inside a hole keep their text, so they could add directories.
+ */
 function dynamicImportEdges(source: unknown): Edge[] | string {
   if (isNode(source) && source.type === 'Literal' && typeof source.value === 'string') {
     return [{ specifier: source.value, glob: false }];
   }
   if (!(isNode(source) && source.type === 'TemplateLiteral')) {
     return 'a dynamic import whose target is not a literal';
+  }
+  if (!(source.expressions as unknown[]).every(plainName)) {
+    return 'a dynamic import template hole that is not a plain name';
   }
   const quasis = (source.quasis as { value: { raw: string } }[]).map((quasi) => quasi.value.raw);
   const holes = (source.expressions as unknown[]).length;
@@ -530,6 +556,11 @@ class ClosureWalk {
   }
 
   private resolveEdge(importer: string, specifier: string): void {
+    // A query or hash would otherwise become part of a package name, so `three?raw` passes as a leaf.
+    if (QUERY_OR_HASH.test(specifier)) {
+      this.violations.push({ importer, specifier, target: '', reason: 'uses a query or hash suffix' });
+      return;
+    }
     const target = this.resolveSpecifier(importer, specifier);
     if (target === undefined) {
       this.violations.push({ importer, specifier, target: '', reason: 'does not resolve' });
