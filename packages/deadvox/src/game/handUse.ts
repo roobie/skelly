@@ -53,8 +53,6 @@ export interface HandUseDeps {
   refusal: (reason: string, atSimSeconds: number) => void;
   notice: (text: string) => void;
   blockSize: number;
-  eye: () => Vec3;
-  lookDir: () => Vec3;
   pick: InteractionPickWorld;
   firearmReady: (uid: number) => boolean;
   sprinting: () => boolean;
@@ -74,9 +72,9 @@ interface MeleeSelection {
 
 export interface HandUse {
   perform: (hand: 'right' | 'left') => void;
-  /** The nearest visible furniture panel, cell or vehicle part in the crosshair. */
-  interactionTargetAt: () => InteractionTarget | undefined;
-  /** The furniture in the crosshair, if the pick found furniture. */
+  /** The nearest visible furniture panel, cell or vehicle part along this look from this eye. */
+  interactionTargetAt: (origin: Vec3, direction: Vec3) => InteractionTarget | undefined;
+  /** The furniture in the crosshair from the session's eye, if the pick found furniture. */
   lookedAt: () => BlockEntity | undefined;
   /** Refuses a primary use while handling is busy; true when it refused. */
   refusePrimaryUseWhileHandling: () => boolean;
@@ -88,14 +86,14 @@ export function createHandUse(deps: HandUseDeps): HandUse {
   const lines = actionText(registry);
   const showRefusal = (reason: string, atSimSeconds: number): void => deps.refusal(reason, atSimSeconds);
 
-  const interactionTargetAt = (): InteractionTarget | undefined => {
+  const interactionTargetAt = (origin: Vec3, direction: Vec3): InteractionTarget | undefined => {
     const session = deps.session();
     const s = deps.blockSize;
     return pickInteractionTarget({
       inventory: deps.inventory(),
       entities: session.entities,
-      origin: deps.eye(),
-      direction: deps.lookDir(),
+      origin,
+      direction,
       maxDistance: reachTuning(registry).useReachMetres / s,
       blockSize: s,
       worldSeed: deps.pick.worldSeed,
@@ -111,7 +109,8 @@ export function createHandUse(deps: HandUseDeps): HandUse {
     });
   };
   const lookedAt = (): BlockEntity | undefined => {
-    const target = interactionTargetAt();
+    const session = deps.session();
+    const target = interactionTargetAt(session.playerEye(), session.playerLookDirection());
     return target?.kind === 'furniture' ? target.entity : undefined;
   };
 
@@ -201,19 +200,20 @@ export function createHandUse(deps: HandUseDeps): HandUse {
       classTuning,
       session.sim.body.consequences.swingSlowdown * session.sim.body.pain.effects.handlingSlowdown,
     );
+    const look = session.playerLook();
     const result = startPlayerMelee(
       session.playerCombat,
       sim.needs,
       {
-        origin: deps.eye(),
-        direction: deps.lookDir(),
+        origin: session.playerEye(look),
+        direction: session.playerLookDirection(look),
         weapon: swingWeapon,
         profile: selected.profile,
         ...(selected.hand === undefined ? {} : { hand: selected.hand }),
         twoHanded: selected.twoHanded,
         hands: handUids(),
-        aimYaw: controls.yaw,
-        aimPitch: controls.pitch,
+        aimYaw: look.yaw,
+        aimPitch: look.pitch,
       },
       sim.body.tuning.staminaRegenDelaySimSeconds,
     );

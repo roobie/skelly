@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dominantSide } from '../src/core/character.ts';
+import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { Simulation } from '../src/core/sim.ts';
 import { type CommandRouterPorts, createCommandRouter } from '../src/game/commandRouter.ts';
@@ -84,8 +85,6 @@ const routerPorts = (ports: Partial<CommandRouterPorts>): CommandRouterPorts => 
   },
   throwMinimumHoldSimSeconds: 0,
   scale: { blockSize: 1, minCy: 0 },
-  eye: unused,
-  lookDir: unused,
   pick: { worldSeed: 0, isSolid: unused, isOpaque: unused, hasModel: unused },
   advanceHeldStrip: () => undefined,
   selectedMagazineAction: () => undefined,
@@ -160,6 +159,21 @@ describe('command router', () => {
       }),
     );
     expect(router.controls.blocking!()).toBe(true);
+  });
+
+  it('throws from the simulated eye, not a view eye that the ADS blend moves with the frame rate', () => {
+    const inventory = new Inventory(registry);
+    const item = inventory.create(registry.items.keys().next().value!);
+    const simulatedEye: Vec3 = [2, 10, 3];
+    const session = {
+      playerEye: () => simulatedEye,
+      playerLookDirection: () => [0, 0, -1],
+      physicalSolid: () => false,
+    } as unknown as Session;
+    const router = createCommandRouter(
+      routerPorts({ session: () => session, inventory: () => inventory, scale: { blockSize: 2, minCy: 0 } }),
+    );
+    expect(router.itemThrowFlight(item, 'right', 1).points[0]).toEqual([4, 20, 6]);
   });
 
   it('replays a recorded stance gesture as the stance toggle, not as a press for the live recogniser', () => {

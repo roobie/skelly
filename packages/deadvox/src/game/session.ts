@@ -410,6 +410,12 @@ const setSessionFirearmsSkillZeroHandling = (
 };
 export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false };
 
+/** A look direction as yaw and pitch. */
+export interface PlayerLook {
+  readonly yaw: number;
+  readonly pitch: number;
+}
+
 /** What the player is doing with the keyboard and mouse, read each tick. */
 export interface PlayerInputSample {
   readonly freeLooking?: boolean;
@@ -1296,12 +1302,19 @@ export const createSession = (options: SessionOptions) => {
       loweredStance()?.eyeDropMetres,
       Player.eye,
     );
-  const playerEye = (): Vec3 =>
+  /** The sampled input's look at the player tick. */
+  const playerLook = (): PlayerLook => {
+    const { yaw, pitch } = sampledInput();
+    return { yaw, pitch };
+  };
+  const playerLookDirection = (look: PlayerLook = playerLook()): Vec3 => aimDirection(look.yaw, look.pitch, NEUTRAL_AIM);
+  /** The eye the simulation aims and picks from; the drawn view's ADS blend never moves it. */
+  const playerEye = (look: PlayerLook = playerLook()): Vec3 =>
     playerEyePosition({
       feet: body.pos,
       blockSize: s,
-      yaw: sampledInput().yaw,
-      pitch: sampledInput().pitch,
+      yaw: look.yaw,
+      pitch: look.pitch,
       stance: playerStance,
       lean: currentLean(),
       figure: claimed(registry.figures, 'player')!,
@@ -2758,6 +2771,9 @@ export const createSession = (options: SessionOptions) => {
     rest,
     actors: actorSystem,
     playerCombat,
+    playerLook,
+    playerLookDirection,
+    playerEye,
     actorStore,
     spawner,
     body,

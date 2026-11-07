@@ -173,8 +173,6 @@ export interface CommandRouterPorts {
   itemThrowTuning: Parameters<typeof throwDistanceForItem>[2];
   throwMinimumHoldSimSeconds: number;
   scale: { readonly blockSize: number; readonly minCy: number };
-  eye: () => Vec3;
-  lookDir: () => Vec3;
   pick: InteractionPickWorld;
   advanceHeldStrip: (uid: number | undefined, atSimSeconds: number, held: boolean) => string | undefined;
   selectedMagazineAction: (item: Item) => string | undefined;
@@ -442,14 +440,17 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     const offset: Vec3 = throwingStance
       ? throwStanceWorldOffset(hand, controls.yaw, controls.pitch, chargeProgress)
       : [0, 0, 0];
-    const origin = ports.eye().map((value, axis) => value * s + offset[axis]!) as Vec3;
+    // A throw lands before the tick samples its input, so it aims with the look the controls hold then.
+    const look = { yaw: controls.yaw, pitch: controls.pitch };
+    const session = ports.session();
+    const origin = session.playerEye(look).map((value, axis) => value * s + offset[axis]!) as Vec3;
     return flightForItem(item, registry, {
       from: origin,
-      direction: ports.lookDir(),
+      direction: session.playerLookDirection(look),
       distanceMetres,
       blockSize: s,
       minY: scale.minCy * CHUNK,
-      isSolid: ports.session().physicalSolid,
+      isSolid: session.physicalSolid,
     });
   }
   function throwHeldItem(item: Item, hand: HandSide, distanceMetres: number): void {
@@ -1276,8 +1277,6 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     refusal: presentation.refusal,
     notice: presentation.notice,
     blockSize: ports.scale.blockSize,
-    eye: ports.eye,
-    lookDir: ports.lookDir,
     pick: ports.pick,
     firearmReady: isFirearmReady,
     sprinting: ports.sprinting,

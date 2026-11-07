@@ -823,8 +823,6 @@ export const startPlay = (
     itemThrowTuning,
     throwMinimumHoldSimSeconds,
     scale,
-    eye: () => eye(),
-    lookDir: () => lookDir(),
     pick: {
       worldSeed: config.seed,
       isSolid: engine.isSolid,
@@ -1991,7 +1989,8 @@ export const startPlay = (
   /** Part boxes for picking: the same projection vehicle reach measures to. */
   const currentVehicleParts = () => session.vehicleParts.all();
 
-  const interactionTargetAt = (): InteractionTarget | undefined => router.interactionTargetAt();
+  /** The view's pick for the affordance, the interact press and the debug ray; hand use picks from the session's eye. */
+  const interactionTargetAt = (): InteractionTarget | undefined => router.interactionTargetAt(eye(), lookDir());
 
   /** The open cell in front of the surface in the crosshair, or at the end of reach when none is near. */
   const aimedCell = (): [number, number, number] => {
