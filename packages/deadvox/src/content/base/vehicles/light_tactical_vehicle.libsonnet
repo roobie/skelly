@@ -49,21 +49,21 @@ local wheel = id + '_wheel';
       fitting('rear_axle', id + '_portal_axle', [s.rearAxle, 0, 0], ['frame']),
       fitting('engine', 'engine_i6_diesel', [1.38, 0.5, 0], ['frame']),
       fitting('gearbox', 'gearbox_truck', [0.59, 0.58, 0], ['engine']),
-      fitting('rear_prop_shaft', id + '_rear_prop_shaft', [-0.72, 0.54, 0], ['gearbox', 'rear_axle']),
+      fitting('rear_prop_shaft', id + '_rear_prop_shaft', [-0.87, 0.54, 0], ['gearbox', 'rear_axle']),
       fitting('front_prop_shaft', 'prop_shaft_short', [1.02, 0.55, 0.2], ['gearbox', 'front_axle']),
       fitting('radiator', 'radiator_van', [2.02, 0.62, 0], ['frame']),
-      fitting('fuel_tank', 'fuel_tank_car', [-2.0, 0.62, 0], ['frame']),
-      fitting('exhaust', 'exhaust_military', [-1.1, 0.52, 0.3], ['engine', 'frame']),
+      fitting('fuel_tank', 'fuel_tank_car', [-2.3, 0.62, 0], ['frame']),
+      fitting('exhaust', 'exhaust_military', [-1.4, 0.52, 0.3], ['engine', 'frame']),
       fitting('steering_wheel', 'steering_wheel', [0.5, 1.32, -s.seatZ], ['dashboard']),
       fitting('gear_lever', 'gear_lever', [0.3, 1.0, 0], ['hull']),
-      kit.cargoSpace('cargo', [-1.7, s.bedTop, 0], [8, 5, 14], 'bed_floor'),
+      kit.cargoSpace('cargo', [-2.0, s.bedTop, 0], [8, 5, 14], 'bed_floor'),
     ]
     + pair('front_wheel', wheel, [s.frontAxle, s.hub, s.wheelZ], on(['front_axle']))
     + pair('rear_wheel', wheel, [s.rearAxle, s.hub, s.wheelZ], on(['rear_axle']))
     + pair('front_door', id + '_front_door', origin, on(['hull']))
     + pair('rear_door', id + '_rear_door', origin, on(['hull']))
-    + pair('front_seat', 'front_seat', [0.24, s.floor, s.seatZ], on(['hull']))
-    + pair('rear_seat', 'front_seat', [-0.6, s.floor, s.seatZ], on(['hull']))
+    + pair('front_seat', 'front_seat', [s.frontSeat, s.floor, s.seatZ], on(['hull']))
+    + pair('rear_seat', 'front_seat', [s.rearSeat, s.floor, s.seatZ], on(['hull']))
     + pair('mirror', 'door_mirror', [s.topFront, s.waist + 0.04, s.upperSkin], on(['hull']))
     + pair('headlamp', id + '_headlamp', [s.nose, 0.86, 0.72], on(['bonnet']))
     + pair('side_lamp', 'marker_lamp', [s.nose + 0.02, 0.8, 0.94], on(['bonnet']))

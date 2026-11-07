@@ -67,17 +67,17 @@ local rakeTop = s.roof - 0.06;
     box('lower_arm', 'steel', [-0.12, 0.42, 0.16], [0.12, 0.46, 0.62]),
     box('upper_arm', 'steel', [-0.1, 0.6, 0.44], [0.1, 0.64, 0.62]),
   ]), { steel: 'steel-grey' }),
-  k.compound(id + '_rear_prop_shaft', 18, [k.turned('tube', 'steel', 'x', k.disc(0.04, -0.93, 0.93))], { steel: 'steel-grey' }),
+  k.compound(id + '_rear_prop_shaft', 18, [k.turned('tube', 'steel', 'x', k.disc(0.04, -1.08, 1.08))], { steel: 'steel-grey' }),
   k.compound(id + '_frame', s.frameMass, [
-    box('cross_' + i, 'frame', [[-2.16, -2.0, -1.2, -0.4, 0.5, 1.2, 2.18][i] - 0.04, s.railLow, -s.railZ], [[-2.16, -2.0, -1.2, -0.4, 0.5, 1.2, 2.18][i] + 0.04, s.railTop, s.railZ])
+    box('cross_' + i, 'frame', [[-2.46, -2.3, -1.5, -0.55, 0.5, 1.2, 2.18][i] - 0.04, s.railLow, -s.railZ], [[-2.46, -2.3, -1.5, -0.55, 0.5, 1.2, 2.18][i] + 0.04, s.railTop, s.railZ])
     for i in std.range(0, 6)
   ] + [
-    box('bearer_aft', 'frame', [-1.82, s.railTop, -s.railZ], [-1.76, s.bedUnder, s.railZ]),
-    box('bearer_fore', 'frame', [-1.2, s.railTop, -s.railZ], [-1.14, s.bedUnder, s.railZ]),
+    box('bearer_aft', 'frame', [-2.12, s.railTop, -s.railZ], [-2.06, s.bedUnder, s.railZ]),
+    box('bearer_fore', 'frame', [-1.5, s.railTop, -s.railZ], [-1.44, s.bedUnder, s.railZ]),
     box('rear_bar', 'paint', [s.rear - 0.02, s.railTop, -0.9], [s.rear + 0.04, s.railTop + 0.1, 0.9]),
   ] + bothSides([
     box('rail', 'frame', [s.rear + 0.02, s.railLow, s.railZ - 0.08], [s.nose, s.railTop, s.railZ]),
-    box('sill_bracket_aft', 'frame', [-0.6, s.railLow, s.railZ], [-0.5, 0.58, 0.92]),
+    box('sill_bracket_aft', 'frame', [-0.8, s.railLow, s.railZ], [-0.7, 0.58, 0.92]),
     box('sill_bracket_fore', 'frame', [0.4, s.railLow, s.railZ], [0.5, 0.58, 0.92]),
   ]), finish),
   k.compound(id + '_hull', s.hullMass, bothSides(
@@ -90,11 +90,11 @@ local rakeTop = s.roof - 0.06;
       prism('gunwale', 'paint', [[s.rear, 1.12], [s.cabBack, 1.28], [s.cabBack, 1.32], [s.rear, 1.16]], [s.bedZ, s.panel]),
       prism('bed_wall', 'trim', [[s.bedRear, s.bedUnder], [s.cabBack, s.bedUnder], [s.cabBack, 1.29], [s.bedRear, 1.13]], [s.bedZ, s.wellIn]),
       box('tail_corner', 'paint', [s.rear, s.railTop + 0.1, s.bedZ], [s.rear + 0.04, 1.13, s.panel]),
-      box('sill', 'dark', [-1.13, 0.5, 0.88], [1.13, s.floor, 1.0]),
-      box('c_post', 'paint', [s.cabBack, s.floor, s.lowerIn], [-0.98, s.waist, s.lowerSkin]),
-      box('c_post_upper', 'paint', [s.cabBack, s.waist, s.upperIn], [-0.98, s.roof, s.upperSkin]),
-      box('b_post', 'paint', [-0.02, s.floor, s.lowerIn], [0.02, s.waist, s.lowerSkin]),
-      box('b_post_upper', 'paint', [-0.02, s.waist, s.upperIn], [0.02, s.roof, s.upperSkin]),
+      box('sill', 'dark', [s.rearAxle + s.archBase, 0.5, 0.88], [s.frontAxle - s.archBase, s.floor, 1.0]),
+      box('c_post', 'paint', [s.cabBack, s.floor, s.lowerIn], [s.cabBack + 0.1, s.waist, s.lowerSkin]),
+      box('c_post_upper', 'paint', [s.cabBack, s.waist, s.upperIn], [s.cabBack + 0.1, s.roof, s.upperSkin]),
+      box('b_post', 'paint', [s.bPost - 0.02, s.floor, s.lowerIn], [s.bPost + 0.02, s.waist, s.lowerSkin]),
+      box('b_post_upper', 'paint', [s.bPost - 0.02, s.waist, s.upperIn], [s.bPost + 0.02, s.roof, s.upperSkin]),
       prism('a_post', 'paint', [[s.topFront, s.waist], [s.cabFront + 0.01, s.waist], [s.cabFront - 0.06, s.roof], [s.topFront, s.roof]], [0.86, s.upperSkin]),
       box('cant_rail', 'paint', [s.cabBack, s.roof - 0.04, s.upperIn], [s.topFront, s.roof, s.upperSkin]),
       box('back_side', 'paint', [s.cabBack, s.waist, 0.68], [s.cabBack + 0.04, s.roof, s.upperSkin]),
@@ -154,8 +154,8 @@ local rakeTop = s.roof - 0.06;
     box('stay_outer', 'frame', [s.nose, 0.98, 0.94], [s.front - 0.05, 1.02, 0.98]),
     box('tow_eye', 'dark', [s.front, 0.62, 0.7], [s.front + 0.03125, 0.72, 0.76]),
   ]), finish),
-  door(id + '_front_door', 0.02, s.cabFront, s.topFront, 0.12, 0.56, s.cabFront),
-  door(id + '_rear_door', -0.98, -0.02, -0.02, -0.82, -0.26, -0.02),
+  door(id + '_front_door', s.bPost + 0.02, s.cabFront, s.topFront, s.bPost + 0.12, 0.56, s.cabFront),
+  door(id + '_rear_door', s.cabBack + 0.1, s.bPost - 0.02, s.bPost - 0.02, s.cabBack + 0.26, s.bPost - 0.24, s.bPost - 0.02),
   k.compound(id + '_windscreen', 26, [
     prism('pane_' + side.n, 'glass', [[s.cabFront - 0.03, s.waist], [s.cabFront, s.waist], [s.cabFront - 0.06, rakeTop], [s.cabFront - 0.09, rakeTop]], side.z)
     for side in [{ n: 'near', z: [0.04, 0.86] }, { n: 'far', z: [-0.86, -0.04] }]
