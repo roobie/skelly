@@ -184,6 +184,7 @@ describe('simulation source fingerprint', () => {
     const paths = [...graph.sources.keys()];
     expect(paths.some((path) => path.startsWith('src/ui/'))).toBe(false);
     expect(paths.some((path) => path.startsWith('src/render/'))).toBe(false);
+    expect(paths.filter((path) => path.startsWith('src/presentation/'))).toEqual([]);
     expect(paths.some((path) => path.startsWith('node_modules/lit-html/'))).toBe(false);
     expect(paths.some((path) => path.startsWith('node_modules/three/'))).toBe(false);
     expect(graph.sources.size).toBeGreaterThan(0);
