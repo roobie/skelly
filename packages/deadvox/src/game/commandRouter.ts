@@ -282,7 +282,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     return action.kind === 'firearm' && isFirearmReady(action.item.uid) && !ports.sprinting();
   });
   const meleeReadiness = (meleeWeaponHeld: boolean, emptyHand?: HandSide) => ({
-    rightMouseHeld: controls.rightMouseActionHeld && ports.pointerLocked() && !ports.menuPointer(),
+    rightMouseHeld: controls.rightMouseActionHeld && hasActiveFirearmInput(),
     meleeWeaponHeld,
     handsEmpty:
       emptyHand === undefined

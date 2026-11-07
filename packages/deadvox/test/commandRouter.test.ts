@@ -140,6 +140,28 @@ describe('command router', () => {
     expect(shots[1]).toBeCloseTo(1 + interval, 9);
   });
 
+  it('blocks a melee hit in a replay viewed without pointer lock, as the live run with the guard raised did', () => {
+    // Empty hands and a raised guard: the recorded sample says input reached the world.
+    const inventory = new Inventory(registry);
+    const controls = new PlayerControls({ playing: () => true, viewerInputAllowed: () => true, held: () => false });
+    controls.rightMouseHeld = true;
+    const session = { sim: { compression: { locksInput: false } } } as unknown as Session;
+    const sample = { active: true, inputLocked: false } as unknown as ReplayControlSample;
+    const router = createCommandRouter(
+      routerPorts({
+        controls,
+        session: () => session,
+        inventory: () => inventory,
+        replaying: () => true,
+        replaySample: () => sample,
+        // The viewer watches the replay with the pointer free.
+        pointerLocked: () => false,
+        menuPointer: () => false,
+      }),
+    );
+    expect(router.controls.blocking!()).toBe(true);
+  });
+
   it('replays a recorded stance gesture as the stance toggle, not as a press for the live recogniser', () => {
     const controls = new PlayerControls({ playing: () => true, viewerInputAllowed: () => true, held: () => false });
     const recogniserPresses: string[] = [];
