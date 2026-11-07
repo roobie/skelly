@@ -96,7 +96,7 @@ try {
     throw new Error(`Reading title did not become ready: ${JSON.stringify({ readiness, errors })}`, { cause: error });
   }
   const ordinaryControlIds = await page.evaluate(
-    "import('/src/game/controls.ts').then(({ controlsCardRows }) => controlsCardRows().map(({ id }) => id))",
+    "import('/src/presentation/controls.ts').then(({ controlsCardRows }) => controlsCardRows().map(({ id }) => id))",
   );
   const renderedControlIds = await page
     .locator('#controls dt')

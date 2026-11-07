@@ -18,7 +18,7 @@ const magazineModel = JSON.parse(
 const anchors = new Map([
   ['src/game/play.ts', '  const onForwardPress = (e: MouseEvent) => {'],
   [
-    'src/game/audio.ts',
+    'src/presentation/audio.ts',
     '    this.stealOldestVoice(event, sound.voiceCap, context);\n    const source = context.createBufferSource();',
   ],
 ]);
@@ -83,9 +83,9 @@ const vite = await createServer({
             `  Object.assign(globalThis, { fullAutoRuntime: { config, sim, input, inventory, session, audio, caseEffects, view, debugTools, eye, heldFirearmBore: () => heldFirearmBore(), reportReader: () => sim.events.reader() } });\n${marker}`,
           );
         }
-        if (id.endsWith('/src/game/audio.ts')) {
-          const marker = anchors.get('src/game/audio.ts');
-          requireAnchor(code, 'src/game/audio.ts', marker);
+        if (id.endsWith('/src/presentation/audio.ts')) {
+          const marker = anchors.get('src/presentation/audio.ts');
+          requireAnchor(code, 'src/presentation/audio.ts', marker);
           return code.replace(
             marker,
             '    this.stealOldestVoice(event, sound.voiceCap, context);\n    globalThis.fullAutoProbe.sourceEvent = event;\n    const source = context.createBufferSource();\n    globalThis.fullAutoProbe.sourceEvent = undefined;',

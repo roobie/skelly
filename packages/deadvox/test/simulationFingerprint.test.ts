@@ -76,11 +76,6 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/game/storageContract.ts':
     'Type-only save and mod storage contracts; the imported types erase from runtime code.',
   'src/game/debugInterface.ts': 'Type-only contracts; the imported interfaces erase from runtime code.',
-  'src/game/indexedDbCommit.ts': 'IndexedDB commit policy runs only in the save worker, outside simulation state.',
-  'src/game/mapSliceInput.ts':
-    'Review-map page input helper; only the map page imports it, so it never reaches simulation or save identity.',
-  'src/game/renderMode.ts':
-    'Presentation-only development render selection; does not alter simulation or save identity.',
   'src/core/soundOcclusion.ts': 'Presentation-only filtering, reached only through the excluded WebAudio adapter.',
   'src/game/hearing.ts': 'Heard-sound record and occlusion, reached only through the excluded WebAudio adapter.',
   'src/game/voiceCaps.ts': 'Playback voice caps, reached only through the excluded WebAudio adapter.',
@@ -178,7 +173,7 @@ describe('simulation source fingerprint', () => {
   it('keeps excluded runtime edges and presentation libraries out of the actual Vite-resolved graph', async () => {
     const graph = await actualSimulationGraph();
     expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
-    expect(graph.sources.has('src/game/engine.ts')).toBe(false);
+    expect(graph.sources.has('src/presentation/engine.ts')).toBe(false);
     expect(graph.sources.has('src/game/playtestObserver.ts')).toBe(false);
     const paths = [...graph.sources.keys()];
     expect(paths.some((path) => path.startsWith('src/ui/'))).toBe(false);
@@ -196,7 +191,7 @@ describe('simulation source fingerprint', () => {
   it('excludes WebAudio implementation but fingerprints sound admission, seeded selection and saves', async () => {
     const host = await actualSimulationHost();
     const original = await actualSimulationFingerprint();
-    const cap = await mutateSimulationSource(host, 'src/game/audio.ts');
+    const cap = await mutateSimulationSource(host, 'src/presentation/audio.ts');
     expect(cap.value).toBe(original);
     expect(cap.included).toBe(false);
     const picker = await mutateSimulationSource(host, 'src/core/soundPicker.ts', '`sound:', '`changed:');
@@ -249,7 +244,7 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('src/game/firearmHandling.ts')).toBe(true);
     expect(graph.sources.has('src/game/debugTargetRay.ts')).toBe(false);
     expect(graph.sources.has('src/render/caseEffects.ts')).toBe(false);
-    expect(graph.sources.has('src/game/controls.ts')).toBe(false);
+    expect(graph.sources.has('src/presentation/controls.ts')).toBe(false);
     expect(graph.sources.has('src/render/meleePose.ts')).toBe(false);
     expect(graph.sources.has('src/ui/primaryActionHint.ts')).toBe(false);
 
@@ -265,7 +260,7 @@ describe('simulation source fingerprint', () => {
     expect(hint.included).toBe(false);
     expect(hint.value).toBe(original);
 
-    const helpCopy = await mutateSimulationSource(host, 'src/game/controls.ts');
+    const helpCopy = await mutateSimulationSource(host, 'src/presentation/controls.ts');
     expect(helpCopy.included).toBe(false);
     expect(helpCopy.value).toBe(original);
 

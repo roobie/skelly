@@ -56,7 +56,7 @@ before parsing or trusting its definitions.
 Browser selections persist as one atomic IndexedDB record, including source text,
 order and enabled state. An unavailable or failed store leaves the panel with no mods
 loaded and a visible storage error, never a partially restored selection. See
-`src/game/modStorage.ts`, `ModStorage`, and `src/ui/modsPanel.ts`, `chooseMods`.
+`src/presentation/modStorage.ts`, `ModStorage`, and `src/ui/modsPanel.ts`, `chooseMods`.
 
 Admitted packs contribute separately to save identity, including their metadata and
 canonical content. Delivery names and JSON object key order are not identity. Dependency
@@ -121,7 +121,7 @@ silently remove authored content from validation and the game. See
 Bundled asset keys combine pack identity and relative path so unrelated mods may
 own equal filenames without choosing a winner. Content resolves files within its
 owning pack; sharing content across packs requires a dependency rather than a flat
-asset namespace. See `src/game/bundledAssets.ts`, `bundledAssetFiles` and
+asset namespace. See `src/presentation/bundledAssets.ts`, `bundledAssetFiles` and
 `bundledOriginAssetKey`.
 
 Each pack's identity covers its manifest and enumerated files, including exporter

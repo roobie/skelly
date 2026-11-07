@@ -4,7 +4,7 @@ import type { ActorSystem } from '../core/actorSystem.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Body } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
-import type { Engine } from '../game/engine.ts';
+import type { Engine } from '../presentation/engine.ts';
 
 /** Places as many requested zombies as fit, clear of the player, each other, and solid world. */
 export const spawnActorType = (

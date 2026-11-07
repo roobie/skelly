@@ -9,6 +9,9 @@ import { claimed } from '../core/capabilities.ts';
 import { requireDayCycle } from '../core/content.ts';
 import { CHUNK } from '../core/coords.ts';
 import { skyAt } from '../core/sky.ts';
+import type { GameConfig } from '../game/config.ts';
+import type { StreamerStats } from '../game/streamer.ts';
+import { createWorldSetup, type WorldSetup } from '../game/worldSetup.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { Mood } from '../render/mood.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
@@ -16,10 +19,7 @@ import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import { Skylight } from '../render/skylight.ts';
 import { browserMesherSource } from '../worker/mesherPort.ts';
-import type { GameConfig } from './config.ts';
 import { GraphicsControls } from './graphicsControls.ts';
-import type { StreamerStats } from './streamer.ts';
-import { createWorldSetup, type WorldSetup } from './worldSetup.ts';
 
 export interface Engine extends WorldSetup {
   skylight?: Skylight;

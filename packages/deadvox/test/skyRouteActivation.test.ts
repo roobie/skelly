@@ -4,8 +4,8 @@ import type { SkyResult } from '../src/core/skyTransport.ts';
 import { realTimestamp } from '../src/core/time.ts';
 import { attachSkyRoute } from '../src/debug/skyRoute.ts';
 import { SKY_ROUTE, type SkyRouteFrame } from '../src/debug/skyRouteMetrics.ts';
-import type { Engine } from '../src/game/engine.ts';
 import { observeRealFrame } from '../src/game/frameDriver.ts';
+import type { Engine } from '../src/presentation/engine.ts';
 import type { Skylight } from '../src/render/skylight.ts';
 
 const witness = vi.hoisted(() => ({ json: '' }));

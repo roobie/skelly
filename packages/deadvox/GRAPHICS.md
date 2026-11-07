@@ -58,7 +58,7 @@ Keep graphics defaults and permitted choices in the core mod, while the player o
 choice for their machine: a content pack cannot know their GPU. Debug URL overrides must
 win over player choices, which must win over content defaults. Explicit false values are
 choices, not absence. See `packages/mods/skelly.graphics/graphics.jsonnet`,
-`src/core/graphics.ts`, `resolveGraphics`, and `src/game/graphicsSettings.ts`.
+`src/core/graphics.ts`, `resolveGraphics`, and `src/presentation/graphicsSettings.ts`.
 
 Benchmarks isolate machine preferences and debug graphics overrides so saved choices cannot
 silently change a comparison workload. Scene scale stays fixed at the content default because
@@ -68,7 +68,7 @@ play's content-default look and shares its flare update: measuring another look 
 occlusion would not establish the cost players pay. Source placement belongs to the benchmark query
 so comparisons can vary the workload without changing code. Content-owned benchmark weathering
 lets mods choose that workload without changing benchmark logic. See
-`src/game/engine.ts`, `createEngine`, `src/game/graphicsControls.ts`, `GraphicsControls`,
+`src/presentation/engine.ts`, `createEngine`, `src/presentation/graphicsControls.ts`, `GraphicsControls`,
 `src/bench/post.ts`, `benchDraw` and `applyBenchWeathering`,
 `src/bench/lightFixture.ts`, `benchFlareSourcesFromUrl`, and
 `src/render/nightVisionFlare.ts`, `createNightVisionFlareUpdate`.
@@ -98,7 +98,7 @@ Graphics options are meta controls because hardware preferences are not characte
 Clearing a preference returns ownership to content rather than saving its resolved default.
 Debug overrides remain separate from preferences, and unrelated look changes must not promote
 player or mod values into the URL. See `src/ui/graphicsOptions.ts`, `renderGraphicsOptions`,
-`src/game/graphicsControls.ts`, `GraphicsControls`, and `src/debug/lookUrl.ts`, `writeLookParams`.
+`src/presentation/graphicsControls.ts`, `GraphicsControls`, and `src/debug/lookUrl.ts`, `writeLookParams`.
 
 ## Performance diagnostics
 

@@ -5,7 +5,7 @@ import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
 import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '../src/core/coreText.ts';
 import type { PackManifest } from '../src/core/packAdmission.ts';
-import { bundledAssetFiles } from '../src/game/bundledAssets.ts';
+import { bundledAssetFiles } from '../src/presentation/bundledAssets.ts';
 import { applyUiTokens } from '../src/ui/uiTokens.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 

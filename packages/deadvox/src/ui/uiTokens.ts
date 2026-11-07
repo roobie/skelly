@@ -1,7 +1,7 @@
 import { claimed } from '../core/capabilities.ts';
 import type { Registry } from '../core/content.ts';
-import { bundledAssetFiles, bundledOriginAssetKey } from '../game/bundledAssets.ts';
 import type { bundledPacks } from '../game/bundledPacks.ts';
+import { bundledAssetFiles, bundledOriginAssetKey } from '../presentation/bundledAssets.ts';
 
 const CURSOR_FILES = bundledAssetFiles({
   ...import.meta.glob<string>('../../mods/*/assets/cursors/*.png', { eager: true, query: '?url', import: 'default' }),

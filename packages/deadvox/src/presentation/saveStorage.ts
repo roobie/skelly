@@ -1,5 +1,5 @@
 import type { SaveSnapshot } from '../core/saveState.ts';
-import { SaveStorageError, type SaveStorageErrorKind } from './saveStorageErrors.ts';
+import { SaveStorageError, type SaveStorageErrorKind } from '../game/saveStorageErrors.ts';
 import {
   commitSavePayload,
   inspectSaveSlots,
@@ -7,7 +7,7 @@ import {
   type SaveCommitRequest,
   SaveCorruptionError,
   type SaveSlotPair,
-} from './saveStorageProtocol.ts';
+} from '../game/saveStorageProtocol.ts';
 import type {
   SaveBackend,
   SaveBackendPreference,
@@ -17,7 +17,7 @@ import type {
   SaveQuota,
   SaveStorageStatus,
   SaveStore,
-} from './storageContract.ts';
+} from '../game/storageContract.ts';
 
 const SAVE_WRITE_LOCK = 'skelly-save-storage';
 const warnSaveLockTimeout = (message: string, details: Record<string, unknown>): void => {

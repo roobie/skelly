@@ -1,9 +1,9 @@
 import { SHA256_HEX } from '../core/canonicalJson.ts';
 import { encodeSave, type SaveVersionComponents, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
-import { createDurableWriteTransaction } from '../game/indexedDbCommit.ts';
 import { SaveStorageError, type SaveStorageErrorKind } from '../game/saveStorageErrors.ts';
 import { SAVE_RECORD_HEADER_BYTES, SAVE_RECORD_MAX_BYTES, sealSaveSlot } from '../game/saveStorageRecord.ts';
+import { createDurableWriteTransaction } from '../presentation/indexedDbCommit.ts';
 
 const DATABASE = 'skelly-save-slots';
 const DATABASE_VERSION = 1;

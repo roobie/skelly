@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import type { PackManifest } from '../src/core/packAdmission.ts';
-import { bundledAssetFiles, bundledOriginAssetKey } from '../src/game/bundledAssets.ts';
+import { bundledAssetFiles, bundledOriginAssetKey } from '../src/presentation/bundledAssets.ts';
 
 it('isolates identical asset paths by owning pack across roots for models and audio', () => {
   const packs = ['../../mods/fixture.product', '../../../mods/fixture.shared'].map((root, index) => ({

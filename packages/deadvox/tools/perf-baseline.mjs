@@ -102,7 +102,7 @@ await build({
       name: 'perf-baseline',
       enforce: 'pre',
       transform(code, id) {
-        if (id.endsWith('/src/game/engine.ts')) {
+        if (id.endsWith('/src/presentation/engine.ts')) {
           return `import { install as installPerfBaseline } from ${JSON.stringify(runtime)};\n${once(code, '  const resize = () => {', '  if (renderer) installPerfBaseline({ renderer, scene, camera, meshes, shadows });\n  const resize = () => {')}`;
         }
         if (id.endsWith('/src/render/mood.ts')) {

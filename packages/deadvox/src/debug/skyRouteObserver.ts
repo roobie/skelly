@@ -1,5 +1,5 @@
 import type { IUniform, Texture, WebGLRenderer } from 'three';
-import type { Engine } from '../game/engine.ts';
+import type { Engine } from '../presentation/engine.ts';
 import type { SkyRouteJob, SkyRoutePhase } from './skyRouteMetrics.ts';
 
 type Method = (...args: unknown[]) => unknown;

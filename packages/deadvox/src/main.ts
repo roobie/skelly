@@ -18,17 +18,17 @@ import {
   makeConfig,
   savingEnabledFromUrl,
 } from './game/config.ts';
-import { mountControlsCard } from './game/controls.ts';
-import { createEngine } from './game/engine.ts';
 import { requestInputLock } from './game/input.ts';
 import { inputBindings, keyboardInput, labelForAction } from './game/inputBindings.ts';
 import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from './game/inputReplay.ts';
 import { startPlay } from './game/play.ts';
-import { renderFreeFromUrl } from './game/renderMode.ts';
 import type { SaveBackendPreference } from './game/storageContract.ts';
 import type { StreamerStats } from './game/streamer.ts';
 import { tutorialRequested, tutorialUrl } from './game/tutorialUrl.ts';
 import { WorldLoading } from './game/worldLoading.ts';
+import { mountControlsCard } from './presentation/controls.ts';
+import { createEngine } from './presentation/engine.ts';
+import { renderFreeFromUrl } from './presentation/renderMode.ts';
 import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
 import { mountFullscreenOptions } from './ui/fullscreenOptions.ts';

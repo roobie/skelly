@@ -233,7 +233,7 @@ try {
   await assertSaveNote('title');
   assert.equal(
     await evaluate(`(async () => {
-      const { controlsCardRows } = await import('/src/game/controls.ts');
+      const { controlsCardRows } = await import('/src/presentation/controls.ts');
       const controls = document.querySelector('#controls');
       const entries = [...controls.querySelectorAll('dt')];
       const rows = controlsCardRows(undefined, true);
@@ -643,7 +643,7 @@ try {
     'world volume is persisted to localStorage',
   );
   const restoredVolumes = await evaluate(`Promise.all([
-    import('/src/game/audio.ts'), import('/src/game/bundledContent.ts')
+    import('/src/presentation/audio.ts'), import('/src/game/bundledContent.ts')
   ]).then(([{ GameAudio }, { buildBundledContent }]) => {
     const { ui, body } = buildBundledContent().registry;
     return new GameAudio({
@@ -664,7 +664,7 @@ try {
     'locked menu click changes the graphics preference',
   );
   const restoredGraphics = await evaluate(`Promise.all([
-    import('/src/game/graphicsSettings.ts'), import('${sharedModUrl('skelly.graphics/graphics.json')}')
+    import('/src/presentation/graphicsSettings.ts'), import('${sharedModUrl('skelly.graphics/graphics.json')}')
   ]).then(([{ readGraphicsSettings }, { default: content }]) => readGraphicsSettings(content.graphics[0]))`);
   assert.equal(restoredGraphics.fastCamo, !initialCamo, 'fresh graphics settings read the persisted machine choice');
   await clickAt('[data-graphics-key="fastCamo"] button');

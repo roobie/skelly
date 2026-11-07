@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { PainCue } from '../src/game/painCue.ts';
+import { PainCue } from '../src/presentation/painCue.ts';
 import { PAIN_CUE_TUNING_FIXTURE } from './presentationFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 

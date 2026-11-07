@@ -11,7 +11,7 @@ import {
 import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
 import { makeConfig } from '../src/game/config.ts';
-import type { RenderedEngine } from '../src/game/engine.ts';
+import type { RenderedEngine } from '../src/presentation/engine.ts';
 import { heightFogUniforms, setHeightFogTuning } from '../src/render/heightFog.ts';
 import { baseRegistry, startupContent } from './baseRegistry.ts';
 import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';

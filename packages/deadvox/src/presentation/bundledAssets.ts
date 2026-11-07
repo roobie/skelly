@@ -1,4 +1,4 @@
-import { bundledPacks } from './bundledPacks.ts';
+import { bundledPacks } from '../game/bundledPacks.ts';
 
 const bundledAssetKey = (packId: string, path: string): string => `${packId}/${path}`;
 

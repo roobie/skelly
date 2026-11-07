@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DamageFeedback } from '../src/game/damageFeedback.ts';
+import { DamageFeedback } from '../src/presentation/damageFeedback.ts';
 import { DAMAGE_FEEDBACK_TUNING_FIXTURE } from './presentationFixture.ts';
 import { Simulation } from './simulationFixture.ts';
 

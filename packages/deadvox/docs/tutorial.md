@@ -35,7 +35,7 @@ has yet to see. See `mods/skelly.deadvox.scenario.tutorial/guidance.libsonnet`, 
 Action labels need live bindings because outcome nouns alone leave newcomers without
 the means to act. Help uses the shared controls card rather than a second manual that
 can drift. See `src/ui/guidedSteps.ts`, `mountGuidance`, and
-`src/game/controls.ts`, `mountControlsCard`.
+`src/presentation/controls.ts`, `mountControlsCard`.
 
 Completed outcomes, not requests or pressed buttons, are the teaching evidence.
 Remembering early outcomes prevents lesson order from stranding someone who already

@@ -1,7 +1,7 @@
 import { setImmediate } from 'node:timers/promises';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { soundVariantKey } from '../src/core/soundSynth.ts';
-import { GameAudio } from '../src/game/audio.ts';
+import { GameAudio } from '../src/presentation/audio.ts';
 import { buildSoundsPageContent } from '../src/soundsPageContent.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import type { Engine } from '../src/game/engine.ts';
 import { startPlay } from '../src/game/play.ts';
+import type { Engine } from '../src/presentation/engine.ts';
 import type { SaveController } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

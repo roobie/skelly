@@ -34,7 +34,7 @@ The code word is grapple. "Grab" already means the ladder grab, the pickup anima
 
 **Breaking free uses what the player already has.** The exits are kill the grabber, cut the arm, stagger it, push it with force, or outlast the duration. A short, learnable list beats one hidden number that makes breaking free feel random, and it needs no new input or tutorial. The first slice has no struggle input, so an empty-handed player can only outlast a grapple; whether that is real counterplay is open below.
 
-**The start has a cue.** A camera tug toward the grabber and a sound mark the moment a grapple begins. Without it a leg grapple reads as lag, so the cue is part of the slice, not polish, and the slice carries visible camera behaviour that needs a look before it merges. The existing hit cue is the seam (`src/game/damageFeedback.ts`, `DamageFeedback`).
+**The start has a cue.** A camera tug toward the grabber and a sound mark the moment a grapple begins. Without it a leg grapple reads as lag, so the cue is part of the slice, not polish, and the slice carries visible camera behaviour that needs a look before it merges. The existing hit cue is the seam (`src/presentation/damageFeedback.ts`, `DamageFeedback`).
 
 **It persists in saves.** Saving and loading must neither free a held player nor invent a hold, so the records travel with the game and are validated on load like the ladder grab (`src/core/saveFormat.ts`, `grabbedLadder`).
 

@@ -6,9 +6,9 @@ import productWeathering from '../mods/skelly.deadvox.weathering/deadvox-weather
 import { buildRegistry } from '../src/core/content.ts';
 import { resolveGraphics } from '../src/core/graphics.ts';
 import { configFromUrl } from '../src/game/config.ts';
-import { createEngine } from '../src/game/engine.ts';
-import { GraphicsControls } from '../src/game/graphicsControls.ts';
-import { writeGraphicsSettings } from '../src/game/graphicsSettings.ts';
+import { createEngine } from '../src/presentation/engine.ts';
+import { GraphicsControls } from '../src/presentation/graphicsControls.ts';
+import { writeGraphicsSettings } from '../src/presentation/graphicsSettings.ts';
 import { Mood } from '../src/render/mood.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 

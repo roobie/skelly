@@ -18,7 +18,7 @@ import { benchDraw } from '../src/bench/post.ts';
 import type { NightVision } from '../src/core/schema.ts';
 import type { Sky } from '../src/core/sky.ts';
 import { realSeconds } from '../src/core/time.ts';
-import type { RenderedEngine } from '../src/game/engine.ts';
+import type { RenderedEngine } from '../src/presentation/engine.ts';
 import { Mood } from '../src/render/mood.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

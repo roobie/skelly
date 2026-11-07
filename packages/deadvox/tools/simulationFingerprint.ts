@@ -74,7 +74,7 @@ export const SIMULATION_EXCLUSIONS = [
   // play.ts retains timestamp-to-dt policy, input sampling and actions; simulationStepper.ts advances the simulation.
   'src/render',
   // The browser's Real clock and frame requests; the stepper receives each frame's Real seconds.
-  'src/game/realFrames.ts',
+  'src/presentation/realFrames.ts',
   'src/debug',
   // Pointer-event quirks of the Mouse 5 side button (input handling); what the button does is in core/lights.ts.
   'src/core/sideButton.ts',
@@ -107,29 +107,29 @@ export const SIMULATION_EXCLUSIONS = [
   // Its public-cartography types describe printable features, not simulation or saved state.
   'src/core/publicCartography.ts',
   // WebAudio output/voice allocation and body-sized pitch law are presentation; admission and saved SoundPicker stay fingerprinted.
-  'src/game/audio.ts',
+  'src/presentation/audio.ts',
   // Bundled URL resolution is presentation; pack files have their own admitted identity.
-  'src/game/bundledAssets.ts',
+  'src/presentation/bundledAssets.ts',
   'src/game/audioPresentation.ts',
   // Machine graphics preferences affect rendering only and must not invalidate simulation saves.
-  'src/game/graphicsSettings.ts',
-  'src/game/graphicsControls.ts',
+  'src/presentation/graphicsSettings.ts',
+  'src/presentation/graphicsControls.ts',
   'src/game/actorAudio.ts',
-  'src/game/damageFeedback.ts',
+  'src/presentation/damageFeedback.ts',
   // The pain cue's pulse runs on frame time; felt pain itself stays fingerprinted in core/pain.ts.
-  'src/game/painCue.ts',
-  'src/game/engine.ts',
+  'src/presentation/painCue.ts',
+  'src/presentation/engine.ts',
   // Chooses the ray for debug readouts only; it cannot affect gameplay or saves.
   'src/game/debugTargetRay.ts',
   // Debug ragdoll staging and its tuning are presentation; corpse physics must not invalidate saves.
   'src/game/ragdollConfig.ts',
-  'src/game/saveStorage.ts',
+  'src/presentation/saveStorage.ts',
   // Browser selection persistence is transport; admission and pack identity are fingerprinted separately.
-  'src/game/modStorage.ts',
+  'src/presentation/modStorage.ts',
   'src/game/saveStorageErrors.ts',
   'src/game/saveStorageRecord.ts',
   'src/game/saveStorageProtocol.ts',
-  'src/game/controls.ts',
+  'src/presentation/controls.ts',
   'src/game/playtestTools.ts',
   'src/game/playtestObserver.ts',
   'src/worker/save.worker.ts',

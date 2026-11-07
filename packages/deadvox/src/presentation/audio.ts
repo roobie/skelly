@@ -11,11 +11,10 @@ import {
   type HeartbeatTuning,
   heartbeatForStamina,
   playerHeartbeat,
-} from './audioPresentation.ts';
-
+} from '../game/audioPresentation.ts';
+import { type HeardSound, Hearing } from '../game/hearing.ts';
+import { VoiceCaps } from '../game/voiceCaps.ts';
 import { bundledAssetFiles, bundledOriginAssetKey } from './bundledAssets.ts';
-import { type HeardSound, Hearing } from './hearing.ts';
-import { VoiceCaps } from './voiceCaps.ts';
 
 const SETTINGS_KEY = 'skelly.audio.settings';
 const CATEGORIES = ['world', 'body', 'ui'] as const;

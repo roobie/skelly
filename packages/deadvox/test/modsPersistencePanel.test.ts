@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, expect, test, vi } from 'vitest';
-import { ModStorage } from '../src/game/modStorage.ts';
+import { ModStorage } from '../src/presentation/modStorage.ts';
 import { chooseMods } from '../src/ui/modsPanel.ts';
 import { baseScreenText } from './baseRegistry.ts';
 

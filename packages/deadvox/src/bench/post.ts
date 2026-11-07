@@ -4,7 +4,7 @@ import { AUTO_TONE, DEFAULT_SHADOWS, type LookState, lookOf, type MoodState, moo
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { skyInWeather } from '../core/weather.ts';
 import type { GameConfig } from '../game/config.ts';
-import type { RenderedEngine } from '../game/engine.ts';
+import type { RenderedEngine } from '../presentation/engine.ts';
 import { setHeightFogTuning } from '../render/heightFog.ts';
 import type { LightPool } from '../render/lightPool.ts';
 import { applyLook } from '../render/look.ts';

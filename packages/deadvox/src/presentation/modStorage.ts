@@ -1,5 +1,5 @@
-import type { BrowserMod } from './browserMods.ts';
-import type { ModStore } from './storageContract.ts';
+import type { BrowserMod } from '../game/browserMods.ts';
+import type { ModStore } from '../game/storageContract.ts';
 
 const DATABASE = 'skelly.browser-mods';
 const STORE = 'selection';

@@ -289,11 +289,6 @@
       "holdDuration": 1,
       "startedAt": 2
     },
-    "game/saveStorage.ts": {
-      "requestTimeoutMs": 1,
-      "timeoutMs": 1,
-      "timer": 1
-    },
     "game/session.ts": {
       "simTime": 1
     },
@@ -304,6 +299,11 @@
     "main.ts": {
       "genMs": 1,
       "meshMs": 1
+    },
+    "presentation/saveStorage.ts": {
+      "requestTimeoutMs": 1,
+      "timeoutMs": 1,
+      "timer": 1
     },
     "render/actorAnimator.ts": {
       "duration": 1,

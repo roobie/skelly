@@ -3,8 +3,8 @@ import { countText } from '../core/numberText.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
 import { type BrowserMod, evaluateMods, MAX_MOD_BYTES, type ModEvaluation } from '../game/browserMods.ts';
-import { isInvalidModSelection, ModStorage } from '../game/modStorage.ts';
 import type { ModStore } from '../game/storageContract.ts';
+import { isInvalidModSelection, ModStorage } from '../presentation/modStorage.ts';
 import { factDetail } from './factDetail.ts';
 
 const httpUrl = /^https?:\/\//i;

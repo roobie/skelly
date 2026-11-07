@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { simSeconds } from '../src/core/time.ts';
-import { GameAudio } from '../src/game/audio.ts';
+import { GameAudio } from '../src/presentation/audio.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 

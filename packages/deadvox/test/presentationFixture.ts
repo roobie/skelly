@@ -1,5 +1,5 @@
-import type { DamageFeedbackTuning } from '../src/game/damageFeedback.ts';
-import type { PainCueTuning } from '../src/game/painCue.ts';
+import type { DamageFeedbackTuning } from '../src/presentation/damageFeedback.ts';
+import type { PainCueTuning } from '../src/presentation/painCue.ts';
 import type { GoreTuning } from '../src/render/gore.ts';
 
 export const GORE_TUNING_FIXTURE: GoreTuning = {

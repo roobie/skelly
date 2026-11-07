@@ -4,7 +4,7 @@ import { actorAttackReachForDef, actorAttackReachMetres, actorBodyDimensions } f
 import { type Body, bodyOverlapsBlock } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { spawnActorType, spawnShamblers } from '../src/debug/shamblerSpawning.ts';
-import type { Engine } from '../src/game/engine.ts';
+import type { Engine } from '../src/presentation/engine.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { createPlayerBody, physicsFor } from './playerFixture.ts';

@@ -12,8 +12,8 @@ import {
   writeGraphicsParams,
 } from '../src/core/graphics.ts';
 import { drugVignetteShown } from '../src/core/mood.ts';
-import { GraphicsControls } from '../src/game/graphicsControls.ts';
-import { readGraphicsSettings, writeGraphicsSettings } from '../src/game/graphicsSettings.ts';
+import { GraphicsControls } from '../src/presentation/graphicsControls.ts';
+import { readGraphicsSettings, writeGraphicsSettings } from '../src/presentation/graphicsSettings.ts';
 import { Gore } from '../src/render/gore.ts';
 import { Mood } from '../src/render/mood.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

@@ -1170,7 +1170,7 @@ expose the same sky eligibility contract across authored layouts and
 scenario composition. Benchmark city plans do not opt into scenario
 sky work, preserving their stress policy. Demo stock stays outside ordinary
 reachability, while admitted scenario templates and fixed items are world sources.
-See `src/core/site.ts`, `Site`; `src/game/engine.ts`, `createEngine`;
+See `src/core/site.ts`, `Site`; `src/presentation/engine.ts`, `createEngine`;
 `src/core/citySite.ts`, `authoredPlacements`; and `src/core/reachability.ts`,
 `worldSources`.
 
@@ -2457,7 +2457,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   cartridge exists, the nearest real one stands in. Loudness, pitch and tonal balance
   belong to content so listening adjustments need no weapon-specific code. Bass
   shaping must retain the recorded attack rather than muffling the whole report;
-  see `src/game/audio.ts`, `GameAudio.startSource`, and `src/core/schema/models.ts`,
+  see `src/presentation/audio.ts`, `GameAudio.startSource`, and `src/core/schema/models.ts`,
   `SoundSchema`. Keep the original recordings untouched so provenance remains
   intact. A synth stays only where it already reads as its gun; a suppressed shot
   keeps its synth until a recording of one exists.
@@ -3518,7 +3518,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **The near plane must admit short-relief optics:** the world camera draws physical optic housing too. Cutting
   through it can leave disconnected slivers above an otherwise complete composited disc. Both camera owners use
   authored near-plane policy supplied by the engine, rather than protecting only the optical adapter. See `src/core/schema/graphics.ts`,
-  `GraphicsTuningSchema`; `src/game/engine.ts`, `createEngine`; and `src/render/hands.ts`, `HeldItems`.
+  `GraphicsTuningSchema`; `src/presentation/engine.ts`, `createEngine`; and `src/render/hands.ts`, `HeldItems`.
 - **Optic presentation tuning is content:** the player view and lens-edge controls remain content-owned so look nudges do not require a code round. See `packages/mods/skelly.graphics/graphics.jsonnet`, `graphics`; `src/core/schema/graphics.ts`, `GraphicsTuningSchema`; and `src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
 - **Optic eye relief is authored per optic so imperfect alignment reads at 1x:** the dot marks the shot direction and drifts against the housing by the eye's lateral offset over the relief, so a long relief hides the sway that skill is meant to fade. See `packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`; and `src/render/hands.ts`, `HeldItems.poseOptic`.
 - **The optic window has no drawn border:** the optic's own housing already frames the view, and a second frame
@@ -3648,7 +3648,7 @@ decoration.
   belongs to the body it reports on, so it is body tuning, and its two
   recordings are sound events so validation checks their files. See
   `src/game/audioPresentation.ts`, `heartbeatForStamina`, and
-  `src/game/audio.ts`, `GameAudio.updateHeartbeat`.
+  `src/presentation/audio.ts`, `GameAudio.updateHeartbeat`.
 - **Audio tuning is content** (`PILLARS.md`, "Content forward compatibility"):
   the voice law, the heartbeat and the audio options' starting volumes are
   required content fields with no code fallback, so retuning them never needs a

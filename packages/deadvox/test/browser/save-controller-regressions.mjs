@@ -101,7 +101,7 @@ try {
       await page.getByRole('button', { name: 'Practice controls', exact: true }).press('Enter');
       assert.equal(
         await page.evaluate(async () => {
-          const { controlsCardRows, filterControlsCardRows } = await import('/src/game/controls.ts');
+          const { controlsCardRows, filterControlsCardRows } = await import('/src/presentation/controls.ts');
           const { topics } = gauntletWitness.engine.site.guidance.steps[0];
           const search = document.querySelector('#controls-search');
           const expected = filterControlsCardRows(controlsCardRows(), topics).map(({ id }) => id);
@@ -504,7 +504,7 @@ try {
       });
       await page.waitForFunction(() => !document.querySelector('#death').hidden);
       const after = await page.evaluate(async (namespace) => {
-        const { SaveStorage } = await import('/src/game/saveStorage.ts');
+        const { SaveStorage } = await import('/src/presentation/saveStorage.ts');
         const storage = new SaveStorage({ backend: 'indexeddb' });
         try {
           const record = await storage.load(namespace);

@@ -4,8 +4,8 @@ import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { type SoundEmission, SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
-import { GameAudio } from '../src/game/audio.ts';
 import { createSession, IDLE, type SessionAudio } from '../src/game/session.ts';
+import { GameAudio } from '../src/presentation/audio.ts';
 import { startupContent } from './baseRegistry.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 

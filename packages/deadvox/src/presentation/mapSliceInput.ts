@@ -1,4 +1,4 @@
-import type { KeyboardInput } from './inputBindings.ts';
+import type { KeyboardInput } from '../game/inputBindings.ts';
 
 export const MAP_SLICE_ACTIONS = ['debug.map-slice-down', 'debug.map-slice-up', 'debug.map-slice-surface'] as const;
 export type MapSliceAction = (typeof MAP_SLICE_ACTIONS)[number];
