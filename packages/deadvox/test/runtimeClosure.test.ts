@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,12 +38,16 @@ const cleanTree: Tree = {
   'packages/presentation/src/hud.ts': 'export const hud = 1;\n',
 };
 
-function violationsIn(changes: Tree) {
+/** `links` maps a link path to the directory it points at, relative to the link's own directory. */
+function violationsIn(changes: Tree, links: Tree = {}) {
   const root = mkdtempSync(join(tmpdir(), 'deadvox-closure-'));
   try {
     for (const [path, source] of Object.entries({ ...cleanTree, ...changes })) {
       mkdirSync(dirname(join(root, path)), { recursive: true });
       writeFileSync(join(root, path), source);
+    }
+    for (const [path, target] of Object.entries(links)) {
+      symlinkSync(target, join(root, path), 'dir');
     }
     return runtimeClosureViolations(root, STAGE_ONE_POLICY);
   } finally {
@@ -125,6 +129,48 @@ describe('runtime closure, stage 1', () => {
           "export const views = import.meta.glob('./*.ts', { base: './missing' });\n",
       }),
     ).toEqual([]);
+  });
+
+  it('fails case-insensitive matching, but passes the case-sensitive default that matches nothing', () => {
+    const nocase = violationsIn({
+      'packages/deadvox/src/core/catalog.ts':
+        "export const views = import.meta.glob('/src/render/*.TS', { caseSensitive: false });\n",
+    });
+    expect(importers(nocase)).toEqual(['packages/deadvox/src/core/catalog.ts']);
+    expect(
+      violationsIn({
+        'packages/deadvox/src/core/catalog.ts':
+          "export const parts = import.meta.glob('./parts/*.ts', { caseSensitive: true, exhaustive: false });\n",
+      }),
+    ).toEqual([]);
+  });
+
+  it('fails exhaustive matching, which also matches dotfiles', () => {
+    const violations = violationsIn({
+      'packages/deadvox/src/core/catalog.ts':
+        "export const panels = import.meta.glob('/src/render/hidden/*.ts', { exhaustive: true });\n",
+      'packages/deadvox/src/render/hidden/.panel.ts': 'export const panel = 1;\n',
+    });
+    expect(importers(violations)).toEqual(['packages/deadvox/src/core/catalog.ts']);
+  });
+
+  it('fails a wildcard over a symlinked directory, which Vite follows', () => {
+    const violations = violationsIn(
+      {
+        'packages/deadvox/src/core/catalog.ts': "export const views = import.meta.glob('/src/config/*/view.ts');\n",
+        'packages/deadvox/src/config/tuning.json': '{}\n',
+      },
+      { 'packages/deadvox/src/config/views': '../render' },
+    );
+    expect(importers(violations)).toEqual(['packages/deadvox/src/core/catalog.ts']);
+  });
+
+  it('fails extglob syntax, which Vite matches literally', () => {
+    const violations = violationsIn({
+      'packages/deadvox/src/core/catalog.ts': "export const panels = import.meta.glob('/src/render/@(panel).ts');\n",
+      'packages/deadvox/src/render/@(panel).ts': 'export const panel = 1;\n',
+    });
+    expect(importers(violations)).toEqual(['packages/deadvox/src/core/catalog.ts']);
   });
 
   it('fails a glob whose base does not resolve, but passes a resolvable glob that matches nothing', () => {

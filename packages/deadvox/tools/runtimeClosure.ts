@@ -182,8 +182,26 @@ const staticString = (node: unknown): string | undefined => {
   return node.type === 'TemplateLiteral' && expressions?.length === 0 ? quasis?.[0]?.value.cooked : undefined;
 };
 
-// Vite's own glob option names; it rejects any other.
-const GLOB_OPTIONS = new Set(['as', 'eager', 'import', 'exhaustive', 'query', 'base', 'caseSensitive']);
+// Vite's own glob option names; it rejects any other. `as`, `eager`, `import` and `query` change only
+// how matched files load. `caseSensitive` and `exhaustive` widen the match beyond what Node's globSync
+// finds (other-case names; dotfiles), so only their literal defaults pass. `base` is read separately.
+const GLOB_OPTIONS = new Map<string, boolean | undefined>([
+  ['as', undefined],
+  ['eager', undefined],
+  ['import', undefined],
+  ['query', undefined],
+  ['base', undefined],
+  ['caseSensitive', true],
+  ['exhaustive', false],
+]);
+
+const optionReadable = (name: unknown, value: unknown): boolean => {
+  if (typeof name !== 'string' || !GLOB_OPTIONS.has(name)) {
+    return false;
+  }
+  const required = GLOB_OPTIONS.get(name);
+  return required === undefined || (isNode(value) && value.type === 'Literal' && value.value === required);
+};
 
 /**
  * The `base` option of an `import.meta.glob` call, or why the options cannot be read. Every property
@@ -200,7 +218,7 @@ function globBase(options: unknown): { readonly base?: string } | string {
   for (const property of options.properties as AstNode[]) {
     const key = property.key as AstNode | undefined;
     const name = key?.name ?? key?.value;
-    if (property.type !== 'Property' || property.computed || !GLOB_OPTIONS.has(name as string)) {
+    if (property.type !== 'Property' || property.computed || !optionReadable(name, property.value)) {
       return 'an import.meta.glob option the check cannot read';
     }
     if (name === 'base') {
@@ -314,6 +332,42 @@ const packageName = (specifier: string): string => {
   return specifier.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]!;
 };
 
+const EXTGLOB = /[?*+@!]\(/;
+const GLOB_MAGIC = /[*?[\]{}()!+@]/;
+
+function findSymlinkedDirectory(dir: string, depth: number): string | undefined {
+  if (depth <= 0 || !(existsSync(dir) && statSync(dir).isDirectory())) {
+    return undefined;
+  }
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isSymbolicLink() && existsSync(path) && statSync(path).isDirectory()) {
+      return path;
+    }
+    const found = entry.isDirectory() ? findSymlinkedDirectory(path, depth - 1) : undefined;
+    if (found !== undefined) {
+      return found;
+    }
+  }
+  return undefined;
+}
+
+/** Why a repo-relative glob pattern could pass a symlinked directory through a wildcard, if it could. */
+function symlinkedDirectoryUnder(repoRoot: string, pattern: string): string | undefined {
+  const segments = pattern.split('/');
+  const firstMagic = segments.findIndex((segment) => GLOB_MAGIC.test(segment));
+  if (firstMagic < 0) {
+    return undefined;
+  }
+  const rest = segments.slice(firstMagic);
+  // The match descends one directory per segment before the last, or through every level under `**`.
+  const depth = rest.includes('**') ? Number.POSITIVE_INFINITY : rest.length - 1;
+  const found = findSymlinkedDirectory(join(repoRoot, ...segments.slice(0, firstMagic)), depth);
+  return found === undefined
+    ? undefined
+    : `globs over a symlinked directory, which Vite follows and the check cannot: ${relative(repoRoot, found).split(sep).join('/')}`;
+}
+
 type Resolved = { readonly file: string } | { readonly npm: string } | undefined;
 
 class ClosureWalk {
@@ -395,6 +449,15 @@ class ClosureWalk {
     const pattern = this.globPattern(importer, specifier, base);
     if (pattern === undefined) {
       this.violations.push({ importer, specifier, target: '', reason: 'uses a glob that does not resolve' });
+      return;
+    }
+    // Node's globSync reads extglob syntax and does not follow a symlinked directory under a wildcard;
+    // Vite does neither, so either would hide files Vite imports.
+    const unmatched = EXTGLOB.test(pattern)
+      ? 'uses extglob syntax, which Vite matches literally'
+      : symlinkedDirectoryUnder(this.root, pattern);
+    if (unmatched !== undefined) {
+      this.violations.push({ importer, specifier, target: '', reason: unmatched });
       return;
     }
     for (const match of globSync(pattern, { cwd: this.root })) {
