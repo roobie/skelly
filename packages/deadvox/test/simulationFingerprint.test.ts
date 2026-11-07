@@ -87,7 +87,6 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
     'Presentation projection of the interaction highlight; replay applies recorded payloads, not the highlight.',
   'src/core/stageMarks.ts':
     'Tutorial and playtest-observer stage values; core/site.ts imports only the type, so nothing simulated reads them.',
-  'src/game/debugGunPose.ts': 'Debug gun-pose editor, toggled live and never recorded.',
 };
 
 async function sourceFilesUnder(directory: string): Promise<string[]> {

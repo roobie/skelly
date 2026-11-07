@@ -7,7 +7,7 @@ import { actionsByGroup, DEBUG_GROUPS, paramName } from '../src/debug/groups.ts'
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { LOOK_PARAMS } from '../src/debug/lookUrl.ts';
-import { DebugGunPose } from '../src/game/debugGunPose.ts';
+import { DebugGunPose } from '../src/presentation/debugGunPose.ts';
 import type { DebugHooks } from '../src/presentation/debugInterface.ts';
 import { inputBindings } from '../src/presentation/inputBindings.ts';
 import { TONE_MODES } from '../src/render/look.ts';

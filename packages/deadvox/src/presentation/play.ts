@@ -47,7 +47,6 @@ import { createRefusalPresenter, handlingMoveCompleteCue, handlingMoveStartCue }
 import { columnArrival } from '../game/columnArrival.ts';
 import { createCommandRouter } from '../game/commandRouter.ts';
 import { CrouchProneInput } from '../game/crouchProneInput.ts';
-import { DebugGunPose } from '../game/debugGunPose.ts';
 import { firearmBoreRay, firearmBoreTarget } from '../game/firearmAim.ts';
 import { firearmHandlingFor } from '../game/firearmHandling.ts';
 import { observeRealFrame } from '../game/frameDriver.ts';
@@ -142,6 +141,7 @@ import { showWin } from '../ui/win.ts';
 import { mountWorldLoading } from '../ui/worldLoading.ts';
 import { GameAudio } from './audio.ts';
 import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
+import { DebugGunPose } from './debugGunPose.ts';
 import type {
   DebugHooks,
   DebugModule,

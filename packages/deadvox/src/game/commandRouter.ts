@@ -24,7 +24,6 @@ import type { Simulation } from '../core/sim.ts';
 import { fillText as fillScreenText } from '../core/textTemplate.ts';
 import { continueActionResumesJob } from './continueAction.ts';
 import { dispatchReplayStanceAction, type StanceReplayAction } from './crouchProneInput.ts';
-import type { DebugGunPose } from './debugGunPose.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import { type FirearmShotInput, firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
@@ -187,7 +186,11 @@ export interface CommandRouterPorts {
   inputContext: () => InputContext;
   pendingPlayerTickActions: Pick<PlayerTickActions, 'enqueue' | 'applyAtNextTick'>;
   /** The debug gun pose's latch; outside debug it passes the live input through. */
-  gunPose: Pick<DebugGunPose, 'active' | 'readyHeld' | 'aimingDownSights'>;
+  gunPose: {
+    readonly active: boolean;
+    readyHeld: (live: boolean) => boolean;
+    aimingDownSights: (live: boolean) => boolean;
+  };
   /** The debug block editor owns canvas clicks. */
   buildMode: () => boolean;
   handlingBusy: () => boolean;

@@ -6,13 +6,13 @@ import type { Inventory } from '../core/inventory.ts';
 import type { Body } from '../core/physics.ts';
 import type { Simulation } from '../core/sim.ts';
 import type { Weather } from '../core/weather.ts';
-import type { DebugGunPoseMode } from '../game/debugGunPose.ts';
 import type { RealFrameObserver } from '../game/frameDriver.ts';
 import type { HeardSound } from '../game/hearing.ts';
 import type { Session } from '../game/session.ts';
 import type { DrawSubmission } from '../render/drawCounters.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import type { ActorRenderer } from '../render/mobActors.ts';
+import type { DebugGunPoseMode } from './debugGunPose.ts';
 import type { Engine } from './engine.ts';
 
 export type SkyRouteAttachment = (hooks: {

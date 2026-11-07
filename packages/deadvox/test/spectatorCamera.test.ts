@@ -4,8 +4,8 @@ import { playerAdsPose } from '../src/core/playerAdsPose.ts';
 import { playerLookPose } from '../src/core/playerLookPose.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
-import { DebugGunPose } from '../src/game/debugGunPose.ts';
 import { createSession, IDLE, type SessionControls } from '../src/game/session.ts';
+import { DebugGunPose } from '../src/presentation/debugGunPose.ts';
 import { SpectatorCamera } from '../src/presentation/spectatorCamera.ts';
 import { startupContent } from './baseRegistry.ts';
 
