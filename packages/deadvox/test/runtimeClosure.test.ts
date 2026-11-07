@@ -116,6 +116,15 @@ async function configFileGateIssues(configFile: string): Promise<string[]> {
   return perCommand.flat();
 }
 
+/** Tree changes that add an exports-free workspace `kit`, whose manifest also holds `extra`. */
+function kitWorkspace(extra: Record<string, unknown>): Tree {
+  const root = JSON.parse(cleanTree['package.json'] ?? '{}') as { workspaces: string[] };
+  return {
+    'package.json': JSON.stringify({ ...root, workspaces: [...root.workspaces, 'packages/kit'] }),
+    'packages/kit/package.json': JSON.stringify({ name: 'kit', type: 'module', ...extra }),
+  };
+}
+
 const importers = (violations: ReturnType<typeof violationsIn>) => violations.map((v) => v.importer);
 const catalog = 'packages/deadvox/src/core/catalog.ts';
 // Literal file names that Vite's matcher reaches through syntax Node's globSync reads differently.
@@ -391,11 +400,11 @@ describe('runtime closure, stage 1', () => {
 
   it('follows the TypeScript source an .mjs specifier also names', () => {
     const violations = violationsIn({
-      'packages/mobgen/src/rig.mjs': 'export const rig = 1;\n',
-      'packages/mobgen/src/rig.mts': "export type V = import('three').Vector3;\n",
-      [catalog]: "export type { V } from '../../../mobgen/src/rig.mjs';\n",
+      'packages/deadvox/src/config/rig.mjs': 'export const rig = 1;\n',
+      'packages/deadvox/src/config/rig.mts': "export type V = import('three').Vector3;\n",
+      [catalog]: "export type { V } from '../config/rig.mjs';\n",
     });
-    expect(violations.map((v) => [v.importer, v.target])).toEqual([['packages/mobgen/src/rig.mts', 'three']]);
+    expect(violations.map((v) => [v.importer, v.target])).toEqual([['packages/deadvox/src/config/rig.mts', 'three']]);
   });
 
   // Each forbidden dependency sits only in the implementation file tsc substitutes for the named one.
@@ -407,11 +416,11 @@ describe('runtime closure, stage 1', () => {
     ['none (a directory with its own package.json)', 'kit', 'kit/types.ts'],
   ])('fails a specifier extension outside the supported set: %s', (_name, named, substitute) => {
     const violations = violationsIn({
-      [`packages/mobgen/src/${named === 'kit' ? 'kit/index.ts' : named}`]:
+      [`packages/deadvox/src/config/${named === 'kit' ? 'kit/index.ts' : named}`]:
         named === 'rig.js' ? 'export const V = 1;\n' : 'export type V = number;\n',
-      'packages/mobgen/src/kit/package.json': JSON.stringify({ types: './types.ts' }),
-      [`packages/mobgen/src/${substitute}`]: "export type V = import('three').Vector3;\n",
-      [catalog]: `export type { V } from '../../../mobgen/src/${named}';\n`,
+      'packages/deadvox/src/config/kit/package.json': JSON.stringify({ types: './types.ts' }),
+      [`packages/deadvox/src/config/${substitute}`]: "export type V = import('three').Vector3;\n",
+      [catalog]: `export type { V } from '../config/${named}';\n`,
     });
     expect(importers(violations)).toEqual([catalog]);
   });
@@ -422,27 +431,23 @@ describe('runtime closure, stage 1', () => {
     ['an unknown key', { frobnicate: true }],
   ])('fails a reached package whose manifest has %s', (_name, extra) => {
     const violations = violationsIn({
-      'packages/mobgen/package.json': JSON.stringify({ name: 'mobgen', type: 'module', ...extra }),
-      'packages/mobgen/src/clean.ts': 'export const V = 1;\n',
-      'packages/mobgen/src/browser.ts': "import { Vector3 } from 'three';\nexport const V = Vector3;\n",
-      [catalog]: "export { V } from 'mobgen/src/clean.ts';\n",
+      ...kitWorkspace(extra),
+      'packages/kit/src/clean.ts': 'export const V = 1;\n',
+      'packages/kit/src/browser.ts': "import { Vector3 } from 'three';\nexport const V = Vector3;\n",
+      [catalog]: "export { V } from 'kit/src/clean.ts';\n",
     });
-    expect(violations.map((v) => v.target)).toEqual(['packages/mobgen/package.json']);
+    expect(violations.map((v) => v.target)).toEqual(['packages/kit/package.json']);
   });
 
   it('judges the workspace manifest that resolves a bare name, not only the target file’s nearest one', () => {
     const violations = violationsIn({
-      'packages/mobgen/package.json': JSON.stringify({
-        name: 'mobgen',
-        type: 'module',
-        typesVersions: { '*': { 'src/clean.ts': ['src/browser.ts'] } },
-      }),
-      'packages/mobgen/src/package.json': JSON.stringify({ type: 'module' }),
-      'packages/mobgen/src/clean.ts': 'export type V = number;\n',
-      'packages/mobgen/src/browser.ts': "export type V = import('three').Vector3;\n",
-      [catalog]: "export type { V } from 'mobgen/src/clean.ts';\n",
+      ...kitWorkspace({ typesVersions: { '*': { 'src/clean.ts': ['src/browser.ts'] } } }),
+      'packages/kit/src/package.json': JSON.stringify({ type: 'module' }),
+      'packages/kit/src/clean.ts': 'export type V = number;\n',
+      'packages/kit/src/browser.ts': "export type V = import('three').Vector3;\n",
+      [catalog]: "export type { V } from 'kit/src/clean.ts';\n",
     });
-    expect(violations.map((v) => v.target)).toEqual(['packages/mobgen/package.json']);
+    expect(violations.map((v) => v.target)).toEqual(['packages/kit/package.json']);
   });
 
   const tsconfigWith = (compilerOptions: Record<string, unknown>, include: unknown = ['src']) =>
