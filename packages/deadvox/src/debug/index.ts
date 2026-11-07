@@ -31,7 +31,6 @@ import type {
   DebugRuntime,
   InputReplayStatusState,
 } from '../presentation/debugInterface.ts';
-import { inputBindings, keyboardInput, labelForAction } from '../presentation/inputBindings.ts';
 import { replayFile, type SnapshotMeasurement } from '../presentation/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { comboBox } from '../ui/comboBox.ts';
@@ -372,7 +371,9 @@ const panelTemplate = ({
   copyWeatheringValues,
   weatheringCopyStatus,
   clockInputValue,
+  labelForAction,
 }: {
+  labelForAction: (actionId: string) => string;
   open: boolean;
   groups: readonly GroupView[];
   gameFrozen: boolean;
@@ -1042,7 +1043,8 @@ export const createDebugActions = ({
   ).map((action) => ({
     ...action,
     get key() {
-      return inputBindings.binding(action.id) ? labelForAction(action.id) : '';
+      const bindings = hooks.keyboard.registry;
+      return bindings.binding(action.id) ? bindings.label(action.id) : '';
     },
   }));
 
@@ -1132,6 +1134,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     restored: !hooks.newGame,
     groundAt: (x, z) => hooks.engine.groundAt(x * s, z * s) / s,
   });
+  const keyboardInput = hooks.keyboard;
+  const inputBindings = keyboardInput.registry;
+  const labelForAction = (actionId: string): string => inputBindings.label(actionId);
   const keyTrace = new KeyTrace();
   keyboardInput.trace = undefined;
   let keyTraceEnabled = false;
@@ -1175,8 +1180,15 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let readout = emptyReadout;
   let shellKey = '';
   let noclip = false;
-  const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize, hooks.strikeTerrainCell);
-  const spawnMenu = new SpawnMenu(hooks.engine.registry, (type) => spawnDebugItem(hooks.inventory, type, hooks.feet()));
+  const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize, {
+    strikeTerrainCell: hooks.strikeTerrainCell,
+    bindings: inputBindings,
+  });
+  const spawnMenu = new SpawnMenu(
+    hooks.engine.registry,
+    (type) => spawnDebugItem(hooks.inventory, type, hooks.feet()),
+    inputBindings,
+  );
   let shamblerCount = readShamblerCount();
   let spawnStatus = '';
   /** Groups the operator collapsed; remembered per browser. */
@@ -1560,6 +1572,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       shellKey = key;
       render(
         panelTemplate({
+          labelForAction,
           open: panelOpen,
           groups,
           gameFrozen,

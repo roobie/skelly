@@ -9,15 +9,19 @@ import type { Vec3 } from '../core/coords.ts';
 import { decimalText } from '../core/numberText.ts';
 import { type Body, bodyOverlapsBlock } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
+import type { BindingRegistry } from '../game/bindingRegistry.ts';
 import { playerTuning } from '../game/player.ts';
 import type { Engine } from '../presentation/engine.ts';
-import { inputBindings, labelForAction } from '../presentation/inputBindings.ts';
 
-const hotbarTemplate = (blocks: readonly { color: string; name: string }[], selected: number) => html`
+const hotbarTemplate = (
+  blocks: readonly { color: string; name: string }[],
+  selected: number,
+  bindings: BindingRegistry,
+) => html`
   ${blocks.slice(0, 9).map(
     (block, i) => html`
     <div class=${i === selected ? 'selected' : ''}>
-      <span style=${`background: ${block.color}`}></span>${labelForAction(`debug.build-slot.${i + 1}`)} ${block.name}
+      <span style=${`background: ${block.color}`}></span>${bindings.label(`debug.build-slot.${i + 1}`)} ${block.name}
     </div>
   `,
   )}
@@ -32,16 +36,24 @@ export class BuildMode {
   private readonly reach: number;
   private readonly outline: LineSegments;
   private readonly strikeTerrainCell: (cell: Vec3, blow: BlockBlow) => boolean;
+  private readonly bindings: BindingRegistry;
 
   constructor(
     engine: Engine,
     body: Body,
     reachBlocks: number,
-    strikeTerrainCell: (cell: Vec3, blow: BlockBlow) => boolean,
+    {
+      strikeTerrainCell,
+      bindings,
+    }: {
+      readonly strikeTerrainCell: (cell: Vec3, blow: BlockBlow) => boolean;
+      readonly bindings: BindingRegistry;
+    },
   ) {
     this.engine = engine;
     this.strikeTerrainCell = strikeTerrainCell;
-    inputBindings.subscribe(() => this.draw());
+    this.bindings = bindings;
+    bindings.subscribe(() => this.draw());
     this.body = body;
     this.reach = reachBlocks;
     const s = engine.config.scale.blockSize;
@@ -150,8 +162,8 @@ export class BuildMode {
           block: block.name,
           damage: decimalText(world.blockDamage.get(hit.block)?.damage ?? 0),
           durability: decimalText(material.durability),
-          stepKey: labelForAction('debug.build-damage'),
-          destroyKey: labelForAction('debug.build-destroy'),
+          stepKey: this.bindings.label('debug.build-damage'),
+          destroyKey: this.bindings.label('debug.build-destroy'),
         })
       : (block?.name ?? '');
   }
@@ -161,6 +173,6 @@ export class BuildMode {
       return;
     }
     this.hotbar.hidden = !this.on;
-    render(hotbarTemplate(this.placeable, this.selected), this.hotbar);
+    render(hotbarTemplate(this.placeable, this.selected, this.bindings), this.hotbar);
   }
 }

@@ -336,7 +336,7 @@ try {
     const verifyGate = async (locked) => {
       const before = await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode);
       const gate = await page.evaluate(
-        `import('/src/presentation/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0])`,
+        `import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0])`,
       );
       await page.evaluate(() => {
         globalThis.nativeGateEvents.length = 0;

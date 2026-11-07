@@ -4,7 +4,7 @@ import type { Inventory } from '../core/inventory.ts';
 import type { GuidanceDef } from '../core/schema/guidance.ts';
 import { showControlsTopic } from '../presentation/controls.ts';
 import type { GuidedSteps } from '../presentation/guidedSteps.ts';
-import { keyCap } from './keyCap.ts';
+import { type KeyLabels, keyCap } from './keyCap.ts';
 
 export interface GuidancePresentation {
   readonly inventory: Inventory;
@@ -28,10 +28,11 @@ export const selectedGuidanceHint = (guide: GuidedSteps, state: GuidancePresenta
   return hint.parts;
 };
 
-const stageHint = (guide: GuidedSteps, state: GuidancePresentation) => {
+const stageHint = (guide: GuidedSteps, state: GuidancePresentation, keys: KeyLabels) => {
   const { inventory, inventoryOpen } = state;
   const text = guide.definition.chrome;
-  const action = (id: string, label: string) => html`<span data-tutorial-action=${id}>${label} ${keyCap(id)}</span>`;
+  const action = (id: string, label: string) =>
+    html`<span data-tutorial-action=${id}>${label} ${keyCap(keys, id)}</span>`;
   const inventoryAction = action('ui.inventory-toggle', inventoryOpen ? text.closeInventory : text.inventory);
   const wield = (label: string) =>
     inventoryOpen
@@ -72,7 +73,7 @@ const stageHint = (guide: GuidedSteps, state: GuidancePresentation) => {
   return selectedGuidanceHint(guide, state).map(part);
 };
 
-export const mountGuidance = (guide: GuidedSteps, exit: () => void, restart: () => void) => {
+export const mountGuidance = (guide: GuidedSteps, exit: () => void, restart: () => void, keys: KeyLabels) => {
   const box = document.getElementById('tutorial-objective')!;
   box.hidden = false;
   const text = guide.definition.chrome;
@@ -85,7 +86,7 @@ export const mountGuidance = (guide: GuidedSteps, exit: () => void, restart: () 
   return (state: GuidancePresentation) => {
     render(
       html`
-      <p class="tutorial-copy" data-tutorial-stage=${guide.stage}>${stageHint(guide, state)}</p>
+      <p class="tutorial-copy" data-tutorial-stage=${guide.stage}>${stageHint(guide, state, keys)}</p>
       <p class="tutorial-copy tutorial-note">${text.unsaved}</p>
     `,
       box,

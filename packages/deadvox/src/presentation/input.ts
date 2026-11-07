@@ -1,7 +1,7 @@
 // Pointer-lock mouse listeners writing the player's controls; keyboard intents come from the shared semantic owner.
 
 import { PlayerControls } from '../game/playerControls.ts';
-import { keyboardInput } from './inputBindings.ts';
+import type { KeyboardInput } from './inputBindings.ts';
 
 export const nextMenuCursor = (
   position: { x: number; y: number },
@@ -44,9 +44,16 @@ export class Input {
   private lookSensitivity: { base: number; appliedPower: () => number } | undefined;
   constructor(
     target: HTMLElement,
-    dominantUseAllowed: () => boolean = () => true,
-    cancelOnBlurAllowed: () => boolean = () => true,
-    viewerInputAllowed: () => boolean = () => true,
+    keyboardInput: KeyboardInput,
+    {
+      dominantUseAllowed = () => true,
+      cancelOnBlurAllowed = () => true,
+      viewerInputAllowed = () => true,
+    }: {
+      readonly dominantUseAllowed?: () => boolean;
+      readonly cancelOnBlurAllowed?: () => boolean;
+      readonly viewerInputAllowed?: () => boolean;
+    } = {},
   ) {
     this.target = target;
     this.dominantUseAllowed = dominantUseAllowed;

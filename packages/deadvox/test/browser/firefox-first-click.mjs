@@ -158,7 +158,7 @@ try {
   await verifyAltRelease(page);
   process.stdout.write(`Native Alt release browser: ${browser.version()}\n`);
   const gateCode = await page.evaluate(
-    `import('/src/presentation/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
+    `import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
   );
   await page.evaluate((code) => {
     globalThis.firefoxNativeGateEvents = [];

@@ -199,7 +199,7 @@ try {
   );
   discovery.phase = 'UI assertions';
   const keyBindings =
-    await evaluate(`Promise.all([import('/src/presentation/inputBindings.ts'), import('/src/game/bindingRegistry.ts')]).then(([{ inputBindings }, { NATIVE_INPUTS }]) => ({
+    await evaluate(`Promise.all([import('/src/product/input.ts'), import('/src/game/bindingRegistry.ts')]).then(([{ inputBindings }, { NATIVE_INPUTS }]) => ({
     mainMenu: { code: inputBindings.chords('ui.main-menu-toggle')[0].code, label: inputBindings.label('ui.main-menu-toggle') },
     browserMenuBar: NATIVE_INPUTS.find((native) => native.code === 'F10'),
   }))`);
@@ -234,9 +234,10 @@ try {
   assert.equal(
     await evaluate(`(async () => {
       const { controlsCardRows } = await import('/src/presentation/controls.ts');
+      const { inputBindings } = await import('/src/product/input.ts');
       const controls = document.querySelector('#controls');
       const entries = [...controls.querySelectorAll('dt')];
-      const rows = controlsCardRows(undefined, true);
+      const rows = controlsCardRows(inputBindings, true);
       const columns = getComputedStyle(controls).gridTemplateColumns.trim().split(/\\s+/);
       const cardEl = document.querySelector('#overlay .card');
       const card = cardEl.getBoundingClientRect();
@@ -534,8 +535,9 @@ try {
   const emptyQuickbarReady = () =>
     evaluate(`(async () => {
       const { quickbarViewModel } = await import('/src/ui/hud.ts');
+      const { inputBindings } = await import('/src/product/input.ts');
       const { quickbar, inventory } = window.uiContractRuntime;
-      const expected = quickbarViewModel(quickbar, inventory).slots;
+      const expected = quickbarViewModel(quickbar, inventory, inputBindings).slots;
       const slots = [...document.querySelectorAll('#quickbar .qb-slot')];
       return expected.length > 0 && expected.every((slot) => !slot.filled) &&
         slots.length === expected.length && slots.every((slot, index) =>
@@ -855,7 +857,7 @@ try {
   );
   assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '1');
   const spawnActionLabel = async () =>
-    evaluate(`import('/src/presentation/inputBindings.ts').then(({ inputBindings }) => {
+    evaluate(`import('/src/product/input.ts').then(({ inputBindings }) => {
     const label = document.querySelector('[data-debug-action="debug.spawn-shamblers"]').textContent;
     return label.includes(inputBindings.label('debug.spawn-shamblers')) &&
       label.includes(document.querySelector('.debug-shambler-count output').textContent);

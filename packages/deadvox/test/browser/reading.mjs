@@ -96,7 +96,7 @@ try {
     throw new Error(`Reading title did not become ready: ${JSON.stringify({ readiness, errors })}`, { cause: error });
   }
   const ordinaryControlIds = await page.evaluate(
-    "import('/src/presentation/controls.ts').then(({ controlsCardRows }) => controlsCardRows().map(({ id }) => id))",
+    "Promise.all([import('/src/presentation/controls.ts'), import('/src/product/input.ts')]).then(([{ controlsCardRows }, { inputBindings }]) => controlsCardRows(inputBindings).map(({ id }) => id))",
   );
   const renderedControlIds = await page
     .locator('#controls dt')
@@ -108,7 +108,7 @@ try {
     // KeyJ is the new chord being captured; world.interact still resolves to the old key until capture commits.
     await page.keyboard.press('KeyJ');
     await page.waitForFunction(
-      "import('/src/presentation/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code === 'KeyJ')",
+      "import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code === 'KeyJ')",
     );
     await page.reload();
     await page.waitForFunction(
@@ -118,7 +118,7 @@ try {
     );
     assert.equal(
       await page.evaluate(
-        "import('/src/presentation/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code)",
+        "import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code)",
       ),
       'KeyJ',
       'settings rebind persists across reload',
@@ -420,7 +420,9 @@ try {
     });
     await page.evaluate(async () => {
       const restUiModule = '/src/ui/rest.ts';
+      const inputModule = '/src/product/input.ts';
       globalThis.readingWitness.restViewModel = (await import(restUiModule)).restViewModel;
+      globalThis.readingWitness.keys = (await import(inputModule)).inputBindings;
     });
     const sleepRefusal = await page.evaluate((uid) => {
       const { session } = globalThis.readingWitness;
@@ -428,12 +430,13 @@ try {
     }, bedUid);
     assert.equal(sleepRefusal, undefined);
     const progressHandle = await page.waitForFunction(() => {
-      const { session, restViewModel } = globalThis.readingWitness;
+      const { session, restViewModel, keys } = globalThis.readingWitness;
       const gauge = document.querySelector('#rest [role="progressbar"]');
       const vm = restViewModel(session.rest.action, true, session.sim, {
         messagesVisible: true,
         restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },
         text: session.inventory.registry.ui.get('core').screenText,
+        keys,
       });
       if (
         !(gauge && session.rest.action?.sleepOnset) ||
@@ -566,7 +569,7 @@ try {
     await aim('crate', noteCrate.uid);
     const searchStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
     const interactLabel = await page.evaluate(
-      "import('/src/presentation/inputBindings.ts').then(({ inputBindings }) => inputBindings.label('world.interact'))",
+      "import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.label('world.interact'))",
     );
     await page.waitForFunction((label) => document.querySelector('#prompt').textContent.includes(label), interactLabel);
     await pressAction(page, 'world.interact');

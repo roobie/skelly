@@ -1,11 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ModelDef } from '../src/core/content.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import { Input, nextMenuCursor, requestInputLock } from '../src/presentation/input.ts';
-import { keyboardInput, shouldCancelInputForViewerFocus } from '../src/presentation/inputBindings.ts';
+import { KeyboardInput, shouldCancelInputForViewerFocus } from '../src/presentation/inputBindings.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { createPlayerBody, PLAYER, steer } from './playerFixture.ts';
+
+const keyboardInput = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS));
 
 const fixture = (allowed: () => boolean = () => true, viewerInputAllowed: () => boolean = () => true) => {
   const targetListeners = new Map<string, (event: MouseEvent) => void>();
@@ -41,7 +45,7 @@ const fixture = (allowed: () => boolean = () => true, viewerInputAllowed: () => 
       input.controls.startFreeLook();
     }
   };
-  input = new Input(target, allowed, () => true, viewerInputAllowed);
+  input = new Input(target, keyboardInput, { dominantUseAllowed: allowed, viewerInputAllowed });
   input.setLookSensitivity(1, () => 1);
   input.controls.setFreeLook(PLAYER.aim.freeLook, () => input.controls.aimingDownSights);
   keyboardInput.cancelled = (preservePointer) => input.controls.cancel(preservePointer);

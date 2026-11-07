@@ -19,11 +19,11 @@ vi.mock('../src/ui/skyRoutePanel.ts', () => ({
     },
   }),
 }));
+const keyboard = {
+  context: () => ({ context: inputFixture.context, debug: false }),
+  registry: { binding: () => ({ contexts: ['play', 'noclip', 'build'] }) },
+};
 vi.mock('../src/presentation/inputBindings.ts', () => ({
-  keyboardInput: {
-    context: () => ({ context: inputFixture.context, debug: false }),
-    registry: { binding: () => ({ contexts: ['play', 'noclip', 'build'] }) },
-  },
   forwardedActionHolds: () => (action: string) => {
     inputFixture.issued.push(action);
     return () => undefined;
@@ -124,6 +124,7 @@ it('route activation excludes inactive rendered work without clearing startup jo
     session: { body: { pos: [SKY_ROUTE.start, 0, SKY_ROUTE.z] } },
     debug,
     active: () => active,
+    keyboard,
   } as unknown as Parameters<typeof attachSkyRoute>[0]);
   if (!route) {
     throw new Error('Owned ports did not attach the route');
@@ -234,6 +235,7 @@ it('waits for the input owner to permit play before starting the route', () => {
     session: { body: { pos: [SKY_ROUTE.start, 0, SKY_ROUTE.z] } },
     debug,
     active: () => active,
+    keyboard,
   } as unknown as Parameters<typeof attachSkyRoute>[0]);
   if (!route) {
     throw new Error('Owned ports did not attach the route');

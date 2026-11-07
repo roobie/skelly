@@ -8,6 +8,8 @@ import { Inventory } from '../../src/core/inventory.ts';
 import { restoreItem, snapshotItem } from '../../src/core/items.ts';
 import { bindReach } from '../../src/core/reach.ts';
 import { Simulation } from '../../src/core/sim.ts';
+import { BindingRegistry } from '../../src/game/bindingRegistry.ts';
+import { INPUT_BINDINGS } from '../../src/product/controls.ts';
 import { InventoryScreen } from '../../src/ui/inventoryScreen.ts';
 import { buildFixtureRegistry } from '../economyFixtures.ts';
 import { fixtureIds } from '../fixtures/capabilityIds.ts';
@@ -60,6 +62,7 @@ export const mountRecoveryProbe = (base: Registry, clock: ClockSettings) => {
   root.dataset.recoveryProbe = '';
   document.body.append(root);
   const screen = new InventoryScreen(root, inventory, queue, {
+    bindings: new BindingRegistry(INPUT_BINDINGS),
     reach,
     feet: () => feet,
     nearby: () => [...inventory.piles.values()],

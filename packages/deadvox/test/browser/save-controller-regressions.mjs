@@ -77,7 +77,7 @@ try {
         'the live guide renders its authored stage identity rather than a built-in stage',
       );
       const binding = await page.evaluate(async () => {
-        const { inputBindings } = await import('/src/presentation/inputBindings.ts');
+        const { inputBindings } = await import('/src/product/input.ts');
         const id = 'movement.forward';
         const original = inputBindings.chords(id);
         const cap = document.querySelector(`[data-tutorial-action="${id}"] kbd`);
@@ -94,7 +94,7 @@ try {
         return { id, original, previous };
       });
       await page.waitForFunction(async ({ id, previous }) => {
-        const { inputBindings } = await import('/src/presentation/inputBindings.ts');
+        const { inputBindings } = await import('/src/product/input.ts');
         const cap = document.querySelector(`[data-tutorial-action="${id}"] kbd`);
         return cap?.textContent === inputBindings.label(id) && cap.textContent !== previous;
       }, binding);
@@ -102,16 +102,17 @@ try {
       assert.equal(
         await page.evaluate(async () => {
           const { controlsCardRows, filterControlsCardRows } = await import('/src/presentation/controls.ts');
+          const { inputBindings } = await import('/src/product/input.ts');
           const { topics } = gauntletWitness.engine.site.guidance.steps[0];
           const search = document.querySelector('#controls-search');
-          const expected = filterControlsCardRows(controlsCardRows(), topics).map(({ id }) => id);
+          const expected = filterControlsCardRows(controlsCardRows(inputBindings), topics).map(({ id }) => id);
           const actual = [...document.querySelectorAll('#controls [data-input-action]')].map(
             (row) => row.dataset.inputAction,
           );
           return (
             search === document.activeElement &&
             expected.length > 0 &&
-            expected.length < controlsCardRows().length &&
+            expected.length < controlsCardRows(inputBindings).length &&
             JSON.stringify(actual) === JSON.stringify(expected) &&
             expected.includes('movement.forward')
           );
@@ -120,7 +121,7 @@ try {
         'practice opens the shared controls card on the movement topic',
       );
       await page.evaluate(async ({ id, original }) => {
-        const { inputBindings } = await import('/src/presentation/inputBindings.ts');
+        const { inputBindings } = await import('/src/product/input.ts');
         if (inputBindings.rebind(id, original) !== undefined) {
           throw new Error('Binding restoration failed');
         }
@@ -132,7 +133,7 @@ try {
         const { HandlingQueue } = await import('/src/core/handling.ts');
         const { Unpacking } = await import('/src/game/unpacking.ts');
         const { dominantSide } = await import('/src/core/character.ts');
-        const { inputBindings } = await import('/src/presentation/inputBindings.ts');
+        const { inputBindings } = await import('/src/product/input.ts');
         // Own fixture inventory: no injected progress or inventory changes in the playing session.
         const inventory = new Inventory(gauntletWitness.engine.registry);
         const bag = inventory.create('hiking_backpack');
@@ -183,6 +184,7 @@ try {
             tutorial,
             () => undefined,
             () => undefined,
+            inputBindings,
           );
           const actions = () =>
             [...document.querySelectorAll('#tutorial-objective [data-tutorial-action]')].map(
@@ -192,6 +194,7 @@ try {
             lootTutorial,
             () => undefined,
             () => undefined,
+            inputBindings,
           )({
             inventory,
             inventoryOpen: true,
@@ -249,7 +252,7 @@ try {
         const { bindReach } = await import('/src/core/reach.ts');
         const { fixtureIds } = await import('/test/fixtures/capabilityIds.ts');
         const { Unpacking } = await import('/src/game/unpacking.ts');
-        const { inputBindings } = await import('/src/presentation/inputBindings.ts');
+        const { inputBindings } = await import('/src/product/input.ts');
         const inventory = new Inventory(gauntletWitness.engine.registry);
         const queue = new HandlingQueue(inventory);
         let finished = false;
@@ -283,6 +286,7 @@ try {
               finished = true;
             },
             () => undefined,
+            inputBindings,
           );
           draw(presentation);
           const exitChoice = definition.choices.find(
@@ -326,6 +330,7 @@ try {
             const inventoryRoot = document.createElement('div');
             document.body.append(inventoryRoot);
             const screen = new InventoryScreen(inventoryRoot, inventory, queue, {
+              bindings: inputBindings,
               feet: () => [0, 1, 0],
               reach: bindReach({
                 inventory,
@@ -421,10 +426,12 @@ try {
         };
         tutorial.observe(prerequisites);
         tutorial.observe({ ...prerequisites, lightOn: false });
+        const { inputBindings } = await import('/src/product/input.ts');
         const draw = mountTutorial(
           tutorial,
           () => undefined,
           () => undefined,
+          inputBindings,
         );
         const observe = () => {
           tutorial.observe({

@@ -30,7 +30,7 @@ const debugHouseStart = { id: 'primary_action_fixture_start' };
 const startStateModule = '/src/core/startState.ts';
 const debugStartsModule = '/test/fixtures/debugStarts.ts';
 const firearmActionModule = '/src/core/firearmAction.ts';
-const inputBindingsModule = '/src/presentation/inputBindings.ts';
+const inputBindingsModule = '/src/product/input.ts';
 const inputReplayModule = '/src/game/inputReplay.ts';
 const firearmHandlingModule = '/src/game/firearmHandling.ts';
 const reloadInputModule = '/src/game/reloadInput.ts';
@@ -3835,8 +3835,8 @@ try {
     const resumedElapsed = await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job.elapsed);
     assert.ok(resumedElapsed >= pryElapsed, 'resuming never moves the pry cursor backwards');
     const stopLabel = await page.evaluate(async (moduleUrl) => {
-      const { labelForAction } = await import(moduleUrl);
-      return labelForAction('handling.stop');
+      const { inputBindings } = await import(moduleUrl);
+      return inputBindings.label('handling.stop');
     }, inputBindingsModule);
     assert.ok((await page.locator('#handling').textContent())?.includes(stopLabel));
     await page.evaluate(() => {

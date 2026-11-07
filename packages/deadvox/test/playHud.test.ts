@@ -5,7 +5,8 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { bodyRegionLabel } from '../src/core/body.ts';
 import { damageWord } from '../src/core/items.ts';
 import { fillText } from '../src/core/textTemplate.ts';
-import { inputBindings, labelForAction } from '../src/presentation/inputBindings.ts';
+import { BindingRegistry } from '../src/game/bindingRegistry.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import {
   playCarryText,
@@ -21,6 +22,8 @@ import { baseRegistry, baseScreenText } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const text = baseScreenText();
+const inputBindings = new BindingRegistry(INPUT_BINDINGS);
+const labelForAction = (actionId: string): string => inputBindings.label(actionId);
 
 it('projects debug positions in metres and counts only existing chunk/geometry attribute bytes', () => {
   const geometry = new BufferGeometry();
@@ -228,6 +231,7 @@ it('uses a rebound registry label for restable furniture interactions', () => {
         fullName: 'Fixture',
       },
       text.interaction,
+      inputBindings,
     );
     const prompt = drawn(hint);
     expect(prompt.querySelector('.keycap')?.textContent).toBe(labelForAction('world.interact'));
@@ -270,6 +274,7 @@ it("names a damaged piece's band from the shared band table below the top band, 
         damage: damageText,
       },
       text.interaction,
+      inputBindings,
     );
     return { word: damageText, shown: drawn(hint).textContent };
   };
@@ -386,11 +391,13 @@ it('omits expired notices and the duplicated rest interruption but retains the s
     interruption: 'Hurt',
     resting: true,
   });
-  const restingPrompt = drawn(playPromptText(state, visible, text.prompt)).textContent;
+  const restingPrompt = drawn(playPromptText(state, visible, text.prompt, inputBindings)).textContent;
   expect(restingPrompt).toContain(state.interactionHint);
   expect(restingPrompt).toContain(state.itemActionHint);
   expect(restingPrompt).not.toContain(state.interruption);
-  const interruptedPrompt = drawn(playPromptText({ ...state, resting: false }, visible, text.prompt)).textContent;
+  const interruptedPrompt = drawn(
+    playPromptText({ ...state, resting: false }, visible, text.prompt, inputBindings),
+  ).textContent;
   expect(interruptedPrompt).toContain(state.interactionHint);
   expect(interruptedPrompt).toContain(state.interruption);
 });
@@ -403,13 +410,14 @@ it('draws the live turn and tip keys as key caps in the carry hint, follows a re
           now: 1,
           notice: '',
           noticeUntil: 0,
-          interactionHint: playCarryText('fixture set down', text.interaction),
+          interactionHint: playCarryText('fixture set down', text.interaction, inputBindings),
           itemActionHint: undefined,
           interruption: undefined,
           resting: false,
         },
         hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, interaction }),
         text.prompt,
+        inputBindings,
       ),
     );
   const caps = (prompt: HTMLElement): string[] =>
@@ -440,10 +448,21 @@ it('shows a refusal reason only when the messages option is on', () => {
     resting: false,
   });
   expect(
-    playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: false }), text.prompt),
+    playPromptText(
+      state,
+      hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: false }),
+      text.prompt,
+      inputBindings,
+    ),
   ).toBe('');
   expect(
-    drawn(playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true }), text.prompt))
-      .textContent,
+    drawn(
+      playPromptText(
+        state,
+        hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true }),
+        text.prompt,
+        inputBindings,
+      ),
+    ).textContent,
   ).toContain(reason);
 });

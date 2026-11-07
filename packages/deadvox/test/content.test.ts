@@ -35,7 +35,7 @@ import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { WEATHERING_RANGES } from '../src/core/weather.ts';
-import { inputBindings } from '../src/presentation/inputBindings.ts';
+import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
@@ -440,6 +440,7 @@ describe('content', () => {
   });
 
   it('keeps input instructions out of item descriptions', () => {
+    const inputBindings = new BindingRegistry(INPUT_BINDINGS);
     const bindingLabels = [
       ...INPUT_BINDINGS.flatMap((binding) =>
         binding.defaults.map((_, index) => inputBindings.alternativeLabel(binding.id, index).split(' + ').at(-1)!),

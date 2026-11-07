@@ -1,6 +1,9 @@
 import { expect, it } from 'vitest';
+import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import type { Engine } from '../src/presentation/engine.ts';
+import { KeyboardInput } from '../src/presentation/inputBindings.ts';
 import { startPlay } from '../src/presentation/play.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import type { SaveController } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
@@ -21,7 +24,8 @@ it('rejects a save-bound content-selected guide before runtime actions or save a
   });
   const none = { packs: [], urls: {} };
   const assets = { audio: none, models: none, cursors: none };
-  expect(() => startPlay(engine, undefined, { assets, saveController })).toThrow(
+  const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS));
+  expect(() => startPlay(engine, undefined, { assets, keyboard, saveController })).toThrow(
     'Practice cannot bind a save or restore a world',
   );
 });

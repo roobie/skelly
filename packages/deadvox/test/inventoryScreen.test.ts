@@ -29,7 +29,7 @@ import {
 } from '../src/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '../src/game/screenCommandDispatcher.ts';
 import { Survival } from '../src/game/survival.ts';
-import { inputBindings, KeyboardInput } from '../src/presentation/inputBindings.ts';
+import { KeyboardInput } from '../src/presentation/inputBindings.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { ItemPictures } from '../src/render/itemPictures.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
@@ -40,6 +40,7 @@ import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const registry = baseRegistry();
+const inputBindings = new BindingRegistry(INPUT_BINDINGS);
 
 /** Matches text filled from a content template, each placeholder replaced by its pattern. */
 const templatePattern = (template: string, placeholders: Readonly<Record<string, string>>): RegExp =>
@@ -157,6 +158,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     throwItem: () => undefined,
   };
   const hooks = {
+    bindings: inputBindings,
     reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1, clock: BASE_CLOCK }),
     feet: () => [0, 0, 0] as [number, number, number],
     nearby: () => [...inv.piles.values()],

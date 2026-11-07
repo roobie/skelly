@@ -5,7 +5,7 @@ import type { ScreenText } from '../core/schema.ts';
 import type { Simulation } from '../core/sim.ts';
 import { fillText } from '../core/textTemplate.ts';
 import { activityProgress } from './activityProgress.ts';
-import { fillHint, type HintText, keyCap } from './keyCap.ts';
+import { fillHint, type HintText, type KeyLabels, keyCap } from './keyCap.ts';
 
 export interface WaitViewAction {
   readonly label: string;
@@ -26,13 +26,14 @@ export interface RestViewOptions {
   /** What the card calls each kind of rest; from the core ui content. */
   readonly restLabels: Readonly<Record<RestKind, string>>;
   readonly text: Pick<ScreenText, 'rest' | 'prompt'>;
+  readonly keys: KeyLabels;
 }
 
 export const restViewModel = (
   action: RestAction | WaitViewAction | undefined,
   canStop: boolean,
   sim: Simulation,
-  { messagesVisible, restLabels, text }: RestViewOptions,
+  { messagesVisible, restLabels, text, keys }: RestViewOptions,
 ): RestViewModel => {
   if (!action) {
     return { visible: false, label: '', clock: '', percent: 0, stopHint: '', canStop: false, prompt: undefined };
@@ -60,17 +61,22 @@ export const restViewModel = (
     label,
     clock: formatClock(sim.calendar),
     percent,
-    stopHint: canStop ? fillHint(text.rest.stop, { key: keyCap('handling.stop') }) : '',
+    stopHint: canStop ? fillHint(text.rest.stop, { key: keyCap(keys, 'handling.stop') }) : '',
     canStop,
     prompt: messagesVisible ? sim.compression.interruption : undefined,
   };
 };
 
 /** The interruption, then its continue key and, when the action can stop, its stop key. */
-export const interruptionPrompt = (text: ScreenText['prompt'], reason: string, canStop: boolean): TemplateResult =>
-  html`${fillText(text.interruption, { reason })}   ${fillHint(text.continue, { key: keyCap('compression.continue') })}${canStop ? html`   ${fillHint(text.stop, { key: keyCap('handling.stop') })}` : ''}`;
+export const interruptionPrompt = (
+  text: ScreenText['prompt'],
+  reason: string,
+  canStop: boolean,
+  keys: KeyLabels,
+): TemplateResult =>
+  html`${fillText(text.interruption, { reason })}   ${fillHint(text.continue, { key: keyCap(keys, 'compression.continue') })}${canStop ? html`   ${fillHint(text.stop, { key: keyCap(keys, 'handling.stop') })}` : ''}`;
 
-const restTemplate = (vm: RestViewModel, text: ScreenText['prompt']): TemplateResult => html`
+const restTemplate = (vm: RestViewModel, text: ScreenText['prompt'], keys: KeyLabels): TemplateResult => html`
   <div class="rest-edge"></div>
   ${activityProgress({
     label: vm.label,
@@ -78,7 +84,7 @@ const restTemplate = (vm: RestViewModel, text: ScreenText['prompt']): TemplateRe
     progressText: vm.clock,
     detail: html`
       ${vm.stopHint ? html`<p class="hd-muted">${vm.stopHint}</p>` : ''}
-      ${vm.prompt ? html`<p class="rest-prompt">${interruptionPrompt(text, vm.prompt, vm.canStop)}</p>` : ''}
+      ${vm.prompt ? html`<p class="rest-prompt">${interruptionPrompt(text, vm.prompt, vm.canStop, keys)}</p>` : ''}
     `,
   })}
 `;
@@ -91,6 +97,7 @@ export const renderRest = ({
   messagesVisible,
   restLabels,
   text,
+  keys,
 }: {
   root: HTMLElement;
   action: RestAction | WaitViewAction | undefined;
@@ -99,10 +106,11 @@ export const renderRest = ({
   messagesVisible: boolean;
   restLabels: Readonly<Record<RestKind, string>>;
   text: Pick<ScreenText, 'rest' | 'prompt'>;
+  keys: KeyLabels;
 }): void => {
-  const vm = restViewModel(action, canStop, sim, { messagesVisible, restLabels, text });
+  const vm = restViewModel(action, canStop, sim, { messagesVisible, restLabels, text, keys });
   root.hidden = !vm.visible;
   if (vm.visible) {
-    render(restTemplate(vm, text.prompt), root);
+    render(restTemplate(vm, text.prompt, keys), root);
   }
 };

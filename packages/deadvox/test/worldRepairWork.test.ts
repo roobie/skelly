@@ -8,6 +8,7 @@ import { snapshotItem } from '../src/core/items.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { realSeconds, simSeconds } from '../src/core/time.ts';
+import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { planRealFrame } from '../src/game/frameDriver.ts';
 import { decodeInputReplay, encodeInputReplay, InputReplayRecorder } from '../src/game/inputReplay.ts';
 import {
@@ -15,6 +16,7 @@ import {
   isReplayActionPayload,
   type ReplayActionPayload,
 } from '../src/game/replayCommands.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { runningCraftPresentation, workName } from '../src/ui/craftReadout.ts';
 import { handlingViewModel, timedActionHandlingPresentation } from '../src/ui/hud.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
@@ -101,7 +103,10 @@ it.each(['normal', 'compressed'] as const)(
         compressionActive: r.sim.compression.active,
       });
       expect(action).toBeDefined();
-      return handlingViewModel(timedActionHandlingPresentation(action!, handling), handling);
+      return handlingViewModel(
+        timedActionHandlingPresentation(action!, handling, new BindingRegistry(INPUT_BINDINGS)),
+        handling,
+      );
     };
     const owned = structuredClone(r.work.work);
     const slice =

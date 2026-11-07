@@ -7,6 +7,8 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { fillText } from '../src/core/textTemplate.ts';
+import { BindingRegistry } from '../src/game/bindingRegistry.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { craftingText, craftRows, runningCraftPresentation } from '../src/ui/craftReadout.ts';
 import { baseRegistry, baseRegistryWith, baseScreenText } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
@@ -245,7 +247,10 @@ describe('crafting read-only presentation', () => {
       );
       expect(action).toBeDefined();
       const { handling } = baseScreenText();
-      const model = handlingViewModel(timedActionHandlingPresentation(action!, handling), handling);
+      const model = handlingViewModel(
+        timedActionHandlingPresentation(action!, handling, new BindingRegistry(INPUT_BINDINGS)),
+        handling,
+      );
       expect(model.visible).toBe(true);
       expect(model.percent).toBe(25);
     });

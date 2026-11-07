@@ -11,7 +11,7 @@ import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
 import { type HandlingPresentationSource, renderHandling } from './hud.ts';
 import type { HudOptionsState } from './hudOptions.ts';
-import { fillHint, type HintText, hintLines, keyCap } from './keyCap.ts';
+import { fillHint, type HintText, hintLines, type KeyLabels, keyCap } from './keyCap.ts';
 import { interruptionPrompt } from './rest.ts';
 
 export interface PlayHudRoots {
@@ -169,6 +169,7 @@ export const playHudText = (
   state: PlayHudState,
   visible: Readonly<HudOptionsState>,
   text: StatsText,
+  keys: KeyLabels,
 ): TemplateResult | '' => {
   const { calendar, speed, paused, carriedGrams, fps, seed, radiusMetres, walking, meshed, pending, looking } = state;
   const [x, y, z] = state.positionMetres.map(decimalText);
@@ -177,7 +178,7 @@ export const playHudText = (
     ...(speed > 1.05 ? [fillText(text.speed, { speed: countText(speed) })] : []),
     ...(paused ? [text.paused] : []),
   ].join(GAP);
-  const gait = fillHint(walking ? text.walking : text.jogging, { key: keyCap('movement.walk-toggle') });
+  const gait = fillHint(walking ? text.walking : text.jogging, { key: keyCap(keys, 'movement.walk-toggle') });
   return hintLines(
     [
       optionalLine(visible.clock, clock),
@@ -209,6 +210,7 @@ export const playPromptText = (
   state: PlayPromptState,
   visible: Readonly<HudOptionsState>,
   text: ScreenText['prompt'],
+  keys: KeyLabels,
 ): TemplateResult | '' => {
   const { now, notice, noticeUntil, interactionHint, itemActionHint, interruption, resting } = state;
   const lines: HintText[] = visible.messages && now < noticeUntil ? [notice] : [];
@@ -220,7 +222,7 @@ export const playPromptText = (
   }
   // Rest has its own Continue/Stop prompt; don't duplicate it in the world prompt.
   if (visible.messages && interruption !== undefined && !resting) {
-    lines.push(interruptionPrompt(text, interruption, true));
+    lines.push(interruptionPrompt(text, interruption, true, keys));
   }
   return hintLines(lines);
 };
@@ -245,23 +247,24 @@ export interface InteractionHint {
 type InteractionText = ScreenText['interaction'];
 
 /** The interact key cap and what pressing it does. */
-const interactLine = (text: InteractionText, action: string): TemplateResult =>
-  fillHint(text.action, { key: keyCap('world.interact'), action });
+const interactLine = (text: InteractionText, keys: KeyLabels, action: string): TemplateResult =>
+  fillHint(text.action, { key: keyCap(keys, 'world.interact'), action });
 
 const doorInteractionText = (
   { open, doorReason, lock, prying, name }: Pick<InteractionHint, 'open' | 'doorReason' | 'lock' | 'prying' | 'name'>,
   text: InteractionText,
+  keys: KeyLabels,
 ): TemplateResult => {
   const verb = prying
     ? fillText(text.force, { name, method: prying })
     : fillText(open ? text.close : text.open, { name });
   const action = doorReason ? fillText(text.blocked, { action: verb, reason: doorReason }) : verb;
-  return html`${interactLine(text, action)}${lock ? `   ${fillText(text.lock, { lock })}` : ''}`;
+  return html`${interactLine(text, keys, action)}${lock ? `   ${fillText(text.lock, { lock })}` : ''}`;
 };
 
 /** The carried piece's set-down line with its turn and tip actions, keys read from the live bindings. */
-export const playCarryText = (setDown: HintText, text: InteractionText): TemplateResult =>
-  html`${setDown} · ${fillHint(text.turn, { key: keyCap('carry.turn') })} · ${fillHint(text.tip, { key: keyCap('carry.tip') })}`;
+export const playCarryText = (setDown: HintText, text: InteractionText, keys: KeyLabels): TemplateResult =>
+  html`${setDown} · ${fillHint(text.turn, { key: keyCap(keys, 'carry.turn') })} · ${fillHint(text.tip, { key: keyCap(keys, 'carry.tip') })}`;
 
 /** Describes an already selected target; never selects/executes the interaction. */
 export const playInteractionText = (
@@ -281,22 +284,23 @@ export const playInteractionText = (
     damage,
   }: InteractionHint,
   text: InteractionText,
+  keys: KeyLabels,
 ): HintText => {
   const name = damage ? fillText(text.damaged, { damage, name: plainName }) : plainName;
   if (door) {
-    return doorInteractionText({ open, doorReason, lock, prying, name }, text);
+    return doorInteractionText({ open, doorReason, lock, prying, name }, text, keys);
   }
   if (climbable) {
-    return interactLine(text, fillText(text.climb, { name }));
+    return interactLine(text, keys, fillText(text.climb, { name }));
   }
   if (readable) {
-    return interactLine(text, fillText(text.read, { name }));
+    return interactLine(text, keys, fillText(text.read, { name }));
   }
   if (restAction) {
-    return interactLine(text, fillText(restAction === 'sleep' ? text.sleep : text.rest, { name }));
+    return interactLine(text, keys, fillText(restAction === 'sleep' ? text.sleep : text.rest, { name }));
   }
   if (container) {
-    return interactLine(text, fillText(searched ? text.lookIn : text.search, { name }));
+    return interactLine(text, keys, fillText(searched ? text.lookIn : text.search, { name }));
   }
   return damage ? `${name.charAt(0).toUpperCase()}${name.slice(1)}` : fullName;
 };

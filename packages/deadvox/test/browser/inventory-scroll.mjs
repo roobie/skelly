@@ -137,6 +137,7 @@ const BUNDLED_CONTENT = buildBundledContent();
 import { requireDayCycle } from '/src/core/content.ts';
 import { bindReach } from '/src/core/reach.ts';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
+import { inputBindings } from '/src/product/input.ts';
 import { mountMenuPointer } from '/src/ui/menuPointer.ts';
 import { applyUiTokens } from '/src/ui/uiTokens.ts';
 import { productAssets } from '/src/product/assets.ts';
@@ -222,6 +223,7 @@ let needsText = 'health 100% · stamina 100%';
 const dispatches = [];
 let capToken;
 const screen = new InventoryScreen(document.querySelector('#inventory'), inventory, new HandlingQueue(inventory), {
+  bindings: inputBindings,
   reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: { ratio: requireDayCycle(BUNDLED_CONTENT.registry).clockRatio, start: 0 } }),
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
   containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: (payload) => { dispatches.push(payload); }, searching: () => false,
@@ -1625,7 +1627,7 @@ try {
       const [chord] = inputBindings.chords('inventory.view-item');
       const mouse = chord.code.startsWith('Mouse') && !chord.modifier;
       return mouse ? ['left', 'middle', 'right'][Number(chord.code.slice('Mouse'.length))] : undefined;
-    }, '/src/presentation/inputBindings.ts');
+    }, '/src/product/input.ts');
     assert.ok(viewButton, 'the default view binding is a mouse button Playwright can press');
     // A focused covered control must not take keys while the viewer is open: the fit button dispatches on activation.
     const coveredFit = page

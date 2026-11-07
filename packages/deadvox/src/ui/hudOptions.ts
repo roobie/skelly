@@ -1,5 +1,5 @@
 import { html, render, type TemplateResult } from 'lit-html';
-import { fillHint, type HintText, keyCap } from './keyCap.ts';
+import { fillHint, type HintText, type KeyLabels, keyCap } from './keyCap.ts';
 
 export const HUD_OPTION_KEYS = [
   'stats',
@@ -88,19 +88,20 @@ const optionsTemplate = (
   text: HudOptionsText,
   state: HudSettings,
   change: (key: HudSettingKey, value: boolean) => void,
+  keys: KeyLabels,
 ): TemplateResult => html`
   <section class="hud-options">
     <h2>${text.heading}</h2>
-    ${optionTemplate('shown', fillHint(text.showHud, { key: keyCap('hud.toggle') }), state, change)}
+    ${optionTemplate('shown', fillHint(text.showHud, { key: keyCap(keys, 'hud.toggle') }), state, change)}
     ${HUD_OPTION_KEYS.map((key) => optionTemplate(key, text.labels[key], state, change))}
   </section>
 `;
 
 export const renderHudOptions = (
   root: HTMLElement,
-  labels: HudOptionsText,
+  { text, keys }: { readonly text: HudOptionsText; readonly keys: KeyLabels },
   state: HudSettings,
   change: (key: HudSettingKey, value: boolean) => void,
 ): void => {
-  render(optionsTemplate(labels, state, change), root);
+  render(optionsTemplate(text, state, change, keys), root);
 };

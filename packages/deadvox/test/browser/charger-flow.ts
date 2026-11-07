@@ -2,7 +2,9 @@ import { batteryEnergy } from '../../src/core/battery.ts';
 import type { Registry } from '../../src/core/content.ts';
 import { toHands } from '../../src/core/options.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../../src/core/saveFormat.ts';
+import { BindingRegistry } from '../../src/game/bindingRegistry.ts';
 import type { ReplayActionPayload } from '../../src/game/replayCommands.ts';
+import { INPUT_BINDINGS } from '../../src/product/controls.ts';
 import { chargerPanel } from '../../src/ui/chargerPanel.ts';
 import { InventoryScreen } from '../../src/ui/inventoryScreen.ts';
 import { contentLookup } from '../../src/ui/saveController.ts';
@@ -40,6 +42,7 @@ export const mountChargerFlow = (base: Registry, root: HTMLElement) => {
     const { session } = runtime;
     const { inventory } = session;
     screen = new InventoryScreen(root, inventory, session.queue, {
+      bindings: new BindingRegistry(INPUT_BINDINGS),
       reach: session.reach,
       feet: () => session.reach().feet,
       nearby: () => session.reach().piles,

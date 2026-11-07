@@ -17,7 +17,6 @@ import {
   type PreferenceStorage,
   REFUSED_MODIFIERS,
 } from '../game/bindingRegistry.ts';
-import { INPUT_BINDINGS } from '../product/controls.ts';
 
 const INVENTORY_FIND_ARROW_BINDINGS: ReadonlySet<string> = new Set(['inventory.previous', 'inventory.next']);
 const INVENTORY_COMBO_BOX_BINDINGS: ReadonlySet<string> = new Set([
@@ -686,8 +685,6 @@ const browserKeyboardLayout: KeyboardLayoutSource = () =>
   (
     globalThis.navigator as Navigator & { keyboard?: { getLayoutMap: () => Promise<ReadonlyMap<string, string>> } }
   )?.keyboard?.getLayoutMap();
-// This singleton exists at import, before any product entry code runs, so it reads the product's default keys
-// directly rather than receiving them.
-export const inputBindings = new BindingRegistry(INPUT_BINDINGS, browserStorage(), browserKeyboardLayout);
-export const keyboardInput = new KeyboardInput(inputBindings);
-export const labelForAction = (id: string): string => inputBindings.label(id);
+/** A page's keyboard over the given default keys, keeping the player's preferences in browser storage. */
+export const createKeyboardInput = (defaults: readonly Binding[]): KeyboardInput =>
+  new KeyboardInput(new BindingRegistry(defaults, browserStorage(), browserKeyboardLayout));

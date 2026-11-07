@@ -24,12 +24,12 @@ import type { StreamerStats } from './game/streamer.ts';
 import { mountControlsCard } from './presentation/controls.ts';
 import { createEngine } from './presentation/engine.ts';
 import { requestInputLock } from './presentation/input.ts';
-import { inputBindings, keyboardInput, labelForAction } from './presentation/inputBindings.ts';
 import { startPlay } from './presentation/play.ts';
 import { renderFreeFromUrl } from './presentation/renderMode.ts';
 import { tutorialRequested, tutorialUrl } from './presentation/tutorialUrl.ts';
 import { WorldLoading } from './presentation/worldLoading.ts';
 import { productAssets as assets } from './product/assets.ts';
+import { inputBindings, keyboardInput } from './product/input.ts';
 import { productModIntake } from './product/mods.ts';
 import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
@@ -110,7 +110,7 @@ if (menuCard && scrollUpCue && scrollDownCue) {
 const menuKeyLabel = document.querySelector<HTMLElement>('[data-key-binding="mainMenu"]');
 const drawMenuLabel = () => {
   if (menuKeyLabel) {
-    menuKeyLabel.textContent = labelForAction('ui.main-menu-toggle');
+    menuKeyLabel.textContent = inputBindings.label('ui.main-menu-toggle');
     menuKeyLabel.dataset.code = inputBindings.chords('ui.main-menu-toggle')[0]!.code;
   }
 };
@@ -168,11 +168,12 @@ if (bench === 'report') {
     inputBindings.setDebugRun();
   }
   mountFullscreenOptions(document.getElementById('fullscreen-options')!, screenText.options);
-  mountInputOptions(document.getElementById('input-options')!, screenText.inputOptions, config.debug);
+  mountInputOptions(document.getElementById('input-options')!, screenText.inputOptions, keyboardInput, config.debug);
   mountControlsCard(
     document.getElementById('controls')!,
     document.getElementById('controls-search') as HTMLInputElement,
     () => config.debug,
+    inputBindings,
   );
   const debugModule = config.debug ? await import('./debug/index.ts') : undefined;
   const skyRoute = params.get('skyRoute') === '1' ? await debugModule?.loadSkyRoute() : undefined;
@@ -195,6 +196,7 @@ if (bench === 'report') {
       clearPendingInputReplay(replayStash);
       startPlay(engine, debugModule!, {
         assets,
+        keyboard: keyboardInput,
         restore: decoded.snapshot,
         replay: {
           inputs: decoded.inputs,
@@ -213,7 +215,7 @@ if (bench === 'report') {
     practiceParams.set('site', 'tutorial');
     const practiceConfig = configFromUrl(practiceParams, content);
     const engine = createEngine(practiceConfig, view, undefined, { render: !renderFree });
-    startPlay(engine, undefined, { assets, tutorial: true });
+    startPlay(engine, undefined, { assets, keyboard: keyboardInput, tutorial: true });
     document.getElementById('new-character-options')!.hidden = true;
     document.getElementById('tutorial-start')!.hidden = true;
     document.getElementById('save-status')!.textContent = 'Unsaved practice';
@@ -275,6 +277,7 @@ if (bench === 'report') {
     if (saveController.isRestored && restored) {
       startPlay(engine, debugModule, {
         assets,
+        keyboard: keyboardInput,
         saveController,
         restore: restored,
         ...(skyRoute ? { skyRoute } : {}),
@@ -293,6 +296,7 @@ if (bench === 'report') {
         try {
           entry = startPlay(engine, debugModule, {
             assets,
+            keyboard: keyboardInput,
             saveController,
             loading: { owner, draw },
             ...creation,

@@ -14,12 +14,14 @@ import type { FrameSummary } from '../render/frameTimes.ts';
 import type { ActorRenderer } from '../render/mobActors.ts';
 import type { DebugGunPoseMode } from './debugGunPose.ts';
 import type { Engine } from './engine.ts';
+import type { KeyboardInput } from './inputBindings.ts';
 
 export type SkyRouteAttachment = (hooks: {
   engine: Engine;
   session: Session;
   debug: DebugRuntime;
   active: () => boolean;
+  keyboard: KeyboardInput;
 }) => RealFrameObserver | undefined;
 
 import type { DebugNoclipStep } from '../game/debugNoclipStep.ts';
@@ -36,6 +38,8 @@ export type InputReplayStatusState =
 
 export interface DebugHooks {
   readonly engine: Engine;
+  /** The page's keyboard; the panel shows its keys and traces its presses. */
+  readonly keyboard: KeyboardInput;
   /** The weather play renders with; the debug look controls set its fogginess. */
   readonly weather: Weather;
   /** The held light's beam; the debug look controls set its strength multiplier. */

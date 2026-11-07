@@ -8,9 +8,9 @@ import { generateColumn, worldGroundAt } from './core/worldgen.ts';
 import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { startForSite } from './game/startSelection.ts';
 import { siteForReviewMap } from './game/worldSetup.ts';
-import { inputBindings, keyboardInput } from './presentation/inputBindings.ts';
 import { MAP_SLICE_ACTIONS, mapSliceKeys } from './presentation/mapSliceInput.ts';
 import { buildBundledContent } from './product/content.ts';
+import { inputBindings, keyboardInput } from './product/input.ts';
 import {
   hillshade,
   marchingSquares,

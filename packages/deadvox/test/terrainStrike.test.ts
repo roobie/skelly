@@ -16,11 +16,13 @@ import { simSeconds } from '../src/core/time.ts';
 import { affectedChunks, World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import { BuildMode } from '../src/debug/build.ts';
+import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import type { MesherHandlers, MesherPort, ToMesher } from '../src/game/mesherProtocol.ts';
 import { playerTuning } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import type { Engine } from '../src/presentation/engine.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { blockMaterialFixture, fixtureBlockMaterial } from './blockMaterialFixture.ts';
@@ -365,9 +367,12 @@ const debugBuild = (f: Fixture) => {
     scene: new Scene(),
     isOpaque: worldSolid(f.world, f.registry, f.inventory.entities),
   } as unknown as Engine;
-  const build = new BuildMode(engine, f.session.body, 1, (target, blow) => {
-    blows.push(blow);
-    return f.session.strikeTerrainCell(target, blow);
+  const build = new BuildMode(engine, f.session.body, 1, {
+    strikeTerrainCell: (target, blow) => {
+      blows.push(blow);
+      return f.session.strikeTerrainCell(target, blow);
+    },
+    bindings: new BindingRegistry(INPUT_BINDINGS),
   });
   const eye: Vec3 = [cell[0] + 0.5, cell[1] - 0.9, cell[2] + 0.5];
   const dir: Vec3 = [0, 1, 0];

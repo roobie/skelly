@@ -206,7 +206,7 @@ try {
       document.querySelector('#world-loading').hidden,
   );
   const reloadCode = await page.evaluate(
-    `import('/src/presentation/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('firearm.reload')[0].code)`,
+    `import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('firearm.reload')[0].code)`,
   );
   await page.evaluate((code) => {
     addEventListener('keydown', (event) => {

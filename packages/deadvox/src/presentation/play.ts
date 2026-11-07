@@ -115,7 +115,7 @@ import {
   writeHudOptions,
 } from '../ui/hudOptions.ts';
 import { InventoryScreen, type ScreenHooks } from '../ui/inventoryScreen.ts';
-import { fillHint, type HintText, hintHtml as html, keyCap } from '../ui/keyCap.ts';
+import { fillHint, type HintText, hintHtml as html, type KeyLabels, keyCap } from '../ui/keyCap.ts';
 import { shouldConfirmPageLeave } from '../ui/leaveConfirmation.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
@@ -157,7 +157,7 @@ import { Input } from './input.ts';
 import {
   type InputCancellationReason,
   type InputCommand,
-  keyboardInput,
+  type KeyboardInput,
   shouldCancelInputForViewerFocus,
 } from './inputBindings.ts';
 import { OpticZoom } from './opticZoom.ts';
@@ -534,6 +534,7 @@ interface HandlingPresentationOptions {
   readonly clockRatio: number;
   readonly compressionActive: boolean;
   readonly throwCharge?: HandlingPresentationSource['throwCharge'];
+  readonly keys: KeyLabels;
 }
 
 const screenTextOf = (registry: Engine['registry']) => claimed(registry.ui, 'interface')!.screenText;
@@ -546,6 +547,7 @@ const handlingPresentationFor = ({
   clockRatio,
   compressionActive,
   throwCharge,
+  keys,
 }: HandlingPresentationOptions): HandlingPresentationSource => {
   if (throwCharge) {
     return { jobs: [], throwCharge };
@@ -553,11 +555,11 @@ const handlingPresentationFor = ({
   const { cancel } = actionText(inventory.registry).hints;
   const inactive = {
     ...queue,
-    cancelLabel: queue.cancelLabel ?? fillHint(cancel, { key: keyCap('handling.stop') }),
+    cancelLabel: queue.cancelLabel ?? fillHint(cancel, { key: keyCap(keys, 'handling.stop') }),
   };
   const craft = runningCraftPresentation(inventory, job, { simSeconds, clockRatio, compressionActive });
   if (craft) {
-    return timedActionHandlingPresentation(craft, screenTextOf(inventory.registry).handling);
+    return timedActionHandlingPresentation(craft, screenTextOf(inventory.registry).handling, keys);
   }
   if (!job || job.stopped || !isTimedLongJob(job)) {
     return inactive;
@@ -573,7 +575,7 @@ const handlingPresentationFor = ({
     label: timedActionLabel(job, inventory),
     stopped: job.stopped,
   };
-  return timedActionHandlingPresentation(action, screenTextOf(inventory.registry).handling);
+  return timedActionHandlingPresentation(action, screenTextOf(inventory.registry).handling, keys);
 };
 
 const createPlayRefusalPresenter = (
@@ -592,6 +594,8 @@ const createPlayRefusalPresenter = (
 
 export interface StartPlayOptions {
   readonly assets: PresentationAssets;
+  /** The page's keyboard, which play drives and whose keys its hints show. */
+  readonly keyboard: KeyboardInput;
   readonly tutorial?: boolean;
   readonly skyRoute?: SkyRouteAttachment;
   readonly handedness?: HandSide;
@@ -646,7 +650,7 @@ const assertPracticeIsolation = (options: StartPlayOptions, guided: boolean): vo
 };
 
 const leaveTutorial = () => location.assign(tutorialUrl(location.href, false));
-const createPlayGuidance = (engine: Engine) => {
+const createPlayGuidance = (engine: Engine, keys: KeyLabels) => {
   const definition = engine.site?.guidance;
   if (!definition) {
     return {};
@@ -662,7 +666,7 @@ const createPlayGuidance = (engine: Engine) => {
     stageMarkArea(marks.beats, exitMark),
     definition,
   );
-  const drawGuidance = mountGuidance(guide, leaveTutorial, () => location.reload());
+  const drawGuidance = mountGuidance(guide, leaveTutorial, () => location.reload(), keys);
   return { guide, drawGuidance };
 };
 
@@ -683,6 +687,8 @@ export const startPlay = (
   options: StartPlayOptions,
 ): { enter: () => void } => {
   assertPracticeIsolation(options, Boolean(engine.site?.guidance));
+  const keyboardInput = options.keyboard;
+  const inputBindings = keyboardInput.registry;
   const { config, registry, streamer, renderer, camera, meshes } = engine;
   const lines = actionText(registry);
   const autosave = autosaveTuning(registry);
@@ -692,7 +698,7 @@ export const startPlay = (
   configureReplayStreaming(engine, options.replay);
   const { scale } = config;
   const s = scale.blockSize;
-  const { guide, drawGuidance } = createPlayGuidance(engine);
+  const { guide, drawGuidance } = createPlayGuidance(engine, inputBindings);
 
   const playerStart = playerStartFromWorld(engine, scale, config.debugStart, {
     restoring: options.restore !== undefined,
@@ -702,12 +708,11 @@ export const startPlay = (
   let replayPlayer: InputReplayPlayer | undefined;
   const shouldCancelForViewerFocus = (reason: InputCancellationReason): boolean =>
     shouldCancelInputForViewerFocus(reason, replayPlayer !== undefined);
-  const input = new Input(
-    inputTarget,
-    () => !debugTools?.buildOn,
-    () => shouldCancelForViewerFocus('window-blur'),
-    () => worldLoading.ready && replayPlayer === undefined,
-  );
+  const input = new Input(inputTarget, keyboardInput, {
+    dominantUseAllowed: () => !debugTools?.buildOn,
+    cancelOnBlurAllowed: () => shouldCancelForViewerFocus('window-blur'),
+    viewerInputAllowed: () => worldLoading.ready && replayPlayer === undefined,
+  });
   input.controls.yaw = playerStart.yaw;
   const playerSenseTuning = claimed(registry.senses, 'player');
   if (!playerSenseTuning) {
@@ -1148,12 +1153,10 @@ export const startPlay = (
   const gameCursor = mountGameCursor($('game-cursor-root'));
   const inventoryPanel = $('inventory');
   const { screenText } = claimed(registry.ui, 'interface')!;
-  const reading = mountReading(
-    $('reading'),
-    screenText.reading,
-    () => syncMenuState(),
-    () => router.readingClosed(),
-  );
+  const reading = mountReading($('reading'), screenText.reading, inputBindings, {
+    changed: () => syncMenuState(),
+    closing: () => router.readingClosed(),
+  });
   const isBookComplete = (bookUid: number): boolean => {
     const book = inventory.itemByUid(bookUid);
     const definition = book && registry.items.get(book.type);
@@ -1167,7 +1170,7 @@ export const startPlay = (
     showHud: screenText.options.showHud,
   };
   const drawHudOptions = () =>
-    renderHudOptions($('hud-options'), hudOptionsText, hudOptions, (key, value) => {
+    renderHudOptions($('hud-options'), { text: hudOptionsText, keys: inputBindings }, hudOptions, (key, value) => {
       hudOptions[key] = value;
       writeHudOptions(hudOptions);
       drawHudOptions();
@@ -1212,6 +1215,7 @@ export const startPlay = (
   const showRefusal = createPlayRefusalPresenter(registry, audio, showNotice);
 
   const hooks: ScreenHooks = {
+    bindings: inputBindings,
     charger: (entity) => chargerPanel(entity, session.power, session.reach()),
     chargerRevision: () => Math.floor(sim.time),
     openedVehicle,
@@ -1491,6 +1495,7 @@ export const startPlay = (
   };
   debugTools = debugModule?.attachDebugTools({
     engine,
+    keyboard: keyboardInput,
     weather,
     flashlight,
     body,
@@ -1983,7 +1988,7 @@ export const startPlay = (
       return finish.reason;
     }
     const dismember = session.downedBodyPlan(id, 'dismember');
-    const values = { key: keyCap('world.interact'), finish: finish.label.toLowerCase() };
+    const values = { key: keyCap(inputBindings, 'world.interact'), finish: finish.label.toLowerCase() };
     return dismember.ok
       ? fillHint(lines.hints.downedBody, values)
       : fillHint(lines.hints.downedBodyRefused, { ...values, reason: dismember.reason.toLowerCase() });
@@ -1992,7 +1997,7 @@ export const startPlay = (
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): HintText => {
     if (session.isObjective(entity)) {
-      return fillHint(lines.hints.activate, { key: keyCap('world.interact'), name: nameOf(entity) });
+      return fillHint(lines.hints.activate, { key: keyCap(inputBindings, 'world.interact'), name: nameOf(entity) });
     }
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     const prying = pryHint(entity);
@@ -2014,6 +2019,7 @@ export const startPlay = (
         damage: damageWord(entities.registry, entities.conditionOf(entity)),
       },
       screenText.interaction,
+      inputBindings,
     );
   };
 
@@ -2217,6 +2223,7 @@ export const startPlay = (
       },
       visible,
       screenText.stats,
+      inputBindings,
     );
   /** Where the carried piece would stand if set down now, for the ghost and the prompt. */
   const carryPreview = () => {
@@ -2248,7 +2255,7 @@ export const startPlay = (
     }
   };
   const furnitureInteractionHint = (entity: BlockEntity): HintText => {
-    const key = keyCap('world.interact');
+    const key = keyCap(inputBindings, 'world.interact');
     if (furnitureActionSelection.isOpen(entity)) {
       const selected = furnitureActionSelection.forItem(entity, furnitureActions(entity));
       return html`${key}: ${selected?.label} ${selected?.id === 'repair' ? '' : nameOf(entity)}`;
@@ -2271,20 +2278,21 @@ export const startPlay = (
   const powerControlHint = (entity: BlockEntity): HintText | undefined => {
     const control = session.power?.control(entity);
     return control
-      ? html`${keyCap('world.interact')}: ${screenText.powerControl[control.enabled ? 'off' : 'on']} ${nameOf(entity)}`
+      ? html`${keyCap(inputBindings, 'world.interact')}: ${screenText.powerControl[control.enabled ? 'off' : 'on']} ${nameOf(entity)}`
       : undefined;
   };
   const interactionHintFor = (
     target: InteractionTarget | undefined,
     carry: ReturnType<typeof carryPreview>,
   ): HintText | undefined => {
-    const key = keyCap('world.interact');
+    const key = keyCap(inputBindings, 'world.interact');
     if (carry) {
       return playCarryText(
         'refusal' in carry.spot
           ? carry.spot.refusal
           : fillHint(lines.hints.setDown, { key, name: nameOf(carry.entity) }),
         screenText.interaction,
+        inputBindings,
       );
     }
     switch (target?.kind) {
@@ -2339,15 +2347,16 @@ export const startPlay = (
       },
       visible,
       screenText.prompt,
+      inputBindings,
     );
   };
 
   let quickbarDrawn = '';
   const drawQuickbar = () => {
-    const key = quickbarKey(quickbar, inventory);
+    const key = quickbarKey(quickbar, inventory, inputBindings);
     if (key !== quickbarDrawn) {
       quickbarDrawn = key;
-      renderQuickbar(quickbarBox, quickbar, inventory);
+      renderQuickbar(quickbarBox, quickbar, inventory, inputBindings);
     }
     quickbarBox.hidden = debugTools?.buildOn ?? false;
   };
@@ -2719,6 +2728,7 @@ export const startPlay = (
       messagesVisible,
       restLabels: claimed(registry.ui, 'interface')!.restLabels,
       text: screenText,
+      keys: inputBindings,
     });
   };
 
@@ -2937,6 +2947,7 @@ export const startPlay = (
               chargeSimSeconds: throwChargeSimSeconds,
               minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
             },
+      keys: inputBindings,
     });
     screen.update();
     reading.revalidate((ownerUid) => Object.values(inventory.hands).some((item) => item?.uid === ownerUid));
@@ -2952,6 +2963,7 @@ export const startPlay = (
   };
   const skyRoute = options.skyRoute?.({
     engine,
+    keyboard: keyboardInput,
     session,
     debug: debugTools!,
     active: () =>

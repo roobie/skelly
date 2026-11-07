@@ -1,7 +1,6 @@
 import { html, render } from 'lit-html';
 import { bindingIsDebugOnly, contextsForRun, POINTER_ACTIONS } from '../core/inputActions.ts';
 import { type BindingRegistry, NATIVE_INPUTS } from '../game/bindingRegistry.ts';
-import { inputBindings } from './inputBindings.ts';
 
 export interface ControlsCardRow {
   readonly id: string;
@@ -10,7 +9,7 @@ export interface ControlsCardRow {
   readonly description: string;
 }
 
-export const controlsCardRows = (registry: BindingRegistry = inputBindings, debugRun = false): ControlsCardRow[] => [
+export const controlsCardRows = (registry: BindingRegistry, debugRun = false): ControlsCardRow[] => [
   ...registry.bindings
     .filter((binding) => debugRun || !bindingIsDebugOnly(binding))
     .map((binding) => {
@@ -60,10 +59,15 @@ export const showControlsTopic = (search: HTMLInputElement, actions: readonly st
   search.dispatchEvent(new CustomEvent<readonly string[]>(TOPIC_EVENT, { detail: actions }));
 };
 
-export const mountControlsCard = (root: HTMLElement, search: HTMLInputElement, debugRun: () => boolean): void => {
+export const mountControlsCard = (
+  root: HTMLElement,
+  search: HTMLInputElement,
+  debugRun: () => boolean,
+  registry: BindingRegistry,
+): void => {
   let topic: readonly string[] | undefined;
   const draw = () => {
-    const rows = filterControlsCardRows(controlsCardRows(inputBindings, debugRun()), topic ?? search.value);
+    const rows = filterControlsCardRows(controlsCardRows(registry, debugRun()), topic ?? search.value);
     render(
       html`${rows.map(({ id, keys, action }) => html`<dt data-input-action=${id}>${keys}</dt><dd>${action}</dd>`)}`,
       root,
@@ -77,6 +81,6 @@ export const mountControlsCard = (root: HTMLElement, search: HTMLInputElement, d
     topic = undefined;
     draw();
   });
-  inputBindings.subscribe(draw);
+  registry.subscribe(draw);
   draw();
 };

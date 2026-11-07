@@ -7,14 +7,17 @@ import { actionsByGroup, DEBUG_GROUPS, paramName } from '../src/debug/groups.ts'
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { LOOK_PARAMS } from '../src/debug/lookUrl.ts';
+import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { DebugGunPose } from '../src/presentation/debugGunPose.ts';
 import type { DebugHooks } from '../src/presentation/debugInterface.ts';
-import { inputBindings } from '../src/presentation/inputBindings.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { TONE_MODES } from '../src/render/look.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
+
+const inputBindings = new BindingRegistry(INPUT_BINDINGS);
 
 const fixtureActorTypes = [
   { id: 'fixture_roamer', name: 'Fixture roamer', authoredOnly: false },
@@ -226,6 +229,7 @@ const makeActions = (
   const gunPose = new DebugGunPose(true);
   const hooks = {
     sim,
+    keyboard: { registry: inputBindings },
     reviewMap: {
       isOpen: () => reviewMapOpen,
       toggle: () => {

@@ -1,7 +1,6 @@
 import { html, type TemplateResult } from 'lit-html';
 import type { DirectiveResult } from 'lit-html/directive.js';
 import { fillParts } from '../core/textTemplate.ts';
-import { labelForAction } from '../presentation/inputBindings.ts';
 
 /** Simulation-graph modules compose hints through this, so the fingerprint never follows lit-html. */
 export const hintHtml = html;
@@ -9,8 +8,14 @@ export const hintHtml = html;
 /** A line of hint text: plain words with any bound key drawn through `keyCap`. */
 export type HintText = string | TemplateResult;
 
+/** Where a hint reads the player's current key for an action; the page's binding registry. */
+export interface KeyLabels {
+  readonly label: (actionId: string) => string;
+}
+
 /** The one way a bound key is shown to the player; its look is `.keycap` in `src/ui/style.css`. */
-export const keyCap = (actionId: string): TemplateResult => html`<kbd class="keycap">${labelForAction(actionId)}</kbd>`;
+export const keyCap = (keys: KeyLabels, actionId: string): TemplateResult =>
+  html`<kbd class="keycap">${keys.label(actionId)}</kbd>`;
 
 /** A directive filling a hint slot, such as the crafting combo box. Intersected with `object` because lit's `DirectiveResult` interface has no members, so a bare number would be assignable to it; a number must pass `src/core/numberText.ts` first. */
 export type HintDirective = DirectiveResult & object;
