@@ -56,7 +56,7 @@ const observation = {
         `${stepperMarker}    rollFullReplayWindow: () => { if (recording.recorder?.full) rollInputRecorderWindow(); },\n`,
       );
     }
-    if (!id.endsWith('/src/game/play.ts')) {
+    if (!id.endsWith('/src/presentation/play.ts')) {
       return;
     }
     const marker = '  startRealFrames(frame);';

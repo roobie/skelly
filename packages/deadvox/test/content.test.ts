@@ -36,7 +36,7 @@ import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { WEATHERING_RANGES } from '../src/core/weather.ts';
 import { INPUT_BINDINGS } from '../src/game/bindingRegistry.ts';
-import { inputBindings } from '../src/game/inputBindings.ts';
+import { inputBindings } from '../src/presentation/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
 import { baseContentSources } from './baseContentFiles.ts';

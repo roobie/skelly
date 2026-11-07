@@ -18,7 +18,6 @@ import { bindReach } from '../src/core/reach.ts';
 import { fillText } from '../src/core/textTemplate.ts';
 import { BindingRegistry, INPUT_BINDINGS } from '../src/game/bindingRegistry.ts';
 import { attachmentWorkSkill, FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
-import { inputBindings, KeyboardInput } from '../src/game/inputBindings.ts';
 import { routeModalCommand } from '../src/game/modalCommand.ts';
 import { PlayerTickActions } from '../src/game/playerTickActions.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
@@ -30,6 +29,7 @@ import {
 } from '../src/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '../src/game/screenCommandDispatcher.ts';
 import { Survival } from '../src/game/survival.ts';
+import { inputBindings, KeyboardInput } from '../src/presentation/inputBindings.ts';
 import { ItemPictures } from '../src/render/itemPictures.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';

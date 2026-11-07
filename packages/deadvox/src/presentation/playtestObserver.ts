@@ -5,6 +5,7 @@ import type { Inventory, Location } from '../core/inventory.ts';
 import type { AttemptPolicyDef } from '../core/schema/attemptPolicy.ts';
 import type { PlaytestMarks } from '../core/site.ts';
 import { stageMarksAt } from '../core/stageMarks.ts';
+import type { Session } from '../game/session.ts';
 import {
   type HandBackFile,
   loadMetrics,
@@ -13,7 +14,6 @@ import {
   SessionMetrics,
   type SessionMetricsV1,
 } from './playtestTools.ts';
-import type { Session } from './session.ts';
 
 interface LootWindow {
   readonly name: string;

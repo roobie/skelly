@@ -35,7 +35,7 @@ const vite = await createServer({
           assert.equal(code.split(anchor).length, 2);
           return `import { readingWorld } from '/test/fixtures/readingWorld.ts';\n${code.replace(anchor, `${anchor}\n    return readingWorld(registry, config.seed, config.scale);`)}`;
         }
-        if (!id.endsWith('/src/game/play.ts')) {
+        if (!id.endsWith('/src/presentation/play.ts')) {
           return;
         }
         const marker = 'startRealFrames(frame);';
@@ -108,7 +108,7 @@ try {
     // KeyJ is the new chord being captured; world.interact still resolves to the old key until capture commits.
     await page.keyboard.press('KeyJ');
     await page.waitForFunction(
-      "import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code === 'KeyJ')",
+      "import('/src/presentation/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code === 'KeyJ')",
     );
     await page.reload();
     await page.waitForFunction(
@@ -118,7 +118,7 @@ try {
     );
     assert.equal(
       await page.evaluate(
-        "import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code)",
+        "import('/src/presentation/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code)",
       ),
       'KeyJ',
       'settings rebind persists across reload',
@@ -566,7 +566,7 @@ try {
     await aim('crate', noteCrate.uid);
     const searchStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
     const interactLabel = await page.evaluate(
-      "import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.label('world.interact'))",
+      "import('/src/presentation/inputBindings.ts').then(({ inputBindings }) => inputBindings.label('world.interact'))",
     );
     await page.waitForFunction((label) => document.querySelector('#prompt').textContent.includes(label), interactLabel);
     await pressAction(page, 'world.interact');

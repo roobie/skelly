@@ -7,9 +7,9 @@ import { sitePalette, terrainShapeOf } from './core/sitePalette.ts';
 import { generateColumn, worldGroundAt } from './core/worldgen.ts';
 import { buildBundledContent } from './game/bundledContent.ts';
 import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
-import { inputBindings, keyboardInput } from './game/inputBindings.ts';
 import { startForSite } from './game/startSelection.ts';
 import { siteForReviewMap } from './game/worldSetup.ts';
+import { inputBindings, keyboardInput } from './presentation/inputBindings.ts';
 import { MAP_SLICE_ACTIONS, mapSliceKeys } from './presentation/mapSliceInput.ts';
 import {
   hillshade,

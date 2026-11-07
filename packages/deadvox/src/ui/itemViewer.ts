@@ -5,7 +5,7 @@ import { html, nothing, render } from 'lit-html';
 import type { Object3D } from 'three';
 import type { Item } from '../core/items.ts';
 import type { GraphicsTuningDef } from '../core/schema.ts';
-import { inputBindings } from '../game/inputBindings.ts';
+import { inputBindings } from '../presentation/inputBindings.ts';
 import { fillHint, keyCap } from './keyCap.ts';
 import { wheelPixels } from './wheel.ts';
 

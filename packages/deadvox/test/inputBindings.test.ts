@@ -11,7 +11,7 @@ import {
   INPUT_BINDINGS,
   REFUSED_MODIFIERS,
 } from '../src/game/bindingRegistry.ts';
-import { capturedChord, type InputCommand, KeyboardInput } from '../src/game/inputBindings.ts';
+import { capturedChord, type InputCommand, KeyboardInput } from '../src/presentation/inputBindings.ts';
 
 const fixture: readonly Binding[] = [
   {

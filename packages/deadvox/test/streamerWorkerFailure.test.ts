@@ -4,8 +4,8 @@ import { realTimestamp } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import type { FromMesher, ToMesher } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
-import { WorldLoading } from '../src/game/worldLoading.ts';
 import type { Engine } from '../src/presentation/engine.ts';
+import { WorldLoading } from '../src/presentation/worldLoading.ts';
 import { workerMesherPort } from '../src/worker/mesherPort.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 

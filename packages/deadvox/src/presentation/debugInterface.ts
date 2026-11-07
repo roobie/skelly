@@ -6,14 +6,14 @@ import type { Inventory } from '../core/inventory.ts';
 import type { Body } from '../core/physics.ts';
 import type { Simulation } from '../core/sim.ts';
 import type { Weather } from '../core/weather.ts';
-import type { Engine } from '../presentation/engine.ts';
+import type { DebugGunPoseMode } from '../game/debugGunPose.ts';
+import type { RealFrameObserver } from '../game/frameDriver.ts';
+import type { HeardSound } from '../game/hearing.ts';
+import type { Session } from '../game/session.ts';
 import type { DrawSubmission } from '../render/drawCounters.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import type { ActorRenderer } from '../render/mobActors.ts';
-import type { DebugGunPoseMode } from './debugGunPose.ts';
-import type { RealFrameObserver } from './frameDriver.ts';
-import type { HeardSound } from './hearing.ts';
-import type { Session } from './session.ts';
+import type { Engine } from './engine.ts';
 
 export type SkyRouteAttachment = (hooks: {
   engine: Engine;
@@ -22,7 +22,7 @@ export type SkyRouteAttachment = (hooks: {
   active: () => boolean;
 }) => RealFrameObserver | undefined;
 
-import type { DebugNoclipStep } from './debugNoclipStep.ts';
+import type { DebugNoclipStep } from '../game/debugNoclipStep.ts';
 import type { SnapshotMeasurement } from './playtestTools.ts';
 
 export type InputReplayStatusState =

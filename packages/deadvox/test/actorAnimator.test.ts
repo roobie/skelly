@@ -351,7 +351,7 @@ it('orbit and spectator orientation cannot change world handling transforms for 
 });
 
 it('the play frame poses overlay and world held views from this frame rather than the previous view', async () => {
-  const source = readFileSync(new URL('../src/game/play.ts', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../src/presentation/play.ts', import.meta.url), 'utf8');
   const start = source.indexOf('const updateFrame =');
   const end = source.indexOf('const skyRoute =', start);
   expect(start).toBeGreaterThan(0);

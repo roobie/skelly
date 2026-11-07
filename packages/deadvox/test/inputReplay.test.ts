@@ -38,7 +38,6 @@ import {
 import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from '../src/game/inputReplayActions.ts';
 import { InputReplayDriver, nextReplayInputSample } from '../src/game/inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
-import { inputReplayStatus } from '../src/game/play.ts';
 import { type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import {
   applyReplayActionPayload,
@@ -47,6 +46,7 @@ import {
 } from '../src/game/replayCommands.ts';
 import { PHYSICS_RATE } from '../src/game/session.ts';
 import { createSimulationStepper, type InputRecording } from '../src/game/simulationStepper.ts';
+import { inputReplayStatus } from '../src/presentation/play.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { rifleAmmunition } from './rifleFixture.ts';
 import {

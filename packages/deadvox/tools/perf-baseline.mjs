@@ -112,7 +112,7 @@ await build({
             '    this.composer = composer;\n    globalThis.perfBaseline.wrapPasses(composer);',
           );
         }
-        if (id.endsWith('/src/game/play.ts')) {
+        if (id.endsWith('/src/presentation/play.ts')) {
           return once(
             code,
             '  startRealFrames(frame);',

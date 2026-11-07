@@ -16,7 +16,7 @@ import {
   modifiers,
   type PreferenceStorage,
   REFUSED_MODIFIERS,
-} from './bindingRegistry.ts';
+} from '../game/bindingRegistry.ts';
 
 const INVENTORY_FIND_ARROW_BINDINGS: ReadonlySet<string> = new Set(['inventory.previous', 'inventory.next']);
 const INVENTORY_COMBO_BOX_BINDINGS: ReadonlySet<string> = new Set([

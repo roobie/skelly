@@ -1,8 +1,8 @@
 import { getBuildRevision } from '../core/buildInfo.ts';
 import type { Vec3 } from '../core/coords.ts';
-import type { SkyRouteAttachment } from '../game/debugInterface.ts';
-import { forwardedActionHolds, keyboardInput } from '../game/inputBindings.ts';
+import type { SkyRouteAttachment } from '../presentation/debugInterface.ts';
 import type { Engine } from '../presentation/engine.ts';
+import { forwardedActionHolds, keyboardInput } from '../presentation/inputBindings.ts';
 import { createSkyRoutePanel } from '../ui/skyRoutePanel.ts';
 import { collectSkyGeometry } from './skyRouteGeometry.ts';
 import {

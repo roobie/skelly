@@ -8,8 +8,8 @@ import { type Action, createDebugActions, dispatchDebugAction } from '../src/deb
 import { LookControls } from '../src/debug/look.ts';
 import { LOOK_PARAMS } from '../src/debug/lookUrl.ts';
 import { DebugGunPose } from '../src/game/debugGunPose.ts';
-import type { DebugHooks } from '../src/game/debugInterface.ts';
-import { inputBindings } from '../src/game/inputBindings.ts';
+import type { DebugHooks } from '../src/presentation/debugInterface.ts';
+import { inputBindings } from '../src/presentation/inputBindings.ts';
 import { TONE_MODES } from '../src/render/look.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';

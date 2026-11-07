@@ -224,14 +224,6 @@
     "debug/vehicleSpike.ts": {
       "ms": 1
     },
-    "game/debugInterface.ts": {
-      "meshingQueueMs": 1,
-      "renderMs": 1,
-      "setTimeOfDay": 1,
-      "simulationMs": 1,
-      "snapshotLastMs": 1,
-      "snapshotP95Ms": 1
-    },
     "game/firearmHandling.ts": {
       "duration": 5,
       "elapsed": 6,
@@ -252,18 +244,41 @@
     "game/mesherProtocol.ts": {
       "ms": 1
     },
-    "game/play.ts": {
+    "game/pressHoldInput.ts": {
+      "holdDuration": 1,
+      "startedAt": 2
+    },
+    "game/session.ts": {
+      "simTime": 1
+    },
+    "game/streamer.ts": {
+      "genMs": 1,
+      "meshMs": 1
+    },
+    "main.ts": {
+      "genMs": 1,
+      "meshMs": 1
+    },
+    "presentation/debugInterface.ts": {
+      "meshingQueueMs": 1,
+      "renderMs": 1,
+      "setTimeOfDay": 1,
+      "simulationMs": 1,
+      "snapshotLastMs": 1,
+      "snapshotP95Ms": 1
+    },
+    "presentation/play.ts": {
       "recordSnapshotDuration": 1,
       "setTimeOfDay": 1,
       "snapshotLastMs": 1,
       "snapshotP95Ms": 1,
       "time": 2
     },
-    "game/playtestObserver.ts": {
+    "presentation/playtestObserver.ts": {
       "handlingSeconds": 3,
       "uiSeconds": 3
     },
-    "game/playtestTools.ts": {
+    "presentation/playtestTools.ts": {
       "batchMeanDurationsMs": 1,
       "batchMeanP50Ms": 1,
       "batchMeanP95Ms": 1,
@@ -284,21 +299,6 @@
       "timerQuantum": 2,
       "timerQuantumCrossCheckPassed": 1,
       "uiSeconds": 1
-    },
-    "game/pressHoldInput.ts": {
-      "holdDuration": 1,
-      "startedAt": 2
-    },
-    "game/session.ts": {
-      "simTime": 1
-    },
-    "game/streamer.ts": {
-      "genMs": 1,
-      "meshMs": 1
-    },
-    "main.ts": {
-      "genMs": 1,
-      "meshMs": 1
     },
     "presentation/saveStorage.ts": {
       "requestTimeoutMs": 1,

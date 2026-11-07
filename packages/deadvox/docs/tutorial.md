@@ -30,7 +30,7 @@ A newcomer whose light dies may not know that batteries can be swapped. Optional
 light practice makes discovering that action cheap without delaying the essentials.
 Outcomes before choosing the module must not silently complete the lesson the player
 has yet to see. See `mods/skelly.deadvox.scenario.tutorial/guidance.libsonnet`, `gunStep`, and
-`src/game/guidedSteps.ts`, `GuidedSteps`.
+`src/presentation/guidedSteps.ts`, `GuidedSteps`.
 
 Action labels need live bindings because outcome nouns alone leave newcomers without
 the means to act. Help uses the shared controls card rather than a second manual that
@@ -52,20 +52,20 @@ graduation requirement, and lost supplies must not trap the learner. See
 `mods/skelly.deadvox.scenario.tutorial/tutorial.jsonnet`, `tutorial_range`.
 
 Practice must never touch the player's save: disposable learning must not share a
-normal world's persistence identity. See `src/game/tutorialUrl.ts`,
-`tutorialRequested`, and `src/game/play.ts`, `startPlay`.
+normal world's persistence identity. See `src/presentation/tutorialUrl.ts`,
+`tutorialRequested`, and `src/presentation/play.ts`, `startPlay`.
 
 Completion, death and voluntary exit return to the start choice rather than silently
 creating a world or transferring equipment. Finishing the essentials must not force
 an exit while optional modules are still available. Returning by navigation gives
 one owner the disposal of the practice runtime. Retain storage selection so Continue
 finds the same normal save, without carrying practice's world or debug choices into
-it. See `src/game/tutorialUrl.ts`, `tutorialUrl`.
+it. See `src/presentation/tutorialUrl.ts`, `tutorialUrl`.
 
 The launcher offers practice only as a play destination, so a benchmark cannot carry
 an unsaved teaching place. Its URL contract stays independent of simulation and
 workspace packages because launcher checks run without a game installation. See
-`site/launcher.js`, `setPlayOnlySite`, and `src/game/tutorialUrl.ts`,
+`site/launcher.js`, `setPlayOnlySite`, and `src/presentation/tutorialUrl.ts`,
 `tutorialRequested`.
 
 Five minutes is a nominal teaching target, not a timer or test assertion. Slower

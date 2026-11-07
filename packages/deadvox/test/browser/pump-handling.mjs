@@ -43,7 +43,7 @@ const observation = {
       });
       return JSON.stringify(data);
     }
-    if (!id.endsWith('/src/game/play.ts')) {
+    if (!id.endsWith('/src/presentation/play.ts')) {
       return;
     }
     assert(code.includes(marker), 'pump observation anchor exists');
@@ -206,7 +206,7 @@ try {
       document.querySelector('#world-loading').hidden,
   );
   const reloadCode = await page.evaluate(
-    `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('firearm.reload')[0].code)`,
+    `import('/src/presentation/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('firearm.reload')[0].code)`,
   );
   await page.evaluate((code) => {
     addEventListener('keydown', (event) => {

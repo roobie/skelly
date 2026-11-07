@@ -16,7 +16,7 @@ const magazineModel = JSON.parse(
   readFileSync(resolve(root, '../mods/skelly.firearms/gungen/magazine_stanag_30.model.json'), 'utf8'),
 );
 const anchors = new Map([
-  ['src/game/play.ts', '  const onForwardPress = (e: MouseEvent) => {'],
+  ['src/presentation/play.ts', '  const onForwardPress = (e: MouseEvent) => {'],
   [
     'src/presentation/audio.ts',
     '    this.stealOldestVoice(event, sound.voiceCap, context);\n    const source = context.createBufferSource();',
@@ -75,9 +75,9 @@ const vite = await createServer({
           });
           return JSON.stringify(data);
         }
-        if (id.endsWith('/src/game/play.ts')) {
-          const marker = anchors.get('src/game/play.ts');
-          requireAnchor(code, 'src/game/play.ts', marker);
+        if (id.endsWith('/src/presentation/play.ts')) {
+          const marker = anchors.get('src/presentation/play.ts');
+          requireAnchor(code, 'src/presentation/play.ts', marker);
           return code.replace(
             marker,
             `  Object.assign(globalThis, { fullAutoRuntime: { config, sim, input, inventory, session, audio, caseEffects, view, debugTools, eye, heldFirearmBore: () => heldFirearmBore(), reportReader: () => sim.events.reader() } });\n${marker}`,
@@ -202,7 +202,7 @@ try {
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   const debugGateCode = await page.evaluate(
-    `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
+    `import('/src/presentation/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
   );
   await page.evaluate((code) => {
     globalThis.fullAutoProbe.titleF1DefaultPrevented = false;

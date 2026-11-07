@@ -5,7 +5,7 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { bodyRegionLabel } from '../src/core/body.ts';
 import { damageWord } from '../src/core/items.ts';
 import { fillText } from '../src/core/textTemplate.ts';
-import { inputBindings, labelForAction } from '../src/game/inputBindings.ts';
+import { inputBindings, labelForAction } from '../src/presentation/inputBindings.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import {
   playCarryText,

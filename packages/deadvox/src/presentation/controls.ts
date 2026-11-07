@@ -1,7 +1,7 @@
 import { html, render } from 'lit-html';
 import { bindingIsDebugOnly, contextsForRun, POINTER_ACTIONS } from '../core/inputActions.ts';
 import { type BindingRegistry, NATIVE_INPUTS } from '../game/bindingRegistry.ts';
-import { inputBindings } from '../game/inputBindings.ts';
+import { inputBindings } from './inputBindings.ts';
 
 export interface ControlsCardRow {
   readonly id: string;

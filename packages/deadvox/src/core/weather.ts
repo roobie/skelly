@@ -2,7 +2,7 @@
 // If weather ever affects the simulation, remove that exclusion and bring the weather state into the
 // save (docs/decisions/0002-saves.md).
 //
-// Weather as it reaches the look: set `Weather.fogginess` and the sky's fog follows. Pure; game/play.ts
+// Weather as it reaches the look: set `Weather.fogginess` and the sky's fog follows. Pure; presentation/play.ts
 // holds the one `Weather` and applies `skyInWeather` to each frame's sky before render/sky.ts uses it.
 
 import type { DayCycleDef } from './schema.ts';

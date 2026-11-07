@@ -138,7 +138,7 @@ const vite = await createServer({
               'uniform float uSkyProofControl;\nvec2 skyVisibility(out bool unbuilt) {\n  if (uSkyProofControl > 0.5) { unbuilt = false; return vec2(1.0); }',
             );
         }
-        if (!id.endsWith('/src/game/play.ts')) {
+        if (!id.endsWith('/src/presentation/play.ts')) {
           return;
         }
         const marker = 'startRealFrames(frame);';
@@ -336,7 +336,7 @@ try {
     const verifyGate = async (locked) => {
       const before = await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode);
       const gate = await page.evaluate(
-        `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0])`,
+        `import('/src/presentation/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0])`,
       );
       await page.evaluate(() => {
         globalThis.nativeGateEvents.length = 0;

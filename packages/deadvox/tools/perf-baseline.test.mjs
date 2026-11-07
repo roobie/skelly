@@ -21,7 +21,7 @@ test('injected play startup attaches the live actor store before starting frames
   const injection = runInNewContext(literal);
   const anchorLiteral = source.match(playAnchorLiteral)?.[0];
   assert.ok(anchorLiteral, 'play startup replacement anchor exists');
-  const play = await readFile(new URL('../src/game/play.ts', import.meta.url), 'utf8');
+  const play = await readFile(new URL('../src/presentation/play.ts', import.meta.url), 'utf8');
   assert.ok(play.includes(runInNewContext(anchorLiteral)), 'play source retains the injection anchor');
   assert.match(play, playActorStoreBinding);
   const actorStore = { size: 1 };

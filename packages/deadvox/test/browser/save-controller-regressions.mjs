@@ -19,7 +19,7 @@ import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
 const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
 const { decodeSave } = await import(pathToFileURL(`${root}/src/core/saveFormat.ts`));
-const { metricsStorageKey } = await import(pathToFileURL(`${root}/src/game/playtestTools.ts`));
+const { metricsStorageKey } = await import(pathToFileURL(`${root}/src/presentation/playtestTools.ts`));
 const { server, address } = await saveControllerServer();
 const browser = await launchChromium('save-controller-regressions', { headless: true });
 const url = browserStageUrl('save-controller-regressions', address);
@@ -77,7 +77,7 @@ try {
         'the live guide renders its authored stage identity rather than a built-in stage',
       );
       const binding = await page.evaluate(async () => {
-        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        const { inputBindings } = await import('/src/presentation/inputBindings.ts');
         const id = 'movement.forward';
         const original = inputBindings.chords(id);
         const cap = document.querySelector(`[data-tutorial-action="${id}"] kbd`);
@@ -94,7 +94,7 @@ try {
         return { id, original, previous };
       });
       await page.waitForFunction(async ({ id, previous }) => {
-        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        const { inputBindings } = await import('/src/presentation/inputBindings.ts');
         const cap = document.querySelector(`[data-tutorial-action="${id}"] kbd`);
         return cap?.textContent === inputBindings.label(id) && cap.textContent !== previous;
       }, binding);
@@ -120,19 +120,19 @@ try {
         'practice opens the shared controls card on the movement topic',
       );
       await page.evaluate(async ({ id, original }) => {
-        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        const { inputBindings } = await import('/src/presentation/inputBindings.ts');
         if (inputBindings.rebind(id, original) !== undefined) {
           throw new Error('Binding restoration failed');
         }
       }, binding);
       const canHints = await page.evaluate(async () => {
-        const { GuidedSteps: Tutorial } = await import('/src/game/guidedSteps.ts');
+        const { GuidedSteps: Tutorial } = await import('/src/presentation/guidedSteps.ts');
         const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
         const { Inventory } = await import('/src/core/inventory.ts');
         const { HandlingQueue } = await import('/src/core/handling.ts');
         const { Unpacking } = await import('/src/game/unpacking.ts');
         const { dominantSide } = await import('/src/core/character.ts');
-        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        const { inputBindings } = await import('/src/presentation/inputBindings.ts');
         // Own fixture inventory: no injected progress or inventory changes in the playing session.
         const inventory = new Inventory(gauntletWitness.engine.registry);
         const bag = inventory.create('hiking_backpack');
@@ -240,7 +240,7 @@ try {
       assert(canHints.eating.includes('hand.use-dominant'), 'held food points back to hand activation');
       assert.equal(canHints.awaitingConsumption, true, 'opening and wielding alone are not consumption');
       const weaponsHints = await page.evaluate(async () => {
-        const { GuidedSteps: Tutorial } = await import('/src/game/guidedSteps.ts');
+        const { GuidedSteps: Tutorial } = await import('/src/presentation/guidedSteps.ts');
         const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
         const { Inventory } = await import('/src/core/inventory.ts');
         const { HandlingQueue } = await import('/src/core/handling.ts');
@@ -249,7 +249,7 @@ try {
         const { bindReach } = await import('/src/core/reach.ts');
         const { fixtureIds } = await import('/test/fixtures/capabilityIds.ts');
         const { Unpacking } = await import('/src/game/unpacking.ts');
-        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        const { inputBindings } = await import('/src/presentation/inputBindings.ts');
         const inventory = new Inventory(gauntletWitness.engine.registry);
         const queue = new HandlingQueue(inventory);
         let finished = false;
@@ -398,7 +398,7 @@ try {
       await page.click('#go');
       await page.waitForFunction(() => globalThis.tutorialSession.sim.paused === false);
       await page.evaluate(async () => {
-        const { GuidedSteps: Tutorial } = await import('/src/game/guidedSteps.ts');
+        const { GuidedSteps: Tutorial } = await import('/src/presentation/guidedSteps.ts');
         const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
         const { engine, session } = gauntletWitness;
         // A separate observer starts at this lesson; the playing session still owns movement and stance.
@@ -953,7 +953,7 @@ try {
       metrics: await handBack('#playtest-metrics-export'),
       replay: await handBack('#playtest-replay-export'),
     };
-    const pageModules = { tools: '/src/game/playtestTools.ts', replays: '/src/game/inputReplay.ts' };
+    const pageModules = { tools: '/src/presentation/playtestTools.ts', replays: '/src/game/inputReplay.ts' };
     const kinds = await page.evaluate(
       async ({ metrics, replay, modules }) => {
         const bytes = (base64) => Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));

@@ -8,8 +8,8 @@ import { Inventory } from '../src/core/inventory.ts';
 import { defOf } from '../src/core/items.ts';
 import type { GuidanceDef } from '../src/core/schema/guidance.ts';
 import { FirearmMechanics, spentCaseItemId } from '../src/game/firearmHandling.ts';
-import { HandlingLessons } from '../src/game/handlingLessons.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
+import { HandlingLessons } from '../src/presentation/handlingLessons.ts';
 import { handlingTracksFixture } from './fixtures/guidance.ts';
 import { content } from './fixtures/startupContent.ts';
 

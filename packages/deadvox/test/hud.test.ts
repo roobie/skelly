@@ -6,8 +6,8 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decimalText } from '../src/core/numberText.ts';
 import { fillText } from '../src/core/textTemplate.ts';
-import { labelForAction } from '../src/game/inputBindings.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
+import { labelForAction } from '../src/presentation/inputBindings.ts';
 import {
   handlingViewModel,
   quickbarKey,

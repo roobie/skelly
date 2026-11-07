@@ -1,7 +1,7 @@
 import { html, type TemplateResult } from 'lit-html';
 import type { DirectiveResult } from 'lit-html/directive.js';
 import { fillParts } from '../core/textTemplate.ts';
-import { labelForAction } from '../game/inputBindings.ts';
+import { labelForAction } from '../presentation/inputBindings.ts';
 
 /** Simulation-graph modules compose hints through this, so the fingerprint never follows lit-html. */
 export const hintHtml = html;

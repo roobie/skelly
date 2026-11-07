@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import { realTimestamp } from '../src/core/time.ts';
-import { finishLoadingFrame, WorldLoading } from '../src/game/worldLoading.ts';
 import type { Engine } from '../src/presentation/engine.ts';
+import { finishLoadingFrame, WorldLoading } from '../src/presentation/worldLoading.ts';
 
 function fixture(workUnits = 2) {
   let holes = 1;

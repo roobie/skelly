@@ -386,7 +386,7 @@ packs.push({
 ${marker}`,
 )}`;
         }
-        if (!id.split('?')[0].endsWith('/src/game/play.ts')) {
+        if (!id.split('?')[0].endsWith('/src/presentation/play.ts')) {
           return;
         }
         const marker = '  const onForwardPress = (e: MouseEvent) => {';
@@ -1618,7 +1618,7 @@ try {
       const [chord] = inputBindings.chords('inventory.view-item');
       const mouse = chord.code.startsWith('Mouse') && !chord.modifier;
       return mouse ? ['left', 'middle', 'right'][Number(chord.code.slice('Mouse'.length))] : undefined;
-    }, '/src/game/inputBindings.ts');
+    }, '/src/presentation/inputBindings.ts');
     assert.ok(viewButton, 'the default view binding is a mouse button Playwright can press');
     // A focused covered control must not take keys while the viewer is open: the fit button dispatches on activation.
     const coveredFit = page

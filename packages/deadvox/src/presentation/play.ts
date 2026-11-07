@@ -43,10 +43,49 @@ import { stageMarkArea } from '../core/stageMarks.ts';
 import { applyStartState } from '../core/startState.ts';
 import { fillText as fillScreenText } from '../core/textTemplate.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
-import { GameAudio } from '../presentation/audio.ts';
-import type { Engine } from '../presentation/engine.ts';
-import { Input } from '../presentation/input.ts';
-import { realNow, startRealFrames } from '../presentation/realFrames.ts';
+import { createRefusalPresenter, handlingMoveCompleteCue, handlingMoveStartCue } from '../game/audioPresentation.ts';
+import { columnArrival } from '../game/columnArrival.ts';
+import { createCommandRouter } from '../game/commandRouter.ts';
+import { CrouchProneInput } from '../game/crouchProneInput.ts';
+import { DebugGunPose } from '../game/debugGunPose.ts';
+import { firearmBoreRay, firearmBoreTarget } from '../game/firearmAim.ts';
+import { firearmHandlingFor } from '../game/firearmHandling.ts';
+import { observeRealFrame } from '../game/frameDriver.ts';
+import { FurnitureActionSelection, furnitureActionsFor } from '../game/furnitureActions.ts';
+import {
+  encodeInputReplay,
+  InputReplayRecorder,
+  joinInputReplayWindows,
+  type ReplayAction,
+  type ReplayControlSample,
+  type ReplayGeneratedColumn,
+  type ReplayInputData,
+  type ReplayStartState,
+  stashInputReplay,
+  withReplayExportGuard,
+} from '../game/inputReplay.ts';
+import { createReplayPlayStateBinding } from '../game/inputReplayActions.ts';
+import { InputReplayDriver, type InputReplayDriverPorts } from '../game/inputReplayDriver.ts';
+import { InputReplayPlayer } from '../game/inputReplayPlayer.ts';
+import type { ItemAction } from '../game/itemActions.ts';
+import { registerLayoutVehicles } from '../game/layoutVehicles.ts';
+import { unarmedMeleeWeapon } from '../game/melee.ts';
+import { playerTuning } from '../game/player.ts';
+import { PlayerTickActions } from '../game/playerTickActions.ts';
+import { PressHoldInput } from '../game/pressHoldInput.ts';
+import { selectPrimaryAction } from '../game/primaryAction.ts';
+import { RELOAD_GESTURE_MS } from '../game/reloadInput.ts';
+import type { ReplayActionPayload } from '../game/replayCommands.ts';
+import { restKindForFurniture } from '../game/rest.ts';
+import { createSession } from '../game/session.ts';
+import {
+  createSimulationStepper,
+  type InputRecording,
+  type InputReplayVerification,
+  inputReplayStoppedStatus,
+} from '../game/simulationStepper.ts';
+import { requireStart } from '../game/startSelection.ts';
+import { playerStartFromWorld } from '../game/worldSetup.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
@@ -100,12 +139,8 @@ import type { SaveController } from '../ui/saveController.ts';
 import { vehicleInspectionViewModel } from '../ui/vehicleInspection.ts';
 import { showWin } from '../ui/win.ts';
 import { mountWorldLoading } from '../ui/worldLoading.ts';
-import { createRefusalPresenter, handlingMoveCompleteCue, handlingMoveStartCue } from './audioPresentation.ts';
+import { GameAudio } from './audio.ts';
 import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
-import { columnArrival } from './columnArrival.ts';
-import { createCommandRouter } from './commandRouter.ts';
-import { CrouchProneInput } from './crouchProneInput.ts';
-import { DebugGunPose } from './debugGunPose.ts';
 import type {
   DebugHooks,
   DebugModule,
@@ -114,56 +149,22 @@ import type {
   SkyRouteAttachment,
 } from './debugInterface.ts';
 import { debugTargetRay } from './debugTargetRay.ts';
-import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
-import { firearmHandlingFor } from './firearmHandling.ts';
-import { observeRealFrame } from './frameDriver.ts';
-import { FurnitureActionSelection, furnitureActionsFor } from './furnitureActions.ts';
+import type { Engine } from './engine.ts';
 import { GuidedSteps } from './guidedSteps.ts';
+import { Input } from './input.ts';
 import {
   type InputCancellationReason,
   type InputCommand,
   keyboardInput,
   shouldCancelInputForViewerFocus,
 } from './inputBindings.ts';
-import {
-  encodeInputReplay,
-  InputReplayRecorder,
-  joinInputReplayWindows,
-  type ReplayAction,
-  type ReplayControlSample,
-  type ReplayGeneratedColumn,
-  type ReplayInputData,
-  type ReplayStartState,
-  stashInputReplay,
-  withReplayExportGuard,
-} from './inputReplay.ts';
-import { createReplayPlayStateBinding } from './inputReplayActions.ts';
-import { InputReplayDriver, type InputReplayDriverPorts } from './inputReplayDriver.ts';
-import { InputReplayPlayer } from './inputReplayPlayer.ts';
-import type { ItemAction } from './itemActions.ts';
-import { registerLayoutVehicles } from './layoutVehicles.ts';
-import { unarmedMeleeWeapon } from './melee.ts';
 import { OpticZoom } from './opticZoom.ts';
-import { playerTuning } from './player.ts';
-import { PlayerTickActions } from './playerTickActions.ts';
 import { bleedingStatusRows } from './playStatus.ts';
 import { createAttemptRecording, type PlaytestObserver } from './playtestObserver.ts';
 import { createSnapshotHistory, downloadFile, type HandBackFile, replayFile } from './playtestTools.ts';
-import { PressHoldInput } from './pressHoldInput.ts';
-import { selectPrimaryAction } from './primaryAction.ts';
 import { QuickbarInput } from './quickbarInput.ts';
-import { RELOAD_GESTURE_MS } from './reloadInput.ts';
-import type { ReplayActionPayload } from './replayCommands.ts';
-import { restKindForFurniture } from './rest.ts';
-import { createSession } from './session.ts';
-import {
-  createSimulationStepper,
-  type InputRecording,
-  type InputReplayVerification,
-  inputReplayStoppedStatus,
-} from './simulationStepper.ts';
+import { realNow, startRealFrames } from './realFrames.ts';
 import { SpectatorCamera } from './spectatorCamera.ts';
-import { requireStart } from './startSelection.ts';
 import {
   isOrbitResetMovementAction,
   isPlayerFigureWhole,
@@ -174,7 +175,6 @@ import {
 import { TierNotice } from './tierNotice.ts';
 import { tutorialUrl } from './tutorialUrl.ts';
 import { finishLoadingFrame, WorldLoading } from './worldLoading.ts';
-import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 

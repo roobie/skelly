@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bodyRegionLabel } from '../src/core/body.ts';
-import { bleedingStatusRows } from '../src/game/playStatus.ts';
+import { bleedingStatusRows } from '../src/presentation/playStatus.ts';
 
 describe('play status projection', () => {
   it('keeps bleeding tier labels and localized region names', () => {

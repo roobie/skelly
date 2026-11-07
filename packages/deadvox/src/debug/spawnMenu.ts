@@ -4,7 +4,7 @@
 
 import { html, render, type TemplateResult } from 'lit-html';
 import type { Registry } from '../core/content.ts';
-import { inputBindings, labelForAction } from '../game/inputBindings.ts';
+import { inputBindings, labelForAction } from '../presentation/inputBindings.ts';
 
 const WHITESPACE = /\s+/;
 

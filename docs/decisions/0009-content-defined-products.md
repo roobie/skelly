@@ -144,8 +144,8 @@ Scenario rows own guided steps, stage marks and attempt recording because a diff
 run must not require runtime identity branches. Guidance observes completed actions
 and selects presentation; it cannot issue gameplay commands or bypass action owners.
 Handling history belongs to an observed item instance so separate items cannot be
-combined into one completed lesson. See `packages/deadvox/src/game/guidedSteps.ts`,
-`GuidedSteps`; `packages/deadvox/src/game/handlingLessons.ts`, `HandlingLessons`;
+combined into one completed lesson. See `packages/deadvox/src/presentation/guidedSteps.ts`,
+`GuidedSteps`; `packages/deadvox/src/presentation/handlingLessons.ts`, `HandlingLessons`;
 and `packages/deadvox/src/ui/guidedSteps.ts`, `mountGuidance`.
 Input references share the action catalogue rather than the browser resolver so
 admission cannot pull DOM timing into simulation. See
@@ -154,7 +154,7 @@ admission cannot pull DOM timing into simulation. See
 Attempt recording is scenario content carried by scenario or layout rows. Without
 an authored row there is nothing to record against, so no code default stands in.
 See `packages/deadvox/src/core/schema/attemptPolicy.ts`, `AttemptPolicySchema`, and
-`packages/deadvox/src/game/playtestObserver.ts`, `createAttemptRecording`.
+`packages/deadvox/src/presentation/playtestObserver.ts`, `createAttemptRecording`.
 
 Snapshot measurement is a debugging aid, not scenario attempt policy: its result
 never reaches the attempt file, so scenarios must not tune it. See

@@ -9,9 +9,9 @@ import type { Vec3 } from '../core/coords.ts';
 import { decimalText } from '../core/numberText.ts';
 import { type Body, bodyOverlapsBlock } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
-import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import { playerTuning } from '../game/player.ts';
 import type { Engine } from '../presentation/engine.ts';
+import { inputBindings, labelForAction } from '../presentation/inputBindings.ts';
 
 const hotbarTemplate = (blocks: readonly { color: string; name: string }[], selected: number) => html`
   ${blocks.slice(0, 9).map(

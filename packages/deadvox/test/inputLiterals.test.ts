@@ -7,7 +7,7 @@ const sourceExtension = /\.[cm]?[jt]s$/;
 // This visual-only page pans a Three.js preview; its camera keys are not gameplay bindings.
 const DEBUG_CAMERA_KEY_OWNERS = new Set(['debug/vehicleSpike.ts']);
 // The binding data and its DOM resolver own the physical codes every other file names through an action.
-const KEYBOARD_OWNERS = new Set(['game/bindingRegistry.ts', 'game/inputBindings.ts']);
+const KEYBOARD_OWNERS = new Set(['game/bindingRegistry.ts', 'presentation/inputBindings.ts']);
 const files = (directory: string): string[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);

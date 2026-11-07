@@ -14,7 +14,7 @@ const observationPlugin = {
   name: 'melee-build-click-observation',
   enforce: 'pre',
   transform(code, id) {
-    if (!id.endsWith('/src/game/play.ts')) {
+    if (!id.endsWith('/src/presentation/play.ts')) {
       return;
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';

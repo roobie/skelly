@@ -7,7 +7,7 @@ import { ifDefined } from 'lit-html/directives/if-defined.js';
 import { live } from 'lit-html/directives/live.js';
 import { createRef, ref } from 'lit-html/directives/ref.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import { comboBoxKey } from '../game/inputBindings.ts';
+import { comboBoxKey } from '../presentation/inputBindings.ts';
 
 export interface ComboBoxOption {
   readonly value: string;

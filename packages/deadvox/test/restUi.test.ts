@@ -5,7 +5,7 @@ import { formatClock, simSecondsPerHour } from '../src/core/clock.ts';
 import type { RestAction } from '../src/core/longAction.ts';
 import { realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
-import { labelForAction } from '../src/game/inputBindings.ts';
+import { labelForAction } from '../src/presentation/inputBindings.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import { restViewModel } from '../src/ui/rest.ts';
 import { baseScreenText } from './baseRegistry.ts';

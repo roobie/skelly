@@ -24,7 +24,7 @@ const observation = {
       assert(code.includes(marker), 'debug look observation point exists');
       return code.replace(marker, `  Object.assign(globalThis, { firefoxUiLook: look });\n${marker}`);
     }
-    if (!id.endsWith('/src/game/play.ts')) {
+    if (!id.endsWith('/src/presentation/play.ts')) {
       return;
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
@@ -160,7 +160,7 @@ try {
   });
   assert.doesNotMatch(await page.locator('#hud').textContent(), /paused/);
   const gateCode = await page.evaluate(
-    `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
+    `import('/src/presentation/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
   );
   await page.evaluate((code) => {
     globalThis.firefoxGateEvents = [];

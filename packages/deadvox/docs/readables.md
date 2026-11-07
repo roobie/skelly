@@ -33,4 +33,4 @@ All readable paper, notes, maps, books and signs alike, opens only where the lig
 
 Scenario clues may lie in the dark, even by day, and nothing lights them for the player: no light at the clue, no indoor bounce, no light in the start kit and no lower threshold for clues. A scenario expects the player to find or make a light to read a clue in the dark, rather than handing every clue over in readable light. Tests that read such a clue bring a light the way a player does: pick one up and switch it on.
 
-Light that fails while a page is open closes it with a short reason, and a book's timed reading stops, keeping its progress: reading on in the dark would let one lit moment pay for the whole text. See `src/game/play.ts`, `closeReadingInDarkness`, and `src/core/bookReading.ts`, `bookReadingHooks`.
+Light that fails while a page is open closes it with a short reason, and a book's timed reading stops, keeping its progress: reading on in the dark would let one lit moment pay for the whole text. See `src/presentation/play.ts`, `closeReadingInDarkness`, and `src/core/bookReading.ts`, `bookReadingHooks`.

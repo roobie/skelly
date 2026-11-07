@@ -2,7 +2,7 @@
 import { html, render } from 'lit-html';
 import type { ReadRequest } from '../core/readable.ts';
 import type { ScreenText } from '../core/schema.ts';
-import { inputBindings } from '../game/inputBindings.ts';
+import { inputBindings } from '../presentation/inputBindings.ts';
 
 /** Meta progress embedded in the paper, because the optional HUD cannot explain a compressed reading action. */
 export interface ReadingProgress {

@@ -7,8 +7,8 @@ import type { Item } from '../core/items.ts';
 import { countText, decimalText } from '../core/numberText.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
-import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import type { Quickbar } from '../game/quickbar.ts';
+import { inputBindings, labelForAction } from '../presentation/inputBindings.ts';
 import { activityProgress } from './activityProgress.ts';
 import { fillHint, type HintText, keyCap } from './keyCap.ts';
 

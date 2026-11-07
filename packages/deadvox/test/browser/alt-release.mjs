@@ -41,7 +41,7 @@ export const verifyAltRelease = async (page) => {
         moving: keyboardInput.held('movement.forward'),
         looking: keyboardInput.held('view.free-look'),
       };
-    }, '/src/game/inputBindings.ts');
+    }, '/src/presentation/inputBindings.ts');
     process.stdout.write(`ALT_RELEASE ${JSON.stringify(state)}\n`);
     assert.equal(state.moving, false, 'movement ends after the native release');
     assert.equal(state.looking, false, 'free look ends after the native release');

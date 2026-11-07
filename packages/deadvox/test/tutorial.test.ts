@@ -8,9 +8,12 @@ import { guidanceFixture } from './fixtures/guidance.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { GuidedSteps as Tutorial, type GuidanceObservation as TutorialObservation } from '../src/game/guidedSteps.ts';
 import { Survival } from '../src/game/survival.ts';
-import { tutorialRequested, tutorialUrl } from '../src/game/tutorialUrl.ts';
+import {
+  GuidedSteps as Tutorial,
+  type GuidanceObservation as TutorialObservation,
+} from '../src/presentation/guidedSteps.ts';
+import { tutorialRequested, tutorialUrl } from '../src/presentation/tutorialUrl.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const observation = (): TutorialObservation => ({

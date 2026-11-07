@@ -19,20 +19,20 @@ import type { WeatheringDef } from '../core/schema.ts';
 import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import { WEATHERING_RANGES } from '../core/weather.ts';
 import type { WeatheringUrlState } from '../core/weatheringUrl.ts';
+import type { DebugNoclipStep } from '../game/debugNoclipStep.ts';
+import { firearmBoreTarget } from '../game/firearmAim.ts';
+import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
+import { unarmedMeleeWeapon } from '../game/melee.ts';
+import { playerTuning } from '../game/player.ts';
 import type {
   DebugHooks,
   DebugModule,
   DebugReadout,
   DebugRuntime,
   InputReplayStatusState,
-} from '../game/debugInterface.ts';
-import type { DebugNoclipStep } from '../game/debugNoclipStep.ts';
-import { firearmBoreTarget } from '../game/firearmAim.ts';
-import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
-import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
-import { unarmedMeleeWeapon } from '../game/melee.ts';
-import { playerTuning } from '../game/player.ts';
-import { replayFile, type SnapshotMeasurement } from '../game/playtestTools.ts';
+} from '../presentation/debugInterface.ts';
+import { inputBindings, keyboardInput, labelForAction } from '../presentation/inputBindings.ts';
+import { replayFile, type SnapshotMeasurement } from '../presentation/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { comboBox } from '../ui/comboBox.ts';
 import { positionLookedAtReadout } from '../ui/hud.ts';

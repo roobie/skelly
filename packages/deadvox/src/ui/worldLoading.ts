@@ -1,7 +1,7 @@
 import { html, render } from 'lit-html';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
-import type { WorldLoading } from '../game/worldLoading.ts';
+import type { WorldLoading } from '../presentation/worldLoading.ts';
 import { isOwnError } from './ownError.ts';
 
 export function mountWorldLoading(loading: WorldLoading, text: ScreenText['worldLoading']): () => void {

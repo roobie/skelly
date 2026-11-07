@@ -75,7 +75,7 @@ export const SIMULATION_ENTRIES = [
 export const SIMULATION_EXCLUSIONS = [
   // The browser shell that wires runtime owners to presentation; no runtime module may import it,
   // so its simulation effects are fingerprinted through the router, stepper and session it calls.
-  'src/game/play.ts',
+  'src/presentation/play.ts',
   // Includes playView's owned meshes/camera/draw/disposal.
   'src/render',
   // The browser's Real clock and frame requests; the stepper receives each frame's Real seconds.
@@ -125,7 +125,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/presentation/painCue.ts',
   'src/presentation/engine.ts',
   // Chooses the ray for debug readouts only; it cannot affect gameplay or saves.
-  'src/game/debugTargetRay.ts',
+  'src/presentation/debugTargetRay.ts',
   // Debug ragdoll staging and its tuning are presentation; corpse physics must not invalidate saves.
   'src/game/ragdollConfig.ts',
   'src/presentation/saveStorage.ts',
@@ -135,8 +135,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/game/saveStorageRecord.ts',
   'src/game/saveStorageProtocol.ts',
   'src/presentation/controls.ts',
-  'src/game/playtestTools.ts',
-  'src/game/playtestObserver.ts',
+  'src/presentation/playtestTools.ts',
+  'src/presentation/playtestObserver.ts',
   'src/worker/save.worker.ts',
   'src/ui/audioOptions.ts',
   'src/ui/graphicsOptions.ts',

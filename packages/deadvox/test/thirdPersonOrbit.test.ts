@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { BACKQUOTE_DOUBLE_TAP_WINDOW_MS, BackquoteOrbitGesture } from '../src/game/backquoteOrbitGesture.ts';
 import { INPUT_BINDINGS } from '../src/game/bindingRegistry.ts';
-import { isOrbitResetMovementAction, ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
+import { BACKQUOTE_DOUBLE_TAP_WINDOW_MS, BackquoteOrbitGesture } from '../src/presentation/backquoteOrbitGesture.ts';
+import { isOrbitResetMovementAction, ThirdPersonOrbit } from '../src/presentation/thirdPersonOrbit.ts';
 
 const hudHoldMs = INPUT_BINDINGS.find(({ id }) => id === 'hud.toggle')?.holdMs ?? 0;
 

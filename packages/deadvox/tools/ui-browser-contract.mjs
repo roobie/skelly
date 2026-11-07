@@ -66,7 +66,7 @@ try {
           const [file] = id.split('?');
           const observations = [
             [
-              '/src/game/play.ts',
+              '/src/presentation/play.ts',
               '  const onForwardPress = (e: MouseEvent) => {',
               '  globalThis.uiContractRuntime = { sim, session, inventory, quickbar, screen, eye: () => [...eye()] };\n',
             ],
@@ -199,7 +199,7 @@ try {
   );
   discovery.phase = 'UI assertions';
   const keyBindings =
-    await evaluate(`Promise.all([import('/src/game/inputBindings.ts'), import('/src/game/bindingRegistry.ts')]).then(([{ inputBindings }, { NATIVE_INPUTS }]) => ({
+    await evaluate(`Promise.all([import('/src/presentation/inputBindings.ts'), import('/src/game/bindingRegistry.ts')]).then(([{ inputBindings }, { NATIVE_INPUTS }]) => ({
     mainMenu: { code: inputBindings.chords('ui.main-menu-toggle')[0].code, label: inputBindings.label('ui.main-menu-toggle') },
     browserMenuBar: NATIVE_INPUTS.find((native) => native.code === 'F10'),
   }))`);
@@ -853,7 +853,7 @@ try {
   );
   assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '1');
   const spawnActionLabel = async () =>
-    evaluate(`import('/src/game/inputBindings.ts').then(({ inputBindings }) => {
+    evaluate(`import('/src/presentation/inputBindings.ts').then(({ inputBindings }) => {
     const label = document.querySelector('[data-debug-action="debug.spawn-shamblers"]').textContent;
     return label.includes(inputBindings.label('debug.spawn-shamblers')) &&
       label.includes(document.querySelector('.debug-shambler-count output').textContent);

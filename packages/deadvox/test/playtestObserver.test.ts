@@ -3,9 +3,9 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { PlaytestMarks } from '../src/core/site.ts';
 import { measureSessionSnapshot } from '../src/debug/snapshotMeasurement.ts';
-import { PlaytestObserver } from '../src/game/playtestObserver.ts';
-import { SessionMetrics } from '../src/game/playtestTools.ts';
 import type { Session } from '../src/game/session.ts';
+import { PlaytestObserver } from '../src/presentation/playtestObserver.ts';
+import { SessionMetrics } from '../src/presentation/playtestTools.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { makeAttemptPolicy } from './fixtures/attemptPolicy.ts';
 

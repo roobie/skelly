@@ -1,4 +1,4 @@
-import { labelForAction } from '../game/inputBindings.ts';
+import { labelForAction } from '../presentation/inputBindings.ts';
 
 // The debug panel's groups, their open/closed state, and the catalogue of keys and URL parameters.
 //

@@ -1,7 +1,7 @@
 import type { Vec3 } from '../core/coords.ts';
 import type { RealTimestamp } from '../core/time.ts';
-import type { Engine } from '../presentation/engine.ts';
-import type { ReplayGeneratedColumn } from './inputReplay.ts';
+import type { ReplayGeneratedColumn } from '../game/inputReplay.ts';
+import type { Engine } from './engine.ts';
 
 // Scale the deadline to chunk-sized work so large views do not inherit a small view's failure budget.
 const REAL_MS_PER_WORK_UNIT = 500;

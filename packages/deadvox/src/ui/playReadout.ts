@@ -2,7 +2,7 @@
 import type { Object3D } from 'three';
 import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
-import type { DebugReadout } from '../game/debugInterface.ts';
+import type { DebugReadout } from '../presentation/debugInterface.ts';
 
 type Measurements = Omit<DebugReadout, 'movement' | 'position' | 'clock' | 'memoryBytes' | 'revealedActors'>;
 

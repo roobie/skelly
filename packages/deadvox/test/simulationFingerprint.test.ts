@@ -77,7 +77,6 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/game/mesherProtocol.ts': 'Type-only mesher messages; the imported types erase from runtime code.',
   'src/game/storageContract.ts':
     'Type-only save and mod storage contracts; the imported types erase from runtime code.',
-  'src/game/debugInterface.ts': 'Type-only contracts; the imported interfaces erase from runtime code.',
   'src/core/soundOcclusion.ts': 'Presentation-only filtering, reached only through the excluded WebAudio adapter.',
   'src/game/hearing.ts': 'Heard-sound record and occlusion, reached only through the excluded WebAudio adapter.',
   'src/game/voiceCaps.ts': 'Playback voice caps, reached only through the excluded WebAudio adapter.',
@@ -88,21 +87,7 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
     'Presentation projection of the interaction highlight; replay applies recorded payloads, not the highlight.',
   'src/core/stageMarks.ts':
     'Tutorial and playtest-observer stage values; core/site.ts imports only the type, so nothing simulated reads them.',
-  'src/game/inputBindings.ts': 'DOM key and button bindings; the recorder stores the resolved action, not the binding.',
-  'src/game/quickbarInput.ts': 'Live quickbar key recognition; the recorder stores the resolved quickbar action.',
-  'src/game/backquoteOrbitGesture.ts': 'Live backquote tap recognition for the debug panel and camera gestures.',
-  'src/game/opticZoom.ts':
-    'Optic zoom for mouse sensitivity, view field and render poses; a replay applies the recorded look.',
-  'src/game/spectatorCamera.ts': 'Debug spectator camera, toggled live and never recorded.',
   'src/game/debugGunPose.ts': 'Debug gun-pose editor, toggled live and never recorded.',
-  'src/game/guidedSteps.ts': 'Tutorial guide prompts; presentation only.',
-  'src/game/handlingLessons.ts': 'Tutorial handling lessons; presentation only.',
-  'src/game/playStatus.ts': 'HUD status rows; presentation only.',
-  'src/game/tierNotice.ts': 'Player-facing tier notices; presentation only.',
-  'src/game/tutorialUrl.ts': 'Tutorial URL parameters read by the browser shell; presentation only.',
-  'src/game/thirdPersonOrbit.ts': 'Third-person camera orbit; presentation only.',
-  'src/game/worldLoading.ts':
-    'Startup readiness on meshing, lighting and real time; the stepper pauses until it is ready, so no simulated or replayed tick runs before it.',
 };
 
 async function sourceFilesUnder(directory: string): Promise<string[]> {
@@ -195,7 +180,7 @@ describe('simulation source fingerprint', () => {
     const graph = await actualSimulationGraph();
     expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
     expect(graph.sources.has('src/presentation/engine.ts')).toBe(false);
-    expect(graph.sources.has('src/game/playtestObserver.ts')).toBe(false);
+    expect(graph.sources.has('src/presentation/playtestObserver.ts')).toBe(false);
     const paths = [...graph.sources.keys()];
     expect(paths.some((path) => path.startsWith('src/ui/'))).toBe(false);
     expect(paths.some((path) => path.startsWith('src/render/'))).toBe(false);
@@ -263,7 +248,7 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('src/game/primaryAction.ts')).toBe(true);
     expect(graph.sources.has('src/debug/axisGizmo.ts')).toBe(false);
     expect(graph.sources.has('src/game/firearmHandling.ts')).toBe(true);
-    expect(graph.sources.has('src/game/debugTargetRay.ts')).toBe(false);
+    expect(graph.sources.has('src/presentation/debugTargetRay.ts')).toBe(false);
     expect(graph.sources.has('src/render/caseEffects.ts')).toBe(false);
     expect(graph.sources.has('src/presentation/controls.ts')).toBe(false);
     expect(graph.sources.has('src/render/meleePose.ts')).toBe(false);
@@ -273,7 +258,7 @@ describe('simulation source fingerprint', () => {
     expect(debugPresentation.included).toBe(false);
     expect(debugPresentation.value).toBe(original);
 
-    const debugTarget = await mutateSimulationSource(host, 'src/game/debugTargetRay.ts');
+    const debugTarget = await mutateSimulationSource(host, 'src/presentation/debugTargetRay.ts');
     expect(debugTarget.included).toBe(false);
     expect(debugTarget.value).toBe(original);
 

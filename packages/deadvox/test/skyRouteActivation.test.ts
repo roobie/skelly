@@ -19,7 +19,7 @@ vi.mock('../src/ui/skyRoutePanel.ts', () => ({
     },
   }),
 }));
-vi.mock('../src/game/inputBindings.ts', () => ({
+vi.mock('../src/presentation/inputBindings.ts', () => ({
   keyboardInput: {
     context: () => ({ context: inputFixture.context, debug: false }),
     registry: { binding: () => ({ contexts: ['play', 'noclip', 'build'] }) },

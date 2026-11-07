@@ -42,7 +42,7 @@ Every number a player reads is formatted through one precision table, `src/core/
 
 ## Class 3: the character's voice
 
-Short first-person refusals and observations name the world or the character's state, not keys or procedures. Their reason text follows the messages HUD option; the refusal sound remains a player-only presentation cue. See `src/game/tierNotice.ts`, `TierNotice`.
+Short first-person refusals and observations name the world or the character's state, not keys or procedures. Their reason text follows the messages HUD option; the refusal sound remains a player-only presentation cue. See `src/presentation/tierNotice.ts`, `TierNotice`.
 
 ## HUD
 
@@ -52,7 +52,7 @@ A bound key in a hint or label is drawn as a key cap, a small bordered capital, 
 
 The interactible outline is an optional spatial HUD aid, separate from interaction hints. It compensates for objects whose appearance does not make their usable parts clear; it is not a substitute for diegetic affordances. Prefer making objects look interactible so players can discover actions without this crutch. The outline must not become a glowing substitute for seeing the object: it receives the scene's surface lighting, without emission or a minimum visibility floor. Its edge normals bisect the adjacent faces, so an edge cannot receive direct light when neither adjoining face faces the light. This keeps its yellow cue responsive to lamps and flashlights as well as the sky, rather than treating a sky-intensity estimate as surface brightness. See `src/render/interactionMarker.ts`, `markInteractionTarget`, and `src/render/furniture.ts`, `markerEdges`.
 
-The held-item action list is meta presentation: the held geometry cannot express which of several valid operations a click will perform. It shares the interaction-hint visibility policy but stays in the lower left so a choice does not cover the target. See `src/game/survival.ts`, `Survival.wieldedItemActionHint`, and `src/game/play.ts`, `promptText`.
+The held-item action list is meta presentation: the held geometry cannot express which of several valid operations a click will perform. It shares the interaction-hint visibility policy but stays in the lower left so a choice does not cover the target. See `src/game/survival.ts`, `Survival.wieldedItemActionHint`, and `src/presentation/play.ts`, `promptText`.
 
 Craft status has no panel of its own. A running craft is progress in the handling HUD, like reading, forcing a door and treatment. A held paused craft is a "Continue" entry in the held-item action list, with no progress shown. A dropped work item shows neither, because it may never be finished and its status must not follow the player; continuing it is an option on the item itself. One shared panel family avoids the overlaps that unique panels cause, and new UI is not invented where an existing element serves. See `src/ui/craftReadout.ts`, `runningCraftPresentation`, and `src/game/survival.ts`, `Survival.availableItemActions`.
 
@@ -72,7 +72,7 @@ Bleeding feedback names each region's tier when messages are enabled. A content 
 
 A `?debug=1` run neither saves nor loads a save unless `?save=1` is also set, because debug runs are ephemeral tests where progress is not worth keeping, and a stale save would stop each run starting fresh. The title card says saves are off, through the same path as other unsaved sessions. See `src/game/config.ts`, `savingEnabledFromUrl`, and `src/ui/saveController.ts`, `SaveController`.
 
-A blocking runtime error halts play, releases pointer lock and prevents further saves. It offers the full error for copying and a local report download; nothing is sent automatically. Reports can contain world, browser and recent playtest data, so review them before public sharing. The error panel's text stays in code and the page, not content, because it must show when content itself fails to load. See `src/ui/errorReport.ts`, `errorReportText`, and `src/game/play.ts`, `stopPlayAfterError`.
+A blocking runtime error halts play, releases pointer lock and prevents further saves. It offers the full error for copying and a local report download; nothing is sent automatically. Reports can contain world, browser and recent playtest data, so review them before public sharing. The error panel's text stays in code and the page, not content, because it must show when content itself fails to load. See `src/ui/errorReport.ts`, `errorReportText`, and `src/presentation/play.ts`, `stopPlayAfterError`.
 
 ## Layout
 

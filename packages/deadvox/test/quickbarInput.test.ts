@@ -4,7 +4,7 @@ import { startupContent } from './baseRegistry.ts';
 const BUNDLED_CONTENT = startupContent();
 
 import { PressHoldInput } from '../src/game/pressHoldInput.ts';
-import { QuickbarInput } from '../src/game/quickbarInput.ts';
+import { QuickbarInput } from '../src/presentation/quickbarInput.ts';
 
 const fixture = () => {
   const taps: number[] = [];

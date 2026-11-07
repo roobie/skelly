@@ -1,5 +1,9 @@
-import type { SnapshotMeasurement, SnapshotMeasurementOptions, SnapshotTimerQuantum } from '../game/playtestTools.ts';
 import type { Session } from '../game/session.ts';
+import type {
+  SnapshotMeasurement,
+  SnapshotMeasurementOptions,
+  SnapshotTimerQuantum,
+} from '../presentation/playtestTools.ts';
 
 const FIREFOX_USER_AGENT = /Firefox\//;
 const CHROMIUM_USER_AGENT = /(?:Headless)?Chrome\/|Chromium\//;

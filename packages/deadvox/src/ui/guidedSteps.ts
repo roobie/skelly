@@ -2,8 +2,8 @@ import { html, render } from 'lit-html';
 import { dominantSide } from '../core/character.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { GuidanceDef } from '../core/schema/guidance.ts';
-import type { GuidedSteps } from '../game/guidedSteps.ts';
 import { showControlsTopic } from '../presentation/controls.ts';
+import type { GuidedSteps } from '../presentation/guidedSteps.ts';
 import { keyCap } from './keyCap.ts';
 
 export interface GuidancePresentation {

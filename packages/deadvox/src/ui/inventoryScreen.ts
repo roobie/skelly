@@ -35,9 +35,9 @@ import {
 import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
 import type { ScreenText, WearSlot } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
-import { blursFindField, type InputCommand, inputBindings } from '../game/inputBindings.ts';
 import { PressHoldInput } from '../game/pressHoldInput.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
+import { blursFindField, type InputCommand, inputBindings } from '../presentation/inputBindings.ts';
 import { comboBox } from './comboBox.ts';
 import { craftingText, craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
