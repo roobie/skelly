@@ -29,8 +29,31 @@ export const initialFootstepClock = (): FootstepClock => ({
   stepIndex: 0,
 });
 
-/** The authored player footstep event for a block; a block without a contract (air) is silent. */
-export const footstepEventForBlock = (block: BlockDef): SoundEventId | undefined => block.footsteps?.player;
+/** The one family a block names itself: a core block may name the player, never a product's actor. */
+export const BLOCK_FOOTSTEP_FAMILY = 'player';
+
+/** Ids may contain any underscores, so only the family's length says where it ends and the block begins. */
+export const footstepSoundId = (family: string, block: string): string => `${family.length}_${family}_${block}`;
+
+export interface FootstepContent {
+  readonly blocks: readonly BlockDef[];
+  readonly footstepSounds: ReadonlyMap<
+    string,
+    { readonly family: string; readonly block: string; readonly sound: SoundEventId }
+  >;
+}
+
+export const footstepEventForBlock = (
+  { footstepSounds }: Pick<FootstepContent, 'footstepSounds'>,
+  block: BlockDef,
+  family: string,
+): SoundEventId | undefined => {
+  if (family === BLOCK_FOOTSTEP_FAMILY) {
+    return block.footsteps?.[BLOCK_FOOTSTEP_FAMILY];
+  }
+  const row = footstepSounds.get(footstepSoundId(family, block.id));
+  return row?.family === family && row.block === block.id ? row.sound : undefined;
+};
 
 export interface FootstepAdvance {
   clock: FootstepClock;
@@ -77,22 +100,22 @@ export const advanceFootsteps = (
   };
 };
 
-export interface ShamblerFootstepClock {
+export interface ActorFootstepClock {
   distanceUntilStep: number;
   nextLongStep: boolean;
 }
 
 /** Alternating short/long strides make the shamblers' ground cadence uneven, without a wall-clock timer. */
-export const initialShamblerFootstepClock = (stepLengthMetres: number): ShamblerFootstepClock => ({
+export const initialActorFootstepClock = (stepLengthMetres: number): ActorFootstepClock => ({
   distanceUntilStep: stepLengthMetres * 0.72,
   nextLongStep: true,
 });
 
-export const advanceShamblerFootsteps = (
-  clock: ShamblerFootstepClock,
+export const advanceActorFootsteps = (
+  clock: ActorFootstepClock,
   travelledMetres: number,
   stepLengthMetres: number,
-): { clock: ShamblerFootstepClock; steps: number } => {
+): { clock: ActorFootstepClock; steps: number } => {
   if (!(travelledMetres > 0)) {
     return { clock, steps: 0 };
   }
@@ -107,9 +130,6 @@ export const advanceShamblerFootsteps = (
   }
   return { clock: { distanceUntilStep: remaining - distance, nextLongStep }, steps };
 };
-
-/** The authored shambler footstep event for a block; a block without a contract (air) is silent. */
-export const shamblerFootstepEventForBlock = (block: BlockDef): SoundEventId | undefined => block.footsteps?.shambler;
 
 /** An actor's horizontal half extents in blocks; halfDepth defaults to a square footprint. */
 export interface Footprint {
@@ -148,31 +168,14 @@ const supportBlocks = (
   return found.map(({ block }) => block);
 };
 
-/** Selects the authored player footstep event for the nearest supporting block, if it declares one. */
 export const footstepEventAt = (
   position: Vec3,
   footprint: Footprint,
   blockIdAt: (x: number, y: number, z: number) => number,
-  blocks: readonly BlockDef[],
+  { blocks, footstepSounds, family }: FootstepContent & { readonly family: string },
 ): SoundEventId | undefined => {
   for (const block of supportBlocks(position, footprint, blockIdAt, blocks)) {
-    const event = footstepEventForBlock(block);
-    if (event !== undefined) {
-      return event;
-    }
-  }
-  return undefined;
-};
-
-/** Selects the authored shambler footstep event for the nearest supporting block, if it declares one. */
-export const shamblerFootstepEventAt = (
-  position: Vec3,
-  footprint: Footprint,
-  blockIdAt: (x: number, y: number, z: number) => number,
-  blocks: readonly BlockDef[],
-): SoundEventId | undefined => {
-  for (const block of supportBlocks(position, footprint, blockIdAt, blocks)) {
-    const event = shamblerFootstepEventForBlock(block);
+    const event = footstepEventForBlock({ footstepSounds }, block, family);
     if (event !== undefined) {
       return event;
     }

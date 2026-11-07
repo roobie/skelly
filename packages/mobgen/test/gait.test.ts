@@ -68,7 +68,7 @@ const contactPoint = (
 
 describe('walkPose', () => {
   it('speed 0 gives a still standing pose regardless of clock', () => {
-    const { body, voxels, extents, params } = setup('shambler');
+    const { body, voxels, extents, params } = setup('humanoid');
     const clocks: GaitClock[] = [
       { stepIndex: 0, progress: 0 },
       { stepIndex: 0, progress: 0.4 },
@@ -285,9 +285,9 @@ describe('walkPose', () => {
   };
 
   it.each([
-    ['shambler', 1, 0.8],
-    ['runner', 2, 1.4],
-    ['brute', 3, 2.8],
+    ['humanoid', 1, 0.8],
+    ['slim-humanoid', 2, 1.4],
+    ['broad-humanoid', 3, 2.8],
   ] as const)('%s seed %i: the swing ankle stays clear at %f m/s', (name, seed, speed) => {
     const found = setup(name, seed);
     expect(ankleGap(name, seed, [speed], 8)).toBeGreaterThan(found.voxels.size);
@@ -307,7 +307,7 @@ describe('walkPose', () => {
 
 describe('drunk shamble steps', () => {
   it('is deterministic: same (seed, step) always gives the same plan', () => {
-    const { params, seed } = setup('shambler', 3);
+    const { params, seed } = setup('humanoid', 3);
     for (const k of [0, 1, 5, 17, 40]) {
       const a = stepPlanFor(seed, k, params);
       const b = stepPlanFor(seed, k, params);
@@ -316,7 +316,7 @@ describe('drunk shamble steps', () => {
   });
 
   it('same seed always gives the same style sequence (across separate calls/order)', () => {
-    const { params, seed } = setup('runner', 2);
+    const { params, seed } = setup('slim-humanoid', 2);
     const forward = Array.from({ length: 20 }, (_, k) => stepPlanFor(seed, k, params).style);
     const backward = Array.from({ length: 20 }, (_, k) => stepPlanFor(seed, 19 - k, params).style).reverse();
     expect(forward).toEqual(backward);
@@ -351,7 +351,7 @@ describe('drunk shamble steps', () => {
 
 describe('advanceClock', () => {
   it('is monotonic and lands on the same clock regardless of step size (fine vs coarse dt)', () => {
-    const { body, extents, params, seed } = setup('shambler', 1);
+    const { body, extents, params, seed } = setup('humanoid', 1);
     const speed = 1.2;
     const basis: GaitBasis = { params, geomL: legGeometryFor(body.bones, extents, 'L'), speed, seed };
     const totalDistance = 6; // metres
@@ -442,7 +442,7 @@ describe('strideCap/step-plan caching (per-actor GaitCache must not go stale on 
   });
 
   it('a cloned params object still hits the same per-actor cache (params identity plays no part)', () => {
-    const { body, extents, params, seed } = setup('shambler');
+    const { body, extents, params, seed } = setup('humanoid');
     const cache = createGaitCache();
     const geomL = legGeometryFor(body.bones, extents, 'L');
     const len = stepLengthMeters({ params, geomL, speed: 1.4, seed, cache }, 3);
@@ -457,7 +457,7 @@ describe('strideCap/step-plan caching (per-actor GaitCache must not go stale on 
   });
 
   it('two actors sharing one params object but not a cache never see each other’s step plans', () => {
-    const { body, extents, params } = setup('shambler');
+    const { body, extents, params } = setup('humanoid');
     const geomL = legGeometryFor(body.bones, extents, 'L');
     const a = createGaitCache();
     const b = createGaitCache();
@@ -471,7 +471,7 @@ describe('strideCap/step-plan caching (per-actor GaitCache must not go stale on 
 
 describe("walkPose's optional idle blend", () => {
   const found = (() => {
-    const t = TEMPLATES.find((x) => x.name === 'shambler')!;
+    const t = TEMPLATES.find((x) => x.name === 'humanoid')!;
     return generateValid(t, 1)!;
   })();
   const { body, voxels } = found.realized;

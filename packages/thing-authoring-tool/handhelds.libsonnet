@@ -99,6 +99,6 @@ local held(id, solid, fraction, hold='upright', roll=90) = {
   key('camp_armoury_key', 0.010, 0.014, 0.043, 'steel-parkerized'),
   key('camp_hq_safe_key', 0.010, 0.010, 0.040, 'brass'),
   key('shed_key', 0.010, 0.012, 0.038, 'steel-grey'),
-  key('gauntlet_police_armoury_key', 0.010, 0.014, 0.043, 'steel-blued'),
+  key('police_armoury_key',0.010, 0.014, 0.043, 'steel-blued'),
   atom('gauntlet_lab_entry_card', 'keycard', 0.005, { width: 0.085, height: 0.055, thickness: 0.001, stripeHeight: 0.012 }, { card: 'plastic-white', stripe: 'plastic-blue' }, 'card'),
 ]

@@ -16,7 +16,7 @@ The graphics direction is driven by atmosphere and readability, not realism. The
 
 ## Look decisions
 
-The default look is tone mapping off, low exposure, the mood pass off and no weathering, because it was judged by eye to look better and costs less. Content owns it, so a mod can change it; every part stays tunable through URL parameters and the debug panel. See `src/core/schema.ts`, `LookDefaultsSchema`, and `src/core/lookDefaults.ts`, `lookDefaultsOf`.
+The default look is tone mapping off, low exposure, the mood pass off and no weathering, because it was judged by eye to look better and costs less. Content owns it, so a mod can change it; every part stays tunable through URL parameters and the debug panel. See `src/core/schema/look.ts`, `LookDefaultsSchema`, and `src/core/lookDefaults.ts`, `lookDefaultsOf`.
 
 Tone mapping can follow the solar cycle instead: neutral in bright daylight, shifting toward ACES at dawn and dusk and using ACES at night, which gives daylight a natural palette while retaining depth in darkness. Weathering adds render-only age without replacing material identity; named profiles let authored scenes vary it. See `src/render/autoTone.ts`.
 
@@ -26,15 +26,15 @@ A flashlight beam fades in full daylight because its pool is not worth drawing o
 
 A powered ceiling fixture's light on a surface fades by that surface's sky exposure, because walking across sunlight must not change how a room is lit. That exposure leaves furniture out: glows cast no furniture shadows, so fading by furniture-blocked sky would light the wall behind a workbench brighter than the open wall beside it. See `src/core/skylight.ts`, "SkyVolume". The held-item scene and the fallback without a skylight have no per-surface sky exposure to fade by, so there the camera's daylight scale stands in. See `src/render/skylight.ts`, `ITEM_POINT_LIGHTS`, and `src/render/lightPool.ts`, `LightPoolContext`.
 
-The number of fixtures drawn at once is content, because rooms such as the test house's garage need every strip light lit together. Raising it accepts more per-pixel light work on every lit surface, and any fixed number can be exceeded again by a busier room, so the nearest fixtures win when that happens. See `src/core/schema.ts`, `renderedFixtureLimit`.
+The number of fixtures drawn at once is content, because rooms such as the test house's garage need every strip light lit together. Raising it accepts more per-pixel light work on every lit surface, and any fixed number can be exceeded again by a busier room, so the nearest fixtures win when that happens. See `src/core/schema/senses.ts`, `renderedFixtureLimit`.
 
-Item light content owns focused-cone brightness, reach, shape and decay so authors can tune different kinds of beam without renderer constants. Spill is optional: omit it, or author it with `enabled` false, for the exact plain cone with an unwidened shadow camera. Base battery beams author a dim spill switched off, because the plain cone is the look the game ships with; the tunables stay in content so a mod can turn it on. Blend both lobes in one spot and widen its shadow camera so spill cannot bypass occluders or require another shadow pass. Install the spill shader before warm-up and express plain beams through neutral uniforms, so both existing and later-created materials use one program without switch-on recompilation or stale variants. See `src/core/schema.ts`, `BeamSpillSchema`, `src/content/base/items-tools.libsonnet`, `batteryBeam`, and `src/render/flashlight.ts`, `Flashlight`.
+Item light content owns focused-cone brightness, reach, shape and decay so authors can tune different kinds of beam without renderer constants. Spill is optional: omit it, or author it with `enabled` false, for the exact plain cone with an unwidened shadow camera. Base battery beams author a dim spill switched off, because the plain cone is the look the game ships with; the tunables stay in content so a mod can turn it on. Blend both lobes in one spot and widen its shadow camera so spill cannot bypass occluders or require another shadow pass. Install the spill shader before warm-up and express plain beams through neutral uniforms, so both existing and later-created materials use one program without switch-on recompilation or stale variants. See `src/core/schema.ts`, `BeamSpillSchema`, `tools/jsonnet/lib/lights.libsonnet`, `batteryBeam`, and `src/render/flashlight.ts`, `Flashlight`.
 
 Switching a light on or off, or dimming it, changes only uniforms, never which lights exist or cast shadows. three.js keys every lit program on the light and shadow-caster counts, so a changed count rebuilds the program of every visible lit material that warm-up did not compile for it, including those created after warm-up such as held items and mobs, and stalls the frame for up to seconds. Carried point lights are a fixed pool with zero intensity when unused, and every beam casts while beam shadows are on. While it is off or faint its depth pass is skipped and its shadow strength is zero, so a map it no longer refreshes cannot leave stale shadows and a faint beam looks the same whatever it did before. See `src/render/lightPool.ts`, `LightPool`, `src/render/flashlight.ts`, `Flashlight.shadowsAllowed`, and `src/render/shadows.ts`, `beamMapDue`.
 
 Shader warm-up runs before the world is shown, because the first draw of an uncompiled program stalls the frame. It compiles the materials in the scene at that point, a hidden stand-in for each program variant a model material takes, and both the direct screen path and the post chain. Models load after warm-up, so stand-ins carry them: colour and finish are uniforms that share one program, so model count adds no wait. Both output paths are warmed because the look's post setting, goggles and optics switch between them during play. Warm-up can compile only what exists or has a stand-in, for the lights present when it runs. Materials built later with their own program, such as mobs', and every lit program after a light-count change therefore compile on first draw. So does a model material outside the stand-ins' variants, which `test/modelMaterials.test.ts` checks the pack for. See `src/render/mood.ts`, `Mood.warmUp`, and `src/render/modelMaterials.ts`, `modelMaterialWarmUp`.
 
-Retune beam intensity and decay against three targets. A mid-grey surface at 10 m stays readable. Close surfaces stay under the bloom clip and the ACES shoulder, where a bright warm colour skews towards orange. Brightness varies by under 2x between 0.5 m and 2 m, where plain inverse-distance falloff varies 4x. The near-field offset makes the last two hold while keeping the reach, so a lower offset needs a lower intensity and a higher one allows more. See `src/content/base/senses.jsonnet`, `nearFieldMetres`, and `test/lightFalloff.test.ts`, which checks the close-up variation.
+Retune beam intensity and decay against three targets. A mid-grey surface at 10 m stays readable. Close surfaces stay under the bloom clip and the ACES shoulder, where a bright warm colour skews towards orange. Brightness varies by under 2x between 0.5 m and 2 m, where plain inverse-distance falloff varies 4x. The near-field offset makes the last two hold while keeping the reach, so a lower offset needs a lower intensity and a higher one allows more. See `packages/mods/skelly.senses/senses.jsonnet`, `nearFieldMetres`, and `test/lightFalloff.test.ts`, which checks the close-up variation.
 
 Use `torchspill=1` in the URL to turn on authored spill that content leaves disabled, and `torchspill=0` to force the plain cone, without enabling debug mode. This render-only override neither invents absent spill nor changes simulation awareness. See `src/render/playView.ts`, `createPlayView`. Handheld, head-mounted and weapon-mounted beams share this path; a mounted light takes its lens from the held weapon's model. See `src/render/flashlightCone.ts`, `withFlashlightSpill`.
 
@@ -57,8 +57,8 @@ Wide ambient occlusion darkens indirect light according to enclosure, while dire
 Keep graphics defaults and permitted choices in the core mod, while the player owns the
 choice for their machine: a content pack cannot know their GPU. Debug URL overrides must
 win over player choices, which must win over content defaults. Explicit false values are
-choices, not absence. See `src/content/base/graphics.jsonnet`,
-`src/core/graphics.ts`, `resolveGraphics`, and `src/game/graphicsSettings.ts`.
+choices, not absence. See `packages/mods/skelly.graphics/graphics.jsonnet`,
+`src/core/graphics.ts`, `resolveGraphics`, and `src/presentation/graphicsSettings.ts`.
 
 Benchmarks isolate machine preferences and debug graphics overrides so saved choices cannot
 silently change a comparison workload. Scene scale stays fixed at the content default because
@@ -68,7 +68,7 @@ play's content-default look and shares its flare update: measuring another look 
 occlusion would not establish the cost players pay. Source placement belongs to the benchmark query
 so comparisons can vary the workload without changing code. Content-owned benchmark weathering
 lets mods choose that workload without changing benchmark logic. See
-`src/game/engine.ts`, `createEngine`, `src/game/graphicsControls.ts`, `GraphicsControls`,
+`src/presentation/engine.ts`, `createEngine`, `src/presentation/graphicsControls.ts`, `GraphicsControls`,
 `src/bench/post.ts`, `benchDraw` and `applyBenchWeathering`,
 `src/bench/lightFixture.ts`, `benchFlareSourcesFromUrl`, and
 `src/render/nightVisionFlare.ts`, `createNightVisionFlareUpdate`.
@@ -98,7 +98,7 @@ Graphics options are meta controls because hardware preferences are not characte
 Clearing a preference returns ownership to content rather than saving its resolved default.
 Debug overrides remain separate from preferences, and unrelated look changes must not promote
 player or mod values into the URL. See `src/ui/graphicsOptions.ts`, `renderGraphicsOptions`,
-`src/game/graphicsControls.ts`, `GraphicsControls`, and `src/debug/lookUrl.ts`, `writeLookParams`.
+`src/presentation/graphicsControls.ts`, `GraphicsControls`, and `src/debug/lookUrl.ts`, `writeLookParams`.
 
 ## Performance diagnostics
 

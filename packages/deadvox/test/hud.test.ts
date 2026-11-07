@@ -6,8 +6,9 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decimalText } from '../src/core/numberText.ts';
 import { fillText } from '../src/core/textTemplate.ts';
-import { labelForAction } from '../src/game/inputBindings.ts';
+import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import {
   handlingViewModel,
   quickbarKey,
@@ -19,6 +20,7 @@ import { baseRegistry, baseScreenText } from './baseRegistry.ts';
 
 const registry = baseRegistry();
 const handlingText = baseScreenText().handling;
+const keys = new BindingRegistry(INPUT_BINDINGS);
 
 /** A cupboard next to a player in a hoodie, for testing furniture and pocket locations. */
 const kitchen = () => {
@@ -34,9 +36,9 @@ const kitchen = () => {
 
 describe('quickbarViewModel', () => {
   it('shows only the key and empty label in an empty slot', () => {
-    const vm = quickbarViewModel(new Quickbar(), new Inventory(registry));
+    const vm = quickbarViewModel(new Quickbar(), new Inventory(registry), keys);
     expect(vm.slots).toHaveLength(new Quickbar().slots.length);
-    expect(vm.slots[0]).toMatchObject({ key: labelForAction('quickbar.use.1'), filled: false, where: '' });
+    expect(vm.slots[0]).toMatchObject({ key: keys.label('quickbar.use.1'), filled: false, where: '' });
     expect(vm.slots[0]?.name).not.toBe('');
   });
 
@@ -46,9 +48,9 @@ describe('quickbarViewModel', () => {
     expect(inv.add(flashlight, { kind: 'hand', side: 'right' })).toBe(true);
     const bar = new Quickbar();
     bar.assign(0, flashlight);
-    const vm = quickbarViewModel(bar, inv);
+    const vm = quickbarViewModel(bar, inv, keys);
     expect(vm.slots[0]).toMatchObject({
-      key: labelForAction('quickbar.use.1'),
+      key: keys.label('quickbar.use.1'),
       filled: true,
       name: inv.name(flashlight),
     });
@@ -61,8 +63,8 @@ describe('quickbarViewModel', () => {
     inv.worn.torso = hoodie;
     const bar = new Quickbar();
     bar.assign(1, hoodie);
-    const vm = quickbarViewModel(bar, inv);
-    expect(vm.slots[1]).toMatchObject({ key: labelForAction('quickbar.use.2') });
+    const vm = quickbarViewModel(bar, inv, keys);
+    expect(vm.slots[1]).toMatchObject({ key: keys.label('quickbar.use.2') });
     expect(vm.slots[1]?.where).not.toBe('');
   });
 
@@ -75,18 +77,18 @@ describe('quickbarViewModel', () => {
     const item = skilled.create('matches');
     expect(skilled.add(item, { kind: 'pocket', owner, pocket: 0 })).toBe(true);
     bar.assign(2, item);
-    const before = quickbarKey(bar, skilled);
+    const before = quickbarKey(bar, skilled, keys);
     character.awardPractice('inventory_management', Number.MAX_SAFE_INTEGER);
     expect(character.skills.inventory_management).toBe(SKILL_LEVEL_MAX);
     expect(skilled.scaleHandlingTime(1)).not.toBe(1);
     const expected = skilled.handlingTime(item, skilled.locate(item)!, { kind: 'hand', side: 'left' });
-    expect(quickbarViewModel(bar, skilled).slots[2]?.where).toBe(
+    expect(quickbarViewModel(bar, skilled, keys).slots[2]?.where).toBe(
       fillText(baseScreenText().quickbar.pocket, {
         container: skilled.name(owner).toLowerCase(),
         secs: decimalText(expected),
       }),
     );
-    expect(quickbarKey(bar, skilled)).not.toBe(before);
+    expect(quickbarKey(bar, skilled, keys)).not.toBe(before);
   });
 
   it('renders an item left in furniture as an empty slot', () => {
@@ -97,7 +99,7 @@ describe('quickbarViewModel', () => {
     bar.assign(3, matches);
     inv.entities.markSearched(cupboard);
     expect(inv.move(matches, { kind: 'furniture', entity: cupboard, pocket: 0 }).ok).toBe(true);
-    const vm = quickbarViewModel(bar, inv);
+    const vm = quickbarViewModel(bar, inv, keys);
     expect(vm.slots[3]).toMatchObject({ filled: false, where: '' });
   });
 
@@ -108,7 +110,7 @@ describe('quickbarViewModel', () => {
     const bar = new Quickbar();
     bar.assign(4, rag);
     inv.consume(rag);
-    const vm = quickbarViewModel(bar, inv);
+    const vm = quickbarViewModel(bar, inv, keys);
     expect(vm.slots[4]).toMatchObject({ filled: false, where: '' });
   });
 
@@ -118,7 +120,7 @@ describe('quickbarViewModel', () => {
     expect(inv.add(beans, { kind: 'hand', side: 'right' })).toBe(true);
     const bar = new Quickbar();
     bar.assign(0, beans);
-    const vm = quickbarViewModel(bar, inv);
+    const vm = quickbarViewModel(bar, inv, keys);
     expect(vm.slots[0]?.name).toContain(String(beans.count));
   });
 });
@@ -130,7 +132,7 @@ describe('quickbarKey', () => {
     expect(inv.add(flashlight, { kind: 'hand', side: 'right' })).toBe(true);
     const bar = new Quickbar();
     bar.assign(0, flashlight);
-    expect(quickbarKey(bar, inv)).toBe(quickbarKey(bar, inv));
+    expect(quickbarKey(bar, inv, keys)).toBe(quickbarKey(bar, inv, keys));
   });
 
   it('changes when a slot is assigned a different item', () => {
@@ -141,17 +143,17 @@ describe('quickbarKey', () => {
     inv.add(rag, { kind: 'hand', side: 'left' });
     const bar = new Quickbar();
     bar.assign(0, flashlight);
-    const before = quickbarKey(bar, inv);
+    const before = quickbarKey(bar, inv, keys);
     bar.assign(0, rag);
-    expect(quickbarKey(bar, inv)).not.toBe(before);
+    expect(quickbarKey(bar, inv, keys)).not.toBe(before);
   });
 
   it('changes when an inventory mutation changes its version', () => {
     const inv = new Inventory(registry);
     const bar = new Quickbar();
-    const before = quickbarKey(bar, inv);
+    const before = quickbarKey(bar, inv, keys);
     expect(inv.add(inv.create('rag'), { kind: 'hand', side: 'right' })).toBe(true);
-    expect(quickbarKey(bar, inv)).not.toBe(before);
+    expect(quickbarKey(bar, inv, keys)).not.toBe(before);
   });
 });
 
@@ -232,17 +234,19 @@ describe('handlingViewModel', () => {
     ];
 
     for (const job of jobs) {
-      const vm = handlingViewModel(timedActionHandlingPresentation(job, handlingText), handlingText);
+      const vm = handlingViewModel(timedActionHandlingPresentation(job, handlingText, keys), handlingText);
       expect(vm.visible).toBe(true);
       const completed = 'elapsedGameSeconds' in job ? job.elapsedGameSeconds : job.elapsedSimSeconds;
       const total = 'durationGameSeconds' in job ? job.durationGameSeconds : job.durationSimSeconds;
       expect(vm.percent).toBe(Math.round((completed / total) * 100));
       const root = document.createElement('div');
       render(vm.cancelLabel, root);
-      expect(root.querySelector('.keycap')?.textContent).toBe(labelForAction('handling.stop'));
+      expect(root.querySelector('.keycap')?.textContent).toBe(keys.label('handling.stop'));
     }
     const stopped = { ...jobs[1]!, stopped: true };
-    expect(handlingViewModel(timedActionHandlingPresentation(stopped, handlingText), handlingText).visible).toBe(false);
+    expect(handlingViewModel(timedActionHandlingPresentation(stopped, handlingText, keys), handlingText).visible).toBe(
+      false,
+    );
   });
   it('has no next-job text when nothing is queued after the current one', () => {
     const inv = new Inventory(registry);

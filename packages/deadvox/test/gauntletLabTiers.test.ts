@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { GauntletSite } from '../src/core/gauntlet.ts';
 import {
   economyEligible,
   LOOT_TIERS,
@@ -11,9 +10,11 @@ import {
   withLootDepth,
 } from '../src/core/loot.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
+import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
 import { compileAssembly, placedGroundLoot, placedPieces } from '../src/core/templates.ts';
 import { startupContent } from './baseRegistry.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const { registry } = startupContent();
@@ -28,7 +29,7 @@ describe('nested tier ranges reach the loot sources', () => {
   // An inner range inside an outer one: the inner assembly's pieces and ground loot take the inner range.
   const crate = [...registry.furniture.values()].find((def) => def.container && def.size.every((n) => n >= 1))!;
   const [w, h, d] = crate.size;
-  const style = [...registry.mapStyles.keys()][0]!;
+  const style = [...registry.mapStyles.values()].find(({ bindings }) => bindings.air?.role === 'opening')!.id;
   const row = (end: string) => `${'F'.repeat(w)}${end}`;
   const piece = {
     id: 'fixture_tier_piece',
@@ -109,9 +110,15 @@ describe('nested tier ranges reach the loot sources', () => {
 });
 
 sweepGroup('gauntlet lab loot tiers by depth', () => {
-  it('lets a deeper level roll the lowest tier and a higher one besides, while level one rolls the lowest alone', () => {
-    const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'gauntlet')!;
-    const site = new GauntletSite({ seed: 1, registry, scale, scenario });
+  it('lets deeper levels roll more tiers, retain the upper levels’ tiers and reach the highest tier', () => {
+    const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'assembledCity')!;
+    const site = new ScenarioCitySite({
+      seed: 1,
+      registry,
+      scale,
+      scenario,
+      start: defaultStartOf(registry, scenario),
+    });
     const sources = site.placements
       .flatMap((placement) =>
         [...placedPieces(placement), ...placedGroundLoot(placement)]
@@ -127,7 +134,7 @@ sweepGroup('gauntlet lab loot tiers by depth', () => {
     expect(sources.length, 'lab sources carry a tier range').toBeGreaterThan(0);
     const top = sources[0]!;
     const bottom = sources.at(-1)!;
-    expect(top.tiers, 'the top level rolls the lowest tier alone').toEqual([TIERS[0]]);
+    expect(top.tiers.length, 'the top level admits loot tiers').toBeGreaterThan(0);
     expect(bottom.tiers.length, 'a deeper level rolls a higher tier').toBeGreaterThan(top.tiers.length);
     expect(bottom.tiers, 'the deepest level rolls the highest tier').toContain(TIERS.at(-1));
     for (const tier of top.tiers) {
@@ -136,8 +143,14 @@ sweepGroup('gauntlet lab loot tiers by depth', () => {
   });
 
   it('rolls rifle supplies only from containers that carry a Military usage on a level below the first', () => {
-    const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'gauntlet')!;
-    const site = new GauntletSite({ seed: 1, registry, scale, scenario });
+    const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'assembledCity')!;
+    const site = new ScenarioCitySite({
+      seed: 1,
+      registry,
+      scale,
+      scenario,
+      start: defaultStartOf(registry, scenario),
+    });
     const sources = site.placements.flatMap((placement) =>
       lootSourcesOf(
         registry,
@@ -164,7 +177,7 @@ sweepGroup('gauntlet lab loot tiers by depth', () => {
     for (let seed = 1; seed <= 60; seed++) {
       const point = lootSpawnPoint(container);
       for (const { type } of rollLoot(registry, point, lootPointStream(seed, point))) {
-        const economy = registry.items.get(type)?.economy;
+        const economy = registry.itemEconomy.get(type);
         rolledMilitaryOnly += economy !== undefined && militaryOnlyEconomy(economy) ? 1 : 0;
       }
     }

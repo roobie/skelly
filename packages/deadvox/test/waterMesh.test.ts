@@ -5,8 +5,8 @@ import { PADDED, paddedIndex } from '../src/core/meshInput.ts';
 import { OCCLUSION_RADIUS, WIDE, wideIndex } from '../src/core/occlusion.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
+import type { MesherPort, ToMesher } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
-import type { ToMesher } from '../src/worker/protocol.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 import { unitFaces } from './meshFaces.ts';
 
@@ -17,29 +17,27 @@ const LAKE = 2;
 
 describe('liquid enclosure', () => {
   const posted: ToMesher[] = [];
-  class RecordingWorker {
-    onmessage: ((event: MessageEvent) => void) | null = null;
-    postMessage(message: ToMesher): void {
+  class RecordingWorker implements MesherPort {
+    post(message: ToMesher): void {
       posted.push(message);
     }
-    terminate(): void {
-      // Nothing to release.
+    listen(): void {
+      // Replies are never sent.
     }
   }
   afterEach(() => {
     posted.length = 0;
-    vi.unstubAllGlobals();
   });
 
   // Every column is rock to the top of chunk layer 1; `water` fills layer 2, or rock does.
   const meshRequests = (top: 'water' | 'rock') => {
-    vi.stubGlobal('Worker', RecordingWorker);
     const liquids = new Uint8Array(256);
     liquids[WATER] = 1;
     const world = new World();
     const streamer = new Streamer({
       world,
       meshes: { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() } as never,
+      mesher: { count: 1, create: () => new RecordingWorker() },
       seed: 17,
       terrain: { grass: 1, dirt: 2, rock: ROCK, sand: 4, water: WATER },
       shape: { ...baseTerrainShape(), dirtDepthMetres: 0 },

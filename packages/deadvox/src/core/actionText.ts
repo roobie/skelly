@@ -2,8 +2,8 @@
 // "Action text is content"). Content authors every line; code only fills named placeholders.
 
 import { check, type InferOutput, nonEmpty, pipe, strictObject, string, transform } from 'valibot';
+import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 
 const PLACEHOLDER = /\{(\w+)\}/g;
 
@@ -50,7 +50,7 @@ export const ActionTextSchema = strictObject({
     grenade: Line,
     bearTrap: Line,
     /** A zombie that is gone by the time its hit lands, so its type's own cause can't be read. */
-    zombie: Line,
+    actor: Line,
   }),
   /** Refusals and notices of the play loop: resting, dropping, throwing, quickbar and fuses. */
   play: strictObject({
@@ -168,8 +168,8 @@ export const ActionTextSchema = strictObject({
   downedBody: strictObject({
     gone: Line,
     noTool: Template('quality'),
-    finishOff: Template('zombie'),
-    dismember: Template('zombie', 'tool'),
+    finishOff: Template('actor'),
+    dismember: Template('actor', 'tool'),
   }),
   rest: strictObject({ unusable: Line }),
   unpacking: strictObject({
@@ -228,7 +228,7 @@ export type ActionText = InferOutput<typeof ActionTextSchema>;
 
 /** The core UI entry's action text; content validation requires that entry. */
 export const actionText = (registry: Pick<Registry, 'ui'>): ActionText => {
-  const ui = registry.ui.get(CORE_CONTENT_IDS.coreUi);
+  const ui = claimed(registry.ui, 'interface');
   if (!ui) {
     throw new Error('Missing core UI tuning');
   }

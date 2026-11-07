@@ -66,6 +66,6 @@ describe('look settings dump', () => {
   });
 
   it('names the file by local date and time', () => {
-    expect(lookDumpFilename(new Date(2026, 9, 1, 14, 5, 9))).toBe('deadvox-look-20261001-140509.json');
+    expect(lookDumpFilename(new Date(2026, 9, 1, 14, 5, 9))).toBe('skelly-look-20261001-140509.json');
   });
 });

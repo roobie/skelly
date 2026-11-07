@@ -1,12 +1,13 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen is a workspace source alias.
 import { quatToMat3 } from '@mobgen/core/math.ts';
-import { crawlerPose } from '@mobgen/mob/crawler.ts';
+import { crawlPose } from '@mobgen/mob/crawl.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { describe, expect, it } from 'vitest';
-import { AMALGAM_FIGURE_SEED } from '../src/core/amalgamFigure.ts';
+import { actorFigure, fusedMassTypeOf } from '../src/core/actorFigure.ts';
+import { FIGURE_VARIANTS } from '../src/core/actorModels.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { FUSED_MASS_FIGURE_SEED } from '../src/core/fusedMassFigure.ts';
 import { reachTuning } from '../src/core/reach.ts';
-import { amalgamTypeOf, zombieFigure } from '../src/core/zombieFigure.ts';
 import { RagdollWorld, ragdollContent, ragdollGroups, ragdollMotion } from '../src/render/ragdoll.ts';
 import type RAPIER from '../src/render/ragdollRapier.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';
@@ -14,51 +15,52 @@ import { baseRegistry } from './baseRegistry.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
 import { sweepGroup } from './sweeps.ts';
 
-const fixtureFigure = zombieFigure({ model: 'shambler' }, 17).realized;
+const fixtureFigure = actorFigure({ model: 'humanoid' }, 17).realized;
 const ground = { blockSize: 1, isSolid: (_x: number, y: number, _z: number) => y < 0 };
 const pose = { rotations: {}, root: [0, 0, 0] as const };
 
 describe('render ragdoll', () => {
-  it.each(ragdollContent.models)(
-    '%s partitions every skeleton bone once with one limited link per non-root group',
-    async (model) => {
-      const type = model === 'amalgam' ? amalgamTypeOf(baseRegistry().zombies)! : { model };
-      const figure = zombieFigure(type, model === 'amalgam' ? AMALGAM_FIGURE_SEED : 17).realized;
-      const groups = ragdollGroups(figure.body.bones);
-      const indices = groups.flatMap((group) => group.indices);
-      expect(indices.length).toBe(figure.body.bones.length);
-      expect(new Set(indices).size).toBe(indices.length);
-      const world = new RagdollWorld(WORLD_GRAVITY);
-      try {
-        const corpse = world.spawn({
-          realized: figure,
-          pose,
-          position: [0, 0, 0],
-          yaw: 0,
-          direction: -1,
-          seed: 17,
-          ground,
-        });
-        await world.ready;
-        expect(corpse.parts.length).toBe(groups.length);
-        expect(corpse.joints.length).toBe(groups.filter((group) => group.parent !== undefined).length);
-        for (const group of groups) {
-          if (group.parent !== undefined) {
-            const { body } = corpse.parts[groups.indexOf(group)]!;
-            const parent = corpse.parts[group.parent]!.body;
-            const links = corpse.joints.filter(
-              (joint) => joint.body1().handle === parent.handle && joint.body2().handle === body.handle,
-            );
-            expect(links.length).toBe(1);
-            expect(group.limits).not.toBeNull();
-          }
+  it.each(
+    Object.entries(FIGURE_VARIANTS)
+      .filter(([, plan]) => ragdollContent.models.includes(plan.model))
+      .map(([plan]) => plan),
+  )('%s partitions every skeleton bone once with one limited link per non-root group', async (model) => {
+    const type = model === 'fused-mass' ? fusedMassTypeOf(baseRegistry().actors)! : { model };
+    const figure = actorFigure(type, model === 'fused-mass' ? FUSED_MASS_FIGURE_SEED : 17).realized;
+    const groups = ragdollGroups(figure.body.bones);
+    const indices = groups.flatMap((group) => group.indices);
+    expect(indices.length).toBe(figure.body.bones.length);
+    expect(new Set(indices).size).toBe(indices.length);
+    const world = new RagdollWorld(WORLD_GRAVITY);
+    try {
+      const corpse = world.spawn({
+        realized: figure,
+        pose,
+        position: [0, 0, 0],
+        yaw: 0,
+        direction: -1,
+        seed: 17,
+        ground,
+      });
+      await world.ready;
+      expect(corpse.parts.length).toBe(groups.length);
+      expect(corpse.joints.length).toBe(groups.filter((group) => group.parent !== undefined).length);
+      for (const group of groups) {
+        if (group.parent !== undefined) {
+          const { body } = corpse.parts[groups.indexOf(group)]!;
+          const parent = corpse.parts[group.parent]!.body;
+          const links = corpse.joints.filter(
+            (joint) => joint.body1().handle === parent.handle && joint.body2().handle === body.handle,
+          );
+          expect(links.length).toBe(1);
+          expect(group.limits).not.toBeNull();
         }
-        expect(() => ragdollGroups(figure.body.bones.slice(1))).toThrow();
-      } finally {
-        world.dispose();
       }
-    },
-  );
+      expect(() => ragdollGroups(figure.body.bones.slice(1))).toThrow();
+    } finally {
+      world.dispose();
+    }
+  });
 
   it('rejects authored grouping omissions and duplicate ownership', () => {
     const figure = fixtureFigure;
@@ -70,7 +72,7 @@ describe('render ragdoll', () => {
 
   // biome-ignore-start lint/suspicious/noMisplacedAssertion: shared invariant probe runs only inside default cases or the gated seed sweep.
   const assertRest = async ({ model, cuts, seed = 17 }: { model: string; cuts: string[]; seed?: number }) => {
-    const figure = zombieFigure({ model }, seed).realized;
+    const figure = actorFigure({ model }, seed).realized;
     const excluded = new Set(
       [...severedBoneSet(figure.body.bones, cuts)].map((id) => figure.body.bones.findIndex((bone) => bone.id === id)),
     );
@@ -78,7 +80,7 @@ describe('render ragdoll', () => {
     try {
       const corpse = world.spawn({
         realized: figure,
-        pose: model === 'crawler' ? crawlerPose(figure) : pose,
+        pose: model === 'legless-humanoid' ? crawlPose(figure) : pose,
         position: [0, 0, 0],
         yaw: 0,
         direction: -1,
@@ -114,10 +116,10 @@ describe('render ragdoll', () => {
   // biome-ignore-end lint/suspicious/noMisplacedAssertion: shared invariant probe.
 
   it.each([
-    { model: 'shambler', cuts: [] },
-    { model: 'runner', cuts: ['head'] },
-    { model: 'brute', cuts: ['upperArm.L'] },
-    { model: 'crawler', cuts: ['thigh.L', 'thigh.R'] },
+    { model: 'humanoid', cuts: [] },
+    { model: 'slim-humanoid', cuts: ['head'] },
+    { model: 'broad-humanoid', cuts: ['upperArm.L'] },
+    { model: 'legless-humanoid', cuts: ['thigh.L', 'thigh.R'] },
   ])('$model settles above ground with $cuts absent', assertRest);
 
   sweepGroup('ragdoll seed sweep', () => {
@@ -136,7 +138,7 @@ describe('render ragdoll', () => {
     try {
       const reach = reachTuning(baseRegistry()).reachMetres;
       const corpse = world.spawn({
-        realized: zombieFigure({ model: 'brute' }, 17).realized,
+        realized: actorFigure({ model: 'broad-humanoid' }, 17).realized,
         pose,
         position: [0, 0, 0],
         yaw: 0,
@@ -199,7 +201,7 @@ describe('render ragdoll', () => {
       const spawn = (seed: number) =>
         world.spawn({
           realized: fixtureFigure,
-          model: 'runner',
+          model: 'slim-humanoid',
           pose,
           position: [0, 0, 0],
           yaw: 0,

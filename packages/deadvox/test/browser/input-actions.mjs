@@ -1,7 +1,7 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: gate/modifier down edges precede the primary key; releases must reverse that order.
 // biome-ignore-all lint/style/useNamingConvention: native metadata retains exact DOM code spelling.
 // Native keyboard drivers resolve the running page's effective bindings, including its hold gate.
-export const actionSnapshotExpression = (id) => `import('/src/game/inputBindings.ts').then(({ inputBindings }) => {
+export const actionSnapshotExpression = (id) => `import('/src/product/input.ts').then(({ inputBindings }) => {
   const binding = inputBindings.binding(${JSON.stringify(id)});
   if (!binding) throw new Error('Unknown input action');
   return { primary: inputBindings.chords(binding.id)[0], gate: binding.gate ? inputBindings.chords(binding.gate)[0] : null };

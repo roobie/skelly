@@ -17,7 +17,11 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => lookupSave
 const saveVersion = {
   simulationHash: 'a'.repeat(64),
   schemaVersion: SAVE_SCHEMA_VERSION,
-  generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
+  generators: {
+    worldgen: 'worldgen-v2',
+    'bodyPlan.humanoid': 'humanoid-figure-v1',
+    'bodyPlan.fused-mass': 'fused-mass-figure-v1',
+  },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
 
@@ -63,11 +67,11 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore'], h
     onRead: () => {
       throw new Error('Unexpected reading in melee fixture');
     },
-    zombieEffects: { onMeleeResult: () => contacts.push(session.sim.time) },
+    actorEffects: { onMeleeResult: () => contacts.push(session.sim.time) },
     ...(restore ? { restore } : {}),
     ...(handedness ? { handedness } : {}),
   });
-  session.zombies.setFrozen(true);
+  session.actors.setFrozen(true);
   session.sim.paused = false;
   return {
     session,
@@ -119,7 +123,7 @@ describe('player melee restore at the contact tolerance edge', () => {
     const first = saved.owner.snapshotState();
     expect(saved.owner.snapshotState()).toEqual(first);
     const restored = combat();
-    expect(() => restored.owner.restoreState(structuredClone(first))).not.toThrow();
+    expect(() => restored.owner.restoreState(structuredClone(first), registry)).not.toThrow();
     for (const step of [1 / 60, FISTS_MELEE.cooldown]) {
       uninterrupted.owner.tick(step, hands);
       restored.owner.tick(step, hands);

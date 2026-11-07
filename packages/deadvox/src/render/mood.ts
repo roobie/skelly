@@ -221,7 +221,7 @@ export class Mood {
   }
 
   /**
-   * Drains colour for the pain cue (`src/game/painCue.ts`), 0 to 1 on top of the grade; cheap enough to call
+   * Drains colour for the pain cue (`src/presentation/painCue.ts`), 0 to 1 on top of the grade; cheap enough to call
    * every frame. It shows only with post on, as the grade does.
    */
   setPainDesaturation(amount: number): void {

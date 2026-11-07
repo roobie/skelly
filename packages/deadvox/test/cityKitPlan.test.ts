@@ -583,7 +583,9 @@ const houseId = /^gauntlet_city_\d+/;
 const yardRows = 2;
 const shopIds = (
   JSON.parse(
-    compileJsonnetFile('packages/deadvox/src/content/base/gauntlet-city-building-types.libsonnet'),
+    compileJsonnetFile(
+      'packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-building-types.libsonnet',
+    ),
   ) as ContentFile
 ).mapAssemblies!.map(({ id }) => id);
 

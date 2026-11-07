@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
-import { debugTargetRay } from '../src/game/debugTargetRay.ts';
+import { debugTargetRay } from '../src/presentation/debugTargetRay.ts';
 
 it('keeps debug targets on the view ray while a wielded firearm is lowered', () => {
   const eye: Vec3 = [1, 2, 3];

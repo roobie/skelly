@@ -1,0 +1,11 @@
+{
+  "assets/models/aa_battery.glb": { "materials": ["steel-grey", "steel-stainless", "paint-charcoal"] },
+  "assets/models/flashlight.glb": { "materials": ["polymer-black", "plastic-white"] },
+  "assets/models/headlamp.glb": {
+    "materials": ["cord-olive", "plastic-red", "steel-grey", "glass-grey", "paint-charcoal"]
+  },
+  "assets/models/night_vision_goggles.glb": { "materials": ["rubber-black", "polymer-od-green", "glass-lens-green"] },
+  "assets/models/portable_radio.glb": {
+    "materials": ["polymer-od-green", "steel-grey", "paint-charcoal", "glass-grey", "plastic-red"]
+  }
+}

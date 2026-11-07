@@ -1,6 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { expect, it } from 'vitest';
+import type { PlayerSense } from '../src/core/actorSense.ts';
 import { BlockEntities, type BlockEntity } from '../src/core/blockEntities.ts';
 import { buildRegistry, requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -10,14 +9,14 @@ import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
-import type { PlayerSense } from '../src/core/zombies.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const MINIMUM = 5;
 /** A whole number of minimum blows, so the last of them brings the damage exactly to it. */
@@ -35,21 +34,20 @@ const fixtureDoor = (id: string, barredFrom?: 'front' | 'back') => ({
     ...(barredFrom ? { barredFrom } : {}),
   },
 });
-const base = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown }));
+const base = baseContentSources();
 const { registry, issues } = buildFixtureRegistry([
   ...base,
   {
     source: 'breach-fixture',
     data: {
-      furnitureMaterials: [{ id: 'breach_fixture', blowSound: FIXTURE_BLOW_SOUND, methods: [] }],
+      furnitureMaterials: [
+        { id: 'breach_fixture', blowSound: FIXTURE_BLOW_SOUND, drops: { default: FIXTURE_BLOW_SOUND }, methods: [] },
+      ],
       furniture: [fixtureDoor('breach_door'), fixtureDoor('breach_boarded', 'front')],
     },
   },
 ]);
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const FLOOR: SolidAt = (_x, y) => y === 0;
 
@@ -89,7 +87,7 @@ const chaseThroughDoor = (strength: number, seconds: number) => {
     eyeHeightMetres: 1.3,
     stance: 'standing',
   });
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player: sense,
     isSolid: solid,
     isOpaque: solid,
@@ -163,7 +161,14 @@ it('builds the breach fixture without issues and rejects any piece, door or not,
       {
         source: 'breach-rejected',
         data: {
-          furnitureMaterials: [{ id: 'breach_fixture', blowSound: FIXTURE_BLOW_SOUND, methods: [] }],
+          furnitureMaterials: [
+            {
+              id: 'breach_fixture',
+              blowSound: FIXTURE_BLOW_SOUND,
+              drops: { default: FIXTURE_BLOW_SOUND },
+              methods: [],
+            },
+          ],
           sounds: fixtureSounds(),
           furniture: [piece],
         },

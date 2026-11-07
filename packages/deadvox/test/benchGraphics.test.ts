@@ -1,14 +1,16 @@
 import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import baseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
+import baseDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
+import baseWeathering from '../../mods/skelly.weathering/weathering.json' with { type: 'json' };
+import productWeathering from '../mods/skelly.deadvox.weathering/deadvox-weathering.json' with { type: 'json' };
 import { buildRegistry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { resolveGraphics } from '../src/core/graphics.ts';
 import { configFromUrl } from '../src/game/config.ts';
-import { createEngine } from '../src/game/engine.ts';
-import { GraphicsControls } from '../src/game/graphicsControls.ts';
-import { writeGraphicsSettings } from '../src/game/graphicsSettings.ts';
+import { createEngine } from '../src/presentation/engine.ts';
+import { GraphicsControls } from '../src/presentation/graphicsControls.ts';
+import { writeGraphicsSettings } from '../src/presentation/graphicsSettings.ts';
 import { Mood } from '../src/render/mood.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const owner = vi.hoisted(() => ({ setup: undefined as unknown }));
 vi.mock('../src/game/worldSetup.ts', () => ({ createWorldSetup: () => owner.setup }));
@@ -39,14 +41,18 @@ const tuning = {
 };
 
 it('benchmark engines use mod defaults despite saved graphics preferences and debug URL overrides', () => {
-  const content = buildRegistry([
+  const result = buildRegistry([
     { source: 'base/dayCycle.json', data: baseDayCycle },
+    { source: 'base/weathering.json', data: baseWeathering },
+    { source: 'base/deadvox-weathering.json', data: productWeathering },
     {
       source: 'fixture',
       data: {
+        starts: [{ id: 'fixture_graphics_start', site: 'city', kit: [], wounds: [], skills: {}, recipes: [] }],
         graphics: [
           {
-            id: CORE_CONTENT_IDS.coreGraphics,
+            id: fixtureIds.graphics,
+            capability: 'graphics',
             nearPlaneMetres: 0.01,
             playerViewFovDegrees: 70,
             readyRadiusM: 16,
@@ -76,6 +82,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
       },
     },
   ]);
+  const content = { ...result, defaultStart: 'fixture_graphics_start' };
   const { registry } = content;
   owner.setup = { registry, skyFields: { fields: [] } };
   let saved = '';
@@ -98,7 +105,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
   const view = { clientWidth: 1, clientHeight: 1 } as HTMLElement;
   const player = createEngine(config, view, undefined, { render: false });
   expect(player.graphics.values.fastCamo).toBe(false);
-  const graphics = content.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!;
+  const graphics = content.registry.graphics.get(fixtureIds.graphics)!;
   expect(player.camera.near).toBe(graphics.nearPlaneMetres);
   expect(player.camera.fov).toBe(graphics.playerViewFovDegrees);
   storage.getItem.mockClear();

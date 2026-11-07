@@ -15,8 +15,8 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import player from '../../../deadvox/src/content/base/player.json' with { type: 'json' };
 import { type Ragdoll, RagdollWorld, ragdollContent } from '../../../deadvox/src/render/ragdoll.ts';
+import player from '../../../mods/skelly.body/player.json' with { type: 'json' };
 import { generate, generateValid, type Realized, realize, realizeLod } from '../core/generate.ts';
 import type { Pose } from '../core/pose.ts';
 import type { ValidationProfile } from '../core/rules.ts';
@@ -30,13 +30,12 @@ import {
   acidWindupPose,
 } from '../mob/acidPoses.ts';
 import { acidTemplate } from '../mob/acidTemplate.ts';
-import { amalgamManifest } from '../mob/amalgam.ts';
-import { VIEWER_TEMPLATES } from '../mob/amalgamTemplate.ts';
 import { ATTACK_CLIPS, type AttackClip, attackClipById, attackClipFor, attackPose } from '../mob/attack.ts';
-import { crawlerGaitPose, crawlerHitPose, crawlerPose } from '../mob/crawler.ts';
+import { crawlGaitPose, crawlHitPose, crawlPose } from '../mob/crawl.ts';
 import { severableParts, severedBoneSet } from '../mob/dismember.ts';
-import { DOG_SEVERABLE_PARTS, dogGaitPose, dogHitPose, dogPose } from '../mob/dog.ts';
 import { dogTemplate } from '../mob/dogTemplate.ts';
+import { fusedMassManifest } from '../mob/fusedMass.ts';
+import { VIEWER_TEMPLATES } from '../mob/fusedMassTemplate.ts';
 import {
   advanceClock,
   createGaitCache,
@@ -52,6 +51,7 @@ import type { HumanoidParams } from '../mob/humanoid.ts';
 import { type IdleStance, idlePose } from '../mob/idle.ts';
 import { LOOK_AT_REST, type LookAtState, lookAtPose } from '../mob/lookAt.ts';
 import { LOOK_AT_PROFILES, type LookAtProfile } from '../mob/lookAtProfiles.ts';
+import { QUADRUPED_SEVERABLE_PARTS, quadrupedGaitPose, quadrupedHitPose, quadrupedPose } from '../mob/quadruped.ts';
 import { flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
 import { skeletonTemplate } from '../mob/skeletonTemplate.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
@@ -61,7 +61,7 @@ const TEMPLATES: readonly Template[] = [...VIEWER_TEMPLATES, dogTemplate, acidTe
 
 /** Plans posed by the shared humanoid walk, idle, attack and death. */
 const usesHumanoidRig = (template: Template): boolean =>
-  template.bodyPlan === 'humanoid' || template.bodyPlan === 'skeleton';
+  (template.bodyPlan === 'humanoid' && template.legCut === undefined) || template.bodyPlan === 'skeleton';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const view = $<HTMLElement>('view');
@@ -184,17 +184,16 @@ interface Loaded {
 
 let current: Loaded | undefined;
 let clock: GaitClock = INITIAL_CLOCK;
-let crawlerPhase = 0;
-// Ground distance the dog has advanced; drives the walk directly, so its planted paws stay planted at any
-// speed (see dogGaitPose). Reset on load like the other walk clocks.
-let dogDistance = 0;
+let crawlPhase = 0;
+// Ground distance drives the walk directly so planted paws stay planted at any speed.
+let gaitDistance = 0;
 let gridZ = 0;
 // Runs unconditionally (walking, standing, attacking...) so breathing/sway never stalls; only its phase
 // matters, so it's never reset on load/death — a fresh actor just joins the motion already in progress,
 // same spirit as idle.ts's own seed-based phase offset for a crowd of actors sharing one body.
 let idleTime = 0;
 const currentStance = (): IdleStance => idleStanceSelect.value as IdleStance;
-const dogStance = (genome: Genome, severed?: ReadonlySet<string>) => ({
+const quadrupedStance = (genome: Genome, severed?: ReadonlySet<string>) => ({
   limp: genome.params.limp ?? 0,
   headTilt: genome.params.headTilt ?? 0,
   severed,
@@ -229,7 +228,7 @@ let lastAcidPose: Pose | undefined;
  * it, for free). Reset on Heal or a fresh load. Not yet the crowd texture's mask (that's a deadvox/renderer
  * concern) — the main viewer just hides bone meshes directly (see scene.ts's setSeveredBones). */
 let severedCuts: string[] = [];
-/** The bones hidden by `severedCuts`, recomputed whenever a cut changes; the dog's grounding needs it so
+/** The bones hidden by `severedCuts`, recomputed whenever a cut changes; quadruped grounding needs it so
  * severed limbs stop bearing the body. */
 let severedBones: ReadonlySet<string> = new Set();
 
@@ -439,7 +438,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   }
   const actor = buildActor(realized, genome.voxelSize);
   scene.add(actor.root);
-  const staticOnly = template.bodyPlan === 'amalgam';
+  const staticOnly = template.bodyPlan === 'fused-mass';
   let loaded: Loaded = {
     genome,
     template,
@@ -450,7 +449,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   };
   if (staticOnly) {
     actor.applyPose({ root: [0, 0, 0], rotations: {} });
-    const parts = amalgamManifest(realized.body, realized.voxels)
+    const parts = fusedMassManifest(realized.body, realized.voxels)
       .parts.filter((part) => part.severable)
       .map((part) => part.rootBone);
     severPart.replaceChildren(...parts.map((id) => new Option(id, id)));
@@ -475,16 +474,16 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
     let initialPose: Pose;
     if (usesHumanoidRig(template)) {
       initialPose = idlePose(walkActor, currentStance(), idleTime);
-    } else if (template.bodyPlan === 'dog') {
+    } else if (template.bodyPlan === 'quadruped') {
       // A fresh load starts whole; `severedCuts` is cleared below, so this pose is deliberately intact.
-      initialPose = dogPose(realized, dogStance(genome));
+      initialPose = quadrupedPose(realized, quadrupedStance(genome));
     } else {
-      initialPose = crawlerPose(realized);
+      initialPose = crawlPose(realized);
     }
     actor.applyPose(initialPose);
     loaded = { ...loaded, params, extents, legGeometry, walkActor };
     severPart.replaceChildren(
-      ...(template.bodyPlan === 'dog' ? DOG_SEVERABLE_PARTS : severableParts(realized.body.bones)).map(
+      ...(template.bodyPlan === 'quadruped' ? QUADRUPED_SEVERABLE_PARTS : severableParts(realized.body.bones)).map(
         (part) => new Option(part, part),
       ),
     );
@@ -496,8 +495,8 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   reactionsFieldset.hidden = false;
   current = loaded;
   clock = INITIAL_CLOCK;
-  crawlerPhase = 0;
-  dogDistance = 0;
+  crawlPhase = 0;
+  gaitDistance = 0;
   gridZ = 0;
   attackTime = undefined;
   attackCooldown = 0;
@@ -707,14 +706,14 @@ const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
   if (!walking || speed <= 0 || !current) {
     return;
   }
-  if (current.template.bodyPlan === 'crawler') {
-    crawlerPhase += speed * dt * Math.PI;
+  if (current.template.legCut !== undefined) {
+    crawlPhase += speed * dt * Math.PI;
     gridZ = (gridZ + speed * dt) % 0.5;
     groundGroup.position.z = gridZ;
     return;
   }
-  if (current.template.bodyPlan === 'dog' || current.template.bodyPlan === 'acid') {
-    dogDistance += speed * dt;
+  if (current.template.bodyPlan === 'quadruped' || current.template.bodyPlan === 'acid') {
+    gaitDistance += speed * dt;
     gridZ = (gridZ + speed * dt) % 0.5;
     groundGroup.position.z = gridZ;
     return;
@@ -778,24 +777,29 @@ const applyLookAt = (loaded: Loaded, pose: Pose, dt: number): void => {
 
 /** Advances and poses one frame while alive: walk/attack/hit clocks all tick, and the pose is a walk (or
  * standing), optionally attacked, optionally flinched on top. */
-const applyCrawlerFrame = (loaded: Loaded, dt: number): void => {
+const applyCrawlFrame = (loaded: Loaded, dt: number): void => {
   const speed = walkOn.checked ? Number(speedInput.value) : 0;
   advanceWalk(dt, walkOn.checked, speed);
   advanceHit(dt);
-  const basePose = crawlerGaitPose(loaded.realized, crawlerPhase, speed);
-  const pose = hitTime === undefined ? basePose : crawlerHitPose(loaded.realized, basePose, hitTime, hitSide);
+  const basePose = crawlGaitPose(loaded.realized, crawlPhase, speed);
+  const pose = hitTime === undefined ? basePose : crawlHitPose(loaded.realized, basePose, hitTime, hitSide);
   applyLookAt(loaded, pose, dt);
 };
 
-const applyDogFrame = (loaded: Loaded, dt: number): void => {
+const applyQuadrupedFrame = (loaded: Loaded, dt: number): void => {
   const speed = walkOn.checked ? Number(speedInput.value) : 0;
   advanceWalk(dt, walkOn.checked, speed);
   advanceHit(dt);
-  const basePose = dogGaitPose(loaded.realized, dogDistance, speed, dogStance(loaded.genome, severedBones));
+  const basePose = quadrupedGaitPose(
+    loaded.realized,
+    gaitDistance,
+    speed,
+    quadrupedStance(loaded.genome, severedBones),
+  );
   const pose =
     hitTime === undefined
       ? basePose
-      : dogHitPose(loaded.realized, basePose, hitTime, { side: hitSide, severed: severedBones });
+      : quadrupedHitPose(loaded.realized, basePose, hitTime, { side: hitSide, severed: severedBones });
   applyLookAt(loaded, pose, dt);
 };
 
@@ -810,7 +814,7 @@ const applyAcidFrame = (loaded: Loaded, dt: number): void => {
       hitTime = undefined;
     }
   }
-  const base = acidWalkPose(loaded.realized, dogDistance, speed, idleTime);
+  const base = acidWalkPose(loaded.realized, gaitDistance, speed, idleTime);
   let attacked = base;
   if (attackTime !== undefined) {
     attacked = acidWindup.checked
@@ -826,15 +830,15 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
     applyAcidFrame(loaded, dt);
     return;
   }
-  if (loaded.template.bodyPlan === 'amalgam') {
+  if (loaded.template.bodyPlan === 'fused-mass') {
     return;
   }
-  if (loaded.template.bodyPlan === 'crawler') {
-    applyCrawlerFrame(loaded, dt);
+  if (loaded.template.legCut !== undefined) {
+    applyCrawlFrame(loaded, dt);
     return;
   }
-  if (loaded.template.bodyPlan === 'dog') {
-    applyDogFrame(loaded, dt);
+  if (loaded.template.bodyPlan === 'quadruped') {
+    applyQuadrupedFrame(loaded, dt);
     return;
   }
   if (!loaded.walkActor) {

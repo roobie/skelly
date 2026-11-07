@@ -1,4 +1,4 @@
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import { claimed } from '../core/capabilities.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { conditionWord, type Item } from '../core/items.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
@@ -67,7 +67,7 @@ export const vehicleInspectionViewModel = (
   if (!(vehicle && blueprint)) {
     return undefined;
   }
-  const text = inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.vehicle;
+  const text = claimed(inventory.registry.ui, 'interface')!.screenText.vehicle;
   const action = (
     work: VehicleWorkKind,
     label: string,

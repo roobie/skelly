@@ -1,8 +1,9 @@
 import { lotChoices, type PlannedLot } from './cityLots.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import { type PlacementLootSource, placementLootIssues } from './placementLoot.ts';
-import { composeStart, type ScenarioStart, startTemplate } from './scenarioStart.ts';
+import { type PlacementLootSource, pieceItemIssues, placementLootIssues } from './placementLoot.ts';
+import { composeStart, type ScenarioStart, type StartPlacementDef, startTemplate } from './scenarioStart.ts';
+import type { StartDef } from './schema/starts.ts';
 import type { FixedLootOverrideDef, ScenarioDef } from './schema.ts';
 import { admittedChoices, cityRowDepth } from './settlementPools.ts';
 import {
@@ -18,8 +19,11 @@ import {
   templateResolves,
 } from './templates.ts';
 
+const PIECE_PATH = /^\.pieces\[(\d+)\]/;
+
 export interface ScenarioComposition {
-  readonly start: ScenarioStart;
+  /** Absent in a city-only build: no start is selected, so nothing roots a playable run. */
+  readonly start?: ScenarioStart;
   readonly leads: readonly Placement[];
   readonly leadFaces?: readonly (Readonly<Vec3> | undefined)[];
   readonly events: readonly Placement[];
@@ -306,14 +310,6 @@ const promisedStockIssues = (registry: Registry, scenario: ScenarioDef): Issue[]
   const promised = (template: CompiledTemplate, fixedLoot: readonly FixedLootOverrideDef[], path: string) => {
     issues.push(...placementLootIssues({ registry, context: template.lootContext }, template, fixedLoot, path));
   };
-  const { start } = composition;
-  if (start.fixedLoot) {
-    promised(
-      startTemplate(registry, start.template, 0, `scenario:${scenario.id}:start`),
-      start.fixedLoot,
-      '.composition.start.fixedLoot',
-    );
-  }
   const named = new Set<string>();
   (composition.stops ?? []).forEach((stop, index) => {
     const path = `.composition.stops[${index}]`;
@@ -435,29 +431,76 @@ const scenarioBuildingSources = (registry: Registry, scenario: ScenarioDef): str
   return choices.filter(({ weight, atMost }) => weight > 0 && atMost !== 0).map(({ ref }) => ref.id);
 };
 
-export const scenarioSources = (registry: Registry, scenarios: Iterable<ScenarioDef> = registry.scenarios.values()) => {
+/** The start's promised stock, checked at its template-local anchors; paths are on the start row. */
+export const startFixedLootIssues = (registry: Registry, scenario: ScenarioDef, start: StartPlacementDef): Issue[] => {
+  const { fixedLoot } = start;
+  if (!fixedLoot) {
+    return [];
+  }
+  let template: CompiledTemplate;
+  try {
+    template = startTemplate(registry, start.template, 0, `scenario:${scenario.id}:start`);
+  } catch {
+    // `scenarioStartIssues` reports an unresolved start template once.
+    return [];
+  }
+  const path = '.placement.fixedLoot';
+  const issues = placementLootIssues({ registry, context: template.lootContext }, template, fixedLoot, path);
+  // A template's own stock errors belong to the template; only those the override's context causes belong here.
+  const own = new Set(pieceItemIssues(registry, template).map((issue) => issue.join('\0')));
+  return issues.flatMap(([at, message]): Issue[] => {
+    if (at.startsWith(path)) {
+      return [[at, message]];
+    }
+    const piece = PIECE_PATH.exec(at);
+    if (!piece || own.has([at, message].join('\0'))) {
+      return [];
+    }
+    const { furniture, pos } = template.pieces[Number(piece[1])]!;
+    const index = fixedLoot.findIndex((override) => override.at.join(',') === pos.join(','));
+    const field = fixedLoot[index]!.lootUsage ? 'lootUsage' : 'lootTier';
+    return [
+      [
+        `${path}[${index}].${field}`,
+        `template "${template.id}" piece "${furniture}" at ${pos.join(',')} under this override: ${message}`,
+      ],
+    ];
+  });
+};
+
+export const scenarioSources = (
+  registry: Registry,
+  scenarios: Iterable<ScenarioDef> = registry.scenarios.values(),
+  starts: Iterable<StartDef> = registry.starts.values(),
+) => {
   const selected = [...scenarios];
+  const ids = new Set(selected.map(({ id }) => id));
+  const placements = [...starts].flatMap(({ site, placement }) => (placement && ids.has(site) ? [placement] : []));
   return {
-    templates: selected.flatMap((scenario) => [
-      scenario.serviceTemplate,
-      ...scenarioBuildingSources(registry, scenario),
-      ...(scenario.composition
-        ? [
-            scenario.composition.start.template,
-            ...scenario.composition.leads.map((lead) => lead.template),
-            ...(scenario.composition.events ?? []).map((event) => event.template),
-            ...scenario.composition.landmarks,
-            ...scenario.composition.incidentalTemplates,
-          ]
-        : []),
-    ]),
-    fixedLoot: selected.flatMap((scenario) => [
-      ...(scenario.composition?.fixedLoot ?? []),
-      ...(scenario.composition?.leads.flatMap((lead) => lead.fixedLoot ?? []) ?? []),
-      ...(scenario.composition?.events?.flatMap((event) => event.fixedLoot) ?? []),
-      ...(scenario.composition?.start.fixedLoot ?? []),
-      ...(scenario.composition?.stops?.flatMap((stop) => stop.fixedLoot) ?? []),
-    ]),
+    templates: [
+      ...placements.map(({ template }) => template),
+      ...selected.flatMap((scenario) => [
+        scenario.serviceTemplate,
+        ...scenarioBuildingSources(registry, scenario),
+        ...(scenario.composition
+          ? [
+              ...scenario.composition.leads.map((lead) => lead.template),
+              ...(scenario.composition.events ?? []).map((event) => event.template),
+              ...scenario.composition.landmarks,
+              ...scenario.composition.incidentalTemplates,
+            ]
+          : []),
+      ]),
+    ],
+    fixedLoot: [
+      ...placements.flatMap(({ fixedLoot }) => fixedLoot ?? []),
+      ...selected.flatMap((scenario) => [
+        ...(scenario.composition?.fixedLoot ?? []),
+        ...(scenario.composition?.leads.flatMap((lead) => lead.fixedLoot ?? []) ?? []),
+        ...(scenario.composition?.events?.flatMap((event) => event.fixedLoot) ?? []),
+        ...(scenario.composition?.stops?.flatMap((stop) => stop.fixedLoot) ?? []),
+      ]),
+    ],
   };
 };
 
@@ -465,7 +508,16 @@ export const composeScenario = (
   registry: Registry,
   scenario: ScenarioDef,
   service: Placement,
-  { floor, start, lots = [] }: { floor: number; start: Placement; lots?: readonly PlannedLot[] },
+  {
+    floor,
+    start,
+    lots = [],
+  }: {
+    floor: number;
+    /** The selected start's authored placement and its placed building; a city-only build composes without one. */
+    start?: { readonly definition: StartPlacementDef; readonly placement: Placement } | undefined;
+    lots?: readonly PlannedLot[];
+  },
 ): ScenarioComposition | undefined => {
   const authored = scenario.composition;
   if (!authored) {
@@ -574,7 +626,7 @@ export const composeScenario = (
     return promised(parent, stop.fixedLoot);
   });
   return Object.freeze({
-    start: composeStart(authored.start, start),
+    ...(start ? { start: composeStart(start.definition, start.placement) } : {}),
     leads,
     leadFaces: Object.freeze(leadFaces),
     events,
@@ -583,7 +635,7 @@ export const composeScenario = (
       Object.freeze({ placement: service, fixedLoot }),
       ...leads.map((lead, index) => Object.freeze({ placement: lead, fixedLoot: authored.leads[index]!.fixedLoot })),
       ...events.map((event, index) => promised(event, authored.events![index]!.fixedLoot)),
-      ...(authored.start.fixedLoot ? [promised(start, authored.start.fixedLoot)] : []),
+      ...(start?.definition.fixedLoot ? [promised(start.placement, start.definition.fixedLoot)] : []),
       ...stops,
     ]),
     objective: furnitureAnchor(authored.objective),

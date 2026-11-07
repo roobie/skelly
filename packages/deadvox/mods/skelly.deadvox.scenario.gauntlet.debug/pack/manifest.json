@@ -1,0 +1,15 @@
+{
+  "dependencies": ["skelly.deadvox.scenario.gauntlet.city", "skelly.deadvox.scenario.gauntlet.start"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "catalogue.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.gauntlet.debug",
+  "optIn": true,
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

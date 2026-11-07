@@ -87,13 +87,13 @@
     }
   ],
   "kindMotion": {
-    "brute": {
+    "broad-humanoid": {
       "launchSpeed": 1.2
     },
-    "crawler": {
+    "legless-humanoid": {
       "launchSpeed": 1.2
     },
-    "runner": {
+    "slim-humanoid": {
       "launchSpeed": 1.2
     }
   },
@@ -159,7 +159,7 @@
       }
     ]
   },
-  "models": ["shambler", "runner", "brute", "crawler", "amalgam"],
+  "models": ["humanoid", "slim-humanoid", "broad-humanoid", "legless-humanoid", "fused-mass"],
   "motion": {
     "hitDirectionWeight": 1,
     "launchSpeed": 1.2,
@@ -179,11 +179,11 @@
     "cuts": [[], ["head"], ["upperArm.L"], ["thigh.L", "thigh.R"], []],
     "finishSeconds": 12,
     "lieSeconds": 120,
-    "models": ["shambler", "runner", "brute", "crawler"],
+    "models": ["humanoid", "slim-humanoid", "broad-humanoid", "legless-humanoid"],
     "spacingMetres": 3,
     "startMetres": [0, -15],
     "viewer": {
-      "x": 24,
+      "x": 55.5,
       "yawDegrees": -25,
       "z": 5.5
     }

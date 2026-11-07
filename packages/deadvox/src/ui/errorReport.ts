@@ -1,6 +1,6 @@
 import { html, render } from 'lit-html';
 import { getBuildRevision } from '../core/buildInfo.ts';
-import type { HandBackFile } from '../game/playtestTools.ts';
+import type { HandBackFile } from '../presentation/playtestTools.ts';
 import { listenForFactDetailPlacement } from './factDetailPlacement.ts';
 import { isOwnError } from './ownError.ts';
 
@@ -186,7 +186,7 @@ export const installErrorReportHandler = (): void => {
       });
       const url = URL.createObjectURL(new Blob([contents], { type: 'application/json' }));
       downloadLink.href = url;
-      downloadLink.download = 'deadvox-error-report.json';
+      downloadLink.download = 'skelly-error-report.json';
       downloadLink.click();
       URL.revokeObjectURL(url);
       render(html`Error report downloaded.`, status);

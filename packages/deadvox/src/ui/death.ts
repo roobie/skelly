@@ -1,6 +1,6 @@
 import { html, render, type TemplateResult } from 'lit-html';
+import { claimed } from '../core/capabilities.ts';
 import type { Registry } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { defOf } from '../core/items.ts';
 import { countText } from '../core/numberText.ts';
 import type { ScreenText } from '../core/schema.ts';
@@ -20,7 +20,7 @@ export interface DeathSummary {
 
 type DeathText = ScreenText['death'];
 
-const deathText = (registry: Registry): DeathText => registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.death;
+const deathText = (registry: Registry): DeathText => claimed(registry.ui, 'interface')!.screenText.death;
 
 /** Hours and minutes, or minutes alone under an hour. */
 const formatSpan = (seconds: number, text: DeathText): string => {

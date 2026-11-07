@@ -4,6 +4,7 @@ read_if:
   - you change the shared Jsonnet compiler, its formatter, or its import and validation rules
   - you optimize evaluation of authored content
   - you add build-specific content or a Jsonnet module
+  - you change mod-owned thing recipes or exporter refresh discovery
   - you author map features or decide what belongs in a map template
   - you check which generated map features still require curated migration
 ---
@@ -17,9 +18,10 @@ Author new content in Jsonnet, except maps edited in Tiled. Convert existing JSO
 - Keep maps edited in Tiled as `.tmj`; compilation must not overwrite editor-owned data. Use `.tmj.jsonnet` only for maps not edited in Tiled. See `packages/deadvox/maps/README.md`.
 - Add structured sources only under the compiler's declared `SOURCE_ROOTS`, preserving each consumer's expected output format. See `tools/jsonnet/compile.mjs`, `SOURCE_ROOTS`.
 - Keep exporter-written JSON outside the Jsonnet source manifest so a refresh has one writer; the exporter owns its output rather than a second authored source.
-- The exporter refresh compiles in two stages because its inputs and outputs form a cycle: the tools' recipes and catalogues are compiled Jsonnet that the exporter reads, and the content Jsonnet imports the model files the exporter writes. A single compile either reads a stale recipe or fails on a model file that is not written yet. A partial compile of the tools' own source directories runs first and leaves the manifest alone, because the manifest describes the full source set. See `tools/refresh-deadvox.mjs` and `tools/jsonnet/compile.mjs`, `compileJsonnetSources`.
+- The exporter refresh compiles in two stages because its inputs and outputs form a cycle: recipes and catalogues are compiled Jsonnet that the exporter reads, and content Jsonnet imports the model files the exporter writes. A single compile either reads a stale recipe or fails on a model file that is not written yet. The input compile leaves the manifest alone because the manifest describes the full source set. See `tools/refresh-deadvox.mjs` and `tools/jsonnet/compile.mjs`, `compileJsonnetSources`.
+- Thing recipes live at exports/things.jsonnet in their item rows' owning mod, across both mod roots. State ownership once, beside the item, so recipes move with rows rather than requiring a central target list or mod column. Discovery makes uneven mod sizes irrelevant and lets third-party mods use the same path. Shared recipe helpers stay in the thing tool and are imported by path. See `tools/thing-recipes.ts`, `thingRecipeDirectories`, and `packages/thing-authoring-tool/src/cli/export.ts`, `exportThingRecipes`.
 - Do not impose a subprocess capture limit on trusted formatter output: growing a content document must not fail because of the process API's default buffer. See `tools/jsonnet/compile.mjs`, `formatJson`.
-- Deadvox core-pack data is authored under `packages/deadvox/src/content/base` and consumed through `packages/deadvox/src/game/bundledContent.ts`, `buildBundledContent`, and `packages/deadvox/src/core/content.ts`, `buildRegistry`. Keep local helpers beside their source and shared helpers under `tools/jsonnet/lib` so module ownership is explicit.
+- Keep shared topic content under `packages/mods` and Deadvox product and scenario content under `packages/deadvox/mods` so ownership follows the consumer boundary. See `packages/deadvox/src/game/bundledContent.ts`, `buildBundledContent`, and `packages/deadvox/src/core/content.ts`, `buildRegistry`. Keep local helpers beside their source and shared helpers under `tools/jsonnet/lib` so module ownership is explicit.
 - Mobgen's material tables stay separate from body-plan construction so look tuning remains content-owned. See `packages/mobgen/src/mob/materialTemplates.jsonnet` and `packages/mobgen/src/mob/materials.ts`, `resolveMaterials`.
 - Build-specific settings must be explicit top-level arguments, not hidden environment inputs, so identical sources produce identical output.
 
@@ -31,8 +33,8 @@ A placed content template is spatial data, not a Jsonnet constructor. Constructo
 
 Curated geometry lets authors inspect and change intended spaces without reverse-engineering a generator. Exclusive ownership prevents composition from repainting a correctly authored shell, while reserved walking space protects circulation from furnishing. See `docs/decisions/0005-curated-map-kits.md`, "Decision".
 
-Generated geometry in `packages/deadvox/src/content/base/camp.libsonnet`,
-`packages/deadvox/src/content/base/ladders.libsonnet` and `packages/deadvox/src/content/base/locks.libsonnet`
+Generated geometry in `packages/deadvox/mods/skelly.deadvox.camp/camp.libsonnet`,
+`packages/deadvox/mods/skelly.deadvox.scenario.playtest/ladders.libsonnet` and `packages/deadvox/mods/skelly.deadvox.scenario.lock-test/locks.libsonnet`
 remains outside #712's city-and-lab migration. Those features need a separate curated
 migration before they satisfy this rule; the gauntlet migration does not authorize
 additional generators.
@@ -45,5 +47,5 @@ additional generators.
 - Keep module exports deliberate and inheritance shallow so ownership and composition stay inspectable.
 - Force critical assertions because Jsonnet evaluation is lazy; invalid authored data must fail before it reaches consumers.
 - Separate authored values from transformation rules and final output so one tuning change can update dependent data without duplicating definitions.
-- Cache height-invariant membership and reuse glyphs for ownership when expanding authored plans. Repeated interpreted list scans make content checks expensive without adding authoring flexibility; see `packages/deadvox/src/content/base/gauntlet-lab-level.libsonnet`, `build`.
+- Cache height-invariant membership and reuse glyphs for ownership when expanding authored plans. Repeated interpreted list scans make content checks expensive without adding authoring flexibility; see `packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-level.libsonnet`, `build`.
 - Use the pinned go-jsonnet runtime so contributors and CI evaluate the same source without requiring a Go toolchain. See `tools/jsonnet/runtime.json` and `tools/jsonnet/setup.mjs`.

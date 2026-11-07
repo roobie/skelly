@@ -43,11 +43,11 @@ describe('debug group state', () => {
   it('opens everything when the stored value is damaged or names unknown groups', () => {
     for (const text of ['', 'nonsense', '{"look":true}', '"look"', '[1, null]']) {
       const store = storage();
-      store.setItem('deadvox.debug-groups-closed', text);
+      store.setItem('skelly.debug-groups-closed', text);
       expect(readClosedGroups(store)).toEqual(new Set());
     }
     const store = storage();
-    store.setItem('deadvox.debug-groups-closed', '["gone","look"]');
+    store.setItem('skelly.debug-groups-closed', '["gone","look"]');
     expect(readClosedGroups(store)).toEqual(new Set(['look']));
   });
 

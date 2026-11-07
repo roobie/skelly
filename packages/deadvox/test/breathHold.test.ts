@@ -15,10 +15,11 @@ import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { type MoveIntent, PLAYER, type StanceToggle } from './playerFixture.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
+import { AIM, type MoveIntent, type StanceToggle } from './playerFixture.ts';
 
 const registry = baseRegistry();
-const firearmsTuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
+const firearmsTuning = skilledFirearmsTuning(registry);
 const { breathHold } = firearmsTuning;
 const { windedBelow } = registry.body.get('player')!.needs.stamina;
 const DT = 1 / 60;
@@ -30,7 +31,7 @@ const aimWith = (sigmaRadiansPerSqrtSecond: number) => {
     smoothingSimSeconds: firearmsTuning.wobbleNoiseSmoothingSimSeconds,
   };
   return new AimController({
-    tuning: PLAYER.aim,
+    tuning: AIM,
     wobbleLimitRadians: firearmsTuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: firearmsTuning.wobbleVerticalToHorizontalRatio,

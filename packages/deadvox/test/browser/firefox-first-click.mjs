@@ -18,7 +18,7 @@ const observation = {
   name: 'native-firefox-time-observation',
   enforce: 'pre',
   transform(code, id) {
-    if (!id.endsWith('/src/game/play.ts')) {
+    if (!id.endsWith('/src/presentation/play.ts')) {
       return;
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
@@ -59,7 +59,7 @@ try {
     }
   });
   await page.addInitScript(() => {
-    localStorage.setItem('deadvox.hud-options', JSON.stringify({ clock: true }));
+    localStorage.setItem('skelly.hud-options', JSON.stringify({ clock: true }));
     const describe = (element) =>
       element
         ? `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${typeof element.className === 'string' && element.className ? `.${element.className.trim().replaceAll(' ', '.')}` : ''}`
@@ -158,7 +158,7 @@ try {
   await verifyAltRelease(page);
   process.stdout.write(`Native Alt release browser: ${browser.version()}\n`);
   const gateCode = await page.evaluate(
-    `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
+    `import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
   );
   await page.evaluate((code) => {
     globalThis.firefoxNativeGateEvents = [];

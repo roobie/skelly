@@ -13,6 +13,7 @@ import { playerHeldSeatFrame, playerLookPose } from '../src/core/playerLookPose.
 import type { PlayerStance } from '../src/core/playerStance.ts';
 import { add, axisRotation, multiplyRotation, rotateVector, sub } from '../src/core/spatial.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 
 type Input = Parameters<typeof playerLeanBoxes>[0];
 
@@ -26,8 +27,7 @@ const fixture = (side: HandSide = 'right', stance: PlayerStance = 'standing', pr
   }
   const figure = registry.figures.get('player')!;
   const tuning = registry.player.get('player')!.lean;
-  const { loweredPitchRadians } = [...registry.skills.values()].find((skill) => skill.combat?.firearms)!.combat!
-    .firearms!;
+  const { loweredPitchRadians } = skilledFirearmsTuning(registry);
   let feet: Vec3 = [0, 2, 0];
   const input = (amount: number, yaw = 0, pitch = 0): Input => {
     const aimFrame = { ...NEUTRAL_AIM, yaw: yaw + 0.02, pitch: pitch - 0.03 };

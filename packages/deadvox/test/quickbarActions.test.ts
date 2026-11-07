@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import { coreMessage } from '../src/core/coreText.ts';
@@ -10,16 +8,13 @@ import { bindReach } from '../src/core/reach.ts';
 import type { ItemDef } from '../src/core/schema.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { Survival } from '../src/game/survival.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { Simulation } from './simulationFixture.ts';
 
-const BASE = 'src/content/base';
 const { registry } = buildRegistry([
-  ...readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
+  ...baseContentSources(),
   {
     source: 'test/quickbarActions.test.ts',
     data: {

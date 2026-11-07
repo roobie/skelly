@@ -29,7 +29,7 @@ export class SnapshotSite extends AuthoredSite {
     });
     this.hedges = [{ min: [224, 41, 0], max: [225, 44, 1], block: registry.blockIds.get('leaves')! }];
   }
-  override zombiesIn(cx: number, cz: number) {
+  override actorsIn(cx: number, cz: number) {
     return cz === 0 && (cx === 8 || cx === 9)
       ? [{ type: 'shambler', pos: [cx * CHUNK + 12, 41, 8] as [number, number, number] }]
       : [];

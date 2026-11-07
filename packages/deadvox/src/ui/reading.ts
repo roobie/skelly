@@ -2,7 +2,7 @@
 import { html, render } from 'lit-html';
 import type { ReadRequest } from '../core/readable.ts';
 import type { ScreenText } from '../core/schema.ts';
-import { inputBindings } from '../game/inputBindings.ts';
+import type { BindingRegistry } from '../game/bindingRegistry.ts';
 
 /** Meta progress embedded in the paper, because the optional HUD cannot explain a compressed reading action. */
 export interface ReadingProgress {
@@ -37,8 +37,8 @@ const scrollText = (text: HTMLElement, action: string): void => {
 export const mountReading = (
   host: HTMLElement,
   text: ScreenText['reading'],
-  changed: () => void,
-  closing: () => void = () => undefined,
+  bindings: Pick<BindingRegistry, 'subscribe'>,
+  { changed, closing = () => undefined }: { readonly changed: () => void; readonly closing?: () => void },
 ) => {
   let current: ReadRequest | undefined;
   let progress: ReadingProgress | undefined;
@@ -78,7 +78,7 @@ export const mountReading = (
       host,
     );
   };
-  inputBindings.subscribe(draw);
+  bindings.subscribe(draw);
   return {
     get isOpen() {
       return current !== undefined;

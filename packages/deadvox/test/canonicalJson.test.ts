@@ -9,7 +9,7 @@ import {
 describe('canonical JSON', () => {
   it('sorts object keys and preserves ECMAScript number representations', () => {
     const value = { z: 0.1 + 0.2, a: -0, b: Number.MIN_VALUE };
-    expect(canonicalJson(value)).toBe(`{"a":{"\\u0000deadvox-number":"-0"},"b":5e-324,"z":0.30000000000000004}`);
+    expect(canonicalJson(value)).toBe(`{"a":{"\\u0000skelly-number":"-0"},"b":5e-324,"z":0.30000000000000004}`);
     expect(new TextDecoder().decode(canonicalJsonBytes(value))).toBe(canonicalJson(value));
   });
 
@@ -20,7 +20,7 @@ describe('canonical JSON', () => {
 
   it('accepts only the wire tag in decode mode and restores negative zero', () => {
     const tagged: unknown = { [NEGATIVE_ZERO_TAG]: '-0' };
-    expect(canonicalJson(tagged, { acceptTaggedNegativeZero: true })).toBe(`{"\\u0000deadvox-number":"-0"}`);
+    expect(canonicalJson(tagged, { acceptTaggedNegativeZero: true })).toBe(`{"\\u0000skelly-number":"-0"}`);
     expect(Object.is(decodeCanonicalNumbers(tagged), -0)).toBe(true);
     expect(() => canonicalJson({ [NEGATIVE_ZERO_TAG]: '-1' }, { acceptTaggedNegativeZero: true })).toThrow(
       'Reserved number tag',

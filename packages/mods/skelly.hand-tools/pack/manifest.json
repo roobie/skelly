@@ -1,0 +1,142 @@
+{
+  "dependencies": ["skelly.inventory", "skelly.materials", "skelly.melee-classes"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "hand-tools-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-hand-tools.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/can_opener.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/whetstone.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/repair_kit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wire_strippers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/adjustable_pliers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sewing_repair_kit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crowbar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hammer.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sledgehammer.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/kitchen_knife.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wrench.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/compass.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/screwdriver.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "exports/things.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/adjustable_pliers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/can_opener.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/compass.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crowbar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hammer.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/kitchen_knife.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/repair_kit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/screwdriver.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sewing_kit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sewing_repair_kit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sledgehammer.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/whetstone.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wire_strippers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wrench.glb"
+    }
+  ],
+  "id": "skelly.hand-tools",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

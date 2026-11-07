@@ -8,7 +8,7 @@ import { reachTuning } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { FIGURE_LIMBS, type FurnitureDef } from '../src/core/schema.ts';
 import type { Facing } from '../src/core/templates.ts';
-import { baseSources } from '../src/game/bundledContent.ts';
+import { baseSources } from '../src/product/content.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { CorpseFigures } from '../src/render/corpseFigures.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
@@ -186,6 +186,10 @@ describe('the content check for dead humans', () => {
     const ids = new Set([figure.body.model, ...FIGURE_LIMBS.map((limb) => figure.limbs[limb].model)]);
     return [
       baseSource('figures-player.json'),
+      {
+        source: 'corpse-sounds',
+        data: { sounds: Object.values(body.moveSounds!).map((id) => registry.sounds.get(id)!) },
+      },
       { source: 'corpse-models.json', data: { models: modelRows.filter(({ id }) => ids.has(id)) } },
     ];
   };

@@ -5,7 +5,7 @@ import { html, nothing, render } from 'lit-html';
 import type { Object3D } from 'three';
 import type { Item } from '../core/items.ts';
 import type { GraphicsTuningDef } from '../core/schema.ts';
-import { inputBindings } from '../game/inputBindings.ts';
+import type { BindingRegistry } from '../game/bindingRegistry.ts';
 import { fillHint, keyCap } from './keyCap.ts';
 import { wheelPixels } from './wheel.ts';
 
@@ -28,8 +28,11 @@ type ItemViewerTuning = GraphicsTuningDef['itemViewer'];
 const RADIANS_PER_DEGREE = Math.PI / 180;
 
 /** Whether a pointer press is the view binding; a key binding instead reaches the screen as an action. */
-export const isViewItemPress = (event: Pick<MouseEvent, 'button' | 'shiftKey'>): boolean =>
-  inputBindings
+export const isViewItemPress = (
+  bindings: Pick<BindingRegistry, 'chords'>,
+  event: Pick<MouseEvent, 'button' | 'shiftKey'>,
+): boolean =>
+  bindings
     .chords('inventory.view-item')
     .some((chord) => chord.code === `Mouse${event.button}` && (chord.modifier === 'shift') === event.shiftKey);
 
@@ -48,6 +51,7 @@ export class ItemViewer {
   private readonly source: () => ItemViewSource | undefined;
   private readonly tuning: () => ItemViewerTuning;
   private readonly closeText: () => string;
+  private readonly bindings: BindingRegistry;
   private viewing: Viewing | undefined;
   private drag: { readonly pointerId: number; x: number; y: number } | undefined;
   private wheelHost: HTMLElement | undefined;
@@ -60,12 +64,13 @@ export class ItemViewer {
     host: () => HTMLElement | null,
     source: () => ItemViewSource | undefined,
     tuning: () => ItemViewerTuning,
-    closeText: () => string,
+    { closeText, bindings }: { readonly closeText: () => string; readonly bindings: BindingRegistry },
   ) {
     this.host = host;
     this.source = source;
     this.tuning = tuning;
     this.closeText = closeText;
+    this.bindings = bindings;
     globalThis.addEventListener('pointermove', (e) => this.pointerMove(e));
     globalThis.addEventListener('pointerup', (e) => this.pointerUp(e));
     globalThis.addEventListener('pointercancel', (e) => this.pointerUp(e));
@@ -181,7 +186,7 @@ export class ItemViewer {
             <div class="inv-viewer-card">
               <header class="inv-viewer-head">
                 <h3>${viewing.name}</h3>
-                <button class="inv-option" type="button" data-action="viewer.close" @click=${() => this.close()}>${fillHint(this.closeText(), { key: keyCap('inventory.view-item') })}</button>
+                <button class="inv-option" type="button" data-action="viewer.close" @click=${() => this.close()}>${fillHint(this.closeText(), { key: keyCap(this.bindings, 'inventory.view-item') })}</button>
               </header>
               <canvas class="inv-viewer-canvas" data-wheel-owner></canvas>
             </div>
@@ -230,7 +235,7 @@ export class ItemViewer {
       this.drag = { pointerId: e.pointerId, x: e.clientX, y: e.clientY };
       return;
     }
-    if (isViewItemPress(e) && !(e.target as Element).closest('button')) {
+    if (isViewItemPress(this.bindings, e) && !(e.target as Element).closest('button')) {
       e.preventDefault();
       this.close();
     }

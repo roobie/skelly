@@ -1,0 +1,62 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.deadvox.site-generation",
+    "skelly.inventory",
+    "skelly.light-sources",
+    "skelly.manufactured-blocks",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.natural-world",
+    "skelly.packaged-foods",
+    "skelly.structures",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "item-economy.json"
+    },
+    {
+      "kind": "content",
+      "path": "locks.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-lock-test.json"
+    },
+    {
+      "kind": "content",
+      "path": "starts.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shed_key.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "exports/things.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shed_key.glb"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.lock-test",
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

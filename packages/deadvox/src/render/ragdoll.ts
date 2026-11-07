@@ -218,7 +218,7 @@ export class RagdollWorld {
     corpse: Ragdoll,
     {
       realized,
-      model = 'shambler',
+      model = 'humanoid',
       position,
       yaw,
       direction,

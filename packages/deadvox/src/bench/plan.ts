@@ -3,7 +3,7 @@
 
 import type { ItemDef } from '../core/content.ts';
 import type { StorageStats } from '../core/storage.ts';
-import type { ActorRenderer } from '../game/config.ts';
+import type { ActorRenderMode } from '../game/config.ts';
 import type { FrameStats, SampleStats } from './stats.ts';
 
 export interface BenchConfig {
@@ -105,12 +105,12 @@ export interface ShamblerRunResult {
   background?: number;
   seed: number;
   /** Which renderer drew the zombies. */
-  actors: ActorRenderer;
+  actors: ActorRenderMode;
   frame: FrameStats;
-  zombieTick: SampleStats;
+  actorTick: SampleStats;
   backgroundTick?: SampleStats;
   renderSubmit: SampleStats;
-  /** CPU ms in the actor renderer's own sync() (pose + matrix/texture writes for 'detailed'; ZombieMeshes'
+  /** CPU ms in the actor renderer's own sync() (pose + matrix/texture writes for 'detailed'; ActorMeshes'
    * instance-matrix writes for 'boxes'). */
   actorSync: SampleStats;
   /** Scene-pass renderer.info.render.calls/.triangles from one measured frame — the population is fixed
@@ -159,7 +159,7 @@ export interface BenchRecord {
     dropped: number;
     pointLightSlots: number;
     shamblers: number;
-    actors: ActorRenderer;
+    actors: ActorRenderMode;
     settings: Record<
       string,
       Pick<
@@ -173,7 +173,7 @@ export interface BenchRecord {
   shamblers?: ShamblerRunResult[];
 }
 
-const KEY = 'deadvox.bench.v3';
+const KEY = 'skelly.bench.v3';
 
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 

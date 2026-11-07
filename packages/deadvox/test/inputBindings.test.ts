@@ -1,21 +1,17 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
+import type { Binding, Chord, InputContext } from '../src/core/inputActions.ts';
 import { KeyTrace } from '../src/debug/keyTrace.ts';
 import {
-  type Binding,
   BindingRegistry,
   bindingConflict,
-  type Chord,
-  capturedChord,
   chordIssue,
   controlRowIssue,
   defaultKeySetIssues,
-  INPUT_BINDINGS,
-  type InputCommand,
-  type InputContext,
-  KeyboardInput,
   REFUSED_MODIFIERS,
-} from '../src/game/inputBindings.ts';
+} from '../src/game/bindingRegistry.ts';
+import { capturedChord, type InputCommand, KeyboardInput } from '../src/presentation/inputBindings.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 
 const fixture: readonly Binding[] = [
   {
@@ -103,7 +99,7 @@ describe('keyboard registry', () => {
   ] as const)(
     'consumes native button activation from a held key after transfer into $to',
     ({ from, to, action, next }) => {
-      const keyboard = new KeyboardInput(new BindingRegistry(undefined, storage()));
+      const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
       let context: InputContext = from;
       keyboard.context = () => ({ context, debug: false });
       const commands: InputCommand[] = [];
@@ -489,7 +485,7 @@ describe('keyboard registry', () => {
     const chosen = { code: 'Digit9' };
     expect(fromContent).not.toContainEqual(chosen);
     const stored = storage();
-    stored.setItem('deadvox.input-bindings', JSON.stringify({ 'world.interact': [chosen] }));
+    stored.setItem('skelly.input-bindings', JSON.stringify({ 'world.interact': [chosen] }));
     const rebound = new BindingRegistry(INPUT_BINDINGS, stored);
     expect(rebound.chords('world.interact')).toEqual([chosen]);
     expect(rebound.chords('movement.forward')).toEqual(
@@ -709,7 +705,7 @@ describe('keyboard registry', () => {
     expect(restored.rebind('fixture.quick', [{ code: 'KeyJ', modifier: 'alt' }])).toBeDefined();
     expect(restored.label('fixture.quick')).toBe('T');
     prefs.setItem(
-      'deadvox.input-bindings',
+      'skelly.input-bindings',
       JSON.stringify({
         unknown: [{ code: 'KeyJ' }],
         'fixture.interact': [{ code: 'Unidentified' }],

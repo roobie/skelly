@@ -1,7 +1,7 @@
 // Presentation-only action-cycle controls. Timelines and motion profiles stay in the gun domain module.
 
-import type { Resolved } from '@skelly/engine/assembly/schema.ts';
-import { applyDir, applyPoint } from '@skelly/engine/foundation/math.ts';
+import type { Resolved } from '@skelly/construct/assembly/schema.ts';
+import { applyDir, applyPoint } from '@skelly/construct/foundation/math.ts';
 import {
   ArrowHelper,
   type Group,

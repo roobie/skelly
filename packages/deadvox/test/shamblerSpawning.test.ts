@@ -1,25 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { bodyIsClear, placeShamblerRing } from '../src/bench/shamblerPlacement.ts';
+import { actorAttackReachForDef, actorAttackReachMetres, actorBodyDimensions } from '../src/core/actorState.ts';
 import { type Body, bodyOverlapsBlock } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { zombieAttackReachForType, zombieAttackReachMetres, zombieBodyDimensions } from '../src/core/zombies.ts';
-import { spawnShamblers, spawnZombieType } from '../src/debug/shamblerSpawning.ts';
-import type { Engine } from '../src/game/engine.ts';
+import { spawnActorType, spawnShamblers } from '../src/debug/shamblerSpawning.ts';
+import type { Engine } from '../src/presentation/engine.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { createPlayerBody, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SCALE = makeScale(0.5);
 const player = () => createPlayerBody(SCALE, 0, 1, 0);
 
-const footprint = (type: typeof registry.zombies extends ReadonlyMap<string, infer T> ? T : never): number => {
-  const body = zombieBodyDimensions(type, SCALE.blockSize);
+const footprint = (type: typeof registry.actors extends ReadonlyMap<string, infer T> ? T : never): number => {
+  const body = actorBodyDimensions(type, SCALE.blockSize);
   return Math.max(body.halfWidth, body.halfDepth ?? body.halfWidth);
 };
-const largestType = [...registry.zombies.values()].reduce((best, type) =>
+const largestType = [...registry.actors.values()].reduce((best, type) =>
   footprint(type) > footprint(best) ? type : best,
 );
 
@@ -33,8 +33,8 @@ const testEngine = (isSolid: (x: number, y: number, z: number) => boolean, seed 
     isOpaque: isSolid,
   }) as unknown as Engine;
 
-const zombiesFor = (body: ReturnType<typeof player>, isSolid: (x: number, y: number, z: number) => boolean) =>
-  new ZombieSystem({
+const actorsFor = (body: ReturnType<typeof player>, isSolid: (x: number, y: number, z: number) => boolean) =>
+  new ActorSystem({
     isSolid,
     isOpaque: isSolid,
     blockSize: SCALE.blockSize,
@@ -63,10 +63,10 @@ describe('debug shambler spawning', () => {
       y === 0 || (x >= 15 && x <= 18 && y >= 1 && y <= 4 && z >= -2 && z <= 2);
     const engine = testEngine(solid);
     const body = player();
-    const zombies = zombiesFor(body, solid);
+    const actors = actorsFor(body, solid);
 
-    expect(spawnShamblers(engine, body, zombies, 25)).toBe(25);
-    const bodies = [body, ...[...zombies.store.entries()].map(([, zombie]) => zombie.body)];
+    expect(spawnShamblers(engine, body, actors, 25)).toBe(25);
+    const bodies = [body, ...[...actors.store.entries()].map(([, actor]) => actor.body)];
     expect(bodies).toHaveLength(26);
     for (let i = 0; i < bodies.length; i++) {
       expect(bodyIsClear(bodies[i]!, solid)).toBe(true);
@@ -80,11 +80,11 @@ describe('debug shambler spawning', () => {
     const solid = (_x: number, y: number) => y === 0;
     const engine = testEngine(solid);
     const body = player();
-    const zombies = zombiesFor(body, solid);
+    const actors = actorsFor(body, solid);
 
-    expect(spawnShamblers(engine, body, zombies, 10)).toBe(10);
-    expect(spawnShamblers(engine, body, zombies, 10)).toBe(10);
-    const bodies = [body, ...[...zombies.store.entries()].map(([, zombie]) => zombie.body)];
+    expect(spawnShamblers(engine, body, actors, 10)).toBe(10);
+    expect(spawnShamblers(engine, body, actors, 10)).toBe(10);
+    const bodies = [body, ...[...actors.store.entries()].map(([, actor]) => actor.body)];
     for (let i = 0; i < bodies.length; i++) {
       for (let j = i + 1; j < bodies.length; j++) {
         expect(horizontalOverlap(bodies[i]!, bodies[j]!)).toBe(false);
@@ -96,21 +96,21 @@ describe('debug shambler spawning', () => {
     const body = player();
     const solid = (_x: number, y: number) => y === 0;
     const engine = testEngine(solid, 73);
-    const zombies = zombiesFor(body, solid);
+    const actors = actorsFor(body, solid);
 
-    expect(spawnZombieType(engine, body, zombies, { typeId: largestType.id, count: 1 })).toBe(1);
-    const [id, zombie] = [...zombies.store.entries()][0]!;
+    expect(spawnActorType(engine, body, actors, { typeId: largestType.id, count: 1 })).toBe(1);
+    const [id, actor] = [...actors.store.entries()][0]!;
     const initialDistance =
-      Math.hypot(body.pos[0] - zombie.body.pos[0], body.pos[2] - zombie.body.pos[2]) * SCALE.blockSize;
-    expect(bodyIsClear(zombie.body, solid)).toBe(true);
-    expect(initialDistance).toBeGreaterThan(zombieAttackReachMetres(zombie));
+      Math.hypot(body.pos[0] - actor.body.pos[0], body.pos[2] - actor.body.pos[2]) * SCALE.blockSize;
+    expect(bodyIsClear(actor.body, solid)).toBe(true);
+    expect(initialDistance).toBeGreaterThan(actorAttackReachMetres(actor));
     for (let tick = 0; tick < 20 * 60; tick++) {
-      zombies.tick(1 / 60);
+      actors.tick(1 / 60);
     }
     const remainingDistance =
-      Math.hypot(body.pos[0] - zombie.body.pos[0], body.pos[2] - zombie.body.pos[2]) * SCALE.blockSize;
+      Math.hypot(body.pos[0] - actor.body.pos[0], body.pos[2] - actor.body.pos[2]) * SCALE.blockSize;
 
-    expect(zombies.store.get(id)!.mode).toBe('chase');
+    expect(actors.store.get(id)!.agent!.mode).toBe('chase');
     expect(remainingDistance).toBeLessThan(initialDistance);
   });
 
@@ -119,7 +119,7 @@ describe('debug shambler spawning', () => {
     const body = player();
     const floor = (_x: number, y: number) => y === 0;
     const openEngine = testEngine(floor, 73);
-    const minRadiusMetres = Math.max(8, zombieAttackReachForType(type) + 1);
+    const minRadiusMetres = Math.max(8, actorAttackReachForDef(type) + 1);
     const [position] = placeShamblerRing({
       count: 1,
       seed: openEngine.config.seed,
@@ -136,7 +136,7 @@ describe('debug shambler spawning', () => {
       height: 1.7 / SCALE.blockSize,
       onGround: true,
     };
-    const largeBody: Body = { ...smallBody, ...zombieBodyDimensions(type, SCALE.blockSize) };
+    const largeBody: Body = { ...smallBody, ...actorBodyDimensions(type, SCALE.blockSize) };
     const blocks: [number, number, number][] = [];
     for (
       let x = Math.floor(position![0] - largeBody.halfWidth);
@@ -158,10 +158,10 @@ describe('debug shambler spawning', () => {
     const solid = (x: number, y: number, z: number) =>
       y === 0 || (obstacle?.every((coordinate, axis) => coordinate === [x, y, z][axis]) ?? false);
     const engine = testEngine(solid, 73);
-    const zombies = zombiesFor(body, solid);
+    const actors = actorsFor(body, solid);
 
-    expect(spawnZombieType(engine, body, zombies, { typeId: type.id, count: 1 })).toBe(1);
-    expect(bodyIsClear([...zombies.store.entries()][0]![1].body, solid)).toBe(true);
+    expect(spawnActorType(engine, body, actors, { typeId: type.id, count: 1 })).toBe(1);
+    expect(bodyIsClear([...actors.store.entries()][0]![1].body, solid)).toBe(true);
   });
 
   it('returns the partial placement count when the ring runs out of clear space', () => {
@@ -181,8 +181,8 @@ describe('debug shambler spawning', () => {
       return calls > measuredCalls;
     });
     const body = player();
-    const zombies = zombiesFor(body, crowdedEngine.isSolid);
-    expect(spawnShamblers(crowdedEngine, body, zombies, 3)).toBe(1);
-    expect(zombies.store.size).toBe(1);
+    const actors = actorsFor(body, crowdedEngine.isSolid);
+    expect(spawnShamblers(crowdedEngine, body, actors, 3)).toBe(1);
+    expect(actors.store.size).toBe(1);
   });
 });

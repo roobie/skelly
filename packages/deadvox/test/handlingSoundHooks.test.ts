@@ -37,8 +37,8 @@ describe('handling move sound hooks', () => {
     expect(started[0]?.from).toMatchObject({ kind: 'pocket' });
     const startedMove = started[0]!;
     const ownerLocation = startedMove.from.kind === 'pocket' ? inventory.locate(startedMove.from.owner) : undefined;
-    const startCue = handlingMoveStartCue(startedMove, ownerLocation, [4, 2, -3]);
-    expect(startCue).toEqual({ event: 'pouch_take', position: [4, 2, -3] });
+    const startCue = handlingMoveStartCue(startedMove, ownerLocation, [4, 2, -3], 'fixture_take');
+    expect(startCue).toEqual({ event: 'fixture_take', position: [4, 2, -3] });
     expect(completed).toHaveLength(0);
     queue.tick(result.ok ? result.job.duration : 0);
     expect(completed).toHaveLength(1);
@@ -55,14 +55,21 @@ describe('handling move sound hooks', () => {
     queue.tick(first.ok ? first.job.duration : 0);
     expect(completed).toHaveLength(1);
     expect(completed[0]?.target.kind).toBe('pile');
-    const dropCue = handlingMoveCompleteCue(completed[0]!);
-    expect(dropCue).toEqual({ event: 'item_drop_wood', position: [0.5, 4, 0.5] });
+    const blockId = registry.blocks.findIndex((block) => block.solid);
+    const context = {
+      blockIdAt: () => blockId,
+      entities: inventory.entities,
+      vehicles: inventory.vehicles,
+      blockSize: 1,
+    };
+    const dropCue = handlingMoveCompleteCue(completed[0]!, registry, context);
+    expect(dropCue).toEqual({ event: registry.blocks[blockId]!.drops!.default, position: [0.5, 4, 0.5] });
 
     const samePile = queue.enqueue(item, { kind: 'pile', pos: [0, 4, 0], at: { x: 1, y: 0, rotated: false } });
     expect(samePile.ok).toBe(true);
     queue.tick(samePile.ok ? samePile.job.duration : 0);
     expect(completed).toHaveLength(2);
     expect(completed[1]?.from).toMatchObject({ kind: 'pile' });
-    expect(handlingMoveCompleteCue(completed[1]!)).toBeUndefined();
+    expect(handlingMoveCompleteCue(completed[1]!, registry, context)).toBeUndefined();
   });
 });

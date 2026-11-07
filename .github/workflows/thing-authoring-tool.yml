@@ -4,10 +4,12 @@ on:
   push:
     branches: [main]
     paths:
+      - 'packages/mods/**'
+      - 'packages/deadvox/mods/**'
       - 'packages/thing-authoring-tool/**'
       - 'packages/thing-core/**'
       - 'packages/thing-export/**'
-      - 'packages/engine/**'
+      - 'packages/construct/**'
       - 'packages/tool-ui/**'
       - 'package.json'
       - 'package-lock.json'
@@ -15,10 +17,12 @@ on:
       - '!**/*.md'
   pull_request:
     paths:
+      - 'packages/mods/**'
+      - 'packages/deadvox/mods/**'
       - 'packages/thing-authoring-tool/**'
       - 'packages/thing-core/**'
       - 'packages/thing-export/**'
-      - 'packages/engine/**'
+      - 'packages/construct/**'
       - 'packages/tool-ui/**'
       - 'package.json'
       - 'package-lock.json'

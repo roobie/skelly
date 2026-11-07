@@ -126,7 +126,6 @@
       "includes": [
         "**/src/bench/*-cpu.mjs",
         "**/deadvox/tools/bench-zombie-swings.mjs",
-        "packages/deadvox/tools/bench-expressions.mjs",
         "packages/deadvox/tools/probe-wasm-expressions.mjs",
         "packages/deadvox/tools/measure-ragdolls.mjs"
       ],
@@ -188,17 +187,18 @@
       "includes": [
         "**/deadvox/src/render/mobActors.ts",
         "**/deadvox/src/render/ragdoll.ts",
-        "**/deadvox/src/core/zombies.ts",
-        "**/deadvox/src/core/zombieRegions.ts",
-        "**/deadvox/src/core/zombiePose.ts",
+        "**/deadvox/src/core/actorSystem.ts",
+        "**/deadvox/src/core/actorMotion.ts",
+        "**/deadvox/src/core/actorRegions.ts",
+        "**/deadvox/src/core/actorPose.ts",
         "**/deadvox/src/game/session.ts",
-        "**/deadvox/src/game/shamblerAudio.ts",
+        "**/deadvox/src/game/actorAudio.ts",
         "**/deadvox/test/mobActors.test.ts",
         "**/deadvox/test/poseAgreement.test.ts",
-        "**/deadvox/test/zombieClips.test.ts",
-        "**/deadvox/test/zombies.test.ts",
-        "**/deadvox/test/shamblerAudio.test.ts",
-        "**/deadvox/test/zombieRegions.test.ts"
+        "**/deadvox/test/actorClips.test.ts",
+        "**/deadvox/test/actorSystem.test.ts",
+        "**/deadvox/test/actorAudio.test.ts",
+        "**/deadvox/test/actorRegions.test.ts"
       ],
       "linter": { "rules": { "correctness": { "noUndeclaredDependencies": "off" } } }
     }

@@ -12,7 +12,7 @@
     "export:deadvox": "node src/cli/export.ts"
   },
   "dependencies": {
-    "@skelly/engine": "*",
+    "@skelly/construct": "*",
     "@skelly/thing-core": "*",
     "@skelly/thing-export": "*",
     "@skelly/tool-ui": "*",

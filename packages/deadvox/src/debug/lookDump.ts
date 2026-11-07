@@ -92,10 +92,10 @@ export const lookDump = (input: LookDumpInput) => ({
   },
 });
 
-/** `deadvox-look-YYYYMMDD-HHMMSS.json`, in the operator's local time. */
+/** `skelly-look-YYYYMMDD-HHMMSS.json`, in the operator's local time. */
 export const lookDumpFilename = (now: Date): string => {
   const two = (n: number) => String(n).padStart(2, '0');
   const date = `${now.getFullYear()}${two(now.getMonth() + 1)}${two(now.getDate())}`;
   const time = `${two(now.getHours())}${two(now.getMinutes())}${two(now.getSeconds())}`;
-  return `deadvox-look-${date}-${time}.json`;
+  return `skelly-look-${date}-${time}.json`;
 };

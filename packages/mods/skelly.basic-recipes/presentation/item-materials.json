@@ -1,0 +1,4 @@
+{
+  "assets/models/hand_saw.glb": { "materials": ["wood-walnut", "steel-grey"] },
+  "assets/models/wooden_plank.glb": { "materials": ["wood-birch"] }
+}

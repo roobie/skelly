@@ -1,8 +1,8 @@
 import { canonicalJsonBytes, isPlainRecord, SHA256_HEX } from '../core/canonicalJson.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
+import { INPUT_ACTIONS, type InputContext, POINTER_ACTIONS } from '../core/inputActions.ts';
 import { decodeSave, encodeSave, type SaveContentKind, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
-import { INPUT_BINDINGS, type InputContext, POINTER_ACTIONS } from './inputBindings.ts';
 import type { MoveIntent } from './player.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
@@ -30,8 +30,8 @@ const INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS =
 export const INPUT_REPLAY_MAX_BYTES = 5 * 1024 * 1024;
 const INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES = 256 * 1024;
 
-const MAGIC = 'DEADVOX_REPLAY';
-const PENDING_REPLAY_KEY = 'deadvox.pending-replay';
+const MAGIC = 'SKELLY_REPLAY';
+const PENDING_REPLAY_KEY = 'skelly.pending-replay';
 const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'liquid.pour',
   'power.set',
@@ -48,7 +48,7 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'furniture.place',
   'furniture.turn',
   'furniture.tip',
-  'zombie.downed',
+  'actor.downed',
   'inventory.search',
   'inventory.work',
   'inventory.assign',
@@ -87,7 +87,7 @@ const REPLAY_SEMANTIC_ACTIONS = [
   'furniture.place',
   'furniture.turn',
   'furniture.tip',
-  'zombie.downed',
+  'actor.downed',
   'inventory.search',
   'inventory.work',
   'inventory.assign',
@@ -109,14 +109,14 @@ const REPLAY_SEMANTIC_ACTIONS = [
 ] as const;
 const ACTION_IDS = [
   ...new Set([
-    ...INPUT_BINDINGS.flatMap((binding) => binding.commands.map((command) => command.id)),
+    ...INPUT_ACTIONS.flatMap((action) => action.commands.map((command) => command.id)),
     ...POINTER_ACTIONS.map((action) => action.id),
     ...REPLAY_SEMANTIC_ACTIONS,
   ]),
 ];
 const ACTION_INDEX = new Map(ACTION_IDS.map((id, index) => [id, index]));
-// Derive contexts from bindings so adding a binding context cannot make recording throw.
-const CONTEXTS: readonly InputContext[] = [...new Set(INPUT_BINDINGS.flatMap(({ contexts }) => contexts))];
+// Derive contexts from the actions so adding a binding context cannot make recording throw.
+const CONTEXTS: readonly InputContext[] = [...new Set(INPUT_ACTIONS.flatMap(({ contexts }) => contexts))];
 const CONTEXT_INDEX = new Map(CONTEXTS.map((context, index) => [context, index]));
 const FRAME_FLAGS = {
   active: 1 << 0,
@@ -400,6 +400,7 @@ export class InputReplayRecorder {
   private actionPayloadBytes = 0;
   private frameCount = 0;
   private actionCount = 0;
+  readonly nowRealMilliseconds: (() => number) | undefined;
   private batchStartedAtRealMilliseconds = 0;
   private readonly batchCosts: Float32Array = new Float32Array(120);
   private completedBatches = 0;
@@ -413,9 +414,15 @@ export class InputReplayRecorder {
     startSnapshot: Readonly<SaveSnapshot>,
     ticksPerWindow = INPUT_REPLAY_TICKS_PER_WINDOW,
     generatedColumns: readonly ReplayGeneratedColumn[] = [],
-    options: { readonly columnChangeEventLimit?: number; readonly startState?: ReplayStartState } = {},
+    options: {
+      readonly columnChangeEventLimit?: number;
+      readonly startState?: ReplayStartState;
+      /** The real clock for recording-cost samples; without one, no cost is sampled. */
+      readonly nowRealMilliseconds?: () => number;
+    } = {},
   ) {
     this.ticksPerWindow = ticksPerWindow;
+    this.nowRealMilliseconds = options.nowRealMilliseconds;
     const columnChangeEventLimit = options.columnChangeEventLimit ?? INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS_PER_WINDOW;
     const startState = options.startState ?? DEFAULT_REPLAY_START_STATE;
     if (
@@ -576,8 +583,8 @@ export class InputReplayRecorder {
       return false;
     }
     this.pendingColumnChanges.length = 0;
-    if (this.frameCount % 60 === 0) {
-      this.batchStartedAtRealMilliseconds = performance.now();
+    if (this.frameCount % 60 === 0 && this.nowRealMilliseconds) {
+      this.batchStartedAtRealMilliseconds = this.nowRealMilliseconds();
     }
     for (const pending of this.pending) {
       const index = this.actionCount;
@@ -601,8 +608,8 @@ export class InputReplayRecorder {
     this.movement[frame * 2] = sample.intent.forward;
     this.movement[frame * 2 + 1] = sample.intent.right;
     this.flags[frame] = flagOf(sample);
-    if (this.frameCount % 60 === 0 && this.completedBatches < this.batchCosts.length) {
-      this.batchCosts[this.completedBatches] = (performance.now() - this.batchStartedAtRealMilliseconds) / 60;
+    if (this.frameCount % 60 === 0 && this.nowRealMilliseconds && this.completedBatches < this.batchCosts.length) {
+      this.batchCosts[this.completedBatches] = (this.nowRealMilliseconds() - this.batchStartedAtRealMilliseconds) / 60;
       this.completedBatches += 1;
     }
     return true;
@@ -661,6 +668,7 @@ export const rolloverInputReplayRecorder = (
   const next = new InputReplayRecorder(startSnapshot, current.ticksPerWindow, generatedColumns, {
     columnChangeEventLimit: current.columnChangeEventLimit,
     startState,
+    ...(current.nowRealMilliseconds ? { nowRealMilliseconds: current.nowRealMilliseconds } : {}),
   });
   current.resolvePendingActionsAtRollover(next);
   current.transferPendingColumnChangesTo(next);
@@ -740,21 +748,29 @@ export function joinInputReplayWindows(
   };
 }
 
-export function stashInputReplay(bytes: Uint8Array): void {
+interface ReplayStashStore {
+  getItem: (key: string) => string | null;
+  setItem: (key: string, value: string) => void;
+  removeItem: (key: string) => void;
+}
+/** Resolved inside each stash call, because a browser can refuse access to the store itself. */
+export type ReplayStash = () => ReplayStashStore;
+
+export function stashInputReplay(stash: ReplayStash, bytes: Uint8Array): void {
   if (bytes.byteLength > INPUT_REPLAY_MAX_BYTES) {
     throw new Error('Replay file exceeds the supported size');
   }
   try {
-    sessionStorage.setItem(PENDING_REPLAY_KEY, encodeBase64(bytes));
+    stash().setItem(PENDING_REPLAY_KEY, encodeBase64(bytes));
   } catch (error) {
     throw new Error('Replay could not be staged for playback in this browser session', { cause: error });
   }
 }
 
-export function pendingInputReplay(): Uint8Array | undefined {
+export function pendingInputReplay(stash: ReplayStash): Uint8Array | undefined {
   let encoded: string | null;
   try {
-    encoded = sessionStorage.getItem(PENDING_REPLAY_KEY);
+    encoded = stash().getItem(PENDING_REPLAY_KEY);
   } catch {
     // Blocked session storage means nothing was staged, the same as an empty key.
     return;
@@ -762,9 +778,9 @@ export function pendingInputReplay(): Uint8Array | undefined {
   return encoded === null ? undefined : decodeBase64(encoded);
 }
 
-export function clearPendingInputReplay(): void {
+export function clearPendingInputReplay(stash: ReplayStash): void {
   try {
-    sessionStorage.removeItem(PENDING_REPLAY_KEY);
+    stash().removeItem(PENDING_REPLAY_KEY);
   } catch {
     /* A failed cleanup must not alter the imported artifact. */
   }

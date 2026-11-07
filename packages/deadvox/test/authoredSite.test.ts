@@ -1,6 +1,5 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared rejection assertions called only by tests.
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { authoredLayoutIssues, inPolygon } from '../src/core/authoredLayout.ts';
 import { placementOf } from '../src/core/authoredPlacement.ts';
@@ -17,6 +16,7 @@ import {
   rectDistance,
   standingHeight,
 } from '../src/core/authoredTerrain.mjs';
+import { claimedId } from '../src/core/capabilities.ts';
 import type { Registry } from '../src/core/content.ts';
 import { CHUNK, compassBearing, toChunk } from '../src/core/coords.ts';
 import { couldFit, ItemFactory } from '../src/core/items.ts';
@@ -24,24 +24,25 @@ import { lootTypeIssue } from '../src/core/loot.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
-import { HORDE_MEMBERS, HORDE_TYPE } from '../src/core/settlementSpawns.ts';
+import { HORDE_MEMBERS } from '../src/core/settlementSpawns.ts';
 import { rectsOverlap } from '../src/core/site.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
-import { zombieBodyDimensions } from '../src/core/spawnClearance.ts';
+import { actorBodyDimensions } from '../src/core/spawnClearance.ts';
 import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';
 import { sweepGroup } from './sweeps.ts';
 
-const base = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown }));
-const layout = (JSON.parse(readFileSync('src/content/base/layouts.json', 'utf8')) as { layouts: SiteLayoutDef[] })
-  .layouts[0]!;
+const base = baseContentSources().filter(({ source }) => !source.startsWith('layouts') && source !== 'starts.json');
+const layout = (
+  JSON.parse(readFileSync('mods/skelly.deadvox.scenario.lone-house/layouts.json', 'utf8')) as {
+    layouts: SiteLayoutDef[];
+  }
+).layouts[0]!;
 const load = (data: unknown) => buildRegistry([...base, { source: 'layout-test.json', data: { layouts: [data] } }]);
 const { registry, issues } = load(layout);
 const baseLayoutIds = [...registry.layouts.keys()].filter((id) => id !== layout.id);
@@ -75,19 +76,17 @@ it('admits layout-selected vehicles and rejects missing blueprints or duplicate 
   expect(admit().issues.some(({ message }) => message.includes('duplicate vehicle placement key'))).toBe(true);
 });
 
-it('refuses unsupported bays and a repair stock building the site does not place', () => {
-  const data = validationLayout('fixture_repair_stock');
+it('refuses unsupported parking bays', () => {
+  const data = validationLayout('fixture_supported_bay');
   data.bays = [{ position: [2, data.player.position[1], 2], facing: 'e' }];
   expect(authoredLayoutIssues(data, registry)).toEqual([]);
   data.bays[0]!.position[1] += 1;
-  data.repairStock = 'fixture_absent_building';
   const paths = authoredLayoutIssues(data, registry).map(([path]) => path);
   expect(paths).toContain('.bays[0].position');
-  expect(paths).toContain('.repairStock');
 });
 
 const layoutTemplateIds = new Set(layout.buildings.map(({ template }) => template));
-const layoutZombieIds = new Set(layout.shamblers.map(({ type }) => type));
+const layoutActorIds = new Set(layout.shamblers.map(({ type }) => type));
 const layoutValidationBase = [
   // Named spawn windows resolve against a day cycle.
   base.find(({ source }) => source === 'dayCycle.json')!,
@@ -103,11 +102,11 @@ const layoutValidationBase = [
           layers: Array.from({ length: height }, () => Array.from({ length: depth }, () => '.'.repeat(width))),
         };
       }),
-      zombies: [...layoutZombieIds].map((id) => {
-        const zombie = structuredClone(registry.zombies.get(id)!);
-        zombie.loot = undefined;
-        zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((region) => [region, null]));
-        return zombie;
+      actors: [...layoutActorIds].map((id) => {
+        const actor = structuredClone(registry.actors.get(id)!);
+        actor.loot = undefined;
+        actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
+        return actor;
       }),
       // The zombies name the tool quality that dismembers them, so one tool has to have it.
       items: [
@@ -119,19 +118,21 @@ const layoutValidationBase = [
           size: [1, 1],
           tool: {
             qualities: Object.fromEntries(
-              [...layoutZombieIds].flatMap((id) => {
-                const dismember = registry.zombies.get(id)!.downed?.dismember;
+              [...layoutActorIds].flatMap((id) => {
+                const dismember = registry.actors.get(id)!.downed?.dismember;
                 return dismember ? [[dismember.quality, dismember.level]] : [];
               }),
             ),
           },
         },
       ],
-      sounds: [...new Set([...layoutZombieIds].flatMap((id) => Object.values(registry.zombies.get(id)!.sounds)))].map(
+      sounds: [...new Set([...layoutActorIds].flatMap((id) => Object.values(registry.actors.get(id)!.sounds)))].map(
         (id) => structuredClone(registry.sounds.get(id)!),
       ),
       // The track surfaces are real blocks, minus the footstep sounds this fixture does not carry.
-      blocks: (base.find(({ source }) => source === 'blocks.json')!.data as { blocks: { id: string }[] }).blocks
+      blocks: base
+        .filter(({ source }) => source === 'manufactured-blocks.json' || source === 'natural-blocks.json')
+        .flatMap(({ data }) => (data as { blocks: { id: string }[] }).blocks)
         .filter(({ id }) => layout.tracks.some(({ surface }) => surface === id))
         .map(
           ({ footsteps: _, material: _material, ...block }: { id: string; footsteps?: unknown; material?: unknown }) =>
@@ -366,7 +367,9 @@ const siteWorld = (site: AuthoredSite, columns: [number, number][], seed: number
 
 describe('authored layout acceptance', () => {
   it('keeps the fixed camp amalgam clear of authored vehicle routes', () => {
-    const playtest = JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as {
+    const playtest = JSON.parse(
+      readFileSync('mods/skelly.deadvox.scenario.playtest/layouts-playtest.json', 'utf8'),
+    ) as {
       layouts: SiteLayoutDef[];
     };
     const camp = playtest.layouts[0]!;
@@ -374,7 +377,7 @@ describe('authored layout acceptance', () => {
     expect(amalgams.length).toBeGreaterThan(0);
     const { blockSize } = makeScale(0.5);
     for (const marker of amalgams) {
-      const body = zombieBodyDimensions(registry.zombies.get(marker.type)!, blockSize);
+      const body = actorBodyDimensions(registry.actors.get(marker.type)!, blockSize);
       const bodyRadius = Math.hypot(body.halfWidth, body.halfDepth ?? body.halfWidth) * blockSize;
       const nearestTrackEdge = Math.min(
         ...camp.tracks.map(
@@ -410,7 +413,7 @@ describe('authored layout acceptance', () => {
       const expected = placedSpawns(placement).find(({ window }) => window?.fromGameTimeOfDay === 'dusk')!;
       expect(expected.window).toEqual({ fromGameTimeOfDay: 'dusk' });
       const site = new AuthoredSite(1, result.registry, scale, admitted);
-      expect(site.zombiesIn(toChunk(expected.pos[0]), toChunk(expected.pos[2]))).toContainEqual({
+      expect(site.actorsIn(toChunk(expected.pos[0]), toChunk(expected.pos[2]))).toContainEqual({
         type: 'shambler',
         pos: expected.pos,
         window: { fromGameTimeOfDay: 'dusk' },
@@ -434,7 +437,7 @@ describe('authored layout acceptance', () => {
     const site = new AuthoredSite(1, registry, scale, admitted);
     const x = marker.position[0] / scale.blockSize;
     const z = marker.position[2] / scale.blockSize;
-    expect(site.zombiesIn(toChunk(x), toChunk(z))).toContainEqual({
+    expect(site.actorsIn(toChunk(x), toChunk(z))).toContainEqual({
       type: marker.type,
       pos: [x, marker.position[1] / scale.blockSize, z],
       window: { fromGameTimeOfDay: 'dusk' },
@@ -481,7 +484,7 @@ describe('authored layout acceptance', () => {
         )
         .map(({ id, position }) => ({
           id: `${playtest.id}_${id}`,
-          type: HORDE_TYPE,
+          type: claimedId(registry.actors, 'settlementHorde'),
           pos: position.map((metres) => metres / scale.blockSize),
         }));
     const minX = Math.floor(playtest.bounds.x0 / scale.blockSize / CHUNK) - 1;
@@ -552,12 +555,12 @@ describe('authored layout acceptance', () => {
     } as SiteLayoutDef;
 
     const amalgamIssues = authoredLayoutIssues(site, fixtureRegistry).map(([path]) => path);
-    const smallZombieSite = {
+    const smallActorSite = {
       ...site,
       shamblers: [{ ...site.shamblers[0]!, type: 'shambler' }],
     };
 
-    expect(authoredLayoutIssues(smallZombieSite, fixtureRegistry).map(([path]) => path)).not.toContain(
+    expect(authoredLayoutIssues(smallActorSite, fixtureRegistry).map(([path]) => path)).not.toContain(
       '.shamblers[0].position',
     );
     expect(amalgamIssues).toContain('.shamblers[0].position');
@@ -638,17 +641,16 @@ describe('authored layout acceptance', () => {
   it('rejects fixed container loot that fits no pocket of its furniture', () => {
     const { pockets } = registry.furniture.get(fixedLootContainer.furniture)!.container!;
     const factory = new ItemFactory();
-    const oversized = [...registry.items.values()].find(
-      (def) =>
-        def.economy !== undefined &&
-        lootTypeIssue(registry, def.id, { usage: def.economy.usage, tier: def.economy.tiers[0]! }) === undefined &&
-        !pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, factory.create(registry, def.id))),
+    const oversized = [...registry.itemEconomy.values()].find(
+      (row) =>
+        lootTypeIssue(registry, row.id, { usage: row.usage, tier: row.tiers[0]! }) === undefined &&
+        !pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, factory.create(registry, row.id))),
     );
-    if (oversized?.economy === undefined) {
+    if (oversized === undefined) {
       throw new Error('fixture needs an economy item larger than the container');
     }
     const fixed = withFixedLoot(fixedLootContainer.pos, oversized.id);
-    fixed.buildings[0]!.lootContext = { usage: oversized.economy.usage, tier: oversized.economy.tiers[0]! };
+    fixed.buildings[0]!.lootContext = { usage: oversized.usage, tier: oversized.tiers[0]! };
     invalidWithSharedRegistry(fixed, 'fits no pocket');
   });
   it('admits fixed stock by building context rather than its container table', () => {
@@ -901,7 +903,9 @@ it('keeps trees out of an authored building covered by woodland', () => {
 
 it('grounds the exported ridge lots, track and slope trees with order-independent overlapping profiles', () => {
   const ridge = (
-    JSON.parse(readFileSync('src/content/base/hunting-cabins.json', 'utf8')) as { layouts: SiteLayoutDef[] }
+    JSON.parse(readFileSync('mods/skelly.deadvox.scenario.hunting-cabins/hunting-cabins.json', 'utf8')) as {
+      layouts: SiteLayoutDef[];
+    }
   ).layouts[0]!;
   for (const building of ridge.buildings) {
     expect(building.position[1]).toBe(
@@ -1106,7 +1110,7 @@ it('stamps the rotated multi-storey house deterministically with supported spawn
     );
   }
 
-  const spawns = columns.flatMap(([cx, cz]) => site.zombiesIn(cx, cz));
+  const spawns = columns.flatMap(([cx, cz]) => site.actorsIn(cx, cz));
   const hasFloorAndHeadroom = ({ pos }: (typeof spawns)[number]) =>
     registry.blocks[a.getBlock(pos[0], pos[1] - 1, pos[2])!]?.solid === true &&
     a.getBlock(pos[0], pos[1], pos[2]) === 0;
@@ -1132,5 +1136,5 @@ it('stamps the rotated multi-storey house deterministically with supported spawn
   };
   const optional = new AuthoredSite(1, registry, scale, optionalLayout);
   const optionalColumns = siteColumns(optional, optionalLayout);
-  expect(optionalColumns.flatMap(([cx, cz]) => optional.zombiesIn(cx, cz))).toEqual([]);
+  expect(optionalColumns.flatMap(([cx, cz]) => optional.actorsIn(cx, cz))).toEqual([]);
 });

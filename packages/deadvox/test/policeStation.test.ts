@@ -19,6 +19,7 @@ import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 
 const content = startupContent();
 const authoredAssemblies = (registry: Registry): MapAssemblyDef[] =>
@@ -171,7 +172,14 @@ it('places exactly one police armoury in each gauntlet plan', () => {
   const scenarios = [...registry.scenarios.values()];
   expect(scenarios.length).toBeGreaterThan(0);
   for (const scenario of scenarios) {
-    const plan = buildCityPlan({ seed: 1, registry, floor: 0, grid: cityGridOf(registry, scenario.city), scenario });
+    const plan = buildCityPlan({
+      seed: 1,
+      registry,
+      floor: 0,
+      grid: cityGridOf(registry, scenario.city),
+      scenario,
+      start: defaultStartOf(registry, scenario),
+    });
     expect(
       plan.placements.filter(({ template }) => template.pieces.some(({ lock }) => lock && locks.has(lock.id))),
     ).toHaveLength(1);

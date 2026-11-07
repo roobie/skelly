@@ -1,11 +1,19 @@
 import { expect, it } from 'vitest';
-import type { Engine } from '../src/game/engine.ts';
-import { startPlay } from '../src/game/play.ts';
+import { BindingRegistry } from '../src/game/bindingRegistry.ts';
+import type { Engine } from '../src/presentation/engine.ts';
+import { KeyboardInput } from '../src/presentation/inputBindings.ts';
+import { startPlay } from '../src/presentation/play.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import type { SaveController } from '../src/ui/saveController.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-it('rejects a save-bound practice session before accessing any runtime or save owner', () => {
+it('rejects a save-bound content-selected guide before runtime actions or save access', () => {
+  const { guidance } = [...baseRegistry().layouts.values()].find((layout) => layout.guidance)!;
   const engine = new Proxy({} as Engine, {
-    get: () => {
+    get: (_target, key) => {
+      if (key === 'site') {
+        return { guidance };
+      }
       throw new Error('Runtime accessed before save-isolation admission');
     },
   });
@@ -14,7 +22,10 @@ it('rejects a save-bound practice session before accessing any runtime or save o
       throw new Error('Save accessed before save-isolation admission');
     },
   });
-  expect(() => startPlay(engine, undefined, { tutorial: true, saveController })).toThrow(
+  const none = { packs: [], urls: {} };
+  const assets = { audio: none, models: none, cursors: none };
+  const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS));
+  expect(() => startPlay(engine, undefined, { assets, keyboard, saveController })).toThrow(
     'Practice cannot bind a save or restore a world',
   );
 });

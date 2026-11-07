@@ -6,7 +6,7 @@ import type { Item } from '../src/core/items.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { ItemDef, ZombieDef } from '../src/core/schema.ts';
+import type { ActorDef, ItemDef } from '../src/core/schema.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { WORLD_REGION_METRES } from '../src/core/worldRegion.ts';
@@ -20,22 +20,20 @@ const trapDef: ItemDef = {
   category: 'tool',
   weight: 1000,
   size: [2, 2],
-  economy: { usage: [], tiers: [] },
   workInProgress: false,
-  notLoot: false,
   trap: {
     setSimSeconds: simSeconds(1),
     disarmSimSeconds: simSeconds(2),
     holdSimSeconds: simSeconds(3),
     playerInjury: { region: 'leftLeg', damage: 5, kind: 'pierce' },
-    zombieLegDamage: 4,
+    actorLegDamage: 4,
   },
 };
-const walker: ZombieDef = { ...base.zombies.get('shambler')!, id: 'fixture_walker' };
+const walker: ActorDef = { ...base.actors.get('shambler')!, id: 'fixture_walker' };
 const content = {
   ...base,
   items: new Map(base.items).set(trapDef.id, trapDef),
-  zombies: new Map(base.zombies).set(walker.id, walker),
+  actors: new Map(base.actors).set(walker.id, walker),
 };
 const scale = makeScale(0.5);
 const FRAME = 1 / 60;
@@ -109,17 +107,17 @@ describe('bear trap', () => {
   it('springs on a zombie that walks into its cell, which does not steer around it', () => {
     const h = runtime();
     const trap = h.lay([3, 1, 0]);
-    const id = h.session.zombies.add(walker, [6.5, 1, 0.5], [-1, 0, 0]);
-    const zombie = h.session.zombieStore.get(id)!;
-    const legs = Object.values(zombie.regions).reduce((sum, health) => sum + health, 0);
+    const id = h.session.actors.add(walker, [6.5, 1, 0.5], [-1, 0, 0]);
+    const actor = h.session.actorStore.get(id)!;
+    const legs = Object.values(actor.regions).reduce((sum, health) => sum + health, 0);
     for (let step = 0; step < 600 && trap.trap?.state === 'armed'; step++) {
       h.run(FRAME);
     }
-    expect(trap.trap).toMatchObject({ state: 'holding', zombie: id });
-    expect(Object.values(zombie.regions).reduce((sum, health) => sum + health, 0)).toBeLessThan(legs);
-    const held = [...zombie.body.pos];
+    expect(trap.trap).toMatchObject({ state: 'holding', actor: id });
+    expect(Object.values(actor.regions).reduce((sum, health) => sum + health, 0)).toBeLessThan(legs);
+    const held = [...actor.body.pos];
     h.run(trapDef.trap!.holdSimSeconds / 2);
-    expect([zombie.body.pos[0], zombie.body.pos[2]]).toEqual([held[0], held[2]]);
+    expect([actor.body.pos[0], actor.body.pos[2]]).toEqual([held[0], held[2]]);
   });
 
   it('restrains and injures the player who steps in it', () => {
@@ -127,7 +125,7 @@ describe('bear trap', () => {
     const trap = h.lay([0, 1, 0]);
     h.run(0.1);
     expect(trap.trap).toMatchObject({ state: 'holding' });
-    expect(trap.trap).not.toHaveProperty('zombie');
+    expect(trap.trap).not.toHaveProperty('actor');
     const { region, damage, kind } = trapDef.trap!.playerInjury;
     expect(h.hits).toHaveBeenCalledWith(damage, expect.any(String), region, { kind });
     const pos = [...h.session.body.pos];
@@ -158,10 +156,10 @@ describe('bear trap', () => {
     h.run(trapDef.trap!.disarmSimSeconds + 0.1);
     expect(trap.trap).toBeUndefined();
     expect(h.hits).not.toHaveBeenCalled();
-    const id = h.session.zombies.add(walker, [1.5, 1, 0.5], [-1, 0, 0]);
+    const id = h.session.actors.add(walker, [1.5, 1, 0.5], [-1, 0, 0]);
     h.run(0.1);
     expect(trap.trap).toBeUndefined();
-    expect(h.session.zombies.store.get(id)).toBeDefined();
+    expect(h.session.actors.store.get(id)).toBeDefined();
   });
 
   it('sets, disarms and recovers the one trap item', () => {
@@ -180,18 +178,22 @@ describe('bear trap', () => {
     expect(traps.map(({ item }) => item)).toEqual([trap]);
   });
 
-  it('keeps a set trap armed and a held player restrained across save and load', async () => {
+  it('preserves trap states and held actor ids across save and load', async () => {
     const original = runtime();
     const armed = original.lay([4, 1, 0]);
     const holding = original.lay([0, 1, 0]);
+    const actorTrap = original.lay([2, 1, 0]);
+    const actorId = original.session.actors.add(walker, [2.5, 1, 0.5], [-1, 0, 0]);
     original.run(0.1);
     expect(holding.trap?.state).toBe('holding');
+    expect(actorTrap.trap).toMatchObject({ state: 'holding', actor: actorId });
     const restored = runtime(
       await roundTrip(original.session.snapshot({ worldId: 'fixture_world', characterId: 'fixture_character' })),
     );
     const restoredTrap = (uid: number) => restored.session.inventory.itemByUid(uid)?.trap;
     expect(restoredTrap(armed.uid)).toEqual(armed.trap);
     expect(restoredTrap(holding.uid)).toEqual(holding.trap);
+    expect(restoredTrap(actorTrap.uid)).toEqual(actorTrap.trap);
     const pos = [...restored.session.body.pos];
     restored.walk(true);
     restored.run(0.5);
@@ -208,19 +210,19 @@ describe('bear trap horizon', () => {
     expect(inventory.add(trap, { kind: 'pile', pos })).toBe(true);
     trap.trap = { state: 'armed' };
     const traps = new BearTraps(inventory);
-    const injureZombie = vi.fn();
+    const injureActor = vi.fn();
     const contacts = (player: Vec3) => ({
       player,
-      zombies: [[7, [farX + 0.5, 1, 0.5]] as const],
+      actors: [[7, [farX + 0.5, 1, 0.5]] as const],
       blockSize: scale.blockSize,
       alive: () => true,
       hurtPlayer: vi.fn(),
-      injureZombie,
+      injureActor,
     });
     expect(traps.step(1, contacts([0.5, 1, 0.5]))).toEqual([]);
     expect(trap.trap).toEqual({ state: 'armed' });
-    expect(injureZombie).not.toHaveBeenCalled();
+    expect(injureActor).not.toHaveBeenCalled();
     traps.step(1, contacts([farX - 10, 1, 0.5]));
-    expect(trap.trap).toMatchObject({ state: 'holding', zombie: 7 });
+    expect(trap.trap).toMatchObject({ state: 'holding', actor: 7 });
   });
 });

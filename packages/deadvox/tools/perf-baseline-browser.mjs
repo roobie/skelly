@@ -238,8 +238,8 @@ export function install(engine) {
     Object.assign(perf, runtime);
     // Reuse the enclosing whole/segmented probe: elapsed GPU queries cannot nest.
     runtime.engine.mood.externalGpuTiming = true;
-    runtime.view.zombieMeshes.group.userData.perfZombies = true;
-    for (const key of ['zombieMeshes', 'playerMeshes']) {
+    runtime.view.actorMeshes.group.userData.perfZombies = true;
+    for (const key of ['actorMeshes', 'playerMeshes']) {
       runtime.view[key].group.userData.perfCategory = 'actors';
     }
   };

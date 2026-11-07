@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import { expect, it } from 'vitest';
-import { type Binding, BindingRegistry, forwardedActionHolds, KeyboardInput } from '../src/game/inputBindings.ts';
+import type { Binding } from '../src/core/inputActions.ts';
+import { BindingRegistry } from '../src/game/bindingRegistry.ts';
+import { forwardedActionHolds, KeyboardInput } from '../src/presentation/inputBindings.ts';
 
 it('route movement forwards native modifier flags and retains a shared sprint key while reversing direction', () => {
   const fixture: Binding[] = [

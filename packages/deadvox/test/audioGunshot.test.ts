@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { setImmediate } from 'node:timers/promises';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { hearVocalNoise } from '../src/core/agentPerception.ts';
 import { buildRegistry, type Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Rng } from '../src/core/random.ts';
@@ -10,10 +11,10 @@ import type { SoundId } from '../src/core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/core/soundPicker.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import { hearVocalNoise } from '../src/core/zombies.ts';
-import { GameAudio } from '../src/game/audio.ts';
 import { firearmShotEmission, heartbeatForStamina, playerHeartbeat } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { GameAudio } from '../src/presentation/audio.ts';
+import { productAssets } from '../src/product/assets.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const audios: GameAudio[] = [];
@@ -35,7 +36,7 @@ const senseTuning = {
   wall: { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 },
   footsteps: baseRegistry.senses.get('player')!.footsteps,
   vocalNoiseLifetimeSimSeconds: baseRegistry.senses.get('player')!.vocalNoiseLifetimeSimSeconds,
-  shamblerVoice: baseRegistry.senses.get('player')!.shamblerVoice,
+  actorVoice: baseRegistry.senses.get('player')!.actorVoice,
   light: {
     playerDaySightScale: 0,
     lureRangeScale: 0,
@@ -157,8 +158,16 @@ const setup = (solidAt: SolidAt = () => false, registryOverride?: Registry) => {
     ? { registry: registryOverride, issues: [] }
     : buildRegistry([
         {
-          source: '../content/base/sounds.json',
-          data: JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown,
+          source: '../../mods/skelly.deadvox.actors/actors-sounds.json',
+          data: JSON.parse(readFileSync('mods/skelly.deadvox.actors/actors-sounds.json', 'utf8')) as unknown,
+        },
+        {
+          source: '../../../mods/skelly.firearms/sounds-firearms.json',
+          data: JSON.parse(readFileSync('../mods/skelly.firearms/sounds-firearms.json', 'utf8')) as unknown,
+        },
+        {
+          source: '../../../mods/skelly.body/body-sounds.json',
+          data: JSON.parse(readFileSync('../mods/skelly.body/body-sounds.json', 'utf8')) as unknown,
         },
       ]);
   const { issues } = soundRegistry;
@@ -168,7 +177,14 @@ const setup = (solidAt: SolidAt = () => false, registryOverride?: Registry) => {
   // Audio reads its default volumes and heartbeat from the bundled UI and body rows.
   const registry = { ...soundRegistry.registry, ui: baseRegistry.ui, body: baseRegistry.body };
   const isSolid = vi.fn(solidAt);
-  const audio = new GameAudio({ registry, blockSize: 1, isSolid, tuning: senseTuning, report: vi.fn() });
+  const audio = new GameAudio({
+    registry,
+    blockSize: 1,
+    isSolid,
+    tuning: senseTuning,
+    report: vi.fn(),
+    files: productAssets.audio,
+  });
   audios.push(audio);
   const picker = new SoundPicker(53, registry.sounds);
   const selected: SoundEmission[] = [];
@@ -216,7 +232,7 @@ describe('game audio playback', () => {
       noise: { enabled: false, radiusMetres: 1 },
     };
     const { registry, issues } = buildRegistry([
-      { source: '../content/base/fixture.json', data: { sounds: [profile] } },
+      { source: '../../../mods/skelly.firearms/fixture.json', data: { sounds: [profile] } },
     ]);
     expect(issues).toEqual([]);
     const { play, context } = setup(() => false, registry);
@@ -251,7 +267,7 @@ describe('game audio playback', () => {
     const ringMod = { frequencyHz: 55, depth: 0.5 };
     const { registry, issues } = buildRegistry([
       {
-        source: '../content/base/fixture.json',
+        source: '../../../mods/skelly.firearms/fixture.json',
         data: { sounds: [voice('fixture_scrambled', { ringMod }), voice('fixture_plain', {})] },
       },
     ]);
@@ -511,20 +527,20 @@ describe('game audio playback', () => {
   });
 
   it('uses the same one-step wall decision for zombie hearing and positional sound', async () => {
-    const shambler = baseRegistry.zombies.get('shambler')!;
+    const shambler = baseRegistry.actors.get('shambler')!;
     let blocked = false;
     const solidAt: SolidAt = (x, y, z) => blocked && x === 4 && y === 2 && z === 0;
     const { audio, play, context, isSolid } = setup(solidAt);
-    const zombie: Vec3 = [0.5, 1.5, 0.5];
-    const listener: Vec3 = [zombie[0], zombie[1] + 1.3, zombie[2]];
+    const actor: Vec3 = [0.5, 1.5, 0.5];
+    const listener: Vec3 = [actor[0], actor[1] + 1.3, actor[2]];
     const radiusMetres = 12;
-    const distanceMetres = (radiusMetres * shambler.hearing * (1 + senseTuning.wall.hearingRangeScale)) / 2;
+    const distanceMetres = (radiusMetres * shambler.agent!.hearing * (1 + senseTuning.wall.hearingRangeScale)) / 2;
     const source: Vec3 = [listener[0] + distanceMetres, listener[1], listener[2]];
-    const noise = { id: 1, pos: [source[0], zombie[1], source[2]] as Vec3, radiusMetres, expiresAt: 2 };
+    const noise = { id: 1, pos: [source[0], actor[1], source[2]] as Vec3, radiusMetres, expiresAt: 2 };
     const hear = (seed: number) =>
       hearVocalNoise({
-        zombie: shambler,
-        from: zombie,
+        def: shambler,
+        from: actor,
         noise,
         time: 1,
         blockSize: 1,

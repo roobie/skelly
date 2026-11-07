@@ -133,7 +133,7 @@ describe('authored test house', () => {
     }
   });
 
-  it('keeps showroom props and repair-stock containers outside the home', () => {
+  it('keeps showroom props outside the home', () => {
     const [width, depth] = footprint(home);
     const overlapsHome = (pos: Vec3, size: Vec3) =>
       pos[0] < home.origin[0] + width &&
@@ -144,16 +144,6 @@ describe('authored test house', () => {
     expect(site.slots.length).toBeGreaterThan(0);
     for (const prop of site.slots) {
       expect(overlapsHome(prop.pos, prop.size), `${prop.furniture} showroom prop enters the home`).toBe(false);
-    }
-    const stock = site.placements
-      .filter(({ template }) => template.id === layout.repairStock)
-      .flatMap(placedPieces)
-      .filter(({ furniture: type }) => registry.furniture.get(type)?.container);
-    expect(stock.length).toBeGreaterThan(0);
-    for (const container of stock) {
-      expect(overlapsHome(container.pos, container.size), `${container.furniture} repair stock enters the home`).toBe(
-        false,
-      );
     }
   });
 

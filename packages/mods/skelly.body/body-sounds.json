@@ -1,0 +1,130 @@
+{
+  "sounds": [
+    {
+      "category": "body",
+      "description": "Take light damage.",
+      "gain": 0.71999999999999997,
+      "gainJitter": [0.88, 1.1200000000000001],
+      "id": "player_hurt_light",
+      "minIntervalSimSeconds": 0.20000000000000001,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 6
+      },
+      "pitchJitter": [0.95999999999999996, 1.04],
+      "variants": [
+        "assets/audio/player-hurt-light-01.ogg",
+        "assets/audio/player-hurt-light-03.ogg",
+        "assets/audio/player-hurt-light-06.ogg"
+      ]
+    },
+    {
+      "category": "body",
+      "debugHint": "?debug=1: Use the debug panel's damage action to apply damage.",
+      "description": "Take heavy damage.",
+      "gain": 0.90000000000000002,
+      "gainJitter": [0.88, 1.1200000000000001],
+      "id": "player_hurt_heavy",
+      "minIntervalSimSeconds": 0.34999999999999998,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 6
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
+      "variants": [
+        "assets/audio/player-hurt-heavy-02.ogg",
+        "assets/audio/player-hurt-heavy-05.ogg",
+        "assets/audio/player-hurt-heavy-08.ogg"
+      ]
+    },
+    {
+      "category": "body",
+      "description": "Jump from the ground.",
+      "gain": 0.5,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "player_strain",
+      "minIntervalSimSeconds": 0.59999999999999998,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 5
+      },
+      "pitchJitter": [0.95999999999999996, 1.05],
+      "variants": [
+        "assets/audio/player-strain-09.ogg",
+        "assets/audio/player-strain-12.ogg",
+        "assets/audio/player-strain-14.ogg"
+      ]
+    },
+    {
+      "category": "body",
+      "description": "Sprint to lower stamina, then stop and listen as it recovers.",
+      "gain": 1,
+      "gainJitter": [1, 1],
+      "id": "player_heartbeat_slow",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1, 1],
+      "variants": ["assets/audio/heartbeat-slow-beat.ogg"]
+    },
+    {
+      "category": "body",
+      "description": "Sprint to lower stamina, then stop and listen as it recovers.",
+      "gain": 1,
+      "gainJitter": [1, 1],
+      "id": "player_heartbeat_fast",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1, 1],
+      "variants": ["assets/audio/heartbeat-fast-beat.ogg"]
+    },
+    {
+      "category": "body",
+      "debugHint": "?debug=1: Use the debug panel's Noclip action to reach a ledge.",
+      "description": "Land after a long drop.",
+      "gain": 0.71999999999999997,
+      "gainJitter": [0.88, 1.1200000000000001],
+      "id": "player_landing_hard",
+      "minIntervalSimSeconds": 0.59999999999999998,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.04],
+      "variants": ["assets/audio/player-landing-hard-01.ogg"]
+    },
+    {
+      "category": "world",
+      "description": "Guard in en-garde with a melee weapon or fists, and fully block a zombie hit.",
+      "gain": 0.90000000000000002,
+      "gainJitter": [0.92000000000000004, 1.0800000000000001],
+      "id": "player_block_full",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 8
+      },
+      "pitchJitter": [1, 1],
+      "variants": ["assets/audio/player-block-full-01.ogg"]
+    },
+    {
+      "category": "world",
+      "description": "Guard in en-garde, and take a zombie hit the block only partly absorbs.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "player_block_partial",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 6
+      },
+      "pitchJitter": [0.69999999999999996, 0.80000000000000004],
+      "variants": ["assets/audio/melee_hit_fist-01.ogg"]
+    }
+  ]
+}

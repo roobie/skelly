@@ -2,9 +2,9 @@
 import type { Object3D } from 'three';
 import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
-import type { DebugReadout } from '../game/debugInterface.ts';
+import type { DebugReadout } from '../presentation/debugInterface.ts';
 
-type Measurements = Omit<DebugReadout, 'movement' | 'position' | 'clock' | 'memoryBytes' | 'revealedZombies'>;
+type Measurements = Omit<DebugReadout, 'movement' | 'position' | 'clock' | 'memoryBytes' | 'revealedActors'>;
 
 export interface PlayReadoutSource {
   readonly measurements: Measurements;
@@ -37,6 +37,6 @@ export const playReadout = (source: PlayReadoutSource): DebugReadout => {
     position: [positionBlocks[0] * s, positionBlocks[1] * s, positionBlocks[2] * s],
     clock: formatClock(calendar),
     memoryBytes,
-    revealedZombies: Array.from(revealedPositions, (pos) => pos.map((v) => (v * s).toFixed(1)).join(',')).slice(0, 40),
+    revealedActors: Array.from(revealedPositions, (pos) => pos.map((v) => (v * s).toFixed(1)).join(',')).slice(0, 40),
   };
 };

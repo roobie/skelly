@@ -21,7 +21,8 @@ import {
 } from './loot.ts';
 import type { PublicCartographicFeature } from './publicCartography.ts';
 import { Rng } from './random.ts';
-import type { FixedLootItemDef, FixedLootOverrideDef, LightPracticeDef } from './schema.ts';
+import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
+import type { StageMark } from './stageMarks.ts';
 import { type Placement, placedGroundLoot, placedPieces } from './templates.ts';
 import type { Surface } from './worldgen.ts';
 
@@ -59,7 +60,7 @@ const rollWear = (registry: Registry, seed: number, spec: EntitySpec): number | 
   return range && Rng.stream(seed, `wear:${spec.type}:${spec.pos.join(',')}`).range(range.from, range.to);
 };
 
-export type ZombieSpawn = {
+export type ActorSpawn = {
   type: string;
   /** Feet position in world blocks. */
   pos: Vec3;
@@ -76,14 +77,14 @@ export interface HordeSpawn {
 /** Observation only: what the playtest metrics watch for. Nothing in the simulation reads it. */
 export interface PlaytestMarks {
   /** Beat areas, in blocks. */
-  readonly beats: readonly { readonly id: string; readonly area: Rect }[];
+  readonly beats: readonly StageMark[];
   /** Key fixed-loot item ids, keyed by their furniture's anchor block ("x,y,z"). */
   readonly keyLoot: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
 export interface Site {
-  /** An authored practice site's optional light module. */
-  readonly lightPractice?: LightPracticeDef;
+  readonly practiceExitMark?: string;
+  readonly guidance?: import('./schema/guidance.ts').GuidanceDef | undefined;
   /** Finished authored footprints eligible for world-derived sky transport. */
   readonly authoredPlacements?: readonly Placement[];
   /** An authored site's playtest beats and key fixed loot. */
@@ -104,13 +105,13 @@ export interface Site {
   furnitureIn: (cx: number, cz: number) => FurnitureSpawn[];
   /** Source columns whose furniture or loot destinations intersect the block rectangle. */
   supplySourcesIn: (area: Rect) => readonly (readonly [number, number])[];
-  /** Zombie spawns anchored in the column, deterministic for the site seed. */
-  zombiesIn: (cx: number, cz: number) => ZombieSpawn[];
+  /** Actor spawns anchored in the column, deterministic for the site seed. */
+  actorsIn: (cx: number, cz: number) => ActorSpawn[];
   /** Optional group spawns anchored in a single column, deterministic for the site seed. */
   hordesIn?: ((cx: number, cz: number) => HordeSpawn[]) | undefined;
 }
 
-export type ColumnSource = Pick<Site, 'furnitureIn' | 'lootPointsIn' | 'supplySourcesIn' | 'zombiesIn' | 'hordesIn'>;
+export type ColumnSource = Pick<Site, 'furnitureIn' | 'lootPointsIn' | 'supplySourcesIn' | 'actorsIn' | 'hordesIn'>;
 
 /** Spatial source ownership is independent of which pieces have arrived or survived. */
 export class SupplyFootprints {

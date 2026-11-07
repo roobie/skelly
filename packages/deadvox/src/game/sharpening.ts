@@ -1,12 +1,12 @@
 import type { BlockEntity } from '../core/blockEntities.ts';
-import { type Character, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
+import type { Character } from '../core/character.ts';
 import type { RecipeDef } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { craftWorkDuration } from '../core/crafting.ts';
 import type { HandlingQueue, JobParams } from '../core/handling.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
+import { recipeSkillLevel, recipeSkillRequirements } from '../core/recipeSkills.ts';
 import { craftingActivityTier } from '../core/skillTraining.ts';
 import { gameSecondsToMinutes } from '../core/time.ts';
 
@@ -103,8 +103,9 @@ export class Sharpening {
       return 'I do not know how to sharpen this';
     }
     if (
-      Object.entries(method.skills).some(
-        ([skill, level]) => skillEffectLevel(this.character.skills[skill] ?? SKILL_LEVEL_MIN) < level,
+      recipeSkillRequirements(this.inventory.registry, method).some(
+        ({ provider, level }) =>
+          recipeSkillLevel(this.inventory.registry, this.character, String(provider.capability)) < level,
       )
     ) {
       return 'I lack the skill to sharpen this';
@@ -113,12 +114,12 @@ export class Sharpening {
     const repair = method.repair!;
     const amount = Math.min(
       1,
-      repair.amount + repair.perSkill * skillEffectLevel(this.character.skills[repair.skill] ?? SKILL_LEVEL_MIN),
+      repair.amount + repair.perSkill * recipeSkillLevel(this.inventory.registry, this.character, repair.skill),
     );
     this.queue.enqueueAction(
       'item.sharpen',
       `Sharpen ${this.inventory.name(blade)}`,
-      craftWorkDuration(method, this.character, bonus || 0) / this.clockRatio,
+      craftWorkDuration(this.inventory.registry, method, this.character, bonus || 0) / this.clockRatio,
       {
         uid: blade.uid,
         recipe: method.id,
@@ -154,8 +155,8 @@ export class Sharpening {
     }
     blade.condition = Math.min(1, blade.condition + params.amount);
     this.inventory.version += 1;
-    const offset = this.inventory.registry.skills.get(CORE_CONTENT_IDS.crafting)!.training!.craftingTierOffset!;
-    for (const [skill, level] of Object.entries(method.skills)) {
+    for (const { skill, level, provider } of recipeSkillRequirements(this.inventory.registry, method)) {
+      const offset = provider.training!.craftingTierOffset!;
       this.character.awardPractice(
         skill,
         gameSecondsToMinutes(method.timeGameMinutes),

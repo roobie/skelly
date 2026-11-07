@@ -6,7 +6,7 @@ import { hash3, pickWeighted, Rng } from './random.ts';
 import { BLOCK_SIZE } from './scale.ts';
 import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } from './scenarioComposition.ts';
 import { portalLadderPoint, scenarioPortalIssues, undergroundPortIssues } from './scenarioPortal.ts';
-import { scenarioStartIssues, startTemplate } from './scenarioStart.ts';
+import { type StartPlacementDef, startTemplate } from './scenarioStart.ts';
 import type { CityBenchmarkDef, MapPoolDef, ScenarioDef } from './schema.ts';
 import { admittedChoices, cityRowDepth, eligibilityExclusion } from './settlementPools.ts';
 import { type Rect, rectsOverlap } from './site.ts';
@@ -506,42 +506,52 @@ export const settlementCollectionIssues = (registry: Registry) => {
   return issues;
 };
 
-const reservedLotIssues = (
+const overlapsLot = (
   registry: Registry,
-  { city, composition, serviceTemplate }: ScenarioDef,
-): [string, string][] => {
-  const reserved = [
-    ...(composition ? [{ id: composition.start.template, cell: composition.start.cell, turn: 0 }] : []),
-    ...(city.service ? [{ id: serviceTemplate, ...city.service }] : []),
-  ];
-  const issues: [string, string][] = [];
-  for (const building of reserved) {
-    const definition = registry.mapAssemblies.get(building.id) ?? registry.templates.get(building.id);
-    if (!definition) {
-      continue;
-    }
-    const x0 = building.cell[0] * (city.street + city.blockX) + city.street + city.pad;
-    const z0 = building.cell[1] * (city.street + city.blockZ) + city.street + city.pad;
-    const [width, depth] =
-      building.turn % 2 === 0 ? [definition.size[0], definition.size[2]] : [definition.size[2], definition.size[0]];
-    const rect = { x0, z0, x1: x0 + width, z1: z0 + depth };
-    if ((city.lots ?? []).some((lot) => rectsOverlap(rect, lotRect(lot)))) {
-      issues.push(['.city.lots', `authored lot overlaps reserved building "${building.id}"`]);
-    }
+  city: ScenarioDef['city'],
+  building: { id: string; cell: readonly [number, number]; turn: number },
+): boolean => {
+  const definition = registry.mapAssemblies.get(building.id) ?? registry.templates.get(building.id);
+  if (!definition) {
+    return false;
   }
-  return issues;
+  const x0 = building.cell[0] * (city.street + city.blockX) + city.street + city.pad;
+  const z0 = building.cell[1] * (city.street + city.blockZ) + city.street + city.pad;
+  const [width, depth] =
+    building.turn % 2 === 0 ? [definition.size[0], definition.size[2]] : [definition.size[2], definition.size[0]];
+  const rect = { x0, z0, x1: x0 + width, z1: z0 + depth };
+  return (city.lots ?? []).some((lot) => rectsOverlap(rect, lotRect(lot)));
 };
-const fixedServiceIssues = ({ city, composition }: ScenarioDef): [string, string][] => {
+
+const fixedServiceIssues = (registry: Registry, { city, serviceTemplate }: ScenarioDef): [string, string][] => {
   if (!city.service) {
     return [];
   }
   const [x, z] = city.service.cell;
-  const start = composition?.start.cell;
-  const inGrid = x >= -city.blocksX && x < city.blocksX && z >= -city.blocksZ && z < city.blocksZ;
-  const distinct = !start || x !== start[0] || z !== start[1];
-  return inGrid && distinct
-    ? []
-    : [['.city.service.cell', 'service needs a reserved cell distinct from the start inside the grid']];
+  const issues: [string, string][] = [];
+  if (!(x >= -city.blocksX && x < city.blocksX && z >= -city.blocksZ && z < city.blocksZ)) {
+    issues.push(['.city.service.cell', 'service needs a reserved cell inside the grid']);
+  }
+  if (overlapsLot(registry, city, { id: serviceTemplate, ...city.service })) {
+    issues.push(['.city.lots', `authored lot overlaps reserved building "${serviceTemplate}"`]);
+  }
+  return issues;
+};
+
+export const startReservationIssues = (
+  registry: Registry,
+  scenario: ScenarioDef,
+  start: StartPlacementDef,
+): [string, string][] => {
+  const { city } = scenario;
+  const issues: [string, string][] = [];
+  if (city.service && city.service.cell[0] === start.cell[0] && city.service.cell[1] === start.cell[1]) {
+    issues.push(['.placement.cell', "start cell must differ from the scenario's service cell"]);
+  }
+  if (overlapsLot(registry, city, { id: start.template, cell: start.cell, turn: 0 })) {
+    issues.push(['.placement.cell', `authored lot overlaps reserved building "${start.template}"`]);
+  }
+  return issues;
 };
 
 export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
@@ -554,14 +564,13 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
     ]);
   }
   const width = city.blockX - 2 * city.pad;
-  issues.push(...fixedServiceIssues(scenario), ...reservedLotIssues(registry, scenario));
+  issues.push(...fixedServiceIssues(registry, scenario));
   issues.push(
     ...cityDecorationIssues(registry, scenario),
     ...cityPoolIssues(registry, scenario),
     ...cityLotIssues(registry, city, cityBounds(city)),
     ...cityLotQuotaIssues(registry, city),
     ...cityUndergroundIssues(registry, city, cityBounds(city)),
-    ...scenarioStartIssues(registry, scenario),
   );
   const template = registry.templates.get(serviceTemplate);
   const assembly = registry.mapAssemblies.get(serviceTemplate);
@@ -831,13 +840,16 @@ export const servicePlacement = ({
     turn,
   });
 
-const startPlacement = (context: FillContext, scenario?: ScenarioDef): Placement | undefined => {
-  const definition = scenario?.composition?.start;
-  if (!definition) {
+const startPlacement = (
+  context: FillContext,
+  scenario: ScenarioDef | undefined,
+  definition: StartPlacementDef | undefined,
+): Placement | undefined => {
+  if (!(scenario && definition)) {
     return undefined;
   }
   return servicePlacement({
-    template: startTemplate(context.registry, definition.template, context.seed, `scenario:${scenario!.id}:start`),
+    template: startTemplate(context.registry, definition.template, context.seed, `scenario:${scenario.id}:start`),
     floor: context.floor,
     grid: context.grid,
     cell: definition.cell,
@@ -1096,6 +1108,7 @@ export const buildCityPlan = ({
   grid,
   maxStoreys = 1,
   scenario,
+  start: startDefinition,
 }: {
   seed: number;
   registry: Registry;
@@ -1103,10 +1116,12 @@ export const buildCityPlan = ({
   grid: CityGrid;
   maxStoreys?: number;
   scenario?: ScenarioDef;
+  /** The selected start's placement; without one the scenario builds city-only and reserves no start cell. */
+  start?: StartPlacementDef | undefined;
 }): CityPlan => {
   const cells = cityCells(grid);
-  const startCell = scenario?.composition?.start.cell ?? [0, 0];
-  const candidates = cells.filter(([i, j]) => i !== startCell[0] || j !== startCell[1]);
+  const startCell = startDefinition?.cell;
+  const candidates = cells.filter(([i, j]) => !startCell || i !== startCell[0] || j !== startCell[1]);
   const context: FillContext = {
     seed,
     floor,
@@ -1120,9 +1135,15 @@ export const buildCityPlan = ({
   };
   const { service, serviceBlock } = planService(context, scenario, candidates);
   const lots = placeCityLots(registry, grid, { seed, floor, compiled: context.compiled });
-  const start = startPlacement(context, scenario);
+  const start = startPlacement(context, scenario, startDefinition);
   const composition =
-    service && scenario && start ? composeScenario(registry, scenario, service, { floor, start, lots }) : undefined;
+    service && scenario
+      ? composeScenario(registry, scenario, service, {
+          floor,
+          start: start && startDefinition && { definition: startDefinition, placement: start },
+          lots,
+        })
+      : undefined;
   const lotCounts = countsForLots(lots, grid.pool);
   const fillCells = (forced: PoolRef[]): Placement[] => {
     context.counts = new Map(lotCounts);
@@ -1134,7 +1155,7 @@ export const buildCityPlan = ({
       if (service && serviceBlock?.[0] === i && serviceBlock[1] === j) {
         return [service];
       }
-      if (start && i === startCell[0] && j === startCell[1]) {
+      if (start && startCell && i === startCell[0] && j === startCell[1]) {
         return [start];
       }
       return Array.from({ length: grid.rows }, (_, row) => fillRow(context, [i, j], row)).flat();
@@ -1151,7 +1172,8 @@ export const buildCityPlan = ({
   }
   const pitchX = grid.street + grid.blockX;
   const pitchZ = grid.street + grid.blockZ;
-  const spawn: Vec3 = composition ? [...composition.start.spawn] : [grid.street / 2, floor + 1, grid.street / 2];
+  // The default spawn only places a body in a city-only build; no certificate roots a route there.
+  const spawn: Vec3 = composition?.start ? [...composition.start.spawn] : [grid.street / 2, floor + 1, grid.street / 2];
   const core = cityCore(grid);
   const bounds = cityBounds(grid);
   const { perimeter } = grid;

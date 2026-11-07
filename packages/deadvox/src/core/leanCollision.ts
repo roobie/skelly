@@ -1,6 +1,6 @@
 import type { AimFrame } from './aim.ts';
+import { claimed } from './capabilities.ts';
 import type { ModelDef } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import { sightedFirearmModel } from './firearmSight.ts';
 import { heldFirearmTransform } from './heldPose.ts';
@@ -88,7 +88,7 @@ export const playerLeanBoxes = ({
   progress: (uid: number) => number;
   loweredPitchRadians: number;
 }): LeanBox[] => {
-  const figure = inventory.registry.figures.get(CORE_CONTENT_IDS.player)!;
+  const figure = claimed(inventory.registry.figures, 'player')!;
   const yawTurn = axisRotation([0, 1, 0], yaw);
   const viewTurn = multiplyRotation(yawTurn, axisRotation([1, 0, 0], pitch));
   const eye = add(feet, rotateVector(yawTurn, pose.eye).map((v) => v / blockSize) as Vec3);

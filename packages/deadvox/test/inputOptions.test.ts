@@ -1,17 +1,13 @@
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it } from 'vitest';
-import {
-  BindingRegistry,
-  bindingConflict,
-  bindingIsDebugOnly,
-  chordIssue,
-  DEBUG_ONLY_CONTEXTS,
-  INPUT_BINDINGS,
-  type InputContext,
-  inputBindings,
-  keyboardInput,
-} from '../src/game/inputBindings.ts';
+import { bindingIsDebugOnly, DEBUG_ONLY_CONTEXTS, type InputContext } from '../src/core/inputActions.ts';
+import { BindingRegistry, bindingConflict, chordIssue } from '../src/game/bindingRegistry.ts';
+import { KeyboardInput } from '../src/presentation/inputBindings.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseScreenText } from './baseRegistry.ts';
+
+const inputBindings = new BindingRegistry(INPUT_BINDINGS);
+const keyboardInput = new KeyboardInput(inputBindings);
 
 const contextWordSeparator = /[^a-z0-9-]+/;
 const dom = new Window();
@@ -110,7 +106,7 @@ describe('input options context visibility', () => {
     expect(debugOnly.length).toBeGreaterThan(0);
     expect(shared.length).toBeGreaterThan(0);
 
-    mountInputOptions(ordinaryRoot, inputOptionsText);
+    mountInputOptions(ordinaryRoot, inputOptionsText, keyboardInput);
     const headings = [...ordinaryRoot.querySelectorAll('section h3')].map(
       (heading) => heading.textContent?.trim() ?? '',
     );
@@ -125,7 +121,7 @@ describe('input options context visibility', () => {
       expect(labels.every((context) => binding.contexts.includes(context as InputContext))).toBe(true);
     }
 
-    mountInputOptions(debugRoot, inputOptionsText, true);
+    mountInputOptions(debugRoot, inputOptionsText, keyboardInput, true);
     expect(debugOnly.every(({ id }) => rowFor(debugRoot, id) !== undefined)).toBe(true);
     expect(
       INPUT_BINDINGS.every((binding) => {
@@ -176,7 +172,7 @@ describe('input options context visibility', () => {
     expect(free).toBeDefined();
     const root = document.createElement('div');
     document.body.append(root);
-    mountInputOptions(root, inputOptionsText);
+    mountInputOptions(root, inputOptionsText, keyboardInput);
     const remove = keyboardInput.install();
     const slot = () =>
       rowFor(root, binding!.id)!.querySelector<HTMLButtonElement>('button[data-binding-alternative="0"]')!;
@@ -220,7 +216,7 @@ describe('input options context visibility', () => {
     expect(pair).toBeDefined();
     const root = document.createElement('div');
     document.body.append(root);
-    mountInputOptions(root, inputOptionsText);
+    mountInputOptions(root, inputOptionsText, keyboardInput);
     const button = rowFor(root, pair!.first.id)?.querySelector<HTMLButtonElement>(
       'button[data-binding-alternative="0"]',
     );
@@ -243,7 +239,7 @@ describe('input options context visibility', () => {
     expect(pair).toBeDefined();
     const root = document.createElement('div');
     document.body.append(root);
-    mountInputOptions(root, inputOptionsText);
+    mountInputOptions(root, inputOptionsText, keyboardInput);
     const button = rowFor(root, pair!.ordinary.id)?.querySelector<HTMLButtonElement>(
       'button[data-binding-alternative="0"]',
     );

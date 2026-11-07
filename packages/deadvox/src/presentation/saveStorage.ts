@@ -1,0 +1,393 @@
+import type { SaveSnapshot } from '../core/saveState.ts';
+import { SaveStorageError, type SaveStorageErrorKind } from '../game/saveStorageErrors.ts';
+import {
+  commitSavePayload,
+  inspectSaveSlots,
+  type RawSaveSlots,
+  type SaveCommitRequest,
+  SaveCorruptionError,
+  type SaveSlotPair,
+} from '../game/saveStorageProtocol.ts';
+import type {
+  SaveBackend,
+  SaveBackendPreference,
+  SaveCommitResult,
+  SaveEncodingOptions,
+  SaveLoadResult,
+  SaveQuota,
+  SaveStorageStatus,
+  SaveStore,
+} from '../game/storageContract.ts';
+
+const SAVE_WRITE_LOCK = 'skelly-save-storage';
+const warnSaveLockTimeout = (message: string, details: Record<string, unknown>): void => {
+  // biome-ignore lint/suspicious/noConsole: a lock timeout must name its holder in the browser console.
+  console.warn(message, details);
+};
+const SAVE_READ_RETRIES = 3;
+const SAVE_READ_RETRY_MS = 50;
+const STORAGE_METADATA_TIMEOUT_MS = 1000;
+const SAVE_REPLY_GRACE_REAL_MS = 50;
+type CrashStage =
+  | 'before-truncate'
+  | 'after-truncate'
+  | 'after-partial-write'
+  | 'after-write'
+  | 'after-flush'
+  | 'before-transaction'
+  | 'after-read'
+  | 'after-put'
+  | 'after-commit';
+interface WorkerResponse {
+  readonly id: number;
+  readonly result?: unknown;
+  readonly error?: string;
+  readonly errorKind?: SaveStorageErrorKind | undefined;
+}
+export interface SaveStorageOptions {
+  /** Force a backend in tests; production should leave this on `auto`. */
+  readonly backend?: SaveBackendPreference;
+  readonly requestTimeoutMs?: number;
+  /** Test-only abrupt worker termination at a named physical-write stage. */
+  readonly testCrashAt?: CrashStage;
+}
+export class SaveStorage implements SaveStore {
+  private readonly preference: SaveBackendPreference;
+  private readonly timeoutMs: number;
+  private readonly crashAt: CrashStage | undefined;
+  private worker: Worker | undefined;
+  private backend: SaveBackend | undefined;
+  private nextId = 0;
+  private readonly pending = new Map<
+    number,
+    {
+      resolve: (value: unknown) => void;
+      reject: (error: Error) => void;
+      timer: ReturnType<typeof globalThis.setTimeout>;
+    }
+  >();
+  private initialized: Promise<SaveStorageStatus> | undefined;
+
+  constructor(options: SaveStorageOptions = {}) {
+    this.preference = options.backend ?? 'auto';
+    this.timeoutMs = options.requestTimeoutMs ?? 15_000;
+    this.crashAt = options.testCrashAt;
+  }
+
+  status(): Promise<SaveStorageStatus> {
+    this.initialized ??= this.initialize();
+    return this.initialized;
+  }
+
+  private createWorker(): Worker {
+    if (!this.worker) {
+      const worker = new Worker(new URL('../worker/save.worker.ts', import.meta.url), { type: 'module' });
+      worker.onmessage = ({ data }: MessageEvent<WorkerResponse>) => {
+        const request = this.pending.get(data.id);
+        if (!request) {
+          return;
+        }
+        this.pending.delete(data.id);
+        clearTimeout(request.timer);
+        if (data.error) {
+          request.reject(data.errorKind ? new SaveStorageError(data.errorKind, data.error) : new Error(data.error));
+        } else {
+          request.resolve(data.result);
+        }
+      };
+      worker.onerror = (event) => this.failWorker(new Error(event.message || 'Save worker failed'));
+      worker.onmessageerror = () => this.failWorker(new Error('Save worker sent an unreadable response'));
+      this.worker = worker;
+    }
+    return this.worker;
+  }
+
+  private failWorker(error: Error): void {
+    this.worker?.terminate();
+    this.worker = undefined;
+    this.backend = undefined;
+    this.initialized = undefined;
+    for (const request of this.pending.values()) {
+      clearTimeout(request.timer);
+      request.reject(error);
+    }
+    this.pending.clear();
+  }
+
+  private request<T>(message: Record<string, unknown>): Promise<T> {
+    const worker = this.createWorker();
+    this.nextId += 1;
+    const id = this.nextId;
+    return new Promise<T>((resolve, reject) => {
+      const startedAtRealMs = performance.now();
+      const dueAtRealMs = startedAtRealMs + this.timeoutMs;
+      const backend = this.backend ?? null;
+      const inputBytes = message.payload instanceof ArrayBuffer ? message.payload.byteLength : null;
+      const fail = (timerOvershootRealMs: number, stallGraceApplied: boolean): void => {
+        if (!this.pending.has(id)) {
+          return;
+        }
+        const details = {
+          requestId: id,
+          operation: message.operation,
+          backend,
+          elapsedRealMs: performance.now() - startedAtRealMs,
+          timerOvershootRealMs,
+          inputBytes,
+          stallGraceApplied,
+        };
+        const error = new Error(`Save worker timed out; completion was not acknowledged: ${JSON.stringify(details)}`, {
+          cause: details,
+        });
+        // biome-ignore lint/suspicious/noConsole: reports must survive callers that catch a rejected request.
+        console.warn(error);
+        this.failWorker(error);
+      };
+      const timer = globalThis.setTimeout(() => {
+        const request = this.pending.get(id);
+        if (!request) {
+          return;
+        }
+        const timerOvershootRealMs = Math.max(0, performance.now() - dueAtRealMs);
+        // A stalled main thread may dispatch its due timer before an already queued worker reply.
+        if (timerOvershootRealMs >= SAVE_REPLY_GRACE_REAL_MS) {
+          request.timer = globalThis.setTimeout(() => fail(timerOvershootRealMs, true), SAVE_REPLY_GRACE_REAL_MS);
+        } else {
+          fail(timerOvershootRealMs, false);
+        }
+      }, this.timeoutMs);
+      this.pending.set(id, { resolve: resolve as (value: unknown) => void, reject, timer });
+      worker.postMessage({ ...message, id });
+    });
+  }
+
+  private async initialize(): Promise<SaveStorageStatus> {
+    const webLocks = typeof navigator.locks?.request === 'function';
+    const response = await this.request<{ backend: SaveBackend }>({
+      operation: 'probe',
+      preferredBackend: this.preference,
+      webLocks,
+    });
+    this.backend = response.backend;
+    // A query cannot prompt. Only the title/pause button may request persistence.
+    const persistenceQuery =
+      typeof navigator.storage?.persisted === 'function'
+        ? navigator.storage.persisted().catch(() => null)
+        : Promise.resolve(null);
+    let metadataTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
+    const metadataDeadline = new Promise<null>((resolve) => {
+      metadataTimer = globalThis.setTimeout(() => resolve(null), STORAGE_METADATA_TIMEOUT_MS);
+    });
+    const [persistent, quota] = await Promise.all([
+      Promise.race([persistenceQuery, metadataDeadline]),
+      Promise.race([
+        this.estimateQuota().catch((): SaveQuota => ({ supported: false })),
+        metadataDeadline.then((): SaveQuota => ({ supported: false })),
+      ]),
+    ]);
+    if (metadataTimer !== undefined) {
+      globalThis.clearTimeout(metadataTimer);
+    }
+    return { backend: this.backend, persistent, quota };
+  }
+
+  get canRequestPersistence(): boolean {
+    return typeof navigator.storage?.persist === 'function';
+  }
+
+  async requestPersistence(): Promise<boolean | null> {
+    if (!this.canRequestPersistence) {
+      return null;
+    }
+    const persistent = await navigator.storage.persist();
+    // Preserve the explicit result even before startup status begins; a late query cannot erase it.
+    this.initialized = this.status().then((status) => ({ ...status, persistent }));
+    return persistent;
+  }
+
+  async estimateQuota(): Promise<SaveQuota> {
+    const { storage } = navigator;
+    if (typeof storage?.estimate !== 'function') {
+      return { supported: false };
+    }
+    const estimate = await storage.estimate();
+    const usageBytes = estimate.usage ?? 0;
+    const quotaBytes = estimate.quota ?? 0;
+    return { supported: true, usageBytes, quotaBytes, availableBytes: Math.max(0, quotaBytes - usageBytes) };
+  }
+
+  private async withLock<T>(mode: 'shared' | 'exclusive', operation: () => Promise<T>): Promise<T> {
+    // Inspect the live queue before aborting so the warning can identify the client holding the lock.
+    const controller = new AbortController();
+    let acquired = false;
+    let timedOut = false;
+    let timer: ReturnType<typeof globalThis.setTimeout> | undefined = globalThis.setTimeout(() => {
+      navigator.locks
+        .query()
+        .then(({ held = [], pending = [] }) => {
+          if (acquired) {
+            return;
+          }
+          const relevantHeld = held.filter((lock) => lock.name === SAVE_WRITE_LOCK);
+          const relevantPending = pending.filter((lock) => lock.name === SAVE_WRITE_LOCK);
+          const waiter = [...relevantPending].reverse().find((lock) => lock.mode === mode);
+          const comparableHolders = relevantHeld.filter((lock) => lock.clientId !== undefined);
+          const holderIsAnotherClient =
+            waiter?.clientId === undefined || comparableHolders.length === 0
+              ? null
+              : comparableHolders.some((lock) => lock.clientId !== waiter.clientId);
+          warnSaveLockTimeout('Skelly save lock request timed out', {
+            cause: 'lock acquisition exceeded its deadline',
+            requestedMode: mode,
+            held: relevantHeld.map(({ mode: heldMode, clientId }) => ({ mode: heldMode, clientId })),
+            pending: relevantPending.map(({ mode: pendingMode, clientId }) => ({ mode: pendingMode, clientId })),
+            holderIsAnotherClient,
+          });
+          timedOut = true;
+          controller.abort();
+        })
+        .catch((error: unknown) => {
+          if (acquired) {
+            return;
+          }
+          warnSaveLockTimeout('Skelly save lock request timed out', {
+            cause: 'lock acquisition exceeded its deadline',
+            requestedMode: mode,
+            held: [],
+            pending: [],
+            holderIsAnotherClient: null,
+            queryError: error instanceof Error ? error.message : String(error),
+          });
+          timedOut = true;
+          controller.abort();
+        });
+    }, this.timeoutMs);
+    try {
+      return await navigator.locks.request(SAVE_WRITE_LOCK, { mode, signal: controller.signal }, () => {
+        acquired = true;
+        if (timer !== undefined) {
+          globalThis.clearTimeout(timer);
+          timer = undefined;
+        }
+        return operation();
+      });
+    } catch (error) {
+      if (timedOut) {
+        throw new Error(
+          'World is still open or saving in another page (possibly in the back/forward cache). Retry saved worlds after it finishes.',
+          {
+            cause: error,
+          },
+        );
+      }
+      throw error;
+    } finally {
+      if (timer !== undefined) {
+        globalThis.clearTimeout(timer);
+      }
+    }
+  }
+
+  async listNamespaces(): Promise<readonly string[]> {
+    await this.status();
+    return this.request<string[]>({ operation: 'list' });
+  }
+
+  async encodeSnapshot(
+    snapshot: Readonly<SaveSnapshot>,
+    generation: number,
+    options: SaveEncodingOptions,
+  ): Promise<Uint8Array> {
+    await this.status();
+    return this.request<Uint8Array>({ operation: 'encode', snapshot, generation, ...options });
+  }
+
+  async readRawSlots(namespace: string): Promise<RawSaveSlots> {
+    await this.status();
+    return this.readRawSlotsAttempt(namespace, 0);
+  }
+
+  private async readRawSlotsAttempt(namespace: string, attempt: number): Promise<RawSaveSlots> {
+    try {
+      const read = () => this.request<SaveSlotPair>({ operation: 'read', namespace });
+      const slots = typeof navigator.locks?.request === 'function' ? await this.withLock('shared', read) : await read();
+      return {
+        a: slots.a === null ? null : new Uint8Array(slots.a),
+        b: slots.b === null ? null : new Uint8Array(slots.b),
+      };
+    } catch (error) {
+      if (!(error instanceof SaveStorageError && error.kind === 'lock') || attempt + 1 >= SAVE_READ_RETRIES) {
+        throw error;
+      }
+      await new Promise((resolve) => globalThis.setTimeout(resolve, SAVE_READ_RETRY_MS * (attempt + 1)));
+      return this.readRawSlotsAttempt(namespace, attempt + 1);
+    }
+  }
+
+  async load(namespace: string): Promise<SaveLoadResult | undefined> {
+    const slots = await this.readRawSlots(namespace);
+    const { valid, corrupt: corruptSlots } = await inspectSaveSlots(namespace, {
+      a: slots.a?.slice().buffer ?? null,
+      b: slots.b?.slice().buffer ?? null,
+    });
+    const [newest] = valid;
+    if (newest) {
+      return {
+        generation: newest.record.generation,
+        slot: newest.slot,
+        payload: newest.record.payload,
+        corruptSlots,
+      };
+    }
+    if (corruptSlots.length > 0) {
+      throw new SaveCorruptionError('Both save generations are invalid; records were retained for export', slots);
+    }
+    return undefined;
+  }
+
+  async save(
+    namespace: string,
+    encodePayload: (generation: number) => Promise<Uint8Array>,
+    options: { readonly replaceCorrupt?: boolean } = {},
+  ): Promise<SaveCommitResult> {
+    const status = await this.status();
+    const driver = {
+      readSlots: (key: string) => this.request<SaveSlotPair>({ operation: 'read', namespace: key }),
+      commit: async (request: SaveCommitRequest) => {
+        await this.request({
+          operation: 'commit',
+          namespace: request.namespace,
+          slot: request.slot,
+          generation: request.generation,
+          payload: request.payload.slice().buffer,
+          expected: request.expected,
+          ...(this.crashAt === undefined ? {} : { crashAt: this.crashAt }),
+        });
+      },
+    };
+    const write = async () => ({
+      ...(await commitSavePayload(driver, namespace, encodePayload, options)),
+      backend: status.backend,
+    });
+
+    if (typeof navigator.locks?.request === 'function') {
+      return this.withLock('exclusive', write);
+    }
+    if (status.backend === 'opfs') {
+      throw new Error('OPFS writes require Web Locks; select IndexedDB fallback');
+    }
+    return write();
+  }
+
+  close(): void {
+    this.worker?.terminate();
+    this.worker = undefined;
+    for (const request of this.pending.values()) {
+      clearTimeout(request.timer);
+      request.reject(new Error('Save storage client closed'));
+    }
+    this.pending.clear();
+    this.initialized = undefined;
+    this.backend = undefined;
+  }
+}

@@ -2,12 +2,13 @@
 // so a refusal leaves the world as it was (`DESIGN.md`, "Moving furniture").
 
 import { type BlockEntities, type BlockEntity, boxIntersectsBody } from './blockEntities.ts';
+import { claimed } from './capabilities.ts';
 import type { FurnitureDef } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
-import type { Vec3 } from './coords.ts';
+import { toChunk, type Vec3 } from './coords.ts';
 import { dropSpots, type Inventory, type Pile, type Spot } from './inventory.ts';
 import { PILE_GRID } from './inventoryScale.ts';
-import { couldFit, findSpot, fitsAt, type Placed } from './items.ts';
+import { couldFit, findSpot, fitsAt, type Item, type Placed } from './items.ts';
+import { settleCell } from './itemThrow.ts';
 import { ladderOutward } from './ladders.ts';
 import { turnPose } from './orientation.ts';
 import type { Body } from './physics.ts';
@@ -66,7 +67,7 @@ const footprint = (pos: Readonly<Vec3>, size: Readonly<Vec3>): Vec3[] => boxCell
 const topLayer = (pos: Readonly<Vec3>, size: Readonly<Vec3>): Vec3[] =>
   footprint([pos[0], pos[1] + size[1], pos[2]], size);
 
-const messagesOf = (inventory: Inventory) => inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages;
+const messagesOf = (inventory: Inventory) => claimed(inventory.registry.ui, 'interface')!.furnitureMoveMessages;
 
 export type FurnitureMoveEffort = 'lift' | 'drag' | 'carry';
 
@@ -94,7 +95,7 @@ export const furnitureMoveStamina = (
  */
 class Shadow {
   /** A cell the move fills or empties; `null` is emptied. */
-  private readonly changed = new Map<string, BlockEntity | null>();
+  private readonly changed = new Map<string, { entity: BlockEntity; solid: boolean } | null>();
   private readonly terrainSolid: SolidAt;
   private readonly entities: BlockEntities;
   private readonly readBox: FurnitureMover['readBox'];
@@ -113,9 +114,18 @@ class Shadow {
 
   fill(entity: BlockEntity, pos: Readonly<Vec3>, filled: boolean): void {
     this.readBox?.(pos, entity.size);
+    const solid = filled
+      ? new Set(
+          this.entities
+            .blockingBoxes(entity)
+            .flatMap((box) => boxCells(box.pos, box.size))
+            .map(key),
+        )
+      : undefined;
     for (const cell of boxCells(pos, entity.size)) {
-      if (filled) {
-        this.changed.set(key(cell), entity);
+      if (solid) {
+        const original = cell.map((axis, i) => axis - pos[i]! + entity.pos[i]!) as Vec3;
+        this.changed.set(key(cell), { entity, solid: solid.has(key(original)) });
       } else if (this.occupant(cell) === entity) {
         this.changed.set(key(cell), null);
       }
@@ -124,22 +134,32 @@ class Shadow {
 
   occupant(cell: Readonly<Vec3>): BlockEntity | undefined {
     const changed = this.changed.get(key(cell));
-    return changed === undefined ? this.entities.filling(cell[0], cell[1], cell[2]) : (changed ?? undefined);
+    return changed === undefined ? this.entities.filling(cell[0], cell[1], cell[2]) : changed?.entity;
   }
 
   occupied(cell: Readonly<Vec3>): boolean {
-    return this.terrainSolid(cell[0], cell[1], cell[2]) || this.occupant(cell) !== undefined;
+    const changed = this.changed.get(key(cell));
+    return (
+      this.terrainSolid(cell[0], cell[1], cell[2]) ||
+      (changed === undefined ? this.entities.isSolid(cell[0], cell[1], cell[2]) : changed?.solid === true)
+    );
   }
 
   free(pos: Readonly<Vec3>, size: Readonly<Vec3>): boolean {
     this.readBox?.(pos, size);
-    return boxCells(pos, size).every((cell) => !this.occupied(cell));
+    // Furniture placement reserves its whole box, including holes that do not support a falling item.
+    return boxCells(pos, size).every(
+      (cell) => !this.terrainSolid(cell[0], cell[1], cell[2]) && this.occupant(cell) === undefined,
+    );
   }
 
   /** Whether anything is under a box, so it stands rather than falls. */
   rests(pos: Readonly<Vec3>, size: Readonly<Vec3>): boolean {
     this.readBox?.(pos, size);
-    return footprint(pos, size).some((cell) => this.occupied(below(cell)));
+    return footprint(pos, size).some((cell) => {
+      const under = below(cell);
+      return this.terrainSolid(...under) || this.occupant(under) !== undefined;
+    });
   }
 
   /** The height a free box comes to rest at when let go. */
@@ -295,17 +315,23 @@ interface Loose {
  * Loose items go to their own targets.
  */
 const resettlePiles = (
-  mover: FurnitureMover,
+  mover: Pick<FurnitureMover, 'inventory'>,
   shadow: Shadow,
   piles: readonly Pile[],
-  loose: readonly Loose[] = [],
+  {
+    loose = [],
+    fallTargets = (from) => columnTargets(shadow, from),
+  }: {
+    loose?: readonly Loose[];
+    fallTargets?: (from: Readonly<Vec3>) => Iterable<Vec3>;
+  } = {},
 ): PileMove[] | undefined => {
   const { inventory } = mover;
   const moving: Loose[] = piles
     .filter((pile) => shadow.occupied(pile.pos) || !shadow.occupied(below(pile.pos)))
     .map((pile) => ({
       items: pile.items,
-      targets: shadow.occupied(pile.pos) ? shadow.aside(pile.pos) : columnTargets(shadow, pile.pos),
+      targets: shadow.occupied(pile.pos) ? shadow.aside(pile.pos) : fallTargets(pile.pos),
     }));
   const leaving = new Set(moving.flatMap((pile) => pile.items));
   const grids = new Map<string, Placed[]>();
@@ -377,8 +403,24 @@ const spreadFrom = (shadow: Shadow, cells: readonly Vec3[]): Iterable<Vec3> => {
   };
 };
 
+/** Only generated neighbours of a ready body may participate; the boundary acts as a wall, not a new seed. */
+export const spreadActorDrop = (
+  inventory: Inventory,
+  terrainSolid: SolidAt,
+  body: Vec3,
+  landings: readonly Vec3[],
+): Iterable<Vec3> => {
+  const cx = toChunk(body[0]);
+  const cz = toChunk(body[2]);
+  const shadow = new Shadow(
+    (x, y, z) => Math.abs(toChunk(x) - cx) > 1 || Math.abs(toChunk(z) - cz) > 1 || terrainSolid(x, y, z),
+    inventory.entities,
+  );
+  return spreadFrom(shadow, landings);
+};
+
 const fitPlaced = (
-  mover: FurnitureMover,
+  mover: Pick<FurnitureMover, 'inventory'>,
   targets: Iterable<Vec3>,
   gridAt: (cell: Vec3) => Placed[],
   placed: Placed,
@@ -407,6 +449,34 @@ const pilesOver = (inventory: Inventory, boxes: readonly { pos: Vec3; size: Vec3
     }
   }
   return [...found];
+};
+
+/** Part and load admission share reservations so neither can consume the other's room. */
+export const planVehicleRemovalPiles = (
+  context: Pick<FurnitureMover, 'inventory' | 'terrainSolid'> & { minY: number; feet: Vec3 },
+  boxes: readonly { pos: Vec3; size: Vec3 }[],
+  part: Item,
+): PileMove[] | 'noGround' | undefined => {
+  const { inventory, terrainSolid, minY, feet } = context;
+  const shadow = new Shadow(terrainSolid, inventory.entities, undefined, minY);
+  const partTargets: Iterable<Vec3> = {
+    *[Symbol.iterator]() {
+      for (const cell of dropSpots(feet)) {
+        const landed = settleCell(cell, 1, minY, (x, y, z) => shadow.occupied([x, y, z]));
+        if (landed) {
+          yield landed;
+        }
+      }
+    },
+  };
+  // Loads plan first, so their lack of room must not mask the part's absent ground.
+  if (partTargets[Symbol.iterator]().next().done) {
+    return 'noGround';
+  }
+  return resettlePiles(context, shadow, pilesOver(inventory, boxes), {
+    fallTargets: (from) => (columnTargets(shadow, from).length > 0 ? spreadFrom(shadow, [from as Vec3]) : partTargets),
+    loose: [{ items: [{ item: part, x: 0, y: 0, rotated: false }], targets: partTargets }],
+  });
 };
 
 /**
@@ -530,7 +600,7 @@ export const planRuin = (
   const piles = [...new Set([...affectedPiles, ...pilesOver(inventory, [...left, ...landed])])].sort((a, b) =>
     cellOrder(a.pos, b.pos),
   );
-  const moves = resettlePiles(mover, shadow, piles, loose);
+  const moves = resettlePiles(mover, shadow, piles, { loose });
   if (!moves) {
     return undefined;
   }

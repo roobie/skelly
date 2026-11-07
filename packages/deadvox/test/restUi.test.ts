@@ -4,8 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { formatClock, simSecondsPerHour } from '../src/core/clock.ts';
 import type { RestAction } from '../src/core/longAction.ts';
 import { realSeconds } from '../src/core/time.ts';
+import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
-import { labelForAction } from '../src/game/inputBindings.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import { restViewModel } from '../src/ui/rest.ts';
 import { baseScreenText } from './baseRegistry.ts';
@@ -13,7 +14,8 @@ import { Simulation } from './simulationFixture.ts';
 
 const restLabels = { rest: 'fixture rest', sleep: 'fixture sleep' };
 const text = baseScreenText();
-const hiddenMessages = { messagesVisible: false, restLabels, text };
+const keys = new BindingRegistry(INPUT_BINDINGS);
+const hiddenMessages = { messagesVisible: false, restLabels, text, keys };
 
 describe('restViewModel', () => {
   it('is invisible with no action running', () => {
@@ -55,7 +57,7 @@ describe('restViewModel', () => {
 
   it('offers Stop during sleep onset but not after sleep begins', () => {
     const sim = new Simulation({ seed: 1 });
-    const stopKey = labelForAction('handling.stop');
+    const stopKey = keys.label('handling.stop');
     const onset: RestAction = {
       kind: 'sleep',
       furnitureUid: 1,
@@ -88,8 +90,18 @@ describe('restViewModel', () => {
     const action: RestAction = { kind: 'rest', furnitureUid: 1, rate: -15, startFatigue: 40 };
     const messagesVisible = (messages: boolean) =>
       hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages }).messages;
-    const hidden = restViewModel(action, true, sim, { messagesVisible: messagesVisible(false), restLabels, text });
-    const visible = restViewModel(action, true, sim, { messagesVisible: messagesVisible(true), restLabels, text });
+    const hidden = restViewModel(action, true, sim, {
+      messagesVisible: messagesVisible(false),
+      restLabels,
+      text,
+      keys,
+    });
+    const visible = restViewModel(action, true, sim, {
+      messagesVisible: messagesVisible(true),
+      restLabels,
+      text,
+      keys,
+    });
     expect(hidden.prompt).toBeUndefined();
     expect(visible.prompt).toBe(reason);
   });

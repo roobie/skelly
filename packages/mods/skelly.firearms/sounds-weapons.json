@@ -1,0 +1,79 @@
+{
+  "sounds": [
+    {
+      "category": "world",
+      "description": "Fire the bolt-action hunting rifle.",
+      "gain": 1,
+      "gainJitter": [1, 1],
+      "id": "gunshot_tikka",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 100
+      },
+      "pitchJitter": [0.97999999999999998, 1.02],
+      "variants": ["assets/audio/gunshot-tikka-01.ogg", "assets/audio/gunshot-tikka-02.ogg"],
+      "voiceCap": 32
+    },
+    {
+      "category": "body",
+      "description": "Open the hunting rifle’s bolt to load loose cartridges, or at the start of a full cycle.",
+      "gain": 0.5,
+      "gainJitter": [0.94999999999999996, 1.05],
+      "id": "rifle_bolt_open",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.96999999999999997, 1.03],
+      "variants": ["assets/audio/rifle-bolt-open-01.ogg"]
+    },
+    {
+      "category": "body",
+      "description": "Close the hunting rifle’s bolt after loading, or at the end of a full cycle.",
+      "gain": 0.5,
+      "gainJitter": [0.94999999999999996, 1.05],
+      "id": "rifle_bolt_close",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.96999999999999997, 1.03],
+      "variants": ["assets/audio/rifle-bolt-close-01.ogg"]
+    },
+    {
+      "category": "body",
+      "description": "Pull the trigger of a magazine gun or the hunting rifle on an empty chamber; it clicks once, then stays silent until the action is worked.",
+      "gain": 0.29999999999999999,
+      "gainJitter": [0.94999999999999996, 1.05],
+      "id": "firearm_dry_click",
+      "minIntervalSimSeconds": 0.14999999999999999,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.94999999999999996, 1.05],
+      "variants": [
+        "assets/audio/firearm-dry-click-01.ogg",
+        "assets/audio/firearm-dry-click-02.ogg",
+        "assets/audio/firearm-dry-click-03.ogg"
+      ]
+    },
+    {
+      "category": "body",
+      "description": "Pull the pump shotgun’s trigger on an empty chamber; it clicks once, then stays silent until it is racked.",
+      "gain": 0.34999999999999998,
+      "gainJitter": [0.94999999999999996, 1.05],
+      "id": "shotgun_dry_click",
+      "minIntervalSimSeconds": 0.14999999999999999,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.94999999999999996, 1.05],
+      "variants": ["assets/audio/shotgun-dry-click-01.ogg"]
+    }
+  ]
+}

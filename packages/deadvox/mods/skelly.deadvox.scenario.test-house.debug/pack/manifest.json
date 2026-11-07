@@ -1,0 +1,42 @@
+{
+  "dependencies": [
+    "skelly.deadvox.scenario.test-house",
+    "skelly.basic-recipes",
+    "skelly.containers",
+    "skelly.deadvox.buildings",
+    "skelly.deadvox.site-generation",
+    "skelly.electric-power",
+    "skelly.electronics",
+    "skelly.firearms",
+    "skelly.flame-tools",
+    "skelly.fuel",
+    "skelly.ground-vehicles",
+    "skelly.hand-tools",
+    "skelly.light-sources",
+    "skelly.manuals",
+    "skelly.manufactured-blocks",
+    "skelly.materials",
+    "skelly.melee",
+    "skelly.readables",
+    "skelly.structures",
+    "skelly.wearables",
+    "skelly.weathering"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "layouts.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.test-house.debug",
+  "optIn": true,
+  "overrides": [
+    {
+      "entry": "layouts:testHouse",
+      "pack": "skelly.deadvox.scenario.test-house"
+    }
+  ],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

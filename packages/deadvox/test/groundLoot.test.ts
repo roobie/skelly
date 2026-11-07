@@ -16,12 +16,21 @@ import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { fixtureDamageContent } from './fixtures/damageKinds.ts';
 
 const base = baseRegistry();
 const seed = 7;
 const PIECES_PATH = /^.*\.pieces/;
-const floor = { id: 'fixture_floor', material: FIXTURE_MATERIAL, name: 'Fixture floor', solid: true, color: '#808080' };
+const floor = {
+  id: 'fixture_floor',
+  material: FIXTURE_MATERIAL,
+  name: 'Fixture floor',
+  solid: true,
+  color: '#808080',
+  drops: { default: 'fixture_blow' },
+};
 const fixtureData = (): ContentFile => ({
+  damageKinds: fixtureDamageContent().damageKinds,
   furnitureMaterials: fixtureMaterials(),
   sounds: fixtureSounds(),
   blocks: [floor],
@@ -34,9 +43,7 @@ const fixtureData = (): ContentFile => ({
       category: 'misc',
       weight: 1,
       size: [1, 1],
-      economy: { usage: ['Medical'], tiers: ['Tier1'] },
       workInProgress: false,
-      notLoot: false,
     },
     {
       id: 'fixture_wrong_usage',
@@ -44,9 +51,7 @@ const fixtureData = (): ContentFile => ({
       category: 'misc',
       weight: 1,
       size: [1, 1],
-      economy: { usage: ['Industrial'], tiers: ['Tier1'] },
       workInProgress: false,
-      notLoot: false,
     },
     {
       id: 'fixture_wrong_tier',
@@ -54,10 +59,13 @@ const fixtureData = (): ContentFile => ({
       category: 'misc',
       weight: 1,
       size: [1, 1],
-      economy: { usage: ['Medical'], tiers: ['Tier3'] },
       workInProgress: false,
-      notLoot: false,
     },
+  ],
+  itemEconomy: [
+    { id: 'fixture_allowed', usage: ['Medical'], tiers: ['Tier1'], notLoot: false },
+    { id: 'fixture_wrong_usage', usage: ['Industrial'], tiers: ['Tier1'], notLoot: false },
+    { id: 'fixture_wrong_tier', usage: ['Medical'], tiers: ['Tier3'], notLoot: false },
   ],
   loot: [
     {
@@ -121,6 +129,7 @@ const fixture = (withFurniture = true, supply: 'table' | 'fixed' = 'table') => {
     blockIds: new Map([...base.blockIds, [floor.id, base.blocks.length]]),
     blockMaterials: new Map([...base.blockMaterials, ...parsed.registry.blockMaterials]),
     items: new Map([...base.items, ...parsed.registry.items]),
+    itemEconomy: new Map([...base.itemEconomy, ...parsed.registry.itemEconomy]),
     furniture: new Map([...base.furniture, ...parsed.registry.furniture]),
     loot: new Map([...base.loot, ...parsed.registry.loot]),
     templates: new Map([...base.templates, ...parsed.registry.templates]),
@@ -138,7 +147,7 @@ const fixture = (withFurniture = true, supply: 'table' | 'fixed' = 'table') => {
     supplySourcesIn: (area) => new SupplyFootprints(placedPieces(placement), [...points.values()].flat()).in(area),
     lootPointsIn: (cx, cz) => points.get(`${cx},${cz}`) ?? [],
     furnitureIn: (cx, cz) => furnitureOf({ registry, seed }, placement, [cx, cz], site.lootPointsIn(cx, cz)),
-    zombiesIn: () => [],
+    actorsIn: () => [],
   };
   const session = (restore?: Readonly<SaveSnapshot>) =>
     createSession({

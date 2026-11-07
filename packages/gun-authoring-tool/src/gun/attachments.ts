@@ -1,6 +1,6 @@
-import type { PartAppearance, PartDef, PartInstance, PortDef, Resolved } from '@skelly/engine/assembly/schema.ts';
-import { applyDir, applyPoint, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import type { PartAppearance, PartDef, PartInstance, PortDef, Resolved } from '@skelly/construct/assembly/schema.ts';
+import { applyDir, applyPoint, type Vec3 } from '@skelly/construct/foundation/math.ts';
+import { localSolidBounds } from '@skelly/construct/shapes/geometry.ts';
 import { MATERIALS } from '@skelly/thing-core/materials';
 import type { OpticAperture } from '@skelly/thing-core/optic-aperture';
 import type { Reticle } from '@skelly/thing-core/reticle';

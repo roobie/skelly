@@ -1,25 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { controlsCardRows, filterControlsCardRows } from '../src/game/controls.ts';
-import { BindingRegistry, DEBUG_ONLY_CONTEXTS, INPUT_BINDINGS, INPUT_CONTEXTS } from '../src/game/inputBindings.ts';
+import { DEBUG_ONLY_CONTEXTS, INPUT_CONTEXTS } from '../src/core/inputActions.ts';
+import { measureSnapshots, snapshotTimerQuantumForUserAgent } from '../src/debug/snapshotMeasurement.ts';
+import { BindingRegistry } from '../src/game/bindingRegistry.ts';
+import { controlsCardRows, filterControlsCardRows } from '../src/presentation/controls.ts';
 import {
   loadMetrics,
-  METRICS_HISTORY_LIMIT,
-  measureSnapshots,
   metricsExportJson,
   metricsStorageKey,
   persistMetrics,
   SessionMetrics,
-  snapshotTimerQuantumForUserAgent,
-} from '../src/game/playtestTools.ts';
-import type { Tutorial } from '../src/game/tutorial.ts';
-import { stageTopics } from '../src/ui/tutorial.ts';
+} from '../src/presentation/playtestTools.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
+import { baseRegistry } from './baseRegistry.ts';
+import { makeAttemptPolicy } from './fixtures/attemptPolicy.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const contextWordSeparator = /[^a-z0-9-]+/;
+const { limits } = makeAttemptPolicy();
 
 describe('playtest metrics', () => {
   it('accumulates looting time, deaths, compression, interruptions, and pocket uses', () => {
-    const metrics = new SessionMetrics(7007);
+    const metrics = new SessionMetrics(7007, limits);
     metrics.recordContainerLoot('kitchen cupboard', 2.5, 18);
     metrics.recordDeath('a shambler', 3600);
     metrics.frame(2, true, true);
@@ -49,7 +50,7 @@ describe('playtest metrics', () => {
         data.set(key, value);
       },
     };
-    const metrics = new SessionMetrics(5);
+    const metrics = new SessionMetrics(5, limits);
     metrics.frame(10, false, false);
     metrics.reachBeat('fixtureBeat', 'first arrival');
     metrics.recordKeyItem('fixtureNote', 'looted', 'first loot');
@@ -69,7 +70,7 @@ describe('playtest metrics', () => {
     });
 
     persistMetrics(metrics, storage);
-    const restored = new SessionMetrics(5, loadMetrics(5, storage));
+    const restored = new SessionMetrics(5, limits, loadMetrics(5, storage, limits));
     restored.reachBeat('fixtureBeat', 'arrival after reload');
     restored.recordKeyItem('fixtureNote', 'read', 'read after reload');
     expect(restored.toJSON()).toEqual(metrics.toJSON());
@@ -83,28 +84,48 @@ describe('playtest metrics', () => {
         data.set(key, value);
       },
     };
-    const metrics = new SessionMetrics(12);
+    const metrics = new SessionMetrics(12, limits);
     metrics.recordPocketUse('player pocket 2');
     persistMetrics(metrics, storage);
     expect(JSON.parse(metricsExportJson(metrics))).toMatchObject({ schemaVersion: 1, seed: 12 });
-    expect(loadMetrics(12, storage)).toEqual(metrics.toJSON());
+    expect(loadMetrics(12, storage, limits)).toEqual(metrics.toJSON());
     expect(metricsStorageKey(12)).toContain(':v1:12');
-    expect(loadMetrics(13, storage)).toBeUndefined();
+    expect(loadMetrics(13, storage, limits)).toBeUndefined();
   });
 
-  it('rejects malformed versioned metrics and bounds recorded history', () => {
+  it('rejects malformed versioned metrics', () => {
     const stored = new Map<string, string>([[metricsStorageKey(73), '{"schemaVersion":1,"seed":73}']]);
     const storage = { getItem: (key: string) => stored.get(key) ?? null };
-    expect(loadMetrics(73, storage)).toBeUndefined();
+    expect(loadMetrics(73, storage, limits)).toBeUndefined();
+  });
 
-    const large = new SessionMetrics(74);
-    for (let i = 0; i < METRICS_HISTORY_LIMIT + 1; i++) {
-      large.recordContainerLoot(`container-${i}`, 1, 2);
-      large.recordDeath('shambler', i);
+  it('bounds live and restored metrics with newest histories, first live keys and last restored pockets', () => {
+    const metrics = new SessionMetrics(74, limits);
+    const indices = Array.from({ length: limits.history + 1 }, (_, i) => i);
+    for (const i of indices) {
+      metrics.recordContainerLoot(`container-${i}`, 1, 2);
+      metrics.recordDeath(`fixture-${i}`, i);
+      metrics.recordPocketUse(`pocket-${i}`);
+      metrics.reachBeat(`beat-${i}`, `fixture clock ${i}`);
+      metrics.recordKeyItem(`item-${i}`, 'looted', `fixture clock ${i}`);
     }
-    const payload = large.toJSON();
-    expect(payload.containersLooted).toHaveLength(METRICS_HISTORY_LIMIT);
-    expect(payload.deaths).toHaveLength(METRICS_HISTORY_LIMIT);
+    const payload = metrics.toJSON();
+    expect(payload.containersLooted.map(({ container }) => container)).toEqual(
+      indices.slice(-limits.history).map((i) => `container-${i}`),
+    );
+    expect(payload.deaths.map(({ cause }) => cause)).toEqual(indices.slice(-limits.history).map((i) => `fixture-${i}`));
+    expect(Object.keys(payload.pocketUses)).toEqual(indices.slice(0, limits.pockets).map((i) => `pocket-${i}`));
+    expect(Object.keys(payload.beatsReached)).toEqual(indices.slice(0, limits.marks).map((i) => `beat-${i}`));
+    expect(Object.keys(payload.keyItems)).toEqual(indices.slice(0, limits.marks).map((i) => `item-${i}`));
+
+    const smaller = { history: limits.history - 1, pockets: limits.pockets - 1, marks: limits.marks - 1 };
+    const loaded = loadMetrics(74, { getItem: () => JSON.stringify(payload) }, smaller)!;
+    expect(loaded.containersLooted).toEqual(payload.containersLooted.slice(-smaller.history));
+    expect(loaded.deaths).toEqual(payload.deaths.slice(-smaller.history));
+    expect(Object.keys(loaded.pocketUses)).toEqual(Object.keys(payload.pocketUses).slice(-smaller.pockets));
+    expect(Object.keys(loaded.beatsReached)).toEqual(Object.keys(payload.beatsReached).slice(0, smaller.marks));
+    expect(Object.keys(loaded.keyItems)).toEqual(Object.keys(payload.keyItems).slice(0, smaller.marks));
+    expect(new SessionMetrics(74, smaller, payload).toJSON()).toEqual(loaded);
   });
 });
 
@@ -445,39 +466,17 @@ describe('controls card', () => {
 
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
   });
-  it('opens each tutorial stage on the binding it practises and no browser row', () => {
-    const practised: Record<Tutorial['stage'], string> = {
-      move: 'movement.forward',
-      door: 'world.interact',
-      loot: 'ui.inventory-toggle',
-      hands: 'inventory.hands',
-      open: 'hand.use-dominant',
-      eat: 'hand.use-dominant',
-      drink: 'hand.use-dominant',
-      light: 'hand.use-dominant',
-      escape: 'player.crouch-toggle',
-      pause: 'ui.main-menu-toggle',
-      finish: 'ui.main-menu-toggle',
-      'light-on': 'hand.use-dominant',
-      'light-swap': 'quickbar.use.1',
-      'light-relight': 'hand.use-dominant',
-      revolver: 'firearm.reload',
-      pump: 'firearm.reload',
-      melee: 'stance.ready',
-      complete: 'ui.main-menu-toggle',
-    };
+  it('resolves authored guidance topics to game controls rather than browser rows', () => {
+    const guides = [...baseRegistry().layouts.values()].flatMap((layout) => (layout.guidance ? [layout.guidance] : []));
+    expect(guides.length).toBeGreaterThan(0);
     const rows = controlsCardRows(new BindingRegistry(INPUT_BINDINGS));
-    const topicRows = Object.entries(practised).map(([stage, action]) => {
-      const topic = stageTopics[stage as Tutorial['stage']];
-      const ids = filterControlsCardRows(rows, topic).map(({ id }) => id);
-      return {
-        stage,
-        practised: ids.includes(action),
-        browser: ids.filter((id) => id.startsWith('browser.')),
-        unbound: topic.filter((id) => !ids.includes(id)),
-      };
-    });
-
-    expect(topicRows.filter((row) => !row.practised || row.browser.length > 0 || row.unbound.length > 0)).toEqual([]);
+    for (const guide of guides) {
+      for (const step of guide.steps) {
+        const ids = filterControlsCardRows(rows, step.topics).map(({ id }) => id);
+        expect(step.topics.length).toBeGreaterThan(0);
+        expect(step.topics.filter((id) => !ids.includes(id))).toEqual([]);
+        expect(ids.filter((id) => id.startsWith('browser.'))).toEqual([]);
+      }
+    }
   });
 });

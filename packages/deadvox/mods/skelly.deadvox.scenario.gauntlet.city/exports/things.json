@@ -1,0 +1,14 @@
+[
+  {
+    "id": "gauntlet_lab_entry_card",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "gauntlet_lab_entry_card",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  }
+]

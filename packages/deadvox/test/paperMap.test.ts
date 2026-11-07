@@ -25,9 +25,7 @@ const sheet: ItemDef = {
   category: 'book',
   weight: 1,
   size: [1, 1],
-  economy: { usage: [], tiers: [] },
   workInProgress: false,
-  notLoot: true,
   paperMap: true,
 };
 const bag: ItemDef = {

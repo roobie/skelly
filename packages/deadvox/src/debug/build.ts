@@ -9,15 +9,19 @@ import type { Vec3 } from '../core/coords.ts';
 import { decimalText } from '../core/numberText.ts';
 import { type Body, bodyOverlapsBlock } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
-import type { Engine } from '../game/engine.ts';
-import { inputBindings, labelForAction } from '../game/inputBindings.ts';
+import type { BindingRegistry } from '../game/bindingRegistry.ts';
 import { playerTuning } from '../game/player.ts';
+import type { Engine } from '../presentation/engine.ts';
 
-const hotbarTemplate = (blocks: readonly { color: string; name: string }[], selected: number) => html`
+const hotbarTemplate = (
+  blocks: readonly { color: string; name: string }[],
+  selected: number,
+  bindings: BindingRegistry,
+) => html`
   ${blocks.slice(0, 9).map(
     (block, i) => html`
     <div class=${i === selected ? 'selected' : ''}>
-      <span style=${`background: ${block.color}`}></span>${labelForAction(`debug.build-slot.${i + 1}`)} ${block.name}
+      <span style=${`background: ${block.color}`}></span>${bindings.label(`debug.build-slot.${i + 1}`)} ${block.name}
     </div>
   `,
   )}
@@ -32,16 +36,24 @@ export class BuildMode {
   private readonly reach: number;
   private readonly outline: LineSegments;
   private readonly strikeTerrainCell: (cell: Vec3, blow: BlockBlow) => boolean;
+  private readonly bindings: BindingRegistry;
 
   constructor(
     engine: Engine,
     body: Body,
     reachBlocks: number,
-    strikeTerrainCell: (cell: Vec3, blow: BlockBlow) => boolean,
+    {
+      strikeTerrainCell,
+      bindings,
+    }: {
+      readonly strikeTerrainCell: (cell: Vec3, blow: BlockBlow) => boolean;
+      readonly bindings: BindingRegistry;
+    },
   ) {
     this.engine = engine;
     this.strikeTerrainCell = strikeTerrainCell;
-    inputBindings.subscribe(() => this.draw());
+    this.bindings = bindings;
+    bindings.subscribe(() => this.draw());
     this.body = body;
     this.reach = reachBlocks;
     const s = engine.config.scale.blockSize;
@@ -123,8 +135,14 @@ export class BuildMode {
       material.minimumStrength,
       material.durability * (mode === 'step' ? tuning.stepDurabilityFraction : 1),
     );
-    const admitted = 1 - material.resistance.blunt;
-    return this.strikeTerrainCell(hit.block, { kind: 'blunt', strength: admitted > 0 ? effective / admitted : 0 });
+    if (!Object.hasOwn(material.resistance, tuning.damageKind)) {
+      throw new Error(`Unsupported block damage kind "${tuning.damageKind}"`);
+    }
+    const admitted = 1 - material.resistance[tuning.damageKind]!;
+    return this.strikeTerrainCell(hit.block, {
+      kind: tuning.damageKind,
+      strength: admitted > 0 ? effective / admitted : 0,
+    });
   }
 
   target(eye: Vec3, dir: Vec3, active: boolean): string {
@@ -144,8 +162,8 @@ export class BuildMode {
           block: block.name,
           damage: decimalText(world.blockDamage.get(hit.block)?.damage ?? 0),
           durability: decimalText(material.durability),
-          stepKey: labelForAction('debug.build-damage'),
-          destroyKey: labelForAction('debug.build-destroy'),
+          stepKey: this.bindings.label('debug.build-damage'),
+          destroyKey: this.bindings.label('debug.build-destroy'),
         })
       : (block?.name ?? '');
   }
@@ -155,6 +173,6 @@ export class BuildMode {
       return;
     }
     this.hotbar.hidden = !this.on;
-    render(hotbarTemplate(this.placeable, this.selected), this.hotbar);
+    render(hotbarTemplate(this.placeable, this.selected, this.bindings), this.hotbar);
   }
 }

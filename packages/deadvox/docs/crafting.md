@@ -5,6 +5,7 @@ read_if:
   - you change the repair progress arc or presentation between compressed scheduler ticks
   - you change furniture repair start, hand admission or completion refusal
   - you change Crafting or pinned Repair row naming, admission or refusal accessibility
+  - you change the browser proof of pinned Repair presentation
   - you change reachability validation or the repair-corner scenario and its authored stock destinations
 ---
 
@@ -26,7 +27,7 @@ Recipe classification is independent of item categories and skill gates so repai
 future world results can share navigation without pretending to be inventory items.
 A tree gives each recipe one browsing home; tags express overlapping properties without
 duplicating branches. Content owns the labels and search terms so packs can extend or
-translate the catalogue without a code registration. See `src/core/schema.ts`,
+translate the catalogue without a code registration. See `src/core/schema/recipes.ts`,
 `RecipeSchema`, and `src/core/content.ts`, `checkRecipeCategories` and `checkRecipe`.
 
 Browsing is inspection, not admission: filtering must not spend stock, grant knowledge or
@@ -45,9 +46,9 @@ Escrow prevents other actions consuming inputs mid-craft. Lost tools or stations
 
 Disassembly promises its yield when work starts, so stopping, skill changes or tool changes must not alter it. Repair improves an existing target rather than supplying disassembly results. Craft completion earns practice; take-apart does not. Books and skill levels teach recipes independently, so a book can shortcut the skill grind without changing item ownership. Practice may come from any activity. See `src/core/disassembly.ts`, `planDisassembly`, and `src/core/character.ts`, `Character.awardPractice` and `Character.learnSkillRecipes`.
 
-Blades already dull with use, so each wearing blade has two sharpening repairs: a grind at a grinding wheel found in garages and workshops, and a weaker hone with a carried whetstone. A fixed wheel at a base and a weaker field stone make keeping an edge a trip-or-carry decision. See `src/core/wear.ts`, `wearMeleeWeaponOnHit`, and `src/content/base/recipes.libsonnet`, `sharpenRecipes`.
+Blades already dull with use, so each wearing blade has two sharpening repairs: a grind at a grinding wheel found in garages and workshops, and a weaker hone with a carried whetstone. A fixed wheel at a base and a weaker field stone make keeping an edge a trip-or-carry decision. See `src/core/wear.ts`, `wearMeleeWeaponOnHit`, and `tools/jsonnet/lib/sharpen-recipes.libsonnet`, `sharpenRecipes`.
 
-Reading a recipe book progresses only while its page is open. Closing the page pauses work and preserves progress; movement closes it and passes through. Readable-only notes and signs do not create a timed job. See `src/core/bookReading.ts`, `bookReadingHooks`, and `src/game/play.ts`, `stopReadingOnClose`.
+Reading a recipe book progresses only while its page is open. Closing the page pauses work and preserves progress; movement closes it and passes through. Readable-only notes and signs do not create a timed job. See `src/core/bookReading.ts`, `bookReadingHooks`, and `src/game/readingClose.ts`, `stopReadingOnClose`.
 
 ## Long actions
 
@@ -63,6 +64,13 @@ Cooking uses a lit station for recipes that require heat. Losing it stops the pl
 
 ## Reachability and tests
 
-The test-house repair stock demonstrates reachable plans rather than pinning a stock catalogue. Keep derivation separate from authored destinations so recipe changes do not require maintaining a second stock list: content names the building whose containers receive the stock, and game logic derives what goes in. A repair that needs a workstation is stocked only when that station stands in the building, so the stock never promises a repair the player cannot do there. See `src/game/testHouseRepair.ts`, `repairStockRecipes`, and `src/content/base/layouts-test-house.jsonnet`, `repairStock`.
+A screen selection is not proof that its frame-owned panel has rendered. Presentation checks must wait for the target's visible panel rather than racing a synchronous visibility read against presentation; see `src/ui/craftController.ts`, `mountCraftPanel`.
 
-`checkReachability` proves recipes reachable from world sources and skips demo layouts, because debug stock must not make a recipe look reachable in normal play. The test house is a demo layout, so its stock is tested by planning each repair with live reach from a stand point inside the building, beside a damaged target. That also proves the containers and the station are within reach of each other. See `src/core/reachability.ts`, `checkReachability`, and `test/repairCorner.test.ts`, `planFromBuilding`.
+Debug garage stock is authored evaluation content, not a recipe-coverage oracle. A new
+tool or changed recipe requires a hand edit; unlisted supplies remain absent rather than
+being synthesized by game logic. See `docs/test-house.md`, "Garage".
+
+`checkReachability` skips demo layouts because evaluation stock must not make a recipe
+look reachable in ordinary play. Fixed-stock checks protect admission and authored item
+state, not completeness against the recipe catalogue. See `src/core/reachability.ts`,
+`checkReachability`, and `test/debugScenarioMod.test.ts`.

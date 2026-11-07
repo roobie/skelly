@@ -1,4 +1,4 @@
-import type { PartFamily } from '@skelly/engine/assembly/schema.ts';
+import type { PartFamily } from '@skelly/construct/assembly/schema.ts';
 import { fullProduct } from './coveringArray.ts';
 import { runSweeps } from './sweeps.ts';
 

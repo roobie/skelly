@@ -18,12 +18,17 @@ const armour = {
   size: [1, 1],
   wearable: { slot: 'vest', encumbrance: 0, wearPerDamage: 0.01, protects: { cut: 0.75, acid: 0.5 } },
 };
-const wearables = 'items-wearables.json';
+const wearables = 'wearables-items.json';
+const wearableModels = 'models-wearables.json';
 const hitBuild = buildRegistry([
-  { source: wearables, data: JSON.parse(readFileSync(join('src/content/base', wearables), 'utf8')) as unknown },
+  { source: 'wear-sounds', data: { sounds: [...registry.sounds.values()] } },
   {
-    source: 'models-items.json',
-    data: JSON.parse(readFileSync('src/content/base/models-items.json', 'utf8')) as unknown,
+    source: wearables,
+    data: JSON.parse(readFileSync(join('../mods/skelly.wearables', wearables), 'utf8')) as unknown,
+  },
+  {
+    source: wearableModels,
+    data: JSON.parse(readFileSync(join('../mods/skelly.wearables', wearableModels), 'utf8')) as unknown,
   },
   {
     source: 'taped-armour-inputs.json',
@@ -184,7 +189,7 @@ describe('item wear', () => {
     } = wearing('test_vest');
     const sim = new Simulation({ seed: 1, ...playerWearHooks(inventory, tuning) });
     sim.hit(8, 'fixture', 'torso', { kind: 'cut' });
-    expect(vest!.condition).toBeCloseTo(1 - 8 * armour.wearable.wearPerDamage * tuning.outerWearMultiplier.cut);
+    expect(vest!.condition).toBeCloseTo(1 - 8 * armour.wearable.wearPerDamage * tuning.outerWearMultiplier.cut!);
     inventory.changeCondition(vest!.uid, -vest!.condition + 0.01);
     const initial = sim.body.health;
     sim.hit(8, 'fixture', 'torso', { kind: 'cut' });
@@ -239,7 +244,7 @@ describe('item wear', () => {
 
     wearOnPlayerHit(inventory, tuning, { region, damage: 1, kind: 'blunt' });
 
-    expect(worn!.condition).toBeCloseTo(1 - rate * tuning.outerWearMultiplier.blunt);
+    expect(worn!.condition).toBeCloseTo(1 - rate * tuning.outerWearMultiplier.blunt!);
     expect(otherWorn!.condition).toBe(1);
   });
 
@@ -264,7 +269,7 @@ describe('item wear', () => {
 
     wearOnPlayerHit(inventory, tuning, { region: 'torso', damage: 3, kind: 'acid' });
 
-    expect(outer!.condition).toBeCloseTo(1 - rate * 3 * tuning.outerWearMultiplier.acid);
+    expect(outer!.condition).toBeCloseTo(1 - rate * 3 * tuning.outerWearMultiplier.acid!);
   });
 
   it('ground contact with impervious boots leaves health, wounds and the boots unchanged', () => {

@@ -1,5 +1,5 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { exportGlb } from '@skelly/thing-export/glb.ts';
 import type { Mesh, MeshStandardMaterial } from 'three';
 import { describe, expect, it } from 'vitest';

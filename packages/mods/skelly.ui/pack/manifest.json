@@ -1,0 +1,34 @@
+{
+  "dependencies": [],
+  "files": [
+    {
+      "kind": "content",
+      "path": "ui.json"
+    },
+    {
+      "kind": "content",
+      "path": "ui-sounds.json"
+    },
+    {
+      "kind": "content",
+      "path": "cursor.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-nope-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/cursors/cursor.png"
+    }
+  ],
+  "id": "skelly.ui",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

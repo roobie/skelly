@@ -1,0 +1,450 @@
+// Loop-closing connections are checked rather than solved because this package does not solve constraints.
+
+import type { Issue } from '../foundation/issue.ts';
+import {
+  add,
+  applyDir,
+  compose,
+  cross,
+  fromColumns,
+  IDENTITY,
+  invert,
+  length,
+  rotation,
+  rotationAngle,
+  rotX,
+  rotY,
+  scale,
+  sub,
+  type Transform,
+} from '../foundation/math.ts';
+import { validateExtrudedPolygon } from '../shapes/geometry.ts';
+import { revolvedProfileError } from '../shapes/revolve.ts';
+import type {
+  Assembly,
+  Domain,
+  KeepOut,
+  PartDef,
+  PortDef,
+  PortRef,
+  Resolved,
+  ResolvedConnection,
+  ResolvedParam,
+} from './schema.ts';
+
+/** 180° about the port's up axis: turns a port frame to face its mate. */
+const FLIP = rotation(rotY(180));
+
+/** A port's frame in its part's local frame, at the given slot. */
+/** The port ref at the other end of a connection, if ref is one of its ends. */
+const otherEnd = (c: { readonly from: string; readonly to: string }, ref: string): string | undefined => {
+  if (c.from === ref) {
+    return c.to;
+  }
+  return c.to === ref ? c.from : undefined;
+};
+
+export const portFrame = (port: PortDef, slot = 0): Transform => ({
+  r: fromColumns(port.normal, port.up, cross(port.normal, port.up)),
+  t: add(port.pos, scale(port.up, slot * (port.slots?.pitch ?? 0))),
+});
+
+type PortConnection = Pick<ResolvedConnection, 'conn' | 'from' | 'to'>;
+
+/** The `from` port's frame in the assembly, including slot and roll. */
+const fromSideFrame = (rc: PortConnection, fromPart: Transform): Transform =>
+  compose(compose(fromPart, portFrame(rc.from.port, rc.conn.slot)), rotation(rotX(rc.conn.roll ?? 0)));
+
+/** Places a part by mating its port frame to a host port at one numbered slot. */
+export const mateTransform = ({
+  hostTransform,
+  hostPort,
+  slot,
+  attachmentPort,
+  roll = 0,
+}: {
+  readonly hostTransform: Transform;
+  readonly hostPort: PortDef;
+  readonly slot: number | undefined;
+  readonly attachmentPort: PortDef;
+  readonly roll?: number;
+}): Transform =>
+  compose(
+    compose(compose(compose(hostTransform, portFrame(hostPort, slot)), rotation(rotX(roll))), FLIP),
+    invert(portFrame(attachmentPort)),
+  );
+
+const placeTo = (rc: PortConnection, fromPart: Transform): Transform =>
+  mateTransform({
+    hostTransform: fromPart,
+    hostPort: rc.from.port,
+    slot: rc.conn.slot,
+    attachmentPort: rc.to.port,
+    roll: rc.conn.roll ?? 0,
+  });
+
+const placeFrom = (rc: PortConnection, toPart: Transform): Transform => {
+  const fromSide = compose(compose(toPart, portFrame(rc.to.port)), FLIP);
+  return compose(
+    compose(fromSide, rotation(rotX(-(rc.conn.roll ?? 0)))),
+    invert(portFrame(rc.from.port, rc.conn.slot)),
+  );
+};
+
+const resolveMotionSources = (
+  defs: Map<string, PartDef>,
+  connections: readonly Omit<ResolvedConnection, 'role'>[],
+  structure: ReportStructure,
+): void => {
+  for (const [id, def] of defs) {
+    const source = def.motion?.sourceKeepOut;
+    if (!source) {
+      continue;
+    }
+    const connection = connections.find(
+      (candidate) =>
+        (candidate.from.part === id && candidate.from.port.id === source.port) ||
+        (candidate.to.part === id && candidate.to.port.id === source.port),
+    );
+    const owner = connection?.from.part === id ? connection.to.part : connection?.from.part;
+    const path = owner ? defs.get(owner)?.keepOuts.find(({ id: keepOutId }) => keepOutId === source.id) : undefined;
+    if (!path) {
+      structure(`Part "${id}" motion source ${source.port} → ${source.id} is not connected.`, [id]);
+      continue;
+    }
+    const { sourceKeepOut: _sourceKeepOut, ...motion } = def.motion!;
+    let axisInOwner = motion.axis;
+    if (connection) {
+      axisInOwner =
+        connection.from.part === owner
+          ? applyDir(placeTo(connection, IDENTITY), motion.axis)
+          : applyDir(placeFrom(connection, IDENTITY), motion.axis);
+    }
+    const travel =
+      2 * axisInOwner.reduce((distance, component, axis) => distance + Math.abs(component) * path.box.half[axis]!, 0);
+    const end = [motion.axis[0] * travel, motion.axis[1] * travel, motion.axis[2] * travel] as const;
+    defs.set(id, { ...def, motion: { ...motion, end } });
+  }
+};
+
+/** How far a connection is from being mated, given where both parts are. */
+export const connectionMismatch = (
+  rc: ResolvedConnection,
+  placed: ReadonlyMap<string, Transform>,
+): { distance: number; angle: number } | undefined => {
+  const a = placed.get(rc.from.part);
+  const b = placed.get(rc.to.part);
+  if (!(a && b)) {
+    return undefined;
+  }
+  const expected = compose(fromSideFrame(rc, a), FLIP);
+  const actual = compose(b, portFrame(rc.to.port));
+  return {
+    distance: length(sub(expected.t, actual.t)),
+    angle: rotationAngle(expected.r, actual.r),
+  };
+};
+
+const splitRef = (ref: string): [string, string] | undefined => {
+  const dot = ref.indexOf('.');
+  if (dot <= 0 || dot === ref.length - 1) {
+    return undefined;
+  }
+  return [ref.slice(0, dot), ref.slice(dot + 1)];
+};
+
+/**
+ * Works out every part's params: set in the assembly, else read from a
+ * neighbour (ParamSpec.from), else the default. Reading from neighbours only
+ * needs the connection list, not placement, so it runs before parts are built.
+ * Parts with an unknown family or a bad param are reported and left out.
+ */
+const boxKeepOutFallback = (keepOut: KeepOut): KeepOut => {
+  const { profile: _profile, axis: _axis, z: _z, ...boxOnly } = keepOut;
+  return boxOnly;
+};
+
+type ParamTable = Map<string, Record<string, ResolvedParam>>;
+type ReportStructure = (message: string, parts?: string[]) => void;
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
+const resolveParams = (assembly: Assembly, domain: Domain, structure: ReportStructure): ParamTable => {
+  const result: ParamTable = new Map();
+  const pending: { part: string; name: string }[] = [];
+
+  for (const [id, inst] of Object.entries(assembly.parts)) {
+    const family = domain.families[inst.family];
+    if (!family) {
+      structure(`Part "${id}" uses unknown family "${inst.family}".`, [id]);
+      continue;
+    }
+    let ok = true;
+    for (const [name, value] of Object.entries(inst.params ?? {})) {
+      const spec = family.params[name];
+      if (!spec) {
+        structure(`Part "${id}" (${family.name}) has no parameter "${name}".`, [id]);
+        ok = false;
+      } else if (!spec.values.includes(value)) {
+        structure(`Part "${id}": ${name}="${value}" is not one of ${spec.values.join(', ')}.`, [id]);
+        ok = false;
+      }
+    }
+    if (!ok) {
+      continue;
+    }
+    const values: Record<string, ResolvedParam> = {};
+    for (const [name, spec] of Object.entries(family.params)) {
+      const set = inst.params?.[name];
+      if (set !== undefined) {
+        values[name] = { value: set, source: 'set' };
+      } else if (spec.from?.length) {
+        pending.push({ part: id, name });
+      } else {
+        values[name] = { value: spec.default, source: 'default' };
+      }
+    }
+    result.set(id, values);
+  }
+
+  // The parts connected at a given port, from the raw connection list.
+  const neighbours = (part: string, port: string): string[] => {
+    const ref = `${part}.${port}`;
+    return assembly.connections.flatMap((c) => {
+      const other = otherEnd(c, ref);
+      const split = other === undefined ? undefined : splitRef(other);
+      return split ? [split[0]] : [];
+    });
+  };
+
+  const setDefault = (part: string, name: string): void => {
+    const spec = domain.families[assembly.parts[part]!.family]!.params[name]!;
+    result.get(part)![name] = { value: spec.default, source: 'default' };
+  };
+
+  // Resolve inherited params until nothing changes; chains resolve in any order.
+  while (pending.length > 0) {
+    let progress = false;
+    for (let i = pending.length - 1; i >= 0; i--) {
+      const { part, name } = pending[i]!;
+      const spec = domain.families[assembly.parts[part]!.family]!.params[name]!;
+      const values = result.get(part)!;
+      for (const src of spec.from ?? []) {
+        const hit = neighbours(part, src.port)
+          .map((n) => ({ n, v: result.get(n)?.[src.param] }))
+          .find((x) => x.v !== undefined);
+        if (!hit) {
+          continue;
+        }
+        const from = `${hit.n}.${src.param}`;
+        if (spec.values.includes(hit.v!.value)) {
+          values[name] = { value: hit.v!.value, source: 'inherited', from };
+        } else {
+          structure(
+            `Part "${part}": ${name} would come from ${from}="${hit.v!.value}", which is not one of ${spec.values.join(', ')}.`,
+            [part],
+          );
+          values[name] = { value: spec.default, source: 'default' };
+        }
+        pending.splice(i, 1);
+        progress = true;
+        break;
+      }
+    }
+    if (progress) {
+      continue;
+    }
+    // Stuck. Params with no connected source take their default, which may
+    // unblock params reading from them. If every source is connected, the
+    // rest wait on each other in a cycle: default them all.
+    const unconnected = pending.filter(({ part, name }) => {
+      const spec = domain.families[assembly.parts[part]!.family]!.params[name]!;
+      return !(spec.from ?? []).some((src) => neighbours(part, src.port).some((n) => result.has(n)));
+    });
+    for (const p of unconnected.length > 0 ? unconnected : [...pending]) {
+      setDefault(p.part, p.name);
+      pending.splice(pending.indexOf(p), 1);
+    }
+  }
+
+  for (const [part, resolved] of result) {
+    const family = domain.families[assembly.parts[part]!.family]!;
+    const values = Object.fromEntries(Object.entries(resolved).map(([name, param]) => [name, param.value]));
+    const refusal = family.validateParams?.(values);
+    if (refusal) {
+      structure(`Part "${part}" (${family.name}) cannot be built: ${refusal}`, [part]);
+      result.delete(part);
+    }
+  }
+  return result;
+};
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
+export const resolve = (assembly: Assembly, domain: Domain): Resolved => {
+  const issues: Issue[] = [];
+  const structure = (message: string, parts: string[] = []): void => {
+    issues.push({ rule: 'structure', message, parts });
+  };
+
+  const params = resolveParams(assembly, domain, structure);
+
+  // Build every part instance from its family.
+  const defs = new Map<string, PartDef>();
+  for (const [id, resolved] of params) {
+    const family = domain.families[assembly.parts[id]!.family]!;
+    const values = Object.fromEntries(Object.entries(resolved).map(([k, v]) => [k, v.value]));
+    const def = family.build(values);
+    const validSolids = def.solids.filter((solid) => {
+      if (solid.kind === 'box') {
+        return true;
+      }
+      const error =
+        solid.kind === 'revolved'
+          ? revolvedProfileError(solid.profile, solid.axis, solid.origin, solid.sides)
+          : validateExtrudedPolygon(solid.profile, solid.z, solid.axis, solid.clip);
+      if (!error) {
+        return true;
+      }
+      structure(`Part "${id}" solid "${solid.id}" is invalid: ${error}.`, [id]);
+      return false;
+    });
+    const validKeepOuts = def.keepOuts.map((keepOut) => {
+      const hasProfile = keepOut.profile !== undefined;
+      const hasZ = keepOut.z !== undefined;
+      if (hasProfile !== hasZ) {
+        structure(`Part "${id}" keep-out "${keepOut.id}" requires both profile and z; falling back to its box.`, [id]);
+        return boxKeepOutFallback(keepOut);
+      }
+      if (hasProfile && hasZ) {
+        const error = validateExtrudedPolygon(keepOut.profile!, keepOut.z!, keepOut.axis);
+        if (error) {
+          structure(
+            `Part "${id}" keep-out "${keepOut.id}" has an invalid profile: ${error}; falling back to its box.`,
+            [id],
+          );
+          return boxKeepOutFallback(keepOut);
+        }
+      }
+      return keepOut;
+    });
+    defs.set(
+      id,
+      validSolids.length === def.solids.length &&
+        validKeepOuts.every((keepOut, index) => keepOut === def.keepOuts[index])
+        ? def
+        : { ...def, solids: validSolids, keepOuts: validKeepOuts },
+    );
+  }
+
+  // Check each connection refers to real parts and ports.
+  const lookup = (ref: string, index: number): PortRef | undefined => {
+    const split = splitRef(ref);
+    if (!split) {
+      structure(`Connection #${index}: "${ref}" is not of the form "part.port".`);
+      return undefined;
+    }
+    const [part, portId] = split;
+    if (!(part in assembly.parts)) {
+      structure(`Connection #${index}: no part "${part}".`);
+      return undefined;
+    }
+    const def = defs.get(part);
+    if (!def) {
+      return undefined; // already reported above
+    }
+    const port = def.ports.find((p) => p.id === portId);
+    if (!port) {
+      structure(`Connection #${index}: part "${part}" (${def.family}) has no port "${portId}".`, [part]);
+      return undefined;
+    }
+    return { part, port };
+  };
+
+  const pending: Omit<ResolvedConnection, 'role'>[] = [];
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
+  assembly.connections.forEach((conn, index) => {
+    const from = lookup(conn.from, index);
+    const to = lookup(conn.to, index);
+    if (!(from && to)) {
+      return;
+    }
+    if (from.part === to.part) {
+      structure(`Connection #${index} connects "${from.part}" to itself.`, [from.part]);
+      return;
+    }
+    if (conn.slot !== undefined) {
+      const { slots } = from.port;
+      if (!slots) {
+        structure(`Connection #${index}: ${conn.from} has no slots.`, [from.part]);
+        return;
+      }
+      if (!Number.isInteger(conn.slot) || conn.slot < 0 || conn.slot >= slots.count) {
+        structure(`Connection #${index}: slot ${conn.slot} is outside ${conn.from} (0–${slots.count - 1}).`, [
+          from.part,
+        ]);
+        return;
+      }
+    }
+    if (conn.roll !== undefined && conn.roll % 90 !== 0) {
+      structure(`Connection #${index}: roll ${conn.roll} is not a multiple of 90.`, [from.part]);
+      return;
+    }
+    pending.push({ index, conn, from, to });
+  });
+
+  resolveMotionSources(defs, pending, structure);
+
+  // Place parts by walking out from the root.
+  const placed = new Map<string, Transform>();
+  const roles = new Map<number, ResolvedConnection['role']>();
+  if (!(assembly.root in assembly.parts)) {
+    structure(`Root "${assembly.root}" is not one of the parts.`);
+  } else if (defs.has(assembly.root)) {
+    placed.set(assembly.root, IDENTITY);
+    let progress = true;
+    while (progress) {
+      progress = false;
+      for (const c of pending) {
+        if (roles.has(c.index)) {
+          continue;
+        }
+        const a = placed.get(c.from.part);
+        const b = placed.get(c.to.part);
+        const rc = { ...c, role: 'tree' as const };
+        if (a && b) {
+          roles.set(c.index, 'loop');
+        } else if (a) {
+          placed.set(c.to.part, placeTo(rc, a));
+          roles.set(c.index, 'tree');
+          progress = true;
+        } else if (b) {
+          placed.set(c.from.part, placeFrom(rc, b));
+          roles.set(c.index, 'tree');
+          progress = true;
+        }
+      }
+    }
+  }
+
+  const connections = pending.map((c) => ({ ...c, role: roles.get(c.index) ?? 'unplaced' }));
+  const filledPorts = new Set(
+    pending.flatMap(({ from, to }) => [`${from.part}.${from.port.id}`, `${to.part}.${to.port.id}`]),
+  );
+  const disconnected = [...defs].flatMap(([id, def]) => {
+    if (placed.has(id) || issues.some((issue) => issue.parts.includes(id))) {
+      return [];
+    }
+    // Required-port issues take precedence over the broader disconnected-part report.
+    if (def.ports.some((port) => port.required && !filledPorts.has(`${id}.${port.id}`))) {
+      return [];
+    }
+    return [id];
+  });
+  if (disconnected.length > 0) {
+    issues.push({
+      rule: 'structure',
+      message: `${disconnected.join(', ')} ${disconnected.length === 1 ? 'is' : 'are'} not connected to the root`,
+      parts: disconnected,
+    });
+  }
+  return { assembly, domain, defs, params, placed, connections, issues };
+};

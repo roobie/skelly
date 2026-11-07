@@ -6,8 +6,10 @@
 
 import { installColumn } from '../core/canonicalTerrain.ts';
 import type { Chunk } from '../core/chunk.ts';
+import { revealedColumns } from '../core/columnReveal.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
 import type { FencePostDefs } from '../core/fencePosts.ts';
+import type { MeshData } from '../core/mesher.ts';
 import { extractPadded, extractWide } from '../core/meshInput.ts';
 import type { Scale } from '../core/scale.ts';
 import type { SkySnapshot } from '../core/skySnapshot.ts';
@@ -17,9 +19,7 @@ import type { WireMeshes } from '../core/wireMesh.ts';
 import type { World } from '../core/world.ts';
 import { isEnclosed } from '../core/world.ts';
 import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../core/worldgen.ts';
-import type { ChunkMeshes } from '../render/chunks.ts';
-import { revealedColumns } from '../render/columnReveal.ts';
-import type { FromMesher, ToMesher } from '../worker/protocol.ts';
+import type { FromMesher, MesherPort, MesherSource, ToMesher } from './mesherProtocol.ts';
 
 const COLUMNS_PER_FRAME = 2;
 
@@ -60,9 +60,18 @@ export const farColumns = (columns: Iterable<string>, [pcx, pcz]: readonly [numb
     return !withinRadius(cx - pcx, cz - pcz, keep);
   });
 
+/** Where finished chunk meshes go, and which columns may be drawn. */
+export interface ChunkMeshSink {
+  setRevealedColumns: (columns: ReadonlySet<string>) => void;
+  keys: () => IterableIterator<string>;
+  set: (key: string, origin: [number, number, number], data: MeshData) => void;
+  remove: (key: string) => void;
+}
+
 export interface StreamerOptions {
   world: World;
-  meshes: ChunkMeshes;
+  meshes: ChunkMeshSink;
+  mesher: MesherSource;
   seed: number;
   terrain: TerrainBlocks;
   shape: TerrainShape;
@@ -110,7 +119,7 @@ export class Streamer {
   private readonly dirty = new Set<string>(); // chunks needing a (re)mesh
   private readonly versions = new Map<string, number>();
   private readonly inFlight = new Set<string>();
-  private readonly workers: Worker[] = [];
+  private readonly workers: MesherPort[] = [];
   private readonly maxInFlight: number;
   private generationFailed = false;
   failure: string | undefined;
@@ -136,7 +145,7 @@ export class Streamer {
   onBeforeReveal: ((cx: number, cz: number) => void) | undefined;
   private revealed = new Set<string>();
   private firstMeshDelivered = false;
-  private readonly workerLoads = new Map<Worker, number>();
+  private readonly workerLoads = new Map<MesherPort, number>();
   onSkyService: ((realMs: number) => void) | undefined;
 
   /** Copied requests await admission without occupying startup mesh slots. */
@@ -184,17 +193,15 @@ export class Streamer {
     this.occluders = Uint8Array.from({ length: opts.colors.length / 3 }, (_, id) =>
       Number(id !== 0 && !opts.wireMeshes?.[id] && !opts.liquids?.[id]),
     );
-    // Leave a physical core for the main thread: hardwareConcurrency counts hyperthreads.
-    const count = Math.max(1, Math.min(3, Math.floor((navigator.hardwareConcurrency || 2) / 2) - 1));
+    const { count } = opts.mesher;
     for (let i = 0; i < count; i++) {
-      const worker = new Worker(new URL('../worker/mesh.worker.ts', import.meta.url), { type: 'module' });
-      worker.onmessage = (e: MessageEvent<FromMesher>) => this.receive(worker, e.data);
-      worker.onerror = (event) => {
-        this.failure ??= event.message || 'World mesh worker failed';
-      };
-      worker.onmessageerror = () => {
-        this.failure ??= 'World mesh worker reply could not be decoded';
-      };
+      const worker = opts.mesher.create();
+      worker.listen({
+        message: (reply) => this.receive(worker, reply),
+        failure: (reason) => {
+          this.failure ??= reason;
+        },
+      });
       this.send(worker, {
         type: 'init',
         colors: opts.colors,
@@ -540,7 +547,7 @@ export class Streamer {
     });
   }
 
-  private receive(worker: Worker, msg: FromMesher): void {
+  private receive(worker: MesherPort, msg: FromMesher): void {
     this.workerLoads.set(worker, (this.workerLoads.get(worker) ?? 1) - 1);
     if (msg.type === 'sky') {
       const callback = this.skyReplies.get(msg.id);
@@ -586,7 +593,7 @@ export class Streamer {
     this.refreshReveal();
   }
 
-  private send(worker: Worker, msg: ToMesher): void {
+  private send(worker: MesherPort, msg: ToMesher): void {
     if (msg.type !== 'init') {
       this.workerLoads.set(worker, (this.workerLoads.get(worker) ?? 0) + 1);
     }
@@ -597,6 +604,6 @@ export class Streamer {
     if (msg.type === 'sky') {
       transfer.push(...msg.input.chunks.flatMap((chunk) => (chunk.raw ? [chunk.raw.buffer as ArrayBuffer] : [])));
     }
-    worker.postMessage(msg, transfer);
+    worker.post(msg, transfer);
   }
 }

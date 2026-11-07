@@ -40,18 +40,18 @@ export const sameFirearmsSkillZeroHandling = (
 ): boolean => canonicalJson(left) === canonicalJson(right);
 
 export interface FirearmsCombatTuning {
-  readonly longGunSteadinessSkill: string;
-  readonly raiseMinimumSimSeconds: number;
-  readonly raiseRangeSimSeconds: number;
-  readonly raiseHalfLifeLevels: number;
+  readonly longGunSteadinessRole?: string | undefined;
+  readonly raiseSimSeconds: number;
+  readonly raiseMinimumSimSeconds?: number | undefined;
+  readonly raiseHalfLifeLevels?: number | undefined;
   /** The ADS-only speed floor, as the longest allowed aim-down-sights acquisition; bounds ADS, not raise. */
   readonly adsAcquisitionMaximumSimSeconds: number;
   readonly readyMovementMinimum: number;
-  readonly readyMovementRange: number;
-  readonly readyMovementHalfLifeLevels: number;
+  readonly readyMovementRange?: number | undefined;
+  readonly readyMovementHalfLifeLevels?: number | undefined;
   readonly loweredPitchRadians: number;
   readonly skillZeroHandling: FirearmsSkillZeroHandling;
-  readonly wobbleSkillTenVariance: number;
+  readonly wobbleSkillTenVariance?: number | undefined;
   readonly wobbleLimitRadians: number;
   readonly wobbleVerticalToHorizontalRatio: number;
   readonly wobbleLuneArchPower: number;
@@ -60,12 +60,12 @@ export interface FirearmsCombatTuning {
   readonly wobbleNoiseSigmaRadiansPerSqrtSecond: number;
   readonly wobbleNoiseSmoothingSimSeconds: number;
   readonly wobbleStanceDriftScale: Readonly<Record<PlayerStance, number>>;
-  readonly reloadFactorFloor: number;
-  readonly reloadFactorHalfLifeLevels: number;
-  readonly rackFactorFloor: number;
-  readonly rackFactorHalfLifeLevels: number;
-  readonly attachmentFactorFloor: number;
-  readonly attachmentFactorHalfLifeLevels: number;
+  readonly reloadFactorFloor?: number | undefined;
+  readonly reloadFactorHalfLifeLevels?: number | undefined;
+  readonly rackFactorFloor?: number | undefined;
+  readonly rackFactorHalfLifeLevels?: number | undefined;
+  readonly attachmentFactorFloor?: number | undefined;
+  readonly attachmentFactorHalfLifeLevels?: number | undefined;
   readonly caseEjection: {
     readonly speedMetresPerSimSecond: number;
     readonly flightSimSeconds: number;
@@ -80,8 +80,8 @@ export interface FirearmsSkillEffects {
   readonly variance: number;
   readonly recoilKickScale: number;
   readonly recoilRecoveryRate: number;
-  readonly reloadDuration: number;
-  readonly rackDuration: number;
+  readonly reloadFactor: number;
+  readonly rackFactor: number;
 }
 
 export interface FirearmStanceEffects {
@@ -110,20 +110,29 @@ export const firearmsSkillEffects = (
   shotKind: FirearmsSkillShotKind = 'singleShot',
 ): FirearmsSkillEffects => {
   const effectLevel = effectLevelFor(level);
+  const zero = tuning.skillZeroHandling[shotKind];
+  if (tuning.curve === undefined) {
+    return {
+      variance: zero.variance,
+      recoilKickScale: zero.recoilKickScale,
+      recoilRecoveryRate: zero.recoilRecoveryScale,
+      reloadFactor: 1,
+      rackFactor: 1,
+    };
+  }
   const curve = curveFor(tuning);
   const expertControl = skillSaturation(SKILL_LEVEL_MAX, curve);
   const control = skillSaturation(effectLevel, curve);
   const progressFromExpert = (control - expertControl) / (1 - expertControl);
-  const zero = tuning.skillZeroHandling[shotKind];
   const expertRecovery = 2 - expertControl;
   const atSkillZero = (expertValue: number, zeroValue: number): number =>
     expertValue + (zeroValue - expertValue) * progressFromExpert;
   return {
-    variance: atSkillZero(tuning.wobbleSkillTenVariance, zero.variance),
+    variance: atSkillZero(tuning.wobbleSkillTenVariance!, zero.variance),
     recoilKickScale: atSkillZero(expertControl, zero.recoilKickScale),
     recoilRecoveryRate: atSkillZero(expertRecovery, zero.recoilRecoveryScale),
-    reloadDuration: skillSaturation(effectLevel, tuning.reloadFactorFloor, tuning.reloadFactorHalfLifeLevels),
-    rackDuration: skillSaturation(effectLevel, tuning.rackFactorFloor, tuning.rackFactorHalfLifeLevels),
+    reloadFactor: skillSaturation(effectLevel, tuning.reloadFactorFloor!, tuning.reloadFactorHalfLifeLevels!),
+    rackFactor: skillSaturation(effectLevel, tuning.rackFactorFloor!, tuning.rackFactorHalfLifeLevels!),
   };
 };
 
@@ -148,13 +157,18 @@ export const adsAcquisitionDuration = (raiseDurationSimSeconds: number, tuning: 
 export const firearmStanceEffects = (level: number, tuning: FirearmsCombatTuning): FirearmStanceEffects => {
   const effectLevel = effectLevelFor(level);
   const raiseDurationSimSeconds =
-    tuning.raiseMinimumSimSeconds +
-    tuning.raiseRangeSimSeconds * skillSaturation(effectLevel, 0, tuning.raiseHalfLifeLevels);
+    tuning.raiseMinimumSimSeconds === undefined
+      ? tuning.raiseSimSeconds
+      : tuning.raiseMinimumSimSeconds +
+        (tuning.raiseSimSeconds - tuning.raiseMinimumSimSeconds) *
+          skillSaturation(effectLevel, 0, tuning.raiseHalfLifeLevels!);
   return {
     raiseDurationSimSeconds,
     adsAcquisitionDurationSimSeconds: adsAcquisitionDuration(raiseDurationSimSeconds, tuning),
     readyMovementFactor:
       tuning.readyMovementMinimum +
-      tuning.readyMovementRange * (effectLevel / (effectLevel + tuning.readyMovementHalfLifeLevels)),
+      (tuning.readyMovementRange === undefined
+        ? 0
+        : tuning.readyMovementRange * (effectLevel / (effectLevel + tuning.readyMovementHalfLifeLevels!))),
   };
 };

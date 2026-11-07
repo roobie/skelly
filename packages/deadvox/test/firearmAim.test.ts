@@ -4,6 +4,7 @@ import type { ModelDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { graphicsTuningOf } from '../src/core/graphicsTuning.ts';
 import { startupContent } from './baseRegistry.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 
 const BUNDLED_CONTENT = startupContent();
 const PLAYER_VIEW_FOV_DEGREES = graphicsTuningOf(BUNDLED_CONTENT.registry).playerViewFovDegrees;
@@ -25,25 +26,25 @@ it('chooses a bore-line zombie in front of a far wall', () => {
   const blockSize = 0.5;
   const eye: Vec3 = [0, 4, 0];
   const direction: Vec3 = [0, 0, -1];
-  const { system, target: zombie } = zombieAimFixture(BUNDLED_CONTENT.registry, eye, direction, blockSize);
+  const { system, target: actor } = zombieAimFixture(BUNDLED_CONTENT.registry, eye, direction, blockSize);
   const surface = farWallTarget(eye, direction, blockSize);
 
-  expect(surface.distanceMetres).toBeGreaterThan(zombie.distanceMetres);
+  expect(surface.distanceMetres).toBeGreaterThan(actor.distanceMetres);
 
   const result = firearmBoreTarget({
     eye,
     direction,
     surface,
-    zombies: system,
+    actors: system,
     blockSize,
     rangeBlocks: FIXTURE_RANGE_BLOCKS,
     weapon: FISTS_MELEE,
   });
-  const zombiePoint = eye.map((value, axis) => value + direction[axis]! * (zombie.distanceMetres / blockSize)) as Vec3;
+  const actorPoint = eye.map((value, axis) => value + direction[axis]! * (actor.distanceMetres / blockSize)) as Vec3;
 
-  expect(result.point).toEqual(zombiePoint);
-  expect(result.distanceMetres).toBe(zombie.distanceMetres);
-  expect(result.zombie).toEqual(zombie);
+  expect(result.point).toEqual(actorPoint);
+  expect(result.distanceMetres).toBe(actor.distanceMetres);
+  expect(result.actor).toEqual(actor);
 });
 
 it('projects the shipped lowered bore below the raised firearm bore', () => {
@@ -52,7 +53,7 @@ it('projects the shipped lowered bore below the raised firearm bore', () => {
   const camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 2, 0.05, 100);
   camera.position.set(...(eye.map((value) => value * blockSize) as Vec3));
   const viewport = { left: 0, top: 0, width: 800, height: 400 };
-  const tuning = BUNDLED_CONTENT.registry.skills.get('firearms_combat')?.combat?.firearms;
+  const tuning = skilledFirearmsTuning(BUNDLED_CONTENT.registry);
   if (!tuning) {
     throw new Error('Missing firearms-combat pose tuning');
   }

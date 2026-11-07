@@ -1,19 +1,20 @@
 import { describe, expect, it } from 'vitest';
+import { acidSpitWindupProgress } from '../src/core/actorPose.ts';
+import type { PlayerSense } from '../src/core/actorSense.ts';
+import type { AcidSpitRelease } from '../src/core/actorSystem.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { acidSpitWindupProgress } from '../src/core/zombiePose.ts';
-import type { AcidSpitRelease, PlayerSense } from '../src/core/zombies.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const { registry } = startupContent();
-const ACID = registry.zombies.get('acid_zombie')!;
+const ACID = registry.actors.get('acid_zombie')!;
 const SPIT = ACID.acidSpit!;
 const DAY_CYCLE = requireDayCycle(registry);
 const SCALE = makeScale(0.5);
@@ -23,7 +24,7 @@ const WIND_FRAMES = Math.ceil(SPIT.windupSimSeconds * 60);
 
 const inBand = (SPIT.rangeBand.nearMetres + SPIT.rangeBand.farMetres) / 2 / BLOCK_SIZE;
 const PLAYER_POS: Vec3 = [0, 2, 0];
-const zombieAt = (blocks: number): Vec3 => [blocks, 1, 0];
+const actorAt = (blocks: number): Vec3 => [blocks, 1, 0];
 
 const sensed = (pos: Vec3, movement: PlayerSense['movement'] = 'still'): PlayerSense => ({
   pos,
@@ -36,7 +37,7 @@ const sensed = (pos: Vec3, movement: PlayerSense['movement'] = 'still'): PlayerS
 });
 
 interface Harness {
-  system: ZombieSystem;
+  system: ActorSystem;
   releases: AcidSpitRelease[];
   sounds: string[];
   setSolid: (solid: SolidAt) => void;
@@ -46,7 +47,7 @@ const harness = (playerPos: () => PlayerSense, solid: SolidAt = FLOOR): Harness 
   const releases: AcidSpitRelease[] = [];
   const sounds: string[] = [];
   let isSolid = solid;
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player: playerPos,
     isSolid: (x, y, z) => isSolid(x, y, z),
     isOpaque: (x, y, z) => isSolid(x, y, z),
@@ -72,7 +73,7 @@ const harness = (playerPos: () => PlayerSense, solid: SolidAt = FLOOR): Harness 
   };
 };
 
-const frames = (system: ZombieSystem, count: number): void => {
+const frames = (system: ActorSystem, count: number): void => {
   for (let frame = 0; frame < count; frame++) {
     system.tick(1 / 60);
   }
@@ -81,8 +82,8 @@ const frames = (system: ZombieSystem, count: number): void => {
 const WALL: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === Math.floor(inBand / 2) && y >= 1 && y <= 4);
 
 const spawn = (h: Harness, blocks = inBand) => {
-  const id = h.system.add(ACID, zombieAt(blocks), [-1, 0, 0]);
-  return { id, zombie: h.system.store.get(id)! };
+  const id = h.system.add(ACID, actorAt(blocks), [-1, 0, 0]);
+  return { id, actor: h.system.store.get(id)! };
 };
 
 describe('acid spit', () => {
@@ -90,7 +91,7 @@ describe('acid spit', () => {
     const seen = harness(() => sensed(PLAYER_POS));
     const seeing = spawn(seen);
     frames(seen.system, 2);
-    expect(seeing.zombie.spitWindup).toBeGreaterThan(0);
+    expect(seeing.actor.spitWindup).toBeGreaterThan(0);
     expect(seen.sounds).toContain(ACID.sounds.attack);
 
     const heard = harness(() => sensed(PLAYER_POS, 'sprinting'), WALL);
@@ -98,8 +99,8 @@ describe('acid spit', () => {
     const modes = new Set<string>();
     for (let frame = 0; frame < 300; frame++) {
       heard.system.tick(1 / 60);
-      modes.add(hearing.zombie.mode);
-      expect(hearing.zombie.spitWindup).toBe(0);
+      modes.add(hearing.actor.agent!.mode);
+      expect(hearing.actor.spitWindup).toBe(0);
     }
     expect(modes).toContain('investigate');
     expect(modes).not.toContain('chase');
@@ -108,26 +109,26 @@ describe('acid spit', () => {
 
   it('exposes wind-up progress rising from zero toward one', () => {
     const h = harness(() => sensed(PLAYER_POS));
-    const { zombie } = spawn(h);
-    expect(acidSpitWindupProgress(zombie)).toBe(0);
+    const { actor } = spawn(h);
+    expect(acidSpitWindupProgress(actor)).toBe(0);
     frames(h.system, 2);
-    const early = acidSpitWindupProgress(zombie);
+    const early = acidSpitWindupProgress(actor);
     frames(h.system, Math.floor(WIND_FRAMES / 2));
-    expect(acidSpitWindupProgress(zombie)).toBeGreaterThan(early);
-    expect(acidSpitWindupProgress(zombie)).toBeLessThan(1);
+    expect(acidSpitWindupProgress(actor)).toBeGreaterThan(early);
+    expect(acidSpitWindupProgress(actor)).toBeLessThan(1);
   });
 
   it('releases exactly one spit with the mover hit moves and no damage at release', () => {
     const h = harness(() => sensed(PLAYER_POS));
-    const { zombie } = spawn(h);
+    const { actor } = spawn(h);
     frames(h.system, WIND_FRAMES + 5);
     expect(h.releases).toHaveLength(1);
     const [{ moves, origin, aim }] = h.releases as [AcidSpitRelease];
     expect(moves).toEqual(SPIT.moves);
     // The spit leaves the posed mouth: ahead of the body toward the player and above its feet.
-    expect(origin[0]).toBeLessThan(zombie.body.pos[0]);
+    expect(origin[0]).toBeLessThan(actor.body.pos[0]);
     expect(origin[0]).toBeGreaterThan(PLAYER_POS[0]);
-    expect(origin[1]).toBeGreaterThan(zombie.body.pos[1]);
+    expect(origin[1]).toBeGreaterThan(actor.body.pos[1]);
     expect(Math.hypot(...aim)).toBeCloseTo(1, 5);
   });
 
@@ -135,30 +136,30 @@ describe('acid spit', () => {
     const released = harness(() => sensed(PLAYER_POS));
     const first = spawn(released);
     frames(released.system, WIND_FRAMES + 5);
-    expect(first.zombie.spitWait).toBeGreaterThan(SPIT.cooldownSimSeconds - 0.5);
+    expect(first.actor.spitWait).toBeGreaterThan(SPIT.cooldownSimSeconds - 0.5);
 
     const hit = harness(() => sensed(PLAYER_POS));
     const second = spawn(hit);
     frames(hit.system, 10);
-    expect(second.zombie.spitWindup).toBeGreaterThan(0);
-    const [x, y, z] = second.zombie.body.pos;
+    expect(second.actor.spitWindup).toBeGreaterThan(0);
+    const [x, y, z] = second.actor.body.pos;
     const origin: Vec3 = [x - 1, y + 1.3 / BLOCK_SIZE, z];
     expect(hit.system.swing(origin, [1, 0, 0], { ...FISTS_MELEE, damage: 1, reach: 4, cooldown: 0 })).toBe(second.id);
-    expect(second.zombie.spitWindup).toBe(0);
-    expect(second.zombie.spitWait).toBeCloseTo(SPIT.cancelPenaltyFraction * SPIT.cooldownSimSeconds, 5);
+    expect(second.actor.spitWindup).toBe(0);
+    expect(second.actor.spitWait).toBeCloseTo(SPIT.cancelPenaltyFraction * SPIT.cooldownSimSeconds, 5);
     frames(hit.system, WIND_FRAMES + 5);
     expect(hit.releases).toHaveLength(0);
   });
 
   it('spends no spit and no cooldown when the line from mouth to chest is blocked at release', () => {
     const h = harness(() => sensed(PLAYER_POS));
-    const { zombie } = spawn(h);
+    const { actor } = spawn(h);
     frames(h.system, 10);
-    expect(zombie.spitWindup).toBeGreaterThan(0);
+    expect(actor.spitWindup).toBeGreaterThan(0);
     h.setSolid(WALL);
     frames(h.system, WIND_FRAMES);
     expect(h.releases).toHaveLength(0);
-    expect(zombie.spitWait).toBe(0);
+    expect(actor.spitWait).toBe(0);
   });
 
   it('lets low cover that clears a standing chest block a crouched one, so a crouched player draws no spit', () => {
@@ -174,7 +175,7 @@ describe('acid spit', () => {
     // searched in tenths of a block for a column where that holds, wherever the mouth and eye land.
     const coverFor = (feet: Vec3) => {
       const open = harness(stanceAt(feet, false));
-      const watcher = spawn(open).zombie;
+      const watcher = spawn(open).actor;
       frames(open.system, WIND_FRAMES + 5);
       const [{ origin }] = open.releases as [AcidSpitRelease];
       const eye: Vec3 = [watcher.body.pos[0], watcher.body.pos[1] + ACID.eyeHeightMetres / BLOCK_SIZE, 0];
@@ -211,81 +212,81 @@ describe('acid spit', () => {
     expect(standing.releases).toHaveLength(1);
 
     const crouched = harness(stance(true), lowCover);
-    const { zombie } = spawn(crouched);
+    const { actor } = spawn(crouched);
     frames(crouched.system, 10);
-    expect(zombie.spitWindup).toBeGreaterThan(0);
+    expect(actor.spitWindup).toBeGreaterThan(0);
     frames(crouched.system, WIND_FRAMES);
     expect(crouched.releases).toHaveLength(0);
-    expect(zombie.spitWait).toBe(0);
+    expect(actor.spitWait).toBe(0);
   });
 
   it('holds ground inside the band, spitting each cooldown, and closes in beyond the far edge', () => {
     const h = harness(() => sensed(PLAYER_POS));
-    const { zombie } = spawn(h);
+    const { actor } = spawn(h);
     frames(h.system, 2);
-    const held = [...zombie.body.pos];
+    const held = [...actor.body.pos];
     frames(h.system, Math.ceil((SPIT.cooldownSimSeconds * 2 + SPIT.windupSimSeconds) * 60));
-    expect(zombie.body.pos[0]).toBeCloseTo(held[0]!, 1);
+    expect(actor.body.pos[0]).toBeCloseTo(held[0]!, 1);
     expect(h.releases.length).toBeGreaterThanOrEqual(2);
 
     const far = harness(() => sensed(PLAYER_POS));
     const approaching = spawn(far, (SPIT.rangeBand.farMetres * 1.5) / BLOCK_SIZE);
-    const [before] = approaching.zombie.body.pos;
+    const [before] = approaching.actor.body.pos;
     frames(far.system, 120);
-    expect(approaching.zombie.body.pos[0]).toBeLessThan(before - 0.5);
+    expect(approaching.actor.body.pos[0]).toBeLessThan(before - 0.5);
   });
 
   it('finishes a winding-up spit point-blank and starts no melee wind-up until after the release', () => {
     let playerX = 0;
     const h = harness(() => sensed([playerX, 2, 0]));
-    const { zombie } = spawn(h);
+    const { actor } = spawn(h);
     frames(h.system, 10);
-    expect(zombie.spitWindup).toBeGreaterThan(0);
+    expect(actor.spitWindup).toBeGreaterThan(0);
 
-    playerX = zombie.body.pos[0] - ACID.attack.reach / 2 / BLOCK_SIZE;
+    playerX = actor.body.pos[0] - ACID.attack!.reach / 2 / BLOCK_SIZE;
     for (let frame = 0; frame < WIND_FRAMES && h.releases.length === 0; frame++) {
       h.system.tick(1 / 60);
-      expect(zombie.attackWindup).toBe(0);
+      expect(actor.attackWindup).toBe(0);
     }
     expect(h.releases).toHaveLength(1);
 
     frames(h.system, 5);
-    expect(zombie.attackWindup).toBeGreaterThan(0);
+    expect(actor.attackWindup).toBeGreaterThan(0);
   });
 
   it('closes in to melee in the pocket inside the near edge and holds ground once back in the band', () => {
-    const pocketMetres = (SPIT.rangeBand.nearMetres + ACID.attack.reach) / 2;
+    const pocketMetres = (SPIT.rangeBand.nearMetres + ACID.attack!.reach) / 2;
     const pocket = harness(() => sensed(PLAYER_POS));
     const closing = spawn(pocket, pocketMetres / BLOCK_SIZE);
-    const [before] = closing.zombie.body.pos;
+    const [before] = closing.actor.body.pos;
     frames(pocket.system, 30);
-    expect(closing.zombie.body.pos[0]).toBeLessThan(before - 0.25);
-    expect(closing.zombie.spitWindup).toBe(0);
+    expect(closing.actor.body.pos[0]).toBeLessThan(before - 0.25);
+    expect(closing.actor.spitWindup).toBe(0);
 
     let playerX = 0;
     const regained = harness(() => sensed([playerX, 2, 0]));
     const returning = spawn(regained, pocketMetres / BLOCK_SIZE);
     frames(regained.system, 30);
-    playerX = returning.zombie.body.pos[0] - inBand;
+    playerX = returning.actor.body.pos[0] - inBand;
     frames(regained.system, 2);
-    const [held] = returning.zombie.body.pos;
+    const [held] = returning.actor.body.pos;
     frames(regained.system, 30);
-    expect(returning.zombie.body.pos[0]).toBeCloseTo(held, 1);
-    expect(returning.zombie.spitWindup + regained.releases.length).toBeGreaterThan(0);
+    expect(returning.actor.body.pos[0]).toBeCloseTo(held, 1);
+    expect(returning.actor.spitWindup + regained.releases.length).toBeGreaterThan(0);
   });
 
   it('round-trips mid-wind-up state so the restored zombie releases the same aim', () => {
     const h = harness(() => sensed(PLAYER_POS));
-    const { id, zombie } = spawn(h);
+    const { id, actor } = spawn(h);
     frames(h.system, Math.floor(WIND_FRAMES / 2));
-    expect(zombie.spitWindup).toBeGreaterThan(0);
-    const snapshot = structuredClone(h.system.snapshotState()) as ReturnType<ZombieSystem['snapshotState']>;
+    expect(actor.spitWindup).toBeGreaterThan(0);
+    const snapshot = structuredClone(h.system.snapshotState()) as ReturnType<ActorSystem['snapshotState']>;
 
     const twin = harness(() => sensed(PLAYER_POS));
     twin.system.restoreState(snapshot, (typeId) => (typeId === ACID.id ? ACID : undefined));
     const restored = twin.system.store.get(id)!;
-    expect(restored.spitWindup).toBe(zombie.spitWindup);
-    expect(restored.spitWait).toBe(zombie.spitWait);
+    expect(restored.spitWindup).toBe(actor.spitWindup);
+    expect(restored.spitWait).toBe(actor.spitWait);
 
     frames(h.system, WIND_FRAMES);
     frames(twin.system, WIND_FRAMES);

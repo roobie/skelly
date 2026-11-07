@@ -1,5 +1,5 @@
 import { Group, type PerspectiveCamera, PointLight, type Scene, Vector3 } from 'three';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import { claimed } from '../core/capabilities.ts';
 import type { Inventory, Location } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { lightExposureFor } from '../core/lights.ts';
@@ -44,8 +44,8 @@ export interface BodyGlow {
 /** The acid sacs' glows as drawn this frame. */
 export function acidGlows(anchors: Iterable<DrawnAnchors>): BodyGlow[] {
   const glows: BodyGlow[] = [];
-  for (const { zombie, glow } of anchors) {
-    const body = zombie.type.acidBody;
+  for (const { actor, glow } of anchors) {
+    const body = actor.type.acidBody;
     if (body && glow) {
       glows.push({ position: glow, color: body.color, ...body.light });
     }
@@ -143,7 +143,7 @@ export class LightPool {
 
   update(inventory: Inventory, context: LightPoolContext): void {
     const { camera, blockSize, daylightScale } = context;
-    const tuning = inventory.registry.senses.get(CORE_CONTENT_IDS.player)!.light;
+    const tuning = claimed(inventory.registry.senses, 'player')!.light;
     const groundLiftMetres = tuning.groundLight.renderLiftMetres;
     const { pointDecay } = tuning.illumination;
     const entries = [...inventory.items()]

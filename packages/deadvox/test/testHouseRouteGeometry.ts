@@ -1,5 +1,5 @@
-import layouts from '../src/content/base/layouts-test-house.json' with { type: 'json' };
-import templates from '../src/content/base/templates-test-house.json' with { type: 'json' };
+import layouts from '../mods/skelly.deadvox.scenario.test-house/layouts-test-house.json' with { type: 'json' };
+import templates from '../mods/skelly.deadvox.scenario.test-house/templates-test-house.json' with { type: 'json' };
 
 const layout = layouts.layouts[0]!;
 const wall = templates.templates.find((template) => Object.values(template.palette).includes('hazard_yellow'))!;

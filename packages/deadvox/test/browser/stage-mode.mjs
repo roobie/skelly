@@ -10,6 +10,7 @@ const modes = Object.freeze({
   'full-auto': 'render-free',
   'case-visual-pool': 'pixel',
   'save-controller-regressions': 'render-free',
+  'gauntlet-save-regressions': 'render-free',
   'save-storage': 'render-free',
   'save-storage-navigation': 'pixel',
   'save-storage-opfs-continue': 'pixel',

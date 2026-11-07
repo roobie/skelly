@@ -1,13 +1,13 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { readStackContentSources } from '../../tools/readBundledPacks.ts';
+import { ActorSystem, BACKGROUND_ACTOR_RATE, BACKGROUND_ACTOR_SLICE_COUNT } from '../core/actorSystem.ts';
+import { claimed } from '../core/capabilities.ts';
 import { parseTimeOfDay } from '../core/clock.ts';
 import { buildRegistry, requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
-import { BACKGROUND_ZOMBIE_RATE, BACKGROUND_ZOMBIE_SLICE_COUNT, ZombieSystem } from '../core/zombies.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
 import { ACTIVE_SHAMBLER_TARGET, parseShamblerSeed } from './plan.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
@@ -15,15 +15,9 @@ import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { createHeadlessShamblerWorld } from './shamblerWorld.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const base = resolve(root, 'src/content/base');
-const { registry } = buildRegistry(
-  readdirSync(base)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
-);
+const { registry } = buildRegistry(readStackContentSources(root, 'skelly.deadvox'));
 const PLAYER = playerTuning(registry);
-const shambler = registry.zombies.get('shambler');
+const shambler = registry.actors.get('shambler');
 if (!shambler) {
   console.error('The base content has no shambler definition.');
   process.exit(1);
@@ -81,13 +75,13 @@ const startTime = parseTimeOfDay('23:30');
 for (const count of counts) {
   const activeCount = Math.min(count, ACTIVE_SHAMBLER_TARGET);
   const backgroundCount = count - activeCount;
-  const system = new ZombieSystem({
-    activeZombieRadiusMetres: siteGenerationOf(registry).activeZombieRadiusMetres,
+  const system = new ActorSystem({
+    activeActorRadiusMetres: siteGenerationOf(registry).activeActorRadiusMetres,
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
     blockSize: engine.config.scale.blockSize,
     physics: physicsFor(engine.config.scale, PLAYER),
-    tuning: registry.senses.get(CORE_CONTENT_IDS.player),
+    tuning: claimed(registry.senses, 'player'),
     player: () => player,
     dayPhase: () => dayPhaseAt(requireDayCycle(registry), startTime),
     hurtPlayer: () => undefined,
@@ -98,7 +92,7 @@ for (const count of counts) {
     player: playerBody,
     engine,
     registry,
-    zombies: system,
+    actors: system,
     tier: 'active',
   });
   if (backgroundCount > 0) {
@@ -108,7 +102,7 @@ for (const count of counts) {
       player: playerBody,
       engine,
       registry,
-      zombies: system,
+      actors: system,
       tier: 'background',
     });
   }
@@ -131,10 +125,10 @@ for (const count of counts) {
       }
       const backgroundStart = process.hrtime.bigint();
       system.tickBackground(
-        1 / BACKGROUND_ZOMBIE_RATE,
+        1 / BACKGROUND_ACTOR_RATE,
         simTime,
-        frame % BACKGROUND_ZOMBIE_SLICE_COUNT,
-        BACKGROUND_ZOMBIE_SLICE_COUNT,
+        frame % BACKGROUND_ACTOR_SLICE_COUNT,
+        BACKGROUND_ACTOR_SLICE_COUNT,
       );
       if (collect) {
         backgroundSamples.push(Number(process.hrtime.bigint() - backgroundStart) / 1e6);

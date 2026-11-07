@@ -1,9 +1,9 @@
+import type { ActorSystem } from './actorSystem.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayPhase } from './dayPhase.ts';
 import type { ScenarioRun } from './scenarioRun.ts';
 import type { EventRuleDef } from './schema.ts';
-import type { ZombieSystem } from './zombies.ts';
 
 export interface EventRuleAdvance {
   rules: readonly EventRuleDef[];
@@ -12,15 +12,15 @@ export interface EventRuleAdvance {
   dayPhase: DayPhase;
   /** Where the player stands; a released horde heads here. */
   player: Readonly<Vec3>;
-  registry: Pick<Registry, 'zombies'>;
-  zombies: Pick<ZombieSystem, 'releaseHorde'>;
+  registry: Pick<Registry, 'actors'>;
+  actors: Pick<ActorSystem, 'releaseHorde'>;
 }
 
 /**
  * Fires each due rule once, in authored order. Only the calendar and the run's saved firing record decide
  * firing, never column loading or rendering (`docs/decisions/0008-deterministic-world.md`, "Decision").
  */
-export const advanceEventRules = ({ rules, run, calendar, dayPhase, player, registry, zombies }: EventRuleAdvance) => {
+export const advanceEventRules = ({ rules, run, calendar, dayPhase, player, registry, actors }: EventRuleAdvance) => {
   if (run.won) {
     return;
   }
@@ -34,11 +34,11 @@ export const advanceEventRules = ({ rules, run, calendar, dayPhase, player, regi
     }
     run.fire(rule.id, calendar);
     rule.effects.forEach((effect, index) => {
-      const type = registry.zombies.get(effect.zombie);
+      const type = registry.actors.get(effect.actor);
       if (!type) {
-        throw new Error(`Event rule ${rule.id} names no zombie type "${effect.zombie}"`);
+        throw new Error(`Event rule ${rule.id} names no zombie type "${effect.actor}"`);
       }
-      zombies.releaseHorde(`event:${rule.id}:${index}`, type, {
+      actors.releaseHorde(`event:${rule.id}:${index}`, type, {
         center: [...effect.at],
         count: effect.count,
         target: [...player],

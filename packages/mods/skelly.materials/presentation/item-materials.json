@@ -1,0 +1,17 @@
+{
+  "assets/models/cloth_bundle.glb": { "materials": [null, null] },
+  "assets/models/cord_coil.glb": { "materials": ["cord-olive"] },
+  "assets/models/duct_tape.glb": { "materials": ["tape-grey", "paperboard-tan"] },
+  "assets/models/fastener_pack.glb": { "materials": ["paperboard-tan", "paint-terracotta", "steel-grey"] },
+  "assets/models/glass_shards.glb": { "materials": [null] },
+  "assets/models/nails.glb": { "materials": ["steel-grey"] },
+  "assets/models/rag.glb": { "materials": ["cloth-rag", "cloth-rag-shadow"] },
+  "assets/models/rubber_strip.glb": { "materials": [null, null] },
+  "assets/models/scrap_metal.glb": { "materials": ["scrap-rusted", "steel-grey"] },
+  "assets/models/small_spring.glb": { "materials": ["steel-grey"] },
+  "assets/models/stick.glb": { "materials": ["wood-walnut"] },
+  "assets/models/tape_roll.glb": { "materials": ["paint-terracotta", "paperboard-tan"] },
+  "assets/models/thread_spool.glb": { "materials": ["paperboard-tan", "paint-terracotta"] },
+  "assets/models/wax.glb": { "materials": ["wax-cream"] },
+  "assets/models/wood_offcut.glb": { "materials": [null, null] }
+}

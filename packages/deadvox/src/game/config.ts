@@ -1,28 +1,23 @@
+import { claimed, claimedId } from '../core/capabilities.ts';
 import { parseTimeOfDay } from '../core/clock.ts';
 import { type Registry, requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK } from '../core/coords.ts';
+import { GENERATED_SITES } from '../core/generatedSites.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
 import type { WeatheringDef } from '../core/schema.ts';
-import { DEFAULT_WEATHERING_PROFILE_ID } from '../core/weather.ts';
 import { resolveWeatheringUrl } from '../core/weatheringUrl.ts';
-import { sweepFromUrl } from '../render/ragdollConfig.ts';
 import type { StartupContent } from './bundledContent.ts';
+import { sweepFromUrl } from './ragdollConfig.ts';
+import { requireStart, startForSite } from './startSelection.ts';
 
 export const DEFAULT_RADIUS_M = 96;
 const MIN_RADIUS_M = 32;
 const MAX_RADIUS_M = 256;
 
-// The mod chooser owns admission, so it must not stage a recipe its later selection could discard.
-export const repairLookEnabled = (params: URLSearchParams): boolean =>
-  params.get('debug') === '1' &&
-  params.get('site') === 'testHouse' &&
-  params.get('repairLook') === '1' &&
-  params.get('mods') !== '1';
-
 export interface GameConfig {
   content: StartupContent;
+  startId: string;
   seed: number;
   scale: Scale;
   /** View (mesh) radius in metres. */
@@ -39,7 +34,6 @@ export interface GameConfig {
   start: number;
   /** Debug keys are on (`?debug=1`). */
   debug: boolean;
-  debugRepairLook?: boolean;
   ragdollSweep?: number;
   /** Fresh debug games may override the start-card hand (`?handedness=left`). */
   debugHandedness?: HandSide;
@@ -72,29 +66,13 @@ export interface GameConfig {
   /** Debug-only world-x boundary; only fragments east of it receive weathering. */
   weatheringSplit?: number;
   /** Zombies are drawn as full mobgen actors (src/render/mobActors.ts) by default; `?actors=boxes` draws
-   * ZombieMeshes' six boxes instead. */
-  actors: ActorRenderer;
+   * ActorMeshes' six boxes instead. */
+  actors: ActorRenderMode;
 }
 
-export type ActorRenderer = 'boxes' | 'detailed';
+export type ActorRenderMode = 'boxes' | 'detailed';
 
 const defaultStart = (content: StartupContent): number => requireDayCycle(content.registry).defaultStartGameTimeOfDay;
-
-/** `?time=` wins, then the layout's own time; the weathering test site defaults to noon. */
-const startTime = (
-  content: StartupContent,
-  site: string,
-  layoutTime: number | undefined,
-  requestedTime: string | null,
-): number => {
-  if (requestedTime !== null) {
-    return parseTimeOfDay(requestedTime) ?? defaultStart(content);
-  }
-  if (layoutTime !== undefined) {
-    return layoutTime;
-  }
-  return site === 'weatheringTest' ? requireDayCycle(content.registry).noonGameTimeOfDay : defaultStart(content);
-};
 
 /** The benchmark passes other block sizes; the game always uses BLOCK_SIZE. */
 export const makeConfig = (
@@ -103,14 +81,17 @@ export const makeConfig = (
   content: StartupContent,
   blockSize = BLOCK_SIZE,
 ): GameConfig => {
+  const selectedStart = requireStart(content, content.defaultStart);
   const scale = makeScale(blockSize);
-  const profile = content.registry.weathering.get(DEFAULT_WEATHERING_PROFILE_ID);
-  const graphics = content.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics);
+  const profile = claimed(content.registry.weathering, 'defaultWeathering');
+  const profileId = claimedId(content.registry.weathering, 'defaultWeathering');
+  const graphics = claimed(content.registry.graphics, 'graphics');
   if (!graphics) {
     throw new Error('Missing core graphics tuning');
   }
   return {
     content,
+    startId: selectedStart.id,
     seed,
     scale,
     radiusM,
@@ -118,21 +99,21 @@ export const makeConfig = (
     readyRadiusChunks: chunksFor(scale, Math.min(radiusM, graphics.readyRadiusM)),
     streamHysteresisChunks: graphics.streamHysteresisM / (CHUNK * scale.blockSize),
     fogFarPlaneScale: graphics.fogFarPlaneScale,
-    start: defaultStart(content),
+    start: selectedStart.startTimeGameTimeOfDay ?? defaultStart(content),
     debug: false,
-    site: 'gauntlet',
+    site: selectedStart.site,
     authoredDecals: true,
-    storeys: 1,
-    density: null,
-    weatheringProfileId: DEFAULT_WEATHERING_PROFILE_ID,
-    weatheringDefaultProfileId: DEFAULT_WEATHERING_PROFILE_ID,
+    storeys: selectedStart.storeys ?? 1,
+    density: selectedStart.density ?? null,
+    weatheringProfileId: profileId,
+    weatheringDefaultProfileId: profileId,
     weathering: profile ? { ...profile } : undefined,
     actors: 'detailed',
   };
 };
 
 /** `?actors=boxes`; anything else (including absent) is 'detailed'. */
-export const actorRendererFromUrl = (params: URLSearchParams): ActorRenderer =>
+export const actorRendererFromUrl = (params: URLSearchParams): ActorRenderMode =>
   params.get('actors') === 'boxes' ? 'boxes' : 'detailed';
 
 export type SiteName = string;
@@ -208,10 +189,7 @@ const MAX_STOREYS = 20;
 export const savingEnabledFromUrl = (params: URLSearchParams): boolean =>
   params.get('debug') !== '1' || params.get('save') === '1';
 
-/**
- * `?site=city` and `?storeys=N` build the stress-test city; `?site=testHouse` selects the test house;
- * `?site=weatheringTest` selects the debug-only comparison; `fallback` is the site otherwise.
- */
+/** Authored scene names require admitted rows; only generated-site selectors bypass that lookup. */
 export const siteFromUrl = (
   params: URLSearchParams,
   fallback: SiteName,
@@ -224,10 +202,7 @@ export const siteFromUrl = (
   const debug = params.get('debug') === '1';
   return {
     site:
-      requested === 'city' ||
-      requested === 'testHouse' ||
-      requested === 'forest' ||
-      (debug && requested === 'weatheringTest') ||
+      (requested !== null && GENERATED_SITES.has(requested) && (debug || requested !== 'weatheringTest')) ||
       (requested !== null && (registry.layouts.has(requested) || registry.scenarios.has(requested)))
         ? requested
         : fallback,
@@ -242,10 +217,34 @@ export const applyWeatheringConfig = (
   registry: Pick<Registry, 'layouts' | 'weathering'> = config.content.registry,
 ): void => {
   config.weatheringDefaultProfileId =
-    registry.layouts.get(config.site)?.weatheringProfile ?? DEFAULT_WEATHERING_PROFILE_ID;
+    registry.layouts.get(config.site)?.weatheringProfile ?? claimedId(registry.weathering, 'defaultWeathering');
   const weathering = resolveWeatheringUrl(params, registry.weathering, config.weatheringDefaultProfileId, config.debug);
   config.weatheringProfileId = weathering?.profileId ?? config.weatheringDefaultProfileId;
   config.weathering = weathering?.settings;
+};
+
+const applyStartConfig = (config: GameConfig, params: URLSearchParams): void => {
+  const { content } = config;
+  const requestedStart = params.get('start');
+  const selected = requireStart(content, requestedStart ?? content.defaultStart, config.debug);
+  const siteSelection = siteFromUrl(params, selected.site, content.registry);
+  const start =
+    requestedStart === null && params.has('site') ? startForSite(content, siteSelection.site, config.debug) : selected;
+  if (requestedStart !== null && params.has('site') && params.get('site') !== start.site) {
+    throw new Error(`Start "${start.id}" requires site "${start.site}"`);
+  }
+  config.startId = start.id;
+  config.site = siteSelection.site;
+  config.seed = params.has('seed')
+    ? Number(params.get('seed')) | 0
+    : (start.seed ?? crypto.getRandomValues(new Int32Array(1))[0]!);
+  config.storeys = params.has('storeys') ? siteSelection.storeys : (start.storeys ?? 1);
+  config.density = params.has('density') ? siteSelection.density : (start.density ?? null);
+  const requestedTime = params.get('time');
+  config.start =
+    requestedTime === null
+      ? (start.startTimeGameTimeOfDay ?? defaultStart(content))
+      : (parseTimeOfDay(requestedTime) ?? defaultStart(content));
 };
 
 /**
@@ -255,17 +254,13 @@ export const applyWeatheringConfig = (
 export const configFromUrl = (params: URLSearchParams, content: StartupContent): GameConfig => {
   const radius = Number(params.get('radius') ?? DEFAULT_RADIUS_M);
   const config = makeConfig(
-    Number(params.get('seed') ?? 1) | 0,
+    Number(params.get('seed')) | 0,
     radius >= MIN_RADIUS_M && radius <= MAX_RADIUS_M ? radius : DEFAULT_RADIUS_M,
     content,
   );
-  Object.assign(config, siteFromUrl(params, 'gauntlet', content.registry));
-  config.authoredDecals = params.get('decals') !== '0';
-  const layoutTime = content.registry.layouts.get(config.site)?.startTimeGameTimeOfDay;
-  const requestedTime = params.get('time');
-  config.start = startTime(content, config.site, layoutTime, requestedTime);
   config.debug = params.get('debug') === '1';
-  config.debugRepairLook = repairLookEnabled(params);
+  applyStartConfig(config, params);
+  config.authoredDecals = params.get('decals') !== '0';
   Object.assign(config, sweepFromUrl(params, config));
   applyWeatheringConfig(config, params);
   const weatheringSplit = debugWeatheringSplitFromUrl(params, config.debug, config.site);

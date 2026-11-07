@@ -1,14 +1,14 @@
-// The dog shambler template: an infected quadruped. Its body plan and poses live in mob/dog.ts; this
+// The dog shambler template: an infected quadruped. Its body plan and poses live in mob/quadruped.ts; this
 // module only names the template and its sampled ranges.
 //
 // It is `comparison-only`: kept for side-by-side checks against other quadrupeds, not for spawning, so a
 // consumer refuses it (core/template.ts's `consumableTemplate`) and the viewer labels it. It also stays
 // outside mob/templates.ts's TEMPLATES list, so Deadvox's enumerations never see it; the viewer opts in
-// explicitly, the same way the amalgam boss does.
+// explicitly, the same way the fused-mass body does.
 
 import { registerTemplate, type Template } from '../core/template.ts';
-// Imports for the side effect of registering the 'dog' body plan (mob/dog.ts's registerBodyPlan call).
-import './dog.ts';
+// Imports for the side effect of registering the quadruped body plan.
+import './quadruped.ts';
 import { dogMaterialHsl, dogMaterials } from './materialTemplates.ts';
 
 export const dogTemplate: Template = {
@@ -16,7 +16,7 @@ export const dogTemplate: Template = {
   materials: dogMaterials,
   materialHsl: dogMaterialHsl,
   description: 'Dog-sized infected quadruped: a lurching, limping four-paw shamble with a hanging head.',
-  bodyPlan: 'dog',
+  bodyPlan: 'quadruped',
   voxelSize: 0.5 / 12,
   bodyMassKg: 30,
   params: {

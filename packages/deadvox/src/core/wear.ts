@@ -1,4 +1,4 @@
-import type { BodyRegion, DamageKind, Touch } from './body.ts';
+import { type BodyRegion, type DamageKind, damageResponse, type Touch } from './body.ts';
 import type { Inventory } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import type { BodyTuningDef } from './schema.ts';
@@ -37,7 +37,7 @@ export const wearOnPlayerHit = (
   }
   const rate = defOf(inventory.registry, item.type).wearable?.wearPerDamage;
   if (rate !== undefined) {
-    inventory.changeCondition(item.uid, -rate * damage * tuning.outerWearMultiplier[kind]);
+    inventory.changeCondition(item.uid, -rate * damage * damageResponse(tuning.outerWearMultiplier, kind));
   }
 };
 

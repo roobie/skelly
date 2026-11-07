@@ -15,8 +15,6 @@ const vessel: ItemDef = {
   weight: 1,
   size: [1, 1],
   workInProgress: false,
-  notLoot: false,
-  economy: { usage: [], tiers: [] },
   vessel: {
     capacityMicrolitres: 8000,
     accepts: ['fixture_liquid'],

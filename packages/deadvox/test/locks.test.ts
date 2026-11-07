@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
@@ -10,15 +8,10 @@ import { doorOptions, doorPlan } from '../src/core/options.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { placedPieces } from '../src/core/templates.ts';
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
-const base = readdirSync('src/content/base')
-  .filter((f) => f.endsWith('.json'))
-  .sort()
-  .map((f) => ({
-    source: f,
-    data: JSON.parse(readFileSync(join('src/content/base', f), 'utf8')) as unknown,
-  }));
+const base = baseContentSources();
 const furniture = {
   id: 'lock_test_door',
   name: 'Test door',
@@ -92,9 +85,7 @@ describe('door locks', () => {
       placedRegistry.items.set(item.id, {
         ...item,
         category: 'tool',
-        economy: { usage: [], tiers: [] },
         workInProgress: false,
-        notLoot: true,
       });
     }
     const site = new AuthoredSite(73, placedRegistry, makeScale(0.5), layout);

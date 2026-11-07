@@ -1,0 +1,14 @@
+{
+  "dependencies": ["skelly.weathering"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "deadvox-weathering.json"
+    }
+  ],
+  "id": "skelly.deadvox.weathering",
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

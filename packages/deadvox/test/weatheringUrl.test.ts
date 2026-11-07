@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
+import { WEATHERING_RANGES } from '../src/core/weather.ts';
 import { resolveWeatheringUrl, writeWeatheringParams } from '../src/core/weatheringUrl.ts';
 import { startupContent } from './baseRegistry.ts';
+import { defaultWeatheringId } from './fixtures/capabilityIds.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
@@ -9,7 +10,7 @@ describe('weathering profile URLs', () => {
   const profiles = BUNDLED_CONTENT.registry.weathering;
 
   it('round-trips a non-default profile choice and edited numeric and colour values', () => {
-    const defaultProfile = profiles.get(DEFAULT_WEATHERING_PROFILE_ID)!;
+    const defaultProfile = profiles.get(defaultWeatheringId)!;
     const profile = [...profiles.values()].find(({ id }) => id !== defaultProfile.id)!;
     const range = WEATHERING_RANGES.variationScaleMetres;
     const changedScale =
@@ -29,7 +30,7 @@ describe('weathering profile URLs', () => {
   });
 
   it('uses a site-assigned profile when its URL contains no profile override', () => {
-    const siteProfile = [...profiles.values()].find(({ id }) => id !== DEFAULT_WEATHERING_PROFILE_ID)!;
+    const siteProfile = [...profiles.values()].find(({ id }) => id !== defaultWeatheringId)!;
     const state = resolveWeatheringUrl(new URLSearchParams(), profiles, siteProfile.id, false)!;
     expect(state.profileId).toBe(siteProfile.id);
     expect(state.defaultProfileId).toBe(siteProfile.id);
@@ -37,7 +38,7 @@ describe('weathering profile URLs', () => {
   });
 
   it('does not accept profile or look overrides outside debug mode', () => {
-    const profile = profiles.get(DEFAULT_WEATHERING_PROFILE_ID)!;
+    const profile = profiles.get(defaultWeatheringId)!;
     const other = [...profiles.values()].find(({ id }) => id !== profile.id)!;
     const state = resolveWeatheringUrl(
       new URLSearchParams(`weatheringProfile=${other.id}&weathering=0`),
@@ -50,7 +51,7 @@ describe('weathering profile URLs', () => {
   });
 
   it('omits unchanged settings and the site-default profile from a share URL', () => {
-    const profile = profiles.get(DEFAULT_WEATHERING_PROFILE_ID)!;
+    const profile = profiles.get(defaultWeatheringId)!;
     const other = [...profiles.values()].find(({ id }) => id !== profile.id)!;
     const params = writeWeatheringParams(
       new URLSearchParams(`weatheringProfile=${other.id}&weathering=0&seed=11`),

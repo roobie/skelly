@@ -3,6 +3,7 @@ read_if:
   - you're an agent starting any task in this repository (always)
   - you check whether the framework refactor gate permits a new PR
   - you add or upgrade a dependency, including the pinned Rapier f64 build
+  - you rename, move or re-import TypeScript symbols
 ---
 
 # Notes for coding agents
@@ -17,8 +18,9 @@ At pre-pre-alpha, preserving old formats and behavior can obstruct simpler
 changes, so we owe no backwards compatibility. Change formats, exports and
 contracts freely when that makes the code simpler; don't add legacy paths, opt-in
 flags, compat shims or migrations to keep old output or old data working, and
-don't require byte-identical exports. What must still work: gungen exports a model
-that deadvox validates and loads. Migration, especially of save games, starts
+don't require byte-identical exports. What must still work: the gun and thing
+authoring tools (`packages/gun-authoring-tool`, `packages/thing-authoring-tool`) export
+models that deadvox validates and loads. Migration, especially of save games, starts
 mattering at v1.0 beta (#1023).
 
 Before writing or changing player-visible text, apply `packages/deadvox/INTERFACE.md`, "Text".
@@ -26,6 +28,10 @@ Before writing or changing player-visible text, apply `packages/deadvox/INTERFAC
 ## Jsonnet
 
 The repository-wide authoring and conversion rule is `docs/jsonnet.md`.
+
+## TypeScript symbolic edits
+
+Rename, move or re-import TypeScript symbols through the TypeScript language service (an LSP client, or `tsc`'s language-service API), not by text edits. It resolves each reference by symbol, so it neither misses an aliased or destructured use nor touches a same-named symbol elsewhere, and one call replaces a long run of hand edits. Prose, Jsonnet, JSON, CSS and string keys stay text edits, and the result is still reviewed as a diff.
 
 ## No host-specific information in tracked files
 
@@ -87,9 +93,9 @@ Private tooling may cite GitHub issues,
 PRs and commits. A clone or contributor using only git and GitHub must be able to read every
 GitHub artifact without private tooling, so references point only from the private side.
 
-- **Feature:** `<subproject><number>` (`g` gungen, `d` deadvox, `m` mobgen, `r` repo-wide
-  or docs), one PR on one branch; engine work uses the `g` prefix because gungen is the
-  engine's only consumer. Numbers count up per subproject; new work always gets a new
+- **Feature:** `<subproject><number>` (`g` the gun authoring tool, `d` deadvox, `m` mobgen,
+  `r` repo-wide or docs), one PR on one branch; `packages/construct` work uses the `g`
+  prefix. Numbers count up per subproject; new work always gets a new
   number, even when it grows out of another feature.
 - **Round:** each dispatched piece of work on a feature is a round and its mail item
   (`g26-1`, `g26-2`, …). The first round is `-1`; BR's feedback, review fixes or a
@@ -99,8 +105,9 @@ GitHub artifact without private tooling, so references point only from the priva
 
 ## Git workflow and worktrees
 
-The #1532 freeze overrides instructions to open a new PR until the framework refactor
-is executed. Work may use an existing PR. See
+The #1532 freeze permits only the framework refactor's single PR to open before the
+refactor lands, so that work can receive CI and merge without admitting other new PRs.
+Open it as a draft for CI; other work may use an existing PR. See
 `docs/decisions/0009-content-defined-products.md`, "Refactor gate", for the in-flight
 closure trigger and its reason.
 
@@ -145,8 +152,8 @@ More tests is not better QA; a test earns its place by catching a bug no other t
 So:
 
 - Test behaviour and contracts that are costly to rediscover or that BR has ruled on:
-  simulation rules, inventory and handling, save round-trip, and gungen exports that
-  deadvox validates and loads. A bug fix gets a test that fails before the fix.
+  simulation rules, inventory and handling, save round-trip, and gun and thing authoring
+  tool exports that deadvox validates and loads. A bug fix gets a test that fails before the fix.
 - **Never assert data that can drift during development.** That means content counts and
   lists, ids beyond the test's own fixture, exact coordinates or seeded outputs, hashes,
   fingerprints, tuning numbers and UI wording. Assert the property instead (validate

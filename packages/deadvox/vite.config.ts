@@ -1,5 +1,4 @@
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
@@ -9,9 +8,9 @@ import { configDefaults, defineConfig } from 'vitest/config';
 import { pagesAnalyticsPlugin } from '../../pagesAnalyticsPlugin.ts';
 import { TEST_POOL } from '../../testPool.ts';
 import { buildRevisionFromGit } from './src/core/buildRevision.ts';
-import { bundledModCatalogue } from './src/core/bundledModCatalogue.ts';
-import { canonicalJson } from './src/core/canonicalJson.ts';
+import { launcherModCatalogue } from './src/core/bundledModCatalogue.ts';
 import { bundleStampPlugin, UNSTAMPED_BUNDLE_DEFINES } from './tools/bundleStampPlugin.ts';
+import { bundledPackDefines, readAvailablePacks } from './tools/readBundledPacks.ts';
 import {
   fingerprintAfterHotChange,
   fingerprintSimulationSources,
@@ -19,7 +18,8 @@ import {
   SIMULATION_EXCLUSIONS,
 } from './tools/simulationFingerprint.ts';
 
-const contentDirectory = fileURLToPath(new URL('./src/content/base/', import.meta.url));
+const packageRoot = fileURLToPath(new URL('.', import.meta.url));
+const packDefines = await bundledPackDefines(readAvailablePacks(packageRoot));
 const filesUnder = (directory: string, prefix: string): { name: string; path: string }[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const relative = `${prefix}${entry.name}`;
@@ -32,24 +32,6 @@ const filesUnder = (directory: string, prefix: string): { name: string; path: st
     }
     return [];
   });
-const contentFiles = filesUnder(contentDirectory, 'base/').sort((left, right) => {
-  if (left.name < right.name) {
-    return -1;
-  }
-  if (left.name > right.name) {
-    return 1;
-  }
-  return 0;
-});
-const baseContentHash = createHash('sha256')
-  .update(
-    canonicalJson(
-      contentFiles
-        .filter(({ name }) => name.endsWith('.json'))
-        .map(({ name, path }) => [name, JSON.parse(readFileSync(path, 'utf8')) as unknown]),
-    ),
-  )
-  .digest('hex');
 let buildRevision: string;
 try {
   buildRevision = buildRevisionFromGit((args) =>
@@ -63,13 +45,11 @@ try {
 }
 
 // Base-pack identity is snapshotted at config load. Simulation source identity is refreshed on source HMR.
-const packageRoot = fileURLToPath(new URL('.', import.meta.url));
 const saveFormatPath = resolve(packageRoot, 'src/core/saveFormat.ts');
-const buildRevisionDefine = '__DEADVOX_BUILD_REVISION__';
-const baseContentHashDefine = '__DEADVOX_BASE_CONTENT_HASH__';
+const buildRevisionDefine = '__SKELLY_BUILD_REVISION__';
 const moduleQueryPattern = /[?#].*$/;
-const simulationHashPlaceholder = '__DEADVOX_SIMULATION_HASH__';
-const simulationHashPattern = /__DEADVOX_SIMULATION_HASH__(?=,)/g;
+const simulationHashPlaceholder = '__SKELLY_SIMULATION_HASH__';
+const simulationHashPattern = /__SKELLY_SIMULATION_HASH__(?=,)/g;
 const simulationHashValuePattern = /^[0-9a-f]{64}$/;
 
 function simulationFingerprintPlugin() {
@@ -94,7 +74,7 @@ function simulationFingerprintPlugin() {
   };
 
   return {
-    name: 'deadvox:simulation-source-fingerprint',
+    name: 'skelly:simulation-source-fingerprint',
     enforce: 'pre' as const,
     async configResolved(config: import('vite').ResolvedConfig) {
       // Use Vite's own resolver so aliases, extension rules, and package conditions match the build graph.
@@ -115,7 +95,7 @@ function simulationFingerprintPlugin() {
     transformIndexHtml(html: string) {
       return html.replace(
         '</head>',
-        `  <meta name="deadvox-simulation-source-hash" content="${simulationHash}">\n</head>`,
+        `  <meta name="skelly-simulation-source-hash" content="${simulationHash}">\n</head>`,
       );
     },
     closeBundle() {
@@ -173,10 +153,10 @@ function simulationFingerprintPlugin() {
 
 // The site launcher is a static page outside this bundle, so it reads the bundled mod list as a file beside the game.
 function bundledModListPlugin() {
-  const source = readFileSync(resolve(packageRoot, 'src/config/bundled-mods.json'), 'utf8');
-  bundledModCatalogue(JSON.parse(source));
+  const catalogue = JSON.parse(readFileSync(resolve(packageRoot, 'src/config/bundled-mods.json'), 'utf8'));
+  const source = `${JSON.stringify(launcherModCatalogue(catalogue, readAvailablePacks(packageRoot)), null, 2)}\n`;
   return {
-    name: 'deadvox:bundled-mod-list',
+    name: 'skelly:bundled-mod-list',
     generateBundle(this: { emitFile: (file: { type: 'asset'; fileName: string; source: string }) => string }) {
       this.emitFile({ type: 'asset', fileName: 'bundled-mods.json', source });
     },
@@ -188,19 +168,20 @@ function bundledModListPlugin() {
 // and the DOM) must never be reachable through this alias; see test/mobgenBoundary.test.ts.
 const mobgenSrc = fileURLToPath(new URL('../mobgen/src/', import.meta.url));
 
-// Tests that build whole worlds, city plans or scenario walks run only under DEADVOX_SWEEPS, in the manual
+// Tests that build whole worlds, city plans or scenario walks run only under SKELLY_SWEEPS, in the manual
 // slow-test workflow; `AGENTS.md`, "Tests" says why. These files are slow throughout. A file that also holds fast
 // tests keeps them in the default run and gates its slow cases with test/sweeps.ts, `sweepGroup`.
 const SLOW_TEST_FILES = [
   'test/gauntletHqThreat.test.ts',
   'test/gauntletLoot.test.ts',
   'test/gauntletRoutes.test.ts',
+  'test/packClosureCompleteness.test.ts',
   'test/playtestLootChart.test.ts',
   'test/scenarioCertificate.test.ts',
   'test/scenarioStart.test.ts',
 ];
 // biome-ignore lint/style/noProcessEnv: the slow-test gate is env-driven; see test/sweeps.ts.
-const runSweeps = process.env.DEADVOX_SWEEPS === '1';
+const runSweeps = process.env.SKELLY_SWEEPS === '1';
 const sweepCaseFiles = (): string[] =>
   readdirSync(resolve(packageRoot, 'test'))
     .filter((name) => name.endsWith('.test.ts'))
@@ -219,11 +200,11 @@ export default defineConfig({
     bundleStampPlugin(packageRoot),
     bundledModListPlugin(),
     // biome-ignore lint/style/noProcessEnv: HTTPS is an opt-in local development server mode.
-    ...(process.env.DEADVOX_HTTPS === '1' ? [basicSsl()] : []),
+    ...(process.env.SKELLY_HTTPS === '1' ? [basicSsl()] : []),
   ],
   define: {
     [buildRevisionDefine]: JSON.stringify(buildRevision),
-    [baseContentHashDefine]: JSON.stringify(baseContentHash),
+    ...packDefines,
     ...UNSTAMPED_BUNDLE_DEFINES,
   },
   base: './', // served from /skelly/deadvox/ on GitHub Pages
@@ -236,7 +217,11 @@ export default defineConfig({
     fs: {
       // The alias resolves outside this project's own root; Vite's dev server otherwise refuses to serve
       // files from outside it.
-      allow: [fileURLToPath(new URL('.', import.meta.url)), mobgenSrc],
+      allow: [
+        fileURLToPath(new URL('.', import.meta.url)),
+        fileURLToPath(new URL('../mods', import.meta.url)),
+        mobgenSrc,
+      ],
     },
   },
   build: {

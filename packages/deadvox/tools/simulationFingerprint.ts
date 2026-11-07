@@ -40,10 +40,7 @@ export async function fingerprintAfterHotChange(
 }
 
 // Isolated experiment identity: not game/save identity and never covered by the debug exclusion.
-export const FEASIBILITY_ENTRIES = [
-  'src/vehicles/feasibility/runner.ts',
-  'src/vehicles/feasibility/driving.ts',
-] as const;
+export const FEASIBILITY_ENTRIES = ['src/feasibility/runner.ts', 'src/feasibility/driving.ts'] as const;
 
 export const SIMULATION_ENTRIES = [
   'src/core/sim.ts',
@@ -52,6 +49,8 @@ export const SIMULATION_ENTRIES = [
   'src/core/worldgen.ts',
   'src/core/saveState.ts',
   'src/core/saveFormat.ts',
+  // Fingerprint new-game initialization independently of startup caller wiring.
+  'src/core/startState.ts',
   'src/core/vehicleWork.ts',
   'src/core/storage.ts',
   'src/core/soundPicker.ts',
@@ -60,18 +59,22 @@ export const SIMULATION_ENTRIES = [
   'src/game/survival.ts',
   'src/game/streamer.ts',
   'src/game/config.ts',
-  // Worlds receive admitted content, so startup admission is no longer reachable from world setup.
+  // Worlds receive admitted content, so startup admission is no longer reachable from world setup. The product's
+  // sources and tunables it is given are content, outside this fingerprint.
   'src/game/browserMods.ts',
   'src/game/bundledMods.ts',
-  'src/game/play.ts',
+  'src/game/commandRouter.ts',
+  // Startup wiring that play.ts hands to the session and streamer, fingerprinted independently of that caller.
+  'src/game/layoutVehicles.ts',
+  'src/game/columnArrival.ts',
   'src/game/quickbar.ts',
   'src/game/session.ts',
+  'src/game/simulationStepper.ts',
   'src/game/worldSetup.ts',
 ] as const;
 
 export const SIMULATION_EXCLUSIONS = [
-  // Includes playView's owned meshes/camera/draw/disposal and playFrames' RAF wiring.
-  // play.ts retains timestamp-to-dt policy, input sampling, actions and simulation advancement.
+  // Includes playView's owned meshes/camera/draw/disposal.
   'src/render',
   'src/debug',
   // Pointer-event quirks of the Mouse 5 side button (input handling); what the button does is in core/lights.ts.
@@ -94,38 +97,23 @@ export const SIMULATION_EXCLUSIONS = [
   // What the mesher reads from the world (block arrays copied out of chunks) and its helpers: presentation only.
   'src/core/meshInput.ts',
   'src/core/occlusion.ts',
+  // Which columns are drawn yet: presentation only.
+  'src/core/columnReveal.ts',
   // Diffuse sky visibility only; does not change movement, sight, hearing or saved world state.
   'src/core/skylight.ts',
   'src/core/skySnapshot.ts',
   'src/core/skyTransport.ts',
   'src/core/shell.ts',
   'src/core/pileLayout.ts',
-  // Paper-map terrain sampling is disposable presentation; it changes neither simulation nor saves.
-  'src/core/paperMapRender.ts',
   // Its public-cartography types describe printable features, not simulation or saved state.
   'src/core/publicCartography.ts',
-  // WebAudio output/voice allocation and body-sized pitch law are presentation; admission and saved SoundPicker stay fingerprinted.
-  'src/game/audio.ts',
   'src/game/audioPresentation.ts',
-  // Machine graphics preferences affect rendering only and must not invalidate simulation saves.
-  'src/game/graphicsSettings.ts',
-  'src/game/graphicsControls.ts',
-  'src/game/shamblerAudio.ts',
-  'src/game/damageFeedback.ts',
-  // The pain cue's pulse runs on frame time; felt pain itself stays fingerprinted in core/pain.ts.
-  'src/game/painCue.ts',
-  'src/game/engine.ts',
-  // Chooses the ray for debug readouts only; it cannot affect gameplay or saves.
-  'src/game/debugTargetRay.ts',
-  'src/game/saveStorage.ts',
-  // Browser selection persistence is transport; admission and pack identity are fingerprinted separately.
-  'src/game/modStorage.ts',
+  'src/game/actorAudio.ts',
+  // Debug ragdoll staging and its tuning are presentation; corpse physics must not invalidate saves.
+  'src/game/ragdollConfig.ts',
   'src/game/saveStorageErrors.ts',
   'src/game/saveStorageRecord.ts',
   'src/game/saveStorageProtocol.ts',
-  'src/game/controls.ts',
-  'src/game/playtestTools.ts',
-  'src/game/playtestObserver.ts',
   'src/worker/save.worker.ts',
   'src/ui/audioOptions.ts',
   'src/ui/graphicsOptions.ts',
@@ -140,9 +128,9 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/keyCap.ts',
   // Page-leave warning timing is lifecycle presentation, not simulation or saved state.
   'src/ui/leaveConfirmation.ts',
-  // Read-only HUD/status/prompt projection; target selection and execution stay in play.ts.
+  // Read-only HUD/status/prompt projection; target selection and recorded commands stay fingerprinted.
   'src/ui/playHud.ts',
-  'src/ui/tutorial.ts',
+  'src/ui/guidedSteps.ts',
   // Read-only debug readout formatting and byte-count estimates.
   'src/ui/playReadout.ts',
   'src/ui/inventoryScreen.ts',
@@ -191,13 +179,7 @@ const PRESENTATION_ASSET_EXTENSIONS = new Set([
   '.woff2',
 ]);
 const MODULE_QUERY_PATTERN = /[?#].*$/;
-const GLOB_REFERENCE = /\bimport\.meta\.glob\b/g;
-const GLOB_CALL = /\bimport\.meta\.glob(?:<[^>]*>)?\s*\(\s*(['"])(.*?)\1/g;
-const CONTENT_GLOB_PATTERNS = new Set([
-  '../content/base/*.json',
-  '../content/base/assets/audio/**/*.ogg',
-  '../config/bundled/*.json',
-]);
+const GLOB_REFERENCE = /\bimport\.meta\.glob\b/;
 const REQUIRE_CALL = /\brequire\s*\(/;
 const IMPORT_META_URL_REFERENCE = /\bimport\.meta\.url\b/g;
 const WORKER_URL_CALL = /\bnew\s+Worker\s*\(\s*new\s+URL\s*\(\s*(['"])(.*?)\1\s*,\s*import\.meta\.url\s*\)/g;
@@ -214,12 +196,8 @@ function comparePaths(left: string, right: string): number {
 }
 
 function assertSupportedDependencyDiscovery(path: string, source: string): void {
-  const globReferences = [...source.matchAll(GLOB_REFERENCE)];
-  const globCalls = [...source.matchAll(GLOB_CALL)];
-  if (globReferences.length !== globCalls.length) {
-    throw new Error(`Unsupported import.meta.glob form in simulation source ${path}`);
-  }
-  if (globCalls.some((call) => !(call[2] && CONTENT_GLOB_PATTERNS.has(call[2])))) {
+  // The product globs its mod roots and passes the maps in, so a simulation source never globs.
+  if (GLOB_REFERENCE.test(source)) {
     throw new Error(`Unclassified import.meta.glob dependency in simulation source ${path}`);
   }
   if (REQUIRE_CALL.test(source)) {
@@ -281,6 +259,8 @@ function sourcePath(id: string): string | undefined {
 function sourceRelativePath(projectRoot: string, sourceRoot: string, file: string): string | undefined {
   const roots = [
     { root: sourceRoot, prefix: 'src/' },
+    { root: resolve(projectRoot, 'mods'), prefix: 'mods/' },
+    { root: resolve(projectRoot, '../mods'), prefix: 'shared-mods/' },
     { root: resolve(projectRoot, '../mobgen/src'), prefix: 'mobgen/' },
     { root: resolve(projectRoot, '../thing-core/src'), prefix: 'thing-core/' },
     { root: resolve(projectRoot, '../../node_modules'), prefix: 'node_modules/' },
@@ -361,7 +341,7 @@ async function resolveTrackableModule(
   if (recordExcludedImport(relativePath, importer, context.excludedImportContext)) {
     return;
   }
-  if (relativePath.startsWith('src/content/base/')) {
+  if (relativePath.startsWith('mods/') || relativePath.startsWith('shared-mods/')) {
     return;
   }
   const extension = extname(relativePath).toLowerCase();
@@ -370,7 +350,7 @@ async function resolveTrackableModule(
   }
   if (
     extension === '.json' &&
-    ['src/config/', 'mobgen/', 'thing-core/'].some((prefix) => relativePath.startsWith(prefix))
+    ['src/config/', 'src/feasibility/', 'mobgen/', 'thing-core/'].some((prefix) => relativePath.startsWith(prefix))
   ) {
     return { file, relativePath };
   }

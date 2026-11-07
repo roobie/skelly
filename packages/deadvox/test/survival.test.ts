@@ -20,48 +20,78 @@ const fixtureBody = new Body(BODY_TUNING_FIXTURE);
 const SPAWN_NEEDS: Needs = fixtureBody.spawnNeeds;
 const STAMINA = fixtureBody.staminaRules;
 const base = (file: string): ContentSource => {
-  const source = `src/content/base/${file}`;
+  const source = `mods/skelly.deadvox.actors/${file}`;
   const data = JSON.parse(readFileSync(source, 'utf8'));
-  if (file === 'items-other.json') {
-    data.items = data.items.filter(
-      (item: { id: string; category: string }) => item.id !== 'bandage' && item.category !== 'book',
-    );
-  }
-  if (file === 'items-tools.json') {
-    data.items = data.items.filter(
-      (item: { id: string }) =>
-        !['torch', 'candle', 'door_bar', 'oil_lamp', 'headlamp', 'nail_bat', 'spear'].includes(item.id),
-    );
-  }
-  if (file === 'items-wearables.json') {
-    data.items = data.items.filter((item: { id: string }) => item.id !== 'taped_armour');
-  }
+  return { source, data };
+};
+const firearmsFile = (file: string): ContentSource => {
+  const source = `skelly.firearms/${file}`;
+  const data = JSON.parse(readFileSync(`../mods/${source}`, 'utf8'));
   if (file === 'items-attachments.json') {
     data.items = data.items.filter((item: { id: string }) => item.id !== 'weapon_sling');
   }
   return { source, data };
 };
+const wearablesWithoutArmourInputs = (): ContentSource => {
+  const source = 'skelly.wearables/wearables-items.json';
+  const data = JSON.parse(readFileSync(`../mods/${source}`, 'utf8'));
+  data.items = data.items.filter((item: { id: string }) => item.id !== 'taped_armour');
+  return { source, data };
+};
+const electricItemsWithoutCrafting = (): ContentSource => {
+  const source = 'skelly.electric-power/electric-power-items.json';
+  const data = JSON.parse(readFileSync(`../mods/${source}`, 'utf8'));
+  data.items = data.items.filter((item: { id: string }) => item.id !== 'headlamp');
+  data.recipes = [];
+  return { source, data };
+};
 const { registry } = buildRegistry(
-  [
-    'ui.json',
-    'item-wear.json',
-    'inventory.json',
-    'sounds.json',
-    'sounds-pump.json',
-    'sounds-weapons.json',
-    'items-food.json',
-    'items-other.json',
-    'items-tools.json',
-    'items-wearables.json',
-    'items-ammunition.json',
-    'items-attachments.json',
-    'items-gun-parts.json',
-    'models-items.json',
-    'models-gun-parts.json',
-    'models-melee.json',
-    'models-firearms.json',
-    'models-attachments.json',
-  ].map(base),
+  ['actors-sounds.json', 'actors-items.json', 'models-actors.json']
+    .map(base)
+    .concat(
+      [
+        'firearms-items.json',
+        'models-firearm-things.json',
+        'sounds-firearms.json',
+        'sounds-pump.json',
+        'sounds-weapons.json',
+        'items-ammunition.json',
+        'items-attachments.json',
+        'items-gun-parts.json',
+        'models-gun-parts.json',
+        'models-firearms.json',
+        'models-attachments.json',
+      ].map(firearmsFile),
+    )
+    .concat(
+      [
+        'skelly.ui/ui.json',
+        'skelly.ui/ui-sounds.json',
+        'skelly.melee-classes/damage-kinds.json',
+        'skelly.melee-classes/melee-classes.json',
+        'skelly.melee-classes/melee-sounds.json',
+        'skelly.inventory/item-wear.json',
+        'skelly.inventory/inventory.json',
+        'skelly.materials/materials-items.json',
+        'skelly.materials/models-materials.json',
+        'skelly.medicine/medicine-items.json',
+        'skelly.medicine/models-medicine.json',
+        'skelly.basic-foods/basic-foods-items.json',
+        'skelly.basic-foods/models-basic-foods.json',
+        'skelly.packaged-foods/packaged-foods-items.json',
+        'skelly.packaged-foods/models-packaged-foods.json',
+        'skelly.wearables/wearables-sounds.json',
+        'skelly.wearables/models-wearables.json',
+        'skelly.fuel/fuel-items.json',
+        'skelly.fuel/models-fuel.json',
+        'skelly.electric-power/models-electric-power.json',
+      ]
+        .map((file) => ({
+          source: file,
+          data: JSON.parse(readFileSync(`../mods/${file}`, 'utf8')),
+        }))
+        .concat(wearablesWithoutArmourInputs(), electricItemsWithoutCrafting()),
+    ),
 );
 
 /** Steps needs every simulation second, as the needs system does at 1×. */

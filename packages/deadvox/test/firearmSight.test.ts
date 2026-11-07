@@ -8,7 +8,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { leanFrame } from '../src/core/lean.ts';
 import { playerLookPose } from '../src/core/playerLookPose.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
-import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
+import { LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import { fittedPartFrame } from '../src/render/models.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';

@@ -1,0 +1,14 @@
+{
+  "assets/models/broken_clock.glb": { "materials": [null, null, null, null] },
+  "assets/models/broken_toaster.glb": { "materials": [null, null, null] },
+  "assets/models/circuit_board.glb": { "materials": [null, null, null, null] },
+  "assets/models/copper_wire.glb": { "materials": ["plastic-black", "copper"] },
+  "assets/models/cracked_phone.glb": { "materials": [null, null, null] },
+  "assets/models/dead_desk_lamp.glb": { "materials": ["steel-grey", "paint-charcoal", "paint-terracotta"] },
+  "assets/models/electrical_repair_kit.glb": { "materials": [null, null, null, null] },
+  "assets/models/field_patch.glb": { "materials": ["steel-grey", "paint-charcoal"] },
+  "assets/models/fuse.glb": { "materials": ["glass-grey", "steel-grey"] },
+  "assets/models/glass_bulb.glb": { "materials": [null, null, null] },
+  "assets/models/glass_lens.glb": { "materials": [null, null] },
+  "assets/models/table_fan.glb": { "materials": [null, null, null] }
+}

@@ -22,15 +22,16 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { claimed } from '../core/capabilities.ts';
 import { requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { graphicsTuningOf } from '../core/graphicsTuning.ts';
 import { BLOCK_SIZE } from '../core/scale.ts';
 import type { VehicleFittingDef } from '../core/schema.ts';
 import { skyAt } from '../core/sky.ts';
 import { assembledVehicle, loadVehicleBlueprint, type PlacedFitting } from '../core/vehicleBlueprint.ts';
-import { buildBundledContent } from '../game/bundledContent.ts';
+import { productAssets } from '../product/assets.ts';
+import { buildBundledContent } from '../product/content.ts';
 import { ModelLibrary } from '../render/models.ts';
 import { PlayerMeshes } from '../render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
@@ -465,7 +466,7 @@ const partModels = new ModelLibrary(
     errorText = message;
     renderPanel();
   },
-  undefined,
+  { packAssets: productAssets.models },
   graphicsTuningOf(registry).modelLoadConcurrency,
 );
 /** Each content build's fittings: the blueprint's placement beside what loading placed from the export. */
@@ -1030,7 +1031,7 @@ applySky(
     ambient,
     camera,
     radiusM: 96,
-    farPlaneScale: registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)?.fogFarPlaneScale ?? 1,
+    farPlaneScale: claimed(registry.graphics, 'graphics')?.fogFarPlaneScale ?? 1,
   },
   skyAt(12, requireDayCycle(registry)),
 );
@@ -1197,7 +1198,7 @@ const playerGroup = new Group();
 scene.add(playerGroup);
 
 const addPlayer = (): void => {
-  const player = registry.figures.get(CORE_CONTENT_IDS.player);
+  const player = claimed(registry.figures, 'player');
   if (!player) {
     throw new Error('The bundled player figure is missing');
   }

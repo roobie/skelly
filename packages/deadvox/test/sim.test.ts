@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import coreDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
+import coreDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
 import { BODY_REGIONS } from '../src/core/body.ts';
 import {
   calendarAt,
@@ -508,7 +508,7 @@ describe('Simulation', () => {
         },
       });
       sim.scheduler.register({
-        id: 'zombies',
+        id: 'actors',
         rate: 20,
         tick: () => {
           ticks += 1;
@@ -558,8 +558,8 @@ describe('Simulation', () => {
     const b = new Simulation({ seed: 7 });
     const draw = (sim: Simulation, id: string) => Array.from({ length: 5 }, () => sim.rng(id).next());
     expect(draw(a, 'zombies')).toEqual(draw(b, 'zombies'));
-    const zombies = a.rng('zombies');
+    const actors = a.rng('zombies');
     const loot = a.rng('loot');
-    expect(zombies.next()).not.toBe(loot.next());
+    expect(actors.next()).not.toBe(loot.next());
   });
 });

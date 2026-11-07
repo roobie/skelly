@@ -1,0 +1,13 @@
+{
+  "sources": [
+    {
+      "author": "Skelly contributors",
+      "changes": "Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.",
+      "download": null,
+      "files": ["assets/models/pharmacy_key.glb", "assets/models/police_armoury_key.glb"],
+      "licence": "CC0-1.0",
+      "title": "Thing tool authored models",
+      "url": "https://github.com/roobie/skelly/blob/main/packages/deadvox/mods/skelly.deadvox.rural-sites/exports/things.jsonnet"
+    }
+  ]
+}

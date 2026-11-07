@@ -11,7 +11,7 @@ The revolver uses assembly parts rather than display groups because only parts h
 
 ## Runtime composition
 
-The separate revolver contract avoids pretending that rotating parts follow the linear carrier timeline. See `src/gun/revolverExport.ts`, `RevolverMetadata`, and `src/gun/exportGlb.ts`, `DeadvoxModelEntry`. The playable consumer validates it through `packages/deadvox/src/core/schema.ts`, `RevolverSchema`.
+The separate revolver contract avoids pretending that rotating parts follow the linear carrier timeline. See `src/gun/revolverExport.ts`, `RevolverMetadata`, and `src/gun/exportGlb.ts`, `DeadvoxModelEntry`. The playable consumer validates it through `packages/deadvox/src/core/schema/models.ts`, `RevolverSchema`.
 
 All points, axes and displacements use the exported model frame, with lengths in metres and signed right-hand rotations in radians. Each node's rest transform is its assembled GLB pose, not an identity transform and not a pivot-relative pose. The writer's node list is flat. Consumers must reset to that rest pose each frame rather than accumulate deltas.
 
@@ -25,4 +25,4 @@ The curated design carries its own cartridge identity. Geometry-only exports wit
 
 Asset credits cover runtime media rather than Jsonnet authoring programs. Keeping the manifest's source beside its compiled output must not require that source to credit itself; see `packages/deadvox/src/core/assets.ts`, `assetFileIssues`.
 
-A refresh has one metadata writer so exported geometry cannot drift from hand-edited records, while authored gameplay overlays remain untouched. The explicit consumption boundary is `exports/deadvox.jsonnet`; see `src/cli/refreshDeadvox.ts`, `loadExportRecipe`, and `packages/deadvox/src/content/base/models-firearms.libsonnet`.
+A refresh has one metadata writer so exported geometry cannot drift from hand-edited records, while authored gameplay overlays remain untouched. The explicit consumption boundary is `exports/deadvox.jsonnet`; see `src/cli/refreshDeadvox.ts`, `loadExportRecipe`, and `packages/mods/skelly.firearms/models-firearms.libsonnet`.

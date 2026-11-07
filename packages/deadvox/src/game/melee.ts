@@ -1,10 +1,18 @@
+import type { MeleeWeapon } from '../core/actorSystem.ts';
+import { claimed } from '../core/capabilities.ts';
 import type { MeleeClassDef } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Needs } from '../core/needs.ts';
 import { spendStamina } from '../core/needs.ts';
 import { type BeginMeleeSwing, copyMeleeWeapon, type PlayerCombat } from '../core/playerCombat.ts';
 import type { ItemDef } from '../core/schema.ts';
-import type { MeleeWeapon } from '../core/zombies.ts';
+
+export const meleeProfileForWeapon = (classes: ReadonlyMap<string, MeleeClassDef>, kind: string) => {
+  const tuning = classes.get(kind);
+  if (!tuning || tuning.unarmed) {
+    throw new Error(`No weapon melee class "${kind}"`);
+  }
+  return tuning.pose;
+};
 
 export type MeleeStartResult = 'started' | 'too-tired' | 'busy';
 
@@ -31,14 +39,15 @@ export const meleeWeaponFromContent = (weapon: ContentMeleeWeapon): MeleeWeapon 
     motion: weapon.motion,
   });
 
-/** The bare-handed attack from the required fists class; its absence is a content error, never a code default. */
+/** The bare-handed attack from the unarmed claimant; its absence is a content error, never a code default. */
 export const unarmedMeleeWeapon = (meleeClasses: ReadonlyMap<string, MeleeClassDef>): MeleeWeapon => {
-  const unarmed = meleeClasses.get(CORE_CONTENT_IDS.fistsMeleeClass)?.unarmed;
+  const unarmed = claimed(meleeClasses, 'unarmed')?.unarmed;
   if (unarmed === undefined) {
-    throw new Error(`Missing required melee class "${CORE_CONTENT_IDS.fistsMeleeClass}"`);
+    throw new Error('missing required capability "unarmed"');
   }
   return copyMeleeWeapon({
     motion: unarmed.motion,
+    type: unarmed.damageKind,
     damage: unarmed.damage,
     reach: unarmed.reach,
     cooldown: unarmed.cooldownSimSeconds,
@@ -46,6 +55,8 @@ export const unarmedMeleeWeapon = (meleeClasses: ReadonlyMap<string, MeleeClassD
     windupCapSimSeconds: unarmed.windupCapSimSeconds,
     stamina: unarmed.stamina,
     impulse: unarmed.impulse,
+    swingSound: unarmed.swingSound,
+    hitSound: unarmed.hitSound,
   });
 };
 

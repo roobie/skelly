@@ -34,7 +34,7 @@ const worldOf = (bones: readonly Bone[], pose: ReturnType<typeof idlePose>, bone
 describe('idleBasePose', () => {
   it('never leaves torso/arms at the bind pose (identity) — the whole point of an idle stance', () => {
     for (const stance of ['slack', 'aggravated'] as const) {
-      const found = setup('shambler');
+      const found = setup('humanoid');
       const actor = actorOf(found);
       const pose = idleBasePose(actor, stance);
       for (const boneId of ['spine', 'chest', 'head', 'jaw', 'upperArm.L', 'upperArm.R']) {
@@ -47,7 +47,7 @@ describe('idleBasePose', () => {
 
   it("plants both feet at their rest xz — the lowest point is within a few mm of 0, and legs don't move sideways", () => {
     for (const stance of ['slack', 'aggravated'] as const) {
-      const found = setup('shambler');
+      const found = setup('humanoid');
       const { body, extents } = found;
       const actor = actorOf(found);
       const pose = idleBasePose(actor, stance);
@@ -74,7 +74,7 @@ describe('idleBasePose', () => {
 
 describe('applyIdleMotion / idlePose', () => {
   it('never moves the legs (feet stay put across any time value — see idle.ts on why)', () => {
-    const found = setup('shambler');
+    const found = setup('humanoid');
     const { body } = found;
     const actor = actorOf(found);
     for (const stance of ['slack', 'aggravated'] as const) {
@@ -88,7 +88,7 @@ describe('applyIdleMotion / idlePose', () => {
   });
 
   it("phase-offsets by seed, so two different zombies sharing one body don't breathe in lockstep", () => {
-    const found = setup('shambler');
+    const found = setup('humanoid');
     const actor = actorOf(found);
     const base = idleBasePose(actor, 'slack');
     const a = applyIdleMotion(base, 'slack', 1.5, 1);
@@ -97,7 +97,7 @@ describe('applyIdleMotion / idlePose', () => {
   });
 
   it('is deterministic for the same (base, stance, time, seed)', () => {
-    const found = setup('shambler');
+    const found = setup('humanoid');
     const actor = actorOf(found);
     const base = idleBasePose(actor, 'aggravated');
     const pose = applyIdleMotion(base, 'aggravated', 3.2, 7);
@@ -106,7 +106,7 @@ describe('applyIdleMotion / idlePose', () => {
   });
 
   it("aggravated's claw motion only touches the forearms — the base reach/hunch/knee-bend hold steady", () => {
-    const found = setup('shambler');
+    const found = setup('humanoid');
     const actor = actorOf(found);
     const base = idleBasePose(actor, 'aggravated');
     const t0 = applyIdleMotion(base, 'aggravated', 0, 5);
@@ -118,7 +118,7 @@ describe('applyIdleMotion / idlePose', () => {
 
 describe("aggravated arms match the chase walk's own steady height (no pop on walk -> idle)", () => {
   it('upperArm.L at chase speed (averaged over a full cycle) is close to the aggravated stance', () => {
-    const found = setup('shambler');
+    const found = setup('humanoid');
     const actor = actorOf(found);
     const { body } = found;
     const ChaseSpeed = 2.8;

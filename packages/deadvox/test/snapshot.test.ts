@@ -1,21 +1,21 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { disassemblyOutputs, disassemblyWorkTime } from '../src/core/disassembly.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
+import type { ContentFile } from '../src/core/schema.ts';
 import type { Site } from '../src/core/site.ts';
-import { type RealSeconds, realSeconds, simSeconds } from '../src/core/time.ts';
+import { gameMinutes, type RealSeconds, realSeconds, simSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 import {
   advance,
@@ -31,26 +31,18 @@ import {
   startRest,
 } from './snapshotTestSupport.ts';
 
-const baseContentFiles = () =>
-  readdirSync('src/content/base')
-    .filter((name) => name.endsWith('.json'))
-    .map((source) => ({
-      source,
-      data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')),
-    }));
+const baseContentFiles = () => baseContentSources() as { source: string; data: ContentFile }[];
 
 const registryWithSleepScenario = (sleepCap: number) => {
   const files = baseContentFiles();
-  const compression = files
-    .flatMap(({ data }) => data.compression ?? [])
-    .find((row) => row.id === CORE_CONTENT_IDS.player);
-  const body = files.flatMap(({ data }) => data.body ?? []).find((row) => row.id === CORE_CONTENT_IDS.player);
+  const compression = files.flatMap(({ data }) => data.compression ?? []).find((row) => row.id === fixtureIds.player);
+  const body = files.flatMap(({ data }) => data.body ?? []).find((row) => row.id === fixtureIds.player);
   if (!(compression && body)) {
     throw new Error('Missing scenario compression or body definition');
   }
   compression.caps.sleep = sleepCap;
-  body.sleepOnset.minGameMinutes = 0.001;
-  body.sleepOnset.maxGameMinutes = 0.001;
+  body.sleepOnset.minGameMinutes = gameMinutes(0.001);
+  body.sleepOnset.maxGameMinutes = gameMinutes(0.001);
   return buildRegistry(files);
 };
 
@@ -251,18 +243,21 @@ describe('snapshot state components', () => {
     const actor = runtime.session.character;
     expect(Object.keys(actor.skills).sort()).toEqual([...registry.skills.keys()].sort());
     expect(Object.values(actor.skills).every((level) => level === 0)).toBe(true);
-    const removedRecipe = actor.knownRecipes.values().next().value;
+    const removedRecipe = [...registry.recipes.values()].find((recipe) => !recipe.skillUnlock)?.id;
     if (removedRecipe === undefined) {
-      throw new Error('starter character has no known recipe');
+      throw new Error('Snapshot fixture needs a recipe without a skill unlock');
     }
+    actor.initializeProgression({}, [removedRecipe]);
     const firstThreshold = practiceForNextLevel(registry, actor.skills.crafting!);
     const award = firstThreshold + practiceForNextLevel(registry, actor.skills.crafting! + 1) / 2;
     actor.awardPractice('crafting', award, SKILL_LEVEL_LEGENDARY);
     const savedLevel = actor.skills.crafting!;
     const savedPractice = actor.practice.crafting;
     actor.knownRecipes.delete(removedRecipe);
-    const combatId = CORE_CONTENT_IDS.firearmsCombat;
-    const steadinessId = registry.skills.get(combatId)!.combat!.firearms!.longGunSteadinessSkill;
+    const combatId = fixtureIds.firearmsCombat;
+    const steadinessId = [...registry.skills.values()].find(
+      (skill) => skill.capability === registry.skills.get(combatId)!.combat!.firearms!.longGunSteadinessRole,
+    )!.id;
     actor.awardPractice(combatId, firstThreshold / 3);
     actor.awardPractice(steadinessId, firstThreshold + firstThreshold / 2);
     const snapshot = capture(runtime);
@@ -772,6 +767,7 @@ describe('craft job codec and ownership', () => {
           }),
         ).toBe(true);
       }
+      runtime.session.character.initializeProgression({}, ['torch']);
       const planned = runtime.session.planCraft(registry.recipes.get('torch')!);
       if (!('plan' in planned)) {
         throw new Error(planned.missing.reason);
@@ -865,6 +861,7 @@ describe('craft job codec and ownership', () => {
       ).toBe(true);
     }
     const recipe = registry.recipes.get('repair_crowbar')!;
+    runtime.session.character.initializeProgression({}, [recipe.id]);
     const planned = runtime.session.planCraft(recipe);
     if (!('plan' in planned)) {
       throw new Error(planned.missing.reason);
@@ -919,7 +916,7 @@ describe('restored session world state', () => {
     expect([...loaded.entities.all].map((entity) => [entity.uid, entity.pockets?.map((p) => p.length)])).toEqual(
       countsBefore,
     );
-    expect(loaded.zombies.store.size).toBe(snapshot.world.zombies.zombies.length);
+    expect(loaded.zombies.store.size).toBe(snapshot.world.actors.actors.length);
 
     const fresh = loaded.site.furnitureIn(...loaded.columns[0]!)[0]!;
     const freshSpec = {
@@ -930,10 +927,10 @@ describe('restored session world state', () => {
     const unseenSite = {
       lootPointsIn: () => [],
       furnitureIn: () => [{ spec: freshSpec, loot: fresh.loot }],
-      zombiesIn: () => [{ type: 'shambler', pos: freshSpawnPos }],
+      actorsIn: () => [{ type: 'shambler', pos: freshSpawnPos }],
     } as unknown as Site;
     loaded.session.onColumn(loaded.columns[0]![0] + 100, loaded.columns[0]![1], unseenSite);
     expect(loaded.entities.at(...freshSpec.pos)?.type).toBe(freshSpec.type);
-    expect(loaded.zombies.store.size).toBe(snapshot.world.zombies.zombies.length + 1);
+    expect(loaded.zombies.store.size).toBe(snapshot.world.actors.actors.length + 1);
   });
 });

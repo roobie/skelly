@@ -55,7 +55,7 @@ export const parseCamParam = (params: URLSearchParams): CamPose | undefined => {
   return {
     position: [x, y, z],
     yaw: yaw / DEG,
-    // The same limit as the mouse look (input.ts), so a hand-edited value can't flip the camera over.
+    // The same limit as the mouse look (playerControls.ts), so a hand-edited value can't flip the camera over.
     pitch: Math.max(-1.55, Math.min(1.55, pitch / DEG)),
     roll: roll / DEG,
   };

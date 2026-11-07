@@ -1,7 +1,7 @@
 import { PerspectiveCamera, Scene } from 'three';
 import { expect, it } from 'vitest';
 import { createBenchLightFixture } from '../src/bench/lightFixture.ts';
-import type { RenderedEngine } from '../src/game/engine.ts';
+import type { RenderedEngine } from '../src/presentation/engine.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

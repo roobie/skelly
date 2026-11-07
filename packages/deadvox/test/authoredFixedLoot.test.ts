@@ -1,6 +1,5 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared property assertions are called only by tests.
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
 import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
@@ -34,15 +33,15 @@ import { CATALOGUE } from '../src/vehicles/catalogue.ts';
 import { PartLibrary, VOXEL } from '../src/vehicles/model.ts';
 import { wheel } from '../src/vehicles/rangeRover.ts';
 import { GLASS, keyVoxel } from '../src/vehicles/voxels.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
 
-const sources = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown }));
+const sources = baseContentSources().filter(({ source }) => !source.startsWith('layouts') && source !== 'starts.json');
 const layout = (
-  JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as { layouts: SiteLayoutDef[] }
+  JSON.parse(readFileSync('mods/skelly.deadvox.scenario.playtest/layouts-playtest.json', 'utf8')) as {
+    layouts: SiteLayoutDef[];
+  }
 ).layouts[0]!;
 const result = buildRegistry([...sources, { source: 'playtest-layout-test.json', data: { layouts: [layout] } }]);
 const scale = makeScale(0.5);
@@ -1309,10 +1308,14 @@ describe('authored fixed loot', () => {
             category: 'material' as const,
             weight: 1,
             size: [1, 1] as [number, number],
-            economy: { usage: ['Military' as const], tiers: ['Tier1' as const] },
             workInProgress: false,
-            notLoot: false,
           },
+        ],
+      ]),
+      itemEconomy: new Map([
+        [
+          'fixture_gear',
+          { id: 'fixture_gear', usage: ['Military' as const], tiers: ['Tier1' as const], notLoot: false },
         ],
       ]),
     };
@@ -1732,8 +1735,8 @@ describe('authored fixed loot', () => {
     const templateIds = new Set(templates);
     const markers = site.placements
       .filter((placement) => templateIds.has(placement.template.id))
-      .flatMap((placement) => placedSpawns(placement).filter(({ zombie }) => zombie === kind));
-    const spawns = columnsFor(site, layout).flatMap(([cx, cz]) => site.zombiesIn(cx, cz));
+      .flatMap((placement) => placedSpawns(placement).filter(({ actor }) => actor === kind));
+    const spawns = columnsFor(site, layout).flatMap(([cx, cz]) => site.actorsIn(cx, cz));
     const matchingSpawns = spawns.filter(({ type }) => type === kind);
 
     expect(markers.length).toBeGreaterThan(0);
@@ -1754,7 +1757,7 @@ describe('authored fixed loot', () => {
     for (const templateId of ['playtest_tool_shack', 'shed']) {
       const template = result.registry.templates.get(templateId)!;
       const { spawns } = compileTemplate(result.registry, template);
-      expect(spawns.some(({ zombie, chance }) => zombie === 'shambler' && chance < 1)).toBe(true);
+      expect(spawns.some(({ actor, chance }) => actor === 'shambler' && chance < 1)).toBe(true);
     }
 
     const inside = (templateId: string, spawn: SiteLayoutDef['shamblers'][number]): boolean => {

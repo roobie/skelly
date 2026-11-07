@@ -9,12 +9,16 @@ import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
 import { fillHint } from './keyCap.ts';
 
-export interface CreditsEntryViewModel {
+interface CreditsLink {
+  readonly url: string;
+  readonly host: string;
+}
+
+interface CreditsEntryViewModel {
   readonly title: string;
-  readonly url: string | null;
+  /** Every distinct page the source came from; packs crediting one source may each link their own. */
+  readonly links: readonly CreditsLink[];
   readonly author: string | null;
-  /** The hostname the source came from, when it has a link. */
-  readonly host: string | null;
   readonly licenceName: string;
   readonly licenceUrl: string | null;
   readonly changes: string | null;
@@ -24,9 +28,8 @@ const entryViewModel = (source: AssetSource): CreditsEntryViewModel => {
   const licence = LICENCES[source.licence];
   return {
     title: source.title,
-    url: source.url,
+    links: source.url === null ? [] : [{ url: source.url, host: new URL(source.url).hostname }],
     author: source.author,
-    host: source.url === null ? null : new URL(source.url).hostname,
     licenceName: licence.name,
     licenceUrl: licence.url,
     changes: source.changes,
@@ -37,19 +40,37 @@ export interface CreditsViewModel {
   readonly entries: readonly CreditsEntryViewModel[];
 }
 
-export const creditsViewModel = (manifest: Manifest): CreditsViewModel => ({
-  entries: manifest.sources.map(entryViewModel),
-});
+export const creditsViewModel = (manifest: Manifest): CreditsViewModel => {
+  // Keyed by all an entry shows but its links, so entries that differ only there are one (`DESIGN.md`, "Assets and credits").
+  const merged = new Map<string, CreditsEntryViewModel>();
+  for (const entry of manifest.sources.map(entryViewModel)) {
+    const { links, ...shown } = entry;
+    const key = JSON.stringify(shown);
+    const seen = merged.get(key);
+    merged.set(
+      key,
+      seen
+        ? {
+            ...seen,
+            links: [...seen.links, ...links.filter(({ url }) => !seen.links.some((link) => link.url === url))],
+          }
+        : entry,
+    );
+  }
+  return { entries: [...merged.values()] };
+};
 
 type CreditsText = ScreenText['credits'];
 
-const entryTemplate = (entry: CreditsEntryViewModel, text: CreditsText): TemplateResult => html`
+const externalLink = (url: string, label: string): TemplateResult =>
+  html`<a href=${url} target="_blank" rel="noopener">${label}</a>`;
+
+const entryTemplate = ({ links, ...entry }: CreditsEntryViewModel, text: CreditsText): TemplateResult => html`
   <li>
     ${
-      entry.url === null
-        ? html`<strong>${entry.title}</strong>`
-        : html`<a href=${entry.url} target="_blank" rel="noopener">${entry.title}</a>`
-    }${entry.author === null ? '' : ` ${fillText(text.byAuthor, { author: entry.author })}`}${entry.host === null ? '' : `, ${fillText(text.fromHost, { host: entry.host })}`}
+      links.length === 1 ? externalLink(links[0]!.url, entry.title) : html`<strong>${entry.title}</strong>`
+    }${entry.author === null ? '' : ` ${fillText(text.byAuthor, { author: entry.author })}`}${links.length === 1 ? `, ${fillText(text.fromHost, { host: links[0]!.host })}` : ''}
+    ${links.length > 1 ? links.map(({ url }) => html`<br />${externalLink(url, url.slice('https://'.length))}`) : ''}
     <br />
     ${fillHint(text.licence, {
       licence:

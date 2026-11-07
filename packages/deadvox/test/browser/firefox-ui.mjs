@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
-import { assertFixtureMods, selectFixtureMods } from './mods-startup.mjs';
+import { assertFixtureMods, assertOptInModIdentity, selectFixtureMods } from './mods-startup.mjs';
 import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { measureWeatheringMaterials } from './weatheringPixels.mjs';
@@ -24,14 +24,14 @@ const observation = {
       assert(code.includes(marker), 'debug look observation point exists');
       return code.replace(marker, `  Object.assign(globalThis, { firefoxUiLook: look });\n${marker}`);
     }
-    if (!id.endsWith('/src/game/play.ts')) {
+    if (!id.endsWith('/src/presentation/play.ts')) {
       return;
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
     assert(code.includes(marker), 'game-loop observation point exists');
     const exposed = code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, worldLoading, spectatorCameraEnabled: () => spectator.enabled, THREE: FirefoxTHREE, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, worldLoading, spectatorCameraEnabled: () => spectator.enabled, figureVariantOf, THREE: FirefoxTHREE, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
     );
     // Inside updateWorldLoading, which still runs on every loading frame while the world draw is skipped.
     const loadingMarker =
@@ -41,7 +41,7 @@ const observation = {
       loadingMarker,
       `${loadingMarker}\n    if (worldLoading.state === 'loading' && !globalThis.firefoxUiStartupSample) {\n      globalThis.firefoxUiStartupSample = { pending: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks), masked: !$('world-loading').hidden };\n    }`,
     );
-    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '../core/weather.ts';\n${withLoading}\n`;
+    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '../core/weather.ts';\nimport { figureVariantOf } from '../core/actorModels.ts';\n${withLoading}\n`;
   },
 };
 const vite = await createServer({
@@ -68,7 +68,7 @@ try {
   });
   await page.addInitScript(installSaveStatusTrace);
   await page.addInitScript(() => {
-    localStorage.setItem('deadvox.hud-options', JSON.stringify({ clock: true }));
+    localStorage.setItem('skelly.hud-options', JSON.stringify({ clock: true }));
     let locked = null;
     Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
     Element.prototype.requestPointerLock = function () {
@@ -88,6 +88,9 @@ try {
     };
     requestAnimationFrame(frame);
   });
+  await assertOptInModIdentity(page, (query) =>
+    browserStageUrl('firefox-ui', `http://127.0.0.1:${address.port}/?${query}`),
+  );
   await page.goto(
     browserStageUrl(
       'firefox-ui',
@@ -157,7 +160,7 @@ try {
   });
   assert.doesNotMatch(await page.locator('#hud').textContent(), /paused/);
   const gateCode = await page.evaluate(
-    `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
+    `import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
   );
   await page.evaluate((code) => {
     globalThis.firefoxGateEvents = [];
@@ -303,14 +306,14 @@ try {
   assert.equal(bandagesAfterConfirm, bandagesBeforeConfirm + 1, 'plain Enter spawns the selected item');
   await page.keyboard.press('Enter');
   assert.equal(await bandages(), bandagesAfterConfirm, 'Enter after closing the menu does not spawn an item');
-  // Zombies of each mobgen body are drawn as their own model, so no two of these types share one. The debug spawn
+  // Shared anatomy must not collapse distinct actor figure variants. The debug spawn
   // ring finds no clear ground in sight of this stage's start, so these check zombies the world already holds.
   const drawnModel = (typeId) => {
-    const { session, view } = globalThis.firefoxUiTest;
-    for (const [id, zombie] of session.zombies.store.entries()) {
-      const state = zombie.type.id === typeId && view.zombieMeshes.states?.get(id);
-      const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
-      if (variant?.model === zombie.type.model && variant.mesh.count > 0) {
+    const { session, view, figureVariantOf } = globalThis.firefoxUiTest;
+    for (const [id, actor] of session.actors.store.entries()) {
+      const state = actor.type.id === typeId && view.actorMeshes.states?.get(id);
+      const variant = state && view.actorMeshes.variants?.[state.variantIndex];
+      if (variant?.model === figureVariantOf(actor.type) && variant.mesh.count > 0) {
         return variant.model;
       }
     }
@@ -322,7 +325,7 @@ try {
       page
         .waitForFunction(drawnModel, typeId, { timeout: 10_000 })
         .then((handle) => handle.jsonValue())
-        .catch(() => assert.fail(`a world ${typeId} is drawn as its content model`)),
+        .catch(() => assert.fail(`a world ${typeId} is drawn as its content figure variant`)),
     ),
   );
   assert.equal(
@@ -336,17 +339,17 @@ try {
   const acidId = await page.waitForFunction(
     () => {
       const { session, view } = globalThis.firefoxUiTest;
-      const away = ([, zombie]) => Math.hypot(...zombie.body.pos.map((value, axis) => value - session.body.pos[axis]));
-      const [found] = [...session.zombies.store.entries()]
-        .filter(([, zombie]) => zombie.type.id === 'acid_zombie')
+      const away = ([, actor]) => Math.hypot(...actor.body.pos.map((value, axis) => value - session.body.pos[axis]));
+      const [found] = [...session.actors.store.entries()]
+        .filter(([, actor]) => actor.type.id === 'acid_zombie')
         .sort((a, b) => away(a) - away(b));
-      const state = found && view.zombieMeshes.states?.get(found[0]);
-      const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
+      const state = found && view.actorMeshes.states?.get(found[0]);
+      const variant = state && view.actorMeshes.variants?.[state.variantIndex];
       const body = found?.[1].type.acidBody;
       const lit = view.lightPool.lights.some(
         (light) => light.color.getHexString() === body?.color.slice(1) && light.distance === body?.light.radiusMetres,
       );
-      const sac = found && view.zombieMeshes.boneMatrix(found[0], 'sac.0');
+      const sac = found && view.actorMeshes.boneMatrix(found[0], 'sac.0');
       return variant?.model === 'acid' &&
         variant.mesh.count > 0 &&
         lit &&
@@ -361,11 +364,11 @@ try {
   const acidDeath = await page.evaluate(
     (id) => {
       const { session } = globalThis.firefoxUiTest;
-      const { zombies } = session;
+      const { actors } = session;
       const {
         pos: [x, y, z],
         height: bodyHeight,
-      } = zombies.store.get(id).body;
+      } = actors.store.get(id).body;
       // Only the head kills this body; a shot that strikes the torso first only downs it. Walls may stand beside
       // it, so level rays from around and up the body look for one whose first visible region is its head.
       const weapon = { damage: 1000, reach: 100, cooldown: 0, impulse: 0 };
@@ -374,18 +377,18 @@ try {
         const [dx, dz] = [Math.cos((turn * Math.PI) / 8), Math.sin((turn * Math.PI) / 8)];
         for (let height = bodyHeight; height > 0 && !shot; height -= 0.2) {
           const origin = [x + 2 * dx, y + height, z + 2 * dz];
-          const aim = zombies.aimAt(origin, [-dx, 0, -dz], weapon);
+          const aim = actors.aimAt(origin, [-dx, 0, -dz], weapon);
           if (aim?.id === id && aim.region === 'head') {
             shot = { origin, directions: [[-dx, 0, -dz]] };
           }
         }
       }
       if (shot) {
-        zombies.firePellets({ ...shot, damage: weapon.damage, impulse: 0, rangeMetres: weapon.reach });
+        actors.firePellets({ ...shot, damage: weapon.damage, impulse: 0, rangeMetres: weapon.reach });
       }
       return {
         aimed: shot !== undefined,
-        died: zombies.store.get(id) === undefined,
+        died: actors.store.get(id) === undefined,
         piles: JSON.stringify(session.inventory.snapshotState().piles),
       };
     },
@@ -397,9 +400,9 @@ try {
     (id) => {
       const { view } = globalThis.firefoxUiTest;
       return (
-        view.zombieMeshes.boneMatrix(id, 'sac.0')?.every((value) => value === 0) &&
+        view.actorMeshes.boneMatrix(id, 'sac.0')?.every((value) => value === 0) &&
         view.acidEffects.dropletCount() >=
-          globalThis.firefoxUiTest.registry.zombies.get('acid_zombie').acidBody.deathSplash.droplets
+          globalThis.firefoxUiTest.registry.actors.get('acid_zombie').acidBody.deathSplash.droplets
       );
     },
     await acidId.jsonValue(),
@@ -444,20 +447,20 @@ try {
   const avatarBeforeLook = await drawnAvatar();
   assert.ok(avatarBeforeLook.length > 0, 'the avatar draws');
   await page.evaluate(() => {
-    globalThis.firefoxUiTest.input.yaw += 1;
+    globalThis.firefoxUiTest.input.controls.yaw += 1;
   });
   assert.deepEqual(await drawnAvatar(), avatarBeforeLook, 'look input while detached must not turn the drawn avatar');
   await pressAction(page, 'debug.perception-labels-toggle');
   await page.waitForFunction(
-    () => [...document.querySelectorAll('.zombie-perception-label')].some((label) => label.style.display !== 'none'),
+    () => [...document.querySelectorAll('.actor-perception-label')].some((label) => label.style.display !== 'none'),
     null,
     { timeout: 5000 },
   );
-  assert.ok(await page.locator('.zombie-perception-label[data-perception-label]').count());
+  assert.ok(await page.locator('.actor-perception-label[data-perception-label]').count());
   await pressAction(page, 'debug.spectator-camera-toggle');
   assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.spectatorCameraEnabled()), false);
   await pressAction(page, 'debug.perception-labels-toggle');
-  await page.waitForFunction(() => document.querySelectorAll('.zombie-perception-label').length === 0, null, {
+  await page.waitForFunction(() => document.querySelectorAll('.actor-perception-label').length === 0, null, {
     timeout: 5000,
   });
 
@@ -569,10 +572,10 @@ try {
   assert.deepEqual(pageErrors, []);
   assert.deepEqual(consoleErrors, []);
 
-  const runWeatheringTestPage = process.env.DEADVOX_FIREFOX_UI_WEATHERING_TEST === '1';
+  const runWeatheringTestPage = process.env.SKELLY_FIREFOX_UI_WEATHERING_TEST === '1';
   if (!runWeatheringTestPage) {
     process.stdout.write(
-      'Skipping Firefox weatheringTest page subflow (#670 quarantine; set DEADVOX_FIREFOX_UI_WEATHERING_TEST=1 to run locally).\n',
+      'Skipping Firefox weatheringTest page subflow (#670 quarantine; set SKELLY_FIREFOX_UI_WEATHERING_TEST=1 to run locally).\n',
     );
   }
   // Quarantined as a flake under `AGENTS.md`, "Tests"; #670 owns the root cause.

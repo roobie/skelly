@@ -3,7 +3,7 @@ import { Box3, Group, type Object3D, Quaternion, Raycaster, Vector3 } from 'thre
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { parse } from 'valibot';
 import { describe, expect, it } from 'vitest';
-import firearmContent from '../src/content/base/models-firearms.json' with { type: 'json' };
+import firearmContent from '../../mods/skelly.firearms/models-firearms.json' with { type: 'json' };
 import type { ModelDef } from '../src/core/content.ts';
 import { heldEjectionPose, heldGripOffset } from '../src/core/heldPose.ts';
 import { ModelSchema } from '../src/core/schema.ts';
@@ -31,7 +31,7 @@ const ak = parse(
   firearmContent.models.find((model) => model.id === 'rifle_ak'),
 );
 const load = (model: ModelDef = ar) => {
-  const bytes = readFileSync(`src/content/base/${model.file}`);
+  const bytes = readFileSync(`../mods/skelly.firearms/${model.file}`);
   return new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
 };
 

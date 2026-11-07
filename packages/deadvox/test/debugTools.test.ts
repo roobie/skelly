@@ -1,5 +1,7 @@
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it } from 'vitest';
+import { actorPoseInputFor } from '../src/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { dominantSide } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -8,20 +10,19 @@ import { magazineSpec } from '../src/core/magazine.ts';
 import { mountedOptic, opticViewSettings } from '../src/core/opticView.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { equipDebugBackpack, equipDebugLoadout } from '../src/debug/debugLoadout.ts';
+import { applyStartKit } from '../src/core/startState.ts';
 import { copyTextOrSelect, formatMeleeResult } from '../src/debug/index.ts';
 import { stepNoclip } from '../src/debug/noclip.ts';
-import { startingLoadout } from '../src/game/loadout.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { startupContent } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { fitFixtureOptic, grenadeStart, shortFirearmStart } from './fixtures/debugStarts.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { createPlayerBody, PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
-const registry = baseRegistry();
+const content = startupContent();
+const { registry } = content;
 const SCALE = makeScale(0.5);
 const FLOOR = (_x: number, y: number) => y === 0;
 const INTENT = { forward: 1, right: 0, jump: false, sprint: false, walk: false };
@@ -147,7 +148,7 @@ describe('debug starting equipment', () => {
     const weapon = { ...weaponDef, cooldown: weaponDef.cooldownSimSeconds };
     expect(weapon).toMatchObject({ damage: 15, reach: 0.8, impulse: 10 });
     let launchImpulse: number | undefined;
-    const system = new ZombieSystem({
+    const system = new ActorSystem({
       player: () => ({
         pos: [0, playerEye[1] - PLAYER.eye / SCALE.blockSize, 0],
         facing: [1, 0, 0],
@@ -163,19 +164,19 @@ describe('debug starting equipment', () => {
       physics: physicsFor(SCALE),
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
-      onSever: (_id, _zombie, _part, hit) => {
+      onSever: (_id, _actor, _part, hit) => {
         launchImpulse = hit.impulse;
       },
     });
     const shambler = {
-      ...registry.zombies.get('shambler')!,
+      ...registry.actors.get('shambler')!,
       dismember: { chance: 0, headOnKillChance: 1 },
     };
     const id = system.add(shambler, [1.85 / SCALE.blockSize, 1, 0], [-1, 0, 0]);
-    const zombie = system.store.get(id)!;
-    zombie.figureSeed = 1;
-    zombie.regions.head = weapon.damage;
-    const boxes = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, SCALE.blockSize)).head;
+    const actor = system.store.get(id)!;
+    actor.figureSeed = 1;
+    actor.regions.head = weapon.damage;
+    const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, SCALE.blockSize)).head;
     const target = boxes
       .map((box) => box.voxelCentroid)
       .find((candidate) => {
@@ -189,49 +190,21 @@ describe('debug starting equipment', () => {
     const ray = direction.map((value) => value / length) as Vec3;
     expect(system.swing(playerEye, ray, FISTS_MELEE)).toBeUndefined();
     expect(system.swing(playerEye, ray, weapon)).toBe(id);
-    expect(zombie.regions.head).toBe(0);
+    expect(actor.regions.head).toBe(0);
     expect(launchImpulse).toBeCloseTo(10 * shambler.severedImpulseScale);
   });
 
-  it('gives a fresh debug game an empty worn hiking backpack and nothing else', () => {
+  it('a fixture grenade kit holds a throwable with compatible packed spares', () => {
     const inventory = new Inventory(registry);
-    startingLoadout(inventory);
-    const before = new Set(Array.from(inventory.items(), ({ item }) => item));
-    equipDebugBackpack(inventory, true, true);
-
-    const added = Array.from(inventory.items(), ({ item }) => item).filter((item) => !before.has(item));
-    expect(added).toEqual([inventory.worn.back]);
-    expect(inventory.worn.back?.type).toBe('hiking_backpack');
-    expect(inventory.worn.back?.pockets?.flat()).toEqual([]);
+    applyStartKit(inventory, grenadeStart());
+    const held = inventory.hands[dominantSide(inventory.character)]!;
+    expect(registry.items.get(held.type)?.explosive).toBeDefined();
+    expect([...inventory.items()].some(({ item }) => item.uid !== held.uid && item.type === held.type)).toBe(true);
   });
 
-  it('adds no backpack to a non-debug or restored game, nor over a worn one', () => {
-    const normal = new Inventory(registry);
-    equipDebugBackpack(normal, false, true);
-    expect(normal.worn.back).toBeUndefined();
-
-    const restored = new Inventory(registry);
-    equipDebugBackpack(restored, true, false);
-    expect(restored.worn.back).toBeUndefined();
-
-    const occupied = new Inventory(registry);
-    const pack = occupied.create('hiking_backpack');
-    expect(occupied.add(pack, { kind: 'worn' })).toBe(true);
-    equipDebugBackpack(occupied, true, true);
-    expect(Array.from(occupied.items(), ({ item }) => item)).toEqual([pack]);
-  });
-
-  it('loadout=grenade holds a grenade in the dominant hand with a couple more packed', () => {
+  it('a fixture short-firearm kit fits a filled compatible magazine and spare ammunition', () => {
     const inventory = new Inventory(registry);
-    expect(equipDebugLoadout(inventory, true, true, '?loadout=grenade')).toBe(true);
-    expect(inventory.hands[dominantSide(inventory.character)]?.type).toBe('frag_grenade');
-    const packed = inventory.worn.back?.pockets?.flat().filter(({ item }) => item.type === 'frag_grenade') ?? [];
-    expect(packed.length).toBeGreaterThan(1);
-  });
-
-  it('loadout=pistol equips a filled compatible magazine and spare ammunition', () => {
-    const inventory = new Inventory(registry);
-    expect(equipDebugLoadout(inventory, true, true, '?loadout=pistol')).toBe(true);
+    applyStartKit(inventory, shortFirearmStart(registry));
     const gun = inventory.hands[dominantSide(inventory.character)]!;
     const definition = registry.items.get(gun.type)!;
     const model = registry.models.get(definition.model!)!;
@@ -257,14 +230,15 @@ describe('debug starting equipment', () => {
     expect(optics.length).toBeGreaterThan(0);
     for (const optic of optics) {
       let previewed = false;
-      for (const host of ['ar', 'hunting']) {
+      const hosts = [...registry.items.values()].filter((item) => item.firearm);
+      for (const host of hosts) {
         const inventory = new Inventory(registry);
+        const firearm = inventory.create(host.id);
         try {
-          equipDebugLoadout(inventory, true, true, `?loadout=${host}&optic=${optic.id}`);
+          fitFixtureOptic(inventory, firearm, optic.id);
         } catch {
           continue;
         }
-        const firearm = inventory.hands[dominantSide(inventory.character)]!;
         const fitted = mountedOptic(registry, firearm);
         expect(fitted?.item.id).toBe(optic.id);
         expect(opticViewSettings(fitted!.item, fitted!.model)?.reticle?.primitives.length).toBeGreaterThan(0);
@@ -273,18 +247,6 @@ describe('debug starting equipment', () => {
       }
       expect(previewed, optic.id).toBe(true);
     }
-  });
-
-  it('wears sneakers in an ordinary starting loadout', () => {
-    const inventory = new Inventory(registry);
-    startingLoadout(inventory);
-    expect(inventory.worn.feet?.type).toBe('sneakers');
-  });
-
-  it('keeps ordinary starting hands empty', () => {
-    const inventory = new Inventory(registry);
-    startingLoadout(inventory);
-    expect(inventory.hands).toEqual({});
   });
 });
 

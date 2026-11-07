@@ -1,0 +1,91 @@
+{
+  "graphics": [
+    {
+      "bloomScale": {
+        "default": 1,
+        "label": "Bloom render scale",
+        "max": 1,
+        "min": 0.25
+      },
+      "cachedSurfaceNoise": {
+        "default": true,
+        "label": "Cached surface noise",
+        "options": [false, true]
+      },
+      "capability": "graphics",
+      "coarseWeathering": {
+        "default": false,
+        "label": "Coarse weathering grid",
+        "options": [false, true]
+      },
+      "drugVignette": {
+        "default": 1,
+        "label": "Painkiller vignette",
+        "max": 1,
+        "min": 0
+      },
+      "fastCamo": {
+        "default": false,
+        "label": "Fast camouflage pattern",
+        "options": [false, true]
+      },
+      "fogFarPlaneScale": 1.5,
+      "gore": {
+        "dripSourceCap": 6,
+        "dropletCap": 128,
+        "dropletSpawnsPerFrame": 48,
+        "splatCap": 256
+      },
+      "id": "core",
+      "itemPicture": {
+        "framing": 1.1000000000000001
+      },
+      "itemPictureCacheCapacity": 128,
+      "itemViewer": {
+        "degreesPerPixel": 0.5,
+        "framing": 1.1000000000000001,
+        "pitchLimitDegrees": 85,
+        "startPitchDegrees": 26,
+        "startYawDegrees": 45,
+        "zoomMax": 4,
+        "zoomMin": 0.5,
+        "zoomPerWheelPixel": 0.002
+      },
+      "mobActors": {
+        "maxCorpses": 16
+      },
+      "modelLoadConcurrency": 8,
+      "nearPlaneMetres": 0.01,
+      "opticLens": {
+        "reticleAntiAliasWidth": 0.5,
+        "rimSoftness": 0.040000000000000001
+      },
+      "playerViewFovDegrees": 75,
+      "readyRadiusM": 64,
+      "renderScale": {
+        "adaptive": {
+          "enabled": true,
+          "hysteresisRealMs": 2,
+          "max": 1,
+          "min": 0.5,
+          "sampleWindow": 20,
+          "step": 0.050000000000000003,
+          "targetRealMs": 15
+        },
+        "default": 1,
+        "label": "Scene render scale",
+        "max": 1,
+        "min": 0.5
+      },
+      "skyJobsInFlight": 3,
+      "skyPreloadRings": 1,
+      "smallSunMap": {
+        "default": false,
+        "label": "Smaller sun shadow map",
+        "options": [false, true]
+      },
+      "streamHysteresisM": 16,
+      "unbuiltSkyCap": 0.5
+    }
+  ]
+}

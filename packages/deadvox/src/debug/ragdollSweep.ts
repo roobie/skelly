@@ -1,8 +1,9 @@
+import { bodyPlanModel, figureVariantOf } from '../core/actorModels.ts';
+import type { ActorSystem } from '../core/actorSystem.ts';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId } from '../core/entities.ts';
-import type { ZombieSystem } from '../core/zombies.ts';
-import type { ZombieRenderer } from '../render/mobActors.ts';
+import type { ActorRenderer } from '../render/mobActors.ts';
 import { ragdollContent } from '../render/ragdoll.ts';
 
 export function stageRagdollSweep({
@@ -15,8 +16,8 @@ export function stageRagdollSweep({
   restored,
   groundAt,
 }: {
-  system: ZombieSystem | undefined;
-  renderer: ZombieRenderer;
+  system: ActorSystem | undefined;
+  renderer: ActorRenderer;
   registry: Registry;
   origin: Vec3;
   blockSize: number;
@@ -30,7 +31,9 @@ export function stageRagdollSweep({
   const tuning = ragdollContent.sweep;
   const downed: EntityId[] = [];
   for (const [row, model] of tuning.models.entries()) {
-    const type = [...registry.zombies.values()].find((candidate) => candidate.model === model)!;
+    const type = [...registry.actors.values()].find(
+      (candidate) => bodyPlanModel(figureVariantOf(candidate)) === model,
+    )!;
     for (const [column, cuts] of tuning.cuts.entries()) {
       const position: Vec3 = [
         origin[0] + (tuning.startMetres[0]! + row * tuning.spacingMetres) / blockSize,
@@ -39,30 +42,32 @@ export function stageRagdollSweep({
       ];
       position[1] = groundAt(position[0], position[2]);
       const id = system.add(type, position);
-      const zombie = system.store.get(id)!;
+      const actor = system.store.get(id)!;
       const seeds = type.figureSeeds!;
-      zombie.figureSeed = seeds[((seed % seeds.length) + seeds.length) % seeds.length]!;
+      actor.figureSeed = seeds[((seed % seeds.length) + seeds.length) % seeds.length]!;
       renderer.sync(system.store, 0, 1);
       const hit = { point: position, direction: [0, 0, -1] as Vec3, impulse: 1 };
-      renderer.zombieWounded?.(id, hit);
+      renderer.actorWounded?.(id, hit);
       for (const part of cuts) {
-        renderer.zombieSevered?.(id, part, hit, zombie);
-        zombie.severed.push(part);
+        renderer.actorSevered?.(id, part, hit, actor);
+        actor.severed.push(part);
       }
       if (column === tuning.cuts.length - 1) {
-        zombie.regions.torso = 0;
-        zombie.incapacitated = true;
-        renderer.zombieIncapacitated?.(id, zombie);
+        actor.regions.torso = 0;
+        actor.incapacitated = true;
+        renderer.actorIncapacitated?.(id, actor);
         downed.push(id);
       } else {
-        renderer.zombieDied?.(id, zombie);
+        renderer.actorDied?.(id, actor);
         system.store.remove(id);
       }
     }
   }
   const living: { id: EntityId; cuts: string[] }[] = [];
   for (const [row, model] of tuning.models.entries()) {
-    const type = [...registry.zombies.values()].find((candidate) => candidate.model === model)!;
+    const type = [...registry.actors.values()].find(
+      (candidate) => bodyPlanModel(figureVariantOf(candidate)) === model,
+    )!;
     for (const [column, cuts] of tuning.crawlCuts.entries()) {
       const position: Vec3 = [
         origin[0] + (tuning.startMetres[0]! + row * tuning.spacingMetres) / blockSize,
@@ -75,15 +80,15 @@ export function stageRagdollSweep({
   }
   const collapseLiving = () => {
     for (const { id, cuts } of living.splice(0)) {
-      const zombie = system.store.get(id);
-      if (!zombie) {
+      const actor = system.store.get(id);
+      if (!actor) {
         continue;
       }
-      const hit = { point: zombie.body.pos, direction: [0, 0, -1] as Vec3, impulse: 1 };
-      renderer.zombieWounded?.(id, hit);
+      const hit = { point: actor.body.pos, direction: [0, 0, -1] as Vec3, impulse: 1 };
+      renderer.actorWounded?.(id, hit);
       for (const part of cuts) {
-        zombie.severed.push(part);
-        renderer.zombieSevered?.(id, part, hit, zombie);
+        actor.severed.push(part);
+        renderer.actorSevered?.(id, part, hit, actor);
       }
     }
   };

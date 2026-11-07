@@ -1,0 +1,22 @@
+{
+  "sources": [
+    {
+      "author": "Skelly contributors",
+      "changes": "Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.",
+      "download": null,
+      "files": ["assets/models/jerry_can.glb"],
+      "licence": "CC0-1.0",
+      "title": "Thing tool authored models",
+      "url": "https://github.com/roobie/skelly/blob/main/packages/mods/skelly.containers/exports/things.jsonnet"
+    },
+    {
+      "author": "Skelly contributors",
+      "changes": "Built from primitive meshes for readable ground-pile silhouettes; no external asset source or texture is used.",
+      "download": null,
+      "files": ["assets/models/lamp_oil_bottle.glb"],
+      "licence": "CC0-1.0",
+      "title": "Project-built low-poly hand-tool and content stand-ins",
+      "url": "https://github.com/roobie/skelly"
+    }
+  ]
+}

@@ -5,11 +5,12 @@ import { CHUNK, compassBearing, toChunk, toLocal } from './core/coords.ts';
 import { BLOCK_SIZE, WORLD_BOTTOM_M } from './core/scale.ts';
 import { sitePalette, terrainShapeOf } from './core/sitePalette.ts';
 import { generateColumn, worldGroundAt } from './core/worldgen.ts';
-import { buildBundledContent } from './game/bundledContent.ts';
 import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
-import { inputBindings, keyboardInput } from './game/inputBindings.ts';
-import { MAP_SLICE_ACTIONS, mapSliceKeys } from './game/mapSliceInput.ts';
+import { startForSite } from './game/startSelection.ts';
 import { siteForReviewMap } from './game/worldSetup.ts';
+import { MAP_SLICE_ACTIONS, mapSliceKeys } from './presentation/mapSliceInput.ts';
+import { buildBundledContent } from './product/content.ts';
+import { inputBindings, keyboardInput } from './product/input.ts';
 import {
   hillshade,
   marchingSquares,
@@ -33,6 +34,10 @@ const seed = Number.isFinite(rawSeed) ? rawSeed | 0 : DEFAULT_SEED;
 const config = makeConfig(seed, DEFAULT_RADIUS_M, content);
 Object.assign(config, siteFromUrl(params, 'playtest', registry));
 config.debug = true;
+if (registry.scenarios.has(config.site)) {
+  // A scenario city is reviewed as its default start places it.
+  config.startId = startForSite(content, config.site, true).id;
+}
 const layout = registry.layouts.get(config.site);
 const site = siteForReviewMap(config, registry);
 const selectedView = (params.get('view') === 'satellite' ? 'satellite' : 'topographic') as SiteMapView;
@@ -117,12 +122,12 @@ if (overlay) {
   document.body.classList.add('map-overlay');
   document.querySelector<HTMLElement>('#map-label')!.textContent = `${config.site.toUpperCase()} · REVIEW MAP`;
   const requestClose = () =>
-    globalThis.parent.postMessage({ type: 'deadvox-review-map-close' }, globalThis.location.origin);
+    globalThis.parent.postMessage({ type: 'skelly-review-map-close' }, globalThis.location.origin);
   const forwardKey = (event: KeyEventLike, phase: 'down' | 'up') => {
     event.preventDefault();
     globalThis.parent.postMessage(
       {
-        type: 'deadvox-review-map-key',
+        type: 'skelly-review-map-key',
         phase,
         code: event.code,
         shiftKey: event.shiftKey,

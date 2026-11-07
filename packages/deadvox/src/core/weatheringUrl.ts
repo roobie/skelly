@@ -1,5 +1,6 @@
+import { claimed, claimedId } from './capabilities.ts';
 import type { WeatheringDef } from './schema.ts';
-import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from './weather.ts';
+import { WEATHERING_RANGES } from './weather.ts';
 
 export interface WeatheringUrlState {
   /** Profile selected in the debug panel. */
@@ -67,10 +68,10 @@ const applyColorOverrides = (params: URLSearchParams, settings: WeatheringDef): 
 export const resolveWeatheringUrl = (
   params: URLSearchParams,
   profiles: ReadonlyMap<string, WeatheringDef>,
-  defaultProfileId: string = DEFAULT_WEATHERING_PROFILE_ID,
+  defaultProfileId: string = claimedId(profiles, 'defaultWeathering'),
   debug = false,
 ): WeatheringUrlState | undefined => {
-  const siteProfile = profiles.get(defaultProfileId) ?? profiles.get(DEFAULT_WEATHERING_PROFILE_ID);
+  const siteProfile = profiles.get(defaultProfileId) ?? claimed(profiles, 'defaultWeathering');
   if (!siteProfile) {
     return undefined;
   }

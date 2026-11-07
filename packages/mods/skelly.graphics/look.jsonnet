@@ -1,0 +1,32 @@
+{
+  look: [{
+    id: 'core',
+    capability: 'defaultLook',
+    tone: 'none',
+    exposure: 0.2,
+    srgb: true,
+    patterns: true,
+    vao: true,
+    post: false,
+    bloom: true,
+    film: true,
+    grade: 0.9,
+    heightFog: { baseMetres: 16, scaleMetres: 14 },
+    painCue: { pulseRiseRealSeconds: 0.15, pulseFallRealSeconds: 1.2, settleStretch: 2 },
+    damageFeedback: {
+      vignetteMax: 0.72,
+      damageForFullStrength: 25,
+      vignetteFadeRealSeconds: 1,
+      rollPeakDegrees: 6,
+      rollRiseRealSeconds: 4 / 60,
+      rollSettleRealSeconds: 0.35,
+    },
+    mobActors: {
+      corpseLieSimSeconds: 8,
+      corpseSinkSimSeconds: 1.5,
+      corpseSinkDepthMetres: 1.5,
+      launchSpinRadiansPerSimSecond: 20,
+      hearingGazeJitter: { yawDegrees: 5, pitchDegrees: 3, cyclesPerSimSecond: 0.6 },
+    },
+  }],
+}

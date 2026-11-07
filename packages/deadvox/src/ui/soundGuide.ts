@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import type { Manifest } from '../core/assets.ts';
+import { type AssetSource, contentFilePack, type PackedManifest } from '../core/assets.ts';
 import type { SoundDef } from '../core/content.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { soundVariantKey } from '../core/soundSynth.ts';
@@ -35,11 +35,24 @@ export interface HeartbeatSoundGuide {
   readonly levels: readonly { readonly label: string; readonly gain: number }[];
 }
 
-/** Joins the live sound definitions to their source/author/licence rows in the asset manifest. */
-const assetSourcesByFile = (manifest: Manifest) =>
-  new Map(manifest.sources.flatMap((source) => source.files.map((file) => [file, source] as const)));
+/** Where each sound was authored, as the registry records it. */
+type SoundOrigins = ReadonlyMap<string, { readonly source: string }>;
 
-const soundVariant = (file: string, source: Manifest['sources'][number] | undefined): SoundVariantGuide => ({
+const packFileKey = (pack: string, file: string): string => `${pack}\0${file}`;
+
+/**
+ * Joins the live sound definitions to their source/author/licence rows in the asset manifest. A file is
+ * looked up in the pack that authored the sound, because two packs may ship different recordings at one path.
+ */
+const assetSourcesByFile = (manifest: PackedManifest, origins: SoundOrigins) => {
+  const byPackFile = new Map(
+    manifest.sources.flatMap((source) => source.files.map((file) => [packFileKey(source.pack, file), source] as const)),
+  );
+  return (soundId: string, file: string) =>
+    byPackFile.get(packFileKey(contentFilePack(origins.get(soundId)?.source ?? ''), file));
+};
+
+const soundVariant = (file: string, source: AssetSource | undefined): SoundVariantGuide => ({
   file,
   sourcePack: source?.title ?? 'Missing source in assets/manifest.json',
   author: source?.author ?? 'Uncredited',
@@ -61,9 +74,10 @@ const synthesisedVariant = (file: string): SoundVariantGuide => ({
 export const buildHeartbeatSoundGuide = (
   heartbeat: HeartbeatTuning,
   sounds: ReadonlyMap<SoundId, SoundDef>,
-  manifest: Manifest,
+  manifest: PackedManifest,
+  origins: SoundOrigins,
 ): HeartbeatSoundGuide => {
-  const byFile = assetSourcesByFile(manifest);
+  const sourceOf = assetSourcesByFile(manifest, origins);
   return {
     id: 'player-heartbeat',
     category: 'body',
@@ -72,7 +86,7 @@ export const buildHeartbeatSoundGuide = (
       (sounds.get(event)?.variants ?? []).map((variant) => {
         const file = soundVariantKey(event, variant);
         return {
-          ...(typeof variant === 'string' ? soundVariant(file, byFile.get(file)) : synthesisedVariant(file)),
+          ...(typeof variant === 'string' ? soundVariant(file, sourceOf(event, file)) : synthesisedVariant(file)),
           event,
         };
       }),
@@ -122,8 +136,12 @@ export const renderHeartbeatSoundGuide = (
 `;
 
 /** Lists every sound in content order; its trigger and shortcut come from the sound's own content entry. */
-export const buildSoundGuide = (sounds: readonly SoundDef[], manifest: Manifest): SoundGuideEntry[] => {
-  const byFile = assetSourcesByFile(manifest);
+export const buildSoundGuide = (
+  sounds: readonly SoundDef[],
+  manifest: PackedManifest,
+  origins: SoundOrigins,
+): SoundGuideEntry[] => {
+  const sourceOf = assetSourcesByFile(manifest, origins);
   return sounds.map((sound) => ({
     id: sound.id as SoundId,
     category: sound.category,
@@ -136,7 +154,7 @@ export const buildSoundGuide = (sounds: readonly SoundDef[], manifest: Manifest)
     noiseRadiusMetres: sound.noise.enabled ? sound.noise.radiusMetres : null,
     variants: sound.variants.map((variant) =>
       typeof variant === 'string'
-        ? soundVariant(variant, byFile.get(variant))
+        ? soundVariant(variant, sourceOf(sound.id, variant))
         : synthesisedVariant(soundVariantKey(sound.id as SoundId, variant)),
     ),
   }));

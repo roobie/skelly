@@ -82,7 +82,7 @@ test('Pages project checks run in their PR workflows', () => {
 });
 
 test('Gungen filters include representative Deadvox and Mobgen import files', () => {
-  const importedFiles = ['packages/deadvox/src/core/amalgamFigure.ts', 'packages/mobgen/src/core/generate.ts'];
+  const importedFiles = ['packages/deadvox/src/core/fusedMassFigure.ts', 'packages/mobgen/src/core/generate.ts'];
   for (const event of ['push', 'pull_request']) {
     for (const file of importedFiles) {
       assert.ok(workflowIncludesPath(gungen, event, file), `Gungen ${event} filter includes ${file}`);
@@ -98,7 +98,7 @@ test('thing-export has its own typecheck and unit job covering its dependency pa
   for (const event of ['push', 'pull_request']) {
     for (const file of [
       'packages/thing-export/src/physical.ts',
-      'packages/engine/src/shapes/solid.ts',
+      'packages/construct/src/shapes/solid.ts',
       'packages/thing-core/src/schema.ts',
       'package-lock.json',
     ]) {

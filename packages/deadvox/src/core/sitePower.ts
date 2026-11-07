@@ -1,8 +1,8 @@
 import { BatteryChargers, type ChargerEndpoint } from './batteryChargers.ts';
 import type { BlockEntity, EntitySpec } from './blockEntities.ts';
+import { claimed } from './capabilities.ts';
 import type { ClockSettings } from './clock.ts';
 import type { Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayCycle } from './dayPhase.ts';
 import type { Inventory } from './inventory.ts';
@@ -102,7 +102,7 @@ export class SitePower {
     const endpoints = devices
       .filter((device) => registry.furniture.get(device.type)!.charger)
       .flatMap((device) => this.bindCharger(device, inventory, state, saved !== undefined));
-    const environment = { registry, clock, cycle, tuning: registry.powerTuning.get(CORE_CONTENT_IDS.powerTuning)! };
+    const environment = { registry, clock, cycle, tuning: claimed(registry.powerTuning, 'power')! };
     this.chargers = inventory ? new BatteryChargers(inventory, environment, state, endpoints) : undefined;
     this.network = this.chargers?.network ?? new PowerNetwork(environment, state);
     if (!saved) {

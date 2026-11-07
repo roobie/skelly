@@ -3,9 +3,9 @@
 
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import type { AimBasis, AimFrame } from '../core/aim.ts';
+import { claimed } from '../core/capabilities.ts';
 import { dominantSide } from '../core/character.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, actionOpenSeconds, actionPhaseSeconds, ejectSeconds } from '../core/firearmAction.ts';
 import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '../core/firearmAttachments.ts';
@@ -40,6 +40,7 @@ import { Rng } from '../core/random.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import { revolverChamberPoint } from '../core/revolverPose.ts';
 import { makeScale } from '../core/scale.ts';
+import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { firearmBoreRay } from './firearmAim.ts';
 import { MAGAZINE_LOAD_ACTION } from './magazineHandling.ts';
@@ -63,7 +64,10 @@ export const isFirearmTrainingAction = (job: Job): boolean =>
  * drawing one and seating it. A removal or an insert into an empty gun takes only its half (`DESIGN.md`, "Combat and
  * noise", rifles). The skill's reload factor shortens both.
  */
-const magazineTimes = (gun: Item, registry: Registry): { removeSimSeconds: number; insertSimSeconds: number } =>
+const magazineTimes = (
+  gun: Item,
+  registry: Registry,
+): { removeSimSeconds: number; insertSimSeconds: number; changeSound: SoundId } =>
   defOf(registry, gun.type).firearm!.handling.magazine!;
 
 /** The share of a magazine job spent taking the fitted one out, so presentation can play remove, then insert. */
@@ -286,9 +290,9 @@ export class FirearmMechanics {
     firearmUid: number,
   ) => void;
   private readonly firearmsSkillLevel: () => number;
+  private readonly combatTuning: FirearmsCombatTuning | undefined;
   private readonly firearmsSkillZeroHandling: () => FirearmsSkillZeroHandling;
   private readonly handlingSlowdown: () => number;
-  private readonly firearmsCombatTuning: FirearmsCombatTuning | undefined;
   private readonly firearmsSkillZeroOverrides = new Map<string, FirearmsSkillZeroHandling>();
   private readonly shotInput: ((uid: number, atSimSeconds: number) => FirearmShotInput | undefined) | undefined;
   private readonly revolvers: RevolverHandling;
@@ -356,16 +360,11 @@ export class FirearmMechanics {
     this.firearmsSkillLevel = firearmsSkillLevel;
     this.handlingSlowdown = handlingSlowdown;
     this.shotInput = shotInput;
-    this.firearmsCombatTuning = inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms;
-    this.firearmsSkillZeroHandling =
-      firearmsSkillZeroHandling ??
-      (() => {
-        const tuning = this.firearmsCombatTuning;
-        if (!tuning) {
-          throw new Error('Missing firearms-combat skill-zero handling tuning');
-        }
-        return tuning.skillZeroHandling;
-      });
+    // An unannotated held gun can be admitted without enabling firearm mechanics.
+    this.combatTuning = claimed(inventory.registry.combatPolicy, 'player')?.firearms
+      ? firearmsCombatTuning(inventory.registry)
+      : undefined;
+    this.firearmsSkillZeroHandling = firearmsSkillZeroHandling ?? (() => this.requiredCombatTuning().skillZeroHandling);
     for (const { item } of inventory.items()) {
       if (item.firearm?.cycle || item.firearm?.landings?.length) {
         this.active.add(item.uid);
@@ -378,7 +377,7 @@ export class FirearmMechanics {
       }
     }
     this.revolvers = new RevolverHandling(inventory, queue, {
-      factor: () => this.handlingFactor('reloadDuration'),
+      factor: () => this.handlingFactor('reloadFactor'),
       sound: (event, time) => this.onSound(event, undefined, time),
       eject: (gun, chamber, type, time) => this.ejectRevolver(gun, chamber, type, time),
       caseType: (gun) => spentCaseItemId(firearmHandlingFor(gun, inventory.registry).calibre),
@@ -587,20 +586,19 @@ export class FirearmMechanics {
     return Math.max(0, Math.min(1, acquiring.elapsedSimSeconds / acquiring.durationSimSeconds));
   }
 
-  private requiredFirearmsCombatTuning(): FirearmsCombatTuning {
-    const tuning = this.firearmsCombatTuning;
-    if (!tuning) {
-      throw new Error('Missing firearms-combat stance tuning');
+  private requiredCombatTuning(): FirearmsCombatTuning {
+    if (!this.combatTuning) {
+      throw new Error('Missing firearms combat policy');
     }
-    return { ...tuning, skillZeroHandling: this.firearmsSkillZeroHandling() };
+    return this.combatTuning;
+  }
+
+  private requiredFirearmsCombatTuning(): FirearmsCombatTuning {
+    return { ...this.requiredCombatTuning(), skillZeroHandling: this.firearmsSkillZeroHandling() };
   }
 
   private caseEjection(): FirearmsCombatTuning['caseEjection'] {
-    const tuning = this.firearmsCombatTuning;
-    if (!tuning) {
-      throw new Error('Missing firearms-combat case ejection tuning');
-    }
-    return tuning.caseEjection;
+    return this.requiredCombatTuning().caseEjection;
   }
 
   skillZeroHandlingSettingFor(uid: number): FirearmsSkillZeroHandling {
@@ -638,7 +636,8 @@ export class FirearmMechanics {
   /** Attachment load slows raising and ready movement using the same per-firearm mass moment. */
   stanceEffectsFor(uid: number): FirearmStanceEffects {
     const item = this.inventory.itemByUid(uid);
-    const stance = firearmStanceEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning());
+    const tuning = this.requiredCombatTuning();
+    const stance = firearmStanceEffects(this.firearmsSkillLevel(), tuning);
     if (!item) {
       return stance;
     }
@@ -648,10 +647,7 @@ export class FirearmMechanics {
     return {
       raiseDurationSimSeconds,
       // The clamp bounds the final duration, attachment load included, so ADS never exceeds the floor's maximum.
-      adsAcquisitionDurationSimSeconds: adsAcquisitionDuration(
-        raiseDurationSimSeconds,
-        this.requiredFirearmsCombatTuning(),
-      ),
+      adsAcquisitionDurationSimSeconds: adsAcquisitionDuration(raiseDurationSimSeconds, tuning),
       readyMovementFactor: (stance.readyMovementFactor * response.swingScale) / loadScale,
     };
   }
@@ -745,7 +741,7 @@ export class FirearmMechanics {
     const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
     const tuning = this.requiredFirearmsCombatTuning();
     const bore = firearmBoreRay({
-      holds: this.inventory.registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
+      holds: claimed(this.inventory.registry.figures, 'player')!.holds,
       model: data.model,
       eye: input.eye,
       stockSeat: input.stockSeat,
@@ -805,7 +801,7 @@ export class FirearmMechanics {
     if (item.firearm!.cylinder!.cocked) {
       return;
     }
-    const strikeAt = input.simTime + tuning.doubleActionPullSimSeconds * this.handlingFactor('reloadDuration');
+    const strikeAt = input.simTime + tuning.doubleActionPullSimSeconds * this.handlingFactor('reloadFactor');
     this.revolvers.pull(item, input.simTime, () => {
       const strike = this.shotInput ? this.shotInput(item.uid, strikeAt) : { ...input, simTime: strikeAt };
       if (!strike) {
@@ -1134,10 +1130,10 @@ export class FirearmMechanics {
         count: countText((gun.firearm?.tube?.length ?? 0) + 1),
         capacity: countText(firearmHandlingFor(gun, this.inventory.registry).model.gun!.internalMagazine!.capacity),
       }),
-      defOf(this.inventory.registry, gun.type).firearm!.roundLoadSimSeconds! * this.handlingFactor('reloadDuration'),
+      defOf(this.inventory.registry, gun.type).firearm!.roundLoadSimSeconds! * this.handlingFactor('reloadFactor'),
       { uid: gun.uid, ammoUid: ammo.uid },
     );
-    this.onSound('shotgun_insert', undefined, time);
+    this.onSound(defOf(this.inventory.registry, gun.type).firearm!.roundInsertSound!, undefined, time);
     return undefined;
   }
 
@@ -1200,7 +1196,7 @@ export class FirearmMechanics {
       this.queue.enqueueAction(
         STRIP_ACTION,
         this.text.loading.removeRound,
-        defOf(this.inventory.registry, type).ammo!.stripSimSeconds * this.handlingFactor('reloadDuration'),
+        defOf(this.inventory.registry, type).ammo!.stripSimSeconds * this.handlingFactor('reloadFactor'),
         { uid: gun.uid },
       );
     }
@@ -1208,7 +1204,7 @@ export class FirearmMechanics {
   }
 
   /** Skill's factor on a hand-handling time, lengthened by what the body does to the hands. */
-  private handlingFactor(kind: 'reloadDuration' | 'rackDuration'): number {
+  private handlingFactor(kind: 'reloadFactor' | 'rackFactor'): number {
     return (
       firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning())[kind] *
       this.handlingSlowdown()
@@ -1222,10 +1218,10 @@ export class FirearmMechanics {
     this.queue.enqueueAction(
       MAGAZINE_ACTION,
       label,
-      seconds * this.handlingFactor('reloadDuration'),
+      seconds * this.handlingFactor('reloadFactor'),
       replacement ? { uid: gun.uid, magazineUid: replacement.uid } : { uid: gun.uid },
     );
-    this.onSound('magazine_change', undefined, time);
+    this.onSound(times.changeSound, undefined, time);
   }
 
   private fullestMagazine(gun: Item): Item | undefined {
@@ -1375,7 +1371,7 @@ export class FirearmMechanics {
     const state: FirearmState = item.firearm ?? { chamber: 'empty' };
     state.hammerDown = undefined;
     const baseDuration = actionPhaseSeconds(data.action, 'hand', phase);
-    const duration = baseDuration * this.handlingFactor('rackDuration');
+    const duration = baseDuration * this.handlingFactor('rackFactor');
     state.cycle = {
       mode: 'hand',
       startedAt: time,
@@ -1397,7 +1393,7 @@ export class FirearmMechanics {
     );
     const firearm = defOf(this.inventory.registry, item.type).firearm!;
     const boltSound = phase === 'close' ? firearm.boltCloseSound : firearm.boltOpenSound;
-    this.onSound(boltSound ?? (pump ? 'shotgun_rack_back' : 'rifle_charge'), undefined, time);
+    this.onSound(firearm.bolt ? boltSound! : firearm.rackSound!, undefined, time);
   }
 
   pauseTo(time: number): void {
@@ -1457,7 +1453,7 @@ export class FirearmMechanics {
         this.isPump(item) &&
         landing.type === spentCaseItemId(firearmHandlingFor(item, this.inventory.registry).calibre);
       if (spentPumpCase) {
-        this.onSound('shotgun_hull_drop', landing.position, landing.at);
+        this.onSound(defOf(this.inventory.registry, item.type).firearm!.caseDropSound!, landing.position, landing.at);
       }
     }
     item.firearm!.landings = pending.length > 0 ? pending : undefined;
@@ -1617,7 +1613,7 @@ export class FirearmMechanics {
       cycle.mode === 'hand' && cycle.phase === undefined
         ? defOf(this.inventory.registry, item.type).firearm!.boltCloseSound
         : undefined;
-    const sound = pump ? 'shotgun_rack_forward' : boltCloseSound;
+    const sound = pump ? defOf(this.inventory.registry, item.type).firearm!.rackForwardSound : boltCloseSound;
     if (sound === undefined || cycle.forwardSounded) {
       return;
     }
@@ -1660,7 +1656,7 @@ export class FirearmMechanics {
     const twoHanded = Boolean(defOf(this.inventory.registry, item.type).twoHanded);
     const eye: Vec3 = pose.eye.map((value) => value * pose.blockSize) as Vec3;
     const held = heldEjectionPose({
-      holds: this.inventory.registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
+      holds: claimed(this.inventory.registry.figures, 'player')!.holds,
       model: data.model,
       side,
       twoHanded,
@@ -1818,7 +1814,7 @@ export class FirearmMechanics {
       side,
       twoHanded: false,
       model,
-      holds: this.inventory.registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
+      holds: claimed(this.inventory.registry.figures, 'player')!.holds,
     });
     const basis = basisAlong(
       [-Math.sin(pose.yaw) * Math.cos(pose.pitch), Math.sin(pose.pitch), -Math.cos(pose.yaw) * Math.cos(pose.pitch)],

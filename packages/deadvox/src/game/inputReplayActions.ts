@@ -1,4 +1,4 @@
-import type { InputContext } from './inputBindings.ts';
+import type { InputContext } from '../core/inputActions.ts';
 import { type InputReplayRecorder, type ReplayStartState, restoreReplayStartState } from './inputReplay.ts';
 
 export interface ReplayPlayStateAccessors {
@@ -42,7 +42,7 @@ export const routeDominantUse = (throwingStance: boolean, throwItem: () => void,
 
 export const toggleWalking = (
   walking: boolean,
-  recorder: InputReplayRecorder | undefined,
+  recorder: Pick<InputReplayRecorder, 'queueAction'> | undefined,
   context: InputContext,
 ): boolean => {
   recorder?.queueAction('movement.walk-toggle', 'down', context, { inSnapshot: true });

@@ -1,6 +1,9 @@
 import process from 'node:process';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
+import { actorPoseInputFor } from '../src/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import type { MeleeWeapon } from '../src/core/actorSystem.ts';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
@@ -13,11 +16,10 @@ import { decodeSave, encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { chunksFor } from '../src/core/scale.ts';
 import { simSeconds } from '../src/core/time.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import type { MeleeWeapon } from '../src/core/zombies.ts';
 import { meleeWeaponFromContent, startPlayerMelee } from '../src/game/melee.ts';
+import { contentLookup as registryContentLookup } from '../src/ui/saveController.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { bodyWithFixtureKind } from './fixtures/damageKinds.ts';
 import { PLAYER } from './playerFixture.ts';
 import { withFixtureBody } from './simulationFixture.ts';
 import {
@@ -40,7 +42,7 @@ import {
 // Bounds the decompressed envelope, which tracks saved-state growth; compression would hide it.
 const TEN_HOUR_SAVE_BUDGET_BYTES = 5 * 1024 * 1024;
 // biome-ignore lint/style/noProcessEnv: timings print only under the bench script.
-const benchmarking = process.env.DEADVOX_BENCH === '1';
+const benchmarking = process.env.SKELLY_BENCH === '1';
 // biome-ignore lint/style/noProcessEnv: distinguish local measurements from the named CI runner.
 const measurementRunner = process.env.GITHUB_ACTIONS === 'true' ? 'ubuntu-latest' : 'local';
 
@@ -112,7 +114,7 @@ const applyBudgetPiles = (runtime: ReturnType<typeof createRuntime>) => {
 };
 
 // Exercise idempotent column arrival; one group marker can own several live actors.
-const touchBudgetFurnitureAndZombies = (runtime: ReturnType<typeof createRuntime>) => {
+const touchBudgetFurnitureAndActors = (runtime: ReturnType<typeof createRuntime>) => {
   const touchedContainers = [...runtime.entities.all].filter((entity) => entity.pockets);
   for (const entity of touchedContainers) {
     runtime.entities.markSearched(entity);
@@ -240,15 +242,28 @@ it("a hit's acute pain and a painkiller dose under way survive the save codec", 
   ).toEqual(saved);
 });
 
-it('an active burn keeps its threshold, accumulated damage and tail through the save codec', async () => {
-  const content = withFixtureBody(registry);
+it('a declared non-melee kind keeps its exposure threshold, accumulated damage and tail through the save codec', async () => {
+  const kind = 'fixture_exposure_kind';
+  const fixture = withFixtureBody(registry);
+  const content = {
+    ...fixture,
+    damageKinds: new Map(fixture.damageKinds).set(kind, { id: kind, class: 'non-melee' as const }),
+    body: new Map([...fixture.body].map(([id, body]) => [id, bodyWithFixtureKind(body, kind)])),
+  };
   const source = createRuntime(undefined, false, undefined, { registry: content });
-  source.sim.hit(1, 'fixture glob', 'leftArm', { kind: 'acid' });
+  source.sim.hit(1, 'fixture glob', 'leftArm', { kind });
   source.sim.frame(simSeconds(0.25));
   const exposure = source.sim.exposures.snapshotState();
   expect(exposure.exposures).toHaveLength(1);
   expect(exposure.exposures[0]!.damage).toBeGreaterThan(1);
-  const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+  const bytes = await encodeFixture(capture(source));
+  await expect(decodeSave(bytes, { version: formatVersion, contentLookup })).rejects.toThrow(
+    `Unknown damageKind content id "${kind}"`,
+  );
+  const decoded = await decodeSave(bytes, {
+    version: formatVersion,
+    contentLookup: (type, id, item) => registryContentLookup(content, type, id, item),
+  });
   const restored = createRuntime(decoded.snapshot, false, undefined, { registry: content });
   expect(restored.sim.exposures.snapshotState()).toEqual(exposure);
   restored.sim.paused = false;
@@ -411,13 +426,14 @@ describe('canonical save format', () => {
   it('round-trips a hesitating and refused zombie through the save envelope', async () => {
     const source = capture(createRuntime());
     const hesitation = structuredClone(source);
-    const hesitating = hesitation.world.zombies.zombies[0]!.zombie;
-    hesitating.mode = 'hesitate';
-    hesitating.hesitationFrom = 'idle';
+    const hesitating = hesitation.world.actors.actors[0]!.actor;
+    hesitating.agent!.mode = 'hesitate';
+    hesitating.chaseStance = false;
+    hesitating.agent!.hesitationFrom = 'idle';
     const refused = structuredClone(source);
-    const refusing = refused.world.zombies.zombies[0]!.zombie;
-    refusing.refusedAt = 1;
-    refusing.leanTarget = [1, 2, 3];
+    const refusing = refused.world.actors.actors[0]!.actor;
+    refusing.agent!.refusedAt = 1;
+    refusing.agent!.leanTarget = [1, 2, 3];
 
     const roundTrips = await Promise.all(
       [hesitation, refused].map(async (snapshot) => ({
@@ -426,7 +442,7 @@ describe('canonical save format', () => {
       })),
     );
     for (const { snapshot, decoded } of roundTrips) {
-      expect(decoded.snapshot.world.zombies.zombies[0]!.zombie).toEqual(snapshot.world.zombies.zombies[0]!.zombie);
+      expect(decoded.snapshot.world.actors.actors[0]!.actor).toEqual(snapshot.world.actors.actors[0]!.actor);
     }
   });
 
@@ -459,13 +475,13 @@ describe('canonical save format', () => {
       source.zombies.store.remove(id);
     }
     const id = source.zombies.add(
-      registry.zombies.get('shambler')!,
+      registry.actors.get('shambler')!,
       [source.player.body.pos[0] + 1, source.player.body.pos[1], source.player.body.pos[2]],
       [0, 0, 1],
     );
-    const zombie = source.zombies.store.get(id)!;
+    const actor = source.zombies.store.get(id)!;
     source.zombies.setFrozen(true);
-    const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, scale.blockSize));
+    const posed = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, scale.blockSize));
     const { center } = posed.head.find((box) => box.bone === 'head')!;
     const origin: import('../src/core/coords.ts').Vec3 = [
       source.player.body.pos[0],
@@ -503,7 +519,7 @@ describe('canonical save format', () => {
         hands,
       }),
     ).toBe('started');
-    const initialHealth = zombie.regions.head!;
+    const initialHealth = actor.regions.head!;
     const action = source.session.playerCombat.activeMeleeAction!;
     const step = 1 / 60;
     const contactTick = Math.ceil(action.contactAt / step);
@@ -549,15 +565,15 @@ describe('canonical save format', () => {
 
   it('persists severed and damaged zombie regions through encode, decode, and restore', async () => {
     const initial = createRuntime();
-    const id = initial.zombies.add(registry.zombies.get('shambler')!, [3, 4, 5]);
+    const id = initial.zombies.add(registry.actors.get('shambler')!, [3, 4, 5]);
     const damaged = structuredClone(capture(initial));
-    const { regions } = damaged.world.zombies.zombies.find((entry) => entry.id === id)!.zombie;
+    const { regions } = damaged.world.actors.actors.find((entry) => entry.id === id)!.actor;
     regions.leftArm = 0;
     regions.head! /= 2;
     regions.torso! /= 2;
     const source = createRuntime(damaged);
-    const zombie = source.zombies.store.get(id)!;
-    expect(zombie.regions).toEqual(regions);
+    const actor = source.zombies.store.get(id)!;
+    expect(actor.regions).toEqual(regions);
 
     const snapshot = capture(source);
     const bytes = await encodeFixture(snapshot);
@@ -565,8 +581,8 @@ describe('canonical save format', () => {
     const loaded = createRuntime(decoded.snapshot);
     const restored = loaded.zombies.store.get(id)!;
 
-    expect(restored.regions).not.toBe(zombie.regions);
-    expect(restored.regions).toEqual(zombie.regions);
+    expect(restored.regions).not.toBe(actor.regions);
+    expect(restored.regions).toEqual(actor.regions);
     expect(capture(loaded)).toEqual(decoded.snapshot);
   });
 
@@ -587,7 +603,7 @@ describe('canonical save format', () => {
     let source = createRuntime(undefined, true, columns);
     expect(startRest(source, 'rest')).toBeUndefined();
     advance(source, 2);
-    source.zombies.add(registry.zombies.get('shambler')!, source.player.body.pos);
+    source.zombies.add(registry.actors.get('shambler')!, source.player.body.pos);
     source = prepareAudioContinuation(source);
     const snapshot = capture(source);
     const bytes = await encodeFixture(snapshot);
@@ -626,7 +642,7 @@ describe('canonical save format', () => {
     const runtime = createRuntime(undefined, true);
     const worldStats = applyBudgetWorldEdits(runtime);
     const pileStats = applyBudgetPiles(runtime);
-    const population = touchBudgetFurnitureAndZombies(runtime);
+    const population = touchBudgetFurnitureAndActors(runtime);
     expect(worldStats.visitedChunks).toBeGreaterThan(0);
     expect(worldStats.editedChunks).toBeGreaterThan(0);
     expect(worldStats.editedChunks).toBeLessThan(worldStats.visitedChunks);
@@ -643,7 +659,7 @@ describe('canonical save format', () => {
       worldStats.editedChunks,
     );
     expect(snapshot.world.spawned.length).toBe(population.spawned);
-    expect(snapshot.world.zombies.zombies.length).toBe(population.alive);
+    expect(snapshot.world.actors.actors.length).toBe(population.alive);
     expect(snapshot.character.inventory.piles.length).toBe(pileStats.pileCount + pileStats.baselinePileCount);
     expect(snapshot.character.inventory.piles.reduce((sum, pile) => sum + pile.items.length, 0)).toBe(
       pileStats.pileCount * pileStats.pileCapacity + pileStats.baselinePileItems,

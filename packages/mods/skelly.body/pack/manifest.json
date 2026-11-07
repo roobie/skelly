@@ -1,0 +1,130 @@
+{
+  "dependencies": ["skelly.melee-classes", "skelly.inventory"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "body.json"
+    },
+    {
+      "kind": "content",
+      "path": "body-sounds.json"
+    },
+    {
+      "kind": "content",
+      "path": "body-synth-sounds.json"
+    },
+    {
+      "kind": "content",
+      "path": "figures-player.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-body.json"
+    },
+    {
+      "kind": "content",
+      "path": "player.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/player_bust.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/player_arm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/player_leg.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "exports/things.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/heartbeat-fast-beat.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/heartbeat-slow-beat.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee_hit_fist-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-block-full-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-heavy-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-heavy-05.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-heavy-08.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-light-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-light-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-light-06.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-landing-hard-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-strain-09.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-strain-12.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-strain-14.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/player_arm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/player_bust.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/player_leg.glb"
+    }
+  ],
+  "id": "skelly.body",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

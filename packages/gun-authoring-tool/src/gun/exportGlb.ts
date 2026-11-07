@@ -1,7 +1,7 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Assembly, PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
-import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Assembly, PartDef, Resolved } from '@skelly/construct/assembly/schema.ts';
+import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '@skelly/construct/foundation/math.ts';
+import { localSolidBounds } from '@skelly/construct/shapes/geometry.ts';
 import type { ModelParts, NeutralModel } from '@skelly/thing-core/schema';
 import { type DrawnGeometry, drawnGeometry } from '@skelly/thing-export/drawn.ts';
 import type {

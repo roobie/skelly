@@ -1,5 +1,5 @@
-import { parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
-import type { Assembly } from '@skelly/engine/assembly/schema.ts';
+import { parseAssemblyJson } from '@skelly/construct/assembly/parseAssembly.ts';
+import type { Assembly } from '@skelly/construct/assembly/schema.ts';
 import type { AppearanceContext, GlbAssetIdentity, VoxelGrains } from '@skelly/thing-export/exportTypes.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { exportGunGlb, type GunDeadvoxModelEntry, type GunExportMetadata } from '../gun/exportGlb.ts';

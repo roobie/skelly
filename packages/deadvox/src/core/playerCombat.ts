@@ -1,8 +1,10 @@
-import { MELEE_DAMAGE_KINDS } from './body.ts';
+import type { MeleeWeapon } from './actorSystem.ts';
 import { DEFAULT_HANDED_CHARACTER, dominantSide, type HandedCharacter } from './character.ts';
+import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
 import {
+  MELEE_PROFILES,
   type MeleeActionPose,
   type MeleeHand,
   type MeleeProfile,
@@ -12,7 +14,6 @@ import {
 } from './meleePose.ts';
 import type { MeleeCharge } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import type { MeleeWeapon } from './zombies.ts';
 
 export interface MeleeActionState extends MeleeActionPose {
   elapsed: number;
@@ -75,7 +76,7 @@ export const copyMeleeWeapon = (weapon: MeleeWeapon): MeleeWeapon => ({
   ...(weapon.swingSound === undefined ? {} : { swingSound: weapon.swingSound }),
   ...(weapon.hitSound === undefined ? {} : { hitSound: weapon.hitSound }),
   ...(weapon.hitLayerSound === undefined ? {} : { hitLayerSound: weapon.hitLayerSound }),
-  ...(weapon.type === undefined ? {} : { type: weapon.type }),
+  type: weapon.type,
   ...(weapon.charge === undefined ? {} : { charge: { ...weapon.charge } }),
 });
 
@@ -113,7 +114,11 @@ const validMeleeCharge = (charge: MeleeCharge): boolean =>
   ) &&
   Number.isFinite(charge.stamina) &&
   charge.stamina >= 0;
-const validMeleeWeapon = (weapon: MeleeWeapon, actionCooldown: number): boolean =>
+const validMeleeWeapon = (
+  weapon: MeleeWeapon,
+  actionCooldown: number,
+  registry: Pick<Registry, 'damageKinds'>,
+): boolean =>
   MELEE_MOTIONS.includes(weapon.motion) &&
   Number.isFinite(weapon.damage) &&
   weapon.damage > 0 &&
@@ -134,7 +139,7 @@ const validMeleeWeapon = (weapon: MeleeWeapon, actionCooldown: number): boolean 
   [weapon.swingSound, weapon.hitSound, weapon.hitLayerSound].every(
     (sound) => sound === undefined || sound.length > 0,
   ) &&
-  (weapon.type === undefined || MELEE_DAMAGE_KINDS.includes(weapon.type)) &&
+  registry.damageKinds.get(weapon.type)?.class === 'melee' &&
   (weapon.charge === undefined || validMeleeCharge(weapon.charge));
 
 export class PlayerCombat {
@@ -174,14 +179,14 @@ export class PlayerCombat {
     });
   }
 
-  restoreState(state: PlayerCombatState): void {
+  restoreState(state: PlayerCombatState, registry: Pick<Registry, 'damageKinds'>): void {
     if (!Number.isFinite(state.playerAttackWait) || state.playerAttackWait < 0) {
       throw new Error('Invalid player attack cooldown');
     }
     if (state.nextFistHand !== 'right' && state.nextFistHand !== 'left') {
       throw new Error('Invalid next fist hand');
     }
-    this.validateAction(state.meleeAction);
+    this.validateAction(state.meleeAction, registry);
     this.playerAttackWait = state.playerAttackWait;
     this.meleeAction = state.meleeAction === null ? null : structuredClone(state.meleeAction);
     this.nextFistHand = state.nextFistHand;
@@ -329,7 +334,7 @@ export class PlayerCombat {
     return true;
   }
 
-  private validateAction(action: MeleeActionState | null): void {
+  private validateAction(action: MeleeActionState | null, registry: Pick<Registry, 'damageKinds'>): void {
     if (action === null) {
       return;
     }
@@ -337,7 +342,7 @@ export class PlayerCombat {
       Array.isArray(value) && value.length === 3 && value.every((component) => Number.isFinite(component));
     const validUid = (uid: number | null): boolean => uid === null || (Number.isSafeInteger(uid) && uid > 0);
     if (
-      !(action.profile === 'fists' || MELEE_DAMAGE_KINDS.includes(action.profile)) ||
+      !MELEE_PROFILES.includes(action.profile) ||
       (action.hand !== 'right' && action.hand !== 'left') ||
       typeof action.twoHanded !== 'boolean' ||
       !Number.isFinite(action.cooldown) ||
@@ -353,7 +358,7 @@ export class PlayerCombat {
       (action.hitResolved && !contactReached(action.elapsed, action.contactAt)) ||
       !vector3(action.origin) ||
       !vector3(action.direction) ||
-      !validMeleeWeapon(action.weapon, action.cooldown) ||
+      !validMeleeWeapon(action.weapon, action.cooldown, registry) ||
       !action.hands ||
       !validUid(action.hands.right) ||
       !validUid(action.hands.left) ||

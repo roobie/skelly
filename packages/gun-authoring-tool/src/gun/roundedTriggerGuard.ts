@@ -1,6 +1,6 @@
-import type { Vec3 } from '@skelly/engine/foundation/math.ts';
-import { boxFromMinMax, clipPolygon, validateExtrudedPolygon } from '@skelly/engine/shapes/geometry.ts';
-import type { Box, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import type { Vec3 } from '@skelly/construct/foundation/math.ts';
+import { boxFromMinMax, clipPolygon, validateExtrudedPolygon } from '@skelly/construct/shapes/geometry.ts';
+import type { Box, Solid, Vec2 } from '@skelly/construct/shapes/solid.ts';
 import type {
   ClosedTriggerGuardDimensions,
   CurvedTriggerBladeShape,

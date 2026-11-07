@@ -1,5 +1,5 @@
-import type { Vec3 } from '@skelly/engine/foundation/math.ts';
-import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import type { Vec3 } from '@skelly/construct/foundation/math.ts';
+import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '@skelly/construct/shapes/solid.ts';
 import { integer, minValue, parse, pipe, strictObject } from 'valibot';
 import { annulus, cylinder, positive, scalar } from './shapes.ts';
 
@@ -10,7 +10,7 @@ const box = (id: string, center: Vec3, size: Vec3, slot = 'body'): BoxSolid => (
   box: { center, half: [size[0] / 2, size[1] / 2, size[2] / 2] },
 });
 
-/** A convex (z, x) quad extruded up the Y axis, wound counter-clockwise as the engine requires. */
+/** A convex (z, x) quad extruded up the Y axis, wound counter-clockwise as construct requires. */
 const slab = (id: string, quad: readonly Vec2[], [bottom, top]: readonly [number, number]): ExtrudedPolygonSolid => {
   const area = quad.reduce((sum, [z, x], index) => {
     const [nz, nx] = quad[(index + 1) % quad.length]!;

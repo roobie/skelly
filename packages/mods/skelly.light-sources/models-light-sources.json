@@ -1,0 +1,211 @@
+{
+  "models": [
+    {
+      "emissiveMaterial": "chemical-light tube",
+      "file": "assets/models/glowstick.glb",
+      "id": "glowstick",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "emissiveMaterial": "chemical-light tube",
+      "file": "assets/models/glowstick.glb",
+      "id": "road_flare",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "anchors": {
+        "flame": [0.41999999999999998, 0, 0]
+      },
+      "emissiveMaterial": "#2b241c",
+      "file": "assets/models/torch.glb",
+      "grip": {
+        "at": [0.111, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "torch",
+      "itemPresentation": {
+        "materials": ["wood", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "rest": "upright",
+      "roll": 0
+    },
+    {
+      "anchors": {
+        "flame": [0.112, 0, 0]
+      },
+      "file": "assets/models/candle.glb",
+      "grip": {
+        "at": [0.040000000000000008, -0.0010000000000000009, -0.0010000000000000009],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "candle",
+      "itemPresentation": {
+        "materials": ["wax", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "rest": "upright",
+      "roll": 0
+    },
+    {
+      "anchors": {
+        "flame": [0, 0.084000000000000005, -2.4164820920652226e-17]
+      },
+      "file": "assets/models/oil_lamp.glb",
+      "grip": {
+        "at": [0, 0.0060000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "oil_lamp",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "glass", "fuel"],
+        "supply": {
+          "axis": "y",
+          "bands": [
+            {
+              "from": 0,
+              "scale": 0
+            },
+            {
+              "from": 0.01,
+              "scale": 0.20000000000000001
+            },
+            {
+              "from": 0.34999999999999998,
+              "scale": 0.5
+            },
+            {
+              "from": 0.69999999999999996,
+              "scale": 1
+            }
+          ],
+          "kind": "fill",
+          "piece": "fuel_fill:fuel_fill"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "base": {
+          "centreOfMass": [0, 0.006000000000000001, 0],
+          "massKg": 0.40000000000000002,
+          "node": "base:base"
+        },
+        "burner": {
+          "centreOfMass": [0, 0.078000000000000014, -1.9225797809721788e-17],
+          "massKg": 0.080000000000000002,
+          "node": "burner:burner"
+        },
+        "chimney": {
+          "centreOfMass": [-3.0047739399045255e-5, 0.1316902555461949, -3.7349059253066799e-5],
+          "massKg": 0.080000000000000002,
+          "node": "chimney:chimney"
+        },
+        "fuel_fill": {
+          "centreOfMass": [-7.5923459276826529e-5, 0.041997563431987267, -7.5858484129830468e-5],
+          "massKg": 0.001,
+          "node": "fuel_fill:fuel_fill"
+        },
+        "reservoir": {
+          "centreOfMass": [0, 0.041999999999999996, -4.9749830044246645e-18],
+          "massKg": 0.12,
+          "node": "reservoir:reservoir"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/lighter.glb",
+      "grip": {
+        "at": [0, 0.027, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "lighter",
+      "itemPresentation": {
+        "materials": ["fuel", "polymer", "metal"],
+        "supply": {
+          "axis": "y",
+          "bands": [
+            {
+              "from": 0,
+              "scale": 0
+            },
+            {
+              "from": 0.01,
+              "scale": 0.20000000000000001
+            },
+            {
+              "from": 0.34999999999999998,
+              "scale": 0.5
+            },
+            {
+              "from": 0.69999999999999996,
+              "scale": 1
+            }
+          ],
+          "kind": "fill",
+          "piece": "fuel_fill:fuel_fill"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "fuel_fill": {
+          "centreOfMass": [-4.1916167664670657e-5, 0.024880239520958088, -2.8683080385566047e-18],
+          "massKg": 0.001,
+          "node": "fuel_fill:fuel_fill"
+        },
+        "lighter": {
+          "centreOfMass": [0, 0.029564393939393935, -1.1363636363636363e-5],
+          "massKg": 0.019,
+          "node": "lighter:lighter"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/matches.glb",
+      "grip": {
+        "at": [0, 0.0050000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "matches",
+      "itemPresentation": {
+        "materials": ["paper", "metal", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "matches": {
+          "centreOfMass": [0, 0.0096153846153846142, 0.0011538461538461537],
+          "massKg": 0.02,
+          "node": "matches:matchbox"
+        }
+      },
+      "roll": 0
+    }
+  ]
+}

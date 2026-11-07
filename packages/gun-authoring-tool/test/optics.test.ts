@@ -1,19 +1,19 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { generate } from '@skelly/engine/assembly/generate.ts';
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { PartAppearance, PartDef } from '@skelly/engine/assembly/schema.ts';
-import type { Template } from '@skelly/engine/assembly/template.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { applyPoint, IDENTITY, invert, type Transform } from '@skelly/engine/foundation/math.ts';
+import { generate } from '@skelly/construct/assembly/generate.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { PartAppearance, PartDef } from '@skelly/construct/assembly/schema.ts';
+import type { Template } from '@skelly/construct/assembly/template.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { applyPoint, IDENTITY, invert, type Transform } from '@skelly/construct/foundation/math.ts';
 import {
   distanceWorld,
   localSolidBounds,
   obbPolyhedron,
   penetrationWorld,
   worldSolid,
-} from '@skelly/engine/shapes/geometry.ts';
-import { meshForSolid } from '@skelly/engine/shapes/mesh.ts';
+} from '@skelly/construct/shapes/geometry.ts';
+import { meshForSolid } from '@skelly/construct/shapes/mesh.ts';
 import { surfaceOf } from '@skelly/thing-core/materials';
 import { OpticApertureSchema } from '@skelly/thing-core/optic-aperture';
 import { ReticleSchema } from '@skelly/thing-core/reticle';

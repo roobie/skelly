@@ -1,8 +1,8 @@
-import type { DesignLoadInputs } from '@skelly/engine/assembly/designLoader.ts';
-import { generateValid } from '@skelly/engine/assembly/generate.ts';
-import type { Assembly, Domain } from '@skelly/engine/assembly/schema.ts';
-import type { Template } from '@skelly/engine/assembly/template.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
+import type { DesignLoadInputs } from '@skelly/construct/assembly/designLoader.ts';
+import { generateValid } from '@skelly/construct/assembly/generate.ts';
+import type { Assembly, Domain } from '@skelly/construct/assembly/schema.ts';
+import type { Template } from '@skelly/construct/assembly/template.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { exportFileText } from '../src/cli/exportFile.ts';
 import { AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts';

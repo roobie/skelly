@@ -4,8 +4,8 @@ import type { SkyResult } from '../src/core/skyTransport.ts';
 import { realTimestamp } from '../src/core/time.ts';
 import { attachSkyRoute } from '../src/debug/skyRoute.ts';
 import { SKY_ROUTE, type SkyRouteFrame } from '../src/debug/skyRouteMetrics.ts';
-import type { Engine } from '../src/game/engine.ts';
 import { observeRealFrame } from '../src/game/frameDriver.ts';
+import type { Engine } from '../src/presentation/engine.ts';
 import type { Skylight } from '../src/render/skylight.ts';
 
 const witness = vi.hoisted(() => ({ json: '' }));
@@ -19,11 +19,11 @@ vi.mock('../src/ui/skyRoutePanel.ts', () => ({
     },
   }),
 }));
-vi.mock('../src/game/inputBindings.ts', () => ({
-  keyboardInput: {
-    context: () => ({ context: inputFixture.context, debug: false }),
-    registry: { binding: () => ({ contexts: ['play', 'noclip', 'build'] }) },
-  },
+const keyboard = {
+  context: () => ({ context: inputFixture.context, debug: false }),
+  registry: { binding: () => ({ contexts: ['play', 'noclip', 'build'] }) },
+};
+vi.mock('../src/presentation/inputBindings.ts', () => ({
   forwardedActionHolds: () => (action: string) => {
     inputFixture.issued.push(action);
     return () => undefined;
@@ -124,6 +124,7 @@ it('route activation excludes inactive rendered work without clearing startup jo
     session: { body: { pos: [SKY_ROUTE.start, 0, SKY_ROUTE.z] } },
     debug,
     active: () => active,
+    keyboard,
   } as unknown as Parameters<typeof attachSkyRoute>[0]);
   if (!route) {
     throw new Error('Owned ports did not attach the route');
@@ -234,6 +235,7 @@ it('waits for the input owner to permit play before starting the route', () => {
     session: { body: { pos: [SKY_ROUTE.start, 0, SKY_ROUTE.z] } },
     debug,
     active: () => active,
+    keyboard,
   } as unknown as Parameters<typeof attachSkyRoute>[0]);
   if (!route) {
     throw new Error('Owned ports did not attach the route');

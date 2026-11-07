@@ -1,4 +1,5 @@
 // Content-owned yields for taking apart a finished item; work progress stays with Inventory.
+import { claimed } from './capabilities.ts';
 import { type CraftCharacter, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
 import type { ItemDef, Registry } from './content.ts';
 import { gatherGameSeconds, indexCraftReach } from './crafting.ts';
@@ -238,8 +239,9 @@ export const planDisassembly = (
   if (selectRecoveryOperation({ kind: 'item', source, reach }, operation).status !== 'ready') {
     return undefined;
   }
-  const skill = operation === 'disassembly' ? definition.disassembly?.skill : definition.salvageLiquidRecovery?.skill;
-  const skillLevel = skill ? (character.skills[skill] ?? SKILL_LEVEL_MIN) : SKILL_LEVEL_MIN;
+  const role = operation === 'disassembly' ? definition.disassembly?.skill : definition.salvageLiquidRecovery?.skill;
+  const provider = role ? claimed(reach.player.inventory.registry.skills, role) : undefined;
+  const skillLevel = provider ? (character.skills[provider.id] ?? SKILL_LEVEL_MIN) : SKILL_LEVEL_MIN;
   const reachIndex = indexCraftReach(reach);
   const qualityLevel = (quality: string) =>
     Math.max(0, ...(reachIndex.qualities.get(quality) ?? []).map(({ level }) => level));

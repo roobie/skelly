@@ -1,0 +1,54 @@
+{
+  "dependencies": ["skelly.inventory", "skelly.melee-classes", "skelly.natural-world"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "explosives-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "explosives-sounds.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-explosives.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/frag_grenade.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "exports/things.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/grenade-blast-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/grenade-blast-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/frag_grenade.glb"
+    }
+  ],
+  "id": "skelly.explosives",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

@@ -19,18 +19,19 @@
       ],
       "ignoreUnresolved": [
         // Vite resolves this browser URL from the Deadvox root at runtime.
-        "/src/game/saveStorage.ts",
-        "/src/game/inputBindings.ts",
-        "/src/game/controls.ts",
-        "/src/game/tutorial.ts",
-        "/src/ui/tutorial.ts",
+        "/src/presentation/saveStorage.ts",
+        "/src/product/input.ts",
+        "/src/presentation/controls.ts",
+        "/src/presentation/guidedSteps.ts",
+        "/src/ui/guidedSteps.ts",
         "/src/core/inventory.ts",
         "/src/core/handling.ts",
         "/src/game/unpacking.ts",
         "/src/game/firearmHandling.ts",
         "/src/ui/inventoryScreen.ts",
         "/src/core/reach.ts",
-        "/src/core/contentIds.ts",
+        "/src/core/stageMarks.ts",
+        "/test/fixtures/capabilityIds.ts",
         "/src/core/character.ts",
         "/src/core/templates.ts",
         "/src/core/furnitureSurface.ts",
@@ -50,7 +51,7 @@
         "/src/spikes/expressions/luau.ts",
         "/src/spikes/expressions/benchmark.ts",
         "/test/expressionWasmCases.ts",
-        "/src/vehicles/feasibility/runner.ts",
+        "/src/feasibility/runner.ts",
         "/tools/rapier-f64/candidate.ts"
       ],
       "entry": [
@@ -63,7 +64,8 @@
         "src/siteMapPage.ts!",
         "src/debug/vehicleSpike.ts!",
         "src/soundsPage.ts!",
-        "tools/bench-expressions.mjs",
+        // A type-level witness compiled by typecheck, never imported.
+        "src/worker/mesherPort.witness.ts",
         "tools/police-item-models.mjs",
         "tools/probe-wasm-expressions.mjs",
         "tools/rapier-f64/candidate.ts",
@@ -89,7 +91,7 @@
       "entry": ["index.html!"],
       "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
     },
-    "packages/engine": {
+    "packages/construct": {
       "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
     },
     "packages/thing-core": {

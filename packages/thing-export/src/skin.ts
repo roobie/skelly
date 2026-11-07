@@ -1,4 +1,4 @@
-import { applyPoint, compose, invert, type Transform, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import { applyPoint, compose, invert, type Transform, type Vec3 } from '@skelly/construct/foundation/math.ts';
 
 export interface SkinJoint {
   readonly name: string;

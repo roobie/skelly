@@ -1,7 +1,7 @@
-import { CORE_RULES } from '@skelly/engine/assembly/rules.ts';
-import type { Assembly, Domain } from '@skelly/engine/assembly/schema.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { CORE_RULE_IDS } from '@skelly/engine/foundation/issue.ts';
+import { CORE_RULES } from '@skelly/construct/assembly/rules.ts';
+import type { Assembly, Domain } from '@skelly/construct/assembly/schema.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { CORE_RULE_IDS } from '@skelly/construct/foundation/issue.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { pistolBarrelCrown } from '../src/gun/rules.ts';

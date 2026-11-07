@@ -1,5 +1,6 @@
 import { MATERIALS } from '@skelly/thing-core/materials';
 import { expect, it } from 'vitest';
+import { readThingRecipes } from '../../../tools/thing-recipes.ts';
 import { buildItem, catalogue, loadCatalogue } from '../src/catalogue.ts';
 import { exportItem, loadThingRecipe } from '../src/exports.ts';
 
@@ -170,7 +171,9 @@ it('refuses recipe references outside the authored item set', () => {
   ).toThrow('Unknown tool item');
 });
 it('exports the player bust with joint anchors that seat the limbs symmetrically about the centre line', () => {
-  const row = loadThingRecipe().find((candidate) => candidate.id === 'player_bust')!;
+  const row = readThingRecipes()
+    .flatMap(({ value }) => loadThingRecipe(value))
+    .find((candidate) => candidate.id === 'player_bust')!;
   const anchors = row.generate().modelEntry.anchors!;
   for (const joint of ['neck', 'head', 'shoulder_left', 'shoulder_right', 'hip_left', 'hip_right']) {
     expect(anchors[joint], joint).toBeDefined();

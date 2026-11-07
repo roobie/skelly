@@ -23,7 +23,7 @@ of the root package.
 - `packages/gun-authoring-tool`: authors and curates guns on top of the shared packages.
   It owns the authored firearm sources and consumption recipe.
 - An export package above the core: writes the GLB, the model entry and each part's mass
-  and centre of mass for both tools. Placing a centre of mass needs the engine's shapes, and
+  and centre of mass for both tools. Placing a centre of mass needs construct's shapes, and
   deadvox loads the core, so this code needs a home deadvox doesn't load. With one writer,
   every tool's exports load the same way, and a second format has an obvious home.
 
@@ -59,6 +59,6 @@ reason. `things/WORK.md`, "Phases" tracks retirement and close-out.
   every atom it draws has a mass someone authored. The gun tool's parts (barrels, receivers
   and so on) are such items.
 - An assembly's model entry carries each part's mass and centre of mass. The tools place each
-  centre from the part's shapes, and deadvox sums the entries and never loads shapes, so the
-  engine stays out of the game.
+  centre from the part's shapes, and deadvox sums the entries and never loads shapes, so
+  `packages/construct` stays out of the game.
 - Every export must validate and load in deadvox; `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility" names the contract.

@@ -1,8 +1,8 @@
 import { getBuildRevision } from '../core/buildInfo.ts';
 import type { Vec3 } from '../core/coords.ts';
-import type { SkyRouteAttachment } from '../game/debugInterface.ts';
-import type { Engine } from '../game/engine.ts';
-import { forwardedActionHolds, keyboardInput } from '../game/inputBindings.ts';
+import type { SkyRouteAttachment } from '../presentation/debugInterface.ts';
+import type { Engine } from '../presentation/engine.ts';
+import { forwardedActionHolds } from '../presentation/inputBindings.ts';
 import { createSkyRoutePanel } from '../ui/skyRoutePanel.ts';
 import { collectSkyGeometry } from './skyRouteGeometry.ts';
 import {
@@ -41,7 +41,13 @@ function eligibleSkyFields(engine: Engine, metres: Vec3) {
         : [],
     );
 }
-export function attachSkyRoute({ engine, session, debug, active }: Parameters<SkyRouteAttachment>[0]) {
+export function attachSkyRoute({
+  engine,
+  session,
+  debug,
+  active,
+  keyboard: keyboardInput,
+}: Parameters<SkyRouteAttachment>[0]) {
   if (!(engine.renderer && engine.skylight)) {
     return;
   }

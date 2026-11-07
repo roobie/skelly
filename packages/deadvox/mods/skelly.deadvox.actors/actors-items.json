@@ -1,0 +1,52 @@
+{
+  "items": [
+    {
+      "category": "misc",
+      "id": "shambler_torso",
+      "model": "shambler_torso",
+      "name": "Severed shambler torso",
+      "size": [4, 6],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_head",
+      "model": "shambler_head",
+      "name": "Severed shambler head",
+      "size": [2, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_left_arm",
+      "model": "shambler_left_arm",
+      "name": "Severed shambler left arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_right_arm",
+      "model": "shambler_right_arm",
+      "name": "Severed shambler right arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_left_leg",
+      "model": "shambler_left_leg",
+      "name": "Severed shambler left leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_right_leg",
+      "model": "shambler_right_leg",
+      "name": "Severed shambler right leg",
+      "size": [2, 9],
+      "workInProgress": false
+    }
+  ]
+}

@@ -1,7 +1,6 @@
 import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import {
   GRAPHICS_KEYS,
   GRAPHICS_KNOBS,
@@ -13,10 +12,11 @@ import {
   writeGraphicsParams,
 } from '../src/core/graphics.ts';
 import { drugVignetteShown } from '../src/core/mood.ts';
-import { GraphicsControls } from '../src/game/graphicsControls.ts';
-import { readGraphicsSettings, writeGraphicsSettings } from '../src/game/graphicsSettings.ts';
+import { GraphicsControls } from '../src/presentation/graphicsControls.ts';
+import { readGraphicsSettings, writeGraphicsSettings } from '../src/presentation/graphicsSettings.ts';
 import { Gore } from '../src/render/gore.ts';
 import { Mood } from '../src/render/mood.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
 
 const scale = (label: string) => ({ label, min: 0.2, max: 0.9, default: 0.6 });
@@ -43,7 +43,8 @@ const source = (options: GraphicsOptions) => ({
   data: {
     graphics: [
       {
-        id: CORE_CONTENT_IDS.coreGraphics,
+        id: fixtureIds.graphics,
+        capability: 'graphics',
         ...fixtureGraphics,
         readyRadiusM: 16,
         streamHysteresisM: 16,
@@ -78,7 +79,7 @@ it.each(['dropletCap', 'splatCap', 'dropletSpawnsPerFrame'] as const)(
     const candidate = source(tuning);
     candidate.data.graphics[0]!.gore[capacity] = 0;
     expect(validateContent(candidate)).toEqual([]);
-    const row = buildRegistry([candidate]).registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!;
+    const row = buildRegistry([candidate]).registry.graphics.get(fixtureIds.graphics)!;
     const gore = new Gore(1, WORLD_GRAVITY, row.gore);
     try {
       gore.spray({ point: [0.5, 0.05, 0.5], direction: [0, -1, 0], impulse: 4 }, 100);
@@ -137,7 +138,7 @@ it('validates graphics ranges, defaults and allowed toggle choices before admitt
 it('merges a graphics mod by row identity and requires graphics in a playable pack', () => {
   const override = { ...tuning, renderScale: { ...tuning.renderScale, default: 0.4 } };
   const { registry } = buildRegistry([source(tuning), { ...source(override), source: 'mod.json' }]);
-  expect(registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)?.renderScale.default).toBe(0.4);
+  expect(registry.graphics.get(fixtureIds.graphics)?.renderScale.default).toBe(0.4);
   expect(requiredContentIssues(registry).some(({ path }) => path === 'graphics')).toBe(false);
   expect(requiredContentIssues(buildRegistry([]).registry).some(({ path }) => path === 'graphics')).toBe(true);
 });

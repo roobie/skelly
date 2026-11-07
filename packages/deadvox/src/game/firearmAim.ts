@@ -1,3 +1,4 @@
+import type { ActorAim, ActorSystem, MeleeWeapon } from '../core/actorSystem.ts';
 import { type AimFrame, aimBasis, NEUTRAL_AIM } from '../core/aim.ts';
 import type { ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -5,7 +6,6 @@ import { type CrosshairTarget, crosshairAimPoint } from '../core/crosshairTarget
 import { type HeldFirearmTransformInput, type HeldSeatFrame, heldFirearmTransform } from '../core/heldPose.ts';
 import type { HandSide } from '../core/inventory.ts';
 import type { HeldPosesDef } from '../core/schema.ts';
-import type { MeleeWeapon, ZombieAim, ZombieSystem } from '../core/zombies.ts';
 
 export interface FirearmBoreRayInput {
   readonly holds: HeldPosesDef;
@@ -90,7 +90,7 @@ export const firearmBoreRay = ({
 export interface FirearmBoreTarget {
   readonly point: Vec3;
   readonly distanceMetres?: number;
-  readonly zombie?: ZombieAim;
+  readonly actor?: ActorAim;
 }
 
 const normalizeDirection = (direction: Vec3): Vec3 => {
@@ -106,7 +106,7 @@ export const firearmBoreTarget = ({
   eye,
   direction,
   surface,
-  zombies,
+  actors,
   blockSize,
   rangeBlocks,
   weapon,
@@ -114,26 +114,26 @@ export const firearmBoreTarget = ({
   readonly eye: Vec3;
   readonly direction: Vec3;
   readonly surface: CrosshairTarget | undefined;
-  readonly zombies: ZombieSystem;
+  readonly actors: ActorSystem;
   readonly blockSize: number;
   readonly rangeBlocks: number;
   /** Only its reach decides the aim's `inReach`; the bore ray itself is not a melee swing. */
   readonly weapon: MeleeWeapon;
 }): FirearmBoreTarget => {
   const rayDirection = normalizeDirection(direction);
-  const zombie = zombies.aimAt(eye, rayDirection, weapon);
-  const zombieDistanceBlocks = zombie ? zombie.distanceMetres / blockSize : undefined;
-  const point = crosshairAimPoint(eye, rayDirection, rangeBlocks, [surface?.distanceBlocks, zombieDistanceBlocks]);
+  const actor = actors.aimAt(eye, rayDirection, weapon);
+  const actorDistanceBlocks = actor ? actor.distanceMetres / blockSize : undefined;
+  const point = crosshairAimPoint(eye, rayDirection, rangeBlocks, [surface?.distanceBlocks, actorDistanceBlocks]);
   const distanceBlocks = Math.min(
     rangeBlocks,
     surface?.distanceBlocks ?? rangeBlocks,
-    zombieDistanceBlocks ?? rangeBlocks,
+    actorDistanceBlocks ?? rangeBlocks,
   );
   return {
     point,
-    ...(surface || (zombie && zombieDistanceBlocks! <= rangeBlocks)
+    ...(surface || (actor && actorDistanceBlocks! <= rangeBlocks)
       ? { distanceMetres: distanceBlocks * blockSize }
       : {}),
-    ...(zombie ? { zombie } : {}),
+    ...(actor ? { actor } : {}),
   };
 };

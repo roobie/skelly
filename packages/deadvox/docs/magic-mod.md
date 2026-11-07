@@ -4,9 +4,11 @@ read_if:
   - you're planning the high-fantasy product the magic mod is a big piece of
   - you're writing a compatibility mod that brings the magic mod into another product, such as Deadvox
   - you're building character attributes, content-declared modifiers, timed effects, resource pools or traits
+  - you extend authored starts with traits or other character-state owners
+  - you generalize skill capability providers into a composable effect resolver
   - you're deciding what a character attribute governs, or whether a new one is needed
   - you're choosing which engine verbs or content kinds the mod rules work adds first
-  - you're opening a closed code list (damage kinds, item capabilities, long jobs, creature abilities) for mods
+  - you're extending declared damage kinds or opening item capabilities, long jobs or creature abilities for mods
 ---
 
 # Magic mod: working draft
@@ -163,12 +165,12 @@ measure and the training integrator.
 #### Skills and the resolver
 
 Skill effects fold into the resolver; skills stay the owner of progression: practice,
-levels, recipe unlocks and training activities. Code reads skills in three ways that stop
-mods: by id (`src/core/inventory.ts`; `src/core/skillTraining.ts` and `src/core/craftWork.ts`
-through `CORE_CONTENT_IDS`), through mechanism tuning blocks on the skill entry
-(`src/core/schema.ts`, `SkillSchema`), and, as prying does, through content that names the
-skill driving it (`src/core/prying.ts`). The fold generalizes the third, which is also why
-a skill must not be selected by id in code.
+levels, recipe unlocks and training activities. Mechanism capabilities select providers
+without fixing their ids; see `src/core/capabilities.ts`, `claimed`. The resolver must
+also decouple effects from their provider's tuning shape so content can combine
+contributors instead of requiring one predefined skill block. Content naming the skill
+driving an interaction remains valid; see `src/core/prying.ts`, `pryPlan`. The fold
+generalizes that relationship rather than restoring fixed skill ids.
 
 Each modified effect resolves in one pipeline:
 
@@ -256,7 +258,7 @@ Each actor saves its active instances (effect, source, age, intensity), pruned w
 Aging is closed-form, so compressed and ticked time agree, as `src/core/pain.ts`,
 `fadeAcute`, and `DamageExposures` already do. Effects are actor-generic from the start:
 spells put fire, slowness and stuns on creatures, and a creature with no effects costs
-nothing. Creature stagger can later move onto effects; see `src/core/zombies.ts`, `staggerSimSeconds`.
+nothing. Creature stagger can later move onto effects; see `src/core/actorState.ts`, `staggerSimSeconds`.
 
 Analgesics are the first consumer: the mechanism must express painkillers before magic
 relies on it.
@@ -312,12 +314,11 @@ consumer, as analgesics are for effects; mana is the second.
 
 ### 4. Traits and start state
 
-Neither traits nor start state is content: schools need trait entries, and the start kit
-is code (`src/game/loadout.ts`, `startingLoadout`). The start-state design is
-`docs/url-mods.md`, "Start state in mods". Traits change during play, which Deadvox needs
-as much as the magic mod: mutation pressure spreads outward from Deadvox's labs
-(`DESIGN.md`, "Points of interest"), so mutation is a consumer outside magic and gap 4 need
-not wait for it.
+Normal start kits are content; see `src/core/startState.ts`, `applyStartState`, and
+`docs/url-mods.md`, "Start state in mods". Traits still need a content mechanism because
+schools grant them at the start and mutation changes them during play. Deadvox's mutation
+pressure spreads outward from its labs (`DESIGN.md`, "Points of interest"), so that
+mechanism has a consumer outside magic and need not wait for it.
 
 #### What a trait carries
 
@@ -386,7 +387,7 @@ and the product it brings it into, which is what lets it settle their clashes.
 `docs/decisions/0007-typed-field-patches.md`, "Decision" lands in two cuts:
 
 1. **Commuting additions:** spellbooks into loot tables, sites into map pools
-   (`src/core/schema.ts`, `MapPoolSchema`), schools into start options. Loot rows and pool
+   (`src/core/schema/layouts.ts`, `MapPoolSchema`), schools into start options. Loot rows and pool
    choices need ids, since rows are 0007's first keyed list.
 2. **Overrides, removal and derive:** a compatibility mod overrides only where the two
    packs genuinely clash, such as a creature's weakness to fire, and its dependency on
@@ -453,56 +454,39 @@ Closed lists to open:
 - **Item use:** `src/game/primaryAction.ts`, `CAPABILITY_DISPATCH`. Casting needs a
   non-item action, or an item capability whose payload is an effect.
 - **Long jobs:** `src/core/longAction.ts`, `LongJob`. Cast time is one more job.
-- **Projectiles and puddles:** they belong to `ZombieSystem` and are typed to the spit
-  ability; see `src/core/zombies.ts`, `ZombieSystem.detonate`. A player-usable system
+- **Projectiles and puddles:** they belong to `ActorSystem` and are typed to the spit
+  ability; see `src/core/actorSystem.ts`, `ActorSystem.detonate`. A player-usable system
   needs an effect payload and a damage kind per blast.
 - **Book outcomes:** reading only teaches recipes; see `src/core/bookReading.ts`.
 - **Quickbar:** it binds items only; see `src/game/quickbar.ts`.
 
 ### 7. Open damage kinds
 
-Elemental schools need fire, cold and electric hits. Damage kinds are a closed code list,
-and the body's responses are tables keyed by every kind, so adding a kind means editing
-every table, and under field patches two mods adding kinds would each have to know them
-all; see `src/core/body.ts`, `DAMAGE_KINDS` and `MELEE_DAMAGE_KINDS`, and
-`src/core/schema.ts`, `perDamageKind`. Creature resistance has a fixed shape for the
-melee kinds plus a separate acid special case; see `src/core/schema.ts`,
-`MeleeDamageResistanceSchema`, and `src/core/zombies.ts`, `acidDamageToZombie`. Blasts
-always deal one kind; see `src/core/zombies.ts`, `ZombieSystem.detonate`. Wearable
-protection is already keyed by kind and optional (`src/core/wear.ts`).
+Elemental schools need new damage identities without new code enumerations.
+Declarations and class admission belong to `src/core/schema/damageKinds.ts`,
+`DamageKindSchema`, and `src/core/damageContent.ts`, `checkDamageKinds`. Actor
+resistance is keyed by kind and region; see `src/core/actorSystem.ts`, `damageToActor`.
+Naming an elemental kind is not enough to make every target support it. #1532 must
+settle target applicability before extending body or terrain response domains; see
+`docs/pack-split.md`, "Hard cases".
 
-- **A kind owns its responses.** A damage kind is a content entry carrying its shock,
-  pain, bleeding chance and outer-wear multiplier, and the body holds no per-kind tables.
-  A mod adds a kind with one entry and patches nothing, the same inversion
-  `docs/magic-mod.md`, "Skills and the resolver" makes for skills.
-- **Any kind can come from a weapon.** There is no melee subset; content chooses what a
-  weapon deals.
-- **One resistance shape:** an optional resistance per kind and region, defaulting to
-  none, on any actor. Acid becomes an ordinary kind. Resistance is a modified effect, so a
-  fire ward or a cold-adapted mutation is a modifier.
-- **One kind per hit.** A hit keeps one kind, so the wound model is unchanged; a flaming
-  sword cuts, and its enchantment's proc rule applies burning (gap 5).
-- **Behaviour on the actor is content:** a kind applies effects on hit (gap 2), with a
-  chance or strength that scales with damage: burning as damage over time, chilled as
-  slowing modifiers in the impairment layer, a stun from electric.
-- **Every damage source names its kind:** blasts, projectiles, damage over time and
-  overdraw consequences, so a fireball is a blast of kind fire.
-- **Presentation belongs to the kind:** its cause wording (`INTERFACE.md`, "Text"),
-  sounds, decals and body cues.
+The magic mod still needs composable response ownership: adding a kind should not
+require competing mods to replace one another's body tables. The effect resolver
+should supply that composition rather than introducing a second injury system;
+see `docs/magic-mod.md`, "Skills and the resolver". One hit retains one kind, while
+an enchantment's proc applies a separate effect. Keeping those operations separate
+preserves wound ownership and lets a weapon's physical strike coexist with burning.
 
-Behaviour on the world, such as igniting and spreading fire, freezing water or conducting
-through it, is engine work outside this draft. A kind would select such a reaction from
-engine vocabulary, and block and furniture materials would carry their response to each
-kind.
-
-Deadvox's planned resistant zombie types in `DESIGN.md`, "Types are data", need the same
-opening.
+Kind-selected actor effects, cause wording, sounds, decals and body cues need their
+own content owners before magic uses them. Presentation follows `INTERFACE.md`,
+"Text". Ignition, freezing and conduction remain engine work outside this draft:
+a declared name cannot manufacture an unsupported world reaction.
 
 ### 8. Creature abilities, factions and allies
 
 Creature stats are content, but abilities and body models are closed code lists, and the
-AI targets only the player character; see `src/core/schema.ts`, `ZOMBIE_ABILITIES`;
-`src/core/zombieModels.ts`, `ZOMBIE_MODELS`; and `src/core/zombies.ts`, `ZombieMode`.
+AI targets only the player character; see `src/core/schema/actors.ts`, `ACTOR_ABILITIES`;
+`src/core/actorModels.ts`, `BODY_PLANS`; and `src/core/actorState.ts`, `AgentMode`.
 Summons and raised dead need factions and target choice, the deepest change here, so it
 comes last.
 

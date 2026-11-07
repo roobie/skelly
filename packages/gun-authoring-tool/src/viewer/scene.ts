@@ -1,7 +1,7 @@
-import type { Report } from '@skelly/engine/assembly/validate.ts';
-import { MAIN_AXIS } from '@skelly/engine/foundation/conventions.ts';
-import type { Issue } from '@skelly/engine/foundation/issue.ts';
-import type { Vec3 } from '@skelly/engine/foundation/math.ts';
+import type { Report } from '@skelly/construct/assembly/validate.ts';
+import { MAIN_AXIS } from '@skelly/construct/foundation/conventions.ts';
+import type { Issue } from '@skelly/construct/foundation/issue.ts';
+import type { Vec3 } from '@skelly/construct/foundation/math.ts';
 import type { Layers as EngineLayers } from '@skelly/tool-ui/scene';
 import { buildLayers as buildEngineLayers, disposeGroup as disposeEngineGroup } from '@skelly/tool-ui/scene';
 import { threeRuntime } from '@skelly/tool-ui/three-runtime';

@@ -1,6 +1,6 @@
-import { motionTransform } from '@skelly/engine/assembly/motion.ts';
-import type { Resolved } from '@skelly/engine/assembly/schema.ts';
-import { dot, length, scale, sub, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import { motionTransform } from '@skelly/construct/assembly/motion.ts';
+import type { Resolved } from '@skelly/construct/assembly/schema.ts';
+import { dot, length, scale, sub, type Vec3 } from '@skelly/construct/foundation/math.ts';
 import {
   distanceWorld,
   localSolidBounds,
@@ -8,7 +8,7 @@ import {
   penetrationWorld,
   type WorldSolid,
   worldSolid,
-} from '@skelly/engine/shapes/geometry.ts';
+} from '@skelly/construct/shapes/geometry.ts';
 import { resolveGunAction } from './actionDescription.ts';
 
 // Every obstacle visits the same dyadic phases; a moving solid's pose is independent of the obstacle.

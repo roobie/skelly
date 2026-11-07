@@ -1,6 +1,6 @@
 // The player figure's exported models, loaded from their files, behind the `ModelLibrary` calls the world figure
 // and the first-person arms make. Tests spread it into their library fakes so the view arms rig the real arm model.
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { Group, type Object3D } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Registry } from '../src/core/content.ts';
@@ -9,6 +9,14 @@ import type { ItemLook } from '../src/render/itemLook.ts';
 import { indexModelMaterials, type ModelLibrary } from '../src/render/models.ts';
 
 export type FigureModels = Pick<ModelLibrary, 'has' | 'part' | 'partLook' | 'heldLook'>;
+
+const MOD_ROOTS = [
+  new URL('../../mods/skelly.body/', import.meta.url),
+  new URL('../../mods/skelly.wearables/', import.meta.url),
+  new URL('../../mods/skelly.electric-power/', import.meta.url),
+  new URL('../../mods/skelly.firearms/', import.meta.url),
+  new URL('../mods/skelly.deadvox.scenario.playtest/', import.meta.url),
+];
 
 /** `worn` names further models to load beside the figure's, such as the head gear a test puts on. */
 export const loadFigureModels = async (
@@ -21,7 +29,8 @@ export const loadFigureModels = async (
   const ids = [...new Set([figure.body.model, ...FIGURE_LIMBS.map((limb) => figure.limbs[limb].model), ...worn])];
   const parsed = await Promise.all(
     ids.map((id) => {
-      const bytes = readFileSync(new URL(`../src/content/base/${registry.models.get(id)!.file}`, import.meta.url));
+      const { file } = registry.models.get(id)!;
+      const bytes = readFileSync(MOD_ROOTS.map((root) => new URL(file, root)).find((path) => existsSync(path))!);
       return loader.parseAsync(Uint8Array.from(bytes).buffer, '').then(indexModelMaterials);
     }),
   );

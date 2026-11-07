@@ -1,6 +1,7 @@
 // The player's world body: the figure row's authored models posed about their joints.
 
 import { Group, type Material, Mesh, type MeshStandardMaterial, Object3D, Quaternion, Vector3 } from 'three';
+import { FIGURE_BOXES, type FigureBox } from '../core/actorRegions.ts';
 import type { BodyRegion } from '../core/body.ts';
 import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef, Registry } from '../core/content.ts';
@@ -29,7 +30,6 @@ import {
   type LegSegment,
   type WearSlot,
 } from '../core/schema.ts';
-import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
 import { ActorAnimator, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { LENS, type ModelLibrary } from './models.ts';

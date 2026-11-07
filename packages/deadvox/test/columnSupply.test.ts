@@ -43,9 +43,7 @@ const registryFixture = () => {
     category: 'material',
     size: [1, 1],
     weight: 1,
-    economy: { usage: [], tiers: [] },
     workInProgress: false,
-    notLoot: false,
   });
   registry.furniture.set(shelf.type, {
     id: shelf.type,
@@ -76,7 +74,7 @@ const fixture = () => {
     furnitureIn: (cx, cz) => spawns.filter(({ spec }) => toChunk(spec.pos[0]) === cx && toChunk(spec.pos[2]) === cz),
     lootPointsIn: (cx, cz) => (toChunk(ground.destination[0]) === cx && cz === 0 ? [ground] : []),
     supplySourcesIn: (area) => footprints.in(area),
-    zombiesIn: () => [],
+    actorsIn: () => [],
   };
   return { registry, inventory, consumed, owner, source };
 };

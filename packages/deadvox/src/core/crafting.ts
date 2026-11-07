@@ -9,6 +9,7 @@ import type { Location } from './inventory.ts';
 import { craftComponentEligible, type Item, isEmpty } from './items.ts';
 import { countText } from './numberText.ts';
 import type { ReachEntry, ReachSnapshot } from './reach.ts';
+import { recipeSkillRequirements } from './recipeSkills.ts';
 
 interface CraftComponent {
   item: Item;
@@ -203,9 +204,9 @@ const equipmentStatus = (recipe: RecipeDef, snapshot: ReachSnapshot, character: 
   const index = indexCraftReach(snapshot, recipe.consumeFitted);
   return {
     knowledge: !character.knownRecipes.has(recipe.id),
-    skills: Object.entries(recipe.skills).map(([skill, required]) => ({
+    skills: recipeSkillRequirements(snapshot.player.inventory.registry, recipe).map(({ skill, level }) => ({
       skill,
-      required,
+      required: level,
       available: skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN),
     })),
     qualities: Object.entries(recipe.qualities).map(([quality, required]) => ({
@@ -382,10 +383,17 @@ const allocateCombination = (
   return allocation;
 };
 
-export const craftWorkDuration = (recipe: RecipeDef, character: CraftCharacter, workFactorBonus = 0): number => {
+export const craftWorkDuration = (
+  registry: Registry,
+  recipe: RecipeDef,
+  character: CraftCharacter,
+  workFactorBonus = 0,
+): number => {
   const skillLevel = Math.max(
     SKILL_LEVEL_MIN,
-    ...Object.keys(recipe.skills).map((skill) => skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN)),
+    ...recipeSkillRequirements(registry, recipe).map(({ skill }) =>
+      skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN),
+    ),
   );
   return (recipe.timeGameMinutes * (1 - workFactorBonus)) / (1 + skillLevel * 0.1);
 };
@@ -400,7 +408,7 @@ const craftPlan = (
         .filter((station) => stationMatches(recipe, station))
         .sort((a, b) => b.workFactorBonus - a.workFactorBonus || a.entity.uid - b.entity.uid)[0]
     : undefined;
-  const work = craftWorkDuration(recipe, character, workstation?.workFactorBonus);
+  const work = craftWorkDuration(snapshot.player.inventory.registry, recipe, character, workstation?.workFactorBonus);
   return {
     kind: 'craft',
     recipe: recipe.id,
@@ -498,9 +506,9 @@ export const planCraft = (
   }
 
   const cache = cachedPlans(snapshot, recipe);
-  const skillKey = Object.keys(recipe.skills)
-    .sort()
-    .map((skill) => [skill, skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN)]);
+  const skillKey = recipeSkillRequirements(snapshot.player.inventory.registry, recipe)
+    .sort((a, b) => a.skill.localeCompare(b.skill))
+    .map(({ skill }) => [skill, skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN)]);
   const key = JSON.stringify([
     Object.entries(prefer).sort(([a], [b]) => Number(a) - Number(b)),
     Object.entries(sources).sort(([a], [b]) => Number(a) - Number(b)),

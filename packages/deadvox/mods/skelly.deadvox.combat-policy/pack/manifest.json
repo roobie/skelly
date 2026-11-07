@@ -1,0 +1,14 @@
+{
+  "dependencies": [],
+  "files": [
+    {
+      "kind": "content",
+      "path": "combat-policy.json"
+    }
+  ],
+  "id": "skelly.deadvox.combat-policy",
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

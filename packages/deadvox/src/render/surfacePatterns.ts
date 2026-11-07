@@ -76,14 +76,14 @@ vec2 hash22(vec2 p) {
   p3 += dot(p3, p3.yzx + 33.33);
   return fract((p3.xx + p3.yz) * p3.zy);
 }
-#ifdef DEADVOX_TEXTURE_NOISE
+#ifdef SKELLY_TEXTURE_NOISE
 uniform sampler2D uSurfaceNoise;
 #endif
 float vnoise(vec2 p) {
   vec2 i = floor(p);
   vec2 f = fract(p);
   f = f * f * (3.0 - 2.0 * f);
-#ifdef DEADVOX_TEXTURE_NOISE
+#ifdef SKELLY_TEXTURE_NOISE
   return textureLod(uSurfaceNoise, (i + f + 0.5) / ${SURFACE_NOISE_PERIOD}.0, 0.0).r;
 #else
   return mix(mix(hash21(i), hash21(i + vec2(1.0, 0.0)), f.x), mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), f.x), f.y);
@@ -186,7 +186,7 @@ vec4 voronoi3(vec3 p) {
 
 // World anchoring keeps blotches continuous across chunk edges and changes in face orientation.
 vec3 camoColor(vec3 world, float fw) {
-#ifdef DEADVOX_FAST_CAMO
+#ifdef SKELLY_FAST_CAMO
   vec3 projected = voronoi(vec2(world.x + world.z * 0.61, world.y + world.z * 0.37) / 0.72);
   vec4 v = vec4(projected, 0.0);
 #else

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { driving, rapierDriver, type Scenario, traceBits } from '../src/vehicles/feasibility/driving.ts';
+import { driving, rapierDriver, type Scenario, traceBits } from '../src/feasibility/driving.ts';
 import { ColliderDesc, RigidBodyDesc, type Voxels, World } from '../vendor/rapier-f64/rapier.js';
 import init from '../vendor/rapier-f64/rapier_wasm3d.js';
 

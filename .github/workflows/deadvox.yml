@@ -5,8 +5,9 @@ on:
   push:
     branches: [main]
     paths:
+      - 'packages/mods/**'
       - 'packages/deadvox/**'
-      - 'packages/engine/**'
+      - 'packages/construct/**'
       - 'packages/tool-ui/**'
       - 'package.json'
       - 'package-lock.json'
@@ -20,8 +21,9 @@ on:
       - 'test/browser-ci*.mjs'
   pull_request:
     paths:
+      - 'packages/mods/**'
       - 'packages/deadvox/**'
-      - 'packages/engine/**'
+      - 'packages/construct/**'
       - 'packages/tool-ui/**'
       - 'package.json'
       - 'package-lock.json'

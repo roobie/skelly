@@ -3,10 +3,10 @@
 
 import type { ModelBox } from '@skelly/thing-core/schema';
 import type { BlockEntity } from './blockEntities.ts';
+import { claimed } from './capabilities.ts';
 import { dominantSide } from './character.ts';
 import type { ClockSettings } from './clock.ts';
 import type { Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import type { Inventory, Location, Pile } from './inventory.ts';
 import type { Item } from './items.ts';
@@ -16,7 +16,7 @@ import { raycast, type SolidAt } from './raycast.ts';
 import type { InventoryTuningDef } from './schema.ts';
 
 /** The reach distances, in metres; required core content guarantees the row. */
-export const reachTuning = (registry: Registry): InventoryTuningDef => registry.inventory.get(CORE_CONTENT_IDS.player)!;
+export const reachTuning = (registry: Registry): InventoryTuningDef => claimed(registry.inventory, 'player')!;
 
 export interface ReachPlayer {
   readonly inventory: Inventory;

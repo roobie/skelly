@@ -1,0 +1,14 @@
+[
+  {
+    "id": "shed_key",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "shed_key",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  }
+]

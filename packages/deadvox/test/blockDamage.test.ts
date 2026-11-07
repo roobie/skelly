@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { bashBlock } from '../src/core/blockDamage.ts';
-import { BLOCK_DAMAGE_KINDS } from '../src/core/blockDamageKinds.ts';
 import { CanonicalTerrain } from '../src/core/canonicalTerrain.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -20,8 +19,22 @@ const structureCell: Vec3 = [6, 5, 6];
 const fixtureData = () => ({
   ...blockMaterialFixture('fixture_rubble'),
   blocks: [
-    { id: 'fixture_wall', name: 'Wall', material: 'fixture_material', color: '#888888', solid: true },
-    { id: 'fixture_rubble', name: 'Rubble', material: 'fixture_material', color: '#777777', solid: true },
+    {
+      id: 'fixture_wall',
+      name: 'Wall',
+      material: 'fixture_material',
+      color: '#888888',
+      solid: true,
+      drops: { default: 'fixture_blow' },
+    },
+    {
+      id: 'fixture_rubble',
+      name: 'Rubble',
+      material: 'fixture_material',
+      color: '#777777',
+      solid: true,
+      drops: { default: 'fixture_blow' },
+    },
   ],
 });
 const fixture = (world = new World()) => {
@@ -62,8 +75,8 @@ const fixture = (world = new World()) => {
 describe('block damage foundation', () => {
   it('projects resistance before the strength gate without changing terrain or overlay', () => {
     const { world, material } = fixture();
-    for (const kind of BLOCK_DAMAGE_KINDS) {
-      const effective = 3 * (1 - material.resistance[kind]);
+    for (const { id: kind } of fixtureData().damageKinds) {
+      const effective = 3 * (1 - material.resistance[kind]!);
       const projected = bashBlock({ material, damage: 0 }, { kind, strength: 3 });
       expect(projected.outcome).toBe(effective < material.minimumStrength || effective === 0 ? 'resisted' : 'damaged');
       expect(projected.damage).toBe(projected.outcome === 'resisted' ? 0 : effective);
@@ -199,7 +212,7 @@ describe('block material admission', () => {
   });
 
   it('requires every supported resistance and rejects unknown kinds', () => {
-    for (const kind of BLOCK_DAMAGE_KINDS) {
+    for (const { id: kind } of fixtureData().damageKinds) {
       const data = fixtureData();
       const resistance: Partial<(typeof data.blockMaterials)[number]['resistance']> = {
         ...data.blockMaterials[0]!.resistance,

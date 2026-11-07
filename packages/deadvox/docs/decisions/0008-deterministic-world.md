@@ -4,6 +4,7 @@ read_if:
   - you're choosing how the simulation core represents numbers or computes sin, cos, atan2, exp, logs, hypot or powers
   - you're deciding how unloaded regions catch up, or how the player's presence reaches regions around them
   - you're changing what column loading, unloading or streaming may do to the simulation
+  - you're changing the readiness-dependent width of zombie drop searches at the loaded edge
   - you're changing how time compression is derived
   - you're changing what generation or save identity covers once mods evaluate expressions
   - you're asking whether and when multiplayer ships and what it asks of the simulation
@@ -34,6 +35,7 @@ The same seed and the same inputs give the same world and the same simulation, b
 - **Enforcement.** The lint ban, and a check that compares simulation and worldgen fingerprints on two engines, both gate CI.
 - **Time compression** is a pure function of simulated input. Frame rate decides how fast the simulation runs in real time, never its outcome.
 - **Streaming.** Simulation effects may follow the player's position, which is an input, but never the timing of a column load or unload. Tier changes are computed from position on the tick; the streamer serves them and does not cause them.
+  The narrow exception is the wider floor search for zombie loot and severed items after every supported first-ring landing is full: a body at the edge of the loaded world gets the first ring only when its column is not ready. This readiness-dependent search width may change whether that item lands or is lost. The case requires both a far kill at the loaded edge and full supported spots, so it is rare, and loss is already the outcome when the permitted search finds no room. This exception permits no other simulation effect to follow load timing. See `DESIGN.md`, "Dropped items land".
 - **Around the player.** The player's region and all eight neighbouring regions are simulated, each with the player's presence as an input. With several players, the simulated set is the union of their blocks.
 - **Catch-up.** The horizon is the edge of the block around the player. A region in the block runs the region model with the player's presence, and its catch-up while unloaded agrees with full ticking within each system's tolerance. A region that leaves the block switches to the system's coarse model, which is canonical. Either way catch-up is deterministic, because replay reruns it.
 - **Generation identity** covers the evaluated output of the content in a canonical form, not the pack sources. Expressions evaluated per tick are engine behaviour, which the simulation fingerprint covers.

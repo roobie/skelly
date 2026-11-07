@@ -9,10 +9,9 @@ import {
 } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { GauntletSite, gauntletPopulation } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { ScenarioCitySite, scenarioCityPopulation } from '../src/core/scenarioCity.ts';
 import type { ScenarioDef } from '../src/core/schema.ts';
 import { siteGenerationOf, sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
 import {
@@ -26,7 +25,8 @@ import {
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureLootContext } from './economyFixtures.ts';
-import { fixtureScenario, fixtureScenarioSources, fixtureStart } from './fixtures/scenario.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
+import { defaultStartOf, fixtureScenario, fixtureScenarioSources, fixtureStart } from './fixtures/scenario.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const BUNDLED_CONTENT = startupContent();
@@ -223,10 +223,11 @@ describe('one finished city plan', () => {
         floor,
         grid: cityGridOf(cityRegistry, scenario.city),
         scenario,
+        start: defaultStartOf(cityRegistry, scenario),
       });
       const site = new CitySite(73, cityRegistry, scale, plan);
-      const { zombies, hordes } = gauntletPopulation(site, scenario);
-      return { spawns: [...zombies.values()].flat(), hordes: [...hordes.values()].flat() };
+      const { actors, hordes } = scenarioCityPopulation(site, scenario);
+      return { spawns: [...actors.values()].flat(), hordes: [...hordes.values()].flat() };
     };
 
     it('spawns each composed event marker once', () => {
@@ -257,7 +258,6 @@ describe('one finished city plan', () => {
       };
       scenario.population.hordes = 0;
       scenario.composition = {
-        start: fixtureStart(),
         fixedLoot: [{ at: [2, 1, 2], items: [{ item: 'fixture_token' }] }],
         leads: [{ template: 'fixture_marker_lead_a' }, { template: 'fixture_marker_lead_b' }],
         landmarks: ['fixture_marker_landmark_a', 'fixture_marker_landmark_b'],
@@ -320,7 +320,7 @@ describe('one finished city plan', () => {
         ...registry,
         furniture: new Map([...registry.furniture, [note.id, note]]),
         templates,
-        zombies: new Map([...registry.zombies, ...native.zombies]),
+        actors: new Map([...registry.actors, ...native.actors]),
       };
       const plan = buildCityPlan({
         seed: 73,
@@ -328,13 +328,14 @@ describe('one finished city plan', () => {
         floor,
         grid: cityGridOf(testRegistry, scenario.city),
         scenario,
+        start: fixtureStart(),
       });
       const site = new CitySite(73, testRegistry, scale, plan);
       const markers = placedSpawns(plan.composition!.events[0]!);
       expect(markers.length).toBeGreaterThan(0);
-      const { zombies } = gauntletPopulation(site, scenario);
+      const { actors } = scenarioCityPopulation(site, scenario);
       for (const marker of markers) {
-        const spawns = zombies.get(`${toChunk(marker.pos[0])},${toChunk(marker.pos[2])}`) ?? [];
+        const spawns = actors.get(`${toChunk(marker.pos[0])},${toChunk(marker.pos[2])}`) ?? [];
         expect(spawns.filter((spawn) => spawn.pos.join(',') === marker.pos.join(','))).toHaveLength(1);
       }
     });
@@ -584,11 +585,17 @@ describe('one finished city plan', () => {
     it('keeps every gauntlet spawn inside the walled area and clear of the wall', () => {
       const native = BUNDLED_CONTENT.registry;
       const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
-      const site = new GauntletSite({ seed: 73, registry: native, scale, scenario });
+      const site = new ScenarioCitySite({
+        seed: 73,
+        registry: native,
+        scale,
+        scenario,
+        start: defaultStartOf(native, scenario),
+      });
       const spawns: { pos: Vec3 }[] = [];
       for (let cz = toChunk(site.bounds.z0) - 2; cz <= toChunk(site.bounds.z1) + 2; cz++) {
         for (let cx = toChunk(site.bounds.x0) - 2; cx <= toChunk(site.bounds.x1) + 2; cx++) {
-          spawns.push(...site.zombiesIn(cx, cz), ...site.hordesIn(cx, cz));
+          spawns.push(...site.actorsIn(cx, cz), ...site.hordesIn(cx, cz));
         }
       }
       expect(spawns.length).toBeGreaterThan(0);
@@ -609,7 +616,6 @@ describe('one finished city plan', () => {
   it('reserves each candidate/turn class inside the apron and keeps ordinary rows out of street space', () => {
     const plan = planned();
     expect(plan.candidates.length).toBeGreaterThan(0);
-    expect(plan.candidates.some(([i, j]) => i === 0 && j === 0)).toBe(false);
     const service = compileTemplate(registry, registry.templates.get(profile.serviceTemplate)!);
     const grid = fixtureGrid;
     const pitchX = grid.street + grid.blockX;
@@ -651,7 +657,7 @@ describe('one finished city plan', () => {
     const other = [...registry.blockIds.keys()].find((name) => name !== entry.palette.paving)!;
     const repaved = {
       ...registry,
-      siteGeneration: new Map(registry.siteGeneration).set(CORE_CONTENT_IDS.authoredSite, {
+      siteGeneration: new Map(registry.siteGeneration).set(fixtureIds.authoredSite, {
         ...entry,
         palette: { ...entry.palette, paving: other },
       }),

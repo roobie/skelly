@@ -1,6 +1,6 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Domain } from '@skelly/engine/assembly/schema.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Domain } from '@skelly/construct/assembly/schema.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { expect, it } from 'vitest';
 import { exportGlb } from '../src/glb.ts';
 

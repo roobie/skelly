@@ -8,7 +8,7 @@ import { groundLootSupplyIssues } from './placementLoot.ts';
 import { pileInReach, reachTuning } from './reach.ts';
 import type { StairDef } from './schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
-import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
+import { actorBodyDimensions, spawnOverlappingSolidBlock } from './spawnClearance.ts';
 import { type FlightPlan, planFlight, STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import { type CompiledTemplate, cellsOf, type Placement, placedPieces, placedPoint } from './templates.ts';
 
@@ -352,13 +352,13 @@ export const templateSpawnClearanceIssues = (registry: Registry, template: Compi
   const space = new TemplateSpace(registry, template);
   const [sx, sy, sz] = template.size;
   return template.spawns.flatMap((spawn, index) => {
-    const type = registry.zombies.get(spawn.zombie);
+    const type = registry.actors.get(spawn.actor);
     if (!type) {
       return [];
     }
     const blocked = spawnOverlappingSolidBlock(
       spawn.pos,
-      zombieBodyDimensions(type, TEMPLATE_BLOCK_SIZE),
+      actorBodyDimensions(type, TEMPLATE_BLOCK_SIZE),
       (x, y, z) => x >= 0 && y >= 0 && z >= 0 && x < sx && y < sy && z < sz && space.occupied(x, y, z, false),
     );
     return blocked

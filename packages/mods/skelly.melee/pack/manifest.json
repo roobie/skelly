@@ -1,0 +1,75 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.crafting",
+    "skelly.hand-tools",
+    "skelly.inventory",
+    "skelly.materials",
+    "skelly.melee-classes",
+    "skelly.natural-world",
+    "skelly.structures"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "melee-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-melee.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/baseball_bat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/kabar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/machete.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steel_pipe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "exports/things.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/baseball_bat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/kabar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/machete.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steel_pipe.glb"
+    }
+  ],
+  "id": "skelly.melee",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

@@ -1,5 +1,5 @@
-import type { PartMotion, Resolved } from '@skelly/engine/assembly/schema.ts';
-import { compose, length, scale, sub, translation, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import type { PartMotion, Resolved } from '@skelly/construct/assembly/schema.ts';
+import { compose, length, scale, sub, translation, type Vec3 } from '@skelly/construct/foundation/math.ts';
 import {
   boundsOfPoints,
   lowerBoundDistanceWorld,
@@ -7,8 +7,8 @@ import {
   penetrationWorld,
   type WorldSolid,
   worldSolid,
-} from '@skelly/engine/shapes/geometry.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+} from '@skelly/construct/shapes/geometry.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { AR_CYCLIC_RPM, SMALL_AR_FRAME } from './arFrames.ts';
 
 import pistolAction from './pistolAction.json' with { type: 'json' };

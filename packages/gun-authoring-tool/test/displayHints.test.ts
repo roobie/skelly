@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Domain } from '@skelly/engine/assembly/schema.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { meshForSolid } from '@skelly/engine/shapes/mesh.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Domain } from '@skelly/construct/assembly/schema.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { meshForSolid } from '@skelly/construct/shapes/mesh.ts';
 import { exportGlb, partNodeName } from '@skelly/thing-export/glb.ts';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';

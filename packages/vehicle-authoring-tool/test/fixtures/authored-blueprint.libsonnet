@@ -1,4 +1,4 @@
-// A blueprint authored with the helper shapes of `packages/deadvox/src/content/base/vehicles.jsonnet`: a pair
+// A blueprint authored with the helper shapes of `packages/mods/skelly.ground-vehicles/vehicles.jsonnet`: a pair
 // with a service name per side, and one height shared by three fittings.
 local fitting(id, part, at, supportedBy=[], service=null) =
   { id: id, part: part, at: at, supportedBy: supportedBy } +

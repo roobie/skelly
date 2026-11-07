@@ -34,10 +34,10 @@ import { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { createPlayerBody, PLAYER } from './playerFixture.ts';
+import { AIM, createPlayerBody } from './playerFixture.ts';
 import { rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
-const BASE = 'src/content/base';
+const BASE = '../mods/skelly.firearms';
 const BLOCK = 0.5;
 const RIFLE = 'rifle_assault';
 const PUMP = 'pump_shotgun';
@@ -395,9 +395,9 @@ const heldGun = async (type: string) => {
 
 it('keeps over-limit view pitch changes in ADS while the held pose takes the recoil frame', async () => {
   const { mechanics, gun, camera, heldFrame, dispose } = await heldGun(RIFLE);
-  const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
+  const tuning = firearmsCombatTuning(registry);
   const aim = new AimController({
-    tuning: PLAYER.aim,
+    tuning: AIM,
     wobbleLimitRadians: tuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: tuning.wobbleVerticalToHorizontalRatio,
@@ -447,7 +447,7 @@ it('keeps over-limit view pitch changes in ADS while the held pose takes the rec
 it.each([RIFLE, PUMP])('keeps the crosshair on the drawn %s bore through a rack, turned mid-rack', async (type) => {
   const { queue, mechanics, gun, side, camera, heldFrame, dispose } = await heldGun(type);
   const model = content.models.get(modelOf(type))!;
-  const { loweredPitchRadians } = content.skills.get('firearms_combat')!.combat!.firearms!;
+  const { loweredPitchRadians } = firearmsCombatTuning(content);
   const viewpoint = { eye: [0, 0, 0] as Vec3, yaw: 0, pitch: 0 };
   // The unturned bore shots use, and the crosshair's as play.ts turns it.
   const unturned = (): FirearmBoreRay =>

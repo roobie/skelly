@@ -126,7 +126,15 @@ it('scales prying by the authored skill curve, not a code constant', () => {
       {
         source: 'steep-mechanics-curve.json',
         data: {
-          skills: [{ id: 'mechanics', name: 'Mechanics', curve: steepCurve }],
+          skills: [
+            {
+              id: 'mechanics',
+              capability: 'mechanics',
+              name: 'Mechanics',
+              curve: steepCurve,
+              training: { craftingTierOffset: 1 },
+            },
+          ],
         },
       },
     ]),
@@ -321,8 +329,12 @@ it('a prying strike travels through the sound-hearing path and draws a shambler'
   const runtime = makePryRuntime();
   const door = makeDoor(runtime);
   const crowbar = carryCrowbar(runtime);
-  const shamblerType = registry.zombies.get('shambler')!;
-  const id = runtime.zombies.add({ ...shamblerType, sight: 0, nightSight: 0 }, [0, 1, 5], [1, 0, 0]);
+  const shamblerType = registry.actors.get('shambler')!;
+  const id = runtime.zombies.add(
+    { ...shamblerType, agent: { ...shamblerType.agent!, sight: 0, nightSight: 0 } },
+    [0, 1, 5],
+    [1, 0, 0],
+  );
   const shambler = runtime.zombies.store.get(id)!;
   expect(runtime.session.forceDoor(door, crowbar.uid)).toBeUndefined();
 
@@ -336,7 +348,7 @@ it('a prying strike travels through the sound-hearing path and draws a shambler'
   expect(runtime.heardSounds.filter(({ event }) => event === 'lock_pry')).toHaveLength(
     Math.floor(action.elapsed / strikeInterval),
   );
-  expect(shambler.mode).toBe('investigate');
+  expect(shambler.agent!.mode).toBe('investigate');
 });
 
 it('a sledgehammer forces a door by hammering and its blows reach the sound-hearing path', () => {
@@ -344,15 +356,19 @@ it('a sledgehammer forces a door by hammering and its blows reach the sound-hear
   const door = makeDoor(runtime);
   const hammer = doorDef.door!.methods.hammer!;
   const sledgehammer = carryTool(runtime, 'sledgehammer');
-  const shamblerType = registry.zombies.get('shambler')!;
-  const id = runtime.zombies.add({ ...shamblerType, sight: 0, nightSight: 0 }, [0, 1, 5], [1, 0, 0]);
+  const shamblerType = registry.actors.get('shambler')!;
+  const id = runtime.zombies.add(
+    { ...shamblerType, agent: { ...shamblerType.agent!, sight: 0, nightSight: 0 } },
+    [0, 1, 5],
+    [1, 0, 0],
+  );
   const shambler = runtime.zombies.store.get(id)!;
   expect(runtime.session.forceDoor(door, sledgehammer.uid)).toBeUndefined();
 
   runtime.sim.scheduler.advance(hammer.strikeIntervalSimSeconds + 2);
 
   expect(runtime.heardSounds.some(({ event }) => event === hammer.strikeSound)).toBe(true);
-  expect(shambler.mode).toBe('investigate');
+  expect(shambler.agent!.mode).toBe('investigate');
 });
 
 it('a sledgehammer breaks a flimsy wood door faster than a wood door', () => {

@@ -35,9 +35,7 @@ const modelFor = (properties: NonNullable<NonNullable<ModelDef['gun']>['attachme
 
 const itemFor = (opticMagnification?: number): ItemDef => ({
   id: 'optic_fixture_item',
-  economy: { usage: [], tiers: [] },
   workInProgress: false,
-  notLoot: false,
   name: 'Optic fixture',
   category: 'misc',
   weight: 1,
@@ -70,6 +68,13 @@ const registryFor = (
   ]);
 
 describe('optic view settings', () => {
+  it('gives an optic marked with an unavailable view no settings, even when its model supports a view', () => {
+    const item = itemFor(4);
+    const model = modelFor({ magnification: { min: 1, max: 6 }, reticle });
+    expect(opticViewSettings(item, model)).toBeDefined();
+    expect(opticViewSettings({ ...item, opticView: 'unavailable' }, model)).toBeUndefined();
+  });
+
   it('uses the core-mod value for a variable optic and preserves the exported reticle', () => {
     const item = itemFor(4);
     const model = modelFor({ magnification: { min: 1, max: 6 }, reticle });

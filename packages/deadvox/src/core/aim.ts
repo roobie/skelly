@@ -1,6 +1,7 @@
+import { claimed } from './capabilities.ts';
+import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { Rng, type RngState } from './random.ts';
-import type { PlayerDef } from './schema.ts';
 
 /** Camera-local angles shared by firearm presentation and ballistic direction. */
 export interface AimFrame {
@@ -76,8 +77,8 @@ export interface BreathHoldTuning {
   readonly recoverySwayScale: number;
   /** Share of drift a hold removes at skill zero without pain. */
   readonly steadyingMinimum: number;
-  readonly steadyingSkillRange: number;
-  readonly steadyingSkillHalfLifeLevels: number;
+  readonly steadyingSkillRange?: number | undefined;
+  readonly steadyingSkillHalfLifeLevels?: number | undefined;
   /** Share of steadying lost per unit of felt-pain ratio. */
   readonly painWeakeningPerRatio: number;
 }
@@ -123,7 +124,9 @@ export const advanceBreathHold = (
 export const breathSteadying = (effectLevel: number, painRatio: number, tuning: BreathHoldTuning): number => {
   const skilled =
     tuning.steadyingMinimum +
-    tuning.steadyingSkillRange * (effectLevel / (effectLevel + tuning.steadyingSkillHalfLifeLevels));
+    (tuning.steadyingSkillRange === undefined
+      ? 0
+      : tuning.steadyingSkillRange * (effectLevel / (effectLevel + tuning.steadyingSkillHalfLifeLevels!)));
   return Math.max(0, Math.min(1, skilled * (1 - tuning.painWeakeningPerRatio * Math.max(0, painRatio))));
 };
 
@@ -221,7 +224,16 @@ const boundVector = (yaw: number, pitch: number, limit: number): AimFrame => {
   return { yaw: yaw * scale, pitch: pitch * scale };
 };
 
-type AimTuning = PlayerDef['aim'];
+export const playerAimTuning = (registry: Registry) => {
+  const player = claimed(registry.player, 'player');
+  const policy = claimed(registry.combatPolicy, 'player')?.aim;
+  if (!(player && policy)) {
+    throw new Error('Missing player aim controls or combat policy');
+  }
+  return { ...player.aim, ...policy };
+};
+
+type AimTuning = ReturnType<typeof playerAimTuning>;
 
 // Keep gait/look wobble separate so its larger content bound cannot enlarge recoil's view-pitch limit.
 interface FrameFromStateOptions {

@@ -1,8 +1,8 @@
 import { expect, it, vi } from 'vitest';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { chunksFor } from '../src/core/scale.ts';
-import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
+import { WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
 import { applyWeatheringConfig, makeConfig as makeContentConfig, savingEnabledFromUrl } from '../src/game/config.ts';
+import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
 import { content as BUNDLED_CONTENT, configFromUrl, makeConfig } from './fixtures/startupContent.ts';
 
 const dayCycle = BUNDLED_CONTENT.registry.dayCycle!;
@@ -25,7 +25,7 @@ it('starts the gauntlet when no world is selected, including debug previews', ()
 
 it('takes the ready ring from content and caps it at the requested view', () => {
   const graphics = new Map(BUNDLED_CONTENT.registry.graphics);
-  const tuning = graphics.get(CORE_CONTENT_IDS.coreGraphics)!;
+  const tuning = graphics.get(fixtureIds.graphics)!;
   const content = { ...BUNDLED_CONTENT, registry: { ...BUNDLED_CONTENT.registry, graphics } };
   for (const readyRadiusM of [0, 24, 120]) {
     graphics.set(tuning.id, { ...tuning, readyRadiusM });
@@ -44,14 +44,17 @@ it('restricts handedness overrides to debug URL configuration', () => {
   expect(configFromUrl(new URLSearchParams('debug=1&handedness=unknown')).debugHandedness).toBeUndefined();
 });
 
-it('restricts ragdoll staging and viewer placement to debug test-house URLs', () => {
-  const selected = configFromUrl(new URLSearchParams('debug=1&site=testHouse&ragdollSweep=19'));
+it('requires explicit debug mod selection for ragdoll staging and viewer placement', () => {
+  const selected = configFromUrl(
+    new URLSearchParams('debug=1&site=testHouse&mods=skelly.deadvox.scenario.test-house.debug&ragdollSweep=19'),
+  );
   expect(selected.ragdollSweep).toBe(19);
   expect(selected.debugStart).toBeDefined();
   for (const query of [
-    'site=testHouse&ragdollSweep=19',
-    'debug=1&ragdollSweep=19',
-    'debug=1&site=testHouse&ragdollSweep=no',
+    'site=testHouse&mods=skelly.deadvox.scenario.test-house.debug&ragdollSweep=19',
+    'debug=1&mods=skelly.deadvox.scenario.test-house.debug&ragdollSweep=19',
+    'debug=1&site=testHouse&mods=skelly.deadvox.scenario.test-house.debug&ragdollSweep=no',
+    'debug=1&site=testHouse&ragdollSweep=19',
   ]) {
     expect(configFromUrl(new URLSearchParams(query)).ragdollSweep).toBeUndefined();
   }
@@ -59,7 +62,7 @@ it('restricts ragdoll staging and viewer placement to debug test-house URLs', ()
 
 it('copies site-selected weathering into replay and resumed configurations', () => {
   const profiles = BUNDLED_CONTENT.registry.weathering;
-  const defaultProfile = profiles.get(DEFAULT_WEATHERING_PROFILE_ID)!;
+  const defaultProfile = profiles.get(defaultWeatheringId)!;
   const siteProfile = [...profiles.values()].find(({ id }) => id !== defaultProfile.id)!;
   const config = makeConfig(1, 96);
   config.site = 'fixture-site';

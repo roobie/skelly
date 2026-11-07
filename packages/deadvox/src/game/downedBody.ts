@@ -1,18 +1,19 @@
 import { actionText, fillText } from '../core/actionText.ts';
+import type { Actor } from '../core/actorState.ts';
+import type { ActorSystem } from '../core/actorSystem.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { bodyInReach, type ReachPlayer } from '../core/reach.ts';
-import type { Zombie, ZombieSystem } from '../core/zombies.ts';
 
-const DOWNED_BODY_ACTION = 'zombie.downed';
+const DOWNED_BODY_ACTION = 'actor.downed';
 const DOWNED_BODY_WAYS = ['finish-off', 'dismember'] as const;
 export type DownedBodyWay = (typeof DOWNED_BODY_WAYS)[number];
 
 type DownedBodyPlan = { ok: true; simSeconds: number; label: string } | { ok: false; reason: string };
 
-type DownedZombies = Pick<ZombieSystem, 'store' | 'finishDowned'>;
+type DownedActors = Pick<ActorSystem, 'store' | 'finishDowned'>;
 
 export const isDownedBodyWay = (value: unknown): value is DownedBodyWay =>
   DOWNED_BODY_WAYS.includes(value as DownedBodyWay);
@@ -26,21 +27,21 @@ const carriedTool = (inventory: Inventory, quality: string, level: number): Item
     .sort((a, b) => inventory.name(a).localeCompare(inventory.name(b)))[0];
 
 /** Whether the player can clear this downed body that way now, how long it takes, and its label. */
-export const downedBodyPlan = (player: ReachPlayer, zombie: Zombie | undefined, way: DownedBodyWay): DownedBodyPlan => {
+export const downedBodyPlan = (player: ReachPlayer, actor: Actor | undefined, way: DownedBodyWay): DownedBodyPlan => {
   const text = actionText(player.inventory.registry);
-  const downed = zombie?.incapacitated ? zombie.type.downed : undefined;
-  if (!(zombie && downed)) {
+  const downed = actor?.incapacitated ? actor.type.downed : undefined;
+  if (!(actor && downed)) {
     return { ok: false, reason: text.downedBody.gone };
   }
-  if (!bodyInReach(player, zombie.body)) {
+  if (!bodyInReach(player, actor.body)) {
     return { ok: false, reason: text.common.tooFar };
   }
-  const name = zombie.type.name.toLowerCase();
+  const name = actor.type.name.toLowerCase();
   if (way === 'finish-off') {
     return {
       ok: true,
       simSeconds: downed.finishOff.simSeconds,
-      label: fillText(text.downedBody.finishOff, { zombie: name }),
+      label: fillText(text.downedBody.finishOff, { actor: name }),
     };
   }
   const { quality, level, simSeconds } = downed.dismember;
@@ -51,26 +52,26 @@ export const downedBodyPlan = (player: ReachPlayer, zombie: Zombie | undefined, 
   return {
     ok: true,
     simSeconds,
-    label: fillText(text.downedBody.dismember, { zombie: name, tool: player.inventory.name(tool).toLowerCase() }),
+    label: fillText(text.downedBody.dismember, { actor: name, tool: player.inventory.name(tool).toLowerCase() }),
   };
 };
 
 /** Queues clearing a downed body, unless it's queued already; returns why it can't be done now. */
 export const queueDownedBody = (
-  { queue, player, zombies }: { queue: HandlingQueue; player: ReachPlayer; zombies: DownedZombies },
+  { queue, player, actors }: { queue: HandlingQueue; player: ReachPlayer; actors: DownedActors },
   id: EntityId,
   way: DownedBodyWay,
 ): string | undefined => {
   if (
-    queue.jobs.some((job) => job.kind === 'action' && job.jobType === DOWNED_BODY_ACTION && job.params.zombieId === id)
+    queue.jobs.some((job) => job.kind === 'action' && job.jobType === DOWNED_BODY_ACTION && job.params.actorId === id)
   ) {
     return undefined;
   }
-  const plan = downedBodyPlan(player, zombies.store.get(id), way);
+  const plan = downedBodyPlan(player, actors.store.get(id), way);
   if (!plan.ok) {
     return plan.reason;
   }
-  queue.enqueueAction(DOWNED_BODY_ACTION, plan.label, plan.simSeconds, { zombieId: id, way });
+  queue.enqueueAction(DOWNED_BODY_ACTION, plan.label, plan.simSeconds, { actorId: id, way });
   return undefined;
 };
 
@@ -78,17 +79,17 @@ export const queueDownedBody = (
 export const registerDownedBodyAction = ({
   queue,
   player,
-  zombies,
+  actors,
 }: {
   queue: HandlingQueue;
   player: ReachPlayer;
-  zombies: DownedZombies;
+  actors: DownedActors;
 }): void => {
-  queue.registerAction(DOWNED_BODY_ACTION, ({ zombieId, way }) => {
-    if (typeof zombieId !== 'number' || !Number.isSafeInteger(zombieId) || !isDownedBodyWay(way)) {
+  queue.registerAction(DOWNED_BODY_ACTION, ({ actorId, way }) => {
+    if (typeof actorId !== 'number' || !Number.isSafeInteger(actorId) || !isDownedBodyWay(way)) {
       throw new Error('Invalid downed body target');
     }
-    const plan = downedBodyPlan(player, zombies.store.get(zombieId), way);
-    return plan.ok ? zombies.finishDowned(zombieId, way === 'dismember') : plan.reason;
+    const plan = downedBodyPlan(player, actors.store.get(actorId), way);
+    return plan.ok ? actors.finishDowned(actorId, way === 'dismember') : plan.reason;
   });
 };

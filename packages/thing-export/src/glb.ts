@@ -7,8 +7,8 @@
 //        -> one empty child node per port, named `<part>.<port>`, with the port metadata in glTF `extras`
 // Vertices are in the part's local frame times the domain's `units.metresPerUnit`; the node transform supplies the placement.
 
-import { portFrame } from '@skelly/engine/assembly/resolve.ts';
-import type { PartDef, PartInstance, PortDef } from '@skelly/engine/assembly/schema.ts';
+import { portFrame } from '@skelly/construct/assembly/resolve.ts';
+import type { PartDef, PartInstance, PortDef } from '@skelly/construct/assembly/schema.ts';
 import {
   applyDir,
   applyPoint,
@@ -17,10 +17,10 @@ import {
   type Mat3,
   type Transform,
   type Vec3,
-} from '@skelly/engine/foundation/math.ts';
-import { type DisplayItem, displayItems } from '@skelly/engine/shapes/display.ts';
-import { boundsOfPoints } from '@skelly/engine/shapes/geometry.ts';
-import { displayBevel, meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
+} from '@skelly/construct/foundation/math.ts';
+import { type DisplayItem, displayItems } from '@skelly/construct/shapes/display.ts';
+import { boundsOfPoints } from '@skelly/construct/shapes/geometry.ts';
+import { displayBevel, meshForSolid, meshForSolidGroup } from '@skelly/construct/shapes/mesh.ts';
 import { surfaceOf } from '@skelly/thing-core/materials';
 import { invalidPaletteFinish, resolveAppearance } from './appearance.ts';
 import type {

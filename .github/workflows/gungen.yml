@@ -6,10 +6,12 @@ on:
   push:
     branches: [main]
     paths:
+      - 'packages/mods/**'
+      - 'packages/deadvox/mods/**'
       - 'packages/gun-authoring-tool/**'
       - 'packages/thing-core/**'
       - 'packages/thing-export/**'
-      - 'packages/engine/**'
+      - 'packages/construct/**'
       - 'packages/tool-ui/**'
       - 'packages/deadvox/src/**'
       - 'package-lock.json'
@@ -20,10 +22,12 @@ on:
       - '.github/workflows/gungen.yml'
   pull_request:
     paths:
+      - 'packages/mods/**'
+      - 'packages/deadvox/mods/**'
       - 'packages/gun-authoring-tool/**'
       - 'packages/thing-core/**'
       - 'packages/thing-export/**'
-      - 'packages/engine/**'
+      - 'packages/construct/**'
       - 'packages/tool-ui/**'
       - 'packages/deadvox/src/**'
       - 'package-lock.json'
@@ -61,7 +65,7 @@ jobs:
         timeout-minutes: 3
         run: npx playwright install chromium
         working-directory: packages/deadvox
-      - run: npm --prefix ../engine run typecheck
+      - run: npm --prefix ../construct run typecheck
       - run: npm --prefix ../tool-ui run typecheck
       - run: npm --prefix ../tool-ui test
       - run: npm run typecheck

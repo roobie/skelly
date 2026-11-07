@@ -1,0 +1,6 @@
+{
+  "assets/models/baseball_bat.glb": { "materials": ["wood-birch"] },
+  "assets/models/kabar.glb": { "materials": ["rubber-black", "steel-blued"] },
+  "assets/models/machete.glb": { "materials": ["wood-walnut", "steel-grey"] },
+  "assets/models/steel_pipe.glb": { "materials": ["steel-grey"] }
+}

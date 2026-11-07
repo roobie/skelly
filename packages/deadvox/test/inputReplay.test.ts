@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BACKGROUND_ACTOR_SLICE_COUNT } from '../src/core/actorSystem.ts';
 import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
 import { dominantSide, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
@@ -7,12 +8,11 @@ import type { Item } from '../src/core/items.ts';
 import { pocketGroundItem, stowTarget, toHands } from '../src/core/options.ts';
 import { encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
-import type { Site, ZombieSpawn } from '../src/core/site.ts';
+import type { ActorSpawn, Site } from '../src/core/site.ts';
 import { gameTimeOfDay, realSeconds as realDuration } from '../src/core/time.ts';
-import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
-import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import {
+  clearPendingInputReplay,
   DEFAULT_REPLAY_START_STATE,
   decodeInputReplay,
   encodeInputReplay,
@@ -20,6 +20,7 @@ import {
   INPUT_REPLAY_SCHEMA_VERSION,
   InputReplayRecorder,
   joinInputReplayWindows,
+  pendingInputReplay,
   type ReplayAction,
   type ReplayColumnUpdate,
   type ReplayControlSample,
@@ -30,12 +31,12 @@ import {
   restoreReplayStartState,
   rolloverInputReplayRecorder,
   sampleFromReplayFrame,
+  stashInputReplay,
   withReplayExportGuard,
 } from '../src/game/inputReplay.ts';
 import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from '../src/game/inputReplayActions.ts';
 import { InputReplayDriver, nextReplayInputSample } from '../src/game/inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
-import { inputReplayStatus } from '../src/game/play.ts';
 import { type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import {
   applyReplayActionPayload,
@@ -43,7 +44,9 @@ import {
   type ReplayActionPayload,
 } from '../src/game/replayCommands.ts';
 import { PHYSICS_RATE } from '../src/game/session.ts';
-import { Unpacking } from '../src/game/unpacking.ts';
+import { createSimulationStepper, type InputRecording } from '../src/game/simulationStepper.ts';
+import { inputReplayStatus } from '../src/presentation/play.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { rifleAmmunition } from './rifleFixture.ts';
 import {
@@ -88,7 +91,7 @@ const replaySample = {
 
 const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Uint8Array =>
   canonicalJsonBytes({
-    magic: 'DEADVOX_REPLAY',
+    magic: 'SKELLY_REPLAY',
     schemaVersion: INPUT_REPLAY_SCHEMA_VERSION,
     startState: inputs.startState ?? DEFAULT_REPLAY_START_STATE,
     endStateFingerprint: '0'.repeat(64),
@@ -995,7 +998,7 @@ describe('input replay', () => {
 
   it('replays a same-tick column load and unload in order, preserving its marker and furniture', async () => {
     const [cx, cz] = fixtureColumns.find(([columnX, columnZ]) => fixtureSite.furnitureIn(columnX, columnZ).length > 0)!;
-    const marker: ZombieSpawn = {
+    const marker: ActorSpawn = {
       type: 'shambler',
       pos: [cx * CHUNK + 7.25, 1, cz * CHUNK + 7.25],
     };
@@ -1006,8 +1009,8 @@ describe('input replay', () => {
       supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),
-      zombiesIn: (columnX, columnZ) =>
-        columnX === cx && columnZ === cz ? [marker] : fixtureSite.zombiesIn(columnX, columnZ),
+      actorsIn: (columnX, columnZ) =>
+        columnX === cx && columnZ === cz ? [marker] : fixtureSite.actorsIn(columnX, columnZ),
       hordesIn: (columnX, columnZ) => fixtureSite.hordesIn(columnX, columnZ),
     };
     const initialColumns: ReplayGeneratedColumn[] = [[cx + 10, cz + 10]];
@@ -1272,7 +1275,7 @@ describe('input replay', () => {
         initialColumns.push([cx + dx, cz + dz]);
       }
     }
-    const marker: ZombieSpawn = {
+    const marker: ActorSpawn = {
       type: 'shambler',
       pos: [cx * CHUNK + 7.25, 1, cz * CHUNK + 7.25],
       window: { fromGameTimeOfDay: gameTimeOfDay(BASE_CLOCK.start + 1) },
@@ -1284,10 +1287,10 @@ describe('input replay', () => {
       supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),
-      zombiesIn: (columnX, columnZ) =>
+      actorsIn: (columnX, columnZ) =>
         columnX === cx && columnZ === cz
-          ? [...fixtureSite.zombiesIn(columnX, columnZ), marker]
-          : fixtureSite.zombiesIn(columnX, columnZ),
+          ? [...fixtureSite.actorsIn(columnX, columnZ), marker]
+          : fixtureSite.actorsIn(columnX, columnZ),
       hordesIn: (columnX, columnZ) => fixtureSite.hordesIn(columnX, columnZ),
     };
     const loadedSource = createRuntime(
@@ -1325,29 +1328,29 @@ describe('input replay', () => {
 
   it("replays a recorded column load's spawn and furniture under compression", async () => {
     const runtime = createRuntime();
-    const firstZombieEntry = runtime.zombies.store.entries().next().value;
-    if (!firstZombieEntry) {
+    const firstActorEntry = runtime.zombies.store.entries().next().value;
+    if (!firstActorEntry) {
       throw new Error('Replay fixture has no zombie');
     }
-    const [zombieId, firstZombie] = firstZombieEntry;
+    const [actorId, firstActor] = firstActorEntry;
     const restRefusal = runtime.sim.actions.startRest('sleep', -10, 1);
     if (restRefusal) {
       throw new Error(`Replay fixture could not start compression: ${restRefusal}`);
     }
     const start = capture(runtime);
-    const cx = toChunk(Math.floor(firstZombie.body.pos[0]));
-    const cz = toChunk(Math.floor(firstZombie.body.pos[2]));
-    const targetTick = BACKGROUND_ZOMBIE_SLICE_COUNT + (zombieId % BACKGROUND_ZOMBIE_SLICE_COUNT);
-    const generatedAroundZombie: ReplayColumnUpdate[] = [];
+    const cx = toChunk(Math.floor(firstActor.body.pos[0]));
+    const cz = toChunk(Math.floor(firstActor.body.pos[2]));
+    const targetTick = BACKGROUND_ACTOR_SLICE_COUNT + (actorId % BACKGROUND_ACTOR_SLICE_COUNT);
+    const generatedAroundActor: ReplayColumnUpdate[] = [];
     for (let dz = -1; dz <= 1; dz++) {
       for (let dx = -1; dx <= 1; dx++) {
-        generatedAroundZombie.push([cx + dx, cz + dz, true]);
+        generatedAroundActor.push([cx + dx, cz + dz, true]);
       }
     }
-    const spawnColumn = generatedAroundZombie.find(
-      ([columnX, columnZ]) => (columnX !== cx || columnZ !== cz) && fixtureSite.zombiesIn(columnX, columnZ).length > 0,
+    const spawnColumn = generatedAroundActor.find(
+      ([columnX, columnZ]) => (columnX !== cx || columnZ !== cz) && fixtureSite.actorsIn(columnX, columnZ).length > 0,
     );
-    const furnitureColumn = generatedAroundZombie.find(
+    const furnitureColumn = generatedAroundActor.find(
       ([columnX, columnZ]) =>
         (columnX !== cx || columnZ !== cz) && fixtureSite.furnitureIn(columnX, columnZ).length > 0,
     );
@@ -1357,17 +1360,17 @@ describe('input replay', () => {
     const source = recordActiveSession(start, recorder, {
       columns: {
         initial: [],
-        updatesAtTick: (tick) => (tick === targetTick ? generatedAroundZombie : []),
+        updatesAtTick: (tick) => (tick === targetTick ? generatedAroundActor : []),
       },
       initialColumns: [[cx + 10, cz + 10]],
       frameDts: [1 / 60],
     });
     expect(
       [...source.zombies.store.entries()].some(
-        ([, zombie]) =>
+        ([, actor]) =>
           spawnColumn &&
-          toChunk(Math.floor(zombie.body.pos[0])) === spawnColumn[0] &&
-          toChunk(Math.floor(zombie.body.pos[2])) === spawnColumn[1],
+          toChunk(Math.floor(actor.body.pos[0])) === spawnColumn[0] &&
+          toChunk(Math.floor(actor.body.pos[2])) === spawnColumn[1],
       ),
     ).toBe(true);
     expect(
@@ -1397,6 +1400,58 @@ describe('input replay', () => {
     });
     expect([...replay.world.chunks.values()].some((chunk) => chunk.cx === cx && chunk.cz === cz)).toBe(true);
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
+  it('a stashed replay is pending after reload and gone after clear', () => {
+    const session = new Map<string, string>();
+    // Each page load resolves its own store over the same session data.
+    const reloadedStash = () => ({
+      getItem: (key: string) => session.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        session.set(key, value);
+      },
+      removeItem: (key: string) => {
+        session.delete(key);
+      },
+    });
+    const bytes = new Uint8Array([0, 1, 2, 250, 255]);
+    stashInputReplay(reloadedStash, bytes);
+    expect(pendingInputReplay(reloadedStash)).toEqual(bytes);
+    clearPendingInputReplay(reloadedStash);
+    expect(pendingInputReplay(reloadedStash)).toBeUndefined();
+  });
+
+  it("a recorder window that fills during a frame rolls after that frame's step", () => {
+    const start = capture(createRuntime());
+    const recording: InputRecording = { recorder: undefined, previous: undefined, stoppedReason: undefined };
+    const runtime = createRuntime(start, false, undefined, {
+      sampleAtPlayerTick: (_tick, live, _time, compression) => {
+        recording.recorder?.recordTick(live, compression);
+        return live;
+      },
+    });
+    const filling = new InputReplayRecorder(start, 1, []);
+    recording.recorder = filling;
+    const stepper = createSimulationStepper({
+      sim: runtime.sim,
+      advance: (simDt, until) => runtime.session.frame(simDt, until),
+      worldReady: () => true,
+      gameFrozen: () => false,
+      replayPlayer: undefined,
+      replayDriver: undefined,
+      replay: undefined,
+      recording,
+      captureSnapshot: () => capture(runtime),
+      generatedColumns: () => [],
+      captureReplayStartState: () => DEFAULT_REPLAY_START_STATE,
+    });
+
+    stepper.step(realDuration(1 / 30), { menuPaused: false });
+
+    expect(filling.full).toBe(true);
+    expect(recording.previous).toBe(filling);
+    expect(recording.recorder).not.toBe(filling);
+    expect(recording.recorder?.tickCount).toBe(0);
   });
 
   it('bounds the always-on recording window and retained buffers', () => {
@@ -1821,8 +1876,7 @@ describe('input replay', () => {
       if (!held) {
         throw new Error('Replay unpack fixture lost its held box');
       }
-      const unpacking = new Unpacking(runtime.inventory, runtime.handling, () => runtime.player.body.pos);
-      const refusal = unpacking.activate(held);
+      const refusal = runtime.session.unpacking.activate(held);
       if (refusal) {
         throw new Error(`Replay unpack was refused: ${refusal}`);
       }
@@ -1849,8 +1903,8 @@ describe('input replay', () => {
   });
 
   it('replays a furniture lift and put-down to the same piece, place and fingerprint', async () => {
-    const [zombieCx, zombieCz] = fixtureZombieColumn;
-    const column: [number, number] = [zombieCx + 10, zombieCz + 10];
+    const [actorCx, actorCz] = fixtureZombieColumn;
+    const column: [number, number] = [actorCx + 10, actorCz + 10];
     const probe = createRuntime(undefined, false, [column]);
     const crate = probe.inventory.registry.furniture.get('crate')!;
     const [width, , depth] = crate.size;

@@ -1,4 +1,4 @@
-import type { Vec3 } from '@skelly/engine/foundation/math.ts';
+import type { Vec3 } from '@skelly/construct/foundation/math.ts';
 import type { TracePoint } from './trace.ts';
 import { uToMm } from './units.ts';
 

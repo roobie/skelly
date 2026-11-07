@@ -1,6 +1,6 @@
-import { generate } from '@skelly/engine/assembly/generate.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import { generate } from '@skelly/construct/assembly/generate.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { localSolidBounds } from '@skelly/construct/shapes/geometry.ts';
 import { describe, expect, it } from 'vitest';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';

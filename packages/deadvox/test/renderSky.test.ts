@@ -9,7 +9,7 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { expect, it } from 'vitest';
-import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
+import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import { skyAt } from '../src/core/sky.ts';
 import { heightFogUniforms } from '../src/render/heightFog.ts';
 import { Mood } from '../src/render/mood.ts';

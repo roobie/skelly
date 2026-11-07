@@ -46,11 +46,10 @@ const data = () => ({
         ? undefined
         : {
             timeGameMinutes: 1,
-            skill: 'fixture_skill',
+            skill: 'crafting',
             yields: [{ item: 'fixture_scrap', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
           },
   })),
-  skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
   recipes: [
     recipe('fixture_bag', 'fixture_leaf', ['fixture_soft', 'fixture_portable'], ['stitch carry']),
     recipe('fixture_coat', 'fixture_root', ['fixture_soft']),

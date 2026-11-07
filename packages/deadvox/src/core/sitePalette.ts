@@ -1,7 +1,8 @@
 // Resolves the site-generation content's block and template names to registry ids. Content
 // validation (`checkSiteGeneration` in `content.ts`) guarantees every name exists.
+
+import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { TerrainBlocks, TerrainShape } from './worldgen.ts';
 
 export interface SitePalette {
@@ -12,7 +13,7 @@ export interface SitePalette {
 }
 
 export const siteGenerationOf = (registry: Pick<Registry, 'siteGeneration'>) => {
-  const entry = registry.siteGeneration.get(CORE_CONTENT_IDS.authoredSite);
+  const entry = claimed(registry.siteGeneration, 'authoredSite');
   if (!entry) {
     throw new Error('Missing site generation content');
   }

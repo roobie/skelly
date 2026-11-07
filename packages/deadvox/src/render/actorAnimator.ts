@@ -1068,7 +1068,8 @@ export class ActorAnimator {
   /** Keep the cutting edge's rest orientation while preserving the target forward axis. */
   private lockCutBladeRoll(side: HandSide, pose: MeleePoseFrame | undefined): void {
     const item = this.inventory.hands[side];
-    if (!item || defOf(this.inventory.registry, item.type).weapon?.melee?.type !== 'cut') {
+    const kind = item && defOf(this.inventory.registry, item.type).weapon?.melee?.type;
+    if (!kind || this.inventory.registry.meleeClasses.get(kind)?.pose !== 'cut') {
       return;
     }
     const rest = readyMeleePose(true, this.figure.holds, this.leadingSide())[side];

@@ -1,16 +1,16 @@
-// Validate content JSON from the command line (for base content and mods):
-//   npm run validate                      the base pack and its asset manifest
-//   npm run validate -- mods/foo/*.json   specific files, applied in order after the base pack;
-//                                         a file named manifest.json is checked as an asset manifest
-// A content file's pack is its folder, so a model's file is found next to it. A
-// manifest's pack is the folder above its assets directory, and every file in there must
-// come from a listed source.
-
 import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { assetFileIssues, MANIFEST_PATH, modelFileIssues, soundFileIssues, validateManifest } from '../core/assets.ts';
+import { readBundledPacks } from '../../tools/readBundledPacks.ts';
+import {
+  assetFileIssues,
+  cursorFileIssues,
+  MANIFEST_PATH,
+  modelFileIssues,
+  soundFileIssues,
+  validateManifest,
+} from '../core/assets.ts';
 import { bundledModCatalogueIssues } from '../core/bundledModCatalogue.ts';
 import {
   buildRegistry,
@@ -20,11 +20,11 @@ import {
   requiredContentIssues,
 } from '../core/content.ts';
 import { modelPresentationAssetIssues } from '../core/itemPresentation.ts';
-import { checkReachability } from '../core/reachability.ts';
+import { admitPacks, packStartIssues } from '../core/packAdmission.ts';
+import { checkStartReachability } from '../core/reachability.ts';
 import { CONTENT_SECTION_KEYS, CONTENT_SECTIONS } from '../core/schema.ts';
 import { controlIssues } from './controlIssues.ts';
 
-const BASE = 'src/content/base';
 const CATALOGUE = 'src/config/bundled-mods.json';
 
 const presentationAssetIssues = (registry: Registry, root: string): ContentIssue[] =>
@@ -49,19 +49,55 @@ const presentationAssetIssues = (registry: Registry, root: string): ContentIssue
     }));
   });
 
+const playableStartIssues = (registry: Registry, write: (line: string) => void): ContentIssue[] =>
+  [...registry.starts.values()].flatMap((start) => {
+    const reachable = checkStartReachability(registry, start);
+    write(
+      `Start "${start.id}": component closure ${reachable.components.size} item types (${reachable.found.size} found)`,
+    );
+    write(`Content count: ${reachable.count} reachable / ${reachable.defined} defined eligible types`);
+    write(`Defined but unreachable: ${reachable.unreachable.join(', ') || 'none'}`);
+    return reachable.issues.map((issue) => {
+      const origin = registry.contentOrigins.get(`recipes:${issue.recipe}`)!;
+      return {
+        source: origin.source,
+        path: origin.path + issue.path,
+        message: `Start "${start.id}": ${issue.message}`,
+      };
+    });
+  });
+
 /** Runs the CLI rules and returns the exit code, so semantic tests avoid process startup. */
 export const validate = (
   args: readonly string[],
   write: (line: string) => void = console.log,
   root = process.cwd(),
 ): number => {
-  const base = readdirSync(resolve(root, BASE))
-    .filter((f) => f.endsWith('.json'))
-    .sort()
-    .map((f) => join(BASE, f));
+  const fragments = [...args];
+  const stackIndex = fragments.indexOf('--stack');
+  const stack = stackIndex < 0 ? 'skelly.deadvox' : fragments.splice(stackIndex, 2)[1];
+  if (!stack || stack.startsWith('--')) {
+    write('FAIL  --stack requires a pack id');
+    return 1;
+  }
+  let admitted: ReturnType<typeof admitPacks>;
+  try {
+    admitted = admitPacks(
+      readBundledPacks(root, stack).map((pack) => ({ ...pack, source: join('src/game', pack.source) })),
+    );
+  } catch (error) {
+    write(`FAIL  bundled packs: ${error instanceof Error ? error.message : String(error)}`);
+    return 1;
+  }
+  const base = admitted.sources.map(({ source }) => source);
   const isManifest = (f: string) => basename(f) === 'manifest.json';
-  const files = [...base, ...args.filter((f) => !isManifest(f))];
-  const manifests = [join(BASE, MANIFEST_PATH), ...args.filter(isManifest)];
+  const files = [...base, ...fragments.filter((f) => !isManifest(f))];
+  const manifests = [
+    ...admitted.packs.flatMap((pack) =>
+      pack.manifest.files.some(({ path }) => path === MANIFEST_PATH) ? [join(pack.source, MANIFEST_PATH)] : [],
+    ),
+    ...fragments.filter(isManifest),
+  ];
 
   /** Every file under a pack's assets directory, as paths within the pack. */
   const assetFiles = (pack: string): string[] =>
@@ -87,15 +123,8 @@ export const validate = (
     }
   }
   const { registry, issues, origins } = buildRegistry(sources);
-  const reachable = checkReachability(registry);
-  for (const issue of reachable.issues) {
-    const origin = origins.get(`recipes:${issue.recipe}`)!;
-    issues.push({ source: origin.source, path: origin.path + issue.path, message: issue.message });
-  }
-  write(`Component closure: ${reachable.components.size} item types (${reachable.found.size} found)`);
-  write(`Reachable components: ${[...reachable.components].sort().join(', ')}`);
-  write(`Content count: ${reachable.count} reachable / ${reachable.defined} defined eligible types`);
-  write(`Defined but unreachable: ${reachable.unreachable.join(', ') || 'none'}`);
+  issues.unshift(...admitted.issues, ...packStartIssues(admitted.packs, registry));
+  issues.push(...playableStartIssues(registry, write));
   issues.push(...requiredContentIssues(registry), ...controlIssues(registry, origins, new Set(base)));
   const catalogue = read(CATALOGUE);
   if (catalogue !== undefined) {
@@ -114,6 +143,9 @@ export const validate = (
       );
     }
   }
+  issues.push(
+    ...cursorFileIssues(registry, (contentFile, file) => existsSync(resolve(root, dirname(contentFile), file))),
+  );
   issues.push(
     ...modelFileIssues(registry, (contentFile, file) => existsSync(resolve(root, dirname(contentFile), file))),
   );

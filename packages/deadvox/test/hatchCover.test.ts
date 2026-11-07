@@ -1,18 +1,18 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { BlockEntity } from '../src/core/blockEntities.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { type FurnitureMover, movableRefusal, placement } from '../src/core/furnitureMove.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
-import { GauntletSite } from '../src/core/gauntlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { cellsOf, footprint, pieceSize } from '../src/core/templates.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 import {
   capture,
   contentLookup,
@@ -23,7 +23,7 @@ import {
 } from './snapshotTestSupport.ts';
 import { sweepGroup } from './sweeps.ts';
 
-const messages = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages;
+const messages = registry.ui.get(fixtureIds.ui)!.furnitureMoveMessages;
 const { blockSize } = makeScale(0.5);
 const coverDef = registry.furniture.get('rug')!;
 const hatchDef = [...registry.furniture.values()].find((def) => def.door?.hatch)!;
@@ -57,10 +57,10 @@ const carry = (inventory: Inventory, type: string): BlockEntity => {
   return piece;
 };
 
-type Spec = ReturnType<GauntletSite['furnitureIn']>[number]['spec'];
+type Spec = ReturnType<ScenarioCitySite['furnitureIn']>[number]['spec'];
 
 /** Every piece the generator furnishes inside the placements' footprints, once each. */
-const specsOf = (city: GauntletSite, placements: GauntletSite['plan']['placements']): Spec[] => {
+const specsOf = (city: ScenarioCitySite, placements: ScenarioCitySite['plan']['placements']): Spec[] => {
   const specs = new Map<string, Spec>();
   for (const area of placements) {
     const [x0, , z0] = area.origin;
@@ -225,7 +225,13 @@ describe('a cover over a hatch', () => {
 sweepGroup('the secret house', () => {
   it('has one cover lying over every cell of its hatch, which can be lifted', () => {
     const scenario = [...registry.scenarios.values()].find((candidate) => candidate.composition)!;
-    const city = new GauntletSite({ seed: 73, registry, scale: makeScale(0.5), scenario });
+    const city = new ScenarioCitySite({
+      seed: 73,
+      registry,
+      scale: makeScale(0.5),
+      scenario,
+      start: defaultStartOf(registry, scenario),
+    });
     const [house] = city.plan.placements.filter(({ template }) => template.id === 'gauntlet_city_cellar_secret');
     const all = specsOf(city, [house!]);
     const hatches = all.filter((spec) => registry.furniture.get(spec.type)?.door?.hatch);
@@ -295,8 +301,6 @@ describe('the content check for covers', () => {
   });
 });
 
-const BASE = 'src/content/base';
-
 interface Slotted {
   id: string;
   choices?: { ref: { id: string } }[];
@@ -320,15 +324,21 @@ const onlyTarpYards = (data: { mapAssemblies?: { slots: Slotted[] }[] }) => ({
 sweepGroup('tarps', () => {
   it('never lie over a hatch and keep clear of doors and ladders', () => {
     const built = buildRegistry(
-      readdirSync(BASE)
-        .filter((file) => file.endsWith('.json'))
-        .sort()
-        .map((file) => ({ source: file, data: onlyTarpYards(JSON.parse(readFileSync(join(BASE, file), 'utf8'))) })),
+      baseContentSources().map(({ source, data }) => ({
+        source,
+        data: onlyTarpYards(data as Parameters<typeof onlyTarpYards>[0]),
+      })),
     );
     expect(built.issues).toEqual([]);
     const tarpYards = built.registry;
     const scenario = [...tarpYards.scenarios.values()].find((candidate) => candidate.composition)!;
-    const city = new GauntletSite({ seed: 73, registry: tarpYards, scale: makeScale(0.5), scenario });
+    const city = new ScenarioCitySite({
+      seed: 73,
+      registry: tarpYards,
+      scale: makeScale(0.5),
+      scenario,
+      start: defaultStartOf(tarpYards, scenario),
+    });
     const all = specsOf(city, city.plan.placements);
     const tarps = all.filter((spec) => spec.type === 'tarp');
     expect(tarps.length).toBeGreaterThan(0);

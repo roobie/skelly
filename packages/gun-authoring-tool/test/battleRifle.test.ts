@@ -1,7 +1,7 @@
-import { generate } from '@skelly/engine/assembly/generate.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { applyDir } from '@skelly/engine/foundation/math.ts';
-import { validateExtrudedPolygon } from '@skelly/engine/shapes/geometry.ts';
+import { generate } from '@skelly/construct/assembly/generate.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { applyDir } from '@skelly/construct/foundation/math.ts';
+import { validateExtrudedPolygon } from '@skelly/construct/shapes/geometry.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES, G3_MAGAZINE_WELL_TILT } from '../src/gun/parts.ts';

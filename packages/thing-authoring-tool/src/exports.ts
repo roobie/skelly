@@ -3,7 +3,6 @@ import { exportGlb } from '@skelly/thing-export/glb.ts';
 import { assemblyProperties, modelParts } from '@skelly/thing-export/physical.ts';
 import { loadRecipe, type RecipeRow, recipeAsset, recipeOptions, recipeVoxel } from '@skelly/thing-export/recipe.ts';
 import { literal, optional, parse, picklist, strictObject } from 'valibot';
-import recipe from '../exports/deadvox.json' with { type: 'json' };
 import { buildItem, catalogue, palette, type ToolItem } from './catalogue.ts';
 import { authoredSkin } from './skin.ts';
 
@@ -71,4 +70,4 @@ const exporters = {
     return () => exportItem(item, recipeAsset(row), recipeVoxel(row), { collision: options.collision === true });
   },
 };
-export const loadThingRecipe = (value: unknown = recipe) => loadRecipe(value, exporters);
+export const loadThingRecipe = (value: unknown) => loadRecipe(value, exporters);

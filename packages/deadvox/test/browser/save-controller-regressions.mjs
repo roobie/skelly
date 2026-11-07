@@ -11,89 +11,40 @@ import { resolve as resolvePath } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { launchChromium } from './chromium.mjs';
-import { gauntletFlow } from './gauntlet-flow.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
-import { auditModelLoads, instrumentModelLoads, modelLoadAuditPlugin } from './model-load-audit.mjs';
+import { auditModelLoads } from './model-load-audit.mjs';
+import { saveControllerServer } from './save-controller-fixture.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
 const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
-const { createServer } = await import('vite');
 const { decodeSave } = await import(pathToFileURL(`${root}/src/core/saveFormat.ts`));
-const observation = {
-  name: 'save-controller-game-ready',
-  enforce: 'pre',
-  transform(code, id) {
-    if (id.endsWith('/src/render/models.ts')) {
-      return instrumentModelLoads(code);
-    }
-    if (id.endsWith('/src/game/worldSetup.ts')) {
-      // The scenario as it enters kind dispatch, so the fixture holds whichever site the kind builds.
-      const marker = 'const scenario = registry.scenarios.get(config.site);';
-      assert(code.includes(marker), 'scenario population fixture admission point exists');
-      return code.replace(
-        marker,
-        "const scenario = ((found) => found && new URLSearchParams(location.search).get('route-fixture') === '1' ? { ...found, population: { ...found.population, settlementPressure: false, authoredMarkers: false } } : found)(registry.scenarios.get(config.site));",
-      );
-    }
-    if (id.endsWith('/src/ui/saveController.ts')) {
-      return code.replace(
-        '    this.environmentProblem = saveEnvironmentProblem();',
-        '    globalThis.saveControllerConstructed = true;\n    this.environmentProblem = saveEnvironmentProblem();',
-      );
-    }
-    if (!id.endsWith('/src/game/play.ts')) {
-      return;
-    }
-    const marker = '  startRealFrames(frame);';
-    assert(code.includes(marker), 'game-ready observation point exists');
-    return code.replace(
-      marker,
-      '  Object.assign(globalThis, { saveControllerPlayStarted: true, worldLoadWitness: { engine, session, worldLoading, frame }, tutorialSession: options.tutorial ? session : undefined, gauntletWitness: { engine, session, input, eye, lookedAt, manual: false, rollReplay: () => { if (inputRecorder?.full) rollInputRecorderWindow(); } } });\n  startRealFrames((now) => globalThis.gauntletWitness.manual ? true : frame(now));',
-    );
-  },
-};
-const server = await createServer({
-  root,
-  configFile: `${root}/vite.config.ts`,
-  logLevel: 'error',
-  server: { host: '127.0.0.1', port: 0 },
-  plugins: [modelLoadAuditPlugin, observation],
-});
-await server.listen();
+const { metricsStorageKey } = await import(pathToFileURL(`${root}/src/presentation/playtestTools.ts`));
+const { server, address } = await saveControllerServer();
 const browser = await launchChromium('save-controller-regressions', { headless: true });
-const address = server.httpServer.address();
-assert(address && typeof address !== 'string');
-const url = browserStageUrl(
-  'save-controller-regressions',
-  `http://127.0.0.1:${address.port}/?seed=73&radius=32&site=testHouse&actors=boxes&post=0&sunshadow=0&torchshadow=0&save-test=1&save-backend=indexeddb`,
-);
+const url = browserStageUrl('save-controller-regressions', address);
 const QUOTA_ERROR = /quota regression/i;
 const BEST_EFFORT = /best.effort/i;
 const PERSISTENCE_GRANTED = /Persistent storage granted/;
-const CURRENT_EXPORT = /^deadvox-current-.*\.bin$/;
+const CURRENT_EXPORT = /^skelly-current-.*\.bin$/;
 const REPLAY_REJECTED = /^Replay rejected:/;
 const LOADING_WORKER_FAILURE = /Controlled loading worker failure/;
 const REFUSED_SAVE_FIXTURE = /refused save fixture/i;
 
 try {
-  await test('gauntlet discovery, resources and ordinary traversal preserve running, won and dead save boundaries', async () => {
-    await gauntletFlow(browser, url);
-  });
-
   await test('practice launch, lifecycle and death leave the normal save untouched and exit returns to start', async () => {
     const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
     const modelAudit = await auditModelLoads(context);
     try {
       const page = await context.newPage();
       await page.goto(url);
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
       await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
       await page.click('#go');
       await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
-      await page.waitForFunction(() => !(deadvoxSaveTest.controller.writing || deadvoxSaveTest.controller.queued));
+      await page.waitForFunction(() => !(skellySaveTest.controller.writing || skellySaveTest.controller.queued));
       const saved = await page.evaluate(async () => {
-        const { controller, storage, namespace } = deadvoxSaveTest;
+        const { controller, storage, namespace } = skellySaveTest;
         controller.halt();
         await storage.save(namespace, (generation) =>
           storage.encodeSnapshot(controller.snapshot(), generation, {
@@ -106,17 +57,27 @@ try {
         return { namespace, generation: record.generation, payload: Array.from(record.payload) };
       });
       await page.reload();
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
       await page.click('#tutorial-start');
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
+      assert.equal(
+        await page.evaluate(() => globalThis.gauntletWitness.engine.site.practiceExitMark),
+        'fixture_guide_exit',
+        'the live guide uses the independently named content mark',
+      );
       assert.equal(
         await page.evaluate(() => Boolean(globalThis.saveControllerConstructed)),
         false,
         'practice never creates a persistence owner',
       );
       await page.locator('#go').waitFor({ state: 'visible' });
+      assert.equal(
+        await page.locator('[data-tutorial-stage]').getAttribute('data-tutorial-stage'),
+        'fixture_arrival',
+        'the live guide renders its authored stage identity rather than a built-in stage',
+      );
       const binding = await page.evaluate(async () => {
-        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        const { inputBindings } = await import('/src/product/input.ts');
         const id = 'movement.forward';
         const original = inputBindings.chords(id);
         const cap = document.querySelector(`[data-tutorial-action="${id}"] kbd`);
@@ -133,24 +94,25 @@ try {
         return { id, original, previous };
       });
       await page.waitForFunction(async ({ id, previous }) => {
-        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        const { inputBindings } = await import('/src/product/input.ts');
         const cap = document.querySelector(`[data-tutorial-action="${id}"] kbd`);
         return cap?.textContent === inputBindings.label(id) && cap.textContent !== previous;
       }, binding);
       await page.getByRole('button', { name: 'Practice controls', exact: true }).press('Enter');
       assert.equal(
         await page.evaluate(async () => {
-          const { controlsCardRows, filterControlsCardRows } = await import('/src/game/controls.ts');
-          const { stageTopics } = await import('/src/ui/tutorial.ts');
+          const { controlsCardRows, filterControlsCardRows } = await import('/src/presentation/controls.ts');
+          const { inputBindings } = await import('/src/product/input.ts');
+          const { topics } = gauntletWitness.engine.site.guidance.steps[0];
           const search = document.querySelector('#controls-search');
-          const expected = filterControlsCardRows(controlsCardRows(), stageTopics.move).map(({ id }) => id);
+          const expected = filterControlsCardRows(controlsCardRows(inputBindings), topics).map(({ id }) => id);
           const actual = [...document.querySelectorAll('#controls [data-input-action]')].map(
             (row) => row.dataset.inputAction,
           );
           return (
             search === document.activeElement &&
             expected.length > 0 &&
-            expected.length < controlsCardRows().length &&
+            expected.length < controlsCardRows(inputBindings).length &&
             JSON.stringify(actual) === JSON.stringify(expected) &&
             expected.includes('movement.forward')
           );
@@ -159,19 +121,19 @@ try {
         'practice opens the shared controls card on the movement topic',
       );
       await page.evaluate(async ({ id, original }) => {
-        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        const { inputBindings } = await import('/src/product/input.ts');
         if (inputBindings.rebind(id, original) !== undefined) {
           throw new Error('Binding restoration failed');
         }
       }, binding);
       const canHints = await page.evaluate(async () => {
-        const { Tutorial } = await import('/src/game/tutorial.ts');
-        const { mountTutorial } = await import('/src/ui/tutorial.ts');
+        const { GuidedSteps: Tutorial } = await import('/src/presentation/guidedSteps.ts');
+        const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
         const { Inventory } = await import('/src/core/inventory.ts');
         const { HandlingQueue } = await import('/src/core/handling.ts');
         const { Unpacking } = await import('/src/game/unpacking.ts');
         const { dominantSide } = await import('/src/core/character.ts');
-        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        const { inputBindings } = await import('/src/product/input.ts');
         // Own fixture inventory: no injected progress or inventory changes in the playing session.
         const inventory = new Inventory(gauntletWitness.engine.registry);
         const bag = inventory.create('hiking_backpack');
@@ -187,8 +149,8 @@ try {
         ) {
           throw new Error('Can fixture must fit');
         }
-        const lightKit = gauntletWitness.engine.site.lightPractice;
-        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
+        const definition = gauntletWitness.engine.site.guidance;
+        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, definition);
         lootTutorial.observe({
           position: [8, 0, 0],
           yaw: 1,
@@ -200,7 +162,7 @@ try {
           lightOn: false,
           paused: false,
         });
-        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
+        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, definition);
         tutorial.observe({
           position: [8, 0, 0],
           yaw: 1,
@@ -218,12 +180,11 @@ try {
         });
         gauntletWitness.manual = true;
         try {
-          const tutorialText = gauntletWitness.engine.registry.ui.get('core').screenText.tutorial;
           const draw = mountTutorial(
             tutorial,
-            tutorialText,
             () => undefined,
             () => undefined,
+            inputBindings,
           );
           const actions = () =>
             [...document.querySelectorAll('#tutorial-objective [data-tutorial-action]')].map(
@@ -231,9 +192,9 @@ try {
             );
           mountTutorial(
             lootTutorial,
-            tutorialText,
             () => undefined,
             () => undefined,
+            inputBindings,
           )({
             inventory,
             inventoryOpen: true,
@@ -264,7 +225,9 @@ try {
             sealed,
             opened,
             eating: actions(),
-            stage: tutorial.stage,
+            awaitingConsumption: tutorial.step.complete.all.some((id) =>
+              tutorial.definition.rules.some((rule) => rule.id === id && rule.when.kind === 'consumed'),
+            ),
           };
         } finally {
           gauntletWitness.manual = false;
@@ -278,23 +241,23 @@ try {
       assert(canHints.sealed.includes('hand.use-off'), 'the held opener points to its hand activation');
       assert(canHints.opened.includes('inventory.activate'), 'open inventory offers held-item activation');
       assert(canHints.eating.includes('hand.use-dominant'), 'held food points back to hand activation');
-      assert.equal(canHints.stage, 'eat', 'opening and wielding alone are not consumption');
+      assert.equal(canHints.awaitingConsumption, true, 'opening and wielding alone are not consumption');
       const weaponsHints = await page.evaluate(async () => {
-        const { Tutorial } = await import('/src/game/tutorial.ts');
-        const { mountTutorial } = await import('/src/ui/tutorial.ts');
+        const { GuidedSteps: Tutorial } = await import('/src/presentation/guidedSteps.ts');
+        const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
         const { Inventory } = await import('/src/core/inventory.ts');
         const { HandlingQueue } = await import('/src/core/handling.ts');
         const { FirearmMechanics } = await import('/src/game/firearmHandling.ts');
         const { InventoryScreen } = await import('/src/ui/inventoryScreen.ts');
         const { bindReach } = await import('/src/core/reach.ts');
-        const { CORE_CONTENT_IDS } = await import('/src/core/contentIds.ts');
+        const { fixtureIds } = await import('/test/fixtures/capabilityIds.ts');
         const { Unpacking } = await import('/src/game/unpacking.ts');
-        const { inputBindings } = await import('/src/game/inputBindings.ts');
+        const { inputBindings } = await import('/src/product/input.ts');
         const inventory = new Inventory(gauntletWitness.engine.registry);
         const queue = new HandlingQueue(inventory);
         let finished = false;
-        const lightKit = inventory.registry.layouts.get('tutorial').practice.light;
-        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 7, x1: 9, z0: 0, z1: 2 }, lightKit);
+        const definition = inventory.registry.layouts.get('tutorial').guidance;
+        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 7, x1: 9, z0: 0, z1: 2 }, definition);
         tutorial.opened('canned_beans');
         tutorial.consumed('beans');
         tutorial.consumed('water_bottle');
@@ -319,19 +282,26 @@ try {
         try {
           const draw = mountTutorial(
             tutorial,
-            inventory.registry.ui.get('core').screenText.tutorial,
             () => {
               finished = true;
             },
             () => undefined,
+            inputBindings,
           );
           draw(presentation);
+          const exitChoice = definition.choices.find(
+            (choice) => choice.action === 'exit' && tutorial.canChoose(choice.id),
+          );
           const offered =
-            tutorial.stage === 'finish' &&
-            !finished &&
-            Boolean(document.querySelector('[data-tutorial-choice="finish"]'));
-          document.querySelector('[data-tutorial-choice="weapons"]').click();
-          const branched = tutorial.stage === 'revolver' && !finished;
+            !finished && Boolean(exitChoice && document.querySelector(`[data-tutorial-choice="${exitChoice.id}"]`));
+          const handlingChoice = definition.choices.find(
+            (choice) =>
+              choice.action === 'choose' &&
+              tutorial.canChoose(choice.id) &&
+              definition.steps.some((step) => step.enabled.none.includes(choice.id)),
+          );
+          document.querySelector(`[data-tutorial-choice="${handlingChoice.id}"]`).click();
+          const branched = tutorial.step.complete.handling !== undefined && !finished;
           const bag = inventory.create('hiking_backpack');
           const box = inventory.create('cartridge_box_357_h_magnum');
           if (!(inventory.add(bag, { kind: 'worn' }) && inventory.add(box, { kind: 'hand', side: 'right' }))) {
@@ -360,6 +330,7 @@ try {
             const inventoryRoot = document.createElement('div');
             document.body.append(inventoryRoot);
             const screen = new InventoryScreen(inventoryRoot, inventory, queue, {
+              bindings: inputBindings,
               feet: () => [0, 1, 0],
               reach: bindReach({
                 inventory,
@@ -382,7 +353,7 @@ try {
               character: () => gauntletWitness.session.character,
               body: () => gauntletWitness.session.sim.body,
               needs: () => '',
-              slotLabels: inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi).wearSlotLabels,
+              slotLabels: inventory.registry.ui.get(fixtureIds.ui).wearSlotLabels,
             });
             let presented = false;
             try {
@@ -432,12 +403,13 @@ try {
       await page.click('#go');
       await page.waitForFunction(() => globalThis.tutorialSession.sim.paused === false);
       await page.evaluate(async () => {
-        const { Tutorial } = await import('/src/game/tutorial.ts');
-        const { mountTutorial } = await import('/src/ui/tutorial.ts');
+        const { GuidedSteps: Tutorial } = await import('/src/presentation/guidedSteps.ts');
+        const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
         const { engine, session } = gauntletWitness;
         // A separate observer starts at this lesson; the playing session still owns movement and stance.
-        const exit = engine.site.playtestMarks.beats.find((beat) => beat.id === 'tutorial_exit').area;
-        const tutorial = new Tutorial([0, 0, 0], 0, exit, engine.site.lightPractice);
+        const { stageMarkArea } = await import('/src/core/stageMarks.ts');
+        const exit = stageMarkArea(engine.site.playtestMarks.beats, engine.site.practiceExitMark);
+        const tutorial = new Tutorial([0, 0, 0], 0, exit, engine.site.guidance);
         tutorial.opened('canned_beans');
         tutorial.consumed('beans');
         tutorial.consumed('water_bottle');
@@ -454,11 +426,12 @@ try {
         };
         tutorial.observe(prerequisites);
         tutorial.observe({ ...prerequisites, lightOn: false });
+        const { inputBindings } = await import('/src/product/input.ts');
         const draw = mountTutorial(
           tutorial,
-          engine.registry.ui.get('core').screenText.tutorial,
           () => undefined,
           () => undefined,
+          inputBindings,
         );
         const observe = () => {
           tutorial.observe({
@@ -471,8 +444,15 @@ try {
           return tutorial.stage;
         };
         gauntletWitness.manual = true;
-        globalThis.tutorialExitFixture = { tutorial, exit, observe };
-        if (observe() !== 'escape') {
+        const { definition } = tutorial;
+        const stageFor = (kind) =>
+          definition.steps.find((step) =>
+            step.complete.all.some((id) => definition.rules.some((rule) => rule.id === id && rule.when.kind === kind)),
+          ).id;
+        const exitStage = stageFor('area');
+        const pauseStage = stageFor('pause');
+        globalThis.tutorialExitFixture = { tutorial, exit, observe, exitStage, pauseStage };
+        if (observe() !== exitStage) {
           throw new Error('Exit fixture must begin with an unfinished escape lesson');
         }
       });
@@ -495,7 +475,7 @@ try {
                 reached = true;
                 break;
               }
-              input.yaw = Math.atan2(-dx, -dz);
+              input.controls.yaw = Math.atan2(-dx, -dz);
               engine.streamer.update(session.body.pos[0], session.body.pos[2]);
               session.frame(1 / 60);
               observe();
@@ -509,8 +489,8 @@ try {
         await releaseForward();
       }
       assert.equal(
-        await page.evaluate(() => tutorialExitFixture.observe()),
-        'escape',
+        await page.evaluate(() => tutorialExitFixture.observe() === tutorialExitFixture.exitStage),
+        true,
         'reaching the named destination without crouching is not enough',
       );
       await pressAction(page, 'player.crouch-toggle');
@@ -519,9 +499,9 @@ try {
           gauntletWitness.session.frame(1 / 60);
           const stage = tutorialExitFixture.observe();
           gauntletWitness.manual = false;
-          return stage;
+          return stage === tutorialExitFixture.pauseStage;
         }),
-        'pause',
+        true,
         'ordinary crouch input at the named destination completes the exit lesson',
       );
       await page.evaluate(() => {
@@ -531,7 +511,7 @@ try {
       });
       await page.waitForFunction(() => !document.querySelector('#death').hidden);
       const after = await page.evaluate(async (namespace) => {
-        const { SaveStorage } = await import('/src/game/saveStorage.ts');
+        const { SaveStorage } = await import('/src/presentation/saveStorage.ts');
         const storage = new SaveStorage({ backend: 'indexeddb' });
         try {
           const record = await storage.load(namespace);
@@ -542,7 +522,7 @@ try {
       }, saved.namespace);
       assert.deepEqual(after, saved, 'no checkpoint or death marker replaces the normal generation');
       assert.equal(
-        await page.evaluate((namespace) => sessionStorage.getItem(`deadvox.dead-world:${namespace}`), saved.namespace),
+        await page.evaluate((namespace) => sessionStorage.getItem(`skelly.dead-world:${namespace}`), saved.namespace),
         null,
       );
       // Native pointer activation of the practice exits is quarantined in #705; its root cause is unresolved.
@@ -573,7 +553,7 @@ try {
     const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
     try {
       await context.addInitScript(() => {
-        sessionStorage.setItem('deadvox.pending-replay', btoa('not a replay'));
+        sessionStorage.setItem('skelly.pending-replay', btoa('not a replay'));
       });
       const page = await context.newPage();
       await page.goto(url);
@@ -604,7 +584,7 @@ try {
       });
       const page = await context.newPage();
       await page.goto(url);
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
+      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
       const button = page.locator('#save-persist');
       assert.equal(await button.isVisible(), true, 'request remains reachable when state is unknown and API exists');
       assert.match(await page.locator('#save-status').textContent(), BEST_EFFORT);
@@ -632,9 +612,9 @@ try {
         false,
         'the hidden persistence action cannot retain keyboard focus',
       );
-      assert.equal(await page.evaluate(() => globalThis.deadvoxSaveTest.controller.storageStatus.persistent), true);
+      assert.equal(await page.evaluate(() => globalThis.skellySaveTest.controller.storageStatus.persistent), true);
       assert.equal(
-        await page.evaluate(async () => (await globalThis.deadvoxSaveTest.storage.status()).persistent),
+        await page.evaluate(async () => (await globalThis.skellySaveTest.storage.status()).persistent),
         true,
       );
     } finally {
@@ -683,8 +663,8 @@ try {
         const status = document.querySelector('#startup-screen #save-status');
         return Boolean(
           status?.textContent.trim() &&
-            globalThis.deadvoxSaveTest?.controller &&
-            !globalThis.deadvoxSaveTest.controller.ready,
+            globalThis.skellySaveTest?.controller &&
+            !globalThis.skellySaveTest.controller.ready,
         );
       });
       assert.equal(await page.locator('#startup-screen').isVisible(), true, 'startup remains visible during discovery');
@@ -721,7 +701,7 @@ try {
       assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 0);
       await page.evaluate(() => globalThis.releasePersistenceIdentity());
       await page.waitForFunction(
-        () => globalThis.deadvoxSaveTest?.controller.ready && document.querySelector('#startup-screen').hidden,
+        () => globalThis.skellySaveTest?.controller.ready && document.querySelector('#startup-screen').hidden,
         undefined,
         { timeout: 30_000 },
       );
@@ -735,9 +715,9 @@ try {
       assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 1);
       assert.match(await page.locator('#save-status').textContent(), PERSISTENCE_GRANTED);
       assert.equal(await button.isVisible(), false, 'explicit grant removes the request action');
-      assert.equal(await page.evaluate(() => globalThis.deadvoxSaveTest.controller.storageStatus.persistent), true);
+      assert.equal(await page.evaluate(() => globalThis.skellySaveTest.controller.storageStatus.persistent), true);
       assert.equal(
-        await page.evaluate(async () => (await globalThis.deadvoxSaveTest.storage.status()).persistent),
+        await page.evaluate(async () => (await globalThis.skellySaveTest.storage.status()).persistent),
         true,
       );
     } finally {
@@ -754,7 +734,7 @@ try {
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     const radiusLinks = await page.locator('[data-view-distance]').evaluateAll((links) =>
       links.map((link) => {
@@ -808,16 +788,16 @@ try {
     });
     await page.setViewportSize({ width: 800, height: 600 });
     const before = await page.evaluate(() => ({
-      hasSnapshot: typeof deadvoxSaveTest.controller.snapshot === 'function',
-      entered: deadvoxSaveTest.controller.isEntered,
+      hasSnapshot: typeof skellySaveTest.controller.snapshot === 'function',
+      entered: skellySaveTest.controller.isEntered,
     }));
     assert.deepEqual(before, { hasSnapshot: false, entered: false });
     await pressAction(page, 'ui.inventory-toggle');
     await pressAction(page, 'movement.forward');
     await page.keyboard.press('F10');
     const after = await page.evaluate(() => ({
-      hasSnapshot: typeof deadvoxSaveTest.controller.snapshot === 'function',
-      entered: deadvoxSaveTest.controller.isEntered,
+      hasSnapshot: typeof skellySaveTest.controller.snapshot === 'function',
+      entered: skellySaveTest.controller.isEntered,
       overlayHidden: document.querySelector('#overlay').hidden,
     }));
     assert.equal(after.entered, false);
@@ -890,7 +870,7 @@ try {
     });
     assert.equal(canAdvance, true, 'the same frame driver advances simulation after the mask clears');
     const schedule = await page.evaluate(async () => {
-      const { controller } = deadvoxSaveTest;
+      const { controller } = skellySaveTest;
       // The interval play bound from content; the schedule below is expressed in it.
       const interval = controller.checkpoints?.intervalSimSeconds;
       if (!(interval > 0)) {
@@ -940,7 +920,7 @@ try {
     assert.ok(schedule.measuredDurations.every((duration) => Number.isFinite(duration) && duration >= 0));
 
     await page.evaluate(() => {
-      const { controller } = deadvoxSaveTest;
+      const { controller } = skellySaveTest;
       controller.storage.save = () => Promise.reject(new DOMException('quota regression', 'QuotaExceededError'));
       controller.beforeSleep();
     });
@@ -980,7 +960,7 @@ try {
       metrics: await handBack('#playtest-metrics-export'),
       replay: await handBack('#playtest-replay-export'),
     };
-    const pageModules = { tools: '/src/game/playtestTools.ts', replays: '/src/game/inputReplay.ts' };
+    const pageModules = { tools: '/src/presentation/playtestTools.ts', replays: '/src/game/inputReplay.ts' };
     const kinds = await page.evaluate(
       async ({ metrics, replay, modules }) => {
         const bytes = (base64) => Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
@@ -989,7 +969,12 @@ try {
         const seed = Number(new URLSearchParams(location.search).get('seed'));
         const metricsText = new TextDecoder().decode(bytes(metrics));
         return {
-          metrics: loadMetrics(seed, { getItem: () => metricsText }) !== undefined,
+          metrics:
+            loadMetrics(
+              seed,
+              { getItem: () => metricsText },
+              globalThis.worldLoadWitness.engine.attemptPolicy.limits,
+            ) !== undefined,
           replay: await decodeInputReplay(bytes(replay), { contentLookup: () => true }).then(
             () => true,
             (error) => String(error),
@@ -1000,18 +985,63 @@ try {
     );
     assert.deepEqual(kinds, { metrics: true, replay: true }, 'each export reads back as its own kind of file');
 
+    const rowless = await context.newPage();
+    rowless.on('pageerror', (error) => pageErrors.push(error.message));
+    const rowlessUrl = new URL(url);
+    rowlessUrl.searchParams.set('site', 'weatheringTest');
+    rowlessUrl.searchParams.set('debug', '1');
+    await rowless.addInitScript(
+      (key) => {
+        globalThis.metricsStorageCalls = [];
+        for (const method of ['getItem', 'setItem']) {
+          const original = Storage.prototype[method];
+          Storage.prototype[method] = function (...args) {
+            if (args[0] === key) {
+              globalThis.metricsStorageCalls.push(method);
+              throw new Error('rowless run accessed attempt metrics storage');
+            }
+            return original.apply(this, args);
+          };
+        }
+      },
+      metricsStorageKey(Number(rowlessUrl.searchParams.get('seed'))),
+    );
+    await rowless.goto(rowlessUrl.href);
+    await rowless.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await rowless.click('#go');
+    await rowless.waitForFunction(() => globalThis.worldLoadWitness?.worldLoading.ready);
+    const unrecorded = await rowless.evaluate(() => {
+      const witness = globalThis.gauntletWitness;
+      witness.manual = true;
+      globalThis.worldLoadWitness.frame(performance.now() + 10_000);
+      const measurement = witness.measureSnapshot();
+      return {
+        policy: witness.engine.attemptPolicy,
+        recorderAbsent: witness.recording === undefined,
+        storageCalls: globalThis.metricsStorageCalls,
+        diagnosticWorked: measurement.batchCount > 0 && measurement.netStateUnchanged,
+      };
+    });
+    assert.equal(unrecorded.policy, undefined);
+    assert.equal(unrecorded.recorderAbsent, true, 'a rowless run allocates no attempt recorder');
+    assert.deepEqual(unrecorded.storageCalls, [], 'neither startup nor periodic frames access metrics storage');
+    assert.equal(unrecorded.diagnosticWorked, true, 'snapshot diagnostics remain available without a recorder');
+    assert.equal(await rowless.locator('#playtest-metrics-export').isDisabled(), true);
+    assert.equal(await rowless.locator('#playtest-replay-export').isEnabled(), true);
+    await rowless.close();
+
     await page.evaluate(() => {
-      deadvoxSaveTest.controller.storage.save = async () => ({ generation: 99, slot: 'a', backend: 'indexeddb' });
+      skellySaveTest.controller.storage.save = async () => ({ generation: 99, slot: 'a', backend: 'indexeddb' });
     });
     await page.click('#save-retry');
     await page.waitForFunction(
-      () => !deadvoxSaveTest.controller.failure && deadvoxSaveTest.controller.savedGeneration === 99,
+      () => !skellySaveTest.controller.failure && skellySaveTest.controller.savedGeneration === 99,
     );
     assert.deepEqual(pageErrors, []);
 
     const faultPage = await context.newPage();
     await faultPage.goto(url);
-    await faultPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+    await faultPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
     await faultPage.evaluate(() => {
       globalThis.holdWorldMeshes = true;
     });
@@ -1030,13 +1060,13 @@ try {
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await page.click('#go');
     await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
 
     const race = await page.evaluate(async () => {
-      const { controller, storage } = deadvoxSaveTest;
+      const { controller, storage } = skellySaveTest;
       const realSave = Object.getPrototypeOf(storage).save.bind(storage);
       const sourceSnapshot = controller.snapshot;
       let health = 90;
@@ -1086,7 +1116,7 @@ try {
       time = 2;
       controller.beforeSleep();
       const queuedBeforeRetry = controller.queued.snapshot.character.simulation.body.health;
-      globalThis.deadvoxRetryRace = { releaseSecond };
+      globalThis.skellyRetryRace = { releaseSecond };
       return { queuedBeforeRetry };
     });
 
@@ -1095,22 +1125,22 @@ try {
     await page.waitForFunction(() => !document.pointerLockElement);
     await page.click('#save-retry');
     const retryState = await page.evaluate(() => ({
-      failure: deadvoxSaveTest.controller.failure,
-      queuedHealth: deadvoxSaveTest.controller.queued.snapshot.character.simulation.body.health,
+      failure: skellySaveTest.controller.failure,
+      queuedHealth: skellySaveTest.controller.queued.snapshot.character.simulation.body.health,
     }));
     assert.equal(retryState.failure, '');
     assert.equal(retryState.queuedHealth, 30);
     await page.evaluate(() => {
-      globalThis.deadvoxRetryRace.releaseSecond();
-      globalThis.deadvoxRetryRace = undefined;
+      globalThis.skellyRetryRace.releaseSecond();
+      globalThis.skellyRetryRace = undefined;
     });
     await page.waitForFunction(
-      () => !(deadvoxSaveTest.controller.writing || deadvoxSaveTest.controller.queued),
+      () => !(skellySaveTest.controller.writing || skellySaveTest.controller.queued),
       undefined,
       { timeout: 30_000 },
     );
     const saved = await page.evaluate(async () => {
-      const { controller, storage, namespace } = deadvoxSaveTest;
+      const { controller, storage, namespace } = skellySaveTest;
       const loaded = await storage.load(namespace);
       return {
         payload: Array.from(loaded.payload),
@@ -1136,12 +1166,12 @@ try {
       return target.href;
     };
     const enterAndCheckpoint = async (page) => {
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
+      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
       await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
       await page.click('#go');
       await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
       return page.evaluate(async () => {
-        const { controller, storage } = deadvoxSaveTest;
+        const { controller, storage } = skellySaveTest;
         controller.beforeSleep();
         for (let attempt = 0; (controller.writing || controller.queued) && attempt < 400; attempt += 1) {
           await new Promise((resolve) => setTimeout(resolve, 5));
@@ -1166,7 +1196,7 @@ try {
       const debugPage = await context.newPage();
       debugPage.on('pageerror', (error) => pageErrors.push(error.message));
       await debugPage.goto(withParams({ debug: '1' }));
-      await debugPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+      await debugPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
         timeout: 30_000,
       });
       // With no save, the new character choice and its start button still lead the card, above the controls list.
@@ -1197,10 +1227,10 @@ try {
 
       const refusedPage = await context.newPage();
       await refusedPage.addInitScript((namespace) => {
-        sessionStorage.setItem(`deadvox.restore-refusal:${namespace}`, 'Refused save fixture');
+        sessionStorage.setItem(`skelly.restore-refusal:${namespace}`, 'Refused save fixture');
       }, saved.namespaces[0]);
       await refusedPage.goto(withParams({ debug: '1', save: '1' }));
-      await refusedPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+      await refusedPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
         timeout: 30_000,
       });
       const refusalHint = refusedPage.locator('#save-refusal-hint');
@@ -1230,13 +1260,13 @@ try {
       const reloaded = await context.newPage();
       reloaded.on('pageerror', (error) => pageErrors.push(error.message));
       await reloaded.goto(withParams({ debug: '1' }));
-      await reloaded.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+      await reloaded.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
         timeout: 30_000,
       });
-      assert.equal(await reloaded.evaluate(() => deadvoxSaveTest.controller.restored === undefined), true);
+      assert.equal(await reloaded.evaluate(() => skellySaveTest.controller.restored === undefined), true);
       assert.equal(await reloaded.locator('#continue').isHidden(), true);
       const disabled = await reloaded.evaluate(async () => {
-        const { controller, storage } = deadvoxSaveTest;
+        const { controller, storage } = skellySaveTest;
         const status = document.querySelector('#save-status');
         const before = status.textContent;
         let storageTouched = false;

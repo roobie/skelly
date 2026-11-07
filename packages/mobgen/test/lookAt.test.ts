@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { generate, realize } from '../src/core/generate.ts';
 import { applyPoint, dot, type Mat3, mulMM, mulMV, normalize, type Transform, transpose } from '../src/core/math.ts';
 import { boneTransforms, type Pose } from '../src/core/pose.ts';
-import { VIEWER_TEMPLATES as TEMPLATES } from '../src/mob/amalgamTemplate.ts';
+import { VIEWER_TEMPLATES as TEMPLATES } from '../src/mob/fusedMassTemplate.ts';
 import { LOOK_AT_REST, lookAtPose } from '../src/mob/lookAt.ts';
 import { LOOK_AT_PROFILES } from '../src/mob/lookAtProfiles.ts';
 
-const template = TEMPLATES.find((candidate) => candidate.name === 'shambler')!;
+const template = TEMPLATES.find((candidate) => candidate.name === 'humanoid')!;
 const realized = realize(generate(template, 7));
 const restPose: Pose = { root: [0, 0, 0], rotations: {} };
 const baseTransforms = boneTransforms(realized.body.bones, restPose);

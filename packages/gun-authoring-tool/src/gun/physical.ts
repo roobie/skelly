@@ -1,4 +1,4 @@
-import type { PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
+import type { PartDef, Resolved } from '@skelly/construct/assembly/schema.ts';
 import type { DrawnGeometry } from '@skelly/thing-export/drawn.ts';
 import { partNodeName } from '@skelly/thing-export/glb.ts';
 import { modelParts, type PhysicalInputs } from '@skelly/thing-export/physical.ts';

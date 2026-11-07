@@ -1,5 +1,5 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Assembly, PartInstance } from '@skelly/engine/assembly/schema.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Assembly, PartInstance } from '@skelly/construct/assembly/schema.ts';
 import { drawnGeometry } from '@skelly/thing-export/drawn.ts';
 import type {
   AppearanceContext,

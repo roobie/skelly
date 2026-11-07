@@ -10,8 +10,8 @@ import { reachTuning } from '../src/core/reach.ts';
 import { skillActivityPractice } from '../src/core/skillTraining.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { MagazineHandling } from '../src/game/magazineHandling.ts';
-import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { advance, capture, createRuntime } from './snapshotTestSupport.ts';
 
 const registry = baseRegistry();
@@ -34,8 +34,6 @@ const fixtureRegistry = (): Registry => {
     {
       id: 'fixture_inventory_bag',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture bag',
       category: 'misc',
       weight: 1,
@@ -46,8 +44,6 @@ const fixtureRegistry = (): Registry => {
     {
       id: 'fixture_inventory_item',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture item',
       category: 'misc',
       weight: 1,
@@ -56,8 +52,6 @@ const fixtureRegistry = (): Registry => {
     {
       id: 'fixture_inventory_magazine',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture magazine',
       category: 'misc',
       weight: 1,
@@ -67,14 +61,15 @@ const fixtureRegistry = (): Registry => {
     {
       id: 'fixture_round',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture round',
       category: 'ammo',
       weight: 0.01,
       size: [1, 1],
       ammo: {
         calibre: 'fixture_calibre',
+        damageKind: 'pierce',
+        loadSound: 'fixture_load',
+        stripSound: 'fixture_strip',
         pellets: 1,
         spreadDegrees: 0,
         diameterMm: 5,
@@ -189,7 +184,7 @@ describe('Inventory Management skill', () => {
       if (!runtime.inventory.add(box, { kind: 'hand', side: 'right' })) {
         throw new Error('Could not hold the unpack fixture box');
       }
-      const unpacking = new Unpacking(runtime.inventory, runtime.handling, () => runtime.player.body.pos);
+      const { unpacking } = runtime.session;
       const initial = runtime.session.character.snapshotState();
 
       expect(unpacking.activate(box)).toBeUndefined();
@@ -268,7 +263,7 @@ describe('Inventory Management skill', () => {
   });
 
   it('keeps firearm-owned round handling on the firearms-combat curve', () => {
-    const firearmTuning = registry.skills.get('firearms_combat')?.combat?.firearms;
+    const firearmTuning = skilledFirearmsTuning(registry);
     if (!firearmTuning) {
       throw new Error('Firearms Combat content has no reload tuning');
     }
@@ -285,7 +280,7 @@ describe('Inventory Management skill', () => {
       const queue = new HandlingQueue(inventory);
       const handling = new MagazineHandling(inventory, queue, {
         feet: () => [0, 0, 0],
-        reloadFactor: () => firearmsSkillEffects(character.skills.firearms_combat!, firearmTuning).reloadDuration,
+        reloadFactor: () => firearmsSkillEffects(character.skills.firearms_combat!, firearmTuning).reloadFactor,
       });
       const refusal = handling.strip(magazine.uid, 0);
       if (refusal) {

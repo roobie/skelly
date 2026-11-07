@@ -2,11 +2,13 @@
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
 import type { AcidGlobState } from '../core/acidGlob.ts';
 import type { AcidPuddleState } from '../core/acidPuddle.ts';
+import type { Actor } from '../core/actorState.ts';
+import { BACKGROUND_ACTOR_RATE } from '../core/actorSystem.ts';
 import { adsCameraEye, guardAdsCamera } from '../core/adsView.ts';
 import type { BlockEntities } from '../core/blockEntities.ts';
+import { claimed } from '../core/capabilities.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { graphicsTuningOf } from '../core/graphicsTuning.ts';
@@ -25,14 +27,15 @@ import type { BodyTuningDef, NightVision } from '../core/schema.ts';
 import type { PoweredLight } from '../core/sitePower.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { skyInWeather, type Weather } from '../core/weather.ts';
-import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
-import { cameraRotation, DamageFeedback } from '../game/damageFeedback.ts';
-import type { Engine } from '../game/engine.ts';
-import { PainCue } from '../game/painCue.ts';
+import type { FromMesher } from '../game/mesherProtocol.ts';
 import { playerTuning } from '../game/player.ts';
-import { THIRD_PERSON_CAMERA } from '../game/thirdPersonOrbit.ts';
-import type { FromMesher } from '../worker/protocol.ts';
+import type { PackAssetFiles } from '../presentation/bundledAssets.ts';
+import { cameraRotation, DamageFeedback } from '../presentation/damageFeedback.ts';
+import type { Engine } from '../presentation/engine.ts';
+import { PainCue } from '../presentation/painCue.ts';
+import { THIRD_PERSON_CAMERA } from '../presentation/thirdPersonOrbit.ts';
 import { AcidEffects } from './acidEffects.ts';
+import { ActorMeshes } from './actors.ts';
 import { createAvatarMannequin } from './avatarMannequin.ts';
 import { createAvatarStudy } from './avatarStudy.ts';
 import { BlastFlashes } from './blastFlashes.ts';
@@ -53,20 +56,18 @@ import { ItemThrows } from './itemThrows.ts';
 import { LeverProps } from './leverProps.ts';
 import { acidGlows, LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
-import { MobActorMeshes, type MobActorMeshesOptions, type ZombieRenderer } from './mobActors.ts';
+import { type ActorRenderer, MobActorMeshes, type MobActorMeshesOptions } from './mobActors.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { ModelLibrary } from './models.ts';
 import { createNightVisionFlareUpdate } from './nightVisionFlare.ts';
 import { PileMeshes } from './piles.ts';
 import { PlayerMeshes } from './playerFigure.ts';
 import { ragdollContent } from './ragdoll.ts';
-
 import { PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 import { applySky } from './sky.ts';
 import { StepOffset } from './stepOffset.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
 import { VehicleMeshes } from './vehicles.ts';
-import { ZombieMeshes } from './zombies.ts';
 
 const corpseBudget = (seed: number | undefined, maxCorpses: number, look: MobActorMeshesOptions['look']) => ({
   maxCorpses: seed === undefined ? maxCorpses : ragdollContent.sweep.capacity,
@@ -126,13 +127,13 @@ export interface PlayWorldFrame {
   readonly calendar: number;
   readonly time: number;
   readonly playerEye: Vec3;
-  /** Where zombie attacks aim, in metres (core/zombies.ts, `PLAYER_CHEST_METRES`). */
+  /** Where zombie attacks aim, in metres (core/actorMotion.ts, `PLAYER_CHEST_METRES`). */
   readonly playerChest: Vec3;
-  readonly lastZombieStep: number;
+  readonly lastActorStep: number;
   readonly lastBackgroundStep: number;
   readonly dt: number;
   readonly entities: BlockEntities;
-  readonly zombies: EntityStore<Zombie>;
+  readonly actors: EntityStore<Actor>;
   readonly acidGlobs: readonly Readonly<AcidGlobState>[];
   readonly acidPuddles: readonly Readonly<AcidPuddleState>[];
   readonly frozen: boolean;
@@ -213,15 +214,18 @@ export const createPlayView = (
   inventory: Inventory,
   report: (message: string) => void,
   {
+    models: modelFiles,
     page = globalThis,
     poweredLights = () => [],
     physicalSolid = engine.isSolid,
   }: {
+    /** The product's bundled models; see `PresentationAssets`, `models`. */
+    models: PackAssetFiles;
     page?: Pick<EventTarget, 'addEventListener'>;
     poweredLights?: () => readonly PoweredLight[];
     /** The session's physical query, with parked vehicles, for corpses, the camera and flare occlusion. */
     physicalSolid?: (x: number, y: number, z: number) => boolean;
-  } = {},
+  },
 ) => {
   const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
   const drawCounters = config.debug && renderer ? new DrawCounters(renderer) : undefined;
@@ -230,16 +234,13 @@ export const createPlayView = (
   const graphics = graphicsTuningOf(registry);
   const s = config.scale.blockSize;
   const { gravityMetresPerSimSecondSquared } = playerTuning(registry);
-  const models = new ModelLibrary(registry, report, undefined, graphics.modelLoadConcurrency);
+  const models = new ModelLibrary(registry, report, { packAssets: modelFiles }, graphics.modelLoadConcurrency);
   let pictures: ItemPictures | undefined;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
-    pictures = new ItemPictures(
-      registry,
-      models,
-      registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!.itemPictureCacheCapacity,
-      { framing: graphics.itemPicture.framing },
-    );
+    pictures = new ItemPictures(registry, models, claimed(registry.graphics, 'graphics')!.itemPictureCacheCapacity, {
+      framing: graphics.itemPicture.framing,
+    });
     if (mood === undefined) {
       throw new Error('rendering resources are incomplete');
     }
@@ -252,7 +253,7 @@ export const createPlayView = (
     shadows.restore(DEFAULT_SHADOWS);
   }
   const weather: Weather = { fogginess: dayCycle.weather.defaultFogginess };
-  const playerFigure = registry.figures.get(CORE_CONTENT_IDS.player)!;
+  const playerFigure = claimed(registry.figures, 'player')!;
   const piles = new PileMeshes(s, models, config.seed, meshes);
   const vehicles = new VehicleMeshes(registry, models, s);
   const caseEffects = new CaseEffects(s, gravityMetresPerSimSecondSquared, models);
@@ -326,7 +327,7 @@ export const createPlayView = (
   scene.add(carriedPiece.floorGroup);
   const playerMeshes = new PlayerMeshes(s, playerFigure, registry.models, models);
   const updateHeldViews = createHeldViews(inventory, held, playerMeshes);
-  const lightTuning = registry.senses.get(CORE_CONTENT_IDS.player)!.light;
+  const lightTuning = claimed(registry.senses, 'player')!.light;
   const flashlight = new Flashlight(
     scene,
     lightTuning.renderedBeamLimit,
@@ -347,7 +348,7 @@ export const createPlayView = (
     models,
   }); // Both actors implement the same presentation contract. Gameplay keeps synchronous
   // death/sever callbacks so an actor is removed before a subsequent sync/prune.
-  const zombieMeshes: ZombieRenderer =
+  const actorMeshes: ActorRenderer =
     config.actors === 'detailed'
       ? new MobActorMeshes(s, undefined, {
           ...corpseBudget(config.ragdollSweep, graphics.mobActors.maxCorpses, look.mobActors),
@@ -355,14 +356,14 @@ export const createPlayView = (
           gravityMetresPerSimSecondSquared,
           canvas: engine.renderer?.domElement,
           reveal: meshes,
-          zombies: registry.zombies,
-          onBurst: (position, zombie) => acidEffects.deathSplash(position, zombie),
+          actors: registry.actors,
+          onBurst: (position, actor) => acidEffects.deathSplash(position, actor),
           onFleshLanded: (centre) => gore.landed(centre),
-          bloodiness: (zombie) => gore.severity(zombie),
+          bloodiness: (actor) => gore.severity(actor),
         })
-      : new ZombieMeshes(s, undefined, meshes);
-  zombieMeshes.setWorld?.(physicalSolid, s);
-  scene.add(zombieMeshes.group);
+      : new ActorMeshes(s, undefined, meshes);
+  actorMeshes.setWorld?.(physicalSolid, s);
+  scene.add(actorMeshes.group);
   const cameraStepOffset = new StepOffset(playerTuning(registry).stepHeight);
   const damageFeedback = new DamageFeedback(look.damageFeedback);
   const painCue = new PainCue(look.painCue);
@@ -491,7 +492,7 @@ export const createPlayView = (
     held,
     flashlight,
     lightPool,
-    zombieMeshes,
+    actorMeshes,
     weather,
     dispose,
     get cameraRoll() {
@@ -525,11 +526,11 @@ export const createPlayView = (
       time,
       playerEye,
       playerChest,
-      lastZombieStep,
+      lastActorStep,
       lastBackgroundStep,
       dt,
       entities,
-      zombies,
+      actors,
       acidGlobs,
       acidPuddles,
       frozen,
@@ -538,8 +539,8 @@ export const createPlayView = (
       itemThrows.update(time, inventory);
       blastFlashes.update(dt);
       leverProps.update(dt);
-      acidEffects.sync(acidGlobs, acidPuddles, registry.zombies, dt);
-      acidEffects.syncDroplets(zombieMeshes.anchors?.() ?? [], dt);
+      acidEffects.sync(acidGlobs, acidPuddles, registry.actors, dt);
+      acidEffects.syncDroplets(actorMeshes.anchors?.() ?? [], dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather, dayCycle.weather);
       piles.sync(inventory, itemThrows.hiddenItemUids);
@@ -548,13 +549,13 @@ export const createPlayView = (
       furniture.sync(entities);
       corpses.sync(entities);
       decals?.sync(entities);
-      const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
-      const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ZOMBIE_RATE));
-      zombieMeshes.setCamera?.(camera);
-      zombieMeshes.setPlayerEyePosition?.(playerEye, playerTuning(registry).sprint);
-      zombieMeshes.setPlayerChestPosition?.(playerChest);
-      zombieMeshes.setPerceptionLabels?.(perceptionLabels);
-      zombieMeshes.sync(zombies, dt, alpha, frozen, backgroundAlpha, time);
+      const alpha = Math.max(0, Math.min(1, (time - lastActorStep) * 20));
+      const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ACTOR_RATE));
+      actorMeshes.setCamera?.(camera);
+      actorMeshes.setPlayerEyePosition?.(playerEye, playerTuning(registry).sprint);
+      actorMeshes.setPlayerChestPosition?.(playerChest);
+      actorMeshes.setPerceptionLabels?.(perceptionLabels);
+      actorMeshes.sync(actors, dt, alpha, frozen, backgroundAlpha, time);
       return { sky };
     },
     prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {
@@ -671,7 +672,7 @@ export const createPlayView = (
         daylightScale: cameraDaylightScale,
         worldDaylightScale: engine.skylight ? 1 : cameraDaylightScale,
         fixtures: poweredLights(),
-        glows: acidGlows(zombieMeshes.anchors?.() ?? []),
+        glows: acidGlows(actorMeshes.anchors?.() ?? []),
       });
       updateFlare(nightVision, dt);
     },
@@ -691,7 +692,7 @@ export const createPlayView = (
       }
       drawCounters?.begin();
       try {
-        zombieMeshes.uploadPoses?.(renderer);
+        actorMeshes.uploadPoses?.(renderer);
         mood.render(
           () => {
             if (ownView) {

@@ -2,15 +2,18 @@
 import { expect, it } from 'vitest';
 import { NEUTRAL_AIM } from '../src/core/aim.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import type { HandlingMechanism as PracticeGun } from '../src/core/guidanceFacts.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { defOf } from '../src/core/items.ts';
+import type { GuidanceDef } from '../src/core/schema/guidance.ts';
 import { FirearmMechanics, spentCaseItemId } from '../src/game/firearmHandling.ts';
-import { type PracticeGun, TutorialWeapons } from '../src/game/tutorialWeapons.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
+import { HandlingLessons } from '../src/presentation/handlingLessons.ts';
+import { handlingTracksFixture } from './fixtures/guidance.ts';
 import { content } from './fixtures/startupContent.ts';
 
-const fixture = (kind: PracticeGun) => {
+const fixture = (kind: PracticeGun, tracks: GuidanceDef['handling'] = handlingTracksFixture()) => {
   const base = content.registry;
   const source = [...base.items.values()].find((item) =>
     kind === 'revolver' ? item.firearm?.revolver : item.firearm?.pump,
@@ -43,7 +46,7 @@ const fixture = (kind: PracticeGun) => {
   };
   const inventory = new Inventory(registry);
   const queue = new HandlingQueue(inventory);
-  const observer = new TutorialWeapons();
+  const observer = new HandlingLessons(tracks);
   const gun = inventory.create('practice-gun');
   const packageItem = inventory.create('practice-box');
   const bag = inventory.create('hiking_backpack');
@@ -213,6 +216,29 @@ it('pump requires completed chambering, a post-fire reload and discharge, and li
   f.rack(); // eject hull, feed live shell
   expect(f.lesson()).toBe('unload');
   f.rack(); // eject live shell
+  expect(f.lesson()).toBeUndefined();
+});
+
+it('uses authored lesson identities, order and fact gates for a selected handling mechanism', () => {
+  const f = fixture('pump', [
+    {
+      id: 'pump',
+      mechanism: 'pump',
+      reloadRequiresCaseRemoval: false,
+      lessons: [
+        { id: 'fixture_aimed', facts: ['sighted'] },
+        { id: 'fixture_ready', facts: ['ready'] },
+      ],
+    },
+  ]);
+  expect(f.lesson()).toBe('fixture_aimed');
+  f.load();
+  f.rack();
+  expect(f.pull(true)).toBe(true);
+  expect(f.lesson()).toBe('fixture_ready');
+  f.load();
+  f.rack();
+  expect(f.pull()).toBe(true);
   expect(f.lesson()).toBeUndefined();
 });
 

@@ -1,5 +1,5 @@
-import type { Resolved } from '@skelly/engine/assembly/schema.ts';
-import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
+import type { Resolved } from '@skelly/construct/assembly/schema.ts';
+import { localSolidBounds } from '@skelly/construct/shapes/geometry.ts';
 import type { Shotshell } from '../ammo/cartridge.ts';
 
 /** Visual fit estimates, not manufacturer's tube specifications. */

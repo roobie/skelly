@@ -266,6 +266,10 @@ The placeholders and rejected or deferred work below are open, including a bette
 hard-landing-specific sound, a distinct stuck-door cue and replacement mud/stone
 footsteps.
 
+A parked recording lives with its topic owner until a row plays it: blade
+recordings in `packages/mods/skelly.melee-classes/assets/audio`, door recordings
+in `packages/mods/skelly.structures/assets/audio`.
+
 - Surface-hit sounds by weapon type and surface: blade on stone has recordings parked as `melee-swing-01..03.ogg`; blunt on a wall and blunt on wood need recordings.
 - Split item-drop sounds by pile surface; the wood clips play on every surface because piles expose no surface classification.
 - A short drop onto a hard floor needs a recording.
@@ -273,7 +277,7 @@ footsteps.
 - New sources for `footstep_mud` and `shambler_step_mud`; the existing variants are rejected.
 - More `footstep_leaves` variants. Do not use `footstep-leaves-02.ogg`; it sounds like linoleum.
 - New sources for `footstep_stone` and `shambler_step_stone`; keep the gravel-sounding clips for a future gravel surface.
-- More `door_open` variants; only `door-open-03.ogg` is accepted.
+- More `door_open` variants; only `door-open-03.ogg` is accepted. `door-open-01..02.ogg` and `door-close-01..03.ogg` are parked.
 - A distinct stuck-door sound; use `door_blocked_close-01.ogg` for both `door_close` and `door_blocked_close` until a separate cue is added.
 - Wire eating, drinking, and flashlight on/off sounds to their use actions; add
   sustained or periodic breathing when stamina is low.

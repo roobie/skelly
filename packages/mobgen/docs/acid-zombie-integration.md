@@ -2,9 +2,10 @@
 read_if:
   - you build any round of the acid zombie's integration
   - you change the acid body's standing-height fitting or shape measurements
-  - you change mobgen's material, budget or carve contracts while the acid zombie lands
+  - you change or rename mobgen's material, budget or carve boundaries while the acid zombie lands
   - you add a non-humanoid mob that Deadvox must hit, sever, pose or light
   - you change acid animation, gaze or the spit mouth anchor
+  - you change Deadvox body-plan selection or its mobgen realization boundary
   - you change creature-owned severed-part item policy
   - you build the cross-mob far level of detail for per-bone meshes
 ---
@@ -68,18 +69,18 @@ module. Their owners are `src/core/body.ts`, `Bone` and `MaterialDef`;
 ### Landing it without weakening other mobs' validation
 
 The port changes contracts, not rules. No existing budget, limit or rule set is loosened to
-make room. Each existing plan (humanoid, crawler, dog, amalgam) gets `budgets` and
-`limbBones` hooks that reproduce its old scaling exactly, including the coarse cell margin.
-The proof is that every existing mobgen test, validation run and Deadvox load passes with
-no budget or fixture edits. A budget edit in that round signals a lost behaviour and is a
-defect.
+make room. A new body's integration must preserve the other plans' scaling, including
+coarse cell margins. See `src/core/generate.ts`, `BodyPlanDef`, for the budget and limb
+boundaries. A budget edit made only to pass integration checks hides a lost behaviour
+and is a defect.
 
-Materials cross the builder, viewer, CLI and Deadvox boundary. Consumers decode through
-the voxel grid's local table rather than a shared palette, because a compatibility shim
-would keep two competing material contracts. See `src/core/voxelize.ts`, `materialOf`;
-`src/viewer/scene.ts`, `vertexColors`; `src/cli/view.ts`, `printView`; and
-`packages/deadvox/src/render/amalgamFlesh.ts`, `mergeBoneMeshes`. Declarative material dependencies
-also enter the generated-body fingerprint; see `packages/deadvox/tools/simulationFingerprint.ts`,
+The voxel grid's local material table must remain the shared consumer boundary: a
+compatibility shim would keep two competing material contracts. See
+`src/core/voxelize.ts`, `materialOf`; `src/viewer/scene.ts`, `vertexColors`;
+`src/cli/view.ts`, `printView`; and
+`packages/deadvox/src/render/fusedMassFlesh.ts`, `mergeBoneMeshes`. Material dependencies
+must participate in generated-body identity so tuning changes cannot bypass save
+admission; see `packages/deadvox/tools/simulationFingerprint.ts`,
 `collectSimulationSourceGraph`.
 
 ### Other mobs' outputs that can change
@@ -147,12 +148,13 @@ Tuning stays in content rather than test literals. Its release-freeze triggers b
 
 ## What Deadvox needs
 
-Deadvox picks a model by id, resolves it through `consumableTemplate` and builds hit boxes
-from the bones the body plan lists per region. See `packages/deadvox/src/core/schema.ts`,
-`ZOMBIE_MODEL`; `src/mob/shamblerFigure.ts`, `zombieFigure`; and
-`packages/deadvox/src/core/zombieRegions.ts`. The acid body's bones have their own names (it has a
-skull and maw, not head and jaw, and a belly and hips, not spine and pelvis), so a humanoid
-name lookup would find nothing.
+Actor identity must not determine its skeleton. Deadvox resolves a selected body plan
+at the mobgen boundary, keeping each plan's region ownership authoritative rather than
+forcing the acid body's distinct bones through humanoid names. See
+`packages/deadvox/src/core/schema/actors.ts`, `BODY_PLAN`;
+`packages/deadvox/src/core/actorModels.ts`, `bodyPlanModel`;
+`src/mob/humanoidFigure.ts`, `templateFigure`; and
+`packages/deadvox/src/core/actorRegions.ts`.
 
 - **Hit regions.** Each plan says which of its bones form head, torso and limbs, because
   renaming acid bones to humanoid names would hide that it is its own skeleton. The sac's
@@ -163,8 +165,8 @@ name lookup would find nothing.
   gore mask sizes itself from the widest body (`packages/deadvox/src/render/mobActors.ts`
   passes the bone count to `crowdTextureLayout`), so the acid bone count needs no encoding
   change. A severed acid part follows its creature kind's authored drop policy,
-  independently of bone names. See `packages/deadvox/src/core/schema.ts`,
-  `ZombieSchema.severedItems`, and `packages/deadvox/src/game/session.ts`, `createSession`.
+  independently of bone names. See `packages/deadvox/src/core/schema/actors.ts`,
+  `ActorSchema.severedItems`, and `packages/deadvox/src/game/session.ts`, `createSession`.
 - **Death burst.** On death the sac's voxels are removed without leaving a severed item and
   without any simulation consequence, so presentation reads death and the sac stays out of
   saves and fingerprints. Keeping it a disposition rather than a Deadvox special case lets a
@@ -182,12 +184,12 @@ name lookup would find nothing.
   for the simulation's head turn as well as the presentation gaze, because hit boxes and the
   spit anchor read the simulation pose. See `src/mob/lookAt.ts`, `lookAtPose`,
   `src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`, and
-  `packages/deadvox/src/core/zombiePose.ts`, `clampedJointRotation`.
+  `packages/deadvox/src/core/actorPose.ts`, `clampedJointRotation`.
   The mouth anchor belongs to the skull's face opening rather than the hanging jaw or its
   drool, so spit line of sight follows the head through wind-up and gaze. See
   `src/core/body.ts`, `BodyAnchor`, and `src/mob/acid.ts`, `buildAcid`. The spit leaves from
   that anchor posed at the end of the wind-up, so the release is a function of simulation
-  state alone; see `packages/deadvox/src/core/zombiePose.ts`, `posedMouth`.
+  state alone; see `packages/deadvox/src/core/actorPose.ts`, `posedMouth`.
 - **Materials and glow.** Deadvox reads colour and glow from the body's material table. That
   keeps the glow a content value instead of a Deadvox list of glowing material names. How
   it renders is in "Glow render path" below. The wind-up brightening is per-actor state

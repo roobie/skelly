@@ -37,7 +37,7 @@ describe('import boundaries', () => {
           const path = relative(ROOT, file);
           const sharedRagdoll =
             (target === resolve(ROOT, '../deadvox/src/render/ragdoll.ts') ||
-              target === resolve(ROOT, '../deadvox/src/content/base/player.json')) &&
+              target === resolve(ROOT, '../mods/skelly.body/player.json')) &&
             (path.startsWith('src/viewer/') || path.startsWith('test/'));
           expect(relative(ROOT, target).startsWith('..') && !sharedRagdoll, `${relative(REPO, file)} -> ${spec}`).toBe(
             false,

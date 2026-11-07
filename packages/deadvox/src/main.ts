@@ -6,32 +6,31 @@ import { applyBenchWeathering } from './bench/post.ts';
 import { showReport } from './bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
-import repairLook from './config/repair-look.json' with { type: 'json' };
-import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
-import { validateManifest } from './core/assets.ts';
+import { bundledCredits } from './bundledCredits.ts';
 import { getBuildRevision } from './core/buildInfo.ts';
+import { claimed } from './core/capabilities.ts';
 import { parseTimeOfDay } from './core/clock.ts';
-import { CORE_CONTENT_IDS } from './core/contentIds.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from './game/bundledMods.ts';
 import {
   applyWeatheringConfig,
   configFromUrl,
   DEFAULT_RADIUS_M,
   makeConfig,
-  repairLookEnabled,
   savingEnabledFromUrl,
 } from './game/config.ts';
-import { mountControlsCard } from './game/controls.ts';
-import { createEngine } from './game/engine.ts';
-import { requestInputLock } from './game/input.ts';
-import { inputBindings, keyboardInput, labelForAction } from './game/inputBindings.ts';
 import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from './game/inputReplay.ts';
-import { startPlay } from './game/play.ts';
-import { renderFreeFromUrl } from './game/renderMode.ts';
-import type { SaveBackendPreference } from './game/saveStorage.ts';
+import type { SaveBackendPreference } from './game/storageContract.ts';
 import type { StreamerStats } from './game/streamer.ts';
-import { tutorialRequested, tutorialUrl } from './game/tutorialUrl.ts';
-import { WorldLoading } from './game/worldLoading.ts';
+import { mountControlsCard } from './presentation/controls.ts';
+import { createEngine } from './presentation/engine.ts';
+import { requestInputLock } from './presentation/input.ts';
+import { startPlay } from './presentation/play.ts';
+import { renderFreeFromUrl } from './presentation/renderMode.ts';
+import { tutorialRequested, tutorialUrl } from './presentation/tutorialUrl.ts';
+import { WorldLoading } from './presentation/worldLoading.ts';
+import { productAssets as assets } from './product/assets.ts';
+import { inputBindings, keyboardInput } from './product/input.ts';
+import { productModIntake } from './product/mods.ts';
 import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
 import { mountFullscreenOptions } from './ui/fullscreenOptions.ts';
@@ -55,19 +54,7 @@ if (showMods) {
   startupScreen.hidden = true;
   modsScreen.hidden = false;
 }
-const bundled = selectBundledMods(
-  showMods ? [] : bundledModIdsFromUrl(params),
-  repairLookEnabled(params) ? [repairLook.mod] : [],
-);
-// The mods screen is drawn before any mod is chosen, so it reads the bundled packs' text.
-const browserSelection = showMods
-  ? await chooseMods(modsScreen, bundled.content.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.mods)
-  : undefined;
-const content = browserSelection?.content ?? bundled.content;
-startupScreen.hidden = false;
-applyUiTokens(content.registry, document.documentElement);
-const { screenText } = content.registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
-inputBindings.setPointerLabels(screenText.pointerButtonLabels);
+const bundled = selectBundledMods(productModIntake, showMods ? [] : bundledModIdsFromUrl(params));
 const saveStatus = document.getElementById('save-status')!;
 const saveStatusHome = saveStatus.parentElement!;
 const saveStatusNextSibling = saveStatus.nextSibling;
@@ -82,6 +69,7 @@ const hideStartupScreen = () => {
   startupScreen.hidden = true;
 };
 const showStartupFailure = (message: string) => {
+  modsScreen.hidden = true;
   document.getElementById('errors')!.textContent = message;
   hideStartupScreen();
 };
@@ -90,6 +78,19 @@ if (bundled.issues.length > 0) {
   // Refused mods must not start a game with other content; stop the module here.
   await new Promise<never>(() => undefined);
 }
+// The mods screen is drawn before any mod is chosen, so it reads the bundled packs' text.
+const browserSelection = showMods
+  ? await chooseMods(modsScreen, claimed(bundled.content.registry.ui, 'interface')!.screenText.mods, productModIntake)
+  : undefined;
+const content = browserSelection?.content ?? bundled.content;
+startupScreen.hidden = false;
+const reportError = (message: string) => {
+  const errors = document.getElementById('errors')!;
+  errors.textContent = [errors.textContent, message].filter(Boolean).join('\n');
+};
+applyUiTokens(content.registry, document.documentElement, { report: reportError, files: assets.cursors });
+const { screenText } = claimed(content.registry.ui, 'interface')!;
+inputBindings.setPointerLabels(screenText.pointerButtonLabels);
 const menuCard = document.querySelector<HTMLElement>('#overlay .card');
 const scrollUpCue = document.getElementById('card-scroll-up');
 const scrollDownCue = document.getElementById('card-scroll-down');
@@ -109,7 +110,7 @@ if (menuCard && scrollUpCue && scrollDownCue) {
 const menuKeyLabel = document.querySelector<HTMLElement>('[data-key-binding="mainMenu"]');
 const drawMenuLabel = () => {
   if (menuKeyLabel) {
-    menuKeyLabel.textContent = labelForAction('ui.main-menu-toggle');
+    menuKeyLabel.textContent = inputBindings.label('ui.main-menu-toggle');
     menuKeyLabel.dataset.code = inputBindings.chords('ui.main-menu-toggle')[0]!.code;
   }
 };
@@ -118,10 +119,10 @@ drawMenuLabel();
 const bench = params.get('bench');
 const renderFree = renderFreeFromUrl(params, import.meta.env.DEV);
 if (bench === null) {
-  const credits = validateManifest('assets/manifest.json', assetManifest);
-  document.getElementById('errors')!.textContent = credits.issues
-    .map((issue) => `${issue.source} ${issue.path}: ${issue.message}`)
-    .join('\n');
+  const credits = bundledCredits();
+  for (const issue of credits.issues) {
+    reportError(`${issue.source} ${issue.path}: ${issue.message}`);
+  }
   mountCredits(
     {
       about: document.getElementById('about')!,
@@ -152,13 +153,13 @@ if (bench === 'report') {
   inputBindings.loadLayout();
   let config = configFromUrl(params, content);
   keyboardInput.context = () => ({ context: 'title', debug: config.debug });
+  const replayStash = () => sessionStorage;
   let pendingReplay: Uint8Array | undefined;
   try {
-    pendingReplay = pendingInputReplay();
+    pendingReplay = pendingInputReplay(replayStash);
   } catch (error) {
-    clearPendingInputReplay();
-    document.getElementById('errors')!.textContent =
-      `Replay rejected: ${error instanceof Error ? error.message : String(error)}`;
+    clearPendingInputReplay(replayStash);
+    reportError(`Replay rejected: ${error instanceof Error ? error.message : String(error)}`);
   }
   if (pendingReplay) {
     config.debug = true;
@@ -167,11 +168,12 @@ if (bench === 'report') {
     inputBindings.setDebugRun();
   }
   mountFullscreenOptions(document.getElementById('fullscreen-options')!, screenText.options);
-  mountInputOptions(document.getElementById('input-options')!, screenText.inputOptions, config.debug);
+  mountInputOptions(document.getElementById('input-options')!, screenText.inputOptions, keyboardInput, config.debug);
   mountControlsCard(
     document.getElementById('controls')!,
     document.getElementById('controls-search') as HTMLInputElement,
     () => config.debug,
+    inputBindings,
   );
   const debugModule = config.debug ? await import('./debug/index.ts') : undefined;
   const skyRoute = params.get('skyRoute') === '1' ? await debugModule?.loadSkyRoute() : undefined;
@@ -191,8 +193,10 @@ if (bench === 'report') {
       const decoded = await decodeInputReplay(pendingReplay, {
         contentLookup: (kind, id) => contentLookup(engine.registry, kind, id),
       });
-      clearPendingInputReplay();
+      clearPendingInputReplay(replayStash);
       startPlay(engine, debugModule!, {
+        assets,
+        keyboard: keyboardInput,
         restore: decoded.snapshot,
         replay: {
           inputs: decoded.inputs,
@@ -203,7 +207,7 @@ if (bench === 'report') {
       });
       hideStartupScreen();
     } catch (error) {
-      clearPendingInputReplay();
+      clearPendingInputReplay(replayStash);
       showStartupFailure(`Replay rejected: ${error instanceof Error ? error.message : String(error)}`);
     }
   } else if (tutorialRequested(params)) {
@@ -211,7 +215,7 @@ if (bench === 'report') {
     practiceParams.set('site', 'tutorial');
     const practiceConfig = configFromUrl(practiceParams, content);
     const engine = createEngine(practiceConfig, view, undefined, { render: !renderFree });
-    startPlay(engine, undefined, { tutorial: true });
+    startPlay(engine, undefined, { assets, keyboard: keyboardInput, tutorial: true });
     document.getElementById('new-character-options')!.hidden = true;
     document.getElementById('tutorial-start')!.hidden = true;
     document.getElementById('save-status')!.textContent = 'Unsaved practice';
@@ -226,18 +230,22 @@ if (bench === 'report') {
     const saveController = new SaveController(
       screenText,
       { backend, savingEnabled: savingEnabledFromUrl(params) },
-      bundled.admitted,
-      browserSelection?.admitted,
+      {
+        bundledMods: bundled.admitted,
+        browserMods: browserSelection?.admitted ?? [],
+        folderPacks: bundled.admittedFolderPacks,
+      },
     );
     startupScreen.append(saveStatus);
     if (params.get('save-test') === '1') {
       Object.assign(globalThis, {
-        deadvoxSaveTest: {
+        skellySaveTest: {
           storage: saveController.storage,
           get namespace() {
             return saveController.namespace;
           },
           controller: saveController,
+          identity: () => (saveController as unknown as { identity: Promise<unknown> | undefined }).identity,
           saveState: () => {
             const { savedGeneration, failure } = saveController as unknown as {
               savedGeneration: number;
@@ -267,7 +275,13 @@ if (bench === 'report') {
     const engine = createEngine(config, view, undefined, { render: !renderFree });
     const restored = await saveController.validateContent(engine.registry);
     if (saveController.isRestored && restored) {
-      startPlay(engine, debugModule, { saveController, restore: restored, ...(skyRoute ? { skyRoute } : {}) });
+      startPlay(engine, debugModule, {
+        assets,
+        keyboard: keyboardInput,
+        saveController,
+        restore: restored,
+        ...(skyRoute ? { skyRoute } : {}),
+      });
       hideStartupScreen();
     } else {
       saveController.setNewWorldLauncher(async (creation) => {
@@ -281,6 +295,8 @@ if (bench === 'report') {
         let entry: ReturnType<typeof startPlay>;
         try {
           entry = startPlay(engine, debugModule, {
+            assets,
+            keyboard: keyboardInput,
             saveController,
             loading: { owner, draw },
             ...creation,

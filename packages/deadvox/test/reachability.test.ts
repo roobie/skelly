@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RecipeDef } from '../src/core/content.ts';
-import { checkReachability } from '../src/core/reachability.ts';
+import { checkReachability, checkStartReachability } from '../src/core/reachability.ts';
+import type { StartDef } from '../src/core/schema/starts.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -10,8 +11,9 @@ const baseline = baseRegistry();
 const mutableSections = [
   'items',
   'furniture',
+  'itemEconomy',
   'loot',
-  'zombies',
+  'actors',
   'templates',
   'recipes',
   'layouts',
@@ -37,8 +39,6 @@ const knowledgeFixture = (
     registry.items.set(item, {
       id: item,
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: item,
       category: 'material',
       weight: 1,
@@ -61,6 +61,82 @@ const knowledgeFixture = (
 const noWorldSources = { sites: new Set<string>() };
 
 describe('static reachability', () => {
+  it('keeps a start recipe and kit root out of another start in the same stack', () => {
+    const registry = knowledgeFixture([{ id: 'fixture_recipe', skills: {} }]);
+    registry.items.set('fixture_stock', { ...registry.items.get('fixture_recipe_result')!, id: 'fixture_stock' });
+    registry.recipes.get('fixture_recipe')!.components = [[{ item: 'fixture_stock', count: 1 }]];
+    const supplied: StartDef = {
+      id: 'fixture_supplied_start',
+      site: 'city',
+      wounds: [],
+      skills: {},
+      recipes: ['fixture_recipe'],
+      kit: [{ id: 'stock', item: 'fixture_stock', destination: { kind: 'hand', role: 'dominant' } }],
+    };
+    const empty: StartDef = { ...supplied, id: 'fixture_empty_start', kit: [], recipes: [] };
+    registry.starts = new Map([supplied, empty].map((row) => [row.id, row]));
+    expect(checkStartReachability(registry, supplied, noWorldSources).toolReachable.has('fixture_recipe_result')).toBe(
+      true,
+    );
+    const missing = checkStartReachability(registry, empty, noWorldSources);
+    expect(missing.toolReachable.has('fixture_recipe_result')).toBe(false);
+    expect(missing.issues.map(({ path }) => path)).toEqual(['.knowledge', '.components[0][0].item']);
+  });
+
+  it('uses the selected start skill provider as a recipe-unlock root', () => {
+    const registry = knowledgeFixture([
+      { id: 'fixture_unlock', skills: { crafting: 1 }, skillUnlock: { skill: 'crafting', level: 1 } },
+    ]);
+    registry.skills = new Map([
+      ['fixtureProvider', { id: 'fixtureProvider', name: 'Fixture skill', capability: 'crafting' }],
+    ]);
+    const start: StartDef = {
+      id: 'fixture_trained_start',
+      site: 'city',
+      kit: [],
+      wounds: [],
+      recipes: [],
+      skills: { fixtureProvider: 1 },
+    };
+    expect(checkStartReachability(registry, start, noWorldSources).toolReachable.has('fixture_unlock_result')).toBe(
+      true,
+    );
+    start.skills = {};
+    expect(checkStartReachability(registry, start, noWorldSources).toolReachable.has('fixture_unlock_result')).toBe(
+      false,
+    );
+  });
+
+  it('does not treat an authored skill level as an unbounded practice source', () => {
+    const registry = knowledgeFixture([
+      { id: 'fixture_high_unlock', skills: {}, skillUnlock: { skill: 'crafting', level: 2 } },
+      { id: 'fixture_high_practice', skills: { crafting: 2 } },
+    ]);
+    registry.skills = new Map([
+      ['fixtureProvider', { id: 'fixtureProvider', name: 'Fixture skill', capability: 'crafting' }],
+    ]);
+    const start: StartDef = {
+      id: 'fixture_start',
+      site: 'city',
+      kit: [],
+      wounds: [],
+      recipes: ['fixture_high_practice'],
+      skills: { fixtureProvider: 1 },
+    };
+    const result = checkStartReachability(registry, start, noWorldSources);
+    expect(result.toolReachable.has('fixture_high_unlock_result')).toBe(false);
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({ recipe: 'fixture_high_unlock', path: '.skillUnlock' }),
+    );
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({ recipe: 'fixture_high_practice', path: '.skills.crafting' }),
+    );
+    registry.recipes.get('fixture_high_practice')!.skills.crafting = 1;
+    expect(
+      checkStartReachability(registry, start, noWorldSources).toolReachable.has('fixture_high_unlock_result'),
+    ).toBe(true);
+  });
+
   it('keeps whole-game reachability when its scope names every site', () => {
     const sites = new Set([...baseline.layouts.keys(), ...baseline.scenarios.keys()]);
     expect(checkReachability(baseline, undefined, { sites })).toEqual(checkReachability(baseline));
@@ -68,10 +144,12 @@ describe('static reachability', () => {
 
   it('excludes an authored non-loot type without excluding an ordinary unreachable type', () => {
     const registry = fresh();
-    const fixture = { ...registry.items.values().next().value!, id: 'fixture_not_loot', notLoot: true };
+    const fixture = { ...registry.items.values().next().value!, id: 'fixture_not_loot' };
     registry.items.set(fixture.id, fixture);
+    const row = { id: fixture.id, ...fixtureEconomy() };
+    registry.itemEconomy.set(fixture.id, { ...row, notLoot: true });
     expect(checkReachability(registry).unreachable).not.toContain(fixture.id);
-    registry.items.set(fixture.id, { ...fixture, notLoot: false });
+    registry.itemEconomy.set(fixture.id, { ...row, notLoot: false });
     expect(checkReachability(registry).unreachable).toContain(fixture.id);
   });
 
@@ -120,8 +198,6 @@ describe('static reachability', () => {
       registry.items.set(id, {
         id,
         workInProgress: false,
-        notLoot: false,
-        economy: fixtureEconomy(),
         name: id,
         category: 'material',
         weight: 1,
@@ -191,8 +267,6 @@ describe('static reachability', () => {
     registry.items.set('unlearned_tool', {
       id: 'unlearned_tool',
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: 'Unlearned tool',
       category: 'tool',
       weight: 1,
@@ -242,8 +316,8 @@ describe('static reachability', () => {
 
   it('learns every unlock level once its skill has a reachable level-zero practice source', () => {
     const registry = knowledgeFixture([
-      { id: 'fixture_practice', skills: { fixtureSkill: 0 } },
-      { id: 'fixture_unlock', skills: {}, skillUnlock: { skill: 'fixtureSkill', level: 11 } },
+      { id: 'fixture_practice', skills: { crafting: 0 } },
+      { id: 'fixture_unlock', skills: {}, skillUnlock: { skill: 'crafting', level: 11 } },
     ]);
     const result = checkReachability(registry, new Set(['fixture_practice']), noWorldSources);
     expect(result.issues).toEqual([]);
@@ -253,13 +327,13 @@ describe('static reachability', () => {
 
   it('rejects an unlock that is its own skill practice source and identifies that skill', () => {
     const registry = knowledgeFixture([
-      { id: 'fixture_self_unlock', skills: { fixtureSkill: 0 }, skillUnlock: { skill: 'fixtureSkill', level: 1 } },
+      { id: 'fixture_self_unlock', skills: { crafting: 0 }, skillUnlock: { skill: 'crafting', level: 1 } },
     ]);
     const result = checkReachability(registry, new Set(), noWorldSources);
     expect(result.issues).toContainEqual({
       recipe: 'fixture_self_unlock',
       path: '.skillUnlock',
-      message: expect.stringContaining('fixtureSkill'),
+      message: expect.stringContaining('crafting'),
     });
     expect(result.components.has('fixture_self_unlock_result')).toBe(false);
     expect(result.toolReachable.has('fixture_self_unlock_result')).toBe(false);
@@ -267,7 +341,7 @@ describe('static reachability', () => {
 
   it('seeds level-zero unlock knowledge without any practice source', () => {
     const registry = knowledgeFixture([
-      { id: 'fixture_zero_unlock', skills: {}, skillUnlock: { skill: 'fixture_untrained', level: 0 } },
+      { id: 'fixture_zero_unlock', skills: {}, skillUnlock: { skill: 'crafting', level: 0 } },
     ]);
     const result = checkReachability(registry, new Set(), noWorldSources);
     expect(result.issues).toEqual([]);
@@ -276,13 +350,13 @@ describe('static reachability', () => {
 
   it('propagates knowledge through an unlocked recipe that alone grounds the next skill', () => {
     const registry = knowledgeFixture([
-      { id: 'fixture_second_unlock', skills: {}, skillUnlock: { skill: 'fixtureSecondSkill', level: 1 } },
+      { id: 'fixture_second_unlock', skills: {}, skillUnlock: { skill: 'mechanics', level: 1 } },
       {
         id: 'fixture_first_unlock',
-        skills: { fixtureSecondSkill: 0 },
-        skillUnlock: { skill: 'fixtureFirstSkill', level: 1 },
+        skills: { mechanics: 0 },
+        skillUnlock: { skill: 'crafting', level: 1 },
       },
-      { id: 'fixture_practice', skills: { fixtureFirstSkill: 0 } },
+      { id: 'fixture_practice', skills: { crafting: 0 } },
     ]);
     const result = checkReachability(registry, new Set(['fixture_practice']), noWorldSources);
     expect(result.issues).toEqual([]);
@@ -297,7 +371,7 @@ describe('static reachability', () => {
     registry.recipes.clear();
     registry.recipes.set('learned_from_book', {
       id: 'learned_from_book',
-      skillUnlock: { skill: 'fixture_untrained', level: 1 },
+      skillUnlock: { skill: 'crafting', level: 1 },
       category: 'fixture_category',
       tags: [],
       searchTerms: [],
@@ -361,8 +435,6 @@ describe('static reachability', () => {
       registry.items.set(id, {
         id,
         workInProgress: false,
-        notLoot: false,
-        economy: fixtureEconomy(),
         name: id,
         category: 'material',
         weight: 1,
@@ -404,11 +476,29 @@ describe('static reachability', () => {
       breach: fixtureBreach(),
       material: FIXTURE_MATERIAL,
     });
-    const shambler = registry.zombies.get('shambler')!;
-    registry.zombies.set('shambler', { ...shambler, loot: 'wanderer' });
-    registry.zombies.set('fixture_spawn', { ...shambler, id: 'fixture_spawn', loot: 'spawned', authoredOnly: true });
-    registry.zombies.set('fixture_direct', { ...shambler, id: 'fixture_direct', loot: 'direct', authoredOnly: true });
-    registry.zombies.set('fixture_zero', { ...shambler, id: 'fixture_zero', loot: 'zero_spawn', spawnWeight: 0 });
+    const shambler = registry.actors.get('shambler')!;
+    registry.actors.set('shambler', { ...shambler, loot: 'wanderer' });
+    registry.actors.set('fixture_spawn', {
+      ...shambler,
+      id: 'fixture_spawn',
+      capability: undefined,
+      loot: 'spawned',
+      authoredOnly: true,
+    });
+    registry.actors.set('fixture_direct', {
+      ...shambler,
+      id: 'fixture_direct',
+      capability: undefined,
+      loot: 'direct',
+      authoredOnly: true,
+    });
+    registry.actors.set('fixture_zero', {
+      ...shambler,
+      id: 'fixture_zero',
+      capability: undefined,
+      loot: 'zero_spawn',
+      spawnWeight: 0,
+    });
     registry.templates.set('shed', {
       id: 'shed',
       lootContext: fixtureLootContext(),
@@ -443,8 +533,6 @@ describe('static reachability', () => {
     registry.items.set('fixture_demo_fixed', {
       id: 'fixture_demo_fixed',
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: 'Fixture fixed item',
       category: 'material',
       weight: 1,
@@ -453,8 +541,6 @@ describe('static reachability', () => {
     registry.items.set('fixture_demo_table_item', {
       id: 'fixture_demo_table_item',
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: 'Fixture table item',
       category: 'material',
       weight: 1,
@@ -523,8 +609,6 @@ describe('static reachability', () => {
       registry.items.set(id, {
         id,
         workInProgress: false,
-        notLoot: false,
-        economy: fixtureEconomy(),
         name: id,
         category: 'material',
         weight: 1,
@@ -573,8 +657,6 @@ describe('static reachability', () => {
       registry.items.set(id, {
         id,
         workInProgress: false,
-        notLoot: false,
-        economy: fixtureEconomy(),
         name: id,
         category: 'material',
         weight: 1,
@@ -609,8 +691,6 @@ describe('static reachability', () => {
     registry.items.set('fixture_package_input', {
       id: 'fixture_package_input',
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: 'Fixture package input',
       category: 'material',
       weight: 1,
@@ -619,8 +699,6 @@ describe('static reachability', () => {
     registry.items.set('fixture_crafted_package', {
       id: 'fixture_crafted_package',
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: 'Fixture crafted package',
       category: 'material',
       weight: 1,
@@ -630,8 +708,6 @@ describe('static reachability', () => {
     registry.items.set('fixture_crafted_payload', {
       id: 'fixture_crafted_payload',
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: 'Fixture crafted payload',
       category: 'material',
       weight: 1,
@@ -668,8 +744,6 @@ describe('static reachability', () => {
     registry.items.set(source, {
       id: source,
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: source,
       category: 'material',
       weight: 1,
@@ -683,8 +757,6 @@ describe('static reachability', () => {
     registry.items.set(output, {
       id: output,
       workInProgress: false,
-      notLoot: false,
-      economy: fixtureEconomy(),
       name: output,
       category: 'material',
       weight: 1,
@@ -729,8 +801,6 @@ describe('static reachability', () => {
       registry.items.set(id, {
         id,
         workInProgress: false,
-        notLoot: false,
-        economy: fixtureEconomy(),
         name: id,
         category: 'tool',
         weight: 1,
@@ -742,8 +812,6 @@ describe('static reachability', () => {
       registry.items.set(id, {
         id,
         workInProgress: false,
-        notLoot: false,
-        economy: fixtureEconomy(),
         name: id,
         category: 'material',
         weight: 1,

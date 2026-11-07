@@ -1,4 +1,4 @@
-import type { Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import type { Solid, Vec2 } from '@skelly/construct/shapes/solid.ts';
 
 /** Cubic Hermite graph, with endpoint slopes expressed as dy/dx. */
 export const hermite = (

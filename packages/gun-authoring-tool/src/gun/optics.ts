@@ -1,6 +1,6 @@
-import type { KeepOut } from '@skelly/engine/assembly/schema.ts';
-import type { Vec3 } from '@skelly/engine/foundation/math.ts';
-import type { RevolvedSolid, Solid, SolidFinish, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import type { KeepOut } from '@skelly/construct/assembly/schema.ts';
+import type { Vec3 } from '@skelly/construct/foundation/math.ts';
+import type { RevolvedSolid, Solid, SolidFinish, Vec2 } from '@skelly/construct/shapes/solid.ts';
 import { type OpticAperture, OpticApertureSchema } from '@skelly/thing-core/optic-aperture';
 import { type Reticle, ReticleSchema } from '@skelly/thing-core/reticle';
 import {

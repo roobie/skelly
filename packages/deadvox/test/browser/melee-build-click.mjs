@@ -14,7 +14,7 @@ const observationPlugin = {
   name: 'melee-build-click-observation',
   enforce: 'pre',
   transform(code, id) {
-    if (!id.endsWith('/src/game/play.ts')) {
+    if (!id.endsWith('/src/presentation/play.ts')) {
       return;
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
@@ -88,7 +88,7 @@ try {
   });
 
   const downwardFrame = await page.evaluate(() => {
-    globalThis.d7Review.input.pitch = -Math.PI / 2;
+    globalThis.d7Review.input.controls.pitch = -Math.PI / 2;
     return globalThis.d7Review.session.sim.time;
   });
   await page.waitForFunction((before) => globalThis.d7Review.session.sim.time > before, downwardFrame);
@@ -129,7 +129,7 @@ try {
     globalThis.d7Observed.combatStaminaBefore = globalThis.d7Review.session.sim.needs.stamina;
   });
   await page.mouse.down({ button: 'right' });
-  await page.waitForFunction(() => globalThis.d7Review.input.rightMouseActionHeld);
+  await page.waitForFunction(() => globalThis.d7Review.input.controls.rightMouseActionHeld);
   await page.mouse.click(640, 360);
   await page.waitForFunction(() => globalThis.d7Observed.starts.length > 0);
   await page.mouse.up({ button: 'right' });

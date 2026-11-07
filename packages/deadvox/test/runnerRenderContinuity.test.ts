@@ -1,32 +1,33 @@
 import { PerspectiveCamera } from 'three';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import type { PlayerMovement, PlayerSense } from '../src/core/actorSense.ts';
+import type { Actor } from '../src/core/actorState.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { PlayerMovement, PlayerSense, Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
 import { createPlayerBody, physicsFor, steer } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
-const RUNNER = registry.zombies.get('runner')!;
+const RUNNER = registry.actors.get('runner')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number): boolean => y === 0;
 let renderer!: MobActorMeshes;
 
 beforeAll(() => {
-  renderer = new MobActorMeshes(BLOCK_SIZE, 4, { zombies: registry.zombies });
+  renderer = new MobActorMeshes(BLOCK_SIZE, 4, { actors: registry.actors });
 });
 
 afterAll(() => renderer.dispose());
 
 const resetRenderer = (): void => {
-  renderer.sync(new MapEntityStore<Zombie>(), 0, 1, false, 1, 0);
+  renderer.sync(new MapEntityStore<Actor>(), 0, 1, false, 1, 0);
 };
 
 interface MovementSample {
@@ -63,7 +64,7 @@ const runEngagement = (seed: number): EngagementResult => {
     stance: 'standing',
   });
   let hits = 0;
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player,
     isSolid: FLOOR,
     isOpaque: FLOOR,
@@ -88,7 +89,7 @@ const runEngagement = (seed: number): EngagementResult => {
   camera.updateMatrixWorld(true);
   renderer.setCamera(camera);
   const dt = 0.05;
-  const maximumStep = RUNNER.speed.chaseMetresPerSimSecond * RUNNER.chaseMotion.speedMultiplier.max * dt + 0.01;
+  const maximumStep = RUNNER.speed.chaseMetresPerSimSecond * RUNNER.chaseMotion!.speedMultiplier.max * dt + 0.01;
   const visitedModes = new Set<string>();
   const samples: MovementSample[] = [];
   let sawAttackWindup = false;
@@ -110,12 +111,12 @@ const runEngagement = (seed: number): EngagementResult => {
         steer(playerBody, SCALE, 0, { forward: 0, right: -1, jump: false, sprint: true, walk: false });
         stepBody(playerBody, dt, FLOOR, {
           ...physicsFor(SCALE),
-          obstacles: [...system.store.entries()].map(([, zombie]) => zombie.body),
+          obstacles: [...system.store.entries()].map(([, actor]) => actor.body),
         });
       }
 
       const beforePos: Vec3 = [...runner.body.pos];
-      const beforeMode = runner.mode;
+      const beforeMode = runner.agent!.mode;
       const beforeWindup = runner.attackWindup > 0;
       system.tickActive(dt, time);
       renderer.sync(system.store, dt, 1, false, 1, time);
@@ -125,7 +126,7 @@ const runEngagement = (seed: number): EngagementResult => {
         (after.body.pos[0] - beforePos[0]) * BLOCK_SIZE,
         (after.body.pos[2] - beforePos[2]) * BLOCK_SIZE,
       );
-      const transition = `${beforeMode}->${after.mode}:${beforeWindup ? 'windup' : 'ready'}->${after.attackWindup > 0 ? 'windup' : 'ready'}`;
+      const transition = `${beforeMode}->${after.agent!.mode}:${beforeWindup ? 'windup' : 'ready'}->${after.attackWindup > 0 ? 'windup' : 'ready'}`;
       const drawn = renderStates.states.get(runnerId)?.lastPlacement;
       const drawnPosition = drawn ? ([drawn.x, drawn.y, drawn.z] as Vec3) : undefined;
       samples.push({
@@ -141,7 +142,7 @@ const runEngagement = (seed: number): EngagementResult => {
         previousDrawn,
       });
       previousDrawn = drawnPosition;
-      visitedModes.add(after.mode);
+      visitedModes.add(after.agent!.mode);
       sawAttackWindup ||= after.attackWindup > 0;
       sawSprintSpeed ||= after.horizontalSpeed > RUNNER.speed.wanderMetresPerSimSecond;
     }
@@ -167,7 +168,7 @@ const runBackgroundSlice = ({
   runnerId,
   tier,
 }: {
-  system: ZombieSystem;
+  system: ActorSystem;
   frame: number;
   time: number;
   runnerId: number;
@@ -193,7 +194,7 @@ const runTierHandoff = (): TierResult => {
     eyeHeightMetres: 1.3,
     stance: 'standing',
   });
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player,
     isSolid: FLOOR,
     isOpaque: FLOOR,
@@ -258,7 +259,7 @@ const runTierHandoff = (): TierResult => {
     }
 
     return {
-      maximumStep: RUNNER.speed.chaseMetresPerSimSecond * RUNNER.chaseMotion.speedMultiplier.max * dt + 0.01,
+      maximumStep: RUNNER.speed.chaseMetresPerSimSecond * RUNNER.chaseMotion!.speedMultiplier.max * dt + 0.01,
       transitions,
       localSlotStable,
       hasPlacement,

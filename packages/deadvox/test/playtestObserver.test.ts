@@ -2,14 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { PlaytestMarks } from '../src/core/site.ts';
-import { PlaytestObserver } from '../src/game/playtestObserver.ts';
-import { SessionMetrics } from '../src/game/playtestTools.ts';
+import { measureSessionSnapshot } from '../src/debug/snapshotMeasurement.ts';
 import type { Session } from '../src/game/session.ts';
+import { PlaytestObserver } from '../src/presentation/playtestObserver.ts';
+import { SessionMetrics } from '../src/presentation/playtestTools.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { makeAttemptPolicy } from './fixtures/attemptPolicy.ts';
 
 const registry = baseRegistry();
+const policy = makeAttemptPolicy();
 
-const runFurnitureChain = (startsInFurniture: boolean, metrics = new SessionMetrics(1), marks?: PlaytestMarks) => {
+const runFurnitureChain = (
+  startsInFurniture: boolean,
+  metrics = new SessionMetrics(1, policy.limits),
+  marks?: PlaytestMarks,
+) => {
   const inventory = new Inventory(registry);
   const backpack = inventory.create('school_backpack');
   inventory.add(backpack, { kind: 'hand', side: 'right' });
@@ -33,7 +40,7 @@ const runFurnitureChain = (startsInFurniture: boolean, metrics = new SessionMetr
     throw new Error('Could not queue the dependent chained move');
   }
 
-  const observer = new PlaytestObserver(metrics, marks);
+  const observer = new PlaytestObserver(metrics, policy, marks);
   const cupboardName = registry.furniture.get(cupboard.type)!.name;
   observer.beginSearch(cupboard, cupboardName);
   observer.beforeFrame(queue, inventory);
@@ -70,7 +77,7 @@ describe('playtest observer', () => {
       { id: 'beat_here', area: { x0: 0, z0: 0, x1: 2, z1: 2 } },
       { id: 'beat_elsewhere', area: { x0: 4, z0: 4, x1: 6, z1: 6 } },
     ];
-    const anchored = runFurnitureChain(true, new SessionMetrics(1), {
+    const anchored = runFurnitureChain(true, new SessionMetrics(1, policy.limits), {
       beats,
       keyLoot: new Map([['0,0,0', new Set(['rag'])]]),
     }).metrics.toJSON();
@@ -78,7 +85,7 @@ describe('playtest observer', () => {
     expect(Object.keys(anchored.keyItems)).toEqual(['rag']);
     expect(anchored.keyItems.rag?.looted).toBeDefined();
 
-    const otherAnchor = runFurnitureChain(true, new SessionMetrics(1), {
+    const otherAnchor = runFurnitureChain(true, new SessionMetrics(1, policy.limits), {
       beats,
       keyLoot: new Map([['9,9,9', new Set(['rag'])]]),
     }).metrics.toJSON();
@@ -86,8 +93,8 @@ describe('playtest observer', () => {
   });
 
   it('records reads only for key item types', () => {
-    const metrics = new SessionMetrics(1);
-    const observer = new PlaytestObserver(metrics, {
+    const metrics = new SessionMetrics(1, policy.limits);
+    const observer = new PlaytestObserver(metrics, policy, {
       beats: [],
       keyLoot: new Map([['0,0,0', new Set(['rag'])]]),
     });
@@ -101,7 +108,7 @@ describe('playtest observer', () => {
   });
 
   it('keeps a metrics exception from escaping observer work into the simulation frame', () => {
-    const metrics = new SessionMetrics(1);
+    const metrics = new SessionMetrics(1, policy.limits);
     metrics.recordPocketUse = () => {
       throw new Error('optional metrics failure');
     };
@@ -130,8 +137,8 @@ describe('playtest observer', () => {
       locate: () => location,
       entities: { defOf: (entity: { type: string }) => ({ name: entity.type }) },
     };
-    const observerMetrics = new SessionMetrics(1);
-    const observer = new PlaytestObserver(observerMetrics);
+    const observerMetrics = new SessionMetrics(1, policy.limits);
+    const observer = new PlaytestObserver(observerMetrics, policy);
     observer.beginSearch(counter as never, 'counter');
     observer.beforeFrame(queue as never, inventory as never);
     const source = location as never;
@@ -166,8 +173,8 @@ describe('playtest observer', () => {
       registry: { items: { get: () => ({ container: { pockets: [{ name: 'main' }] } }) } },
       name: (owner: { type: string }) => owner.type,
     };
-    const metrics = new SessionMetrics(1);
-    const observer = new PlaytestObserver(metrics);
+    const metrics = new SessionMetrics(1, policy.limits);
+    const observer = new PlaytestObserver(metrics, policy);
     for (const owner of [ownerA, ownerB]) {
       const job = {
         kind: 'move',
@@ -202,13 +209,13 @@ describe('playtest observer', () => {
 
   it('measures delayed time independently of the simulation step cap', () => {
     const entity = { uid: 30, type: 'cabinet', pockets: [] };
-    const metrics = new SessionMetrics(1);
-    const observer = new PlaytestObserver(metrics);
+    const metrics = new SessionMetrics(1, policy.limits);
+    const observer = new PlaytestObserver(metrics, policy);
     observer.beginSearch(entity as never, 'cabinet');
     observer.afterFrame(
       { realSeconds: 1, screenOpen: true, visible: true },
       { jobs: [] } as never,
-      { sim: { paused: false, compression: { c: 1 } }, inventory: {} } as never,
+      { sim: { paused: false, compression: { c: policy.compressionThreshold } }, inventory: {} } as never,
     );
     const item = { uid: 92, type: 'matches', count: 1 };
     let location: unknown = { kind: 'furniture', entity, pocket: 0, placed: { item, x: 0, y: 0, rotated: false } };
@@ -245,7 +252,7 @@ describe('playtest observer', () => {
   });
 });
 
-describe('playtest observer snapshot oracle', () => {
+describe('snapshot diagnostic oracle', () => {
   it('catches a producer mutation by inspecting live state independently', () => {
     const entity = { uid: 9, pockets: [] };
     const runtime = {
@@ -269,15 +276,14 @@ describe('playtest observer snapshot oracle', () => {
       entities: { all: new Set([entity]) },
       searching: () => true,
       queue: { jobs: [{ kind: 'action', jobType: 'furniture.search', elapsed: 1 }] },
-      zombies: { snapshotState: () => ({}) },
+      actors: { snapshotState: () => ({}) },
       spawner: { snapshotState: () => [] },
       survival: { snapshotState: () => ({}) },
       playerAudio: {},
       worldColumns: () => [],
       audioState: () => ({}),
     } as unknown as Session;
-    const observer = new PlaytestObserver(new SessionMetrics(1));
-    const result = observer.measureSnapshot(
+    const result = measureSessionSnapshot(
       () => {
         Object.assign(runtime.sim.body, { health: runtime.sim.body.health - 1 });
         return {};

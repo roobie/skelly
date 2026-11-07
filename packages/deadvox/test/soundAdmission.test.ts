@@ -4,8 +4,9 @@ import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { type SoundEmission, SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
-import { GameAudio } from '../src/game/audio.ts';
 import { createSession, IDLE, type SessionAudio } from '../src/game/session.ts';
+import { GameAudio } from '../src/presentation/audio.ts';
+import { productAssets } from '../src/product/assets.ts';
 import { startupContent } from './baseRegistry.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
@@ -122,9 +123,9 @@ describe('simulation sound admission', () => {
   it('applies a zombie type’s authored pitch multiplier to its mob sound', () => {
     const selected: Readonly<SoundEmission>[] = [];
     const session = makeSession((emission) => selected.push(emission));
-    const type = registry.zombies.get('amalgam')!;
-    session.zombies.add(type, [6, 8, 9], [0, 0, 1]);
-    session.zombies.tick(1 / 60);
+    const type = registry.actors.get('amalgam')!;
+    session.actors.add(type, [6, 8, 9], [0, 0, 1]);
+    session.actors.tick(1 / 60);
 
     const sound = selected.find(({ event }) => event.startsWith('amalgam_'));
     expect(sound).toBeDefined();
@@ -145,6 +146,7 @@ describe('simulation sound admission', () => {
       isSolid: () => false,
       tuning: TEST_SENSE_TUNING,
       report,
+      files: productAssets.audio,
     });
     const session = makeSession(
       (sound) => output.play(sound, sound.position.map((v) => v * 0.5) as [number, number, number]),

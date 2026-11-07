@@ -2,7 +2,7 @@
 read_if:
   - you're planning or implementing Holding ground construction, electricity or fire
   - you're deciding Slice 5 scope, BR gates, technical spikes or play acceptance
-  - you're integrating base appliances, door bashing or unattended simulation
+  - you're integrating base appliances, door bashing, its decision-code ownership or unattended simulation
   - you're implementing bear traps, data-driven events or the playtest wave
 ---
 
@@ -67,7 +67,7 @@ Bashing needs actor and obstacle strength, not an inference from movement or the
 brute silhouette. The authored brute shambler is not automatically the tier-2
 brute; the tier-2 brute's door breaking and player knockback arrive together under
 `DESIGN.md`, "Types are data". See `DESIGN.md`, "Base building and electricity", and
-`src/core/zombies.ts`, `ZombieSystem.updateObstacleContact`.
+`src/core/agent.ts`, `AgentController.updateObstacleContact`.
 Boarding already has directional opening semantics; player-built boarding must
 not silently turn an inside-openable leaf into an immovable wall. See
 `docs/aftermath.md`, "Door variants", and `src/core/blockEntities.ts`, `doorRefusal`.
@@ -257,9 +257,9 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
    changing source visibility through the opening. BR approves flame/smoke readability and
    what the player can do about a burning shelter.
 7. **Event rules, scenario wave and region integration.** #313's rules and their
-   one-shot state are in `DESIGN.md`, "Scenario events". The playtest scenario
-   adopts the wave from `src/content/base/holding-wave.libsonnet`, `rule`, with its
-   own arrival point. Cross the catch-up horizon with a working and
+   one-shot state are in `DESIGN.md`, "Scenario events". The wave lives in the playtest
+   scenario mod because the playtest adopts it, with its own arrival point; see
+   `mods/skelly.deadvox.scenario.playtest/holding-wave.libsonnet`, `rule`. Cross the catch-up horizon with a working and
    a burning base. Prove canonical coarse outcomes, persisted damage, traps, processes
    and nearby/background light attention. Exercise preparation, the wave and recovery
    with charged attacks and stagger available; ordinary ambient attention remains

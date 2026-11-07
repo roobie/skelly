@@ -7,10 +7,14 @@
 import { type BaseIssue, safeParse } from 'valibot';
 import { authoredLayoutIssues } from './authoredLayout.ts';
 import type { BundleAdmission } from './bundleAdmission.ts';
+import { capabilityIssues, claimed } from './capabilities.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { checkDamageKinds } from './damageContent.ts';
+import { checkDropSounds } from './dropSounds.ts';
+import { BLOCK_FOOTSTEP_FAMILY, footstepEventForBlock } from './footsteps.ts';
 import { liftableFurniture } from './furnitureMove.ts';
+import { guidanceIssues } from './guidance.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import {
   footprintScaleIssue,
@@ -21,6 +25,7 @@ import {
   rolledFitIssue,
 } from './inventoryScale.ts';
 import { itemPresentationIssues } from './itemPresentation.ts';
+import { vesselAccepts } from './liquids.ts';
 import { lootTypeIssue } from './loot.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import { mapKitIssues } from './mapKit.ts';
@@ -28,9 +33,9 @@ import { type MaterialOperation, materialCycle } from './materialCycles.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { pieceItemIssues } from './placementLoot.ts';
 import { POWER_UNITS } from './powerContent.ts';
-import { handlingRangeIssues } from './rangeLayout.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import {
+  type ActorDef,
   ARM_SEGMENTS,
   type BlockDef,
   CONTENT_SECTION_KEYS,
@@ -52,9 +57,8 @@ import {
   type ScenarioDef,
   type SiteLayoutDef,
   type TemplateDef,
-  type ZombieDef,
 } from './schema.ts';
-import { SOUND_EVENT_IDS } from './soundEvents.ts';
+import { startIssues } from './startIssues.ts';
 import { ownershipShapeIssues } from './templateOwnership.ts';
 import {
   templateDoorIssues,
@@ -66,6 +70,7 @@ import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolv
 import { vehicleContentIssues } from './vehicleBlueprint.ts';
 
 export type {
+  ActorDef,
   FigureDef,
   FurnitureDef,
   ItemDef,
@@ -75,7 +80,6 @@ export type {
   RecipeDef,
   SoundDef,
   TemplateDef,
-  ZombieDef,
 } from './schema.ts';
 /** A parsed JSON file and where it came from (for error messages). */
 export interface ContentSource {
@@ -101,11 +105,15 @@ export interface Registry extends RegistryMaps {
   modelOrigins: Map<string, { source: string; path: string }>;
   /** Where each sound event was defined; variant paths are relative to this content file's pack. */
   soundOrigins: Map<string, { source: string; path: string }>;
+  /** Every cursor row with its content file, in stack order, so an unloadable winner can fall back to an earlier row. */
+  cursorStack: { cursor: NonNullable<ContentFile['cursors']>[number]; source: string }[];
   dayCycle: DayCycleDef | undefined;
   contentOrigins: Map<string, { source: string; path: string }>;
 }
 
 const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000', solid: false };
+
+import { FIGURE_VARIANTS } from './actorModels.ts';
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;
@@ -177,7 +185,7 @@ const templateIssues = (
 };
 
 /** Checks that need only the file itself: duplicate ids, the built-in air block, template sizes. */
-const fileIssues = (file: ContentFile, source: string): [string, string][] => {
+const fileIssues = (file: ContentFile): [string, string][] => {
   const out: [string, string][] = [];
   for (const section of SECTIONS) {
     const seen = new Set<string>();
@@ -208,13 +216,6 @@ const fileIssues = (file: ContentFile, source: string): [string, string][] => {
       ]);
     }
   });
-  if (source.endsWith('/models-melee.json') || source === 'models-melee.json') {
-    (file.models ?? []).forEach((model, i) => {
-      if (model.hold === undefined) {
-        out.push([`models[${i}].hold`, 'missing']);
-      }
-    });
-  }
   return out;
 };
 
@@ -231,7 +232,7 @@ const parseContent = ({ source, data }: ContentSource): { file?: ContentFile; is
   if (!result.success) {
     return { issues: schemaIssues(source, result.issues) };
   }
-  const issues = fileIssues(result.output, source).map(([path, message]) => ({ source, path, message }));
+  const issues = fileIssues(result.output).map(([path, message]) => ({ source, path, message }));
   return { file: result.output, issues };
 };
 
@@ -263,6 +264,7 @@ const emptyRegistry = (): Registry => ({
   blockIds: new Map([[AIR.id, 0]]),
   modelOrigins: new Map(),
   soundOrigins: new Map(),
+  cursorStack: [],
   dayCycle: undefined,
   contentOrigins: new Map(),
 });
@@ -295,12 +297,8 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
       (file[section] ?? []).forEach((def, i) => {
         if (section === 'skills') {
           const skill = def as NonNullable<ContentFile['skills']>[number];
-          const entry =
-            skill.combat?.firearms === undefined
-              ? skill
-              : { ...skill, combat: { ...skill.combat, firearms: { ...skill.combat.firearms, curve: skill.curve } } };
-          registry.skills.set(entry.id, entry);
-          note(section, entry.id, source, i);
+          registry.skills.set(skill.id, skill);
+          note(section, skill.id, source, i);
           return;
         }
         (map as Map<string, typeof def>).set(def.id, def);
@@ -313,6 +311,9 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
     (file.sounds ?? []).forEach((sound, i) => {
       registry.soundOrigins.set(sound.id, { source, path: `sounds[${i}]` });
     });
+    for (const cursor of file.cursors ?? []) {
+      registry.cursorStack.push({ cursor, source });
+    }
   }
   return { registry, origins };
 };
@@ -392,9 +393,6 @@ const checkUnpacking = (item: ItemDef, registry: Registry, qualities: ReadonlySe
 const checkDisassembly = (item: ItemDef, registry: Registry, qualities: ReadonlySet<string>, report: Report) => {
   const { disassembly } = item;
   if (disassembly) {
-    if (!registry.skills.has(disassembly.skill)) {
-      report('items', item.id, '.disassembly.skill', `no skill "${disassembly.skill}"`);
-    }
     disassembly.yields.forEach((yieldItem, index) => {
       if (!registry.items.has(yieldItem.item)) {
         report('items', item.id, `.disassembly.yields[${index}].item`, `no item "${yieldItem.item}"`);
@@ -444,13 +442,8 @@ const checkLiquidRecovery = (item: ItemDef, registry: Registry, qualities: Reado
       report('items', item.id, `${path}.toolModifier.quality`, `no tool quality "${quality}"`);
     }
   }
-  if (item.salvageLiquidRecovery) {
-    if (!item.salvage) {
-      report('items', item.id, '.salvageLiquidRecovery', 'salvage liquid recovery needs a salvage capability');
-    }
-    if (!registry.skills.has(item.salvageLiquidRecovery.skill)) {
-      report('items', item.id, '.salvageLiquidRecovery.skill', `no skill "${item.salvageLiquidRecovery.skill}"`);
-    }
+  if (item.salvageLiquidRecovery && !item.salvage) {
+    report('items', item.id, '.salvageLiquidRecovery', 'salvage liquid recovery needs a salvage capability');
   }
 };
 
@@ -567,7 +560,7 @@ const checkLiquidFuel = (item: ItemDef, registry: Registry, report: Report): voi
     report('items', item.id, '.light.liquidFuel', 'liquid fuel requires a vessel and no other light fuel mechanism');
   }
   for (const liquid of light.liquidFuel.accepts) {
-    if (!(registry.liquids.has(liquid) && item.vessel?.accepts.includes(liquid))) {
+    if (!(registry.liquids.has(liquid) && item.vessel && vesselAccepts(item.vessel, liquid))) {
       report('items', item.id, '.light.liquidFuel.accepts', 'fuel must be registered and accepted by the vessel');
     }
   }
@@ -612,6 +605,13 @@ const checkFirearmSounds = (item: ItemDef, model: ModelDef | undefined, registry
       '.firearm.suppressedShotSound',
       'a suppressor-mountable firearm needs a suppressed shot sound',
     );
+  }
+};
+
+const checkMeleeModel = (item: ItemDef, registry: Registry, report: Report): void => {
+  const model = item.weapon?.melee && item.model !== undefined ? registry.models.get(item.model) : undefined;
+  if (model && model.hold === undefined) {
+    report('items', item.id, '.model', `melee model "${model.id}" has no hold pose`);
   }
 };
 
@@ -822,7 +822,7 @@ const checkContainerWidth = ({
   registry: Registry;
   report: Report;
 }): void => {
-  const limit = registry.inventory.get(CORE_CONTENT_IDS.player)?.containerMaxWidthCells;
+  const limit = claimed(registry.inventory, 'player')?.containerMaxWidthCells;
   if (limit === undefined || container.wideReason) {
     return;
   }
@@ -988,14 +988,14 @@ const checkVessel = (item: ItemDef, registry: Registry, report: Report): void =>
   ) {
     report('items', item.id, '.vessel', 'liquid vessels cannot declare another consumable balance or unpacking');
   }
-  for (const liquid of vessel.accepts) {
+  for (const liquid of vessel.accepts === 'any' ? [] : vessel.accepts) {
     if (!registry.liquids.has(liquid)) {
       report('items', item.id, '.vessel.accepts', `no liquid "${liquid}"`);
     }
   }
   const initial = vessel.initialContents;
   if (initial.kind === 'filled') {
-    if (!(vessel.accepts.includes(initial.liquid) && registry.liquids.has(initial.liquid))) {
+    if (!(vesselAccepts(vessel, initial.liquid) && registry.liquids.has(initial.liquid))) {
       report('items', item.id, '.vessel.initialContents', 'initial liquid must be registered and accepted');
     }
     if (initial.volumeMicrolitres > vessel.capacityMicrolitres) {
@@ -1010,7 +1010,7 @@ const checkItems = (registry: Registry, report: Report) => {
   const obtainable = obtainableItems(registry);
   const qualities = new Set(items.flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   const hasIgniter = items.some((item) => item.igniter !== undefined);
-  const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
+  const cellMetres = claimed(registry.inventory, 'player')?.cellMetres;
   for (const item of items) {
     if (item.container) {
       checkContainerWidth({ section: 'items', id: item.id, container: item.container, registry, report });
@@ -1025,6 +1025,7 @@ const checkItems = (registry: Registry, report: Report) => {
     checkItemLightModel(item, registry, report);
     checkItemHeldDisplay(item, registry, report);
     checkItemFirearm(item, registry, report);
+    checkMeleeModel(item, registry, report);
     checkMeleeSounds(item, registry, report);
     checkItemOptic(item, registry, obtainable, report);
     checkItemAttachmentEffects(item, registry, report);
@@ -1079,16 +1080,6 @@ const checkLoot = (registry: Registry, report: Report) => {
   }
 };
 
-const checkDoorOpenNoise = (registry: Registry, furniture: FurnitureDef, report: Report) => {
-  const openNoise = furniture.door?.openNoise;
-  const openingSound = openNoise && registry.sounds.get(openNoise.sound);
-  if (openNoise && !openingSound) {
-    report('furniture', furniture.id, '.door.openNoise.sound', `no sound event "${openNoise.sound}"`);
-  } else if (openNoise && openingSound && !openingSound.noise.enabled) {
-    report('furniture', furniture.id, '.door.openNoise.sound', 'opening sound must emit hearing noise');
-  }
-};
-
 const checkSearchNoise = (registry: Registry, furniture: FurnitureDef, report: Report) => {
   const { searchNoise } = furniture;
   const sound = searchNoise && registry.sounds.get(searchNoise.sound);
@@ -1102,11 +1093,15 @@ const checkSearchNoise = (registry: Registry, furniture: FurnitureDef, report: R
 const militaryOnly = (id: string) => `"${id}" is military loot only`;
 
 const checkInstalledEconomy = (registry: Registry, item: ItemDef, report: Report) => {
-  for (const usage of item.economy.usage) {
-    for (const tier of item.economy.tiers) {
+  const economy = registry.itemEconomy.get(item.id);
+  if (!economy) {
+    return;
+  }
+  for (const usage of economy.usage) {
+    for (const tier of economy.tiers) {
       const issue = lootTypeIssue(registry, item.id, { usage: [usage], tier });
       if (issue !== undefined) {
-        report('items', item.id, '.economy', issue);
+        report('itemEconomy', item.id, '', issue);
       }
     }
   }
@@ -1120,6 +1115,14 @@ const itemSupplyOutputs = (item: ItemDef): (readonly [string, string])[] => [
   ...(item.disassembly?.yields ?? []).map((output, i) => [`.disassembly.yields[${i}].item`, output.item] as const),
   ...(item.salvage ?? []).map((output, i) => [`.salvage[${i}].item`, output.item] as const),
 ];
+
+const checkItemEconomyRows = (registry: Registry, report: Report) => {
+  for (const row of registry.itemEconomy.values()) {
+    if (!registry.items.has(row.id)) {
+      report('itemEconomy', row.id, '.id', `no item "${row.id}"`);
+    }
+  }
+};
 
 /** Military-only supply cannot be manufactured through an ordinary recipe or salvage source. */
 const checkMilitaryLoot = (registry: Registry, report: Report) => {
@@ -1167,9 +1170,6 @@ const checkDoorForcing = (registry: Registry, furniture: FurnitureDef, report: R
     const path = `.door.methods.${id}`;
     if (material?.methods && !material.methods.includes(id)) {
       report('furniture', furniture.id, path, `material "${material.id}" does not admit method "${id}"`);
-    }
-    if (!registry.skills.has(method.skill)) {
-      report('furniture', furniture.id, `${path}.skill`, `no skill "${method.skill}"`);
     }
     const sound = registry.sounds.get(method.strikeSound);
     if (!sound?.noise.enabled) {
@@ -1263,7 +1263,7 @@ const checkFurniturePower = (registry: Registry, furniture: FurnitureDef, report
 };
 
 const checkFurniture = (registry: Registry, report: Report) => {
-  const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
+  const cellMetres = claimed(registry.inventory, 'player')?.cellMetres;
   checkMaterialSounds(registry, report);
   for (const furniture of registry.furniture.values()) {
     if (liftableFurniture(furniture) && furniture.massKg === undefined) {
@@ -1279,7 +1279,6 @@ const checkFurniture = (registry: Registry, report: Report) => {
         report('furniture', furniture.id, `.container.pockets[${index}].grid`, issue);
       }
     });
-    checkDoorOpenNoise(registry, furniture, report);
     checkSearchNoise(registry, furniture, report);
     checkMaterial(registry, furniture, report);
     checkDoorForcing(registry, furniture, report);
@@ -1316,7 +1315,7 @@ const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [strin
   if (entry.fixed && furniture?.cover) {
     found.push(['.fixed', 'a cover must be liftable, so it cannot be fitted']);
   }
-  if (entry.spawn !== undefined && !registry.zombies.has(entry.spawn)) {
+  if (entry.spawn !== undefined && !registry.actors.has(entry.spawn)) {
     found.push(['.spawn', `no zombie type "${entry.spawn}"`]);
   }
   return found;
@@ -1558,44 +1557,46 @@ const checkSiteGeneration = (registry: Registry, report: Report) => {
   }
 };
 
-const checkHandlingRanges = (registry: Registry, report: Report) => {
-  for (const layout of registry.handlingRange.values()) {
-    for (const [path, message] of handlingRangeIssues(layout)) {
-      report('handlingRange', layout.id, path, message);
-    }
-  }
-};
-
-const checkSeveredItems = (registry: Registry, zombie: ZombieDef, report: Report) => {
-  const regions = Object.keys(zombie.regions);
+const checkSeveredItems = (registry: Registry, actor: ActorDef, report: Report) => {
+  const regions = Object.keys(actor.regions);
   if (
-    regions.length !== Object.keys(zombie.severedItems).length ||
-    regions.some((region) => !Object.hasOwn(zombie.severedItems, region))
+    regions.length !== Object.keys(actor.severedItems).length ||
+    regions.some((region) => !Object.hasOwn(actor.severedItems, region))
   ) {
-    report('zombies', zombie.id, '.severedItems', 'severed item keys must match region keys');
+    report('actors', actor.id, '.severedItems', 'severed item keys must match region keys');
   }
-  for (const [region, item] of Object.entries(zombie.severedItems)) {
+  for (const [region, item] of Object.entries(actor.severedItems)) {
     if (item !== null && !registry.items.has(item)) {
-      report('zombies', zombie.id, `.severedItems.${region}`, `no item "${item}"`);
+      report('actors', actor.id, `.severedItems.${region}`, `no item "${item}"`);
     }
   }
 };
 
-const checkZombies = (registry: Registry, report: Report) => {
+const checkActorFigure = (actor: ActorDef, report: Report): void => {
+  if (actor.figure !== undefined && FIGURE_VARIANTS[actor.figure].bodyPlan !== actor.model) {
+    report('actors', actor.id, '.figure', 'figure variant anatomy must match the body plan');
+  }
+};
+
+const checkActors = (registry: Registry, report: Report) => {
   const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
-  for (const zombie of registry.zombies.values()) {
-    checkSeveredItems(registry, zombie, report);
-    if (zombie.loot !== undefined && !registry.loot.has(zombie.loot)) {
-      report('zombies', zombie.id, '.loot', `no loot table "${zombie.loot}"`);
+  for (const actor of registry.actors.values()) {
+    checkSeveredItems(registry, actor, report);
+    checkActorFigure(actor, report);
+    if (actor.footstepSound !== undefined && !registry.soundFamilies.has(actor.footstepSound)) {
+      report('actors', actor.id, '.footstepSound', `no sound family "${actor.footstepSound}"`);
     }
-    const quality = zombie.downed?.dismember.quality;
+    if (actor.loot !== undefined && !registry.loot.has(actor.loot)) {
+      report('actors', actor.id, '.loot', `no loot table "${actor.loot}"`);
+    }
+    const quality = actor.downed?.dismember.quality;
     if (quality !== undefined && !qualities.has(quality)) {
-      report('zombies', zombie.id, '.downed.dismember.quality', `no tool quality "${quality}"`);
+      report('actors', actor.id, '.downed.dismember.quality', `no tool quality "${quality}"`);
     }
     for (const key of ['idle', 'alert', 'attack', 'hurt'] as const) {
-      const event = zombie.sounds[key];
+      const event = actor.sounds[key];
       if (!registry.sounds.has(event)) {
-        report('zombies', zombie.id, `.sounds.${key}`, `no sound event "${event}"`);
+        report('actors', actor.id, `.sounds.${key}`, `no sound event "${event}"`);
       }
     }
   }
@@ -1624,9 +1625,6 @@ const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report
       return;
     }
     checkRepairDestination(registry, recipe, report);
-    if (!registry.skills.has(recipe.repair.skill)) {
-      report('recipes', recipe.id, '.repair.skill', `no skill "${recipe.repair.skill}"`);
-    }
     if (recipe.result.count !== 1) {
       report('recipes', recipe.id, '.result.count', 'repair recipes target one item');
     }
@@ -1662,9 +1660,6 @@ const checkRecipe = ({
     }
   });
   checkItem(recipe.result.item, '.result.item');
-  if (recipe.skillUnlock && !registry.skills.has(recipe.skillUnlock.skill)) {
-    report('recipes', recipe.id, '.skillUnlock.skill', `no skill "${recipe.skillUnlock.skill}"`);
-  }
   checkRecipeRepair(registry, recipe, report);
   recipe.components.forEach((group, g) => {
     group.forEach((component, c) => {
@@ -1675,7 +1670,9 @@ const checkRecipe = ({
       const path = `.components[${g}][${c}]`;
       if (!registry.liquids.has(component.liquid)) {
         report('recipes', recipe.id, `${path}.liquid`, `no liquid "${component.liquid}"`);
-      } else if (![...registry.items.values()].some((item) => item.vessel?.accepts.includes(component.liquid))) {
+      } else if (
+        ![...registry.items.values()].some(({ vessel }) => vessel && vesselAccepts(vessel, component.liquid))
+      ) {
         report('recipes', recipe.id, `${path}.liquid`, 'no vessel accepts this liquid');
       }
       if (component.volumeMicrolitres % recipe.result.count !== 0) {
@@ -1683,17 +1680,11 @@ const checkRecipe = ({
       }
     });
   });
-  for (const id of Object.keys(recipe.skills)) {
-    const skill = registry.skills.get(id);
-    if (!skill) {
-      report('recipes', recipe.id, `.skills.${id}`, `no skill "${id}"`);
+  for (const role of Object.keys(recipe.skills)) {
+    const provider = claimed(registry.skills, role);
+    if (provider && provider.training?.craftingTierOffset === undefined) {
+      report('recipes', recipe.id, `.skills.${role}`, `skill role "${role}" provider has no crafting tier offset`);
     }
-  }
-  if (
-    Object.keys(recipe.skills).length > 0 &&
-    registry.skills.get(CORE_CONTENT_IDS.crafting)?.training?.craftingTierOffset === undefined
-  ) {
-    report('recipes', recipe.id, '.skills', 'crafting skill has no crafting tier offset');
   }
   for (const id of Object.keys(recipe.qualities)) {
     if (!qualities.has(id)) {
@@ -1838,7 +1829,35 @@ const checkKeys = (registry: Registry, report: Report) => {
   }
 };
 
+const checkLayoutGuidance = (layout: SiteLayoutDef, registry: Registry, report: Report): void => {
+  if (layout.guidance) {
+    if (!layout.practice) {
+      report('layouts', layout.id, '.guidance', 'guidance requires an authored exit mark');
+    }
+    for (const [path, message] of guidanceIssues(layout.guidance, registry)) {
+      report('layouts', layout.id, `.guidance${path}`, message);
+    }
+  }
+  const light = layout.practice?.light;
+  if (light && registry.items.get(light.light)?.light?.power?.battery !== light.battery) {
+    report('layouts', layout.id, '.practice.light', `"${light.light}" is not a light that takes "${light.battery}"`);
+  }
+};
+
+const checkCatalogueRows = (registry: Registry, report: Report): void => {
+  for (const row of registry.catalogueRows.values()) {
+    row.furniture.forEach((furniture, i) => {
+      if (!registry.furniture.has(furniture)) {
+        report('catalogueRows', row.id, `.furniture[${i}]`, `no furniture "${furniture}"`);
+      }
+    });
+  }
+};
+
 const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report: Report): void => {
+  if (layout.attemptPolicy?.exportFormat === 'attempt') {
+    report('layouts', layout.id, '.attemptPolicy.exportFormat', 'attempt reports require scenario run state');
+  }
   if (layout.weatheringProfile && !registry.weathering.has(layout.weatheringProfile)) {
     report('layouts', layout.id, '.weatheringProfile', `no weathering profile "${layout.weatheringProfile}"`);
   }
@@ -1855,10 +1874,7 @@ const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report
     }
     keys.add(vehicle.placementKey);
   }
-  const light = layout.practice?.light;
-  if (light && registry.items.get(light.light)?.light?.power?.battery !== light.battery) {
-    report('layouts', layout.id, '.practice.light', `"${light.light}" is not a light that takes "${light.battery}"`);
-  }
+  checkLayoutGuidance(layout, registry, report);
 };
 
 const reportMissingCamoSettings = (block: BlockDef, report: Report): void => {
@@ -1914,20 +1930,32 @@ const checkEventRules = (registry: Registry, scenario: ScenarioDef, report: Repo
     }
     ids.add(rule.id);
     rule.effects.forEach((effect, effectIndex) => {
-      if (!registry.zombies.has(effect.zombie)) {
+      if (!registry.actors.has(effect.actor)) {
         report(
           'scenarios',
           scenario.id,
-          `.eventRules[${index}].effects[${effectIndex}].zombie`,
-          `no zombie type "${effect.zombie}"`,
+          `.eventRules[${index}].effects[${effectIndex}].actor`,
+          `no zombie type "${effect.actor}"`,
         );
       }
     });
   });
 };
 
+const checkScenarioPopulation = (registry: Registry, scenario: ScenarioDef, report: Report): void => {
+  for (const [capability, required, field] of [
+    ['settlementHorde', scenario.population.hordes > 0, 'hordes'],
+    ['settlementWanderer', scenario.population.settlementPressure, 'settlementPressure'],
+  ] as const) {
+    if (required && !claimed(registry.actors, capability)) {
+      report('scenarios', scenario.id, `.population.${field}`, `missing required capability "${capability}"`);
+    }
+  }
+};
+
 const checkScenarios = (registry: Registry, report: Report): void => {
   for (const scenario of registry.scenarios.values()) {
+    checkScenarioPopulation(registry, scenario, report);
     for (const [path, message] of scenarioPlanIssues(registry, scenario)) {
       report('scenarios', scenario.id, path, message);
     }
@@ -1938,18 +1966,26 @@ const checkScenarios = (registry: Registry, report: Report): void => {
       report('scenarios', scenario.id, '.compression', `no compression tuning "${scenario.compression}"`);
     }
     checkEventRules(registry, scenario, report);
-    if (registry.layouts.has(scenario.id) || ['city', 'forest', 'testHouse', 'weatheringTest'].includes(scenario.id)) {
+    if (registry.layouts.has(scenario.id) || ['city', 'forest', 'weatheringTest'].includes(scenario.id)) {
       report('scenarios', scenario.id, '.id', 'scenario id collides with another site selector');
     }
   }
 };
 
 const checkBlockFootsteps = (registry: Registry, report: Report): void => {
+  for (const senses of registry.senses.values()) {
+    if (!registry.soundFamilies.has(senses.footsteps.family)) {
+      report('senses', senses.id, '.footsteps.family', `no sound family "${senses.footsteps.family}"`);
+    }
+  }
   for (const { id, footsteps } of registry.blocks) {
     if (!footsteps) {
       continue;
     }
     for (const [family, event] of Object.entries(footsteps)) {
+      if (!registry.soundFamilies.has(family)) {
+        report('blocks', id, `.footsteps.${family}`, `no sound family "${family}"`);
+      }
       if (!registry.sounds.has(event)) {
         report('blocks', id, `.footsteps.${family}`, `no sound event "${event}"`);
       }
@@ -1957,22 +1993,84 @@ const checkBlockFootsteps = (registry: Registry, report: Report): void => {
   }
 };
 
-const checkSkillAndUiReferences = (registry: Registry, report: Report): void => {
+const checkFootstepSounds = (registry: Registry, report: Report): void => {
+  for (const { id, family, block, sound } of registry.footstepSounds.values()) {
+    if (family === BLOCK_FOOTSTEP_FAMILY) {
+      report('footstepSounds', id, '.family', `"${family}" footsteps belong on the block`);
+    }
+    if (!registry.soundFamilies.has(family)) {
+      report('footstepSounds', id, '.family', `no sound family "${family}"`);
+    }
+    if (!registry.blockIds.has(block)) {
+      report('footstepSounds', id, '.block', `no block "${block}"`);
+    }
+    if (!registry.sounds.has(sound)) {
+      report('footstepSounds', id, '.sound', `no sound event "${sound}"`);
+    }
+  }
+};
+
+/** A silent step is a content bug. Reported at the block, so the issue's source is the file authoring that block. */
+const checkFootstepCoverage = (registry: Registry, report: Report): void => {
+  const families = new Set(
+    [...registry.actors.values()].flatMap(({ footstepSound }) =>
+      footstepSound !== undefined &&
+      footstepSound !== BLOCK_FOOTSTEP_FAMILY &&
+      registry.soundFamilies.has(footstepSound)
+        ? [footstepSound]
+        : [],
+    ),
+  );
+  for (const family of families) {
+    for (const block of registry.blocks) {
+      if (block.footsteps && footstepEventForBlock(registry, block, family) === undefined) {
+        report('blocks', block.id, '.footsteps', `no footstep row for family "${family}" on block "${block.id}"`);
+      }
+    }
+  }
+};
+
+const checkCombatSkillRanges = (registry: Registry, report: Report): void => {
+  const policy = claimed(registry.combatPolicy, 'player');
   for (const skill of registry.skills.values()) {
-    const steadinessSkill = skill.combat?.firearms?.longGunSteadinessSkill;
-    if (steadinessSkill !== undefined && !registry.skills.get(steadinessSkill)?.steadiness) {
+    const firearms = skill.combat?.firearms;
+    const melee = skill.combat?.melee;
+    if (firearms && policy?.firearms) {
+      const baseline = policy.firearms;
+      if (firearms.raiseMinimumSimSeconds > baseline.raiseSimSeconds) {
+        report('skills', skill.id, '.combat.firearms.raiseMinimumSimSeconds', 'expert raise exceeds policy baseline');
+      }
+      if (
+        baseline.readyMovementMinimum + firearms.readyMovementRange > 1 ||
+        baseline.breathHold.steadyingMinimum + firearms.breathHold.steadyingSkillRange > 1
+      ) {
+        report('skills', skill.id, '.combat.firearms', 'effect range exceeds one with combat policy baseline');
+      }
+    }
+    if (
+      melee &&
+      policy?.melee &&
+      (policy.melee.blockChanceMinimum + melee.blockChanceRange > 1 ||
+        policy.melee.mitigationMinimum + melee.mitigationRange > 1)
+    ) {
+      report('skills', skill.id, '.combat.melee', 'effect range exceeds one with combat policy baseline');
+    }
+  }
+};
+
+const checkSkillAndUiReferences = (registry: Registry, report: Report): void => {
+  checkCombatSkillRanges(registry, report);
+  for (const skill of registry.skills.values()) {
+    const role = skill.combat?.firearms?.longGunSteadinessRole;
+    const provider = role && claimed(registry.skills, role);
+    if (provider && !provider.steadiness) {
       report(
         'skills',
         skill.id,
-        '.combat.firearms.longGunSteadinessSkill',
-        `no steadiness tuning on skill "${steadinessSkill}"`,
+        '.combat.firearms.longGunSteadinessRole',
+        `no steadiness tuning on role "${role}" provider`,
       );
     }
-    skill.startingRecipes?.forEach((id, index) => {
-      if (!registry.recipes.has(id)) {
-        report('skills', skill.id, `.startingRecipes[${index}]`, `no recipe "${id}"`);
-      }
-    });
   }
   for (const tuning of registry.ui.values()) {
     if (!registry.sounds.has(tuning.refusalSound)) {
@@ -2167,6 +2265,12 @@ const checkBlockMaterials = (registry: Registry, report: Report): void => {
   }
 };
 
+const checkStarts = (registry: Registry, report: Report): void => {
+  for (const { id, path, message } of startIssues(registry)) {
+    report('starts', id, path, message);
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -2178,6 +2282,9 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkCamoBlocks(registry, report);
   checkBlockFootsteps(registry, report);
+  checkFootstepSounds(registry, report);
+  checkFootstepCoverage(registry, report);
+  checkDropSounds(registry, report);
   checkBlockMaterials(registry, report);
   for (const block of registry.blocks) {
     for (const [gait, event] of Object.entries(block.rustle ?? {})) {
@@ -2194,24 +2301,28 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkFigures(registry, report);
   checkHeldHands(registry, report);
   checkLoot(registry, report);
+  checkItemEconomyRows(registry, report);
   checkMilitaryLoot(registry, report);
   checkFurniture(registry, report);
   checkTemplates(registry, report);
   checkSpawnWindows(registry, report);
   checkSiteGeneration(registry, report);
-  checkHandlingRanges(registry, report);
   for (const issue of mapKitIssues(registry)) {
     report(issue.section, issue.id, issue.path, issue.message);
   }
   checkKeys(registry, report);
-  checkZombies(registry, report);
+  checkActors(registry, report);
+  checkDamageKinds(registry, report);
   checkRecipes(registry, report);
   checkSkillAndUiReferences(registry, report);
   checkHeartbeatSounds(registry, report);
+  checkActionSounds(registry, report);
+  checkCatalogueRows(registry, report);
   for (const layout of registry.layouts.values()) {
     checkLayoutReferences(layout, registry, report);
   }
   checkScenarios(registry, report);
+  checkStarts(registry, report);
   for (const { section, id, path, message } of settlementCollectionIssues(registry)) {
     report(section, id, path, message);
   }
@@ -2221,40 +2332,76 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   return issues;
 };
 
-// Recipe skill references already make `crafting` missing content invalid; it need not be a pack-level requirement.
-export const REQUIRED_CORE_CONTENT = [
-  { section: 'body', id: CORE_CONTENT_IDS.player },
-  { section: 'compression', id: CORE_CONTENT_IDS.player },
-  { section: 'figures', id: CORE_CONTENT_IDS.player },
-  { section: 'handlingRange', id: CORE_CONTENT_IDS.testRange },
-  { section: 'skillProgression', id: 'core' },
-  { section: 'inventory', id: CORE_CONTENT_IDS.player },
-  { section: 'meleeClasses', id: CORE_CONTENT_IDS.fistsMeleeClass },
-  { section: 'saves', id: CORE_CONTENT_IDS.autosave },
-  { section: 'senses', id: CORE_CONTENT_IDS.player },
-  { section: 'player', id: CORE_CONTENT_IDS.player },
-  { section: 'siteGeneration', id: CORE_CONTENT_IDS.authoredSite },
-  { section: 'skills', id: CORE_CONTENT_IDS.firearmsCombat },
-  { section: 'skills', id: CORE_CONTENT_IDS.meleeCombat },
-  { section: 'skills', id: CORE_CONTENT_IDS.inventoryManagement },
-  { section: 'ui', id: CORE_CONTENT_IDS.coreUi },
-  { section: 'graphics', id: CORE_CONTENT_IDS.coreGraphics },
-  { section: 'look', id: CORE_CONTENT_IDS.coreLook },
-  ...SOUND_EVENT_IDS.map((id) => ({ section: 'sounds' as const, id })),
-] as const satisfies readonly { section: Exclude<ContentSection, 'blocks'>; id: string }[];
+const checkActionSounds = (registry: Registry, report: Report): void => {
+  const selected = (section: ContentSection, id: string, path: string, sound: string | undefined): void => {
+    if (sound !== undefined && !registry.sounds.has(sound)) {
+      report(section, id, path, `no sound event "${sound}"`);
+    }
+  };
+  const group = (section: ContentSection, id: string, path: string, sounds: Record<string, string>): void => {
+    for (const [field, sound] of Object.entries(sounds)) {
+      selected(section, id, `${path}.${field}`, sound);
+    }
+  };
+  for (const body of registry.body.values()) {
+    const { hurt, block, breath, strain, landing } = body.sounds;
+    group('body', body.id, '.sounds', { strain, landing });
+    group('body', body.id, '.sounds.hurt', { light: hurt.light, heavy: hurt.heavy });
+    group('body', body.id, '.sounds.block', block);
+    group('body', body.id, '.sounds.breath', breath);
+  }
+  for (const furniture of registry.furniture.values()) {
+    if (furniture.moveSounds) {
+      group('furniture', furniture.id, '.moveSounds', furniture.moveSounds);
+    }
+    if (furniture.door) {
+      selected('furniture', furniture.id, '.door.openSound', furniture.door.openSound);
+      selected('furniture', furniture.id, '.door.closeSound', furniture.door.closeSound);
+      selected('furniture', furniture.id, '.door.blockedCloseSound', furniture.door.blockedCloseSound);
+    }
+    selected('furniture', furniture.id, '.container.takeSound', furniture.container?.takeSound);
+  }
+  for (const meleeClass of registry.meleeClasses.values()) {
+    if (meleeClass.unarmed) {
+      const { swingSound, hitSound } = meleeClass.unarmed;
+      group('meleeClasses', meleeClass.id, '.unarmed', { swingSound, hitSound });
+    }
+  }
+  const checkItem = (item: ItemDef): void => {
+    selected('items', item.id, '.container.takeSound', item.container?.takeSound);
+    selected('items', item.id, '.explosive.sound', item.explosive?.sound);
+    if (item.ammo) {
+      const { loadSound, stripSound } = item.ammo;
+      group('items', item.id, '.ammo', { loadSound, stripSound });
+    }
+    const { firearm } = item;
+    if (!firearm) {
+      return;
+    }
+    const needed = {
+      rackSound: !(firearm.bolt || firearm.revolver),
+      rackForwardSound: firearm.pump,
+      caseDropSound: firearm.pump,
+      roundInsertSound: firearm.roundLoadSimSeconds !== undefined,
+    };
+    for (const field of ['rackSound', 'rackForwardSound', 'roundInsertSound', 'caseDropSound'] as const) {
+      selected('items', item.id, `.firearm.${field}`, firearm[field]);
+      if (needed[field] && firearm[field] === undefined) {
+        report('items', item.id, `.firearm.${field}`, 'missing sound selection for this firearm action');
+      }
+    }
+    if (firearm.revolver) {
+      group('items', item.id, '.firearm.revolver.sounds', firearm.revolver.sounds);
+    }
+    selected('items', item.id, '.firearm.handling.magazine.changeSound', firearm.handling.magazine?.changeSound);
+  };
+  for (const item of registry.items.values()) {
+    checkItem(item);
+  }
+};
 
 export const requiredContentIssues = (registry: Registry): ContentIssue[] => {
-  const issues: ContentIssue[] = REQUIRED_CORE_CONTENT.filter(({ section, id }) => !registry[section].has(id)).map(
-    ({ section, id }) => {
-      let message = `missing required content "${id}"`;
-      if (section === 'sounds') {
-        message = `missing required sound event "${id}"`;
-      } else if (section === 'ui') {
-        message = `missing required UI tuning "${id}"`;
-      }
-      return { source: 'core content', path: section, message };
-    },
-  );
+  const issues: ContentIssue[] = capabilityIssues(registry);
   if ([...registry.items.values()].filter((item) => item.workInProgress).length !== 1) {
     issues.push({
       source: 'core content',
@@ -2295,6 +2442,10 @@ export const buildRegistry = (
   }
   for (;;) {
     const { registry, origins } = merge(files);
+    const conflicts = capabilityIssues(registry, false);
+    if (conflicts.length > 0) {
+      return { registry, issues: [...issues, ...conflicts], origins };
+    }
     const broken = trusted ? [] : referenceIssues(registry, origins);
     if (broken.length === 0) {
       return { registry, issues, origins };

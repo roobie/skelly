@@ -3,6 +3,7 @@ read_if:
   - you add, move or remove a Deadvox game-entry URL parameter or hash key
   - you author a demo mod or change how a URL selects mods
   - you change scenario-owned starts, product defaults or the starting kit
+  - you change admission or ordinary inventory placement of authored starts
   - you change how the camera or other view state is written back to the URL
   - you write a browser test or CI script that opens the game with a prepared URL
   - you change how the bench reads its run parameters or sets up its world
@@ -19,7 +20,11 @@ This is the design plan for `docs/decisions/0006-url-mods-and-hash-state.md`, wh
 
 Start rows belong to scenario content because location and kit depend on the map and run. A scenario may provide several starts, and a mod may add one. The product entry pack names its default scenario and start; a player picker is later UI work. See `docs/decisions/0009-content-defined-products.md`, "Starts and mixing".
 
-The planned start section joins `src/core/schema.ts`, `SECTION_DESCRIPTOR`, so new-game setup uses ordinary admission rather than a private preset path. Move the initial kit from `src/game/loadout.ts`, `startingLoadout`, and the layout's start time into that content. The row supplies layout, storeys, density, start time, seed, kit, wounds and skill levels without putting scenario references in shared topics.
+Start definitions use ordinary admission rather than a private preset path; see `src/core/schema/starts.ts`, `StartSchema`, and `src/core/schema/files.ts`, `CONTENT_SECTIONS`. Shared topics need no scenario or start row because definitions are inert until a playable stack supplies its run.
+
+The entry pack chooses the default normal run so reusable topics need not know its identity. Fresh product games select admitted rows and place their normal kit through ordinary owners; see `src/core/packAdmission.ts`, `PackManifestSchema`, `src/game/config.ts`, `configFromUrl`, and `src/presentation/play.ts`, `startPlay`. A generated world is still a mechanism selected by content, not an authored scenario identity in runtime code.
+
+Initial recipe knowledge belongs to the selected start; skill-earned unlocks remain character-owned. See `src/core/character.ts`, `initializeProgression`. Debug kits combine a normal start with the spawn menu or a mod-owned start row, rather than per-kit base starts. Enabling debug tools alone changes no starting inventory, wounds or progression. A backpack is an ordinary item, obtained through the same paths. Mod and test-fixture starts use ordinary admission and placement; debug-only selection stays with `src/game/startSelection.ts`, `requireStart`.
 
 The seed in the start row is optional. A mod pins it when its demo must reproduce one world; otherwise a new game draws one. A hash `seed` overrides it, so exploring other worlds under the same demo stays a hash edit rather than a new mod.
 
@@ -27,14 +32,15 @@ The start row is an ordinary definition. Changing a single field of it from anot
 
 When browser loading of Jsonnet mods is built (issue #801), it must let a browser mod import bundled pack sources, so a browser mod can build on the same sources a demo mod does at build time.
 
-The kit is a list of entries. Each names an item and optionally a count and condition, and says where it goes: worn, in the dominant or off hand, in a pocket of another named entry, or fitted into a slot of another entry. A magazine entry can be filled. Hands are named by role, never by side, so a kit follows the player's handedness option and a left-handed player never has to swap. This is enough to express every kit `src/debug/debugLoadout.ts`, `equipDebugLoadout` builds.
+Name kit parents before their children so placement order is deterministic rather than a second dependency scheduler. Hands use roles rather than sides so handedness does not require a different kit or a player swap. Initial magazine and cylinder contents remain item state, not a second ammunition inventory. Cylinder state goes through the item's ordinary mechanical and ammunition checks so authored state cannot evade model capacity or calibre. See `src/core/schema/starts.ts`, `StartSchema`; `src/core/startState.ts`, `applyStartState`; and `src/core/items.ts`, `setInitialCylinder`.
 
-Validation runs at two boundaries:
+Validation and application have separate responsibilities:
 
-- **Pack admission** checks references: item, layout, skill and wound ids resolve, named parents exist and come earlier in the list, and no hand is named twice. These join `src/core/content.ts`, `referenceIssues`, so `validate` and the panel report them like any other content issue.
-- **New game** places the kit through ordinary inventory adds. A placement the inventory refuses, such as an item too big for its pocket, stops startup with a diagnostic naming the mod and the entry. It never silently drops an item.
+- **Pack admission** attributes unresolved references, conflicting site defaults and invalid kit ownership to their start row, using the same diagnostics as other content. See `src/core/startIssues.ts`, `startIssues`, and `src/core/content.ts`, `referenceIssues`.
+- **Playable-stack validation** checks each start's recipe, kit and skill roots separately so another start cannot conceal missing knowledge. World sources remain stack-wide: static type reachability is not proof that every recipe can be completed within each individual site. A lower-layer stack without starts needs no playable-world closure. See `src/core/reachability.ts`, `checkStartReachability`, and `src/cli/validate.ts`, `validate`.
+- **New game** must use ordinary inventory placement and fitting so content cannot bypass pocket size or slot certification. A refusal stops startup with source and entry attribution instead of silently dropping the item. See `src/core/startState.ts`, `applyStartState`; progression remains character-owned through `src/core/character.ts`, `initializeProgression`.
 
-Start state applies only to a new game. Continue and replay restore the saved world and ignore it, as they ignore the starting kit.
+Callers must identify a fresh game explicitly. Continue and replay restore the saved world and must not reapply kit, wounds or progression, including advancing the item allocator. See `src/core/startState.ts`, `applyStartState`.
 
 ## Demo mods and URL loading
 
@@ -65,8 +71,8 @@ After death, New world keeps the query and the rest of the hash and changes only
 **To mods (start row or definitions):**
 
 - site, storeys, density, time and seed move into the start row, with the hash seed override in "Start state in mods";
-- loadout, wound, firearmsCombat and inventoryManagement become demo mods with kits, wounds and skill levels;
-- the debug backpack from `src/debug/debugLoadout.ts`, `equipDebugBackpack`, becomes a `debug-kit` demo mod, so debug no longer changes the world;
+- debug kits use the spawn menu or mod-owned start rows; wounds and skill levels require an authored row, not query switches;
+- enabling development tools alone must not grant a backpack or change the world;
 - the weathering profile override in `src/core/weatheringUrl.ts`, `resolveWeatheringUrl`, becomes a mod replacing a profile or the site's profile reference;
 - the tutorial site becomes the tutorial mod.
 
@@ -94,7 +100,7 @@ Browser scripts stop concatenating query strings. One helper under `test/browser
 
 The slices preserve each later slice's URLs while migrating one concern at a time. Their delivery must obey `docs/decisions/0009-content-defined-products.md`, "Refactor gate": use an existing PR or wait until the refactor is executed. Start state comes first so the flashlight demo proves the mod path before other setup moves onto it. Tests follow `AGENTS.md`, "Tests": extend an existing flow rather than adding a browser stage.
 
-1. **Start state and URL mod loading.** Establish the content-owned new-game path before migrating other URL state: the start section, validation and placement; the default row replacing `startingLoadout`; the demo source root; `?mods=` admitting demo mods; and `?modpanel`. Every script opening the panel with `?mods=1`, including `test/browser/firefox-ui.mjs`, moves to `?modpanel`. No other parameter moves in this slice. A flashlight-at-night demo with the flashlight in the dominant hand proves the new-game path. This slice owns URL migration, not default-entry UX: the independent default start-flow slice is owned by `docs/decisions/0008-mod-authoring-tool.md`, "Build plan". Coordinate its entry routes with this migration; both use shared admission and save-identity checks.
-2. **Hash state.** The parser, bounds and schema; the browser URL helper; the camera, look switches, weathering tuning, interaction ray, debug, radius and the other hash keys moved to the hash, with write-back of the camera and the panel's live keys. The bench run settings move to the hash, with the bench's `nextUrl` functions and the scripts that start a bench. Presets still in the query that are gated on debug read it from the hash. `src/game/tutorialUrl.ts`, `tutorialUrl`, carries radius and actors in the hash instead of clearing it. `test/browser/gauntlet-flow.mjs` and `test/browser/save-storage.mjs` drop route-fixture and save-lock-holder, which nothing in the game reads.
-3. **Debug presets to demo mods.** Loadouts, wounds, skill levels, the debug backpack, site, time, storeys, density, seed and the weathering profile leave the query for demo mods, with the playtest publisher and CI workflows that use them. The seed moves into the start row, with its hash override, and New world changes the hash seed. The bench's world setup becomes demo mods. The voice-size probe in `src/game/shamblerAudio.ts` gates on the started layout instead of the site parameter. The tutorial becomes a bundled mod: `src/game/tutorialUrl.ts`, `tutorialRequested`, detects it from the loaded start row instead of `site=tutorial`, and `tutorialUrl` selects it through `?mods=`.
+1. **Start state and URL mod loading.** Build URL mod loading on the admitted new-game path in `src/core/startState.ts`, `applyStartState`: the remaining work is the demo source root, `?mods=` admitting demo mods and `?modpanel`. Every script opening the panel with `?mods=1`, including `test/browser/firefox-ui.mjs`, moves to `?modpanel`. No other parameter moves in this slice. A flashlight-at-night demo with the flashlight in the dominant hand proves the new-game path. This slice owns URL migration, not default-entry UX: the independent default start-flow slice is owned by `docs/decisions/0008-mod-authoring-tool.md`, "Build plan". Coordinate its entry routes with this migration; both use shared admission and save-identity checks.
+2. **Hash state.** The parser, bounds and schema; the browser URL helper; the camera, look switches, weathering tuning, interaction ray, debug, radius and the other hash keys moved to the hash, with write-back of the camera and the panel's live keys. The bench run settings move to the hash, with the bench's `nextUrl` functions and the scripts that start a bench. Query selectors gated on debug read it from the hash. `src/presentation/tutorialUrl.ts`, `tutorialUrl`, carries radius and actors in the hash instead of clearing it. `test/browser/gauntlet-flow.mjs` and `test/browser/save-storage.mjs` drop route-fixture and save-lock-holder, which nothing in the game reads.
+3. **World setup to mods.** Prepared debug inventory, wounds and skill levels belong in mod-owned start rows. Site, time, storeys, density, seed and the weathering profile leave the query for demo mods, with the playtest publisher and CI workflows that use them. The seed moves into the start row, with its hash override, and New world changes the hash seed. The bench's world setup becomes demo mods. The voice-size probe in `src/game/actorAudio.ts` gates on the started layout instead of the site parameter. The tutorial becomes a bundled mod: `src/presentation/tutorialUrl.ts`, `tutorialRequested`, detects it from the loaded start row instead of `site=tutorial`, and `tutorialUrl` selects it through `?mods=`.
 4. **Player options and rejection.** Handedness and graphics leave the URL. Kept separate because it adds options UI, which slices 1 to 3 do not need. Rejection of unknown query parameters lands here, once every parameter this plan moves has left the query with the scripts that use it.

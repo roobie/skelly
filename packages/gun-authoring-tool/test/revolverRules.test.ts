@@ -1,9 +1,9 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Resolved } from '@skelly/engine/assembly/schema.ts';
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { displayItems } from '@skelly/engine/shapes/display.ts';
-import { meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Resolved } from '@skelly/construct/assembly/schema.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { displayItems } from '@skelly/construct/shapes/display.ts';
+import { meshForSolid, meshForSolidGroup } from '@skelly/construct/shapes/mesh.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';

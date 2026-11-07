@@ -1,7 +1,7 @@
-import type { PartDef, Resolved } from '@skelly/engine/assembly/schema.ts';
-import { add, applyPoint, scale, type Transform, type Vec3 } from '@skelly/engine/foundation/math.ts';
-import { boundsOfPoints } from '@skelly/engine/shapes/geometry.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import type { PartDef, Resolved } from '@skelly/construct/assembly/schema.ts';
+import { add, applyPoint, scale, type Transform, type Vec3 } from '@skelly/construct/foundation/math.ts';
+import { boundsOfPoints } from '@skelly/construct/shapes/geometry.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { modelMassKg } from '@skelly/thing-core/mass';
 import type { ModelBox, ModelParts } from '@skelly/thing-core/schema';
 import { authoredMeasure, type DrawnGeometry, drawnGeometry, type SolidMeasure } from './drawn.ts';

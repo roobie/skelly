@@ -1,12 +1,14 @@
 import { batteryEnergy } from '../../src/core/battery.ts';
 import type { Registry } from '../../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
 import { toHands } from '../../src/core/options.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../../src/core/saveFormat.ts';
+import { BindingRegistry } from '../../src/game/bindingRegistry.ts';
 import type { ReplayActionPayload } from '../../src/game/replayCommands.ts';
+import { INPUT_BINDINGS } from '../../src/product/controls.ts';
 import { chargerPanel } from '../../src/ui/chargerPanel.ts';
 import { InventoryScreen } from '../../src/ui/inventoryScreen.ts';
 import { contentLookup } from '../../src/ui/saveController.ts';
+import { fixtureIds } from '../fixtures/capabilityIds.ts';
 import { createChargerSession } from '../fixtures/chargerSession.ts';
 
 const queueMove = (
@@ -29,13 +31,18 @@ export const mountChargerFlow = (base: Registry, root: HTMLElement) => {
   const version = {
     simulationHash: 'a'.repeat(64),
     schemaVersion: SAVE_SCHEMA_VERSION,
-    generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
+    generators: {
+      worldgen: 'worldgen-v2',
+      'bodyPlan.humanoid': 'humanoid-figure-v1',
+      'bodyPlan.fused-mass': 'fused-mass-figure-v1',
+    },
     contentPacks: [{ id: 'fixture', version: '1', canonicalHash: '0'.repeat(64) }],
   };
   const mount = () => {
     const { session } = runtime;
     const { inventory } = session;
     screen = new InventoryScreen(root, inventory, session.queue, {
+      bindings: new BindingRegistry(INPUT_BINDINGS),
       reach: session.reach,
       feet: () => session.reach().feet,
       nearby: () => session.reach().piles,
@@ -49,7 +56,7 @@ export const mountChargerFlow = (base: Registry, root: HTMLElement) => {
       body: () => session.sim.body,
       character: () => session.character,
       needs: () => '',
-      slotLabels: runtime.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.wearSlotLabels,
+      slotLabels: runtime.registry.ui.get(fixtureIds.ui)!.wearSlotLabels,
       charger: (entity) => chargerPanel(entity, session.power, session.reach()),
       chargerRevision: () => session.sim.time,
       dispatch: (payload) => {

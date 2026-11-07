@@ -1,4 +1,4 @@
-import type { BoxSolid, ExtrudedPolygonSolid, RevolvedSolid } from '@skelly/engine/shapes/solid.ts';
+import type { BoxSolid, ExtrudedPolygonSolid, RevolvedSolid } from '@skelly/construct/shapes/solid.ts';
 import { parse, strictObject } from 'valibot';
 import { positive, revolve, scalar, strip } from './shapes.ts';
 

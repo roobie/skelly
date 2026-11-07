@@ -16,7 +16,7 @@ import { loadFigureModels } from './figureModels.ts';
 import { content } from './fixtures/startupContent.ts';
 
 const loadModel = (model: ModelDef) => {
-  const bytes = readFileSync(`src/content/base/${model.file}`);
+  const bytes = readFileSync(`../mods/skelly.firearms/${model.file}`);
   return new GLTFLoader()
     .parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '')
     .then(indexModelMaterials);

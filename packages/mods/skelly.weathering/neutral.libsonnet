@@ -1,0 +1,16 @@
+{
+  strength: 0,
+  tintColor: '#ddd7d7',
+  tintDarkness: 0,
+  streakColor: '#ddddcf',
+  streakStrength: 0.22,
+  streakLengthMetres: 2.38,
+  mossColor: '#dde7d7',
+  mossStrength: 0.2,
+  variationScaleMetres: 12,
+  variationStrength: 0.85,
+  mossThreshold: 0.68,
+  mossBias: 0.5,
+  mixCeiling: 1,
+  weatheringBlend: 0,
+}

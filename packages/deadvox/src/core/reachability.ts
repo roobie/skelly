@@ -1,10 +1,12 @@
 // Static type reachability, not an inventory/quantity/seed or whole-game solver.
-import { startingKnownRecipes } from './character.ts';
+
+import { claimed } from './capabilities.ts';
 import type { FurnitureDef, RecipeDef, Registry } from './content.ts';
 import { disassemblyOutputs } from './disassembly.ts';
 import { scenarioSources } from './scenarioComposition.ts';
+import type { StartDef } from './schema/starts.ts';
 import type { ScenarioDef, SiteLayoutDef } from './schema.ts';
-import { HORDE_TYPE, ordinarySpawnWeights } from './settlementSpawns.ts';
+import { ordinarySpawnWeights } from './settlementSpawns.ts';
 import { type CompiledTemplate, compileMapPiece, compileTemplate, kitSlotChoices } from './templates.ts';
 
 interface RecipeDiagnostic {
@@ -110,7 +112,7 @@ interface ClosureInput {
   found: ReadonlySet<string>;
   tools: boolean;
   knowledge: ReadonlySet<string>;
-  skills: ReadonlySet<string>;
+  skills: ReadonlyMap<string, number>;
   workstationQualities: ReadonlyMap<string, number>;
 }
 
@@ -142,7 +144,9 @@ const closure = ({ registry, found, tools, knowledge, skills, workstationQualiti
       if (
         recipe.kind !== 'repair' &&
         knowledge.has(recipe.id) &&
-        Object.entries(recipe.skills).every(([skill, level]) => level === 0 || skills.has(skill)) &&
+        Object.entries(recipe.skills).every(
+          ([role, level]) => !claimed(registry.skills, role) || (skills.get(role) ?? 0) >= level,
+        ) &&
         inputsReady(registry, recipe, items) &&
         (!tools ||
           Object.entries(recipe.qualities).every(([quality, level]) =>
@@ -184,7 +188,7 @@ const authoredFixedLootItems = (layouts: readonly SiteLayoutDef[]): Set<string> 
   return items;
 };
 
-const worldZombieTypes = (
+const worldActorTypes = (
   registry: Registry,
   layouts: readonly SiteLayoutDef[],
   scenarios: Iterable<ScenarioDef>,
@@ -192,7 +196,10 @@ const worldZombieTypes = (
   const types = new Set(layouts.flatMap((layout) => layout.shamblers.map((spawn) => spawn.type)));
   const populations = [...scenarios].map((scenario) => scenario.population);
   if (layouts.some((layout) => layout.hordes?.length) || populations.some((population) => population.hordes > 0)) {
-    types.add(HORDE_TYPE);
+    const provider = claimed(registry.actors, 'settlementHorde');
+    if (provider) {
+      types.add(provider.id);
+    }
   }
   if (populations.some((population) => population.settlementPressure)) {
     for (const [type, weight] of ordinarySpawnWeights(registry)) {
@@ -207,6 +214,10 @@ const worldZombieTypes = (
 export interface ReachabilityScope {
   /** Site ids whose authored sources are included; absent means every playable site. */
   readonly sites?: ReadonlySet<string>;
+  /** Start rows whose placements add their building and promised stock; absent means every start. */
+  readonly starts?: readonly StartDef[];
+  readonly items?: ReadonlySet<string>;
+  readonly skills?: ReadonlyMap<string, number>;
 }
 
 const compiledSource = (registry: Registry, id: string): CompiledTemplate | undefined => {
@@ -257,7 +268,7 @@ interface WorldSourceAccumulator {
   placed: Set<string>;
   workstations: Set<string>;
   workstationQualities: Map<string, number>;
-  zombieTypes: Set<string>;
+  actorTypes: Set<string>;
 }
 
 const addPieceSources = (registry: Registry, template: CompiledTemplate, sources: WorldSourceAccumulator): void => {
@@ -295,7 +306,7 @@ const addTemplateSources = (registry: Registry, template: CompiledTemplate, sour
   addPieceSources(registry, template, sources);
   addGroundLootSources(template, sources);
   for (const marker of template.spawns.filter((spawn) => spawn.chance > 0)) {
-    sources.zombieTypes.add(marker.zombie);
+    sources.actorTypes.add(marker.actor);
   }
 };
 
@@ -312,16 +323,16 @@ const worldSources = (registry: Registry, scope: ReachabilityScope = {}) => {
     placed,
     workstations,
     workstationQualities,
-    zombieTypes: worldZombieTypes(registry, authoredLayouts, scenarios),
+    actorTypes: worldActorTypes(registry, authoredLayouts, scenarios),
   };
   const authoredTemplates = authoredLayouts.flatMap((layout) => layout.buildings.map(({ template }) => template));
-  const scenarioContent = scenarioSources(registry, scenarios);
+  const scenarioContent = scenarioSources(registry, scenarios, scope.starts);
   // Compilation follows every positive-weight kit alternative, not unused palette declarations.
   for (const template of sourceTemplates(registry, new Set([...authoredTemplates, ...scenarioContent.templates]))) {
     addTemplateSources(registry, template, sources);
   }
-  for (const id of sources.zombieTypes) {
-    const loot = registry.zombies.get(id)?.loot;
+  for (const id of sources.actorTypes) {
+    const loot = registry.actors.get(id)?.loot;
     if (loot !== undefined) {
       roots.add(loot);
     }
@@ -333,7 +344,7 @@ const worldSources = (registry: Registry, scope: ReachabilityScope = {}) => {
   for (const fixed of scenarioContent.fixedLoot.flatMap((source) => source.items)) {
     placed.add(fixed.item);
   }
-  const found = new Set([...rolled, ...placed]);
+  const found = new Set([...rolled, ...placed, ...(scope.items ?? [])]);
   addItemOutputs(registry, found);
   return { found, placed, rolled, workstations, workstationQualities };
 };
@@ -345,7 +356,7 @@ interface RecipeDiagnosticContext {
   workstations: ReadonlySet<string>;
   workstationQualities: ReadonlyMap<string, number>;
   knowledge: ReadonlySet<string>;
-  skills: ReadonlySet<string>;
+  skills: ReadonlyMap<string, number>;
 }
 
 const knowledgeIssues = (recipe: RecipeDef, knowledge: ReadonlySet<string>): RecipeDiagnostic[] =>
@@ -355,7 +366,7 @@ const knowledgeIssues = (recipe: RecipeDef, knowledge: ReadonlySet<string>): Rec
         {
           recipe: recipe.id,
           path: recipe.skillUnlock ? '.skillUnlock' : '.knowledge',
-          message: `recipe "${recipe.id}" has no knowledge source: not in any skill's startingRecipes; no reachable book teaches it; ${
+          message: `recipe "${recipe.id}" has no knowledge source: not in the supplied starting recipe roots; no reachable book teaches it; ${
             recipe.skillUnlock
               ? `unlock at "${recipe.skillUnlock.skill}" level ${recipe.skillUnlock.level} has no reachable practice source for "${recipe.skillUnlock.skill}"`
               : 'recipe names no skill unlock'
@@ -382,10 +393,14 @@ const componentIssues = (registry: Registry, recipe: RecipeDef, components: Read
     }),
   );
 
-const skillIssues = (recipe: RecipeDef, skills: ReadonlySet<string>): RecipeDiagnostic[] => {
+const skillIssues = (
+  registry: Registry,
+  recipe: RecipeDef,
+  skills: ReadonlyMap<string, number>,
+): RecipeDiagnostic[] => {
   const issues: RecipeDiagnostic[] = [];
   for (const [skill, level] of Object.entries(recipe.skills)) {
-    if (level > 0 && !skills.has(skill)) {
+    if (claimed(registry.skills, skill) && (skills.get(skill) ?? 0) < level) {
       issues.push({
         recipe: recipe.id,
         path: `.skills.${skill}`,
@@ -432,7 +447,7 @@ const recipeDiagnostics = (context: RecipeDiagnosticContext): { issues: RecipeDi
     issues.push(
       ...knowledgeIssues(recipe, context.knowledge),
       ...componentIssues(context.registry, recipe, context.components),
-      ...skillIssues(recipe, context.skills),
+      ...skillIssues(context.registry, recipe, context.skills),
       ...qualityIssues(recipe, context),
       ...workstationIssues(recipe, context.workstations),
     );
@@ -452,7 +467,7 @@ const canPracticeRecipe = (
   }: {
     registry: Registry;
     tools: ReadonlySet<string>;
-    skills: ReadonlySet<string>;
+    skills: ReadonlyMap<string, number>;
     knowledge: ReadonlySet<string>;
     workstations: ReadonlySet<string>;
     workstationQualities: ReadonlyMap<string, number>;
@@ -460,7 +475,9 @@ const canPracticeRecipe = (
 ): boolean =>
   knowledge.has(recipe.id) &&
   inputsReady(registry, recipe, tools) &&
-  Object.entries(recipe.skills).every(([skill, level]) => level === 0 || skills.has(skill)) &&
+  Object.entries(recipe.skills).every(
+    ([role, level]) => !claimed(registry.skills, role) || (skills.get(role) ?? 0) >= level,
+  ) &&
   Object.entries(recipe.qualities).every(([quality, level]) =>
     qualityReady({ registry, items: tools, workstationQualities }, quality, level),
   ) &&
@@ -469,7 +486,7 @@ const canPracticeRecipe = (
 const knownRecipes = (registry: Registry, found: ReadonlySet<string>, known: ReadonlySet<string>) => {
   const knowledge = new Set(known);
   for (const recipe of registry.recipes.values()) {
-    if (recipe.skillUnlock?.level === 0) {
+    if (recipe.skillUnlock && (!claimed(registry.skills, recipe.skillUnlock.skill) || recipe.skillUnlock.level === 0)) {
       knowledge.add(recipe.id);
     }
   }
@@ -487,7 +504,19 @@ interface ReachableKnowledgeAndSkillsContext {
   workstations: ReadonlySet<string>;
   workstationQualities: ReadonlyMap<string, number>;
   known: ReadonlySet<string>;
+  startingSkills: ReadonlyMap<string, number>;
 }
+
+const addPracticeSkills = (registry: Registry, recipe: RecipeDef, skills: Map<string, number>): boolean => {
+  let changed = false;
+  for (const role of Object.keys(recipe.skills)) {
+    if (claimed(registry.skills, role) && skills.get(role) !== Number.POSITIVE_INFINITY) {
+      skills.set(role, Number.POSITIVE_INFINITY);
+      changed = true;
+    }
+  }
+  return changed;
+};
 
 const reachableKnowledgeAndSkills = ({
   registry,
@@ -495,33 +524,34 @@ const reachableKnowledgeAndSkills = ({
   workstations,
   workstationQualities,
   known,
+  startingSkills,
 }: ReachableKnowledgeAndSkillsContext) => {
   const knowledge = knownRecipes(registry, found, known);
-  const skills = new Set<string>();
-  let previous: number;
+  const skills = new Map(startingSkills);
+  let changed: boolean;
   do {
-    previous = knowledge.size + skills.size;
+    changed = false;
+    const previousKnowledge = knowledge.size;
     const tools = closure({ registry, found, tools: true, knowledge, skills, workstationQualities });
     for (const recipe of registry.recipes.values()) {
       if (!canPracticeRecipe(recipe, { registry, tools, skills, knowledge, workstations, workstationQualities })) {
         continue;
       }
-      for (const skill of Object.keys(recipe.skills)) {
-        skills.add(skill);
-      }
+      changed = addPracticeSkills(registry, recipe, skills) || changed;
     }
     for (const recipe of registry.recipes.values()) {
-      if (recipe.skillUnlock && skills.has(recipe.skillUnlock.skill)) {
+      if (recipe.skillUnlock && (skills.get(recipe.skillUnlock.skill) ?? 0) >= recipe.skillUnlock.level) {
         knowledge.add(recipe.id);
       }
     }
-  } while (knowledge.size + skills.size !== previous);
+    changed ||= knowledge.size !== previousKnowledge;
+  } while (changed);
   return { knowledge, skills };
 };
 
 export const checkReachability = (
   registry: Registry,
-  known: ReadonlySet<string> = new Set(startingKnownRecipes(registry)),
+  known: ReadonlySet<string> = new Set(),
   scope?: ReachabilityScope,
 ) => {
   const { found, placed, rolled, workstations, workstationQualities } = worldSources(registry, scope);
@@ -531,6 +561,7 @@ export const checkReachability = (
     workstations,
     workstationQualities,
     known,
+    startingSkills: scope?.skills ?? new Map(),
   });
   const components = closure({ registry, found, tools: false, knowledge, skills, workstationQualities });
   const toolReachable = closure({ registry, found, tools: true, knowledge, skills, workstationQualities });
@@ -543,7 +574,7 @@ export const checkReachability = (
     knowledge,
     skills,
   });
-  const eligible = [...registry.items.values()].filter((item) => !item.notLoot).map((item) => item.id);
+  const eligible = [...registry.itemEconomy.values()].filter((row) => !row.notLoot).map((row) => row.id);
   return {
     found,
     placed,
@@ -557,3 +588,23 @@ export const checkReachability = (
     unreachable: eligible.filter((id) => !components.has(id)).sort(),
   };
 };
+
+export const checkStartReachability = (registry: Registry, start: StartDef, scope: ReachabilityScope = {}) =>
+  checkReachability(registry, new Set(start.recipes), {
+    ...scope,
+    starts: [start],
+    items: new Set(
+      start.kit.flatMap((entry) => [
+        entry.item,
+        ...(entry.cartridges ?? []),
+        ...(entry.cylinder?.chambers.flatMap((chamber) => (chamber.state === 'round' ? [chamber.roundType] : [])) ??
+          []),
+      ]),
+    ),
+    skills: new Map(
+      Object.entries(start.skills).flatMap(([id, level]) => {
+        const role = registry.skills.get(id)?.capability;
+        return role ? [[role, level] as const] : [];
+      }),
+    ),
+  });

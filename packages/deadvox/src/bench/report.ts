@@ -42,7 +42,7 @@ export const shamblerResultRow = (r: ShamblerRunResult): string[] => [
   String(r.seed),
   r.actors,
   `${f(r.frame.msMedian)} / ${f(r.frame.msP95)} / ${pct(r.frame.slowFraction)}`,
-  `${f(r.zombieTick.median)} / ${f(r.zombieTick.p95)}`,
+  `${f(r.actorTick.median)} / ${f(r.actorTick.p95)}`,
   r.backgroundTick ? `${f(r.backgroundTick.median)} / ${f(r.backgroundTick.p95)}` : '–',
   `${f(r.actorSync.median)} / ${f(r.actorSync.p95)}`,
   `${f(r.renderSubmit.median)} / ${f(r.renderSubmit.p95)}`,
@@ -55,7 +55,7 @@ export const shamblerSummary = (runs: readonly ShamblerRunResult[]): string =>
   runs
     .map(
       (r) =>
-        `N=${r.n} active/background=${r.active ?? '–'}/${r.background ?? '–'} seed=${r.seed} actors=${r.actors}: frame ${f(r.frame.msMedian)}/${f(r.frame.msP95)} ms p50/p95, ${pct(r.frame.slowFraction)} >18 ms; active tick ${f(r.zombieTick.median)}/${f(r.zombieTick.p95)} ms p50/p95; background tick ${r.backgroundTick ? `${f(r.backgroundTick.median)}/${f(r.backgroundTick.p95)}` : '–'} ms p50/p95; actor sync ${f(r.actorSync.median)}/${f(r.actorSync.p95)} ms p50/p95; render-submit ${f(r.renderSubmit.median)}/${f(r.renderSubmit.p95)} ms p50/p95; holes ${r.holesMax} max (${pct(r.holeFraction)} frames)${r.interrupted ? ' [INTERRUPTED]' : ''}`,
+        `N=${r.n} active/background=${r.active ?? '–'}/${r.background ?? '–'} seed=${r.seed} actors=${r.actors}: frame ${f(r.frame.msMedian)}/${f(r.frame.msP95)} ms p50/p95, ${pct(r.frame.slowFraction)} >18 ms; active tick ${f(r.actorTick.median)}/${f(r.actorTick.p95)} ms p50/p95; background tick ${r.backgroundTick ? `${f(r.backgroundTick.median)}/${f(r.backgroundTick.p95)}` : '–'} ms p50/p95; actor sync ${f(r.actorSync.median)}/${f(r.actorSync.p95)} ms p50/p95; render-submit ${f(r.renderSubmit.median)}/${f(r.renderSubmit.p95)} ms p50/p95; holes ${r.holesMax} max (${pct(r.holeFraction)} frames)${r.interrupted ? ' [INTERRUPTED]' : ''}`,
     )
     .join(' | ');
 
@@ -187,7 +187,7 @@ const showShamblerReport = (card: HTMLElement, record: BenchRecord): void => {
     element('h1', 'Shambler benchmark results'),
     element(
       'p',
-      'Frame times are wall-clock intervals; slow frames are over 18 ms. ZombieSystem tick and render-submit are CPU timings. Holes are nearby unmeshed columns.',
+      'Frame times are wall-clock intervals; slow frames are over 18 ms. ActorSystem tick and render-submit are CPU timings. Holes are nearby unmeshed columns.',
     ),
     table,
     element('h2', 'One-line summary'),

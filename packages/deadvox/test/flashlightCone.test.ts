@@ -1,4 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
 import { compileFunction } from 'node:vm';
 import {
   Light,
@@ -21,6 +20,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { type BeamSpill, BeamSpillSchema, type ContentFile } from '../src/core/schema.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { CALIBRATED_NEAR_FIELD_M } from './flashlightFixture.ts';
 
 let Flashlight: typeof import('../src/render/flashlight.ts').Flashlight;
@@ -66,9 +66,7 @@ const source = (shape: object) => ({
         id: 'fixture_beam',
         name: 'Fixture beam',
         category: 'light',
-        economy: { usage: [], tiers: [] },
         workInProgress: false,
-        notLoot: false,
         weight: 10,
         size: [1, 1],
         wearable: { slot: 'head', encumbrance: 0 },
@@ -267,13 +265,10 @@ describe('flashlight cone', () => {
   });
 
   it('no base beam ships with spill enabled', () => {
-    const base = 'src/content/base';
-    const beams = readdirSync(base)
-      .filter((file) => file.endsWith('.json'))
-      .flatMap((file) => {
-        const content = JSON.parse(readFileSync(`${base}/${file}`, 'utf8')) as ContentFile;
-        return (content.items ?? []).filter((item) => item.light?.beam);
-      });
+    const beams = baseContentSources().flatMap(({ data }) => {
+      const content = data as ContentFile;
+      return (content.items ?? []).filter((item) => item.light?.beam);
+    });
     expect(beams.length).toBeGreaterThan(0);
     expect(beams.filter((item) => item.light?.beam?.spill?.enabled).map((item) => item.id)).toEqual([]);
   });

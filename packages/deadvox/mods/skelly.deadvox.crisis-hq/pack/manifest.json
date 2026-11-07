@@ -1,0 +1,27 @@
+{
+  "dependencies": [
+    "skelly.deadvox.actors",
+    "skelly.deadvox.camp",
+    "skelly.deadvox.loot",
+    "skelly.deadvox.rural-sites",
+    "skelly.deadvox.site-generation",
+    "skelly.manufactured-blocks",
+    "skelly.natural-world",
+    "skelly.structures"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "crisis-hq-fixtures.json"
+    },
+    {
+      "kind": "content",
+      "path": "crisis-hq.json"
+    }
+  ],
+  "id": "skelly.deadvox.crisis-hq",
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

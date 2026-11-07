@@ -4,7 +4,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { graphicsTuningOf } from '../src/core/graphicsTuning.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { authoredSkyBoxes, SkyFields } from '../src/core/skyField.ts';
-import { createEngine } from '../src/game/engine.ts';
+import { createEngine } from '../src/presentation/engine.ts';
 import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';
 

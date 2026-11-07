@@ -10,6 +10,7 @@ import {
   adaptMainInteractionPick,
   adaptMainOpticLensPass,
   adaptMainSeedPool,
+  adaptMainSiteActors,
   baseOnlyWorkspacePlugin,
   mainArrivalGit,
   mainOverlayPath,
@@ -76,6 +77,31 @@ it('main picker callers supply both branch reach predicates without changing an 
   assert.equal(adaptMainInteractionPick(adapted), adapted);
 });
 
+it('main world setup exposes and delegates the branch actor-column contract, including its empty debug site', () => {
+  const source = `class DebugSite {
+    zombiesIn() { return []; }
+  }
+  return {
+    debug: new DebugSite(),
+    site: { zombiesIn: (cx, cz) => built?.zombiesIn(cx, cz) ?? [] },
+  };`;
+  const spawn = { type: 'fixture_actor', pos: [1, 2, 3] };
+  const calls = [];
+  const adapted = adaptMainSiteActors(source);
+  const build = Function('built', adapted);
+  const result = build({
+    actorsIn: (...column) => {
+      calls.push(column);
+      return [spawn];
+    },
+  });
+  assert.deepEqual(result.site.actorsIn(2, 3), [spawn]);
+  assert.deepEqual(calls, [[2, 3]]);
+  assert.deepEqual(result.debug.actorsIn(), []);
+  assert.deepEqual(build(undefined).site.actorsIn(2, 3), []);
+  assert.equal(adaptMainSiteActors(adapted), adapted);
+});
+
 it('main Mood overlays pass graphics-owned optic-lens tuning to the branch renderer', () => {
   const source = 'this.opticPass = opticLensPass();';
   const adapted = adaptMainOpticLensPass(source);
@@ -102,6 +128,53 @@ it('a main renderer on one shared seed pool builds only the seeds each model rea
     throw new Error('geometry failed');
   };
   assert.throws(() => build(['shambler'], [1], broken, 1), { message: 'geometry failed' });
+  assert.equal(adaptMainSeedPool(adapted), adapted);
+});
+
+it('main actor overlays keep renamed body-plan selectors separate from mobgen mechanism names', () => {
+  const source = `import type { ZombieModel } from '../core/zombieModels.ts';
+return types.map((type) => {
+  const model = type.model;
+  const v = { model };
+  const variant = v;
+  return {
+    seeded: type.model !== 'amalgam',
+    special: type?.model === 'amalgam',
+    lookAt: LOOK_AT_PROFILES[model === 'amalgam' ? 'shambler' : model],
+    template: templatesByModel.get(v.model),
+    ragdoll: ragdollContent.models.includes(variant.model),
+  };
+});`;
+  const adapted = adaptMainSeedPool(source);
+  const [declaration, ...body] = adapted.split('\n');
+  const inspect = Function(
+    'types',
+    'bodyPlanModel',
+    'figureVariantOf',
+    'LOOK_AT_PROFILES',
+    'templatesByModel',
+    'ragdollContent',
+    body.join('\n'),
+  );
+  const mechanisms = { humanoid: 'humanoid', 'fused-mass': 'amalgam', crawler: 'crawler' };
+  const actual = inspect(
+    [{ model: 'humanoid' }, { model: 'fused-mass' }, { model: 'humanoid', figure: 'crawler' }],
+    (variant) => mechanisms[variant],
+    (type) => type.figure ?? type.model,
+    { humanoid: 'humanoid-gaze', crawler: 'crawler-gaze' },
+    new Map([
+      ['humanoid', 'humanoid-template'],
+      ['amalgam', 'mass-template'],
+      ['crawler', 'crawler-template'],
+    ]),
+    { models: ['humanoid', 'amalgam'] },
+  );
+  assert.deepEqual(actual, [
+    { seeded: true, special: false, lookAt: 'humanoid-gaze', template: 'humanoid-template', ragdoll: true },
+    { seeded: false, special: true, lookAt: 'humanoid-gaze', template: 'mass-template', ragdoll: true },
+    { seeded: true, special: false, lookAt: 'crawler-gaze', template: 'crawler-template', ragdoll: false },
+  ]);
+  assert.ok(declaration.includes('bodyPlanModel'));
   assert.equal(adaptMainSeedPool(adapted), adapted);
 });
 

@@ -15,6 +15,7 @@ export const mainSourceOverlays = [
   'bench/run.ts',
   'bench/post.ts',
   'game/bundledContent.ts',
+  'game/browserMods.ts',
   'game/config.ts',
   'game/worldSetup.ts',
   'game/engine.ts',
@@ -87,6 +88,12 @@ export function adaptMainInteractionPick(source) {
   );
 }
 
+// Base world setup supplies a column-source wrapper to branch session/spawner code. Both the wrapper's
+// public method and its delegation must use the branch contract; export shims cannot rename object members.
+export function adaptMainSiteActors(source) {
+  return source.replaceAll('zombiesIn', 'actorsIn');
+}
+
 const SHARED_SEED_POOL = `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).map((seed) =>
       buildActorVariant(model, seed, amalgamType),
     ),`;
@@ -94,12 +101,17 @@ const SHARED_SEED_POOL = `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : fig
 // A base renderer that builds every model on one shared seed pool meets the branch's figure realization, which
 // refuses a seed that is not valid for a model by itself rather than drawing the next seed's body. The base
 // renderer then builds, per model, only the pool seeds that realize, as the branch builds each model's own
-// authored seeds; any other build error still fails the run. A base that builds per-model seeds needs no rewrite.
-// See `packages/mobgen/src/mob/shamblerFigure.ts`, `zombieFigure`.
+// authored seeds; any other build error still fails the run. A base that builds per-model seeds needs no seed rewrite.
+// The overlay retains branch body-plan identities, while mobgen profiles, templates and ragdoll catalogs keep
+// implementation names; reverting either side would mix content and mechanism contracts.
+// See `packages/mobgen/src/mob/humanoidFigure.ts`, `templateFigure`.
 export function adaptMainSeedPool(source) {
-  return source.replace(
-    SHARED_SEED_POOL,
-    `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).flatMap((seed) => {
+  return source
+    .replaceAll('ZombieModel', 'ActorModel')
+    .replaceAll('core/zombieModels.ts', 'core/actorModels.ts')
+    .replace(
+      SHARED_SEED_POOL,
+      `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).flatMap((seed) => {
       try {
         return [buildActorVariant(model, seed, amalgamType)];
       } catch (error) {
@@ -109,7 +121,23 @@ export function adaptMainSeedPool(source) {
         throw error;
       }
     }),`,
-  );
+    )
+    .replace(
+      "import type { ActorModel } from '../core/actorModels.ts';",
+      "import { type ActorModel, bodyPlanModel, figureVariantOf } from '../core/actorModels.ts';",
+    )
+    .replaceAll('zombie.type.model', 'figureVariantOf(zombie.type)')
+    .replaceAll('type.model', 'figureVariantOf(type)')
+    .replaceAll("'amalgam'", "'fused-mass'")
+    .replace(
+      "LOOK_AT_PROFILES[model === 'fused-mass' ? 'shambler' : model]",
+      "LOOK_AT_PROFILES[model === 'fused-mass' ? 'humanoid' : bodyPlanModel(model)]",
+    )
+    .replace('templatesByModel.get(v.model)', 'templatesByModel.get(bodyPlanModel(v.model))')
+    .replace(
+      'ragdollContent.models.includes(variant.model)',
+      'ragdollContent.models.includes(bodyPlanModel(variant.model))',
+    );
 }
 
 // The base Mood caller predates content-owned optic-lens tuning. Keep its presentation overlay while supplying
@@ -319,6 +347,7 @@ function assertOverlayBoundary(root, overlays, branchPaths) {
 const OVERLAY_ADAPTERS = {
   'render/playView.ts': contentLookView,
   'game/play.ts': adaptMainInteractionPick,
+  'game/worldSetup.ts': adaptMainSiteActors,
   'render/mobActors.ts': adaptMainSeedPool,
   'render/mood.ts': adaptMainOpticLensPass,
   'game/engine.ts': (source) =>
@@ -455,7 +484,10 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           if (overlays.has(relative)) {
             appliedSources.add(relative);
           }
-          if (relative === 'core/authoredSite.ts' || relative === 'content/base/templates-stairs.json') {
+          if (
+            relative === 'core/authoredSite.ts' ||
+            id.endsWith('/mods/skelly.deadvox.scenario.stairs/templates-stairs.json')
+          ) {
             source = fixtureTransform(source, id) ?? source;
           }
           return OVERLAY_ADAPTERS[relative]?.(source) ?? source;

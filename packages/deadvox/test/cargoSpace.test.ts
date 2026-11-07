@@ -10,7 +10,6 @@ import {
   snapBox,
 } from '../src/core/cargoSpace.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { ItemFactory, type ItemState, restoreItem, snapshotItem } from '../src/core/items.ts';
 import type { VehicleFittingDef } from '../src/core/schema.ts';
 import {
@@ -20,10 +19,11 @@ import {
   placeFitting,
 } from '../src/core/vehicleBlueprint.ts';
 import type { VehicleInstance } from '../src/core/vehicleInstances.ts';
-import { baseSources } from '../src/game/bundledContent.ts';
+import { baseSources } from '../src/product/content.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 // The vehicle content and the cell size it is measured in, not the whole base: see `test/vehicleExport.test.ts`.
-const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json'];
+const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json', 'natural-sounds.json'];
 const fixtureSources = baseSources.filter(({ source }) => FIXTURE_BASE.some((file) => source.endsWith(`/${file}`)));
 const MOD = 'mods/cargo-fixture.json';
 const OFF_FREE_FLOOR = /free floor/;
@@ -33,7 +33,7 @@ const NO_LOAD_FLOOR = /load floor/;
 
 const base = buildRegistry(fixtureSources);
 const { registry } = base;
-const cell = registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres;
+const cell = registry.inventory.get(fixtureIds.player)!.cellMetres;
 const openMetres = registry.items.get('cargo_space')!.vehicle!.addon!.openClearanceCells! * cell;
 const addon = { requires: 'load_floor' as const, openClearanceCells: openMetres / cell };
 

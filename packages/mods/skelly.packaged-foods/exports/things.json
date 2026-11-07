@@ -1,0 +1,182 @@
+[
+  {
+    "id": "canned_beans",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "canned_beans",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "canned_soup",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "canned_soup",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "crackers",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "crackers",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "chocolate_bar",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "chocolate_bar",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "soda_can",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "soda_can",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "empty_soda_can",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "empty_soda_can",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "water_bottle",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "water_bottle",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "juice_carton",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "juice_carton",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "opened_beans",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "opened_beans",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "opened_soup",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "opened_soup",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "empty_can",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "empty_can",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "opened_soda",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "opened_soda",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "beans",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "beans",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "soup",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "soup",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "soda",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "soda",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  }
+]

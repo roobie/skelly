@@ -36,13 +36,13 @@ Hover and focus details use one or two sentences of plain fact. No wordplay, con
 
 The interface affords actions rather than writing procedures. Control labels come from bindings so rebinding cannot leave stale labels. Numbers stay available on surfaces the player opens rather than being pushed during play, keeping simulation facts accessible without undermining diegesis. Gungen and mobgen viewers are development tools, outside this rule.
 
-The labels and messages a screen draws are content, like the rest of the game's text, so a pack can reword or translate them without a code edit. Code names a key and validation rejects content that lacks it, so a missing line is an error rather than a silent default. A line marks each value code fills in as a `{slot}`, so a pack can reword or reorder around it; validation rejects a line that drops a slot or names one code never fills, and a slot holding a bound key is drawn as its key cap. See `src/core/schema.ts`, `UiScreenTextSchema`, and `src/ui/keyCap.ts`, `fillHint`.
+The labels and messages a screen draws are content, like the rest of the game's text, so a pack can reword or translate them without a code edit. Code names a key and validation rejects content that lacks it, so a missing line is an error rather than a silent default. A line marks each value code fills in as a `{slot}`, so a pack can reword or reorder around it; validation rejects a line that drops a slot or names one code never fills, and a slot holding a bound key is drawn as its key cap. See `src/core/schema/ui.ts`, `UiScreenTextSchema`, and `src/ui/keyCap.ts`, `fillHint`.
 
 Every number a player reads is formatted through one precision table, `src/core/numberText.ts`, whose kinds (`countText`, `decimalText` and the rest) own each value's precision, because accumulated simulation values carry float noise no line should show and precision belongs in one place, not in literals at call sites. Every text-slot boundary takes only formatted values — action text (`src/core/actionText.ts`, `fillText`), core messages and labels (`src/core/coreText.ts`, `coreMessage`), and hint lines (`src/ui/keyCap.ts`, `fillHint`, whose slots take text, rendered templates and directives like the crafting combo box, but no primitive) — so the compiler rejects a raw number reaching a line.
 
 ## Class 3: the character's voice
 
-Short first-person refusals and observations name the world or the character's state, not keys or procedures. Their reason text follows the messages HUD option; the refusal sound remains a player-only presentation cue. See `src/game/tierNotice.ts`, `TierNotice`.
+Short first-person refusals and observations name the world or the character's state, not keys or procedures. Their reason text follows the messages HUD option; the refusal sound remains a player-only presentation cue. See `src/presentation/tierNotice.ts`, `TierNotice`.
 
 ## HUD
 
@@ -52,7 +52,7 @@ A bound key in a hint or label is drawn as a key cap, a small bordered capital, 
 
 The interactible outline is an optional spatial HUD aid, separate from interaction hints. It compensates for objects whose appearance does not make their usable parts clear; it is not a substitute for diegetic affordances. Prefer making objects look interactible so players can discover actions without this crutch. The outline must not become a glowing substitute for seeing the object: it receives the scene's surface lighting, without emission or a minimum visibility floor. Its edge normals bisect the adjacent faces, so an edge cannot receive direct light when neither adjoining face faces the light. This keeps its yellow cue responsive to lamps and flashlights as well as the sky, rather than treating a sky-intensity estimate as surface brightness. See `src/render/interactionMarker.ts`, `markInteractionTarget`, and `src/render/furniture.ts`, `markerEdges`.
 
-The held-item action list is meta presentation: the held geometry cannot express which of several valid operations a click will perform. It shares the interaction-hint visibility policy but stays in the lower left so a choice does not cover the target. See `src/game/survival.ts`, `Survival.wieldedItemActionHint`, and `src/game/play.ts`, `promptText`.
+The held-item action list is meta presentation: the held geometry cannot express which of several valid operations a click will perform. It shares the interaction-hint visibility policy but stays in the lower left so a choice does not cover the target. See `src/game/survival.ts`, `Survival.wieldedItemActionHint`, and `src/presentation/play.ts`, `promptText`.
 
 Craft status has no panel of its own. A running craft is progress in the handling HUD, like reading, forcing a door and treatment. A held paused craft is a "Continue" entry in the held-item action list, with no progress shown. A dropped work item shows neither, because it may never be finished and its status must not follow the player; continuing it is an option on the item itself. One shared panel family avoids the overlaps that unique panels cause, and new UI is not invented where an existing element serves. See `src/ui/craftReadout.ts`, `runningCraftPresentation`, and `src/game/survival.ts`, `Survival.availableItemActions`.
 
@@ -62,7 +62,7 @@ The optional stats readout is a tuning surface for viewing felt pain and its com
 
 ## Combat and feedback
 
-Combat readiness is a stance, not a HUD mode. Firearms fire only while ready and not sprinting; an unready click does nothing and produces no refusal sound. Melee attacks require en-garde, and en-garde alone blocks, so guarding needs no extra key. Firearms Combat affects duck-walking; Melee Combat affects blocking. Hand activation follows actor roles without remapping physical slots. See `src/game/play.ts`, `fireHeldItem` and `shouldPlayerBlock`; `src/game/inputBindings.ts`, `BindingRegistry`; and `src/game/primaryAction.ts`, `selectPrimaryAction`, for which held item owns the click.
+Combat readiness is a stance, not a HUD mode. Firearms fire only while ready and not sprinting; an unready click does nothing and produces no refusal sound. Melee attacks require en-garde, and en-garde alone blocks, so guarding needs no extra key. Firearms Combat affects duck-walking; Melee Combat affects blocking. Hand activation follows actor roles without remapping physical slots. See `src/game/handUse.ts`, `fireHeldItem`; `src/game/commandRouter.ts`, `shouldPlayerBlock`; `src/game/bindingRegistry.ts`, `BindingRegistry`; and `src/game/primaryAction.ts`, `selectPrimaryAction`, for which held item owns the click.
 
 Bleeding feedback names each region's tier when messages are enabled. A content tier marked for warning gets a warning; a quiet tier stays quiet. Refusal text follows the messages option, while the character's refusal sound remains available. Treatment progress belongs to the handling HUD; recipe reading progress belongs on the open page because it provides an endpoint even when HUD options are off.
 
@@ -72,7 +72,7 @@ Bleeding feedback names each region's tier when messages are enabled. A content 
 
 A `?debug=1` run neither saves nor loads a save unless `?save=1` is also set, because debug runs are ephemeral tests where progress is not worth keeping, and a stale save would stop each run starting fresh. The title card says saves are off, through the same path as other unsaved sessions. See `src/game/config.ts`, `savingEnabledFromUrl`, and `src/ui/saveController.ts`, `SaveController`.
 
-A blocking runtime error halts play, releases pointer lock and prevents further saves. It offers the full error for copying and a local report download; nothing is sent automatically. Reports can contain world, browser and recent playtest data, so review them before public sharing. The error panel's text stays in code and the page, not content, because it must show when content itself fails to load. See `src/ui/errorReport.ts`, `errorReportText`, and `src/game/play.ts`, `stopPlayAfterError`.
+A blocking runtime error halts play, releases pointer lock and prevents further saves. It offers the full error for copying and a local report download; nothing is sent automatically. Reports can contain world, browser and recent playtest data, so review them before public sharing. The error panel's text stays in code and the page, not content, because it must show when content itself fails to load. See `src/ui/errorReport.ts`, `errorReportText`, and `src/presentation/play.ts`, `stopPlayAfterError`.
 
 ## Layout
 
@@ -127,7 +127,7 @@ picture. Uneven visual coverage is preferable to blocking new items and mods on
 art or pretending a generic bundle is the item's likeness. This is distinct from
 a declared model failing to load: errors must not be hidden as intentional
 coverage, and temporary loading must not become a permanent absent picture.
-See `src/core/schema.ts`, `ItemSchema`, and `src/render/models.ts`, `ModelLibrary`.
+See `src/core/schema/items.ts`, `ItemSchema`, and `src/render/models.ts`, `ModelLibrary`.
 
 Pictures and the read-only viewer depict stable instance snapshots, not handling
 motion. They share the world's state presentation so inspection does not invent

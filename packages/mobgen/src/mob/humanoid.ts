@@ -334,8 +334,8 @@ const boxFeature = (bone: string, center: Vec3, half: Vec3, round: number): Feat
 export const snapRow = (y: number, voxel: number): number => (Math.round(y / voxel - 0.5) + 0.5) * voxel;
 export const snapCol = (x: number, voxel: number): number => Math.round(x / voxel) * voxel;
 
-// Median default-voxel-size / median-template-height ratio: shambler 1/41.4,
-// runner 1/45 and brute 1/43. This calibrates the new metric face constants to
+// Median default-voxel-size / median-template-height ratio: humanoid 1/41.4,
+// slim build 1/45 and broad build 1/43. This calibrates the metric face constants to
 // a typical actor's previous default-voxel head size without using LOD voxel size.
 const FACE_HEIGHT_RATIO = 1 / 43;
 
@@ -804,22 +804,21 @@ export const buildHumanoid = (genome: Genome): Body => {
   return { bones, features, materials: resolveMaterials(templateByName(genome.template), p) };
 };
 
-const LOWER_CRAWLER_BONE = /^(shin|foot)\./;
-const CRAWLER_STUMP_FRACTION = 0.55;
+const LOWER_LEG_CUT_BONE = /^(shin|foot)\./;
 
-const cutCrawlerBones = (bones: readonly Bone[]): { bones: Bone[]; cuts: Map<string, Vec3> } => {
+const cutLegBones = (bones: readonly Bone[], fraction: number): { bones: Bone[]; cuts: Map<string, Vec3> } => {
   const cuts = new Map<string, Vec3>();
   const retained = bones.flatMap((bone) => {
-    if (LOWER_CRAWLER_BONE.test(bone.id)) {
+    if (LOWER_LEG_CUT_BONE.test(bone.id)) {
       return [];
     }
     if (!bone.id.startsWith('thigh.')) {
       return [bone];
     }
     const cut: Vec3 = [
-      bone.head[0] + (bone.tail[0] - bone.head[0]) * CRAWLER_STUMP_FRACTION,
-      bone.head[1] + (bone.tail[1] - bone.head[1]) * CRAWLER_STUMP_FRACTION,
-      bone.head[2] + (bone.tail[2] - bone.head[2]) * CRAWLER_STUMP_FRACTION,
+      bone.head[0] + (bone.tail[0] - bone.head[0]) * fraction,
+      bone.head[1] + (bone.tail[1] - bone.head[1]) * fraction,
+      bone.head[2] + (bone.tail[2] - bone.head[2]) * fraction,
     ];
     cuts.set(bone.id, cut);
     return [{ ...bone, tail: cut }];
@@ -827,12 +826,12 @@ const cutCrawlerBones = (bones: readonly Bone[]): { bones: Bone[]; cuts: Map<str
   return { bones: retained, cuts };
 };
 
-const trimCrawlerFeature = (
+const trimLegCutFeature = (
   feature: Feature,
   cut: Vec3 | undefined,
   boneHeads: ReadonlyMap<string, Vec3>,
 ): Feature[] => {
-  if (LOWER_CRAWLER_BONE.test(feature.bone)) {
+  if (LOWER_LEG_CUT_BONE.test(feature.bone)) {
     return [];
   }
   if (!cut || feature.op === 'paint') {
@@ -855,7 +854,7 @@ const trimCrawlerFeature = (
 };
 
 // Amputation removes the humanoid feet that otherwise align generated voxels with y = 0.
-const translateCrawlerBodyToGround = (body: Body, size: number, seed: number): Body => {
+const translateLegsCutBodyToGround = (body: Body, size: number, seed: number): Body => {
   const voxels = voxelize(body, size, seed);
   let lowestRow = Number.POSITIVE_INFINITY;
   for (let index = 0; index < voxels.owner.length; index++) {
@@ -878,7 +877,7 @@ const translateCrawlerBodyToGround = (body: Body, size: number, seed: number): B
       case 'box':
         return { ...feature, shape: { ...shape, center: translate(shape.center) } };
       default:
-        throw new Error('unsupported crawler shape');
+        throw new Error('unsupported legs-cut shape');
     }
   });
   return {
@@ -889,10 +888,10 @@ const translateCrawlerBodyToGround = (body: Body, size: number, seed: number): B
 };
 
 /** Keeps a short upper-thigh stump on each side; the lower-leg subtree is absent. */
-const amputateCrawlerLegs = (body: Body, genome: Genome): Body => {
-  const { bones, cuts } = cutCrawlerBones(body.bones);
+const amputateLegs = (body: Body, genome: Genome, fraction: number): Body => {
+  const { bones, cuts } = cutLegBones(body.bones, fraction);
   const boneHeads = new Map(body.bones.map((bone) => [bone.id, bone.head]));
-  const features = body.features.flatMap((feature) => trimCrawlerFeature(feature, cuts.get(feature.bone), boneHeads));
+  const features = body.features.flatMap((feature) => trimLegCutFeature(feature, cuts.get(feature.bone), boneHeads));
   for (const [bone, center] of cuts) {
     features.push({
       bone,
@@ -902,7 +901,7 @@ const amputateCrawlerLegs = (body: Body, genome: Genome): Body => {
       onto: ['skin'],
     });
   }
-  return translateCrawlerBodyToGround({ ...body, bones, features }, genome.voxelSize, genome.seed);
+  return translateLegsCutBodyToGround({ ...body, bones, features }, genome.voxelSize, genome.seed);
 };
 
 export const sampleWounds = (rng: Rng, count: number): Wound[] => {
@@ -936,20 +935,16 @@ const HUMANOID_REGION_BONES: NonNullable<BodyPlanDef['regionBones']> = {
 
 registerBodyPlan('humanoid', {
   sample: sampleHumanoid,
-  build: (genome) => buildHumanoid(genome),
+  build: (genome, template) => {
+    const body = buildHumanoid(genome);
+    return template.legCut === undefined ? body : amputateLegs(body, genome, template.legCut);
+  },
   paramOrder: HUMANOID_PARAM_ORDER,
   woundBones: WOUNDABLE_BONES,
   budgets: heightHeadBudgets,
-  limbBones: HUMANOID_LIMB_BONES,
-  regionBones: HUMANOID_REGION_BONES,
-});
-
-registerBodyPlan('crawler', {
-  sample: sampleHumanoid,
-  build: (genome) => amputateCrawlerLegs(buildHumanoid(genome), genome),
-  paramOrder: HUMANOID_PARAM_ORDER,
-  woundBones: WOUNDABLE_BONES,
-  budgets: heightHeadBudgets,
-  limbBones: HUMANOID_LIMB_BONES.filter((id) => !LOWER_CRAWLER_BONE.test(id)),
+  limbBones: (template) =>
+    template.legCut === undefined
+      ? HUMANOID_LIMB_BONES
+      : HUMANOID_LIMB_BONES.filter((id) => !LOWER_LEG_CUT_BONE.test(id)),
   regionBones: HUMANOID_REGION_BONES,
 });

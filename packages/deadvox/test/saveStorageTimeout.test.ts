@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { type SaveBackendPreference, SaveStorage } from '../src/game/saveStorage.ts';
+import type { SaveBackendPreference } from '../src/game/storageContract.ts';
+import { SaveStorage } from '../src/presentation/saveStorage.ts';
 
 type Operation = 'probe' | 'read' | 'commit';
 interface Request {

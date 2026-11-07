@@ -1,9 +1,9 @@
-import type { Design, DesignIssue, DesignLoadResult } from '@skelly/engine/assembly/design.ts';
-import type { DesignLoadInputs } from '@skelly/engine/assembly/designLoader.ts';
-import { loadDesignValue, readDeclaredStatus } from '@skelly/engine/assembly/designLoader.ts';
-import { describeValue, parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
-import type { Resolved } from '@skelly/engine/assembly/schema.ts';
-import type { Template } from '@skelly/engine/assembly/template.ts';
+import type { Design, DesignIssue, DesignLoadResult } from '@skelly/construct/assembly/design.ts';
+import type { DesignLoadInputs } from '@skelly/construct/assembly/designLoader.ts';
+import { loadDesignValue, readDeclaredStatus } from '@skelly/construct/assembly/designLoader.ts';
+import { describeValue, parseAssemblyJson } from '@skelly/construct/assembly/parseAssembly.ts';
+import type { Resolved } from '@skelly/construct/assembly/schema.ts';
+import type { Template } from '@skelly/construct/assembly/template.ts';
 import { ATTACHMENT_IDS } from './attachments.ts';
 import { boltCalibreIssue, isBoltAssembly, withBoltCalibre } from './boltCartridge.ts';
 import { PART_CATALOGUE, type PartCatalogue } from './catalogue.ts';
@@ -158,7 +158,7 @@ const expandItemPart = (
 };
 
 /**
- * Replaces each part that names a catalogue item with the engine instance the item fixes, so fit validation sees the
+ * Replaces each part that names a catalogue item with the construct instance the item fixes, so fit validation sees the
  * part as built. The item owns family, construction and finish; the instance keeps only pose and placement.
  */
 const withCatalogueItems = (raw: unknown, catalogue: PartCatalogue): ItemExpansion => {
@@ -188,7 +188,7 @@ const knownAttachmentIds = (value: unknown): value is readonly string[] | undefi
   value === undefined ||
   (Array.isArray(value) && value.every((id) => typeof id === 'string' && ATTACHMENT_IDS.some((known) => known === id)));
 
-/** Loads a persisted firearm design through the generic engine contracts and firearm-specific checks. */
+/** Loads a persisted firearm design through the generic construct contracts and firearm-specific checks. */
 export const loadGunDesignValue = (
   authored: unknown,
   inputs: DesignLoadInputs = {
@@ -261,7 +261,7 @@ export const loadGunDesign = (text: string): GunDesignLoadResult => {
       error: { code: 'invalid-json', message: `invalid JSON: ${err instanceof Error ? err.message : String(err)}` },
     };
   }
-  // A non-string template reaches the engine loader, which refuses it as an invalid shape.
+  // A non-string template reaches the construct loader, which refuses it as an invalid shape.
   let template = TEMPLATES[0]!;
   if (isRecord(raw) && typeof raw.template === 'string') {
     const found = TEMPLATES.find((candidate) => candidate.name === raw.template);

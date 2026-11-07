@@ -1,6 +1,6 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Assembly, Domain, PartDef } from '@skelly/engine/assembly/schema.ts';
-import type { Template } from '@skelly/engine/assembly/template.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Assembly, Domain, PartDef } from '@skelly/construct/assembly/schema.ts';
+import type { Template } from '@skelly/construct/assembly/template.ts';
 import { describe, expect, it } from 'vitest';
 import {
   applyOverrides,

@@ -4,7 +4,7 @@
 
 import { html, render, type TemplateResult } from 'lit-html';
 import type { Registry } from '../core/content.ts';
-import { inputBindings, labelForAction } from '../game/inputBindings.ts';
+import type { BindingRegistry } from '../game/bindingRegistry.ts';
 
 const WHITESPACE = /\s+/;
 
@@ -44,10 +44,14 @@ interface SpawnMenuActions {
   onSpawn: (id: string) => void;
 }
 
-const spawnMenuTemplate = (vm: SpawnMenuViewModel, actions: SpawnMenuActions): TemplateResult => html`
+const spawnMenuTemplate = (
+  vm: SpawnMenuViewModel,
+  actions: SpawnMenuActions,
+  bindings: BindingRegistry,
+): TemplateResult => html`
   <div class="card" data-debug-controls>
     <h2>Spawn an item</h2>
-    <p>Drops it at your feet. ${labelForAction('spawn.dismiss')}: close · ${labelForAction('spawn.confirm')}: spawn.</p>
+    <p>Drops it at your feet. ${bindings.label('spawn.dismiss')}: close · ${bindings.label('spawn.confirm')}: spawn.</p>
     <input
       type="search"
       placeholder="Filter by name, id or category"
@@ -80,6 +84,7 @@ export class SpawnMenu {
   private readonly registry: Registry;
   private readonly spawn: (type: string) => string;
   private readonly drawTemplate: (template: TemplateResult, root: HTMLElement) => void;
+  private readonly bindings: BindingRegistry;
   private filter = '';
   private status = '';
   private selectedIndex = 0;
@@ -89,12 +94,14 @@ export class SpawnMenu {
   constructor(
     registry: Registry,
     spawn: (type: string) => string,
+    bindings: BindingRegistry,
     drawTemplate: (template: TemplateResult, root: HTMLElement) => void = render,
   ) {
     this.registry = registry;
     this.spawn = spawn;
+    this.bindings = bindings;
     this.drawTemplate = drawTemplate;
-    inputBindings.subscribe(() => {
+    bindings.subscribe(() => {
       this.drawn = '';
       if (this.opened) {
         this.render();
@@ -189,17 +196,21 @@ export class SpawnMenu {
     }
     this.drawn = key;
     this.drawTemplate(
-      spawnMenuTemplate(this.viewModel, {
-        onFilter: (value) => {
-          this.filter = value;
-          this.selectedIndex = 0;
-          this.render();
+      spawnMenuTemplate(
+        this.viewModel,
+        {
+          onFilter: (value) => {
+            this.filter = value;
+            this.selectedIndex = 0;
+            this.render();
+          },
+          onSpawn: (id) => {
+            this.status = this.spawn(id);
+            this.render();
+          },
         },
-        onSpawn: (id) => {
-          this.status = this.spawn(id);
-          this.render();
-        },
-      }),
+        this.bindings,
+      ),
       this.root,
     );
   }

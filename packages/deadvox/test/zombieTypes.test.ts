@@ -1,22 +1,24 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { posedShambler } from '../src/core/zombiePose.ts';
+import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
+import { posedActor } from '../src/core/actorPose.ts';
 
 const readJson = <T>(path: string): T => JSON.parse(readFileSync(path, 'utf8')) as T;
-const { zombies } = readJson<{
-  zombies: {
+const { actors } = readJson<{
+  actors: {
     id: string;
     model: string;
+    figure?: string;
     bodyScale?: number;
     spawnWeight: number;
     sounds: Record<string, string>;
   }[];
-}>('src/content/base/zombies.json');
-const soundDefs = readJson<{ sounds: { id: string }[] }>('src/content/base/sounds.json').sounds;
+}>('mods/skelly.deadvox.actors/enemies.json');
+const soundDefs = readJson<{ sounds: { id: string }[] }>('mods/skelly.deadvox.actors/actors-sounds.json').sounds;
 const soundById = new Map(soundDefs.map((sound) => [sound.id, sound]));
 
 const figureForModel = (model: string, bodyScale?: number) =>
-  posedShambler({
+  posedActor({
     seed: 1,
     model,
     ...(bodyScale === undefined ? {} : { bodyScale }),
@@ -34,14 +36,16 @@ const figureForModel = (model: string, bodyScale?: number) =>
 
 describe('zombie type content', () => {
   it('poses every zombie with the model selected by its type data', () => {
-    expect(zombies.length).toBeGreaterThan(0);
-    for (const zombie of zombies) {
-      expect(figureForModel(zombie.model, zombie.bodyScale).genome.template).toBe(zombie.model);
+    expect(actors.length).toBeGreaterThan(0);
+    for (const actor of actors) {
+      expect(figureForModel(figureVariantOf(actor), actor.bodyScale).genome.template).toBe(
+        bodyPlanModel(figureVariantOf(actor)),
+      );
     }
   });
 
   it('references registered vocal sounds for every zombie type', () => {
-    const events = zombies.flatMap(({ sounds }) => Object.values(sounds));
+    const events = actors.flatMap(({ sounds }) => Object.values(sounds));
     expect(events.length).toBeGreaterThan(0);
     for (const event of events) {
       expect(soundById.has(event)).toBe(true);

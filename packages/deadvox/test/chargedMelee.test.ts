@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import type { MeleeWeapon } from '../src/core/actorSystem.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { type MeleeTargetResolver, PlayerCombat, type PlayerCombatState } from '../src/core/playerCombat.ts';
 import { simSeconds } from '../src/core/time.ts';
-import type { MeleeWeapon } from '../src/core/zombies.ts';
 
 const DT = 1 / 60;
 const HANDS = { right: 7, left: null };
@@ -110,7 +110,7 @@ describe('charged melee', () => {
     run(saved.combat, 0.5, true);
     const state = roundTrip(saved.combat.snapshotState());
     const restored = recorder();
-    restored.combat.restoreState(state);
+    restored.combat.restoreState(state, { damageKinds: new Map([[WEAPON.type, { id: WEAPON.type, class: 'melee' }]]) });
     expect(restored.combat.activeMeleeAction?.chargeHeldSimSeconds).toBe(state.meleeAction?.chargeHeldSimSeconds);
     run(restored.combat, 1, true);
     run(restored.combat, 1, false);

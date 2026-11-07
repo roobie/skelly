@@ -1,7 +1,7 @@
 ---
 read_if:
   - you change Deadvox browser CI partition, aggregate requirements, or browser launch source
-  - you investigate or reinstate a quarantined browser case
+  - you investigate or reinstate a quarantined browser case or rename its environment gate
   - you change how the Deadvox unit suite is split across CI jobs or the bound on a shard
 ---
 
@@ -14,6 +14,8 @@ The sharded unit job is the only path that runs the whole Deadvox unit suite. Th
 Install steps keep a 3-minute bound because a cold `npm ci` takes seconds. The failures behind it (#1108) were a registry request that stalled for npm's default five-minute fetch timeout, longer than the bound. The root `.npmrc` and the one beside the lit-check lockfile cap each request and retry so a stalled one is retried inside the bound; raise neither the bound nor the retries to hide a slow registry. Both files carry the same values because npm reads the config of the directory it installs into.
 
 GitHub Actions owns browser scheduling, isolation and timeouts. Keeping orchestration in `.github/workflows/deadvox-browser.yml` avoids a second runner that could change what the measurements mean.
+
+A browser step's bound follows the same rule as a unit shard's: about twice its measured time, split when the work grows rather than raised. A step near its bound fails on runner variance alone, and a green rerun cannot clear that failure (`tools/browser-ci-result.mjs`, `assertBrowserResult`), so it blocks the head (#1546). The gauntlet save flow has its own step for this reason; it shares its server with the other save-controller cases. See `packages/deadvox/test/browser/gauntlet-save-regressions.mjs` and `packages/deadvox/test/browser/save-controller-fixture.mjs`, `saveControllerServer`.
 
 `test/browser-ci-manifest.mjs`, `browserManifest`, checks that executed browser cases match the reusable workflow and enabled package scripts. Explicit quarantines keep a removed case's reinstatement obligation visible.
 
@@ -32,7 +34,7 @@ timeout. See `packages/deadvox/test/browser/save-storage.mjs`, `navigationOnly`,
 
 The stage clears the `pageshow` marker before Back, because the destination page writes the same session-storage key and would otherwise satisfy the wait while the old document is still loading. It then asserts that Back restored the cached page and, if not, fails with the navigation entry's `notRestoredReasons`. Reinstatement starts from that eviction reason: a Back that Chromium declines to restore is a bfcache eviction, not a slow save.
 
-The eviction's cause is unproven. Chromium reports it as `masked` with an `about:blank` child, which matches the hidden debug review-map iframe that start-up creates. The eviction did not return when the frame was put back, so the frame is not established as the cause and eviction depends on something that varies between runs. Do not lift the quarantine on the frame alone: it needs before, after and restored-before runs in which the restored-before runs evict again. See `packages/deadvox/src/game/play.ts`, `createReviewMapFrame`.
+The eviction's cause is unproven. Chromium reports it as `masked` with an `about:blank` child, which matches the hidden debug review-map iframe that start-up creates. The eviction did not return when the frame was put back, so the frame is not established as the cause and eviction depends on something that varies between runs. Do not lift the quarantine on the frame alone: it needs before, after and restored-before runs in which the restored-before runs evict again. See `packages/deadvox/src/presentation/play.ts`, `createReviewMapFrame`.
 
 Asynchronous save checks must poll the resolved result, not the truthiness of the promise:
 a false first observation must not certify quiescence. Separate browser capture and storage
@@ -47,7 +49,7 @@ snapshot on both sides of the stalling step, because a bare timeout cannot tell 
 discovery or write from a missing launcher. #749 (the gauntlet win checkpoint never reaches
 saved) reports this in the `save-other` shard. #670 (the second weathering page never
 enables `#go`) reports it only when the quarantined subflow runs with
-`DEADVOX_FIREFOX_UI_WEATHERING_TEST=1`, because no CI shard reaches it. Both issues stay
+`SKELLY_FIREFOX_UI_WEATHERING_TEST=1`, because no CI shard reaches it. Both issues stay
 open as the owners. See `packages/deadvox/test/browser/save-lock-diagnostics.mjs`,
 `saveLockSnapshot`.
 

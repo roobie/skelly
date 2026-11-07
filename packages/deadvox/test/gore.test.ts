@@ -1,10 +1,11 @@
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
+import type { Actor } from '../src/core/actorState.ts';
+import type { HitImpulse } from '../src/core/actorSystem.ts';
 import { BODY_REGIONS, type BodyRegion } from '../src/core/body.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { BLOCK_SIZE } from '../src/core/scale.ts';
-import type { HitImpulse, Zombie } from '../src/core/zombies.ts';
 import { Gore, type GoreBodies } from '../src/render/gore.ts';
 import { PLAYER_REGION_BOXES } from '../src/render/playerFigure.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
@@ -62,7 +63,7 @@ describe('Gore', () => {
     const dripPosition = (thirdPerson: boolean): Vector3 => {
       const gore = new Gore(BLOCK_SIZE, WORLD_GRAVITY, GORE_TUNING_FIXTURE);
       gore.update(1, floor, {
-        zombies: new MapEntityStore<Zombie>(),
+        actors: new MapEntityStore<Actor>(),
         listener: playerPos,
         player: { pos: playerPos, yaw, drip, thirdPerson },
       });
@@ -103,7 +104,7 @@ describe('Gore', () => {
   it('stops player wound drips once the wound stops bleeding', () => {
     const gore = new Gore(1, WORLD_GRAVITY, GORE_TUNING_FIXTURE);
     const bodies: GoreBodies = {
-      zombies: new MapEntityStore<Zombie>(),
+      actors: new MapEntityStore<Actor>(),
       listener: [0, 0, 0],
       player: {
         pos: [0, 0, 0],

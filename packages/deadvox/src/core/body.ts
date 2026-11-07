@@ -30,12 +30,15 @@ const BODY_REGION_WORD_BOUNDARY = /([A-Z])/g;
 const BODY_REGION_INITIAL = /^[a-z]/;
 export const bodyRegionLabel = (region: BodyRegion): string =>
   region.replace(BODY_REGION_WORD_BOUNDARY, ' $1').replace(BODY_REGION_INITIAL, (first) => first.toUpperCase());
-/** The kinds a melee weapon or swing can deal; acid is no weapon class. */
-export const MELEE_DAMAGE_KINDS = ['blunt', 'cut', 'pierce'] as const;
-export type MeleeDamageKind = (typeof MELEE_DAMAGE_KINDS)[number];
-/** What a hit does to flesh; weapons, enemy attacks, bleeding and shock all read it. */
-export const DAMAGE_KINDS = [...MELEE_DAMAGE_KINDS, 'acid'] as const;
-export type DamageKind = (typeof DAMAGE_KINDS)[number];
+export type DamageKind = string;
+
+export const damageResponse = (responses: Readonly<Record<string, number>>, kind: DamageKind): number => {
+  const response = responses[kind];
+  if (response === undefined) {
+    throw new Error(`Missing body response for damage kind "${kind}"`);
+  }
+  return response;
+};
 /** Contacts that meet a content-chosen wear slot before the region's outermost one. */
 export const TOUCHES = ['ground', 'hand'] as const;
 export type Touch = (typeof TOUCHES)[number];
@@ -445,7 +448,9 @@ export class Body implements ModifierActor {
       throw new Error('Invalid body damage');
     }
     const shockPerDamage =
-      effects.kind === undefined ? 0 : this.modified('body.shockPerDamage', this.tuning.shockPerDamage[effects.kind]);
+      effects.kind === undefined
+        ? 0
+        : this.modified('body.shockPerDamage', damageResponse(this.tuning.shockPerDamage, effects.kind));
     const shockDamage = effects.shockDamage ?? amount * shockPerDamage;
     if (!Number.isFinite(shockDamage) || shockDamage < 0) {
       throw new Error('Invalid shock damage');
@@ -463,7 +468,9 @@ export class Body implements ModifierActor {
     const applied = this.damageHealth(amount);
     // A kindless impact hurts no more than it shocks.
     const painPerDamage =
-      effects.kind === undefined ? 0 : this.modified('body.painPerDamage', this.tuning.pain.perDamage[effects.kind]);
+      effects.kind === undefined
+        ? 0
+        : this.modified('body.painPerDamage', damageResponse(this.tuning.pain.perDamage, effects.kind));
     this.state.pain.acute += amount * painPerDamage * this.tuning.pain.regionWeight[region];
     this.state.regionDamage[region] = clamp(this.state.regionDamage[region] + amount);
     this.applyImpactShock(shockDamage, this.painKnocksOut());
@@ -621,7 +628,9 @@ export class Body implements ModifierActor {
         continue;
       }
       share +=
-        this.modified('bleeding.chance', tier.chancePerDamage[kind]) * damage * (tier.regionFactor?.[region] ?? 1);
+        this.modified('bleeding.chance', damageResponse(tier.chancePerDamage, kind)) *
+        damage *
+        (tier.regionFactor?.[region] ?? 1);
       if (roll < share) {
         return index;
       }

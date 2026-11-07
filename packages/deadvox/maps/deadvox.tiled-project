@@ -14,7 +14,7 @@
     },
     {
       "id": 101,
-      "name": "zombie_type",
+      "name": "actor_type",
       "type": "enum",
       "storageType": "string",
       "values": ["amalgam", "crawler", "military_shambler", "runner", "shambler"],
@@ -66,10 +66,10 @@
       "name": "shambler",
       "members": [
         {
-          "name": "zombie",
+          "name": "actor",
           "type": "string",
           "value": "",
-          "propertyType": "zombie_type"
+          "propertyType": "actor_type"
         },
         {
           "name": "chance",

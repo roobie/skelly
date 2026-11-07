@@ -28,8 +28,8 @@ async function captureLook(page, directory, { route, mode, repeat }) {
       'cam',
       [
         ...perf.session.body.pos.map((value) => value * config.scale.blockSize),
-        (perf.input.yaw * 180) / Math.PI,
-        (perf.input.pitch * 180) / Math.PI,
+        (perf.input.controls.yaw * 180) / Math.PI,
+        (perf.input.controls.pitch * 180) / Math.PI,
         0,
       ].join(','),
     );
@@ -102,7 +102,7 @@ await build({
       name: 'perf-baseline',
       enforce: 'pre',
       transform(code, id) {
-        if (id.endsWith('/src/game/engine.ts')) {
+        if (id.endsWith('/src/presentation/engine.ts')) {
           return `import { install as installPerfBaseline } from ${JSON.stringify(runtime)};\n${once(code, '  const resize = () => {', '  if (renderer) installPerfBaseline({ renderer, scene, camera, meshes, shadows });\n  const resize = () => {')}`;
         }
         if (id.endsWith('/src/render/mood.ts')) {
@@ -112,11 +112,11 @@ await build({
             '    this.composer = composer;\n    globalThis.perfBaseline.wrapPasses(composer);',
           );
         }
-        if (id.endsWith('/src/game/play.ts')) {
+        if (id.endsWith('/src/presentation/play.ts')) {
           return once(
             code,
             '  startRealFrames(frame);',
-            '  globalThis.perfBaseline.attach({ engine, session, input, view, worldLoading, debug: debugTools, zombieStore });\n  startRealFrames((now) => globalThis.perfBaseline.frame(frame, now));',
+            '  globalThis.perfBaseline.attach({ engine, session, input, view, worldLoading, debug: debugTools, actorStore });\n  startRealFrames((now) => globalThis.perfBaseline.frame(frame, now));',
           );
         }
         if (id.endsWith('/src/debug/skyRoute.ts')) {
@@ -183,7 +183,7 @@ try {
     await page.addInitScript((count) => {
       globalThis.addEventListener('mousemove', (event) => event.stopImmediatePropagation(), true);
       if (count) {
-        localStorage.setItem('deadvox.shambler-spawn-count', String(count));
+        localStorage.setItem('skelly.shambler-spawn-count', String(count));
       }
     }, route.spawnCount);
     let cdp;
@@ -219,7 +219,7 @@ try {
             }
             perf.session.body.pos[1] += (workload.liftMetres ?? 0) / perf.engine.config.scale.blockSize;
           }
-          const { yaw } = perf.input;
+          const { yaw } = perf.input.controls;
           let frame = 0;
           perf.resetPath = () => {
             frame = 0;
@@ -229,7 +229,7 @@ try {
               perf.debug.handleAction('debug.freeze-game');
             }
             if (workload.driver === 'orbit') {
-              perf.input.yaw =
+              perf.input.controls.yaw =
                 yaw +
                 ((workload.yawAmplitudeDegrees * Math.PI) / 180) *
                   Math.sin((2 * Math.PI * workload.yawCycles * frame) / sampling.sampleFrames);
@@ -289,7 +289,7 @@ try {
           records: perf.records,
           visibility: document.visibilityState,
           position: perf.engine.camera.position.toArray(),
-          zombieCount: perf.zombieStore.size,
+          zombieCount: perf.actorStore.size,
           drawingBuffer: [perf.engine.renderer.domElement.width, perf.engine.renderer.domElement.height],
           renderScale: perf.engine.mood.renderScale,
           sky: document.querySelector('[data-sky-route] textarea')?.value,

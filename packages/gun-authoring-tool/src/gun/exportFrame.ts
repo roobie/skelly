@@ -1,6 +1,6 @@
-// Keep firearm units and file axes in the Gungen adapter so the shared engine stays domain-neutral.
+// Keep firearm units and file axes in the Gungen adapter so the construct package stays domain-neutral.
 
-import { IDENTITY_M, type Mat3, mulMV, transpose, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import { IDENTITY_M, type Mat3, mulMV, transpose, type Vec3 } from '@skelly/construct/foundation/math.ts';
 import unitScale from './unitScale.json' with { type: 'json' };
 
 /**
@@ -29,7 +29,7 @@ const clean = (x: number): number => {
   return r === 0 ? 0 : r;
 };
 
-/** Euler angles in degrees, in the engine's order (three.js 'XYZ', matrix = Rx * Ry * Rz), of a rotation matrix. */
+/** Euler angles in degrees, in construct's order (three.js 'XYZ', matrix = Rx * Ry * Rz), of a rotation matrix. */
 export const eulerXyzDegrees = (m: Mat3): Vec3 => {
   const m13 = Math.min(1, Math.max(-1, m[2]));
   const y = Math.asin(m13);

@@ -51,8 +51,6 @@ it('exports a cycling semi-auto slide with the calibre and anchors Deadvox admit
     weight: massKg * 1000,
     size: [1, 1],
     workInProgress: false,
-    notLoot: true,
-    economy: { usage: [], tiers: [] },
   }));
   const { registry, issues } = buildRegistry([{ source: 'fixture', data: { models: [model], items } }]);
   expect(issues).toEqual([]);

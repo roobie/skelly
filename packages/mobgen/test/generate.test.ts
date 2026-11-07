@@ -40,7 +40,7 @@ describe('generate', () => {
 });
 
 describe('genome checks', () => {
-  const shambler = TEMPLATES.find((x) => x.name === 'shambler')!;
+  const humanoid = TEMPLATES.find((x) => x.name === 'humanoid')!;
 
   it('every template samples exactly the humanoid params (a misspelled override would otherwise be silently ignored)', () => {
     for (const t of TEMPLATES) {
@@ -50,14 +50,14 @@ describe('genome checks', () => {
 
   it('realize rejects a genome missing a param, naming it', () => {
     for (const name of ['height', 'strideFactor']) {
-      const genome = generate(shambler, 42);
+      const genome = generate(humanoid, 42);
       const { [name]: _dropped, ...params } = genome.params;
       expect(() => realize({ ...genome, params })).toThrow(`param "${name}"`);
     }
   });
 
   it('rejects non-finite params and bad wounds', () => {
-    const genome = generate(shambler, 42);
+    const genome = generate(humanoid, 42);
     expect(() => realize({ ...genome, params: { ...genome.params, girth: Number.NaN } })).toThrow('girth');
     const wound = { bone: 'spine', t: 0.5, angle: 0, radius: 0.03 };
     expect(() => realize({ ...genome, wounds: [{ ...wound, bone: 'head' }] })).toThrow('wound 0 has bone "head"');
@@ -98,8 +98,8 @@ const headBounds = (genome: Genome) => {
 };
 
 describe('coarser voxel sizes', () => {
-  const shambler = TEMPLATES.find((template) => template.name === 'shambler')!;
-  const base = generate(shambler, 17);
+  const humanoid = TEMPLATES.find((template) => template.name === 'humanoid')!;
+  const base = generate(humanoid, 17);
   const sizes = [0.5 / 6, 0.5 / 4];
 
   it.each(sizes)('keeps skull metric radii and head bounds within one voxel at size %s', (voxelSize) => {
@@ -246,7 +246,7 @@ describe('validation profiles', () => {
   });
 
   it('recommends from full-detail limb thickness in cells without changing the explicit full default', () => {
-    const base = generate(TEMPLATES.find((template) => template.name === 'shambler')!, 7);
+    const base = generate(TEMPLATES.find((template) => template.name === 'humanoid')!, 7);
     const thin = { ...base, voxelSize: 0.05, params: { ...base.params, height: 2, girth: 0.1 } };
     const thick = { ...thin, params: { ...thin.params, girth: 4 } };
     expect(recommendedProfileFor(thin)).toBe('silhouette');
@@ -307,8 +307,8 @@ describe('templates', () => {
   }
 
   sweepGroup('head volume sweep', () => {
-    it('shambler head+jaw voxel count is within the template budget on average', () => {
-      const t = TEMPLATES.find((x) => x.name === 'shambler')!;
+    it('humanoid head+jaw voxel count is within the template budget on average', () => {
+      const t = TEMPLATES.find((x) => x.name === 'humanoid')!;
       const head = t.budgets.groups.head!;
       let sum = 0;
       for (let seed = 0; seed < SEEDS; seed++) {

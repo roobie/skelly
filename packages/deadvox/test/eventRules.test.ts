@@ -12,14 +12,14 @@ import type { EventRuleDef } from '../src/core/schema.ts';
 import { gameHours } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
+import { ACTIVE_ACTOR_RATE } from '../src/game/simulationRates.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 import { formatVersion } from './snapshotTestSupport.ts';
 
 const { registry } = startupContent();
 const profile = [...registry.scenarios.values()][0]!;
-const zombie = [...registry.zombies.values()][0]!;
+const actor = [...registry.actors.values()][0]!;
 const worldOptions = { blockSize: 0.5, site: profile.id, storeys: 1, density: null };
 const AFTER = gameHours(2);
 /** Inside the one loaded chunk, beside the player. */
@@ -31,7 +31,7 @@ const waveRule = (at: Vec3, conditions: EventRuleDef['conditions'] = []): EventR
   id: 'fixture_wave',
   trigger: { kind: 'elapsed', afterGameHours: AFTER },
   conditions,
-  effects: [{ kind: 'releaseHorde', zombie: zombie.id, count: 2, at }],
+  effects: [{ kind: 'releaseHorde', actor: actor.id, count: 2, at }],
 });
 
 const fixture = (rule: EventRuleDef, restore?: Readonly<SaveSnapshot>) => {
@@ -74,11 +74,11 @@ const fixture = (rule: EventRuleDef, restore?: Readonly<SaveSnapshot>) => {
   /** Debug time travel, then a frame long enough for one zombie tick to see the new calendar. */
   const jump = (calendar: number) => {
     session.sim.setDebugCalendarTime(calendar);
-    session.frame(1 / ZOMBIE_RATE);
+    session.frame(1 / ACTIVE_ACTOR_RATE);
   };
   const due = session.scenarioRun!.startedAtGameTimestamp + AFTER;
   const fired = () => capture().character.scenarioRun!.eventsFiredAtGameTimestamp[rule.id];
-  const released = () => capture().world.zombies.hordes.filter(({ id }) => id.startsWith('event:')).length;
+  const released = () => capture().world.actors.hordes.filter(({ id }) => id.startsWith('event:')).length;
   return { session, capture, jump, due, fired, released };
 };
 
@@ -156,14 +156,14 @@ describe('scenario event rules', () => {
 
   it.each([
     ['an unadmitted trigger kind', { trigger: { kind: 'area' } }, '.trigger.kind', 'elapsed'],
-    ['a missing zombie type', {}, '.zombie', 'no zombie type'],
+    ['a missing zombie type', {}, '.actor', 'no zombie type'],
     ['a duplicate id', 'duplicate', '.id', 'duplicate event rule'],
   ] as const)('rejects a scenario whose rule has %s', (_label, change, pathEnd, message) => {
     const scenario = fixtureScenario();
     const rule = {
       id: 'fixture_rule',
       trigger: { kind: 'elapsed', afterGameHours: 1 },
-      effects: [{ kind: 'releaseHorde', zombie: 'missing_fixture_zombie', count: 1, at: [0, 1, 0] }],
+      effects: [{ kind: 'releaseHorde', actor: 'missing_fixture_zombie', count: 1, at: [0, 1, 0] }],
     };
     const rules = change === 'duplicate' ? [rule, rule] : [{ ...rule, ...change }];
     const sources = fixtureScenarioSources(scenario);

@@ -1,4 +1,4 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
 import { singlePart } from '@skelly/thing-core/single-part';
 import { drawnGeometry } from '@skelly/thing-export/drawn.ts';
 import type { GlbAssetIdentity, GlbExportError, VoxelGrains } from '@skelly/thing-export/exportTypes.ts';

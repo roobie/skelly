@@ -22,18 +22,18 @@ export interface TrapContacts {
   /** The player's feet, in blocks. */
   player: Readonly<Vec3>;
   /** Zombies' feet, in blocks, in the store's order. */
-  zombies: Iterable<readonly [EntityId, Readonly<Vec3>]>;
+  actors: Iterable<readonly [EntityId, Readonly<Vec3>]>;
   blockSize: number;
   alive: (id: EntityId) => boolean;
   hurtPlayer: (injury: TrapDef['playerInjury']) => void;
-  injureZombie: (id: EntityId, damage: number) => void;
+  injureActor: (id: EntityId, damage: number) => void;
 }
 
-/** A trap that sprung this step: on the player when `zombie` is absent. */
+/** A trap that sprung this step: on the player when `actor` is absent. */
 export interface Sprung {
   readonly item: Item;
   readonly pos: Readonly<Vec3>;
-  readonly zombie?: EntityId;
+  readonly actor?: EntityId;
 }
 
 /** The cell a body's feet stand in, as the player's drop cell is found. */
@@ -60,9 +60,9 @@ export class BearTraps {
   }
 
   /** Whether a shut trap holds the zombie with this id, or the player without one. */
-  holds(zombie?: EntityId): boolean {
+  holds(actor?: EntityId): boolean {
     for (const { item } of this.lying()) {
-      if (item.trap?.state === 'holding' && item.trap.zombie === zombie) {
+      if (item.trap?.state === 'holding' && item.trap.actor === actor) {
         return true;
       }
     }
@@ -82,12 +82,12 @@ export class BearTraps {
         continue;
       }
       trap.remainingSimSeconds -= dt;
-      if (trap.remainingSimSeconds <= 0 || (trap.zombie !== undefined && !contacts.alive(trap.zombie))) {
+      if (trap.remainingSimSeconds <= 0 || (trap.actor !== undefined && !contacts.alive(trap.actor))) {
         item.trap = undefined;
       }
     }
     const player = cellOf(contacts.player);
-    const zombies = [...contacts.zombies].map(([id, pos]) => [id, cellOf(pos)] as const);
+    const actors = [...contacts.actors].map(([id, pos]) => [id, cellOf(pos)] as const);
     const sprung: Sprung[] = [];
     for (const { item, pos, def } of traps) {
       if (item.trap?.state !== 'armed' || !inPlayerBlock(pos, contacts.player, contacts.blockSize)) {
@@ -99,12 +99,12 @@ export class BearTraps {
         contacts.hurtPlayer(def.playerInjury);
         continue;
       }
-      const caught = zombies.find(([, cell]) => sameCell(cell, pos));
+      const caught = actors.find(([, cell]) => sameCell(cell, pos));
       if (caught) {
-        const [zombie] = caught;
-        item.trap = { state: 'holding', zombie, remainingSimSeconds: def.holdSimSeconds };
-        sprung.push({ item, pos, zombie });
-        contacts.injureZombie(zombie, def.zombieLegDamage);
+        const [actor] = caught;
+        item.trap = { state: 'holding', actor, remainingSimSeconds: def.holdSimSeconds };
+        sprung.push({ item, pos, actor });
+        contacts.injureActor(actor, def.actorLegDamage);
       }
     }
     return sprung;

@@ -1,12 +1,12 @@
-import type { DesignLoadResult } from '@skelly/engine/assembly/design.ts';
-import { generate, generateValid } from '@skelly/engine/assembly/generate.ts';
-import { formatParseError, parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
-import type { Assembly, Connection } from '@skelly/engine/assembly/schema.ts';
-import type { Template } from '@skelly/engine/assembly/template.ts';
-import { type Report, validate } from '@skelly/engine/assembly/validate.ts';
-import type { Issue } from '@skelly/engine/foundation/issue.ts';
-import { worldBox } from '@skelly/engine/shapes/geometry.ts';
-import { DEFAULT_REVOLVE_FACETS, MAX_REVOLVE_FACETS, MIN_REVOLVE_FACETS } from '@skelly/engine/shapes/revolve.ts';
+import type { DesignLoadResult } from '@skelly/construct/assembly/design.ts';
+import { generate, generateValid } from '@skelly/construct/assembly/generate.ts';
+import { formatParseError, parseAssemblyJson } from '@skelly/construct/assembly/parseAssembly.ts';
+import type { Assembly, Connection } from '@skelly/construct/assembly/schema.ts';
+import type { Template } from '@skelly/construct/assembly/template.ts';
+import { type Report, validate } from '@skelly/construct/assembly/validate.ts';
+import type { Issue } from '@skelly/construct/foundation/issue.ts';
+import { worldBox } from '@skelly/construct/shapes/geometry.ts';
+import { DEFAULT_REVOLVE_FACETS, MAX_REVOLVE_FACETS, MIN_REVOLVE_FACETS } from '@skelly/construct/shapes/revolve.ts';
 import { type CameraState, parseCameraState, serializeCameraState } from '@skelly/tool-ui/camera-state';
 import { createOrbitControls } from '@skelly/tool-ui/orbit';
 import {

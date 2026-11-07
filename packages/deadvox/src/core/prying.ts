@@ -1,4 +1,5 @@
 import type { BlockEntity } from './blockEntities.ts';
+import { claimed } from './capabilities.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from './character.ts';
 import type { FurnitureDef, Registry } from './content.ts';
 import { coreMessage } from './coreText.ts';
@@ -105,15 +106,18 @@ const planFor = ({
   tool: Item;
   character?: PryCharacter | undefined;
 }): PryPlan => {
-  const skillLevel = character?.skills[tuning.skill] ?? SKILL_LEVEL_MIN;
-  const curve = inventory.registry.skills.get(tuning.skill)?.curve;
-  if (curve === undefined) {
-    throw new Error(`Missing skill curve content for ${tuning.skill}`);
+  const provider = claimed(inventory.registry.skills, tuning.skill);
+  const curve = provider?.curve;
+  if (provider && curve === undefined) {
+    throw new Error(`Skill "${provider.id}" provides forcing role "${tuning.skill}" without a curve`);
   }
-  const time = durationForSkill(tuning.timeSimSeconds, tuning.fastestTimeSimSeconds, skillLevel, {
-    floor: curve.saturationFloor,
-    halfLifeLevels: curve.saturationHalfLifeLevels,
-  });
+  const skillLevel = provider ? (character?.skills[provider.id] ?? SKILL_LEVEL_MIN) : SKILL_LEVEL_MIN;
+  const time = curve
+    ? durationForSkill(tuning.timeSimSeconds, tuning.fastestTimeSimSeconds, skillLevel, {
+        floor: curve.saturationFloor,
+        halfLifeLevels: curve.saturationHalfLifeLevels,
+      })
+    : tuning.timeSimSeconds;
   const strikeInterval = tuning.strikeIntervalSimSeconds * (time / tuning.timeSimSeconds);
   return {
     ok: true,

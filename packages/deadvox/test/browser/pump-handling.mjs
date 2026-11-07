@@ -14,7 +14,6 @@ import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { worldRepairInGameFlow } from './world-repair-flow.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const marker = '  const onForwardPress = (e: MouseEvent) => {';
@@ -22,7 +21,29 @@ const observation = {
   name: 'pump-handling-readonly-observation',
   enforce: 'pre',
   transform(code, id) {
-    if (!id.endsWith('/src/game/play.ts')) {
+    if (id.endsWith('/mods/skelly.deadvox.scenario.test-house/starts.json')) {
+      const data = JSON.parse(code);
+      const { defaultForSite: _default, ...start } = data.starts.find((row) => row.site === 'testHouse');
+      data.starts.push({
+        ...start,
+        id: 'pump_handling_fixture_start',
+        debugOnly: true,
+        kit: [
+          ...start.kit,
+          { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
+          { id: 'firearm', item: 'pump_shotgun', destination: { kind: 'hand', role: 'dominant' } },
+          { id: 'box', item: 'shotshell_box', destination: { kind: 'pocket', parent: 'backpack', pocket: 0 } },
+          {
+            id: 'rounds',
+            item: 'shell_12_gauge_00_buck',
+            count: 20,
+            destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
+          },
+        ],
+      });
+      return JSON.stringify(data);
+    }
+    if (!id.endsWith('/src/presentation/play.ts')) {
       return;
     }
     assert(code.includes(marker), 'pump observation anchor exists');
@@ -30,8 +51,6 @@ const observation = {
       marker,
       `
   Object.assign(globalThis, { pumpHandlingTest: { engine, session, input, camera, audio, screen,
-    debugRepairTarget, get repairTargetUid() { return screen.repairTarget?.uid; }, furnitureActionSelection, furnitureActions,
-    getReplayActions: () => inputRecorder?.copyInputs().actions,
     getNotice: () => notice, getFramePacing: () => frameInterval.summary() } });
   const observeStartSource = audio.startSource.bind(audio);
   audio.startSource = (source) => {
@@ -172,7 +191,7 @@ try {
   await page.goto(
     browserStageUrl(
       'pump-handling',
-      `http://127.0.0.1:${address.port}/?debug=1&loadout=pump&site=testHouse&time=12%3A00&seed=7&radius=64`,
+      `http://127.0.0.1:${address.port}/?debug=1&start=pump_handling_fixture_start&site=testHouse&mods=skelly.deadvox.scenario.test-house.debug&time=12%3A00&seed=7&radius=64`,
     ),
     { waitUntil: 'domcontentloaded' },
   );
@@ -187,7 +206,7 @@ try {
       document.querySelector('#world-loading').hidden,
   );
   const reloadCode = await page.evaluate(
-    `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('firearm.reload')[0].code)`,
+    `import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('firearm.reload')[0].code)`,
   );
   await page.evaluate((code) => {
     addEventListener('keydown', (event) => {
@@ -281,7 +300,7 @@ try {
   const moveTo = async (waypoint) => {
     const { currentPosition, yaw } = await page.evaluate(({ axis }) => {
       const { input, session } = globalThis.pumpHandlingTest;
-      return { currentPosition: session.body.pos[axis], yaw: input.yaw };
+      return { currentPosition: session.body.pos[axis], yaw: input.controls.yaw };
     }, waypoint);
     const moveDirection = Math.sign(waypoint.target - currentPosition);
     if (!moveDirection) {
@@ -375,14 +394,14 @@ try {
   });
   const { lockerUid: routeLockerUid } = routeInputs;
   assert.ok(lockerRoute.waypoints.length > 0);
-  const wasWalking = await page.evaluate(() => globalThis.pumpHandlingTest.input.walking);
+  const wasWalking = await page.evaluate(() => globalThis.pumpHandlingTest.input.controls.walking);
   if (!wasWalking) {
     await pressAction(page, 'movement.walk-toggle');
-    await page.waitForFunction(() => globalThis.pumpHandlingTest.input.walking);
+    await page.waitForFunction(() => globalThis.pumpHandlingTest.input.controls.walking);
   }
   // Spawn faces the showroom's slots, off the route's axes; face east so each leg's key moves along one axis.
   await page.evaluate(() => {
-    globalThis.pumpHandlingTest.input.yaw = -Math.PI / 2;
+    globalThis.pumpHandlingTest.input.controls.yaw = -Math.PI / 2;
   });
   await page.evaluate(() => globalThis.pumpManualFrames.enable());
   let routeStop;
@@ -406,7 +425,7 @@ try {
   await page.evaluate(() => globalThis.pumpManualFrames.disable());
   if (!wasWalking) {
     await pressAction(page, 'movement.walk-toggle');
-    await page.waitForFunction(() => !globalThis.pumpHandlingTest.input.walking);
+    await page.waitForFunction(() => !globalThis.pumpHandlingTest.input.controls.walking);
   }
   assert.ok(routeStop, 'route settled at the rack-facing stop');
   const rackApproach = {
@@ -839,7 +858,7 @@ try {
         jobs: session.queue.jobs.length,
         rest: session.rest.action?.kind ?? null,
         fov: camera.fov,
-        ads: globalThis.pumpHandlingTest.input.aimingDownSights,
+        ads: globalThis.pumpHandlingTest.input.controls.aimingDownSights,
         paused: session.sim.paused,
         dead: session.sim.dead ?? null,
         sounds: globalThis.pumpHandlingTest.audio.heardSounds,
@@ -1203,10 +1222,40 @@ try {
   await releaseRevolverTopUp();
   assert.equal(revolverReloaded.reached, true, 'native top-up clears the fired case');
   await page.evaluate(() => globalThis.pumpManualFrames.disable());
-  await worldRepairInGameFlow(page, `http://127.0.0.1:${address.port}`);
+  assert.deepEqual(errors, []);
+  await page.goto(
+    browserStageUrl(
+      'pump-handling',
+      `http://127.0.0.1:${address.port}/?debug=1&site=testHouse&mods=skelly.deadvox.scenario.test-house.debug&ragdollSweep=19&time=12%3A00&seed=7&radius=64`,
+    ),
+    { waitUntil: 'domcontentloaded' },
+  );
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  await page.locator('#go').click();
+  await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
+  const ragdollSample = await page.evaluate(() => {
+    const { engine, session } = globalThis.pumpHandlingTest;
+    const viewer = engine.config.debugStart;
+    const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
+    return {
+      seed: engine.config.ragdollSweep,
+      staged: [...session.actors.store.entries()].some(([, actor]) => actor.incapacitated),
+      viewerDownrange:
+        viewer !== undefined &&
+        rack !== undefined &&
+        viewer.x >= rack.pos[0] * engine.config.scale.blockSize &&
+        Math.hypot(
+          viewer.x - rack.pos[0] * engine.config.scale.blockSize,
+          viewer.z - rack.pos[2] * engine.config.scale.blockSize,
+        ) < engine.config.radiusM,
+    };
+  });
+  assert.equal(ragdollSample.seed, 19, 'the explicit mod URL selects the requested ragdoll sample');
+  assert.equal(ragdollSample.staged, true, 'the fresh debug session stages downed sample actors');
+  assert.equal(ragdollSample.viewerDownrange, true, 'the sample viewer reaches the lane beyond the admitted rack');
   assert.deepEqual(errors, []);
   process.stdout.write(
-    `${JSON.stringify({ cancelled, unpacked, tapped, released, loaded, racked, fired, decoded, doublePress, handlingWaits, revolverLoaded, revolverClosed, revolverFired, revolverReloaded, errors })}\n`,
+    `${JSON.stringify({ cancelled, unpacked, tapped, released, loaded, racked, fired, decoded, doublePress, handlingWaits, revolverLoaded, revolverClosed, revolverFired, revolverReloaded, ragdollSample, errors })}\n`,
   );
 } finally {
   await browser?.close();

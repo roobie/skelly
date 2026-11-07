@@ -42,13 +42,13 @@ Recipes are content. Alternatives may compete for the same stock, so planning mu
 
 The planner is a disposable view. Commands obtain current reach and plan again; editing a returned plan cannot change later results. See `src/core/crafting.ts`, `planCraft`, and `src/core/longAction.ts`, `LongActions`.
 
-Reading a recipe book is a long action only while its page is open. Closing it pauses work and retains progress; moving closes the page and lets movement proceed. Progress belongs to the action, not to the authored text. Readable-only notes and signs have no timed job. See `src/game/play.ts`, `stopReadingOnClose`, and `src/core/bookReading.ts`, `bookReadingHooks`.
+Reading a recipe book is a long action only while its page is open. Closing it pauses work and retains progress; moving closes the page and lets movement proceed. Progress belongs to the action, not to the authored text. Readable-only notes and signs have no timed job. See `src/game/readingClose.ts`, `stopReadingOnClose`, and `src/core/bookReading.ts`, `bookReadingHooks`.
 
 Take-apart work snapshots its yield so stopping and resuming cannot change the promised output after a skill, tool or burn change. Recovered liquid follows the source's own consumption record and remaining burn because only liquid actually used and not spent can return. A selected receiver and approval of any stated spill keep a consequential destination or discard visible to the player. See `src/core/disassembly.ts`, `planDisassembly`; `src/core/inventory.ts`, `Inventory.planLiquidReceipts`; and `DESIGN.md`, "Crafting".
 
 Repair addresses an existing owner, not a new result: its name must describe the selected piece rather than a recipe's item output. An explicit entity identity prevents mending a replacement at the same position or another matching piece. Inspection grants no reservation or future permission; a refused completion returns escrow rather than silently choosing a different target. Saved work and replay must retain that same ownership boundary. See `src/core/items.ts`, `WorkTarget`; `src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair` and `CraftCommands.repairEntity`; `src/core/craftWork.ts`, `entityRepairRefusal`; and `src/core/inventory.ts`, `Inventory.releaseWork`.
 
-Craft completion awards practice; take-apart work does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Practice is source-agnostic. A tiered activity trains a skill only up to its tier, and practice at or above that tier is dropped, so repeating easy work cannot carry a skill upward; see `src/core/character.ts`, `Character.awardPractice`, and `src/content/base/recipes.libsonnet`, `training`.
+Craft completion awards practice; take-apart work does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Practice is source-agnostic. A tiered activity trains a skill only up to its tier, and practice at or above that tier is dropped, so repeating easy work cannot carry a skill upward; see `src/core/character.ts`, `Character.awardPractice`, and `packages/mods/skelly.firearms/firearms-skills.jsonnet`, `training`.
 
 ## Long actions and interruptions
 
@@ -64,7 +64,7 @@ A set trap is an ordinary item lying in a ground pile, with its armed or holding
 
 Setting and disarming are handling jobs. Handling jobs are never saved, which makes the disarm non-resumable across a save as the rule requires. A hit, a critical need or movement withdraws a pending disarm instead of pausing it, so the next attempt starts its full duration. Its completion clears the armed state and fires nothing. See `src/game/bearTrapActions.ts`, `interruptDisarm`.
 
-Only traps inside the block of nine regions around the player spring, and the test is positions only, never whether a column is loaded or drawn. See `src/core/worldRegion.ts`, `inPlayerBlock`. Unloaded zombies wait for Slice 4b catch-up without moving, so inside the block an unloaded zombie cannot newly enter a trap's cell; one already standing in it is still caught. See `src/core/zombies.ts`, `ZombieSystemOptions`.
+Only traps inside the block of nine regions around the player spring, and the test is positions only, never whether a column is loaded or drawn. See `src/core/worldRegion.ts`, `inPlayerBlock`. Unloaded zombies wait for Slice 4b catch-up without moving, so inside the block an unloaded zombie cannot newly enter a trap's cell; one already standing in it is still caught. See `src/core/actorSystem.ts`, `ActorSystemOptions`.
 
 ## Appliances
 

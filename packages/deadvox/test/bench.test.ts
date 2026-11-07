@@ -21,7 +21,8 @@ import {
 } from '../src/bench/report.ts';
 import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
-import { frameStats, percentile } from '../src/bench/stats.ts';
+import { frameStats } from '../src/bench/stats.ts';
+import { percentile } from '../src/core/percentile.ts';
 import { gameHours } from '../src/core/time.ts';
 
 describe('bench stats', () => {
@@ -152,7 +153,7 @@ describe('bench report', () => {
       seed: 12,
       actors: 'boxes',
       frame: { ...frames, msMedian: 16.5, msP95: 19, slowFraction: 0.2 },
-      zombieTick: { count: 300, median: 0.4, p95: 0.8 },
+      actorTick: { count: 300, median: 0.4, p95: 0.8 },
       actorSync: { count: 900, median: 2.3, p95: 4.1 },
       renderSubmit: { count: 900, median: 1.1, p95: 2.2 },
       draws: 12,
@@ -195,7 +196,7 @@ describe('bench report', () => {
       seed: 12,
       actors: 'detailed',
       frame: { ...frames, msMedian: 16.5, msP95: 19, slowFraction: 0.2 },
-      zombieTick: { count: 300, median: 0.4, p95: 0.8 },
+      actorTick: { count: 300, median: 0.4, p95: 0.8 },
       actorSync: { count: 900, median: 2.3, p95: 4.1 },
       renderSubmit: { count: 900, median: 1.1, p95: 2.2 },
       draws: 12,

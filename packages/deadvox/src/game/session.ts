@@ -6,18 +6,40 @@
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { actionText, fillText } from '../core/actionText.ts';
-import { AimController, type AimWobbleNoiseTuning, aimDirection, breathSteadying, NEUTRAL_AIM } from '../core/aim.ts';
+import { actorFigure, figureSeedPool } from '../core/actorFigure.ts';
+import type { PlayerMovement, VocalNoise } from '../core/actorSense.ts';
+import { ActorSpawner } from '../core/actorSpawns.ts';
+import { type Actor, PLAYER_ARM_REACH_M } from '../core/actorState.ts';
+import {
+  type AcidGroundImpact,
+  ActorSystem,
+  BACKGROUND_ACTOR_RATE,
+  BACKGROUND_ACTOR_SLICE_COUNT,
+  BACKGROUND_ACTOR_SLICE_RATE,
+  type HitImpulse,
+  type MeleeResult,
+  type MeleeWeapon,
+} from '../core/actorSystem.ts';
+import { loweredStanceTuning } from '../core/agentPerception.ts';
+import {
+  AimController,
+  type AimWobbleNoiseTuning,
+  aimDirection,
+  breathSteadying,
+  NEUTRAL_AIM,
+  playerAimTuning,
+} from '../core/aim.ts';
 import { BearTraps } from '../core/bearTrap.ts';
 import type { BlockBlow } from '../core/blockDamage.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
+import { claimed, claimedId } from '../core/capabilities.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
 import { createColumnSupply } from '../core/columnSupply.ts';
 import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { coreMessage } from '../core/coreText.ts';
 import { CraftCommands } from '../core/craftCommands.ts';
@@ -37,13 +59,7 @@ import {
 } from '../core/firearmsSkill.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import { foodMillisecondsAt } from '../core/food.ts';
-import {
-  advanceFootsteps,
-  footstepEventAt,
-  initialFootstepClock,
-  isHardLanding,
-  shamblerFootstepEventAt,
-} from '../core/footsteps.ts';
+import { advanceFootsteps, footstepEventAt, initialFootstepClock, isHardLanding } from '../core/footsteps.ts';
 import {
   advanceFloorLockedPlacement,
   type FurnitureMover,
@@ -58,13 +74,14 @@ import {
   ruinFurniture,
   slideDestination,
   slideFurniture,
+  spreadActorDrop,
   tipCarried,
   turnCarried,
 } from '../core/furnitureMove.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { type IlluminationScene, illuminationAt, readingLightRefusal } from '../core/illumination.ts';
-import { Inventory, type Location } from '../core/inventory.ts';
+import { dropSpots, Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { settleCell } from '../core/itemThrow.ts';
 import { climb, LadderHold } from '../core/ladders.ts';
@@ -105,6 +122,8 @@ import { type PlacedPowerDevice, SitePower } from '../core/sitePower.ts';
 import {
   firearmShotPracticeSkill,
   firearmSteadinessSkill,
+  firearmsCombatTuning as readFirearmsCombatTuning,
+  meleeCombatTuning as readMeleeCombatTuning,
   skillActivityPractice,
   skillActivityPracticeRate,
 } from '../core/skillTraining.ts';
@@ -119,36 +138,18 @@ import { spendFuel } from '../core/torch.ts';
 import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
 import { VehicleParts } from '../core/vehicleParts.ts';
 import { VehicleOccupancy } from '../core/vehicleProjection.ts';
+import { completeVehicleRemoval } from '../core/vehicleRemoval.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
-import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
-import { ZombieSpawner } from '../core/zombieSpawns.ts';
-import {
-  type AcidGroundImpact,
-  BACKGROUND_ZOMBIE_RATE,
-  BACKGROUND_ZOMBIE_SLICE_COUNT,
-  BACKGROUND_ZOMBIE_SLICE_RATE,
-  type HitImpulse,
-  loweredStanceTuning,
-  type MeleeResult,
-  type MeleeWeapon,
-  PLAYER_ARM_REACH_M,
-  type PlayerMovement,
-  type VocalNoise,
-  type Zombie,
-  ZombieSystem,
-} from '../core/zombies.ts';
+import { actorVoiceLaw } from './actorAudio.ts';
+import { applyActorPlayerHit } from './actorPlayerHit.ts';
 import { firearmShotSound } from './audioPresentation.ts';
 import { interruptDisarm, registerTrapActions } from './bearTrapActions.ts';
-import type { DebugNoclipStep } from './debugInterface.ts';
+import type { DebugNoclipStep } from './debugNoclipStep.ts';
 import { registerDoorAction } from './doorAction.ts';
 import { type DownedBodyWay, downedBodyPlan, queueDownedBody, registerDownedBodyAction } from './downedBody.ts';
-import {
-  ATTACHMENT_WORK_SKILL,
-  FirearmAttachmentHandling,
-  isAttachmentWorkAction,
-} from './firearmAttachmentHandling.ts';
+import { FirearmAttachmentHandling, isAttachmentWorkAction } from './firearmAttachmentHandling.ts';
 import {
   FirearmMechanics,
   type FirearmOutcome,
@@ -173,12 +174,11 @@ import {
 } from './player.ts';
 import { Quickbar } from './quickbar.ts';
 import { RestController } from './rest.ts';
-import { shamblerVoiceLaw } from './shamblerAudio.ts';
-import { ZOMBIE_RATE } from './simulationRates.ts';
+import { Sharpening } from './sharpening.ts';
+import { ACTIVE_ACTOR_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
 import { ThrowCharge } from './throwCharge.ts';
-import { UNPACK_ACTION } from './unpacking.ts';
-import { applyZombiePlayerHit } from './zombiePlayerHit.ts';
+import { UNPACK_ACTION, Unpacking } from './unpacking.ts';
 
 export const PHYSICS_RATE = 60;
 export const HANDLING_RATE = 20;
@@ -211,9 +211,11 @@ const sessionSteadiness = (
 ) => {
   const skillId = firearmSteadinessSkill(registry, firearm ? defOf(registry, firearm.type) : undefined);
   return {
-    level: skillEffectLevel(character.skills[skillId]!),
+    level: skillEffectLevel(skillId === undefined ? SKILL_LEVEL_MIN : character.skills[skillId]!),
     tuning:
-      skillId === CORE_CONTENT_IDS.firearmsCombat ? tuning : steadinessTuning(tuning, registry.skills.get(skillId)!),
+      skillId === undefined || skillId === claimed(registry.skills, 'firearmsCombat')?.id
+        ? tuning
+        : steadinessTuning(tuning, registry.skills.get(skillId)!),
   };
 };
 
@@ -237,7 +239,8 @@ const validateSnipingAdsFirearm = (registry: Registry, firearm: Item | undefined
     uid !== undefined &&
     (!firearm ||
       firearm.uid !== uid ||
-      firearmSteadinessSkill(registry, defOf(registry, firearm.type)) === CORE_CONTENT_IDS.firearmsCombat)
+      firearmSteadinessSkill(registry, defOf(registry, firearm.type)) ===
+        claimed(registry.skills, 'firearmsCombat')?.id)
   ) {
     throw new Error('Invalid saved Sniping acquisition firearm');
   }
@@ -263,7 +266,11 @@ const advanceSnipingPractice = ({
   dt: number;
 }): number | undefined => {
   const skillId = firearmSteadinessSkill(registry, firearm ? defOf(registry, firearm.type) : undefined);
-  if (!(ready && aiming && firearm && firearms.isReady(firearm.uid)) || skillId === CORE_CONTENT_IDS.firearmsCombat) {
+  if (
+    skillId === undefined ||
+    !(ready && aiming && firearm && firearms.isReady(firearm.uid)) ||
+    skillId === claimed(registry.skills, 'firearmsCombat')?.id
+  ) {
     return undefined;
   }
   if (firearm.uid !== previousUid) {
@@ -276,7 +283,7 @@ const advanceSnipingPractice = ({
 };
 
 const createSessionAim = ({
-  player,
+  registry,
   tuning,
   seed,
   restored,
@@ -284,7 +291,7 @@ const createSessionAim = ({
   wobbleFlatOverride,
   wobbleNoiseScaleOverride,
 }: {
-  player: ReturnType<typeof playerTuning>;
+  registry: Registry;
   tuning: FirearmsCombatTuning;
   seed: number;
   restored: SaveSnapshot | undefined;
@@ -295,7 +302,7 @@ const createSessionAim = ({
   const footstepClock = restored?.character.playerAudio.footstepClock ?? initialFootstepClock();
   const wobbleSeed = Rng.stream(restored?.character.simulation.seed ?? seed, 'player-aim-wobble').int(0, 0xff_ff_ff_ff);
   return new AimController({
-    tuning: player.aim,
+    tuning: playerAimTuning(registry),
     wobbleLimitRadians: tuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: wobbleFlatOverride ?? tuning.wobbleVerticalToHorizontalRatio,
@@ -403,6 +410,12 @@ const setSessionFirearmsSkillZeroHandling = (
 };
 export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false };
 
+/** A look direction as yaw and pitch. */
+export interface PlayerLook {
+  readonly yaw: number;
+  readonly pitch: number;
+}
+
 /** What the player is doing with the keyboard and mouse, read each tick. */
 export interface PlayerInputSample {
   readonly freeLooking?: boolean;
@@ -505,7 +518,7 @@ export interface SessionOptions {
   /** Whether the world under (x, z), in blocks, is loaded enough to stand on. */
   ready: (x: number, z: number) => boolean;
   /** Optional replayed terrain readiness used only to classify zombie tiers. */
-  zombieReady?: ((x: number, z: number) => boolean) | undefined;
+  actorReady?: ((x: number, z: number) => boolean) | undefined;
   controls: SessionControls;
   audio: SessionAudio;
   /** A message that isn't an interruption, such as a completion notice. */
@@ -523,6 +536,10 @@ export interface SessionOptions {
   onDischarge?: (item: Item, sighted: boolean) => void;
   onCompletedSwing?: (isFist: boolean) => void;
   onBatterySwapped?: ((lightType: string) => void) | undefined;
+  /** An unpack opened a container in place; called with the container's type. */
+  onOpened?: ((type: string) => void) | undefined;
+  /** An unpack delivered its contents; called with their item type. */
+  onUnpacked?: ((type: string) => void) | undefined;
   /** Output only, called after the simulation has committed the case transition. */
   onFirearmEjection?: (effect: FirearmShotEffect) => void;
   /** Output only, after the simulation inserts an ejected item into its landing pile. */
@@ -537,20 +554,20 @@ export interface SessionOptions {
   onFuseLit?: (item: Item) => void;
   /** Presentation-only: a melee block absorbed damage. */
   onBlock?: (jolt: BlockJolt, full: boolean) => void;
-  onAcidImpact?: (position: Vec3, type: Zombie['type']) => void;
+  onAcidImpact?: (position: Vec3, type: Actor['type']) => void;
   onAcidGroundImpact?: (impact: AcidGroundImpact) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
-  zombieEffects?: {
+  actorEffects?: {
     /** A hit drew blood: where it struck, along which line, and how hard. */
-    onWound?: (id: EntityId, zombie: Zombie, hit: HitImpulse, damage: number) => void;
+    onWound?: (id: EntityId, actor: Actor, hit: HitImpulse, damage: number) => void;
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
-    onSever?: (id: EntityId, zombie: Zombie, part: string, hit: HitImpulse) => void;
-    /** A hit knocked flesh out of an amalgam (its `carved` already lists `cells`). */
-    onCarve?: (id: EntityId, zombie: Zombie, cells: readonly number[], hit: HitImpulse) => void;
+    onSever?: (id: EntityId, actor: Actor, part: string, hit: HitImpulse) => void;
+    /** A hit knocked flesh out of a fused-mass body (its `carved` already lists `cells`). */
+    onCarve?: (id: EntityId, actor: Actor, cells: readonly number[], hit: HitImpulse) => void;
     /** A zombie became incapacitated but remains in the store and may be revived later. */
-    onIncapacitated?: (id: EntityId, zombie: Zombie) => void;
+    onIncapacitated?: (id: EntityId, actor: Actor) => void;
     /** A zombie died: it is already out of the store, and its loot is already dropped. */
-    onDeath?: (id: EntityId, zombie: Zombie) => void;
+    onDeath?: (id: EntityId, actor: Actor) => void;
     /** The actual result of the player's last swing, for debug-only presentation. */
     onMeleeResult?: (result: MeleeResult) => void;
     /** Presentation-only first-person recoil for a confirmed hit. */
@@ -558,6 +575,8 @@ export interface SessionOptions {
   };
   /** Debug tools, once attached; read each time they matter. */
   debug?: () => SessionDebug | undefined;
+  /** The page's URL query, for the debug actor voice-pitch overrides; a headless caller omits it and gets none. */
+  urlSearch?: string | undefined;
   /** Debug-only vertical/horizontal ratio override for the walking lune. */
   wobbleFlatOverride?: number | undefined;
   /** Debug-only multiplier for authored OU noise strength. */
@@ -582,8 +601,10 @@ interface RestoredLook {
   walk: boolean;
 }
 
-const firearmsSkillLevel = (character: Character): number =>
-  skillEffectLevel(character.skills.firearms_combat ?? SKILL_LEVEL_MIN);
+const firearmsSkillLevel = (character: Character): number => {
+  const id = character.skillForCapability('firearmsCombat');
+  return skillEffectLevel((id === undefined ? undefined : character.skills[id]) ?? SKILL_LEVEL_MIN);
+};
 
 interface StanceBody {
   readonly body: Body;
@@ -644,7 +665,7 @@ const createSessionCharacter = (
 ): Character =>
   restored ? Character.restoreState(registry, restored.character.progression) : new Character(registry, { handedness });
 
-const playerBodyTuning = (registry: Registry, id: string = CORE_CONTENT_IDS.player) => {
+const playerBodyTuning = (registry: Registry, id: string = claimedId(registry.body, 'player')) => {
   const tuning = registry.body.get(id);
   if (!tuning) {
     throw new Error('Missing player body tuning');
@@ -652,7 +673,7 @@ const playerBodyTuning = (registry: Registry, id: string = CORE_CONTENT_IDS.play
   return tuning;
 };
 
-const playerCompressionCaps = (registry: Registry, id: string = CORE_CONTENT_IDS.player) => {
+const playerCompressionCaps = (registry: Registry, id: string = claimedId(registry.compression, 'player')) => {
   const tuning = registry.compression.get(id);
   if (!tuning) {
     throw new Error('Missing player compression tuning');
@@ -661,7 +682,7 @@ const playerCompressionCaps = (registry: Registry, id: string = CORE_CONTENT_IDS
 };
 
 const playerSenseTuning = (registry: Registry) => {
-  const tuning = registry.senses.get(CORE_CONTENT_IDS.player);
+  const tuning = claimed(registry.senses, 'player');
   if (!tuning) {
     throw new Error('Missing player sense tuning');
   }
@@ -731,7 +752,7 @@ const restorePlayerSessionLatches = (player: ReturnType<typeof restorePlayer> | 
   handlingPausedForKnockout: player?.handlingPausedForKnockout ?? false,
 });
 
-const zombieReadinessFor = (options: SessionOptions) => options.zombieReady ?? options.ready;
+const actorReadinessFor = (options: SessionOptions) => options.actorReady ?? options.ready;
 
 /** Physical bricks share the parked-vehicle occupancy projection with the cell collision path. */
 const solidBricksFor = (world: World, registry: Registry, inventory: Inventory, blockSize: number): SolidBricks =>
@@ -802,7 +823,7 @@ const createSessionPower = (options: SessionOptions, sim: Simulation, inventory:
   });
   sim.scheduler.register({
     id: 'power',
-    rate: 1 / options.registry.powerTuning.get(CORE_CONTENT_IDS.powerTuning)!.tickSimSeconds,
+    rate: 1 / claimed(options.registry.powerTuning, 'power')!.tickSimSeconds,
     tick: (_dt, time) => power.advance(simTimestamp(time)),
   });
   return power;
@@ -816,10 +837,7 @@ export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const text = actionText(registry);
   const dayCycle = requireDayCycle(registry);
-  const shamblerVoice = shamblerVoiceLaw(
-    figureSeedPool(registry.zombies),
-    registry.senses.get(CORE_CONTENT_IDS.player)!.shamblerVoice,
-  );
+  const actorVoice = actorVoiceLaw(figureSeedPool(registry.actors), claimed(registry.senses, 'player')!.actorVoice);
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
   const Player = playerTuning(registry);
@@ -857,12 +875,12 @@ export const createSession = (options: SessionOptions) => {
   };
 
   const character = createSessionCharacter(registry, options.handedness, restored);
-  const firearmsCombatTuning = registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms;
-  if (!firearmsCombatTuning) {
-    throw new Error('Missing firearms-combat skill tuning');
-  }
+  const firearmsCombatTuning = readFirearmsCombatTuning(registry);
   const currentFirearmsCombatTuning = (): FirearmsCombatTuning => firearmsCombatTuning;
-  const meleeCombatTuning = registry.skills.get(CORE_CONTENT_IDS.meleeCombat)?.combat?.melee;
+  const meleeCombatTuning = readMeleeCombatTuning(registry);
+  const firearmsSkillId = claimed(registry.skills, 'firearmsCombat')?.id;
+  const meleeSkillId = claimed(registry.skills, 'meleeCombat')?.id;
+  const inventorySkillId = claimed(registry.skills, 'inventoryManagement')?.id;
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, {
         character,
@@ -890,7 +908,7 @@ export const createSession = (options: SessionOptions) => {
       (item) => item && registry.items.get(item.type)?.firearm,
     );
   const aim = createSessionAim({
-    player: Player,
+    registry,
     tuning: currentFirearmsCombatTuning(),
     seed,
     restored,
@@ -923,8 +941,8 @@ export const createSession = (options: SessionOptions) => {
     return sunExposureCache.isExposedAt(pos, hour, dayCycle);
   };
   const quickbar = new Quickbar();
-  const spawner = new ZombieSpawner();
-  const zombieStore = new MapEntityStore<Zombie>();
+  const spawner = new ActorSpawner();
+  const actorStore = new MapEntityStore<Actor>();
 
   /** The air block at the player's feet, where drops land. */
   const feet = (): Vec3 => [Math.floor(body.pos[0]), Math.floor(body.pos[1] + 0.01), Math.floor(body.pos[2])];
@@ -1005,7 +1023,7 @@ export const createSession = (options: SessionOptions) => {
       return false;
     }
     const definition = registry.sounds.get(event)!;
-    const bodyPitch = soundPitchMultiplier ?? (mobBody ? shamblerVoice.bodyPitch(mobBody) : 1);
+    const bodyPitch = soundPitchMultiplier ?? (mobBody ? actorVoice.bodyPitch(mobBody, options.urlSearch) : 1);
     const pitch = selected.pitch * bodyPitch;
     const pick = { ...selected, pitch };
     const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);
@@ -1059,8 +1077,10 @@ export const createSession = (options: SessionOptions) => {
   const playPlayerSound = (event: SoundId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
     admitSound(event, chest(), time, { ...meta, listenerRelative: meta.listenerRelative ?? true, player: true });
   const awardInventoryPractice = (): void => {
-    const training = skillActivityPractice(registry, CORE_CONTENT_IDS.inventoryManagement, 'handling');
-    character.awardPractice(CORE_CONTENT_IDS.inventoryManagement, training.practice, training.tier);
+    if (inventorySkillId !== undefined) {
+      const training = skillActivityPractice(registry, inventorySkillId, 'handling');
+      character.awardPractice(inventorySkillId, training.practice, training.tier);
+    }
   };
   /** What of a melee blow gets past the en-garde guard; acid never comes through here. */
   const blockedDamage = (damage: number, attacker: EntityId): number => {
@@ -1069,7 +1089,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const block = meleeBlock(
       {
-        level: character.skills.melee_combat ?? SKILL_LEVEL_MIN,
+        level: meleeSkillId === undefined ? SKILL_LEVEL_MIN : character.skills[meleeSkillId]!,
         damage,
         roll: sim.rng(`block:${attacker}:${sim.time}`).next(),
         stamina: sim.needs.stamina,
@@ -1081,9 +1101,11 @@ export const createSession = (options: SessionOptions) => {
       return damage;
     }
     spendStamina(sim.needs, block.staminaCost, bodyTuning.staminaRegenDelaySimSeconds);
-    const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'block');
-    character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice * block.absorbed, training.tier);
-    playPlayerSound(block.full ? 'player_block_full' : 'player_block_partial');
+    if (meleeSkillId !== undefined) {
+      const training = skillActivityPractice(registry, meleeSkillId, 'block');
+      character.awardPractice(meleeSkillId, training.practice * block.absorbed, training.tier);
+    }
+    playPlayerSound(bodyTuning.sounds.block[block.full ? 'full' : 'partial']);
     options.onBlock?.(blockJolt(block.absorbed, meleeCombatTuning), block.full);
     return damage - block.absorbed;
   };
@@ -1160,11 +1182,13 @@ export const createSession = (options: SessionOptions) => {
     onShot: (shot, time, firearm, sighted) => {
       options.onDischarge?.(firearm, sighted);
       const skillId = firearmShotPracticeSkill(registry, defOf(registry, firearm.type), sighted);
-      const shotTraining = skillActivityPractice(registry, skillId, 'shot');
-      character.awardPractice(skillId, shotTraining.practice, shotTraining.tier);
-      const { hits, stops } = zombieSystem.firePellets(shot);
+      if (skillId !== undefined) {
+        const shotTraining = skillActivityPractice(registry, skillId, 'shot');
+        character.awardPractice(skillId, shotTraining.practice, shotTraining.tier);
+      }
+      const { hits, stops } = actorSystem.firePellets(shot);
       bodyStops = stops;
-      if (hits > 0 && (skillId !== CORE_CONTENT_IDS.firearmsCombat || firearmReadyWalking)) {
+      if (skillId !== undefined && hits > 0 && (skillId !== firearmsSkillId || firearmReadyWalking)) {
         const training = skillActivityPractice(registry, skillId, 'hit');
         character.awardPractice(skillId, training.practice, training.tier);
       }
@@ -1186,7 +1210,7 @@ export const createSession = (options: SessionOptions) => {
   const magazines = new MagazineHandling(inventory, queue, {
     feet,
     reloadFactor: () =>
-      firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).reloadDuration *
+      firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).reloadFactor *
       sim.body.pain.effects.handlingSlowdown,
     onSound: (event, time) => playPlayerSound(event, time),
   });
@@ -1205,10 +1229,34 @@ export const createSession = (options: SessionOptions) => {
       return Boolean(book?.recipes.every((recipe) => character.knownRecipes.has(recipe)));
     },
   });
+  const unpacking = new Unpacking(inventory, queue, feet, {
+    calendar: () => sim.calendar,
+    opened: (type) => options.onOpened?.(type),
+    unpacked: (type) => options.onUnpacked?.(type),
+  });
+  const sharpening = new Sharpening(inventory, queue, {
+    character,
+    reach: () => reach(),
+    clockRatio: sim.clock.ratio,
+  });
   sim.actions.craft = craftActionHooks(inventory, character, reach, { feet, calendar: () => sim.calendar });
   sim.actions.reading = bookReadingHooks(inventory, character, () => readingLight());
   sim.actions.treatment = playerTreatmentHooks(inventory, sim);
   sim.actions.vehicleWork = vehicleWorkHooks(inventory, {
+    transfer: (request) => {
+      const context = options.terrainDestruction;
+      return request.kind === 'remove' && context
+        ? completeVehicleRemoval(
+            {
+              terrain: context.terrain,
+              supply: columnSupply.project(context.source),
+              blockSize: s,
+              feet: inventory.dropFeet()!,
+            },
+            request,
+          )
+        : inventory.vehicleTransfer(request);
+    },
     output: () => ({ kind: 'pile', pos: feet() }),
     quality: (quality) =>
       Math.max(0, ...reach().entries.map(({ item }) => registry.items.get(item.type)?.tool?.qualities[quality] ?? 0)),
@@ -1254,15 +1302,23 @@ export const createSession = (options: SessionOptions) => {
       loweredStance()?.eyeDropMetres,
       Player.eye,
     );
-  const playerEye = (): Vec3 =>
+  /** The sampled input's look at the player tick. */
+  const playerLook = (): PlayerLook => {
+    const { yaw, pitch } = sampledInput();
+    return { yaw, pitch };
+  };
+  const playerLookDirection = (look: PlayerLook = playerLook()): Vec3 =>
+    aimDirection(look.yaw, look.pitch, NEUTRAL_AIM);
+  /** The eye the simulation aims and picks from; the drawn view's ADS blend never moves it. */
+  const playerEye = (look: PlayerLook = playerLook()): Vec3 =>
     playerEyePosition({
       feet: body.pos,
       blockSize: s,
-      yaw: sampledInput().yaw,
-      pitch: sampledInput().pitch,
+      yaw: look.yaw,
+      pitch: look.pitch,
       stance: playerStance,
       lean: currentLean(),
-      figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+      figure: claimed(registry.figures, 'player')!,
       models: registry.models,
       ads: playerAdsPose(inventory, aimingDownSights(), aim.frame),
     });
@@ -1323,7 +1379,7 @@ export const createSession = (options: SessionOptions) => {
     });
     const cue = aim.breathCue;
     if (cue) {
-      playPlayerSound(`breath_${cue}`);
+      playPlayerSound(bodyTuning.sounds.breath[cue]);
     }
   };
   /** `DESIGN.md`, "Holding breath": staying still lets breath steady the body. */
@@ -1355,7 +1411,7 @@ export const createSession = (options: SessionOptions) => {
         airbornePeakY !== undefined &&
         isHardLanding((airbornePeakY - body.pos[1]) * s, senseTuning.footsteps)
       ) {
-        playPlayerSound('player_landing_hard', time);
+        playPlayerSound(bodyTuning.sounds.landing, time);
       }
       airbornePeakY = undefined;
     } else {
@@ -1373,7 +1429,11 @@ export const createSession = (options: SessionOptions) => {
     );
     footstepClock = footsteps.clock;
     for (let i = 0; i < footsteps.steps; i++) {
-      const event = footstepEventAt(body.pos, body, (x, y, z) => world.getBlock(x, y, z), registry.blocks);
+      const event = footstepEventAt(body.pos, body, (x, y, z) => world.getBlock(x, y, z), {
+        blocks: registry.blocks,
+        footstepSounds: registry.footstepSounds,
+        family: senseTuning.footsteps.family,
+      });
       if (event) {
         playPlayerSound(event, time);
       }
@@ -1415,7 +1475,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const { yaw, pitch } = sampledInput();
     const look = playerLookPose({
-      figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+      figure: claimed(registry.figures, 'player')!,
       models: registry.models,
       pitch,
       stance: playerStance,
@@ -1516,15 +1576,40 @@ export const createSession = (options: SessionOptions) => {
     if (piece && entities.isSolid(...hit.block)) {
       return bashPiece(piece, weapon.impulse);
     }
-    return hit ? strikeTerrainCell(hit.block, { strength: weapon.impulse, kind: weapon.type ?? 'blunt' }) : false;
+    return hit ? strikeTerrainCell(hit.block, { strength: weapon.impulse, kind: weapon.type }) : false;
   };
   const traps = new BearTraps(inventory);
-  const zombieSystem = new ZombieSystem({
-    activeZombieRadiusMetres: siteGenerationOf(registry).activeZombieRadiusMetres,
-    store: zombieStore,
+  const actorReady = actorReadinessFor(options);
+  const placeActorDrop = (item: Item, pos: Vec3): void => {
+    const landed = freshDropTarget(inventory, item, pos);
+    if (!landed) {
+      return;
+    }
+    if (inventory.planAdd(item, landed).ok) {
+      inventory.add(item, landed);
+      return;
+    }
+    if (!actorReady(pos[0], pos[2])) {
+      return;
+    }
+    const landings = dropSpots(pos).flatMap((spot) => {
+      const floor = inventory.landing(spot);
+      return floor ? [floor] : [];
+    });
+    for (const cell of spreadActorDrop(inventory, physicalSolid, pos, landings)) {
+      const target = { kind: 'pile' as const, pos: cell };
+      if (inventory.planAdd(item, target).ok) {
+        inventory.add(item, target);
+        return;
+      }
+    }
+  };
+  const actorSystem = new ActorSystem({
+    activeActorRadiusMetres: siteGenerationOf(registry).activeActorRadiusMetres,
+    store: actorStore,
     restrained: (id) => traps.holds(id),
     seed: sim.seed,
-    isLoaded: zombieReadinessFor(options),
+    isLoaded: actorReady,
     terrainFloor: options.terrainFloor,
     isSolid: physicalSolid,
     solidBricks: solidBricksFor(world, registry, inventory, s),
@@ -1544,15 +1629,15 @@ export const createSession = (options: SessionOptions) => {
     dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
     isSunExposedAt: (position) => isSunExposedAt(position, hourOfDay(sim.calendar)),
     hurtPlayer: (amount, hitRegions, attacker, kind) => {
-      const source = zombieStore.get(attacker);
+      const source = actorStore.get(attacker);
       const damage = blockedDamage(source ? modified('attack.damage', amount, source) : amount, attacker);
       if (damage <= 0) {
         return;
       }
       playerCombat.cancelCharge();
-      applyZombiePlayerHit(sim, {
+      applyActorPlayerHit(sim, {
         damage,
-        cause: source?.type.cause ?? text.causes.zombie,
+        cause: source?.type.cause ?? text.causes.actor,
         regionRoll: sim.rng(`player-hit-region:${attacker}:${sim.time}`).next(),
         hitRegions,
         kind,
@@ -1560,18 +1645,18 @@ export const createSession = (options: SessionOptions) => {
     },
     onAcidPlayerHit: (hit) => {
       playerCombat.cancelCharge();
-      applyZombiePlayerHit(sim, hit);
+      applyActorPlayerHit(sim, hit);
     },
     onPlayerExposure: (contact) => sim.expose(contact),
     onPlayerLeaveExposure: (source) => sim.leaveExposure(source),
     onAcidImpact: (position, type) => options.onAcidImpact?.(position, type),
     onAcidGroundImpact: (impact) => options.onAcidGroundImpact?.(impact),
-    onSound: (event, position, zombie, playerMelee) => {
+    onSound: (event, position, actor, playerMelee) => {
       if (playerMelee) {
         playWorldSound(event, position, sim.time, {
           listenerRelative: true,
           sourceLabel: 'player melee',
-          ...(zombie ? { body: zombieFigure(zombie.type, zombie.figureSeed).realized.body } : {}),
+          ...(actor ? { body: actorFigure(actor.type, actor.figureSeed).realized.body } : {}),
         });
         return;
       }
@@ -1579,75 +1664,72 @@ export const createSession = (options: SessionOptions) => {
         event,
         position,
         sim.time,
-        zombie
+        actor
           ? {
-              body: zombieFigure(zombie.type, zombie.figureSeed).realized.body,
-              ...(zombie.type.soundPitchMultiplier === undefined
+              body: actorFigure(actor.type, actor.figureSeed).realized.body,
+              ...(actor.type.soundPitchMultiplier === undefined
                 ? {}
-                : { soundPitchMultiplier: zombie.type.soundPitchMultiplier }),
+                : { soundPitchMultiplier: actor.type.soundPitchMultiplier }),
             }
           : {},
       );
     },
-    onFootstep: (position, id, mode, zombie) => {
-      const event = shamblerFootstepEventAt(
-        position,
-        zombie.body,
-        (x, y, z) => world.getBlock(x, y, z),
-        registry.blocks,
-      );
+    onFootstep: (position, id, actor) => {
+      const family = actor.type.footstepSound;
+      if (family === undefined) {
+        return;
+      }
+      const event = footstepEventAt(position, actor.body, (x, y, z) => world.getBlock(x, y, z), {
+        blocks: registry.blocks,
+        footstepSounds: registry.footstepSounds,
+        family,
+      });
       if (!event) {
         return;
       }
       playWorldSound(event, position, sim.time, {
-        sourceLabel: `${zombie.type.name.toLowerCase()} #${id} · ${mode}`,
-        body: zombieFigure(zombie.type, zombie.figureSeed).realized.body,
+        sourceLabel: `${actor.type.name.toLowerCase()} #${id}${actor.agent ? ` · ${actor.agent.mode}` : ''}`,
+        body: actorFigure(actor.type, actor.figureSeed).realized.body,
       });
     },
-    onSevered: (zombie, region) => {
-      const pos: Vec3 = [
-        Math.floor(zombie.body.pos[0]),
-        Math.floor(zombie.body.pos[1]),
-        Math.floor(zombie.body.pos[2]),
-      ];
-      const item = zombie.type.severedItems[region];
+    onSevered: (actor, region) => {
+      const pos: Vec3 = [Math.floor(actor.body.pos[0]), Math.floor(actor.body.pos[1]), Math.floor(actor.body.pos[2])];
+      const item = actor.type.severedItems[region];
       if (item !== null) {
-        inventory.add(inventory.create(item!), { kind: 'pile', pos });
+        placeActorDrop(inventory.create(item!), pos);
       }
     },
-    onWound: (id, zombie, hit, damage) => options.zombieEffects?.onWound?.(id, zombie, hit, damage),
-    onSever: (id, zombie, part, hit) => options.zombieEffects?.onSever?.(id, zombie, part, hit),
-    onCarve: (id, zombie, cells, hit) => options.zombieEffects?.onCarve?.(id, zombie, cells, hit),
-    onIncapacitated: (id, zombie) => options.zombieEffects?.onIncapacitated?.(id, zombie),
-    ...(options.zombieEffects?.onMeleeResult ? { onMeleeResult: options.zombieEffects.onMeleeResult } : {}),
-    ...(options.zombieEffects?.onMeleeContact ? { onMeleeContact: options.zombieEffects.onMeleeContact } : {}),
-    onDeath: (id, zombie) => {
-      const table = zombie.type.loot;
+    onWound: (id, actor, hit, damage) => options.actorEffects?.onWound?.(id, actor, hit, damage),
+    onSever: (id, actor, part, hit) => options.actorEffects?.onSever?.(id, actor, part, hit),
+    onCarve: (id, actor, cells, hit) => options.actorEffects?.onCarve?.(id, actor, cells, hit),
+    onIncapacitated: (id, actor) => options.actorEffects?.onIncapacitated?.(id, actor),
+    ...(options.actorEffects?.onMeleeResult ? { onMeleeResult: options.actorEffects.onMeleeResult } : {}),
+    ...(options.actorEffects?.onMeleeContact ? { onMeleeContact: options.actorEffects.onMeleeContact } : {}),
+    onDeath: (id, actor) => {
+      const table = actor.type.loot;
       if (table) {
-        const pos: Vec3 = [
-          Math.floor(zombie.body.pos[0]),
-          Math.floor(zombie.body.pos[1]),
-          Math.floor(zombie.body.pos[2]),
-        ];
-        for (const drop of rollLoot(registry, corpseLootPoint(table, id, pos), sim.rng(`zombie-loot:${id}`))) {
-          inventory.add(inventory.createRolled(drop), { kind: 'pile', pos });
+        const pos: Vec3 = [Math.floor(actor.body.pos[0]), Math.floor(actor.body.pos[1]), Math.floor(actor.body.pos[2])];
+        for (const drop of rollLoot(registry, corpseLootPoint(table, id, pos), sim.rng(`actor-loot:${id}`))) {
+          placeActorDrop(inventory.createRolled(drop), pos);
         }
       }
-      options.zombieEffects?.onDeath?.(id, zombie);
+      options.actorEffects?.onDeath?.(id, actor);
     },
   });
   const playerCombat = new PlayerCombat(
     {
-      playPlayerMeleeSwing: (origin, weapon) => zombieSystem.playPlayerMeleeSwing(origin, weapon),
+      playPlayerMeleeSwing: (origin, weapon) => actorSystem.playPlayerMeleeSwing(origin, weapon),
       resolvePlayerMelee: (origin, direction, weapon, isFist) =>
-        zombieSystem.resolvePlayerMelee(origin, direction, weapon, isFist) || strikePiece(origin, direction, weapon),
+        actorSystem.resolvePlayerMelee(origin, direction, weapon, isFist) || strikePiece(origin, direction, weapon),
     },
     character,
     {
       onWeaponHit: (uid) => wearMeleeWeaponOnHit(inventory, uid),
       onLandedHit: () => {
-        const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'hit');
-        character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice, training.tier);
+        if (meleeSkillId !== undefined) {
+          const training = skillActivityPractice(registry, meleeSkillId, 'hit');
+          character.awardPractice(meleeSkillId, training.practice, training.tier);
+        }
       },
       onCompletedSwing: (isFist) => options.onCompletedSwing?.(isFist),
       payChargeStamina: (wanted) => {
@@ -1657,7 +1739,7 @@ export const createSession = (options: SessionOptions) => {
       },
     },
   );
-  let lastZombieStep = 0;
+  let lastActorStep = 0;
   let lastBackgroundStep = 0;
   let backgroundSliceIndex = 0;
   let lastPlayerStep = 0;
@@ -1730,13 +1812,16 @@ export const createSession = (options: SessionOptions) => {
     }
     const directions = fragmentDirections(sim.rng(`fragments:${item.uid}`), spec.fragments.count);
     const { damage, impulse, rangeMetres } = spec.fragments;
-    zombieSystem.detonate({ blast: spec.blast, fragments: { origin: at, directions, damage, impulse, rangeMetres } });
+    actorSystem.detonate({
+      blast: spec.blast,
+      fragments: { origin: at, directions, damage, impulse, rangeMetres, damageKind: spec.fragments.damageKind },
+    });
     const centre = bodyCentre(body);
     const blast =
       spec.blast.damage *
       blastShare(spec.blast, Math.hypot(centre[0] - at[0], centre[1] - at[1], centre[2] - at[2]) * s);
     if (blast > 0 && inSight(at, centre, physicalSolid)) {
-      sim.hit(blast, text.causes.grenade, 'torso', { kind: 'blunt' });
+      sim.hit(blast, text.causes.grenade, 'torso', { kind: spec.blast.damageKind });
     }
     for (const region of fragmentHitsOnBody({
       origin: at,
@@ -1746,15 +1831,15 @@ export const createSession = (options: SessionOptions) => {
       isSolid: physicalSolid,
       regionHeights: bodyTuning.fragmentRegionHeights,
     })) {
-      sim.hit(damage, text.causes.grenade, region, { kind: 'pierce' });
+      sim.hit(damage, text.causes.grenade, region, { kind: spec.fragments.damageKind });
     }
     options.onDetonation?.([at[0] * s, at[1] * s, at[2] * s], spec.blast.radiusMetres);
     // The blast is the player's doing, so it is heard as their noise, from where it went off.
     admitSound(spec.sound, at, sim.time, { player: true, sourceLabel: 'grenade' });
   };
   sim.scheduler.register({
-    id: 'zombies',
-    rate: ZOMBIE_RATE,
+    id: 'actors',
+    rate: ACTIVE_ACTOR_RATE,
     tick: (dt, time) => {
       const lit = (item: Item): void => {
         inventory.version += 1; // The item now draws without its lever.
@@ -1763,7 +1848,7 @@ export const createSession = (options: SessionOptions) => {
       for (const item of fuses.advance(dt, (live) => inventory.locate(live)?.kind === 'hand', lit)) {
         detonate(item);
       }
-      spawner.advance({ calendar: sim.calendar, registry, zombies: zombieSystem });
+      spawner.advance({ calendar: sim.calendar, registry, actors: actorSystem });
       if (scenarioRun) {
         advanceEventRules({
           rules: options.scenario?.eventRules ?? [],
@@ -1772,28 +1857,28 @@ export const createSession = (options: SessionOptions) => {
           dayPhase: dayPhaseAt(dayCycle, sim.calendar).phase,
           player: body.pos,
           registry,
-          zombies: zombieSystem,
+          actors: actorSystem,
         });
       }
-      zombieSystem.tickActive(dt, time, heldItemUids());
+      actorSystem.tickActive(dt, time, heldItemUids());
       traps.step(dt, {
         player: body.pos,
-        zombies: [...zombieStore.entries()].map(([id, zombie]) => [id, zombie.body.pos] as const),
+        actors: [...actorStore.entries()].map(([id, actor]) => [id, actor.body.pos] as const),
         blockSize: s,
-        alive: (id) => zombieStore.get(id) !== undefined,
+        alive: (id) => actorStore.get(id) !== undefined,
         hurtPlayer: ({ region, damage, kind }) => sim.hit(damage, text.causes.bearTrap, region, { kind }),
-        injureZombie: (id, damage) => zombieSystem.injureLegs(id, damage),
+        injureActor: (id, damage) => actorSystem.injureLegs(id, damage),
       });
-      lastZombieStep = time;
+      lastActorStep = time;
     },
   });
   sim.scheduler.register({
-    id: 'zombie-background',
-    rate: BACKGROUND_ZOMBIE_SLICE_RATE,
+    id: 'actor-background',
+    rate: BACKGROUND_ACTOR_SLICE_RATE,
     tick: (_dt, time) => {
       const sliceIndex = backgroundSliceIndex;
-      backgroundSliceIndex = (backgroundSliceIndex + 1) % BACKGROUND_ZOMBIE_SLICE_COUNT;
-      zombieSystem.tickBackground(1 / BACKGROUND_ZOMBIE_RATE, time, sliceIndex, BACKGROUND_ZOMBIE_SLICE_COUNT);
+      backgroundSliceIndex = (backgroundSliceIndex + 1) % BACKGROUND_ACTOR_SLICE_COUNT;
+      actorSystem.tickBackground(1 / BACKGROUND_ACTOR_RATE, time, sliceIndex, BACKGROUND_ACTOR_SLICE_COUNT);
       if (sliceIndex === 0) {
         lastBackgroundStep = time;
       }
@@ -1801,8 +1886,8 @@ export const createSession = (options: SessionOptions) => {
   });
 
   /** A downed body lies on the floor: the player walks over it and a door closes on it, as shamblers already do. */
-  const standingZombieBodies = (): Body[] =>
-    [...zombieStore.entries()].filter(([, zombie]) => !zombie.incapacitated).map(([, zombie]) => zombie.body);
+  const standingActorBodies = (): Body[] =>
+    [...actorStore.entries()].filter(([, actor]) => !actor.incapacitated).map(([, actor]) => actor.body);
 
   /** A world sound that shamblers hear when its content gives it a noise. */
   const playNoisyWorldSound = (event: SoundId, position: Vec3): void => {
@@ -1818,7 +1903,7 @@ export const createSession = (options: SessionOptions) => {
     terrainSolid: (x, y, z) => moveTerrain(x, y, z) || vehicleOccupancy.isSolid(x, y, z),
     blockSize: s,
     player: body,
-    others: standingZombieBodies(),
+    others: standingActorBodies(),
     stamina: sim.needs.stamina,
     beforeRelocate: (entity) => power?.beforeRemove(simTimestamp(sim.time), entity),
   });
@@ -1842,7 +1927,10 @@ export const createSession = (options: SessionOptions) => {
       furnitureMoveStamina(inventory, entity, floorLocked ? 'drag' : 'lift'),
       bodyTuning.staminaRegenDelaySimSeconds,
     );
-    playNoisyWorldSound(floorLocked ? 'furniture_drag' : 'furniture_scrape', centre);
+    const sound = entities.defOf(entity).moveSounds?.[floorLocked ? 'drag' : 'lift'];
+    if (sound !== undefined) {
+      playNoisyWorldSound(sound, centre);
+    }
     return undefined;
   };
   queue.registerAction('furniture.slide', (params) => {
@@ -1861,7 +1949,10 @@ export const createSession = (options: SessionOptions) => {
     const reason = slideFurniture(furnitureMover(), entity, params.way, { destination: params.destination as Vec3 });
     if (!reason) {
       spendStamina(sim.needs, furnitureMoveStamina(inventory, entity, 'drag'), bodyTuning.staminaRegenDelaySimSeconds);
-      playNoisyWorldSound('furniture_drag', boxCentre(entity.pos, entity.size));
+      const sound = entities.defOf(entity).moveSounds?.drag;
+      if (sound !== undefined) {
+        playNoisyWorldSound(sound, boxCentre(entity.pos, entity.size));
+      }
     }
     return reason;
   });
@@ -1887,11 +1978,11 @@ export const createSession = (options: SessionOptions) => {
   const placePiece = (aimed: Readonly<Vec3>): string | undefined => {
     const carried = entities.carrying();
     if (!carried) {
-      return registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.emptyHands;
+      return claimed(registry.ui, 'interface')!.furnitureMoveMessages.emptyHands;
     }
-    const sound = carried.floorLocked ? 'furniture_drag' : 'furniture_scrape';
+    const sound = entities.defOf(carried).moveSounds?.[carried.floorLocked ? 'drag' : 'lift'];
     const reason = placeFurniture(furnitureMover(), aimed);
-    if (!reason) {
+    if (!reason && sound !== undefined) {
       playNoisyWorldSound(sound, boxCentre(carried.pos, carried.size));
     }
     return reason;
@@ -1909,7 +2000,7 @@ export const createSession = (options: SessionOptions) => {
       const dz = (fx * Math.sin(angle) + fz * Math.cos(angle)) / length;
       const aimed: Vec3 = [Math.floor(body.pos[0] + dx * clear), y, Math.floor(body.pos[2] + dz * clear)];
       if (!placePiece(aimed)) {
-        (options.refusal ?? options.notice)(registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.wornOut);
+        (options.refusal ?? options.notice)(claimed(registry.ui, 'interface')!.furnitureMoveMessages.wornOut);
         return;
       }
     }
@@ -1998,7 +2089,7 @@ export const createSession = (options: SessionOptions) => {
     const ladder = ladderHold.piece(pacedIntent.jump || sim.body.actionRefusal !== undefined);
     steer(body, scale, { yaw: sampledInput().yaw, intent: { ...steered, onLadder: ladder !== undefined } }, Player);
     if (jumpStarted) {
-      playPlayerSound('player_strain', time);
+      playPlayerSound(bodyTuning.sounds.strain, time);
     }
     refuseThrowForLadder();
     const climbing =
@@ -2012,8 +2103,8 @@ export const createSession = (options: SessionOptions) => {
       ...physics,
       // Only a climb up steps up a ledge: one down would step back onto the roof edge it is leaving.
       ...(climbing ? { gravity: 0, braced: body.vel[1] >= 0 } : {}),
-      obstacles: standingZombieBodies(),
-      shapeOf: zombieSystem.shapeOf,
+      obstacles: standingActorBodies(),
+      shapeOf: actorSystem.shapeOf,
     });
     sim.land(landingSpeed * s);
     observeScenarioMovement(scenarioRun, {
@@ -2078,9 +2169,14 @@ export const createSession = (options: SessionOptions) => {
     firearms.advanceAdsAcquisition(dt, heldFirearm?.uid, Boolean(controls.aimingDownSights?.()));
     const going = intent.forward !== 0 || intent.right !== 0;
     firearmReadyWalking = readyGait && going;
-    if (readyGait && readyUid !== undefined && (!firearms.isReady(readyUid) || going)) {
-      const training = skillActivityPracticeRate(registry, CORE_CONTENT_IDS.firearmsCombat, 'readying');
-      character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, dt * training.practicePerSecond, training.tier);
+    if (
+      firearmsSkillId !== undefined &&
+      readyGait &&
+      readyUid !== undefined &&
+      (!firearms.isReady(readyUid) || going)
+    ) {
+      const training = skillActivityPracticeRate(registry, firearmsSkillId, 'readying');
+      character.awardPractice(firearmsSkillId, dt * training.practicePerSecond, training.tier);
     }
     snipingAdsUid = advanceSnipingPractice({
       registry,
@@ -2126,7 +2222,7 @@ export const createSession = (options: SessionOptions) => {
         playerLeanBoxes({
           inventory,
           pose: playerLookPose({
-            figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+            figure: claimed(registry.figures, 'player')!,
             models: registry.models,
             pitch,
             stance: playerStance,
@@ -2322,13 +2418,13 @@ export const createSession = (options: SessionOptions) => {
     if (isInventoryPracticeAction(job)) {
       awardInventoryPractice();
     }
-    if (isFirearmTrainingAction(job)) {
-      const training = skillActivityPractice(registry, CORE_CONTENT_IDS.firearmsCombat, 'handling');
-      character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, training.practice, training.tier);
+    if (firearmsSkillId !== undefined && isFirearmTrainingAction(job)) {
+      const training = skillActivityPractice(registry, firearmsSkillId, 'handling');
+      character.awardPractice(firearmsSkillId, training.practice, training.tier);
     }
-    if (isAttachmentWorkAction(job)) {
-      const training = skillActivityPractice(registry, ATTACHMENT_WORK_SKILL, 'attachment');
-      character.awardPractice(ATTACHMENT_WORK_SKILL, training.practice, training.tier);
+    if (firearmsSkillId !== undefined && isAttachmentWorkAction(job)) {
+      const training = skillActivityPractice(registry, firearmsSkillId, 'attachment');
+      character.awardPractice(firearmsSkillId, training.practice, training.tier);
     }
   };
   const tickHandling = (dt: number) => {
@@ -2414,11 +2510,11 @@ export const createSession = (options: SessionOptions) => {
     queue,
     inventory,
     player: () => body,
-    others: standingZombieBodies,
+    others: standingActorBodies,
     playWorldSound: playNoisyWorldSound,
-    closeBlockedMessages: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.doorCloseBlockedMessages,
+    closeBlockedMessages: claimed(registry.ui, 'interface')!.doorCloseBlockedMessages,
   });
-  registerDownedBodyAction({ queue, player: reachPlayer, zombies: zombieSystem });
+  registerDownedBodyAction({ queue, player: reachPlayer, actors: actorSystem });
   registerTrapActions({
     queue,
     inventory,
@@ -2494,15 +2590,15 @@ export const createSession = (options: SessionOptions) => {
       return found;
     });
     world.blockDamage.restoreState(restored.world.blockDamage, registry, options.onRestoreIssue);
-    zombieSystem.restoreState(restored.world.zombies, (id) => registry.zombies.get(id));
-    playerCombat.restoreState(restored.character.playerCombat);
+    actorSystem.restoreState(restored.world.actors, (id) => registry.actors.get(id));
+    playerCombat.restoreState(restored.character.playerCombat, registry);
     spawner.restoreState(restored.world.spawned);
     sim.restoreState(restored.character.simulation);
     const schedulerState = sim.scheduler.snapshotState();
-    lastZombieStep = schedulerState.systems.find(({ id }) => id === 'zombies')?.done ?? sim.time;
-    const backgroundState = schedulerState.systems.find(({ id }) => id === 'zombie-background');
+    lastActorStep = schedulerState.systems.find(({ id }) => id === 'actors')?.done ?? sim.time;
+    const backgroundState = schedulerState.systems.find(({ id }) => id === 'actor-background');
     lastBackgroundStep = backgroundState?.done ?? sim.time;
-    backgroundSliceIndex = (backgroundState?.ticks ?? 0) % BACKGROUND_ZOMBIE_SLICE_COUNT;
+    backgroundSliceIndex = (backgroundState?.ticks ?? 0) % BACKGROUND_ACTOR_SLICE_COUNT;
     lastPlayerStep = schedulerState.systems.find(({ id }) => id === 'player')?.done ?? sim.time;
     sim.actions.restoreState(restored.character.longAction);
     survival.restoreState(restored.character.lightUid === null ? {} : { litUid: restored.character.lightUid });
@@ -2665,16 +2761,21 @@ export const createSession = (options: SessionOptions) => {
           })
         : plan.reason;
     },
-    downedBodyPlan: (id: EntityId, way: DownedBodyWay) => downedBodyPlan(reachPlayer, zombieStore.get(id), way),
+    downedBodyPlan: (id: EntityId, way: DownedBodyWay) => downedBodyPlan(reachPlayer, actorStore.get(id), way),
     /** Queues finishing off or dismembering a downed body; returns why not. */
     clearDownedBody: (id: EntityId, way: DownedBodyWay) =>
-      queueDownedBody({ queue, player: reachPlayer, zombies: zombieSystem }, id, way),
+      queueDownedBody({ queue, player: reachPlayer, actors: actorSystem }, id, way),
     crafting: new CraftCommands({ inventory, character, sim, queue, reach }),
     survival,
+    unpacking,
+    sharpening,
     rest,
-    zombies: zombieSystem,
+    actors: actorSystem,
     playerCombat,
-    zombieStore,
+    playerLook,
+    playerLookDirection,
+    playerEye,
+    actorStore,
     spawner,
     body,
     /** Set when the session was restored: the view direction to hand back to the input. */
@@ -2714,8 +2815,8 @@ export const createSession = (options: SessionOptions) => {
     playWorldSound,
     playPlayerSound,
     /** Time of the last shambler step, for render interpolation. */
-    get lastZombieStep() {
-      return lastZombieStep;
+    get lastActorStep() {
+      return lastActorStep;
     },
     get lastBackgroundStep() {
       return lastBackgroundStep;
@@ -2765,7 +2866,7 @@ export const createSession = (options: SessionOptions) => {
     /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
     onColumn: (cx: number, cz: number, source: ColumnSource) => {
       columnSupply.arrive(cx, cz, source);
-      spawner.onColumn({ cx, cz, site: source, registry, zombies: zombieSystem });
+      spawner.onColumn({ cx, cz, site: source, registry, actors: actorSystem });
     },
     onColumnUnload: (cx: number, cz: number): void => spawner.unloadColumn(cx, cz),
     /** Queues a search of a container, unless one is queued or done. */
@@ -2840,7 +2941,10 @@ export const createSession = (options: SessionOptions) => {
       rest.frame(dt, until);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
-          playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);
+          playPlayerSound(
+            bodyTuning.sounds.hurt[event.amount >= bodyTuning.sounds.hurt.heavyAtDamage ? 'heavy' : 'light'],
+            event.time,
+          );
         }
       }
     },
@@ -2853,7 +2957,10 @@ export const createSession = (options: SessionOptions) => {
       rest.frameReplay(realSeconds);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
-          playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);
+          playPlayerSound(
+            bodyTuning.sounds.hurt[event.amount >= bodyTuning.sounds.hurt.heavyAtDamage ? 'heavy' : 'light'],
+            event.time,
+          );
         }
       }
     },
@@ -2883,7 +2990,7 @@ export const createSession = (options: SessionOptions) => {
         aim,
         survival,
         quickbar: quickbar.snapshotState(inventory),
-        zombies: zombieSystem,
+        actors: actorSystem,
         playerCombat,
         spawner,
         rolledColumns,

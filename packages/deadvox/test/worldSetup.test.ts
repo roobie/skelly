@@ -1,7 +1,81 @@
 import { describe, expect, it } from 'vitest';
+import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { playerStartFromWorld } from '../src/game/worldSetup.ts';
+import type { ScenarioCitySite } from '../src/core/scenarioCity.ts';
+import { configFromUrl as readConfig } from '../src/game/config.ts';
+import { createWorldSetup, playerStartFromWorld, siteForReviewMap } from '../src/game/worldSetup.ts';
+import { ChunkMeshes } from '../src/render/chunks.ts';
+import { makeAttemptLayout } from './fixtures/attemptPolicy.ts';
+import { quietMesherSource } from './fixtures/quietMesherSource.ts';
+import { composedFixture, fixtureStart, fixtureStartRow } from './fixtures/scenario.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';
+
+it('selects the active authored layout policy and supplies none for a rowless diagnostic site', () => {
+  const original = configFromUrl(new URLSearchParams());
+  const layout = makeAttemptLayout();
+  const start = {
+    ...original.content.registry.starts.get(original.startId)!,
+    id: 'fixture_policy_start',
+    site: layout.id,
+    defaultForSite: true as const,
+  };
+  const registry = {
+    ...original.content.registry,
+    layouts: new Map([[layout.id, layout]]),
+    starts: new Map([...original.content.registry.starts, [start.id, start]]),
+  };
+  const content = { ...original.content, registry };
+  const setup = (params: string) => {
+    const config = readConfig(new URLSearchParams(params), content);
+    return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
+  };
+  expect(setup(`site=${layout.id}`).attemptPolicy).toEqual(layout.attemptPolicy);
+  registry.layouts.set(layout.id, { ...layout, attemptPolicy: undefined });
+  expect(setup(`site=${layout.id}`).attemptPolicy).toBeUndefined();
+  expect(setup('site=weatheringTest&debug=1').attemptPolicy).toBeUndefined();
+});
+
+it('builds authored rows unchanged by a debug profile, including a fixture named testHouse', () => {
+  const original = configFromUrl(new URLSearchParams());
+  const layout = { ...makeAttemptLayout(), id: 'testHouse' };
+  const registry = { ...original.content.registry, layouts: new Map([[layout.id, layout]]) };
+  for (const debug of [false, true]) {
+    const site = siteForReviewMap({ ...original, site: layout.id, debug }, registry);
+    expect(site).toBeInstanceOf(AuthoredSite);
+    expect(site!.spawn).toEqual({ pos: layout.player.position, yaw: 0 });
+  }
+});
+
+describe('selected start on a composed scenario', () => {
+  const near = fixtureStartRow(fixtureStart(), { id: 'fixture_near_start' });
+  const { defaultForSite: _default, ...far } = fixtureStartRow(
+    { ...fixtureStart(), cell: [-1, -1], spawn: [3, 7, 2] },
+    { id: 'fixture_far_start' },
+  );
+  const { profile, registry } = composedFixture([near, far]);
+  const original = configFromUrl(new URLSearchParams());
+  const build = (startId: string) => siteForReviewMap({ ...original, site: profile.id, startId }, registry);
+
+  it('places each selected start by its own row, not by the site default', () => {
+    const [nearPlan, farPlan] = [near, far].map(({ id }) => (build(id) as ScenarioCitySite).plan);
+    expect(nearPlan!.candidates).not.toContainEqual(near.placement!.cell);
+    expect(nearPlan!.candidates).toContainEqual(far.placement!.cell);
+    expect(farPlan!.candidates).not.toContainEqual(far.placement!.cell);
+    expect(farPlan!.candidates).toContainEqual(near.placement!.cell);
+    expect(farPlan!.spawn).toEqual(farPlan!.composition!.start!.spawn);
+    expect(nearPlan!.spawn).not.toEqual(farPlan!.spawn);
+  });
+
+  it('refuses an absent start and a start that names another site', () => {
+    const elsewhere = fixtureStartRow(null, { id: 'fixture_elsewhere_start', site: 'testHouse' });
+    const mixed = { ...registry, starts: new Map([...registry.starts, [elsewhere.id, elsewhere]]) };
+    for (const startId of ['fixture_absent_start', elsewhere.id]) {
+      expect(() => siteForReviewMap({ ...original, site: profile.id, startId }, mixed)).toThrow(
+        'does not start on site',
+      );
+    }
+  });
+});
 
 describe('player start from world setup', () => {
   it('converts the generated metre-space spawn to a block-space body origin', () => {

@@ -85,7 +85,7 @@ export function skyTimingPlugin() {
     enforce: 'pre',
     transform(code, id) {
       const [path] = id.split('?');
-      if (path.endsWith('/src/game/engine.ts')) {
+      if (path.endsWith('/src/presentation/engine.ts')) {
         return code.replace(
           '  return {\n    ...worldSetup,',
           '  if(globalThis.skyTiming) globalThis.skyTiming.engineReadyAbsoluteRealMs=performance.timeOrigin+performance.now();\n  return {\n    ...worldSetup,',

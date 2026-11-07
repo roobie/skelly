@@ -6,7 +6,7 @@ local material(color, emissive=0, charged=false) =
   bodyPlan: 'acid',
   status: 'ready',
   bodyMassKg: 105,
-  sizeReference: 'shambler',
+  sizeReference: 'humanoid',
   supportBones: ['foot.L', 'foot.R', 'toe.L', 'toe.R'],
   materials: {
     skin: material([0.663, 0.706, 0.478]),

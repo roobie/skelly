@@ -1,4 +1,4 @@
-local styles = import '../../../src/content/base/map-kits.jsonnet';
+local styles = import '../../../mods/skelly.deadvox.buildings/map-kits.jsonnet';
 local townhouse = std.filter(function(style) style.id == 'brick_townhouse', styles.mapStyles)[0];
 {
   mapStyles: [townhouse + {

@@ -15,12 +15,13 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
+import type { Actor } from '../core/actorState.ts';
+import type { HitImpulse } from '../core/actorSystem.ts';
 import { BODY_REGIONS, type BodyRegion } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
 import type { GraphicsTuningDef } from '../core/schema.ts';
-import type { HitImpulse, Zombie } from '../core/zombies.ts';
 import { PLAYER_REGION_BOXES, type PlayerFigurePlacement, setPlayerFigurePosition } from './playerFigure.ts';
 
 export type GoreTuning = GraphicsTuningDef['gore'];
@@ -56,7 +57,7 @@ interface Droplet {
   sizeMetres: number;
 }
 
-type SeveredSpurt = Zombie['type']['severedSpurt'];
+type SeveredSpurt = Actor['type']['severedSpurt'];
 
 interface Splat {
   active: boolean;
@@ -65,7 +66,7 @@ interface Splat {
 
 /** One of the nearest wounded bodies, picked afresh each update. */
 interface Dripper {
-  zombie: Zombie | undefined;
+  actor: Actor | undefined;
   distanceBlocks: number;
   severity: number;
 }
@@ -86,7 +87,7 @@ export interface GorePlayer {
 }
 
 export interface GoreBodies {
-  readonly zombies: Pick<EntityStore<Zombie>, 'entries'>;
+  readonly actors: Pick<EntityStore<Actor>, 'entries'>;
   readonly listener: Vec3;
   readonly player?: GorePlayer;
 }
@@ -99,10 +100,10 @@ const setPlayerDripOrigin = (
   setPlayerFigurePosition(target, placement, PLAYER_REGION_BOXES[region].at);
 };
 
-const regionNameLists = new WeakMap<Zombie['type']['regions'], readonly string[]>();
+const regionNameLists = new WeakMap<Actor['type']['regions'], readonly string[]>();
 
 /** A type's region names, listed once per type rather than once per body per frame. */
-const regionNames = (maxima: Zombie['type']['regions']): readonly string[] => {
+const regionNames = (maxima: Actor['type']['regions']): readonly string[] => {
   let names = regionNameLists.get(maxima);
   if (!names) {
     names = Object.keys(maxima);
@@ -113,25 +114,22 @@ const regionNames = (maxima: Zombie['type']['regions']): readonly string[] => {
 
 /** How badly a body bleeds, 0 to 1, from its saved wounds: health lost across its regions, severed parts and
  * carved flesh. Derived, so drips and the bloodied tint survive a reload with no state of their own. */
-export const woundSeverity = (zombie: Pick<Zombie, 'type' | 'regions' | 'severed' | 'carved'>): number => {
+export const woundSeverity = (actor: Pick<Actor, 'type' | 'regions' | 'severed' | 'carved'>): number => {
   let full = 0;
   let left = 0;
-  const maxima = zombie.type.regions;
+  const maxima = actor.type.regions;
   for (const region of regionNames(maxima)) {
     const max = maxima[region]!;
     full += max;
-    left += Math.min(max, Math.max(0, zombie.regions[region] ?? 0));
+    left += Math.min(max, Math.max(0, actor.regions[region] ?? 0));
   }
   const lost = full > 0 ? 1 - left / full : 0;
-  return Math.min(
-    1,
-    lost + zombie.severed.length * SEVERED_PART_SEVERITY + zombie.carved.length * CARVED_CELL_SEVERITY,
-  );
+  return Math.min(1, lost + actor.severed.length * SEVERED_PART_SEVERITY + actor.carved.length * CARVED_CELL_SEVERITY);
 };
 
 /** Fades each splat by its own opacity, which three's built-in materials have no per-instance slot for. */
 const patchSplatOpacity = (material: MeshLambertMaterial): void => {
-  material.customProgramCacheKey = () => 'deadvox-gore-splat';
+  material.customProgramCacheKey = () => 'skelly-gore-splat';
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nattribute float splatOpacity;\nvarying float vSplatOpacity;')
@@ -151,7 +149,7 @@ export class Gore {
   private readonly droplets: Droplet[];
   private readonly splats: Splat[];
   private readonly drippers: Dripper[];
-  private readonly severities = new WeakMap<Zombie, SeverityMemo>();
+  private readonly severities = new WeakMap<Actor, SeverityMemo>();
   private readonly dropletMesh: InstancedMesh<BoxGeometry, MeshLambertMaterial>;
   private readonly splatMesh: InstancedMesh<CircleGeometry, MeshLambertMaterial>;
   private readonly splatOpacity: InstancedBufferAttribute;
@@ -189,7 +187,7 @@ export class Gore {
     }));
     this.splats = Array.from({ length: tuning.splatCap }, () => ({ active: false, ageRealSeconds: 0 }));
     this.drippers = Array.from({ length: tuning.dripSourceCap }, () => ({
-      zombie: undefined,
+      actor: undefined,
       distanceBlocks: 0,
       severity: 0,
     }));
@@ -235,17 +233,17 @@ export class Gore {
 
   /** A body's woundSeverity, worked out at most once per update: the drips and the stains on live bodies
    * (mobActors.ts) both read it every frame. */
-  severity(zombie: Zombie): number {
-    const memo = this.severities.get(zombie);
+  severity(actor: Actor): number {
+    const memo = this.severities.get(actor);
     if (memo?.update === this.updates) {
       return memo.value;
     }
-    const value = woundSeverity(zombie);
+    const value = woundSeverity(actor);
     if (memo) {
       memo.update = this.updates;
       memo.value = value;
     } else {
-      this.severities.set(zombie, { update: this.updates, value });
+      this.severities.set(actor, { update: this.updates, value });
     }
     return value;
   }
@@ -271,7 +269,7 @@ export class Gore {
     }
   }
 
-  /** The extra burst as flesh is carved out of an amalgam, on top of the wound's own spray: more for a
+  /** The extra burst as flesh is carved out of a fused-mass body, on top of the wound's own spray: more for a
    * bigger hole. */
   carved(hit: HitImpulse, cells: number): void {
     this.spray(hit, cells * CARVED_CELL_SPRAY_DAMAGE);
@@ -305,7 +303,7 @@ export class Gore {
     }
   }
 
-  /** A large splat on the floor under something wet that came to rest there, such as a chunk of amalgam
+  /** A large splat on the floor under something wet that came to rest there, such as a chunk of fused-mass
    * flesh (its centre, metres). The floor is the top of the block the centre is in. */
   landed(centre: Vec3): void {
     const floor = Math.floor(centre[1] / this.blockSize) * this.blockSize;
@@ -372,8 +370,8 @@ export class Gore {
     }
     const [lx, ly, lz] = bodies.listener;
     const rangeBlocks = DRIP_RANGE_M / this.blockSize;
-    for (const [, zombie] of bodies.zombies.entries()) {
-      const { pos } = zombie.body;
+    for (const [, actor] of bodies.actors.entries()) {
+      const { pos } = actor.body;
       const distanceBlocks = Math.hypot(pos[0] - lx, pos[1] - ly, pos[2] - lz);
       const full = this.dripperCount === this.tuning.dripSourceCap;
       if (
@@ -382,23 +380,23 @@ export class Gore {
       ) {
         continue;
       }
-      const severity = this.severity(zombie);
+      const severity = this.severity(actor);
       if (severity > 0) {
-        this.insertDripper(zombie, distanceBlocks, severity);
+        this.insertDripper(actor, distanceBlocks, severity);
       }
     }
   }
 
   /** Keeps the drippers sorted by distance: takes a free slot, or the farthest's when full, and moves it in
    * behind the last one nearer than it. */
-  private insertDripper(zombie: Zombie, distanceBlocks: number, severity: number): void {
+  private insertDripper(actor: Actor, distanceBlocks: number, severity: number): void {
     let index = Math.min(this.dripperCount, this.tuning.dripSourceCap - 1);
     const slot = this.drippers[index]!;
     while (index > 0 && this.drippers[index - 1]!.distanceBlocks > distanceBlocks) {
       this.drippers[index] = this.drippers[index - 1]!;
       index -= 1;
     }
-    slot.zombie = zombie;
+    slot.actor = actor;
     slot.distanceBlocks = distanceBlocks;
     slot.severity = severity;
     this.drippers[index] = slot;
@@ -408,13 +406,13 @@ export class Gore {
   private drip(dt: number): void {
     const s = this.blockSize;
     for (let index = 0; index < this.dripperCount; index++) {
-      const { zombie, severity } = this.drippers[index]!;
-      if (!(zombie && this.rng.chance(DRIPS_PER_SECOND * severity * dt))) {
+      const { actor, severity } = this.drippers[index]!;
+      if (!(actor && this.rng.chance(DRIPS_PER_SECOND * severity * dt))) {
         continue;
       }
-      const { pos, halfWidth, height } = zombie.body;
+      const { pos, halfWidth, height } = actor.body;
       const reach = halfWidth * s;
-      const heightMetres = zombie.incapacitated ? DOWNED_DRIP_HEIGHT_M : height * s;
+      const heightMetres = actor.incapacitated ? DOWNED_DRIP_HEIGHT_M : height * s;
       const x = pos[0] * s + this.rng.range(-reach, reach);
       const y = pos[1] * s + heightMetres * this.rng.range(0.35, 0.85);
       const z = pos[2] * s + this.rng.range(-reach, reach);

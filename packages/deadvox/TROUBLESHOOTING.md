@@ -16,32 +16,30 @@ Start with the closest boundary and reproduce the observed condition; do not inf
 
 ## Startup and save discovery
 
-Save discovery and content validation protect entry into a world. The loading mask keeps one progress cue while simulation and player input are paused. The mask is opaque, so the world is not drawn behind it: on software GL those draws take enough time from generation and meshing to stretch a small site's load past a browser stage's wait (#1286). Frames still service the skylight, because lighting readiness gates loading, and the frame that turns ready draws the world before the mask lifts. Until then the canvas holds no current world frame and play drops action input, so a browser stage that hides the mask still waits for the ready state before it presses or captures pixels; see `test/browser/stairs.mjs`, "world-ready". Lighting readiness follows nearby demand rather than requiring distant volumes to be resident. See `src/main.ts`, `hideStartupScreen`, `src/ui/worldLoading.ts`, `mountWorldLoading`, `src/game/worldLoading.ts`, `WorldLoading` and `finishLoadingFrame`, and `src/render/skylight.ts`, `loadingReadiness`.
+Save discovery and content validation protect entry into a world. The loading mask keeps one progress cue while simulation and player input are paused. The mask is opaque, so the world is not drawn behind it: on software GL those draws take enough time from generation and meshing to stretch a small site's load past a browser stage's wait (#1286). Frames still service the skylight, because lighting readiness gates loading, and the frame that turns ready draws the world before the mask lifts. Until then the canvas holds no current world frame and play drops action input, so a browser stage that hides the mask still waits for the ready state before it presses or captures pixels; see `test/browser/stairs.mjs`, "world-ready". Lighting readiness follows nearby demand rather than requiring distant volumes to be resident. See `src/main.ts`, `hideStartupScreen`, `src/ui/worldLoading.ts`, `mountWorldLoading`, `src/presentation/worldLoading.ts`, `WorldLoading` and `finishLoadingFrame`, and `src/render/skylight.ts`, `loadingReadiness`.
 
-A stuck load keeps the scene covered and offers reload instead of exposing incomplete terrain, because a missing chunk can show what solid blocks hide, such as a sealed or buried room. The mask protects the ready ring; the terrain reveal gate protects the remaining view as it fills in. Replay uses the same ready ring within recorded terrain so loading never invents simulation columns. Recording starts after readiness to preserve the initial player view without load-time simulation ticks. Pause and held-input restoration must agree at that boundary so the first action, ready stance and ADS do not depend on a later frame. See `src/game/play.ts`, `updateWorldLoading`, `src/game/streamer.ts`, `unmeshedRecordedColumns`, and `src/render/chunks.ts`, `ChunkMeshes`.
+A stuck load keeps the scene covered and offers reload instead of exposing incomplete terrain, because a missing chunk can show what solid blocks hide, such as a sealed or buried room. The mask protects the ready ring; the terrain reveal gate protects the remaining view as it fills in. Replay uses the same ready ring within recorded terrain so loading never invents simulation columns. Recording starts after readiness to preserve the initial player view without load-time simulation ticks. Pause and held-input restoration must agree at that boundary so the first action, ready stance and ADS do not depend on a later frame. See `src/presentation/play.ts`, `updateWorldLoading`, `src/game/streamer.ts`, `unmeshedRecordedColumns`, and `src/render/chunks.ts`, `ChunkMeshes`.
 
 A world mesh worker failure stops play instead of letting streaming go on without meshing, because holes would open and autosave would keep saving a session the player cannot see. The worker is not restarted with its work requeued, because a deterministic build failure fails again on the same chunk, and requeueing would need per-worker tracking of mesh and sky requests. See `src/game/streamer.ts`, `Streamer.update` and `Streamer.receive`, and `src/worker/mesh.worker.ts`, `onmessage`.
 
-Continue may wait for another page's origin-wide save lock. A timeout does not mean a frozen holder can be recovered from the current page; use the reported holder/pending state and the controlled busy-lock browser contract. A successful competing read does not prove that contention caused a failure. See `src/game/saveStorage.ts`, `SaveStorage.withLock`, and `test/browser/save-storage.mjs`.
+Continue may wait for another page's origin-wide save lock. A timeout does not mean a frozen holder can be recovered from the current page; use the reported holder/pending state and the controlled busy-lock browser contract. A successful competing read does not prove that contention caused a failure. See `src/presentation/saveStorage.ts`, `SaveStorage.withLock`, and `test/browser/save-storage.mjs`.
 
 A frozen page can hold the lock, so the last committed generation is the recovery point. Firefox may cancel module requests when the fixture closes or replaces a document. Mark every owned close and rescan through `test/browser/save-storage.mjs`, `navigatePage`, so cancellation is attributed to that outgoing document; destination-page failures remain errors. Only the destination page's successful load and save checks establish the navigation outcome. See [ADR 0002](docs/decisions/0002-saves.md).
 
 ## Debug and rendering
 
-`?debug=1` is for authoring and diagnostics, including immutable preview measurements. Debug bindings remain rebindable; the held debug gate applies to authoring actions, while noclip flight is ungated only while noclip is active. Native text editing and focus remain browser-owned. A desktop OS may intercept a key before the browser receives it, so synthetic events cannot prove native key delivery. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and [CONTROLS.md](CONTROLS.md).
+`?debug=1` is for authoring and diagnostics, including immutable preview measurements. Debug bindings remain rebindable; the held debug gate applies to authoring actions, while noclip flight is ungated only while noclip is active. Native text editing and focus remain browser-owned. A desktop OS may intercept a key before the browser receives it, so synthetic events cannot prove native key delivery. See `src/product/controls.ts`, `INPUT_BINDINGS`, and [CONTROLS.md](CONTROLS.md).
 
-The Tools gun-pose actions hold an authoring pose while the detached camera takes
-over input. Press the selected action again to return to ordinary mouse control;
-select another to replace the latch. The debug HUD names the latched pose. These
-requests use the player's normal readiness and anatomical solver, not a mannequin
-copy; detached flight still cannot move or fire the avatar. Use the live key
-labels in the Tools group because bindings remain rebindable. See
-`src/debug/index.ts`, `GUN_POSES`; `src/content/base/controls.jsonnet`, `controls`;
-and `src/game/debugGunPose.ts`, `DebugGunPose`.
+Gun-pose diagnostics use the player's normal readiness and anatomical solver, not
+a mannequin copy, so the inspected pose represents play. Detached flight must not
+move or fire the avatar. Use live key labels because bindings remain rebindable.
+See `src/debug/index.ts`, `GUN_POSES`;
+`packages/mods/skelly.controls/controls.jsonnet`, `controls`; and
+`src/presentation/debugGunPose.ts`, `DebugGunPose`.
 
 Use transient world-space primitives for spatial diagnostics rather than a one-off visualizer or permanent scene objects. Keep producers behind a debug group. Primitives without a duration retire at the next rendered frame; durations use the same frame Real clock, so simulation speed and pause do not affect expiry. The draw owner copies caller coordinates and releases its scene resources on disposal. Its bounded queue drops the oldest entry and counts overload. See `src/debug/transientDraw.ts`, `TransientDebugDraw`.
 
-The Diagnostics interaction-ray toggle draws to the nearer of an opaque hit or the target F would pick, within reach. Its cross sits outside the hit: along the surface normal for blocks, or back along the ray for targets without a normal. See `src/debug/index.ts`, `drawInteractionRay`, and `src/game/play.ts`, `interactionTargetAt`.
+The Diagnostics interaction-ray toggle draws to the nearer of an opaque hit or the target F would pick, within reach. Its cross sits outside the hit: along the surface normal for blocks, or back along the ray for targets without a normal. See `src/debug/index.ts`, `drawInteractionRay`, and `src/game/handUse.ts`, `interactionTargetAt`.
 
 Look and camera parameters are copied from the URL, making a reported pose reproducible. Use `tools/render-probe.mjs` with a `cam=` pose for headless shader reproduction; inspect the screenshot and pixel scan. SwiftShader is not a GPU, so a clean run cannot rule out driver-specific defects. Flip one debug toggle at a time before theorizing; see `src/debug/lookUrl.ts`, `src/debug/camUrl.ts`, and `src/core/weatheringUrl.ts`.
 
@@ -51,7 +49,7 @@ Software-rendered browser contracts should exercise logic without paying rendere
 
 ## Debug spawning
 
-The zombie spawn catalogue follows loaded content, including authored-only types, so modded and site-specific actors can be inspected without making them ambient spawns. Keyboard shortcuts are optional; an unbound type remains available in the panel. See `src/debug/index.ts`, `createDebugActions`, and `src/debug/shamblerSpawning.ts`, `spawnZombieType`.
+The zombie spawn catalogue follows loaded content, including authored-only types, so modded and site-specific actors can be inspected without making them ambient spawns. Keyboard shortcuts are optional; an unbound type remains available in the panel. See `src/debug/index.ts`, `createDebugActions`, and `src/debug/shamblerSpawning.ts`, `spawnActorType`.
 
 ## Browser stages
 

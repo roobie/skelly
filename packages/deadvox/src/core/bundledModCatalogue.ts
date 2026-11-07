@@ -28,6 +28,21 @@ export const bundledModCatalogueIssues = (value: unknown): string[] => {
       seen.add(entry.id);
     }
   });
+  const { folderMods } = value as { folderMods?: unknown };
+  if (folderMods !== undefined) {
+    if (!Array.isArray(folderMods)) {
+      return [...issues, 'folderMods must be a list'];
+    }
+    folderMods.forEach((id: unknown, index) => {
+      if (!isText(id)) {
+        issues.push(`folderMods[${index}] must be a non-empty string`);
+      } else if (seen.has(id)) {
+        issues.push(`folderMods[${index}] "${id}" is duplicated`);
+      } else {
+        seen.add(id);
+      }
+    });
+  }
   return issues;
 };
 
@@ -37,4 +52,17 @@ export const bundledModCatalogue = (value: unknown): BundledModEntry[] => {
     throw new Error(`Invalid bundled mod catalogue: ${issues.join('; ')}`);
   }
   return (value as { mods: BundledModEntry[] }).mods;
+};
+
+/** The site launcher's list: the bundled catalogue plus every shipped opt-in folder pack, by its id. */
+export const launcherModCatalogue = (
+  value: unknown,
+  packs: readonly { manifest: { id: string; optIn?: true | undefined } }[],
+): { mods: BundledModEntry[]; folderMods: string[] } => {
+  const catalogue = {
+    mods: bundledModCatalogue(value),
+    folderMods: packs.filter(({ manifest }) => manifest.optIn).map(({ manifest }) => manifest.id),
+  };
+  bundledModCatalogue(catalogue);
+  return catalogue;
 };

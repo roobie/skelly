@@ -8,7 +8,12 @@ import { exportItem, loadThingRecipe } from './exports.ts';
 
 const select = document.querySelector<HTMLSelectElement>('#item')!;
 const preview = createPreview(document.querySelector<HTMLCanvasElement>('#view')!);
-const rows = loadThingRecipe();
+const rows = Object.values(
+  import.meta.glob(['../../deadvox/mods/*/exports/things.json', '../../mods/*/exports/things.json'], {
+    eager: true,
+    import: 'default',
+  }),
+).flatMap((value) => loadThingRecipe(value));
 for (const row of rows) {
   const option = document.createElement('option');
   option.value = row.id;

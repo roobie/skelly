@@ -446,7 +446,7 @@
       "min": -15
     }
   },
-  "sizeReference": "shambler",
+  "sizeReference": "humanoid",
   "skinB": [0.56100000000000005, 0.61199999999999999, 0.44700000000000001],
   "status": "ready",
   "supportBones": ["foot.L", "foot.R", "toe.L", "toe.R"],

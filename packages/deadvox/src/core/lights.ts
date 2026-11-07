@@ -7,9 +7,9 @@
 
 import { batteryCharge, batteryEnergy, batteryFields, batteryFits, spentBattery } from './battery.ts';
 import type { BlockEntity } from './blockEntities.ts';
+import { claimed } from './capabilities.ts';
 import { offSide } from './character.ts';
 import type { Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import { type CoreMessageKey, coreMessage } from './coreText.ts';
 import type { DayCycle } from './dayPhase.ts';
@@ -119,7 +119,7 @@ export const lightSenseSourceFor = ({
     return {
       pos: [x + 0.5, y, z + 0.5],
       seenFrom: light.seenFrom,
-      heightMetres: registry.senses.get(CORE_CONTENT_IDS.player)!.light.groundLight.senseHeightMetres,
+      heightMetres: claimed(registry.senses, 'player')!.light.groundLight.senseHeightMetres,
       carried: false,
     };
   }

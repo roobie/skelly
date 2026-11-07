@@ -1,0 +1,130 @@
+local use = import 'tools/jsonnet/lib/food-use.libsonnet';
+local eats = use.eats;
+local drinks = use.drinks;
+local canShellGrams = (import 'packages/thing-authoring-tool/cans.libsonnet').shellMassKg * 1000;
+local sodaShellGrams = 15;
+local sodaDrinkGrams = 345;
+local beansGrams = 350;
+local soupGrams = 330;
+
+(import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack({
+  items: [
+    {
+      id: 'opened_beans', name: 'Opened can of beans', category: 'food',
+      model: 'opened_beans', weight: canShellGrams, size: [1, 2], serving: { food: 'beans', empty: 'empty_can' },
+    },
+    {
+      id: 'opened_soup', name: 'Opened can of soup', category: 'food',
+      model: 'opened_soup', weight: canShellGrams, size: [1, 2], serving: { food: 'soup', empty: 'empty_can' },
+    },
+    {
+      id: 'empty_can', name: 'Empty can', category: 'tool',
+      model: 'empty_can', weight: canShellGrams, size: [1, 2],
+    },
+    {
+      id: 'canned_beans',
+      name: 'Can of beans',
+      keywords: ['tin', 'legumes'],
+      category: 'food',
+      model: 'canned_beans',
+      weight: canShellGrams + beansGrams,
+      size: [1, 2],
+      description: 'Dented but sealed.',
+      unpack: { item: 'opened_beans', count: 1, simSeconds: 15, qualities: { opening: 1 }, inPlace: true },
+    },
+    {
+      id: 'beans',
+      name: 'Beans',
+      category: 'food',
+      model: 'beans',
+      weight: beansGrams,
+      size: [1, 2],
+      food: eats(350, 100),
+    },
+    {
+      id: 'canned_soup',
+      name: 'Can of soup',
+      category: 'food',
+      model: 'canned_soup',
+      weight: canShellGrams + soupGrams,
+      size: [1, 2],
+      unpack: { item: 'opened_soup', count: 1, simSeconds: 15, qualities: { opening: 1 }, inPlace: true },
+    },
+    {
+      id: 'soup',
+      name: 'Soup',
+      category: 'food',
+      model: 'soup',
+      weight: soupGrams,
+      size: [1, 2],
+      food: eats(200, 250),
+    },
+    {
+      id: 'crackers',
+      name: 'Box of crackers',
+      category: 'food',
+      model: 'crackers',
+      size: [2, 2],
+      food: eats(1100, 0),
+    },
+    {
+      id: 'chocolate_bar',
+      name: 'Chocolate bar',
+      category: 'food',
+      model: 'chocolate_bar',
+      size: [2, 1],
+      food: eats(530, 0),
+    },
+    {
+      id: 'soda_can',
+      name: 'Can of soda',
+      category: 'drink',
+      model: 'soda_can',
+      weight: sodaShellGrams + sodaDrinkGrams,
+      size: [1, 2],
+      unpack: { item: 'opened_soda', count: 1, simSeconds: 2, inPlace: true },
+    },
+    {
+      id: 'opened_soda',
+      name: 'Opened can of soda',
+      category: 'drink',
+      model: 'opened_soda',
+      weight: sodaShellGrams,
+      size: [1, 2],
+      serving: { food: 'soda', empty: 'empty_soda_can' },
+    },
+    {
+      id: 'empty_soda_can',
+      name: 'Empty soda can',
+      category: 'tool',
+      model: 'empty_soda_can',
+      weight: sodaShellGrams,
+      size: [1, 2],
+    },
+    {
+      id: 'soda',
+      name: 'Soda',
+      category: 'drink',
+      model: 'soda',
+      weight: sodaDrinkGrams,
+      size: [1, 2],
+      food: drinks(140, 300),
+    },
+    {
+      id: 'water_bottle',
+      name: 'Bottle of water',
+      category: 'drink',
+      model: 'water_bottle',
+      size: [1, 3],
+      food: drinks(0, 1000),
+    },
+    {
+      id: 'juice_carton',
+      name: 'Carton of juice',
+      category: 'drink',
+      model: 'juice_carton',
+      size: [1, 3],
+      food: drinks(450, 900),
+    },
+  ],
+})

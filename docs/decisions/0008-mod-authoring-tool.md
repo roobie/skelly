@@ -19,7 +19,7 @@ Its home is a new workspace package, planned at `packages/mod-authoring-tool`, c
 a deliberate SkellyEngine authoring API. This keeps authoring separate from play and geometry
 tools without a later package extraction. The runtime must not import the tool; the tool must
 not reach into arbitrary game internals or import other authoring tools, gungen or the
-geometry engine. Existing boundaries still apply under `things/WORK.md`, "Decisions";
+`packages/construct` geometry library. Existing boundaries still apply under `things/WORK.md`, "Decisions";
 the schema's transitive neutral thing-core contract is not a direct geometry-tool import.
 Thing and gun tools still own geometry and model export; this tool links their outputs.
 
@@ -113,7 +113,7 @@ start flow.
    first tool slice exercises both run modes and the single merge authority. Show only
    data an adapter can actually access; another origin's browser store is not implicitly
    readable. This slice has no editing dependency on field patches. Guard the API-only
-   import direction through `packages/engine/test/engineImportBoundary.test.ts`,
+   import direction through `packages/construct/test/constructImportBoundary.test.ts`,
    `packageEdges`, including subpath and forbidden reverse/private/tool imports.
 2. **Engine field-patch merge.** Design-check and build the merge, schema marking
    and per-field origins governed by ADR 0007. This is independently scheduled within
@@ -129,7 +129,7 @@ start flow.
 4. **New-entry and patch editor.** Depends on slice 1 for the workspace/API, slice 2
    for patch semantics and per-field origins, and slice 3 to evaluate saved Jsonnet in
    the browser. Derive structural forms from
-   `packages/deadvox/src/core/schema.ts`, `SECTION_DESCRIPTOR`, rather than keeping a
+   `packages/deadvox/src/core/schema/files.ts`, `SECTION_DESCRIPTOR`, rather than keeping a
    second schema; add presentation metadata at that owner. The first editing workflow
    saves Jsonnet and uses the engine's patch semantics and per-field origins.
 5. **Validation parity.** Depends on slice 1 for the hosted/local file adapters, not

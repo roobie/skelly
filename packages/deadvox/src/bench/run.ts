@@ -3,9 +3,15 @@
 // speed while streaming. Each phase records frame times; moving phases also record
 // holes (nearby columns not meshed yet). The next run starts from a fresh page.
 
+import {
+  ActorSystem,
+  BACKGROUND_ACTOR_RATE,
+  BACKGROUND_ACTOR_SLICE_COUNT,
+  BACKGROUND_ACTOR_SLICE_RATE,
+} from '../core/actorSystem.ts';
+import { claimed } from '../core/capabilities.ts';
 import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
 import { type Registry, requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { graphicsTuningOf } from '../core/graphicsTuning.ts';
@@ -18,18 +24,12 @@ import { siteGenerationOf } from '../core/sitePalette.ts';
 import { skyAt } from '../core/sky.ts';
 import type { StorageStats } from '../core/storage.ts';
 import { storageStats } from '../core/storage.ts';
-import {
-  BACKGROUND_ZOMBIE_RATE,
-  BACKGROUND_ZOMBIE_SLICE_COUNT,
-  BACKGROUND_ZOMBIE_SLICE_RATE,
-  ZombieSystem,
-} from '../core/zombies.ts';
 import type { StartupContent } from '../game/bundledContent.ts';
 import { type GameConfig, makeConfig, type SiteName, siteFromUrl } from '../game/config.ts';
-import type { RenderedEngine } from '../game/engine.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
-import { ZOMBIE_RATE } from '../game/simulationRates.ts';
+import { ACTIVE_ACTOR_RATE } from '../game/simulationRates.ts';
 import type { StreamerStats } from '../game/streamer.ts';
+import type { RenderedEngine } from '../presentation/engine.ts';
 import { flashlightDaylightScale } from '../render/flashlight.ts';
 import { MobActorMeshes } from '../render/mobActors.ts';
 import { applySky } from '../render/sky.ts';
@@ -295,8 +295,8 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
   const dir = [HEADING[0] / heading, HEADING[1] / heading] as const;
   let [x, , z] = engine.spawn.pos;
   let playerBody: Body | undefined;
-  let zombies: ZombieSystem | undefined;
-  let zombieMeshes: MobActorMeshes | undefined;
+  let actors: ActorSystem | undefined;
+  let actorMeshes: MobActorMeshes | undefined;
   let movement: 'still' | 'jogging' | 'sprinting' = 'still';
   const place = (yaw: number, pitch: number) => {
     const ground = engine.groundAt(x, z);
@@ -315,7 +315,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
   const travelYaw = Math.atan2(-dir[0], -dir[1]);
   let aborted = false;
   const prepareShamblers = (): void => {
-    if (shamblerCount === 0 || zombies) {
+    if (shamblerCount === 0 || actors) {
       return;
     }
     try {
@@ -325,19 +325,19 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       const simulation = new Simulation({
         seed: config.seed,
         registry: engine.registry,
-        bodyTuning: engine.registry.body.get(CORE_CONTENT_IDS.player)!,
-        compressionCaps: engine.registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
+        bodyTuning: claimed(engine.registry.body, 'player')!,
+        compressionCaps: claimed(engine.registry.compression, 'player')!.caps,
         clock: { ratio: dayCycle.clockRatio, start: startTime },
       });
       simulation.godMode = true;
       const lightSeenFrom = engine.registry.items.get('torch')!.light!.seenFrom;
-      zombies = new ZombieSystem({
-        activeZombieRadiusMetres: siteGenerationOf(engine.registry).activeZombieRadiusMetres,
+      actors = new ActorSystem({
+        activeActorRadiusMetres: siteGenerationOf(engine.registry).activeActorRadiusMetres,
         seed: config.seed,
         isSolid: engine.isSolid,
         isOpaque: engine.isOpaque,
         blockSize: s,
-        tuning: engine.registry.senses.get(CORE_CONTENT_IDS.player)!,
+        tuning: claimed(engine.registry.senses, 'player')!,
         physics: physicsFor(config.scale, Player),
         player: () => ({
           pos: [...playerBody!.pos] as [number, number, number],
@@ -357,51 +357,51 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         player: playerBody,
         engine,
         registry: engine.registry,
-        zombies,
+        actors,
       });
       const graphics = graphicsTuningOf(engine.registry);
-      zombieMeshes = new MobActorMeshes(s, shamblerCount, {
-        zombies: engine.registry.zombies,
+      actorMeshes = new MobActorMeshes(s, shamblerCount, {
+        actors: engine.registry.actors,
         look: lookDefaultsOf(engine.registry).mobActors,
         maxCorpses: graphics.mobActors.maxCorpses,
         handlingReachMetres: reachTuning(engine.registry).reachMetres,
         gravityMetresPerSimSecondSquared: worldGravity(engine.registry),
       });
-      engine.scene.add(zombieMeshes.group);
+      engine.scene.add(actorMeshes.group);
     } catch (error) {
       aborted = true;
       hud.textContent = error instanceof Error ? error.message : String(error);
     }
   };
-  let zombieAccumulator = 0;
+  let actorAccumulator = 0;
   let backgroundAccumulator = 0;
   let backgroundSlice = 0;
   let backgroundStepTime = 0;
   const advanceShamblers = (dt: number): void => {
-    if (!(zombies && zombieMeshes)) {
+    if (!(actors && actorMeshes)) {
       return;
     }
-    zombieAccumulator += dt;
+    actorAccumulator += dt;
     backgroundAccumulator += dt;
-    while (zombieAccumulator >= 1 / ZOMBIE_RATE) {
-      zombies.tickActive(1 / ZOMBIE_RATE);
-      zombieAccumulator -= 1 / ZOMBIE_RATE;
+    while (actorAccumulator >= 1 / ACTIVE_ACTOR_RATE) {
+      actors.tickActive(1 / ACTIVE_ACTOR_RATE);
+      actorAccumulator -= 1 / ACTIVE_ACTOR_RATE;
     }
-    while (backgroundAccumulator >= 1 / BACKGROUND_ZOMBIE_SLICE_RATE) {
-      backgroundStepTime += 1 / BACKGROUND_ZOMBIE_SLICE_RATE;
-      zombies.tickBackground(
-        1 / BACKGROUND_ZOMBIE_RATE,
+    while (backgroundAccumulator >= 1 / BACKGROUND_ACTOR_SLICE_RATE) {
+      backgroundStepTime += 1 / BACKGROUND_ACTOR_SLICE_RATE;
+      actors.tickBackground(
+        1 / BACKGROUND_ACTOR_RATE,
         backgroundStepTime,
         backgroundSlice,
-        BACKGROUND_ZOMBIE_SLICE_COUNT,
+        BACKGROUND_ACTOR_SLICE_COUNT,
       );
-      backgroundSlice = (backgroundSlice + 1) % BACKGROUND_ZOMBIE_SLICE_COUNT;
-      backgroundAccumulator -= 1 / BACKGROUND_ZOMBIE_SLICE_RATE;
+      backgroundSlice = (backgroundSlice + 1) % BACKGROUND_ACTOR_SLICE_COUNT;
+      backgroundAccumulator -= 1 / BACKGROUND_ACTOR_SLICE_RATE;
     }
-    zombieMeshes.setCamera?.(camera);
+    actorMeshes.setCamera?.(camera);
     const renderTime = backgroundStepTime + backgroundAccumulator;
-    const clock = syncClock(renderTime, renderTime - zombieAccumulator, backgroundStepTime);
-    zombieMeshes.sync(zombies.store, dt, clock.alpha, false, clock.backgroundAlpha, clock.simSeconds);
+    const clock = syncClock(renderTime, renderTime - actorAccumulator, backgroundStepTime);
+    actorMeshes.sync(actors.store, dt, clock.alpha, false, clock.backgroundAlpha, clock.simSeconds);
   };
 
   let phase: Phase = 'load';

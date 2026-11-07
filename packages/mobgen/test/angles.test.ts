@@ -144,9 +144,9 @@ const attackFixtureProblems = (fixture: Fixture): string[] => {
 
 describe('Pose.angles recompose to the walk matrices', () => {
   it.each([
-    ['shambler', 1, 0.8],
-    ['runner', 2, 1.4],
-    ['brute', 3, 2.8],
+    ['humanoid', 1, 0.8],
+    ['slim-humanoid', 2, 1.4],
+    ['broad-humanoid', 3, 2.8],
   ])('%s: every angle-carrying bone recomposes at a representative walk phase', (templateName, seed, speed) => {
     const fixture = actorFor(templateName, seed);
     const clock = clocksFor(fixture, speed).at(-1)!;
@@ -182,7 +182,7 @@ describe('Pose.angles recompose to the walk matrices', () => {
   });
 
   it('a standing pose (speed 0) reports empty angles, matching its empty rotations', () => {
-    const fixture = actorFor('shambler', 1);
+    const fixture = actorFor('humanoid', 1);
     const pose = walkPose(fixture.actor, INITIAL_CLOCK, 0, true);
     expect(pose.angles).toEqual({});
     expect(pose.rotations).toEqual({});
@@ -191,12 +191,12 @@ describe('Pose.angles recompose to the walk matrices', () => {
 
 describe('attackPose clipAngles recompose to the attacked matrices', () => {
   const focusedCases = [
-    ['shambler', 1, 0.8, 0],
-    ['runner', 2, 1.4, 0.1],
-    ['brute', 3, 2.8, 0.2],
-    ['shambler', 1, 1.4, 0.7],
-    ['runner', 2, 0.8, 0.85],
-    ['brute', 3, 1.4, LUNGE_GRAB.duration],
+    ['humanoid', 1, 0.8, 0],
+    ['slim-humanoid', 2, 1.4, 0.1],
+    ['broad-humanoid', 3, 2.8, 0.2],
+    ['humanoid', 1, 1.4, 0.7],
+    ['slim-humanoid', 2, 0.8, 0.85],
+    ['broad-humanoid', 3, 1.4, LUNGE_GRAB.duration],
   ] as const;
   for (const [templateName, seed, speed, time] of focusedCases) {
     it(`${templateName}: walk and clip layers recompose through arm fade at t=${time}`, () => {
@@ -220,7 +220,7 @@ describe('attackPose clipAngles recompose to the attacked matrices', () => {
   });
 
   it('without walk angles the attack pose carries none either', () => {
-    const fixture = actorFor('shambler', 1);
+    const fixture = actorFor('humanoid', 1);
     const base = walkPose(fixture.actor, { stepIndex: 2, progress: 0.3 }, 1.4);
     const attacked = attackPose(fixture.actor, LUNGE_GRAB, 0.45, base);
     expect(attacked.angles).toBeUndefined();

@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { bundledModCatalogueIssues } from '../packages/deadvox/src/core/bundledModCatalogue.ts';
-import { tutorialRequested } from '../packages/deadvox/src/game/tutorialUrl.ts';
+import { tutorialRequested } from '../packages/deadvox/src/presentation/tutorialUrl.ts';
 import { gitEnvironment, playtestRound, publishPlaytest } from '../packages/deadvox/tools/publish-playtest.mjs';
 import { loadPlaytestText } from '../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
@@ -32,7 +32,7 @@ const PAGES_ASSEMBLY_LOOP_PATTERN = /for P in ([^;]+); do/;
 const WHITESPACE_PATTERN = /\s+/;
 const HREF_PATTERN = /\bhref="([^"]+)"/;
 const LAYOUT_FILE_PATTERN = /^layouts.*\.json$/;
-const DEADVOX_CONTENT = 'packages/deadvox/src/content/base';
+const DEADVOX_MODS = 'packages/deadvox/mods';
 const RESOURCE_URL_PATTERNS = [
   /\b(?:href|src)\s*=\s*["']([^"']+)["']/g,
   /url\(\s*["']?([^"')\s]+)["']?\s*\)/g,
@@ -52,14 +52,15 @@ const filesUnder = (directory) =>
   });
 
 const authoredLayoutIds = () =>
-  readdirSync(join(ROOT, DEADVOX_CONTENT))
-    .filter((name) => LAYOUT_FILE_PATTERN.test(name))
-    .flatMap((name) => JSON.parse(read(`${DEADVOX_CONTENT}/${name}`)).layouts.map((layout) => layout.id));
+  readdirSync(join(ROOT, DEADVOX_MODS)).flatMap((mod) =>
+    readdirSync(join(ROOT, DEADVOX_MODS, mod))
+      .filter((name) => LAYOUT_FILE_PATTERN.test(name))
+      .flatMap((name) => JSON.parse(read(`${DEADVOX_MODS}/${mod}/${name}`)).layouts.map((layout) => layout.id)),
+  );
 
 const intentionallyUnofferedDeadvoxParams = {
+  start: 'An admitted start-row selector; a player start picker is separate UI work.',
   ragdollSweep: 'A seeded debug-only corpse sample, not a launcher gameplay option.',
-  repairLook: 'A debug-only showroom repair inspection, not a launcher gameplay option.',
-  optic: 'A content-ID selector for certified optic review loadouts, not a standalone gameplay option.',
   decals: 'A presentation comparison switch for authored-decal review, not a launcher gameplay option.',
   skyRoute:
     'A bounded hardware diagnostic owns its complete launch preset; it is not an independent launcher tuning option.',
@@ -239,11 +240,10 @@ describe('site launchers track the games’ URL parameters', () => {
     const supported = paramsReadBy([
       'packages/deadvox/src/main.ts',
       'packages/deadvox/src/game/config.ts',
-      'packages/deadvox/src/render/ragdollConfig.ts',
+      'packages/deadvox/src/game/ragdollConfig.ts',
       'packages/deadvox/src/core/weatheringUrl.ts',
       'packages/deadvox/src/bench/run.ts',
       'packages/deadvox/src/bench/shamblers.ts',
-      'packages/deadvox/src/debug/debugLoadout.ts',
     ]);
     const omitted = new Set(Object.keys(intentionallyUnofferedDeadvoxParams));
     for (const name of omitted) {
@@ -300,9 +300,9 @@ describe('site launchers track the games’ URL parameters', () => {
     const makeDeadvox = makeDeadvoxForTest();
     const defaults = launcherModelForTest().deadvox;
     const gauntlet = { ...defaults, ...launcherPresetsForTest().gauntlet };
-    const scenarioIds = JSON.parse(read('packages/deadvox/src/content/base/scenarios.json')).scenarios.map(
-      (scenario) => scenario.id,
-    );
+    const scenarioIds = JSON.parse(
+      read('packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/scenarios.json'),
+    ).scenarios.map((scenario) => scenario.id);
     const play = makeDeadvox(gauntlet);
     const site = play.searchParams.get('site');
     assert.ok(scenarioIds.includes(site), `the gauntlet preset composes a scenario site (${site})`);
@@ -344,18 +344,50 @@ describe('site launchers track the games’ URL parameters', () => {
       numericDetail: { mods: [{ ...row('a'), detail: 7 }] },
       missingPresentation: { mods: [{ id: 'a' }] },
       notAList: { mods: row('a') },
+      folderIds: { mods: [row('a')], folderMods: ['b'] },
+      folderIdClash: { mods: [row('a')], folderMods: ['a'] },
+      folderIdNotText: { mods: [row('a')], folderMods: [7] },
+      folderIdsNotAList: { mods: [row('a')], folderMods: 'b' },
     };
     await Promise.all(
       Object.entries(catalogues).map(async ([name, catalogue]) => {
         const gameAdmits = bundledModCatalogueIssues(catalogue).length === 0;
         const shown = await loadBundledMods(async () => ({ ok: true, json: async () => catalogue }), 'x');
-        assert.deepEqual(shown, gameAdmits ? catalogue.mods : [], `${name}: launcher agrees with the game schema`);
+        const folderRows = () => (catalogue.folderMods ?? []).map((id) => ({ id, label: id, detail: id }));
+        assert.deepEqual(
+          shown,
+          gameAdmits ? [...catalogue.mods, ...folderRows()] : [],
+          `${name}: launcher agrees with the game schema`,
+        );
       }),
     );
     assert.equal(bundledModCatalogueIssues(catalogues.valid).length, 0, 'the valid fixture passes the schema');
     assert.notEqual(bundledModCatalogueIssues(catalogues.duplicateIds).length, 0, 'duplicate ids fail the schema');
     const failed = await loadBundledMods(async () => ({ ok: false, json: async () => catalogues.valid }), 'x');
     assert.deepEqual(failed, [], 'a failed fetch hides the control');
+  });
+
+  // The site job runs without an install, so the build side (an opt-in pack reaching `folderMods`) is tested in
+  // `packages/deadvox/test/readBundledPacks.test.ts`, where packages resolve.
+  it('offers a catalogue folder mod by id and links it when picked', async () => {
+    const catalogue = {
+      ...JSON.parse(read('packages/deadvox/src/config/bundled-mods.json')),
+      folderMods: ['fixture.debug'],
+    };
+    const loadBundledMods = new Function(`${extractDeclaration('loadBundledMods')}\nreturn loadBundledMods;`)();
+    const shown = await loadBundledMods(async () => ({ ok: true, json: async () => catalogue }), 'x');
+    assert.ok(
+      shown.some(({ id }) => id === 'fixture.debug'),
+      'the folder mod is offered by its id',
+    );
+
+    const makeDeadvox = makeDeadvoxForTest();
+    const model = launcherModelForTest();
+    onInputForTest(model)({
+      currentTarget: { id: 'deadvox-form' },
+      target: { dataset: { modId: 'fixture.debug' }, type: 'checkbox', checked: true },
+    });
+    assert.equal(makeDeadvox(model.deadvox).searchParams.get('mods'), 'fixture.debug', 'picking it requests its id');
   });
 
   it('composes a practice tutorial URL the game accepts from the launcher', () => {
@@ -514,7 +546,7 @@ describe('site launcher playtest entry', () => {
       assert.ok(beginnerHref, 'the assembled page has a beginner-mode link');
       assert.ok(script.indexOf('class="playtest-action"') < script.indexOf('class="beginner-action"'));
       const beginner = new URL(beginnerHref, config.url);
-      assert.equal(beginner.searchParams.get('mods'), 'beginner', 'beginner selects its bundled mod');
+      assert.equal(beginner.searchParams.get('mods'), 'skelly.deadvox.beginner', 'beginner selects its bundled mod');
       beginner.searchParams.delete('mods');
       assert.equal(beginner.href, play.href, 'beginner mode uses the same frozen game URL');
       assert.ok(authoredLayoutIds().includes(play.searchParams.get('site')), 'play selects an authored site');

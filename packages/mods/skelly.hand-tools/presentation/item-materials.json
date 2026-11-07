@@ -1,0 +1,18 @@
+{
+  "assets/models/adjustable_pliers.glb": { "materials": ["steel-grey", "plastic-blue", "paint-charcoal"] },
+  "assets/models/can_opener.glb": { "materials": ["steel-grey", "plastic-red", "steel-parkerized", "paint-charcoal"] },
+  "assets/models/compass.glb": { "materials": ["plastic-black", "steel-grey", "paint-cream", "plastic-white"] },
+  "assets/models/crowbar.glb": { "materials": ["steel-grey"] },
+  "assets/models/hammer.glb": { "materials": ["wood-walnut", "steel-grey"] },
+  "assets/models/kitchen_knife.glb": { "materials": ["plastic-black", "steel-stainless"] },
+  "assets/models/repair_kit.glb": { "materials": ["paint-charcoal", "steel-grey", "paperboard-tan"] },
+  "assets/models/screwdriver.glb": { "materials": ["plastic-yellow", "steel-blued"] },
+  "assets/models/sewing_kit.glb": { "materials": [null, null, null, null] },
+  "assets/models/sewing_repair_kit.glb": {
+    "materials": ["paint-terracotta", "cord-olive", "plastic-red", "paperboard-tan", "steel-grey"]
+  },
+  "assets/models/sledgehammer.glb": { "materials": ["wood-walnut", "steel-grey"] },
+  "assets/models/whetstone.glb": { "materials": ["stone-whet"] },
+  "assets/models/wire_strippers.glb": { "materials": ["steel-grey", "plastic-red"] },
+  "assets/models/wrench.glb": { "materials": ["steel-grey"] }
+}

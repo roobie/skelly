@@ -11,20 +11,22 @@ import {
   rectDistance,
   smoothstep,
 } from './authoredTerrain.mjs';
+import { claimed, claimedId } from './capabilities.ts';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CHUNK, toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
 import { placementKeyLoot } from './placementLoot.ts';
 import type { PublicCartographicFeature } from './publicCartography.ts';
 import { Rng, simplexNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
-import type { LightPracticeDef, SiteLayoutDef } from './schema.ts';
-import { HORDE_MEMBERS, HORDE_TYPE, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
+import type { SiteLayoutDef } from './schema.ts';
+import { HORDE_MEMBERS, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import {
   focusPose,
+  loadedCatalogue,
   propCentre,
+  type ShowroomCatalogue,
   type ShowroomDef,
   type ShowroomProp,
   slotPlacement,
@@ -32,16 +34,15 @@ import {
   yawToward,
 } from './showroom.ts';
 import {
+  type ActorSpawn,
   furnitureOf,
   grow,
   type HordeSpawn,
   lootSourcesOf,
   type PlaytestMarks,
   type Rect,
-  rectsOverlap,
   type Site,
   SupplyFootprints,
-  type ZombieSpawn,
 } from './site.ts';
 import { sitePalette } from './sitePalette.ts';
 import { type Placement, placedPieces, placedSpawns, stampPlacement } from './templates.ts';
@@ -138,6 +139,15 @@ const siteWater = (
   };
 };
 
+const showroomOf = (registry: Registry, layout: SiteLayoutDef) => {
+  const { showroom } = layout;
+  return {
+    showroom,
+    props: showroom ? slotProps(registry, showroom) : [],
+    catalogue: showroom?.catalogue ? loadedCatalogue(registry, showroom.catalogue) : undefined,
+  };
+};
+
 export class AuthoredSite implements Site {
   readonly spawn: Site['spawn'];
   readonly surface: Surface;
@@ -149,16 +159,18 @@ export class AuthoredSite implements Site {
   get trees(): readonly TreePlacement[] {
     return this.treeIndex.trees;
   }
-  private readonly spawns: readonly ZombieSpawn[];
+  private readonly spawns: readonly ActorSpawn[];
   private readonly hordes: readonly HordeSpawn[];
-  private treeIndex: TreeIndex;
+  private readonly treeIndex: TreeIndex;
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
   private readonly supplyFootprints: SupplyFootprints;
   readonly playtestMarks: PlaytestMarks;
-  readonly lightPractice?: LightPracticeDef;
+  readonly practiceExitMark?: string;
+  readonly guidance?: import('./schema/guidance.ts').GuidanceDef | undefined;
   readonly seed: number;
   readonly registry: Registry;
   readonly showroom: ShowroomDef | undefined;
+  readonly catalogue: ShowroomCatalogue | undefined;
   /** The showroom's authored props, oldest first. */
   readonly slots: readonly ShowroomProp[];
 
@@ -169,7 +181,7 @@ export class AuthoredSite implements Site {
       throw new Error('Authored ASCII sites require 0.5 m blocks');
     }
     const s = scale.blockSize;
-    const tuning = registry.siteGeneration.get(CORE_CONTENT_IDS.authoredSite);
+    const tuning = claimed(registry.siteGeneration, 'authoredSite');
     if (!tuning) {
       throw new Error('Missing authored site generation tuning');
     }
@@ -204,11 +216,14 @@ export class AuthoredSite implements Site {
         })),
       ),
     };
+    this.guidance = layout.guidance;
     if (layout.practice) {
-      this.lightPractice = layout.practice.light;
+      this.practiceExitMark = layout.practice.exitMark;
     }
-    this.showroom = layout.showroom;
-    this.slots = layout.showroom ? slotProps(registry, layout.showroom) : [];
+    const { showroom, props, catalogue } = showroomOf(registry, layout);
+    this.showroom = showroom;
+    this.catalogue = catalogue;
+    this.slots = props;
     const newest = this.slots.at(-1);
     this.spawn = {
       pos: [...layout.player.position],
@@ -359,13 +374,15 @@ export class AuthoredSite implements Site {
         xm / tuning.topography.wavelengthMetres,
         zm / tuning.topography.wavelengthMetres,
       );
-      return Math.round((profile + noise * tuning.topography.amplitudeMetres * noiseWeight(x, z, xm, zm)) / s);
+      const ground = Math.round((profile + noise * tuning.topography.amplitudeMetres * noiseWeight(x, z, xm, zm)) / s);
+      return catalogue ? catalogue.height(x, z, ground) : ground;
     };
     const trackAt = (x: number, z: number) =>
       layout.tracks.find((track) => polylineDistance([(x + 0.5) * s, (z + 0.5) * s], track.points) <= track.width / 2);
     const { water, sandy } = siteWater(layout, s, height);
     const player = blocks(layout.player.position);
     const reserved = [
+      ...(catalogue ? [catalogue.rect] : []),
       ...lots.map((lot) => lot.apron),
       { x0: player[0] - 3 / s, x1: player[0] + 3 / s, z0: player[2] - 3 / s, z1: player[2] + 3 / s },
     ];
@@ -438,6 +455,10 @@ export class AuthoredSite implements Site {
       height,
       ...(water && { water }),
       top: (x, z) => {
+        const floor = catalogue?.top(x, z);
+        if (floor !== undefined) {
+          return floor;
+        }
         if (sandy(x, z)) {
           return terrain.sand;
         }
@@ -449,7 +470,7 @@ export class AuthoredSite implements Site {
       },
     };
     const markers = this.placements.flatMap(placedSpawns).map((marker) => ({
-      type: marker.zombie,
+      type: marker.actor,
       pos: marker.pos,
       chance: marker.chance,
       ...(marker.window ? { window: marker.window } : {}),
@@ -469,19 +490,17 @@ export class AuthoredSite implements Site {
       }));
     this.hordes = (layout.hordes ?? []).map(({ id, position }) => ({
       id: `${layout.id}_${id}`,
-      type: HORDE_TYPE,
+      type: claimedId(registry.actors, 'settlementHorde'),
       pos: blocks(position),
       members: Rng.stream(seed, `authored-horde:${layout.id}:${id}`).int(...HORDE_MEMBERS),
     }));
   }
 
-  /** Wrappers reserve their derived floors before streaming so neither trees nor litter survive there. */
-  reserveVegetation(areas: readonly Rect[]): void {
-    this.treeIndex = new TreeIndex(this.trees.filter((tree) => !areas.some((area) => rectsOverlap(tree.bounds, area))));
-  }
-
   focus(furniture: string): Site['spawn'] | undefined {
-    const pose = this.showroom && focusPose(this.slots, furniture, this.showroom.focusDistance);
+    const pose =
+      this.showroom &&
+      (focusPose(this.slots, furniture, this.showroom.focusDistance) ??
+        (this.catalogue && focusPose(this.catalogue.props, furniture, this.showroom.focusDistance)));
     return pose && { pos: [...pose.pos], yaw: pose.yaw };
   }
 
@@ -493,7 +512,7 @@ export class AuthoredSite implements Site {
   }
 
   supplySourcesIn(area: Rect) {
-    return this.supplyFootprints.in(area);
+    return [...this.supplyFootprints.in(area), ...(this.catalogue?.supplySourcesIn(area) ?? [])];
   }
 
   lootPointsIn(cx: number, cz: number): readonly LootSpawnPoint[] {
@@ -501,9 +520,12 @@ export class AuthoredSite implements Site {
   }
 
   furnitureIn(cx: number, cz: number) {
-    return this.placements.flatMap((placement) => furnitureOf(this, placement, [cx, cz], this.lootPointsIn(cx, cz)));
+    return [
+      ...this.placements.flatMap((placement) => furnitureOf(this, placement, [cx, cz], this.lootPointsIn(cx, cz))),
+      ...(this.catalogue?.furnitureIn(cx, cz) ?? []),
+    ];
   }
-  zombiesIn(cx: number, cz: number): ZombieSpawn[] {
+  actorsIn(cx: number, cz: number): ActorSpawn[] {
     return this.spawns.filter((spawn) => toChunk(spawn.pos[0]) === cx && toChunk(spawn.pos[2]) === cz);
   }
   hordesIn(cx: number, cz: number): HordeSpawn[] {

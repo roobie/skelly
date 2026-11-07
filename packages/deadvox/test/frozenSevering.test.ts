@@ -1,38 +1,38 @@
 import { describe, expect, it } from 'vitest';
+import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import type { Actor } from '../src/core/actorState.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import type { Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;
-const posed = (zombie: Zombie) =>
-  posedShamblerRegionBoxes({
-    seed: zombie.figureSeed,
-    position: zombie.body.pos,
-    facing: zombie.facing,
-    headYaw: zombie.headYaw,
-    gaitPhase: zombie.gaitPhase,
-    speed: zombie.horizontalSpeed,
-    chasing: zombie.mode === 'chase',
-    attackWindup: zombie.attackWindup,
-    attackWindupSeconds: zombie.type.attack.windupSimSeconds,
-    severed: zombie.severed,
+const posed = (actor: Actor) =>
+  posedHumanoidRegionBoxes({
+    seed: actor.figureSeed,
+    position: actor.body.pos,
+    facing: actor.facing,
+    headYaw: actor.headYaw,
+    gaitPhase: actor.gaitPhase,
+    speed: actor.horizontalSpeed,
+    chasing: actor.agent!.mode === 'chase',
+    attackWindup: actor.attackWindup,
+    attackWindupSeconds: actor.type.attack!.windupSimSeconds,
+    severed: actor.severed,
     blockSize: BLOCK_SIZE,
   });
-const regionRay = (zombie: Zombie) => {
-  const box = posed(zombie).rightArm.find((candidate) => candidate.bone === 'forearm.R')!;
-  const front: Vec3 = [-zombie.facing[0], 0, -zombie.facing[2]];
+const regionRay = (actor: Actor) => {
+  const box = posed(actor).rightArm.find((candidate) => candidate.bone === 'forearm.R')!;
+  const front: Vec3 = [-actor.facing[0], 0, -actor.facing[2]];
   return {
     origin: [
       box.center[0] + (front[0] * 0.45) / BLOCK_SIZE,
@@ -51,11 +51,11 @@ describe('melee while debug-frozen', () => {
       regions: { ...SHAMBLER.regions, rightArm: FISTS_MELEE.damage },
       dismember: { chance: 0, headOnKillChance: 0 },
     };
-    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { zombies: registry.zombies, poolSize: 2 });
+    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { actors: registry.actors, poolSize: 2 });
     try {
       renderer.setWorld(FLOOR, BLOCK_SIZE);
       const severedParts: string[] = [];
-      const system = new ZombieSystem({
+      const system = new ActorSystem({
         player: () => ({
           pos: [100, 1, 100],
           facing: [0, 0, -1],
@@ -71,18 +71,18 @@ describe('melee while debug-frozen', () => {
         physics: physicsFor(SCALE),
         tuning: TEST_SENSE_TUNING,
         hurtPlayer: () => undefined,
-        onSever: (sourceId, sourceZombie, part, hit) => {
+        onSever: (sourceId, sourceActor, part, hit) => {
           severedParts.push(part);
-          renderer.zombieSevered(sourceId, part, hit, sourceZombie);
+          renderer.actorSevered(sourceId, part, hit, sourceActor);
         },
       });
       const id = system.add(armKill, [0, 1, 0], [0, 0, -1]);
-      const zombie = system.store.get(id)!;
+      const actor = system.store.get(id)!;
       renderer.sync(system.store, 1 / 60, 1);
       system.setFrozen(true);
-      const ray = regionRay(zombie);
+      const ray = regionRay(actor);
       expect(system.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(id);
-      expect(zombie.severed).toContain('upperArm.R');
+      expect(actor.severed).toContain('upperArm.R');
       expect(severedParts).toEqual(['upperArm.R']);
       expect(renderer.boneMatrix(id, 'head')).toBeDefined();
       expect(renderer.debrisCountFor(id)).toBe(1);

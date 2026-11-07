@@ -1,5 +1,5 @@
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { CORE_RULE_IDS } from '@skelly/engine/foundation/issue.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { CORE_RULE_IDS } from '@skelly/construct/foundation/issue.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadFixtures } from './helpers.ts';

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "jerry_can",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "jerry_can",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  }
+]

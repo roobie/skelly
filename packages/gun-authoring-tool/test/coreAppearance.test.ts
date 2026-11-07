@@ -1,5 +1,5 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Domain, PartDef } from '@skelly/engine/assembly/schema.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Domain, PartDef } from '@skelly/construct/assembly/schema.ts';
 import type { GlbAssetIdentity, Palette } from '@skelly/thing-export/exportTypes.ts';
 import { exportGlb } from '@skelly/thing-export/glb.ts';
 import { describe, expect, it } from 'vitest';

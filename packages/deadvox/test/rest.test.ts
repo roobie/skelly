@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { actionText } from '../src/core/actionText.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
@@ -13,16 +11,13 @@ import { World } from '../src/core/world.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
 import { createSession, HANDLING_RATE, IDLE } from '../src/game/session.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const HOUR = simSecondsPerHour(BASE_CLOCK);
-const BASE = 'src/content/base';
-const BASE_SOURCES = readdirSync(BASE)
-  .filter((f) => f.endsWith('.json'))
-  .sort()
-  .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
+const BASE_SOURCES = baseContentSources();
 const registry = baseRegistry();
 const SCALE = makeScale(0.5);
 const SPAWN_NEEDS: Needs = new Body(BODY_TUNING_FIXTURE).spawnNeeds;
@@ -732,12 +727,12 @@ describe('long-action interruptions', () => {
 
     const { health } = sim.body;
     const events = sim.events.reader();
-    const id = session.zombies.add(registry.zombies.get('shambler')!, [60, 1, 0], [-1, 0, 0]);
+    const id = session.actors.add(registry.actors.get('shambler')!, [60, 1, 0], [-1, 0, 0]);
     let chasedAtCap = false;
     for (let i = 0; i < 600 && session.rest.action; i++) {
       frame();
       chasedAtCap ||=
-        session.zombieStore.get(id)!.mode === 'chase' &&
+        session.actorStore.get(id)!.agent!.mode === 'chase' &&
         sim.compression.active &&
         sim.compression.c === sim.compression.limits.cap;
     }

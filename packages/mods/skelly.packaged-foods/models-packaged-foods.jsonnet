@@ -1,0 +1,10 @@
+local partless = std.set(['canned_beans', 'canned_soup']);
+(import 'tools/jsonnet/lib/item-presentation.libsonnet')(
+  import 'presentation/item-materials.json',
+  overrides={ beans: ['organic', 'organic'], soup: ['organic', 'organic'] },
+).pack({
+  models: [
+    if std.setMember(model.id, partless) then std.objectRemoveKey(model, 'parts') else model
+    for model in import 'things/index.json'
+  ],
+})

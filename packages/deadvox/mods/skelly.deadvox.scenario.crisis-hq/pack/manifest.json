@@ -1,0 +1,23 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.deadvox.crisis-hq",
+    "skelly.deadvox.site-generation",
+    "skelly.light-sources",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.packaged-foods",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "starts.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.crisis-hq",
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

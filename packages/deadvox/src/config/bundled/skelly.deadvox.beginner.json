@@ -1,0 +1,2993 @@
+{
+  "actors": [
+    {
+      "abilities": [],
+      "agent": {
+        "hearing": 0.5,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "lightSightScale": 0.5,
+        "nightSight": 5,
+        "sight": 12.5,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
+      "attack": {
+        "cooldownSimSeconds": 1.5,
+        "grabBandMetres": 1.7,
+        "moves": [
+          {
+            "damage": 4.5,
+            "damageKind": "blunt",
+            "hitRegions": [
+              {
+                "region": "torso",
+                "weight": 6
+              },
+              {
+                "region": "head",
+                "weight": 2
+              },
+              {
+                "region": "leftArm",
+                "weight": 1
+              },
+              {
+                "region": "rightArm",
+                "weight": 1
+              }
+            ],
+            "id": "clobber",
+            "motion": "swing",
+            "weight": 3
+          },
+          {
+            "damage": 2.5,
+            "damageKind": "pierce",
+            "hitRegions": [
+              {
+                "region": "leftArm",
+                "weight": 3
+              },
+              {
+                "region": "rightArm",
+                "weight": 3
+              },
+              {
+                "region": "torso",
+                "weight": 2
+              },
+              {
+                "region": "head",
+                "weight": 1
+              }
+            ],
+            "id": "bite",
+            "motion": "wrestle",
+            "weight": 1
+          }
+        ],
+        "reach": 1.2,
+        "windupSimSeconds": 0.29999999999999999
+      },
+      "canJumpObstacles": true,
+      "capability": ["settlementHorde", "settlementWanderer"],
+      "cause": "a shambler",
+      "chaseMotion": {
+        "lurchSimSeconds": 1,
+        "speedMultiplier": {
+          "max": 1.2,
+          "min": 0.59999999999999998
+        },
+        "stumbleChancePerSimSecond": 0.16,
+        "stumbleDecelerationMetresPerSimSecondSquared": 14,
+        "stumbleDurationSimSeconds": {
+          "max": 0.75,
+          "min": 0.55000000000000004
+        },
+        "stumbleEaseSimSeconds": 0.20000000000000001,
+        "stumbleSpeedFraction": 0.040000000000000001,
+        "swayDegrees": 25,
+        "swayIntervalSimSeconds": {
+          "max": 1.1000000000000001,
+          "min": 0.69999999999999996
+        }
+      },
+      "damageResistance": {
+        "acid": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blast": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "breach": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "crush": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "fragment": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
+      "dismember": {
+        "chance": 0.14999999999999999,
+        "headOnKillChance": 0.25
+      },
+      "downed": {
+        "dismember": {
+          "level": 1,
+          "quality": "cutting",
+          "simSeconds": 15
+        },
+        "finishOff": {
+          "simSeconds": 3
+        }
+      },
+      "earHeightMetres": 1.3,
+      "eyeHeightMetres": 1.3,
+      "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
+      "footstepSound": "shambler",
+      "id": "shambler",
+      "jumpMetresPerSimSecond": 4.6760999999999999,
+      "loot": "shambler_pockets",
+      "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
+      "name": "Shambler",
+      "regions": {
+        "head": 30,
+        "leftArm": 12,
+        "leftLeg": 12,
+        "rightArm": 12,
+        "rightLeg": 12,
+        "torso": 30
+      },
+      "severedImpulseScale": 1.3,
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
+      "severedSpurt": {
+        "droplets": 14,
+        "lifetimeRealSeconds": 4.5,
+        "partVelocityShare": 0.80000000000000004,
+        "speedMetresPerRealSecond": 5,
+        "spreadFraction": 1.5
+      },
+      "sounds": {
+        "alert": "shambler_alert",
+        "attack": "shambler_attack",
+        "hurt": "shambler_hurt",
+        "idle": "shambler_idle"
+      },
+      "spawnWeight": 1,
+      "speed": {
+        "chaseMetresPerSimSecond": 1.3999999999999999,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
+        "wanderMetresPerSimSecond": 0.40000000000000002
+      },
+      "stagger": {
+        "durationSimSeconds": 0.80000000000000004,
+        "impulseThreshold": 12
+      },
+      "stepLength": 0.59999999999999998,
+      "strength": 5
+    },
+    {
+      "abilities": [],
+      "agent": {
+        "hearing": 0.5,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "lightSightScale": 0.5,
+        "nightSight": 5,
+        "sight": 12.5,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
+      "attack": {
+        "cooldownSimSeconds": 1.5,
+        "grabBandMetres": 1.7,
+        "moves": [
+          {
+            "damage": 4.5,
+            "damageKind": "blunt",
+            "hitRegions": [
+              {
+                "region": "torso",
+                "weight": 6
+              },
+              {
+                "region": "head",
+                "weight": 2
+              },
+              {
+                "region": "leftArm",
+                "weight": 1
+              },
+              {
+                "region": "rightArm",
+                "weight": 1
+              }
+            ],
+            "id": "clobber",
+            "motion": "swing",
+            "weight": 3
+          },
+          {
+            "damage": 2.5,
+            "damageKind": "pierce",
+            "hitRegions": [
+              {
+                "region": "leftArm",
+                "weight": 3
+              },
+              {
+                "region": "rightArm",
+                "weight": 3
+              },
+              {
+                "region": "torso",
+                "weight": 2
+              },
+              {
+                "region": "head",
+                "weight": 1
+              }
+            ],
+            "id": "bite",
+            "motion": "wrestle",
+            "weight": 1
+          }
+        ],
+        "reach": 1.2,
+        "windupSimSeconds": 0.29999999999999999
+      },
+      "authoredOnly": true,
+      "canJumpObstacles": true,
+      "cause": "a soldier",
+      "chaseMotion": {
+        "lurchSimSeconds": 1,
+        "speedMultiplier": {
+          "max": 1.2,
+          "min": 0.59999999999999998
+        },
+        "stumbleChancePerSimSecond": 0.16,
+        "stumbleDecelerationMetresPerSimSecondSquared": 14,
+        "stumbleDurationSimSeconds": {
+          "max": 0.75,
+          "min": 0.55000000000000004
+        },
+        "stumbleEaseSimSeconds": 0.20000000000000001,
+        "stumbleSpeedFraction": 0.040000000000000001,
+        "swayDegrees": 25,
+        "swayIntervalSimSeconds": {
+          "max": 1.1000000000000001,
+          "min": 0.69999999999999996
+        }
+      },
+      "damageResistance": {
+        "acid": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blast": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "breach": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "crush": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "fragment": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
+      "dismember": {
+        "chance": 0.14999999999999999,
+        "headOnKillChance": 0.25
+      },
+      "downed": {
+        "dismember": {
+          "level": 1,
+          "quality": "cutting",
+          "simSeconds": 15
+        },
+        "finishOff": {
+          "simSeconds": 3
+        }
+      },
+      "earHeightMetres": 1.3,
+      "eyeHeightMetres": 1.3,
+      "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
+      "footstepSound": "shambler",
+      "id": "military_shambler",
+      "jumpMetresPerSimSecond": 4.6760999999999999,
+      "loot": "soldier_pockets",
+      "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
+      "name": "Soldier",
+      "regions": {
+        "head": 30,
+        "leftArm": 12,
+        "leftLeg": 12,
+        "rightArm": 12,
+        "rightLeg": 12,
+        "torso": 30
+      },
+      "severedImpulseScale": 1.3,
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
+      "severedSpurt": {
+        "droplets": 14,
+        "lifetimeRealSeconds": 4.5,
+        "partVelocityShare": 0.80000000000000004,
+        "speedMetresPerRealSecond": 5,
+        "spreadFraction": 1.5
+      },
+      "sounds": {
+        "alert": "shambler_alert",
+        "attack": "shambler_attack",
+        "hurt": "shambler_hurt",
+        "idle": "shambler_idle"
+      },
+      "spawnWeight": 1,
+      "speed": {
+        "chaseMetresPerSimSecond": 1.3999999999999999,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
+        "wanderMetresPerSimSecond": 0.40000000000000002
+      },
+      "stagger": {
+        "durationSimSeconds": 0.80000000000000004,
+        "impulseThreshold": 12
+      },
+      "stepLength": 0.59999999999999998,
+      "strength": 5
+    },
+    {
+      "abilities": [],
+      "agent": {
+        "hearing": 0.5,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "lightSightScale": 0.5,
+        "nightSight": 5,
+        "sight": 12.5,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
+      "attack": {
+        "cooldownSimSeconds": 1.5,
+        "grabBandMetres": 1.7,
+        "moves": [
+          {
+            "damage": 4.5,
+            "damageKind": "blunt",
+            "hitRegions": [
+              {
+                "region": "torso",
+                "weight": 6
+              },
+              {
+                "region": "head",
+                "weight": 2
+              },
+              {
+                "region": "leftArm",
+                "weight": 1
+              },
+              {
+                "region": "rightArm",
+                "weight": 1
+              }
+            ],
+            "id": "clobber",
+            "motion": "swing",
+            "weight": 3
+          },
+          {
+            "damage": 2.5,
+            "damageKind": "pierce",
+            "hitRegions": [
+              {
+                "region": "leftArm",
+                "weight": 3
+              },
+              {
+                "region": "rightArm",
+                "weight": 3
+              },
+              {
+                "region": "torso",
+                "weight": 2
+              },
+              {
+                "region": "head",
+                "weight": 1
+              }
+            ],
+            "id": "bite",
+            "motion": "wrestle",
+            "weight": 1
+          }
+        ],
+        "reach": 1.2,
+        "windupSimSeconds": 0.29999999999999999
+      },
+      "authoredOnly": true,
+      "canJumpObstacles": true,
+      "cause": "a farmer",
+      "chaseMotion": {
+        "lurchSimSeconds": 1,
+        "speedMultiplier": {
+          "max": 1.2,
+          "min": 0.59999999999999998
+        },
+        "stumbleChancePerSimSecond": 0.16,
+        "stumbleDecelerationMetresPerSimSecondSquared": 14,
+        "stumbleDurationSimSeconds": {
+          "max": 0.75,
+          "min": 0.55000000000000004
+        },
+        "stumbleEaseSimSeconds": 0.20000000000000001,
+        "stumbleSpeedFraction": 0.040000000000000001,
+        "swayDegrees": 25,
+        "swayIntervalSimSeconds": {
+          "max": 1.1000000000000001,
+          "min": 0.69999999999999996
+        }
+      },
+      "damageResistance": {
+        "acid": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blast": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "breach": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "crush": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "fragment": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
+      "dismember": {
+        "chance": 0.14999999999999999,
+        "headOnKillChance": 0.25
+      },
+      "downed": {
+        "dismember": {
+          "level": 1,
+          "quality": "cutting",
+          "simSeconds": 15
+        },
+        "finishOff": {
+          "simSeconds": 3
+        }
+      },
+      "earHeightMetres": 1.3,
+      "eyeHeightMetres": 1.3,
+      "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
+      "footstepSound": "shambler",
+      "id": "farmer_shambler",
+      "jumpMetresPerSimSecond": 4.6760999999999999,
+      "loot": "farmer_pockets",
+      "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
+      "name": "Farmer",
+      "regions": {
+        "head": 30,
+        "leftArm": 12,
+        "leftLeg": 12,
+        "rightArm": 12,
+        "rightLeg": 12,
+        "torso": 30
+      },
+      "severedImpulseScale": 1.3,
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
+      "severedSpurt": {
+        "droplets": 14,
+        "lifetimeRealSeconds": 4.5,
+        "partVelocityShare": 0.80000000000000004,
+        "speedMetresPerRealSecond": 5,
+        "spreadFraction": 1.5
+      },
+      "sounds": {
+        "alert": "shambler_alert",
+        "attack": "shambler_attack",
+        "hurt": "shambler_hurt",
+        "idle": "shambler_idle"
+      },
+      "spawnWeight": 1,
+      "speed": {
+        "chaseMetresPerSimSecond": 1.3999999999999999,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
+        "wanderMetresPerSimSecond": 0.40000000000000002
+      },
+      "stagger": {
+        "durationSimSeconds": 0.80000000000000004,
+        "impulseThreshold": 12
+      },
+      "stepLength": 0.59999999999999998,
+      "strength": 5
+    },
+    {
+      "abilities": [],
+      "agent": {
+        "hearing": 0.5,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "lightSightScale": 0.5,
+        "nightSight": 5,
+        "sight": 12.5,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
+      "attack": {
+        "cooldownSimSeconds": 1.5,
+        "grabBandMetres": 1.7,
+        "moves": [
+          {
+            "damage": 4.5,
+            "damageKind": "blunt",
+            "hitRegions": [
+              {
+                "region": "torso",
+                "weight": 6
+              },
+              {
+                "region": "head",
+                "weight": 2
+              },
+              {
+                "region": "leftArm",
+                "weight": 1
+              },
+              {
+                "region": "rightArm",
+                "weight": 1
+              }
+            ],
+            "id": "clobber",
+            "motion": "swing",
+            "weight": 3
+          },
+          {
+            "damage": 2.5,
+            "damageKind": "pierce",
+            "hitRegions": [
+              {
+                "region": "leftArm",
+                "weight": 3
+              },
+              {
+                "region": "rightArm",
+                "weight": 3
+              },
+              {
+                "region": "torso",
+                "weight": 2
+              },
+              {
+                "region": "head",
+                "weight": 1
+              }
+            ],
+            "id": "bite",
+            "motion": "wrestle",
+            "weight": 1
+          }
+        ],
+        "reach": 1.2,
+        "windupSimSeconds": 0.29999999999999999
+      },
+      "authoredOnly": true,
+      "canJumpObstacles": true,
+      "cause": "a site worker",
+      "chaseMotion": {
+        "lurchSimSeconds": 1,
+        "speedMultiplier": {
+          "max": 1.2,
+          "min": 0.59999999999999998
+        },
+        "stumbleChancePerSimSecond": 0.16,
+        "stumbleDecelerationMetresPerSimSecondSquared": 14,
+        "stumbleDurationSimSeconds": {
+          "max": 0.75,
+          "min": 0.55000000000000004
+        },
+        "stumbleEaseSimSeconds": 0.20000000000000001,
+        "stumbleSpeedFraction": 0.040000000000000001,
+        "swayDegrees": 25,
+        "swayIntervalSimSeconds": {
+          "max": 1.1000000000000001,
+          "min": 0.69999999999999996
+        }
+      },
+      "damageResistance": {
+        "acid": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blast": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "breach": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "crush": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "fragment": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
+      "dismember": {
+        "chance": 0.14999999999999999,
+        "headOnKillChance": 0.25
+      },
+      "downed": {
+        "dismember": {
+          "level": 1,
+          "quality": "cutting",
+          "simSeconds": 15
+        },
+        "finishOff": {
+          "simSeconds": 3
+        }
+      },
+      "earHeightMetres": 1.3,
+      "eyeHeightMetres": 1.3,
+      "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
+      "footstepSound": "shambler",
+      "id": "worker_shambler",
+      "jumpMetresPerSimSecond": 4.6760999999999999,
+      "loot": "worker_pockets",
+      "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
+      "name": "Site worker",
+      "regions": {
+        "head": 30,
+        "leftArm": 12,
+        "leftLeg": 12,
+        "rightArm": 12,
+        "rightLeg": 12,
+        "torso": 30
+      },
+      "severedImpulseScale": 1.3,
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
+      "severedSpurt": {
+        "droplets": 14,
+        "lifetimeRealSeconds": 4.5,
+        "partVelocityShare": 0.80000000000000004,
+        "speedMetresPerRealSecond": 5,
+        "spreadFraction": 1.5
+      },
+      "sounds": {
+        "alert": "shambler_alert",
+        "attack": "shambler_attack",
+        "hurt": "shambler_hurt",
+        "idle": "shambler_idle"
+      },
+      "spawnWeight": 1,
+      "speed": {
+        "chaseMetresPerSimSecond": 1.3999999999999999,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
+        "wanderMetresPerSimSecond": 0.40000000000000002
+      },
+      "stagger": {
+        "durationSimSeconds": 0.80000000000000004,
+        "impulseThreshold": 12
+      },
+      "stepLength": 0.59999999999999998,
+      "strength": 5
+    },
+    {
+      "abilities": [],
+      "agent": {
+        "hearing": 0.5,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "lightSightScale": 0.5,
+        "nightSight": 5,
+        "sight": 12.5,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
+      "attack": {
+        "cooldownSimSeconds": 1.5,
+        "grabBandMetres": 1.7,
+        "moves": [
+          {
+            "damage": 4.5,
+            "damageKind": "blunt",
+            "hitRegions": [
+              {
+                "region": "torso",
+                "weight": 6
+              },
+              {
+                "region": "head",
+                "weight": 2
+              },
+              {
+                "region": "leftArm",
+                "weight": 1
+              },
+              {
+                "region": "rightArm",
+                "weight": 1
+              }
+            ],
+            "id": "clobber",
+            "motion": "swing",
+            "weight": 3
+          },
+          {
+            "damage": 2.5,
+            "damageKind": "pierce",
+            "hitRegions": [
+              {
+                "region": "leftArm",
+                "weight": 3
+              },
+              {
+                "region": "rightArm",
+                "weight": 3
+              },
+              {
+                "region": "torso",
+                "weight": 2
+              },
+              {
+                "region": "head",
+                "weight": 1
+              }
+            ],
+            "id": "bite",
+            "motion": "wrestle",
+            "weight": 1
+          }
+        ],
+        "reach": 1.2,
+        "windupSimSeconds": 0.29999999999999999
+      },
+      "authoredOnly": true,
+      "canJumpObstacles": true,
+      "cause": "a medic",
+      "chaseMotion": {
+        "lurchSimSeconds": 1,
+        "speedMultiplier": {
+          "max": 1.2,
+          "min": 0.59999999999999998
+        },
+        "stumbleChancePerSimSecond": 0.16,
+        "stumbleDecelerationMetresPerSimSecondSquared": 14,
+        "stumbleDurationSimSeconds": {
+          "max": 0.75,
+          "min": 0.55000000000000004
+        },
+        "stumbleEaseSimSeconds": 0.20000000000000001,
+        "stumbleSpeedFraction": 0.040000000000000001,
+        "swayDegrees": 25,
+        "swayIntervalSimSeconds": {
+          "max": 1.1000000000000001,
+          "min": 0.69999999999999996
+        }
+      },
+      "damageResistance": {
+        "acid": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blast": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "breach": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "crush": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "fragment": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
+      "dismember": {
+        "chance": 0.14999999999999999,
+        "headOnKillChance": 0.25
+      },
+      "downed": {
+        "dismember": {
+          "level": 1,
+          "quality": "cutting",
+          "simSeconds": 15
+        },
+        "finishOff": {
+          "simSeconds": 3
+        }
+      },
+      "earHeightMetres": 1.3,
+      "eyeHeightMetres": 1.3,
+      "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
+      "footstepSound": "shambler",
+      "id": "medic_shambler",
+      "jumpMetresPerSimSecond": 4.6760999999999999,
+      "loot": "medic_pockets",
+      "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
+      "name": "Medic",
+      "regions": {
+        "head": 30,
+        "leftArm": 12,
+        "leftLeg": 12,
+        "rightArm": 12,
+        "rightLeg": 12,
+        "torso": 30
+      },
+      "severedImpulseScale": 1.3,
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
+      "severedSpurt": {
+        "droplets": 14,
+        "lifetimeRealSeconds": 4.5,
+        "partVelocityShare": 0.80000000000000004,
+        "speedMetresPerRealSecond": 5,
+        "spreadFraction": 1.5
+      },
+      "sounds": {
+        "alert": "shambler_alert",
+        "attack": "shambler_attack",
+        "hurt": "shambler_hurt",
+        "idle": "shambler_idle"
+      },
+      "spawnWeight": 1,
+      "speed": {
+        "chaseMetresPerSimSecond": 1.3999999999999999,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
+        "wanderMetresPerSimSecond": 0.40000000000000002
+      },
+      "stagger": {
+        "durationSimSeconds": 0.80000000000000004,
+        "impulseThreshold": 12
+      },
+      "stepLength": 0.59999999999999998,
+      "strength": 5
+    },
+    {
+      "abilities": [],
+      "agent": {
+        "hearing": 0.5,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "lightSightScale": 0.5,
+        "nightSight": 5,
+        "sight": 12.5,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
+      "attack": {
+        "cooldownSimSeconds": 1.8,
+        "grabBandMetres": 1.7,
+        "moves": [
+          {
+            "damage": 7,
+            "damageKind": "blunt",
+            "hitRegions": [
+              {
+                "region": "torso",
+                "weight": 6
+              },
+              {
+                "region": "head",
+                "weight": 2
+              },
+              {
+                "region": "leftArm",
+                "weight": 1
+              },
+              {
+                "region": "rightArm",
+                "weight": 1
+              }
+            ],
+            "id": "clobber",
+            "motion": "swing",
+            "weight": 5
+          },
+          {
+            "damage": 2.5,
+            "damageKind": "pierce",
+            "hitRegions": [
+              {
+                "region": "leftArm",
+                "weight": 3
+              },
+              {
+                "region": "rightArm",
+                "weight": 3
+              },
+              {
+                "region": "torso",
+                "weight": 2
+              },
+              {
+                "region": "head",
+                "weight": 1
+              }
+            ],
+            "id": "bite",
+            "motion": "wrestle",
+            "weight": 1
+          }
+        ],
+        "reach": 1.2,
+        "windupSimSeconds": 0.29999999999999999
+      },
+      "authoredOnly": true,
+      "canJumpObstacles": true,
+      "cause": "a brute",
+      "chaseMotion": {
+        "lurchSimSeconds": 1,
+        "speedMultiplier": {
+          "max": 1.2,
+          "min": 0.59999999999999998
+        },
+        "stumbleChancePerSimSecond": 0.16,
+        "stumbleDecelerationMetresPerSimSecondSquared": 14,
+        "stumbleDurationSimSeconds": {
+          "max": 0.75,
+          "min": 0.55000000000000004
+        },
+        "stumbleEaseSimSeconds": 0.20000000000000001,
+        "stumbleSpeedFraction": 0.040000000000000001,
+        "swayDegrees": 25,
+        "swayIntervalSimSeconds": {
+          "max": 1.1000000000000001,
+          "min": 0.69999999999999996
+        }
+      },
+      "damageResistance": {
+        "acid": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blast": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "breach": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "crush": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "fragment": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
+      "dismember": {
+        "chance": 0.14999999999999999,
+        "headOnKillChance": 0.25
+      },
+      "downed": {
+        "dismember": {
+          "level": 1,
+          "quality": "cutting",
+          "simSeconds": 15
+        },
+        "finishOff": {
+          "simSeconds": 3
+        }
+      },
+      "earHeightMetres": 1.3,
+      "eyeHeightMetres": 1.3,
+      "figure": "broad-humanoid",
+      "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
+      "footstepSound": "shambler",
+      "id": "brute_shambler",
+      "jumpMetresPerSimSecond": 4.6760999999999999,
+      "loot": "shambler_pockets",
+      "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
+      "name": "Brute",
+      "regions": {
+        "head": 60,
+        "leftArm": 24,
+        "leftLeg": 24,
+        "rightArm": 24,
+        "rightLeg": 24,
+        "torso": 60
+      },
+      "severedImpulseScale": 1.3,
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
+      "severedSpurt": {
+        "droplets": 14,
+        "lifetimeRealSeconds": 4.5,
+        "partVelocityShare": 0.80000000000000004,
+        "speedMetresPerRealSecond": 5,
+        "spreadFraction": 1.5
+      },
+      "sounds": {
+        "alert": "shambler_alert",
+        "attack": "shambler_attack",
+        "hurt": "shambler_hurt",
+        "idle": "shambler_idle"
+      },
+      "spawnWeight": 1,
+      "speed": {
+        "chaseMetresPerSimSecond": 1.2,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
+        "wanderMetresPerSimSecond": 0.40000000000000002
+      },
+      "stepLength": 0.80000000000000004,
+      "strength": 5
+    },
+    {
+      "abilities": [],
+      "agent": {
+        "hearing": 0.5,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "lightSightScale": 0.5,
+        "nightSight": 5,
+        "sight": 12.5,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
+      "attack": {
+        "cooldownSimSeconds": 1.3,
+        "grabBandMetres": 1.7,
+        "moves": [
+          {
+            "damage": 4.5,
+            "damageKind": "blunt",
+            "hitRegions": [
+              {
+                "region": "torso",
+                "weight": 6
+              },
+              {
+                "region": "head",
+                "weight": 2
+              },
+              {
+                "region": "leftArm",
+                "weight": 1
+              },
+              {
+                "region": "rightArm",
+                "weight": 1
+              }
+            ],
+            "id": "clobber",
+            "motion": "swing",
+            "weight": 3
+          },
+          {
+            "damage": 2.5,
+            "damageKind": "pierce",
+            "hitRegions": [
+              {
+                "region": "leftArm",
+                "weight": 3
+              },
+              {
+                "region": "rightArm",
+                "weight": 3
+              },
+              {
+                "region": "torso",
+                "weight": 2
+              },
+              {
+                "region": "head",
+                "weight": 1
+              }
+            ],
+            "id": "bite",
+            "motion": "wrestle",
+            "weight": 1
+          }
+        ],
+        "reach": 1.2,
+        "windupSimSeconds": 0.25
+      },
+      "canJumpObstacles": true,
+      "cause": "a runner",
+      "chaseMotion": {
+        "lurchSimSeconds": 0.69999999999999996,
+        "speedMultiplier": {
+          "max": 1.05,
+          "min": 0.84999999999999998
+        },
+        "stumbleChancePerSimSecond": 0.029999999999999999,
+        "stumbleDecelerationMetresPerSimSecondSquared": 14,
+        "stumbleDurationSimSeconds": {
+          "max": 0.75,
+          "min": 0.55000000000000004
+        },
+        "stumbleEaseSimSeconds": 0.20000000000000001,
+        "stumbleSpeedFraction": 0.040000000000000001,
+        "swayDegrees": 8,
+        "swayIntervalSimSeconds": {
+          "max": 1.2,
+          "min": 0.80000000000000004
+        }
+      },
+      "damageResistance": {
+        "acid": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blast": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "breach": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "crush": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "fragment": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
+      "dismember": {
+        "chance": 0.10000000000000001,
+        "headOnKillChance": 0.20000000000000001
+      },
+      "downed": {
+        "dismember": {
+          "level": 1,
+          "quality": "cutting",
+          "simSeconds": 15
+        },
+        "finishOff": {
+          "simSeconds": 3
+        }
+      },
+      "earHeightMetres": 1.3,
+      "eyeHeightMetres": 1.3,
+      "figure": "slim-humanoid",
+      "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
+      "id": "runner",
+      "jumpMetresPerSimSecond": 4.6760999999999999,
+      "loot": "shambler_pockets",
+      "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
+      "name": "Runner",
+      "regions": {
+        "head": 17.5,
+        "leftArm": 9,
+        "leftLeg": 9,
+        "rightArm": 9,
+        "rightLeg": 9,
+        "torso": 19
+      },
+      "severedImpulseScale": 1.3,
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
+      "severedSpurt": {
+        "droplets": 14,
+        "lifetimeRealSeconds": 4.5,
+        "partVelocityShare": 0.80000000000000004,
+        "speedMetresPerRealSecond": 5,
+        "spreadFraction": 1.5
+      },
+      "sounds": {
+        "alert": "runner_alert",
+        "attack": "runner_attack",
+        "hurt": "runner_hurt",
+        "idle": "runner_idle"
+      },
+      "spawnWeight": 0.12,
+      "speed": {
+        "chaseMetresPerSimSecond": 3.25,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
+        "wanderMetresPerSimSecond": 0.40000000000000002
+      },
+      "stepLength": 0.80000000000000004,
+      "strength": 4
+    },
+    {
+      "abilities": [],
+      "agent": {
+        "hearing": 0.5,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 5,
+          "sprint": 9,
+          "walk": 2
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "lightSightScale": 0.5,
+        "nightSight": 3.5,
+        "sight": 8,
+        "sightCone": 55,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
+      "attack": {
+        "cooldownSimSeconds": 1.7,
+        "grabBandMetres": 1.7,
+        "moves": [
+          {
+            "damage": 3,
+            "damageKind": "pierce",
+            "hitRegions": [
+              {
+                "region": "leftLeg",
+                "weight": 1
+              },
+              {
+                "region": "rightLeg",
+                "weight": 1
+              }
+            ],
+            "id": "bite",
+            "motion": "wrestle",
+            "weight": 1
+          }
+        ],
+        "reach": 1.2,
+        "windupSimSeconds": 0.40000000000000002
+      },
+      "canJumpObstacles": true,
+      "cause": "a crawler",
+      "chaseMotion": {
+        "lurchSimSeconds": 1,
+        "speedMultiplier": {
+          "max": 1,
+          "min": 0.69999999999999996
+        },
+        "stumbleChancePerSimSecond": 0.080000000000000002,
+        "stumbleDecelerationMetresPerSimSecondSquared": 14,
+        "stumbleDurationSimSeconds": {
+          "max": 0.75,
+          "min": 0.55000000000000004
+        },
+        "stumbleEaseSimSeconds": 0.20000000000000001,
+        "stumbleSpeedFraction": 0.040000000000000001,
+        "swayDegrees": 12,
+        "swayIntervalSimSeconds": {
+          "max": 1.2,
+          "min": 0.80000000000000004
+        }
+      },
+      "damageResistance": {
+        "acid": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blast": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "breach": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "crush": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "fragment": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
+      "dismember": {
+        "chance": 0.050000000000000003,
+        "headOnKillChance": 0.14999999999999999
+      },
+      "downed": {
+        "dismember": {
+          "level": 1,
+          "quality": "cutting",
+          "simSeconds": 15
+        },
+        "finishOff": {
+          "simSeconds": 3
+        }
+      },
+      "earHeightMetres": 1.3,
+      "eyeHeightMetres": 1.3,
+      "figure": "legless-humanoid",
+      "figureSeeds": [1, 2, 3, 5, 6, 7, 11],
+      "id": "crawler",
+      "jumpMetresPerSimSecond": 4.6760999999999999,
+      "loot": "shambler_pockets",
+      "model": "humanoid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
+      "name": "Crawler",
+      "regions": {
+        "head": 20,
+        "leftArm": 9,
+        "leftLeg": 5,
+        "rightArm": 9,
+        "rightLeg": 5,
+        "torso": 25
+      },
+      "severedImpulseScale": 1.3,
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
+      "severedSpurt": {
+        "droplets": 14,
+        "lifetimeRealSeconds": 4.5,
+        "partVelocityShare": 0.80000000000000004,
+        "speedMetresPerRealSecond": 5,
+        "spreadFraction": 1.5
+      },
+      "sounds": {
+        "alert": "crawler_alert",
+        "attack": "crawler_attack",
+        "hurt": "crawler_hurt",
+        "idle": "crawler_idle"
+      },
+      "spawnWeight": 0.080000000000000002,
+      "speed": {
+        "chaseMetresPerSimSecond": 0.55000000000000004,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
+        "wanderMetresPerSimSecond": 0.17499999999999999
+      },
+      "stepLength": 0.45000000000000001,
+      "strength": 3
+    },
+    {
+      "abilities": [],
+      "agent": {
+        "hearing": 0.5,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "lightSightScale": 0.5,
+        "nightSight": 5,
+        "sight": 12.5,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
+      "attack": {
+        "cooldownSimSeconds": 2.7999999999999998,
+        "moves": [
+          {
+            "damage": 11,
+            "damageKind": "blunt",
+            "hitRegions": [
+              {
+                "region": "torso",
+                "weight": 6
+              },
+              {
+                "region": "head",
+                "weight": 2
+              },
+              {
+                "region": "leftArm",
+                "weight": 1
+              },
+              {
+                "region": "rightArm",
+                "weight": 1
+              }
+            ],
+            "id": "tentacle_strike",
+            "motion": "thrust",
+            "weight": 1
+          }
+        ],
+        "reach": 2.2000000000000002,
+        "windupSimSeconds": 1
+      },
+      "authoredOnly": true,
+      "bodyScale": 4,
+      "canJumpObstacles": false,
+      "carving": {
+        "interiorColor": "#7a1e22",
+        "maxRadiusMetres": 0.75,
+        "radiusMetresPerDamage": 0.0023
+      },
+      "cause": "an amalgam",
+      "chaseMotion": {
+        "lurchSimSeconds": 1,
+        "speedMultiplier": {
+          "max": 1,
+          "min": 1
+        },
+        "stumbleChancePerSimSecond": 0,
+        "stumbleDecelerationMetresPerSimSecondSquared": 14,
+        "stumbleDurationSimSeconds": {
+          "max": 0.75,
+          "min": 0.55000000000000004
+        },
+        "stumbleEaseSimSeconds": 0.20000000000000001,
+        "stumbleSpeedFraction": 0.040000000000000001,
+        "swayDegrees": 0,
+        "swayIntervalSimSeconds": {
+          "max": 1.1000000000000001,
+          "min": 0.69999999999999996
+        }
+      },
+      "damageResistance": {
+        "acid": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blast": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "breach": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "crush": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "fragment": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
+      "dismember": {
+        "chance": 0.14999999999999999,
+        "headOnKillChance": 0.25
+      },
+      "earHeightMetres": 1.3,
+      "eyeHeightMetres": 1.3,
+      "id": "amalgam",
+      "jumpMetresPerSimSecond": 4.6760999999999999,
+      "locomotion": "omnidirectional",
+      "loot": "shambler_pockets",
+      "model": "fused-mass",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
+      "name": "Amalgam",
+      "regions": {
+        "core.trunk": 1200,
+        "member.head": 30,
+        "member.leftArm": 12,
+        "member.leftLeg": 12,
+        "member.rightArm": 12,
+        "member.rightLeg": 12,
+        "member.torso": 30
+      },
+      "severedImpulseScale": 1.3,
+      "severedItems": {
+        "core.trunk": null,
+        "member.head": null,
+        "member.leftArm": null,
+        "member.leftLeg": null,
+        "member.rightArm": null,
+        "member.rightLeg": null,
+        "member.torso": null
+      },
+      "severedSpurt": {
+        "droplets": 14,
+        "lifetimeRealSeconds": 4.5,
+        "partVelocityShare": 0.80000000000000004,
+        "speedMetresPerRealSecond": 5,
+        "spreadFraction": 1.5
+      },
+      "soundPitchMultiplier": 0.5,
+      "sounds": {
+        "alert": "amalgam_alert",
+        "attack": "amalgam_attack",
+        "hurt": "amalgam_hurt",
+        "idle": "amalgam_idle"
+      },
+      "spawnWeight": 1,
+      "speed": {
+        "chaseMetresPerSimSecond": 0.69999999999999996,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
+        "wanderMetresPerSimSecond": 0.125
+      },
+      "stepLength": 0.59999999999999998,
+      "strength": 0
+    },
+    {
+      "abilities": ["acidSpit"],
+      "acidBody": {
+        "charge": {
+          "charged": 2.5,
+          "idle": 0.5
+        },
+        "color": "#9ad21e",
+        "deathSplash": {
+          "droplets": 24,
+          "sizeMetres": 0.02,
+          "slowestSpeedFraction": 0.5,
+          "speedMetresPerRealSecond": 3.5
+        },
+        "drips": {
+          "perRealSecond": 1.5,
+          "sizeMetres": 0.012
+        },
+        "light": {
+          "intensity": 0.59999999999999998,
+          "radiusMetres": 3
+        }
+      },
+      "acidSpit": {
+        "cancelPenaltyFraction": 0.5,
+        "cooldownSimSeconds": 5,
+        "globMetresPerSimSecond": 21.924600000000002,
+        "moves": [
+          {
+            "damage": 6,
+            "damageKind": "acid",
+            "hitRegions": [
+              {
+                "region": "torso",
+                "weight": 5
+              },
+              {
+                "region": "head",
+                "weight": 2
+              },
+              {
+                "region": "leftArm",
+                "weight": 1
+              },
+              {
+                "region": "rightArm",
+                "weight": 1
+              }
+            ],
+            "id": "spit",
+            "weight": 1
+          }
+        ],
+        "presentation": {
+          "color": "#8bff32",
+          "radiusMetres": 0.080000000000000002,
+          "splashRadiusMetres": 0.29999999999999999,
+          "splashRealSeconds": 0.25
+        },
+        "puddle": {
+          "damageKind": "acid",
+          "damagePerSimSecond": 2,
+          "lifetimeSimSeconds": 8,
+          "radiusMetres": 0.80000000000000004
+        },
+        "rangeBand": {
+          "farMetres": 12,
+          "nearMetres": 4
+        },
+        "spreadDegrees": 4,
+        "windupSimSeconds": 1.2
+      },
+      "agent": {
+        "hearing": 0.5,
+        "hearingModel": {
+          "alertCooldownSimSeconds": 60,
+          "bearingErrorRadians": 0.60999999999999999,
+          "chainChance": 0.34999999999999998,
+          "chainRadiusMetres": 8,
+          "farMultiplier": 2,
+          "hesitationSimSeconds": {
+            "max": 5,
+            "min": 5
+          },
+          "investigationDistanceMetres": 8,
+          "loudNoiseRadiusMetres": 30,
+          "refusalLean": 0.75,
+          "refusalSuspicionSimSeconds": 20,
+          "searchRadiusMetres": 4,
+          "searchSimSeconds": {
+            "max": 50,
+            "min": 40
+          },
+          "searchStrollSimSeconds": {
+            "max": 3,
+            "min": 1
+          }
+        },
+        "hearingRange": {
+          "jog": 8,
+          "sprint": 15,
+          "walk": 3
+        },
+        "hordeSpacing": {
+          "innerMetres": 0.34999999999999998,
+          "stepMetres": 0.38
+        },
+        "idleSound": {
+          "density": {
+            "penaltyPerNeighbour": 0.25,
+            "radiusMetres": 8
+          },
+          "intervalSimSeconds": {
+            "max": 20,
+            "min": 8
+          }
+        },
+        "lightSightScale": 0.5,
+        "nightSight": 5,
+        "sight": 12.5,
+        "sightCone": 60,
+        "speed": {
+          "backgroundStepMetres": 1
+        },
+        "stimulusMemorySimSeconds": 180,
+        "wander": {
+          "bodyLookArcDegrees": 150,
+          "headLookArcDegrees": 100,
+          "idleSimSeconds": {
+            "max": 10,
+            "min": 3
+          },
+          "leashMetres": 12,
+          "lookIntervalSimSeconds": {
+            "max": 1.8,
+            "min": 0.80000000000000004
+          },
+          "obstacleWanderChance": 0.25,
+          "obstacleWanderDistanceMetres": 10,
+          "strollSimSeconds": {
+            "max": 12,
+            "min": 3
+          },
+          "wayAroundMinGainFraction": 0.25,
+          "wayAroundReachMetres": 2
+        }
+      },
+      "attack": {
+        "cooldownSimSeconds": 1.5,
+        "grabBandMetres": 1.7,
+        "moves": [
+          {
+            "damage": 4.5,
+            "damageKind": "blunt",
+            "hitRegions": [
+              {
+                "region": "torso",
+                "weight": 6
+              },
+              {
+                "region": "head",
+                "weight": 2
+              },
+              {
+                "region": "leftArm",
+                "weight": 1
+              },
+              {
+                "region": "rightArm",
+                "weight": 1
+              }
+            ],
+            "id": "clobber",
+            "motion": "swing",
+            "weight": 3
+          },
+          {
+            "damage": 2.5,
+            "damageKind": "pierce",
+            "hitRegions": [
+              {
+                "region": "leftArm",
+                "weight": 3
+              },
+              {
+                "region": "rightArm",
+                "weight": 3
+              },
+              {
+                "region": "torso",
+                "weight": 2
+              },
+              {
+                "region": "head",
+                "weight": 1
+              }
+            ],
+            "id": "bite",
+            "motion": "wrestle",
+            "weight": 1
+          }
+        ],
+        "reach": 1.2,
+        "windupSimSeconds": 0.29999999999999999
+      },
+      "authoredOnly": true,
+      "canJumpObstacles": true,
+      "cause": "an acid zombie",
+      "chaseMotion": {
+        "lurchSimSeconds": 1,
+        "speedMultiplier": {
+          "max": 1.2,
+          "min": 0.59999999999999998
+        },
+        "stumbleChancePerSimSecond": 0.16,
+        "stumbleDecelerationMetresPerSimSecondSquared": 14,
+        "stumbleDurationSimSeconds": {
+          "max": 0.75,
+          "min": 0.55000000000000004
+        },
+        "stumbleEaseSimSeconds": 0.20000000000000001,
+        "stumbleSpeedFraction": 0.040000000000000001,
+        "swayDegrees": 25,
+        "swayIntervalSimSeconds": {
+          "max": 1.1000000000000001,
+          "min": 0.69999999999999996
+        }
+      },
+      "damageResistance": {
+        "acid": {
+          "head": 1,
+          "leftArm": 1,
+          "leftLeg": 1,
+          "rightArm": 1,
+          "rightLeg": 1,
+          "torso": 1
+        },
+        "blast": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "breach": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "crush": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "fragment": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
+      "dismember": {
+        "chance": 0.14999999999999999,
+        "headOnKillChance": 0.25
+      },
+      "downed": {
+        "dismember": {
+          "level": 1,
+          "quality": "cutting",
+          "simSeconds": 15
+        },
+        "finishOff": {
+          "simSeconds": 3
+        }
+      },
+      "earHeightMetres": 1.3,
+      "eyeHeightMetres": 1.3,
+      "figureSeeds": [1, 2, 3, 4, 6, 8],
+      "footstepSound": "shambler",
+      "id": "acid_zombie",
+      "jumpMetresPerSimSecond": 4.6760999999999999,
+      "loot": "shambler_pockets",
+      "model": "acid",
+      "motion": {
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
+      "name": "Acid zombie",
+      "regions": {
+        "head": 30,
+        "leftArm": 12,
+        "leftLeg": 12,
+        "rightArm": 12,
+        "rightLeg": 12,
+        "torso": 30
+      },
+      "severedImpulseScale": 1.3,
+      "severedItems": {
+        "head": "shambler_head",
+        "leftArm": "shambler_left_arm",
+        "leftLeg": "shambler_left_leg",
+        "rightArm": "shambler_right_arm",
+        "rightLeg": "shambler_right_leg",
+        "torso": "shambler_torso"
+      },
+      "severedSpurt": {
+        "droplets": 14,
+        "lifetimeRealSeconds": 4.5,
+        "partVelocityShare": 0.80000000000000004,
+        "speedMetresPerRealSecond": 5,
+        "spreadFraction": 1.5
+      },
+      "sounds": {
+        "alert": "acid_zombie_alert",
+        "attack": "acid_zombie_attack",
+        "hurt": "acid_zombie_hurt",
+        "idle": "acid_zombie_idle"
+      },
+      "spawnWeight": 1,
+      "speed": {
+        "chaseMetresPerSimSecond": 1.3999999999999999,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
+        "wanderMetresPerSimSecond": 0.40000000000000002
+      },
+      "stagger": {
+        "durationSimSeconds": 0.80000000000000004,
+        "impulseThreshold": 12
+      },
+      "stepLength": 0.59999999999999998,
+      "strength": 5
+    }
+  ],
+  "dependencies": ["skelly.deadvox.actors"],
+  "id": "skelly.deadvox.beginner",
+  "overrides": [
+    {
+      "entry": "actors:shambler",
+      "pack": "skelly.deadvox.actors"
+    },
+    {
+      "entry": "actors:military_shambler",
+      "pack": "skelly.deadvox.actors"
+    },
+    {
+      "entry": "actors:farmer_shambler",
+      "pack": "skelly.deadvox.actors"
+    },
+    {
+      "entry": "actors:worker_shambler",
+      "pack": "skelly.deadvox.actors"
+    },
+    {
+      "entry": "actors:medic_shambler",
+      "pack": "skelly.deadvox.actors"
+    },
+    {
+      "entry": "actors:brute_shambler",
+      "pack": "skelly.deadvox.actors"
+    },
+    {
+      "entry": "actors:runner",
+      "pack": "skelly.deadvox.actors"
+    },
+    {
+      "entry": "actors:crawler",
+      "pack": "skelly.deadvox.actors"
+    },
+    {
+      "entry": "actors:amalgam",
+      "pack": "skelly.deadvox.actors"
+    },
+    {
+      "entry": "actors:acid_zombie",
+      "pack": "skelly.deadvox.actors"
+    }
+  ],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

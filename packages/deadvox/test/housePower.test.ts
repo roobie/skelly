@@ -18,6 +18,7 @@ import { createWorldSetup } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
+import { quietMesherSource } from './fixtures/quietMesherSource.ts';
 import { contentLookup, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 vi.mock('../src/game/streamer.ts', () => {
@@ -29,7 +30,7 @@ vi.mock('../src/game/streamer.ts', () => {
 const content = startupContent();
 const base = content.registry;
 const config = { ...makeConfig(7, 16, content), site: 'testHouse' };
-const setup = createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, base));
+const setup = createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, base), quietMesherSource());
 const house = setup.powerDevices;
 const kind = (device: PlacedPowerDevice) => base.powerDevices.get(base.furniture.get(device.type)!.power!.device)!.kind;
 const loads = house.filter((device) => kind(device) === 'consumer');

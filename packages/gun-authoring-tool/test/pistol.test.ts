@@ -1,6 +1,6 @@
-import { validate } from '@skelly/engine/assembly/validate.ts';
-import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/shapes/geometry.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
+import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '@skelly/construct/shapes/geometry.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { PISTOL_CROWN_LENGTH_U } from '../src/gun/parts.ts';

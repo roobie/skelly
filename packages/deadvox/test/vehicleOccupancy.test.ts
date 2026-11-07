@@ -1,7 +1,6 @@
 import { expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { worldSolid } from '../src/core/collision.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { settleCell } from '../src/core/itemThrow.ts';
@@ -13,6 +12,7 @@ import { projectVehicleParts, VehicleOccupancy } from '../src/core/vehicleProjec
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
 const registry = baseRegistry();
@@ -150,7 +150,7 @@ it('wires vehicle occupancy into session furniture placement and landing', () =>
   const aimed: Vec3 = [cell[0] + Math.floor(crate.size[0] / 2), cell[1], cell[2] + Math.floor(crate.size[2] / 2)];
 
   expect(session.furniturePlacement(aimed)).toEqual({
-    refusal: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.noRoom,
+    refusal: registry.ui.get(fixtureIds.ui)!.furnitureMoveMessages.noRoom,
   });
   expect(inventory.landing(cell)).toBeUndefined();
 

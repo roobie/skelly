@@ -1,0 +1,113 @@
+{
+  "models": [
+    {
+      "anchors": {
+        "strike": [0.42730000000034007, 0, 0]
+      },
+      "file": "assets/models/baseball_bat.glb",
+      "grip": {
+        "at": [-0.29999999999973997, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "baseball_bat",
+      "itemPresentation": {
+        "materials": ["wood"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "baseball_bat": {
+          "centreOfMass": [0.16811516120885597, -9.4789123663608247e-5, -8.7381092684569501e-5],
+          "massKg": 0.90000000000000002,
+          "node": "baseball_bat:bat"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "anchors": {
+        "strike": [0.22, 0, 0]
+      },
+      "file": "assets/models/kabar.glb",
+      "grip": {
+        "at": [-0.074999999999979999, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "forward",
+      "id": "kabar",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "kabar": {
+          "centreOfMass": [-0.011265993265993273, -0.00013973063973063976, -6.9023569023569088e-5],
+          "massKg": 0.29999999999999999,
+          "node": "kabar:knife"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "anchors": {
+        "edge": [0.200000000000044, -0.034000000000000002, 0],
+        "strike": [0.24400000000000002, -1.5994150448506161e-14, 0]
+      },
+      "file": "assets/models/machete.glb",
+      "grip": {
+        "at": [-0.20000000000005602, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "forward",
+      "id": "machete",
+      "itemPresentation": {
+        "materials": ["wood", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "machete": {
+          "centreOfMass": [-0.054441009320300077, -0.010371902705160264, -3.4098658786087779e-5],
+          "massKg": 0.55000000000000004,
+          "node": "machete:knife"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "anchors": {
+        "strike": [0.92699999999999205, 0, -0.10000000000000001]
+      },
+      "file": "assets/models/steel_pipe.glb",
+      "grip": {
+        "at": [0, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "steel_pipe",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "steel_pipe": {
+          "centreOfMass": [0.50986915470968708, 4.3119470671325572e-6, -0.004980298862538101],
+          "massKg": 1.8,
+          "node": "steel_pipe:steelPipe"
+        }
+      },
+      "roll": 0
+    }
+  ]
+}

@@ -1,9 +1,9 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Assembly, PortDef } from '@skelly/engine/assembly/schema.ts';
-import { applyPoint, cross, IDENTITY, sub } from '@skelly/engine/foundation/math.ts';
-import { worldSolid } from '@skelly/engine/shapes/geometry.ts';
-import { meshForSolid } from '@skelly/engine/shapes/mesh.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Assembly, PortDef } from '@skelly/construct/assembly/schema.ts';
+import { applyPoint, cross, IDENTITY, sub } from '@skelly/construct/foundation/math.ts';
+import { worldSolid } from '@skelly/construct/shapes/geometry.ts';
+import { meshForSolid } from '@skelly/construct/shapes/mesh.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES, M4_STOCK_GEOMETRY } from '../src/gun/parts.ts';

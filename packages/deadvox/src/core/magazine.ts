@@ -5,6 +5,7 @@ import type { ItemDef, ModelDef, Registry } from './content.ts';
 import {
   attachmentIdFor,
   compatibilityPairCertifies,
+  firearmSlotIds,
   footprintFitsRail,
   isExportedSingleFit,
   isLongGun,
@@ -15,6 +16,17 @@ import {
 } from './firearmFitting.ts';
 import type { Item } from './items.ts';
 import { militaryOnlyEconomy } from './loot.ts';
+
+export const knownItemSlot = (registry: Registry, type: string, slot: string): boolean => {
+  const def = registry.items.get(type);
+  return (
+    def !== undefined &&
+    ((slot === 'magazine' && magazineWellCalibre(registry, type) !== undefined) ||
+      (slot === 'battery' && def.light?.power !== undefined) ||
+      (slot === 'canister' && def.tool?.fuel !== undefined) ||
+      firearmSlotIds(registry, def).includes(slot))
+  );
+};
 
 export interface MagazineSpec {
   readonly calibre: string;
@@ -48,7 +60,7 @@ export const magazineFits = (registry: Registry, firearmType: string, magazineTy
 };
 
 export const militaryLootItems = (registry: Registry): ReadonlySet<string> =>
-  new Set([...registry.items.values()].filter((item) => militaryOnlyEconomy(item.economy)).map((item) => item.id));
+  new Set([...registry.itemEconomy.values()].filter(militaryOnlyEconomy).map((item) => item.id));
 
 interface FittedAttachment {
   readonly slotId: string;

@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import type { HordeState } from '../src/core/agentHorde.ts';
+import { perceivePlayer } from '../src/core/agentPerception.ts';
 import { SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -6,14 +8,13 @@ import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { SunExposureCache } from '../src/core/lights.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { skyAt, sunDirection } from '../src/core/sky.ts';
-import { type HordeState, perceivePlayer } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { physicsFor } from './playerFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const cycle = requireDayCycle(registry);
-const shambler = registry.zombies.get('shambler')!;
+const shambler = registry.actors.get('shambler')!;
 const scale = makeScale(0.5);
 const floor = (_x: number, y: number) => y === 0;
 const player = {
@@ -39,7 +40,7 @@ const phaseSamples = () => {
 
 const hordeModeAt = (time: number): HordeState['mode'] => {
   const state = dayPhaseAt(cycle, time);
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player: () => player,
     isSolid: floor,
     isOpaque: floor,
@@ -56,9 +57,9 @@ const hordeModeAt = (time: number): HordeState['mode'] => {
 
 describe('sun-owned day phases', () => {
   it('keeps sun exposure, sky, zombie sight, and spawn words on the authored solar phase', () => {
-    const zombie = { ...shambler, hearing: 0 };
-    expect(zombie.sight).toBeGreaterThan(zombie.nightSight);
-    const betweenRanges = (zombie.sight + zombie.nightSight) / 2;
+    const actor = { ...shambler, agent: { ...shambler.agent!, hearing: 0 } };
+    expect(actor.agent.sight).toBeGreaterThan(actor.agent.nightSight);
+    const betweenRanges = (actor.agent.sight + actor.agent.nightSight) / 2;
     const target: Vec3 = [betweenRanges / scale.blockSize, 1, 0];
     const dayLightIntensities: number[] = [];
     const nightLightIntensities: number[] = [];
@@ -83,7 +84,7 @@ describe('sun-owned day phases', () => {
       }
 
       const seesAtRange = perceivePlayer({
-        zombie,
+        def: actor,
         from: [0, 1, 0],
         facing: [1, 0, 0],
         player: { ...player, pos: target },
@@ -93,7 +94,7 @@ describe('sun-owned day phases', () => {
         isSolid: () => false,
         tuning: registry.senses.get('player')!,
       });
-      const sightRange = zombie.nightSight + (zombie.sight - zombie.nightSight) * state.sightBlend;
+      const sightRange = actor.agent.nightSight + (actor.agent.sight - actor.agent.nightSight) * state.sightBlend;
       expect(seesAtRange, `sight at ${time}`).toBe(sightRange >= betweenRanges);
     }
 
@@ -107,12 +108,13 @@ describe('sun-owned day phases', () => {
     }).filter(({ state }) => state.phase === 'dawn' || state.phase === 'dusk');
     const lowBlend = twilight.find(({ state }) => state.sightBlend > 0.3 && state.sightBlend < 0.5)!;
     const highBlend = twilight.find(({ state }) => state.sightBlend > 0.5 && state.sightBlend < 0.7)!;
-    const zombie = { ...shambler, hearing: 0 };
-    const rangeAt = (fraction: number) => zombie.nightSight + (zombie.sight - zombie.nightSight) * fraction;
+    const actor = { ...shambler, agent: { ...shambler.agent!, hearing: 0 } };
+    const rangeAt = (fraction: number) =>
+      actor.agent.nightSight + (actor.agent.sight - actor.agent.nightSight) * fraction;
     const seesAt = (distance: number, time: number) => {
       const state = dayPhaseAt(cycle, time);
       return perceivePlayer({
-        zombie,
+        def: actor,
         from: [0, 1, 0],
         facing: [1, 0, 0],
         player: { ...player, pos: [distance / scale.blockSize, 1, 0] },

@@ -1,4 +1,4 @@
-import { validate } from '@skelly/engine/assembly/validate.ts';
+import { validate } from '@skelly/construct/assembly/validate.ts';
 import { describe, expect, it } from 'vitest';
 import {
   type ActionFrame,

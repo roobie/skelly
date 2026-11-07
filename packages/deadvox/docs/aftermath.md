@@ -25,9 +25,9 @@ content that is checked. The checks cover each piece on its own, one compile of 
 (one choice per slot) and anchor routes through every alternative of every slot. They do not
 cover container reach or spawn clearance in each assembled alternative, so keep scenes inside
 the placement rules below, which hold for every alternative by construction. See
-`src/content/base/gauntlet-city-scenes.libsonnet`, `scenes` and `slot`;
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-scenes.libsonnet`, `scenes` and `slot`;
 `src/core/mapKit.ts`, `mapKitIssues`; `test/cityKitRoutes.test.ts`; and
-`src/content/base/aftermath.libsonnet`, `pieces` and `slot`, which offers disorder poses as
+`mods/skelly.deadvox.scenario.gauntlet.city/aftermath.libsonnet`, `pieces` and `slot`, which offers disorder poses as
 separate slots.
 
 Rules for placement, each with its reason:
@@ -83,7 +83,7 @@ refuses opening from that side while it opens from the other. The refusal is the
 ordinary door refusal. From the street the only way in is breaking the leaf with blows, the
 player's or a zombie's; damage short of that leaves the boarded side refusing and the other side
 opening, so boarding never becomes a wall or a free passage (`packages/deadvox/DESIGN.md`, "Base building and electricity").
-See `src/content/base/gauntlet-city-doors.libsonnet`, `furniture`; `src/core/blockEntities.ts`,
+See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-doors.libsonnet`, `furniture`; `src/core/blockEntities.ts`,
 `doorRefusal`; `test/locks.test.ts`, "boarded doors"; and `test/cityKitPlan.test.ts`,
 "gauntlet door openings".
 

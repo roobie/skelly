@@ -57,7 +57,7 @@ it('awards content-authored melee practice after a landed fist hit', () => {
     onRead: () => {
       throw new Error('Unexpected reading in melee training fixture');
     },
-    zombieEffects: {
+    actorEffects: {
       onMeleeResult: (result) => {
         landed = result.id !== undefined;
       },
@@ -66,7 +66,7 @@ it('awards content-authored melee practice after a landed fist hit', () => {
   const initialPractice = session.character.practice.melee_combat ?? 0;
   const initialLevel = session.character.skills.melee_combat ?? 0;
   const player = session.body.pos;
-  session.zombies.add(registry.zombies.get('shambler')!, [player[0], player[1], player[2] - 1], [0, 0, 1]);
+  session.actors.add(registry.actors.get('shambler')!, [player[0], player[1], player[2] - 1], [0, 0, 1]);
   const hands = { right: null, left: null };
 
   expect(

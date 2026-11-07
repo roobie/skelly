@@ -1,0 +1,8 @@
+{
+  "catalogueRows": [
+    {
+      "furniture": ["tutorial_cabinet", "tutorial_range_cabinet"],
+      "id": "tutorial_debug"
+    }
+  ]
+}

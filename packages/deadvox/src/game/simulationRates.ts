@@ -1,1 +1,1 @@
-export const ZOMBIE_RATE = 20;
+export const ACTIVE_ACTOR_RATE = 20;

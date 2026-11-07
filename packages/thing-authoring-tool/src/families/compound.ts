@@ -1,4 +1,4 @@
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import type { Solid } from '@skelly/construct/shapes/solid.ts';
 import {
   array,
   check,

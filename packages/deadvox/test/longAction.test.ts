@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { bookReadingHooks } from '../src/core/bookReading.ts';
 import { Character } from '../src/core/character.ts';
@@ -14,18 +12,13 @@ import { realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { stopReadingOnClose } from '../src/game/readingClose.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
-const baseContent = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
-  }));
+const baseContent = baseContentSources();
 const registry = baseRegistry();
 // Built once at load: a full registry build inside the test body pushed it past the test timeout under load.
 const readingFixtureRegistry = buildRegistry([
@@ -59,6 +52,7 @@ const readingFixtureRegistry = buildRegistry([
 ]).registry;
 const make = (
   saved?: {
+    character: ReturnType<Character['snapshotState']>;
     inventory: ReturnType<Inventory['snapshotState']>;
     simulation: ReturnType<Simulation['snapshotState']>;
     action: ReturnType<Simulation['actions']['snapshotState']>;
@@ -67,7 +61,7 @@ const make = (
 ) => {
   const inv = saved ? Inventory.restoreState(contentRegistry, saved.inventory) : new Inventory(contentRegistry);
   const sim = new Simulation({ seed: 1 });
-  const character = new Character(contentRegistry);
+  const character = saved ? Character.restoreState(contentRegistry, saved.character) : new Character(contentRegistry);
   const reach = bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK });
   sim.actions.craft = craftActionHooks(inv, character, reach, { feet: () => [0, 0, 0], calendar: () => sim.calendar });
   const light = { dark: false };
@@ -81,6 +75,7 @@ const make = (
 };
 const start = (contentRegistry: Registry = registry) => {
   const runtime = make(undefined, contentRegistry);
+  runtime.character.initializeProgression({}, ['torch']);
   for (const [type, count] of [
     ['stick', 1],
     ['rag', 2],
@@ -106,6 +101,7 @@ const start = (contentRegistry: Registry = registry) => {
   return { ...runtime, item, payload: item.work! };
 };
 const snapshot = (runtime: ReturnType<typeof make>) => ({
+  character: runtime.character.snapshotState(),
   inventory: runtime.inv.snapshotState(),
   simulation: runtime.sim.snapshotState(),
   action: runtime.sim.actions.snapshotState(),
@@ -114,6 +110,7 @@ const resultCount = (inv: Inventory) =>
   [...inv.items()].filter(({ item }) => item.type === 'torch').reduce((sum, { item }) => sum + item.count, 0);
 const startRepair = () => {
   const runtime = make();
+  runtime.character.initializeProgression({}, ['repair_crowbar']);
   const target = runtime.inv.create('crowbar');
   target.condition = 0.2;
   for (const [type, pos] of [

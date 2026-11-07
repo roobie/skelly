@@ -12,17 +12,17 @@ export interface LookAtProfile {
 export const LOOK_AT_PROFILES: Readonly<Record<string, LookAtProfile>> = {
   acid: data.gaze,
   skeleton: skeleton.gaze,
-  shambler: {
+  humanoid: {
     neck: { yawDeg: 25, pitchDeg: 20 },
     head: { yawDeg: 35, pitchDeg: 25 },
     turnRateDegPerSecond: 120,
   },
-  runner: {
+  'slim-humanoid': {
     neck: { yawDeg: 22, pitchDeg: 18 },
     head: { yawDeg: 34, pitchDeg: 24 },
     turnRateDegPerSecond: 140,
   },
-  crawler: {
+  'legless-humanoid': {
     neck: { yawDeg: 28, pitchDeg: 50 },
     head: { yawDeg: 38, pitchDeg: 42 },
     turnRateDegPerSecond: 110,
@@ -32,12 +32,12 @@ export const LOOK_AT_PROFILES: Readonly<Record<string, LookAtProfile>> = {
     head: { yawDeg: 34, pitchDeg: 34 },
     turnRateDegPerSecond: 130,
   },
-  brute: {
+  'broad-humanoid': {
     neck: { yawDeg: 20, pitchDeg: 16 },
     head: { yawDeg: 30, pitchDeg: 22 },
     turnRateDegPerSecond: 90,
   },
-  amalgam: {
+  'fused-mass': {
     neck: { yawDeg: 20, pitchDeg: 16 },
     head: { yawDeg: 30, pitchDeg: 22 },
     turnRateDegPerSecond: 90,

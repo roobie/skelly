@@ -1,0 +1,240 @@
+{
+  "dependencies": [
+    "skelly.deadvox.loot",
+    "skelly.inventory",
+    "skelly.manufactured-blocks",
+    "skelly.melee-classes",
+    "skelly.natural-world"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "actors-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "actors-sounds.json"
+    },
+    {
+      "kind": "content",
+      "path": "enemies.json"
+    },
+    {
+      "kind": "content",
+      "path": "footstep-sounds.json"
+    },
+    {
+      "kind": "content",
+      "path": "item-economy.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-actors.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_torso.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_head.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_left_arm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_right_arm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_left_leg.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_right_leg.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "exports/things.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-04.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-05.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-06.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-leaves-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-leaves-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-mud-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-mud-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-mud-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-mud-04.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-04.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-05.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-06.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-wood-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-wood-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-wood-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-alert-04.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-alert-05.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-alert-06.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-attack-07.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-attack-08.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-attack-09.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-hit-05.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-hit-06.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-hit-07.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-hurt-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-idle-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-idle-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-idle-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_head.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_left_arm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_left_leg.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_right_arm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_right_leg.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_torso.glb"
+    }
+  ],
+  "id": "skelly.deadvox.actors",
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

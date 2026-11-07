@@ -1,6 +1,6 @@
 import process from 'node:process';
 import { gunzipSync } from 'node:zlib';
-import { afterEach, expect, it, vi } from 'vitest';
+import { expect, it } from 'vitest';
 import { DEFAULT_MAX_PAYLOAD_BYTES, decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { columnArrival } from '../src/game/columnArrival.ts';
@@ -10,6 +10,7 @@ import { createWorldSetup, type WorldSetup } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { startupContent } from './baseRegistry.ts';
+import { quietMesherSource } from './fixtures/quietMesherSource.ts';
 
 // Save size and save time are held to these bounds against explored area (`DESIGN.md`, "Edits persist").
 // A failing bound is not fixed by raising a constant: the round that crosses it raises a BR card that
@@ -30,9 +31,7 @@ const BENCH_TIMEOUT_MS = 60_000;
 const TARGET_SIDE = Math.ceil(Math.sqrt(TARGET_EXPLORED_COLUMNS));
 
 // biome-ignore lint/style/noProcessEnv: timings are asserted only under the bench script.
-const benchmarking = process.env.DEADVOX_BENCH === '1';
-
-afterEach(() => vi.unstubAllGlobals());
+const benchmarking = process.env.SKELLY_BENCH === '1';
 
 const content = startupContent();
 const { registry } = content;
@@ -44,14 +43,8 @@ const version = {
 };
 
 const worldSetup = (): WorldSetup => {
-  vi.stubGlobal(
-    'Worker',
-    class {
-      postMessage = vi.fn();
-    },
-  );
   const config = configFromUrl(new URLSearchParams('site=city'), content);
-  return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry));
+  return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
 };
 
 const session = (source: WorldSetup, restore?: Readonly<SaveSnapshot>) =>

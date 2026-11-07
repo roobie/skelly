@@ -7,17 +7,27 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { scenarioCertificate, scenarioStartCertificate } from '../src/core/scenarioCertificate.ts';
 import { type StartDescent, scenarioStartIssues } from '../src/core/scenarioStart.ts';
+import type { StartDef } from '../src/core/schema/starts.ts';
 import { ContentFileSchema } from '../src/core/schema.ts';
+import { startIssues } from '../src/core/startIssues.ts';
 import { type BlockBox, stampChunk } from '../src/core/structure.ts';
 import { templateReachableStandingPositions } from '../src/core/templateSpatial.ts';
-import { gameHours } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 
 const registry = baseRegistry();
 const profile = [...registry.scenarios.values()].find((row) => row.composition)!;
 const grid = cityGridOf(registry, profile.city);
-const plan = buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile });
-const { start } = plan.composition!;
+const placement = defaultStartOf(registry, profile);
+const plan = buildCityPlan({
+  seed: 9,
+  registry,
+  floor: 64,
+  grid,
+  scenario: profile,
+  start: placement,
+});
+const start = plan.composition!.start!;
 const scale = makeScale(0.5);
 const obstruction = (at: Readonly<Vec3>) => ({
   min: at.map(Math.floor) as Vec3,
@@ -54,20 +64,20 @@ it('admits the authored roof spawn and keeps its reserved block inside the stree
   expect(scenarioPlanIssues(registry, profile)).toEqual([]);
   expect(start.spawn[1]).toBeGreaterThan(plan.floor + 1);
   expect(plan.spawn).toEqual(start.spawn);
-  const [cellX, cellZ] = profile.composition!.start.cell;
+  const [cellX, cellZ] = placement.cell;
   expect(plan.candidates.some(([x, z]) => x === cellX && z === cellZ)).toBe(false);
-  const { placement } = start;
-  expect(plan.placements).toContain(placement);
-  expect(placement.origin[0]).toBeGreaterThanOrEqual(plan.core.x0);
-  expect(placement.origin[2]).toBeGreaterThanOrEqual(plan.core.z0);
-  expect(placement.origin[0] + placement.template.size[0]).toBeLessThanOrEqual(plan.core.x1);
-  expect(placement.origin[2] + placement.template.size[2]).toBeLessThanOrEqual(plan.core.z1);
+  const built = start.placement;
+  expect(plan.placements).toContain(built);
+  expect(built.origin[0]).toBeGreaterThanOrEqual(plan.core.x0);
+  expect(built.origin[2]).toBeGreaterThanOrEqual(plan.core.z0);
+  expect(built.origin[0] + built.template.size[0]).toBeLessThanOrEqual(plan.core.x1);
+  expect(built.origin[2] + built.template.size[2]).toBeLessThanOrEqual(plan.core.z1);
 });
 
 it('keeps every start-storey container reachable from the roof through supported steps', () => {
   const { template } = start.placement;
   const reached = templateReachableStandingPositions(registry, template, {
-    entrance: profile.composition!.start.spawn,
+    entrance: placement.spawn,
   });
   expect(template.access!.storeys.length).toBeGreaterThan(0);
   for (const { floor } of template.access!.storeys) {
@@ -90,15 +100,41 @@ it('keeps every start-storey container reachable from the roof through supported
 });
 
 it('refuses start reservations that overlap authored lots or leave the street grid', () => {
-  const own = structuredClone(profile);
+  const own = structuredClone(placement);
   const cell = plan.candidates[0]!;
-  own.composition!.start.cell = [...cell];
-  expect(scenarioStartIssues(registry, own)).toEqual([]);
-  expect(() => buildCityPlan({ seed: 9, registry, floor: plan.floor, grid, scenario: own })).toThrow(
+  own.cell = [...cell];
+  expect(scenarioStartIssues(registry, profile, own)).toEqual([]);
+  expect(() => buildCityPlan({ seed: 9, registry, floor: plan.floor, grid, scenario: profile, start: own })).toThrow(
     'overlaps reserved building',
   );
-  own.composition!.start.cell = [grid.blocksX, grid.blocksZ];
-  expect(scenarioStartIssues(registry, own).some(([path]) => path === '.composition.start.cell')).toBe(true);
+  own.cell = [grid.blocksX, grid.blocksZ];
+  expect(scenarioStartIssues(registry, profile, own).some(([path]) => path === '.placement.cell')).toBe(true);
+});
+
+const startRow = [...registry.starts.values()].find((row) => row.defaultForSite && row.site === profile.id)!;
+const withStart = (row: StartDef) => ({ ...registry, starts: new Map([[row.id, row]]) });
+
+it('reports a misplaced start on its own start row, not on the scenario it starts on', () => {
+  const own = structuredClone(startRow);
+  own.placement!.cell = [grid.blocksX, grid.blocksZ];
+  const fixtures = withStart(own);
+  expect(startIssues(fixtures)).toContainEqual({
+    id: own.id,
+    path: '.placement.cell',
+    message: 'start cell must lie inside the street grid',
+  });
+  expect(scenarioPlanIssues(fixtures, profile)).toEqual([]);
+});
+
+it('requires a placement on every start of a composed scenario and refuses one elsewhere', () => {
+  const { placement: _placement, ...bare } = structuredClone(startRow);
+  expect(startIssues(withStart(bare)).filter(({ path }) => path === '.placement')).toEqual([
+    { id: bare.id, path: '.placement', message: expect.stringContaining(profile.id) },
+  ]);
+  const elsewhere = [...registry.starts.values()].find((row) => !registry.scenarios.get(row.site)?.composition)!;
+  expect(startIssues(withStart({ ...elsewhere, placement })).filter(({ path }) => path === '.placement')).toHaveLength(
+    1,
+  );
 });
 
 it('refuses a start overtopped by a fixed or pooled authored building', () => {
@@ -124,17 +160,16 @@ it('refuses a start overtopped by a fixed or pooled authored building', () => {
       mapAssemblies: new Map(registry.mapAssemblies).set(building.id, building),
       mapPools: new Map(registry.mapPools).set(pool.id, pool),
     };
-    const startIssues = () =>
-      scenarioStartIssues(fixtures, own).filter(([path]) => path === '.composition.start.template');
-    expect(startIssues()).toEqual([]);
+    const skyline = () =>
+      scenarioStartIssues(fixtures, own, placement).filter(([path]) => path === '.placement.template');
+    expect(skyline()).toEqual([]);
     building.size[1] = start.placement.template.size[1] + 1;
-    expect(startIssues().length).toBeGreaterThan(0);
+    expect(skyline().length).toBeGreaterThan(0);
   }
 });
 
 it('rejects an unsupported roof-route target without rejecting its reachable sibling', () => {
-  const own = structuredClone(profile);
-  const definition = own.composition!.start;
+  const definition = structuredClone(placement);
   const upper: Vec3 = [...definition.spawn];
   const unsupported: Vec3 = [upper[0], start.placement.template.size[1] - 1, upper[2]];
   const drop = (point: Vec3) => ({
@@ -146,9 +181,9 @@ it('rejects an unsupported roof-route target without rejecting its reachable sib
   });
   definition.descents = [drop(upper), drop(unsupported)];
   definition.minimumOpenDescents = 1;
-  const paths = scenarioStartIssues(registry, own).map(([path]) => path);
-  expect(paths).toContain('.composition.start.descents[1]');
-  expect(paths).not.toContain('.composition.start.descents[0]');
+  const paths = scenarioStartIssues(registry, profile, definition).map(([path]) => path);
+  expect(paths).toContain('.placement.descents[1]');
+  expect(paths).not.toContain('.placement.descents[0]');
 });
 
 for (const descent of start.descents) {
@@ -175,18 +210,19 @@ it('rejects a drop that would require walking on air before reaching its landing
 
 it('keeps a choice when one way down is blocked but rejects a single remaining exit', () => {
   const parsed = parse(ContentFileSchema, {
-    scenarios: [
+    starts: [
       {
-        ...profile,
-        outbreakAgeGameHours: profile.outbreakAgeGameHours / gameHours(1),
-        composition: {
-          ...profile.composition!,
-          start: { ...profile.composition!.start, minimumOpenDescents: undefined },
-        },
+        id: 'fixture_default_minimum',
+        site: profile.id,
+        placement: { ...placement, minimumOpenDescents: undefined },
+        kit: [],
+        wounds: [],
+        skills: {},
+        recipes: [],
       },
     ],
   });
-  const minimum = parsed.scenarios![0]!.composition!.start.minimumOpenDescents;
+  const minimum = parsed.starts![0]!.placement!.minimumOpenDescents;
   expect(start.descents.length).toBeGreaterThan(minimum);
   expect(minimum).toBeGreaterThan(1);
   expect(certificate(start.descents, minimum, start.descents.slice(0, 1)).issues).toEqual([]);

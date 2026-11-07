@@ -122,6 +122,28 @@ const cellsOfBox = function* ({ min, max }: ModelBox, blockSize: number): Iterab
   }
 };
 
+export const vehiclePartAt = (
+  registry: Registry,
+  vehicles: VehicleInstances,
+  blockSize: number,
+  cell: Readonly<Vec3>,
+): VehiclePartProjection | undefined => {
+  for (const [vehicleId, vehicle] of vehicles.records) {
+    for (const part of projectVehicleParts(registry, vehicleId, vehicle, blockSize)) {
+      if (
+        part.boxes.some(({ min, max }) =>
+          cell.every(
+            (value, axis) => value >= Math.floor(min[axis]! / blockSize) && value < Math.ceil(max[axis]! / blockSize),
+          ),
+        )
+      ) {
+        return part;
+      }
+    }
+  }
+  return undefined;
+};
+
 /** Physical cells derived from the same occupied fitting boxes as rendering and picking. */
 export function* vehicleCells(
   registry: Registry,

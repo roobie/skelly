@@ -12,6 +12,7 @@ import {
   decodeSave,
   readSaveVersionMetadata,
   type SaveContentKind,
+  type SaveVersionComponents,
   type SaveVersionIdentity,
   type SaveWorldIdentity,
   type SaveWorldOptions,
@@ -21,21 +22,17 @@ import { KNOWN_SCHEDULER_IDS } from '../core/schedulerIds.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
 import { type RealTimestamp, realTimestamp } from '../core/time.ts';
-import {
-  type SaveBackendPreference,
-  type SaveLoadResult,
-  SaveStorage,
-  type SaveStorageStatus,
-} from '../game/saveStorage.ts';
 import { SaveCorruptionError } from '../game/saveStorageProtocol.ts';
+import type { SaveBackendPreference, SaveLoadResult, SaveStorageStatus, SaveStore } from '../game/storageContract.ts';
+import { SaveStorage } from '../presentation/saveStorage.ts';
 import { CheckpointSchedule } from './checkpointSchedule.ts';
 import { factDetail } from './factDetail.ts';
 import { computeMenuState } from './menuState.ts';
 
 const BROWSER_MOD_DIFFERENCE_PREFIX = /^(Missing|Different|Additional) mod: browser\./;
-const CONTINUE_KEY = 'deadvox.continue-namespace';
-const RESTORE_REFUSAL_KEY = 'deadvox.restore-refusal';
-const DEAD_WORLD_KEY = 'deadvox.dead-world';
+const CONTINUE_KEY = 'skelly.continue-namespace';
+const RESTORE_REFUSAL_KEY = 'skelly.restore-refusal';
+const DEAD_WORLD_KEY = 'skelly.dead-world';
 
 export const contentLookup = (registry: Registry, kind: SaveContentKind, id: string, item?: ItemState): boolean => {
   switch (kind) {
@@ -51,10 +48,14 @@ export const contentLookup = (registry: Registry, kind: SaveContentKind, id: str
       return registry.furniture.has(id);
     case 'climbable':
       return Boolean(registry.furniture.get(id)?.climbable);
-    case 'zombie':
-      return registry.zombies.has(id);
+    case 'actor':
+      return registry.actors.has(id);
     case 'sound':
       return registry.sounds.has(id);
+    case 'damageKind':
+      return registry.damageKinds.has(id);
+    case 'meleeDamageKind':
+      return registry.damageKinds.get(id)?.class === 'melee';
     case 'scheduler':
       return KNOWN_SCHEDULER_IDS.has(id);
     case 'skill':
@@ -98,7 +99,7 @@ const versionLabel = (saved: Partial<SaveVersionIdentity> | undefined | null, te
 
 /** Title-screen discovery, checkpoint scheduling and lifecycle save triggers. */
 export class SaveController {
-  readonly storage: SaveStorage;
+  readonly storage: SaveStore;
   private readonly identity: Promise<SaveVersionIdentity> | undefined;
   private identityValue: SaveVersionIdentity | undefined;
   namespace = '';
@@ -158,8 +159,15 @@ export class SaveController {
   constructor(
     text: Pick<ScreenText, 'save' | 'menu'>,
     { backend = 'auto', savingEnabled = true }: { backend?: SaveBackendPreference; savingEnabled?: boolean } = {},
-    bundledMods: readonly ActiveBundledMod[] = [],
-    browserMods: readonly ActiveBrowserMod[] = [],
+    {
+      bundledMods = [],
+      browserMods = [],
+      folderPacks = [],
+    }: {
+      bundledMods?: readonly ActiveBundledMod[];
+      browserMods?: readonly ActiveBrowserMod[];
+      folderPacks?: SaveVersionComponents['contentPacks'];
+    } = {},
   ) {
     this.text = text.save;
     this.goLabels = text.menu;
@@ -168,7 +176,7 @@ export class SaveController {
     this.savingEnabled = savingEnabled;
     this.environmentProblem = savingEnabled ? saveEnvironmentProblem(text.save) : text.save.debugRun;
     if (!this.environmentProblem) {
-      this.identity = currentSaveVersionIdentity(bundledMods, browserMods);
+      this.identity = currentSaveVersionIdentity(bundledMods, browserMods, folderPacks);
     }
     // A debug run without saves still exports metrics that name its world and character.
     const canMintIds = !this.environmentProblem || this.environmentProblem === text.save.debugRun;
@@ -823,7 +831,7 @@ export class SaveController {
       );
       const link = $('save-download') as HTMLAnchorElement;
       link.href = url;
-      link.download = `deadvox-current-${this.namespace}.bin`;
+      link.download = `skelly-current-${this.namespace}.bin`;
       link.click();
       URL.revokeObjectURL(url);
       this.statusText = this.text.snapshotExported;
@@ -869,7 +877,7 @@ export class SaveController {
       );
       const link = $('save-download') as HTMLAnchorElement;
       link.href = url;
-      link.download = `deadvox-${this.namespace}-${slot}.bin`;
+      link.download = `skelly-${this.namespace}-${slot}.bin`;
       link.click();
       URL.revokeObjectURL(url);
     }

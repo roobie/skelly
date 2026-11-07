@@ -12,16 +12,16 @@ import {
 import type { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { expect, it, vi } from 'vitest';
+import graphics from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import { createBenchLightFixture } from '../src/bench/lightFixture.ts';
 import { benchDraw } from '../src/bench/post.ts';
-import graphics from '../src/content/base/graphics.json' with { type: 'json' };
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { NightVision } from '../src/core/schema.ts';
 import type { Sky } from '../src/core/sky.ts';
 import { realSeconds } from '../src/core/time.ts';
-import type { RenderedEngine } from '../src/game/engine.ts';
+import type { RenderedEngine } from '../src/presentation/engine.ts';
 import { Mood } from '../src/render/mood.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const owner = vi.hoisted(() => ({
   composers: [] as {
@@ -94,7 +94,7 @@ it('measures the night-vision chain and source occlusion/halos with the play-def
   const goggles = items.get('night_vision_goggles')!;
   items.set(goggles.id, { ...goggles, light: { ...goggles.light!, nightVision: GOGGLES } });
   const look = new Map(base.look);
-  const defaults = look.get(CORE_CONTENT_IDS.coreLook)!;
+  const defaults = look.get(fixtureIds.defaultLook)!;
   look.set(defaults.id, { ...defaults, tone: 'none', post: false });
   const engine = {
     renderer,

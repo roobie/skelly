@@ -1,4 +1,4 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
 import { describe, expect, it } from 'vitest';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';

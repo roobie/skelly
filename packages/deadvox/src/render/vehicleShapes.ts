@@ -1,6 +1,7 @@
 import { BufferAttribute, BufferGeometry, Sphere, Vector3 } from 'three';
-import type { FromMesher, ToMesher } from '../worker/protocol.ts';
-import { buildShape, type PartData, type ShapeData } from './vehicleShape.ts';
+import type { FromMesher, ToMesher } from '../game/mesherProtocol.ts';
+import type { PartData, ShapeData } from '../vehicles/shapeData.ts';
+import { buildShape } from './vehicleShape.ts';
 
 /** A shape's uncoloured geometry beside the quad materials that colour it. */
 export interface Part {

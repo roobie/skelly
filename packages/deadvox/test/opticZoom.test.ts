@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Item } from '../src/core/items.ts';
 import type { ItemDef, ModelDef } from '../src/core/schema.ts';
-import { OpticZoom } from '../src/game/opticZoom.ts';
+import { OpticZoom } from '../src/presentation/opticZoom.ts';
 
 const fixture = (rememberPerWeapon = true, fixed = false) => {
   const range = { min: 2, max: fixed ? 2 : 7.3 };
@@ -11,9 +11,7 @@ const fixture = (rememberPerWeapon = true, fixed = false) => {
     id: 'fixture_optic',
     name: 'Fixture optic',
     category: 'misc',
-    economy: { usage: [], tiers: [] },
     workInProgress: false,
-    notLoot: false,
     weight: 1,
     size: [1, 1],
     model: 'fixture_optic_model',

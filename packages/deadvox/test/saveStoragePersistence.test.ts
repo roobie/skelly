@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { SaveStorage } from '../src/game/saveStorage.ts';
+import { SaveStorage } from '../src/presentation/saveStorage.ts';
 
 afterEach(() => vi.unstubAllGlobals());
 

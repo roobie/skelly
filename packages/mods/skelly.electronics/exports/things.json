@@ -1,0 +1,50 @@
+[
+  {
+    "id": "field_patch",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "field_patch",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "dead_desk_lamp",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "dead_desk_lamp",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "copper_wire",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "copper_wire",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "fuse",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "fuse",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  }
+]

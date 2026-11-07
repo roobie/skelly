@@ -6,7 +6,7 @@ import type {
   PortDef,
   Resolved,
   Rule,
-} from '@skelly/engine/assembly/schema.ts';
+} from '@skelly/construct/assembly/schema.ts';
 import {
   applyDir,
   applyPoint,
@@ -16,9 +16,9 @@ import {
   length,
   sub,
   type Vec3,
-} from '@skelly/engine/foundation/math.ts';
-import { boxFromMinMax, worldSolid } from '@skelly/engine/shapes/geometry.ts';
-import type { ClipPlane, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+} from '@skelly/construct/foundation/math.ts';
+import { boxFromMinMax, worldSolid } from '@skelly/construct/shapes/geometry.ts';
+import type { ClipPlane, Solid, Vec2 } from '@skelly/construct/shapes/solid.ts';
 
 import { mmToU } from './units.ts';
 

@@ -10,13 +10,11 @@ import {
 } from '../src/bench/post.ts';
 import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { DEFAULT_WEATHERING_PROFILE_ID } from '../src/core/weather.ts';
-import type { StartupContent } from '../src/game/bundledContent.ts';
 import { makeConfig } from '../src/game/config.ts';
-import type { RenderedEngine } from '../src/game/engine.ts';
+import type { RenderedEngine } from '../src/presentation/engine.ts';
 import { heightFogUniforms, setHeightFogTuning } from '../src/render/heightFog.ts';
 import { baseRegistry, startupContent } from './baseRegistry.ts';
+import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 
 const params = (query: string) => new URLSearchParams(query);
@@ -25,9 +23,9 @@ const registry = baseRegistry();
 
 describe('benchmark weathering', () => {
   it('uses its own registry profile, not the play default, so retuning the default leaves the bench workload alone', () => {
-    const config = makeConfig(1, 64, { registry } as unknown as StartupContent);
+    const config = makeConfig(1, 64, { ...startupContent(), registry });
     applyBenchWeathering(config);
-    expect(config.weatheringProfileId).not.toBe(DEFAULT_WEATHERING_PROFILE_ID);
+    expect(config.weatheringProfileId).not.toBe(defaultWeatheringId);
     expect(config.weathering).toBeDefined();
     expect(config.weathering).toEqual(registry.weathering.get(config.weatheringProfileId));
   });
@@ -73,9 +71,12 @@ describe('benchmark post-processing option', () => {
 
   it.each([false, true])('initializes authored fog independently of prior play with post=%s', (post) => {
     const { registry: contentRegistry } = startupContent();
-    const look = contentRegistry.look.get(CORE_CONTENT_IDS.coreLook)!;
+    const look = contentRegistry.look.get(fixtureIds.defaultLook)!;
     const fog = LOOK_FIXTURE.heightFog;
-    const fixtureRegistry = { ...contentRegistry, look: new Map([[look.id, { ...LOOK_FIXTURE, id: look.id }]]) };
+    const fixtureRegistry = {
+      ...contentRegistry,
+      look: new Map([[look.id, { ...LOOK_FIXTURE, id: look.id, capability: 'defaultLook' }]]),
+    };
     setHeightFogTuning({ baseMetres: fog.baseMetres + 1, scaleMetres: fog.scaleMetres * 2 });
     const engine = {
       registry: fixtureRegistry,

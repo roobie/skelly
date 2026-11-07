@@ -128,7 +128,7 @@ describe('furniture', () => {
     const expected =
       def.container!.pockets[0]!.handlingSimSeconds +
       inv.pocketHandling(hoodie, 0) +
-      2 * handlingWeights(registry).perCell * cells;
+      2 * handlingWeights(registry).perCellSimSeconds * cells;
     expect(plan.ok && plan.time).toBeCloseTo(expected);
   });
 

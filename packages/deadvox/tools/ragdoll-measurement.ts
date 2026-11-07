@@ -1,10 +1,10 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen is a workspace source alias.
-import { crawlerPose } from '@mobgen/mob/crawler.ts';
+import { crawlPose } from '@mobgen/mob/crawl.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
-import graphics from '../src/content/base/graphics.json' with { type: 'json' };
-import inventory from '../src/content/base/inventory.json' with { type: 'json' };
-import player from '../src/content/base/player.json' with { type: 'json' };
-import { zombieFigure } from '../src/core/zombieFigure.ts';
+import player from '../../mods/skelly.body/player.json' with { type: 'json' };
+import graphics from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
+import inventory from '../../mods/skelly.inventory/inventory.json' with { type: 'json' };
+import { actorFigure } from '../src/core/actorFigure.ts';
 import { initializeRagdollPhysics, RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
 
 interface Sample {
@@ -30,14 +30,14 @@ export async function measureRagdolls() {
   const samples: Sample[] = [];
   for (const model of ragdollContent.sweep.models) {
     for (const constrained of [false, true]) {
-      const figure = zombieFigure({ model }, seed).realized;
+      const figure = actorFigure({ model }, seed).realized;
       const world = new RagdollWorld(player.player[0]!.gravityMetresPerSimSecondSquared);
       try {
         const corpses = Array.from({ length: maxCorpses }, (_, index) =>
           world.spawn({
             realized: figure,
             model,
-            pose: model === 'crawler' ? crawlerPose(figure) : { root: [0, 0, 0], rotations: {} },
+            pose: model === 'legless-humanoid' ? crawlPose(figure) : { root: [0, 0, 0], rotations: {} },
             excluded: new Set(
               [
                 ...severedBoneSet(

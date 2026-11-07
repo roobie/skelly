@@ -2,11 +2,11 @@
 // stock, monopod). They import only from core: parts.ts registers these families, so importing parts.ts
 // from here would make a cycle. Numbers are in u and sit on the 0.25u grid unless a comment says otherwise.
 
-import type { ParamSpec } from '@skelly/engine/assembly/schema.ts';
-import { SIZE_CLASSES, type SizeClass } from '@skelly/engine/foundation/conventions.ts';
-import type { Vec3 } from '@skelly/engine/foundation/math.ts';
-import { boxFromMinMax } from '@skelly/engine/shapes/geometry.ts';
-import type { BoxSolid, Solid, SolidDisplayHints, SolidFinish, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import type { ParamSpec } from '@skelly/construct/assembly/schema.ts';
+import { SIZE_CLASSES, type SizeClass } from '@skelly/construct/foundation/conventions.ts';
+import type { Vec3 } from '@skelly/construct/foundation/math.ts';
+import { boxFromMinMax } from '@skelly/construct/shapes/geometry.ts';
+import type { BoxSolid, Solid, SolidDisplayHints, SolidFinish, Vec2 } from '@skelly/construct/shapes/solid.ts';
 import physical from '../physical.json' with { type: 'json' };
 
 export const X: Vec3 = [1, 0, 0];

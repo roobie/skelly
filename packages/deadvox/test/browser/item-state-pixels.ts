@@ -2,6 +2,8 @@ import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { buildRegistry } from '../../src/core/content.ts';
 import { ItemFactory, snapshotItem } from '../../src/core/items.ts';
+import { BindingRegistry } from '../../src/game/bindingRegistry.ts';
+import { INPUT_BINDINGS } from '../../src/product/controls.ts';
 import { ItemPictures } from '../../src/render/itemPictures.ts';
 import { ModelLibrary } from '../../src/render/models.ts';
 import { ItemViewer } from '../../src/ui/itemViewer.ts';
@@ -99,8 +101,6 @@ export const statePixelFixture = async () => {
             name: 'Pixel',
             category: 'misc',
             workInProgress: false,
-            notLoot: false,
-            economy: { usage: [], tiers: [] },
             weight: 1,
             size: [1, 1],
             model: 'pixel',
@@ -140,7 +140,7 @@ export const statePixelFixture = async () => {
       zoomMin: 0.5,
       zoomMax: 2,
     }),
-    () => 'Close',
+    { closeText: () => 'Close', bindings: new BindingRegistry(INPUT_BINDINGS) },
   );
   const factory = new ItemFactory();
   return {

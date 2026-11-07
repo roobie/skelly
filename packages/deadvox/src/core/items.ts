@@ -3,8 +3,8 @@
 // items stack up to their type's limit.
 
 import { assertBatteryEnergy, batteryFields } from './battery.ts';
+import { claimed } from './capabilities.ts';
 import type { ItemDef, ModelDef, Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { RecoveryOperation } from './disassembly.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
@@ -15,7 +15,7 @@ import {
   initialFoodExposure,
   projectFoodExposure,
 } from './food.ts';
-import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
+import { type LiquidAmount, type LiquidRecoveryChoices, vesselAccepts } from './liquids.ts';
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
@@ -126,8 +126,8 @@ export interface ItemFields<Node> {
   work?: CraftWork<Node> | undefined;
 }
 
-/** Holding a zombie by id, or the player when `zombie` is absent. */
-export type TrapState = { state: 'armed' } | { state: 'holding'; zombie?: number; remainingSimSeconds: number };
+/** Holding an actor by id, or the player when `actor` is absent. */
+export type TrapState = { state: 'armed' } | { state: 'holding'; actor?: number; remainingSimSeconds: number };
 
 type ItemSlots<Node> = Record<string, Node>;
 
@@ -279,7 +279,7 @@ const assertSavedTrap = (def: ItemDef, state: ItemState): void => {
     (Number.isFinite(trap.remainingSimSeconds) &&
       trap.remainingSimSeconds > 0 &&
       trap.remainingSimSeconds <= (def.trap?.holdSimSeconds ?? 0) &&
-      (trap.zombie === undefined || Number.isSafeInteger(trap.zombie)));
+      (trap.actor === undefined || Number.isSafeInteger(trap.actor)));
   if (!(def.trap && state.count === 1 && holdValid)) {
     throw new Error('Invalid saved trap state');
   }
@@ -377,7 +377,7 @@ export const assertSavedLiquidContents = (registry: Registry, state: ItemState):
       (contents.kind === 'filled' &&
         Object.keys(contents).length === 3 &&
         registry.liquids.has(contents.liquid) &&
-        vessel.accepts.includes(contents.liquid) &&
+        vesselAccepts(vessel, contents.liquid) &&
         Number.isSafeInteger(contents.volumeMicrolitres) &&
         contents.volumeMicrolitres > 0 &&
         contents.volumeMicrolitres <= vessel.capacityMicrolitres));
@@ -708,6 +708,20 @@ const assertAmmunition = (registry: Registry, type: string, state: FirearmState)
   assertIntegralAmmunition(registry, revolverModel, state);
 };
 
+export const setInitialCylinder = (
+  registry: Registry,
+  item: Item,
+  cylinder: NonNullable<FirearmState['cylinder']>,
+): void => {
+  if (!item.firearm?.cylinder || item.count !== 1) {
+    throw new Error('Initial cylinder needs one revolver');
+  }
+  const state = { ...item.firearm, cylinder: structuredClone(cylinder) };
+  assertFirearmState(state);
+  assertAmmunition(registry, item.type, state);
+  item.firearm = state;
+};
+
 /** Width and height in cells, as placed. */
 export const footprint = (def: ItemDef, rotated: boolean): [number, number] =>
   rotated ? [def.size[1], def.size[0]] : [def.size[0], def.size[1]];
@@ -733,13 +747,13 @@ export const craftComponentEligible = (item: Item, consumeFitted = false): boole
 
 /** Condition as a word, from the content band table (`DESIGN.md`, "The item model"). */
 export const conditionWord = (registry: Registry, condition: number): string => {
-  const bands = registry.inventory.get(CORE_CONTENT_IDS.player)!.conditionBands;
+  const bands = claimed(registry.inventory, 'player')!.conditionBands;
   return (bands.findLast((band) => band.from <= condition) ?? bands[0]!).word;
 };
 
 /** The band word for a condition below the top band; a thing in the top band reads by its plain name. */
 export const damageWord = (registry: Registry, condition: number): string | undefined => {
-  const bands = registry.inventory.get(CORE_CONTENT_IDS.player)!.conditionBands;
+  const bands = claimed(registry.inventory, 'player')!.conditionBands;
   return condition < bands.at(-1)!.from ? conditionWord(registry, condition) : undefined;
 };
 
@@ -868,7 +882,7 @@ export const findSpot = (
       size: grid.size,
       placed: [...grid.placed.filter((placed) => placed.item !== ignore), { item, ...spot }],
     });
-  const threshold = registry.inventory.get(CORE_CONTENT_IDS.player)!.autoPlacementTallMinFreeAreaGainCells;
+  const threshold = claimed(registry.inventory, 'player')!.autoPlacementTallMinFreeAreaGainCells;
   // Remove the empty-grid aspect-ratio bias before crediting packing beside other items.
   const gain = remaining(tall) - remaining(wide) - (emptyRemaining(tall.rotated) - emptyRemaining(wide.rotated));
   return gain > threshold ? tall : wide;

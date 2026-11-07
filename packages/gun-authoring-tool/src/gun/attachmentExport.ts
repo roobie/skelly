@@ -1,5 +1,5 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Assembly, PartAppearance, PartFamily } from '@skelly/engine/assembly/schema.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Assembly, PartAppearance, PartFamily } from '@skelly/construct/assembly/schema.ts';
 import { drawnGeometry } from '@skelly/thing-export/drawn.ts';
 import type { GlbAssetIdentity, GlbExportError, VoxelGrains } from '@skelly/thing-export/exportTypes.ts';
 import { modelCollision } from '@skelly/thing-export/physical.ts';

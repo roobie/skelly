@@ -1,0 +1,30 @@
+(import 'tools/jsonnet/lib/item-presentation.libsonnet')(
+  import 'presentation/item-materials.json',
+  overrides={
+    riot_helmet_view: ['glass', 'polymer'],
+    stab_vest: ['cloth', 'cloth'],
+    hoodie: ['cloth', 'polymer'],
+    jacket: ['cloth', 'polymer'],
+    jeans: ['cloth'],
+    rubber_boots: ['polymer', 'polymer'],
+    school_backpack: ['cloth', 'polymer'],
+    school_backpack_worn: ['cloth', 'polymer', 'polymer'],
+    school_backpack_worn_jacket: ['cloth', 'polymer', 'polymer'],
+    fanny_pack: ['cloth', 'polymer'],
+    fanny_pack_worn: ['cloth', 'polymer'],
+    fanny_pack_worn_jacket: ['cloth', 'polymer'],
+    utility_vest: ['cloth', 'polymer'],
+    utility_vest_worn: ['cloth', 'cloth'],
+    utility_vest_worn_jacket: ['cloth', 'cloth'],
+    stab_vest_worn: ['cloth', 'polymer'],
+    stab_vest_worn_jacket: ['cloth', 'polymer'],
+    worn_hoodie_body: ['cloth', 'polymer'],
+    worn_hoodie_fore: ['cloth', 'polymer'],
+    worn_hoodie_upper: ['cloth'],
+  },
+).pack({
+  models: [
+    { id: 'stab_vest', file: 'assets/models/stab_vest.glb' },
+    { id: 'riot_helmet_view', file: 'assets/models/riot_helmet_view.glb' },
+  ] + (import 'things/index.json'),
+})

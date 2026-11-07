@@ -1,6 +1,6 @@
 // A stock-wrist long gun with made-up dimensions, so a test can read the authored hold rule back through the held
 // frame without pinning any shipped gun's numbers.
-local longGunHands = import 'packages/deadvox/src/content/base/long-gun-hands.libsonnet';
+local longGunHands = import 'packages/mods/skelly.firearms/long-gun-hands.libsonnet';
 
 longGunHands(
   {

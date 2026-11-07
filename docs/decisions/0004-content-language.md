@@ -4,7 +4,7 @@ read_if:
   - you're asking why mod and event rules use restricted CEL rather than a scripting language
   - you're modelling a scripted sequence of events, such as a panel that opens a door
   - you're designing deterministic functions or the engine-to-mod boundary
-  - you're assessing what the CEL spike evidence does not prove
+  - you're building the engine's CEL implementation
   - "you're taking up the mod-content work in #313 or #393"
   - you're asking why a mod may change a core tuning value
   - you're designing mod triggers, randomness, effects, state, composition, field patches or UI
@@ -23,7 +23,7 @@ Content and tuning belong in schema-validated mods, while exact mechanisms stay 
 
 Mod and event rules use restricted CEL inside a typed rule envelope, and no scripting language is admitted. The envelope is Jsonnet data: a trigger, an optional condition and a list of engine effects. CEL fills only the condition and the effect arguments. It cannot sequence, loop or mutate, so the engine keeps scheduling, state, randomness and effects, as the mod rules below require. A maintained runtime supplies parsing, type checking and evaluation without making a new language an engine maintenance obligation. A mod-facing rule may describe a consequence, but cannot mutate state outside the engine's validated boundary.
 
-A scripting language would cost more for less. The Luau and Starlark candidates were safe only under a profile that removed stateful statements and unbounded work, which leaves expressions inside a larger runtime. Their published bindings expose no static analyzer, so a type mistake surfaces when a rule is evaluated during play, while CEL's checker reports typed diagnostics against authored source at load. See `packages/deadvox/src/spikes/expressions/README.md`, "Published runtime boundary", and `packages/deadvox/src/spikes/expressions/README.md`, "CEL mod boundary".
+A scripting language would cost more for less. The Luau and Starlark candidates were safe only under a profile that removed stateful statements and unbounded work, which leaves expressions inside a larger runtime. Their published bindings expose no static analyzer, so a type mistake surfaces when a rule is evaluated during play, while CEL's checker reports typed diagnostics against authored source at load. See `packages/deadvox/src/spikes/expressions/README.md`, "Published runtime boundary".
 
 The guard boundary around CEL is owned engine code: checked arithmetic through a rewrite, rejection of any expression the serializer cannot reproduce, a failure latch for callback errors that CEL's logical operators would otherwise recover from, and structural work reservation in place of an instruction counter. It relies on the pinned package's public parser and serializer, so a package upgrade re-proves the guards. Authors lose a valid expression that cannot survive the serializer, which is safer than silently changing it.
 
@@ -37,9 +37,11 @@ Every mod uses the same override rules, including core-tier providers. One rule 
 
 The game and the modding framework own save compatibility, and a mod has no say in it, so a save whose mod state no longer matches is refused like any pack mismatch; see `packages/deadvox/docs/decisions/0002-saves.md`, "Compatibility".
 
-The production profile starts from the spike's mod profile: flat aggregates, no nested traversal macros, author operator syntax with every intermediate result checked, and bounded synchronous host callbacks. A failure that disappears inside a predicate makes final-result validation insufficient, and termination rests on these exclusions rather than on a fuel meter, so widening the profile reopens its termination proof. The mod profile stays separate from the spike's scalar comparison profile. A general integer-to-double conversion policy for effects and comparisons, the engine helper vocabulary and its version policy remain open in #313; the spike's reuse evidence chooses no library version solving or global patching; see `packages/deadvox/src/spikes/expressions/README.md`, "Exercised, not chosen".
+CEL is the engine expression language, and the engine builds its CEL implementation fresh. The mod-rule spike was shaped for the old mod path, so it is deleted rather than seeded into the engine; git history keeps it as evidence.
 
-Representative engine contracts exercise a MoM-shaped rule layer, not a port of its world mechanics. No harness policy adopts a choice for the game; the rules below do.
+The production profile admits flat aggregates, no nested traversal macros, author operator syntax with every intermediate result checked, and bounded synchronous host callbacks. A failure that disappears inside a predicate makes final-result validation insufficient, and termination rests on these exclusions rather than on a fuel meter, so widening the profile reopens its termination proof. A general integer-to-double conversion policy for effects and comparisons, the engine helper vocabulary and its version policy remain open in #313.
+
+Engine contracts serve a MoM-shaped rule layer, not a port of its world mechanics; the rules below set its choices.
 
 ## Mod rules
 

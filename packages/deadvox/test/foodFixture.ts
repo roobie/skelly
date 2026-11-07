@@ -9,8 +9,6 @@ export const fixtureFood: ItemDef = {
   size: [1, 1],
   stack: 10,
   workInProgress: false,
-  notLoot: false,
-  economy: { usage: [], tiers: [] },
   food: {
     calories: 10,
     water: 2,

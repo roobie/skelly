@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import type { Registry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { coreMessage } from '../src/core/coreText.ts';
 import type { Item } from '../src/core/items.ts';
@@ -19,6 +18,7 @@ import {
   type ReplayActionPayload,
 } from '../src/game/replayCommands.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import {
   blockId,
   capture,
@@ -138,7 +138,7 @@ const fixture = (registry = fixtureRegistry()) => {
 describe('placement-carrying vehicle commands', () => {
   it('keeps one owner through a player-installed plate chain and refuses removing its occupied support', () => {
     const registry = fixtureRegistry();
-    const cell = registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres;
+    const cell = registry.inventory.get(fixtureIds.player)!.cellMetres;
     const items = new Map(registry.items);
     const plate = items.get('mounting_plate')!;
     items.set(plate.id, {
@@ -236,7 +236,7 @@ describe('placement-carrying vehicle commands', () => {
   });
   it('moves a factory cargo item to another legal cell through work with exactly one owner and removes it again', () => {
     const registry = fixtureRegistry();
-    const cell = registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres;
+    const cell = registry.inventory.get(fixtureIds.player)!.cellMetres;
     const items = new Map(registry.items);
     const models = new Map(registry.models);
     const floor = items.get('car_battery')!;

@@ -1,0 +1,8 @@
+{
+  "assets/models/antibiotics.glb": { "materials": ["plastic-white", "plastic-blue"] },
+  "assets/models/antiseptic.glb": { "materials": ["paperboard-brown", "plastic-red", "plastic-white"] },
+  "assets/models/bandage.glb": { "materials": ["plastic-white", "paperboard-tan"] },
+  "assets/models/codeine.glb": { "materials": ["paperboard-brown", "plastic-blue", "plastic-white"] },
+  "assets/models/morphine.glb": { "materials": ["glass-grey", "plastic-blue", "plastic-white"] },
+  "assets/models/painkillers.glb": { "materials": ["plastic-white", "plastic-red"] }
+}

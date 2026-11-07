@@ -1,6 +1,14 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { assetFileIssues, modelFileIssues, validateManifest } from '../src/core/assets.ts';
+import { bundledCredits } from '../src/bundledCredits.ts';
+import {
+  assetFileIssues,
+  type Manifest,
+  mergeManifests,
+  modelFileIssues,
+  validateManifest,
+} from '../src/core/assets.ts';
 import { buildRegistry } from '../src/core/content.ts';
 
 const source = (fields: Record<string, unknown> = {}) => ({
@@ -17,9 +25,29 @@ const source = (fields: Record<string, unknown> = {}) => ({
 const check = (...sources: unknown[]) => validateManifest('manifest.json', { sources });
 
 describe('asset manifest', () => {
-  it('the base manifest has no issues', () => {
-    const data = JSON.parse(readFileSync('src/content/base/assets/manifest.json', 'utf8')) as unknown;
-    expect(validateManifest('base', data).issues).toEqual([]);
+  it('credits every source of every pack on disk, with no issues', () => {
+    const onDisk = ['mods', '../mods'].flatMap((root) =>
+      existsSync(root)
+        ? readdirSync(root)
+            .map((mod) => join(root, mod, 'assets/manifest.json'))
+            .filter((file) => existsSync(file))
+            .map((file) => JSON.parse(readFileSync(file, 'utf8')) as Manifest)
+        : [],
+    );
+    const { manifest, issues } = bundledCredits();
+    expect(issues).toEqual([]);
+    expect(onDisk.length).toBeGreaterThan(0);
+    expect(manifest.sources.length).toBe(onDisk.flatMap(({ sources }) => sources).length);
+  });
+
+  it('merges pack manifests so each keeps its credits, its own issues and its own paths', () => {
+    const merged = mergeManifests([
+      { source: 'first', data: { sources: [source({ title: 'First' })] } },
+      { source: 'second', data: { sources: [source({ title: 'Second' })] } },
+      { source: 'broken', data: { sources: [source({ licence: 'CC-BY-SA-4.0' })] } },
+    ]);
+    expect(merged.manifest.sources.map(({ title }) => title)).toEqual(['First', 'Second']);
+    expect(merged.issues.map((issue) => issue.source)).toEqual(['broken']);
   });
 
   it('accepts CC0, no-licence original work and CC BY, and refuses other licences', () => {

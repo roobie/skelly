@@ -1,5 +1,5 @@
-import { clipPolygon } from '@skelly/engine/shapes/geometry.ts';
-import type { Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import { clipPolygon } from '@skelly/construct/shapes/geometry.ts';
+import type { Solid, Vec2 } from '@skelly/construct/shapes/solid.ts';
 import physical from './physical.json' with { type: 'json' };
 import { TAPERED_STOCK_PROPORTIONS as P } from './shotgunProportions.ts';
 import { hermite as curve, type StockContour, woodCell, woodRegion } from './stockWood.ts';

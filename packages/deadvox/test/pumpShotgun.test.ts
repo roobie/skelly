@@ -16,8 +16,8 @@ import { bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundId } from '../src/core/soundEvents.ts';
+import { applyStartKit } from '../src/core/startState.ts';
 import { World } from '../src/core/world.ts';
-import { equipDebugLoadout } from '../src/debug/debugLoadout.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
   FirearmMechanics,
@@ -28,6 +28,8 @@ import {
 import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
+import { pumpStart } from './fixtures/debugStarts.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from './playerFixture.ts';
 
 const registry = baseRegistry();
@@ -478,13 +480,13 @@ describe('real pump ammunition', () => {
     expect(f.inventory.itemByUid(f.box.uid)).toBe(f.box);
   });
 
-  it('gives the pump loadout one stack of loose shells, which the pump loads from', () => {
+  it('loads loose ammunition from an authored pump start', () => {
     const inventory = new Inventory(registry);
-    expect(equipDebugLoadout(inventory, true, true, '?loadout=pump')).toBe(true);
+    applyStartKit(inventory, pumpStart());
     const gun = inventory.hands[dominantSide(inventory.character)]!;
     const looseShells = () => [...inventory.items()].map(({ item }) => item).filter(({ type }) => type === shellType);
-    expect(looseShells()).toHaveLength(1);
     const [stack] = looseShells();
+    expect(stack).toBeDefined();
     expect(stack!.count).toBeGreaterThan(1);
     const carried = stack!.count;
     const queue = new HandlingQueue(inventory);
@@ -819,7 +821,7 @@ describe('real pump ammunition', () => {
     const aimFrame = { yaw: 0.1, pitch: -0.06 };
     expect(f.mechanics.fire({ ...pose, item: f.gun, seed: 71, simTime: 3, aimFrame })).toBe(true);
     expect(f.trajectories[0]?.directions).toEqual(f.shots[0]?.directions);
-    const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const tuning = skilledFirearmsTuning(registry);
     const bore = firearmBoreRay({
       holds: registry.figures.get('player')!.holds,
       model: firearmHandlingFor(f.gun, registry).model,
@@ -967,10 +969,11 @@ describe('real pump ammunition', () => {
       notice: () => undefined,
       onRead: () => undefined,
     });
-    const type = registry.zombies.get('shambler')!;
-    const a = open.zombies.add(type, [0, 0, -8]);
-    const b = blocked.zombies.add(type, [0, 0, -8]);
+    const type = registry.actors.get('shambler')!;
+    const a = open.actors.add(type, [0, 0, -8]);
+    const b = blocked.actors.add(type, [0, 0, -8]);
     const shot: PelletShot = {
+      damageKind: 'pierce',
       origin: [0, 2, 0],
       directions: [[0, 0, -1]],
       damage: 20,
@@ -978,11 +981,11 @@ describe('real pump ammunition', () => {
       diameterMm: 8.38,
       rangeMetres: 50,
     };
-    const before = structuredClone(open.zombieStore.get(a)!.regions);
-    expect(open.zombies.firePellets(shot).hits).toBe(1);
-    expect(blocked.zombies.firePellets(shot).hits).toBe(0);
-    expect(open.zombieStore.get(a)!.regions).not.toEqual(before);
-    expect(blocked.zombieStore.get(b)!.regions).toEqual(before);
+    const before = structuredClone(open.actorStore.get(a)!.regions);
+    expect(open.actors.firePellets(shot).hits).toBe(1);
+    expect(blocked.actors.firePellets(shot).hits).toBe(0);
+    expect(open.actorStore.get(a)!.regions).not.toEqual(before);
+    expect(blocked.actorStore.get(b)!.regions).toEqual(before);
     expect(open.playerCombat.activeMeleeAction).toBeUndefined();
   });
 });

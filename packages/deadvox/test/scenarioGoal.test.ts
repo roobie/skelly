@@ -32,12 +32,11 @@ const own = buildRegistry([
           stack: 2,
           weight: 5,
           size: [1, 1],
-          economy: { usage: ['Residential'], tiers: ['Tier1'] },
           workInProgress: false,
-          notLoot: false,
           readable: { title: 'Fixture lead', text: 'Fixture destination' },
         },
       ],
+      itemEconomy: [{ id: 'fixture_paper', usage: ['Residential'], tiers: ['Tier1'], notLoot: false }],
       furniture: [
         {
           id: 'fixture_goal',
@@ -60,6 +59,7 @@ const registry = {
   ...BUNDLED_CONTENT.registry,
   furniture: new Map([...BUNDLED_CONTENT.registry.furniture, ...own.registry.furniture]),
   items: new Map([...BUNDLED_CONTENT.registry.items, ...own.registry.items]),
+  itemEconomy: new Map([...BUNDLED_CONTENT.registry.itemEconomy, ...own.registry.itemEconomy]),
 };
 const profile = [...registry.scenarios.values()][0]!;
 const objective: Vec3 = [8, 1, 6];

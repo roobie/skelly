@@ -1,5 +1,3 @@
-import { labelForAction } from '../game/inputBindings.ts';
-
 // The debug panel's groups, their open/closed state, and the catalogue of keys and URL parameters.
 //
 // Binding labels resolve through the registry so collapsing a group cannot preserve a stale shortcut.
@@ -21,8 +19,8 @@ export type GroupId =
 /** A control or readout in a group that is not a key action: documented in the catalogue only. */
 interface GroupNote {
   readonly label: string;
-  /** Shown in the key column; absent for something with no key. */
-  readonly key?: string;
+  /** The action whose bound key the key column shows; absent for something with no key. */
+  readonly action?: string;
   readonly param?: string;
 }
 
@@ -93,12 +91,7 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
     title: 'Diagnostics',
     notes: [
       { label: 'Mouse readout (bottom left, always on)' },
-      {
-        label: 'Performance overlay',
-        get key() {
-          return labelForAction('debug.performance-toggle');
-        },
-      },
+      { label: 'Performance overlay', action: 'debug.performance-toggle' },
       { label: 'Interaction ray', param: 'interactionray=1' },
     ],
   },
@@ -137,7 +130,7 @@ export const keysAtAGlance = (def: GroupDef, actions: readonly { readonly key: s
 /** The bare parameter name of a `name=values` hint. */
 export const paramName = (param: string): string => param.split('=')[0]!;
 
-const STORAGE_KEY = 'deadvox.debug-groups-closed';
+const STORAGE_KEY = 'skelly.debug-groups-closed';
 
 export type GroupStorage = Pick<Storage, 'getItem' | 'setItem'>;
 

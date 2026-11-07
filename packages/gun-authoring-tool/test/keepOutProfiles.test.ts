@@ -1,6 +1,6 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import { keepOut } from '@skelly/engine/assembly/rules.ts';
-import type { Assembly, Domain, KeepOut, PartFamily } from '@skelly/engine/assembly/schema.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import { keepOut } from '@skelly/construct/assembly/rules.ts';
+import type { Assembly, Domain, KeepOut, PartFamily } from '@skelly/construct/assembly/schema.ts';
 import { describe, expect, it } from 'vitest';
 
 const notchProfile = [

@@ -20,10 +20,10 @@ import { BASE_DAY_CYCLE, dayStateAtHour } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const FIXTURE_LIMIT = TEST_SENSE_TUNING.light.renderedFixtureLimit;
 const TEST_LIGHTS = [
@@ -224,7 +224,7 @@ describe('made-light point pool', () => {
     expect(pool.lights[4]!.position.z).toBeCloseTo(source!.pos[2] * SCALE.blockSize);
 
     const floor = (_x: number, y: number) => y === 0;
-    const zombies = new ZombieSystem({
+    const actors = new ActorSystem({
       player: () => ({
         pos: [50, 1, 50],
         facing: [-1, 0, 0],
@@ -242,10 +242,10 @@ describe('made-light point pool', () => {
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
     });
-    const id = zombies.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
-    zombies.tick(1 / 60);
-    expect(zombies.store.get(id)!.mode).toBe('investigate');
-    expect(zombies.store.get(id)!.lastPerceived).toEqual(source?.pos);
+    const id = actors.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+    actors.tick(1 / 60);
+    expect(actors.store.get(id)!.agent!.mode).toBe('investigate');
+    expect(actors.store.get(id)!.agent!.lastPerceived).toEqual(source?.pos);
   });
 
   it('shines a set-down light from the flame its pile draws', () => {

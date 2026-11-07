@@ -1,14 +1,14 @@
 import { SHA256_HEX } from '../core/canonicalJson.ts';
 import { encodeSave, type SaveVersionComponents, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
-import { createDurableWriteTransaction } from '../game/indexedDbCommit.ts';
 import { SaveStorageError, type SaveStorageErrorKind } from '../game/saveStorageErrors.ts';
 import { SAVE_RECORD_HEADER_BYTES, SAVE_RECORD_MAX_BYTES, sealSaveSlot } from '../game/saveStorageRecord.ts';
+import { createDurableWriteTransaction } from '../presentation/indexedDbCommit.ts';
 
-const DATABASE = 'deadvox-save-slots';
+const DATABASE = 'skelly-save-slots';
 const DATABASE_VERSION = 1;
 const STORE = 'slots';
-const ROOT_DIRECTORY = 'deadvox-saves';
+const ROOT_DIRECTORY = 'skelly-saves';
 const SLOT_NAMES = ['a', 'b'] as const;
 type SlotName = (typeof SLOT_NAMES)[number];
 type Backend = 'opfs' | 'indexeddb';

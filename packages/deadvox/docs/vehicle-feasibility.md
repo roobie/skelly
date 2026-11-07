@@ -8,7 +8,7 @@ read_if:
 
 # Vehicle feasibility admission
 
-The selected physics build is project-owned deterministic Rapier f64 for driving, parked collision and ragdolls; see `docs/decisions/0009-rapier-f64-build.md`, "Decision". Engine selection is settled, while production integration and handling acceptance still need evidence. The spike is not that integration. Keep library initialization behind adapters so the harness does not define game saves: the collision-free continuation seam is `src/vehicles/feasibility/contract.ts`, `Candidate`, and the driving seam is `src/vehicles/feasibility/driving.ts`, `Driver`.
+The selected physics build is project-owned deterministic Rapier f64 for driving, parked collision and ragdolls; see `docs/decisions/0009-rapier-f64-build.md`, "Decision". Engine selection is settled, while production integration and handling acceptance still need evidence. The spike is not that integration. Keep library initialization behind adapters so the harness does not define game saves: the collision-free continuation seam is `src/feasibility/contract.ts`, `Candidate`, and the driving seam is `src/feasibility/driving.ts`, `Driver`.
 
 ## Numeric eligibility and supply
 
@@ -22,9 +22,9 @@ Commit the f64 WASM and its generated bindings and load them from the repository
 
 ## Harness boundaries
 
-Schedule partitioning, compression and restoration must not alter the experiment's continuation; see `src/vehicles/feasibility/runner.ts`, `TickDispatch`. Wall-time conversion remains a caller concern, so this experiment does not supply a production clock.
+Schedule partitioning, compression and restoration must not alter the experiment's continuation; see `src/feasibility/runner.ts`, `TickDispatch`. Wall-time conversion remains a caller concern, so this experiment does not supply a production clock.
 
-Agreement evidence must expose distinctions a digest can conceal and preserve the information needed to continue safely; see `src/vehicles/feasibility/trace.ts`, `trace`. Unsafe edges still need defined production invariants; falling in a probe does not decide the game's drop or recovery policy.
+Agreement evidence must expose distinctions a digest can conceal and preserve the information needed to continue safely; see `src/feasibility/trace.ts`, `trace`. Unsafe edges still need defined production invariants; falling in a probe does not decide the game's drop or recovery policy.
 
 Cross-runtime evidence uses the same module in Node and each supported browser; see `test/browser/vehicle-feasibility.mjs`, `engines`. Timings cannot establish reference-class performance acceptance, and the collision-free moving body cannot establish road collision-work bounds.
 
@@ -32,7 +32,7 @@ Cross-runtime evidence uses the same module in Node and each supported browser; 
 
 The f64 0.36 build agreed bit for bit across Node, Chromium, Firefox and WebKit. The slope probe climbed and reversed; the edge probe lost support and kept falling; the thin obstacle stopped forward travel without tunnelling; the scrape retained forward travel while removing inward lateral motion. These are narrow findings, not complete vehicle handling evidence.
 
-`src/vehicles/feasibility/driving.ts`, `rapierDriver` and `runDriving`, uses a rotation-locked sphere against authored boxes. The proxy provides no wheels, steering, rollover or evidence about mass- and load-dependent handling. `src/config/vehicleFeasibility.jsonnet`, `driving`, owns probe geometry, inputs, expected behaviours and working bounds so tuning does not require another solver mechanism.
+`src/feasibility/driving.ts`, `rapierDriver` and `runDriving`, uses a rotation-locked sphere against authored boxes. The proxy provides no wheels, steering, rollover or evidence about mass- and load-dependent handling. `src/feasibility/vehicleFeasibility.jsonnet`, `driving`, owns probe geometry, inputs, expected behaviours and working bounds so tuning does not require another solver mechanism.
 
 The authored probes stay within their working penetration target. The separate higher-speed `test/vehicleDrivingFeasibility.test.ts`, `fixture`, exceeds that target while still stopping on the approach side: its assertion protects no tunnelling, not universal penetration acceptance. Edge departure leaves the supported envelope. Neither result proves an acceptable drop, recovery or speed policy.
 
@@ -42,7 +42,7 @@ The authored probes stay within their working penetration target. The separate h
 
 Rapier admits finite geometry with one moving body, and the adapter configures solver iterations and CCD substeps. These constrain the scene and iteration envelope, not internal narrowphase, allocation or CCD work. The trace labels internal work unmeasured rather than inventing operation counts. Instrumentation remains required for production admission under #322.
 
-For a diagnostic look, run Deadvox's Vite development server and open `/src/vehicles/feasibility/driving.html`. The page is outside the shipped game and build entry points. Select a scenario, reset, then run or single-step Rapier; neutral drive input reproduces the recorded probe. It is not a handling approval surface.
+For a diagnostic look, run Deadvox's Vite development server and open `/src/feasibility/driving.html`. The page is outside the shipped game and build entry points. Select a scenario, reset, then run or single-step Rapier; neutral drive input reproduces the recorded probe. It is not a handling approval surface.
 
 ### Still open
 

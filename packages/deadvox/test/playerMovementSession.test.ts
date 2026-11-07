@@ -2,6 +2,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { actionText } from '../src/core/actionText.ts';
+import { actorPoseInputFor } from '../src/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import type { Actor } from '../src/core/actorState.ts';
 import { breathSteadying, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { practiceForNextLevel, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -17,23 +20,21 @@ import { bodyDistance, reachTuning } from '../src/core/reach.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
-import type { SiteLayoutDef, ZombieDef } from '../src/core/schema.ts';
+import type { ActorDef, SiteLayoutDef } from '../src/core/schema.ts';
 import { firearmShotPracticeSkill, firearmSteadinessSkill, skillActivityPractice } from '../src/core/skillTraining.ts';
 import { compileTemplate, footprint, type Placement, placedBlockAt } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import type { Zombie } from '../src/core/zombies.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { type MoveIntent, PLAYER, physicsFor, type StanceToggle } from './playerFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
 import { encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
-const BASE = 'src/content/base';
+const BASE = 'mods/skelly.deadvox.scenario.playtest';
 const registry = baseRegistry();
 const [FIREARM_TYPE] = [...registry.items].find(([, def]) => def.firearm)!;
 const [DOOR_TYPE] = [...registry.furniture].find(([, def]) => def.door && !def.door.hatch)!;
@@ -137,6 +138,12 @@ describe('long-gun skill ownership', () => {
     {
       source: 'fixture-sniping',
       data: {
+        // Fixture timing puts the novice raise above the ADS maximum, so the clamp bites,
+        // but the trained raise below it, so ADS follows the skill-scaled raise instead.
+        combatPolicy: [...registry.combatPolicy.values()].map((policy) => ({
+          ...policy,
+          firearms: { ...policy.firearms!, raiseSimSeconds: 0.3 + 0.3, adsAcquisitionMaximumSimSeconds: 0.45 },
+        })),
         skills: [
           {
             ...combat,
@@ -144,18 +151,17 @@ describe('long-gun skill ownership', () => {
               ...combat.combat,
               firearms: {
                 ...combat.combat!.firearms!,
-                longGunSteadinessSkill: snipingId,
-                // Test-authored timing so the two ADS regimes are fixture properties, not production
-                // tuning: the novice raise (minimum + range) exceeds the maximum, so the clamp bites,
-                // while a trained handler's raise (minimum + range * 5 / 15 at half-life 5) stays under it.
                 raiseMinimumSimSeconds: 0.3,
-                raiseRangeSimSeconds: 0.3,
                 raiseHalfLifeLevels: 5,
-                adsAcquisitionMaximumSimSeconds: 0.45,
               },
             },
           },
-          { ...registry.skills.get(combat.combat!.firearms!.longGunSteadinessSkill)!, id: snipingId },
+          {
+            ...[...registry.skills.values()].find(
+              (skill) => skill.capability === combat.combat!.firearms!.longGunSteadinessRole,
+            )!,
+            id: snipingId,
+          },
         ],
         items: [true, false].map((twoHanded) => ({
           ...registry.items.get('rifle_assault')!,
@@ -169,8 +175,9 @@ describe('long-gun skill ownership', () => {
       },
     },
   ]);
+  content.skills.delete([...registry.skills.values()].find((skill) => skill.capability === 'longGunSteadiness')!.id);
   /** The fixture's own firearms timing; assertions read it, so production retuning cannot break them. */
-  const tuning = content.skills.get(combatId)!.combat!.firearms!;
+  const tuning = skilledFirearmsTuning(content);
   const equip = (runtime: ReturnType<typeof makeRuntime>, type = gunId) => {
     const { session } = runtime;
     return chargedRifle(session.inventory, session.queue, session.firearms, { type, magazines: session.magazines })
@@ -259,8 +266,8 @@ describe('long-gun skill ownership', () => {
       expect(firearmsSkillEffects(SKILL_LEVEL_MAX, tuning).recoilKickScale).toBeLessThan(
         firearmsSkillEffects(0, tuning).recoilKickScale,
       );
-      expect(firearmsSkillEffects(SKILL_LEVEL_MAX, tuning).reloadDuration).toBeLessThan(
-        firearmsSkillEffects(0, tuning).reloadDuration,
+      expect(firearmsSkillEffects(SKILL_LEVEL_MAX, tuning).reloadFactor).toBeLessThan(
+        firearmsSkillEffects(0, tuning).reloadFactor,
       );
       expect(firearmStanceEffects(SKILL_LEVEL_MAX, tuning).raiseDurationSimSeconds).toBeLessThan(
         firearmStanceEffects(0, tuning).raiseDurationSimSeconds,
@@ -325,9 +332,9 @@ describe('long-gun skill ownership', () => {
     const before = session.character.snapshotState();
     expect(session.firearms.fire(shot)).toBe(false);
     expect(session.character.snapshotState()).toEqual(before);
-    const zombieType = [...content.zombies.values()][0]!;
-    session.zombies.add(zombieType, [0, 1, -3], [0, 0, 1]);
-    const hits = vi.spyOn(session.zombies, 'firePellets');
+    const actorType = [...content.actors.values()][0]!;
+    session.actors.add(actorType, [0, 1, -3], [0, 0, 1]);
+    const hits = vi.spyOn(session.actors, 'firePellets');
     expect(session.firearms.fire({ ...shot, ready: true })).toBe(true);
     expect(hits).toHaveReturnedWith(expect.objectContaining({ hits: expect.any(Number) }));
     expect(hits.mock.results[0]!.value.hits).toBeGreaterThan(0);
@@ -637,29 +644,29 @@ type Session = Runtime['session'];
 const horizontalDistance = (from: readonly number[], to: readonly number[]): number =>
   Math.hypot(to[0]! - from[0]!, to[2]! - from[2]!);
 
-const shambler = registry.zombies.get('shambler')!;
+const shambler = registry.actors.get('shambler')!;
 const { loot: _loot, ...lootless } = shambler;
 // One blow downs it at the torso; its head stays on, so it lies there instead of dying. No limb comes off,
 // and its pockets are empty, so anything on the ground came from clearing it.
-const FRAGILE: ZombieDef = {
+const FRAGILE: ActorDef = {
   ...lootless,
   regions: { ...shambler.regions, torso: FISTS_MELEE.damage },
   dismember: { chance: 0, headOnKillChance: 0 },
 };
 
 /** Adds a shambler facing -z and downs it with a blow to the chest, as the player would. */
-const downShambler = (session: Session, position: Vec3): { id: EntityId; zombie: Zombie } => {
-  const id = session.zombies.add(FRAGILE, position, [0, 0, -1]);
-  const zombie = session.zombies.store.get(id)!;
+const downShambler = (session: Session, position: Vec3): { id: EntityId; actor: Actor } => {
+  const id = session.actors.add(FRAGILE, position, [0, 0, -1]);
+  const actor = session.actors.store.get(id)!;
   const { blockSize } = makeScale(0.5);
-  const chest = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, blockSize)).torso.find(
+  const chest = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, blockSize)).torso.find(
     (box) => box.bone === 'chest',
   )!.center;
   const origin: Vec3 = [chest[0], chest[1], chest[2] + 0.45 / blockSize];
-  if (session.zombies.swing(origin, [0, 0, -1], FISTS_MELEE) !== id || !zombie.incapacitated) {
+  if (session.actors.swing(origin, [0, 0, -1], FISTS_MELEE) !== id || !actor.incapacitated) {
     throw new Error('The blow did not down the shambler');
   }
-  return { id, zombie };
+  return { id, actor };
 };
 
 describe('attacker modifiers', () => {
@@ -687,7 +694,7 @@ describe('attacker modifiers', () => {
         ],
       ]),
     };
-    const move: ZombieDef['attack']['moves'][number] = {
+    const move: NonNullable<ActorDef['attack']>['moves'][number] = {
       id: 'fixture-hit',
       motion: 'swing',
       weight: 1,
@@ -695,21 +702,21 @@ describe('attacker modifiers', () => {
       damageKind: 'cut',
       hitRegions: [{ region: 'leftArm', weight: 1 }],
     };
-    const type: ZombieDef = {
+    const type: ActorDef = {
       ...shambler,
-      attack: { ...shambler.attack, moves: [move] },
+      attack: { ...shambler.attack!, moves: [move] },
     };
     const strike = (boost: boolean) => {
       const runtime = makeRuntime({ content });
       const { session } = runtime;
-      const id = session.zombies.add(type, [1.2, 1, 0], [-1, 0, 0]);
-      const zombie = session.zombies.store.get(id)!;
-      expect(zombie.modifiers).toEqual([]);
+      const id = session.actors.add(type, [1.2, 1, 0], [-1, 0, 0]);
+      const actor = session.actors.store.get(id)!;
+      expect(actor.modifiers).toEqual([]);
       if (boost) {
-        zombie.modifiers.push({ effect: 'attack.damage', multiply: 2, add: 4 });
+        actor.modifiers.push({ effect: 'attack.damage', multiply: 2, add: 4 });
       }
       const hit = vi.spyOn(session.sim, 'hit');
-      const maxFrames = Math.ceil((type.attack.windupSimSeconds + 2) * 60);
+      const maxFrames = Math.ceil((type.attack!.windupSimSeconds + 2) * 60);
       for (let frames = 0; frames < maxFrames && hit.mock.calls.length === 0; frames++) {
         runtime.advance(1);
       }
@@ -811,7 +818,7 @@ describe('landing injuries', () => {
 });
 
 describe('session movement consequences', () => {
-  it('uses a player content override for body, directional pace, lowered stance and aim', () => {
+  it('uses shared player overrides for movement and product policy for aim feel', () => {
     const tuning = {
       ...PLAYER,
       halfWidth: 0.2,
@@ -820,9 +827,12 @@ describe('session movement consequences', () => {
       walk: 2.4,
       movement: { sidewaysSpeedScale: 0.3, backwardSpeedScale: 0.2 },
       crouch: { speedMetresPerSimSecond: 0.8, eyeDropMetres: 0.8, bodyHeightMetres: 1.1 },
-      aim: { ...PLAYER.aim, maxOffsetRadians: 0.03 },
     };
-    const content = baseRegistryWith([{ source: 'fixture-player', data: { player: [tuning] } }]);
+    const baselinePolicy = [...registry.combatPolicy.values()].find((entry) => entry.capability === 'player')!;
+    const policy = { ...baselinePolicy, aim: { ...baselinePolicy.aim!, maxOffsetRadians: 0.03 } };
+    const content = baseRegistryWith([
+      { source: 'fixture-player', data: { player: [tuning], combatPolicy: [policy] } },
+    ]);
     const runtime = makeRuntime({ content });
     const { session } = runtime;
     const { blockSize } = makeScale(0.5);
@@ -841,7 +851,7 @@ describe('session movement consequences', () => {
       tuning.crouch.speedMetresPerSimSecond * tuning.movement.sidewaysSpeedScale,
     );
     session.aim.recordShot(0, 0.2);
-    expect(Math.abs(session.aim.snapshotState().recoilYaw)).toBeCloseTo(tuning.aim.maxOffsetRadians);
+    expect(Math.abs(session.aim.snapshotState().recoilYaw)).toBeCloseTo(policy.aim.maxOffsetRadians);
     expect(session.aim.pendingViewPitchShift).toBeGreaterThan(0);
   });
 
@@ -903,12 +913,12 @@ describe('session movement consequences', () => {
     const corridor = (x: number, y: number): boolean => y === 0 || ((x === -1 || x === 2) && y >= 1 && y <= 4);
     const runtime = makeRuntime({ isSolid: corridor, spawn: [1, 1, 5] });
     const { session } = runtime;
-    const { zombie } = downShambler(session, [1, 1, 1]);
-    expect(2).toBeLessThan(2 * (session.body.halfWidth + zombie.body.halfWidth));
+    const { actor } = downShambler(session, [1, 1, 1]);
+    expect(2).toBeLessThan(2 * (session.body.halfWidth + actor.body.halfWidth));
 
     runtime.setIntent({ ...IDLE, forward: 1, walk: true });
     runtime.advance(360);
-    expect(session.body.pos[2]).toBeLessThan(zombie.body.pos[2] - zombie.body.halfWidth - session.body.halfWidth);
+    expect(session.body.pos[2]).toBeLessThan(actor.body.pos[2] - actor.body.halfWidth - session.body.halfWidth);
   });
 
   it('closes a door over a downed shambler lying in the doorway', () => {
@@ -916,8 +926,8 @@ describe('session movement consequences', () => {
     const { session } = runtime;
     const door = session.entities.add({ type: DOOR_TYPE, pos: [0, 1, -3], size: [2, 4, 1], facing: 'n' })!;
     session.entities.setOpen(door, true);
-    const { zombie } = downShambler(session, [1, 1, -2.5]);
-    expect(session.entities.bodyIntersects(door, zombie.body)).toBe(true);
+    const { actor } = downShambler(session, [1, 1, -2.5]);
+    expect(session.entities.bodyIntersects(door, actor.body)).toBe(true);
 
     const { handlingSimSeconds } = registry.furniture.get(DOOR_TYPE)!.door!;
     session.queue.enqueueAction(DOOR_ACTION, 'Door', handlingSimSeconds, { entityUid: door.uid, closing: true });
@@ -1203,7 +1213,7 @@ describe('clearing a downed shambler', () => {
     const { id } = downShambler(session, [0, 1, -2]);
     expect(session.clearDownedBody(id, 'finish-off')).toBeUndefined();
     runtime.advance(framesFor(downed.finishOff.simSeconds));
-    expect(session.zombies.store.get(id)).toBeUndefined();
+    expect(session.actors.store.get(id)).toBeUndefined();
     expect(groundItems(session)).toEqual([]);
   });
 
@@ -1218,14 +1228,14 @@ describe('clearing a downed shambler', () => {
   it('dismembers it with a tool of the quality, leaving its arms and head behind', () => {
     const runtime = makeRuntime();
     const { session } = runtime;
-    const { id, zombie } = downShambler(session, [0, 1, -2]);
+    const { id, actor } = downShambler(session, [0, 1, -2]);
     const { quality, level, simSeconds } = downed.dismember;
     const tool = [...registry.items.values()].find((item) => (item.tool?.qualities[quality] ?? 0) >= level)!;
     expect(session.inventory.add(session.inventory.create(tool.id), { kind: 'hand', side: 'right' })).toBe(true);
     expect(session.clearDownedBody(id, 'dismember')).toBeUndefined();
     runtime.advance(framesFor(simSeconds));
-    expect(session.zombies.store.get(id)).toBeUndefined();
-    expect(zombie.severed).toEqual(expect.arrayContaining(['upperArm.L', 'upperArm.R', 'head']));
+    expect(session.actors.store.get(id)).toBeUndefined();
+    expect(actor.severed).toEqual(expect.arrayContaining(['upperArm.L', 'upperArm.R', 'head']));
     expect(groundItems(session)).toHaveLength(3);
   });
 
@@ -1239,7 +1249,7 @@ describe('clearing a downed shambler', () => {
       'walked out of reach',
       (runtime: Runtime) => runtime.setIntent({ ...IDLE, forward: -1 }),
       // Still running as it is about to end, with the body beyond reach.
-      (session: Session, zombie: Zombie) => {
+      (session: Session, actor: Actor) => {
         expect(session.queue.busy).toBe(true);
         const player = {
           inventory: session.inventory,
@@ -1247,20 +1257,20 @@ describe('clearing a downed shambler', () => {
           blockSize: makeScale(0.5).blockSize,
           clock: session.sim.clock,
         };
-        expect(bodyDistance(player, zombie.body)).toBeGreaterThan(reachTuning(session.inventory.registry).reachMetres);
+        expect(bodyDistance(player, actor.body)).toBeGreaterThan(reachTuning(session.inventory.registry).reachMetres);
       },
     ],
   ])('leaves the body lying there when finishing it off is %s', (_, interrupt, premise) => {
     const runtime = makeRuntime();
     const { session } = runtime;
-    const { id, zombie } = downShambler(session, [0, 1, -2]);
+    const { id, actor } = downShambler(session, [0, 1, -2]);
     expect(session.clearDownedBody(id, 'finish-off')).toBeUndefined();
     interrupt(runtime);
     const beforeEnd = Math.floor(downed.finishOff.simSeconds * 60) - 1;
     runtime.advance(beforeEnd);
-    premise(session, zombie);
+    premise(session, actor);
     runtime.advance(framesFor(downed.finishOff.simSeconds) - beforeEnd);
-    expect(session.zombies.store.get(id)).toBe(zombie);
-    expect(zombie.incapacitated).toBe(true);
+    expect(session.actors.store.get(id)).toBe(actor);
+    expect(actor.incapacitated).toBe(true);
   });
 });

@@ -10,7 +10,7 @@ import { playerLookPose } from '../src/core/playerLookPose.ts';
 import { firearmsCombatTuning } from '../src/core/skillTraining.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
-import { PLAYER } from './playerFixture.ts';
+import { AIM } from './playerFixture.ts';
 
 it('allows skill-dependent unity optic parallax and adds walking misalignment', () => {
   const { registry } = withDefaultAttachment(baseRegistry(), 'rifle_assault', 'optic_mini_reflex');
@@ -28,7 +28,7 @@ it('allows skill-dependent unity optic parallax and adds walking misalignment', 
   const offset = (level: number, moving: boolean) => {
     const effects = firearmsSkillEffects(level, tuning);
     const aim = new AimController({
-      tuning: PLAYER.aim,
+      tuning: AIM,
       wobbleLimitRadians: 0.2,
       wobbleShape: { verticalToHorizontalRatio: 0.5, archPower: 1, phaseOffsetRadians: 0 },
       wobbleSeed: 7,

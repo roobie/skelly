@@ -1,6 +1,10 @@
+import { BODY_PLANS } from './actorModels.ts';
+import type { ActorState } from './actorState.ts';
+import type { ActorSystemState } from './actorSystem.ts';
+import type { HordeState } from './agentHorde.ts';
 import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState, assertBreathHoldState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
-import { BODY_REGIONS, DAMAGE_KINDS, MELEE_DAMAGE_KINDS, TOUCHES } from './body.ts';
+import { BODY_REGIONS, TOUCHES } from './body.ts';
 import { getBuildRevision } from './buildInfo.ts';
 import {
   canonicalJsonBytes as canonicalBytes,
@@ -16,6 +20,7 @@ import type { ItemState } from './items.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import { validateLongJob } from './longAction.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
+import { MELEE_PROFILES } from './meleePose.ts';
 import type { PlayerCombatState } from './playerCombat.ts';
 import { PLAYER_STANCES } from './playerStance.ts';
 import type { SaveSnapshot } from './saveState.ts';
@@ -24,7 +29,6 @@ import { freezeSnapshot } from './snapshotData.ts';
 import { assertVehicleState, type VehicleInstancesState } from './vehicleInstances.ts';
 import type { SavedChunk, SavedColumn } from './world.ts';
 import { regionIndex, WORLD_REGION_METRES } from './worldRegion.ts';
-import type { HordeState, ZombieState, ZombieSystemState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
 export interface SaveVersionComponents {
@@ -58,8 +62,10 @@ export type SaveContentKind =
   | 'item'
   | 'furniture'
   | 'climbable'
-  | 'zombie'
+  | 'actor'
   | 'sound'
+  | 'damageKind'
+  | 'meleeDamageKind'
   | 'scheduler'
   | 'skill'
   | 'recipe'
@@ -70,7 +76,7 @@ type SaveContentLookup = (kind: SaveContentKind, id: string, item?: ItemState) =
 export interface EncodeSaveOptions {
   /** Slot owner supplies a strictly increasing safe-integer generation; the codec has no storage state. */
   generation: number;
-  /** Omit in the built game to use its injected simulation fingerprint and base-pack hash. */
+  /** Omit in the built game to use its injected simulation fingerprint and pack identities. */
   version?: SaveVersionComponents;
   /** Git revision is diagnostic metadata only and is not part of the compatibility digest. */
   buildRevision?: string;
@@ -79,7 +85,7 @@ export interface EncodeSaveOptions {
 }
 
 export interface DecodeSaveOptions {
-  /** Omit in the built game to compare against its injected simulation fingerprint and base-pack hash. */
+  /** Omit in the built game to compare against its injected simulation fingerprint and pack identities. */
   version?: SaveVersionComponents;
   /** Running revision is shown in refusal messages but never gates compatibility. */
   buildRevision?: string;
@@ -104,7 +110,7 @@ interface EncodedChunk extends SavedChunk {
 interface Region {
   vehicles: { order: number; id: number; vehicle: VehicleInstancesState['instances'][number]['vehicle'] }[];
   chunks: EncodedChunk[];
-  zombies: { order: number; id: number; zombie: ZombieState }[];
+  actors: { order: number; id: number; actor: ActorState }[];
   entities: { order: number; entity: BlockEntityState }[];
   piles: { order: number; pile: InventoryState['piles'][number] }[];
 }
@@ -115,12 +121,12 @@ interface WirePayload {
     options: SaveWorldIdentity;
     power?: SaveSnapshot['world']['power'];
     regions: Record<string, Region>;
-    zombieSystem: {
+    actorSystem: {
       nextEntityId: number;
       nextPuddleId: number;
       hordes: HordeState[];
-      acidGlobs: ZombieSystemState['acidGlobs'];
-      acidPuddles: ZombieSystemState['acidPuddles'];
+      acidGlobs: ActorSystemState['acidGlobs'];
+      acidPuddles: ActorSystemState['acidPuddles'];
     };
     vehiclesNextId: number;
     blockEntitiesNextUid: number;
@@ -147,7 +153,7 @@ interface WirePayload {
 }
 
 interface Envelope {
-  magic: 'DEADVOX_SAVE';
+  magic: 'SKELLY_SAVE';
   schemaVersion: number;
   versionIdentity: SaveVersionIdentity;
   generation: number;
@@ -156,24 +162,29 @@ interface Envelope {
   payload: WirePayload;
 }
 
-const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 64;
+const MAGIC = 'SKELLY_SAVE';
+export const SAVE_SCHEMA_VERSION = 65;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
 const REGION_KEY = /^(0|-?[1-9]\d*),(0|-?[1-9]\d*)$/;
 
-// `vite.config.ts` supplies source, Git diagnostic, and canonical base-content identities.
-declare const __DEADVOX_SIMULATION_HASH__: string;
-declare const __DEADVOX_BASE_CONTENT_HASH__: string;
+// `vite.config.ts` supplies source, Git diagnostic, and canonical per-pack identities.
+declare const __SKELLY_SIMULATION_HASH__: string;
+declare const __SKELLY_CONTENT_PACKS__: SaveVersionComponents['contentPacks'];
 
 function defaultVersion(): SaveVersionComponents {
   try {
     return {
-      simulationHash: __DEADVOX_SIMULATION_HASH__,
+      simulationHash: __SKELLY_SIMULATION_HASH__,
       schemaVersion: SAVE_SCHEMA_VERSION,
-      generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
-      contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: __DEADVOX_BASE_CONTENT_HASH__ }],
+      generators: {
+        worldgen: 'worldgen-v2',
+        ...Object.fromEntries(
+          Object.entries(BODY_PLANS).map(([plan, capability]) => [`bodyPlan.${plan}`, capability.generator]),
+        ),
+      },
+      contentPacks: __SKELLY_CONTENT_PACKS__,
     };
   } catch (error) {
     throw new Error('Explicit save version components are required outside a Vite build', { cause: error });
@@ -318,7 +329,7 @@ const simulationFields = {
     exposures: arr(
       obj({
         region: enumeration(BODY_REGIONS),
-        kind: enumeration(DAMAGE_KINDS),
+        kind: str({ id: true }),
         damage: nonNegative,
         roll: num({ min: 0, max: 1 }),
         infectionRoll: num({ min: 0, max: 1 }),
@@ -366,7 +377,7 @@ itemSchema = obj({
   trap: opt(
     union(
       obj({ state: enumeration(['armed']) }),
-      obj({ state: enumeration(['holding']), zombie: opt(positiveInt), remainingSimSeconds: positive }),
+      obj({ state: enumeration(['holding']), actor: opt(positiveInt), remainingSimSeconds: positive }),
     ),
   ),
   madeAtGameTimestamp: opt(nonNegative),
@@ -646,41 +657,47 @@ const horde = obj({
   lastNoiseId: nonNegativeInt,
   rng: tuple(safeInt, safeInt, safeInt, safeInt),
 });
-const zombie = obj({
+const actor = obj({
+  agent: opt(
+    obj({
+      hordeId: opt(str({ nonEmpty: true })),
+      hordeOffset: opt(vec3),
+      home: vec3,
+      mode: enumeration(['idle', 'stroll', 'hesitate', 'search', 'chase', 'investigate', 'return']),
+      investigationTier: opt(enumeration(['near', 'far'])),
+      hesitationFrom: opt(enumeration(['idle', 'stroll'])),
+      refusedAt: opt(nonNegative),
+      leanTarget: opt(vec3),
+      behaviorRng: tuple(safeInt, safeInt, safeInt, safeInt),
+      soundRng: tuple(safeInt, safeInt, safeInt, safeInt),
+      lastVocalNoiseId: nullable(nonNegativeInt),
+      lastAlertAt: opt(nonNegative),
+      idleSoundTimer: nonNegative,
+      modeTimer: finite,
+      searchAnchor: opt(vec3),
+      searchTimer: finite,
+      searchStrolling: bool,
+      searchHeading: vec3,
+      strollHeading: vec3,
+      obstacleWanderHeading: opt(vec3),
+      obstacleWanderRemaining: nonNegative,
+      obstacleSlideSide: enumeration([-1, 0, 1]),
+      bodyLookTarget: finite,
+      headYawTarget: finite,
+      lookTimer: finite,
+      lastPerceived: opt(vec3),
+      stimulusAt: opt(nonNegative),
+    }),
+  ),
   type: str({ id: true }),
-  hordeId: opt(str({ nonEmpty: true })),
-  hordeOffset: opt(vec3),
   figureSeed: safeInt,
   incapacitated: bool,
   body,
   facing: vec3,
-  home: vec3,
-  mode: enumeration(['idle', 'stroll', 'hesitate', 'search', 'chase', 'investigate', 'return']),
-  investigationTier: opt(enumeration(['near', 'far'])),
-  hesitationFrom: opt(enumeration(['idle', 'stroll'])),
-  refusedAt: opt(nonNegative),
-  leanTarget: opt(vec3),
-  behaviorRng: tuple(safeInt, safeInt, safeInt, safeInt),
-  soundRng: tuple(safeInt, safeInt, safeInt, safeInt),
   dismemberRng: tuple(safeInt, safeInt, safeInt, safeInt),
-  lastVocalNoiseId: nullable(nonNegativeInt),
-  lastAlertAt: opt(nonNegative),
-  idleSoundTimer: nonNegative,
-  modeTimer: finite,
-  searchAnchor: opt(vec3),
-  searchTimer: finite,
-  searchStrolling: bool,
-  searchHeading: vec3,
-  strollHeading: vec3,
   horizontalSpeed: finite,
-  obstacleWanderHeading: opt(vec3),
-  obstacleWanderRemaining: nonNegative,
   obstacleContact: bool,
-  obstacleSlideSide: enumeration([-1, 0, 1]),
-  bodyLookTarget: finite,
   headYaw: finite,
-  headYawTarget: finite,
-  lookTimer: finite,
   swayValue: finite,
   swayStart: finite,
   swayTarget: finite,
@@ -695,8 +712,6 @@ const zombie = obj({
   stumbleElapsed: finite,
   stumbleDuration: finite,
   regions: record(nonNegative),
-  lastPerceived: opt(vec3),
-  stimulusAt: opt(nonNegative),
   attackWait: finite,
   attackWindup: finite,
   spitWindup: nonNegative,
@@ -709,10 +724,11 @@ const zombie = obj({
   stepOffset: opt(finite),
   hitFlinchTime: opt(nonNegative),
   staggerSimSeconds: nonNegative,
-  /** Bone ids severed so far — cumulative, never shrinks; see Zombie.severed's own doc comment. */
+  /** Bone ids severed so far — cumulative, never shrinks; see Actor.severed's own doc comment. */
   severed: arr(str()),
-  /** Amalgam voxel-grid cells knocked out by hits, ascending; see Zombie.carved. */
+  /** Fused-mass voxel-grid cells knocked out by hits, ascending; see Actor.carved. */
   carved: arr(nonNegativeInt),
+  chaseStance: bool,
 });
 const playerState = obj({
   body,
@@ -729,7 +745,7 @@ const playerState = obj({
 });
 const meleeAction = nullable(
   obj({
-    profile: enumeration([...MELEE_DAMAGE_KINDS, 'fists']),
+    profile: enumeration(MELEE_PROFILES),
     hand: enumeration(['right', 'left']),
     twoHanded: bool,
     cooldown: positive,
@@ -758,7 +774,7 @@ const meleeAction = nullable(
       swingSound: opt(str({ id: true })),
       hitSound: opt(str({ id: true })),
       hitLayerSound: opt(str({ id: true })),
-      type: opt(enumeration(MELEE_DAMAGE_KINDS)),
+      type: str({ id: true }),
       charge: opt(
         obj({
           fullSimSeconds: positive,
@@ -871,13 +887,13 @@ const wirePayloadSchema = obj({
             runs: arr(savedRun, 1),
           }),
         ),
-        zombies: arr(obj({ order: nonNegativeInt, id: positiveInt, zombie })),
+        actors: arr(obj({ order: nonNegativeInt, id: positiveInt, actor })),
         vehicles: arr(obj({ order: nonNegativeInt, id: positiveInt, vehicle: vehicleSchema })),
         entities: arr(obj({ order: nonNegativeInt, entity: blockEntitySchema })),
         piles: arr(obj({ order: nonNegativeInt, pile: pileSchema })),
       }),
     ),
-    zombieSystem: obj({
+    actorSystem: obj({
       nextEntityId: positiveInt,
       nextPuddleId: nonNegativeInt,
       hordes: arr(horde),
@@ -1183,26 +1199,25 @@ function versionDigest(version: SaveVersionComponents): Promise<string> {
 /** A bundled mod applied to the running content, identified by the hash of its data. */
 export interface ActiveBundledMod {
   id: string;
+  version: string;
   data: unknown;
 }
 
-export interface ActiveBrowserMod extends ActiveBundledMod {
-  version: string;
-}
+export type ActiveBrowserMod = ActiveBundledMod;
 
 export async function currentSaveVersionIdentity(
   bundledMods: readonly ActiveBundledMod[] = [],
   browserMods: readonly ActiveBrowserMod[] = [],
+  folderPacks: SaveVersionComponents['contentPacks'] = [],
 ): Promise<SaveVersionIdentity> {
   const components = structuredClone(defaultVersion());
+  components.contentPacks.push(...folderPacks);
   const packs = await Promise.all(
-    [...bundledMods]
-      .sort((a, b) => (a.id < b.id ? -1 : 1))
-      .map(async (mod) => ({
-        id: `bundled.${mod.id}`,
-        version: '1',
-        canonicalHash: await sha256(canonicalBytes(mod.data)),
-      })),
+    bundledMods.map(async (mod) => ({
+      id: `bundled.${mod.id}`,
+      version: mod.version,
+      canonicalHash: await sha256(canonicalBytes(mod.data)),
+    })),
   );
   const browserPacks = await Promise.all(
     browserMods.map(async (mod) => ({
@@ -1243,7 +1258,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
     const key = `${x},${z}`;
     let region = regions.get(key);
     if (!region) {
-      region = { chunks: [], zombies: [], entities: [], piles: [], vehicles: [] };
+      region = { chunks: [], actors: [], entities: [], piles: [], vehicles: [] };
       regions.set(key, region);
     }
     return region;
@@ -1256,9 +1271,9 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       chunkOrder += 1;
     }
   }
-  snapshot.world.zombies.zombies.forEach((entry, order) => {
-    const [x, , z] = entry.zombie.body.pos;
-    getRegion(regionIndex(x, worldOptions.blockSize), regionIndex(z, worldOptions.blockSize)).zombies.push({
+  snapshot.world.actors.actors.forEach((entry, order) => {
+    const [x, , z] = entry.actor.body.pos;
+    getRegion(regionIndex(x, worldOptions.blockSize), regionIndex(z, worldOptions.blockSize)).actors.push({
       ...entry,
       order,
     });
@@ -1292,12 +1307,12 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         clock: snapshot.character.simulation.clock,
       },
       regions: Object.fromEntries(regions),
-      zombieSystem: {
-        nextEntityId: snapshot.world.zombies.nextEntityId,
-        nextPuddleId: snapshot.world.zombies.nextPuddleId,
-        hordes: [...snapshot.world.zombies.hordes],
-        acidGlobs: [...snapshot.world.zombies.acidGlobs],
-        acidPuddles: [...snapshot.world.zombies.acidPuddles],
+      actorSystem: {
+        nextEntityId: snapshot.world.actors.nextEntityId,
+        nextPuddleId: snapshot.world.actors.nextPuddleId,
+        hordes: [...snapshot.world.actors.hordes],
+        acidGlobs: [...snapshot.world.actors.acidGlobs],
+        acidPuddles: [...snapshot.world.actors.acidPuddles],
       },
       vehiclesNextId: snapshot.world.vehicles.nextId,
       blockEntitiesNextUid: savedInventory.entities.nextUid,
@@ -1344,12 +1359,12 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
 
 function restoreWirePayload(wire: WirePayload): SaveSnapshot {
   const chunks: EncodedChunk[] = [];
-  const zombies: { order: number; id: number; zombie: ZombieState }[] = [];
+  const actors: { order: number; id: number; actor: ActorState }[] = [];
   const entities: BlockEntityState[] = [];
   const piles: InventoryState['piles'] = [];
   for (const region of Object.values(wire.world.regions)) {
     chunks.push(...region.chunks);
-    zombies.push(...region.zombies);
+    actors.push(...region.actors);
     entities.push(...region.entities.map(({ order: _order, entity }) => entity));
     piles.push(...region.piles.map(({ order: _order, pile }) => pile));
   }
@@ -1375,7 +1390,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
           ({ order: _order, ...entry }) => entry,
         ),
       },
-      zombies: { ...wire.world.zombieSystem, zombies: ordered(zombies).map(({ order: _order, ...entry }) => entry) },
+      actors: { ...wire.world.actorSystem, actors: ordered(actors).map(({ order: _order, ...entry }) => entry) },
       spawned: [...wire.world.spawned],
       rolledColumns: [...wire.world.rolledColumns],
       blockDamage: structuredClone(wire.world.blockDamage),
@@ -1462,7 +1477,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   const regions = new Set<string>();
   const chunkSet = new Set<string>();
   const entityIds = new Set<number>();
-  const zombieIds = new Set<number>();
+  const actorIds = new Set<number>();
   const origins = new Set<string>();
   const spawnKeys = new Set<string>();
   const regionChunks = WORLD_REGION_METRES / (CHUNK * worldOptions.blockSize);
@@ -1470,7 +1485,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
     throw new Error('Invalid world region layout');
   }
   const chunkOrders: number[] = [];
-  const zombieOrders: number[] = [];
+  const actorOrders: number[] = [];
   const entityOrders: number[] = [];
   const pileOrders: number[] = [];
   const vehicleOrders: number[] = [];
@@ -1482,7 +1497,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
     regions.add(regionKey);
     if (
       region.chunks.length +
-        region.zombies.length +
+        region.actors.length +
         region.entities.length +
         region.piles.length +
         region.vehicles.length ===
@@ -1510,12 +1525,12 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
         throw new Error(`Chunk ${key} is in the wrong region`);
       }
     }
-    for (const { order, id, zombie: saved } of region.zombies) {
-      zombieOrders.push(order);
-      if (zombieIds.has(id)) {
+    for (const { order, id, actor: saved } of region.actors) {
+      actorOrders.push(order);
+      if (actorIds.has(id)) {
         throw new Error(`Duplicate zombie id ${id}`);
       }
-      zombieIds.add(id);
+      actorIds.add(id);
       if (
         regionIndex(saved.body.pos[0], worldOptions.blockSize) !== regionX ||
         regionIndex(saved.body.pos[2], worldOptions.blockSize) !== regionZ
@@ -1558,7 +1573,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
     }
   };
   checkOrder(chunkOrders, 'chunk');
-  checkOrder(zombieOrders, 'zombie');
+  checkOrder(actorOrders, 'zombie');
   checkOrder(entityOrders, 'block entity');
   checkOrder(pileOrders, 'pile');
   checkOrder(vehicleOrders, 'vehicle');
@@ -1600,14 +1615,14 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   if (wire.world.blockEntitiesNextUid <= maxEntity) {
     throw new Error('Invalid next block entity id');
   }
-  const maxZombie = [...zombieIds].reduce((maximum, id) => Math.max(maximum, id), 0);
-  if (snapshot.world.zombies.nextEntityId <= maxZombie) {
+  const maxActor = [...actorIds].reduce((maximum, id) => Math.max(maximum, id), 0);
+  if (snapshot.world.actors.nextEntityId <= maxActor) {
     throw new Error('Next zombie id does not exceed saved zombie ids');
   }
   if (snapshot.world.id === snapshot.character.id) {
     throw new Error('World and character IDs must be distinct');
   }
-  if (new Set(snapshot.world.zombies.zombies.map(({ id }) => id)).size !== snapshot.world.zombies.zombies.length) {
+  if (new Set(snapshot.world.actors.actors.map(({ id }) => id)).size !== snapshot.world.actors.actors.length) {
     throw new Error('Duplicate zombie id');
   }
   if (
@@ -1779,6 +1794,19 @@ function validateItemContentReferences(
   }
 }
 
+function validateDamageReferences(
+  snapshot: SaveSnapshot,
+  check: (kind: SaveContentKind, id: string, path: string) => void,
+): void {
+  for (const [index, exposure] of snapshot.character.simulation.exposures.exposures.entries()) {
+    check('damageKind', exposure.kind, `character.simulation.exposures.exposures[${index}].kind`);
+  }
+  const { meleeAction: action } = snapshot.character.playerCombat;
+  if (action) {
+    check('meleeDamageKind', action.weapon.type, 'character.playerCombat.meleeAction.weapon.type');
+  }
+}
+
 function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLookup): void {
   const check = (kind: SaveContentKind, id: string, path: string, item?: ItemState) => {
     if (!lookup(kind, id, item)) {
@@ -1810,6 +1838,7 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   ) {
     throw new Error('Duplicate known recipe');
   }
+  validateDamageReferences(snapshot, check);
   validateItemContentReferences(snapshot.character.inventory, snapshot.world.vehicles, check);
   for (const { id, vehicle } of snapshot.world.vehicles.instances) {
     check('vehicleBlueprint', vehicle.blueprint, `world.vehicles.${id}.blueprint`);
@@ -1821,14 +1850,14 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   if (grabbed) {
     check('climbable', grabbed.type, 'character.player.ladder.grabbedUid');
   }
-  snapshot.world.zombies.acidPuddles.forEach((puddle, index) => {
-    check('zombie', puddle.type, `world.zombies.acidPuddles[${index}].type`);
+  snapshot.world.actors.acidPuddles.forEach((puddle, index) => {
+    check('actor', puddle.type, `world.actors.acidPuddles[${index}].type`);
   });
-  for (const [index, glob] of snapshot.world.zombies.acidGlobs.entries()) {
-    check('zombie', glob.type, `world.zombies.acidGlobs[${index}].type`);
+  for (const [index, glob] of snapshot.world.actors.acidGlobs.entries()) {
+    check('actor', glob.type, `world.actors.acidGlobs[${index}].type`);
   }
-  for (const [index, savedZombie] of snapshot.world.zombies.zombies.entries()) {
-    check('zombie', savedZombie.zombie.type, `world.zombies[${index}].type`);
+  for (const [index, savedActor] of snapshot.world.actors.actors.entries()) {
+    check('actor', savedActor.actor.type, `world.actors[${index}].type`);
   }
   for (const [index, [id]] of snapshot.character.inventory.looted.entries()) {
     check('item', id, `character.inventory.looted[${index}][0]`);
@@ -1841,7 +1870,7 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   }
 }
 
-function assertAcidGlobSources(state: ZombieSystemState): void {
+function assertAcidGlobSources(state: ActorSystemState): void {
   for (const glob of state.acidGlobs) {
     if (glob.source >= state.nextEntityId) {
       throw new Error('Invalid acid glob source');
@@ -1864,10 +1893,10 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
             chunks: arr(obj({ cy: safeInt, palette: arr(str({ id: true }), 1), runs: arr(savedRun, 1) }), 1),
           }),
         ),
-        zombies: obj({
+        actors: obj({
           nextEntityId: positiveInt,
           nextPuddleId: nonNegativeInt,
-          zombies: arr(obj({ id: positiveInt, zombie })),
+          actors: arr(obj({ id: positiveInt, actor })),
           hordes: arr(horde),
           acidGlobs: arr(acidGlob),
           acidPuddles: arr(acidPuddle),
@@ -1900,22 +1929,22 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
   assertAimWobbleNoiseState(snapshot.character.aim.wobbleNoise);
   assertBreathHoldState(snapshot.character.aim.breath);
   validateActionReferences(snapshot);
-  assertAcidGlobSources(snapshot.world.zombies);
+  assertAcidGlobSources(snapshot.world.actors);
   const hordes = new Map<string, HordeState>();
-  for (const hordeState of snapshot.world.zombies.hordes) {
+  for (const hordeState of snapshot.world.actors.hordes) {
     if (hordes.has(hordeState.id)) {
       throw new Error(`Duplicate horde ${hordeState.id}`);
     }
     hordes.set(hordeState.id, hordeState);
   }
-  for (const { zombie: zombieState } of snapshot.world.zombies.zombies) {
-    if ((zombieState.hordeId === undefined) !== (zombieState.hordeOffset === undefined)) {
+  for (const { actor: actorState } of snapshot.world.actors.actors) {
+    if ((actorState.agent?.hordeId === undefined) !== (actorState.agent?.hordeOffset === undefined)) {
       throw new Error('Incomplete zombie horde membership');
     }
-    if (zombieState.hordeId !== undefined) {
-      const hordeState = hordes.get(zombieState.hordeId);
-      if (!hordeState || hordeState.type !== zombieState.type) {
-        throw new Error(`Invalid horde membership ${zombieState.hordeId}`);
+    if (actorState.agent?.hordeId !== undefined) {
+      const hordeState = hordes.get(actorState.agent.hordeId);
+      if (!hordeState || hordeState.type !== actorState.type) {
+        throw new Error(`Invalid horde membership ${actorState.agent.hordeId}`);
       }
     }
   }
@@ -1928,7 +1957,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
   if (blockEntities.nextUid <= Math.max(0, ...blockEntities.entities.map(({ uid }) => uid))) {
     throw new Error('Invalid next block entity id');
   }
-  if (snapshot.world.zombies.nextEntityId <= Math.max(0, ...snapshot.world.zombies.zombies.map(({ id }) => id))) {
+  if (snapshot.world.actors.nextEntityId <= Math.max(0, ...snapshot.world.actors.actors.map(({ id }) => id))) {
     throw new Error('Next zombie id does not exceed saved zombie ids');
   }
   if (WORLD_REGION_METRES / (CHUNK * 0.5) <= 0) {

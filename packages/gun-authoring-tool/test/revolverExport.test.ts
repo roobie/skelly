@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import { applyPoint, compose, type Transform } from '@skelly/engine/foundation/math.ts';
-import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/shapes/geometry.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import { applyPoint, compose, type Transform } from '@skelly/construct/foundation/math.ts';
+import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/construct/shapes/geometry.ts';
 import { Matrix4, Quaternion, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { buildRegistry } from '../../deadvox/src/core/content.ts';

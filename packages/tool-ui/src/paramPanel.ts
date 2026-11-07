@@ -1,6 +1,6 @@
-import { resolve } from '@skelly/engine/assembly/resolve.ts';
-import type { Assembly, Connection, Domain, PartInstance, ResolvedParam } from '@skelly/engine/assembly/schema.ts';
-import type { Choice, ParamReference, Template } from '@skelly/engine/assembly/template.ts';
+import { resolve } from '@skelly/construct/assembly/resolve.ts';
+import type { Assembly, Connection, Domain, PartInstance, ResolvedParam } from '@skelly/construct/assembly/schema.ts';
+import type { Choice, ParamReference, Template } from '@skelly/construct/assembly/template.ts';
 
 const partOf = (ref: string): string => ref.slice(0, ref.indexOf('.'));
 const choiceValues = <T>(c: Choice<T>): readonly T[] => (Array.isArray(c) ? (c as readonly T[]) : [c as T]);

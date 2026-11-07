@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import inventory from '../../deadvox/src/content/base/inventory.json' with { type: 'json' };
-import battery from '../../deadvox/src/content/base/things/car_battery.model.json' with { type: 'json' };
 import { buildRegistry, type ContentSource } from '../../deadvox/src/core/content.ts';
 import { loadVehicleBlueprint, vehicleContentIssues } from '../../deadvox/src/core/vehicleBlueprint.ts';
+import battery from '../../mods/skelly.ground-vehicles/things/car_battery.model.json' with { type: 'json' };
+import inventory from '../../mods/skelly.inventory/inventory.json' with { type: 'json' };
 import { exportVehicleBlueprint, type VehicleBlueprintInput } from '../src/export.ts';
 import { registryIssueText } from '../src/issues.ts';
+import { DROP_SOUND } from './fixtures/parts.ts';
 
 const PART = 'vat_round_trip_part';
 const HOST = 'vat_round_trip_host';
@@ -18,18 +19,18 @@ const input: VehicleBlueprintInput = {
 const sourceFor = (blueprint: VehicleBlueprintInput): ContentSource => ({
   source: 'vat/round-trip.json',
   data: {
+    sounds: [DROP_SOUND],
     models: [{ ...battery, id: PART }],
     items: [
       {
         id: PART,
         name: 'VAT round-trip part',
         workInProgress: false,
-        notLoot: false,
         category: 'misc',
         model: PART,
         size: [1, 1],
-        economy: { usage: [], tiers: [] },
         vehicle: {
+          drops: { default: DROP_SOUND.id },
           capabilities: ['structure'],
           obstruction: { sight: true, light: true, sound: true, combat: true },
         },

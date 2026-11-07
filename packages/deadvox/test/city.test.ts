@@ -20,7 +20,7 @@ describe('the stress-test city', () => {
       2 * [...registry.cityBenchmarks.values()][0]!.reachMetres,
     );
     expect(city.plan.service).toBeUndefined();
-    expect(city.zombiesIn(0, 0)).toEqual([]);
+    expect(city.actorsIn(0, 0)).toEqual([]);
   });
 
   it('stacks owned storeys and their nonempty furniture without duplicating the foundation', () => {

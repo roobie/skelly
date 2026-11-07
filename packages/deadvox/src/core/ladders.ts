@@ -3,8 +3,8 @@
 // feet level with the ladder's top, where moving toward the ladder steps off onto what it serves.
 
 import type { BlockEntities, BlockEntity } from './blockEntities.ts';
+import { claimed } from './capabilities.ts';
 import { dominantSide, offSide } from './character.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { coreMessage } from './coreText.ts';
 import type { HandHold, HandSide, Inventory } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
@@ -165,7 +165,7 @@ export class LadderHold implements HandHold {
   grab(entity: BlockEntity): string | undefined {
     const { inventory } = this.options;
     if (this.options.entities.carrying()) {
-      return inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.handsFull;
+      return claimed(inventory.registry.ui, 'interface')!.furnitureMoveMessages.handsFull;
     }
     const reserved = this.options.entities.useRefusal(entity);
     if (reserved) {

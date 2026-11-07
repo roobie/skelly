@@ -27,8 +27,8 @@ import { mountedOptic } from '../src/core/opticView.ts';
 import { playerAdsPose } from '../src/core/playerAdsPose.ts';
 import { figureStancePose, playerEyePosition, playerLookPose } from '../src/core/playerLookPose.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { equipDebugLoadout } from '../src/debug/debugLoadout.ts';
-import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
+import { applyStartKit } from '../src/core/startState.ts';
+import { LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
 import { ARM_NODE, solveArmRig } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { HeldPresentation } from '../src/render/heldPresentation.ts';
@@ -40,6 +40,8 @@ import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
+import { fitFixtureOptic, fixtureStart } from './fixtures/debugStarts.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
@@ -49,7 +51,7 @@ vi.mock('../src/render/armRig.ts', { spy: true });
 const fixture = async (
   firearm = true,
   firearmType?: string,
-  { preview, heldLook }: { preview?: string; heldLook?: ModelLibrary['heldLook'] } = {},
+  { optic, heldLook }: { optic?: string; heldLook?: ModelLibrary['heldLook'] } = {},
 ) => {
   const base = baseRegistry();
   const gun = firearmType
@@ -76,22 +78,24 @@ const fixture = async (
         name: 'Fixture item',
         category: 'misc' as const,
         weight: 100,
-        economy: { usage: [], tiers: [] },
         workInProgress: false,
-        notLoot: false,
         size: [2, 2] as [number, number],
         twoHanded: true,
       };
   const registry = { ...base, items: new Map(base.items).set(itemDef.id, itemDef) };
   const inventory = new Inventory(registry);
-  if (preview && !equipDebugLoadout(inventory, true, true, preview)) {
-    throw new Error('Preview loadout was not applied');
+  if (optic) {
+    applyStartKit(
+      inventory,
+      fixtureStart([{ id: 'firearm', item: gun.id, destination: { kind: 'hand', role: 'dominant' } }]),
+    );
+    fitFixtureOptic(inventory, inventory.hands.right!, optic);
   }
-  const item = preview ? inventory.hands.right : inventory.create(itemDef.id);
+  const item = optic ? inventory.hands.right : inventory.create(itemDef.id);
   if (!item) {
     throw new Error('Preview did not equip a right-hand firearm');
   }
-  if (!(preview || inventory.add(item, { kind: 'hand', side: 'right' }))) {
+  if (!(optic || inventory.add(item, { kind: 'hand', side: 'right' }))) {
     throw new Error('Cannot hold fixture item');
   }
   const figure = registry.figures.get('player')!;
@@ -235,7 +239,7 @@ it.each(['rifle_hunting', 'pump_shotgun', 'rifle_assault', 'rifle_ak', 'pistol_s
     const f = await fixture(true, type);
     const figure = f.registry.figures.get('player')!;
     const model = f.registry.models.get(f.registry.items.get(f.item.type)!.model!)!;
-    const amplitude = f.registry.skills.get('firearms_combat')!.combat!.firearms!.wobbleLimitRadians;
+    const amplitude = skilledFirearmsTuning(f.registry).wobbleLimitRadians;
     // Walking's vertical arch, look sway and noise share one vector cap, not independently additive maxima.
     const envelope = [
       NEUTRAL_AIM,
@@ -347,7 +351,7 @@ it('orbit and spectator orientation cannot change world handling transforms for 
 });
 
 it('the play frame poses overlay and world held views from this frame rather than the previous view', async () => {
-  const source = readFileSync(new URL('../src/game/play.ts', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../src/presentation/play.ts', import.meta.url), 'utf8');
   const start = source.indexOf('const updateFrame =');
   const end = source.indexOf('const skyRoute =', start);
   expect(start).toBeGreaterThan(0);
@@ -619,7 +623,7 @@ it.each(unityOpticTypes())(
     // Both the world figure and the hidden optics animator compose the gun; the test checks the world's.
     const fitted: { slot: string; fit: Object3D }[] = [];
     const f = await fixture(true, undefined, {
-      preview: `?loadout=ar&optic=${opticType}`,
+      optic: opticType,
       heldLook: (look) => {
         const parts = new Group().add(new Mesh(geometry, material), new Mesh(geometry, material));
         const slots = Object.fromEntries(

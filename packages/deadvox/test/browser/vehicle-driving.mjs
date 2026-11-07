@@ -53,7 +53,7 @@ export async function runDrivingProbes(vite, engines, selected) {
   // biome-ignore lint/style/useNamingConvention: wasm-bindgen API
   await raw.default({ module_or_path: wasm });
   const api = await vite.ssrLoadModule('/vendor/rapier-f64/rapier.js');
-  const { runDriving, driving, traceBits } = await vite.ssrLoadModule('/src/vehicles/feasibility/driving.ts');
+  const { runDriving, driving, traceBits } = await vite.ssrLoadModule('/src/feasibility/driving.ts');
   const baseline = runDriving(api);
   const bits = traceBits(baseline);
   assert.deepEqual(traceBits(runDriving(api)), bits, 'Node repeat agrees at every field');
@@ -62,7 +62,7 @@ export async function runDrivingProbes(vite, engines, selected) {
     wasmSha256: createHash('sha256').update(wasm).digest('hex'),
     scenarioSha256: createHash('sha256').update(JSON.stringify(driving)).digest('hex'),
     sourceSha256: createHash('sha256')
-      .update(await readFile(new URL('../../src/vehicles/feasibility/driving.ts', import.meta.url)))
+      .update(await readFile(new URL('../../src/feasibility/driving.ts', import.meta.url)))
       .digest('hex'),
   };
   const summary = Object.fromEntries(
@@ -93,7 +93,7 @@ export async function runDrivingProbes(vite, engines, selected) {
         {
           rawUrl: '/vendor/rapier-f64/rapier_wasm3d.js',
           apiUrl: '/vendor/rapier-f64/rapier.js',
-          drivingUrl: '/src/vehicles/feasibility/driving.ts',
+          drivingUrl: '/src/feasibility/driving.ts',
         },
       );
       await writeFile(
@@ -103,7 +103,7 @@ export async function runDrivingProbes(vite, engines, selected) {
       assert.deepEqual(result.bits, bits, `${engine}: all trajectory fields agree bit-for-bit with Node`);
       process.stdout.write(`${engine} ${browser.version()}: driving trajectories agree bit-for-bit\n`);
       if (engine === 'chromium') {
-        await page.goto(`http://127.0.0.1:${address.port}/src/vehicles/feasibility/driving.html`);
+        await page.goto(`http://127.0.0.1:${address.port}/src/feasibility/driving.html`);
         await page.waitForFunction(() => document.querySelector('#state').textContent.includes('"tick": 0'));
         await page.locator('#step').click();
         await page.waitForFunction(() => JSON.parse(document.querySelector('#state').textContent).tick === 1);

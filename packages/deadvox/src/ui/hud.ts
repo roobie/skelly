@@ -1,16 +1,15 @@
 // The quickbar and handling progress shown while playing (`DESIGN.md`, "Inventory screen").
 
 import { html, render, type TemplateResult } from 'lit-html';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import { claimed } from '../core/capabilities.ts';
 import type { Inventory, Location } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { countText, decimalText } from '../core/numberText.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
-import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import type { Quickbar } from '../game/quickbar.ts';
 import { activityProgress } from './activityProgress.ts';
-import { fillHint, type HintText, keyCap } from './keyCap.ts';
+import { fillHint, type HintText, type KeyLabels, keyCap } from './keyCap.ts';
 
 type QuickbarText = ScreenText['quickbar'];
 type HandlingText = ScreenText['handling'];
@@ -43,17 +42,17 @@ export interface QuickbarViewModel {
   readonly slots: readonly QuickbarSlotViewModel[];
 }
 
-export const quickbarViewModel = (bar: Quickbar, inv: Inventory): QuickbarViewModel => {
-  const text = inv.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.quickbar;
+export const quickbarViewModel = (bar: Quickbar, inv: Inventory, keys: KeyLabels): QuickbarViewModel => {
+  const text = claimed(inv.registry.ui, 'interface')!.screenText.quickbar;
   return {
     slots: bar.slots.map((_, i) => {
       const item = bar.resolve(i, inv);
       if (!item) {
-        return { key: labelForAction(`quickbar.use.${i + 1}`), filled: false, name: text.empty, where: '' };
+        return { key: keys.label(`quickbar.use.${i + 1}`), filled: false, name: text.empty, where: '' };
       }
       const at = inv.locate(item);
       return {
-        key: labelForAction(`quickbar.use.${i + 1}`),
+        key: keys.label(`quickbar.use.${i + 1}`),
         filled: true,
         name:
           item.count > 1
@@ -77,8 +76,8 @@ const quickbarTemplate = (vm: QuickbarViewModel): TemplateResult => html`
   )}
 `;
 
-export const renderQuickbar = (root: HTMLElement, bar: Quickbar, inv: Inventory): void => {
-  render(quickbarTemplate(quickbarViewModel(bar, inv)), root);
+export const renderQuickbar = (root: HTMLElement, bar: Quickbar, inv: Inventory, keys: KeyLabels): void => {
+  render(quickbarTemplate(quickbarViewModel(bar, inv, keys)), root);
 };
 
 /** Keep the looked-at debug hint above visible bottom HUD elements, or at the quickbar's own bottom offset. */
@@ -110,8 +109,8 @@ export const positionLookedAtReadout = (readout: HTMLElement): void => {
 };
 
 /** Changes when the inventory or a slot's item does; the redraw contract's key. */
-export const quickbarKey = (bar: Quickbar, inv: Inventory): string =>
-  `${inputBindings.revision}|${inv.version}|${inv.scaleHandlingTime(1)}|${bar.slots.map((uid) => uid ?? 0).join(',')}`;
+export const quickbarKey = (bar: Quickbar, inv: Inventory, keys: { readonly revision: number }): string =>
+  `${keys.revision}|${inv.version}|${inv.scaleHandlingTime(1)}|${bar.slots.map((uid) => uid ?? 0).join(',')}`;
 
 export interface HandlingViewModel {
   readonly visible: boolean;
@@ -158,10 +157,11 @@ export type TimedActionPresentation = {
 export const timedActionHandlingPresentation = (
   action: TimedActionPresentation,
   text: HandlingText,
+  keys: KeyLabels,
 ): HandlingPresentationSource => ({
   jobs: [],
   ...(action.stopped ? {} : { longAction: action }),
-  cancelLabel: action.stopped ? '' : fillHint(text.pause, { key: keyCap('handling.stop') }),
+  cancelLabel: action.stopped ? '' : fillHint(text.pause, { key: keyCap(keys, 'handling.stop') }),
   movementLabel: '',
 });
 

@@ -8,16 +8,16 @@ import {
   standingHeight,
   surfaceFoundation,
 } from './authoredTerrain.mjs';
+import { claimed } from './capabilities.ts';
 import type { Registry, TemplateDef } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import { placementLootIssues } from './placementLoot.ts';
 import { WORLD_BOTTOM_M, WORLD_TOP_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
-import { HORDE_TYPE, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
-import { ShowroomCatalogue, slotPlacement, slotProps } from './showroom.ts';
+import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
+import { loadedCatalogue, slotPlacement, slotProps } from './showroom.ts';
 import { grow, type Rect, rectDistance, rectsOverlap } from './site.ts';
-import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
+import { actorBodyDimensions, spawnOverlappingSolidBlock } from './spawnClearance.ts';
 import {
   cellsOf,
   type Placement,
@@ -52,11 +52,14 @@ const showroomIssues = (
 ): [string, string][] => {
   const showroom = layout.showroom!;
   const issues: [string, string][] = [];
-  if (!registry.blockIds.has(showroom.catalogue.floor)) {
-    issues.push(['.showroom.catalogue.floor', `no block "${showroom.catalogue.floor}"`]);
-  }
-  if (showroom.focusDistance >= showroom.catalogue.spacing) {
-    issues.push(['.showroom.focusDistance', 'must be less than the catalogue spacing, so focus stands in an aisle']);
+  const { catalogue } = showroom;
+  if (catalogue) {
+    if (!registry.blockIds.has(catalogue.floor)) {
+      issues.push(['.showroom.catalogue.floor', `no block "${catalogue.floor}"`]);
+    }
+    if (showroom.focusDistance >= catalogue.spacing) {
+      issues.push(['.showroom.focusDistance', 'must be less than the catalogue spacing, so focus stands in an aisle']);
+    }
   }
   if (showroom.slots.length > showroom.capacity) {
     issues.push(['.showroom.slots', `holds ${showroom.slots.length} slots; capacity is ${showroom.capacity}`]);
@@ -69,13 +72,23 @@ const showroomIssues = (
   if (issues.length > 0) {
     return issues;
   }
-  // Streaming whole columns, the startup ring can reach one column past its radius.
-  const ready = registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)?.readyRadiusM;
-  const { rect } = new ShowroomCatalogue(registry, showroom.catalogue);
-  const [px, , pz] = layout.player.position;
-  const distance = rectDistance(rect, Math.floor(px / TEMPLATE_BLOCK_SIZE), Math.floor(pz / TEMPLATE_BLOCK_SIZE));
-  if (ready !== undefined && distance * TEMPLATE_BLOCK_SIZE <= ready + CHUNK * TEMPLATE_BLOCK_SIZE) {
-    issues.push(['.showroom.catalogue.position', 'must lie beyond the startup ring, so it cannot delay the start']);
+  // An unknown row id is the row's own issue; the floor is measured once the rows resolve.
+  const rowsResolve = [...registry.catalogueRows.values()].every(({ furniture }) =>
+    furniture.every((id) => registry.furniture.has(id)),
+  );
+  const shown = catalogue && rowsResolve ? loadedCatalogue(registry, catalogue) : undefined;
+  if (shown) {
+    // Streaming whole columns, the startup ring can reach one column past its radius.
+    const ready = claimed(registry.graphics, 'graphics')?.readyRadiusM;
+    const [px, , pz] = layout.player.position;
+    const distance = rectDistance(
+      shown.rect,
+      Math.floor(px / TEMPLATE_BLOCK_SIZE),
+      Math.floor(pz / TEMPLATE_BLOCK_SIZE),
+    );
+    if (ready !== undefined && distance * TEMPLATE_BLOCK_SIZE <= ready + CHUNK * TEMPLATE_BLOCK_SIZE) {
+      issues.push(['.showroom.catalogue.position', 'must lie beyond the startup ring, so it cannot delay the start']);
+    }
   }
   const placement = slotPlacement(registry, layout);
   if (placement) {
@@ -210,23 +223,15 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     checkSpawn([position[0], position[2]], path);
     supported(position, path);
   });
-  if (layout.repairStock !== undefined) {
-    const stock = placements.filter(({ template }) => template.id === layout.repairStock);
-    if (stock.length !== 1) {
-      issues.push(['.repairStock', `"${layout.repairStock}" must name exactly one building in this site`]);
-    } else if (!placedPieces(stock[0]!).some(({ furniture }) => registry.furniture.get(furniture)?.container)) {
-      issues.push(['.repairStock', `"${layout.repairStock}" has no container furniture`]);
-    }
-  }
   if (layout.showroom) {
     issues.push(...showroomIssues(layout, registry, solidAt));
   }
   supported(layout.player.position, '.player.position');
   checkSpawn([layout.player.position[0], layout.player.position[2]], '.player.position');
   const authoredHordes = layout.hordes ?? [];
-  const hordeType = registry.zombies.get(HORDE_TYPE);
+  const hordeType = claimed(registry.actors, 'settlementHorde');
   if (authoredHordes.length > 0 && !hordeType) {
-    issues.push(['.hordes', `no zombie type "${HORDE_TYPE}"`]);
+    issues.push(['.hordes', 'missing required capability "settlementHorde"']);
   }
   const hordeIds = new Set<string>();
   authoredHordes.forEach(({ id, position }, i) => {
@@ -240,7 +245,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     if (hordeType) {
       const blocked = spawnOverlappingSolidBlock(
         blocks(position),
-        zombieBodyDimensions(hordeType, TEMPLATE_BLOCK_SIZE),
+        actorBodyDimensions(hordeType, TEMPLATE_BLOCK_SIZE),
         solidAt,
       );
       if (blocked) {
@@ -249,7 +254,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     }
   });
   layout.shamblers.forEach((spawn, i) => {
-    const type = registry.zombies.get(spawn.type);
+    const type = registry.actors.get(spawn.type);
     if (!type) {
       issues.push([`.shamblers[${i}].type`, `no zombie type "${spawn.type}"`]);
     }
@@ -258,7 +263,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     if (type) {
       const blocked = spawnOverlappingSolidBlock(
         blocks(spawn.position),
-        zombieBodyDimensions(type, TEMPLATE_BLOCK_SIZE),
+        actorBodyDimensions(type, TEMPLATE_BLOCK_SIZE),
         solidAt,
       );
       if (blocked) {
@@ -295,6 +300,9 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     check([area.x0, area.z0], `.beats[${i}].area`);
     check([area.x1, area.z1], `.beats[${i}].area`);
   });
+  if (layout.practice && !beatIds.has(layout.practice.exitMark)) {
+    issues.push(['.practice.exitMark', `no stage mark "${layout.practice.exitMark}"`]);
+  }
   return issues;
 };
 

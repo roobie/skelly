@@ -2,9 +2,12 @@ import { readFileSync } from 'node:fs';
 import { Mesh } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it, vi } from 'vitest';
+import type { ActorRegions } from '../src/core/actorRegions.ts';
+import type { Detonation } from '../src/core/actorSystem.ts';
 import { dominantSide } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { fragmentDirections } from '../src/core/explosive.ts';
+import { HUMANOID_REGION_NAMES } from '../src/core/humanoidRegionNames.ts';
 import type { Item } from '../src/core/items.ts';
 import { Rng } from '../src/core/random.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
@@ -18,9 +21,6 @@ import {
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
-import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
-import type { ZombieRegions } from '../src/core/zombieRegions.ts';
-import type { Detonation } from '../src/core/zombies.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { itemLook } from '../src/render/itemLook.ts';
@@ -30,11 +30,11 @@ import { baseRegistry } from './baseRegistry.ts';
 import type { MoveIntent } from './playerFixture.ts';
 
 const registry = baseRegistry();
-const MODEL_ROOT = 'src/content/base';
+const MODEL_ROOT = '../mods/skelly.explosives';
 const BLOCK = 0.5;
 const GRENADE = 'frag_grenade';
 const FUSE = registry.items.get(GRENADE)!.explosive!.fuseSimSeconds;
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const OPEN: SolidAt = (_x, y) => y < 0;
 /** A wall across the x axis in block column 2, well above head height. */
 const WALL_AT_X2: SolidAt = (x, y) => y < 0 || (x === 2 && y < 10);
@@ -42,15 +42,19 @@ const WALL_AT_X2: SolidAt = (x, y) => y < 0 || (x === 2 && y < 10);
 const version: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
   schemaVersion: SAVE_SCHEMA_VERSION,
-  generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
+  generators: {
+    worldgen: 'worldgen-v2',
+    'bodyPlan.humanoid': 'humanoid-figure-v1',
+    'bodyPlan.fused-mass': 'fused-mass-figure-v1',
+  },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
 const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   switch (kind) {
     case 'item':
       return registry.items.has(id);
-    case 'zombie':
-      return registry.zombies.has(id);
+    case 'actor':
+      return registry.actors.has(id);
     case 'sound':
       return registry.sounds.has(id);
     default:
@@ -121,13 +125,14 @@ const liveInHand = (session: Runtime): Item => {
   return grenade;
 };
 
-const healthLost = (before: ZombieRegions, after: ZombieRegions): number =>
-  ZOMBIE_REGION_NAMES.reduce((sum, region) => sum + before[region]! - after[region]!, 0);
+const healthLost = (before: ActorRegions, after: ActorRegions): number =>
+  HUMANOID_REGION_NAMES.reduce((sum, region) => sum + before[region]! - after[region]!, 0);
 
 /** A detonation in blocks at `origin`; without `fragmentCount`, it throws no fragments. */
 const detonation = (origin: Vec3, blast: Detonation['blast'], fragmentCount = 0): Detonation => ({
   blast,
   fragments: {
+    damageKind: 'pierce',
     origin,
     directions: fragmentDirections(Rng.stream(5, 'test-fragments'), fragmentCount),
     damage: 5,
@@ -355,11 +360,11 @@ describe('hand grenade', () => {
   it('hurts a nearer shambler more, and none beyond the blast radius', () => {
     const session = runtime();
     const origin: Vec3 = [0, 1, 0];
-    const near = session.zombieStore.get(session.zombies.add(SHAMBLER, [2, 0, 0]))!;
-    const far = session.zombieStore.get(session.zombies.add(SHAMBLER, [-6, 0, 0]))!;
-    const beyond = session.zombieStore.get(session.zombies.add(SHAMBLER, [0, 0, 14]))!;
+    const near = session.actorStore.get(session.actors.add(SHAMBLER, [2, 0, 0]))!;
+    const far = session.actorStore.get(session.actors.add(SHAMBLER, [-6, 0, 0]))!;
+    const beyond = session.actorStore.get(session.actors.add(SHAMBLER, [0, 0, 14]))!;
     const before = [near, far, beyond].map(({ regions }) => ({ ...regions }));
-    session.zombies.detonate(detonation(origin, { radiusMetres: 6, damage: 20, impulse: 1 }));
+    session.actors.detonate(detonation(origin, { damageKind: 'blunt', radiusMetres: 6, damage: 20, impulse: 1 }));
     const [nearLoss, farLoss, beyondLoss] = [near, far, beyond].map(({ regions }, i) =>
       healthLost(before[i]!, regions),
     );
@@ -370,10 +375,12 @@ describe('hand grenade', () => {
 
   it('stops blast and fragments at a wall, while a shambler as close on the open side is hit', () => {
     const session = runtime(WALL_AT_X2);
-    const sheltered = session.zombieStore.get(session.zombies.add(SHAMBLER, [6, 0, 0.5]))!;
-    const open = session.zombieStore.get(session.zombies.add(SHAMBLER, [-5, 0, 0.5]))!;
+    const sheltered = session.actorStore.get(session.actors.add(SHAMBLER, [6, 0, 0.5]))!;
+    const open = session.actorStore.get(session.actors.add(SHAMBLER, [-5, 0, 0.5]))!;
     const before = [sheltered, open].map(({ regions }) => ({ ...regions }));
-    session.zombies.detonate(detonation([0.5, 1, 0.5], { radiusMetres: 6, damage: 20, impulse: 1 }, 400));
+    session.actors.detonate(
+      detonation([0.5, 1, 0.5], { damageKind: 'blunt', radiusMetres: 6, damage: 20, impulse: 1 }, 400),
+    );
     expect(healthLost(before[0]!, sheltered.regions)).toBe(0);
     expect(healthLost(before[1]!, open.regions)).toBeGreaterThan(0);
   });
@@ -385,9 +392,9 @@ describe('hand grenade', () => {
       id: 'fixture_parts',
       severedItems: { ...SHAMBLER.severedItems, leftArm: 'rag', rightLeg: null } as typeof SHAMBLER.severedItems,
     };
-    const id = session.zombies.add(type, [1, 0, 0]);
-    session.zombies.detonate(detonation([0, 1, 0], { radiusMetres: 6, damage: 1000, impulse: 1 }));
-    expect(session.zombieStore.get(id)).toBeUndefined();
+    const id = session.actors.add(type, [1, 0, 0]);
+    session.actors.detonate(detonation([0, 1, 0], { damageKind: 'blunt', radiusMetres: 6, damage: 1000, impulse: 1 }));
+    expect(session.actorStore.get(id)).toBeUndefined();
     const dropped = [...session.inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item.type));
     const limbs = (['leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const)
       .map((region) => type.severedItems[region])

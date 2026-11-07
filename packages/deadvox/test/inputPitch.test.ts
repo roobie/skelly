@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/input.ts';
+import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
 
 it('keeps recoil-driven view-pitch shifts within the mouse-look limits', () => {
   const upward = adjustLookPitch(LOOK_PITCH_LIMIT - 0.01, 0.2);

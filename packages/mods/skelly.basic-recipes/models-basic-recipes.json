@@ -1,0 +1,52 @@
+{
+  "models": [
+    {
+      "file": "assets/models/wooden_plank.glb",
+      "grip": {
+        "at": [0, 0.01, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "wooden_plank",
+      "itemPresentation": {
+        "materials": ["wood"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "material": {
+          "centreOfMass": [-0.0031353591160220989, 0.01, 0.0045994475138121547],
+          "massKg": 0.5,
+          "node": "material:cutStock"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/hand_saw.glb",
+      "grip": {
+        "at": [0.014, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "hand_saw",
+      "itemPresentation": {
+        "materials": ["wood", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "hand_saw": {
+          "centreOfMass": [0.14426835443037972, 0, -9.1139240506329027e-5],
+          "massKg": 0.65000000000000002,
+          "node": "hand_saw:compound"
+        }
+      },
+      "roll": 90
+    }
+  ]
+}

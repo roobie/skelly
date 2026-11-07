@@ -1,6 +1,7 @@
+import { claimed } from '../core/capabilities.ts';
 import type { Registry } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { type DropReceiverContext, pileDropSound } from '../core/dropSounds.ts';
 import type { MoveStart } from '../core/handling.ts';
 import type { Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
@@ -82,8 +83,7 @@ export const firearmShotEmission = (registry: Registry, item: Item, noiseRadiusS
 export type HeartbeatTuning = BodyTuningDef['heartbeat'];
 
 /** The player body's heartbeat; content validation makes the player body required. */
-export const playerHeartbeat = (registry: Registry): HeartbeatTuning =>
-  registry.body.get(CORE_CONTENT_IDS.player)!.heartbeat;
+export const playerHeartbeat = (registry: Registry): HeartbeatTuning => claimed(registry.body, 'player')!.heartbeat;
 
 export interface HeartbeatTarget {
   readonly bpm: number;
@@ -108,20 +108,26 @@ export const handlingMoveStartCue = (
   move: MoveStart,
   ownerLocation: Location | undefined,
   chest: Vec3,
+  takeSound: SoundId | undefined,
 ): HandlingSoundCue | undefined => {
   const { from, target } = move;
   if (
+    takeSound !== undefined &&
     from.kind === 'pocket' &&
     ownerLocation?.kind === 'worn' &&
     !(target.kind === 'pocket' && target.owner === from.owner && target.pocket === from.pocket)
   ) {
-    return { event: 'pouch_take', position: chest };
+    return { event: takeSound, position: chest };
   }
   return undefined;
 };
 
 /** Sound policy for a completed move; positions remain in blocks for SessionAudio to scale once. */
-export const handlingMoveCompleteCue = (move: MoveStart): HandlingSoundCue | undefined => {
+export const handlingMoveCompleteCue = (
+  move: MoveStart,
+  registry: Registry,
+  context: DropReceiverContext,
+): HandlingSoundCue | undefined => {
   const { from, target } = move;
   if (target.kind !== 'pile') {
     return undefined;
@@ -131,5 +137,5 @@ export const handlingMoveCompleteCue = (move: MoveStart): HandlingSoundCue | und
     return undefined;
   }
   const [x, y, z] = target.pos;
-  return { event: 'item_drop_wood', position: [x + 0.5, y, z + 0.5] };
+  return { event: pileDropSound(registry, move.item.type, target.pos, context), position: [x + 0.5, y, z + 0.5] };
 };

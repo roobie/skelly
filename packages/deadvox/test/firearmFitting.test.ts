@@ -414,34 +414,39 @@ describe('certified firearm fitting', () => {
 
   it('keeps an optic with an unavailable view out of fitting with its own refusal', () => {
     const fixture = makeFixture();
-    const optic = [...fixture.registry.items.values()].find((item) => item.opticView === 'unavailable');
-    if (!optic?.model) {
-      throw new Error('Fixture registry needs an optic with an unavailable view');
+    const slotFor = (attachmentId: string | undefined) =>
+      fixture.model.attachmentSlots!.find(
+        ({ id }) => attachmentId !== undefined && fixture.model.compatibility?.[id]?.includes(attachmentId),
+      );
+    const attachmentOf = (item: ItemDef) =>
+      item.model === undefined ? undefined : fixture.registry.models.get(item.model)?.gun?.attachment;
+    const viewable = [...fixture.registry.items.values()].find((item) => {
+      const attachment = attachmentOf(item);
+      return attachment?.kind === 'optic' && item.opticView === undefined && slotFor(attachment.id) !== undefined;
+    });
+    if (!viewable) {
+      throw new Error('Fixture firearm needs a compatible optic with a view');
     }
-    const opticModel = fixture.registry.models.get(optic.model)!;
-    const firearmSlot = fixture.model.attachmentSlots!.find(({ id }) =>
-      fixture.model.compatibility?.[id]?.includes(opticModel.gun!.attachment!.id),
-    );
-    if (!firearmSlot) {
-      throw new Error('Fixture firearm needs a compatible optic slot');
-    }
+    // The test owns the mark, so it does not depend on shipped content carrying one.
+    fixture.registry.items.set(viewable.id, { ...viewable, opticView: 'unavailable' });
+    const firearmSlot = slotFor(attachmentOf(viewable)!.id)!;
     if (fixture.firearm.slots?.[firearmSlot.id]) {
       fixture.inventory.fitSlot(fixture.firearm, firearmSlot.id, undefined);
     }
-    const thermal = fixture.inventory.create(optic.id);
+    const marked = fixture.inventory.create(viewable.id);
     const queue = new HandlingQueue(fixture.inventory);
     const handling = new FirearmAttachmentHandling(fixture.inventory, queue, () => [0, 0, 0]);
     if (
       !(
         fixture.inventory.add(fixture.firearm, { kind: 'hand', side: 'right' }) &&
-        fixture.inventory.add(thermal, { kind: 'pile', pos: [0, 0, 0] })
+        fixture.inventory.add(marked, { kind: 'pile', pos: [0, 0, 0] })
       )
     ) {
       throw new Error('Fixture items could not be placed for optic handling');
     }
 
-    expect(handling.candidates(fixture.firearm.uid, firearmSlot.id)).not.toContain(thermal);
-    expect(handling.fit(fixture.firearm.uid, firearmSlot.id, thermal.uid)).toBe(
+    expect(handling.candidates(fixture.firearm.uid, firearmSlot.id)).not.toContain(marked);
+    expect(handling.fit(fixture.firearm.uid, firearmSlot.id, marked.uid)).toBe(
       fixture.registry.ui.get('core')!.actionText.attachments.viewUnavailable,
     );
     expect(queue.jobs).toHaveLength(0);
