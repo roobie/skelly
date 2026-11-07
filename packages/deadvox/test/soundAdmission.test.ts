@@ -6,6 +6,7 @@ import { type SoundEmission, SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE, type SessionAudio } from '../src/game/session.ts';
 import { GameAudio } from '../src/presentation/audio.ts';
+import { productAssets } from '../src/product/assets.ts';
 import { startupContent } from './baseRegistry.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
@@ -145,6 +146,7 @@ describe('simulation sound admission', () => {
       isSolid: () => false,
       tuning: TEST_SENSE_TUNING,
       report,
+      files: productAssets.audio,
     });
     const session = makeSession(
       (sound) => output.play(sound, sound.position.map((v) => v * 0.5) as [number, number, number]),

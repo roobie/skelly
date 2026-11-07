@@ -21,24 +21,17 @@ import { type GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { attachmentFrame } from '../core/attachmentFrame.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
-import { bundledAssetFiles, bundledOriginAssetKey } from '../presentation/bundledAssets.ts';
+import { bundledOriginAssetKey } from '../presentation/bundledAssets.ts';
 import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
 import type { ItemLook, ItemLookSlot } from './itemLook.ts';
 import { fittedStateGroup } from './itemStateLook.ts';
 import { applyModelMaterials } from './modelMaterials.ts';
 
-const PACK_FILES = bundledAssetFiles({
-  ...import.meta.glob<string>('../../mods/*/assets/**/*.glb', {
-    eager: true,
-    query: '?url',
-    import: 'default',
-  }),
-  ...import.meta.glob<string>('../../../mods/*/assets/**/*.glb', {
-    eager: true,
-    query: '?url',
-    import: 'default',
-  }),
-});
+/**
+ * A fixture's model URLs keyed by the model's `file`, or the product's bundled ones keyed by bundled asset key
+ * (`PresentationAssets`, `models`).
+ */
+export type ModelFiles = Readonly<Record<string, string>> | { readonly packAssets: Readonly<Record<string, string>> };
 
 export interface GroundModelPart {
   readonly geometry: BufferGeometry;
@@ -262,16 +255,12 @@ export class ModelLibrary {
   private readonly loadNext: () => void;
 
   /** `report` hears about models that can't be drawn; it's never called during construction. */
-  constructor(
-    registry: Registry,
-    report: (message: string) => void,
-    files: Readonly<Record<string, string>> | undefined,
-    loadConcurrency: number,
-  ) {
+  constructor(registry: Registry, report: (message: string) => void, files: ModelFiles, loadConcurrency: number) {
     const loader = new GLTFLoader();
+    const packAssets = typeof files.packAssets === 'object' ? files.packAssets : undefined;
     this.pending = [...registry.models.values()].flatMap((def) => {
       const key = bundledOriginAssetKey(registry.modelOrigins.get(def.id)?.source, def.file);
-      const url = files ? files[def.file] : PACK_FILES[key ?? ''];
+      const url = packAssets ? packAssets[key ?? ''] : (files as Readonly<Record<string, string>>)[def.file];
       if (url === undefined) {
         queueMicrotask(() => report(`model "${def.id}": no file "${def.file}" in the pack`));
         return [];

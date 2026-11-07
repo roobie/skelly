@@ -29,6 +29,7 @@ import { startPlay } from './presentation/play.ts';
 import { renderFreeFromUrl } from './presentation/renderMode.ts';
 import { tutorialRequested, tutorialUrl } from './presentation/tutorialUrl.ts';
 import { WorldLoading } from './presentation/worldLoading.ts';
+import { productAssets as assets } from './product/assets.ts';
 import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
 import { mountFullscreenOptions } from './ui/fullscreenOptions.ts';
@@ -86,7 +87,7 @@ const reportError = (message: string) => {
   const errors = document.getElementById('errors')!;
   errors.textContent = [errors.textContent, message].filter(Boolean).join('\n');
 };
-applyUiTokens(content.registry, document.documentElement, { report: reportError });
+applyUiTokens(content.registry, document.documentElement, { report: reportError, files: assets.cursors });
 const { screenText } = claimed(content.registry.ui, 'interface')!;
 inputBindings.setPointerLabels(screenText.pointerButtonLabels);
 const menuCard = document.querySelector<HTMLElement>('#overlay .card');
@@ -192,6 +193,7 @@ if (bench === 'report') {
       });
       clearPendingInputReplay(replayStash);
       startPlay(engine, debugModule!, {
+        assets,
         restore: decoded.snapshot,
         replay: {
           inputs: decoded.inputs,
@@ -210,7 +212,7 @@ if (bench === 'report') {
     practiceParams.set('site', 'tutorial');
     const practiceConfig = configFromUrl(practiceParams, content);
     const engine = createEngine(practiceConfig, view, undefined, { render: !renderFree });
-    startPlay(engine, undefined, { tutorial: true });
+    startPlay(engine, undefined, { assets, tutorial: true });
     document.getElementById('new-character-options')!.hidden = true;
     document.getElementById('tutorial-start')!.hidden = true;
     document.getElementById('save-status')!.textContent = 'Unsaved practice';
@@ -270,7 +272,12 @@ if (bench === 'report') {
     const engine = createEngine(config, view, undefined, { render: !renderFree });
     const restored = await saveController.validateContent(engine.registry);
     if (saveController.isRestored && restored) {
-      startPlay(engine, debugModule, { saveController, restore: restored, ...(skyRoute ? { skyRoute } : {}) });
+      startPlay(engine, debugModule, {
+        assets,
+        saveController,
+        restore: restored,
+        ...(skyRoute ? { skyRoute } : {}),
+      });
       hideStartupScreen();
     } else {
       saveController.setNewWorldLauncher(async (creation) => {
@@ -284,6 +291,7 @@ if (bench === 'report') {
         let entry: ReturnType<typeof startPlay>;
         try {
           entry = startPlay(engine, debugModule, {
+            assets,
             saveController,
             loading: { owner, draw },
             ...creation,

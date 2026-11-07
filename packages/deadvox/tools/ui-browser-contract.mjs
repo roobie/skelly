@@ -353,6 +353,7 @@ try {
   const uiTokens = await evaluate(`(async () => {
     const { buildRegistry } = await import('/src/core/content.ts');
     const { applyUiTokens } = await import('/src/ui/uiTokens.ts');
+    const { productAssets } = await import('/src/product/assets.ts');
     const { default: baseUi } = await import('${sharedModUrl('skelly.ui/ui.json')}');
     const { default: baseCursor } = await import('${sharedModUrl('skelly.ui/cursor.json')}');
     const frame = document.createElement('iframe');
@@ -370,7 +371,7 @@ try {
         { source: 'ui-probe.json', data: { ui: [{ ...baseUi.ui.find((row) => row.id === 'core'), refusalSound: sound.id, ...tuning }] } },
       ]);
       if (issues.length) throw new Error('Invalid UI probe fixture: ' + JSON.stringify(issues));
-      applyUiTokens(registry, frame.contentDocument.documentElement, { report: (message) => { throw new Error(message); } });
+      applyUiTokens(registry, frame.contentDocument.documentElement, { report: (message) => { throw new Error(message); }, files: productAssets.cursors });
       const style = frame.contentWindow.getComputedStyle(probe);
       return { padding: Number.parseFloat(style.paddingLeft), fontSize: Number.parseFloat(style.fontSize) };
     };
@@ -652,6 +653,7 @@ try {
       blockSize: 1,
       isSolid: () => false,
       report: () => {},
+      files: {},
     }).settings;
   })`);
   assert.equal(restoredVolumes.world, savedWorldVolume, 'a fresh audio instance reads the persisted volume');

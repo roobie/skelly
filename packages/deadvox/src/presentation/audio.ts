@@ -14,7 +14,7 @@ import {
 } from '../game/audioPresentation.ts';
 import { type HeardSound, Hearing } from '../game/hearing.ts';
 import { VoiceCaps } from '../game/voiceCaps.ts';
-import { bundledAssetFiles, bundledOriginAssetKey } from './bundledAssets.ts';
+import { bundledOriginAssetKey } from './bundledAssets.ts';
 
 const SETTINGS_KEY = 'skelly.audio.settings';
 const CATEGORIES = ['world', 'body', 'ui'] as const;
@@ -56,19 +56,6 @@ const readVolumes = (defaults: Readonly<AudioVolumes>): AudioVolumes => {
   }
 };
 
-const PACK_FILES = bundledAssetFiles({
-  ...import.meta.glob<string>('../../mods/*/assets/audio/**/*.ogg', {
-    eager: true,
-    query: '?url',
-    import: 'default',
-  }),
-  ...import.meta.glob<string>('../../../mods/*/assets/audio/**/*.ogg', {
-    eager: true,
-    query: '?url',
-    import: 'default',
-  }),
-});
-
 interface Nodes {
   master: GainNode;
   categories: Map<AudioCategory, GainNode>;
@@ -80,6 +67,8 @@ export interface GameAudioOptions {
   isSolid: SolidAt;
   tuning: SenseDef;
   report: (message: string) => void;
+  /** Recording URLs by bundled asset key; see `PresentationAssets`. */
+  files: Readonly<Record<string, string>>;
 }
 
 interface SourceStartOptions {
@@ -145,6 +134,7 @@ export class GameAudio {
   private readonly registry: Registry;
   private readonly hearing: Hearing;
   private readonly report: (message: string) => void;
+  private readonly files: Readonly<Record<string, string>>;
   private readonly voiceCaps = new VoiceCaps<Voice>(VOICE_FADE_SECONDS);
   private readonly heartbeat: HeartbeatTuning;
   private heartbeatTarget: HeartbeatTarget;
@@ -154,8 +144,9 @@ export class GameAudio {
   private disposed = false;
   private outputMuted = false;
 
-  constructor({ registry, blockSize, isSolid, tuning, report }: GameAudioOptions) {
+  constructor({ registry, blockSize, isSolid, tuning, report, files }: GameAudioOptions) {
     this.registry = registry;
+    this.files = files;
     this.hearing = new Hearing({ blockSize, isSolid, tuning });
     this.report = report;
     this.volumes = readVolumes(claimed(registry.ui, 'interface')!.audioVolumes);
@@ -474,7 +465,7 @@ export class GameAudio {
     }
     const origin = this.registry.soundOrigins.get(event);
     const key = bundledOriginAssetKey(origin?.source, file);
-    return key ? PACK_FILES[key] : undefined;
+    return key ? this.files[key] : undefined;
   }
 
   private variantBuffer(

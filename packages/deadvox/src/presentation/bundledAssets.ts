@@ -1,5 +1,12 @@
 import { bundledPacks } from '../game/bundledPacks.ts';
 
+/** Asset URLs keyed by `bundledOriginAssetKey`, passed in by the product, which globs its own mod roots. */
+export interface PresentationAssets {
+  readonly audio: Readonly<Record<string, string>>;
+  readonly models: Readonly<Record<string, string>>;
+  readonly cursors: Readonly<Record<string, string>>;
+}
+
 const bundledAssetKey = (packId: string, path: string): string => `${packId}/${path}`;
 
 export const bundledAssetFiles = (

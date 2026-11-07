@@ -185,8 +185,6 @@ const CONTENT_GLOB_PATTERNS = new Set([
   '../../../mods/*/*.json',
   '../../mods/*/pack/manifest.json',
   '../../../mods/*/pack/manifest.json',
-  '../../mods/*/assets/audio/**/*.ogg',
-  '../../../mods/*/assets/audio/**/*.ogg',
   '../config/bundled/*.json',
 ]);
 const REQUIRE_CALL = /\brequire\s*\(/;

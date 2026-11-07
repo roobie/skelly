@@ -30,6 +30,7 @@ import type { SkySnapshot } from '../src/core/skySnapshot.ts';
 import { buildSkyResult, type SkyResult } from '../src/core/skyTransport.ts';
 import type { Engine } from '../src/presentation/engine.ts';
 import { ThirdPersonOrbit } from '../src/presentation/thirdPersonOrbit.ts';
+import { productAssets } from '../src/product/assets.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { ITEM_POINT_LIGHTS } from '../src/render/lightPool.ts';
 import { createPlayView } from '../src/render/playView.ts';
@@ -126,7 +127,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     },
     isSolid,
   } as unknown as Engine;
-  const view = createPlayView(engine, inventory, vi.fn(), { page });
+  const view = createPlayView(engine, inventory, vi.fn(), { models: productAssets.models, page });
   syncActor(view, engine.camera);
   return {
     engine,
@@ -259,7 +260,11 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
     },
     shadows: { torchOn: true, restore: vi.fn(), attachTorches: vi.fn() },
   } as unknown as Engine;
-  const view = createPlayView(engine, inventory, vi.fn(), { page: new EventTarget(), poweredLights });
+  const view = createPlayView(engine, inventory, vi.fn(), {
+    models: productAssets.models,
+    page: new EventTarget(),
+    poweredLights,
+  });
   const daylight = skyAt(12, BASE_DAY_CYCLE);
   const updateFrame = () => {
     syncActor(view, camera);
@@ -566,7 +571,7 @@ describe('play presentation ownership', () => {
       sky: {},
       isSolid: () => false,
     } as unknown as Engine;
-    const view = createPlayView(engine, inventory, vi.fn(), { page: new EventTarget() });
+    const view = createPlayView(engine, inventory, vi.fn(), { models: productAssets.models, page: new EventTarget() });
 
     expect(view.pictures).toBeUndefined();
     expect(view.render()).toBeNull();

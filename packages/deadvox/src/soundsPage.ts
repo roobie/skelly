@@ -4,6 +4,7 @@ import { claimed } from './core/capabilities.ts';
 import type { SoundId } from './core/soundEvents.ts';
 import { playerHeartbeat } from './game/audioPresentation.ts';
 import { GameAudio } from './presentation/audio.ts';
+import { productAssets } from './product/assets.ts';
 import { buildSoundsPageContent } from './soundsPageContent.ts';
 import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from './ui/soundGuide.ts';
 import { applyUiTokens } from './ui/uiTokens.ts';
@@ -25,7 +26,7 @@ const report = (message: string) => {
   errorRoot.textContent = message;
 };
 // The page shares the game's style sheet, which is measured in these tokens.
-applyUiTokens(registry, document.documentElement, { report });
+applyUiTokens(registry, document.documentElement, { report, files: productAssets.cursors });
 
 const audio = new GameAudio({
   registry,
@@ -33,6 +34,7 @@ const audio = new GameAudio({
   isSolid: () => false,
   tuning: claimed(registry.senses, 'player')!,
   report,
+  files: productAssets.audio,
 });
 audio.updateListener([0, 0, 0], [0, 0, -1]);
 

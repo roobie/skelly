@@ -14,6 +14,7 @@ import { World } from '../src/core/world.ts';
 import { firearmShotEmission, heartbeatForStamina, playerHeartbeat } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { GameAudio } from '../src/presentation/audio.ts';
+import { productAssets } from '../src/product/assets.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const audios: GameAudio[] = [];
@@ -176,7 +177,14 @@ const setup = (solidAt: SolidAt = () => false, registryOverride?: Registry) => {
   // Audio reads its default volumes and heartbeat from the bundled UI and body rows.
   const registry = { ...soundRegistry.registry, ui: baseRegistry.ui, body: baseRegistry.body };
   const isSolid = vi.fn(solidAt);
-  const audio = new GameAudio({ registry, blockSize: 1, isSolid, tuning: senseTuning, report: vi.fn() });
+  const audio = new GameAudio({
+    registry,
+    blockSize: 1,
+    isSolid,
+    tuning: senseTuning,
+    report: vi.fn(),
+    files: productAssets.audio,
+  });
   audios.push(audio);
   const picker = new SoundPicker(53, registry.sounds);
   const selected: SoundEmission[] = [];

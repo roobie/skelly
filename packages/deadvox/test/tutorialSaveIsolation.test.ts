@@ -19,7 +19,8 @@ it('rejects a save-bound content-selected guide before runtime actions or save a
       throw new Error('Save accessed before save-isolation admission');
     },
   });
-  expect(() => startPlay(engine, undefined, { saveController })).toThrow(
+  const assets = { audio: {}, models: {}, cursors: {} };
+  expect(() => startPlay(engine, undefined, { assets, saveController })).toThrow(
     'Practice cannot bind a save or restore a world',
   );
 });

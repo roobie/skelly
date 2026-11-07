@@ -213,15 +213,18 @@ export const createPlayView = (
   inventory: Inventory,
   report: (message: string) => void,
   {
+    models: modelFiles,
     page = globalThis,
     poweredLights = () => [],
     physicalSolid = engine.isSolid,
   }: {
+    /** The product's bundled model URLs; see `PresentationAssets`. */
+    models: Readonly<Record<string, string>>;
     page?: Pick<EventTarget, 'addEventListener'>;
     poweredLights?: () => readonly PoweredLight[];
     /** The session's physical query, with parked vehicles, for corpses, the camera and flare occlusion. */
     physicalSolid?: (x: number, y: number, z: number) => boolean;
-  } = {},
+  },
 ) => {
   const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
   const drawCounters = config.debug && renderer ? new DrawCounters(renderer) : undefined;
@@ -230,7 +233,7 @@ export const createPlayView = (
   const graphics = graphicsTuningOf(registry);
   const s = config.scale.blockSize;
   const { gravityMetresPerSimSecondSquared } = playerTuning(registry);
-  const models = new ModelLibrary(registry, report, undefined, graphics.modelLoadConcurrency);
+  const models = new ModelLibrary(registry, report, { packAssets: modelFiles }, graphics.modelLoadConcurrency);
   let pictures: ItemPictures | undefined;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {

@@ -2,6 +2,7 @@ import { setImmediate } from 'node:timers/promises';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { soundVariantKey } from '../src/core/soundSynth.ts';
 import { GameAudio } from '../src/presentation/audio.ts';
+import { productAssets } from '../src/product/assets.ts';
 import { buildSoundsPageContent } from '../src/soundsPageContent.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
@@ -58,7 +59,14 @@ describe('listening sheet', () => {
     );
     expect(recorded).toBeDefined();
     const report = vi.fn();
-    const audio = new GameAudio({ registry, blockSize: 1, isSolid: () => false, tuning: BASE_SENSE_TUNING, report });
+    const audio = new GameAudio({
+      registry,
+      blockSize: 1,
+      isSolid: () => false,
+      tuning: BASE_SENSE_TUNING,
+      report,
+      files: productAssets.audio,
+    });
     audio.unlock();
 
     expect(audio.preview(recorded!.sound.id, soundVariantKey(recorded!.sound.id, recorded!.variant))).toBe(true);

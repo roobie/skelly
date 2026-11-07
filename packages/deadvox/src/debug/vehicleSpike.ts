@@ -31,6 +31,7 @@ import type { VehicleFittingDef } from '../core/schema.ts';
 import { skyAt } from '../core/sky.ts';
 import { assembledVehicle, loadVehicleBlueprint, type PlacedFitting } from '../core/vehicleBlueprint.ts';
 import { buildBundledContent } from '../game/bundledContent.ts';
+import { productAssets } from '../product/assets.ts';
 import { ModelLibrary } from '../render/models.ts';
 import { PlayerMeshes } from '../render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
@@ -465,7 +466,7 @@ const partModels = new ModelLibrary(
     errorText = message;
     renderPanel();
   },
-  undefined,
+  { packAssets: productAssets.models },
   graphicsTuningOf(registry).modelLoadConcurrency,
 );
 /** Each content build's fittings: the blueprint's placement beside what loading placed from the export. */

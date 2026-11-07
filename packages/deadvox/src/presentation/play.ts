@@ -141,6 +141,7 @@ import { showWin } from '../ui/win.ts';
 import { mountWorldLoading } from '../ui/worldLoading.ts';
 import { GameAudio } from './audio.ts';
 import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
+import type { PresentationAssets } from './bundledAssets.ts';
 import { DebugGunPose } from './debugGunPose.ts';
 import type {
   DebugHooks,
@@ -590,6 +591,7 @@ const createPlayRefusalPresenter = (
 };
 
 export interface StartPlayOptions {
+  readonly assets: PresentationAssets;
   readonly tutorial?: boolean;
   readonly skyRoute?: SkyRouteAttachment;
   readonly handedness?: HandSide;
@@ -677,8 +679,8 @@ const focusNoticeOnce = (lines: ActionText, unknownFocus: string | undefined) =>
 
 export const startPlay = (
   engine: Engine,
-  debugModule?: DebugModule,
-  options: StartPlayOptions = {},
+  debugModule: DebugModule | undefined,
+  options: StartPlayOptions,
 ): { enter: () => void } => {
   assertPracticeIsolation(options, Boolean(engine.site?.guidance));
   const { config, registry, streamer, renderer, camera, meshes } = engine;
@@ -992,6 +994,7 @@ export const startPlay = (
     blockSize: s,
     isSolid: session.isSoundBlocking,
     tuning: playerSenseTuning,
+    files: options.assets.audio,
     report: (message) => {
       const errors = $('errors');
       errors.textContent = [errors.textContent, message].filter(Boolean).join('\n');
@@ -1127,7 +1130,11 @@ export const startPlay = (
       const box = $('errors');
       box.textContent = [box.textContent, message].filter(Boolean).join('\n');
     },
-    { poweredLights: () => session.power?.lights() ?? [], physicalSolid: session.physicalSolid },
+    {
+      models: options.assets.models,
+      poweredLights: () => session.power?.lights() ?? [],
+      physicalSolid: session.physicalSolid,
+    },
   );
   input.setMouseLookOverride((movementX, movementY) =>
     thirdPersonOrbit.rotate(movementX, movementY, isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled)),

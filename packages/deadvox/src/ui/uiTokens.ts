@@ -1,16 +1,7 @@
 import { claimed } from '../core/capabilities.ts';
 import type { Registry } from '../core/content.ts';
 import type { bundledPacks } from '../game/bundledPacks.ts';
-import { bundledAssetFiles, bundledOriginAssetKey } from '../presentation/bundledAssets.ts';
-
-const CURSOR_FILES = bundledAssetFiles({
-  ...import.meta.glob<string>('../../mods/*/assets/cursors/*.png', { eager: true, query: '?url', import: 'default' }),
-  ...import.meta.glob<string>('../../../mods/*/assets/cursors/*.png', {
-    eager: true,
-    query: '?url',
-    import: 'default',
-  }),
-});
+import { bundledOriginAssetKey } from '../presentation/bundledAssets.ts';
 
 /** Installs the stack's UI tuning and cursor once, before game startup. */
 export const applyUiTokens = (
@@ -18,11 +9,12 @@ export const applyUiTokens = (
   root: HTMLElement,
   {
     report,
-    files = CURSOR_FILES,
+    files,
     packs,
   }: {
     report: (message: string) => void;
-    files?: Readonly<Record<string, string>>;
+    /** Cursor image URLs by bundled asset key; see `PresentationAssets`, `cursors`. */
+    files: Readonly<Record<string, string>>;
     packs?: typeof bundledPacks;
   },
 ): void => {
