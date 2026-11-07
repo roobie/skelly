@@ -827,7 +827,6 @@ export const startPlay = (
       worldSeed: config.seed,
       isSolid: engine.isSolid,
       isOpaque: engine.isOpaque,
-      hasModel: (id) => view.models.has(id),
     },
     advanceHeldStrip: (uid, time, held) => magazines.advanceHeldStrip(uid, time, held),
     selectedMagazineAction: (item) => survival.selectedItemAction(item)?.magazine,

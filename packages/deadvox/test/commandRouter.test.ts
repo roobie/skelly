@@ -85,7 +85,7 @@ const routerPorts = (ports: Partial<CommandRouterPorts>): CommandRouterPorts => 
   },
   throwMinimumHoldSimSeconds: 0,
   scale: { blockSize: 1, minCy: 0 },
-  pick: { worldSeed: 0, isSolid: unused, isOpaque: unused, hasModel: unused },
+  pick: { worldSeed: 0, isSolid: unused, isOpaque: unused },
   advanceHeldStrip: () => undefined,
   selectedMagazineAction: () => undefined,
   firearmShotInput: unused,
@@ -174,6 +174,32 @@ describe('command router', () => {
       routerPorts({ session: () => session, inventory: () => inventory, scale: { blockSize: 2, minCy: 0 } }),
     );
     expect(router.itemThrowFlight(item, 'right', 1).points[0]).toEqual([4, 20, 6]);
+  });
+
+  it('picks a modelled ground item from content alone, whatever models the renderer has loaded', () => {
+    const inventory = new Inventory(registry);
+    const modelled = [...registry.items.values()].find(
+      (def) => def.model !== undefined && registry.models.has(def.model) && def.pileDisplay === undefined,
+    );
+    if (!modelled) {
+      throw new Error('The fixture needs a modelled item drawn in a regular pile');
+    }
+    const item = inventory.create(modelled.id);
+    expect(inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    const session = {
+      entities: inventory.entities,
+      vehicleParts: { all: () => [] },
+      ladderHold: { on: false },
+      actorStore: new Map(),
+    } as unknown as Session;
+    const router = createCommandRouter(
+      routerPorts({
+        session: () => session,
+        inventory: () => inventory,
+        pick: { ...routerPorts({}).pick, isSolid: () => false, isOpaque: () => false },
+      }),
+    );
+    expect(router.interactionTargetAt([0.5, 0.9, 0.5], [0, -1, 0])).toMatchObject({ kind: 'item', item });
   });
 
   it('replays a recorded stance gesture as the stance toggle, not as a press for the live recogniser', () => {

@@ -35,12 +35,11 @@ import type { Session } from './session.ts';
 /** The melee readiness a primary melee action is chosen with (`src/game/primaryAction.ts`, `primaryMeleeAction`). */
 type MeleeReadiness = Parameters<typeof primaryMeleeAction>[1];
 
-/** The interaction pick's world inputs; the drawn pile layout depends on which models have loaded. */
+/** The interaction pick's world inputs. */
 export interface InteractionPickWorld {
   readonly worldSeed: number;
   readonly isSolid: SolidAt;
   readonly isOpaque: SolidAt;
-  readonly hasModel: (id: string) => boolean;
 }
 
 export interface HandUseDeps {
@@ -102,7 +101,8 @@ export function createHandUse(deps: HandUseDeps): HandUse {
       isOpaque: deps.pick.isOpaque,
       vehicleParts: session.vehicleParts.all(),
       throughLadders: session.ladderHold.on,
-      hasModel: (id) => deps.pick.hasModel(id),
+      // Piles lay out as drawn once their content's models load, never by load timing (`CONTROLS.md`, "Replay boundary").
+      hasModel: (id) => registry.models.has(id),
       downedBodies: [...session.actorStore.entries()]
         .filter(([, actor]) => actor.incapacitated)
         .map(([id, actor]) => ({ id, body: actor.body })),
