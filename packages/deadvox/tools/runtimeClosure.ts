@@ -182,7 +182,13 @@ const staticString = (node: unknown): string | undefined => {
   return node.type === 'TemplateLiteral' && expressions?.length === 0 ? quasis?.[0]?.value.cooked : undefined;
 };
 
-/** The `base` option of an `import.meta.glob` call; a string when it is absent or literal. */
+// Vite's own glob option names; it rejects any other.
+const GLOB_OPTIONS = new Set(['as', 'eager', 'import', 'exhaustive', 'query', 'base', 'caseSensitive']);
+
+/**
+ * The `base` option of an `import.meta.glob` call, or why the options cannot be read. Every property
+ * is checked, whatever its position: a spread or computed key could set `base` where the check cannot see it.
+ */
 function globBase(options: unknown): { readonly base?: string } | string {
   if (options === undefined) {
     return {};
@@ -190,17 +196,22 @@ function globBase(options: unknown): { readonly base?: string } | string {
   if (!(isNode(options) && options.type === 'ObjectExpression')) {
     return 'an import.meta.glob whose options are not an object literal';
   }
+  let base: string | undefined;
   for (const property of options.properties as AstNode[]) {
     const key = property.key as AstNode | undefined;
-    if (property.type !== 'Property' || property.computed) {
+    const name = key?.name ?? key?.value;
+    if (property.type !== 'Property' || property.computed || !GLOB_OPTIONS.has(name as string)) {
       return 'an import.meta.glob option the check cannot read';
     }
-    if ((key?.name ?? key?.value) === 'base') {
-      const base = staticString(property.value);
-      return base === undefined ? 'an import.meta.glob base that is not a literal' : { base };
+    if (name === 'base') {
+      // Vite evaluates the object literal, so a repeated base takes its last value.
+      base = staticString(property.value);
+      if (base === undefined) {
+        return 'an import.meta.glob base that is not a literal';
+      }
     }
   }
-  return {};
+  return base === undefined ? {} : { base };
 }
 
 /** The patterns of one `import.meta.glob` call, with its base. */

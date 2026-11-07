@@ -113,6 +113,20 @@ describe('runtime closure, stage 1', () => {
     expect(violations.map((v) => [v.importer, v.target])).toEqual([['packages/mobgen/src/rig/arm.ts', 'three']]);
   });
 
+  it('fails a glob whose options spread after a literal base, but passes a literal base that matches nothing', () => {
+    const spread = violationsIn({
+      'packages/deadvox/src/core/catalog.ts':
+        "export const views = import.meta.glob('./*.ts', {\n  base: './missing',\n  ...(true ? { base: '/src/render' } : {}),\n});\n",
+    });
+    expect(importers(spread)).toEqual(['packages/deadvox/src/core/catalog.ts']);
+    expect(
+      violationsIn({
+        'packages/deadvox/src/core/catalog.ts':
+          "export const views = import.meta.glob('./*.ts', { base: './missing' });\n",
+      }),
+    ).toEqual([]);
+  });
+
   it('fails a glob whose base does not resolve, but passes a resolvable glob that matches nothing', () => {
     const unresolved = violationsIn({
       'packages/deadvox/src/core/catalog.ts': "export const parts = import.meta.glob('parts/*.ts');\n",
