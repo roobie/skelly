@@ -67,8 +67,15 @@ const PACKAGE_KEYS = new Set([
   'overrides',
   'exports',
 ]);
-// The compiler options the check models: none of them changes resolution beyond the checked values below.
+// The tsconfig keys and compiler options the check models. Most cannot add files or change resolution;
+// the ones that can are constrained in `tsconfigInputs`: moduleResolution, module, paths, types (bare
+// package names, each classified like an import), lib (compiler library names) and include (paths inside
+// the package).
 const TSCONFIG_KEYS = new Set(['compilerOptions', 'include']);
+const BARE_TYPE_PACKAGE = /^(?:@[a-z0-9][\w.-]*\/)?[a-z0-9][\w.-]*(?:\/[a-z0-9][\w.-]*)*$/;
+const COMPILER_LIBRARY = /^[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*$/;
+const TYPES_SCOPE = /^(.+?)__/;
+const INCLUDE_PATH = /^[A-Za-z0-9_][\w-]*(?:\.[\w-]+)*(?:\/[A-Za-z0-9_][\w-]*(?:\.[\w-]+)*)*$/;
 const COMPILER_OPTIONS = new Set([
   'target',
   'module',
@@ -209,17 +216,56 @@ function literalValue(node: unknown): unknown {
   return Object.fromEntries(entries);
 }
 
+const stringList = (value: unknown, item: RegExp): string[] | undefined =>
+  Array.isArray(value) && value.every((entry) => typeof entry === 'string' && item.test(entry))
+    ? (value as string[])
+    : undefined;
+
+/**
+ * Why a tsconfig sets values the check does not model, or the bare type packages it adds, which are
+ * then classified like imports. Values that add files or dependencies are constrained one by one.
+ */
+function tsconfigInputs(
+  text: string,
+  aliases: Readonly<Record<string, string>>,
+  tsconfigDir: string,
+): { readonly reason: string } | { readonly types: readonly string[] } {
+  const reason = unsupportedTsconfig(text, aliases, tsconfigDir);
+  if (reason !== undefined) {
+    return { reason };
+  }
+  const { compilerOptions: options = {}, include } = tsconfigValue(text) as {
+    compilerOptions?: Record<string, unknown>;
+    include?: unknown;
+  };
+  const types = options.types === undefined ? [] : stringList(options.types, BARE_TYPE_PACKAGE);
+  const lib = options.lib === undefined ? [] : stringList(options.lib, COMPILER_LIBRARY);
+  const included = include === undefined ? [] : stringList(include, INCLUDE_PATH);
+  if (types === undefined) {
+    return { reason: 'tsconfig types other than bare package names' };
+  }
+  if (lib === undefined || included === undefined || options.module !== 'ESNext') {
+    return { reason: 'tsconfig lib, include or module values the check does not model' };
+  }
+  return { types };
+}
+
+/** A tsconfig's literal value, or undefined when it holds anything but literals. */
+function tsconfigValue(text: string): unknown {
+  const parsed = parseSync('tsconfig.js', `(${text})`, { lang: 'js' });
+  const body = parsed.program.body[0] as AstNode | undefined;
+  const wrapped = body?.expression as AstNode | undefined;
+  const expression = wrapped?.type === 'ParenthesizedExpression' ? wrapped.expression : wrapped;
+  return parsed.errors.length === 0 ? literalValue(expression) : undefined;
+}
+
 /** Why a tsconfig sets resolution the check does not model, if it does; only the policy alias paths pass. */
 function unsupportedTsconfig(
   text: string,
   aliases: Readonly<Record<string, string>>,
   tsconfigDir: string,
 ): string | undefined {
-  const parsed = parseSync('tsconfig.js', `(${text})`, { lang: 'js' });
-  const body = parsed.program.body[0] as AstNode | undefined;
-  const wrapped = body?.expression as AstNode | undefined;
-  const expression = wrapped?.type === 'ParenthesizedExpression' ? wrapped.expression : wrapped;
-  const config = parsed.errors.length === 0 ? literalValue(expression) : undefined;
+  const config = tsconfigValue(text);
   if (!(config && typeof config === 'object')) {
     return 'a tsconfig the check cannot read';
   }
@@ -254,15 +300,34 @@ function unsupportedManifest(text: string): string | undefined {
   return manifest.type === 'module' ? undefined : 'a package whose type is not module';
 }
 
-function sourceFilesUnder(repoRoot: string, dir: string): string[] {
+/**
+ * The source files under a runtime root, and every symlink met there. The compiler includes a linked
+ * file or directory under its link path, so a link would hide its real owner from path classification.
+ */
+function sourceFilesUnder(repoRoot: string, dir: string): { files: string[]; links: string[] } {
   const absolute = join(repoRoot, dir);
   if (!existsSync(absolute)) {
     throw new Error(`Runtime start directory does not exist: ${dir}`);
   }
-  return readdirSync(absolute, { withFileTypes: true, recursive: true })
-    .filter((entry) => entry.isFile() && SOURCE_FILE.test(entry.name))
-    .map((entry) => relative(repoRoot, join(entry.parentPath, entry.name)).split(sep).join('/'))
-    .sort();
+  if (lstatSync(absolute).isSymbolicLink()) {
+    return { files: [], links: [dir] };
+  }
+  const files: string[] = [];
+  const links: string[] = [];
+  const pending = [dir];
+  for (let current = pending.pop(); current !== undefined; current = pending.pop()) {
+    for (const entry of readdirSync(join(repoRoot, current), { withFileTypes: true })) {
+      const path = posix.join(current, entry.name);
+      if (entry.isSymbolicLink()) {
+        links.push(path);
+      } else if (entry.isDirectory()) {
+        pending.push(path);
+      } else if (entry.isFile() && SOURCE_FILE.test(entry.name)) {
+        files.push(path);
+      }
+    }
+  }
+  return { files: files.sort(), links: links.sort() };
 }
 
 interface Edge {
@@ -660,7 +725,11 @@ class ClosureWalk {
     this.root = root;
     this.policy = policy;
     this.workspaces = workspacesOf(root);
-    this.queue = policy.start.flatMap((dir) => sourceFilesUnder(root, dir));
+    const roots = policy.start.map((dir) => sourceFilesUnder(root, dir));
+    this.queue = roots.flatMap(({ files }) => files);
+    for (const link of roots.flatMap(({ links }) => links)) {
+      this.violations.push({ importer: link, specifier: '', target: '', reason: 'a symlink in a runtime root' });
+    }
   }
 
   /** Every existing file any of these paths can mean, or why one of them cannot be resolved. */
@@ -699,7 +768,12 @@ class ClosureWalk {
     // A workspace is classified by where it lies, whatever route names it; only other names are npm packages.
     const name = packageName(specifier);
     const workspace = this.workspaces.find((candidate) => candidate.name === name);
-    return workspace ? this.found(workspacePaths(workspace, specifier.slice(name.length))) : { npm: name };
+    if (workspace === undefined) {
+      return { npm: name };
+    }
+    // The workspace manifest steers this resolution (exports, typesVersions), whatever manifest the target has.
+    this.judgeManifestFile(importer, specifier, posix.join(workspace.dir, 'package.json'));
+    return this.found(workspacePaths(workspace, specifier.slice(name.length)));
   }
 
   /** The nearest package.json above a repository-relative directory, inside the repository. */
@@ -721,7 +795,14 @@ class ClosureWalk {
   /** Reports, once per manifest, a package.json that could change how this file resolves or loads. */
   private judgeManifest(importer: string, specifier: string, file: string): void {
     const manifest = this.manifestFor(posix.dirname(file));
-    if (manifest === undefined || this.judgedManifests.has(manifest)) {
+    if (manifest !== undefined) {
+      this.judgeManifestFile(importer, specifier, manifest);
+    }
+  }
+
+  /** Reports, once, a package.json used as a resolution input that holds keys the check does not model. */
+  private judgeManifestFile(importer: string, specifier: string, manifest: string): void {
+    if (this.judgedManifests.has(manifest)) {
       return;
     }
     this.judgedManifests.add(manifest);
@@ -734,14 +815,23 @@ class ClosureWalk {
   private judgeTsconfig(): void {
     const { tsconfig, aliases } = this.policy;
     const text = isFile(join(this.root, tsconfig)) ? readFileSync(join(this.root, tsconfig), 'utf8') : undefined;
-    const reason =
-      text === undefined ? 'a missing tsconfig' : unsupportedTsconfig(text, aliases, posix.dirname(tsconfig));
-    if (reason !== undefined) {
-      this.violations.push({ importer: tsconfig, specifier: '', target: '', reason });
+    const inputs =
+      text === undefined ? { reason: 'a missing tsconfig' } : tsconfigInputs(text, aliases, posix.dirname(tsconfig));
+    if ('reason' in inputs) {
+      this.violations.push({ importer: tsconfig, specifier: '', target: '', reason: inputs.reason });
+      return;
+    }
+    // Each listed type package is a dependency of every compiled file, so it is classified like an import.
+    for (const name of inputs.types) {
+      // `@types/x` and `@types/scope__x` are the declarations of `x` and `@scope/x`.
+      const declared = name.startsWith('@types/') ? name.slice('@types/'.length).replace(TYPES_SCOPE, '@$1/') : name;
+      this.resolveEdge(tsconfig, declared);
     }
   }
 
   run(): void {
+    // The root manifest lists the workspaces that bare names resolve to.
+    this.judgeManifestFile('package.json', '', 'package.json');
     this.judgeTsconfig();
     for (let file = this.queue.shift(); file !== undefined; file = this.queue.shift()) {
       if (!this.visited.has(file)) {

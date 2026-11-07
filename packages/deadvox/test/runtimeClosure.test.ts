@@ -21,7 +21,7 @@ const cleanTree: Tree = {
     dependencies: { '@skelly/presentation': '*' },
   }),
   'packages/deadvox/tsconfig.json':
-    '{\n  // The one supported alias.\n  "compilerOptions": { "moduleResolution": "Bundler", "paths": { "@mobgen/*": ["../mobgen/src/*"] } },\n}\n',
+    '{\n  // The one supported alias.\n  "compilerOptions": {\n    "module": "ESNext",\n    "moduleResolution": "Bundler",\n    "types": ["node"],\n    "paths": { "@mobgen/*": ["../mobgen/src/*"] },\n  },\n  "include": ["src"],\n}\n',
   'packages/deadvox/src/core/sim.ts':
     "import { rule } from './rule.ts';\nimport { pose } from '@mobgen/pose.ts';\nimport { schema } from '@skelly/thing-core/schema';\nimport { join } from 'node:path';\nexport const tick = () => [rule, pose, schema, join];\n",
   'packages/deadvox/src/core/rule.ts': 'export const rule = 1;\n',
@@ -335,7 +335,8 @@ describe('runtime closure, stage 1', () => {
     ['none (a directory with its own package.json)', 'kit', 'kit/types.ts'],
   ])('fails a specifier extension outside the supported set: %s', (_name, named, substitute) => {
     const violations = violationsIn({
-      [`packages/mobgen/src/${named === 'kit' ? 'kit/index.ts' : named}`]: 'export type V = number;\n',
+      [`packages/mobgen/src/${named === 'kit' ? 'kit/index.ts' : named}`]:
+        named === 'rig.js' ? 'export const V = 1;\n' : 'export type V = number;\n',
       'packages/mobgen/src/kit/package.json': JSON.stringify({ types: './types.ts' }),
       [`packages/mobgen/src/${substitute}`]: "export type V = import('three').Vector3;\n",
       [catalog]: `export type { V } from '../../../mobgen/src/${named}';\n`,
@@ -357,13 +358,54 @@ describe('runtime closure, stage 1', () => {
     expect(violations.map((v) => v.target)).toEqual(['packages/mobgen/package.json']);
   });
 
-  it('fails a tsconfig that sets resolution the check does not model', () => {
+  it('judges the workspace manifest that resolves a bare name, not only the target file’s nearest one', () => {
     const violations = violationsIn({
-      'packages/deadvox/tsconfig.json': JSON.stringify({
-        compilerOptions: { moduleResolution: 'Bundler', baseUrl: '.', paths: { '@mobgen/*': ['../mobgen/src/*'] } },
+      'packages/mobgen/package.json': JSON.stringify({
+        name: 'mobgen',
+        type: 'module',
+        typesVersions: { '*': { 'src/clean.ts': ['src/browser.ts'] } },
       }),
+      'packages/mobgen/src/package.json': JSON.stringify({ type: 'module' }),
+      'packages/mobgen/src/clean.ts': 'export type V = number;\n',
+      'packages/mobgen/src/browser.ts': "export type V = import('three').Vector3;\n",
+      [catalog]: "export type { V } from 'mobgen/src/clean.ts';\n",
+    });
+    expect(violations.map((v) => v.target)).toEqual(['packages/mobgen/package.json']);
+  });
+
+  const tsconfigWith = (compilerOptions: Record<string, unknown>, include: unknown = ['src']) =>
+    JSON.stringify({
+      compilerOptions: {
+        module: 'ESNext',
+        moduleResolution: 'Bundler',
+        paths: { '@mobgen/*': ['../mobgen/src/*'] },
+        ...compilerOptions,
+      },
+      include,
+    });
+
+  it.each([
+    ['a resolution option it does not model', tsconfigWith({ baseUrl: '.' })],
+    ['a types path to a render declaration', tsconfigWith({ types: ['./src/render/view.d.ts'] })],
+    ['a forbidden types package', tsconfigWith({ types: ['three'] })],
+    ['a forbidden @types package', tsconfigWith({ types: ['@types/three'] })],
+    ['typeRoots', tsconfigWith({ typeRoots: ['./src/render'] })],
+    ['a lib path', tsconfigWith({ lib: ['./src/render/view.d.ts'] })],
+    ['an include outside the package', tsconfigWith({}, ['src', '../presentation/src'])],
+  ])('fails a tsconfig with %s', (_name, tsconfig) => {
+    const violations = violationsIn({
+      'packages/deadvox/tsconfig.json': tsconfig,
+      'packages/deadvox/src/render/view.d.ts': "export type V = import('three').Vector3;\n",
     });
     expect(importers(violations)).toEqual(['packages/deadvox/tsconfig.json']);
+  });
+
+  it('fails a symlinked file in a runtime root', () => {
+    const violations = violationsIn(
+      { 'packages/deadvox/src/render/linkTarget.ts': "export type V = import('three').Vector3;\n" },
+      { 'packages/deadvox/src/core/linked.ts': '../render/linkTarget.ts' },
+    );
+    expect(importers(violations)).toEqual(['packages/deadvox/src/core/linked.ts']);
   });
 
   it.each([
