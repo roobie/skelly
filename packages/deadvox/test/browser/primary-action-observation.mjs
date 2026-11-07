@@ -109,9 +109,25 @@ export const observationPlugin = {
       const adsToggleMarker = `      case 'aim.ads-toggle':
         controls.toggleAimingDownSights(ports.replaying());
         break;`;
+      const playerTickMarker = '      ports.pendingPlayerTickActions.applyAtNextTick();';
       assert(code.includes(throwQueueMarker), 'stance throw queue observation point exists');
       assert(code.includes(adsToggleMarker), 'ADS replay observation point exists');
+      assert(code.includes(playerTickMarker), 'player tick action observation point exists');
       return code
+        .replace(
+          playerTickMarker,
+          `${playerTickMarker}
+      const proof = globalThis.primaryActionTest;
+      if (proof?.quickbarTapCommitObservation && !proof.quickbarTapTickObservation) {
+        const tappedItem = ports.inventory().itemByUid(proof.quickbarTapItemUid);
+        proof.quickbarTapTickObservation = {
+          itemMoveQueued: ports.session().queue.jobs.some(
+            (job) => job.kind === 'move' && job.itemUid === proof.quickbarTapItemUid,
+          ),
+          location: tappedItem ? ports.inventory().locate(tappedItem)?.kind ?? null : null,
+        };
+      }`,
+        )
         .replace(
           throwQueueMarker,
           `${throwQueueMarker}
@@ -132,22 +148,8 @@ export const observationPlugin = {
       return;
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
-    const playerTickMarker = '      pendingPlayerTickActions.applyAtNextTick();';
     assert(code.includes(marker), 'game-loop observation point exists');
-    assert(code.includes(playerTickMarker), 'player tick action observation point exists');
-    let observedCode = code.replace(
-      playerTickMarker,
-      `${playerTickMarker}
-      if (proof.quickbarTapCommitObservation && !proof.quickbarTapTickObservation) {
-        const tappedItem = inventory.itemByUid(proof.quickbarTapItemUid);
-        proof.quickbarTapTickObservation = {
-          itemMoveQueued: queue.jobs.some(
-            (job) => job.kind === 'move' && job.itemUid === proof.quickbarTapItemUid,
-          ),
-          location: tappedItem ? inventory.locate(tappedItem)?.kind ?? null : null,
-        };
-      }`,
-    );
+    let observedCode = code;
     // The fixture drops the way the game does, so a full pile at the feet spills to the next spot.
     observedCode = `import { dropTarget as primaryActionDropTarget } from '../core/options.ts';\n${observedCode}`;
     // The quickbar probe drives the router's quickbar actions directly.
@@ -191,7 +193,7 @@ export const observationPlugin = {
     }),
     quickbar,
     screen,
-    dispatchScreenCommand,
+    dispatchScreenCommand: router.dispatchScreenCommand,
     get inputRecorder() { return inputRecording.recorder; },
     captureSnapshot,
     dropAfterNextThrowCommit: false,

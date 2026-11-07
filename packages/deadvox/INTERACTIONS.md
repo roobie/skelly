@@ -42,7 +42,7 @@ Recipes are content. Alternatives may compete for the same stock, so planning mu
 
 The planner is a disposable view. Commands obtain current reach and plan again; editing a returned plan cannot change later results. See `src/core/crafting.ts`, `planCraft`, and `src/core/longAction.ts`, `LongActions`.
 
-Reading a recipe book is a long action only while its page is open. Closing it pauses work and retains progress; moving closes the page and lets movement proceed. Progress belongs to the action, not to the authored text. Readable-only notes and signs have no timed job. See `src/game/play.ts`, `stopReadingOnClose`, and `src/core/bookReading.ts`, `bookReadingHooks`.
+Reading a recipe book is a long action only while its page is open. Closing it pauses work and retains progress; moving closes the page and lets movement proceed. Progress belongs to the action, not to the authored text. Readable-only notes and signs have no timed job. See `src/game/readingClose.ts`, `stopReadingOnClose`, and `src/core/bookReading.ts`, `bookReadingHooks`.
 
 Take-apart work snapshots its yield so stopping and resuming cannot change the promised output after a skill, tool or burn change. Recovered liquid follows the source's own consumption record and remaining burn because only liquid actually used and not spent can return. A selected receiver and approval of any stated spill keep a consequential destination or discard visible to the player. See `src/core/disassembly.ts`, `planDisassembly`; `src/core/inventory.ts`, `Inventory.planLiquidReceipts`; and `DESIGN.md`, "Crafting".
 

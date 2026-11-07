@@ -18,7 +18,7 @@ import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
 import { sightedFirearmModel } from '../core/firearmSight.ts';
 import { heldFirearmTransform } from '../core/heldPose.ts';
-import { type InputContext, inventoryTabForAction } from '../core/inputActions.ts';
+import type { InputContext, inventoryTabForAction } from '../core/inputActions.ts';
 import { interactionAffordance } from '../core/interactionAffordance.ts';
 import type { InteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile } from '../core/inventory.ts';
@@ -138,12 +138,11 @@ import {
   withReplayExportGuard,
 } from './inputReplay.ts';
 import { createReplayPlayStateBinding } from './inputReplayActions.ts';
-import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample } from './inputReplayDriver.ts';
+import { InputReplayDriver, type InputReplayDriverPorts } from './inputReplayDriver.ts';
 import { InputReplayPlayer } from './inputReplayPlayer.ts';
 import type { ItemAction } from './itemActions.ts';
 import { registerLayoutVehicles } from './layoutVehicles.ts';
 import { unarmedMeleeWeapon } from './melee.ts';
-import { routeModalCommand } from './modalCommand.ts';
 import { OpticZoom } from './opticZoom.ts';
 import { playerTuning } from './player.ts';
 import { PlayerTickActions } from './playerTickActions.ts';
@@ -153,12 +152,10 @@ import { createSnapshotHistory, downloadFile, type HandBackFile, replayFile } fr
 import { PressHoldInput } from './pressHoldInput.ts';
 import { selectPrimaryAction } from './primaryAction.ts';
 import { QuickbarInput } from './quickbarInput.ts';
-import { stopReadingOnClose as stopReadingPageOnClose } from './readingClose.ts';
 import { RELOAD_GESTURE_MS } from './reloadInput.ts';
 import type { ReplayActionPayload } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
-import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
-import { createSession, type PlayerInputSample } from './session.ts';
+import { createSession } from './session.ts';
 import {
   createSimulationStepper,
   type InputRecording,
@@ -748,30 +745,6 @@ export const startPlay = (
   replayPlayer = createInputReplayPlayer(options.replay?.inputs, (action, sample) =>
     dispatchReplayAction(action, sample),
   );
-  const samplePlayerInput = (
-    _tick: number,
-    live: PlayerInputSample,
-    _time: number,
-    compressionAtTick: number,
-  ): PlayerInputSample => {
-    if (!replayPlayer) {
-      input.controls.advanceFreeLook(0);
-      const sample = {
-        ...live,
-        headYaw: input.controls.freeLook.yaw,
-        headPitch: input.controls.freeLook.pitch,
-        freeLooking: input.controls.freeLooking,
-      };
-      if (inputRecording.recorder && !inputRecording.recorder.recordTick(sample, compressionAtTick)) {
-        stepper.stopRecordingForColumnOverflow();
-      }
-      pendingPlayerTickActions.applyAtNextTick();
-      return live;
-    }
-    const replayInput = nextReplayInputSample(replayPlayer, sim.compression, input.controls);
-    replaySample = replayInput.recordedSample;
-    return replayInput.input;
-  };
   const spectator = new SpectatorCamera();
   const debugGunPose = new DebugGunPose(config.debug);
   let thirdPersonViewEnabled = false;
@@ -797,7 +770,25 @@ export const startPlay = (
       spectatorAllows: (action) => spectator.allowsCommand(action),
       screenInputCommand: (command) => screen.onInputCommand(command),
       locomotionPressed: (action) => resetOrbitOnLocomotion(action, thirdPersonOrbit),
-      modalCommand: (action) => modalCommand(action),
+      modal: {
+        toggleMainMenu: () => {
+          mainMenuOpen = !mainMenuOpen;
+          syncMenuState();
+        },
+        mainMenuOpen: () => mainMenuOpen,
+        readingOpen: () => reading.isOpen,
+        readingAction: (command) => reading.onAction(command),
+        readingMovementAction: () => {
+          if (reading.bookUid === undefined) {
+            return false;
+          }
+          reading.close();
+          return true;
+        },
+        toggleInventory: () => toggleInventory(),
+        screenOpen: () => screen.isOpen,
+        screenAction: (command) => screen.onAction(command),
+      },
       debugCommand: (action, at) => handleDebugCommand(action, at),
       hintCommand: (action, phase, at) => handleHintCommand(action, phase, at),
     },
@@ -806,16 +797,16 @@ export const startPlay = (
     pointerLocked: () => input.locked,
     menuPointer: () => input.menuPointer,
     beforeSleep: () => options.saveController?.beforeSleep(),
-    sampleAtPlayerTick: samplePlayerInput,
     replaying: () => replayPlayer !== undefined,
+    replayPlayer: () => replayPlayer,
     replaySample: () => replaySample,
     setReplaySample: (sample) => {
       replaySample = sample;
     },
     recorder: () => inputRecording.recorder,
+    stopRecordingForColumnOverflow: () => stepper.stopRecordingForColumnOverflow(),
     inputContext: () => inputContext(),
     pendingPlayerTickActions,
-    dispatchScreenCommand: (payload) => dispatchScreenCommand(payload),
     gunPose: debugGunPose,
     buildMode: () => Boolean(debugTools?.buildOn),
     handlingBusy: () => queue.busy,
@@ -1147,13 +1138,12 @@ export const startPlay = (
   const overlay = $('overlay');
   const gameCursor = mountGameCursor($('game-cursor-root'));
   const inventoryPanel = $('inventory');
-  let stopReadingOnClose: () => void = () => undefined;
   const { screenText } = claimed(registry.ui, 'interface')!;
   const reading = mountReading(
     $('reading'),
     screenText.reading,
     () => syncMenuState(),
-    () => stopReadingOnClose(),
+    () => router.readingClosed(),
   );
   const isBookComplete = (bookUid: number): boolean => {
     const book = inventory.itemByUid(bookUid);
@@ -1224,7 +1214,7 @@ export const startPlay = (
     distance: (pile: Pile) => pileDistance(pile.pos),
     containers: () => session.reach().furniture,
     entityDistance,
-    dispatch: dispatchScreenCommand,
+    dispatch: router.dispatchScreenCommand,
 
     searching: session.searching,
     notice: showNotice,
@@ -1249,7 +1239,7 @@ export const startPlay = (
 
   const craftPanel = mountCraftPanel($('crafting'), session, {
     notice: (text) => showRefusal(text, sim.time),
-    dispatch: dispatchScreenCommand,
+    dispatch: router.dispatchScreenCommand,
   });
 
   let revealActors = false;
@@ -1695,37 +1685,6 @@ export const startPlay = (
     stepper.skipGameHours(hours);
   };
 
-  stopReadingOnClose = () => stopReadingPageOnClose(sim);
-
-  const dispatchScreenCommandWithCompletion = createScreenCommandDispatcher({
-    isReplaying: () => replayPlayer !== undefined,
-    inputRecorder: () => inputRecording.recorder,
-    inputContext: () => inputContext(),
-    pendingPlayerTickActions,
-    apply: router.applyScreenCommand,
-    inventory,
-    notice: hooks.notice,
-    refusal: (reason) => showRefusal(reason, sim.time),
-  });
-  function dispatchScreenCommand(payload: ReplayActionPayload): string | undefined {
-    return dispatchScreenCommandWithCompletion(payload);
-  }
-
-  const timeKeys = (code: string): boolean => {
-    if (compression.interruption === undefined) {
-      return false;
-    }
-    if (code === 'compression.continue') {
-      router.continueAction();
-      return true;
-    }
-    if (code === 'handling.stop') {
-      router.stopAction();
-      return true;
-    }
-    return false;
-  };
-
   const openInventory = (tab?: NonNullable<ReturnType<typeof inventoryTabForAction>>) => {
     quickbarInput.cancel();
     if (tab) {
@@ -1842,50 +1801,13 @@ export const startPlay = (
       if (reviewMapOpen) {
         toggleReviewMap(false);
       }
-      modalCommand('ui.main-menu-toggle');
+      router.modalCommand('ui.main-menu-toggle');
     } else if (reviewMapOpen) {
       toggleReviewMap(false);
     } else {
       reading.close();
     }
   };
-  const inventoryTabCommand = (action: string): boolean => {
-    const tab = inventoryTabForAction(action);
-    if (!tab) {
-      return false;
-    }
-    if (compression.locksInput) {
-      return true;
-    }
-    openInventory(tab);
-    return true;
-  };
-  const modalCommand = (action: string): boolean =>
-    routeModalCommand(action, {
-      toggleMainMenu: () => {
-        mainMenuOpen = !mainMenuOpen;
-        syncMenuState();
-      },
-      readingOpen: reading.isOpen,
-      readingAction: (command) => reading.onAction(command),
-      readingMovementAction: () => {
-        if (reading.bookUid === undefined) {
-          return false;
-        }
-        reading.close();
-        return true;
-      },
-      toggleInventory: () => {
-        if (!compression.locksInput) {
-          toggleInventory();
-        }
-      },
-      inventoryTabAction: inventoryTabCommand,
-      screenOpen: screen.isOpen,
-      screenAction: (command) => screen.onAction(command),
-      mainMenuOpen,
-      interruptionCommand: timeKeys,
-    });
   const handleDebugCommand = (action: string, at: number): boolean =>
     dispatchDebugCommand(action, at, {
       backquoteGesture,
@@ -2188,7 +2110,7 @@ export const startPlay = (
     if (!payload) {
       return;
     }
-    const reason = dispatchScreenCommand(payload);
+    const reason = router.dispatchScreenCommand(payload);
     if (reason) {
       showRefusal(reason, sim.time);
     }
@@ -2662,7 +2584,7 @@ export const startPlay = (
       return;
     }
     if (!replayPlayer && input.controls.consumeRightMousePressed() && session.throwCharge.active) {
-      dispatchScreenCommand({ kind: 'item.throw.cancel' });
+      router.dispatchScreenCommand({ kind: 'item.throw.cancel' });
       input.controls.suppressRightMouseUntilRelease();
     }
   };

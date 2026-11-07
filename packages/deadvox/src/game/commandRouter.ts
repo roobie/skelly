@@ -1,6 +1,6 @@
-// Routes the player's controls into the simulation: bound input commands and what a replay records of them, the
-// session controls and trigger at the player tick, replayed actions, screen commands, furniture use and the item throw,
-// with the firearm and melee readiness gate those read.
+// Routes the player's controls into the simulation: bound input commands and what a replay records of them, which
+// modal UI takes a press, the input sample and session controls and trigger at the player tick, replayed actions,
+// screen commands, furniture use and the item throw, with the firearm and melee readiness gate those read.
 
 import { actionText, fillText } from '../core/actionText.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
@@ -11,7 +11,7 @@ import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { coreMessage } from '../core/coreText.ts';
 import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
 import { throwStanceWorldOffset } from '../core/heldPose.ts';
-import type { InputContext } from '../core/inputActions.ts';
+import { type InputContext, inventoryTabForAction } from '../core/inputActions.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { flightForItem, hasMetThrowMinimumHold, type ItemFlight, throwDistanceForItem } from '../core/itemThrow.ts';
@@ -33,19 +33,23 @@ import { furnitureActionsFor } from './furnitureActions.ts';
 import { createHandUse, type HandUse, type InteractionPickWorld } from './handUse.ts';
 import type { InputReplayRecorder, ReplayAction, ReplayControlSample } from './inputReplay.ts';
 import { routeDominantUse, toggleWalking } from './inputReplayActions.ts';
-import { applyReplayLook } from './inputReplayPlayer.ts';
+import { nextReplayInputSample } from './inputReplayDriver.ts';
+import { applyReplayLook, type InputReplayPlayer } from './inputReplayPlayer.ts';
 import type { ItemAction } from './itemActions.ts';
 import { shouldEnterMeleeGuard } from './melee.ts';
+import { routeModalCommand } from './modalCommand.ts';
 import type { MoveIntent } from './player.ts';
 import { adjustLookPitch, type PlayerControls } from './playerControls.ts';
 import { applyToHeldItem, type PlayerTickActions } from './playerTickActions.ts';
 import { selectPrimaryAction } from './primaryAction.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
+import { stopReadingOnClose } from './readingClose.ts';
 import { type ReloadBinding, reloadTarget } from './reloadInput.ts';
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
-import type { Session, SessionControls } from './session.ts';
+import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
+import type { PlayerInputSample, Session, SessionControls } from './session.ts';
 
 const QUICKBAR_ACTION = /^quickbar\.(tap|hold)\.(\d+)$/;
 
@@ -97,7 +101,7 @@ interface CommandRouterPresentation {
   notice: (text: string) => void;
   closeInventoryScreen: () => void;
   syncMenuState: () => void;
-  openInventory: (tab: 'items') => void;
+  openInventory: (tab: InventoryTab) => void;
   /** Opens the movable piece's action list. */
   openFurnitureChoices: (entity: BlockEntity, actions: ItemAction[]) => void;
   /** Tells a playtest observer, if one watches, that a search began. */
@@ -111,11 +115,26 @@ interface CommandRouterPresentation {
   screenInputCommand: (command: InputCommand) => boolean;
   /** A locomotion press resets the third-person orbit. */
   locomotionPressed: (action: string) => void;
-  /** Menus and reading take a press before gameplay; true when they consumed it. */
-  modalCommand: (action: string) => boolean;
+  /** Menus and reading take a press before gameplay. */
+  modal: ModalPorts;
   debugCommand: (action: string, at: number) => boolean;
   /** The backquote hint and orbit gesture; true when it consumed the command. */
   hintCommand: (action: string, phase: InputCommand['phase'], at: number) => boolean;
+}
+
+type InventoryTab = NonNullable<ReturnType<typeof inventoryTabForAction>>;
+
+/** The main menu, reading and inventory UIs a modal press reaches; the router decides which takes it. */
+interface ModalPorts {
+  toggleMainMenu: () => void;
+  mainMenuOpen: () => boolean;
+  readingOpen: () => boolean;
+  readingAction: (action: string) => void;
+  /** Closes an open book on a movement press; false when the page is not a book. */
+  readingMovementAction: () => boolean;
+  toggleInventory: () => void;
+  screenOpen: () => boolean;
+  screenAction: (action: string) => void;
 }
 
 /** A live press-and-hold recogniser; a replay records the action it resolves to, not the key. */
@@ -155,15 +174,16 @@ export interface CommandRouterPorts {
   menuPointer: () => boolean;
   /** The save controller captures a save before a sleep begins. */
   beforeSleep: () => void;
-  sampleAtPlayerTick: NonNullable<SessionControls['sampleAtPlayerTick']>;
   replaying: () => boolean;
+  /** The replay that drives the player ticks, if one does. */
+  replayPlayer: () => Pick<InputReplayPlayer, 'next'> | undefined;
   replaySample: () => ReplayControlSample | undefined;
-  setReplaySample: (sample: ReplayControlSample) => void;
-  recorder: () => Pick<InputReplayRecorder, 'queueAction'> | undefined;
+  setReplaySample: (sample: ReplayControlSample | undefined) => void;
+  recorder: () => Pick<InputReplayRecorder, 'queueAction' | 'recordTick'> | undefined;
+  /** The recording ran out of room for generated columns. */
+  stopRecordingForColumnOverflow: () => void;
   inputContext: () => InputContext;
-  pendingPlayerTickActions: Pick<PlayerTickActions, 'enqueue'>;
-  /** Applies a screen command now, or records it and applies it at the next player tick. */
-  dispatchScreenCommand: (payload: ReplayActionPayload) => string | undefined;
+  pendingPlayerTickActions: Pick<PlayerTickActions, 'enqueue' | 'applyAtNextTick'>;
   /** The debug gun pose's latch; outside debug it passes the live input through. */
   gunPose: Pick<DebugGunPose, 'active' | 'readyHeld' | 'aimingDownSights'>;
   /** The debug block editor owns canvas clicks. */
@@ -191,6 +211,12 @@ export interface CommandRouter {
   useTarget: (entity: BlockEntity) => void;
   itemThrowFlight: (item: Item, hand: HandSide, distanceMetres: number) => ItemFlight;
   applyScreenCommand: (payload: ReplayActionPayload) => string | undefined;
+  /** Applies a screen command now, or records it and applies it at the next player tick. */
+  dispatchScreenCommand: (payload: ReplayActionPayload) => string | undefined;
+  /** Routes a press to the main menu, reading or inventory first; true when one of them took it. */
+  modalCommand: (action: string) => boolean;
+  /** The reading page closed: stop reading and return movement input. */
+  readingClosed: () => void;
   dispatchReplayAction: (action: ReplayAction, sample: ReplayControlSample) => void;
   /** A live command, gated and recorded; a replay passes fromReplay so it is not recorded again. */
   dispatchInputCommand: (command: InputCommand, fromReplay?: boolean) => void;
@@ -395,7 +421,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       return;
     }
     if (controls.consumeRightMousePressed() || controls.rightMouseHeld) {
-      ports.dispatchScreenCommand({ kind: 'item.throw.cancel' });
+      dispatchScreenCommand({ kind: 'item.throw.cancel' });
       controls.suppressRightMouseUntilRelease();
       return;
     }
@@ -920,6 +946,53 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     return undefined;
   };
 
+  // ---- modal commands ----
+
+  const timeKeys = (code: string): boolean => {
+    if (ports.session().sim.compression.interruption === undefined) {
+      return false;
+    }
+    if (code === 'compression.continue') {
+      continueAction();
+      return true;
+    }
+    if (code === 'handling.stop') {
+      stopAction();
+      return true;
+    }
+    return false;
+  };
+  const inventoryTabCommand = (action: string): boolean => {
+    const tab = inventoryTabForAction(action);
+    if (!tab) {
+      return false;
+    }
+    if (ports.session().sim.compression.locksInput) {
+      return true;
+    }
+    presentation.openInventory(tab);
+    return true;
+  };
+  const { modal } = presentation;
+  const modalCommand = (action: string): boolean =>
+    routeModalCommand(action, {
+      toggleMainMenu: () => modal.toggleMainMenu(),
+      readingOpen: modal.readingOpen(),
+      readingAction: (command) => modal.readingAction(command),
+      readingMovementAction: () => modal.readingMovementAction(),
+      toggleInventory: () => {
+        if (!ports.session().sim.compression.locksInput) {
+          modal.toggleInventory();
+        }
+      },
+      inventoryTabAction: inventoryTabCommand,
+      screenOpen: modal.screenOpen(),
+      screenAction: (command) => modal.screenAction(command),
+      mainMenuOpen: modal.mainMenuOpen(),
+      interruptionCommand: timeKeys,
+    });
+  const readingClosed = (): void => stopReadingOnClose(ports.session().sim);
+
   // ---- live input commands ----
 
   const withUnlockedInput = (action: () => void): void => {
@@ -991,7 +1064,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
         break;
       case 'craft.continue':
         if (ports.session().crafting.currentUid !== undefined) {
-          ports.dispatchScreenCommand({ kind: 'craft.continue' });
+          dispatchScreenCommand({ kind: 'craft.continue' });
         }
         break;
       case 'handling.stop':
@@ -1005,7 +1078,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
   };
   const carryCommand = (action: string): void => {
     const kind = CarryCommands[action];
-    const reason = kind && ports.dispatchScreenCommand({ kind });
+    const reason = kind && dispatchScreenCommand({ kind });
     if (reason) {
       presentation.refusal(reason, ports.sim().time);
     }
@@ -1057,7 +1130,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     presentation.locomotionPressed(action);
     ports.session().sim.actions.cancelWaitForMovement(action);
     if (action === 'ui.main-menu-toggle') {
-      presentation.modalCommand(action);
+      modalCommand(action);
       return;
     }
     if (presentation.debugCommand(action, at)) {
@@ -1072,7 +1145,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     if (ports.session().sim.dead) {
       return;
     }
-    if (!presentation.modalCommand(action)) {
+    if (!modalCommand(action)) {
       gameplayCommand(action, at, slot);
     }
   };
@@ -1204,6 +1277,21 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     }
     return undefined;
   };
+  /** Built at the first screen command, once the session exists. */
+  let screenCommandDispatcher: ((payload: ReplayActionPayload) => string | undefined) | undefined;
+  function dispatchScreenCommand(payload: ReplayActionPayload): string | undefined {
+    screenCommandDispatcher ??= createScreenCommandDispatcher({
+      isReplaying: ports.replaying,
+      inputRecorder: ports.recorder,
+      inputContext: ports.inputContext,
+      pendingPlayerTickActions: ports.pendingPlayerTickActions,
+      apply: applyScreenCommand,
+      inventory: ports.inventory(),
+      notice: presentation.notice,
+      refusal: (reason) => presentation.refusal(reason, ports.sim().time),
+    });
+    return screenCommandDispatcher(payload);
+  }
   const dispatchReplayQuickbar = (action: ReplayAction): boolean => {
     const match = QUICKBAR_ACTION.exec(action.action);
     if (!match) {
@@ -1267,6 +1355,34 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
 
   // ---- player tick ----
 
+  /** Live play records the tick and applies the actions queued for it; a replay takes the recorded sample. */
+  const sampleAtPlayerTick = (
+    _tick: number,
+    live: PlayerInputSample,
+    _time: number,
+    compressionAtTick: number,
+  ): PlayerInputSample => {
+    const replayPlayer = ports.replayPlayer();
+    if (!replayPlayer) {
+      controls.advanceFreeLook(0);
+      const sample = {
+        ...live,
+        headYaw: controls.freeLook.yaw,
+        headPitch: controls.freeLook.pitch,
+        freeLooking: controls.freeLooking,
+      };
+      const recorder = ports.recorder();
+      if (recorder && !recorder.recordTick(sample, compressionAtTick)) {
+        ports.stopRecordingForColumnOverflow();
+      }
+      ports.pendingPlayerTickActions.applyAtNextTick();
+      return live;
+    }
+    const replayInput = nextReplayInputSample(replayPlayer, ports.session().sim.compression, controls);
+    ports.setReplaySample(replayInput.recordedSample);
+    return replayInput.input;
+  };
+
   const handUse = createHandUse({
     registry,
     controls,
@@ -1283,12 +1399,12 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     meleeReadiness,
     fireWeapon,
     enqueueDoorBar,
-    dispatchScreenCommand: ports.dispatchScreenCommand,
+    dispatchScreenCommand,
   });
   const sessionControls: SessionControls = {
     active: () => ports.active(),
     intent: (): MoveIntent => controls.intent(),
-    sampleAtPlayerTick: ports.sampleAtPlayerTick,
+    sampleAtPlayerTick,
     freeLooking: () => controls.freeLooking,
     readyHeld: () => controls.rightMouseHeld,
     firearmReady: (uid) => isFirearmReady(uid),
@@ -1380,6 +1496,9 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     useTarget,
     itemThrowFlight,
     applyScreenCommand,
+    dispatchScreenCommand,
+    modalCommand,
+    readingClosed,
     dispatchReplayAction,
     dispatchInputCommand,
     requestStanceAction,
