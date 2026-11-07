@@ -247,7 +247,6 @@ export interface CommandRouter {
   /** The held item's primary use in this hand, as the player tick runs it. */
   performHandUse: HandUse['perform'];
   interactionTargetAt: HandUse['interactionTargetAt'];
-  lookedAt: HandUse['lookedAt'];
   refusePrimaryUseWhileHandling: HandUse['refusePrimaryUseWhileHandling'];
   meleeSelection: HandUse['meleeSelection'];
   /** The firearm and melee readiness gate the simulation reads; presentation reads it too. */
@@ -1522,7 +1521,6 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     enqueueDoorBar,
     performHandUse: handUse.perform,
     interactionTargetAt: handUse.interactionTargetAt,
-    lookedAt: handUse.lookedAt,
     refusePrimaryUseWhileHandling: handUse.refusePrimaryUseWhileHandling,
     meleeSelection: handUse.meleeSelection,
     readiness: { hasGunPoseInput, isFirearmReady, isAimingDownSights, shouldPlayerBlock },

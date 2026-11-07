@@ -73,8 +73,6 @@ export interface HandUse {
   perform: (hand: 'right' | 'left') => void;
   /** The nearest visible furniture panel, cell or vehicle part along this look from this eye. */
   interactionTargetAt: (origin: Vec3, direction: Vec3) => InteractionTarget | undefined;
-  /** The furniture in the crosshair from the session's eye, if the pick found furniture. */
-  lookedAt: () => BlockEntity | undefined;
   /** Refuses a primary use while handling is busy; true when it refused. */
   refusePrimaryUseWhileHandling: () => boolean;
   meleeSelection: (preferredHand?: 'right' | 'left') => MeleeSelection;
@@ -108,6 +106,7 @@ export function createHandUse(deps: HandUseDeps): HandUse {
         .map(([id, actor]) => ({ id, body: actor.body })),
     });
   };
+  /** The furniture in the crosshair from the session's eye, if the pick found furniture. */
   const lookedAt = (): BlockEntity | undefined => {
     const session = deps.session();
     const target = interactionTargetAt(session.playerEye(), session.playerLookDirection());
@@ -369,5 +368,5 @@ export function createHandUse(deps: HandUseDeps): HandUse {
     }
   };
 
-  return { perform, interactionTargetAt, lookedAt, refusePrimaryUseWhileHandling, meleeSelection };
+  return { perform, interactionTargetAt, refusePrimaryUseWhileHandling, meleeSelection };
 }
