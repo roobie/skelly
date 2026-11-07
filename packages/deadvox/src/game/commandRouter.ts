@@ -1,8 +1,9 @@
 // Routes the player's controls into the simulation: bound input commands and what a replay records of them, the
 // session controls and trigger at the player tick, replayed actions, screen commands, furniture use and the item throw.
 
-import { actionText } from '../core/actionText.ts';
+import { actionText, fillText } from '../core/actionText.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
+import { claimed } from '../core/capabilities.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import type { Registry } from '../core/content.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
@@ -13,13 +14,20 @@ import type { InputContext } from '../core/inputActions.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { flightForItem, hasMetThrowMinimumHold, type ItemFlight, throwDistanceForItem } from '../core/itemThrow.ts';
+import { offHandUse } from '../core/lights.ts';
 import type { RestKind } from '../core/longAction.ts';
-import { pocketGroundItem, toHands, wieldOrPocket } from '../core/options.ts';
+import { countText } from '../core/numberText.ts';
+import { doorOptions, doorPlan, dropTarget, pocketGroundItem, toHands, wieldOrPocket } from '../core/options.ts';
+import { pryPlan } from '../core/prying.ts';
 import type { Simulation } from '../core/sim.ts';
+import { fillText as fillScreenText } from '../core/textTemplate.ts';
+import { continueActionResumesJob } from './continueAction.ts';
 import { dispatchReplayStanceAction, type StanceReplayAction } from './crouchProneInput.ts';
+import { DOOR_ACTION } from './doorAction.ts';
 import { type FirearmShotInput, firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { freeLookAllowsCommand, freeLookAllowsUse } from './freeLook.ts';
+import { furnitureActionsFor } from './furnitureActions.ts';
 import type { InputReplayRecorder, ReplayAction, ReplayControlSample } from './inputReplay.ts';
 import { routeDominantUse, toggleWalking } from './inputReplayActions.ts';
 import { applyReplayLook } from './inputReplayPlayer.ts';
@@ -29,7 +37,8 @@ import { adjustLookPitch, type PlayerControls } from './playerControls.ts';
 import { applyToHeldItem, type PlayerTickActions } from './playerTickActions.ts';
 import { selectPrimaryAction } from './primaryAction.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
-import type { ReloadBinding } from './reloadInput.ts';
+import { QuickbarActions } from './quickbarActions.ts';
+import { type ReloadBinding, reloadTarget } from './reloadInput.ts';
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import type { Session, SessionControls } from './session.ts';
@@ -81,6 +90,7 @@ interface ItemThrowLaunch {
 /** Where routed effects reach the player; called in place, in the order the routing reaches them. */
 interface CommandRouterPresentation {
   refusal: (reason: string, atSimSeconds: number) => void;
+  notice: (text: string) => void;
   closeInventoryScreen: () => void;
   syncMenuState: () => void;
   openInventory: (tab: 'items') => void;
@@ -122,17 +132,6 @@ interface LiveGesturePorts {
   cancelHeld: () => void;
 }
 
-/** Live gestures a replay re-dispatches by their recorded action; their owners still live in play.ts. */
-interface ReplayGesturePorts {
-  reloadBinding: () => ReloadBinding | undefined;
-  toggleThrowingStance: () => void;
-  dropHeldItemForThrowingStance: () => void;
-  toggleWornLights: () => void;
-  useForwardButton: () => void;
-  quickbarTap: (slot: number) => void;
-  quickbarHold: (slot: number) => void;
-}
-
 /** What the router reads and drives; owners outside the router supply each port lazily. */
 export interface CommandRouterPorts {
   controls: PlayerControls;
@@ -146,6 +145,12 @@ export interface CommandRouterPorts {
   active: () => boolean;
   /** The world finished loading; no command reaches it before. */
   worldReady: () => boolean;
+  /** The pointer is locked to the view. */
+  pointerLocked: () => boolean;
+  /** A menu holds the pointer. */
+  menuPointer: () => boolean;
+  /** The save controller captures a save before a sleep begins. */
+  beforeSleep: () => void;
   sampleAtPlayerTick: NonNullable<SessionControls['sampleAtPlayerTick']>;
   replaying: () => boolean;
   replaySample: () => ReplayControlSample | undefined;
@@ -162,9 +167,6 @@ export interface CommandRouterPorts {
   buildMode: () => boolean;
   handlingBusy: () => boolean;
   sprinting: () => boolean;
-  throwingStance: () => boolean;
-  syncThrowingStance: () => void;
-  beginItemThrow: () => void;
   itemThrowTuning: Parameters<typeof throwDistanceForItem>[2];
   throwMinimumHoldSimSeconds: number;
   scale: { readonly blockSize: number; readonly minCy: number };
@@ -177,14 +179,6 @@ export interface CommandRouterPorts {
   fire: (shot: FirearmShotInput) => boolean;
   fireReason: (uid: number) => string | undefined;
   descending: () => boolean;
-  actOnWork: (uid: number, operation: WorkOperation, choices?: RecoveryChoices) => string | undefined;
-  enqueueDoorBar: (entity: BlockEntity, barring: boolean) => string | undefined;
-  toggleDoor: (entity: BlockEntity) => void;
-  toggleRestFromTarget: (kind: RestKind, entity: BlockEntity) => void;
-  furnitureActions: (entity: BlockEntity) => ItemAction[];
-  continueAction: () => void;
-  stopAction: () => void;
-  gestures: ReplayGesturePorts;
   liveGestures: LiveGesturePorts;
 }
 
@@ -192,8 +186,6 @@ export interface CommandRouter {
   /** The session's controls, before any presentation guard wraps them. */
   readonly controls: SessionControls;
   fireWeapon: (item: Item, atSimSeconds: number) => boolean;
-  /** Ends a held automatic burst, as leaving the throwing stance does. */
-  clearAutomaticFire: () => void;
   cancelItemThrow: () => void;
   useTarget: (entity: BlockEntity) => void;
   itemThrowFlight: (item: Item, hand: HandSide, distanceMetres: number) => ItemFlight;
@@ -202,13 +194,38 @@ export interface CommandRouter {
   /** A live command, gated and recorded; a replay passes fromReplay so it is not recorded again. */
   dispatchInputCommand: (command: InputCommand, fromReplay?: boolean) => void;
   requestStanceAction: (action: StanceReplayAction) => void;
+  throwingStance: () => boolean;
+  /** A replay segment's start state sets the stance directly. */
+  setThrowingStance: (value: boolean) => void;
+  /** Leaves the throwing stance once both hands are empty. */
+  syncThrowingStance: () => void;
+  toggleThrowingStance: () => void;
+  dropHeldItemForThrowingStance: () => void;
+  beginItemThrow: () => void;
+  /** Starts a waiting throw charge once handling frees the hands; run each frame. */
+  advancePendingItemThrow: () => void;
+  toggleWornLights: () => void;
+  useForwardButton: () => void;
+  quickbarTap: (slot: number) => void;
+  quickbarHold: (slot: number) => void;
+  /** Continue a craft, rest/sleep, or the debug compression test. */
+  continueAction: () => void;
+  /** Stop the current long action without discarding owned progress. */
+  stopAction: () => void;
+  compress: () => void;
+  /** Default-view R reloads, racks and removes; menus own their own bindings (including inventory rotation). */
+  reloadBinding: () => ReloadBinding | undefined;
+  /** Sets a held bar across the door or lifts the bar off it, from the side the player stands on. */
+  enqueueDoorBar: (entity: BlockEntity, barring: boolean) => string | undefined;
 }
 
 export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
-  const { controls, registry, presentation, gestures, liveGestures } = ports;
+  const { controls, registry, presentation, liveGestures } = ports;
   const lines = actionText(registry);
+  const restRefusals = { rest: lines.play.restRefused, sleep: lines.play.sleepRefused };
   const firearmTrigger = new FirearmTrigger();
   let automaticFireUid: number | undefined;
+  let throwingStance = false;
   const refusalReason = (reason: string | undefined): void => {
     if (reason) {
       presentation.refusal(reason, ports.sim().time);
@@ -241,7 +258,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     }
     const action = selectPrimaryAction(ports.inventory());
     if (
-      ports.throwingStance() ||
+      throwingStance ||
       action.kind !== 'firearm' ||
       action.item.firearm?.cylinder ||
       !firearmHandlingFor(action.item, registry).action.fire
@@ -344,7 +361,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       ports.pendingPlayerTickActions.enqueue(() => {
         applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
           throwHeldItem(heldItem, hand, distance);
-          ports.syncThrowingStance();
+          syncThrowingStance();
         });
       });
     }
@@ -352,7 +369,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
   function throwRecordedItem(itemUid: number, hand: HandSide, distanceMetres: number): void {
     applyToHeldItem(ports.inventory().hands, hand, itemUid, (item) => {
       throwHeldItem(item, hand, distanceMetres);
-      ports.syncThrowingStance();
+      syncThrowingStance();
     });
   }
   function itemThrowFlight(item: Item, hand: HandSide, distanceMetres: number): ItemFlight {
@@ -360,7 +377,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     const s = scale.blockSize;
     const fullStrength = throwDistanceForItem(item, registry, itemThrowTuning, itemThrowTuning.chargeSimSeconds);
     const chargeProgress = fullStrength > 0 ? Math.max(0, Math.min(1, distanceMetres / fullStrength)) : 0;
-    const offset: Vec3 = ports.throwingStance()
+    const offset: Vec3 = throwingStance
       ? throwStanceWorldOffset(hand, controls.yaw, controls.pitch, chargeProgress)
       : [0, 0, 0];
     const origin = ports.eye().map((value, axis) => value * s + offset[axis]!) as Vec3;
@@ -403,13 +420,398 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     );
   }
 
+  function beginItemThrow(): void {
+    if (controls.freeLooking) {
+      return;
+    }
+    const sim = ports.sim();
+    const refusal = sim.body.actionRefusal;
+    if (refusal) {
+      presentation.refusal(refusal, sim.time);
+      return;
+    }
+    const session = ports.session();
+    const begun = session.throwCharge.begin(sim.time, session.queue.busy || session.firearms.busy);
+    if (begun.kind === 'refused') {
+      presentation.refusal(begun.reason, sim.time);
+    } else if (begun.kind === 'waiting') {
+      presentation.notice(lines.play.waitingForHandling);
+    }
+  }
+  function advancePendingItemThrow(): void {
+    const session = ports.session();
+    const charge = session.throwCharge;
+    if (!charge.active || charge.startedAt !== undefined) {
+      return;
+    }
+    if (!(ports.replaySample()?.intent.useDominantHeld ?? controls.dominantUseHeld)) {
+      cancelItemThrow();
+      return;
+    }
+    const { sim } = session;
+    if (sim.paused || session.queue.busy || session.firearms.busy) {
+      return;
+    }
+    if (!charge.start(sim.time)) {
+      presentation.refusal(lines.play.throwLostItem, sim.time);
+      return;
+    }
+    presentation.notice('');
+  }
+
+  // ---- throwing stance ----
+
+  function toggleThrowingStance(): void {
+    if (controls.freeLooking) {
+      return;
+    }
+    throwingStance = !throwingStance;
+    automaticFireUid = undefined;
+    if (!ports.replaying()) {
+      ports.recorder()?.queueAction('throw.stance.toggle', 'down', ports.inputContext(), { inSnapshot: true });
+    }
+    if (!throwingStance) {
+      cancelItemThrow();
+    }
+    syncThrowingStance();
+  }
+  function syncThrowingStance(): void {
+    if (throwingStance && !ports.inventory().hands.right && !ports.inventory().hands.left) {
+      throwingStance = false;
+      cancelItemThrow();
+    }
+  }
+  function dropHeldItemForThrowingStance(): void {
+    if (!ports.replaying()) {
+      const sim = ports.sim();
+      if (sim.body.actionRefusal) {
+        presentation.refusal(sim.body.actionRefusal, sim.time);
+        return;
+      }
+      if (!ports.inventory().hands[ports.session().throwCharge.throwHand()]) {
+        return;
+      }
+      ports.recorder()?.queueAction('item.drop', 'down', ports.inputContext());
+      ports.pendingPlayerTickActions.enqueue(dropHeldItemForThrowingStanceNow);
+      return;
+    }
+    dropHeldItemForThrowingStanceNow();
+  }
+  function dropHeldItemForThrowingStanceNow(): void {
+    if (controls.freeLooking) {
+      return;
+    }
+    const sim = ports.sim();
+    if (sim.body.actionRefusal) {
+      presentation.refusal(sim.body.actionRefusal, sim.time);
+      return;
+    }
+    const session = ports.session();
+    const inventory = ports.inventory();
+    const hand = session.throwCharge.throwHand();
+    const item = inventory.hands[hand];
+    if (!item) {
+      return;
+    }
+    const drop = dropTarget(inventory, item, session.feet());
+    const result = drop.plan.ok ? inventory.move(item, drop.target) : drop.plan;
+    if (!result.ok) {
+      presentation.refusal(fillText(lines.play.dropRefused, { reason: result.reason }), sim.time);
+      return;
+    }
+    if (session.throwCharge.itemUid === item.uid) {
+      cancelItemThrow();
+    }
+    syncThrowingStance();
+  }
+
+  // ---- worn lights and forward use ----
+
+  function toggleWornLights(): void {
+    if (!ports.replaying()) {
+      ports.recorder()?.queueAction('light.worn-toggle', 'down', ports.inputContext());
+      ports.pendingPlayerTickActions.enqueue(toggleWornLightsNow);
+      return;
+    }
+    toggleWornLightsNow();
+  }
+  function toggleWornLightsNow(): void {
+    if (controls.freeLooking) {
+      return;
+    }
+    refusalReason(ports.session().survival.toggleWornLights());
+  }
+  function useForwardButton(): void {
+    if (!ports.replaying()) {
+      ports.recorder()?.queueAction('hand.use-forward', 'down', ports.inputContext());
+      ports.pendingPlayerTickActions.enqueue(useForwardButtonNow);
+      return;
+    }
+    useForwardButtonNow();
+  }
+  function useForwardButtonNow(): void {
+    if (controls.freeLooking) {
+      return;
+    }
+    // Instant off-hand use shares Survival's owner with a quickbar second press.
+    const item = offHandUse(registry, ports.inventory());
+    const reason = item && ports.session().survival.use(item);
+    if (reason) {
+      presentation.refusal(reason, ports.sim().time);
+    }
+  }
+
+  // ---- quickbar ----
+
+  /** Built at the first quickbar action, once the session exists. */
+  let quickbarActions: QuickbarActions | undefined;
+  const quickbarActionsFor = (session: Session): QuickbarActions => {
+    quickbarActions ??= new QuickbarActions({
+      inventory: session.inventory,
+      queue: session.queue,
+      feet: session.feet,
+      survival: session.survival,
+      notice: (text) => presentation.refusal(text, ports.sim().time),
+    });
+    return quickbarActions;
+  };
+  function runQuickbarAction(slot: number, held: boolean): void {
+    if (controls.freeLooking) {
+      return;
+    }
+    const sim = ports.sim();
+    if (sim.body.actionRefusal) {
+      presentation.refusal(sim.body.actionRefusal, sim.time);
+      return;
+    }
+    const session = ports.session();
+    const item = session.quickbar.resolve(slot, ports.inventory());
+    if (!item) {
+      presentation.refusal(fillText(lines.play.quickbarEmpty, { slot: countText(slot + 1) }), sim.time);
+      return;
+    }
+    if (held) {
+      quickbarActionsFor(session).hold(item);
+    } else {
+      quickbarActionsFor(session).tap(item);
+    }
+  }
+  function quickbarTap(slot: number): void {
+    const recorder = ports.replaying() ? undefined : ports.recorder();
+    if (recorder) {
+      recorder.queueAction(`quickbar.tap.${slot + 1}`, 'down', ports.inputContext());
+      ports.pendingPlayerTickActions.enqueue(() => runQuickbarAction(slot, false));
+      return;
+    }
+    runQuickbarAction(slot, false);
+  }
+  function quickbarHold(slot: number): void {
+    const recorder = ports.replaying() ? undefined : ports.recorder();
+    if (recorder) {
+      recorder.queueAction(`quickbar.hold.${slot + 1}`, 'down', ports.inputContext());
+      ports.pendingPlayerTickActions.enqueue(() => runQuickbarAction(slot, true));
+      return;
+    }
+    runQuickbarAction(slot, true);
+  }
+
+  // ---- long actions: work, continue and stop ----
+
+  function actOnWork(uid: number, operation: WorkOperation, choices: RecoveryChoices = {}): string | undefined {
+    const reason = ports.session().crafting.act(uid, operation, choices);
+    if (!reason && operation !== 'apart') {
+      presentation.closeInventoryScreen();
+      presentation.syncMenuState();
+    }
+    return reason;
+  }
+  function continueWork(): boolean {
+    const workUid = ports.session().crafting.currentUid;
+    if (workUid === undefined) {
+      return false;
+    }
+    const reason = actOnWork(workUid, 'continue');
+    if (reason) {
+      presentation.refusal(fillText(lines.play.continueRefused, { reason }), ports.sim().time);
+    }
+    return true;
+  }
+  function compress(): void {
+    const { queue, sim } = ports.session();
+    queue.cancel();
+    const result = sim.compress();
+    if (!result.ok) {
+      presentation.refusal(fillText(lines.play.restRefused, { reason: result.reason }), sim.time);
+    }
+  }
+  function continueAction(): void {
+    const refusal = ports.sim().body.actionRefusal;
+    if (refusal) {
+      presentation.refusal(refusal, ports.sim().time);
+      return;
+    }
+    if (continueWork()) {
+      return;
+    }
+    const { rest, sim } = ports.session();
+    if (rest.action || continueActionResumesJob(sim.actions.job?.jobType)) {
+      const reason = rest.action ? rest.resume() : sim.actions.resume();
+      if (reason) {
+        presentation.refusal(fillText(lines.play.continueRefused, { reason }), sim.time);
+      }
+    } else {
+      compress();
+    }
+  }
+  function stopAction(): void {
+    const { rest, sim } = ports.session();
+    if (rest.action && !rest.canStop) {
+      return;
+    }
+    if (
+      sim.actions.job?.jobType === 'craft' ||
+      sim.actions.job?.jobType === 'wait' ||
+      sim.actions.job?.jobType === 'reading' ||
+      sim.actions.job?.jobType === 'forceDoor' ||
+      sim.actions.job?.jobType === 'treatment' ||
+      sim.actions.job?.jobType === 'vehicleWork'
+    ) {
+      sim.actions.stop();
+    } else if (rest.action) {
+      rest.stop();
+    } else {
+      sim.compression.stop();
+    }
+  }
+
+  // ---- reload ----
+
+  function reloadBinding(): ReloadBinding | undefined {
+    const session = ports.session();
+    const { sim, queue, firearms } = session;
+    if (
+      !(ports.pointerLocked() || ports.replaying()) ||
+      (ports.menuPointer() && !ports.replaying()) ||
+      sim.compression.locksInput ||
+      sim.paused ||
+      sim.dead ||
+      sim.body.actionRefusal ||
+      ports.buildMode() ||
+      session.throwCharge.startedAt !== undefined
+    ) {
+      return;
+    }
+    // An admitted gesture is recorded; replay drives it back through this binding.
+    const admit = (action: 'firearm.load' | 'firearm.rack' | 'firearm.remove', reason: string | undefined): boolean => {
+      if (reason) {
+        presentation.refusal(reason, sim.time);
+      } else {
+        ports.recorder()?.queueAction(action, 'down', ports.inputContext());
+      }
+      return reason === undefined;
+    };
+    const target = reloadTarget(firearms, session.magazines, lines.play.notHoldingGun);
+    if (!target) {
+      return;
+    }
+    // A reload works the firearm with both hands, so a hand on a ladder refuses it.
+    const ladder = (): string | undefined => {
+      const hand = session.ladderHold.hand();
+      return hand && session.ladderHold.refusal(hand);
+    };
+    return {
+      uid: target.uid,
+      busy: () => queue.busy || firearms.busy,
+      oneAction: target.oneAction,
+      load: () => admit('firearm.load', ladder() ?? target.load(sim.time)),
+      rack: () => admit('firearm.rack', ladder() ?? target.rack(sim.time)),
+      remove: () => admit('firearm.remove', ladder() ?? target.remove(sim.time)),
+      ...(target.stillLoaded ? { stillLoaded: target.stillLoaded } : {}),
+      cancelLoad: target.cancelLoad,
+      ...(target.releaseLoad ? { releaseLoad: () => target.releaseLoad!(sim.time) } : {}),
+    };
+  }
+
   // ---- furniture ----
+
+  const furnitureActions = (entity: BlockEntity): ItemAction[] =>
+    furnitureActionsFor(ports.inventory(), entity, ports.scale.blockSize);
+  function toggleRest(kind: RestKind, entity: BlockEntity): void {
+    const { rest, queue, sim } = ports.session();
+    const { compression } = sim;
+    const already = rest.action?.kind === kind && rest.action.furnitureUid === entity.uid;
+    if (compression.interruption !== undefined && !already) {
+      return;
+    }
+    if (!already) {
+      if (compression.locksInput) {
+        return;
+      }
+      queue.cancel();
+      if (kind === 'sleep') {
+        ports.beforeSleep();
+      }
+    }
+    const reason = rest.toggle(kind, entity.uid);
+    if (reason) {
+      presentation.refusal(fillText(restRefusals[kind], { reason }), sim.time);
+    }
+  }
+  function toggleRestFromTarget(kind: RestKind, entity: BlockEntity): void {
+    const { rest } = ports.session();
+    const { action } = rest;
+    if (action?.kind === kind && action.furnitureUid === entity.uid && !rest.canStop) {
+      return;
+    }
+    toggleRest(kind, entity);
+  }
+  function toggleDoor(entity: BlockEntity): void {
+    const session = ports.session();
+    const { inventory, entities, queue, sim } = session;
+    if (entity.lock?.locked && Object.keys(entities.defOf(entity).door?.methods ?? {}).length > 0) {
+      const plan = pryPlan(inventory, entity, undefined, session.character);
+      if (!plan.ok) {
+        presentation.refusal(plan.reason, sim.time);
+        return;
+      }
+      queue.cancel();
+      const reason = session.forceDoor(entity, plan.tool.uid, plan.method);
+      if (reason) {
+        presentation.refusal(reason, sim.time);
+      }
+      return;
+    }
+    const option = doorOptions(inventory, entity)[0]!;
+    if (!option.plan.ok) {
+      presentation.refusal(option.plan.reason, sim.time);
+      return;
+    }
+    const label = fillText(lines.doors.operate, { action: option.label, door: session.nameOf(entity) });
+    queue.enqueueAction(DOOR_ACTION, label, option.plan.time, {
+      entityUid: entity.uid,
+      closing: option.operation === 'close',
+    });
+  }
+  /** Sets a held bar across the door or lifts the bar off it, from the side the player stands on. */
+  function enqueueDoorBar(entity: BlockEntity, barring: boolean): string | undefined {
+    const session = ports.session();
+    const plan = doorPlan(session.inventory, entity, barring ? 'bar' : 'unbar');
+    if (!plan.ok) {
+      return plan.reason;
+    }
+    const { screenText } = claimed(registry.ui, 'interface')!;
+    const label = barring
+      ? fillScreenText(screenText.interaction.barDoor, { name: session.nameOf(entity) })
+      : screenText.interaction.liftBar;
+    session.queue.enqueueAction(DOOR_ACTION, label, plan.time, { entityUid: entity.uid, barring });
+    return undefined;
+  }
 
   function useTarget(entity: BlockEntity): void {
     const session = ports.session();
     const def = session.entities.defOf(entity);
     if (def.door) {
-      ports.toggleDoor(entity);
+      toggleDoor(entity);
       return;
     }
     if (def.climbable) {
@@ -425,7 +827,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     }
     const kind = restKindForFurniture(def);
     if (kind) {
-      ports.toggleRestFromTarget(kind, entity);
+      toggleRestFromTarget(kind, entity);
       return;
     }
     if (!entity.pockets) {
@@ -447,8 +849,8 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     if (session.sim.compression.locksInput && session.rest.action?.furnitureUid !== entity.uid) {
       return undefined;
     }
-    if (alternatives && ports.furnitureActions(entity).length > 0) {
-      presentation.openFurnitureChoices(entity, ports.furnitureActions(entity));
+    if (alternatives && furnitureActions(entity).length > 0) {
+      presentation.openFurnitureChoices(entity, furnitureActions(entity));
     } else {
       useTarget(entity);
     }
@@ -475,7 +877,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     controls.reload.cancel();
     session.queue.cancel();
     if (session.sim.actions.job || session.rest.action || session.sim.compression.active) {
-      ports.stopAction();
+      stopAction();
     }
   };
   const assignQuickbarIfUnlocked = (slot: number | undefined, at: number): void => {
@@ -519,7 +921,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
         }
         break;
       case 'firearm.reload':
-        controls.reload.keyDown(at, gestures.reloadBinding());
+        controls.reload.keyDown(at, reloadBinding());
         break;
       case 'world.interact':
         withUnlockedInput(() => liveGestures.interact.keyDown(action, at));
@@ -660,7 +1062,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
           presentation.weaponInspected(item);
         }
       },
-      work: ports.actOnWork,
+      work: actOnWork,
       vehicleWork: (work, vehicleId, target, itemUid) => session.beginVehicleWork(work, vehicleId, target, itemUid),
       fitAttachment: (firearmUid, slotId, attachmentUid) =>
         session.firearmAttachments.fit(firearmUid, slotId, attachmentUid),
@@ -690,7 +1092,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       interact: interactFurniture,
       lift: (uid, floorLocked) => {
         const entity = entities.byUid(uid);
-        return entity?.bar ? ports.enqueueDoorBar(entity, false) : session.liftFurniture(uid, floorLocked);
+        return entity?.bar ? enqueueDoorBar(entity, false) : session.liftFurniture(uid, floorLocked);
       },
       useFurniture: (uid): string | undefined => {
         const entity = entities.byUid(uid);
@@ -709,10 +1111,10 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       craftRepairEntity: (recipeId, entityUid, preference, sources) =>
         session.crafting.repairEntity(recipeId, entityUid, preference, sources),
       craftContinue: () => {
-        ports.continueAction();
+        continueAction();
       },
       craftStop: () => {
-        ports.stopAction();
+        stopAction();
       },
       wait: () => sim.actions.startWait(),
       setWakeGameHour: (gameHour) => {
@@ -748,7 +1150,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     if (index < 1 || index > QUICKBAR_SLOTS) {
       return false;
     }
-    (match[1] === 'tap' ? gestures.quickbarTap : gestures.quickbarHold)(index - 1);
+    (match[1] === 'tap' ? quickbarTap : quickbarHold)(index - 1);
     return true;
   };
   const dispatchReplayGesture = (action: ReplayAction): boolean => {
@@ -757,28 +1159,28 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     }
     switch (action.action) {
       case 'firearm.load':
-        gestures.reloadBinding()?.load();
+        reloadBinding()?.load();
         return true;
       case 'firearm.rack':
-        gestures.reloadBinding()?.rack();
+        reloadBinding()?.rack();
         return true;
       case 'firearm.remove':
-        gestures.reloadBinding()?.remove();
+        reloadBinding()?.remove();
         return true;
       case 'throw.stance.toggle':
-        gestures.toggleThrowingStance();
+        toggleThrowingStance();
         return true;
       case 'item.drop':
-        gestures.dropHeldItemForThrowingStance();
+        dropHeldItemForThrowingStance();
         return true;
       case 'item.throw.cancel':
         cancelItemThrow();
         return true;
       case 'light.worn-toggle':
-        gestures.toggleWornLights();
+        toggleWornLights();
         return true;
       case 'hand.use-forward':
-        gestures.useForwardButton();
+        useForwardButton();
         return true;
       default:
         return dispatchReplayQuickbar(action);
@@ -815,7 +1217,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     consumeOffUse: () => controls.consumeOffUse(),
     consumeStanceToggle: () => controls.consumeStanceToggle(),
     useDominant: () =>
-      routeDominantUse(ports.throwingStance(), ports.beginItemThrow, () => {
+      routeDominantUse(throwingStance, beginItemThrow, () => {
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
         const action = selectPrimaryAction(ports.inventory());
         if (
@@ -830,7 +1232,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
         }
       }),
     heldDominantUse: (atSimSeconds, pressed, triggerHeld) => {
-      if (ports.throwingStance()) {
+      if (throwingStance) {
         ports.advanceHeldStrip(undefined, atSimSeconds, false);
         if (!triggerHeld) {
           releaseItemThrow();
@@ -893,9 +1295,6 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
   return {
     controls: sessionControls,
     fireWeapon,
-    clearAutomaticFire: () => {
-      automaticFireUid = undefined;
-    },
     cancelItemThrow,
     useTarget,
     itemThrowFlight,
@@ -903,5 +1302,23 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     dispatchReplayAction,
     dispatchInputCommand,
     requestStanceAction,
+    throwingStance: () => throwingStance,
+    setThrowingStance: (value) => {
+      throwingStance = value;
+    },
+    syncThrowingStance,
+    toggleThrowingStance,
+    dropHeldItemForThrowingStance,
+    beginItemThrow,
+    advancePendingItemThrow,
+    toggleWornLights,
+    useForwardButton,
+    quickbarTap,
+    quickbarHold,
+    continueAction,
+    stopAction,
+    compress,
+    reloadBinding,
+    enqueueDoorBar,
   };
 }

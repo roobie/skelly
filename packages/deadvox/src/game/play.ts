@@ -14,7 +14,6 @@ import { dominantSide, offSide } from '../core/character.ts';
 import { CitySite } from '../core/citySite.ts';
 import { formatClock, nextTimeOfDay } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
-import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
@@ -25,11 +24,10 @@ import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile } from '../core/inventory.ts';
 import { damageWord, defOf, type Item } from '../core/items.ts';
-import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
-import type { LongJob, RestKind } from '../core/longAction.ts';
+import { chargeShare, wornNightVision } from '../core/lights.ts';
+import type { LongJob } from '../core/longAction.ts';
 import type { MeleeProfile } from '../core/meleePose.ts';
-import { countText } from '../core/numberText.ts';
-import { doorOptions, doorPlan, dropTarget, heldDoorBar } from '../core/options.ts';
+import { doorOptions, doorPlan, heldDoorBar } from '../core/options.ts';
 import { playerAdsPose } from '../core/playerAdsPose.ts';
 import { playerEyePosition, playerHeldSeatFrame, playerLookPose } from '../core/playerLookPose.ts';
 import { pryPlan } from '../core/prying.ts';
@@ -110,7 +108,6 @@ import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
 import { openingTargetForHand } from './canOpening.ts';
 import { columnArrival } from './columnArrival.ts';
 import { createCommandRouter } from './commandRouter.ts';
-import { continueActionResumesJob } from './continueAction.ts';
 import { CrouchProneInput } from './crouchProneInput.ts';
 import { DebugGunPose } from './debugGunPose.ts';
 import type {
@@ -168,10 +165,9 @@ import { createAttemptRecording, type PlaytestObserver } from './playtestObserve
 import { createSnapshotHistory, downloadFile, type HandBackFile, replayFile } from './playtestTools.ts';
 import { PressHoldInput } from './pressHoldInput.ts';
 import { ignitionTargetForHand, primaryMeleeAction, selectPrimaryAction } from './primaryAction.ts';
-import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
 import { stopReadingOnClose as stopReadingPageOnClose } from './readingClose.ts';
-import { RELOAD_GESTURE_MS, type ReloadBinding, reloadTarget } from './reloadInput.ts';
+import { RELOAD_GESTURE_MS } from './reloadInput.ts';
 import type { ReplayActionPayload } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
@@ -704,7 +700,6 @@ export const startPlay = (
   assertPracticeIsolation(options, Boolean(engine.site?.guidance));
   const { config, registry, streamer, renderer, camera, meshes } = engine;
   const lines = actionText(registry);
-  const restRefusals = { rest: lines.play.restRefused, sleep: lines.play.sleepRefused };
   const autosave = autosaveTuning(registry);
   const inputTarget = renderer?.domElement ?? $('view');
   const { owner: worldLoading, draw: drawWorldLoading } = playLoadingFor(engine, options);
@@ -749,7 +744,6 @@ export const startPlay = (
     armSpeedMetresPerRealSecond: throwArmSpeedMetresPerRealSecond,
     armEnergyJoules: throwArmEnergyJoules,
   };
-  let throwingStance = false;
   const pendingPlayerTickActions = new PlayerTickActions();
   let interactionPressTarget: InteractionTarget | undefined;
   /** The vehicle opened by interacting with it; presentation only, so it is neither saved nor replayed. */
@@ -808,6 +802,7 @@ export const startPlay = (
     sim: () => sim,
     presentation: {
       refusal: (reason, atSimSeconds) => showRefusal(reason, atSimSeconds),
+      notice: (text) => showNotice(text),
       closeInventoryScreen: () => closeInventoryScreen(),
       syncMenuState: () => syncMenuState(),
       openInventory: (tab) => openInventory(tab),
@@ -824,6 +819,9 @@ export const startPlay = (
     },
     active: () => worldLoading.ready && (Boolean(options.replay) || (input.locked && !input.menuPointer)),
     worldReady: () => worldLoading.ready,
+    pointerLocked: () => input.locked,
+    menuPointer: () => input.menuPointer,
+    beforeSleep: () => options.saveController?.beforeSleep(),
     sampleAtPlayerTick: samplePlayerInput,
     replaying: () => replayPlayer !== undefined,
     replaySample: () => replaySample,
@@ -840,9 +838,6 @@ export const startPlay = (
     buildMode: () => Boolean(debugTools?.buildOn),
     handlingBusy: () => queue.busy,
     sprinting: () => session.sprinting,
-    throwingStance: () => throwingStance,
-    syncThrowingStance: () => syncThrowingStance(),
-    beginItemThrow,
     itemThrowTuning,
     throwMinimumHoldSimSeconds,
     scale,
@@ -855,22 +850,6 @@ export const startPlay = (
     fire: (shot) => firearms.fire(shot),
     fireReason: (uid) => firearms.fireReason(uid),
     descending: () => keyboardInput.held('noclip.descend'),
-    actOnWork: (uid, operation, choices) => actOnWork(uid, operation, choices),
-    enqueueDoorBar: (entity, barring) => enqueueDoorBar(entity, barring),
-    toggleDoor: (entity) => toggleDoor(entity),
-    toggleRestFromTarget: (kind, entity) => toggleRestFromTarget(kind, entity),
-    furnitureActions: (entity) => furnitureActions(entity),
-    continueAction: () => continueAction(),
-    stopAction: () => stopAction(),
-    gestures: {
-      reloadBinding: () => reloadBinding(),
-      toggleThrowingStance: () => toggleThrowingStance(),
-      dropHeldItemForThrowingStance: () => dropHeldItemForThrowingStance(),
-      toggleWornLights: () => toggleWornLights(),
-      useForwardButton: () => useForwardButton(),
-      quickbarTap: (slot) => quickbarTap(slot),
-      quickbarHold: (slot) => quickbarHold(slot),
-    },
     liveGestures: {
       crouchProne: {
         keyDown: (action, at) => crouchProneInput.keyDown(action, at),
@@ -1279,53 +1258,7 @@ export const startPlay = (
   };
   const showRefusal = createPlayRefusalPresenter(registry, audio, showNotice);
 
-  const toggleRest = (kind: RestKind, entity: BlockEntity): void => {
-    const already = rest.action?.kind === kind && rest.action.furnitureUid === entity.uid;
-    if (compression.interruption !== undefined && !already) {
-      return;
-    }
-    if (!already) {
-      if (compression.locksInput) {
-        return;
-      }
-      queue.cancel();
-      if (kind === 'sleep') {
-        options.saveController?.beforeSleep();
-      }
-    }
-    const reason = rest.toggle(kind, entity.uid);
-    if (reason) {
-      showRefusal(fillText(restRefusals[kind], { reason }), sim.time);
-    }
-  };
-
   // ---- furniture: searching and doors ----
-
-  const toggleDoor = (entity: BlockEntity) => {
-    if (entity.lock?.locked && Object.keys(entities.defOf(entity).door?.methods ?? {}).length > 0) {
-      const plan = pryPlan(inventory, entity, undefined, session.character);
-      if (!plan.ok) {
-        showRefusal(plan.reason, sim.time);
-        return;
-      }
-      queue.cancel();
-      const reason = session.forceDoor(entity, plan.tool.uid, plan.method);
-      if (reason) {
-        showRefusal(reason, sim.time);
-      }
-      return;
-    }
-    const option = doorOptions(inventory, entity)[0]!;
-    if (!option.plan.ok) {
-      showRefusal(option.plan.reason, sim.time);
-      return;
-    }
-    const label = fillText(lines.doors.operate, { action: option.label, door: nameOf(entity) });
-    queue.enqueueAction(DOOR_ACTION, label, option.plan.time, {
-      entityUid: entity.uid,
-      closing: option.operation === 'close',
-    });
-  };
 
   const activateKey = (item: Item) => {
     const entity = lookedAt();
@@ -1349,22 +1282,9 @@ export const startPlay = (
     });
   };
 
-  /** Sets a held bar across the door or lifts the bar off it, from the side the player stands on. */
-  const enqueueDoorBar = (entity: BlockEntity, barring: boolean): string | undefined => {
-    const plan = doorPlan(inventory, entity, barring ? 'bar' : 'unbar');
-    if (!plan.ok) {
-      return plan.reason;
-    }
-    const label = barring
-      ? fillScreenText(screenText.interaction.barDoor, { name: nameOf(entity) })
-      : screenText.interaction.liftBar;
-    queue.enqueueAction(DOOR_ACTION, label, plan.time, { entityUid: entity.uid, barring });
-    return undefined;
-  };
-
   const activateBar = () => {
     const entity = lookedAt();
-    const reason = entity && entities.defOf(entity).door ? enqueueDoorBar(entity, true) : undefined;
+    const reason = entity && entities.defOf(entity).door ? router.enqueueDoorBar(entity, true) : undefined;
     if (reason) {
       showRefusal(reason, sim.time);
     }
@@ -1462,9 +1382,9 @@ export const startPlay = (
   const replayPlayState = createReplayPlayStateBinding({
     getLeanAmount: () => session.leanAmount,
     setLeanAmount: (value) => session.restoreLean(value),
-    getThrowingStance: () => throwingStance,
+    getThrowingStance: () => router.throwingStance(),
     setThrowingStance: (value) => {
-      throwingStance = value;
+      router.setThrowingStance(value);
     },
     getReadyHeld: () => input.controls.rightMouseHeld,
     setReadyHeld: (value) => {
@@ -1700,7 +1620,7 @@ export const startPlay = (
     feet,
     showNotice,
     strikeTerrainCell: (cell, blow) => !replayPlayer && session.strikeTerrainCell(cell, blow),
-    compress: () => compress(),
+    compress: () => router.compress(),
     skipGameHours: (hours) => skipGameHours(hours),
     setTimeOfDay: (hour, minute) => {
       const timeOfDay = hour * 3600 + minute * 60;
@@ -1838,14 +1758,6 @@ export const startPlay = (
     resumeRequested = false;
   });
 
-  const compress = () => {
-    queue.cancel();
-    const result = sim.compress();
-    if (!result.ok) {
-      showRefusal(fillText(lines.play.restRefused, { reason: result.reason }), sim.time);
-    }
-  };
-
   /**
    * Debug: fast-forwards the real clock by `hours` game hours through the same compressed
    * stepping as rest (needs, scheduler and shamblers all run). Another call
@@ -1861,67 +1773,6 @@ export const startPlay = (
     stepper.skipGameHours(hours);
   };
 
-  const actOnWork = (uid: number, operation: WorkOperation, choices: RecoveryChoices = {}): string | undefined => {
-    const reason = session.crafting.act(uid, operation, choices);
-    if (!reason && operation !== 'apart') {
-      closeInventoryScreen();
-      syncMenuState();
-    }
-    return reason;
-  };
-
-  const continueWork = (): boolean => {
-    const workUid = session.crafting.currentUid;
-    if (workUid === undefined) {
-      return false;
-    }
-    const reason = actOnWork(workUid, 'continue');
-    if (reason) {
-      showRefusal(fillText(lines.play.continueRefused, { reason }), sim.time);
-    }
-    return true;
-  };
-
-  /** Continue a craft, rest/sleep, or the debug compression test. */
-  const continueAction = (): void => {
-    const refusal = sim.body.actionRefusal;
-    if (refusal) {
-      showRefusal(refusal, sim.time);
-      return;
-    }
-    if (continueWork()) {
-      return;
-    }
-    if (rest.action || continueActionResumesJob(sim.actions.job?.jobType)) {
-      const reason = rest.action ? rest.resume() : sim.actions.resume();
-      if (reason) {
-        showRefusal(fillText(lines.play.continueRefused, { reason }), sim.time);
-      }
-    } else {
-      compress();
-    }
-  };
-
-  /** Stop the current long action without discarding owned progress. */
-  const stopAction = (): void => {
-    if (rest.action && !rest.canStop) {
-      return;
-    }
-    if (
-      sim.actions.job?.jobType === 'craft' ||
-      sim.actions.job?.jobType === 'wait' ||
-      sim.actions.job?.jobType === 'reading' ||
-      sim.actions.job?.jobType === 'forceDoor' ||
-      sim.actions.job?.jobType === 'treatment' ||
-      sim.actions.job?.jobType === 'vehicleWork'
-    ) {
-      sim.actions.stop();
-    } else if (rest.action) {
-      rest.stop();
-    } else {
-      compression.stop();
-    }
-  };
   stopReadingOnClose = () => stopReadingPageOnClose(sim);
 
   const dispatchScreenCommandWithCompletion = createScreenCommandDispatcher({
@@ -1943,11 +1794,11 @@ export const startPlay = (
       return false;
     }
     if (code === 'compression.continue') {
-      continueAction();
+      router.continueAction();
       return true;
     }
     if (code === 'handling.stop') {
-      stopAction();
+      router.stopAction();
       return true;
     }
     return false;
@@ -1973,57 +1824,15 @@ export const startPlay = (
     }
   };
 
-  const quickbarActions = new QuickbarActions({
-    inventory,
-    queue,
-    feet,
-    survival,
-    notice: (text) => showRefusal(text, sim.time),
-  });
-  const runQuickbarAction = (slot: number, held: boolean): void => {
-    if (input.controls.freeLooking) {
-      return;
-    }
-    if (sim.body.actionRefusal) {
-      showRefusal(sim.body.actionRefusal, sim.time);
-      return;
-    }
-    const item = quickbar.resolve(slot, inventory);
-    if (!item) {
-      showRefusal(fillText(lines.play.quickbarEmpty, { slot: countText(slot + 1) }), sim.time);
-      return;
-    }
-    if (held) {
-      quickbarActions.hold(item);
-    } else {
-      quickbarActions.tap(item);
-    }
-  };
-  const quickbarTap = (slot: number) => {
-    if (!replayPlayer && inputRecording.recorder) {
-      inputRecording.recorder.queueAction(`quickbar.tap.${slot + 1}`, 'down', inputContext());
-      pendingPlayerTickActions.enqueue(() => runQuickbarAction(slot, false));
-      return;
-    }
-    runQuickbarAction(slot, false);
-  };
-  const quickbarHold = (slot: number) => {
-    if (!replayPlayer && inputRecording.recorder) {
-      inputRecording.recorder.queueAction(`quickbar.hold.${slot + 1}`, 'down', inputContext());
-      pendingPlayerTickActions.enqueue(() => runQuickbarAction(slot, true));
-      return;
-    }
-    runQuickbarAction(slot, true);
-  };
-  const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
+  const quickbarInput = new QuickbarInput({ tap: router.quickbarTap, hold: router.quickbarHold });
   const crouchProneInput = new CrouchProneInput({
     holdRealMs: () => playerSenseTuning.crouchProneHoldRealSeconds * 1000,
     action: router.requestStanceAction,
   });
   const throwStanceInput = new PressHoldInput<string>({
     holdRealMs: () => throwStanceDropHoldRealSeconds * 1000,
-    tap: () => toggleThrowingStance(),
-    hold: () => dropHeldItemForThrowingStance(),
+    tap: () => router.toggleThrowingStance(),
+    hold: () => router.dropHeldItemForThrowingStance(),
   });
   const interactInput = new PressHoldInput<string>({
     holdRealMs: () => RELOAD_GESTURE_MS.hold,
@@ -2033,7 +1842,7 @@ export const startPlay = (
   const wornLightInput = new PressHoldInput<string>({
     holdRealMs: () => wornLightToggleHoldRealSeconds * 1000,
     tap: () => undefined,
-    hold: () => toggleWornLights(),
+    hold: () => router.toggleWornLights(),
   });
   const toggleHud = (): void => {
     hudOptions.shown = !hudOptions.shown;
@@ -2056,51 +1865,6 @@ export const startPlay = (
     interactionPressTarget = undefined;
     cancelBackquoteGesture(backquoteGesture);
   });
-
-  /** Default-view R reloads, racks and removes; menus own their own bindings (including inventory rotation). */
-  const reloadBinding = (): ReloadBinding | undefined => {
-    if (
-      !(input.locked || replayPlayer) ||
-      (input.menuPointer && !replayPlayer) ||
-      compression.locksInput ||
-      sim.paused ||
-      sim.dead ||
-      sim.body.actionRefusal ||
-      debugTools?.buildOn ||
-      session.throwCharge.startedAt !== undefined
-    ) {
-      return;
-    }
-    // An admitted gesture is recorded; replay drives it back through this binding.
-    const admit = (action: 'firearm.load' | 'firearm.rack' | 'firearm.remove', reason: string | undefined): boolean => {
-      if (reason) {
-        showRefusal(reason, sim.time);
-      } else {
-        inputRecording.recorder?.queueAction(action, 'down', inputContext());
-      }
-      return reason === undefined;
-    };
-    const target = reloadTarget(firearms, magazines, lines.play.notHoldingGun);
-    if (!target) {
-      return;
-    }
-    // A reload works the firearm with both hands, so a hand on a ladder refuses it.
-    const ladder = (): string | undefined => {
-      const hand = session.ladderHold.hand();
-      return hand && session.ladderHold.refusal(hand);
-    };
-    return {
-      uid: target.uid,
-      busy: () => queue.busy || firearms.busy,
-      oneAction: target.oneAction,
-      load: () => admit('firearm.load', ladder() ?? target.load(sim.time)),
-      rack: () => admit('firearm.rack', ladder() ?? target.rack(sim.time)),
-      remove: () => admit('firearm.remove', ladder() ?? target.remove(sim.time)),
-      ...(target.stillLoaded ? { stillLoaded: target.stillLoaded } : {}),
-      cancelLoad: target.cancelLoad,
-      ...(target.releaseLoad ? { releaseLoad: () => target.releaseLoad!(sim.time) } : {}),
-    };
-  };
 
   const activePlayContext = (): InputContext => {
     if (reading.isOpen) {
@@ -2530,150 +2294,6 @@ export const startPlay = (
     }
   }
 
-  function toggleThrowingStance(): void {
-    if (input.controls.freeLooking) {
-      return;
-    }
-    throwingStance = !throwingStance;
-    router.clearAutomaticFire();
-    if (!replayPlayer) {
-      inputRecording.recorder?.queueAction('throw.stance.toggle', 'down', inputContext(), { inSnapshot: true });
-    }
-    if (!throwingStance) {
-      router.cancelItemThrow();
-    }
-    syncThrowingStance();
-  }
-
-  function syncThrowingStance(): void {
-    if (throwingStance && !inventory.hands.right && !inventory.hands.left) {
-      throwingStance = false;
-      router.cancelItemThrow();
-    }
-  }
-
-  function toggleWornLights(): void {
-    if (!replayPlayer) {
-      inputRecording.recorder?.queueAction('light.worn-toggle', 'down', inputContext());
-      pendingPlayerTickActions.enqueue(toggleWornLightsNow);
-      return;
-    }
-    toggleWornLightsNow();
-  }
-
-  function toggleWornLightsNow(): void {
-    if (input.controls.freeLooking) {
-      return;
-    }
-    refusalReason(survival.toggleWornLights());
-  }
-
-  function useForwardButton(): void {
-    if (!replayPlayer) {
-      inputRecording.recorder?.queueAction('hand.use-forward', 'down', inputContext());
-      pendingPlayerTickActions.enqueue(useForwardButtonNow);
-      return;
-    }
-    useForwardButtonNow();
-  }
-
-  function useForwardButtonNow(): void {
-    if (input.controls.freeLooking) {
-      return;
-    }
-    // Instant off-hand use shares Survival's owner with a quickbar second press.
-    const item = offHandUse(registry, inventory);
-    const reason = item && survival.use(item);
-    if (reason) {
-      showRefusal(reason, sim.time);
-    }
-  }
-
-  function dropHeldItemForThrowingStance(): void {
-    if (!replayPlayer) {
-      if (sim.body.actionRefusal) {
-        showRefusal(sim.body.actionRefusal, sim.time);
-        return;
-      }
-      if (!inventory.hands[session.throwCharge.throwHand()]) {
-        return;
-      }
-      inputRecording.recorder?.queueAction('item.drop', 'down', inputContext());
-      pendingPlayerTickActions.enqueue(dropHeldItemForThrowingStanceNow);
-      return;
-    }
-    dropHeldItemForThrowingStanceNow();
-  }
-
-  function dropHeldItemForThrowingStanceNow(): void {
-    if (input.controls.freeLooking) {
-      return;
-    }
-    if (sim.body.actionRefusal) {
-      showRefusal(sim.body.actionRefusal, sim.time);
-      return;
-    }
-    const hand = session.throwCharge.throwHand();
-    const item = inventory.hands[hand];
-    if (!item) {
-      return;
-    }
-    const drop = dropTarget(inventory, item, feet());
-    const result = drop.plan.ok ? inventory.move(item, drop.target) : drop.plan;
-    if (!result.ok) {
-      showRefusal(fillText(lines.play.dropRefused, { reason: result.reason }), sim.time);
-      return;
-    }
-    if (session.throwCharge.itemUid === item.uid) {
-      router.cancelItemThrow();
-    }
-    syncThrowingStance();
-  }
-
-  function beginItemThrow(): void {
-    if (input.controls.freeLooking) {
-      return;
-    }
-    const refusal = sim.body.actionRefusal;
-    if (refusal) {
-      showRefusal(refusal, sim.time);
-      return;
-    }
-    const begun = session.throwCharge.begin(sim.time, queue.busy || firearms.busy);
-    if (begun.kind === 'refused') {
-      showRefusal(begun.reason, sim.time);
-    } else if (begun.kind === 'waiting') {
-      showNotice(lines.play.waitingForHandling);
-    }
-  }
-
-  function advancePendingItemThrow(): void {
-    const charge = session.throwCharge;
-    if (!charge.active || charge.startedAt !== undefined) {
-      return;
-    }
-    if (!(replaySample?.intent.useDominantHeld ?? input.controls.dominantUseHeld)) {
-      router.cancelItemThrow();
-      return;
-    }
-    if (sim.paused || queue.busy || firearms.busy) {
-      return;
-    }
-    if (!charge.start(sim.time)) {
-      showRefusal(lines.play.throwLostItem, sim.time);
-      return;
-    }
-    showNotice('');
-  }
-
-  function toggleRestFromTarget(kind: RestKind, entity: BlockEntity): void {
-    const { action } = rest;
-    if (action?.kind === kind && action.furnitureUid === entity.uid && !rest.canStop) {
-      return;
-    }
-    toggleRest(kind, entity);
-  }
-
   inputTarget.addEventListener('contextmenu', (e) => e.preventDefault());
   const handUids = () => ({
     right: inventory.hands.right?.uid ?? null,
@@ -2928,7 +2548,7 @@ export const startPlay = (
     if (refusePrimaryUseWhileHandling()) {
       return;
     }
-    useForwardButton();
+    router.useForwardButton();
   };
   document.addEventListener('pointerdown', onForwardPress, true);
   document.addEventListener('mousedown', onForwardPress, true);
@@ -2953,7 +2573,7 @@ export const startPlay = (
 
   const displayCalendar = (): number => sim.calendar;
   const throwStanceCueVisible = (interactionVisible: boolean): boolean =>
-    throwingStance && interactionVisible && input.locked && !screen.isOpen && !reading.isOpen && !mainMenuOpen;
+    router.throwingStance() && interactionVisible && input.locked && !screen.isOpen && !reading.isOpen && !mainMenuOpen;
 
   const statusView = (): PlayStatus => {
     const { pain } = sim.body;
@@ -3233,7 +2853,7 @@ export const startPlay = (
   };
 
   const throwingPresentation = () => {
-    if (!throwingStance) {
+    if (!router.throwingStance()) {
       return {};
     }
     const { startedAt } = session.throwCharge;
@@ -3447,7 +3067,7 @@ export const startPlay = (
       interactInput.cancel();
       interactionPressTarget = undefined;
     } else {
-      input.controls.reload.advance(now, reloadBinding());
+      input.controls.reload.advance(now, router.reloadBinding());
     }
     const inputLocked = replaySample?.inputLocked ?? compression.locksInput;
     if (screen.isOpen || mainMenuOpen || inputLocked || sim.dead || actionRefusal || freeLooking) {
@@ -3635,8 +3255,8 @@ export const startPlay = (
     mark = realNow();
     const gameFrozen = stepSimulation(dt, menuState.paused);
     updateBodyNotices();
-    advancePendingItemThrow();
-    syncThrowingStance();
+    router.advancePendingItemThrow();
+    router.syncThrowingStance();
     caseEffects.update(sim.time);
     updateGore(dt);
     impactEffects.update(dt, config.debug && debugLaserEnabled);

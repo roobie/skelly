@@ -103,7 +103,7 @@ export const observationPlugin = {
       const throwQueueMarker = `      ports.pendingPlayerTickActions.enqueue(() => {
         applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
           throwHeldItem(heldItem, hand, distance);
-          ports.syncThrowingStance();
+          syncThrowingStance();
         });
       });`;
       const adsToggleMarker = `      case 'aim.ads-toggle':
@@ -150,6 +150,8 @@ export const observationPlugin = {
     );
     // The fixture drops the way the game does, so a full pile at the feet spills to the next spot.
     observedCode = `import { dropTarget as primaryActionDropTarget } from '../core/options.ts';\n${observedCode}`;
+    // The quickbar probe drives the router's quickbar actions directly.
+    observedCode = `import { QuickbarActions as PrimaryActionQuickbarActions } from './quickbarActions.ts';\n${observedCode}`;
     // The landing probe measures a throw as the router does.
     observedCode = `import { throwDistanceForItem as primaryActionThrowDistance } from '../core/itemThrow.ts';\n${observedCode}`;
     return observedCode.replace(
@@ -177,7 +179,14 @@ export const observationPlugin = {
     feet,
     scale,
     performHandUse,
-    quickbarActions,
+    // The router builds its own quickbar actions; this one has the same owners and holds no state of its own.
+    quickbarActions: new PrimaryActionQuickbarActions({
+      inventory,
+      queue,
+      feet,
+      survival,
+      notice: (text) => showRefusal(text, sim.time),
+    }),
     quickbar,
     screen,
     dispatchScreenCommand,
@@ -199,7 +208,7 @@ export const observationPlugin = {
       if (proof.quickbarTapAfterNextThrowCommit !== undefined) {
         const slot = proof.quickbarTapAfterNextThrowCommit;
         proof.quickbarTapAfterNextThrowCommit = undefined;
-        quickbarTap(slot);
+        router.quickbarTap(slot);
         const tappedItem = inventory.itemByUid(proof.quickbarTapItemUid);
         proof.quickbarTapCommitObservation = {
           itemMoveQueued: queue.jobs.some(
@@ -210,7 +219,7 @@ export const observationPlugin = {
       }
       if (proof.dropAfterNextThrowCommit) {
         proof.dropAfterNextThrowCommit = false;
-        dropHeldItemForThrowingStance();
+        router.dropHeldItemForThrowingStance();
       }
     },
     startInputReplayRecording: () => {
@@ -220,7 +229,7 @@ export const observationPlugin = {
       });
     },
     hudOptions,
-    beginItemThrow,
+    beginItemThrow: router.beginItemThrow,
     getItemThrowLanding: (itemUid, heldSimSeconds) => {
       const item = inventory.itemByUid(itemUid);
       if (!item) return undefined;
@@ -249,7 +258,7 @@ export const observationPlugin = {
     initialPlayerPosition: [...session.body.pos],
     getNotice: () => notice,
     isChargingItemThrow: () => session.throwCharge.startedAt !== undefined,
-    isThrowingStance: () => throwingStance,
+    isThrowingStance: () => router.throwingStance(),
     clearNotice: () => showNotice(''),
     clearHand: (side) => {
       const held = inventory.hands[side];
