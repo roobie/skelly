@@ -1,18 +1,16 @@
 // biome-ignore-all lint/style/useNamingConvention: DOM code names retain their exact platform spelling.
 
-import controlsFile from '../../../mods/skelly.controls/controls.json' with { type: 'json' };
-
 import { type Binding, bindingIsDebugOnly, type Chord, INPUT_ACTIONS, type Modifier } from '../core/inputActions.ts';
 
 const withDefaults = (defaults: ReadonlyMap<string, readonly Chord[]>): readonly Binding[] =>
   INPUT_ACTIONS.map((action) => ({ ...action, defaults: defaults.get(action.id) ?? [] }));
-const BASE_DEFAULT_KEYS: BindingMap = new Map(
-  (controlsFile as { controls: readonly { id: string; keys: readonly Chord[] }[] }).controls.map(({ id, keys }) => [
-    id,
-    keys,
-  ]),
-);
-export const INPUT_BINDINGS: readonly Binding[] = withDefaults(BASE_DEFAULT_KEYS);
+/** A controls file: each action's default keys. */
+export interface ControlsFile {
+  readonly controls: readonly { readonly id: string; readonly keys: readonly Chord[] }[];
+}
+/** Every action, with its default keys from the product's controls file. */
+export const bindingsFromControls = ({ controls }: ControlsFile): readonly Binding[] =>
+  withDefaults(new Map(controls.map(({ id, keys }) => [id, keys])));
 export const NATIVE_INPUTS = [
   { code: 'Escape', description: 'Release pointer lock / cancel binding capture' },
   { code: 'F10', description: 'Browser menu bar' },
@@ -286,7 +284,7 @@ export class BindingRegistry {
   private readonly storage: PreferenceStorage | undefined;
   private readonly keyboardLayout: KeyboardLayoutSource | undefined;
   private debugRun = false;
-  constructor(bindings = INPUT_BINDINGS, storage?: PreferenceStorage, keyboardLayout?: KeyboardLayoutSource) {
+  constructor(bindings: readonly Binding[], storage?: PreferenceStorage, keyboardLayout?: KeyboardLayoutSource) {
     this.bindings = bindings;
     this.storage = storage;
     this.keyboardLayout = keyboardLayout;

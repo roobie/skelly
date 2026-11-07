@@ -7,17 +7,18 @@ import { Inventory } from '../src/core/inventory.ts';
 import { propCentre, type ShowroomProp, slotProps } from '../src/core/showroom.ts';
 import { rectsOverlap } from '../src/core/site.ts';
 import { cellsOf } from '../src/core/templates.ts';
-import { availablePackInputs } from '../src/game/bundledContent.ts';
 import { selectBundledMods } from '../src/game/bundledMods.ts';
 import { configFromUrl } from '../src/game/config.ts';
 import { playerStartFromWorld } from '../src/game/worldSetup.ts';
+import { availablePackInputs } from '../src/product/content.ts';
+import { productModIntake } from '../src/product/mods.ts';
 import { withReusedBuilds } from './bundledContentReuse.ts';
 import { content as baseContent } from './fixtures/startupContent.ts';
 import { testHouseSite } from './testHouseSite.ts';
 
 // The showroom host shows rows only from loaded mods, so the product debug mod brings rows to show.
 const debugMods = ['skelly.deadvox.scenario.test-house.debug', 'skelly.deadvox.scenario.debug'];
-const selected = withReusedBuilds(() => selectBundledMods(debugMods));
+const selected = withReusedBuilds(() => selectBundledMods(productModIntake, debugMods));
 const config = configFromUrl(new URLSearchParams('site=testHouse'), selected.content);
 const { registry } = config.content;
 const area = (authored: AuthoredSite) => {
@@ -95,7 +96,7 @@ describe('test house showroom', () => {
         overrides: [{ pack: 'fixture.rows-a', entry: 'catalogueRows:fixture_row_a' }],
       }),
     ];
-    const withRows = withReusedBuilds(() => selectBundledMods(debugMods, mods));
+    const withRows = withReusedBuilds(() => selectBundledMods(productModIntake, debugMods, mods));
     expect(withRows.issues).toEqual([]);
     const rowsConfig = configFromUrl(new URLSearchParams('site=testHouse'), withRows.content);
     const rowsRegistry = rowsConfig.content.registry;

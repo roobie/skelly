@@ -1,9 +1,8 @@
 import { canonicalJsonBytes, isPlainRecord, SHA256_HEX } from '../core/canonicalJson.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
-import { type InputContext, POINTER_ACTIONS } from '../core/inputActions.ts';
+import { INPUT_ACTIONS, type InputContext, POINTER_ACTIONS } from '../core/inputActions.ts';
 import { decodeSave, encodeSave, type SaveContentKind, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
-import { INPUT_BINDINGS } from './bindingRegistry.ts';
 import type { MoveIntent } from './player.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
@@ -110,14 +109,14 @@ const REPLAY_SEMANTIC_ACTIONS = [
 ] as const;
 const ACTION_IDS = [
   ...new Set([
-    ...INPUT_BINDINGS.flatMap((binding) => binding.commands.map((command) => command.id)),
+    ...INPUT_ACTIONS.flatMap((action) => action.commands.map((command) => command.id)),
     ...POINTER_ACTIONS.map((action) => action.id),
     ...REPLAY_SEMANTIC_ACTIONS,
   ]),
 ];
 const ACTION_INDEX = new Map(ACTION_IDS.map((id, index) => [id, index]));
-// Derive contexts from bindings so adding a binding context cannot make recording throw.
-const CONTEXTS: readonly InputContext[] = [...new Set(INPUT_BINDINGS.flatMap(({ contexts }) => contexts))];
+// Derive contexts from the actions so adding a binding context cannot make recording throw.
+const CONTEXTS: readonly InputContext[] = [...new Set(INPUT_ACTIONS.flatMap(({ contexts }) => contexts))];
 const CONTEXT_INDEX = new Map(CONTEXTS.map((context, index) => [context, index]));
 const FRAME_FLAGS = {
   active: 1 << 0,

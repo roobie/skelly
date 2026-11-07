@@ -43,7 +43,7 @@ boundary, rather than gaining override rights from selection order. See
 `src/game/browserMods.ts`, `readMod` and `evaluateMods`, and
 `src/core/packAdmission.ts`, `admitPacks`.
 Bundled fragments belong to their manifest's pack, not separate mods; see
-`src/game/bundledPacks.ts`, `bundledPacks`.
+`src/game/bundledContent.ts`, `createBundledContent`.
 
 The pre-start panel rejects invalid files whole and keeps their diagnostics visible.
 An enabled invalid file blocks Start rather than silently starting a different world;
@@ -51,7 +51,8 @@ disabling it permits startup with the remaining content, including the base pack
 See `src/ui/modsPanel.ts`, `chooseMods`, and `src/game/browserMods.ts`, `evaluateMods`.
 The intake byte limit belongs to trusted startup configuration in
 `src/config/browser-mods.jsonnet`, not to a selected mod: admission must bound a file
-before parsing or trusting its definitions.
+before parsing or trusting its definitions. The product passes it to admission; see
+`src/product/mods.ts`, `productModIntake`.
 
 Browser selections persist as one atomic IndexedDB record, including source text,
 order and enabled state. An unavailable or failed store leaves the panel with no mods
@@ -113,7 +114,7 @@ Bundled packs use the common manifest contract so dependency ownership and delib
 entry replacement survive extraction into topics. A missing dependency, cycle or
 undeclared cross-pack override refuses the stack; filename order must never choose a
 winner between packs. The tier grants no privilege. See `src/core/packAdmission.ts`,
-`PackManifestSchema` and `admitPacks`, and `src/game/bundledPacks.ts`, `bundledPacks`.
+`PackManifestSchema` and `admitPacks`, and `src/game/bundledContent.ts`, `createBundledContent`.
 Compiled JSON under a pack root must be declared, so an omitted manifest entry cannot
 silently remove authored content from validation and the game. See
 `tools/readBundledPacks.ts`, `readBundledPacks`.
@@ -122,7 +123,7 @@ Bundled asset keys combine pack identity and relative path so unrelated mods may
 own equal filenames without choosing a winner. Content resolves files within its
 owning pack; sharing content across packs requires a dependency rather than a flat
 asset namespace. See `src/presentation/bundledAssets.ts`, `bundledAssetFiles` and
-`bundledOriginAssetKey`.
+`bundledAssetUrl`.
 
 Each pack's identity covers its manifest and enumerated files, including exporter
 models, so changing a model cannot leave its world's content identity unchanged.

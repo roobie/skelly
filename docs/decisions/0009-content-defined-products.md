@@ -255,6 +255,16 @@ types, because the presentation side moves out of the runtime package whole. See
 edits, not deliberate bypasses; what it does not check is in
 `packages/deadvox/docs/runtime-closure-limits.md`, "Not checked".
 
+Runtime code names no product path. The product globs its own mod roots and reads its
+own configuration, then passes the maps in, so the runtime carries neither a product's
+layout nor build-tool coupling and another product can supply different sources. See
+`packages/deadvox/src/product/content.ts`, `productContent`, and
+`packages/deadvox/src/product/mods.ts`, `productModIntake`. Presentation receives the
+product's maps from the product entry in the same way, except the input-binding
+singleton: it exists at import, before any entry code runs, so it reads the product's
+default keys itself; see `packages/deadvox/src/presentation/inputBindings.ts`,
+`inputBindings`.
+
 The #1532 gate is closure or merge of every PR in its frozen in-flight set: #1531,
 #1529, #1528, #1527, #1526, #1524, #1520, #1509, #1503, #1496, #1493, #1488, #1477,
 #1403 and #1369. The framework refactor's own single PR is allowed under the freeze:

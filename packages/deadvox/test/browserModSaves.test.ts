@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { admitPacks, admitWithFolderPacks, packContentHash, selectFolderClosure } from '../src/core/packAdmission.ts';
 import { currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/core/saveFormat.ts';
-import { availablePackInputs, bundledPackInputs } from '../src/game/bundledContent.ts';
+import { availablePackInputs, bundledPackInputs } from '../src/product/content.ts';
 import { folderChain } from './fixtures/folderPacks.ts';
 import { capture, contentLookup, createRuntime, formatWorldOptions } from './snapshotTestSupport.ts';
 

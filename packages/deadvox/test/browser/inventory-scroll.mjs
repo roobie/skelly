@@ -132,7 +132,7 @@ import { Inventory } from '/src/core/inventory.ts';
 import { BODY_REGIONS, Body } from '/src/core/body.ts';
 import { HandlingQueue } from '/src/core/handling.ts';
 import { visibleGridName } from '/src/core/inventoryGridName.ts';
-import { buildBundledContent } from '/src/game/bundledContent.ts';
+import { buildBundledContent } from '/src/product/content.ts';
 const BUNDLED_CONTENT = buildBundledContent();
 import { requireDayCycle } from '/src/core/content.ts';
 import { bindReach } from '/src/core/reach.ts';
@@ -1971,7 +1971,7 @@ try {
           start: 0,
         });
       },
-      { recoveryModule: '/test/browser/liquid-recovery-ui.ts', contentModule: '/src/game/bundledContent.ts' },
+      { recoveryModule: '/test/browser/liquid-recovery-ui.ts', contentModule: '/src/product/content.ts' },
     );
     const recoveryRoot = page.locator('[data-recovery-probe]');
     const startButton = recoveryRoot.locator('button[data-work-operation="disassemble"]');
@@ -2096,7 +2096,7 @@ try {
       const { buildBundledContent } = await import(contentModule);
       globalThis.chargerFlow = mountChargerFlow(buildBundledContent().registry, document.querySelector('#inventory'));
     },
-    { chargerModule: '/test/browser/charger-flow.ts', contentModule: '/src/game/bundledContent.ts' },
+    { chargerModule: '/test/browser/charger-flow.ts', contentModule: '/src/product/content.ts' },
   );
   const chargerButton = (kind) => page.locator(`[data-charger-action="${kind}"]`);
   await chargerButton('inventory.move').click();

@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { perceivePlayer } from '../src/core/agentPerception.ts';
 import { admitWithFolderPacks, type PackInput, selectFolderClosure } from '../src/core/packAdmission.ts';
 import { currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/core/saveFormat.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';
+import { buildBundledContent } from '../src/product/content.ts';
+import { productModIntake } from '../src/product/mods.ts';
 import { startupContent } from './baseRegistry.ts';
 import { reuseBundledBuilds, withReusedBuilds } from './bundledContentReuse.ts';
 import { fixturePack, folderChain } from './fixtures/folderPacks.ts';
@@ -13,7 +14,7 @@ const base = buildBundledContent().registry;
 const PACKS_DIFFER = /content packs differ/;
 // Admitted once; every case below reads it and none changes it.
 const BEGINNER_ID = 'skelly.deadvox.beginner';
-const beginner = withReusedBuilds(() => selectBundledMods([BEGINNER_ID]));
+const beginner = withReusedBuilds(() => selectBundledMods(productModIntake, [BEGINNER_ID]));
 // The suite's own build of the unmodded content stands in for a second one, so the no-mod case still compares two builds.
 reuseBundledBuilds(startupContent());
 
@@ -52,14 +53,17 @@ describe('beginner bundled mod', () => {
   });
 
   it('leaves content unchanged when no bundled mod is asked for', () => {
-    const none = selectBundledMods(bundledModIdsFromUrl(new URLSearchParams('seed=3')));
+    const none = selectBundledMods(productModIntake, bundledModIdsFromUrl(new URLSearchParams('seed=3')));
     expect(none.issues).toEqual([]);
     expect(none.admitted).toEqual([]);
     expect(none.content.registry.actors).toEqual(base.actors);
   });
 
   it('refuses an unknown bundled id visibly', () => {
-    const result = selectBundledMods(bundledModIdsFromUrl(new URLSearchParams(`mods=${BEGINNER_ID},nonesuch`)));
+    const result = selectBundledMods(
+      productModIntake,
+      bundledModIdsFromUrl(new URLSearchParams(`mods=${BEGINNER_ID},nonesuch`)),
+    );
     expect(result.issues).toEqual([expect.objectContaining({ message: expect.stringContaining('nonesuch') })]);
   });
 

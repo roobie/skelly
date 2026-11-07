@@ -1,16 +1,17 @@
 import { isDeepStrictEqual } from 'node:util';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { type BrowserMod, evaluateMods, MAX_MOD_BYTES } from '../src/game/browserMods.ts';
-// biome-ignore lint/performance/noNamespaceImport: the malformed-input test spies on the content-build boundary
-import * as bundledContent from '../src/game/bundledContent.ts';
+import { type BrowserMod, evaluateMods } from '../src/game/browserMods.ts';
 import { configFromUrl } from '../src/game/config.ts';
 import { createWorldSetup } from '../src/game/worldSetup.ts';
+import { productContent } from '../src/product/content.ts';
+import { productModIntake } from '../src/product/mods.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { reuseBundledBuilds } from './bundledContentReuse.ts';
 import fixture from './fixtures/mods/browser-mod.json' with { type: 'json' };
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';
 
-const base = bundledContent.buildBundledContent();
+const { maxModBytes } = productModIntake;
+const base = productContent.buildBundledContent();
 reuseBundledBuilds();
 afterEach(() => {
   vi.restoreAllMocks();
@@ -19,8 +20,8 @@ const mod = (data: unknown): BrowserMod => ({ source: 'fixture.json', text: JSON
 
 describe('browser mod admission', () => {
   it('refuses malformed JSON without changing admitted base content', () => {
-    vi.spyOn(bundledContent, 'buildBundledContent').mockReturnValue(base);
-    const result = evaluateMods([{ source: 'broken.json', text: '{', enabled: true }]);
+    vi.spyOn(productContent, 'buildBundledContent').mockReturnValue(base);
+    const result = evaluateMods(productModIntake, [{ source: 'broken.json', text: '{', enabled: true }]);
     expect(result.canStart).toBe(false);
     expect(result.issues.get('broken.json')).toEqual([
       expect.objectContaining({ source: 'broken.json', path: '', message: expect.any(String) }),
@@ -29,7 +30,7 @@ describe('browser mod admission', () => {
   });
   it('refuses a missing mod id without admitting its definitions', () => {
     const { id: _id, ...data } = fixture;
-    const result = evaluateMods([mod(data)]);
+    const result = evaluateMods(productModIntake, [mod(data)]);
     expect(result.canStart).toBe(false);
     expect(result.issues.get('fixture.json')).toEqual([
       expect.objectContaining({ path: 'id', message: expect.stringContaining('required') }),
@@ -43,7 +44,7 @@ describe('browser mod admission', () => {
       ...mod({ ...fixture, items: [{ ...fixture.items[0], name: 'Duplicate replacement' }] }),
       source: 'https://example.test/same-mod.json',
     };
-    const result = evaluateMods([first, duplicate]);
+    const result = evaluateMods(productModIntake, [first, duplicate]);
     expect(result.issues.get(duplicate.source)).toEqual([
       expect.objectContaining({ path: 'id', message: expect.stringContaining(fixture.id) }),
     ]);
@@ -54,7 +55,10 @@ describe('browser mod admission', () => {
   });
 
   it('allows startup with a disabled duplicate while showing its clash', () => {
-    const result = evaluateMods([mod(fixture), { ...mod(fixture), source: 'disabled.json', enabled: false }]);
+    const result = evaluateMods(productModIntake, [
+      mod(fixture),
+      { ...mod(fixture), source: 'disabled.json', enabled: false },
+    ]);
     expect(result.canStart).toBe(true);
     expect(result.issues.get('disabled.json')).toEqual([
       expect.objectContaining({ path: 'id', message: expect.stringContaining(fixture.id) }),
@@ -62,7 +66,7 @@ describe('browser mod admission', () => {
   });
 
   it('allows a different mod to override a declared dependency entry', () => {
-    const result = evaluateMods([
+    const result = evaluateMods(productModIntake, [
       mod(fixture),
       {
         ...mod({
@@ -84,16 +88,16 @@ describe('browser mod admission', () => {
     expect(result.content.registry.items.get(fixture.items[0]!.id)?.name).toBe('Distinct override');
   });
   it('caps UTF-8 bytes rather than character count before parsing', () => {
-    const oversized = mod({ items: [{ ...fixture.items[0], description: 'é'.repeat(MAX_MOD_BYTES / 2) }] });
-    expect(oversized.text.length).toBeLessThan(MAX_MOD_BYTES);
-    const result = evaluateMods([oversized]);
+    const oversized = mod({ items: [{ ...fixture.items[0], description: 'é'.repeat(maxModBytes / 2) }] });
+    expect(oversized.text.length).toBeLessThan(maxModBytes);
+    const result = evaluateMods(productModIntake, [oversized]);
     expect(result.canStart).toBe(false);
     expect(result.issues.get(oversized.source)?.length).toBeGreaterThan(0);
     expect(result.content.origins).toEqual(base.origins);
   });
   it('passes the added item and winning zombie speed into the startup world', () => {
     const data = fixture;
-    const result = evaluateMods([mod(data)]);
+    const result = evaluateMods(productModIntake, [mod(data)]);
     expect(result.canStart).toBe(true);
     expect(result.admitted).toEqual([
       {
@@ -126,7 +130,7 @@ describe('browser mod admission', () => {
   it('rejects the whole broken file with issues without changing base content', () => {
     const data = fixture;
     const broken = mod({ ...data, items: [...data.items, { id: 'broken' }] });
-    const result = evaluateMods([broken]);
+    const result = evaluateMods(productModIntake, [broken]);
     expect(result.canStart).toBe(false);
     expect(result.issues.get('fixture.json')?.length).toBeGreaterThan(0);
     expect(result.content.registry.items.size).toBe(base.registry.items.size);
@@ -139,7 +143,7 @@ describe('browser mod admission', () => {
 
   it('allows base-content startup after disabling a broken file while preserving its issues', () => {
     const broken = mod({ ...fixture, items: [...fixture.items, { id: 'broken' }] });
-    const disabled = evaluateMods([{ ...broken, enabled: false }]);
+    const disabled = evaluateMods(productModIntake, [{ ...broken, enabled: false }]);
     expect(disabled.canStart).toBe(true);
     expect(disabled.admitted).toEqual([]);
     expect(disabled.issues.get(broken.source)?.length).toBeGreaterThan(0);

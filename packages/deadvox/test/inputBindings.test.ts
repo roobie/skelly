@@ -8,10 +8,10 @@ import {
   chordIssue,
   controlRowIssue,
   defaultKeySetIssues,
-  INPUT_BINDINGS,
   REFUSED_MODIFIERS,
 } from '../src/game/bindingRegistry.ts';
 import { capturedChord, type InputCommand, KeyboardInput } from '../src/presentation/inputBindings.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 
 const fixture: readonly Binding[] = [
   {
@@ -99,7 +99,7 @@ describe('keyboard registry', () => {
   ] as const)(
     'consumes native button activation from a held key after transfer into $to',
     ({ from, to, action, next }) => {
-      const keyboard = new KeyboardInput(new BindingRegistry(undefined, storage()));
+      const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
       let context: InputContext = from;
       keyboard.context = () => ({ context, debug: false });
       const commands: InputCommand[] = [];

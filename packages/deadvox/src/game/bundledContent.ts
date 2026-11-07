@@ -1,33 +1,41 @@
 import { BundleAdmission, type BundleStamp } from '../core/bundleAdmission.ts';
 import { buildRegistry, type ContentSource } from '../core/content.ts';
-import { admitPacks, type PackInput, packStartIssues } from '../core/packAdmission.ts';
+import { admitPacks, type PackInput, type PackManifest, packStartIssues } from '../core/packAdmission.ts';
 import type { SaveVersionComponents } from '../core/saveFormat.ts';
-import { bundledPacks } from './bundledPacks.ts';
 
 declare const __SKELLY_BUNDLE_STAMP__: Record<string, BundleStamp> | undefined;
 declare const __SKELLY_ADMISSION_FINGERPRINT__: string | undefined;
 declare const __SKELLY_FILE_HASHES__: Record<string, string>;
 declare const __SKELLY_OPT_IN_PACKS__: SaveVersionComponents['contentPacks'];
 
-const files = {
-  ...import.meta.glob<unknown>('../../mods/*/*.json', { eager: true, import: 'default' }),
-  ...import.meta.glob<unknown>('../../../mods/*/*.json', { eager: true, import: 'default' }),
-};
-const available: PackInput[] = bundledPacks.map(({ root, manifest }) => ({
-  source: root,
-  manifest,
-  files: manifest.files.map(({ path, kind }) => ({
-    source: path,
-    data: kind === 'content' ? files[`${root}/${path}`] : __SKELLY_FILE_HASHES__[`${root}/${path}`],
-  })),
-}));
-const packs = available.filter(({ manifest }) => !manifest.optIn);
-export const bundledPackInputs: readonly PackInput[] = packs;
-/** Every shipped pack, opt-in ones included, for selecting an opt-in pack's closure. */
-export const availablePackInputs: readonly PackInput[] = available;
-const admission = admitPacks(packs);
-export const baseSources: readonly ContentSource[] = admission.sources;
+const MANIFEST_SUFFIX = '/pack/manifest.json';
+
+/** A shipped pack: its root, as the product's manifest key names it, and its manifest. */
+export interface BundledPack {
+  readonly root: string;
+  readonly manifest: PackManifest;
+}
+
+/** The product's shipped packs, read by the product; this module names no pack root. */
+export interface BundledContentSources {
+  /** Pack manifests keyed by `<root>/pack/manifest.json`. */
+  readonly manifests: Readonly<Record<string, PackManifest>>;
+  /** Content files keyed by `<root>/<path>`, each path as its manifest lists it. */
+  readonly files: Readonly<Record<string, unknown>>;
+}
+
 export type StartupContent = ReturnType<typeof buildRegistry> & { defaultStart?: string | undefined };
+
+export interface BundledContent {
+  /** Every shipped pack, ordered by root. */
+  readonly packs: readonly BundledPack[];
+  /** The packs that start without selection: every shipped pack except the opt-in ones. */
+  readonly bundledPackInputs: readonly PackInput[];
+  /** Every shipped pack, opt-in ones included, for selecting an opt-in pack's closure. */
+  readonly availablePackInputs: readonly PackInput[];
+  readonly baseSources: readonly ContentSource[];
+  readonly buildBundledContent: (mods?: readonly PackInput[], modsSelected?: boolean) => StartupContent;
+}
 
 /** The build's identity entry for an opt-in pack, hashed once at build time. */
 export const optInPackIdentity = (pack: PackInput): SaveVersionComponents['contentPacks'][number] => {
@@ -38,27 +46,46 @@ export const optInPackIdentity = (pack: PackInput): SaveVersionComponents['conte
   return identity;
 };
 
-const admissions = await Promise.all(
-  admission.packs.map(async (pack) => ({
-    pack,
-    admission: await BundleAdmission.preparePack(
+/** Admits the product's shipped packs once and prepares their bundle proof. */
+export const createBundledContent = async ({ manifests, files }: BundledContentSources): Promise<BundledContent> => {
+  const bundledPacks: readonly BundledPack[] = Object.entries(manifests)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([path, manifest]) => ({ root: path.slice(0, -MANIFEST_SUFFIX.length), manifest }));
+  const available: PackInput[] = bundledPacks.map(({ root, manifest }) => ({
+    source: root,
+    manifest,
+    files: manifest.files.map(({ path, kind }) => ({
+      source: path,
+      data: kind === 'content' ? files[`${root}/${path}`] : __SKELLY_FILE_HASHES__[`${root}/${path}`],
+    })),
+  }));
+  const packs = available.filter(({ manifest }) => !manifest.optIn);
+  const admission = admitPacks(packs);
+  const admissions = await Promise.all(
+    admission.packs.map(async (pack) => ({
       pack,
-      __SKELLY_BUNDLE_STAMP__?.[pack.manifest.id],
-      __SKELLY_ADMISSION_FINGERPRINT__,
-    ),
-  })),
-);
-const bundle = BundleAdmission.combine(admissions);
-
-export const buildBundledContent = (
-  mods: readonly PackInput[] = [],
-  modsSelected = mods.length > 0,
-): StartupContent => {
-  const selected = admitPacks([...packs, ...mods]);
-  const result = buildRegistry(selected.sources, { bundle, modsSelected });
-  result.issues.unshift(...selected.issues, ...packStartIssues(selected.packs, result.registry));
+      admission: await BundleAdmission.preparePack(
+        pack,
+        __SKELLY_BUNDLE_STAMP__?.[pack.manifest.id],
+        __SKELLY_ADMISSION_FINGERPRINT__,
+      ),
+    })),
+  );
+  const bundle = BundleAdmission.combine(admissions);
   return {
-    ...result,
-    defaultStart: selected.packs.findLast(({ manifest }) => manifest.defaultStart !== undefined)?.manifest.defaultStart,
+    packs: bundledPacks,
+    bundledPackInputs: packs,
+    availablePackInputs: available,
+    baseSources: admission.sources,
+    buildBundledContent: (mods = [], modsSelected = mods.length > 0) => {
+      const selected = admitPacks([...packs, ...mods]);
+      const result = buildRegistry(selected.sources, { bundle, modsSelected });
+      result.issues.unshift(...selected.issues, ...packStartIssues(selected.packs, result.registry));
+      return {
+        ...result,
+        defaultStart: selected.packs.findLast(({ manifest }) => manifest.defaultStart !== undefined)?.manifest
+          .defaultStart,
+      };
+    },
   };
 };

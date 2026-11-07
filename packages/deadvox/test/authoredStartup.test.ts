@@ -14,7 +14,7 @@ it('refuses startup rather than inventing a run when rejected content removes th
     }
   }
   vi.doMock('../mods/skelly.deadvox.scenario.lone-house/layouts.json', () => ({ default: { layouts: {} } }));
-  const { buildBundledContent } = await import('../src/game/bundledContent.ts');
+  const { buildBundledContent } = await import('../src/product/content.ts');
   const { configFromUrl } = await import('../src/game/config.ts');
   const content = buildBundledContent();
   expect(content.issues.some(({ path }) => path === 'defaultStart')).toBe(true);

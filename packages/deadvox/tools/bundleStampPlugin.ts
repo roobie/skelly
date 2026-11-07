@@ -6,7 +6,7 @@ import process from 'node:process';
 import type { Plugin } from 'vite';
 import type { BundleStamp } from '../src/core/bundleAdmission.ts';
 import { admitPacks, packContentHash } from '../src/core/packAdmission.ts';
-import { bundledPackDefines, readAvailablePacks } from './readBundledPacks.ts';
+import { bundledPackDefines, PACK_ROOT_BASE, readAvailablePacks } from './readBundledPacks.ts';
 import { fingerprintSimulationSources } from './simulationFingerprint.ts';
 
 const BUNDLE_STAMP_DEFINE = '__SKELLY_BUNDLE_STAMP__';
@@ -44,12 +44,15 @@ export function bundleStampPlugin(packageRoot: string): Plugin {
       packHashes = await Promise.all(packs.map(packContentHash));
       for (const pack of packs) {
         snapshot.set(
-          resolve(packageRoot, 'src/game', pack.source, 'pack/manifest.json'),
+          resolve(packageRoot, PACK_ROOT_BASE, pack.source, 'pack/manifest.json'),
           JSON.stringify(pack.manifest),
         );
         pack.manifest.files.forEach(({ path, kind }, index) => {
           if (kind === 'content') {
-            snapshot.set(resolve(packageRoot, 'src/game', pack.source, path), JSON.stringify(pack.files[index]!.data));
+            snapshot.set(
+              resolve(packageRoot, PACK_ROOT_BASE, pack.source, path),
+              JSON.stringify(pack.files[index]!.data),
+            );
           }
         });
       }

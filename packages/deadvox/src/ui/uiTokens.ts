@@ -1,7 +1,6 @@
 import { claimed } from '../core/capabilities.ts';
 import type { Registry } from '../core/content.ts';
-import type { bundledPacks } from '../game/bundledPacks.ts';
-import { bundledOriginAssetKey } from '../presentation/bundledAssets.ts';
+import { bundledAssetUrl, type PackAssetFiles } from '../presentation/bundledAssets.ts';
 
 /** Installs the stack's UI tuning and cursor once, before game startup. */
 export const applyUiTokens = (
@@ -10,12 +9,10 @@ export const applyUiTokens = (
   {
     report,
     files,
-    packs,
   }: {
     report: (message: string) => void;
-    /** Cursor image URLs by bundled asset key; see `PresentationAssets`, `cursors`. */
-    files: Readonly<Record<string, string>>;
-    packs?: typeof bundledPacks;
+    /** Cursor images; see `PresentationAssets`, `cursors`. */
+    files: PackAssetFiles;
   },
 ): void => {
   const tuning = claimed(registry.ui, 'interface');
@@ -29,8 +26,7 @@ export const applyUiTokens = (
   root.style.setProperty('--ui-scale', String(tuning.hudScale));
   const rows = registry.cursorStack.filter(({ cursor }) => cursor.capability === 'gameCursor').reverse();
   for (const { cursor, source } of rows) {
-    const key = bundledOriginAssetKey(source, cursor.image, packs);
-    const image = key ? files[key] : undefined;
+    const image = bundledAssetUrl(files, source, cursor.image);
     if (image) {
       root.style.setProperty('--cursor-image', `url("${image}")`);
       root.style.setProperty('--cursor-frame-width', `${cursor.frameWidthPx}px`);

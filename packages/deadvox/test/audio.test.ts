@@ -63,7 +63,7 @@ describe('GameAudio Web Audio compatibility', () => {
       isSolid: () => false,
       tuning: senseTuning,
       report: () => undefined,
-      files: {},
+      files: { packs: [], urls: {} },
     });
 
     expect(() => audio.unlock()).not.toThrow();

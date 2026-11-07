@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, vi } from 'vitest';
-// biome-ignore lint/performance/noNamespaceImport: the reuse wraps the content-build boundary that admission calls
-import * as bundledContent from '../src/game/bundledContent.ts';
+import type { StartupContent } from '../src/game/bundledContent.ts';
+import { productContent } from '../src/product/content.ts';
 
-const build = bundledContent.buildBundledContent;
-const built = new Map<string, bundledContent.StartupContent>();
+const build = productContent.buildBundledContent;
+const built = new Map<string, StartupContent>();
 const buildKey = (mods: readonly unknown[], modsSelected: boolean): string => JSON.stringify([mods, modsSelected]);
 
 const reusingBuild = (): void => {
-  vi.spyOn(bundledContent, 'buildBundledContent').mockImplementation((mods = [], modsSelected = mods.length > 0) => {
+  vi.spyOn(productContent, 'buildBundledContent').mockImplementation((mods = [], modsSelected = mods.length > 0) => {
     const key = buildKey(mods, modsSelected);
     const content = built.get(key) ?? build(mods, modsSelected);
     built.set(key, content);
@@ -21,7 +21,7 @@ const reusingBuild = (): void => {
  * a case that compares against base content keeps its own direct build, so that comparison never meets itself.
  * `plain` is an independent build of the content with no mod, which a file may hand over to spare the first such build.
  */
-export const reuseBundledBuilds = (plain?: bundledContent.StartupContent): void => {
+export const reuseBundledBuilds = (plain?: StartupContent): void => {
   if (plain !== undefined) {
     built.set(buildKey([], false), plain);
   }

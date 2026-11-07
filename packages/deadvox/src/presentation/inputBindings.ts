@@ -1,6 +1,7 @@
 import {
   type Binding,
   type Chord,
+  INPUT_ACTIONS,
   INVENTORY_TAB_BINDINGS,
   type InputContext,
   type Modifier,
@@ -8,7 +9,6 @@ import {
 import {
   BindingRegistry,
   chordIssue,
-  INPUT_BINDINGS,
   isHeld,
   type KeyboardLayoutSource,
   modifierCodes,
@@ -17,6 +17,7 @@ import {
   type PreferenceStorage,
   REFUSED_MODIFIERS,
 } from '../game/bindingRegistry.ts';
+import { INPUT_BINDINGS } from '../product/controls.ts';
 
 const INVENTORY_FIND_ARROW_BINDINGS: ReadonlySet<string> = new Set(['inventory.previous', 'inventory.next']);
 const INVENTORY_COMBO_BOX_BINDINGS: ReadonlySet<string> = new Set([
@@ -24,7 +25,7 @@ const INVENTORY_COMBO_BOX_BINDINGS: ReadonlySet<string> = new Set([
   ...INVENTORY_TAB_BINDINGS.map(({ action }) => action),
 ]);
 const INVENTORY_CHECKBOX_BINDINGS: ReadonlySet<string> = new Set(
-  INPUT_BINDINGS.filter((binding) => binding.contexts.includes('inventory')).map(({ id }) => id),
+  INPUT_ACTIONS.filter((action) => action.contexts.includes('inventory')).map(({ id }) => id),
 );
 // Escape is left out so a tap still frees the pointer and the browser's own fullscreen exit stays.
 export const BROWSER_CHORD_LOCK_CODES: string[] = ['KeyW', 'KeyT', 'KeyN', 'Tab'];
@@ -685,6 +686,8 @@ const browserKeyboardLayout: KeyboardLayoutSource = () =>
   (
     globalThis.navigator as Navigator & { keyboard?: { getLayoutMap: () => Promise<ReadonlyMap<string, string>> } }
   )?.keyboard?.getLayoutMap();
+// This singleton exists at import, before any product entry code runs, so it reads the product's default keys
+// directly rather than receiving them.
 export const inputBindings = new BindingRegistry(INPUT_BINDINGS, browserStorage(), browserKeyboardLayout);
 export const keyboardInput = new KeyboardInput(inputBindings);
 export const labelForAction = (id: string): string => inputBindings.label(id);

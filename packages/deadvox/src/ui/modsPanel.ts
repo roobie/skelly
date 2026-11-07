@@ -2,7 +2,7 @@ import { html, render } from 'lit-html';
 import { countText } from '../core/numberText.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
-import { type BrowserMod, evaluateMods, MAX_MOD_BYTES, type ModEvaluation } from '../game/browserMods.ts';
+import { type BrowserMod, evaluateMods, type ModEvaluation, type ModIntake } from '../game/browserMods.ts';
 import type { ModStore } from '../game/storageContract.ts';
 import { isInvalidModSelection, ModStorage } from '../presentation/modStorage.ts';
 import { factDetail } from './factDetail.ts';
@@ -15,6 +15,7 @@ type ModsText = ScreenText['mods'];
 export const readPaste = async (
   draft: string,
   messages: ModsText,
+  maxModBytes: number,
   fetchMod: typeof fetch = fetch,
 ): Promise<{ name: string; text: string; issue?: string }> => {
   const value = draft.trim();
@@ -47,9 +48,9 @@ export const readPaste = async (
           break;
         }
         bytes += chunk.value.byteLength;
-        if (bytes > MAX_MOD_BYTES) {
+        if (bytes > maxModBytes) {
           await reader.cancel();
-          return failed(fillText(messages.tooLarge, { maxBytes: countText(MAX_MOD_BYTES) }));
+          return failed(fillText(messages.tooLarge, { maxBytes: countText(maxModBytes) }));
         }
         text += decoder.decode(chunk.value, { stream: true });
       }
@@ -63,12 +64,16 @@ export const readPaste = async (
   }
 };
 
-const readUpload = async (file: File, messages: ModsText): Promise<{ name: string; text: string; issue?: string }> => {
+const readUpload = async (
+  file: File,
+  messages: ModsText,
+  maxModBytes: number,
+): Promise<{ name: string; text: string; issue?: string }> => {
   if (!file.name.toLowerCase().endsWith('.json')) {
     return { name: file.name, text: '', issue: messages.jsonOnly };
   }
-  if (file.size > MAX_MOD_BYTES) {
-    return { name: file.name, text: '', issue: fillText(messages.tooLarge, { maxBytes: countText(MAX_MOD_BYTES) }) };
+  if (file.size > maxModBytes) {
+    return { name: file.name, text: '', issue: fillText(messages.tooLarge, { maxBytes: countText(maxModBytes) }) };
   }
   try {
     return { name: file.name, text: await file.text() };
@@ -81,6 +86,7 @@ const readUpload = async (file: File, messages: ModsText): Promise<{ name: strin
 export const chooseMods = async (
   root: HTMLElement,
   text: ModsText,
+  intake: ModIntake,
   storage: ModStore = new ModStorage(),
 ): Promise<ModEvaluation> => {
   let initial: BrowserMod[] = [];
@@ -143,7 +149,7 @@ export const chooseMods = async (
       busy = true;
       uploadError = '';
       draw();
-      const results = await Promise.all(files.map((file) => readUpload(file, text)));
+      const results = await Promise.all(files.map((file) => readUpload(file, text, intake.maxModBytes)));
       for (const result of results) {
         if (result.issue) {
           uploadError += `${result.name}: ${result.issue}\n`;
@@ -162,7 +168,7 @@ export const chooseMods = async (
       busy = true;
       uploadError = '';
       draw();
-      const result = await readPaste(draft, text);
+      const result = await readPaste(draft, text, intake.maxModBytes);
       if (result.issue) {
         uploadError = `${result.name}: ${result.issue}`;
       } else {
@@ -173,13 +179,13 @@ export const chooseMods = async (
       await update();
     };
     const draw = () => {
-      const result = evaluateMods(mods);
+      const result = evaluateMods(intake, mods);
       const storageIssue = invalidSelection ? text.invalidSelection : text.storageFailed;
       render(
         html`
       <section class="mods-card" aria-label=${text.heading}>
         <h1>${text.heading}</h1>
-        <p>${factDetail(text.jsonLabel, fillText(text.jsonFact, { maxBytes: countText(MAX_MOD_BYTES) }))}</p>
+        <p>${factDetail(text.jsonLabel, fillText(text.jsonFact, { maxBytes: countText(intake.maxModBytes) }))}</p>
         <pre role="alert">${storageFailed ? storageIssue : ''}</pre>
         ${invalidSelection ? html`<button type="button" id="mods-discard" ?disabled=${busy} @click=${discard}>${text.discard}</button>` : ''}
         <label>${text.input}<textarea aria-label=${text.inputLabel} ?disabled=${busy || storageFailed} .value=${draft} @input=${(
@@ -212,7 +218,7 @@ export const chooseMods = async (
         )}
         </ol>
         <button type="button" id="mods-start" ?disabled=${busy || !result.canStart} @click=${() => {
-          const selected = evaluateMods(mods);
+          const selected = evaluateMods(intake, mods);
           if (!busy && selected.canStart) {
             root.hidden = true;
             resolve(selected);

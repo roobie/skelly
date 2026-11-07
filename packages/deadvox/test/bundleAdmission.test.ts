@@ -4,7 +4,7 @@ import { BundleAdmission, type BundleStamp, bundleSourceHash } from '../src/core
 // biome-ignore lint/performance/noNamespaceImport: the test spies on the live proof export used by admission.
 import * as cityPlan from '../src/core/cityPlan.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
-import { baseSources } from '../src/game/bundledContent.ts';
+import { baseSources } from '../src/product/content.ts';
 import { stampBundle } from '../tools/stampBundle.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';

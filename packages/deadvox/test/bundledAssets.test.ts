@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import type { PackManifest } from '../src/core/packAdmission.ts';
-import { bundledAssetFiles, bundledOriginAssetKey } from '../src/presentation/bundledAssets.ts';
+import { bundledAssetFiles, bundledAssetUrl } from '../src/presentation/bundledAssets.ts';
 
 it('isolates identical asset paths by owning pack across roots for models and audio', () => {
   const packs = ['../../mods/fixture.product', '../../../mods/fixture.shared'].map((root, index) => ({
@@ -13,10 +13,8 @@ it('isolates identical asset paths by owning pack across roots for models and au
       packs,
     );
     packs.forEach(({ root }, index) => {
-      const key = bundledOriginAssetKey(`${root}/nested/rows.json`, file, packs)!;
-      expect(key).toBe(`fixture.pack${index}/${file}`);
-      expect(files[key]).toBe(`url${index}`);
+      expect(bundledAssetUrl(files, `${root}/nested/rows.json`, file)).toBe(`url${index}`);
     });
-    expect(bundledOriginAssetKey('../../mods/fixture.absent/rows.json', file, packs)).toBeUndefined();
+    expect(bundledAssetUrl(files, '../../mods/fixture.absent/rows.json', file)).toBeUndefined();
   }
 });

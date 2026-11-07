@@ -12,7 +12,7 @@ import { pryPlan } from '../src/core/prying.ts';
 import { bindReach } from '../src/core/reach.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { firearmSteadinessSkill } from '../src/core/skillTraining.ts';
-import { baseSources } from '../src/game/bundledContent.ts';
+import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';

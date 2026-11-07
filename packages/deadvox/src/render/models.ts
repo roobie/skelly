@@ -21,17 +21,16 @@ import { type GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { attachmentFrame } from '../core/attachmentFrame.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
-import { bundledOriginAssetKey } from '../presentation/bundledAssets.ts';
+import { bundledAssetUrl, type PackAssetFiles } from '../presentation/bundledAssets.ts';
 import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
 import type { ItemLook, ItemLookSlot } from './itemLook.ts';
 import { fittedStateGroup } from './itemStateLook.ts';
 import { applyModelMaterials } from './modelMaterials.ts';
 
 /**
- * A fixture's model URLs keyed by the model's `file`, or the product's bundled ones keyed by bundled asset key
- * (`PresentationAssets`, `models`).
+ * A fixture's model URLs keyed by the model's `file`, or the product's bundled ones (`PresentationAssets`, `models`).
  */
-export type ModelFiles = Readonly<Record<string, string>> | { readonly packAssets: Readonly<Record<string, string>> };
+export type ModelFiles = Readonly<Record<string, string>> | { readonly packAssets: PackAssetFiles };
 
 export interface GroundModelPart {
   readonly geometry: BufferGeometry;
@@ -259,8 +258,9 @@ export class ModelLibrary {
     const loader = new GLTFLoader();
     const packAssets = typeof files.packAssets === 'object' ? files.packAssets : undefined;
     this.pending = [...registry.models.values()].flatMap((def) => {
-      const key = bundledOriginAssetKey(registry.modelOrigins.get(def.id)?.source, def.file);
-      const url = packAssets ? packAssets[key ?? ''] : (files as Readonly<Record<string, string>>)[def.file];
+      const url = packAssets
+        ? bundledAssetUrl(packAssets, registry.modelOrigins.get(def.id)?.source, def.file)
+        : (files as Readonly<Record<string, string>>)[def.file];
       if (url === undefined) {
         queueMicrotask(() => report(`model "${def.id}": no file "${def.file}" in the pack`));
         return [];

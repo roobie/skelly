@@ -644,7 +644,7 @@ try {
     'world volume is persisted to localStorage',
   );
   const restoredVolumes = await evaluate(`Promise.all([
-    import('/src/presentation/audio.ts'), import('/src/game/bundledContent.ts')
+    import('/src/presentation/audio.ts'), import('/src/product/content.ts')
   ]).then(([{ GameAudio }, { buildBundledContent }]) => {
     const { ui, body } = buildBundledContent().registry;
     return new GameAudio({
@@ -653,7 +653,7 @@ try {
       blockSize: 1,
       isSolid: () => false,
       report: () => {},
-      files: {},
+      files: { packs: [], urls: {} },
     }).settings;
   })`);
   assert.equal(restoredVolumes.world, savedWorldVolume, 'a fresh audio instance reads the persisted volume');

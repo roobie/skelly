@@ -1,4 +1,4 @@
-import { buildBundledContent } from '../../deadvox/src/game/bundledContent.ts';
+import { buildBundledContent } from '../../deadvox/src/product/content.ts';
 import {
   addFitting,
   blueprintIssues,

@@ -1,10 +1,15 @@
 import { safeParse } from 'valibot';
-import browserModConfig from '../config/browser-mods.json' with { type: 'json' };
 import { type ContentIssue, validateContent } from '../core/content.ts';
 import { admitWithFolderPacks, type PackInput, PackManifestSchema } from '../core/packAdmission.ts';
-import { buildBundledContent, bundledPackInputs, type StartupContent } from './bundledContent.ts';
+import type { BundledContent, StartupContent } from './bundledContent.ts';
+import type { BundledMod } from './bundledMods.ts';
 
-export const MAX_MOD_BYTES = browserModConfig.maxModBytes;
+/** What mod admission reads from the product: its shipped content, its bundled mods and its mod file bound. */
+export interface ModIntake {
+  readonly content: BundledContent;
+  readonly bundledMods: readonly BundledMod[];
+  readonly maxModBytes: number;
+}
 
 export interface BrowserMod {
   source: string;
@@ -23,9 +28,9 @@ export interface ModEvaluation {
 
 type IdentifiedSource = PackInput & { id: string; version: string; data: unknown };
 
-const readMod = (mod: BrowserMod): IdentifiedSource | ContentIssue => {
-  if (new TextEncoder().encode(mod.text).byteLength > MAX_MOD_BYTES) {
-    return { source: mod.source, path: '', message: `File exceeds ${MAX_MOD_BYTES} bytes` };
+const readMod = (mod: BrowserMod, maxModBytes: number): IdentifiedSource | ContentIssue => {
+  if (new TextEncoder().encode(mod.text).byteLength > maxModBytes) {
+    return { source: mod.source, path: '', message: `File exceeds ${maxModBytes} bytes` };
   }
   try {
     const parsed: unknown = JSON.parse(mod.text);
@@ -73,7 +78,12 @@ const readMod = (mod: BrowserMod): IdentifiedSource | ContentIssue => {
 };
 
 /** Folder packs go through pack admission whole; only single-file mods are read as mod text. */
-export const evaluateMods = (mods: readonly BrowserMod[], folderPacks: readonly PackInput[] = []): ModEvaluation => {
+export const evaluateMods = (
+  intake: ModIntake,
+  mods: readonly BrowserMod[],
+  folderPacks: readonly PackInput[] = [],
+): ModEvaluation => {
+  const { buildBundledContent, bundledPackInputs } = intake.content;
   const issues = new Map<string, ContentIssue[]>();
   const selected: IdentifiedSource[] = [];
   const disabled: IdentifiedSource[] = [];
@@ -84,7 +94,7 @@ export const evaluateMods = (mods: readonly BrowserMod[], folderPacks: readonly 
     message: `Duplicate mod id "${source.id}"; already selected in ${identities.get(source.id)}`,
   });
   for (const mod of mods) {
-    const parsed = readMod(mod);
+    const parsed = readMod(mod, intake.maxModBytes);
     if (!('data' in parsed)) {
       issues.set(mod.source, [parsed]);
       continue;

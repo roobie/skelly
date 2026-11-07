@@ -30,6 +30,7 @@ import { renderFreeFromUrl } from './presentation/renderMode.ts';
 import { tutorialRequested, tutorialUrl } from './presentation/tutorialUrl.ts';
 import { WorldLoading } from './presentation/worldLoading.ts';
 import { productAssets as assets } from './product/assets.ts';
+import { productModIntake } from './product/mods.ts';
 import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
 import { mountFullscreenOptions } from './ui/fullscreenOptions.ts';
@@ -53,7 +54,7 @@ if (showMods) {
   startupScreen.hidden = true;
   modsScreen.hidden = false;
 }
-const bundled = selectBundledMods(showMods ? [] : bundledModIdsFromUrl(params));
+const bundled = selectBundledMods(productModIntake, showMods ? [] : bundledModIdsFromUrl(params));
 const saveStatus = document.getElementById('save-status')!;
 const saveStatusHome = saveStatus.parentElement!;
 const saveStatusNextSibling = saveStatus.nextSibling;
@@ -79,7 +80,7 @@ if (bundled.issues.length > 0) {
 }
 // The mods screen is drawn before any mod is chosen, so it reads the bundled packs' text.
 const browserSelection = showMods
-  ? await chooseMods(modsScreen, claimed(bundled.content.registry.ui, 'interface')!.screenText.mods)
+  ? await chooseMods(modsScreen, claimed(bundled.content.registry.ui, 'interface')!.screenText.mods, productModIntake)
   : undefined;
 const content = browserSelection?.content ?? bundled.content;
 startupScreen.hidden = false;

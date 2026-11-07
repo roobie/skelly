@@ -8,7 +8,7 @@ import { reachTuning } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { FIGURE_LIMBS, type FurnitureDef } from '../src/core/schema.ts';
 import type { Facing } from '../src/core/templates.ts';
-import { baseSources } from '../src/game/bundledContent.ts';
+import { baseSources } from '../src/product/content.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { CorpseFigures } from '../src/render/corpseFigures.ts';
 import type { ModelLibrary } from '../src/render/models.ts';

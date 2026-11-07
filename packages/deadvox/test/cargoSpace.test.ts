@@ -19,7 +19,7 @@ import {
   placeFitting,
 } from '../src/core/vehicleBlueprint.ts';
 import type { VehicleInstance } from '../src/core/vehicleInstances.ts';
-import { baseSources } from '../src/game/bundledContent.ts';
+import { baseSources } from '../src/product/content.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 // The vehicle content and the cell size it is measured in, not the whole base: see `test/vehicleExport.test.ts`.

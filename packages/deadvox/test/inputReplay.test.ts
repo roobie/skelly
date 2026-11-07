@@ -10,7 +10,6 @@ import { encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import type { ActorSpawn, Site } from '../src/core/site.ts';
 import { gameTimeOfDay, realSeconds as realDuration } from '../src/core/time.ts';
-import { INPUT_BINDINGS } from '../src/game/bindingRegistry.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import {
   clearPendingInputReplay,
@@ -47,6 +46,7 @@ import {
 import { PHYSICS_RATE } from '../src/game/session.ts';
 import { createSimulationStepper, type InputRecording } from '../src/game/simulationStepper.ts';
 import { inputReplayStatus } from '../src/presentation/play.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { rifleAmmunition } from './rifleFixture.ts';
 import {

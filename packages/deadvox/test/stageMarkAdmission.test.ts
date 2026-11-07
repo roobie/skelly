@@ -3,7 +3,7 @@ import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { stageMarkArea } from '../src/core/stageMarks.ts';
-import { baseSources } from '../src/game/bundledContent.ts';
+import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const source = 'fixture-stage-mark.json';

@@ -100,7 +100,6 @@ const cursorPacks = ['../../mods/fixture.early', '../../../mods/fixture.later'].
   manifest: { id: `fixture.pack${index}` } as PackManifest,
 }));
 const cursorAssets = {
-  packs: cursorPacks,
   files: bundledAssetFiles(
     Object.fromEntries(cursorPacks.map(({ root }, index) => [`${root}/${cursor.image}`, `/url${index}.png`])),
     cursorPacks,

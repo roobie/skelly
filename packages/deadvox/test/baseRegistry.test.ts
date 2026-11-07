@@ -1,7 +1,7 @@
 import { deepStrictEqual } from 'node:assert/strict';
 import { isDeepStrictEqual } from 'node:util';
 import { expect, it } from 'vitest';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/product/content.ts';
 import { baseRegistry, startupContent } from './baseRegistry.ts';
 
 // The one deliberate full content build in the suite: the cache must hold what production builds. The

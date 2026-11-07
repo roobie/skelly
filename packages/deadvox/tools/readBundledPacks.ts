@@ -6,6 +6,9 @@ import { parse } from 'valibot';
 import { canonicalJson } from '../src/core/canonicalJson.ts';
 import { admitPacks, type PackInput, PackManifestSchema, packContentHash } from '../src/core/packAdmission.ts';
 
+/** Pack roots are relative to the product modules that glob them, as `src/product/content.ts`, `productContent` keys them. */
+export const PACK_ROOT_BASE = 'src/product';
+
 /** Every shipped pack, opt-in ones included, as the bundle stamp and file hashes cover them. */
 export const readAvailablePacks = (packageRoot: string): PackInput[] => {
   const roots = ['mods', '../mods']
@@ -19,18 +22,19 @@ export const readAvailablePacks = (packageRoot: string): PackInput[] => {
                 existsSync(resolve(directory, entry.name, 'pack/manifest.json')),
             )
             .map((entry) =>
-              relative(resolve(packageRoot, 'src/game'), resolve(directory, entry.name)).split(sep).join('/'),
+              relative(resolve(packageRoot, PACK_ROOT_BASE), resolve(directory, entry.name)).split(sep).join('/'),
             )
         : [];
     })
-    // The save identity lists packs in this order, so it follows the game's: `src/game/bundledPacks.ts`, `bundledPacks`.
+    // The save identity lists packs in this order, so it follows the game's: `src/game/bundledContent.ts`,
+    // `createBundledContent`.
     .sort((left, right) => `${left}/pack/manifest.json`.localeCompare(`${right}/pack/manifest.json`));
   const inputs = roots.map((root) => {
     const manifest = parse(
       PackManifestSchema,
-      JSON.parse(readFileSync(resolve(packageRoot, 'src/game', root, 'pack/manifest.json'), 'utf8')),
+      JSON.parse(readFileSync(resolve(packageRoot, PACK_ROOT_BASE, root, 'pack/manifest.json'), 'utf8')),
     );
-    const directory = resolve(packageRoot, 'src/game', root);
+    const directory = resolve(packageRoot, PACK_ROOT_BASE, root);
     const declared = new Set(['pack/manifest.json', ...manifest.files.map(({ path }) => path)]);
     for (const file of readdirSync(directory, { recursive: true, encoding: 'utf8' })) {
       const path = file.split(sep).join('/');

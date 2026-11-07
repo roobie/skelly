@@ -79,6 +79,8 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
     'Type-only save and mod storage contracts; the imported types erase from runtime code.',
   'src/core/soundOcclusion.ts': 'Presentation-only filtering, reached only through the excluded WebAudio adapter.',
   'src/game/hearing.ts': 'Heard-sound record and occlusion, reached only through the excluded WebAudio adapter.',
+  'src/game/bindingRegistry.ts':
+    'Default keys and rebinding preferences; replay records action ids from the input actions, not from key bindings.',
   'src/game/voiceCaps.ts': 'Playback voice caps, reached only through the excluded WebAudio adapter.',
   'src/core/schedulerIds.ts':
     'Reached only through the excluded save controller; test/saveSchedulerIds.test.ts keeps it equal to the fingerprinted registrations, so it cannot change without them.',

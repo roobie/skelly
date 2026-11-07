@@ -28,7 +28,7 @@ A frozen page can hold the lock, so the last committed generation is the recover
 
 ## Debug and rendering
 
-`?debug=1` is for authoring and diagnostics, including immutable preview measurements. Debug bindings remain rebindable; the held debug gate applies to authoring actions, while noclip flight is ungated only while noclip is active. Native text editing and focus remain browser-owned. A desktop OS may intercept a key before the browser receives it, so synthetic events cannot prove native key delivery. See `src/game/bindingRegistry.ts`, `INPUT_BINDINGS`, and [CONTROLS.md](CONTROLS.md).
+`?debug=1` is for authoring and diagnostics, including immutable preview measurements. Debug bindings remain rebindable; the held debug gate applies to authoring actions, while noclip flight is ungated only while noclip is active. Native text editing and focus remain browser-owned. A desktop OS may intercept a key before the browser receives it, so synthetic events cannot prove native key delivery. See `src/product/controls.ts`, `INPUT_BINDINGS`, and [CONTROLS.md](CONTROLS.md).
 
 Gun-pose diagnostics use the player's normal readiness and anatomical solver, not
 a mannequin copy, so the inspected pose represents play. Detached flight must not

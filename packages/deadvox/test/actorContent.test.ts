@@ -4,7 +4,7 @@ import { claimed } from '../src/core/capabilities.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { footstepSoundId } from '../src/core/footsteps.ts';
 import { settlementActorSpawns, settlementHordeSpawn } from '../src/core/settlementSpawns.ts';
-import { baseSources } from '../src/game/bundledContent.ts';
+import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
 import { fixtureScenarioSources } from './fixtures/scenario.ts';

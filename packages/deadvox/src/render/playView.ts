@@ -29,6 +29,7 @@ import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { skyInWeather, type Weather } from '../core/weather.ts';
 import type { FromMesher } from '../game/mesherProtocol.ts';
 import { playerTuning } from '../game/player.ts';
+import type { PackAssetFiles } from '../presentation/bundledAssets.ts';
 import { cameraRotation, DamageFeedback } from '../presentation/damageFeedback.ts';
 import type { Engine } from '../presentation/engine.ts';
 import { PainCue } from '../presentation/painCue.ts';
@@ -218,8 +219,8 @@ export const createPlayView = (
     poweredLights = () => [],
     physicalSolid = engine.isSolid,
   }: {
-    /** The product's bundled model URLs; see `PresentationAssets`. */
-    models: Readonly<Record<string, string>>;
+    /** The product's bundled models; see `PresentationAssets`, `models`. */
+    models: PackAssetFiles;
     page?: Pick<EventTarget, 'addEventListener'>;
     poweredLights?: () => readonly PoweredLight[];
     /** The session's physical query, with parked vehicles, for corpses, the camera and flare occlusion. */

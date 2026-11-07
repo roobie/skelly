@@ -37,7 +37,7 @@ The Deadvox entry depends on every scenario mod without the opt-in marker of
 `docs/pack-split.md`, "Debug mods". The browser loads every unmarked bundled mod folder
 while the CLI and tests load the entry's closure, so one set keeps them in step without a
 second loading path. The cost is that the entry stack
-carries every demo. See `src/game/bundledPacks.ts`, `bundledPacks`, and
+carries every demo. See `src/product/content.ts`, `productContent`, and
 `tools/readBundledPacks.ts`, `readBundledPacks`. The entry is therefore the one pack
 whose dependencies may sit in a higher tier than its own: it selects the stack rather
 than defining reusable content.

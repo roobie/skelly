@@ -8,14 +8,15 @@ import { Inventory } from '../src/core/inventory.ts';
 import { admitPacks } from '../src/core/packAdmission.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { placedPoint } from '../src/core/templates.ts';
-import { bundledPackInputs } from '../src/game/bundledContent.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';
+import { bundledPackInputs } from '../src/product/content.ts';
+import { productModIntake } from '../src/product/mods.ts';
 import { readAvailablePacks, readBundledPacks } from '../tools/readBundledPacks.ts';
 import { withReusedBuilds } from './bundledContentReuse.ts';
 import { content as baseContent, makeConfig } from './fixtures/startupContent.ts';
 
 const selected = withReusedBuilds(() =>
-  selectBundledMods(bundledModIdsFromUrl(new URLSearchParams({ mods: debugManifest.id }))),
+  selectBundledMods(productModIntake, bundledModIdsFromUrl(new URLSearchParams({ mods: debugManifest.id }))),
 );
 
 const totals = (items: { item: string; count: number; condition: number; liquidContents?: unknown }[]) => {
@@ -53,7 +54,10 @@ describe('authored debug scenario mod', () => {
   it('loads two selected debug folder mods together', () => {
     const tutorialDebug = 'skelly.deadvox.scenario.tutorial.debug';
     const both = withReusedBuilds(() =>
-      selectBundledMods(bundledModIdsFromUrl(new URLSearchParams({ mods: `${debugManifest.id},${tutorialDebug}` }))),
+      selectBundledMods(
+        productModIntake,
+        bundledModIdsFromUrl(new URLSearchParams({ mods: `${debugManifest.id},${tutorialDebug}` })),
+      ),
     );
     expect(both.issues).toEqual([]);
     expect(both.admittedFolderPacks.map(({ id }) => id).sort()).toEqual([debugManifest.id, tutorialDebug].sort());

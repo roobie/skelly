@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import battery from '../../mods/skelly.ground-vehicles/things/car_battery.model.json' with { type: 'json' };
 import { buildRegistry, type ContentSource, type Registry } from '../src/core/content.ts';
 import { loadVehicleBlueprint, type PlacedFitting } from '../src/core/vehicleBlueprint.ts';
-import { baseSources } from '../src/game/bundledContent.ts';
+import { baseSources } from '../src/product/content.ts';
 import { PLAYER } from './playerFixture.ts';
 
 const HOSTS = ['hatchback', 'pickup', 'hoist'];

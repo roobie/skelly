@@ -59,7 +59,8 @@ export const SIMULATION_ENTRIES = [
   'src/game/survival.ts',
   'src/game/streamer.ts',
   'src/game/config.ts',
-  // Worlds receive admitted content, so startup admission is no longer reachable from world setup.
+  // Worlds receive admitted content, so startup admission is no longer reachable from world setup. The product's
+  // sources and tunables it is given are content, outside this fingerprint.
   'src/game/browserMods.ts',
   'src/game/bundledMods.ts',
   'src/game/commandRouter.ts',
@@ -178,15 +179,7 @@ const PRESENTATION_ASSET_EXTENSIONS = new Set([
   '.woff2',
 ]);
 const MODULE_QUERY_PATTERN = /[?#].*$/;
-const GLOB_REFERENCE = /\bimport\.meta\.glob\b/g;
-const GLOB_CALL = /\bimport\.meta\.glob(?:<[^>]*>)?\s*\(\s*(['"])(.*?)\1/g;
-const CONTENT_GLOB_PATTERNS = new Set([
-  '../../mods/*/*.json',
-  '../../../mods/*/*.json',
-  '../../mods/*/pack/manifest.json',
-  '../../../mods/*/pack/manifest.json',
-  '../config/bundled/*.json',
-]);
+const GLOB_REFERENCE = /\bimport\.meta\.glob\b/;
 const REQUIRE_CALL = /\brequire\s*\(/;
 const IMPORT_META_URL_REFERENCE = /\bimport\.meta\.url\b/g;
 const WORKER_URL_CALL = /\bnew\s+Worker\s*\(\s*new\s+URL\s*\(\s*(['"])(.*?)\1\s*,\s*import\.meta\.url\s*\)/g;
@@ -203,12 +196,8 @@ function comparePaths(left: string, right: string): number {
 }
 
 function assertSupportedDependencyDiscovery(path: string, source: string): void {
-  const globReferences = [...source.matchAll(GLOB_REFERENCE)];
-  const globCalls = [...source.matchAll(GLOB_CALL)];
-  if (globReferences.length !== globCalls.length) {
-    throw new Error(`Unsupported import.meta.glob form in simulation source ${path}`);
-  }
-  if (globCalls.some((call) => !(call[2] && CONTENT_GLOB_PATTERNS.has(call[2])))) {
+  // The product globs its mod roots and passes the maps in, so a simulation source never globs.
+  if (GLOB_REFERENCE.test(source)) {
     throw new Error(`Unclassified import.meta.glob dependency in simulation source ${path}`);
   }
   if (REQUIRE_CALL.test(source)) {

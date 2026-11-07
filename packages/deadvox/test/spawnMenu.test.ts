@@ -6,6 +6,7 @@ import { SpawnMenu, spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import type { DebugHooks } from '../src/presentation/debugInterface.ts';
 import { KeyboardInput } from '../src/presentation/inputBindings.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
@@ -177,7 +178,7 @@ describe('spawnMenuViewModel', () => {
     const spawn = vi.fn((id: string) => `${id} spawned`);
     const menu = new SpawnMenu(registry, spawn, () => undefined);
     menu.setRoot(root);
-    const keyboard = new KeyboardInput(new BindingRegistry());
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS));
     keyboard.context = () => ({ context: menu.isOpen ? 'spawn' : 'play', debug: true });
     const commands: string[] = [];
     keyboard.command = ({ action, phase }) => {

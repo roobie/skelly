@@ -14,7 +14,7 @@ import {
 } from '../game/audioPresentation.ts';
 import { type HeardSound, Hearing } from '../game/hearing.ts';
 import { VoiceCaps } from '../game/voiceCaps.ts';
-import { bundledOriginAssetKey } from './bundledAssets.ts';
+import { bundledAssetUrl, type PackAssetFiles } from './bundledAssets.ts';
 
 const SETTINGS_KEY = 'skelly.audio.settings';
 const CATEGORIES = ['world', 'body', 'ui'] as const;
@@ -67,8 +67,8 @@ export interface GameAudioOptions {
   isSolid: SolidAt;
   tuning: SenseDef;
   report: (message: string) => void;
-  /** Recording URLs by bundled asset key; see `PresentationAssets`. */
-  files: Readonly<Record<string, string>>;
+  /** Recordings; see `PresentationAssets`, `audio`. */
+  files: PackAssetFiles;
 }
 
 interface SourceStartOptions {
@@ -134,7 +134,7 @@ export class GameAudio {
   private readonly registry: Registry;
   private readonly hearing: Hearing;
   private readonly report: (message: string) => void;
-  private readonly files: Readonly<Record<string, string>>;
+  private readonly files: PackAssetFiles;
   private readonly voiceCaps = new VoiceCaps<Voice>(VOICE_FADE_SECONDS);
   private readonly heartbeat: HeartbeatTuning;
   private heartbeatTarget: HeartbeatTarget;
@@ -464,8 +464,7 @@ export class GameAudio {
       return recipe;
     }
     const origin = this.registry.soundOrigins.get(event);
-    const key = bundledOriginAssetKey(origin?.source, file);
-    return key ? this.files[key] : undefined;
+    return bundledAssetUrl(this.files, origin?.source, file);
   }
 
   private variantBuffer(
