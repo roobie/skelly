@@ -106,35 +106,36 @@ export const observationPlugin = {
           ports.syncThrowingStance();
         });
       });`;
+      const adsToggleMarker = `      case 'aim.ads-toggle':
+        controls.toggleAimingDownSights(ports.replaying());
+        break;`;
       assert(code.includes(throwQueueMarker), 'stance throw queue observation point exists');
-      return code.replace(
-        throwQueueMarker,
-        `${throwQueueMarker}
+      assert(code.includes(adsToggleMarker), 'ADS replay observation point exists');
+      return code
+        .replace(
+          throwQueueMarker,
+          `${throwQueueMarker}
       globalThis.primaryActionTest?.afterThrowCommit();`,
-      );
+        )
+        .replace(
+          adsToggleMarker,
+          `      case 'aim.ads-toggle': {
+        const before = controls.aimingDownSights;
+        const replaying = ports.replaying();
+        controls.toggleAimingDownSights(replaying);
+        globalThis.primaryActionTest?.adsToggled(before, controls.aimingDownSights, replaying);
+        break;
+      }`,
+        );
     }
     if (!id.endsWith('/src/game/play.ts')) {
       return;
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
     const playerTickMarker = '      pendingPlayerTickActions.applyAtNextTick();';
-    const adsToggleMarker = `      case 'aim.ads-toggle':
-        input.controls.toggleAimingDownSights(replayPlayer !== undefined);
-        break;`;
     assert(code.includes(marker), 'game-loop observation point exists');
-    assert(code.includes(adsToggleMarker), 'ADS replay observation point exists');
     assert(code.includes(playerTickMarker), 'player tick action observation point exists');
     let observedCode = code.replace(
-      adsToggleMarker,
-      `      case 'aim.ads-toggle': {
-        const before = input.controls.aimingDownSights;
-        const replaying = replayPlayer !== undefined;
-        input.controls.toggleAimingDownSights(replaying);
-        proof.adsToggleObservations.push({ before, after: input.controls.aimingDownSights, replaying, locked: input.locked });
-        break;
-      }`,
-    );
-    observedCode = observedCode.replace(
       playerTickMarker,
       `${playerTickMarker}
       if (proof.quickbarTapCommitObservation && !proof.quickbarTapTickObservation) {
@@ -188,6 +189,10 @@ export const observationPlugin = {
     quickbarTapCommitObservation: undefined,
     quickbarTapTickObservation: undefined,
     adsToggleObservations: [],
+    // The router calls this from its ADS toggle, with the state before and after it.
+    adsToggled: (before, after, replaying) => {
+      proof.adsToggleObservations.push({ before, after, replaying, locked: input.locked });
+    },
     throwSpawnObservations: {},
     // The router calls this right after a live stance throw queues its player-tick commit.
     afterThrowCommit: () => {

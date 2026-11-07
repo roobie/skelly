@@ -111,7 +111,7 @@ import { openingTargetForHand } from './canOpening.ts';
 import { columnArrival } from './columnArrival.ts';
 import { createCommandRouter } from './commandRouter.ts';
 import { continueActionResumesJob } from './continueAction.ts';
-import { CrouchProneInput, type StanceReplayAction } from './crouchProneInput.ts';
+import { CrouchProneInput } from './crouchProneInput.ts';
 import { DebugGunPose } from './debugGunPose.ts';
 import type {
   DebugHooks,
@@ -125,7 +125,7 @@ import { DOOR_ACTION } from './doorAction.ts';
 import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { observeRealFrame } from './frameDriver.ts';
-import { freeLookAllowsCommand, freeLookAllowsUse } from './freeLook.ts';
+import { freeLookAllowsUse } from './freeLook.ts';
 import { FurnitureActionSelection, furnitureActionsFor } from './furnitureActions.ts';
 import { GuidedSteps } from './guidedSteps.ts';
 import {
@@ -146,7 +146,7 @@ import {
   stashInputReplay,
   withReplayExportGuard,
 } from './inputReplay.ts';
-import { createReplayPlayStateBinding, toggleWalking } from './inputReplayActions.ts';
+import { createReplayPlayStateBinding } from './inputReplayActions.ts';
 import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample } from './inputReplayDriver.ts';
 import { InputReplayPlayer } from './inputReplayPlayer.ts';
 import type { ItemAction } from './itemActions.ts';
@@ -296,23 +296,6 @@ const PIN_LINES: Readonly<Record<PinState, string>> = {
   burning: 'Fuse: burning',
 };
 const pinDescription = (state: PinState | undefined): string[] => (state ? [PIN_LINES[state]] : []);
-const isGestureAction = (action: string): boolean =>
-  action === 'firearm.reload' ||
-  action === 'player.crouch-toggle' ||
-  action === 'player.prone-toggle' ||
-  action === 'player.throw' ||
-  action === 'light.worn-toggle' ||
-  action === 'world.interact' ||
-  action.startsWith('quickbar.use.');
-
-const isPayloadBackedScreenAction = (context: InputContext, action: string): boolean =>
-  (context === 'inventory' &&
-    ((action.startsWith('inventory.') && !['inventory.previous', 'inventory.next'].includes(action)) ||
-      action.startsWith('quickbar.assign.') ||
-      action === 'handling.stop')) ||
-  action === 'craft.continue' ||
-  action.startsWith('carry.');
-
 const resetOrbitOnLocomotion = (action: string, orbit: ThirdPersonOrbit): void => {
   if (isOrbitResetMovementAction(action)) {
     orbit.movementInput();
@@ -832,8 +815,15 @@ export const startPlay = (
       beginSearch: (entity) => playtestObserver?.beginSearch(entity, nameOf(entity)),
       weaponInspected: (item) => guide?.weapons.inspected(item, registry),
       throwVisual: (launch, owner) => itemThrows.spawn(launch, owner),
+      spectatorAllows: (action) => spectator.allowsCommand(action),
+      screenInputCommand: (command) => screen.onInputCommand(command),
+      locomotionPressed: (action) => resetOrbitOnLocomotion(action, thirdPersonOrbit),
+      modalCommand: (action) => modalCommand(action),
+      debugCommand: (action, at) => handleDebugCommand(action, at),
+      hintCommand: (action, phase, at) => handleHintCommand(action, phase, at),
     },
     active: () => worldLoading.ready && (Boolean(options.replay) || (input.locked && !input.menuPointer)),
+    worldReady: () => worldLoading.ready,
     sampleAtPlayerTick: samplePlayerInput,
     replaying: () => replayPlayer !== undefined,
     replaySample: () => replaySample,
@@ -873,7 +863,6 @@ export const startPlay = (
     continueAction: () => continueAction(),
     stopAction: () => stopAction(),
     gestures: {
-      requestStanceAction: (action) => requestStanceAction(action),
       reloadBinding: () => reloadBinding(),
       toggleThrowingStance: () => toggleThrowingStance(),
       dropHeldItemForThrowingStance: () => dropHeldItemForThrowingStance(),
@@ -882,8 +871,35 @@ export const startPlay = (
       quickbarTap: (slot) => quickbarTap(slot),
       quickbarHold: (slot) => quickbarHold(slot),
     },
-    // Temporary until the input-command gate moves into the router (4b-4).
-    dispatchInputCommand: (command, fromReplay) => dispatchInputCommand(command, fromReplay),
+    liveGestures: {
+      crouchProne: {
+        keyDown: (action, at) => crouchProneInput.keyDown(action, at),
+        keyUp: (action, at) => crouchProneInput.keyUp(action, at),
+      },
+      throwStance: {
+        keyDown: (action, at) => throwStanceInput.keyDown(action, at),
+        keyUp: (action, at) => throwStanceInput.keyUp(action, at),
+      },
+      wornLight: {
+        keyDown: (action, at) => wornLightInput.keyDown(action, at),
+        keyUp: (action, at) => wornLightInput.keyUp(action, at),
+      },
+      interact: {
+        keyDown: (action, at) => {
+          interactionPressTarget = interactionTargetAt();
+          interactInput.keyDown(action, at);
+        },
+        keyUp: (action, at) => {
+          interactInput.keyUp(action, at);
+          interactionPressTarget = undefined;
+        },
+      },
+      quickbar: {
+        keyDown: (slot, at) => quickbarInput.keyDown(slot, at),
+        keyUp: (slot, at) => quickbarInput.keyUp(slot, at),
+      },
+      cancelHeld: () => cancelHeldInput(),
+    },
   });
   const session = createSession({
     registry,
@@ -2000,17 +2016,9 @@ export const startPlay = (
     runQuickbarAction(slot, true);
   };
   const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
-  const requestStanceAction = (action: StanceReplayAction): void => {
-    withUnlockedInput(() => {
-      if (!replayPlayer) {
-        inputRecording.recorder?.queueAction(action, 'down', inputContext());
-      }
-      input.controls.requestStanceToggle(action === 'player.crouch-toggle' ? 'crouch' : 'prone');
-    });
-  };
   const crouchProneInput = new CrouchProneInput({
     holdRealMs: () => playerSenseTuning.crouchProneHoldRealSeconds * 1000,
-    action: requestStanceAction,
+    action: router.requestStanceAction,
   });
   const throwStanceInput = new PressHoldInput<string>({
     holdRealMs: () => throwStanceDropHoldRealSeconds * 1000,
@@ -2192,119 +2200,6 @@ export const startPlay = (
       mainMenuOpen,
       interruptionCommand: timeKeys,
     });
-  const withUnlockedInput = (action: () => void): void => {
-    if (!(replaySample?.inputLocked ?? compression.locksInput)) {
-      action();
-    }
-  };
-  const stopHandling = (): void => {
-    input.controls.reload.cancel();
-    queue.cancel();
-    if (sim.actions.job || rest.action || compression.active) {
-      stopAction();
-    }
-  };
-  const assignQuickbarIfUnlocked = (slot: number | undefined, at: number): void => {
-    if (slot !== undefined && !compression.locksInput) {
-      quickbarInput.keyDown(slot, at);
-    }
-  };
-  const gameplayCommand = (action: string, at: number, slot: number | undefined): void => {
-    if (!freeLookAllowsCommand(input.controls.freeLooking, action)) {
-      return;
-    }
-    switch (action) {
-      case 'stance.ready':
-        input.controls.rightMouseHeld = true;
-        break;
-      case 'aim.ads-toggle':
-        input.controls.toggleAimingDownSights(replayPlayer !== undefined);
-        break;
-      case 'view.free-look':
-        input.controls.startFreeLook();
-        break;
-      case 'movement.walk-toggle':
-        input.controls.walking = toggleWalking(
-          input.controls.walking,
-          replayPlayer ? undefined : inputRecording.recorder,
-          inputContext(),
-        );
-        break;
-      case 'player.crouch-toggle':
-        withUnlockedInput(() => crouchProneInput.keyDown(action, at));
-        break;
-      case 'player.throw':
-        withUnlockedInput(() => throwStanceInput.keyDown(action, at));
-        break;
-      case 'light.worn-toggle':
-        withUnlockedInput(() => wornLightInput.keyDown(action, at));
-        break;
-      case 'hand.use-off':
-        if (!replayPlayer) {
-          input.controls.useOff();
-        }
-        break;
-      case 'firearm.reload':
-        input.controls.reload.keyDown(at, reloadBinding());
-        break;
-      case 'world.interact':
-        withUnlockedInput(() => {
-          interactionPressTarget = interactionTargetAt();
-          interactInput.keyDown(action, at);
-        });
-        break;
-      case 'craft.continue':
-        if (session.crafting.currentUid !== undefined) {
-          dispatchScreenCommand({ kind: 'craft.continue' });
-        }
-        break;
-      case 'handling.stop':
-        stopHandling();
-        break;
-      default:
-        carryCommand(action);
-        break;
-    }
-    assignQuickbarIfUnlocked(slot, at);
-  };
-  const CarryCommands: Readonly<Record<string, 'furniture.turn' | 'furniture.tip'>> = {
-    'carry.turn': 'furniture.turn',
-    'carry.tip': 'furniture.tip',
-  };
-  const carryCommand = (action: string): void => {
-    const kind = CarryCommands[action];
-    const reason = kind && dispatchScreenCommand({ kind });
-    if (reason) {
-      showRefusal(reason, sim.time);
-    }
-  };
-  const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
-    if (action === 'stance.ready') {
-      input.controls.rightMouseHeld = false;
-      input.controls.aimingDownSights = false;
-    }
-    if (action === 'firearm.reload') {
-      input.controls.reload.keyUp(at);
-    }
-    if (action === 'world.interact') {
-      interactInput.keyUp(action, at);
-      interactionPressTarget = undefined;
-    }
-    if (action === 'player.crouch-toggle') {
-      crouchProneInput.keyUp(action, at);
-    }
-    if (action === 'player.throw') {
-      throwStanceInput.keyUp(action, at);
-    }
-    if (action === 'light.worn-toggle') {
-      wornLightInput.keyUp(action, at);
-    }
-    if (slot !== undefined) {
-      quickbarInput.keyUp(slot, at);
-    }
-  };
-  const quickbarSlotFor = (action: string): number | undefined =>
-    action.startsWith('quickbar.use.') ? Number(action.slice('quickbar.use.'.length)) - 1 : undefined;
   const handleDebugCommand = (action: string, at: number): boolean =>
     dispatchDebugCommand(action, at, {
       backquoteGesture,
@@ -2334,70 +2229,7 @@ export const startPlay = (
     interactionPressTarget = undefined;
     cancelBackquoteGesture(backquoteGesture);
   };
-  const rejectRefusedInput = (): boolean => {
-    const refusal = sim.body.actionRefusal;
-    if (!refusal) {
-      return false;
-    }
-    cancelHeldInput();
-    showRefusal(refusal, sim.time);
-    return true;
-  };
-  const releaseInputCommand = (action: string, at: number, slot: number | undefined): void => {
-    if (handleHintCommand(action, 'up', at)) {
-      return;
-    }
-    if (sim.body.actionRefusal) {
-      cancelHeldInput();
-      return;
-    }
-    releaseCommand(action, at, slot);
-  };
-  const dispatchPressCommand = (action: string, at: number, slot: number | undefined): void => {
-    resetOrbitOnLocomotion(action, thirdPersonOrbit);
-    sim.actions.cancelWaitForMovement(action);
-    if (action === 'ui.main-menu-toggle') {
-      modalCommand(action);
-      return;
-    }
-    if (handleDebugCommand(action, at)) {
-      return;
-    }
-    if (rejectRefusedInput()) {
-      return;
-    }
-    if (handleHintCommand(action, 'down', at)) {
-      return;
-    }
-    if (sim.dead) {
-      return;
-    }
-    if (!modalCommand(action)) {
-      gameplayCommand(action, at, slot);
-    }
-  };
-  const dispatchInputCommand = ({ action, phase, at }: InputCommand, fromReplay = false): void => {
-    if (!worldLoading.ready || (replayPlayer && !fromReplay) || !spectator.allowsCommand(action)) {
-      return;
-    }
-    const context = inputContext();
-    const payloadBackedScreenAction = isPayloadBackedScreenAction(context, action);
-    // Gameplay records this press after toggling saved state; recording it here too duplicates the live press.
-    const walkToggleHandledByGameplay = action === 'movement.walk-toggle' && phase === 'down';
-    if (!(fromReplay || isGestureAction(action) || payloadBackedScreenAction || walkToggleHandledByGameplay)) {
-      inputRecording.recorder?.queueAction(action, phase, context);
-    }
-    const slot = quickbarSlotFor(action);
-    if (context === 'inventory' && screen.onInputCommand({ action, phase, at })) {
-      return;
-    }
-    if (phase === 'up') {
-      releaseInputCommand(action, at, slot);
-      return;
-    }
-    dispatchPressCommand(action, at, slot);
-  };
-  keyboardInput.command = (command) => dispatchInputCommand(command);
+  keyboardInput.command = (command) => router.dispatchInputCommand(command);
   ({ dispatchReplayAction } = router);
   keyboardInput.install();
   keyboardInput.sync();

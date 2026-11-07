@@ -1,5 +1,5 @@
-// Routes the player's controls into the simulation: the session controls and trigger at the player tick, replayed
-// actions, screen commands, furniture use and the item throw.
+// Routes the player's controls into the simulation: bound input commands and what a replay records of them, the
+// session controls and trigger at the player tick, replayed actions, screen commands, furniture use and the item throw.
 
 import { actionText } from '../core/actionText.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
@@ -19,9 +19,9 @@ import type { Simulation } from '../core/sim.ts';
 import { dispatchReplayStanceAction, type StanceReplayAction } from './crouchProneInput.ts';
 import { type FirearmShotInput, firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
-import { freeLookAllowsUse } from './freeLook.ts';
+import { freeLookAllowsCommand, freeLookAllowsUse } from './freeLook.ts';
 import type { InputReplayRecorder, ReplayAction, ReplayControlSample } from './inputReplay.ts';
-import { routeDominantUse } from './inputReplayActions.ts';
+import { routeDominantUse, toggleWalking } from './inputReplayActions.ts';
 import { applyReplayLook } from './inputReplayPlayer.ts';
 import type { ItemAction } from './itemActions.ts';
 import type { MoveIntent } from './player.ts';
@@ -35,6 +35,38 @@ import { restKindForFurniture } from './rest.ts';
 import type { Session, SessionControls } from './session.ts';
 
 const QUICKBAR_ACTION = /^quickbar\.(tap|hold)\.(\d+)$/;
+
+/** A bound action's press or release, stamped with its Real time. */
+interface InputCommand {
+  readonly action: string;
+  readonly phase: 'down' | 'up';
+  readonly at: number;
+}
+
+const isGestureAction = (action: string): boolean =>
+  action === 'firearm.reload' ||
+  action === 'player.crouch-toggle' ||
+  action === 'player.prone-toggle' ||
+  action === 'player.throw' ||
+  action === 'light.worn-toggle' ||
+  action === 'world.interact' ||
+  action.startsWith('quickbar.use.');
+
+const isPayloadBackedScreenAction = (context: InputContext, action: string): boolean =>
+  (context === 'inventory' &&
+    ((action.startsWith('inventory.') && !['inventory.previous', 'inventory.next'].includes(action)) ||
+      action.startsWith('quickbar.assign.') ||
+      action === 'handling.stop')) ||
+  action === 'craft.continue' ||
+  action.startsWith('carry.');
+
+const quickbarSlotFor = (action: string): number | undefined =>
+  action.startsWith('quickbar.use.') ? Number(action.slice('quickbar.use.'.length)) - 1 : undefined;
+
+const CarryCommands: Readonly<Record<string, 'furniture.turn' | 'furniture.tip'>> = {
+  'carry.turn': 'furniture.turn',
+  'carry.tip': 'furniture.tip',
+};
 
 /** A thrown item's arc, shown from launch to landing; the item already lies where it lands. */
 interface ItemThrowLaunch {
@@ -59,11 +91,39 @@ interface CommandRouterPresentation {
   /** Tells the tutorial guide, if one runs, that a weapon was inspected. */
   weaponInspected: (item: Item) => void;
   throwVisual: (launch: ItemThrowLaunch, inventory: Inventory) => void;
+  /** The spectator camera may withhold a command. */
+  spectatorAllows: (action: string) => boolean;
+  /** The open inventory screen takes a command first; true when it consumed it. */
+  screenInputCommand: (command: InputCommand) => boolean;
+  /** A locomotion press resets the third-person orbit. */
+  locomotionPressed: (action: string) => void;
+  /** Menus and reading take a press before gameplay; true when they consumed it. */
+  modalCommand: (action: string) => boolean;
+  debugCommand: (action: string, at: number) => boolean;
+  /** The backquote hint and orbit gesture; true when it consumed the command. */
+  hintCommand: (action: string, phase: InputCommand['phase'], at: number) => boolean;
+}
+
+/** A live press-and-hold recogniser; a replay records the action it resolves to, not the key. */
+interface PressGesture {
+  keyDown: (action: string, at: number) => void;
+  keyUp: (action: string, at: number) => void;
+}
+
+/** Live gesture recognisers the press routing feeds; play.ts owns them. */
+interface LiveGesturePorts {
+  crouchProne: PressGesture;
+  throwStance: PressGesture;
+  wornLight: PressGesture;
+  /** Picks the interaction target at the press and forgets it at the release. */
+  interact: PressGesture;
+  quickbar: { keyDown: (slot: number, at: number) => void; keyUp: (slot: number, at: number) => void };
+  /** Cancels every held live gesture, as a refusal does. */
+  cancelHeld: () => void;
 }
 
 /** Live gestures a replay re-dispatches by their recorded action; their owners still live in play.ts. */
 interface ReplayGesturePorts {
-  requestStanceAction: (action: StanceReplayAction) => void;
   reloadBinding: () => ReloadBinding | undefined;
   toggleThrowingStance: () => void;
   dropHeldItemForThrowingStance: () => void;
@@ -84,6 +144,8 @@ export interface CommandRouterPorts {
   presentation: CommandRouterPresentation;
   /** Input reaches the world: loading finished and the pointer is in play, or a replay drives it. */
   active: () => boolean;
+  /** The world finished loading; no command reaches it before. */
+  worldReady: () => boolean;
   sampleAtPlayerTick: NonNullable<SessionControls['sampleAtPlayerTick']>;
   replaying: () => boolean;
   replaySample: () => ReplayControlSample | undefined;
@@ -123,11 +185,7 @@ export interface CommandRouterPorts {
   continueAction: () => void;
   stopAction: () => void;
   gestures: ReplayGesturePorts;
-  /** Temporary until the input-command gate moves into the router (4b-4); play.ts owns it. */
-  dispatchInputCommand: (
-    command: { action: ReplayAction['action']; phase: ReplayAction['phase']; at: number },
-    fromReplay: true,
-  ) => void;
+  liveGestures: LiveGesturePorts;
 }
 
 export interface CommandRouter {
@@ -141,10 +199,13 @@ export interface CommandRouter {
   itemThrowFlight: (item: Item, hand: HandSide, distanceMetres: number) => ItemFlight;
   applyScreenCommand: (payload: ReplayActionPayload) => string | undefined;
   dispatchReplayAction: (action: ReplayAction, sample: ReplayControlSample) => void;
+  /** A live command, gated and recorded; a replay passes fromReplay so it is not recorded again. */
+  dispatchInputCommand: (command: InputCommand, fromReplay?: boolean) => void;
+  requestStanceAction: (action: StanceReplayAction) => void;
 }
 
 export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
-  const { controls, registry, presentation, gestures } = ports;
+  const { controls, registry, presentation, gestures, liveGestures } = ports;
   const lines = actionText(registry);
   const firearmTrigger = new FirearmTrigger();
   let automaticFireUid: number | undefined;
@@ -394,6 +455,184 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     return undefined;
   };
 
+  // ---- live input commands ----
+
+  const withUnlockedInput = (action: () => void): void => {
+    if (!(ports.replaySample()?.inputLocked ?? ports.session().sim.compression.locksInput)) {
+      action();
+    }
+  };
+  const requestStanceAction = (action: StanceReplayAction): void => {
+    withUnlockedInput(() => {
+      if (!ports.replaying()) {
+        ports.recorder()?.queueAction(action, 'down', ports.inputContext());
+      }
+      controls.requestStanceToggle(action === 'player.crouch-toggle' ? 'crouch' : 'prone');
+    });
+  };
+  const stopHandling = (): void => {
+    const session = ports.session();
+    controls.reload.cancel();
+    session.queue.cancel();
+    if (session.sim.actions.job || session.rest.action || session.sim.compression.active) {
+      ports.stopAction();
+    }
+  };
+  const assignQuickbarIfUnlocked = (slot: number | undefined, at: number): void => {
+    if (slot !== undefined && !ports.session().sim.compression.locksInput) {
+      liveGestures.quickbar.keyDown(slot, at);
+    }
+  };
+  const gameplayCommand = (action: string, at: number, slot: number | undefined): void => {
+    if (!freeLookAllowsCommand(controls.freeLooking, action)) {
+      return;
+    }
+    switch (action) {
+      case 'stance.ready':
+        controls.rightMouseHeld = true;
+        break;
+      case 'aim.ads-toggle':
+        controls.toggleAimingDownSights(ports.replaying());
+        break;
+      case 'view.free-look':
+        controls.startFreeLook();
+        break;
+      case 'movement.walk-toggle':
+        controls.walking = toggleWalking(
+          controls.walking,
+          ports.replaying() ? undefined : ports.recorder(),
+          ports.inputContext(),
+        );
+        break;
+      case 'player.crouch-toggle':
+        withUnlockedInput(() => liveGestures.crouchProne.keyDown(action, at));
+        break;
+      case 'player.throw':
+        withUnlockedInput(() => liveGestures.throwStance.keyDown(action, at));
+        break;
+      case 'light.worn-toggle':
+        withUnlockedInput(() => liveGestures.wornLight.keyDown(action, at));
+        break;
+      case 'hand.use-off':
+        if (!ports.replaying()) {
+          controls.useOff();
+        }
+        break;
+      case 'firearm.reload':
+        controls.reload.keyDown(at, gestures.reloadBinding());
+        break;
+      case 'world.interact':
+        withUnlockedInput(() => liveGestures.interact.keyDown(action, at));
+        break;
+      case 'craft.continue':
+        if (ports.session().crafting.currentUid !== undefined) {
+          ports.dispatchScreenCommand({ kind: 'craft.continue' });
+        }
+        break;
+      case 'handling.stop':
+        stopHandling();
+        break;
+      default:
+        carryCommand(action);
+        break;
+    }
+    assignQuickbarIfUnlocked(slot, at);
+  };
+  const carryCommand = (action: string): void => {
+    const kind = CarryCommands[action];
+    const reason = kind && ports.dispatchScreenCommand({ kind });
+    if (reason) {
+      presentation.refusal(reason, ports.sim().time);
+    }
+  };
+  const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
+    if (action === 'stance.ready') {
+      controls.rightMouseHeld = false;
+      controls.aimingDownSights = false;
+    }
+    if (action === 'firearm.reload') {
+      controls.reload.keyUp(at);
+    }
+    if (action === 'world.interact') {
+      liveGestures.interact.keyUp(action, at);
+    }
+    if (action === 'player.crouch-toggle') {
+      liveGestures.crouchProne.keyUp(action, at);
+    }
+    if (action === 'player.throw') {
+      liveGestures.throwStance.keyUp(action, at);
+    }
+    if (action === 'light.worn-toggle') {
+      liveGestures.wornLight.keyUp(action, at);
+    }
+    if (slot !== undefined) {
+      liveGestures.quickbar.keyUp(slot, at);
+    }
+  };
+  const rejectRefusedInput = (): boolean => {
+    const refusal = ports.sim().body.actionRefusal;
+    if (!refusal) {
+      return false;
+    }
+    liveGestures.cancelHeld();
+    presentation.refusal(refusal, ports.sim().time);
+    return true;
+  };
+  const releaseInputCommand = (action: string, at: number, slot: number | undefined): void => {
+    if (presentation.hintCommand(action, 'up', at)) {
+      return;
+    }
+    if (ports.sim().body.actionRefusal) {
+      liveGestures.cancelHeld();
+      return;
+    }
+    releaseCommand(action, at, slot);
+  };
+  const dispatchPressCommand = (action: string, at: number, slot: number | undefined): void => {
+    presentation.locomotionPressed(action);
+    ports.session().sim.actions.cancelWaitForMovement(action);
+    if (action === 'ui.main-menu-toggle') {
+      presentation.modalCommand(action);
+      return;
+    }
+    if (presentation.debugCommand(action, at)) {
+      return;
+    }
+    if (rejectRefusedInput()) {
+      return;
+    }
+    if (presentation.hintCommand(action, 'down', at)) {
+      return;
+    }
+    if (ports.session().sim.dead) {
+      return;
+    }
+    if (!presentation.modalCommand(action)) {
+      gameplayCommand(action, at, slot);
+    }
+  };
+  const dispatchInputCommand = ({ action, phase, at }: InputCommand, fromReplay = false): void => {
+    if (!ports.worldReady() || (ports.replaying() && !fromReplay) || !presentation.spectatorAllows(action)) {
+      return;
+    }
+    const context = ports.inputContext();
+    const payloadBackedScreenAction = isPayloadBackedScreenAction(context, action);
+    // Gameplay records this press after toggling saved state; recording it here too duplicates the live press.
+    const walkToggleHandledByGameplay = action === 'movement.walk-toggle' && phase === 'down';
+    if (!(fromReplay || isGestureAction(action) || payloadBackedScreenAction || walkToggleHandledByGameplay)) {
+      ports.recorder()?.queueAction(action, phase, context);
+    }
+    const slot = quickbarSlotFor(action);
+    if (context === 'inventory' && presentation.screenInputCommand({ action, phase, at })) {
+      return;
+    }
+    if (phase === 'up') {
+      releaseInputCommand(action, at, slot);
+      return;
+    }
+    dispatchPressCommand(action, at, slot);
+  };
+
   // ---- replayed and screen commands ----
 
   /** Built at the first command, once the session exists. */
@@ -513,7 +752,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     return true;
   };
   const dispatchReplayGesture = (action: ReplayAction): boolean => {
-    if (dispatchReplayStanceAction(action.action, gestures.requestStanceAction)) {
+    if (dispatchReplayStanceAction(action.action, requestStanceAction)) {
       return true;
     }
     switch (action.action) {
@@ -558,7 +797,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     if (dispatchReplayGesture(action)) {
       return;
     }
-    ports.dispatchInputCommand({ action: action.action, phase: action.phase, at: performance.now() }, true);
+    dispatchInputCommand({ action: action.action, phase: action.phase, at: performance.now() }, true);
   };
 
   // ---- player tick ----
@@ -662,5 +901,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     itemThrowFlight,
     applyScreenCommand,
     dispatchReplayAction,
+    dispatchInputCommand,
+    requestStanceAction,
   };
 }
