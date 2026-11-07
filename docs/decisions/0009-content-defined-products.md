@@ -248,6 +248,11 @@ splits into `skelly.*` mods in one refactor. The runtime package is `packages/en
 up that name and is `packages/construct`, `@skelly/construct`; the reasons for that name
 are in `packages/construct/README.md`, "Name".
 
+Runtime code (`packages/deadvox/src/core`, `packages/deadvox/src/vehicles`,
+`packages/deadvox/src/game` and the shared libraries it follows) never imports presentation, render or UI code, not even for
+types, because the presentation side moves out of the runtime package whole. See
+`packages/deadvox/tools/runtimeClosure.ts`, `STAGE_ONE_POLICY`.
+
 The #1532 gate is closure or merge of every PR in its frozen in-flight set: #1531,
 #1529, #1528, #1527, #1526, #1524, #1520, #1509, #1503, #1496, #1493, #1488, #1477,
 #1403 and #1369. The framework refactor's own single PR is allowed under the freeze:
