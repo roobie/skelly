@@ -31,15 +31,7 @@ import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import type { MeleeProfile } from '../core/meleePose.ts';
 import { countText } from '../core/numberText.ts';
-import {
-  doorOptions,
-  doorPlan,
-  dropTarget,
-  heldDoorBar,
-  pocketGroundItem,
-  toHands,
-  wieldOrPocket,
-} from '../core/options.ts';
+import { doorOptions, doorPlan, dropTarget, heldDoorBar } from '../core/options.ts';
 import { playerAdsPose } from '../core/playerAdsPose.ts';
 import { playerEyePosition, playerHeldSeatFrame, playerLookPose } from '../core/playerLookPose.ts';
 import { pryPlan } from '../core/prying.ts';
@@ -121,7 +113,7 @@ import { openingTargetForHand } from './canOpening.ts';
 import { columnArrival } from './columnArrival.ts';
 import { createCommandRouter } from './commandRouter.ts';
 import { continueActionResumesJob } from './continueAction.ts';
-import { CrouchProneInput, dispatchReplayStanceAction, type StanceReplayAction } from './crouchProneInput.ts';
+import { CrouchProneInput, type StanceReplayAction } from './crouchProneInput.ts';
 import { DebugGunPose } from './debugGunPose.ts';
 import type {
   DebugHooks,
@@ -158,7 +150,7 @@ import {
 } from './inputReplay.ts';
 import { createReplayPlayStateBinding, toggleWalking } from './inputReplayActions.ts';
 import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample } from './inputReplayDriver.ts';
-import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
+import { InputReplayPlayer } from './inputReplayPlayer.ts';
 import type { ItemAction } from './itemActions.ts';
 import { registerLayoutVehicles } from './layoutVehicles.ts';
 import {
@@ -178,12 +170,11 @@ import { createAttemptRecording, type PlaytestObserver } from './playtestObserve
 import { createSnapshotHistory, downloadFile, type HandBackFile, replayFile } from './playtestTools.ts';
 import { PressHoldInput } from './pressHoldInput.ts';
 import { ignitionTargetForHand, primaryMeleeAction, selectPrimaryAction } from './primaryAction.ts';
-import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
 import { stopReadingOnClose as stopReadingPageOnClose } from './readingClose.ts';
 import { RELOAD_GESTURE_MS, type ReloadBinding, reloadTarget } from './reloadInput.ts';
-import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
+import type { ReplayActionPayload } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
@@ -301,7 +292,6 @@ const guardDebugErrorFrame = (
     return frame(now);
   };
 };
-const QUICKBAR_ACTION = /^quickbar\.(tap|hold)\.(\d+)$/;
 const PIN_LINES: Readonly<Record<PinState, string>> = {
   in: 'Pin: in',
   pulled: 'Pin: pulled',
@@ -832,9 +822,17 @@ export const startPlay = (
   const router = createCommandRouter({
     controls: input.controls,
     registry,
+    session: () => session,
     inventory: () => inventory,
     sim: () => sim,
-    presentation: { refusal: (reason, atSimSeconds) => showRefusal(reason, atSimSeconds) },
+    presentation: {
+      refusal: (reason, atSimSeconds) => showRefusal(reason, atSimSeconds),
+      closeInventoryScreen: () => closeInventoryScreen(),
+      syncMenuState: () => syncMenuState(),
+      openFurnitureChoices: (entity, actions) => furnitureActionSelection.open(entity, actions),
+      beginSearch: (entity) => playtestObserver?.beginSearch(entity, nameOf(entity)),
+      weaponInspected: (item) => guide?.weapons.inspected(item, registry),
+    },
     active: () => worldLoading.ready && (Boolean(options.replay) || (input.locked && !input.menuPointer)),
     sampleAtPlayerTick: samplePlayerInput,
     replaySample: () => replaySample,
@@ -849,8 +847,9 @@ export const startPlay = (
     sprinting: () => session.sprinting,
     throwingStance: () => throwingStance,
     beginItemThrow,
-    // Temporary until the item-throw path moves into the router (4b-3).
+    // Temporary until the item-throw path moves into the router.
     releaseItemThrow,
+    throwRecordedItem,
     performHandUse: (hand) => performHandUse(hand),
     advanceHeldStrip: (uid, time, held) => magazines.advanceHeldStrip(uid, time, held),
     selectedMagazineAction: (item) => survival.selectedItemAction(item)?.magazine,
@@ -858,6 +857,25 @@ export const startPlay = (
     fire: (shot) => firearms.fire(shot),
     fireReason: (uid) => firearms.fireReason(uid),
     descending: () => keyboardInput.held('noclip.descend'),
+    actOnWork: (uid, operation, choices) => actOnWork(uid, operation, choices),
+    enqueueDoorBar: (entity, barring) => enqueueDoorBar(entity, barring),
+    // Temporary until furniture use moves into the router.
+    useTarget,
+    furnitureActions: (entity) => furnitureActions(entity),
+    continueAction: () => continueAction(),
+    stopAction: () => stopAction(),
+    gestures: {
+      requestStanceAction: (action) => requestStanceAction(action),
+      reloadBinding: () => reloadBinding(),
+      toggleThrowingStance: () => toggleThrowingStance(),
+      dropHeldItemForThrowingStance: () => dropHeldItemForThrowingStance(),
+      toggleWornLights: () => toggleWornLights(),
+      useForwardButton: () => useForwardButton(),
+      quickbarTap: (slot) => quickbarTap(slot),
+      quickbarHold: (slot) => quickbarHold(slot),
+    },
+    // Temporary until the input-command gate moves into the router (4b-4).
+    dispatchInputCommand: (command, fromReplay) => dispatchInputCommand(command, fromReplay),
   });
   const session = createSession({
     registry,
@@ -1883,102 +1901,12 @@ export const startPlay = (
   };
   stopReadingOnClose = () => stopReadingPageOnClose(sim);
 
-  const replayCommandOwners: ReplayCommandOwners = {
-    pour: (sourceUid, receiverUid) => survival.pour(sourceUid, receiverUid),
-    charger: session.chargerControl,
-    power: session.powerControl,
-    inventory,
-    queue,
-    quickbar,
-    search: (uid) => {
-      const entity = entities.byUid(uid);
-      if (!entity) {
-        return lines.common.gone;
-      }
-      playtestObserver?.beginSearch(entity, nameOf(entity));
-      return search(entity);
-    },
-    inspect: (uid) => {
-      const item = inventory.itemByUid(uid);
-      if (item) {
-        guide?.weapons.inspected(item, registry);
-      }
-    },
-    work: actOnWork,
-    vehicleWork: (work, vehicleId, target, itemUid) => session.beginVehicleWork(work, vehicleId, target, itemUid),
-    fitAttachment: (firearmUid, slotId, attachmentUid) =>
-      session.firearmAttachments.fit(firearmUid, slotId, attachmentUid),
-    removeAttachment: (firearmUid, slotId) => session.firearmAttachments.remove(firearmUid, slotId),
-    loadBattery: (lightUid, batteryUid) => survival.loadBattery(lightUid, batteryUid),
-    toHands: (uid, feetPosition) => {
-      const item = inventory.itemByUid(uid);
-      return item ? toHands(inventory, queue, item, feetPosition) : lines.common.gone;
-    },
-    wieldOrPocket: (uid, feetPosition) => {
-      const item = inventory.itemByUid(uid);
-      return item ? wieldOrPocket(inventory, queue, item, feetPosition) : lines.common.gone;
-    },
-    activate: (uid) => {
-      const item = inventory.itemByUid(uid);
-      return item ? survival.activateHeld(item) : lines.common.gone;
-    },
-    pickup: pickupGroundItem,
-    interact: interactFurniture,
-    lift: (uid, floorLocked) => {
-      const entity = entities.byUid(uid);
-      return entity?.bar ? enqueueDoorBar(entity, false) : session.liftFurniture(uid, floorLocked);
-    },
-    useFurniture: (uid): string | undefined => {
-      const entity = entities.byUid(uid);
-      if (!entity) {
-        return 'It is no longer there';
-      }
-      useTarget(entity);
-      return undefined;
-    },
-    slide: (uid, way) => session.slideFurniture(uid, way),
-    place: (pos) => session.placeFurniture(pos),
-    turn: () => session.turnFurniture(),
-    tip: () => session.tipFurniture(),
-    clearDownedBody: (id, way) => session.clearDownedBody(id, way),
-    craftStart: (recipeId, preference, sources) => session.crafting.start(recipeId, preference, sources),
-    craftRepairEntity: (recipeId, entityUid, preference, sources) =>
-      session.crafting.repairEntity(recipeId, entityUid, preference, sources),
-    craftContinue: () => {
-      continueAction();
-    },
-    craftStop: () => {
-      stopAction();
-    },
-    wait: () => sim.actions.startWait(),
-    setWakeGameHour: (gameHour) => {
-      rest.wakeGameHour = gameHour;
-    },
-    cancelItemThrow,
-    throwItem: throwRecordedItem,
-  };
-  const applyScreenCommand = (payload: ReplayActionPayload): string | undefined => {
-    const reason = applyReplayActionPayload(payload, replayCommandOwners);
-    if (reason) {
-      return reason;
-    }
-    if (
-      payload.kind === 'craft.start' ||
-      payload.kind === 'craft.repair-entity' ||
-      payload.kind === 'action.wait' ||
-      payload.kind === 'vehicle.work'
-    ) {
-      closeInventoryScreen();
-      syncMenuState();
-    }
-    return undefined;
-  };
   const dispatchScreenCommandWithCompletion = createScreenCommandDispatcher({
     isReplaying: () => replayPlayer !== undefined,
     inputRecorder: () => inputRecording.recorder,
     inputContext: () => inputContext(),
     pendingPlayerTickActions,
-    apply: applyScreenCommand,
+    apply: router.applyScreenCommand,
     inventory,
     notice: hooks.notice,
     refusal: (reason) => showRefusal(reason, sim.time),
@@ -2203,7 +2131,7 @@ export const startPlay = (
     input.controls.cancel(preservePointer);
     screen.cancelInput();
     cancelBackquoteGesture(backquoteGesture);
-    cancelItemThrow();
+    router.cancelItemThrow();
     throwStanceInput.cancel();
     crouchProneInput.cancel();
     quickbarInput.cancel();
@@ -2392,7 +2320,7 @@ export const startPlay = (
     input.controls.reload.cancel();
     crouchProneInput.cancel();
     throwStanceInput.cancel();
-    cancelItemThrow();
+    router.cancelItemThrow();
     quickbarInput.cancel();
     interactInput.cancel();
     wornLightInput.cancel();
@@ -2463,66 +2391,7 @@ export const startPlay = (
     dispatchPressCommand(action, at, slot);
   };
   keyboardInput.command = (command) => dispatchInputCommand(command);
-  const dispatchReplayQuickbar = (action: ReplayAction): boolean => {
-    const match = QUICKBAR_ACTION.exec(action.action);
-    if (!match) {
-      return false;
-    }
-    const index = Number(match[2]);
-    if (index < 1 || index > QUICKBAR_SLOTS) {
-      return false;
-    }
-    (match[1] === 'tap' ? quickbarTap : quickbarHold)(index - 1);
-    return true;
-  };
-  const dispatchReplayGesture = (action: ReplayAction): boolean => {
-    if (dispatchReplayStanceAction(action.action, requestStanceAction)) {
-      return true;
-    }
-    switch (action.action) {
-      case 'firearm.load':
-        reloadBinding()?.load();
-        return true;
-      case 'firearm.rack':
-        reloadBinding()?.rack();
-        return true;
-      case 'firearm.remove':
-        reloadBinding()?.remove();
-        return true;
-      case 'throw.stance.toggle':
-        toggleThrowingStance();
-        return true;
-      case 'item.drop':
-        dropHeldItemForThrowingStance();
-        return true;
-      case 'item.throw.cancel':
-        cancelItemThrow();
-        return true;
-      case 'light.worn-toggle':
-        toggleWornLights();
-        return true;
-      case 'hand.use-forward':
-        useForwardButton();
-        return true;
-      default:
-        return dispatchReplayQuickbar(action);
-    }
-  };
-  dispatchReplayAction = (action, sample) => {
-    replaySample = sample;
-    applyReplayLook(input.controls, sample);
-    if (action.payload) {
-      const reason = applyScreenCommand(action.payload);
-      if (reason) {
-        showRefusal(reason, sim.time);
-      }
-      return;
-    }
-    if (dispatchReplayGesture(action)) {
-      return;
-    }
-    dispatchInputCommand({ action: action.action, phase: action.phase, at: performance.now() }, true);
-  };
+  ({ dispatchReplayAction } = router);
   keyboardInput.install();
   keyboardInput.sync();
   const cycleFurnitureAction = (deltaY: number): boolean => {
@@ -2822,33 +2691,6 @@ export const startPlay = (
     }
   }
 
-  function pickupGroundItem(uid: number, mode: 'pocket' | 'wield', feetPosition: Vec3): string | undefined {
-    const item = inventory.itemByUid(uid);
-    if (!item) {
-      return lines.common.gone;
-    }
-    return mode === 'wield' ? toHands(inventory, queue, item, feetPosition) : pocketGroundItem(inventory, queue, item);
-  }
-
-  function interactFurniture(uid: number, alternatives?: true): string | undefined {
-    const entity = entities.byUid(uid);
-    if (!entity) {
-      return lines.common.gone;
-    }
-    if (session.isObjective(entity)) {
-      return session.activateGoal(entity);
-    }
-    if (compression.locksInput && rest.action?.furnitureUid !== entity.uid) {
-      return undefined;
-    }
-    if (alternatives && furnitureActions(entity).length > 0) {
-      furnitureActionSelection.open(entity, furnitureActions(entity));
-    } else {
-      useTarget(entity);
-    }
-    return undefined;
-  }
-
   function toggleThrowingStance(): void {
     if (input.controls.freeLooking) {
       return;
@@ -2859,7 +2701,7 @@ export const startPlay = (
       inputRecording.recorder?.queueAction('throw.stance.toggle', 'down', inputContext(), { inSnapshot: true });
     }
     if (!throwingStance) {
-      cancelItemThrow();
+      router.cancelItemThrow();
     }
     syncThrowingStance();
   }
@@ -2867,7 +2709,7 @@ export const startPlay = (
   function syncThrowingStance(): void {
     if (throwingStance && !inventory.hands.right && !inventory.hands.left) {
       throwingStance = false;
-      cancelItemThrow();
+      router.cancelItemThrow();
     }
   }
 
@@ -2944,7 +2786,7 @@ export const startPlay = (
       return;
     }
     if (session.throwCharge.itemUid === item.uid) {
-      cancelItemThrow();
+      router.cancelItemThrow();
     }
     syncThrowingStance();
   }
@@ -2969,7 +2811,7 @@ export const startPlay = (
   /** A replay charges as the live game did, so a climber holds still alike, but throws from the recording. */
   function releaseItemThrow(): void {
     if (input.controls.freeLooking) {
-      cancelItemThrow();
+      router.cancelItemThrow();
       return;
     }
     if (!session.throwCharge.active) {
@@ -3019,17 +2861,13 @@ export const startPlay = (
     }
   }
 
-  function cancelItemThrow(): void {
-    session.throwCharge.cancel();
-  }
-
   function advancePendingItemThrow(): void {
     const charge = session.throwCharge;
     if (!charge.active || charge.startedAt !== undefined) {
       return;
     }
     if (!(replaySample?.intent.useDominantHeld ?? input.controls.dominantUseHeld)) {
-      cancelItemThrow();
+      router.cancelItemThrow();
       return;
     }
     if (sim.paused || queue.busy || firearms.busy) {
@@ -3823,7 +3661,7 @@ export const startPlay = (
 
   const cancelItemThrowOnRightClick = (): void => {
     if (sim.body.actionRefusal && session.throwCharge.active) {
-      cancelItemThrow();
+      router.cancelItemThrow();
       return;
     }
     if (!replayPlayer && input.controls.consumeRightMousePressed() && session.throwCharge.active) {
@@ -3894,7 +3732,7 @@ export const startPlay = (
     const actionRefusal = Boolean(sim.body.actionRefusal);
     const { freeLooking } = input.controls;
     if (freeLooking) {
-      cancelItemThrow();
+      router.cancelItemThrow();
       throwStanceInput.cancel();
     }
     if (actionRefusal || freeLooking) {

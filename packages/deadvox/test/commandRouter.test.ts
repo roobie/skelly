@@ -34,12 +34,23 @@ describe('command router', () => {
     // The router reads only the clock and the body's action refusal.
     const sim = { time: 0, body: { actionRefusal: undefined } } as unknown as Pick<Simulation, 'time' | 'body'>;
     const shots: number[] = [];
+    const unused = (): never => {
+      throw new Error('The trigger path does not reach this port');
+    };
     const router = createCommandRouter({
       controls: new PlayerControls({ playing: () => true, viewerInputAllowed: () => true, held: () => false }),
       registry,
+      session: unused,
       inventory: () => inventory,
       sim: () => sim,
-      presentation: { refusal: () => undefined },
+      presentation: {
+        refusal: () => undefined,
+        closeInventoryScreen: unused,
+        syncMenuState: unused,
+        openFurnitureChoices: unused,
+        beginSearch: unused,
+        weaponInspected: unused,
+      },
       active: () => true,
       sampleAtPlayerTick: (_tick, live) => live,
       replaySample: () => undefined,
@@ -53,6 +64,7 @@ describe('command router', () => {
       throwingStance: () => false,
       beginItemThrow: () => undefined,
       releaseItemThrow: () => undefined,
+      throwRecordedItem: unused,
       performHandUse: () => undefined,
       advanceHeldStrip: () => undefined,
       selectedMagazineAction: () => undefined,
@@ -63,6 +75,23 @@ describe('command router', () => {
       },
       fireReason: () => undefined,
       descending: () => false,
+      actOnWork: unused,
+      enqueueDoorBar: unused,
+      useTarget: unused,
+      furnitureActions: unused,
+      continueAction: unused,
+      stopAction: unused,
+      gestures: {
+        requestStanceAction: unused,
+        reloadBinding: unused,
+        toggleThrowingStance: unused,
+        dropHeldItemForThrowingStance: unused,
+        toggleWornLights: unused,
+        useForwardButton: unused,
+        quickbarTap: unused,
+        quickbarHold: unused,
+      },
+      dispatchInputCommand: unused,
     });
     const interval = 1 / roundsPerSimSecond;
     router.controls.heldDominantUse!(1, true, true);
