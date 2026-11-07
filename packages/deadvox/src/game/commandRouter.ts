@@ -1,44 +1,64 @@
 // Routes the player's controls into the simulation: the session controls and trigger at the player tick, replayed
-// actions and screen commands.
+// actions, screen commands, furniture use and the item throw.
 
 import { actionText } from '../core/actionText.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import type { Registry } from '../core/content.ts';
+import { CHUNK, type Vec3 } from '../core/coords.ts';
+import { coreMessage } from '../core/coreText.ts';
 import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
+import { throwStanceWorldOffset } from '../core/heldPose.ts';
+import type { InputContext } from '../core/inputActions.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
+import { flightForItem, hasMetThrowMinimumHold, type ItemFlight, throwDistanceForItem } from '../core/itemThrow.ts';
+import type { RestKind } from '../core/longAction.ts';
 import { pocketGroundItem, toHands, wieldOrPocket } from '../core/options.ts';
 import type { Simulation } from '../core/sim.ts';
 import { dispatchReplayStanceAction, type StanceReplayAction } from './crouchProneInput.ts';
 import { type FirearmShotInput, firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { freeLookAllowsUse } from './freeLook.ts';
-import type { ReplayAction, ReplayControlSample } from './inputReplay.ts';
+import type { InputReplayRecorder, ReplayAction, ReplayControlSample } from './inputReplay.ts';
 import { routeDominantUse } from './inputReplayActions.ts';
 import { applyReplayLook } from './inputReplayPlayer.ts';
 import type { ItemAction } from './itemActions.ts';
 import type { MoveIntent } from './player.ts';
 import { adjustLookPitch, type PlayerControls } from './playerControls.ts';
+import { applyToHeldItem, type PlayerTickActions } from './playerTickActions.ts';
 import { selectPrimaryAction } from './primaryAction.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import type { ReloadBinding } from './reloadInput.ts';
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
+import { restKindForFurniture } from './rest.ts';
 import type { Session, SessionControls } from './session.ts';
 
 const QUICKBAR_ACTION = /^quickbar\.(tap|hold)\.(\d+)$/;
+
+/** A thrown item's arc, shown from launch to landing; the item already lies where it lands. */
+interface ItemThrowLaunch {
+  item: Item;
+  itemUid: number;
+  origin: Vec3;
+  startedAtSimSeconds: number;
+  landingAt: number;
+  flight: ItemFlight;
+}
 
 /** Where routed effects reach the player; called in place, in the order the routing reaches them. */
 interface CommandRouterPresentation {
   refusal: (reason: string, atSimSeconds: number) => void;
   closeInventoryScreen: () => void;
   syncMenuState: () => void;
+  openInventory: (tab: 'items') => void;
   /** Opens the movable piece's action list. */
   openFurnitureChoices: (entity: BlockEntity, actions: ItemAction[]) => void;
   /** Tells a playtest observer, if one watches, that a search began. */
   beginSearch: (entity: BlockEntity) => void;
   /** Tells the tutorial guide, if one runs, that a weapon was inspected. */
   weaponInspected: (item: Item) => void;
+  throwVisual: (launch: ItemThrowLaunch, inventory: Inventory) => void;
 }
 
 /** Live gestures a replay re-dispatches by their recorded action; their owners still live in play.ts. */
@@ -65,8 +85,14 @@ export interface CommandRouterPorts {
   /** Input reaches the world: loading finished and the pointer is in play, or a replay drives it. */
   active: () => boolean;
   sampleAtPlayerTick: NonNullable<SessionControls['sampleAtPlayerTick']>;
+  replaying: () => boolean;
   replaySample: () => ReplayControlSample | undefined;
   setReplaySample: (sample: ReplayControlSample) => void;
+  recorder: () => Pick<InputReplayRecorder, 'queueAction'> | undefined;
+  inputContext: () => InputContext;
+  pendingPlayerTickActions: Pick<PlayerTickActions, 'enqueue'>;
+  /** Applies a screen command now, or records it and applies it at the next player tick. */
+  dispatchScreenCommand: (payload: ReplayActionPayload) => string | undefined;
   firearmReady: (uid: number) => boolean;
   aimingDownSights: () => boolean;
   blocking: () => boolean;
@@ -75,11 +101,13 @@ export interface CommandRouterPorts {
   handlingBusy: () => boolean;
   sprinting: () => boolean;
   throwingStance: () => boolean;
+  syncThrowingStance: () => void;
   beginItemThrow: () => void;
-  /** Temporary until the item-throw path moves into the router; play.ts owns the release. */
-  releaseItemThrow: () => void;
-  /** Temporary until the item-throw path moves into the router; play.ts owns the throw. */
-  throwRecordedItem: (itemUid: number, hand: HandSide, distanceMetres: number) => void;
+  itemThrowTuning: Parameters<typeof throwDistanceForItem>[2];
+  throwMinimumHoldSimSeconds: number;
+  scale: { readonly blockSize: number; readonly minCy: number };
+  eye: () => Vec3;
+  lookDir: () => Vec3;
   performHandUse: (hand: 'right' | 'left') => void;
   advanceHeldStrip: (uid: number | undefined, atSimSeconds: number, held: boolean) => string | undefined;
   selectedMagazineAction: (item: Item) => string | undefined;
@@ -89,8 +117,8 @@ export interface CommandRouterPorts {
   descending: () => boolean;
   actOnWork: (uid: number, operation: WorkOperation, choices?: RecoveryChoices) => string | undefined;
   enqueueDoorBar: (entity: BlockEntity, barring: boolean) => string | undefined;
-  /** Temporary until furniture use moves into the router; play.ts owns it. */
-  useTarget: (entity: BlockEntity) => void;
+  toggleDoor: (entity: BlockEntity) => void;
+  toggleRestFromTarget: (kind: RestKind, entity: BlockEntity) => void;
   furnitureActions: (entity: BlockEntity) => ItemAction[];
   continueAction: () => void;
   stopAction: () => void;
@@ -109,6 +137,8 @@ export interface CommandRouter {
   /** Ends a held automatic burst, as leaving the throwing stance does. */
   clearAutomaticFire: () => void;
   cancelItemThrow: () => void;
+  useTarget: (entity: BlockEntity) => void;
+  itemThrowFlight: (item: Item, hand: HandSide, distanceMetres: number) => ItemFlight;
   applyScreenCommand: (payload: ReplayActionPayload) => string | undefined;
   dispatchReplayAction: (action: ReplayAction, sample: ReplayControlSample) => void;
 }
@@ -200,10 +230,150 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     }
   };
 
+  // ---- item throw ----
+
   const cancelItemThrow = (): void => {
     ports.session().throwCharge.cancel();
   };
-  const { useTarget } = ports;
+  /** A replay charges as the live game did, so a climber holds still alike, but throws from the recording. */
+  function releaseItemThrow(): void {
+    if (controls.freeLooking) {
+      cancelItemThrow();
+      return;
+    }
+    const session = ports.session();
+    if (!session.throwCharge.active) {
+      return;
+    }
+    if (ports.replaying()) {
+      session.throwCharge.cancel();
+    } else {
+      finishItemThrow();
+    }
+  }
+  function finishItemThrow(): void {
+    const released = ports.session().throwCharge.release(ports.sim().time);
+    if (!released) {
+      return;
+    }
+    if (controls.consumeRightMousePressed() || controls.rightMouseHeld) {
+      ports.dispatchScreenCommand({ kind: 'item.throw.cancel' });
+      controls.suppressRightMouseUntilRelease();
+      return;
+    }
+    const { itemUid: uid, hand, heldSimSeconds } = released;
+    if (!hasMetThrowMinimumHold(heldSimSeconds, ports.throwMinimumHoldSimSeconds)) {
+      return;
+    }
+    const inventory = ports.inventory();
+    const item = inventory.itemByUid(uid);
+    if (!(item && inventory.hands[hand] === item)) {
+      return;
+    }
+    const distance = throwDistanceForItem(item, registry, ports.itemThrowTuning, heldSimSeconds);
+    if (!ports.replaying()) {
+      ports.recorder()?.queueAction('item.throw', 'down', ports.inputContext(), {
+        payload: {
+          kind: 'item.throw',
+          itemUid: uid,
+          hand,
+          distance,
+        },
+      });
+      ports.pendingPlayerTickActions.enqueue(() => {
+        applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
+          throwHeldItem(heldItem, hand, distance);
+          ports.syncThrowingStance();
+        });
+      });
+    }
+  }
+  function throwRecordedItem(itemUid: number, hand: HandSide, distanceMetres: number): void {
+    applyToHeldItem(ports.inventory().hands, hand, itemUid, (item) => {
+      throwHeldItem(item, hand, distanceMetres);
+      ports.syncThrowingStance();
+    });
+  }
+  function itemThrowFlight(item: Item, hand: HandSide, distanceMetres: number): ItemFlight {
+    const { itemThrowTuning, scale } = ports;
+    const s = scale.blockSize;
+    const fullStrength = throwDistanceForItem(item, registry, itemThrowTuning, itemThrowTuning.chargeSimSeconds);
+    const chargeProgress = fullStrength > 0 ? Math.max(0, Math.min(1, distanceMetres / fullStrength)) : 0;
+    const offset: Vec3 = ports.throwingStance()
+      ? throwStanceWorldOffset(hand, controls.yaw, controls.pitch, chargeProgress)
+      : [0, 0, 0];
+    const origin = ports.eye().map((value, axis) => value * s + offset[axis]!) as Vec3;
+    return flightForItem(item, registry, {
+      from: origin,
+      direction: ports.lookDir(),
+      distanceMetres,
+      blockSize: s,
+      minY: scale.minCy * CHUNK,
+      isSolid: ports.session().physicalSolid,
+    });
+  }
+  function throwHeldItem(item: Item, hand: HandSide, distanceMetres: number): void {
+    if (controls.freeLooking) {
+      return;
+    }
+    const inventory = ports.inventory();
+    if (inventory.hands[hand] !== item) {
+      return;
+    }
+    const flight = itemThrowFlight(item, hand, distanceMetres);
+    const origin = flight.points[0]!;
+    const target = flight.landing ? { kind: 'pile' as const, pos: flight.landing } : undefined;
+    if (!target) {
+      presentation.refusal(coreMessage(registry, 'noLanding'), ports.sim().time);
+      return;
+    }
+    const startedAtSimSeconds = ports.sim().time;
+    const landingAt = startedAtSimSeconds + flight.durationSimSeconds;
+    const landed = ports.session().throwCharge.place(item, hand, target);
+    if (!landed.landed) {
+      if (landed.reason) {
+        presentation.refusal(landed.reason, ports.sim().time);
+      }
+      return;
+    }
+    presentation.throwVisual(
+      { item, itemUid: landed.item.uid, origin, startedAtSimSeconds, landingAt, flight },
+      inventory,
+    );
+  }
+
+  // ---- furniture ----
+
+  function useTarget(entity: BlockEntity): void {
+    const session = ports.session();
+    const def = session.entities.defOf(entity);
+    if (def.door) {
+      ports.toggleDoor(entity);
+      return;
+    }
+    if (def.climbable) {
+      refusalReason(session.grabLadder(entity));
+      return;
+    }
+    if (def.readable) {
+      const reason = session.readFurniture(entity);
+      if (reason) {
+        presentation.refusal(reason, ports.sim().time);
+      }
+      return;
+    }
+    const kind = restKindForFurniture(def);
+    if (kind) {
+      ports.toggleRestFromTarget(kind, entity);
+      return;
+    }
+    if (!entity.pockets) {
+      return;
+    }
+    presentation.beginSearch(entity);
+    session.search(entity);
+    presentation.openInventory('items');
+  }
   const interactFurniture = (uid: number, alternatives?: true): string | undefined => {
     const session = ports.session();
     const entity = session.entities.byUid(uid);
@@ -310,7 +480,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
         rest.wakeGameHour = gameHour;
       },
       cancelItemThrow,
-      throwItem: ports.throwRecordedItem,
+      throwItem: throwRecordedItem,
     };
   };
   const applyScreenCommand = (payload: ReplayActionPayload): string | undefined => {
@@ -424,7 +594,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       if (ports.throwingStance()) {
         ports.advanceHeldStrip(undefined, atSimSeconds, false);
         if (!triggerHeld) {
-          ports.releaseItemThrow();
+          releaseItemThrow();
         }
         return;
       }
@@ -488,6 +658,8 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       automaticFireUid = undefined;
     },
     cancelItemThrow,
+    useTarget,
+    itemThrowFlight,
     applyScreenCommand,
     dispatchReplayAction,
   };

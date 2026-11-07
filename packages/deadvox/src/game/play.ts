@@ -13,20 +13,18 @@ import { claimed } from '../core/capabilities.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { CitySite } from '../core/citySite.ts';
 import { formatClock, nextTimeOfDay } from '../core/clock.ts';
-import { CHUNK, type Vec3 } from '../core/coords.ts';
-import { coreMessage } from '../core/coreText.ts';
+import type { Vec3 } from '../core/coords.ts';
 import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
 import { sightedFirearmModel } from '../core/firearmSight.ts';
-import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
+import { heldFirearmTransform } from '../core/heldPose.ts';
 import { type InputContext, inventoryTabForAction } from '../core/inputActions.ts';
 import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile } from '../core/inventory.ts';
 import { damageWord, defOf, type Item } from '../core/items.ts';
-import { flightForItem, hasMetThrowMinimumHold, throwDistanceForItem } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import type { MeleeProfile } from '../core/meleePose.ts';
@@ -164,7 +162,7 @@ import {
 import { routeModalCommand } from './modalCommand.ts';
 import { OpticZoom } from './opticZoom.ts';
 import { playerTuning } from './player.ts';
-import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
+import { PlayerTickActions } from './playerTickActions.ts';
 import { bleedingStatusRows } from './playStatus.ts';
 import { createAttemptRecording, type PlaytestObserver } from './playtestObserver.ts';
 import { createSnapshotHistory, downloadFile, type HandBackFile, replayFile } from './playtestTools.ts';
@@ -829,16 +827,23 @@ export const startPlay = (
       refusal: (reason, atSimSeconds) => showRefusal(reason, atSimSeconds),
       closeInventoryScreen: () => closeInventoryScreen(),
       syncMenuState: () => syncMenuState(),
+      openInventory: (tab) => openInventory(tab),
       openFurnitureChoices: (entity, actions) => furnitureActionSelection.open(entity, actions),
       beginSearch: (entity) => playtestObserver?.beginSearch(entity, nameOf(entity)),
       weaponInspected: (item) => guide?.weapons.inspected(item, registry),
+      throwVisual: (launch, owner) => itemThrows.spawn(launch, owner),
     },
     active: () => worldLoading.ready && (Boolean(options.replay) || (input.locked && !input.menuPointer)),
     sampleAtPlayerTick: samplePlayerInput,
+    replaying: () => replayPlayer !== undefined,
     replaySample: () => replaySample,
     setReplaySample: (sample) => {
       replaySample = sample;
     },
+    recorder: () => inputRecording.recorder,
+    inputContext: () => inputContext(),
+    pendingPlayerTickActions,
+    dispatchScreenCommand: (payload) => dispatchScreenCommand(payload),
     firearmReady: (uid) => isFirearmReady(uid),
     aimingDownSights: () => debugGunPose.aimingDownSights(input.controls.aimingDownSights) && isAimingDownSights(),
     blocking: () => shouldPlayerBlock(),
@@ -846,10 +851,13 @@ export const startPlay = (
     handlingBusy: () => queue.busy,
     sprinting: () => session.sprinting,
     throwingStance: () => throwingStance,
+    syncThrowingStance: () => syncThrowingStance(),
     beginItemThrow,
-    // Temporary until the item-throw path moves into the router.
-    releaseItemThrow,
-    throwRecordedItem,
+    itemThrowTuning,
+    throwMinimumHoldSimSeconds,
+    scale,
+    eye: () => eye(),
+    lookDir: () => lookDir(),
     performHandUse: (hand) => performHandUse(hand),
     advanceHeldStrip: (uid, time, held) => magazines.advanceHeldStrip(uid, time, held),
     selectedMagazineAction: (item) => survival.selectedItemAction(item)?.magazine,
@@ -859,8 +867,8 @@ export const startPlay = (
     descending: () => keyboardInput.held('noclip.descend'),
     actOnWork: (uid, operation, choices) => actOnWork(uid, operation, choices),
     enqueueDoorBar: (entity, barring) => enqueueDoorBar(entity, barring),
-    // Temporary until furniture use moves into the router.
-    useTarget,
+    toggleDoor: (entity) => toggleDoor(entity),
+    toggleRestFromTarget: (kind, entity) => toggleRestFromTarget(kind, entity),
     furnitureActions: (entity) => furnitureActions(entity),
     continueAction: () => continueAction(),
     stopAction: () => stopAction(),
@@ -1033,7 +1041,6 @@ export const startPlay = (
     pileDistance,
     entityDistance,
     nameOf,
-    search,
   } = session;
   const playHalted = { value: false };
   const opticZoom = new OpticZoom(registry);
@@ -2808,59 +2815,6 @@ export const startPlay = (
     }
   }
 
-  /** A replay charges as the live game did, so a climber holds still alike, but throws from the recording. */
-  function releaseItemThrow(): void {
-    if (input.controls.freeLooking) {
-      router.cancelItemThrow();
-      return;
-    }
-    if (!session.throwCharge.active) {
-      return;
-    }
-    if (replayPlayer) {
-      session.throwCharge.cancel();
-    } else {
-      finishItemThrow();
-    }
-  }
-
-  function finishItemThrow(): void {
-    const released = session.throwCharge.release(sim.time);
-    if (!released) {
-      return;
-    }
-    if (input.controls.consumeRightMousePressed() || input.controls.rightMouseHeld) {
-      dispatchScreenCommand({ kind: 'item.throw.cancel' });
-      input.controls.suppressRightMouseUntilRelease();
-      return;
-    }
-    const { itemUid: uid, hand, heldSimSeconds } = released;
-    if (!hasMetThrowMinimumHold(heldSimSeconds, throwMinimumHoldSimSeconds)) {
-      return;
-    }
-    const item = inventory.itemByUid(uid);
-    if (!(item && inventory.hands[hand] === item)) {
-      return;
-    }
-    const distance = throwDistanceForItem(item, registry, itemThrowTuning, heldSimSeconds);
-    if (!replayPlayer) {
-      inputRecording.recorder?.queueAction('item.throw', 'down', inputContext(), {
-        payload: {
-          kind: 'item.throw',
-          itemUid: uid,
-          hand,
-          distance,
-        },
-      });
-      pendingPlayerTickActions.enqueue(() => {
-        applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
-          throwHeldItem(heldItem, hand, distance);
-          syncThrowingStance();
-        });
-      });
-    }
-  }
-
   function advancePendingItemThrow(): void {
     const charge = session.throwCharge;
     if (!charge.active || charge.startedAt !== undefined) {
@@ -2880,92 +2834,12 @@ export const startPlay = (
     showNotice('');
   }
 
-  function throwRecordedItem(itemUid: number, hand: HandSide, distanceMetres: number): void {
-    applyToHeldItem(inventory.hands, hand, itemUid, (item) => {
-      throwHeldItem(item, hand, distanceMetres);
-      syncThrowingStance();
-    });
-  }
-
-  function itemThrowFlight(item: Item, hand: HandSide, distanceMetres: number) {
-    const fullStrength = throwDistanceForItem(item, registry, itemThrowTuning, itemThrowTuning.chargeSimSeconds);
-    const chargeProgress = fullStrength > 0 ? Math.max(0, Math.min(1, distanceMetres / fullStrength)) : 0;
-    const offset: Vec3 = throwingStance
-      ? throwStanceWorldOffset(hand, input.controls.yaw, input.controls.pitch, chargeProgress)
-      : [0, 0, 0];
-    const origin = eye().map((value, axis) => value * s + offset[axis]!) as Vec3;
-    return flightForItem(item, registry, {
-      from: origin,
-      direction: lookDir(),
-      distanceMetres,
-      blockSize: s,
-      minY: scale.minCy * CHUNK,
-      isSolid: session.physicalSolid,
-    });
-  }
-
-  function throwHeldItem(item: Item, hand: HandSide, distanceMetres: number): void {
-    if (input.controls.freeLooking) {
-      return;
-    }
-    if (inventory.hands[hand] !== item) {
-      return;
-    }
-    const flight = itemThrowFlight(item, hand, distanceMetres);
-    const origin = flight.points[0]!;
-    const target = flight.landing ? { kind: 'pile' as const, pos: flight.landing } : undefined;
-    if (!target) {
-      showRefusal(coreMessage(registry, 'noLanding'), sim.time);
-      return;
-    }
-    const startedAtSimSeconds = sim.time;
-    const landingAt = startedAtSimSeconds + flight.durationSimSeconds;
-    const landed = session.throwCharge.place(item, hand, target);
-    if (!landed.landed) {
-      if (landed.reason) {
-        showRefusal(landed.reason, sim.time);
-      }
-      return;
-    }
-    itemThrows.spawn({ item, itemUid: landed.item.uid, origin, startedAtSimSeconds, landingAt, flight }, inventory);
-  }
-
   function toggleRestFromTarget(kind: RestKind, entity: BlockEntity): void {
     const { action } = rest;
     if (action?.kind === kind && action.furnitureUid === entity.uid && !rest.canStop) {
       return;
     }
     toggleRest(kind, entity);
-  }
-
-  function useTarget(entity: BlockEntity): void {
-    const def = entities.defOf(entity);
-    if (def.door) {
-      toggleDoor(entity);
-      return;
-    }
-    if (def.climbable) {
-      refusalReason(session.grabLadder(entity));
-      return;
-    }
-    if (def.readable) {
-      const reason = session.readFurniture(entity);
-      if (reason) {
-        showRefusal(reason, sim.time);
-      }
-      return;
-    }
-    const kind = restKindForFurniture(def);
-    if (kind) {
-      toggleRestFromTarget(kind, entity);
-      return;
-    }
-    if (!entity.pockets) {
-      return;
-    }
-    playtestObserver?.beginSearch(entity, nameOf(entity));
-    search(entity);
-    openInventory('items');
   }
 
   inputTarget.addEventListener('contextmenu', (e) => e.preventDefault());

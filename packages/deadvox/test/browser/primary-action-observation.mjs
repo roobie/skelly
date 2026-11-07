@@ -99,45 +99,32 @@ export const observationPlugin = {
       });
       return JSON.stringify(data);
     }
+    if (id.endsWith('/src/game/commandRouter.ts')) {
+      const throwQueueMarker = `      ports.pendingPlayerTickActions.enqueue(() => {
+        applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
+          throwHeldItem(heldItem, hand, distance);
+          ports.syncThrowingStance();
+        });
+      });`;
+      assert(code.includes(throwQueueMarker), 'stance throw queue observation point exists');
+      return code.replace(
+        throwQueueMarker,
+        `${throwQueueMarker}
+      globalThis.primaryActionTest?.afterThrowCommit();`,
+      );
+    }
     if (!id.endsWith('/src/game/play.ts')) {
       return;
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
-    const throwQueueMarker = `      pendingPlayerTickActions.enqueue(() => {
-        applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
-          throwHeldItem(heldItem, hand, distance);
-          syncThrowingStance();
-        });
-      });`;
     const playerTickMarker = '      pendingPlayerTickActions.applyAtNextTick();';
     const adsToggleMarker = `      case 'aim.ads-toggle':
         input.controls.toggleAimingDownSights(replayPlayer !== undefined);
         break;`;
     assert(code.includes(marker), 'game-loop observation point exists');
     assert(code.includes(adsToggleMarker), 'ADS replay observation point exists');
-    assert(code.includes(throwQueueMarker), 'stance throw queue observation point exists');
     assert(code.includes(playerTickMarker), 'player tick action observation point exists');
     let observedCode = code.replace(
-      throwQueueMarker,
-      `${throwQueueMarker}
-      if (proof.quickbarTapAfterNextThrowCommit !== undefined) {
-        const slot = proof.quickbarTapAfterNextThrowCommit;
-        proof.quickbarTapAfterNextThrowCommit = undefined;
-        quickbarTap(slot);
-        const tappedItem = inventory.itemByUid(proof.quickbarTapItemUid);
-        proof.quickbarTapCommitObservation = {
-          itemMoveQueued: queue.jobs.some(
-            (job) => job.kind === 'move' && job.itemUid === proof.quickbarTapItemUid,
-          ),
-          location: tappedItem ? inventory.locate(tappedItem)?.kind ?? null : null,
-        };
-      }
-      if (proof.dropAfterNextThrowCommit) {
-        proof.dropAfterNextThrowCommit = false;
-        dropHeldItemForThrowingStance();
-      }`,
-    );
-    observedCode = observedCode.replace(
       adsToggleMarker,
       `      case 'aim.ads-toggle': {
         const before = input.controls.aimingDownSights;
@@ -162,6 +149,8 @@ export const observationPlugin = {
     );
     // The fixture drops the way the game does, so a full pile at the feet spills to the next spot.
     observedCode = `import { dropTarget as primaryActionDropTarget } from '../core/options.ts';\n${observedCode}`;
+    // The landing probe measures a throw as the router does.
+    observedCode = `import { throwDistanceForItem as primaryActionThrowDistance } from '../core/itemThrow.ts';\n${observedCode}`;
     return observedCode.replace(
       marker,
       `
@@ -200,6 +189,25 @@ export const observationPlugin = {
     quickbarTapTickObservation: undefined,
     adsToggleObservations: [],
     throwSpawnObservations: {},
+    // The router calls this right after a live stance throw queues its player-tick commit.
+    afterThrowCommit: () => {
+      if (proof.quickbarTapAfterNextThrowCommit !== undefined) {
+        const slot = proof.quickbarTapAfterNextThrowCommit;
+        proof.quickbarTapAfterNextThrowCommit = undefined;
+        quickbarTap(slot);
+        const tappedItem = inventory.itemByUid(proof.quickbarTapItemUid);
+        proof.quickbarTapCommitObservation = {
+          itemMoveQueued: queue.jobs.some(
+            (job) => job.kind === 'move' && job.itemUid === proof.quickbarTapItemUid,
+          ),
+          location: tappedItem ? inventory.locate(tappedItem)?.kind ?? null : null,
+        };
+      }
+      if (proof.dropAfterNextThrowCommit) {
+        proof.dropAfterNextThrowCommit = false;
+        dropHeldItemForThrowingStance();
+      }
+    },
     startInputReplayRecording: () => {
       inputRecording.previous = undefined;
       inputRecording.recorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns(), {
@@ -211,10 +219,10 @@ export const observationPlugin = {
     getItemThrowLanding: (itemUid, heldSimSeconds) => {
       const item = inventory.itemByUid(itemUid);
       if (!item) return undefined;
-      const distance = throwDistanceForItem(item, registry, itemThrowTuning, heldSimSeconds);
+      const distance = primaryActionThrowDistance(item, registry, itemThrowTuning, heldSimSeconds);
       const location = inventory.locate(item);
       const hand = location?.kind === 'hand' ? location.side : session.throwCharge.throwHand();
-      const flight = itemThrowFlight(item, hand, distance);
+      const flight = router.itemThrowFlight(item, hand, distance);
       const target = flight.landing ? { kind: 'pile', pos: flight.landing } : undefined;
       const landingDistance = target
         ? Math.hypot(target.pos[0] + 0.5 - body.pos[0], target.pos[2] + 0.5 - body.pos[2]) * s
@@ -230,7 +238,7 @@ export const observationPlugin = {
     nextTimeOfDay,
     ignitionTargetForHand,
     interactionTargetAt,
-    useTarget,
+    useTarget: router.useTarget,
     useText,
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
     initialPlayerPosition: [...session.body.pos],

@@ -255,7 +255,7 @@ Aim variance comes from movement, swing and recoil and shows as weapon sway. Ski
 
 Portable light should create situational risk without competing with daylight or replacing ordinary sight and sound. Indoor darkness must still make light useful in daytime. A lure should invite investigation without trapping a shambler indefinitely, and nearby sound must take precedence so a glowstick cannot become an unconditional attention lock. See `src/core/actorSystem.ts`, `ActorSystem`.
 
-Charging makes throw distance a deliberate choice; cancellation prevents a mistaken release. Handling conflicts must remain with the existing action owners rather than allowing a charge to bypass occupied hands. Keep range weight-sensitive; atmospheric drag remains deferred to #368. See `src/core/inputActions.ts`, `player.throw`, `src/game/throwCharge.ts`, `ThrowCharge`, and `src/game/play.ts`, `finishItemThrow`.
+Charging makes throw distance a deliberate choice; cancellation prevents a mistaken release. Handling conflicts must remain with the existing action owners rather than allowing a charge to bypass occupied hands. Keep range weight-sensitive; atmospheric drag remains deferred to #368. See `src/core/inputActions.ts`, `player.throw`, `src/game/throwCharge.ts`, `ThrowCharge`, and `src/game/commandRouter.ts`, `finishItemThrow`.
 
 **Saves:** Preserve item-light state and persistent attention through their existing owners, not a second pursuit or light-state system. Derive visibility from active sources and surroundings so saved state cannot disagree with the world.
 
