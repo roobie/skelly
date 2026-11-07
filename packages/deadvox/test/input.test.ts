@@ -31,20 +31,20 @@ const fixture = (allowed: () => boolean = () => true, viewerInputAllowed: () => 
   let input: Input;
   keyboardInput.command = ({ action, phase }) => {
     if (action === 'stance.ready') {
-      input.rightMouseHeld = phase === 'down';
+      input.controls.rightMouseHeld = phase === 'down';
       if (phase === 'up') {
-        input.aimingDownSights = false;
+        input.controls.aimingDownSights = false;
       }
     } else if (action === 'aim.ads-toggle' && phase === 'down') {
-      input.toggleAimingDownSights();
+      input.controls.toggleAimingDownSights();
     } else if (action === 'view.free-look' && phase === 'down') {
-      input.startFreeLook();
+      input.controls.startFreeLook();
     }
   };
   input = new Input(target, allowed, () => true, viewerInputAllowed);
   input.setLookSensitivity(1, () => 1);
-  input.setFreeLook(PLAYER.aim.freeLook, () => input.aimingDownSights);
-  keyboardInput.cancelled = (preservePointer) => input.cancel(preservePointer);
+  input.controls.setFreeLook(PLAYER.aim.freeLook, () => input.controls.aimingDownSights);
+  keyboardInput.cancelled = (preservePointer) => input.controls.cancel(preservePointer);
   return { input, target, document, targetListeners, windowListeners, documentListeners };
 };
 afterEach(() => {
@@ -88,7 +88,7 @@ describe('pointer input', () => {
     const before = createPlayerBody(scale, 0, 0, 0);
     const after = createPlayerBody(scale, 0, 0, 0);
     keyboardInput.press(key('KeyW'));
-    const intent = input.intent();
+    const intent = input.controls.intent();
     const bore = () =>
       firearmBoreRay({
         model: {
@@ -99,8 +99,8 @@ describe('pointer input', () => {
         } as unknown as ModelDef,
         holds: baseRegistry().figures.get('player')!.holds,
         eye: [0, 2, 0],
-        yaw: input.yaw,
-        pitch: input.pitch,
+        yaw: input.controls.yaw,
+        pitch: input.controls.pitch,
         blockSize: scale.blockSize,
         side: 'right',
         leadingSide: 'right',
@@ -110,54 +110,54 @@ describe('pointer input', () => {
         loweredPitchRadians: 0.5,
       });
     const bodyBore = bore();
-    steer(before, scale, input.yaw, intent);
+    steer(before, scale, input.controls.yaw, intent);
     keyboardInput.press(key('AltLeft', true));
     documentListeners.get('mousemove')!({ movementX: 100, movementY: -50 } as MouseEvent);
-    steer(after, scale, input.yaw, input.intent());
-    expect(input.freeLooking).toBe(true);
-    expect(input.viewYaw).not.toBe(input.yaw);
-    expect(input.viewPitch).not.toBe(input.pitch);
-    expect(input.intent()).toEqual(intent);
+    steer(after, scale, input.controls.yaw, input.controls.intent());
+    expect(input.controls.freeLooking).toBe(true);
+    expect(input.controls.viewYaw).not.toBe(input.controls.yaw);
+    expect(input.controls.viewPitch).not.toBe(input.controls.pitch);
+    expect(input.controls.intent()).toEqual(intent);
     expect(after.vel).toEqual(before.vel);
     expect(bore()).toEqual(bodyBore);
-    expect(Math.abs(input.freeLook.yaw)).toBeLessThanOrEqual(PLAYER.aim.freeLook.yawLimitRadians);
-    expect(Math.abs(input.freeLook.pitch)).toBeLessThanOrEqual(PLAYER.aim.freeLook.pitchLimitRadians);
+    expect(Math.abs(input.controls.freeLook.yaw)).toBeLessThanOrEqual(PLAYER.aim.freeLook.yawLimitRadians);
+    expect(Math.abs(input.controls.freeLook.pitch)).toBeLessThanOrEqual(PLAYER.aim.freeLook.pitchLimitRadians);
     keyboardInput.release(key('AltLeft'));
-    input.advanceFreeLook(0.01);
-    const returning = Math.abs(input.freeLook.yaw);
+    input.controls.advanceFreeLook(0.01);
+    const returning = Math.abs(input.controls.freeLook.yaw);
     expect(returning).toBeLessThan(PLAYER.aim.freeLook.yawLimitRadians);
-    input.advanceFreeLook(
+    input.controls.advanceFreeLook(
       (PLAYER.aim.freeLook.yawLimitRadians + PLAYER.aim.freeLook.pitchLimitRadians) /
         PLAYER.aim.freeLook.returnRadiansPerRealSecond,
     );
-    expect(input.freeLooking).toBe(false);
-    expect(input.viewYaw).toBe(input.yaw);
-    expect(input.viewPitch).toBe(input.pitch);
-    expect(input.freeLook.yaw).toBe(0);
-    expect(input.freeLook.pitch).toBe(0);
+    expect(input.controls.freeLooking).toBe(false);
+    expect(input.controls.viewYaw).toBe(input.controls.yaw);
+    expect(input.controls.viewPitch).toBe(input.controls.pitch);
+    expect(input.controls.freeLook.yaw).toBe(0);
+    expect(input.controls.freeLook.pitch).toBe(0);
     keyboardInput.release(key('KeyW'));
   });
   it('ends sights when free look starts in ADS and stays at hip after release', () => {
     const { input, targetListeners, documentListeners } = fixture();
     targetListeners.get('mousedown')!({ button: 2 } as MouseEvent);
-    input.toggleAimingDownSights();
-    expect(input.aimingDownSights).toBe(true);
+    input.controls.toggleAimingDownSights();
+    expect(input.controls.aimingDownSights).toBe(true);
     keyboardInput.press(key('AltLeft', true));
-    expect(input.aimingDownSights).toBe(false);
-    const before = input.yaw;
+    expect(input.controls.aimingDownSights).toBe(false);
+    const before = input.controls.yaw;
     documentListeners.get('mousemove')!({ movementX: 0.1, movementY: 0 } as MouseEvent);
-    expect(input.yaw).toBe(before);
-    expect(input.freeLooking).toBe(true);
+    expect(input.controls.yaw).toBe(before);
+    expect(input.controls.freeLooking).toBe(true);
     keyboardInput.release(key('AltLeft'));
-    input.advanceFreeLook(0);
-    expect(input.freeLooking).toBe(false);
-    expect(input.aimingDownSights).toBe(false);
+    input.controls.advanceFreeLook(0);
+    expect(input.controls.freeLooking).toBe(false);
+    expect(input.controls.aimingDownSights).toBe(false);
   });
   it.each(['blur', 'pointerlockchange'] as const)('ends free look on %s without waiting for Alt release', (reason) => {
     const { input, document, documentListeners, windowListeners } = fixture();
     keyboardInput.press(key('AltLeft', true));
     documentListeners.get('mousemove')!({ movementX: 1, movementY: 1 } as MouseEvent);
-    expect(input.freeLooking).toBe(true);
+    expect(input.controls.freeLooking).toBe(true);
     if (reason === 'blur') {
       windowListeners.get('blur')!({} as MouseEvent);
       keyboardInput.windowBlurred();
@@ -166,9 +166,9 @@ describe('pointer input', () => {
       documentListeners.get('pointerlockchange')!({} as MouseEvent);
       keyboardInput.cancel();
     }
-    expect(input.freeLook.active).toBe(false);
-    expect(input.viewYaw).toBe(input.yaw);
-    expect(input.viewPitch).toBe(input.pitch);
+    expect(input.controls.freeLook.active).toBe(false);
+    expect(input.controls.viewYaw).toBe(input.controls.yaw);
+    expect(input.controls.viewPitch).toBe(input.controls.pitch);
     expect(keyboardInput.held('view.free-look')).toBe(false);
   });
   it('cancels each viewer-focus reason live but not during replay', () => {
@@ -182,16 +182,16 @@ describe('pointer input', () => {
   it('routes orbit mouse movement without changing player look', () => {
     const { input, target, document, documentListeners } = fixture();
     document.pointerLockElement = target;
-    input.yaw = 0.8;
-    input.pitch = -0.2;
+    input.controls.yaw = 0.8;
+    input.controls.pitch = -0.2;
     const orbitLook = vi.fn(() => true);
     input.setMouseLookOverride(orbitLook);
 
     documentListeners.get('mousemove')!({ movementX: 30, movementY: -12 } as MouseEvent);
 
     expect(orbitLook).toHaveBeenCalledExactlyOnceWith(30, -12);
-    expect(input.yaw).toBe(0.8);
-    expect(input.pitch).toBe(-0.2);
+    expect(input.controls.yaw).toBe(0.8);
+    expect(input.controls.pitch).toBe(-0.2);
   });
   it('scales look by applied optic power on each mouse event', () => {
     const { input, target, document, documentListeners } = fixture();
@@ -199,9 +199,9 @@ describe('pointer input', () => {
     let power = 1;
     input.setLookSensitivity(1, () => power);
     const turn = () => {
-      input.yaw = 0;
+      input.controls.yaw = 0;
       documentListeners.get('mousemove')!({ movementX: 10, movementY: 0 } as MouseEvent);
-      return Math.abs(input.yaw);
+      return Math.abs(input.controls.yaw);
     };
 
     const unaimed = turn();
@@ -261,15 +261,15 @@ describe('pointer input', () => {
         () => allowed,
       );
       document.pointerLockElement = locked ? target : null;
-      input.rightMouseHeld = true;
-      input.suppressRightMouseUntilRelease();
+      input.controls.rightMouseHeld = true;
+      input.controls.suppressRightMouseUntilRelease();
       const read = () => ({
-        rightMousePressed: input.consumeRightMousePressed(),
-        rightMouseSuppressed: input.rightMouseHeld && !input.rightMouseActionHeld,
-        dominantUsePressed: input.intent().useDominant,
-        dominantUseDown: input.dominantUseHeld,
-        yaw: input.yaw,
-        pitch: input.pitch,
+        rightMousePressed: input.controls.consumeRightMousePressed(),
+        rightMouseSuppressed: input.controls.rightMouseHeld && !input.controls.rightMouseActionHeld,
+        dominantUsePressed: input.controls.intent().useDominant,
+        dominantUseDown: input.controls.dominantUseHeld,
+        yaw: input.controls.yaw,
+        pitch: input.controls.pitch,
       });
       type MouseState = ReturnType<typeof read>;
       const initial = read();
@@ -303,71 +303,71 @@ describe('pointer input', () => {
     let allowed = false;
     const { input, targetListeners } = fixture(() => allowed);
     targetListeners.get('mousedown')!({ button: 0 } as MouseEvent);
-    expect(input.intent().useDominantHeld).toBe(false);
+    expect(input.controls.intent().useDominantHeld).toBe(false);
     allowed = true;
-    expect(input.intent().useDominant).toBe(false);
+    expect(input.controls.intent().useDominant).toBe(false);
     targetListeners.get('mousedown')!({ button: 0 } as MouseEvent);
-    expect(input.intent().useDominant).toBe(true);
+    expect(input.controls.intent().useDominant).toBe(true);
   });
   it('admits hand uses only in locked play and clears presses, holds and ready stance on cancellation', () => {
     const { input, document, target, targetListeners, windowListeners } = fixture();
     document.pointerLockElement = null;
-    input.useOff();
+    input.controls.useOff();
     targetListeners.get('mousedown')!({ button: 0 } as MouseEvent);
-    expect(input.intent().useOff).toBe(false);
-    expect(input.intent().useDominant).toBe(false);
+    expect(input.controls.intent().useOff).toBe(false);
+    expect(input.controls.intent().useDominant).toBe(false);
     document.pointerLockElement = target;
     input.menuPointer = true;
-    input.useOff();
-    expect(input.intent().useOff).toBe(false);
+    input.controls.useOff();
+    expect(input.controls.intent().useOff).toBe(false);
     input.menuPointer = false;
-    input.useOff();
+    input.controls.useOff();
     targetListeners.get('mousedown')!({ button: 0 } as MouseEvent);
     targetListeners.get('mousedown')!({ button: 2 } as MouseEvent);
-    expect(input.intent()).toMatchObject({ useOff: true, useDominant: true, useDominantHeld: true });
-    expect(input.rightMouseHeld).toBe(true);
-    input.consumeOffUse();
-    input.consumeDominantUse();
-    expect(input.intent()).toMatchObject({ useOff: false, useDominant: false, useDominantHeld: true });
+    expect(input.controls.intent()).toMatchObject({ useOff: true, useDominant: true, useDominantHeld: true });
+    expect(input.controls.rightMouseHeld).toBe(true);
+    input.controls.consumeOffUse();
+    input.controls.consumeDominantUse();
+    expect(input.controls.intent()).toMatchObject({ useOff: false, useDominant: false, useDominantHeld: true });
     windowListeners.get('mouseup')!({ button: 2 } as MouseEvent);
-    expect(input.rightMouseHeld).toBe(false);
+    expect(input.controls.rightMouseHeld).toBe(false);
     windowListeners.get('blur')!(new Event('blur') as MouseEvent);
-    expect(input.intent().useDominantHeld).toBe(false);
+    expect(input.controls.intent().useDominantHeld).toBe(false);
   });
   it('suppresses ready and aim actions from the right-click that cancels a glowstick charge', () => {
     const { input, targetListeners, windowListeners } = fixture();
     targetListeners.get('mousedown')!({ button: 2, timeStamp: 1 } as MouseEvent);
-    expect(input.rightMouseActionHeld).toBe(true);
-    expect(input.consumeRightMousePressed()).toBe(true);
-    input.suppressRightMouseUntilRelease();
-    expect(input.rightMouseHeld).toBe(true);
-    expect(input.rightMouseActionHeld).toBe(false);
-    expect(input.consumeRightMousePressed()).toBe(false);
+    expect(input.controls.rightMouseActionHeld).toBe(true);
+    expect(input.controls.consumeRightMousePressed()).toBe(true);
+    input.controls.suppressRightMouseUntilRelease();
+    expect(input.controls.rightMouseHeld).toBe(true);
+    expect(input.controls.rightMouseActionHeld).toBe(false);
+    expect(input.controls.consumeRightMousePressed()).toBe(false);
     windowListeners.get('mouseup')!({ button: 2, timeStamp: 2 } as MouseEvent);
-    expect(input.rightMouseActionHeld).toBe(false);
+    expect(input.controls.rightMouseActionHeld).toBe(false);
     targetListeners.get('mousedown')!({ button: 2, timeStamp: 3 } as MouseEvent);
-    expect(input.rightMouseActionHeld).toBe(true);
+    expect(input.controls.rightMouseActionHeld).toBe(true);
   });
   it('toggles sight alignment only while the ready stance is held', () => {
     const { input, targetListeners, windowListeners } = fixture();
     const down = targetListeners.get('mousedown')!;
     const up = windowListeners.get('mouseup')!;
     down({ button: 1 } as MouseEvent);
-    expect(input.aimingDownSights).toBe(false);
+    expect(input.controls.aimingDownSights).toBe(false);
     up({ button: 1 } as MouseEvent);
     down({ button: 2 } as MouseEvent);
     down({ button: 1 } as MouseEvent);
-    expect(input.aimingDownSights).toBe(true);
+    expect(input.controls.aimingDownSights).toBe(true);
     up({ button: 1 } as MouseEvent);
     down({ button: 1 } as MouseEvent);
-    expect(input.aimingDownSights).toBe(false);
+    expect(input.controls.aimingDownSights).toBe(false);
     up({ button: 1 } as MouseEvent);
-    input.setAimingDownSightsAllowed(() => false);
+    input.controls.setAimingDownSightsAllowed(() => false);
     down({ button: 1 } as MouseEvent);
-    expect(input.aimingDownSights).toBe(false);
+    expect(input.controls.aimingDownSights).toBe(false);
     up({ button: 1 } as MouseEvent);
     up({ button: 2 } as MouseEvent);
-    expect(input.aimingDownSights).toBe(false);
+    expect(input.controls.aimingDownSights).toBe(false);
   });
   it('keeps ready and ADS active when F2 enables debug controls', () => {
     const { input, targetListeners, windowListeners } = fixture();
@@ -376,7 +376,7 @@ describe('pointer input', () => {
     down({ button: 2, timeStamp: 1 } as MouseEvent);
     down({ button: 1, timeStamp: 2 } as MouseEvent);
     windowListeners.get('mouseup')!({ button: 1, timeStamp: 3 } as MouseEvent);
-    expect([input.rightMouseHeld, input.aimingDownSights]).toEqual([true, true]);
+    expect([input.controls.rightMouseHeld, input.controls.aimingDownSights]).toEqual([true, true]);
 
     keyboardInput.press({
       code: 'F2',
@@ -388,11 +388,11 @@ describe('pointer input', () => {
       isComposing: false,
       timeStamp: 4,
     });
-    expect([input.rightMouseHeld, input.aimingDownSights, keyboardInput.held('stance.ready')]).toEqual([
-      true,
-      true,
-      true,
-    ]);
+    expect([
+      input.controls.rightMouseHeld,
+      input.controls.aimingDownSights,
+      keyboardInput.held('stance.ready'),
+    ]).toEqual([true, true, true]);
     keyboardInput.release({
       code: 'F2',
       shiftKey: false,
@@ -404,16 +404,16 @@ describe('pointer input', () => {
       timeStamp: 5,
     });
     windowListeners.get('mouseup')!({ button: 2, timeStamp: 6 } as MouseEvent);
-    expect([input.rightMouseHeld, input.aimingDownSights]).toEqual([false, false]);
+    expect([input.controls.rightMouseHeld, input.controls.aimingDownSights]).toEqual([false, false]);
   });
   it('delivers a stance-toggle request once to the simulation consumer', () => {
     const { input } = fixture();
-    input.requestStanceToggle('prone');
-    expect(input.consumeStanceToggle()).toBe('prone');
-    expect(input.consumeStanceToggle()).toBeUndefined();
-    input.requestStanceToggle('crouch');
-    input.cancel();
-    expect(input.consumeStanceToggle()).toBeUndefined();
+    input.controls.requestStanceToggle('prone');
+    expect(input.controls.consumeStanceToggle()).toBe('prone');
+    expect(input.controls.consumeStanceToggle()).toBeUndefined();
+    input.controls.requestStanceToggle('crouch');
+    input.controls.cancel();
+    expect(input.controls.consumeStanceToggle()).toBeUndefined();
   });
   it('clamps the virtual menu cursor to its viewport', () => {
     const { input } = fixture();

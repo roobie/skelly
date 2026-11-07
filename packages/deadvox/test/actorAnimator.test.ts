@@ -28,7 +28,7 @@ import { playerAdsPose } from '../src/core/playerAdsPose.ts';
 import { figureStancePose, playerEyePosition, playerLookPose } from '../src/core/playerLookPose.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { applyStartKit } from '../src/core/startState.ts';
-import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
+import { LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
 import { ARM_NODE, solveArmRig } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { HeldPresentation } from '../src/render/heldPresentation.ts';

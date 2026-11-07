@@ -13,7 +13,7 @@ import { playerAdsPose } from '../src/core/playerAdsPose.ts';
 import { figureStancePose, playerHeldSeatFrame, playerLookPose } from '../src/core/playerLookPose.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
-import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
+import { LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
 import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
 import {
   actionPartPaths,

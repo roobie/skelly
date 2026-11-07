@@ -1480,7 +1480,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       {
         pileLayoutModuleUrl: pileLayoutModule,
         playerLookPoseModuleUrl: '/src/core/playerLookPose.ts',
-        inputModuleUrl: '/src/game/input.ts',
+        inputModuleUrl: '/src/game/playerControls.ts',
         ground: placed,
       },
     );

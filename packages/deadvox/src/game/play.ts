@@ -137,7 +137,7 @@ import { observeRealFrame } from './frameDriver.ts';
 import { freeLookAllowsCommand, freeLookAllowsUse } from './freeLook.ts';
 import { FurnitureActionSelection, furnitureActionsFor } from './furnitureActions.ts';
 import { GuidedSteps } from './guidedSteps.ts';
-import { adjustLookPitch, Input } from './input.ts';
+import { Input } from './input.ts';
 import {
   type InputCancellationReason,
   type InputCommand,
@@ -172,6 +172,7 @@ import {
 import { routeModalCommand } from './modalCommand.ts';
 import { OpticZoom } from './opticZoom.ts';
 import { type MoveIntent, playerTuning } from './player.ts';
+import { adjustLookPitch } from './playerControls.ts';
 import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
 import { bleedingStatusRows } from './playStatus.ts';
 import { createAttemptRecording, type PlaytestObserver } from './playtestObserver.ts';
@@ -257,7 +258,7 @@ const stopPlayAfterError = (
   sim.paused = true;
   saveController?.halt();
   input.unlock();
-  input.cancel();
+  input.controls.cancel();
 };
 
 const bindPlayErrorReport = ({
@@ -757,7 +758,7 @@ export const startPlay = (
     () => shouldCancelForViewerFocus('window-blur'),
     () => worldLoading.ready && replayPlayer === undefined,
   );
-  input.yaw = playerStart.yaw;
+  input.controls.yaw = playerStart.yaw;
   let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
   const playerSenseTuning = claimed(registry.senses, 'player');
   if (!playerSenseTuning) {
@@ -807,12 +808,12 @@ export const startPlay = (
     compressionAtTick: number,
   ): PlayerInputSample => {
     if (!replayPlayer) {
-      input.advanceFreeLook(0);
+      input.controls.advanceFreeLook(0);
       const sample = {
         ...live,
-        headYaw: input.freeLook.yaw,
-        headPitch: input.freeLook.pitch,
-        freeLooking: input.freeLooking,
+        headYaw: input.controls.freeLook.yaw,
+        headPitch: input.controls.freeLook.pitch,
+        freeLooking: input.controls.freeLooking,
       };
       if (inputRecording.recorder && !inputRecording.recorder.recordTick(sample, compressionAtTick)) {
         stepper.stopRecordingForColumnOverflow();
@@ -820,7 +821,7 @@ export const startPlay = (
       pendingPlayerTickActions.applyAtNextTick();
       return live;
     }
-    const replayInput = nextReplayInputSample(replayPlayer, sim.compression, input);
+    const replayInput = nextReplayInputSample(replayPlayer, sim.compression, input.controls);
     replaySample = replayInput.recordedSample;
     return replayInput.input;
   };
@@ -908,16 +909,16 @@ export const startPlay = (
     controls: debugGunPose.guard(
       spectator.guard({
         active: () => worldLoading.ready && (Boolean(options.replay) || (input.locked && !input.menuPointer)),
-        intent: (): MoveIntent => input.intent(),
+        intent: (): MoveIntent => input.controls.intent(),
         sampleAtPlayerTick: samplePlayerInput,
-        freeLooking: () => input.freeLooking,
-        readyHeld: () => input.rightMouseHeld,
+        freeLooking: () => input.controls.freeLooking,
+        readyHeld: () => input.controls.rightMouseHeld,
         firearmReady: (uid) => isFirearmReady(uid),
-        aimingDownSights: () => debugGunPose.aimingDownSights(input.aimingDownSights) && isAimingDownSights(),
+        aimingDownSights: () => debugGunPose.aimingDownSights(input.controls.aimingDownSights) && isAimingDownSights(),
         blocking: () => shouldPlayerBlock(),
-        consumeDominantUse: () => input.consumeDominantUse(),
-        consumeOffUse: () => input.consumeOffUse(),
-        consumeStanceToggle: () => input.consumeStanceToggle(),
+        consumeDominantUse: () => input.controls.consumeDominantUse(),
+        consumeOffUse: () => input.controls.consumeOffUse(),
+        consumeStanceToggle: () => input.controls.consumeStanceToggle(),
         useDominant: () =>
           routeDominantUse(throwingStance, beginItemThrow, () => {
             // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
@@ -951,7 +952,7 @@ export const startPlay = (
           }
           handleHeldDominantUse(time, pressed, triggerHeld);
           const action = selectPrimaryAction(inventory);
-          if (!freeLookAllowsUse(input.freeLooking, action.kind)) {
+          if (!freeLookAllowsUse(input.controls.freeLooking, action.kind)) {
             magazines.advanceHeldStrip(undefined, time, false);
             return;
           }
@@ -964,7 +965,7 @@ export const startPlay = (
         automaticFireHeld: () => {
           const weapon = automaticFireWeapon();
           return Boolean(
-            (replaySample?.intent.useDominantHeld ?? input.dominantUseHeld) &&
+            (replaySample?.intent.useDominantHeld ?? input.controls.dominantUseHeld) &&
               !sim.body.actionRefusal &&
               weapon &&
               automaticFireUid === weapon.uid &&
@@ -974,11 +975,11 @@ export const startPlay = (
         },
         adjustPitch: (delta) => {
           if (!replaySample) {
-            return input.adjustPitch(delta);
+            return input.controls.adjustPitch(delta);
           }
           const adjusted = adjustLookPitch(replaySample.pitch, delta);
           replaySample = { ...replaySample, pitch: adjusted.pitch };
-          applyReplayLook(input, replaySample);
+          applyReplayLook(input.controls, replaySample);
           return adjusted.applied;
         },
         useOff: () => {
@@ -986,9 +987,9 @@ export const startPlay = (
             performHandUse(offSide(inventory.character));
           }
         },
-        yaw: () => input.yaw,
-        pitch: () => input.pitch,
-        walking: () => input.walking,
+        yaw: () => input.controls.yaw,
+        pitch: () => input.controls.pitch,
+        walking: () => input.controls.walking,
         descending: () => keyboardInput.held('noclip.descend'),
       }),
     ),
@@ -1132,15 +1133,15 @@ export const startPlay = (
     replayPlayer ? replaySample?.active === true && !replaySample.inputLocked : input.locked && !input.menuPointer;
   const hasGunPoseInput = (): boolean => debugGunPose.active || hasActiveFirearmInput();
   const isFirearmReady = (uid: number): boolean =>
-    debugGunPose.readyHeld(input.rightMouseActionHeld) &&
+    debugGunPose.readyHeld(input.controls.rightMouseActionHeld) &&
     hasGunPoseInput() &&
     !compression.locksInput &&
     firearms.isReady(uid);
   const isAimingDownSights = (): boolean => {
     const action = selectPrimaryAction(inventory);
     return (
-      debugGunPose.aimingDownSights(input.aimingDownSights) &&
-      debugGunPose.readyHeld(input.rightMouseActionHeld) &&
+      debugGunPose.aimingDownSights(input.controls.aimingDownSights) &&
+      debugGunPose.readyHeld(input.controls.rightMouseActionHeld) &&
       hasGunPoseInput() &&
       action.kind === 'firearm' &&
       isFirearmReady(action.item.uid) &&
@@ -1178,12 +1179,12 @@ export const startPlay = (
   /** The aim is in view while it is wanted or still settling back; the pose blends by the share shown. */
   const adsViewActive = (): boolean => isAimingDownSights() || adsAimShown > 0;
   const adsViewPose = () => playerAdsPose(inventory, adsViewActive(), aim.frame, adsAimShown);
-  input.setAimingDownSightsAllowed(() => {
+  input.controls.setAimingDownSightsAllowed(() => {
     const action = selectPrimaryAction(inventory);
     return action.kind === 'firearm' && isFirearmReady(action.item.uid) && !session.sprinting;
   });
   const { lookSensitivityRadiansPerPixel, freeLook } = playerTuning(registry).aim;
-  input.setFreeLook(freeLook, () => spectator.enabled || isAimingDownSights());
+  input.controls.setFreeLook(freeLook, () => spectator.enabled || isAimingDownSights());
   input.setLookSensitivity(
     lookSensitivityRadiansPerPixel,
     () => 1 + (opticZoom.appliedPower(zoomFirearm(), adsViewActive()) - 1) * adsAimShown,
@@ -1200,9 +1201,9 @@ export const startPlay = (
     clockRatio: sim.clock.ratio,
   });
   if (session.restoredLook) {
-    input.yaw = session.restoredLook.yaw;
-    input.pitch = session.restoredLook.pitch;
-    input.walking = session.restoredLook.walk;
+    input.controls.yaw = session.restoredLook.yaw;
+    input.controls.pitch = session.restoredLook.pitch;
+    input.controls.walking = session.restoredLook.walk;
   }
   let snapshotIds = {
     worldId: options.restore?.world.id ?? '',
@@ -1530,13 +1531,13 @@ export const startPlay = (
     setThrowingStance: (value) => {
       throwingStance = value;
     },
-    getReadyHeld: () => input.rightMouseHeld,
+    getReadyHeld: () => input.controls.rightMouseHeld,
     setReadyHeld: (value) => {
-      input.rightMouseHeld = value;
+      input.controls.rightMouseHeld = value;
     },
-    getAimingDownSights: () => input.aimingDownSights,
+    getAimingDownSights: () => input.controls.aimingDownSights,
     setAimingDownSights: (value) => {
-      input.aimingDownSights = value;
+      input.controls.aimingDownSights = value;
     },
     getInventoryOpen: () => screen.isOpen,
     setInventoryOpen: (value) => {
@@ -1671,10 +1672,10 @@ export const startPlay = (
       mapUrl.searchParams.set('centerZ', String(z));
       mapUrl.searchParams.set('playerX', String(x));
       mapUrl.searchParams.set('playerZ', String(z));
-      mapUrl.searchParams.set('playerYaw', String(input.yaw));
+      mapUrl.searchParams.set('playerYaw', String(input.controls.yaw));
       reviewMapFrame.src = mapUrl.href;
       input.unlock();
-      input.cancel();
+      input.controls.cancel();
     } else {
       reviewMapFrame.src = 'about:blank';
     }
@@ -1721,7 +1722,7 @@ export const startPlay = (
     character: session.character,
     newGame: options.restore === undefined,
     sim,
-    input,
+    input: input.controls,
     debugModifierHeld: () => keyboardInput.held('debug.gate'),
     reviewMap: { isOpen: () => reviewMapOpen, toggle: () => toggleReviewMap() },
     impactLaser: {
@@ -1740,7 +1741,7 @@ export const startPlay = (
       enabled: () => spectator.enabled,
       toggle: () => {
         cancelHeldInput();
-        spectator.toggle(body, eye(), input.yaw, input.pitch);
+        spectator.toggle(body, eye(), input.controls.yaw, input.controls.pitch);
       },
       teleport: () => spectator.teleport(body, session.playerEyeHeightMetres / s, engine.isSolid),
     },
@@ -1848,7 +1849,7 @@ export const startPlay = (
     if (worldLoading.state === 'failed') {
       input.unlock();
     } else if (worldLoading.ready && !wasReady) {
-      input.cancel();
+      input.controls.cancel();
       keyboardInput.cancel();
       sim.paused = syncMenuState().paused || (debugTools?.frozen ?? false);
       replayPlayState.restore(options.replay?.startState);
@@ -2135,7 +2136,7 @@ export const startPlay = (
     notice: (text) => showRefusal(text, sim.time),
   });
   const runQuickbarAction = (slot: number, held: boolean): void => {
-    if (input.freeLooking) {
+    if (input.controls.freeLooking) {
       return;
     }
     if (sim.body.actionRefusal) {
@@ -2175,7 +2176,7 @@ export const startPlay = (
       if (!replayPlayer) {
         inputRecording.recorder?.queueAction(action, 'down', inputContext());
       }
-      input.requestStanceToggle(action === 'player.crouch-toggle' ? 'crouch' : 'prone');
+      input.controls.requestStanceToggle(action === 'player.crouch-toggle' ? 'crouch' : 'prone');
     });
   };
   const crouchProneInput = new CrouchProneInput({
@@ -2305,7 +2306,7 @@ export const startPlay = (
     if (!shouldCancelForViewerFocus(reason ?? 'manual')) {
       return;
     }
-    input.cancel(preservePointer);
+    input.controls.cancel(preservePointer);
     screen.cancelInput();
     cancelBackquoteGesture(backquoteGesture);
     cancelItemThrow();
@@ -2368,7 +2369,7 @@ export const startPlay = (
     }
   };
   const stopHandling = (): void => {
-    input.reload.cancel();
+    input.controls.reload.cancel();
     queue.cancel();
     if (sim.actions.job || rest.action || compression.active) {
       stopAction();
@@ -2380,22 +2381,22 @@ export const startPlay = (
     }
   };
   const gameplayCommand = (action: string, at: number, slot: number | undefined): void => {
-    if (!freeLookAllowsCommand(input.freeLooking, action)) {
+    if (!freeLookAllowsCommand(input.controls.freeLooking, action)) {
       return;
     }
     switch (action) {
       case 'stance.ready':
-        input.rightMouseHeld = true;
+        input.controls.rightMouseHeld = true;
         break;
       case 'aim.ads-toggle':
-        input.toggleAimingDownSights(replayPlayer !== undefined);
+        input.controls.toggleAimingDownSights(replayPlayer !== undefined);
         break;
       case 'view.free-look':
-        input.startFreeLook();
+        input.controls.startFreeLook();
         break;
       case 'movement.walk-toggle':
-        input.walking = toggleWalking(
-          input.walking,
+        input.controls.walking = toggleWalking(
+          input.controls.walking,
           replayPlayer ? undefined : inputRecording.recorder,
           inputContext(),
         );
@@ -2411,11 +2412,11 @@ export const startPlay = (
         break;
       case 'hand.use-off':
         if (!replayPlayer) {
-          input.useOff();
+          input.controls.useOff();
         }
         break;
       case 'firearm.reload':
-        input.reload.keyDown(at, reloadBinding());
+        input.controls.reload.keyDown(at, reloadBinding());
         break;
       case 'world.interact':
         withUnlockedInput(() => {
@@ -2450,11 +2451,11 @@ export const startPlay = (
   };
   const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
     if (action === 'stance.ready') {
-      input.rightMouseHeld = false;
-      input.aimingDownSights = false;
+      input.controls.rightMouseHeld = false;
+      input.controls.aimingDownSights = false;
     }
     if (action === 'firearm.reload') {
-      input.reload.keyUp(at);
+      input.controls.reload.keyUp(at);
     }
     if (action === 'world.interact') {
       interactInput.keyUp(action, at);
@@ -2479,7 +2480,7 @@ export const startPlay = (
     dispatchDebugCommand(action, at, {
       backquoteGesture,
       debugTools,
-      facingYaw: input.yaw,
+      facingYaw: input.controls.yaw,
       thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled),
       toggleReviewMap,
       syncMenuState,
@@ -2490,11 +2491,11 @@ export const startPlay = (
       at,
       thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled),
       debugPanelAvailable: keyboardInput.held('debug.gate'),
-      facingYaw: input.yaw,
+      facingYaw: input.controls.yaw,
     });
   const cancelHeldInput = (): void => {
     screen.cancelInput();
-    input.reload.cancel();
+    input.controls.reload.cancel();
     crouchProneInput.cancel();
     throwStanceInput.cancel();
     cancelItemThrow();
@@ -2615,7 +2616,7 @@ export const startPlay = (
   };
   dispatchReplayAction = (action, sample) => {
     replaySample = sample;
-    applyReplayLook(input, sample);
+    applyReplayLook(input.controls, sample);
     if (action.payload) {
       const reason = applyScreenCommand(action.payload);
       if (reason) {
@@ -2662,13 +2663,13 @@ export const startPlay = (
   );
 
   const lookDir = (): Vec3 =>
-    aimDirection(replaySample?.yaw ?? input.yaw, replaySample?.pitch ?? input.pitch, NEUTRAL_AIM);
+    aimDirection(replaySample?.yaw ?? input.controls.yaw, replaySample?.pitch ?? input.controls.pitch, NEUTRAL_AIM);
   const eye = (): Vec3 =>
     playerEyePosition({
       feet: body.pos,
       blockSize: s,
-      yaw: spectator.avatarYaw(input.yaw),
-      pitch: spectator.avatarPitch(input.pitch),
+      yaw: spectator.avatarYaw(input.controls.yaw),
+      pitch: spectator.avatarPitch(input.controls.pitch),
       stance: session.stance,
       lean: session.lean,
       figure: claimed(registry.figures, 'player')!,
@@ -2680,7 +2681,7 @@ export const startPlay = (
     playerLookPose({
       figure: claimed(registry.figures, 'player')!,
       models: registry.models,
-      pitch: spectator.avatarPitch(input.pitch),
+      pitch: spectator.avatarPitch(input.controls.pitch),
       stance: session.stance,
       lean: session.lean,
       ads: adsViewPose(),
@@ -2690,7 +2691,7 @@ export const startPlay = (
     const pose = heldBodyPose();
     return {
       stockSeat: pose.stockSeats[side],
-      seatFrame: playerHeldSeatFrame(pose, input.pitch),
+      seatFrame: playerHeldSeatFrame(pose, input.controls.pitch),
       leanRollRadians: session.lean.rollRadians,
       adsEyes: pose.eyes,
     };
@@ -2904,7 +2905,7 @@ export const startPlay = (
 
   /** While a piece is carried, either press sets it down wherever the crosshair points. */
   function completeWorldInteraction(mode: 'pocket' | 'wield'): void {
-    if (input.freeLooking) {
+    if (input.controls.freeLooking) {
       interactionPressTarget = undefined;
       return;
     }
@@ -2955,7 +2956,7 @@ export const startPlay = (
   }
 
   function toggleThrowingStance(): void {
-    if (input.freeLooking) {
+    if (input.controls.freeLooking) {
       return;
     }
     throwingStance = !throwingStance;
@@ -2986,7 +2987,7 @@ export const startPlay = (
   }
 
   function toggleWornLightsNow(): void {
-    if (input.freeLooking) {
+    if (input.controls.freeLooking) {
       return;
     }
     refusalReason(survival.toggleWornLights());
@@ -3002,7 +3003,7 @@ export const startPlay = (
   }
 
   function useForwardButtonNow(): void {
-    if (input.freeLooking) {
+    if (input.controls.freeLooking) {
       return;
     }
     // Instant off-hand use shares Survival's owner with a quickbar second press.
@@ -3030,7 +3031,7 @@ export const startPlay = (
   }
 
   function dropHeldItemForThrowingStanceNow(): void {
-    if (input.freeLooking) {
+    if (input.controls.freeLooking) {
       return;
     }
     if (sim.body.actionRefusal) {
@@ -3055,7 +3056,7 @@ export const startPlay = (
   }
 
   function beginItemThrow(): void {
-    if (input.freeLooking) {
+    if (input.controls.freeLooking) {
       return;
     }
     const refusal = sim.body.actionRefusal;
@@ -3073,7 +3074,7 @@ export const startPlay = (
 
   /** A replay charges as the live game did, so a climber holds still alike, but throws from the recording. */
   function releaseItemThrow(): void {
-    if (input.freeLooking) {
+    if (input.controls.freeLooking) {
       cancelItemThrow();
       return;
     }
@@ -3092,9 +3093,9 @@ export const startPlay = (
     if (!released) {
       return;
     }
-    if (input.consumeRightMousePressed() || input.rightMouseHeld) {
+    if (input.controls.consumeRightMousePressed() || input.controls.rightMouseHeld) {
       dispatchScreenCommand({ kind: 'item.throw.cancel' });
-      input.suppressRightMouseUntilRelease();
+      input.controls.suppressRightMouseUntilRelease();
       return;
     }
     const { itemUid: uid, hand, heldSimSeconds } = released;
@@ -3133,7 +3134,7 @@ export const startPlay = (
     if (!charge.active || charge.startedAt !== undefined) {
       return;
     }
-    if (!(replaySample?.intent.useDominantHeld ?? input.dominantUseHeld)) {
+    if (!(replaySample?.intent.useDominantHeld ?? input.controls.dominantUseHeld)) {
       cancelItemThrow();
       return;
     }
@@ -3158,7 +3159,7 @@ export const startPlay = (
     const fullStrength = throwDistanceForItem(item, registry, itemThrowTuning, itemThrowTuning.chargeSimSeconds);
     const chargeProgress = fullStrength > 0 ? Math.max(0, Math.min(1, distanceMetres / fullStrength)) : 0;
     const offset: Vec3 = throwingStance
-      ? throwStanceWorldOffset(hand, input.yaw, input.pitch, chargeProgress)
+      ? throwStanceWorldOffset(hand, input.controls.yaw, input.controls.pitch, chargeProgress)
       : [0, 0, 0];
     const origin = eye().map((value, axis) => value * s + offset[axis]!) as Vec3;
     return flightForItem(item, registry, {
@@ -3172,7 +3173,7 @@ export const startPlay = (
   }
 
   function throwHeldItem(item: Item, hand: HandSide, distanceMetres: number): void {
-    if (input.freeLooking) {
+    if (input.controls.freeLooking) {
       return;
     }
     if (inventory.hands[hand] !== item) {
@@ -3303,8 +3304,8 @@ export const startPlay = (
         ...(selected.hand === undefined ? {} : { hand: selected.hand }),
         twoHanded: selected.twoHanded,
         hands: handUids(),
-        aimYaw: input.yaw,
-        aimPitch: input.pitch,
+        aimYaw: input.controls.yaw,
+        aimPitch: input.controls.pitch,
       },
       sim.body.tuning.staminaRegenDelaySimSeconds,
     );
@@ -3350,7 +3351,7 @@ export const startPlay = (
   };
 
   const meleeReadiness = (meleeWeaponHeld: boolean, emptyHand?: HandSide) => ({
-    rightMouseHeld: input.rightMouseActionHeld && input.locked && !input.menuPointer,
+    rightMouseHeld: input.controls.rightMouseActionHeld && input.locked && !input.menuPointer,
     meleeWeaponHeld,
     handsEmpty:
       emptyHand === undefined ? !(inventory.hands.right || inventory.hands.left) : !inventory.hands[emptyHand],
@@ -3422,7 +3423,7 @@ export const startPlay = (
     }
     const held = inventory.hands[hand];
     const action = selectPrimaryAction(inventory, hand, held && survival.selectedItemAction(held)?.id);
-    if (!freeLookAllowsUse(input.freeLooking, action.kind)) {
+    if (!freeLookAllowsUse(input.controls.freeLooking, action.kind)) {
       return;
     }
     if (sharpenAtWheel(hand)) {
@@ -3461,7 +3462,11 @@ export const startPlay = (
       case 'magazine':
         refusalReason(
           survival.selectedItemAction(action.item)?.magazine === 'strip'
-            ? magazines.strip(action.item.uid, sim.time, replaySample?.intent.useDominantHeld ?? input.dominantUseHeld)
+            ? magazines.strip(
+                action.item.uid,
+                sim.time,
+                replaySample?.intent.useDominantHeld ?? input.controls.dominantUseHeld,
+              )
             : lines.magazine.empty,
         );
         return;
@@ -3560,7 +3565,7 @@ export const startPlay = (
         fps,
         seed: config.seed,
         radiusMetres: config.radiusM,
-        walking: input.walking,
+        walking: input.controls.walking,
         positionMetres: body.pos.map((v) => v * s),
         meshed: meshes.count,
         pending: streamer.pending,
@@ -3711,7 +3716,7 @@ export const startPlay = (
   };
 
   const updateVisualFeedback = (dt: number): void => {
-    input.advanceFreeLook(dt);
+    input.controls.advanceFreeLook(dt);
     advanceAdsAim(dt);
     for (const event of damageEvents.read()) {
       if (event.kind === 'damage') {
@@ -3725,10 +3730,10 @@ export const startPlay = (
         body,
         paused: sim.paused,
         noclip: debugTools?.noclip ?? false,
-        yaw: spectator.avatarYaw(input.yaw),
-        pitch: spectator.avatarPitch(input.pitch),
-        headYaw: spectator.enabled ? 0 : input.freeLook.yaw,
-        headPitch: spectator.enabled ? 0 : input.viewPitch - input.pitch,
+        yaw: spectator.avatarYaw(input.controls.yaw),
+        pitch: spectator.avatarPitch(input.controls.pitch),
+        headYaw: spectator.enabled ? 0 : input.controls.freeLook.yaw,
+        headPitch: spectator.enabled ? 0 : input.controls.viewPitch - input.controls.pitch,
         stridePhase: session.playerStridePhase,
         stance: session.stance,
         lean: session.lean,
@@ -3736,7 +3741,7 @@ export const startPlay = (
         adsAim: adsAimShown,
         eye: eye(),
         ...(spectator.body
-          ? { spectator: { position: [...spectator.body.pos], yaw: input.yaw, pitch: input.pitch } }
+          ? { spectator: { position: [...spectator.body.pos], yaw: input.controls.yaw, pitch: input.controls.pitch } }
           : {}),
         thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled),
         ...thirdPersonOrbitFrame(orbitAngle),
@@ -3777,7 +3782,7 @@ export const startPlay = (
           snapshotP95Ms: snapshotHistory.p95Ms,
           snapshotCount: snapshotHistory.count,
         },
-        walking: input.walking,
+        walking: input.controls.walking,
         positionBlocks: body.pos,
         blockSize: s,
         calendar: displayCalendar(),
@@ -3792,7 +3797,11 @@ export const startPlay = (
 
   const firearmReadiness = () => {
     const selected = selectPrimaryAction(inventory);
-    if (selected.kind !== 'firearm' || !debugGunPose.readyHeld(input.rightMouseActionHeld) || !hasGunPoseInput()) {
+    if (
+      selected.kind !== 'firearm' ||
+      !debugGunPose.readyHeld(input.controls.rightMouseActionHeld) ||
+      !hasGunPoseInput()
+    ) {
       return;
     }
     return {
@@ -3859,7 +3868,7 @@ export const startPlay = (
     const model = sightedFirearmModel(registry, item) ?? firearmHandlingFor(item, registry).model;
     const side = inventory.hands.right?.uid === item.uid ? ('right' as const) : ('left' as const);
     const progress = firearmPose?.progress ?? 0;
-    const viewpoint = { eye: eye(), yaw: input.yaw, pitch: input.pitch };
+    const viewpoint = { eye: eye(), yaw: input.controls.yaw, pitch: input.controls.pitch };
     const leadingSide = dominantSide(inventory.character);
     const twoHanded = Boolean(registry.items.get(item.type)?.twoHanded);
     const aimingDownSights = firearmPose?.aimingDownSights ?? false;
@@ -3873,7 +3882,7 @@ export const startPlay = (
       aimingDownSights,
       ...heldBodyInput(side),
       aimFrame: aim.frame,
-      lookPitchRadians: input.pitch,
+      lookPitchRadians: input.controls.pitch,
       loweredPitchRadians: tuning.loweredPitchRadians,
     };
     const basePose = heldFirearmTransform(poseInput);
@@ -3933,9 +3942,9 @@ export const startPlay = (
     debugTools.stepNoclip({
       body,
       scale,
-      yaw: input.yaw,
-      pitch: input.pitch,
-      intent: input.intent(),
+      yaw: input.controls.yaw,
+      pitch: input.controls.pitch,
+      intent: input.controls.intent(),
       descend: keyboardInput.held('noclip.descend'),
       dt,
     });
@@ -3946,9 +3955,9 @@ export const startPlay = (
       cancelItemThrow();
       return;
     }
-    if (!replayPlayer && input.consumeRightMousePressed() && session.throwCharge.active) {
+    if (!replayPlayer && input.controls.consumeRightMousePressed() && session.throwCharge.active) {
       dispatchScreenCommand({ kind: 'item.throw.cancel' });
-      input.suppressRightMouseUntilRelease();
+      input.controls.suppressRightMouseUntilRelease();
     }
   };
 
@@ -3970,9 +3979,9 @@ export const startPlay = (
       debugTools?.stepNoclip({
         body: spectator.body,
         scale,
-        yaw: input.yaw,
-        pitch: input.pitch,
-        intent: input.intent(),
+        yaw: input.controls.yaw,
+        pitch: input.controls.pitch,
+        intent: input.controls.intent(),
         descend: keyboardInput.held('noclip.descend'),
         dt: realDt,
       });
@@ -3990,7 +3999,7 @@ export const startPlay = (
       bore,
       eye: eye(),
       lookDirection: lookDir(),
-      rightMouseHeld: input.rightMouseActionHeld,
+      rightMouseHeld: input.controls.rightMouseActionHeld,
       pointerLocked: input.locked,
       menuPointer: input.menuPointer,
       firearmReady,
@@ -4012,18 +4021,18 @@ export const startPlay = (
 
   const updateActionInputs = (now: number): void => {
     const actionRefusal = Boolean(sim.body.actionRefusal);
-    const { freeLooking } = input;
+    const { freeLooking } = input.controls;
     if (freeLooking) {
       cancelItemThrow();
       throwStanceInput.cancel();
     }
     if (actionRefusal || freeLooking) {
-      input.reload.cancel();
+      input.controls.reload.cancel();
       quickbarInput.cancel();
       interactInput.cancel();
       interactionPressTarget = undefined;
     } else {
-      input.reload.advance(now, reloadBinding());
+      input.controls.reload.advance(now, reloadBinding());
     }
     const inputLocked = replaySample?.inputLocked ?? compression.locksInput;
     if (screen.isOpen || mainMenuOpen || inputLocked || sim.dead || actionRefusal || freeLooking) {
@@ -4049,7 +4058,7 @@ export const startPlay = (
       listener: body.pos,
       player: {
         pos: body.pos,
-        yaw: spectator.avatarYaw(input.yaw),
+        yaw: spectator.avatarYaw(input.controls.yaw),
         drip: playerDrip,
         thirdPerson: isPlayerFigureWhole(thirdPersonViewEnabled, spectator.enabled),
       },
@@ -4106,7 +4115,7 @@ export const startPlay = (
     }
     guide.observe({
       position: body.pos,
-      yaw: input.yaw,
+      yaw: input.controls.yaw,
       crouching: session.stance === 'crouching',
       doorOpen: [...entities.all].some((entity) => entity.type === observe.door && entity.open),
       searched: [...entities.all].some((entity) => entity.type === observe.searched && entity.searched),

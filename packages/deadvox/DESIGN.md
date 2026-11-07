@@ -2304,7 +2304,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   Look-targeted item actions are refused while
   free look is held so a glance cannot redirect a throw, strike or interaction.
   Content owns the neck range and return speed; transient head offsets do not belong
-  in a character save. See `src/game/input.ts`, `Input`, `src/game/freeLook.ts`, `FreeLook`,
+  in a character save. See `src/game/playerControls.ts`, `PlayerControls`, `src/game/freeLook.ts`, `FreeLook`,
   `freeLookAllowsUse` and `freeLookAllowsCommand`, and `src/render/playView.ts`, `createPlayView`. The debug X is
   separate from the optional crosshair. In ADS, recoil, sway, and handling
   move the firearm pose and bore while the view direction stays fixed; only the intentional

@@ -1,19 +1,8 @@
-// Pointer-lock mouse look; keyboard intents come from the shared semantic owner.
+// Pointer-lock mouse listeners writing the player's controls; keyboard intents come from the shared semantic owner.
 
-import { FreeLook, type FreeLookTuning } from './freeLook.ts';
 import { keyboardInput } from './inputBindings.ts';
-import type { MoveIntent, StanceToggle } from './player.ts';
-import { ReloadInput } from './reloadInput.ts';
+import { PlayerControls } from './playerControls.ts';
 
-export const LOOK_PITCH_LIMIT = 1.55;
-
-export const adjustLookPitch = (pitch: number, delta: number): { pitch: number; applied: number } => {
-  if (![pitch, delta].every(Number.isFinite)) {
-    throw new Error('Invalid pitch adjustment');
-  }
-  const next = Math.max(-LOOK_PITCH_LIMIT, Math.min(LOOK_PITCH_LIMIT, pitch + delta));
-  return { pitch: next, applied: next - pitch };
-};
 export const nextMenuCursor = (
   position: { x: number; y: number },
   movement: { x: number; y: number },
@@ -43,22 +32,8 @@ export function requestInputLock(target: HTMLElement): Promise<void> {
 }
 
 export class Input {
-  readonly reload = new ReloadInput();
-  readonly freeLook = new FreeLook();
-  private freeLookInput: { tuning: FreeLookTuning; ads: () => boolean } | undefined;
-  yaw = 0;
-  pitch = 0;
-  walking = false;
+  readonly controls: PlayerControls;
   menuPointer = false;
-  rightMouseHeld = false;
-  aimingDownSights = false;
-  private rightMousePressed = false;
-  private rightMouseSuppressed = false;
-  private aimingDownSightsAllowed: () => boolean = () => true;
-  private dominantUsePressed = false;
-  private dominantUseDown = false;
-  private offUsePressed = false;
-  private stanceTogglePressed: StanceToggle | undefined;
   cursorX = globalThis.innerWidth / 2;
   cursorY = globalThis.innerHeight / 2;
   private readonly target: HTMLElement;
@@ -77,26 +52,31 @@ export class Input {
     this.dominantUseAllowed = dominantUseAllowed;
     this.cancelOnBlurAllowed = cancelOnBlurAllowed;
     this.viewerInputAllowed = viewerInputAllowed;
+    const controls = new PlayerControls({
+      playing: () => this.locked && !this.menuPointer,
+      viewerInputAllowed: () => this.viewerInputAllowed(),
+      held: (action) => keyboardInput.held(action),
+    });
+    this.controls = controls;
     target.addEventListener('mousedown', (event) => {
       if (!this.viewerInputAllowed()) {
         return;
       }
       const mouse = event as MouseEvent;
       if (mouse.button === 2) {
-        this.rightMousePressed = true;
+        controls.pressRightMouse();
       }
       if (this.locked && !this.menuPointer) {
         keyboardInput.pressPointer(mouse.button, mouse);
       }
       if (
         mouse.button === 0 &&
-        !this.dominantUseDown &&
+        !controls.dominantUseHeld &&
         this.locked &&
         !this.menuPointer &&
         this.dominantUseAllowed()
       ) {
-        this.dominantUsePressed = true;
-        this.dominantUseDown = true;
+        controls.pressDominantUse();
       }
     });
     globalThis.addEventListener('mouseup', (event) => {
@@ -107,20 +87,20 @@ export class Input {
       const { button } = mouse;
       keyboardInput.releasePointer(button, mouse.timeStamp);
       if (button === 2) {
-        this.rightMouseSuppressed = false;
+        controls.releaseRightMouse();
       }
       if (button === 0) {
-        this.dominantUseDown = false;
+        controls.releaseDominantUse();
       }
     });
     globalThis.addEventListener('blur', () => {
       if (this.cancelOnBlurAllowed()) {
-        this.cancel();
+        controls.cancel();
       }
     });
     document.addEventListener('pointerlockchange', () => {
       if (!this.locked && this.cancelOnBlurAllowed()) {
-        this.freeLook.clear();
+        controls.freeLook.clear();
       }
     });
     document.addEventListener('mousemove', (event) => {
@@ -138,107 +118,14 @@ export class Input {
       if (!(Number.isFinite(sensitivity) && sensitivity > 0)) {
         throw new Error('Invalid look sensitivity');
       }
-      this.advanceFreeLook(0);
-      if (this.freeLook.active && this.freeLookInput) {
-        this.freeLook.turn(-event.movementX * sensitivity, -event.movementY * sensitivity, this.freeLookInput.tuning);
-      } else {
-        this.yaw -= event.movementX * sensitivity;
-        this.pitch = adjustLookPitch(this.pitch, -event.movementY * sensitivity).pitch;
-      }
+      controls.look(event.movementX * sensitivity, event.movementY * sensitivity);
     });
-  }
-  cancel(preservePointer = false): void {
-    this.freeLook.clear();
-    this.reload.cancel();
-    this.rightMousePressed = false;
-    this.rightMouseSuppressed = false;
-    if (!preservePointer) {
-      this.rightMouseHeld = false;
-      this.aimingDownSights = false;
-    }
-    this.dominantUseDown = false;
-    this.dominantUsePressed = false;
-    this.offUsePressed = false;
-    this.stanceTogglePressed = undefined;
-  }
-  setFreeLook(tuning: FreeLookTuning, ads: () => boolean): void {
-    this.freeLookInput = { tuning, ads };
-  }
-  advanceFreeLook(dt: number): void {
-    if (this.freeLookInput && this.viewerInputAllowed()) {
-      this.freeLook.update(
-        dt,
-        this.locked && !this.menuPointer && keyboardInput.held('view.free-look'),
-        this.freeLookInput.ads(),
-        this.freeLookInput.tuning,
-      );
-    }
-  }
-  get freeLooking(): boolean {
-    this.advanceFreeLook(0);
-    return this.freeLook.active;
-  }
-  get viewYaw(): number {
-    return this.yaw + this.freeLook.yaw;
-  }
-  get viewPitch(): number {
-    return adjustLookPitch(this.pitch, this.freeLook.pitch).pitch;
   }
   setMouseLookOverride(override: (movementX: number, movementY: number) => boolean): void {
     this.mouseLookOverride = override;
   }
   setLookSensitivity(base: number, appliedPower: () => number): void {
     this.lookSensitivity = { base, appliedPower };
-  }
-  setAimingDownSightsAllowed(allowed: () => boolean): void {
-    this.aimingDownSightsAllowed = allowed;
-  }
-  toggleAimingDownSights(replaying = false): void {
-    if (
-      this.rightMouseActionHeld &&
-      (replaying || (this.locked && !this.menuPointer)) &&
-      this.aimingDownSightsAllowed()
-    ) {
-      this.aimingDownSights = !this.aimingDownSights;
-    }
-  }
-  startFreeLook(): void {
-    this.aimingDownSights = false;
-  }
-  useOff(): void {
-    if (this.locked && !this.menuPointer) {
-      this.offUsePressed = true;
-    }
-  }
-  get rightMouseActionHeld(): boolean {
-    return this.rightMouseHeld && !this.rightMouseSuppressed;
-  }
-
-  consumeRightMousePressed(): boolean {
-    const pressed = this.rightMousePressed;
-    this.rightMousePressed = false;
-    return pressed;
-  }
-
-  suppressRightMouseUntilRelease(): void {
-    this.rightMouseSuppressed = this.rightMouseHeld;
-  }
-
-  get locked(): boolean {
-    return document.pointerLockElement === this.target;
-  }
-
-  get dominantUseHeld(): boolean {
-    return this.dominantUseDown;
-  }
-
-  adjustPitch(delta: number): number {
-    if (!Number.isFinite(delta)) {
-      throw new Error('Invalid pitch adjustment');
-    }
-    const adjusted = adjustLookPitch(this.pitch, delta);
-    this.pitch = adjusted.pitch;
-    return adjusted.applied;
   }
   moveMenuCursor(movementX: number, movementY: number): void {
     if (!(this.locked && this.menuPointer)) {
@@ -252,6 +139,9 @@ export class Input {
     this.cursorX = cursor.x;
     this.cursorY = cursor.y;
   }
+  get locked(): boolean {
+    return document.pointerLockElement === this.target;
+  }
   lock(): void {
     requestInputLock(this.target);
   }
@@ -259,33 +149,5 @@ export class Input {
     if (this.locked) {
       document.exitPointerLock();
     }
-  }
-  intent(): MoveIntent {
-    const on = (action: string) => (keyboardInput.held(action) ? 1 : 0);
-    return {
-      forward: on('movement.forward') - on('movement.back'),
-      right: on('movement.right') - on('movement.left'),
-      lean: on('player.lean-right') - on('player.lean-left'),
-      jump: keyboardInput.held('movement.jump') || keyboardInput.held('noclip.ascend'),
-      sprint: keyboardInput.held('movement.sprint'),
-      walk: this.walking,
-      useDominant: this.dominantUsePressed,
-      useDominantHeld: this.dominantUseDown,
-      useOff: this.offUsePressed,
-    };
-  }
-  consumeDominantUse(): void {
-    this.dominantUsePressed = false;
-  }
-  consumeOffUse(): void {
-    this.offUsePressed = false;
-  }
-  requestStanceToggle(toggle: StanceToggle): void {
-    this.stanceTogglePressed = toggle;
-  }
-  consumeStanceToggle(): StanceToggle | undefined {
-    const pressed = this.stanceTogglePressed;
-    this.stanceTogglePressed = undefined;
-    return pressed;
   }
 }

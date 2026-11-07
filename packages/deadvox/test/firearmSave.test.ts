@@ -20,7 +20,7 @@ import {
   firearmHandlingFor,
   spentCaseItemId,
 } from '../src/game/firearmHandling.ts';
-import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/input.ts';
+import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
