@@ -63,7 +63,9 @@ export const SIMULATION_ENTRIES = [
   'src/game/browserMods.ts',
   'src/game/bundledMods.ts',
   'src/game/commandRouter.ts',
-  'src/game/play.ts',
+  // Startup wiring that play.ts hands to the session and streamer, fingerprinted independently of that caller.
+  'src/game/layoutVehicles.ts',
+  'src/game/columnArrival.ts',
   'src/game/quickbar.ts',
   'src/game/session.ts',
   'src/game/simulationStepper.ts',
@@ -71,8 +73,10 @@ export const SIMULATION_ENTRIES = [
 ] as const;
 
 export const SIMULATION_EXCLUSIONS = [
+  // The browser shell that wires runtime owners to presentation; no runtime module may import it,
+  // so its simulation effects are fingerprinted through the router, stepper and session it calls.
+  'src/game/play.ts',
   // Includes playView's owned meshes/camera/draw/disposal.
-  // play.ts retains timestamp-to-dt policy, input sampling and actions; simulationStepper.ts advances the simulation.
   'src/render',
   // The browser's Real clock and frame requests; the stepper receives each frame's Real seconds.
   'src/presentation/realFrames.ts',
@@ -147,7 +151,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/keyCap.ts',
   // Page-leave warning timing is lifecycle presentation, not simulation or saved state.
   'src/ui/leaveConfirmation.ts',
-  // Read-only HUD/status/prompt projection; target selection and execution stay in play.ts.
+  // Read-only HUD/status/prompt projection; target selection and recorded commands stay fingerprinted.
   'src/ui/playHud.ts',
   'src/ui/guidedSteps.ts',
   // Read-only debug readout formatting and byte-count estimates.

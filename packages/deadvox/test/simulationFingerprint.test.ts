@@ -54,8 +54,10 @@ const UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR = /Unsupported runtime dependency/;
 const SOURCE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?)$/;
 const DECLARATION_FILE_PATTERN = /\.d\.[cm]?ts$/;
 
-// These files are not runtime roots: buildRevision is a test/build diagnostic helper,
-// while debugInterface contains only erased TypeScript contracts.
+// Core and game files outside simulation identity, each with its reason: test, build or type-only
+// files, and presentation, live-input or debug files that only the excluded browser shell reaches.
+// Unlike an exclusion, a rule here only records the file: a later runtime import brings it back
+// into identity, so a simulation use added later cannot hide behind it.
 const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/soundEvents.ts': 'Erased sound-id type contracts; selections and validation stay in the runtime graph.',
   'src/core/actorSense.ts': 'Erased player-sense contracts; perception and motion remain in the runtime graph.',
@@ -82,6 +84,25 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/schedulerIds.ts':
     'Reached only through the excluded save controller; test/saveSchedulerIds.test.ts keeps it equal to the fingerprinted registrations, so it cannot change without them.',
   'src/core/temporalFields.ts': 'Authored-field catalogue used by the time linter, not game runtime.',
+  'src/core/interactionAffordance.ts':
+    'Presentation projection of the interaction highlight; replay applies recorded payloads, not the highlight.',
+  'src/core/stageMarks.ts':
+    'Tutorial and playtest-observer stage values; core/site.ts imports only the type, so nothing simulated reads them.',
+  'src/game/inputBindings.ts': 'DOM key and button bindings; the recorder stores the resolved action, not the binding.',
+  'src/game/quickbarInput.ts': 'Live quickbar key recognition; the recorder stores the resolved quickbar action.',
+  'src/game/backquoteOrbitGesture.ts': 'Live backquote tap recognition for the debug panel and camera gestures.',
+  'src/game/opticZoom.ts':
+    'Optic zoom for mouse sensitivity, view field and render poses; a replay applies the recorded look.',
+  'src/game/spectatorCamera.ts': 'Debug spectator camera, toggled live and never recorded.',
+  'src/game/debugGunPose.ts': 'Debug gun-pose editor, toggled live and never recorded.',
+  'src/game/guidedSteps.ts': 'Tutorial guide prompts; presentation only.',
+  'src/game/handlingLessons.ts': 'Tutorial handling lessons; presentation only.',
+  'src/game/playStatus.ts': 'HUD status rows; presentation only.',
+  'src/game/tierNotice.ts': 'Player-facing tier notices; presentation only.',
+  'src/game/tutorialUrl.ts': 'Tutorial URL parameters read by the browser shell; presentation only.',
+  'src/game/thirdPersonOrbit.ts': 'Third-person camera orbit; presentation only.',
+  'src/game/worldLoading.ts':
+    'Startup readiness on meshing, lighting and real time; the stepper pauses until it is ready, so no simulated or replayed tick runs before it.',
 };
 
 async function sourceFilesUnder(directory: string): Promise<string[]> {
@@ -219,7 +240,7 @@ describe('simulation source fingerprint', () => {
     const paper = await mutateSimulationSource(host, 'src/ui/reading.ts');
     expect(paper.included).toBe(false);
     expect(paper.value).toBe(original);
-    const reach = await mutateSimulationSource(host, 'src/game/play.ts');
+    const reach = await mutateSimulationSource(host, 'src/game/commandRouter.ts');
     expect(reach.included).toBe(true);
     expect(reach.value).not.toBe(original);
   });
