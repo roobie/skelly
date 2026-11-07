@@ -589,14 +589,6 @@
       "output": "packages/deadvox/test/fixtures/mods/browser-mod.json"
     },
     {
-      "source": "packages/deadvox/test/fixtures/mods/cel-mod-spike.jsonnet",
-      "output": "packages/deadvox/test/fixtures/mods/cel-mod-spike.json"
-    },
-    {
-      "source": "packages/deadvox/test/fixtures/mods/cel-reuse-spike.jsonnet",
-      "output": "packages/deadvox/test/fixtures/mods/cel-reuse-spike.json"
-    },
-    {
       "source": "packages/deadvox/test/fixtures/mods/expression-spike.jsonnet",
       "output": "packages/deadvox/test/fixtures/mods/expression-spike.json"
     },

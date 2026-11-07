@@ -126,7 +126,6 @@
       "includes": [
         "**/src/bench/*-cpu.mjs",
         "**/deadvox/tools/bench-zombie-swings.mjs",
-        "packages/deadvox/tools/bench-expressions.mjs",
         "packages/deadvox/tools/probe-wasm-expressions.mjs",
         "packages/deadvox/tools/measure-ragdolls.mjs"
       ],

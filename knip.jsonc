@@ -66,7 +66,6 @@
         "src/soundsPage.ts!",
         // A type-level witness compiled by typecheck, never imported.
         "src/worker/mesherPort.witness.ts",
-        "tools/bench-expressions.mjs",
         "tools/police-item-models.mjs",
         "tools/probe-wasm-expressions.mjs",
         "tools/rapier-f64/candidate.ts",
