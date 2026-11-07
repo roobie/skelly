@@ -6,7 +6,7 @@ import { parse } from 'valibot';
 import { canonicalJson } from '../src/core/canonicalJson.ts';
 import { admitPacks, type PackInput, PackManifestSchema, packContentHash } from '../src/core/packAdmission.ts';
 
-/** Pack roots are relative to the product modules that glob them, as `src/product/content.ts`, `productContent` keys them. */
+/** Pack roots are relative to the product modules that glob them; see `src/product/packs.ts`, `bundledPacks`. */
 export const PACK_ROOT_BASE = 'src/product';
 
 /** Every shipped pack, opt-in ones included, as the bundle stamp and file hashes cover them. */

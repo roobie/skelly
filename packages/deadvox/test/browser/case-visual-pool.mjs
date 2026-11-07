@@ -18,6 +18,7 @@ import { playerTuning } from '/src/game/player.ts';
 import { CaseEffects, FLYING_CASE_CAP } from '/src/render/caseEffects.ts';
 import { PileMeshes } from '/src/render/piles.ts';
 import { ModelLibrary } from '/src/render/models.ts';
+import { productAssets } from '/src/product/assets.ts';
 import { SPENT_CASE_SCATTER_CAP } from '/src/core/scatterPile.ts';
 const raw = {
   ...import.meta.glob('./mods/*/*.json', { eager: true, import: 'default' }),
@@ -41,7 +42,7 @@ const modelErrors = [];
 const models = new ModelLibrary(
   { ...registry, models: new Map([[modelDef.id, modelDef]]) },
   (message) => modelErrors.push(message),
-  undefined,
+  { packAssets: productAssets.models },
   1,
 );
 const waitFor = async (condition) => {

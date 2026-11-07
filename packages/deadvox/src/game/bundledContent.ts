@@ -16,10 +16,16 @@ export interface BundledPack {
   readonly manifest: PackManifest;
 }
 
-/** The product's shipped packs, read by the product; this module names no pack root. */
+/** The product's shipped packs, ordered by root, from manifests keyed by `<root>/pack/manifest.json`. */
+export const bundledPacksFrom = (manifests: Readonly<Record<string, PackManifest>>): readonly BundledPack[] =>
+  Object.entries(manifests)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([path, manifest]) => ({ root: path.slice(0, -MANIFEST_SUFFIX.length), manifest }));
+
+/** The product's shipped packs and their content, read by the product; this module names no pack root. */
 export interface BundledContentSources {
-  /** Pack manifests keyed by `<root>/pack/manifest.json`. */
-  readonly manifests: Readonly<Record<string, PackManifest>>;
+  /** Every shipped pack; see `bundledPacksFrom`. */
+  readonly packs: readonly BundledPack[];
   /** Content files keyed by `<root>/<path>`, each path as its manifest lists it. */
   readonly files: Readonly<Record<string, unknown>>;
 }
@@ -27,8 +33,6 @@ export interface BundledContentSources {
 export type StartupContent = ReturnType<typeof buildRegistry> & { defaultStart?: string | undefined };
 
 export interface BundledContent {
-  /** Every shipped pack, ordered by root. */
-  readonly packs: readonly BundledPack[];
   /** The packs that start without selection: every shipped pack except the opt-in ones. */
   readonly bundledPackInputs: readonly PackInput[];
   /** Every shipped pack, opt-in ones included, for selecting an opt-in pack's closure. */
@@ -47,10 +51,10 @@ export const optInPackIdentity = (pack: PackInput): SaveVersionComponents['conte
 };
 
 /** Admits the product's shipped packs once and prepares their bundle proof. */
-export const createBundledContent = async ({ manifests, files }: BundledContentSources): Promise<BundledContent> => {
-  const bundledPacks: readonly BundledPack[] = Object.entries(manifests)
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([path, manifest]) => ({ root: path.slice(0, -MANIFEST_SUFFIX.length), manifest }));
+export const createBundledContent = async ({
+  packs: bundledPacks,
+  files,
+}: BundledContentSources): Promise<BundledContent> => {
   const available: PackInput[] = bundledPacks.map(({ root, manifest }) => ({
     source: root,
     manifest,
@@ -73,7 +77,6 @@ export const createBundledContent = async ({ manifests, files }: BundledContentS
   );
   const bundle = BundleAdmission.combine(admissions);
   return {
-    packs: bundledPacks,
     bundledPackInputs: packs,
     availablePackInputs: available,
     baseSources: admission.sources,

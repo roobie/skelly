@@ -1,10 +1,10 @@
 import { bundledAssetFiles, type PresentationAssets } from '../presentation/bundledAssets.ts';
-import { bundledPacks } from './content.ts';
+import { bundledPacks } from './packs.ts';
 
 const owned = (files: Readonly<Record<string, string>>) => bundledAssetFiles(files, bundledPacks);
 
-// Only the product names its mod roots; presentation code receives these maps from the product entry. Glob keys
-// are relative to this file, so they share a base with the pack roots of `src/product/content.ts`, `productContent`.
+// Presentation code receives these maps from the product entry. Glob keys are relative to this directory, as the
+// pack roots of `src/product/packs.ts`, `bundledPacks`, are.
 export const productAssets: PresentationAssets = {
   audio: owned({
     ...import.meta.glob<string>('../../mods/*/assets/audio/**/*.ogg', {

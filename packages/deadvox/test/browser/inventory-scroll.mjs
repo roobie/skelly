@@ -1529,6 +1529,7 @@ try {
         const { ItemPictures } = await import(moduleUrls.itemPictures);
         const { ModelLibrary } = await import(moduleUrls.models);
         const { itemLook } = await import(moduleUrls.itemLook);
+        const { productAssets } = await import(moduleUrls.productAssets);
         const { session, screen } = globalThis.foregripFitTest;
         if (screen.hooks.pictures) {
           throw new Error('Live handling must remain render-free');
@@ -1544,14 +1545,19 @@ try {
           (message) => {
             throw new Error(message);
           },
-          undefined,
+          { packAssets: productAssets.models },
           ids.size,
         );
         screen.hooks.pictures = new ItemPictures(registry, models, 1);
       },
       {
         uid: rifleUid,
-        moduleUrls: { itemPictures: itemPicturesModule, models: modelsModule, itemLook: itemLookModule },
+        moduleUrls: {
+          itemPictures: itemPicturesModule,
+          models: modelsModule,
+          itemLook: itemLookModule,
+          productAssets: '/src/product/assets.ts',
+        },
       },
     );
     await page.waitForFunction((uid) => {
