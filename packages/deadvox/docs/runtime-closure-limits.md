@@ -43,9 +43,11 @@ sees.
   redirect imports.
 - **Vite configs for other commands, modes or environment variables:** the gate loads the config
   once for each command the package's scripts run (`test/runtimeClosure.test.ts`,
-  `packageCommands`); a custom `--mode`, `vite preview`, Vitest's test mode or a branch on an
-  environment variable is not loaded, because those combinations are unbounded and none of them
-  builds or serves the runtime under the package's scripts.
+  `packageCommands`); a custom `--mode`, `vite preview` and Vitest's test mode are not loaded.
+  Environment variants are not enumerated either, including ones a package script selects (the
+  HTTPS development script in `package.json`, `scripts`, and its branch in `vite.config.ts`,
+  `basicSsl`): each load takes only the branch the test's inherited environment picks. These are
+  accepted because the combinations are unbounded.
 - **`publicDir` as a root-relative URL:** a `/` specifier that only the public directory supplies
   is not compared, because Vite refuses to import code or JSON through that lookup; an ordinary
   relative or absolute import of a file inside the public directory is a module edge and is checked
