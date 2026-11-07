@@ -226,8 +226,46 @@ describe('runtime closure, stage 1', () => {
     ['a forbidden workspace root', "import '@skelly/presentation?raw';\n"],
   ])('fails a queried bare specifier naming %s', (_name, source) => {
     const violations = violationsIn({ [catalog]: source });
-    // The type-position import scan also reads a literal import() call, so one edge can report twice.
-    expect([...new Set(importers(violations))]).toEqual([catalog]);
+    expect(importers(violations)).toEqual([catalog]);
+  });
+
+  it.each([
+    ['a type import behind a comment', "export type V = import(/* m */ 'three').Vector3;\n"],
+    ['a type import with an escaped name', "export type V = import('th\\u0072ee').Vector3;\n"],
+    ['a queried type import behind a comment', "export type V = import(/* m */ 'three?raw');\n"],
+    [
+      'a queried module URL with a trailing comma',
+      "export const u = new URL('../render/view.ts?raw', import.meta.url,);\n",
+    ],
+    [
+      'a module URL whose target is not a literal',
+      'export const at = (path: string) => new URL(path, import.meta.url);\n',
+    ],
+    ['an import-equals require', "import Three = require('three');\nexport const v = Three;\n"],
+    ['a CommonJS require call', "export const three = require('three');\n"],
+    ['a triple-slash types reference', '/// <reference types="three" />\nexport const v = 1;\n'],
+    [
+      'a module augmentation',
+      "declare module 'three' {\n  interface Vector3 {\n    tag: string;\n  }\n}\nexport {};\n",
+    ],
+    ['an import.meta.resolve call', "export const at = import.meta.resolve('../render/view.ts');\n"],
+  ])('fails %s', (_name, source) => {
+    expect(importers(violationsIn({ [catalog]: source }))).toEqual([catalog]);
+  });
+
+  it('reads a module URL with a trailing comma', () => {
+    const violations = violationsIn({
+      [catalog]: "export const u = new URL('../render/view.ts', import.meta.url,);\n",
+    });
+    expect(violations.map((v) => [v.importer, v.target])).toEqual([[catalog, 'packages/deadvox/src/render/view.ts']]);
+  });
+
+  it('fails a JSDoc type import in a JavaScript runtime file', () => {
+    const legacy = 'packages/deadvox/src/core/legacy.js';
+    const violations = violationsIn({
+      [legacy]: "/** @type {import('three').Vector3 | undefined} */\nexport let v;\n",
+    });
+    expect(importers(violations)).toEqual([legacy]);
   });
 
   it.each([

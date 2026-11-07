@@ -45,8 +45,10 @@ export const STAGE_ONE_POLICY: RuntimeClosurePolicy = {
 
 const SOURCE_FILE = /\.(?:[cm]?[jt]sx?)$/;
 const RESOLVE_SUFFIXES = ['', '.ts', '.tsx', '.mts', '.js', '.mjs', '/index.ts', '/index.js'];
-const IMPORT_CALL = /\bimport\s*\(\s*(['"`])([^'"`$]*)\1\s*[,)]/g;
-const URL_CALL = /\bnew\s+URL\s*\(\s*(['"`])([^'"`]*)\1\s*,\s*import\.meta\.url\s*\)/g;
+// Comment readers: a triple-slash directive and its attributes, and a JSDoc type import in JavaScript.
+const TRIPLE_SLASH = /^\/\s*<reference\b/;
+const DIRECTIVE_ATTRIBUTE = /([\w-]+)\s*=\s*(["'])(.*?)\2/g;
+const JSDOC_IMPORT = /\bimport\s*\(|@import\b/;
 // The glob subset the check matches exactly as the bundler does: literal name characters and `*` within a
 // segment, `**` as a whole segment. Brackets, groups, braces, `?`, escapes and queries fall outside it.
 const GLOB_SEGMENT = /^[A-Za-z0-9._*-]+$/;
@@ -156,7 +158,11 @@ interface AstNode {
 
 const isNode = (value: unknown): value is AstNode => typeof value === 'object' && value !== null;
 
-const isGlobMember = (node: AstNode): boolean => {
+/** `import.meta.<name>`, read non-computed. */
+const isImportMetaMember = (node: unknown, name: string): boolean => {
+  if (!isNode(node)) {
+    return false;
+  }
   const object = node.object as AstNode | undefined;
   const meta = object?.meta as AstNode | undefined;
   const metaProperty = object?.property as AstNode | undefined;
@@ -167,9 +173,17 @@ const isGlobMember = (node: AstNode): boolean => {
     object?.type === 'MetaProperty' &&
     meta?.name === 'import' &&
     metaProperty?.name === 'meta' &&
-    property?.name === 'glob'
+    property?.name === name
   );
 };
+
+const isGlobMember = (node: AstNode): boolean => isImportMetaMember(node, 'glob');
+
+/** A specifier that must be a string literal; the parser has already decoded its escapes. */
+const literalEdge = (node: unknown): Edge[] | string =>
+  isNode(node) && node.type === 'Literal' && typeof node.value === 'string'
+    ? [{ specifier: node.value, glob: false }]
+    : 'a module specifier that is not a string literal';
 
 /** A glob pattern's text as Vite reads it: a string literal's value, or a hole-free template's raw text. */
 const globText = (node: unknown): string | undefined => {
@@ -212,7 +226,7 @@ function dynamicImportEdges(source: unknown): Edge[] | string {
     return [{ specifier: source.value, glob: false }];
   }
   if (!(isNode(source) && source.type === 'TemplateLiteral')) {
-    return 'a dynamic import whose target is not a literal';
+    return 'a dynamic import or module URL whose target is not a literal or template';
   }
   if (!(source.expressions as unknown[]).every(plainName)) {
     return 'a dynamic import template hole that is not a plain name';
@@ -304,22 +318,66 @@ function globCallEdges(call: AstNode): Edge[] | string {
     .map((specifier) => ({ specifier, glob: true, ...base }));
 }
 
-/**
- * The dynamic-import and glob edges of one syntax node; a glob call's callee is recorded so it is not
- * read as a bare reference.
- */
-function syntaxNodeEdges(node: AstNode, callees: Set<AstNode>): Edge[] | string {
-  if (node.type === 'ImportExpression') {
-    return dynamicImportEdges(node.source);
+/** `new URL(target, import.meta.url)`, which the bundler resolves and emits like an import. */
+const isModuleUrl = (node: AstNode): boolean => {
+  const callee = node.callee as AstNode | undefined;
+  const args = node.arguments as unknown[];
+  return (
+    callee?.type === 'Identifier' && callee.name === 'URL' && args.length === 2 && isImportMetaMember(args[1], 'url')
+  );
+};
+
+/** The specifier-bearing node kinds that carry a single string-literal specifier, and where it sits. */
+const LITERAL_SPECIFIERS: ReadonlyMap<string, string> = new Map([
+  ['ImportDeclaration', 'source'],
+  ['ExportAllDeclaration', 'source'],
+  ['ExportNamedDeclaration', 'source'],
+  ['TSImportType', 'source'],
+  ['TSExternalModuleReference', 'expression'],
+]);
+
+function callEdges(node: AstNode, callees: Set<AstNode>): Edge[] | string {
+  const callee = node.callee as AstNode | undefined;
+  if (callee?.type === 'Identifier' && callee.name === 'require') {
+    return 'a CommonJS require call';
   }
-  if (node.type === 'CallExpression' && isNode(node.callee) && isGlobMember(node.callee)) {
-    callees.add(node.callee);
+  if (isNode(callee) && isImportMetaMember(callee, 'resolve')) {
+    return literalEdge((node.arguments as unknown[])[0]);
+  }
+  if (isNode(callee) && isGlobMember(callee)) {
+    callees.add(callee);
     return globCallEdges(node);
   }
-  return isGlobMember(node) && !callees.has(node) ? 'an import.meta.glob form the check cannot read' : [];
+  return [];
 }
 
-/** Every dynamic import and `import.meta.glob` call; any other use of `import.meta.glob` fails closed. */
+/**
+ * The edges one syntax node carries. Every module-specifier form is read here from the parsed tree, so
+ * literals arrive decoded and comments or trailing commas cannot hide an edge. A glob call's callee is
+ * recorded so it is not read as a bare reference.
+ */
+function syntaxNodeEdges(node: AstNode, callees: Set<AstNode>): Edge[] | string {
+  const specifierKey = LITERAL_SPECIFIERS.get(node.type ?? '');
+  if (specifierKey !== undefined) {
+    // An `export { … }` without `from` has no source.
+    return node[specifierKey] === null && node.type === 'ExportNamedDeclaration' ? [] : literalEdge(node[specifierKey]);
+  }
+  switch (node.type) {
+    case 'TSModuleDeclaration':
+      // `declare module 'x'` names a module, as an ambient declaration or an augmentation of it.
+      return isNode(node.id) && node.id.type === 'Literal' ? literalEdge(node.id) : [];
+    case 'ImportExpression':
+      return dynamicImportEdges(node.source);
+    case 'NewExpression':
+      return isModuleUrl(node) ? dynamicImportEdges((node.arguments as unknown[])[0]) : [];
+    case 'CallExpression':
+      return callEdges(node, callees);
+    default:
+      return isGlobMember(node) && !callees.has(node) ? 'an import.meta.glob form the check cannot read' : [];
+  }
+}
+
+/** Every module specifier in the syntax tree; any use of `import.meta.glob` other than a call fails closed. */
 function syntaxEdges(program: unknown): Edge[] | string {
   const edges: Edge[] = [];
   const callees = new Set<AstNode>();
@@ -350,32 +408,60 @@ const languageOf = (file: string): 'js' | 'jsx' | 'ts' | 'tsx' | 'dts' => {
   return TS_FILE.test(file) ? 'ts' : 'js';
 };
 
-/** Static and dynamic imports and `export … from`, type-only ones included. */
-function moduleEdges(file: string, source: string): Edge[] | string {
-  const parsed = parseSync(file, source, { lang: languageOf(file) });
+/**
+ * Triple-slash directives are comments the compiler reads: `types` names a package and `path` a file.
+ * In JavaScript files a JSDoc `import(…)` or `@import` brings a type dependency the tree does not carry,
+ * so it fails closed.
+ */
+function commentEdges(language: string, comments: readonly { type: string; value: string }[]): Edge[] | string {
+  const edges: Edge[] = [];
+  for (const { type, value } of comments) {
+    if (type === 'Line' && TRIPLE_SLASH.test(value)) {
+      const directive = directiveEdges(value);
+      if (typeof directive === 'string') {
+        return directive;
+      }
+      edges.push(...directive);
+    } else if ((language === 'js' || language === 'jsx') && JSDOC_IMPORT.test(value)) {
+      return 'a JSDoc type import the check cannot read';
+    }
+  }
+  return edges;
+}
+
+/** One triple-slash directive's edges; `lib` names a compiler library, not a module. */
+function directiveEdges(value: string): Edge[] | string {
+  const attributes = [...value.matchAll(DIRECTIVE_ATTRIBUTE)];
+  const unreadable = `a triple-slash directive the check cannot read: ${value}`;
+  if (attributes.length === 0) {
+    return unreadable;
+  }
+  const edges: Edge[] = [];
+  for (const [, name, , target = ''] of attributes) {
+    if (name === 'types') {
+      edges.push({ specifier: target, glob: false });
+    } else if (name === 'path') {
+      edges.push({ specifier: target.startsWith('.') ? target : `./${target}`, glob: false });
+    } else if (name !== 'lib' && name !== 'no-default-lib') {
+      return unreadable;
+    }
+  }
+  return edges;
+}
+
+/** Every module specifier of a file, all read from its parse. */
+function edgesOf(file: string, source: string): Edge[] | string {
+  const language = languageOf(file);
+  const parsed = parseSync(file, source, { lang: language });
   if (parsed.errors.length > 0) {
     return `source the parser rejects: ${parsed.errors[0]!.message}`;
   }
-  const requests = [
-    ...parsed.module.staticImports.map((entry) => entry.moduleRequest),
-    ...parsed.module.staticExports.flatMap((statement) => statement.entries.map((entry) => entry.moduleRequest)),
-  ];
-  const edges: Edge[] = requests.flatMap((request) => (request ? [{ specifier: request.value, glob: false }] : []));
   const syntax = syntaxEdges(parsed.program);
-  return typeof syntax === 'string' ? syntax : [...edges, ...syntax];
-}
-
-/** Type-position `import('…')` and `new URL('…', import.meta.url)`. */
-function metaEdges(source: string): Edge[] {
-  return [...source.matchAll(IMPORT_CALL), ...source.matchAll(URL_CALL)].map((call) => ({
-    specifier: call[2]!,
-    glob: false,
-  }));
-}
-
-function edgesOf(file: string, source: string): Edge[] | string {
-  const modules = moduleEdges(file, source);
-  return typeof modules === 'string' ? modules : [...modules, ...metaEdges(source)];
+  const comments = commentEdges(language, parsed.comments);
+  if (typeof syntax === 'string' || typeof comments === 'string') {
+    return typeof syntax === 'string' ? syntax : (comments as string);
+  }
+  return [...syntax, ...comments];
 }
 
 const packageName = (specifier: string): string => {
