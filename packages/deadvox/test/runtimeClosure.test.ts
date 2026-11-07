@@ -38,7 +38,7 @@ const cleanTree: Tree = {
   'packages/presentation/src/hud.ts': 'export const hud = 1;\n',
 };
 
-/** `links` maps a link path to the directory it points at, relative to the link's own directory. */
+/** `links` maps a link path to the file or directory it points at, relative to the link's own directory. */
 function violationsIn(changes: Tree, links: Tree = {}) {
   const root = mkdtempSync(join(tmpdir(), 'deadvox-closure-'));
   try {
@@ -47,7 +47,7 @@ function violationsIn(changes: Tree, links: Tree = {}) {
       writeFileSync(join(root, path), source);
     }
     for (const [path, target] of Object.entries(links)) {
-      symlinkSync(target, join(root, path), 'dir');
+      symlinkSync(target, join(root, path));
     }
     return runtimeClosureViolations(root, STAGE_ONE_POLICY);
   } finally {
@@ -56,6 +56,13 @@ function violationsIn(changes: Tree, links: Tree = {}) {
 }
 
 const importers = (violations: ReturnType<typeof violationsIn>) => violations.map((v) => v.importer);
+const catalog = 'packages/deadvox/src/core/catalog.ts';
+// Literal file names that Vite's matcher reaches through syntax Node's globSync reads differently.
+const oddlyNamedRender: Tree = {
+  'packages/deadvox/src/render/brackets/[ab].ts': 'export const ab = 1;\n',
+  'packages/deadvox/src/render/groups/ab.ts': 'export const ab = 1;\n',
+  'packages/deadvox/src/render/alternation/a.ts': 'export const a = 1;\n',
+};
 
 describe('runtime closure, stage 1', () => {
   it('keeps the runtime and the libraries it follows from reaching presentation, render, UI, three or Lit', () => {
@@ -165,12 +172,57 @@ describe('runtime closure, stage 1', () => {
     expect(importers(violations)).toEqual(['packages/deadvox/src/core/catalog.ts']);
   });
 
-  it('fails extglob syntax, which Vite matches literally', () => {
+  it('matches an allowlisted glob with ** and * exactly', () => {
+    const violations = violationsIn({ [catalog]: "export const views = import.meta.glob('/src/render/**/v*.ts');\n" });
+    expect(violations.map((v) => [v.importer, v.target])).toEqual([[catalog, 'packages/deadvox/src/render/view.ts']]);
+  });
+
+  it.each([
+    ['a bracket class', "import.meta.glob('/src/render/brackets/[ab].ts')"],
+    ['escaped brackets in a string', "import.meta.glob('/src/render/brackets/\\\\[ab\\\\].ts')"],
+    ['escaped brackets in a template', 'import.meta.glob(`/src/render/brackets/\\[ab\\].ts`)'],
+    ['a bare group', "import.meta.glob('/src/render/groups/a(b).ts')"],
+    ['an alternation', "import.meta.glob('/src/render/alternation/(a|b).ts')"],
+  ])('fails a glob outside the allowlisted syntax: %s', (_name, call) => {
+    const violations = violationsIn({ ...oddlyNamedRender, [catalog]: `export const views = ${call};\n` });
+    expect(importers(violations)).toEqual([catalog]);
+  });
+
+  it('expands a dynamic import template from its syntax tree, whatever its holes contain', () => {
     const violations = violationsIn({
-      'packages/deadvox/src/core/catalog.ts': "export const panels = import.meta.glob('/src/render/@(panel).ts');\n",
-      'packages/deadvox/src/render/@(panel).ts': 'export const panel = 1;\n',
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: fixture source text holding a template literal.
+      [catalog]: 'export const view = import(`../render/${({ x: 1 }).x}.ts`);\n',
+      'packages/deadvox/src/render/1.ts': 'export const one = 1;\n',
     });
-    expect(importers(violations)).toEqual(['packages/deadvox/src/core/catalog.ts']);
+    expect([...new Set(importers(violations))]).toEqual([catalog]);
+    expect(violations.map((v) => v.target)).toContain('packages/deadvox/src/render/1.ts');
+  });
+
+  it('fails a dynamic import template with a query', () => {
+    const violations = violationsIn({
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: fixture source text holding a template literal.
+      [catalog]: 'export const load = (name: string) => import(`../render/${name}.ts?raw`);\n',
+    });
+    expect(importers(violations)).toEqual([catalog]);
+  });
+
+  it.each([
+    [
+      'a symlinked directory on the literal path',
+      "'/src/config/views/*.ts'",
+      'packages/deadvox/src/config/views',
+      '../render',
+    ],
+    ['a symlinked matched file', "'/src/config/view.ts'", 'packages/deadvox/src/config/view.ts', '../render/view.ts'],
+  ])('fails a glob through %s', (_name, pattern, link, target) => {
+    const violations = violationsIn(
+      {
+        [catalog]: `export const views = import.meta.glob(${pattern});\n`,
+        'packages/deadvox/src/config/tuning.json': '{}\n',
+      },
+      { [link]: target },
+    );
+    expect(importers(violations)).toEqual([catalog]);
   });
 
   it('fails a glob whose base does not resolve, but passes a resolvable glob that matches nothing', () => {

@@ -1,5 +1,5 @@
 // biome-ignore lint/correctness/noNodejsModules: This check reads the source tree in Node.js.
-import { existsSync, globSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, globSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
 // biome-ignore lint/correctness/noNodejsModules: This check reads the source tree in Node.js.
 import { dirname, isAbsolute, join, posix, relative, resolve, sep } from 'node:path';
 import { parseSync } from 'vite';
@@ -45,10 +45,11 @@ export const STAGE_ONE_POLICY: RuntimeClosurePolicy = {
 
 const SOURCE_FILE = /\.(?:[cm]?[jt]sx?)$/;
 const RESOLVE_SUFFIXES = ['', '.ts', '.tsx', '.mts', '.js', '.mjs', '/index.ts', '/index.js'];
-const LITERAL = /^(['"`])([^'"`]*)\1$/;
 const IMPORT_CALL = /\bimport\s*\(\s*(['"`])([^'"`$]*)\1\s*[,)]/g;
 const URL_CALL = /\bnew\s+URL\s*\(\s*(['"`])([^'"`]*)\1\s*,\s*import\.meta\.url\s*\)/g;
-const TEMPLATE_HOLE = /\$\{[^}]*\}/g;
+// The glob subset the check matches exactly as the bundler does: literal name characters and `*` within a
+// segment, `**` as a whole segment. Brackets, groups, braces, `?`, escapes and queries fall outside it.
+const GLOB_SEGMENT = /^[A-Za-z0-9._*-]+$/;
 const DECLARATION_FILE = /\.d\.[cm]?ts$/;
 const TS_FILE = /\.[cm]?ts$/;
 
@@ -169,6 +170,33 @@ const isGlobMember = (node: AstNode): boolean => {
   );
 };
 
+/** A glob pattern's text as Vite reads it: a string literal's value, or a hole-free template's raw text. */
+const globText = (node: unknown): string | undefined => {
+  if (!isNode(node)) {
+    return undefined;
+  }
+  if (node.type === 'Literal' && typeof node.value === 'string') {
+    return node.value;
+  }
+  const quasis = node.quasis as { value: { raw: string } }[] | undefined;
+  const expressions = node.expressions as unknown[] | undefined;
+  return node.type === 'TemplateLiteral' && expressions?.length === 0 ? quasis?.[0]?.value.raw : undefined;
+};
+
+/** A dynamic import's target: a literal specifier, or a template as a glob with one `*` per hole. */
+function dynamicImportEdges(source: unknown): Edge[] | string {
+  if (isNode(source) && source.type === 'Literal' && typeof source.value === 'string') {
+    return [{ specifier: source.value, glob: false }];
+  }
+  if (!(isNode(source) && source.type === 'TemplateLiteral')) {
+    return 'a dynamic import whose target is not a literal';
+  }
+  const quasis = (source.quasis as { value: { raw: string } }[]).map((quasi) => quasi.value.raw);
+  const holes = (source.expressions as unknown[]).length;
+  // Raw text keeps any escape, which the glob allowlist then rejects.
+  return [{ specifier: quasis.join('*'), glob: holes > 0 }];
+}
+
 /** A string literal or a template literal without holes. */
 const staticString = (node: unknown): string | undefined => {
   if (!isNode(node)) {
@@ -236,7 +264,7 @@ function globBase(options: unknown): { readonly base?: string } | string {
 function globCallEdges(call: AstNode): Edge[] | string {
   const [patterns, options, ...rest] = call.arguments as unknown[];
   const list = isNode(patterns) && patterns.type === 'ArrayExpression' ? (patterns.elements as unknown[]) : [patterns];
-  const specifiers = list.map(staticString);
+  const specifiers = list.map(globText);
   const base = globBase(options);
   if (rest.length > 0 || specifiers.some((specifier) => specifier === undefined)) {
     return 'an import.meta.glob pattern that is not a literal';
@@ -250,8 +278,14 @@ function globCallEdges(call: AstNode): Edge[] | string {
     .map((specifier) => ({ specifier, glob: true, ...base }));
 }
 
-/** The glob edges of one syntax node; a call's callee is recorded so it is not read as a bare reference. */
-function globNodeEdges(node: AstNode, callees: Set<AstNode>): Edge[] | string {
+/**
+ * The dynamic-import and glob edges of one syntax node; a glob call's callee is recorded so it is not
+ * read as a bare reference.
+ */
+function syntaxNodeEdges(node: AstNode, callees: Set<AstNode>): Edge[] | string {
+  if (node.type === 'ImportExpression') {
+    return dynamicImportEdges(node.source);
+  }
   if (node.type === 'CallExpression' && isNode(node.callee) && isGlobMember(node.callee)) {
     callees.add(node.callee);
     return globCallEdges(node);
@@ -259,8 +293,8 @@ function globNodeEdges(node: AstNode, callees: Set<AstNode>): Edge[] | string {
   return isGlobMember(node) && !callees.has(node) ? 'an import.meta.glob form the check cannot read' : [];
 }
 
-/** Every `import.meta.glob` call; any other use of `import.meta.glob` fails closed. */
-function globEdges(program: unknown): Edge[] | string {
+/** Every dynamic import and `import.meta.glob` call; any other use of `import.meta.glob` fails closed. */
+function syntaxEdges(program: unknown): Edge[] | string {
   const edges: Edge[] = [];
   const callees = new Set<AstNode>();
   // A parent is read before its children, so a call records its callee before the walk reaches it.
@@ -269,7 +303,7 @@ function globEdges(program: unknown): Edge[] | string {
     if (Array.isArray(node)) {
       pending.push(...node);
     } else if (isNode(node)) {
-      const found = globNodeEdges(node, callees);
+      const found = syntaxNodeEdges(node, callees);
       if (typeof found === 'string') {
         return found;
       }
@@ -301,17 +335,8 @@ function moduleEdges(file: string, source: string): Edge[] | string {
     ...parsed.module.staticExports.flatMap((statement) => statement.entries.map((entry) => entry.moduleRequest)),
   ];
   const edges: Edge[] = requests.flatMap((request) => (request ? [{ specifier: request.value, glob: false }] : []));
-  for (const { moduleRequest } of parsed.module.dynamicImports) {
-    const argument = source.slice(moduleRequest.start, moduleRequest.end).trim();
-    const literal = LITERAL.exec(argument)?.[2];
-    if (literal === undefined) {
-      return `a dynamic import whose target is not a literal: ${argument}`;
-    }
-    const glob = literal.includes('${');
-    edges.push({ specifier: glob ? literal.replace(TEMPLATE_HOLE, '*') : literal, glob });
-  }
-  const globs = globEdges(parsed.program);
-  return typeof globs === 'string' ? globs : [...edges, ...globs];
+  const syntax = syntaxEdges(parsed.program);
+  return typeof syntax === 'string' ? syntax : [...edges, ...syntax];
 }
 
 /** Type-position `import('…')` and `new URL('…', import.meta.url)`. */
@@ -332,8 +357,10 @@ const packageName = (specifier: string): string => {
   return specifier.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]!;
 };
 
-const EXTGLOB = /[?*+@!]\(/;
-const GLOB_MAGIC = /[*?[\]{}()!+@]/;
+/** Whether a repository-relative glob stays inside the repository and inside the allowlisted subset. */
+const allowlisted = (pattern: string): boolean =>
+  !pattern.startsWith('../') &&
+  pattern.split('/').every((segment) => segment === '**' || (GLOB_SEGMENT.test(segment) && !segment.includes('**')));
 
 function findSymlinkedDirectory(dir: string, depth: number): string | undefined {
   if (depth <= 0 || !(existsSync(dir) && statSync(dir).isDirectory())) {
@@ -352,20 +379,22 @@ function findSymlinkedDirectory(dir: string, depth: number): string | undefined 
   return undefined;
 }
 
-/** Why a repo-relative glob pattern could pass a symlinked directory through a wildcard, if it could. */
-function symlinkedDirectoryUnder(repoRoot: string, pattern: string): string | undefined {
-  const segments = pattern.split('/');
-  const firstMagic = segments.findIndex((segment) => GLOB_MAGIC.test(segment));
-  if (firstMagic < 0) {
+/**
+ * A symlinked directory a wildcard segment of this repo-relative glob could pass through. Node's globSync
+ * does not enumerate under one, so files Vite would import there are never seen as matches.
+ */
+function symlinkedDirectoryUnder(
+  repoRoot: string,
+  literalBase: string,
+  wildcard: readonly string[],
+): string | undefined {
+  if (wildcard.length === 0) {
     return undefined;
   }
-  const rest = segments.slice(firstMagic);
   // The match descends one directory per segment before the last, or through every level under `**`.
-  const depth = rest.includes('**') ? Number.POSITIVE_INFINITY : rest.length - 1;
-  const found = findSymlinkedDirectory(join(repoRoot, ...segments.slice(0, firstMagic)), depth);
-  return found === undefined
-    ? undefined
-    : `globs over a symlinked directory, which Vite follows and the check cannot: ${relative(repoRoot, found).split(sep).join('/')}`;
+  const depth = wildcard.includes('**') ? Number.POSITIVE_INFINITY : wildcard.length - 1;
+  const found = findSymlinkedDirectory(join(repoRoot, literalBase), depth);
+  return found === undefined ? undefined : relative(repoRoot, found).split(sep).join('/');
 }
 
 type Resolved = { readonly file: string } | { readonly npm: string } | undefined;
@@ -373,6 +402,7 @@ type Resolved = { readonly file: string } | { readonly npm: string } | undefined
 class ClosureWalk {
   readonly violations: RuntimeClosureViolation[] = [];
   private readonly visited = new Set<string>();
+  private readonly symlinks = new Map<string, boolean>();
   private readonly queue: string[];
   private readonly workspaces: readonly Workspace[];
   private readonly root: string;
@@ -442,7 +472,7 @@ class ClosureWalk {
       return posix.join(dir, pattern);
     }
     const alias = Object.entries(aliases).find(([prefix]) => pattern.startsWith(prefix));
-    return alias ? `${alias[1]}${pattern.slice(alias[0].length)}` : undefined;
+    return alias ? posix.normalize(`${alias[1]}${pattern.slice(alias[0].length)}`) : undefined;
   }
 
   private resolveGlob(importer: string, specifier: string, base: string | undefined): void {
@@ -451,11 +481,7 @@ class ClosureWalk {
       this.violations.push({ importer, specifier, target: '', reason: 'uses a glob that does not resolve' });
       return;
     }
-    // Node's globSync reads extglob syntax and does not follow a symlinked directory under a wildcard;
-    // Vite does neither, so either would hide files Vite imports.
-    const unmatched = EXTGLOB.test(pattern)
-      ? 'uses extglob syntax, which Vite matches literally'
-      : symlinkedDirectoryUnder(this.root, pattern);
+    const unmatched = this.unmatchedGlob(pattern);
     if (unmatched !== undefined) {
       this.violations.push({ importer, specifier, target: '', reason: unmatched });
       return;
@@ -466,6 +492,41 @@ class ClosureWalk {
         this.reach(importer, specifier, target);
       }
     }
+  }
+
+  /** Why Node's globSync could match this glob differently from the bundler, if it could. */
+  private unmatchedGlob(pattern: string): string | undefined {
+    if (!allowlisted(pattern)) {
+      return `uses a glob outside the checked subset: ${pattern}`;
+    }
+    const segments = pattern.split('/');
+    const firstWildcard = segments.findIndex((segment) => segment.includes('*'));
+    const literal = firstWildcard < 0 ? segments.slice(0, -1) : segments.slice(0, firstWildcard);
+    const linkOnBase = this.symlinkOnPath(literal.join('/'));
+    const linkUnder = symlinkedDirectoryUnder(
+      this.root,
+      literal.join('/'),
+      firstWildcard < 0 ? [] : segments.slice(firstWildcard),
+    );
+    const link = linkOnBase ?? linkUnder;
+    return link === undefined ? undefined : `globs through a symlink, which the bundler follows: ${link}`;
+  }
+
+  /** The first symlink on a repository-relative path, checking each component. */
+  private symlinkOnPath(path: string): string | undefined {
+    const parts = path === '' ? [] : path.split('/');
+    for (let end = 1; end <= parts.length; end++) {
+      const prefix = parts.slice(0, end).join('/');
+      let linked = this.symlinks.get(prefix);
+      if (linked === undefined) {
+        linked = lstatSync(join(this.root, prefix), { throwIfNoEntry: false })?.isSymbolicLink() ?? false;
+        this.symlinks.set(prefix, linked);
+      }
+      if (linked) {
+        return prefix;
+      }
+    }
+    return undefined;
   }
 
   private resolveEdge(importer: string, specifier: string): void {
@@ -481,7 +542,11 @@ class ClosureWalk {
 
   private reach(importer: string, specifier: string, target: string): void {
     const { start, followed, forbidden } = this.policy;
-    if (forbidden.some((dir) => within(target, dir))) {
+    // Classification is by path, so a symlink could hide the owner the bundler resolves it to.
+    const link = this.symlinkOnPath(target);
+    if (link !== undefined) {
+      this.violations.push({ importer, specifier, target, reason: `reaches through a symlink: ${link}` });
+    } else if (forbidden.some((dir) => within(target, dir))) {
       this.violations.push({ importer, specifier, target, reason: 'reaches a forbidden directory' });
     } else if ([...start, ...followed].some((dir) => within(target, dir)) && SOURCE_FILE.test(target)) {
       this.queue.push(target);
