@@ -98,6 +98,8 @@ interface ItemThrowLaunch {
 /** Where routed effects reach the player; called in place, in the order the routing reaches them. */
 interface CommandRouterPresentation {
   refusal: (reason: string, atSimSeconds: number) => void;
+  /** Refuses a held item that has no primary action; presentation words the hint. */
+  noPrimaryAction: (item: Item, atSimSeconds: number) => void;
   notice: (text: string) => void;
   closeInventoryScreen: () => void;
   syncMenuState: () => void;
@@ -1390,6 +1392,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     sim: ports.sim,
     replaySample: ports.replaySample,
     refusal: presentation.refusal,
+    noPrimaryAction: presentation.noPrimaryAction,
     notice: presentation.notice,
     blockSize: ports.scale.blockSize,
     pick: ports.pick,

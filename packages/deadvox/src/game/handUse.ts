@@ -15,7 +15,6 @@ import { doorPlan } from '../core/options.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
 import type { Simulation } from '../core/sim.ts';
-import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { openingTargetForHand } from './canOpening.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import { freeLookAllowsUse } from './freeLook.ts';
@@ -50,6 +49,8 @@ export interface HandUseDeps {
   sim: () => Pick<Simulation, 'time' | 'body'>;
   replaySample: () => ReplayControlSample | undefined;
   refusal: (reason: string, atSimSeconds: number) => void;
+  /** Refuses a held item that has no primary action; presentation words the hint. */
+  noPrimaryAction: (item: Item, atSimSeconds: number) => void;
   notice: (text: string) => void;
   blockSize: number;
   pick: InteractionPickWorld;
@@ -254,7 +255,7 @@ export function createHandUse(deps: HandUseDeps): HandUse {
       refusalReason(deps.session().survival.use(usable));
       return;
     }
-    showRefusal(primaryActionHint(registry, item), deps.sim().time);
+    deps.noPrimaryAction(item, deps.sim().time);
   };
   const fireHeldItem = (item: Item): void => {
     if (!deps.firearmReady(item.uid) || deps.sprinting() || deps.fireWeapon(item, deps.sim().time)) {
@@ -359,7 +360,7 @@ export function createHandUse(deps: HandUseDeps): HandUse {
         activateBar();
         return;
       case 'none':
-        showRefusal(primaryActionHint(registry, action.item), sim.time);
+        deps.noPrimaryAction(action.item, sim.time);
         return;
       default: {
         const unhandled: never = action;

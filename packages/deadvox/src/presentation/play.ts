@@ -133,6 +133,7 @@ import {
   renderPlayHud,
 } from '../ui/playHud.ts';
 import { playReadout } from '../ui/playReadout.ts';
+import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { mountReading } from '../ui/reading.ts';
 import { renderRest, type WaitViewAction } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
@@ -759,6 +760,7 @@ export const startPlay = (
     sim: () => sim,
     presentation: {
       refusal: (reason, atSimSeconds) => showRefusal(reason, atSimSeconds),
+      noPrimaryAction: (item, atSimSeconds) => showRefusal(primaryActionHint(registry, item), atSimSeconds),
       notice: (text) => showNotice(text),
       closeInventoryScreen: () => closeInventoryScreen(),
       syncMenuState: () => syncMenuState(),

@@ -45,6 +45,7 @@ const routerPorts = (ports: Partial<CommandRouterPorts>): CommandRouterPorts => 
   sim: unused,
   presentation: {
     refusal: () => undefined,
+    noPrimaryAction: unused,
     notice: unused,
     closeInventoryScreen: unused,
     syncMenuState: unused,
