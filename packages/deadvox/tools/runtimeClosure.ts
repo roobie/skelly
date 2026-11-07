@@ -44,11 +44,29 @@ export const STAGE_ONE_POLICY: RuntimeClosurePolicy = {
 };
 
 const SOURCE_FILE = /\.(?:[cm]?[jt]sx?)$/;
-const RESOLVE_SUFFIXES = ['', '.ts', '.tsx', '.mts', '.js', '.mjs', '/index.ts', '/index.js'];
-// Comment readers: a triple-slash directive and its attributes, and a JSDoc type import in JavaScript.
+// Every extension tsc (bundler resolution) or Vite tries for a specifier, so resolution follows their union.
+const RESOLVE_EXTENSIONS = [
+  '.ts',
+  '.tsx',
+  '.d.ts',
+  '.mts',
+  '.d.mts',
+  '.cts',
+  '.d.cts',
+  '.js',
+  '.jsx',
+  '.mjs',
+  '.cjs',
+  '.json',
+];
+// tsc reads a `.js`-family specifier as its TypeScript source or declaration too.
+const JS_EXTENSION = /\.(?:js|jsx|mjs|cjs)$/;
+const TS_SUBSTITUTES = ['.ts', '.tsx', '.d.ts', '.mts', '.d.mts', '.cts', '.d.cts'];
+// Comment readers: a triple-slash directive and its attributes. In JavaScript any comment naming `import`
+// fails closed, since tsc's JSDoc reader finds module references across line breaks and leading asterisks.
 const TRIPLE_SLASH = /^\/\s*<reference\b/;
 const DIRECTIVE_ATTRIBUTE = /([\w-]+)\s*=\s*(["'])(.*?)\2/g;
-const JSDOC_IMPORT = /\bimport\s*\(|@import\b/;
+const JSDOC_IMPORT = /\bimport\b/;
 // The glob subset the check matches exactly as the bundler does: literal name characters and `*` within a
 // segment, `**` as a whole segment. Brackets, groups, braces, `?`, escapes and queries fall outside it.
 const GLOB_SEGMENT = /^[A-Za-z0-9._*-]+$/;
@@ -60,6 +78,8 @@ interface Workspace {
   readonly name: string;
   readonly dir: string;
   readonly exports: unknown;
+  /** tsc remaps type resolution through `typesVersions`; the check does not model it. */
+  readonly typesVersions: boolean;
 }
 
 const within = (path: string, dir: string): boolean => path === dir || path.startsWith(`${dir}/`);
@@ -75,62 +95,80 @@ function workspacesOf(repoRoot: string): Workspace[] {
       const manifest = JSON.parse(readFileSync(join(repoRoot, dir, 'package.json'), 'utf8')) as {
         name: string;
         exports?: unknown;
+        typesVersions?: unknown;
       };
-      return { name: manifest.name, dir: dir.split(sep).join('/'), exports: manifest.exports };
+      return {
+        name: manifest.name,
+        dir: dir.split(sep).join('/'),
+        exports: manifest.exports,
+        typesVersions: manifest.typesVersions !== undefined,
+      };
     });
 }
 
-function exportTarget(value: unknown): string | undefined {
+/** Every target string under an `exports` value: each condition (nested too) and each array fallback. */
+function exportTargets(value: unknown): string[] {
   if (typeof value === 'string') {
-    return value;
+    return [value];
   }
-  if (value && typeof value === 'object') {
-    for (const condition of ['import', 'module', 'default', 'types']) {
-      const target = exportTarget((value as Record<string, unknown>)[condition]);
-      if (target) {
-        return target;
-      }
-    }
+  if (Array.isArray(value)) {
+    return value.flatMap(exportTargets);
   }
-  return undefined;
+  return value && typeof value === 'object' ? Object.values(value).flatMap(exportTargets) : [];
 }
 
-function workspaceFile(workspace: Workspace, subpath: string): string | undefined {
+/**
+ * The workspace paths a subpath can name: every target of the exact `exports` key, else of every
+ * matching pattern; or why the check cannot resolve it conservatively.
+ */
+function workspacePaths(workspace: Workspace, subpath: string): string[] | string {
+  if (workspace.typesVersions) {
+    return `a workspace with typesVersions: ${workspace.name}`;
+  }
   if (workspace.exports === undefined) {
-    return subpath === '' ? undefined : `${workspace.dir}${subpath}`;
+    // Without exports the root resolves through main, module or types fields, which the check does not model.
+    return subpath === '' ? `a workspace root without exports: ${workspace.name}` : [`${workspace.dir}${subpath}`];
   }
   const map =
-    typeof workspace.exports === 'string' || !Object.keys(workspace.exports as object).some((k) => k.startsWith('.'))
+    typeof workspace.exports === 'string' ||
+    Array.isArray(workspace.exports) ||
+    !Object.keys(workspace.exports as object).some((k) => k.startsWith('.'))
       ? { '.': workspace.exports }
       : (workspace.exports as Record<string, unknown>);
   const key = `.${subpath}`;
-  const direct = exportTarget(map[key]);
-  if (direct) {
-    return join(workspace.dir, direct).split(sep).join('/');
+  const inDir = (target: string) => join(workspace.dir, target).split(sep).join('/');
+  if (Object.hasOwn(map, key)) {
+    return exportTargets(map[key]).map(inDir);
   }
-  for (const [pattern, value] of Object.entries(map)) {
+  return Object.entries(map).flatMap(([pattern, value]) => {
     const star = pattern.indexOf('*');
     if (star < 0 || !key.startsWith(pattern.slice(0, star)) || !key.endsWith(pattern.slice(star + 1))) {
-      continue;
+      return [];
     }
-    const target = exportTarget(value);
-    if (target) {
-      const matched = key.slice(star, key.length - (pattern.length - star - 1));
-      return join(workspace.dir, target.replace('*', matched)).split(sep).join('/');
-    }
-  }
-  return undefined;
+    const matched = key.slice(star, key.length - (pattern.length - star - 1));
+    return exportTargets(value).map((target) => inDir(target.replaceAll('*', matched)));
+  });
 }
 
-function existingFile(repoRoot: string, path: string): string | undefined {
-  for (const suffix of RESOLVE_SUFFIXES) {
-    const candidate = `${path}${suffix}`;
-    const absolute = join(repoRoot, candidate);
-    if (existsSync(absolute) && statSync(absolute).isFile()) {
-      return candidate;
-    }
+const isFile = (absolute: string): boolean => existsSync(absolute) && statSync(absolute).isFile();
+
+/**
+ * Every existing file tsc or Vite could take a path to mean: the path itself, each extension appended,
+ * tsc's TypeScript substitutes for a `.js`-family name, and a directory's index files; or why not.
+ */
+function existingFiles(repoRoot: string, path: string): string[] | string {
+  const absolute = join(repoRoot, path);
+  if (existsSync(absolute) && statSync(absolute).isDirectory() && existsSync(join(absolute, 'package.json'))) {
+    return `a directory with its own package.json: ${path}`;
   }
-  return undefined;
+  const base = path.replace(JS_EXTENSION, '');
+  const candidates = [
+    path,
+    ...RESOLVE_EXTENSIONS.map((extension) => `${path}${extension}`),
+    ...(base === path ? [] : TS_SUBSTITUTES.map((extension) => `${base}${extension}`)),
+    ...RESOLVE_EXTENSIONS.map((extension) => `${path}/index${extension}`),
+  ];
+  return [...new Set(candidates)].filter((candidate) => isFile(join(repoRoot, candidate)));
 }
 
 function sourceFilesUnder(repoRoot: string, dir: string): string[] {
@@ -149,6 +187,8 @@ interface Edge {
   readonly glob: boolean;
   /** An `import.meta.glob` call's `base` option. */
   readonly base?: string;
+  /** A `new URL(…, import.meta.url)` target: a URL path relative to the importer, not a module specifier. */
+  readonly url?: boolean;
 }
 
 interface AstNode {
@@ -221,9 +261,10 @@ const plainName = (node: unknown): boolean => {
  * turns an identifier or member hole into one `*`, which stays within one path segment; literals, calls,
  * concatenation and nested templates inside a hole keep their text, so they could add directories.
  */
-function dynamicImportEdges(source: unknown): Edge[] | string {
+function dynamicImportEdges(source: unknown, url: boolean): Edge[] | string {
+  const kind = url ? { url } : {};
   if (isNode(source) && source.type === 'Literal' && typeof source.value === 'string') {
-    return [{ specifier: source.value, glob: false }];
+    return [{ specifier: source.value, glob: false, ...kind }];
   }
   if (!(isNode(source) && source.type === 'TemplateLiteral')) {
     return 'a dynamic import or module URL whose target is not a literal or template';
@@ -233,8 +274,12 @@ function dynamicImportEdges(source: unknown): Edge[] | string {
   }
   const quasis = (source.quasis as { value: { raw: string } }[]).map((quasi) => quasi.value.raw);
   const holes = (source.expressions as unknown[]).length;
-  // Raw text keeps any escape, which the glob allowlist then rejects.
-  return [{ specifier: quasis.join('*'), glob: holes > 0 }];
+  // tsc reads a template's cooked text and Vite its raw text; with an escape they name different targets.
+  if (holes === 0 && quasis[0]!.includes('\\')) {
+    return 'a template specifier with an escape, which the compiler and bundler read differently';
+  }
+  // With holes, raw text keeps any escape, which the glob allowlist then rejects.
+  return [{ specifier: quasis.join('*'), glob: holes > 0, ...kind }];
 }
 
 /** A string literal or a template literal without holes. */
@@ -367,9 +412,9 @@ function syntaxNodeEdges(node: AstNode, callees: Set<AstNode>): Edge[] | string 
       // `declare module 'x'` names a module, as an ambient declaration or an augmentation of it.
       return isNode(node.id) && node.id.type === 'Literal' ? literalEdge(node.id) : [];
     case 'ImportExpression':
-      return dynamicImportEdges(node.source);
+      return dynamicImportEdges(node.source, false);
     case 'NewExpression':
-      return isModuleUrl(node) ? dynamicImportEdges((node.arguments as unknown[])[0]) : [];
+      return isModuleUrl(node) ? dynamicImportEdges((node.arguments as unknown[])[0], true) : [];
     case 'CallExpression':
       return callEdges(node, callees);
     default:
@@ -509,7 +554,12 @@ function symlinkedDirectoryUnder(
   return found === undefined ? undefined : relative(repoRoot, found).split(sep).join('/');
 }
 
-type Resolved = { readonly file: string } | { readonly npm: string } | undefined;
+type Resolved = { readonly files: readonly string[] } | { readonly npm: string } | { readonly unresolved: string };
+
+// A module URL the check reads: a path relative to the importer, without escapes or percent-encoding that
+// URL parsing would rewrite.
+const MODULE_URL = /^\.\.?\//;
+const URL_REWRITTEN = /[%\\]/;
 
 class ClosureWalk {
   readonly violations: RuntimeClosureViolation[] = [];
@@ -527,25 +577,43 @@ class ClosureWalk {
     this.queue = policy.start.flatMap((dir) => sourceFilesUnder(root, dir));
   }
 
+  /** Every existing file any of these paths can mean, or why one of them cannot be resolved. */
+  private found(paths: readonly string[] | string): Resolved {
+    if (typeof paths === 'string') {
+      return { unresolved: paths };
+    }
+    const files = new Set<string>();
+    for (const path of paths) {
+      const existing = existingFiles(this.root, posix.normalize(path.split(sep).join('/')));
+      if (typeof existing === 'string') {
+        return { unresolved: existing };
+      }
+      for (const file of existing) {
+        files.add(file);
+      }
+    }
+    return files.size === 0 ? { unresolved: 'does not resolve' } : { files: [...files] };
+  }
+
   private resolveSpecifier(importer: string, specifier: string): Resolved {
-    const found = (path: string | undefined): Resolved => {
-      const file = path === undefined ? undefined : existingFile(this.root, path.split(sep).join('/'));
-      return file === undefined ? undefined : { file };
-    };
     if (specifier.startsWith('node:')) {
       return { npm: specifier };
     }
-    if (specifier.startsWith('.') || isAbsolute(specifier)) {
-      return found(isAbsolute(specifier) ? relative(this.root, specifier) : join(dirname(importer), specifier));
+    if (specifier.startsWith('.')) {
+      return this.found([join(dirname(importer), specifier)]);
+    }
+    if (isAbsolute(specifier)) {
+      // tsc reads a filesystem path and Vite a path from its root; follow both.
+      return this.found([relative(this.root, specifier), posix.join(this.policy.viteRoot, specifier)]);
     }
     const alias = Object.entries(this.policy.aliases).find(([prefix]) => specifier.startsWith(prefix));
     if (alias) {
-      return found(`${alias[1]}${specifier.slice(alias[0].length)}`);
+      return this.found([`${alias[1]}${specifier.slice(alias[0].length)}`]);
     }
     // A workspace is classified by where it lies, whatever route names it; only other names are npm packages.
     const name = packageName(specifier);
     const workspace = this.workspaces.find((candidate) => candidate.name === name);
-    return workspace ? found(workspaceFile(workspace, specifier.slice(name.length))) : { npm: name };
+    return workspace ? this.found(workspacePaths(workspace, specifier.slice(name.length))) : { npm: name };
   }
 
   run(): void {
@@ -563,8 +631,16 @@ class ClosureWalk {
       this.violations.push({ importer: file, specifier: '', target: '', reason: `uses ${edges}` });
       return;
     }
-    for (const { specifier, glob, base } of edges) {
-      if (glob) {
+    for (const { specifier, glob, base, url } of edges) {
+      if (url && !(MODULE_URL.test(specifier) && !URL_REWRITTEN.test(specifier))) {
+        // A module URL resolves against the importer's URL, never as a package name or from a root.
+        this.violations.push({
+          importer: file,
+          specifier,
+          target: '',
+          reason: 'uses a module URL that is not a plain ./ or ../ path',
+        });
+      } else if (glob) {
         this.resolveGlob(file, specifier, base);
       } else {
         this.resolveEdge(file, specifier);
@@ -648,10 +724,12 @@ class ClosureWalk {
       return;
     }
     const target = this.resolveSpecifier(importer, specifier);
-    if (target === undefined) {
-      this.violations.push({ importer, specifier, target: '', reason: 'does not resolve' });
-    } else if ('file' in target) {
-      this.reach(importer, specifier, target.file);
+    if ('unresolved' in target) {
+      this.violations.push({ importer, specifier, target: '', reason: target.unresolved });
+    } else if ('files' in target) {
+      for (const file of target.files) {
+        this.reach(importer, specifier, file);
+      }
     } else if (this.policy.forbiddenPackages.includes(target.npm)) {
       this.violations.push({ importer, specifier, target: target.npm, reason: 'imports a forbidden package' });
     }

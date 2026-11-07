@@ -260,12 +260,66 @@ describe('runtime closure, stage 1', () => {
     expect(violations.map((v) => [v.importer, v.target])).toEqual([[catalog, 'packages/deadvox/src/render/view.ts']]);
   });
 
-  it('fails a JSDoc type import in a JavaScript runtime file', () => {
+  it.each([
+    ['on one line', "/** @type {import('three').Vector3 | undefined} */\nexport let v;\n"],
+    ['across a line break and its asterisk', "/** @type {import\n * ('three').Vector3} */\nexport let v;\n"],
+  ])('fails a JSDoc type import in a JavaScript runtime file, %s', (_name, source) => {
     const legacy = 'packages/deadvox/src/core/legacy.js';
+    expect(importers(violationsIn({ [legacy]: source }))).toEqual([legacy]);
+  });
+
+  it.each([
+    ['a hole-free template with an escape', 'export const m = import(`th\\u0072ee`);\n'],
+    [
+      'a module URL without a leading ./ or ../',
+      "export const u = new URL('sub/../../render/view.ts', import.meta.url);\n",
+    ],
+  ])('fails %s', (_name, source) => {
+    expect(importers(violationsIn({ [catalog]: source }))).toEqual([catalog]);
+  });
+
+  it('follows every condition of a workspace export, the types target included', () => {
     const violations = violationsIn({
-      [legacy]: "/** @type {import('three').Vector3 | undefined} */\nexport let v;\n",
+      'packages/thing-core/package.json': JSON.stringify({
+        name: '@skelly/thing-core',
+        exports: { './schema': { types: './src/types.d.ts', import: './src/schema.js' } },
+      }),
+      'packages/thing-core/src/schema.js': 'export const schema = 1;\n',
+      'packages/thing-core/src/types.d.ts': "export type V = import('three').Vector3;\n",
+      [catalog]: "export type { V } from '@skelly/thing-core/schema';\n",
     });
-    expect(importers(violations)).toEqual([legacy]);
+    expect(violations.map((v) => [v.importer, v.target])).toEqual([['packages/thing-core/src/types.d.ts', 'three']]);
+  });
+
+  it('follows the TypeScript source a .js specifier also names', () => {
+    const violations = violationsIn({
+      'packages/mobgen/src/rig.js': 'export const rig = 1;\n',
+      'packages/mobgen/src/rig.ts': "export type V = import('three').Vector3;\n",
+      [catalog]: "export type { V } from '../../../mobgen/src/rig.js';\n",
+    });
+    expect(violations.map((v) => [v.importer, v.target])).toEqual([['packages/mobgen/src/rig.ts', 'three']]);
+  });
+
+  it('fails a workspace whose types tsc remaps through typesVersions', () => {
+    const violations = violationsIn({
+      'packages/thing-core/package.json': JSON.stringify({
+        name: '@skelly/thing-core',
+        exports: { './schema': './src/schema.ts' },
+        typesVersions: { '*': { schema: ['src/types.d.ts'] } },
+      }),
+      'packages/thing-core/src/types.d.ts': "export type V = import('three').Vector3;\n",
+    });
+    expect(importers(violations)).toEqual(['packages/deadvox/src/core/sim.ts']);
+  });
+
+  it('fails a directory import whose own package.json can redirect it', () => {
+    const violations = violationsIn({
+      'packages/mobgen/src/kit/package.json': JSON.stringify({ types: './types.d.ts' }),
+      'packages/mobgen/src/kit/index.ts': 'export const kit = 1;\n',
+      'packages/mobgen/src/kit/types.d.ts': "export type V = import('three').Vector3;\n",
+      [catalog]: "export { kit } from '../../../mobgen/src/kit';\n",
+    });
+    expect(importers(violations)).toEqual([catalog]);
   });
 
   it.each([
