@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
-import { loadConfigFromFile, type UserConfig } from 'vite';
+import { type ConfigEnv, loadConfigFromFile, type UserConfig } from 'vite';
 import { describe, expect, it } from 'vitest';
 import { runtimeClosureViolations, STAGE_ONE_POLICY } from '../tools/runtimeClosure.ts';
 
@@ -97,6 +97,25 @@ async function viteGateIssues(config: UserConfig): Promise<string[]> {
   return issues;
 }
 
+// The package's scripts run `vite` (serve, development) and `vite build` (build, production); a config
+// function may answer each differently, so each is gated.
+const packageCommands: readonly ConfigEnv[] = [
+  { command: 'build', mode: 'production' },
+  { command: 'serve', mode: 'development' },
+];
+
+/** The gate's issues for each package command's loaded config, prefixed by the command. */
+async function configFileGateIssues(configFile: string): Promise<string[]> {
+  const perCommand = await Promise.all(
+    packageCommands.map(async (env) => {
+      const loaded = await loadConfigFromFile(env, configFile, dirname(configFile), 'silent');
+      const found = loaded === null ? ['no config'] : await viteGateIssues(loaded.config);
+      return found.map((issue) => `${env.command}: ${issue}`);
+    }),
+  );
+  return perCommand.flat();
+}
+
 const importers = (violations: ReturnType<typeof violationsIn>) => violations.map((v) => v.importer);
 const catalog = 'packages/deadvox/src/core/catalog.ts';
 // Literal file names that Vite's matcher reaches through syntax Node's globSync reads differently.
@@ -113,14 +132,21 @@ describe('runtime closure, stage 1', () => {
 
   // The loaded config is checked, not the file's text: the file computes its alias target.
   it('runs on a Vite config whose resolution adds only the policy aliases', async () => {
-    const loaded = await loadConfigFromFile(
-      { command: 'build', mode: 'production' },
-      join(viteRoot, 'vite.config.ts'),
-      viteRoot,
-      'silent',
-    );
-    expect(loaded).not.toBeNull();
-    expect(await viteGateIssues(loaded?.config ?? {})).toEqual([]);
+    expect(await configFileGateIssues(join(viteRoot, 'vite.config.ts'))).toEqual([]);
+  });
+
+  it('fails a Vite config whose development server alone takes another root', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'deadvox-vite-gate-'));
+    try {
+      const configFile = join(dir, 'vite.config.mjs');
+      writeFileSync(
+        configFile,
+        `export default ({ command }) => ({\n  root: command === 'serve' ? 'src/render' : '.',\n  resolve: { alias: ${JSON.stringify(policyAliases)} },\n});\n`,
+      );
+      expect(await configFileGateIssues(configFile)).toEqual(['serve: root']);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('fails a Vite config whose root is not the policy root, and one whose promised plugin resolves ids', async () => {
@@ -150,6 +176,16 @@ describe('runtime closure, stage 1', () => {
         "import { view } from '../../deadvox/src/render/view.ts';\nexport const step = view;\n",
     });
     expect(importers(violations)).toEqual(['packages/mobgen/src/step.ts']);
+  });
+
+  it('fails a forbidden file reached only through a local source outside the runtime roots', () => {
+    const violations = violationsIn({
+      'packages/deadvox/src/core/a.ts': "export { view } from '../config/helper.ts';\n",
+      'packages/deadvox/src/config/helper.ts': "export { view } from '../render/view.ts';\n",
+    });
+    expect(violations.map((v) => [v.importer, v.target])).toEqual([
+      ['packages/deadvox/src/config/helper.ts', 'packages/deadvox/src/render/view.ts'],
+    ]);
   });
 
   it('fails a followed library that imports three (W5)', () => {

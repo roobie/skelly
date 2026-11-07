@@ -41,13 +41,21 @@ sees.
 - **Vite settings outside `resolve`, `root` and plugins:** per-environment resolution, SSR
   resolution and worker plugins are not compared with the policy; the real config sets none that
   redirect imports.
-- **`publicDir`:** not compared, because Vite refuses to import code or JSON from it and an asset
-  URL from it is not a module edge.
+- **Vite configs for other commands, modes or environment variables:** the gate loads the config
+  once for each command the package's scripts run (`test/runtimeClosure.test.ts`,
+  `packageCommands`); a custom `--mode`, `vite preview`, Vitest's test mode or a branch on an
+  environment variable is not loaded, because those combinations are unbounded and none of them
+  builds or serves the runtime under the package's scripts.
+- **`publicDir` as a root-relative URL:** a `/` specifier that only the public directory supplies
+  is not compared, because Vite refuses to import code or JSON through that lookup; an ordinary
+  relative or absolute import of a file inside the public directory is a module edge and is checked
+  by its path like any other.
 - **Non-module reach:** code fetched or evaluated at run time, globals that presentation code
   registers, and data files that name presentation modules are not imports, so the check never sees
   them; it guards module edges only.
 - **Insides of npm packages:** a package that is neither a workspace nor named in
-  `STAGE_ONE_POLICY`, `forbiddenPackages` is a leaf, so what it imports is not walked.
+  `STAGE_ONE_POLICY`, `forbiddenPackages` is a leaf, so what it imports is not walked. Local
+  source files are always followed, except under a directory `STAGE_ONE_POLICY`, `leaves` names.
 - **Negated glob patterns:** skipped, so the check matches more than Vite does; this over-reports
   and never hides an edge.
 

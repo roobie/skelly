@@ -8,13 +8,13 @@ import { parseSync } from 'vite';
 
 /** Where the runtime starts, what it may follow, and what it may never reach. Paths are repository-relative. */
 export interface RuntimeClosurePolicy {
-  /** Every source file under these directories is runtime. */
+  /** Every source file under these directories is runtime. Every local source file they reach is followed. */
   readonly start: readonly string[];
-  /** Shared libraries the runtime may use; files they reach are checked by the same rules. */
-  readonly followed: readonly string[];
-  /** Directories no runtime or followed file may reach, by any import route. */
+  /** Local directories whose source files are deliberately not followed; a leaf is named here, never implied. */
+  readonly leaves: readonly string[];
+  /** Directories no runtime file, or local file it reaches, may reach, by any import route. */
   readonly forbidden: readonly string[];
-  /** npm packages no runtime or followed file may import, with every subpath. */
+  /** npm packages no runtime file, or local file it reaches, may import, with every subpath. */
   readonly forbiddenPackages: readonly string[];
   /** Import-specifier prefixes that resolve to a directory, as the compiler's path mapping does. */
   readonly aliases: Readonly<Record<string, string>>;
@@ -34,7 +34,7 @@ export interface RuntimeClosureViolation {
 // Stage 1: the presentation side leaves deadvox whole (#1532), so the runtime may not reach it.
 export const STAGE_ONE_POLICY: RuntimeClosurePolicy = {
   start: ['packages/deadvox/src/core', 'packages/deadvox/src/vehicles', 'packages/deadvox/src/game'],
-  followed: ['packages/mobgen', 'packages/thing-core'],
+  leaves: [],
   forbidden: [
     'packages/deadvox/src/render',
     'packages/deadvox/src/ui',
@@ -955,7 +955,7 @@ class ClosureWalk {
   }
 
   private reach(importer: string, specifier: string, target: string): void {
-    const { start, followed, forbidden } = this.policy;
+    const { leaves, forbidden } = this.policy;
     this.judgeManifest(importer, specifier, target);
     // Classification is by path, so a symlink could hide the owner the bundler resolves it to.
     const link = this.symlinkOnPath(target);
@@ -963,15 +963,16 @@ class ClosureWalk {
       this.violations.push({ importer, specifier, target, reason: `reaches through a symlink: ${link}` });
     } else if (forbidden.some((dir) => within(target, dir))) {
       this.violations.push({ importer, specifier, target, reason: 'reaches a forbidden directory' });
-    } else if ([...start, ...followed].some((dir) => within(target, dir)) && SOURCE_FILE.test(target)) {
+    } else if (SOURCE_FILE.test(target) && !leaves.some((dir) => within(target, dir))) {
+      // Vite follows every local source it resolves, so the walk does too, wherever the file lies.
       this.queue.push(target);
     }
   }
 }
 
 /**
- * Walk every import, type-only ones included, from the runtime start set and the followed
- * libraries it reaches, and report each edge into a forbidden directory or package.
+ * Walk every import, type-only ones included, from the runtime start set and every local source
+ * file it reaches, and report each edge into a forbidden directory or package.
  */
 export function runtimeClosureViolations(repoRoot: string, policy: RuntimeClosurePolicy): RuntimeClosureViolation[] {
   const walk = new ClosureWalk(resolve(repoRoot), policy);
