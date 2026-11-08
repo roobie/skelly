@@ -51,9 +51,11 @@ and report both digest values. This checks that the selected assets and their pa
 declarations agree without changing simulation behaviour. Report a digest difference
 to the lead; the bump must not merge with that difference.
 
-The pin that first includes actor outputs must also declare and admit those outputs
-in the same PR. Until that cutover, retain the pre-actor pin: otherwise the external
-root would expose files no bundled pack claims. See
+A pin may carry actor outputs before Deadvox admits them, because nothing reads the
+submodule's built root until Deadvox supplies it as the external root. The hazard is
+the external root, not the pin: once supplied, it exposes files no bundled pack claims.
+The change that supplies the external root therefore admits the actor outputs in the
+same PR, or skips the actor namespace. See
 `docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Staged admission".
 
 Asset-move PRs target `framework/refactor` and take it in by merging

@@ -99,10 +99,13 @@ an intentional shared-export look from an unnoticed change.
 
 ## Staged admission
 
-The initial submodule pin contains model exports but no Deadvox actor bodies or
-clips under its built root. Keep that pin until the PR that admits actor data also
-declares those files: a later asset revision can otherwise expose unclaimed files to the external
-root's orphan check. Consumer cutovers change declarations, metadata and bytes
+The submodule pin may carry Deadvox actor bodies and clips under its built root
+before Deadvox declares them, because nothing reads that root until Deadvox supplies
+it as the external root; see `packages/deadvox/tools/readBundledPacks.ts`,
+`readResolved`. The hazard is the external root, not the pin: once supplied, its
+orphan check meets actor files no bundled pack claims. The change that supplies the
+external root therefore admits actor data with its declarations, or skips the actor
+namespace. Consumer cutovers change declarations, metadata and bytes
 together, so a model is never admitted without its files or exposed without a claim.
 See `docs/git-workflow.md`, "Shared asset pin bumps".
 
