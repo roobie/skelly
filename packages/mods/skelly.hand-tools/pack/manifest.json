@@ -11,19 +11,11 @@
     },
     {
       "kind": "json",
-      "path": "things/can_opener.model.json"
+      "path": "assets/manifest.json"
     },
     {
       "kind": "json",
-      "path": "things/whetstone.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/repair_kit.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/wire_strippers.model.json"
+      "path": "presentation/item-materials.json"
     },
     {
       "kind": "json",
@@ -31,27 +23,11 @@
     },
     {
       "kind": "json",
-      "path": "things/sewing_repair_kit.model.json"
+      "path": "things/brush_axe.model.json"
     },
     {
       "kind": "json",
-      "path": "things/crowbar.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/hammer.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/sledgehammer.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/kitchen_knife.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/wrench.model.json"
+      "path": "things/can_opener.model.json"
     },
     {
       "kind": "json",
@@ -59,7 +35,23 @@
     },
     {
       "kind": "json",
-      "path": "things/screwdriver.model.json"
+      "path": "things/crowbar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/digging_stick.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hammer.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hammer_bronze.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchet.model.json"
     },
     {
       "kind": "json",
@@ -67,19 +59,47 @@
     },
     {
       "kind": "json",
-      "path": "assets/manifest.json"
+      "path": "things/kitchen_knife.model.json"
     },
     {
       "kind": "json",
-      "path": "exports/things.json"
+      "path": "things/primitive_axe.model.json"
     },
     {
       "kind": "json",
-      "path": "presentation/item-materials.json"
+      "path": "things/repair_kit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/screwdriver.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sewing_repair_kit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sledgehammer.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/whetstone.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wire_strippers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wrench.model.json"
     },
     {
       "kind": "asset",
       "path": "assets/models/adjustable_pliers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brush_axe.glb"
     },
     {
       "kind": "asset",
@@ -95,11 +115,27 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/digging_stick.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/hammer.glb"
     },
     {
       "kind": "asset",
+      "path": "assets/models/hammer_bronze.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchet.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/kitchen_knife.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/primitive_axe.glb"
     },
     {
       "kind": "asset",

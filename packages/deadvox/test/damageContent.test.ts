@@ -7,6 +7,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { meleeProfileForWeapon } from '../src/game/melee.ts';
 import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureActorFigures } from './fixtures/actorFigures.ts';
 import { bodyWithFixtureKind, fixtureDamageContent } from './fixtures/damageKinds.ts';
 
 it('uses a content-only damage kind on bodies, actors and terrain with an existing class and pose', () => {
@@ -46,6 +47,7 @@ it('uses a content-only damage kind on bodies, actors and terrain with an existi
         damageKinds: [{ id: kind, class: 'melee' }],
         meleeClasses: [{ ...templateClass, id: kind }],
         actors: [actor],
+        actorFigures: fixtureActorFigures(actor),
         items: [item],
         body: [...base.body.values()].map((entry) => bodyWithFixtureKind(entry, kind)).concat(tuning),
         blockMaterials: [...base.blockMaterials.values()].map((entry) => ({

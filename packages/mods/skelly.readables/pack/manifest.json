@@ -18,6 +18,14 @@
       "path": "presentation/item-materials.json"
     },
     {
+      "kind": "json",
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/notebook.model.json"
+    },
+    {
       "kind": "asset",
       "path": "assets/models/folded_note.glb"
     },

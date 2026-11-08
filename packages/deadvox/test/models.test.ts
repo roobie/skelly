@@ -763,7 +763,9 @@ describe('base pack melee', () => {
       data: { models: handTools.models.filter(({ id }) => handToolMelee.includes(id)) },
     },
   ]).registry;
-  const models = [...melee.models.values()];
+  // A pack may hold models no melee weapon draws yet; only a drawn model must carry a hold and strike anchor.
+  const drawn = new Set([...registry.items.values()].filter((item) => item.weapon?.melee).map((item) => item.model));
+  const models = [...melee.models.values()].filter((model) => drawn.has(model.id));
   const heldAnchor = async (id: string, name: string): Promise<Vector3> => {
     const def = melee.models.get(id)!;
     const bytes = modFileBytes(def.file);

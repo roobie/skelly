@@ -55,11 +55,11 @@
     },
     {
       "kind": "json",
-      "path": "things/pharmacy_key.model.json"
+      "path": "assets/manifest.json"
     },
     {
       "kind": "json",
-      "path": "things/police_armoury_key.model.json"
+      "path": "presentation/item-materials.json"
     },
     {
       "kind": "json",
@@ -67,15 +67,11 @@
     },
     {
       "kind": "json",
-      "path": "assets/manifest.json"
+      "path": "things/pharmacy_key.model.json"
     },
     {
       "kind": "json",
-      "path": "exports/things.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
+      "path": "things/police_armoury_key.model.json"
     },
     {
       "kind": "asset",

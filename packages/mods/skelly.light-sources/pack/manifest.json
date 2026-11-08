@@ -18,7 +18,11 @@
     },
     {
       "kind": "json",
-      "path": "things/torch.model.json"
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
     },
     {
       "kind": "json",
@@ -26,7 +30,11 @@
     },
     {
       "kind": "json",
-      "path": "things/oil_lamp.model.json"
+      "path": "things/everburning_torch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/index.json"
     },
     {
       "kind": "json",
@@ -38,23 +46,19 @@
     },
     {
       "kind": "json",
-      "path": "things/index.json"
+      "path": "things/oil_lamp.model.json"
     },
     {
       "kind": "json",
-      "path": "assets/manifest.json"
-    },
-    {
-      "kind": "json",
-      "path": "exports/things.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
+      "path": "things/torch.model.json"
     },
     {
       "kind": "asset",
       "path": "assets/models/candle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/everburning_torch.glb"
     },
     {
       "kind": "asset",

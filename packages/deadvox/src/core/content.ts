@@ -14,6 +14,7 @@ import { checkDamageKinds } from './damageContent.ts';
 import { checkDropSounds } from './dropSounds.ts';
 import { BLOCK_FOOTSTEP_FAMILY, footstepEventForBlock } from './footsteps.ts';
 import { liftableFurniture } from './furnitureMove.ts';
+import { FUSED_MASS_FIGURE_SEED } from './fusedMassFigure.ts';
 import { guidanceIssues } from './guidance.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import {
@@ -35,7 +36,16 @@ import { pieceItemIssues } from './placementLoot.ts';
 import { POWER_UNITS } from './powerContent.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import {
+  type ActorBody,
+  ActorBodySchema,
+  ActorClipsSchema,
+  actorClipIssues,
+  actorFigureKey,
+  actorFigureKeyParts,
+} from './schema/actors.ts';
+import {
   type ActorDef,
+  type ActorFigureDef,
   ARM_SEGMENTS,
   type BlockDef,
   CONTENT_SECTION_KEYS,
@@ -113,7 +123,7 @@ export interface Registry extends RegistryMaps {
 
 const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000', solid: false };
 
-import { FIGURE_VARIANTS } from './actorModels.ts';
+import { FIGURE_VARIANTS, figureVariantOf } from './actorModels.ts';
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;
@@ -1578,6 +1588,120 @@ const checkActorFigure = (actor: ActorDef, report: Report): void => {
   }
 };
 
+/** The content that admits built figures; a whole registry is one. */
+interface ActorFigureContent {
+  readonly actors: ReadonlyMap<
+    string,
+    Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'figureSeeds' | 'regions'>
+  >;
+  readonly figures: ReadonlyMap<string, unknown>;
+  readonly actorFigures: ReadonlyMap<string, ActorFigureDef>;
+}
+
+interface ActorFigureIssue {
+  readonly section: 'actors' | 'actorFigures';
+  readonly id: string;
+  readonly path: string;
+  readonly message: string;
+}
+
+/** A fused mass's body keys its regions per member; its type keys them once for every member. */
+const FUSED_MEMBER_PREFIX = /^member\.\d+\./;
+const typeRegionKey = (bodyRegion: string): string => bodyRegion.replace(FUSED_MEMBER_PREFIX, 'member.');
+
+const figureTypeIssues = (
+  type: Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'regions'>,
+  body: ActorBody,
+): [string, string][] => {
+  const issues: [string, string][] = [];
+  if (body.model !== figureVariantOf(type)) {
+    issues.push(['.body.model', `must be the figure variant of actor type "${type.id}"`]);
+  }
+  const bodyRegions = new Set(Object.keys(body.regions ?? {}).map(typeRegionKey));
+  const typeRegions = Object.keys(type.regions);
+  if (bodyRegions.size !== typeRegions.length || typeRegions.some((region) => !bodyRegions.has(region))) {
+    issues.push(['.body.regions', `region keys must match actor type "${type.id}"`]);
+  }
+  if (type.model === 'fused-mass' && body.scale !== type.bodyScale) {
+    issues.push(['.body.scale', `must equal the bodyScale of actor type "${type.id}"`]);
+  }
+  return issues;
+};
+
+/**
+ * Built figure rows admit when every seed an actor type draws has one, the fused mass's fixed seed included, and each
+ * row's key names an actor type, or an authored figure such as the player's. The browser has no figure bytes, so
+ * `actorFigureFileIssues` checks them in Node.
+ */
+export const actorFigureIssues = (content: ActorFigureContent): ActorFigureIssue[] => {
+  const issues: ActorFigureIssue[] = [];
+  for (const id of content.actorFigures.keys()) {
+    const type = actorFigureKeyParts(id)?.type ?? id;
+    if (!(content.actors.has(type) || content.figures.has(type))) {
+      issues.push({ section: 'actorFigures', id, path: '.id', message: `no actor type or figure "${type}"` });
+    }
+  }
+  for (const type of content.actors.values()) {
+    const seeds = type.model === 'fused-mass' ? [FUSED_MASS_FIGURE_SEED] : (type.figureSeeds ?? []);
+    seeds.forEach((seed, i) => {
+      const key = actorFigureKey(type.id, seed);
+      if (!content.actorFigures.has(key)) {
+        const path = type.model === 'fused-mass' ? '.model' : `.figureSeeds[${i}]`;
+        issues.push({ section: 'actors', id: type.id, path, message: `no actor figure "${key}"` });
+      }
+    });
+  }
+  return issues;
+};
+
+/**
+ * What one figure row's body and clips, parsed from the files it names, disagree with: their schemas, the row's key,
+ * the body's clips and its actor type.
+ */
+export const actorFigureFileIssues = (
+  content: Pick<ActorFigureContent, 'actors' | 'figures'>,
+  id: string,
+  bodyData: unknown,
+  clipsData: unknown,
+): ActorFigureIssue[] => {
+  const body = safeParse(ActorBodySchema, bodyData);
+  const clips = safeParse(ActorClipsSchema, clipsData);
+  if (!(body.success && clips.success)) {
+    return [
+      ...(body.success ? [] : schemaIssues('.body', body.issues)),
+      ...(clips.success ? [] : schemaIssues('.clips', clips.issues)),
+    ].map(({ source, path, message }) => ({
+      section: 'actorFigures',
+      id,
+      path: path ? `${source}.${path}` : source,
+      message,
+    }));
+  }
+  const issues: ActorFigureIssue[] = [];
+  const report = (path: string, message: string) => issues.push({ section: 'actorFigures', id, path, message });
+  if (id !== actorFigureKey(body.output.type, body.output.seed)) {
+    report('.id', 'must be the body type and seed as "type.seed"');
+  }
+  for (const message of actorClipIssues(body.output, clips.output)) {
+    report('.clips', message);
+  }
+  const type = content.actors.get(body.output.type);
+  if (type) {
+    for (const [path, message] of figureTypeIssues(type, body.output)) {
+      report(path, message);
+    }
+  } else if (!content.figures.has(body.output.type)) {
+    report('.body.type', `no actor type or figure "${body.output.type}"`);
+  }
+  return issues;
+};
+
+const checkActorFigures = (registry: Registry, report: Report) => {
+  for (const { section, id, path, message } of actorFigureIssues(registry)) {
+    report(section, id, path, message);
+  }
+};
+
 const checkActors = (registry: Registry, report: Report) => {
   const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   for (const actor of registry.actors.values()) {
@@ -2312,6 +2436,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkKeys(registry, report);
   checkActors(registry, report);
+  checkActorFigures(registry, report);
   checkDamageKinds(registry, report);
   checkRecipes(registry, report);
   checkSkillAndUiReferences(registry, report);

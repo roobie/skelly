@@ -14,6 +14,7 @@ export type {
 export { ARM_SEGMENTS, FIGURE_LIMB_JOINTS, FIGURE_LIMBS, LEG_SEGMENTS } from './schema/figures.ts';
 export type {
   ActorDef,
+  ActorFigureDef,
   BlockDef,
   BlockMaterialDef,
   BodyTuningDef,

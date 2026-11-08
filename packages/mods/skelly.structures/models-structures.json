@@ -1,6 +1,24 @@
 {
   "models": [
     {
+      "file": "assets/models/oven_door.glb",
+      "id": "oven_door",
+      "itemPresentation": {
+        "materials": ["metal", "glass", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "oven_door": {
+          "centreOfMass": [0, 0.025064035703540252, 0.0011815264266372477],
+          "massKg": 10,
+          "node": "oven_door:compound"
+        }
+      }
+    },
+    {
       "file": "assets/models/hinge_set.glb",
       "id": "hinge_set",
       "itemPresentation": {
@@ -12,7 +30,7 @@
       },
       "parts": {
         "hinge_set": {
-          "centreOfMass": [0, 0.0016666666666666668, 9.0699628569410935e-19],
+          "centreOfMass": [-1.1456795187715064e-18, 0.0019473684210526314, 0],
           "massKg": 0.35999999999999999,
           "node": "hinge_set:compound"
         }

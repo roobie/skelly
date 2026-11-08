@@ -17,8 +17,8 @@
       "output": "packages/deadvox/mods/skelly.deadvox.actors/enemies.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.actors/exports/things.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.actors/exports/things.json"
+      "source": "packages/deadvox/mods/skelly.deadvox.actors/figures-actors.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.actors/figures-actors.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.actors/footstep-sounds.jsonnet",
@@ -79,10 +79,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.camp/camp.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.camp/camp.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.camp/exports/things.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.camp/exports/things.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.camp/item-economy.jsonnet",
@@ -147,10 +143,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/assets/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/assets/manifest.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/exports/things.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/exports/things.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/furniture-medical.jsonnet",
@@ -257,10 +249,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/assets/manifest.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/exports/things.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/exports/things.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/footstep-sounds.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/footstep-sounds.json"
     },
@@ -321,10 +309,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/assets/manifest.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/exports/things.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/exports/things.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/item-economy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/item-economy.json"
     },
@@ -363,10 +347,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/assets/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/assets/manifest.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/exports/things.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/exports/things.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/furniture-playtest.jsonnet",
@@ -621,16 +601,24 @@
       "output": "packages/mobgen/src/mob/skeletonTemplate.json"
     },
     {
+      "source": "packages/mods/skelly.arcana/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.arcana/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.arcana/models-arcana.jsonnet",
+      "output": "packages/mods/skelly.arcana/models-arcana.json"
+    },
+    {
+      "source": "packages/mods/skelly.arcana/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.arcana/pack/manifest.json"
+    },
+    {
       "source": "packages/mods/skelly.basic-foods/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.basic-foods/assets/manifest.json"
     },
     {
       "source": "packages/mods/skelly.basic-foods/basic-foods-items.jsonnet",
       "output": "packages/mods/skelly.basic-foods/basic-foods-items.json"
-    },
-    {
-      "source": "packages/mods/skelly.basic-foods/exports/things.jsonnet",
-      "output": "packages/mods/skelly.basic-foods/exports/things.json"
     },
     {
       "source": "packages/mods/skelly.basic-foods/models-basic-foods.jsonnet",
@@ -647,10 +635,6 @@
     {
       "source": "packages/mods/skelly.basic-recipes/basic-recipes-items.jsonnet",
       "output": "packages/mods/skelly.basic-recipes/basic-recipes-items.json"
-    },
-    {
-      "source": "packages/mods/skelly.basic-recipes/exports/things.jsonnet",
-      "output": "packages/mods/skelly.basic-recipes/exports/things.json"
     },
     {
       "source": "packages/mods/skelly.basic-recipes/models-basic-recipes.jsonnet",
@@ -677,8 +661,8 @@
       "output": "packages/mods/skelly.body/body.json"
     },
     {
-      "source": "packages/mods/skelly.body/exports/things.jsonnet",
-      "output": "packages/mods/skelly.body/exports/things.json"
+      "source": "packages/mods/skelly.body/figures-body.jsonnet",
+      "output": "packages/mods/skelly.body/figures-body.json"
     },
     {
       "source": "packages/mods/skelly.body/figures-player.jsonnet",
@@ -703,10 +687,6 @@
     {
       "source": "packages/mods/skelly.containers/containers-items.jsonnet",
       "output": "packages/mods/skelly.containers/containers-items.json"
-    },
-    {
-      "source": "packages/mods/skelly.containers/exports/things.jsonnet",
-      "output": "packages/mods/skelly.containers/exports/things.json"
     },
     {
       "source": "packages/mods/skelly.containers/models-containers.jsonnet",
@@ -753,10 +733,6 @@
       "output": "packages/mods/skelly.electric-power/electric-power-items.json"
     },
     {
-      "source": "packages/mods/skelly.electric-power/exports/things.jsonnet",
-      "output": "packages/mods/skelly.electric-power/exports/things.json"
-    },
-    {
       "source": "packages/mods/skelly.electric-power/models-electric-power.jsonnet",
       "output": "packages/mods/skelly.electric-power/models-electric-power.json"
     },
@@ -775,10 +751,6 @@
     {
       "source": "packages/mods/skelly.electronics/electronics-items.jsonnet",
       "output": "packages/mods/skelly.electronics/electronics-items.json"
-    },
-    {
-      "source": "packages/mods/skelly.electronics/exports/things.jsonnet",
-      "output": "packages/mods/skelly.electronics/exports/things.json"
     },
     {
       "source": "packages/mods/skelly.electronics/models-electronics.jsonnet",
@@ -801,10 +773,6 @@
       "output": "packages/mods/skelly.explosives/explosives-sounds.json"
     },
     {
-      "source": "packages/mods/skelly.explosives/exports/things.jsonnet",
-      "output": "packages/mods/skelly.explosives/exports/things.json"
-    },
-    {
       "source": "packages/mods/skelly.explosives/models-explosives.jsonnet",
       "output": "packages/mods/skelly.explosives/models-explosives.json"
     },
@@ -815,10 +783,6 @@
     {
       "source": "packages/mods/skelly.firearms/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.firearms/assets/manifest.json"
-    },
-    {
-      "source": "packages/mods/skelly.firearms/exports/things.jsonnet",
-      "output": "packages/mods/skelly.firearms/exports/things.json"
     },
     {
       "source": "packages/mods/skelly.firearms/firearms-items.jsonnet",
@@ -893,10 +857,6 @@
       "output": "packages/mods/skelly.flame-tools/assets/manifest.json"
     },
     {
-      "source": "packages/mods/skelly.flame-tools/exports/things.jsonnet",
-      "output": "packages/mods/skelly.flame-tools/exports/things.json"
-    },
-    {
       "source": "packages/mods/skelly.flame-tools/flame-tools-items.jsonnet",
       "output": "packages/mods/skelly.flame-tools/flame-tools-items.json"
     },
@@ -911,10 +871,6 @@
     {
       "source": "packages/mods/skelly.fuel/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.fuel/assets/manifest.json"
-    },
-    {
-      "source": "packages/mods/skelly.fuel/exports/things.jsonnet",
-      "output": "packages/mods/skelly.fuel/exports/things.json"
     },
     {
       "source": "packages/mods/skelly.fuel/fuel-items.jsonnet",
@@ -945,10 +901,6 @@
       "output": "packages/mods/skelly.ground-vehicles/assets/manifest.json"
     },
     {
-      "source": "packages/mods/skelly.ground-vehicles/exports/things.jsonnet",
-      "output": "packages/mods/skelly.ground-vehicles/exports/things.json"
-    },
-    {
       "source": "packages/mods/skelly.ground-vehicles/ground-vehicles-items.jsonnet",
       "output": "packages/mods/skelly.ground-vehicles/ground-vehicles-items.json"
     },
@@ -967,10 +919,6 @@
     {
       "source": "packages/mods/skelly.hand-tools/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.hand-tools/assets/manifest.json"
-    },
-    {
-      "source": "packages/mods/skelly.hand-tools/exports/things.jsonnet",
-      "output": "packages/mods/skelly.hand-tools/exports/things.json"
     },
     {
       "source": "packages/mods/skelly.hand-tools/hand-tools-items.jsonnet",
@@ -1017,10 +965,6 @@
       "output": "packages/mods/skelly.light-sources/assets/manifest.json"
     },
     {
-      "source": "packages/mods/skelly.light-sources/exports/things.jsonnet",
-      "output": "packages/mods/skelly.light-sources/exports/things.json"
-    },
-    {
       "source": "packages/mods/skelly.light-sources/light-sources-items.jsonnet",
       "output": "packages/mods/skelly.light-sources/light-sources-items.json"
     },
@@ -1053,10 +997,6 @@
       "output": "packages/mods/skelly.materials/assets/manifest.json"
     },
     {
-      "source": "packages/mods/skelly.materials/exports/things.jsonnet",
-      "output": "packages/mods/skelly.materials/exports/things.json"
-    },
-    {
       "source": "packages/mods/skelly.materials/materials-items.jsonnet",
       "output": "packages/mods/skelly.materials/materials-items.json"
     },
@@ -1071,10 +1011,6 @@
     {
       "source": "packages/mods/skelly.medicine/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.medicine/assets/manifest.json"
-    },
-    {
-      "source": "packages/mods/skelly.medicine/exports/things.jsonnet",
-      "output": "packages/mods/skelly.medicine/exports/things.json"
     },
     {
       "source": "packages/mods/skelly.medicine/medicine-items.jsonnet",
@@ -1111,10 +1047,6 @@
     {
       "source": "packages/mods/skelly.melee/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.melee/assets/manifest.json"
-    },
-    {
-      "source": "packages/mods/skelly.melee/exports/things.jsonnet",
-      "output": "packages/mods/skelly.melee/exports/things.json"
     },
     {
       "source": "packages/mods/skelly.melee/melee-items.jsonnet",
@@ -1163,10 +1095,6 @@
     {
       "source": "packages/mods/skelly.packaged-foods/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.packaged-foods/assets/manifest.json"
-    },
-    {
-      "source": "packages/mods/skelly.packaged-foods/exports/things.jsonnet",
-      "output": "packages/mods/skelly.packaged-foods/exports/things.json"
     },
     {
       "source": "packages/mods/skelly.packaged-foods/models-packaged-foods.jsonnet",
@@ -1233,10 +1161,6 @@
       "output": "packages/mods/skelly.structures/assets/manifest.json"
     },
     {
-      "source": "packages/mods/skelly.structures/exports/things.jsonnet",
-      "output": "packages/mods/skelly.structures/exports/things.json"
-    },
-    {
       "source": "packages/mods/skelly.structures/models-structures.jsonnet",
       "output": "packages/mods/skelly.structures/models-structures.json"
     },
@@ -1259,10 +1183,6 @@
     {
       "source": "packages/mods/skelly.traps/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.traps/assets/manifest.json"
-    },
-    {
-      "source": "packages/mods/skelly.traps/exports/things.jsonnet",
-      "output": "packages/mods/skelly.traps/exports/things.json"
     },
     {
       "source": "packages/mods/skelly.traps/models-traps.jsonnet",
@@ -1299,10 +1219,6 @@
     {
       "source": "packages/mods/skelly.wearables/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.wearables/assets/manifest.json"
-    },
-    {
-      "source": "packages/mods/skelly.wearables/exports/things.jsonnet",
-      "output": "packages/mods/skelly.wearables/exports/things.json"
     },
     {
       "source": "packages/mods/skelly.wearables/models-wearables.jsonnet",

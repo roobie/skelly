@@ -1,4 +1,7 @@
 {
+  "assets/models/cutting_board.glb": { "materials": ["wood-birch"] },
+  "assets/models/iron_pot.glb": { "materials": ["iron-cast", "paint-cream"] },
   "assets/models/jerry_can.glb": { "materials": ["polymer-od-green", "paint-charcoal"] },
-  "assets/models/lamp_oil_bottle.glb": { "materials": [null, null, null, "fuel"] }
+  "assets/models/lamp_oil_bottle.glb": { "materials": [null, null, null, "fuel"] },
+  "assets/models/pan.glb": { "materials": ["iron-cast", "coal-black"] }
 }

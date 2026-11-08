@@ -4,7 +4,6 @@
 ).pack({
   models: [
     { id: 'paper_sheet', file: 'assets/models/paper_sheet.glb' },
-    { id: 'notebook', file: 'assets/models/notebook.glb' },
     { id: 'folded_note', file: 'assets/models/folded_note.glb' },
-  ],
+  ] + import 'packages/skelly-assets/built/skelly.readables/things/index.json',
 })

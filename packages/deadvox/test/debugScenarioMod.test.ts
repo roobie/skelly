@@ -35,21 +35,27 @@ describe('authored debug scenario mod', () => {
     expect(selected.admitted).toEqual([]);
   });
 
-  it('builds every debug mod from its own closure and keeps the catalogue rows it declares', () => {
-    // Selection supplies the default stack, which would hide a row whose owner the debug mod does not declare.
-    const debugPacks = readAvailablePacks('.').filter(({ manifest }) => manifest.optIn);
+  // Selection supplies the default stack, which would hide a row whose owner the debug mod does not declare.
+  const debugPacks = readAvailablePacks('.').filter(({ manifest }) => manifest.optIn);
+
+  it('finds the selected debug mod among the opt-in packs', () => {
     expect(debugPacks.map(({ manifest }) => manifest.id)).toContain(debugManifest.id);
-    for (const { manifest, files } of debugPacks) {
-      const admitted = admitPacks(readBundledPacks('.', manifest.id));
-      expect(admitted.issues, manifest.id).toEqual([]);
-      const { registry, issues } = buildRegistry(admitted.sources);
-      expect(issues, manifest.id).toEqual([]);
-      const rows = files.flatMap(({ data }) => (data as { catalogueRows?: { id: string }[] }).catalogueRows ?? []);
-      for (const { id } of rows) {
-        expect(registry.catalogueRows.has(id), `${manifest.id} ${id}`).toBe(true);
-      }
-    }
   });
+
+  // Each closure admits the whole actor stack, so one test per mod keeps each build inside its own budget.
+  it.each(debugPacks.map((pack) => [pack.manifest.id, pack.files] as const))(
+    'builds debug mod %s from its own closure and keeps the catalogue rows it declares',
+    (id, files) => {
+      const admitted = admitPacks(readBundledPacks('.', id));
+      expect(admitted.issues).toEqual([]);
+      const { registry, issues } = buildRegistry(admitted.sources);
+      expect(issues).toEqual([]);
+      const rows = files.flatMap(({ data }) => (data as { catalogueRows?: { id: string }[] }).catalogueRows ?? []);
+      for (const { id: row } of rows) {
+        expect(registry.catalogueRows.has(row), row).toBe(true);
+      }
+    },
+  );
 
   it('loads two selected debug folder mods together', () => {
     const tutorialDebug = 'skelly.deadvox.scenario.tutorial.debug';

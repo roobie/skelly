@@ -14,6 +14,7 @@ import {
   fixtureMaterials,
   fixtureSounds,
 } from '../economyFixtures.ts';
+import { fixtureActorFigures } from './actorFigures.ts';
 import { bodySoundIds } from './bodySounds.ts';
 import { fixtureIds } from './capabilityIds.ts';
 import { fixtureDamageContent } from './damageKinds.ts';
@@ -235,6 +236,7 @@ export const fixtureScenarioSources = (
       data: {
         damageKinds: fixtureDamageContent().damageKinds,
         actors: [actor],
+        actorFigures: fixtureActorFigures(actor),
         furnitureMaterials: fixtureMaterials(),
         blockMaterials: [fixtureBlockMaterial('fixture_solid')],
         sounds: [...fixtureSounds(), ...bodySounds],

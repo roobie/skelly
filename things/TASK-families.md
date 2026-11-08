@@ -21,11 +21,14 @@ Phase 4 is complete when all of these hold:
 - A tool row a player holds either authors its handling datum against a named solid or takes
   Deadvox's default hold; a default judged wrong at a look in game gets an authored datum.
 
-To derive what remains, compare each mod's model registrations with what its own recipe exports.
-A registration no recipe exports is a hand-made model, and a datum a registration adds over its
-export is an override. Recipes live beside their item rows in whichever mod owns them, in either
-mod root. See `test/things-deadvox-contract.test.mjs`,
-"thing tool exports satisfy the Deadvox contract", for the check of each committed export.
+To find hand-made models, compare each pack's model registrations with the rows the pinned
+`packages/skelly-assets/built/manifest.json` names for that pack: a registration no pinned row
+names is hand-made. Manifest rows carry no handling datums, so find overrides by comparing a
+registration's datums with its pinned model entry,
+`packages/skelly-assets/built/<pack>/things/<id>.model.json`: a datum that differs from the
+entry is an override. Recipes live in the `packages/skelly-assets` submodule. See
+`test/things-deadvox-contract.test.mjs`,
+"loads authored handling and anchors without consumer overrides".
 
 ## Exceptions
 

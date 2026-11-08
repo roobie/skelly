@@ -1,18 +1,22 @@
 {
   "sources": [
     {
-      "author": "Skelly contributors",
-      "changes": "Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.",
+      "author": "Björn Roberg",
+      "changes": null,
       "download": null,
       "files": [
         "assets/models/baseball_bat.glb",
         "assets/models/kabar.glb",
+        "assets/models/lame_saber.glb",
+        "assets/models/long_pole.glb",
         "assets/models/machete.glb",
-        "assets/models/steel_pipe.glb"
+        "assets/models/pike_pole.glb",
+        "assets/models/steel_pipe.glb",
+        "assets/models/sun_shield.glb"
       ],
-      "licence": "CC0-1.0",
-      "title": "Thing tool authored models",
-      "url": "https://github.com/roobie/skelly/blob/main/packages/mods/skelly.melee/exports/things.jsonnet"
+      "licence": "CC-BY-NC-SA-4.0",
+      "title": "skelly-assets built models",
+      "url": "https://github.com/roobie/skelly-assets"
     }
   ]
 }

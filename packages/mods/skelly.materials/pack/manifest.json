@@ -11,7 +11,15 @@
     },
     {
       "kind": "json",
-      "path": "things/rag.model.json"
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cord_coil.model.json"
     },
     {
       "kind": "json",
@@ -19,7 +27,19 @@
     },
     {
       "kind": "json",
+      "path": "things/fastener_pack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
       "path": "things/nails.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rag.model.json"
     },
     {
       "kind": "json",
@@ -27,19 +47,11 @@
     },
     {
       "kind": "json",
-      "path": "things/stick.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/wax.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/small_spring.model.json"
     },
     {
       "kind": "json",
-      "path": "things/fastener_pack.model.json"
+      "path": "things/stick.model.json"
     },
     {
       "kind": "json",
@@ -51,23 +63,7 @@
     },
     {
       "kind": "json",
-      "path": "things/cord_coil.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
-      "path": "assets/manifest.json"
-    },
-    {
-      "kind": "json",
-      "path": "exports/things.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
+      "path": "things/wax.model.json"
     },
     {
       "kind": "asset",

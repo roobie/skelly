@@ -1,20 +1,20 @@
 {
   "sources": [
     {
-      "author": "Skelly contributors",
-      "changes": "Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.",
+      "author": "Björn Roberg",
+      "changes": null,
       "download": null,
       "files": [
-        "assets/models/bandage.glb",
-        "assets/models/antiseptic.glb",
         "assets/models/antibiotics.glb",
-        "assets/models/painkillers.glb",
+        "assets/models/antiseptic.glb",
+        "assets/models/bandage.glb",
         "assets/models/codeine.glb",
-        "assets/models/morphine.glb"
+        "assets/models/morphine.glb",
+        "assets/models/painkillers.glb"
       ],
-      "licence": "CC0-1.0",
-      "title": "Thing tool authored models",
-      "url": "https://github.com/roobie/skelly/blob/main/packages/mods/skelly.medicine/exports/things.jsonnet"
+      "licence": "CC-BY-NC-SA-4.0",
+      "title": "skelly-assets built models",
+      "url": "https://github.com/roobie/skelly-assets"
     }
   ]
 }

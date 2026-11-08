@@ -974,3 +974,23 @@ export const actorClipIssues = (body: ActorBody, clips: ActorClips): string[] =>
   }
   return issues;
 };
+
+/** The registry key of one built figure, named as the asset submodule names its files. */
+export const actorFigureKey = (type: string, seed: number): string => `${type}.${seed}`;
+
+const FIGURE_KEY = /^(.+)\.(\d+)$/;
+
+/** A figure key's type and seed, or nothing when the key is not "type.seed". */
+export const actorFigureKeyParts = (id: string): { type: string; seed: number } | undefined => {
+  const match = FIGURE_KEY.exec(id);
+  return match ? { type: match[1]!, seed: Number(match[2]) } : undefined;
+};
+
+/**
+ * One built figure: the declared pack files holding the body and clips the asset submodule bakes for one type and
+ * seed. Only Node reads those bytes, so the browser admits figures without loading them.
+ */
+export const ActorFigureSchema = pipe(
+  strictObject({ id: string(), body: string(), clips: string() }),
+  check(({ id }) => actorFigureKeyParts(id) !== undefined, 'id must be the figure type and seed as "type.seed"'),
+);

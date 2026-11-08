@@ -156,9 +156,8 @@ layer order inside construct is in `packages/skelly-assets/tools/packages/constr
    multi-part desk lamp share the source-to-preview and export path. The lamp proves that the single-part helper's users
    can gain parts, and that non-gun parts carry summed mass and a weighted centre without
    a competing item weight. The remaining-families phase then starts on an exercised path.
-   Each pack's recipe names the exports Deadvox validates and loads; see
-   `packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/exports/things.jsonnet` and
-   `test/things-deadvox-contract.test.mjs`.
+   The asset submodule's build manifest names the exports Deadvox validates and loads; see
+   `packages/skelly-assets/built/manifest.json` and `test/things-deadvox-contract.test.mjs`.
 4. **Thing tool, remaining families.** Family by family, each with source, GLB, entry and
    load test together. The compass keeps its dedicated display renderer.
 5. **Gun tool — complete.** Gun and ammo policy, authored sources, tests and lasting

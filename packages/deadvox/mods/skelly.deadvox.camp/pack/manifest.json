@@ -27,6 +27,14 @@
     },
     {
       "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
       "path": "things/camp_armoury_key.model.json"
     },
     {
@@ -36,18 +44,6 @@
     {
       "kind": "json",
       "path": "things/index.json"
-    },
-    {
-      "kind": "json",
-      "path": "assets/manifest.json"
-    },
-    {
-      "kind": "json",
-      "path": "exports/things.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
     },
     {
       "kind": "asset",

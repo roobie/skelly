@@ -1,0 +1,354 @@
+{
+  "actorFigures": [
+    {
+      "body": "actors/acid_zombie.1.body.json",
+      "clips": "actors/acid_zombie.1.clips.json",
+      "id": "acid_zombie.1"
+    },
+    {
+      "body": "actors/acid_zombie.2.body.json",
+      "clips": "actors/acid_zombie.2.clips.json",
+      "id": "acid_zombie.2"
+    },
+    {
+      "body": "actors/acid_zombie.3.body.json",
+      "clips": "actors/acid_zombie.3.clips.json",
+      "id": "acid_zombie.3"
+    },
+    {
+      "body": "actors/acid_zombie.4.body.json",
+      "clips": "actors/acid_zombie.4.clips.json",
+      "id": "acid_zombie.4"
+    },
+    {
+      "body": "actors/acid_zombie.6.body.json",
+      "clips": "actors/acid_zombie.6.clips.json",
+      "id": "acid_zombie.6"
+    },
+    {
+      "body": "actors/acid_zombie.8.body.json",
+      "clips": "actors/acid_zombie.8.clips.json",
+      "id": "acid_zombie.8"
+    },
+    {
+      "body": "actors/amalgam.1.body.json",
+      "clips": "actors/amalgam.1.clips.json",
+      "id": "amalgam.1"
+    },
+    {
+      "body": "actors/brute_shambler.1.body.json",
+      "clips": "actors/brute_shambler.1.clips.json",
+      "id": "brute_shambler.1"
+    },
+    {
+      "body": "actors/brute_shambler.2.body.json",
+      "clips": "actors/brute_shambler.2.clips.json",
+      "id": "brute_shambler.2"
+    },
+    {
+      "body": "actors/brute_shambler.3.body.json",
+      "clips": "actors/brute_shambler.3.clips.json",
+      "id": "brute_shambler.3"
+    },
+    {
+      "body": "actors/brute_shambler.4.body.json",
+      "clips": "actors/brute_shambler.4.clips.json",
+      "id": "brute_shambler.4"
+    },
+    {
+      "body": "actors/brute_shambler.5.body.json",
+      "clips": "actors/brute_shambler.5.clips.json",
+      "id": "brute_shambler.5"
+    },
+    {
+      "body": "actors/brute_shambler.6.body.json",
+      "clips": "actors/brute_shambler.6.clips.json",
+      "id": "brute_shambler.6"
+    },
+    {
+      "body": "actors/brute_shambler.7.body.json",
+      "clips": "actors/brute_shambler.7.clips.json",
+      "id": "brute_shambler.7"
+    },
+    {
+      "body": "actors/brute_shambler.8.body.json",
+      "clips": "actors/brute_shambler.8.clips.json",
+      "id": "brute_shambler.8"
+    },
+    {
+      "body": "actors/crawler.1.body.json",
+      "clips": "actors/crawler.1.clips.json",
+      "id": "crawler.1"
+    },
+    {
+      "body": "actors/crawler.11.body.json",
+      "clips": "actors/crawler.11.clips.json",
+      "id": "crawler.11"
+    },
+    {
+      "body": "actors/crawler.2.body.json",
+      "clips": "actors/crawler.2.clips.json",
+      "id": "crawler.2"
+    },
+    {
+      "body": "actors/crawler.3.body.json",
+      "clips": "actors/crawler.3.clips.json",
+      "id": "crawler.3"
+    },
+    {
+      "body": "actors/crawler.5.body.json",
+      "clips": "actors/crawler.5.clips.json",
+      "id": "crawler.5"
+    },
+    {
+      "body": "actors/crawler.6.body.json",
+      "clips": "actors/crawler.6.clips.json",
+      "id": "crawler.6"
+    },
+    {
+      "body": "actors/crawler.7.body.json",
+      "clips": "actors/crawler.7.clips.json",
+      "id": "crawler.7"
+    },
+    {
+      "body": "actors/farmer_shambler.1.body.json",
+      "clips": "actors/farmer_shambler.1.clips.json",
+      "id": "farmer_shambler.1"
+    },
+    {
+      "body": "actors/farmer_shambler.2.body.json",
+      "clips": "actors/farmer_shambler.2.clips.json",
+      "id": "farmer_shambler.2"
+    },
+    {
+      "body": "actors/farmer_shambler.3.body.json",
+      "clips": "actors/farmer_shambler.3.clips.json",
+      "id": "farmer_shambler.3"
+    },
+    {
+      "body": "actors/farmer_shambler.4.body.json",
+      "clips": "actors/farmer_shambler.4.clips.json",
+      "id": "farmer_shambler.4"
+    },
+    {
+      "body": "actors/farmer_shambler.5.body.json",
+      "clips": "actors/farmer_shambler.5.clips.json",
+      "id": "farmer_shambler.5"
+    },
+    {
+      "body": "actors/farmer_shambler.6.body.json",
+      "clips": "actors/farmer_shambler.6.clips.json",
+      "id": "farmer_shambler.6"
+    },
+    {
+      "body": "actors/farmer_shambler.7.body.json",
+      "clips": "actors/farmer_shambler.7.clips.json",
+      "id": "farmer_shambler.7"
+    },
+    {
+      "body": "actors/farmer_shambler.8.body.json",
+      "clips": "actors/farmer_shambler.8.clips.json",
+      "id": "farmer_shambler.8"
+    },
+    {
+      "body": "actors/medic_shambler.1.body.json",
+      "clips": "actors/medic_shambler.1.clips.json",
+      "id": "medic_shambler.1"
+    },
+    {
+      "body": "actors/medic_shambler.2.body.json",
+      "clips": "actors/medic_shambler.2.clips.json",
+      "id": "medic_shambler.2"
+    },
+    {
+      "body": "actors/medic_shambler.3.body.json",
+      "clips": "actors/medic_shambler.3.clips.json",
+      "id": "medic_shambler.3"
+    },
+    {
+      "body": "actors/medic_shambler.4.body.json",
+      "clips": "actors/medic_shambler.4.clips.json",
+      "id": "medic_shambler.4"
+    },
+    {
+      "body": "actors/medic_shambler.5.body.json",
+      "clips": "actors/medic_shambler.5.clips.json",
+      "id": "medic_shambler.5"
+    },
+    {
+      "body": "actors/medic_shambler.6.body.json",
+      "clips": "actors/medic_shambler.6.clips.json",
+      "id": "medic_shambler.6"
+    },
+    {
+      "body": "actors/medic_shambler.7.body.json",
+      "clips": "actors/medic_shambler.7.clips.json",
+      "id": "medic_shambler.7"
+    },
+    {
+      "body": "actors/medic_shambler.8.body.json",
+      "clips": "actors/medic_shambler.8.clips.json",
+      "id": "medic_shambler.8"
+    },
+    {
+      "body": "actors/military_shambler.1.body.json",
+      "clips": "actors/military_shambler.1.clips.json",
+      "id": "military_shambler.1"
+    },
+    {
+      "body": "actors/military_shambler.2.body.json",
+      "clips": "actors/military_shambler.2.clips.json",
+      "id": "military_shambler.2"
+    },
+    {
+      "body": "actors/military_shambler.3.body.json",
+      "clips": "actors/military_shambler.3.clips.json",
+      "id": "military_shambler.3"
+    },
+    {
+      "body": "actors/military_shambler.4.body.json",
+      "clips": "actors/military_shambler.4.clips.json",
+      "id": "military_shambler.4"
+    },
+    {
+      "body": "actors/military_shambler.5.body.json",
+      "clips": "actors/military_shambler.5.clips.json",
+      "id": "military_shambler.5"
+    },
+    {
+      "body": "actors/military_shambler.6.body.json",
+      "clips": "actors/military_shambler.6.clips.json",
+      "id": "military_shambler.6"
+    },
+    {
+      "body": "actors/military_shambler.7.body.json",
+      "clips": "actors/military_shambler.7.clips.json",
+      "id": "military_shambler.7"
+    },
+    {
+      "body": "actors/military_shambler.8.body.json",
+      "clips": "actors/military_shambler.8.clips.json",
+      "id": "military_shambler.8"
+    },
+    {
+      "body": "actors/runner.1.body.json",
+      "clips": "actors/runner.1.clips.json",
+      "id": "runner.1"
+    },
+    {
+      "body": "actors/runner.2.body.json",
+      "clips": "actors/runner.2.clips.json",
+      "id": "runner.2"
+    },
+    {
+      "body": "actors/runner.3.body.json",
+      "clips": "actors/runner.3.clips.json",
+      "id": "runner.3"
+    },
+    {
+      "body": "actors/runner.4.body.json",
+      "clips": "actors/runner.4.clips.json",
+      "id": "runner.4"
+    },
+    {
+      "body": "actors/runner.5.body.json",
+      "clips": "actors/runner.5.clips.json",
+      "id": "runner.5"
+    },
+    {
+      "body": "actors/runner.6.body.json",
+      "clips": "actors/runner.6.clips.json",
+      "id": "runner.6"
+    },
+    {
+      "body": "actors/runner.7.body.json",
+      "clips": "actors/runner.7.clips.json",
+      "id": "runner.7"
+    },
+    {
+      "body": "actors/runner.8.body.json",
+      "clips": "actors/runner.8.clips.json",
+      "id": "runner.8"
+    },
+    {
+      "body": "actors/shambler.1.body.json",
+      "clips": "actors/shambler.1.clips.json",
+      "id": "shambler.1"
+    },
+    {
+      "body": "actors/shambler.2.body.json",
+      "clips": "actors/shambler.2.clips.json",
+      "id": "shambler.2"
+    },
+    {
+      "body": "actors/shambler.3.body.json",
+      "clips": "actors/shambler.3.clips.json",
+      "id": "shambler.3"
+    },
+    {
+      "body": "actors/shambler.4.body.json",
+      "clips": "actors/shambler.4.clips.json",
+      "id": "shambler.4"
+    },
+    {
+      "body": "actors/shambler.5.body.json",
+      "clips": "actors/shambler.5.clips.json",
+      "id": "shambler.5"
+    },
+    {
+      "body": "actors/shambler.6.body.json",
+      "clips": "actors/shambler.6.clips.json",
+      "id": "shambler.6"
+    },
+    {
+      "body": "actors/shambler.7.body.json",
+      "clips": "actors/shambler.7.clips.json",
+      "id": "shambler.7"
+    },
+    {
+      "body": "actors/shambler.8.body.json",
+      "clips": "actors/shambler.8.clips.json",
+      "id": "shambler.8"
+    },
+    {
+      "body": "actors/worker_shambler.1.body.json",
+      "clips": "actors/worker_shambler.1.clips.json",
+      "id": "worker_shambler.1"
+    },
+    {
+      "body": "actors/worker_shambler.2.body.json",
+      "clips": "actors/worker_shambler.2.clips.json",
+      "id": "worker_shambler.2"
+    },
+    {
+      "body": "actors/worker_shambler.3.body.json",
+      "clips": "actors/worker_shambler.3.clips.json",
+      "id": "worker_shambler.3"
+    },
+    {
+      "body": "actors/worker_shambler.4.body.json",
+      "clips": "actors/worker_shambler.4.clips.json",
+      "id": "worker_shambler.4"
+    },
+    {
+      "body": "actors/worker_shambler.5.body.json",
+      "clips": "actors/worker_shambler.5.clips.json",
+      "id": "worker_shambler.5"
+    },
+    {
+      "body": "actors/worker_shambler.6.body.json",
+      "clips": "actors/worker_shambler.6.clips.json",
+      "id": "worker_shambler.6"
+    },
+    {
+      "body": "actors/worker_shambler.7.body.json",
+      "clips": "actors/worker_shambler.7.clips.json",
+      "id": "worker_shambler.7"
+    },
+    {
+      "body": "actors/worker_shambler.8.body.json",
+      "clips": "actors/worker_shambler.8.clips.json",
+      "id": "worker_shambler.8"
+    }
+  ]
+}

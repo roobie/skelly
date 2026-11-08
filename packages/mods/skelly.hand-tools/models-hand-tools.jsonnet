@@ -10,10 +10,15 @@ local dial = {
 };
 (import 'tools/jsonnet/lib/item-presentation.libsonnet')(
   import 'presentation/item-materials.json',
-  overrides={ sewing_kit: ['polymer', 'cloth', 'metal', 'polymer'] },
+  overrides={
+    sewing_kit: ['polymer', 'cloth', 'metal', 'polymer'],
+    digging_stick: ['wood', 'wood', 'mineral'],
+    hammer_bronze: ['wood', 'metal', 'organic'],
+    primitive_axe: ['wood', 'mineral', 'organic'],
+  },
 ).pack({
   models: [{ id: 'sewing_kit', file: 'assets/models/sewing_kit.glb' }] + [
     if model.id == 'compass' then model + { dial: dial } else model
-    for model in import 'things/index.json'
+    for model in import 'packages/skelly-assets/built/skelly.hand-tools/things/index.json'
   ],
 })

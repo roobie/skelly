@@ -1,4 +1,4 @@
-local pistol = import 'gungen/pistol_service.model.json';
+local pistol = import 'packages/skelly-assets/built/skelly.firearms/gungen/pistol_service.model.json';
 (import 'item-presentation.libsonnet').pack((import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack({
   items: [
     {
@@ -58,8 +58,8 @@ local pistol = import 'gungen/pistol_service.model.json';
         support: { at: [pistol.grip.at[0] - 0.026, pistol.grip.at[1] - 0.051, -0.04], palm: [0, 0, 1], fingers: [0.8660254037844386, 0.5, 0], pose: 'pistolCup' },
       },
     },
-    import 'gungen/magazine_pistol_9.model.json',
-    import 'gungen/round_9x19.model.json',
-    import 'gungen/case_9x19.model.json',
+    import 'packages/skelly-assets/built/skelly.firearms/gungen/magazine_pistol_9.model.json',
+    import 'packages/skelly-assets/built/skelly.firearms/gungen/round_9x19.model.json',
+    import 'packages/skelly-assets/built/skelly.firearms/gungen/case_9x19.model.json',
   ],
 }))

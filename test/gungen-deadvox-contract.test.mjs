@@ -1,34 +1,28 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
-import { fileURLToPath } from 'node:url';
 import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
 import { typeWeightGrams } from '../packages/deadvox/src/core/items.ts';
 import { magazineFits } from '../packages/deadvox/src/core/magazine.ts';
 import { ModelSchema } from '../packages/deadvox/src/core/schema.ts';
 import { ammoMatchesCalibre, spentCaseItemId } from '../packages/deadvox/src/game/firearmHandling.ts';
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
+import { readStackContentSources } from '../packages/deadvox/tools/readBundledPacks.ts';
 import {
-  packFileBytes,
-  readAvailablePacks,
-  readStackContentSources,
-} from '../packages/deadvox/tools/readBundledPacks.ts';
-import { assertRecipeCredits } from './model-export-sync.mjs';
+  assertCutOver,
+  assertPinnedRow,
+  glbJson,
+  PACKAGE_ROOT,
+  pinnedFiles,
+  readCutOver,
+} from './model-export-sync.mjs';
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
 const { safeParse } = deadvoxRequire('valibot');
-const PACKAGE_ROOT = fileURLToPath(new URL('../packages/deadvox/', import.meta.url));
-const GUN_EXPORT = /^gungen\/[^/]+\.model\.json$/;
-const FIREARMS = readAvailablePacks(PACKAGE_ROOT).find(({ manifest }) => manifest.id === 'skelly.firearms');
-const packJson = (path) => JSON.parse(packFileBytes(PACKAGE_ROOT, FIREARMS, path).toString('utf8'));
-// Every gun tool export the firearms pack declares, read through the pack reader.
-const EXPORTED = FIREARMS.manifest.files
-  .filter(({ kind, path }) => kind === 'json' && GUN_EXPORT.test(path))
-  .map(({ path }) => {
-    const modelEntry = packJson(path);
-    return { path, modelEntry, glb: packFileBytes(PACKAGE_ROOT, FIREARMS, modelEntry.file) };
-  });
+// The gun tool's cut-over: per kind, the pinned rows its bundled packs consume from the external root.
+const CUT_OVER = readCutOver('gungen');
+const EXPORTED = CUT_OVER.rows.map((use) => ({ ...use, ...pinnedFiles(use) }));
 const PART_ITEM_PATH = /^models\[0\]\.parts\.[^.]+\.item$/;
 const hasMesh = (scene) => {
   let found = false;
@@ -37,13 +31,6 @@ const hasMesh = (scene) => {
   });
   return found;
 };
-const glbJson = (bytes) =>
-  JSON.parse(
-    bytes
-      .subarray(20, 20 + bytes.readUInt32LE(12))
-      .toString()
-      .trim(),
-  );
 const loadGlb = async (glb) => await new GLTFLoader().parseAsync(Uint8Array.from(glb).buffer, '');
 // A part's item lives in another file; the full-base test resolves it.
 const ownIssues = (model) =>
@@ -79,9 +66,9 @@ const consumptionGaps = (sources) => {
   const items = [...registry.items.values()];
   for (const id of EXPORT_IDS) {
     if (!registry.models.has(id)) {
-      gaps.push(`${id}: the declared export is not a registered model`);
+      gaps.push(`${id}: the consumed export is not a registered model`);
     } else if (!items.some((item) => item.model === id)) {
-      gaps.push(`${id}: no item draws the declared export`);
+      gaps.push(`${id}: no item draws the consumed export`);
     }
   }
   const guns = items.filter((item) => item.firearm && EXPORT_IDS.has(item.model));
@@ -105,11 +92,18 @@ const COMPOSED_GUNS = [...EXPORT_IDS]
   .filter((model) => model?.gun && Object.values(model.parts ?? {}).some(({ item }) => item !== undefined));
 
 describe('gungen exports satisfy deadvox model validation', () => {
-  it('validates and loads every declared export and resolves its declared part nodes', async () => {
-    assert.ok(EXPORTED.length > 0, 'the firearms pack must declare a gun export');
+  // biome-ignore lint/style/noDoneCallback: Node's TestContext prints the per-pack listing, not a done callback.
+  it('consumes every pinned gun row of each kind from the external root, with no pending pack', (t) => {
+    assertCutOver(CUT_OVER, t);
+  });
+
+  it('matches each consumed gun row to its pinned manifest row', async () => {
+    await Promise.all(EXPORTED.map(async (out) => assertPinnedRow({ ...out, loaded: await loadGlb(out.glb) })));
+  });
+
+  it('validates and loads every consumed export and resolves its declared part nodes', async () => {
     await Promise.all(
-      EXPORTED.map(async ({ path, modelEntry, glb }) => {
-        assert.equal(path, `gungen/${modelEntry.id}.model.json`, `${path}: export named for another model`);
+      EXPORTED.map(async ({ modelEntry, glb }) => {
         const parsed = safeParse(ModelSchema, modelEntry);
         assert.ok(parsed.success, `${modelEntry.id}: ${JSON.stringify(parsed.issues)}`);
         assert.deepEqual(ownIssues(modelEntry), [], `${modelEntry.id}: invalid consumer model`);
@@ -194,13 +188,6 @@ describe('gungen exports satisfy deadvox model validation', () => {
     assert.ok(
       gaps.includes(`${gun.id}: companion stray_cartridge draws ${stray.id}, which no gun export declares`),
       JSON.stringify(gaps),
-    );
-  });
-
-  it('credits every declared export in the asset manifest', () => {
-    assertRecipeCredits(
-      EXPORTED.map(({ modelEntry }) => modelEntry),
-      packJson('assets/manifest.json'),
     );
   });
 

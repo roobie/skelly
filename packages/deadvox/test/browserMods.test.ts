@@ -54,6 +54,18 @@ describe('browser mod admission', () => {
     expect(result.issues.has(first.source)).toBe(false);
   });
 
+  it('refuses a figure from a content-only mod, which declares no figure files', () => {
+    const figure = { id: 'player.999999', body: '../../outside.body.json', clips: 'missing.clips.json' };
+    const result = evaluateMods(productModIntake, [mod({ ...fixture, actorFigures: [figure] })]);
+    expect(result.canStart).toBe(false);
+    expect(result.issues.get('fixture.json')).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'files', message: expect.stringContaining(`${figure.id} body`) }),
+        expect.objectContaining({ path: 'files', message: expect.stringContaining(`${figure.id} clips`) }),
+      ]),
+    );
+  });
+
   it('allows startup with a disabled duplicate while showing its clash', () => {
     const result = evaluateMods(productModIntake, [
       mod(fixture),

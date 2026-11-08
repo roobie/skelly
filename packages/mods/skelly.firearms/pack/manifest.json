@@ -78,6 +78,10 @@
     },
     {
       "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
       "path": "gungen/ak_slant_compensator.model.json"
     },
     {
@@ -114,11 +118,11 @@
     },
     {
       "kind": "json",
-      "path": "gungen/bolt_carrier_ar_large.model.json"
+      "path": "gungen/bolt_carrier_ar.model.json"
     },
     {
       "kind": "json",
-      "path": "gungen/bolt_carrier_ar.model.json"
+      "path": "gungen/bolt_carrier_ar_large.model.json"
     },
     {
       "kind": "json",
@@ -162,11 +166,11 @@
     },
     {
       "kind": "json",
-      "path": "gungen/charging_handle_ar_large.model.json"
+      "path": "gungen/charging_handle_ar.model.json"
     },
     {
       "kind": "json",
-      "path": "gungen/charging_handle_ar.model.json"
+      "path": "gungen/charging_handle_ar_large.model.json"
     },
     {
       "kind": "json",
@@ -246,11 +250,11 @@
     },
     {
       "kind": "json",
-      "path": "gungen/lower_ar_large.model.json"
+      "path": "gungen/lower_ar.model.json"
     },
     {
       "kind": "json",
-      "path": "gungen/lower_ar.model.json"
+      "path": "gungen/lower_ar_large.model.json"
     },
     {
       "kind": "json",
@@ -342,11 +346,11 @@
     },
     {
       "kind": "json",
-      "path": "gungen/receiver_ar_large.model.json"
+      "path": "gungen/receiver_ar.model.json"
     },
     {
       "kind": "json",
-      "path": "gungen/receiver_ar.model.json"
+      "path": "gungen/receiver_ar_large.model.json"
     },
     {
       "kind": "json",
@@ -355,6 +359,10 @@
     {
       "kind": "json",
       "path": "gungen/receiver_sporter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/revolver.model.json"
     },
     {
       "kind": "json",
@@ -383,10 +391,6 @@
     {
       "kind": "json",
       "path": "gungen/revolver_hammer.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "gungen/revolver.model.json"
     },
     {
       "kind": "json",
@@ -462,7 +466,19 @@
     },
     {
       "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ammo_can.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/cartridge_box_308_h_winchester.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cartridge_box_357_h_magnum.model.json"
     },
     {
       "kind": "json",
@@ -474,7 +490,11 @@
     },
     {
       "kind": "json",
-      "path": "things/cartridge_box_357_h_magnum.model.json"
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scrap_foregrip.model.json"
     },
     {
       "kind": "json",
@@ -482,19 +502,11 @@
     },
     {
       "kind": "json",
-      "path": "things/ammo_can.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/weapon_sling.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/taped_flashlight_mount.model.json"
     },
     {
       "kind": "json",
-      "path": "things/scrap_foregrip.model.json"
+      "path": "things/weapon_sling.model.json"
     },
     {
       "kind": "json",
@@ -503,22 +515,6 @@
     {
       "kind": "json",
       "path": "things/weapon_sling_worn_jacket.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
-      "path": "assets/manifest.json"
-    },
-    {
-      "kind": "json",
-      "path": "exports/things.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
     },
     {
       "kind": "asset",

@@ -15,6 +15,10 @@
     },
     {
       "kind": "content",
+      "path": "figures-body.json"
+    },
+    {
+      "kind": "content",
       "path": "figures-player.json"
     },
     {
@@ -27,19 +31,11 @@
     },
     {
       "kind": "json",
-      "path": "things/player_bust.model.json"
+      "path": "actors/player.1.body.json"
     },
     {
       "kind": "json",
-      "path": "things/player_arm.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/player_leg.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/index.json"
+      "path": "actors/player.1.clips.json"
     },
     {
       "kind": "json",
@@ -47,11 +43,23 @@
     },
     {
       "kind": "json",
-      "path": "exports/things.json"
+      "path": "presentation/item-materials.json"
     },
     {
       "kind": "json",
-      "path": "presentation/item-materials.json"
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/player_arm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/player_bust.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/player_leg.model.json"
     },
     {
       "kind": "asset",
@@ -108,6 +116,10 @@
     {
       "kind": "asset",
       "path": "assets/audio/player-strain-14.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/player.1.glb"
     },
     {
       "kind": "asset",

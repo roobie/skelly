@@ -1,0 +1,9 @@
+{
+  "actorFigures": [
+    {
+      "body": "actors/player.1.body.json",
+      "clips": "actors/player.1.clips.json",
+      "id": "player.1"
+    }
+  ]
+}
