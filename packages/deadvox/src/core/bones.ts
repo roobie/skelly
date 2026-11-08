@@ -24,9 +24,3 @@ export interface BodyAnchor {
   /** Rest-pose world coordinates; apply the owning bone's posed transform. */
   readonly position: Vec3;
 }
-
-export interface ActorBody {
-  readonly anchors?: Readonly<Record<string, BodyAnchor>>;
-  /** Parents-first: every bone's parent appears earlier in the array (or is null). */
-  readonly bones: readonly Bone[];
-}

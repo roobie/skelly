@@ -1,6 +1,6 @@
 import type { Vec3 } from './coords.ts';
 
-export type Tensor3 = readonly [
+type Tensor3 = readonly [
   readonly [number, number, number],
   readonly [number, number, number],
   readonly [number, number, number],

@@ -2,7 +2,7 @@ import type { SenseDef } from '../core/schema.ts';
 
 export type ActorVoiceTuning = SenseDef['actorVoice'];
 
-/** A built body's standing height in metres (`schema/actors.ts`, `ActorBodySchema`). */
+/** A built body's standing height in metres (`src/core/schema/actors.ts`, `ActorBodySchema`). */
 interface SizedBody {
   readonly height: number;
 }
