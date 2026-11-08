@@ -211,11 +211,11 @@ const timingOf = ({
 }: {
   readonly durationSimSeconds?: number | undefined;
   readonly hitAtSimSeconds?: number | undefined;
-}): { readonly duration: number; readonly hitTime: number } => {
+}): { readonly durationSimSeconds: number; readonly hitAtSimSeconds: number } => {
   if (durationSimSeconds === undefined || hitAtSimSeconds === undefined) {
     throw new Error('An attack clip needs durationSimSeconds and hitAtSimSeconds');
   }
-  return { duration: durationSimSeconds, hitTime: hitAtSimSeconds };
+  return { durationSimSeconds, hitAtSimSeconds };
 };
 
 /** Stable per-entity hit-flinch side; shared by render and simulation pose generation. */
@@ -262,9 +262,9 @@ const humanoidAttackTimeFor = (input: ActorPoseInput, clip: OverlayClip): number
   if (elapsed === undefined) {
     return undefined;
   }
-  const { duration, hitTime } = timingOf(clip);
-  const time = Math.max(0, hitTime - input.attackWindupSeconds) + elapsed;
-  return time <= duration ? time : undefined;
+  const { durationSimSeconds, hitAtSimSeconds } = timingOf(clip);
+  const time = Math.max(0, hitAtSimSeconds - input.attackWindupSeconds) + elapsed;
+  return time <= durationSimSeconds ? time : undefined;
 };
 
 /** Acid clip time: the wind-up covers the clip up to its peak, then the clip runs out in real time. */
@@ -273,10 +273,10 @@ const acidAttackTimeFor = (input: ActorPoseInput, clip: JointDeltaClip): number 
   if (elapsed === undefined) {
     return undefined;
   }
-  const { duration, hitTime: peak } = timingOf(clip);
+  const { durationSimSeconds, hitAtSimSeconds: peak } = timingOf(clip);
   const windup = input.attackWindupSeconds;
   const time = elapsed < windup ? (peak * elapsed) / windup : peak + elapsed - windup;
-  return time <= duration ? time : undefined;
+  return time <= durationSimSeconds ? time : undefined;
 };
 
 const STANCE_CROSSFADE_SECONDS = 0.5;
