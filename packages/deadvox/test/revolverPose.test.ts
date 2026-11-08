@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { Box3, Matrix4, Mesh, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
@@ -14,9 +13,10 @@ import { HeldItems } from '../src/render/hands.ts';
 import { heldModelFrame, indexModelMaterials, type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { content } from './fixtures/startupContent.ts';
+import { modFileBytes } from './modFile.ts';
 
 const loadModel = (model: ModelDef) => {
-  const bytes = readFileSync(`../mods/skelly.firearms/${model.file}`);
+  const bytes = modFileBytes(model.file);
   return new GLTFLoader()
     .parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '')
     .then(indexModelMaterials);

@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { MATERIALS } from '@skelly/thing-core/materials';
 import {
   BoxGeometry,
@@ -121,10 +120,10 @@ it('warm-up stand-ins share a program with every material the pack models draw, 
     (parser as unknown as { textureLoader: Loader }).textureLoader = imageLoader as unknown as Loader;
     return { name: 'stub_images' };
   });
-  const files = thingModels().map(({ path }) => path);
+  const files = thingModels().map(({ glb }) => glb);
   expect(files).not.toHaveLength(0);
   const scenes = await Promise.all(
-    files.map(async (file) => (await loader.parseAsync(Uint8Array.from(readFileSync(file)).buffer, '')).scene),
+    files.map(async (glb) => (await loader.parseAsync(Uint8Array.from(glb).buffer, '')).scene),
   );
   const meshes: Mesh[] = [];
   for (const scene of scenes) {

@@ -41,10 +41,9 @@ import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { loadFigureModels } from './figureModels.ts';
 
-import { modFile } from './modFile.ts';
+import { modFileBytes } from './modFile.ts';
 import { thingModels } from './thingModels.ts';
 
-const BASE = '../mods/skelly.firearms';
 const MODEL_FILE = /^assets\/models\/[a-z0-9_]+\.glb$/;
 const AXIS_INDEX = { x: 0, y: 1, z: 2 } as const;
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
@@ -86,9 +85,9 @@ it('prepares every thing recipe export for ground and held drawing with its grip
   const models = thingModels();
   expect(models.length).toBeGreaterThan(0);
   await Promise.all(
-    models.map(async ({ id, path }) => {
+    models.map(async ({ id, glb }) => {
       const definition = registry.models.get(id)!;
-      const { scene } = await parseGlb(readFileSync(path));
+      const { scene } = await parseGlb(glb);
       const { ground, held, groundParts } = prepareModel(definition, scene);
       const groundBounds = new Box3().setFromObject(ground);
       expect(groundBounds.isEmpty(), id).toBe(false);
@@ -106,7 +105,7 @@ it('prepares every thing recipe export for ground and held drawing with its grip
 
 it('rests the oil lamp on its base with its authored up axis upright', async () => {
   const definition = registry.models.get(registry.items.get('oil_lamp')!.model!)!;
-  const { scene } = await parseGlb(readFileSync(modFile(definition.file)));
+  const { scene } = await parseGlb(modFileBytes(definition.file));
   const { ground } = prepareModel(definition, scene);
   ground.updateMatrixWorld(true);
   const frame = groundModelFrame(ground);
@@ -131,7 +130,7 @@ it('keeps every authored fuel fill inside its clear shell and resolves its origi
   expect(filled.length).toBeGreaterThan(0);
   await Promise.all(
     filled.map(async (model) => {
-      const { scene } = await parseGlb(readFileSync(modFile(model.file)));
+      const { scene } = await parseGlb(modFileBytes(model.file));
       const { supply } = model.itemPresentation!;
       if (supply.kind !== 'fill') {
         throw new Error('Expected fill selector');
@@ -168,7 +167,7 @@ it.each<[string, Vec3]>([
   'turns a %s-held compass screen to the eye, upright, with the whole model in front of the palm',
   async (_side, heldAt) => {
     const definition = registry.models.get('compass')!;
-    const { scene } = await parseGlb(readFileSync(modFile(definition.file)));
+    const { scene } = await parseGlb(modFileBytes(definition.file));
     const { held } = prepareModel(definition, scene);
     // Every canvas call is a no-op: the test observes Three transforms, not painted pixels.
     const context = new Proxy({}, { get: () => vi.fn() });
@@ -211,7 +210,7 @@ it.each<[string, Vec3]>([
 
 it.each(['right', 'left'] as const)('keeps the %s arm out of every sight line to a held compass card', async (side) => {
   const definition = registry.models.get('compass')!;
-  const { scene } = await parseGlb(readFileSync(modFile(definition.file)));
+  const { scene } = await parseGlb(modFileBytes(definition.file));
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => new Proxy({}, { get: () => vi.fn() }) }) });
   const inventory = new Inventory(registry);
   expect(inventory.add(inventory.create('compass'), { kind: 'hand', side })).toBeTruthy();
@@ -250,7 +249,7 @@ it.each(['right', 'left'] as const)('keeps the %s arm out of every sight line to
 
 it.each(['right', 'left'] as const)('keeps the held oil lamp flame visible beyond the %s palm', async (side) => {
   const definition = registry.models.get(registry.items.get('oil_lamp')!.model!)!;
-  const { scene } = await parseGlb(readFileSync(modFile(definition.file)));
+  const { scene } = await parseGlb(modFileBytes(definition.file));
   const inventory = new Inventory(registry);
   const lamp = inventory.create('oil_lamp');
   expect(inventory.add(lamp, { kind: 'hand', side })).toBe(true);
@@ -344,7 +343,7 @@ describe('piles with models', () => {
     expect(definition.model).toBeDefined();
     const modelDefinition = registry.models.get(definition.model!)!;
     expect(modelDefinition.emissiveMaterial).toBeDefined();
-    const { scene } = await parseGlb(readFileSync(modFile(modelDefinition.file)));
+    const { scene } = await parseGlb(modFileBytes(modelDefinition.file));
     const { ground } = prepareModel(modelDefinition, scene);
     expect(new Box3().setFromObject(ground).isEmpty()).toBe(false);
     let authoredTube = false;
@@ -427,9 +426,7 @@ describe('piles with models', () => {
     );
     expect(flameLights.length).toBeGreaterThan(0);
     const scenes = await Promise.all(
-      flameLights.map(
-        async ({ model }) => (await parseGlb(readFileSync(modFile(registry.models.get(model!)!.file)))).scene,
-      ),
+      flameLights.map(async ({ model }) => (await parseGlb(modFileBytes(registry.models.get(model!)!.file))).scene),
     );
     for (const [index, definition] of flameLights.entries()) {
       const modelDefinition = registry.models.get(definition.model!)!;
@@ -486,7 +483,7 @@ it('prepares integral-magazine manual exports and binds movers by glTF node inde
   expect(models.length).toBeGreaterThan(0);
   await Promise.all(
     models.map(async (def) => {
-      const gltf = await parseGlb(readFileSync(modFile(def.file)));
+      const gltf = await parseGlb(modFileBytes(def.file));
       expect(def.gun!.internalMagazine!.capacity).toBeGreaterThan(0);
       expect(def.gun?.calibre).toBeDefined();
       expect(def.gun?.sight?.kind).toBe('iron');
@@ -569,14 +566,14 @@ it("draws a grenade without the pin and lever it has shed, by the exported glb's
   const shed = [def.pin!.piece, def.lever!.piece];
   const loads: Promise<void>[] = [];
   const spy = vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad) => {
-    loads.push(parseGlb(readFileSync(path)).then(onLoad));
+    loads.push(parseGlb(modFileBytes(path)).then(onLoad));
   });
   const models = new ModelLibrary(
     { ...registry, models: new Map([[model, def]]) },
     (message) => {
       throw new Error(message);
     },
-    { [def.file]: modFile(def.file) },
+    { [def.file]: def.file },
     1,
   );
   spy.mockRestore();
@@ -690,8 +687,8 @@ describe('fitted attachment model frames', () => {
     if (!(slot.model && slot.mountFrame)) {
       throw new Error('Default optic look is incomplete');
     }
-    const gunScene = (await parseGlb(readFileSync(`${BASE}/${firearm.file}`))).scene;
-    const opticScene = (await parseGlb(readFileSync(`${BASE}/${registry.models.get(slot.model)!.file}`))).scene;
+    const gunScene = (await parseGlb(modFileBytes(firearm.file))).scene;
+    const opticScene = (await parseGlb(modFileBytes(registry.models.get(slot.model)!.file))).scene;
     const { held } = prepareModel(firearm, gunScene);
     const modelFrame = held.children[0]!.children[0]!;
     const fitted = fittedPartFrame(slot).add(opticScene);
@@ -736,7 +733,7 @@ describe('fitted magazine model frame', () => {
     if (!slot) {
       throw new Error('Rifle magazine look is incomplete');
     }
-    const gltf = await parseGlb(readFileSync(`${BASE}/${firearm.file}`));
+    const gltf = await parseGlb(modFileBytes(firearm.file));
     const node = gltf.parser.json.nodes.find(
       (candidate: { name?: string; translation?: number[] }) => candidate.name === 'magazine:magazine',
     ) as unknown as { translation?: number[] } | undefined;
@@ -769,7 +766,7 @@ describe('base pack melee', () => {
   const models = [...melee.models.values()];
   const heldAnchor = async (id: string, name: string): Promise<Vector3> => {
     const def = melee.models.get(id)!;
-    const bytes = readFileSync(modFile(def.file));
+    const bytes = modFileBytes(def.file);
     const { scene } = await parseGlb(bytes);
     const { held } = prepareModel(def, scene);
     held.updateMatrixWorld(true);
@@ -817,7 +814,7 @@ describe('base pack melee', () => {
   it.each(models.map((model) => [model.id, model] as const))(
     '%s loads, rests on x, and has usable palm and strike anchors at real-world scale',
     async (_, def) => {
-      const bytes = readFileSync(modFile(def.file));
+      const bytes = modFileBytes(def.file);
       const { scene } = await parseGlb(bytes);
       const sourceBox = new Box3().setFromObject(scene);
       const { ground } = prepareModel(def, scene);
@@ -866,7 +863,7 @@ describe('base pack melee', () => {
 
   it('holds the pipe elbow forward while its shaft stays upright', async () => {
     const def = melee.models.get('steel_pipe')!;
-    const bytes = readFileSync(modFile(def.file));
+    const bytes = modFileBytes(def.file);
     const { scene } = await parseGlb(bytes);
     const { held } = prepareModel(def, scene);
     held.updateMatrixWorld(true);
@@ -931,7 +928,7 @@ describe('base pack modeled ammunition and spent cases', () => {
       [...ids].map(async (id) => ({
         id,
         def: registry.models.get(id)!,
-        ...(await parseGlb(readFileSync(`${BASE}/${registry.models.get(id)!.file}`))),
+        ...(await parseGlb(modFileBytes(registry.models.get(id)!.file))),
       })),
     );
     for (const { id, def, scene } of loaded) {
@@ -959,7 +956,7 @@ it('loads both exported STANAG magazine GLBs with the same body width', async ()
     ['magazine_stanag_20', 'magazine_stanag_30'].map(async (id) => {
       const definition = registry.models.get(id);
       expect(definition).toBeDefined();
-      const { scene } = await parseGlb(readFileSync(`${BASE}/${definition!.file}`));
+      const { scene } = await parseGlb(modFileBytes(definition!.file));
       scene.updateMatrixWorld(true);
       const size = new Box3().setFromObject(scene).getSize(new Vector3());
       expect(size.x).toBeGreaterThan(0);
@@ -979,7 +976,7 @@ describe('base pack guns', () => {
   const guns = [...models.values()].filter((m) => m.anchors?.muzzle);
 
   it.each(guns.map((m) => [m.id, m] as const))('%s is held muzzle forward, top up', async (_, def) => {
-    const bytes = readFileSync(`${BASE}/${def.file}`);
+    const bytes = modFileBytes(def.file);
     const gltf = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
     if (gltf.parser.json.asset.generator === 'skelly gungen glb export') {
       expect(def.gun?.sight, `${def.id} Gungen exports need sight metadata`).toBeDefined();
@@ -997,7 +994,7 @@ describe('base pack guns', () => {
 
   it('uses the exported AR with zero turn and its muzzle at the forward end', async () => {
     const def = models.get('rifle_assault')!;
-    const bytes = readFileSync(`${BASE}/${def.file}`);
+    const bytes = modFileBytes(def.file);
     const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
     const bounds = new Box3().setFromObject(scene);
     expect(def.grip?.turn).toEqual([0, 0, 0]);

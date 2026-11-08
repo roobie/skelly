@@ -5,6 +5,7 @@ import { relative, resolve, sep } from 'node:path';
 import { parse } from 'valibot';
 import { canonicalJson } from '../src/core/canonicalJson.ts';
 import { admitPacks, type PackInput, PackManifestSchema, packContentHash } from '../src/core/packAdmission.ts';
+import { logicalKey, type PackFileEntry, type PackLocation, resolvePhysical } from '../src/core/packFiles.ts';
 
 /** Pack roots are relative to the product modules that glob them; see `src/product/packs.ts`, `bundledPacks`. */
 export const PACK_ROOT_BASE = 'src/product';
@@ -45,22 +46,41 @@ export const readAvailablePacks = (packageRoot: string): PackInput[] => {
     return {
       source: root,
       manifest,
-      files: manifest.files.map(({ path, kind }) => {
-        const bytes = readFileSync(resolve(directory, path));
-        const data: unknown = kind === 'asset' ? undefined : JSON.parse(bytes.toString('utf8'));
+      files: manifest.files.map((entry) => {
+        const bytes = readResolved(packageRoot, { root, manifest }, entry);
+        const data: unknown = entry.kind === 'asset' ? undefined : JSON.parse(bytes.toString('utf8'));
         return {
-          source: path,
+          source: entry.path,
           data:
-            kind === 'content'
+            entry.kind === 'content'
               ? data
               : createHash('sha256')
-                  .update(kind === 'json' ? canonicalJson(data) : bytes)
+                  .update(entry.kind === 'json' ? canonicalJson(data) : bytes)
                   .digest('hex'),
         };
       }),
     };
   });
   return inputs;
+};
+
+// No external root is supplied yet, so every entry resolves to its one local candidate.
+const readResolved = (packageRoot: string, pack: PackLocation, entry: PackFileEntry): Buffer<ArrayBuffer> => {
+  const physical = (key: string) => resolve(packageRoot, PACK_ROOT_BASE, key);
+  const resolved = resolvePhysical(pack, entry, { has: (key) => existsSync(physical(key)) });
+  if ('issue' in resolved) {
+    throw new Error(resolved.issue.message);
+  }
+  return readFileSync(physical(resolved.key));
+};
+
+/** The bytes of one file a pack declares, from wherever the reader resolves it. */
+export const packFileBytes = (packageRoot: string, pack: PackInput, path: string): Buffer<ArrayBuffer> => {
+  const entry = pack.manifest.files.find((file) => file.path === path);
+  if (!entry) {
+    throw new Error(`Pack ${pack.manifest.id}: no declared file ${path}`);
+  }
+  return readResolved(packageRoot, { root: pack.source, manifest: pack.manifest }, entry);
 };
 
 /** The default packs, or the named stack's closure, which may include opt-in packs it names. */
@@ -128,7 +148,10 @@ export const bundledPackDefines = async (inputs: readonly PackInput[]): Promise<
     packs.flatMap((pack) =>
       pack.manifest.files
         .filter(({ kind }) => kind !== 'content')
-        .map(({ path }) => [`${pack.source}/${path}`, pack.files.find(({ source }) => source === path)!.data]),
+        .map(({ path }) => [
+          logicalKey({ root: pack.source }, path),
+          pack.files.find(({ source }) => source === path)!.data,
+        ]),
     ),
   );
   return {

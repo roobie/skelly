@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { Box3, Group, type Object3D, Quaternion, Raycaster, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { parse } from 'valibot';
@@ -19,6 +18,7 @@ import {
 } from '../src/render/firearmModel.ts';
 import { prepareModel } from '../src/render/models.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { modFileBytes } from './modFile.ts';
 
 const { holds } = baseRegistry().figures.get('player')!;
 
@@ -31,7 +31,7 @@ const ak = parse(
   firearmContent.models.find((model) => model.id === 'rifle_ak'),
 );
 const load = (model: ModelDef = ar) => {
-  const bytes = readFileSync(`../mods/skelly.firearms/${model.file}`);
+  const bytes = modFileBytes(model.file);
   return new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
 };
 

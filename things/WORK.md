@@ -157,7 +157,7 @@ package edges by the same test's `packageEdges`.
    multi-part desk lamp share the source-to-preview and export path. The lamp proves that the single-part helper's users
    can gain parts, and that non-gun parts carry summed mass and a weighted centre without
    a competing item weight. The remaining-families phase then starts on an exercised path.
-   Reproducible source ownership keeps the shipped binaries from silently diverging; see
+   Each pack's recipe names the exports Deadvox validates and loads; see
    `packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/exports/things.jsonnet` and
    `test/things-deadvox-contract.test.mjs`.
 4. **Thing tool, remaining families.** Family by family, each with source, GLB, entry and

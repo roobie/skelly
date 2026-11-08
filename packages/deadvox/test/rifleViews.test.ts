@@ -1,7 +1,5 @@
 // A rifle as the player sees it: drawn with the magazine it really has in every view (`DESIGN.md`, "Piles and item models"), and its handling played on it from the job alone.
 
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import {
   Box3,
   type BufferGeometry,
@@ -34,10 +32,10 @@ import { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { modFileBytes } from './modFile.ts';
 import { AIM, createPlayerBody } from './playerFixture.ts';
 import { rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
-const BASE = '../mods/skelly.firearms';
 const BLOCK = 0.5;
 const RIFLE = 'rifle_assault';
 const PUMP = 'pump_shotgun';
@@ -73,13 +71,13 @@ const library = async (ids: readonly string[]): Promise<ModelLibrary> => {
   const defs = ids.map((id) => content.models.get(id)!);
   const loads: Promise<void>[] = [];
   const spy = vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad, _onProgress, onError) => {
-    loads.push(new GLTFLoader().parseAsync(Uint8Array.from(readFileSync(path)).buffer, '').then(onLoad, onError));
+    loads.push(new GLTFLoader().parseAsync(Uint8Array.from(modFileBytes(path)).buffer, '').then(onLoad, onError));
   });
   const errors: string[] = [];
   const models = new ModelLibrary(
     { ...content, models: new Map(defs.map((def) => [def.id, def])) },
     (message) => errors.push(message),
-    Object.fromEntries(defs.map(({ file }) => [file, join(BASE, file)])),
+    Object.fromEntries(defs.map(({ file }) => [file, file])),
     defs.length,
   );
   spy.mockRestore();

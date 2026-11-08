@@ -1,14 +1,12 @@
 // biome-ignore-all lint/correctness/noNodejsModules: the Vite transform asserts the browser-test observation contract
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import process from 'node:process';
 import graphicsFile from '../../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import { CHUNK } from '../../src/core/coords.ts';
 import { BLOCK_SIZE, chunksFor, makeScale } from '../../src/core/scale.ts';
+import { modFileBytes } from '../modFile.ts';
 
-const magazineModel = JSON.parse(
-  readFileSync(new URL('../../../mods/skelly.firearms/gungen/magazine_pistol_9.model.json', import.meta.url), 'utf8'),
-);
+const magazineModel = JSON.parse(modFileBytes('gungen/magazine_pistol_9.model.json').toString('utf8'));
 export const cleanReplayRadiusM = 32;
 const columnMetres = CHUNK * BLOCK_SIZE;
 const streamEdgeColumn =
