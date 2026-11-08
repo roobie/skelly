@@ -13,7 +13,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { fusedMassTypeOf, generatedActorFigure } from '../src/core/actorFigure.ts';
 import { figureVariantOf } from '../src/core/actorModels.ts';
 import { actorPoseInputFor, flinchSideForId, HIT_FLINCH_DURATION } from '../src/core/actorPose.ts';
-import { humanoidRegionBoxes, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import type { Actor, AgentMode } from '../src/core/actorState.ts';
 import type { ActorSystemOptions } from '../src/core/actorSystem.ts';
 import { applyPoint, IDENTITY_M, mulMV, quatToMat3, transpose } from '../src/core/boneMath.ts';
@@ -35,6 +35,7 @@ import {
 import { Rng } from '../src/core/random.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
+import type { ActorBody } from '../src/core/schema/actors.ts';
 import { ACTIVE_ACTOR_RATE } from '../src/game/simulationRates.ts';
 import { AcidEffects } from '../src/render/acidEffects.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
@@ -134,7 +135,7 @@ const setHitParityPose = (_renderer: MobActorMeshes, entries: readonly HitParity
 
 const hitParityErrorsForBox = ({
   renderer,
-  seed,
+  body,
   id,
   phase,
   windup,
@@ -142,7 +143,7 @@ const hitParityErrorsForBox = ({
   box,
 }: {
   renderer: MobActorMeshes;
-  seed: number;
+  body: ActorBody;
   id: number;
   phase: number;
   windup: number;
@@ -150,15 +151,13 @@ const hitParityErrorsForBox = ({
   box: { bone: string; center: Vec3; rotation: readonly number[] };
 }): string[] => {
   const matrix = renderer.boneMatrix(id, box.bone)!;
-  const local = humanoidRegionBoxes(seed)[regionName as keyof ReturnType<typeof humanoidRegionBoxes>].find(
-    (rest) => rest.bone === box.bone,
-  )!.center;
+  const local = body.boxes![regionName]!.find((rest) => rest.bone === box.bone)!.center;
   const rendered: Vec3 = [
     matrix[0]! * local[0]! + matrix[1]! * local[1]! + matrix[2]! * local[2]! + matrix[3]!,
     matrix[4]! * local[0]! + matrix[5]! * local[1]! + matrix[6]! * local[2]! + matrix[7]!,
     matrix[8]! * local[0]! + matrix[9]! * local[1]! + matrix[10]! * local[2]! + matrix[11]!,
   ];
-  const key = `${seed}/${phase}/${windup}/${box.bone}`;
+  const key = `${body.seed}/${phase}/${windup}/${box.bone}`;
   const errors = rendered.flatMap((value, axis) =>
     Math.abs(value - box.center[axis]! * 0.5) > 0.001 ? [`${key}/axis-${axis}`] : [],
   );
@@ -180,11 +179,13 @@ const hitParityErrorsForBox = ({
 };
 
 const hitParityErrors = (renderer: MobActorMeshes, entries: readonly HitParityEntry[], pose: HitParityPose): string[] =>
-  entries.flatMap(({ seed, id, actor }) => {
-    const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, { blockSize: 0.5, actorFigureFiles: FIGURES }));
+  entries.flatMap(({ id, actor }) => {
+    const input = actorPoseInputFor(actor, id, { blockSize: 0.5, actorFigureFiles: FIGURES });
+    const boxes = posedHumanoidRegionBoxes(input);
+    const { body } = input.figure;
     return Object.entries(boxes).flatMap(([regionName, region]) =>
       region.flatMap((box) =>
-        hitParityErrorsForBox({ renderer, seed, id, phase: pose.phase, windup: pose.windup, regionName, box }),
+        hitParityErrorsForBox({ renderer, body, id, phase: pose.phase, windup: pose.windup, regionName, box }),
       ),
     );
   });

@@ -7,7 +7,7 @@ import {
   posedActor,
   targetStanceWeight,
 } from '../src/core/actorPose.ts';
-import { type HumanoidHitRegion, humanoidRegionBoxes, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import { type HumanoidHitRegion, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import type { Actor } from '../src/core/actorState.ts';
 import { IDENTITY_M } from '../src/core/boneMath.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -333,7 +333,9 @@ describe('rendered and hit shambler poses', () => {
       const headBox = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, POSE_SCENE)).head.find(
         (box) => box.bone === 'head',
       )!;
-      const local = humanoidRegionBoxes(actor.figureSeed).head.find((box) => box.bone === 'head')!.center;
+      const local = actorFigure(FIGURES, actor.type, actor.figureSeed).body.boxes!.head!.find(
+        (box) => box.bone === 'head',
+      )!.center;
       const matrix = renderer.boneMatrix(id, 'head')!;
       const center = [0, 1, 2].map(
         (axis) =>
