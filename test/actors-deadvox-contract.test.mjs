@@ -14,7 +14,7 @@ import {
   standingFit,
   walkCursor,
 } from '../packages/deadvox/src/core/actorClips.ts';
-import { slerpQuat } from '../packages/deadvox/src/core/boneMath.ts';
+import { applyPoint, slerpQuat } from '../packages/deadvox/src/core/boneMath.ts';
 import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
 import { boneTransforms } from '../packages/deadvox/src/core/pose.ts';
 import {
@@ -315,12 +315,28 @@ describe('pinned producer exports', () => {
   });
 });
 
+/** What a fused mass's cell index attribute disagrees with in the body's cells: it must name a filled cell per vertex. */
+const cellIssues = ({ uv3: cell }, count, cells) => {
+  if (cell?.count !== count) {
+    return [`cell index does not cover the ${count} vertices`];
+  }
+  const filled = new Set(cells.filled.map(([index]) => index));
+  for (let i = 0; i < count; i++) {
+    if (!filled.has(cell.getX(i))) {
+      return [`vertex ${i} names cell ${cell.getX(i)}, which is not filled`];
+    }
+  }
+  return [];
+};
+
 /**
- * What an actor GLB's one bone-tabled mesh disagrees with in `bones`: the table must name the bones in order, every
- * vertex attribute cover every vertex, each vertex's bone index be a table index and each triangle index a vertex.
- * Also returns the bone indices that carry vertices and the scene's vertical span.
+ * What an actor GLB's one bone-tabled mesh disagrees with in `figureBody`: the table must name the bones in order, every
+ * vertex attribute cover every vertex, each vertex's bone index be a table index and each triangle index a vertex; a
+ * fused mass's cell index must name a filled cell. Also returns the bone indices that carry vertices, the scene's
+ * vertical span and the bone-tabled geometry.
  */
-const boneMesh = async (bytes, bones) => {
+const boneMesh = async (bytes, figureBody) => {
+  const { bones } = figureBody;
   const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
   const tabled = [];
   loaded.scene.traverse((visited) => {
@@ -329,7 +345,7 @@ const boneMesh = async (bytes, bones) => {
     }
   });
   const box = new Box3().setFromObject(loaded.scene);
-  const result = { issues: [], skinned: [], span: box.max.y - box.min.y };
+  const result = { issues: [], skinned: [], span: box.max.y - box.min.y, geometry: undefined };
   if (tabled.length !== 1) {
     result.issues.push(`${tabled.length} bone-tabled meshes`);
     return result;
@@ -355,12 +371,16 @@ const boneMesh = async (bytes, bones) => {
   if (!Array.from(index.array).every((vertex) => vertex < count)) {
     result.issues.push('a triangle index beyond the vertices');
   }
+  if (figureBody.cells) {
+    result.issues.push(...cellIssues(attributes, count, figureBody.cells));
+  }
+  result.geometry = node.geometry;
   return result;
 };
 
 describe('actor fixture GLB', () => {
   it('decodes with the bone table and per-vertex bone indices', async () => {
-    const { issues } = await boneMesh(readFileSync(fixture('fixture.glb')), body.bones);
+    const { issues } = await boneMesh(readFileSync(fixture('fixture.glb')), body);
     assert.deepEqual(issues, []);
   });
 });
@@ -405,6 +425,30 @@ const groundIssues = ({ body: figureBody, clips: { standing: stand, crawling: cr
   ...(crawl ? crawlingIssues(figureBody, crawl) : []),
 ];
 
+/** The stored idle poses of each stance a figure has. */
+const idlePoses = ({ standing: stand, crawling: crawl }) =>
+  [stand, crawl]
+    .filter(Boolean)
+    .flatMap(({ idle }) => (idle.slack ? [idle.slack.base, idle.aggravated.base] : [idle.frames[0]]))
+    .map(decodeFrame);
+
+/**
+ * Where a figure's GLB, posed through each vertex's bone, leaves the ground its hull fits: in every idle pose the lowest
+ * posed vertex must lie within one voxel of the lowest hull voxel.
+ */
+const posedIssues = ({ body: figureBody, clips: figureClips }, { attributes: { position, uv1 } }) =>
+  idlePoses(figureClips).flatMap((pose) => {
+    const transforms = boneTransforms(figureBody.bones, pose);
+    const byIndex = figureBody.bones.map(({ id }) => transforms.get(id));
+    let lowest = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < position.count; i++) {
+      const vertex = [position.getX(i), position.getY(i), position.getZ(i)];
+      lowest = Math.min(lowest, applyPoint(byIndex[uv1.getX(i)], vertex)[1]);
+    }
+    const fit = groundFit(figureBody, pose, hulled(figureBody)).lowest;
+    return Math.abs(lowest - fit) <= figureBody.voxelSize ? [] : [`posed lowest vertex ${lowest} vs hull fit ${fit}`];
+  });
+
 describe('stack actor figures', () => {
   const { registry, issues } = buildRegistry(readStackContentSources(PACKAGE_ROOT, 'skelly.deadvox'));
   const figures = [...registry.actorFigures.values()];
@@ -423,7 +467,8 @@ describe('stack actor figures', () => {
   });
 
   /** What one figure's pinned GLB, body and clips, read as deadvox reads them, disagree with in its admitted body. */
-  const glbIssues = async ({ id, body: figureBody }) => {
+  const glbIssues = async (figure) => {
+    const { id, body: figureBody } = figure;
     const rows = models.filter((model) => model.id === id);
     const pack = rows.length === 1 && packs.find(({ manifest }) => manifest.id === rows[0].pack);
     if (!pack) {
@@ -439,8 +484,11 @@ describe('stack actor figures', () => {
     if (readIds.join() !== figureBody.bones.map((bone) => bone.id).join()) {
       found.push(`read body bones [${readIds}] differ from the admitted body's`);
     }
-    const mesh = await boneMesh(packFileBytes(PACKAGE_ROOT, pack, glb), figureBody.bones);
+    const mesh = await boneMesh(packFileBytes(PACKAGE_ROOT, pack, glb), figureBody);
     found.push(...mesh.issues);
+    if (mesh.issues.length === 0) {
+      found.push(...posedIssues(figure, mesh.geometry));
+    }
     const voxelled = figureBody.bones.flatMap(({ voxels }, i) => ((voxels?.length ?? 0) > 0 ? [i] : []));
     if (mesh.skinned.join() !== voxelled.join()) {
       found.push(`bones with vertices [${mesh.skinned}] vs bones with voxels [${voxelled}]`);
@@ -451,7 +499,7 @@ describe('stack actor figures', () => {
     return found.map((issue) => `${id}: ${issue}`);
   };
 
-  it('reads each figure GLB from the external root with the body bone table and voxel-bearing bones', async () => {
+  it('reads each figure GLB from the external root with the body bone table, filled cells and hull-fitted geometry', async () => {
     assert.ok(figures.length > 0);
     assert.deepEqual((await Promise.all(figures.map(glbIssues))).flat(), []);
   });

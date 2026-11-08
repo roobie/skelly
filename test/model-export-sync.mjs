@@ -177,19 +177,15 @@ export const assertPinnedRow = ({ pack, row, glb, modelEntry, loaded }) => {
 };
 
 /**
- * Every mesh is voxelised, and one model's grains nest so its lattices align. Which voxel class a model takes is the
- * producer's recipe choice and is not in the pinned output.
+ * Every mesh is voxelised on its recipe row's class. The pinned output does not carry the class, so `voxel` comes from
+ * the producer's recipe at the same pin.
  */
-export const assertVoxelized = ({ id, glb }) => {
+export const assertVoxelized = ({ id, glb, voxel }) => {
+  assert.ok(voxel, `${id}: no recipe row`);
+  const grains = [voxel.grain, voxel.detailGrain].filter((grain) => grain !== undefined);
   const primitives = glbJson(Buffer.from(glb)).meshes.flatMap((mesh) => mesh.primitives);
   assert.ok(primitives.length > 0, `${id}: no meshes`);
-  const grains = primitives.map(({ extras }) => extras?.voxelGrain);
-  for (const grain of grains) {
-    assert.ok(Number.isFinite(grain) && grain > 0, `${id}: a mesh is not voxelized`);
-  }
-  const finest = Math.min(...grains);
-  for (const grain of grains) {
-    const ratio = grain / finest;
-    assert.ok(Math.abs(ratio - Math.round(ratio)) < 1e-9, `${id}: grain ${grain} does not nest on ${finest}`);
+  for (const { extras } of primitives) {
+    assert.ok(grains.includes(extras?.voxelGrain), `${id}: a mesh is not voxelized on the row's class`);
   }
 };

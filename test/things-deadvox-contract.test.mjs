@@ -7,6 +7,7 @@ import { ARM_SEGMENTS, LEG_SEGMENTS, ModelSchema } from '../packages/deadvox/src
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
 import { readStackContentSources } from '../packages/deadvox/tools/readBundledPacks.ts';
 import { modelMassKg } from '../packages/skelly-assets/tools/packages/thing-core/src/mass.ts';
+import { readRecipes } from '../packages/skelly-assets/tools/recipes.mjs';
 import {
   assertCutOver,
   assertPinnedRow,
@@ -92,9 +93,12 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       }
     }
   });
-  it('voxelizes every consumed thing model on nesting grains', () => {
-    for (const { id, glb } of exported) {
-      assertVoxelized({ id, glb });
+  it('voxelizes every consumed thing model on its recipe row class', () => {
+    const classes = new Map(
+      readRecipes().flatMap(({ packId, value }) => value.map(({ id, voxel }) => [`${packId}/${id}`, voxel])),
+    );
+    for (const { id, glb, row } of exported) {
+      assertVoxelized({ id, glb, voxel: classes.get(`${row.pack}/${id}`) });
     }
   });
   it('builds the registry with one authoritative mass source for each item', () => {
