@@ -20,7 +20,7 @@ runtime is not extracted around tool dependencies that are about to disappear; s
 
 Use a git submodule, not a second tracked copy, so each product revision selects an
 explicit asset revision. Copy pipeline sources from the refactor tree, recording the
-source commit per package in the submodule's [tools/README.md](https://github.com/roobie/skelly-assets/blob/main/tools/README.md); git history stays in
+source commit per package in `packages/skelly-assets/tools/README.md`; git history stays in
 skelly rather than being rewritten into another repository. Shared thing-core has
 one workspace instance and one root lockfile so tools and consumers resolve the same
 contracts and materials.
@@ -46,10 +46,9 @@ a copied GLB with no producing row is not part of a shared build pipeline.
 
 Every directory under the external built root names the content pack that declares
 its files, never a product that reads them. A product-named directory forces another
-reader to bundle that product's name and makes the model shared in name only. See the submodule's [tools/layout.mjs](https://github.com/roobie/skelly-assets/blob/main/tools/layout.mjs), `outputPath`,
-and [models/recipes/](https://github.com/roobie/skelly-assets/tree/main/models/recipes),
-[models/export.json](https://github.com/roobie/skelly-assets/blob/main/models/export.json) and
-[models/mobs.json](https://github.com/roobie/skelly-assets/blob/main/models/mobs.json).
+reader to bundle that product's name and makes the model shared in name only. See `packages/skelly-assets/tools/layout.mjs`, `outputPath`,
+and `packages/skelly-assets/models/recipes/`, `packages/skelly-assets/models/export.json` and
+`packages/skelly-assets/models/mobs.json`.
 
 A pack groups one coherent kind of content. The roster's `skelly.bolt-guns` and
 `skelly.armour` stay separate from `skelly.firearms` and `skelly.wearables`: a sci-fi
@@ -63,9 +62,8 @@ ported rows by kind: head wear and worn garments in `skelly.wearables`, hand too
 in `skelly.hand-tools`, arms in `skelly.melee`, the torch in `skelly.light-sources`,
 cookware in `skelly.containers` and the oven door in `skelly.structures`. Keep
 `binder_top`, `crystal_butt_wand`, `crystal_socket_wand` and `rune_clay_tablet`
-together in `skelly.arcana`, including the top despite its garment form. The submodule's
-[models/recipes/](https://github.com/roobie/skelly-assets/tree/main/models/recipes)
-files own the selection; these are model
+together in `skelly.arcana`, including the top despite its garment form. The
+`packages/skelly-assets/models/recipes/` files own the selection; these are model
 homes, not a requirement to author playable items. A model may be admitted without
 an item that places it.
 
@@ -75,9 +73,9 @@ Bake a rig once into the `pose` representation, with root translations and local
 quaternion rotations and composable action clips. Every consumer composes the same
 clips the same way; coordinate-facing adjustments belong to the consumer's scene,
 not a second bake. Two representations of one source are two outputs that cannot
-be read alike, defeating the one-output rule. See the submodule's
-[tools/actorBake.mjs](https://github.com/roobie/skelly-assets/blob/main/tools/actorBake.mjs),
-`bakeActor`, and [tools/actorCompose.mjs](https://github.com/roobie/skelly-assets/blob/main/tools/actorCompose.mjs).
+be read alike, defeating the one-output rule. See
+`packages/skelly-assets/tools/actorBake.mjs`, `bakeActor`, and
+`packages/skelly-assets/tools/actorCompose.mjs`.
 
 ## Shared appearance and replacement
 
@@ -86,10 +84,8 @@ Turned pieces share a library-wide eight-flat default, with authored side counts
 taking precedence and `sides: null` opting into round geometry. This replaces a
 look determined by a model's origin with a consistent library look while preserving
 authoring control. See
-[tools/packages/thing-authoring-tool/items.jsonnet](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-authoring-tool/items.jsonnet),
-`turnedSides`, and
-[tools/packages/thing-authoring-tool/src/families/compound.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-authoring-tool/src/families/compound.ts),
-`compound`.
+`packages/skelly-assets/tools/packages/thing-authoring-tool/items.jsonnet`, `turnedSides`, and
+`packages/skelly-assets/tools/packages/thing-authoring-tool/src/families/compound.ts`, `compound`.
 
 Delete a copy as duplicate elimination only when its producer equals it. A differing
 copy may instead leave as an approved replacement, with its byte difference and
@@ -116,4 +112,4 @@ gap. These limits are not proof that the entire shared-library goal is met.
 Models and built assets remain CC-BY-NC-SA-4.0; pipeline tools, the showcase and
 workflow code remain EUPL-1.2. Keeping those scopes separate preserves the models'
 non-commercial terms without relicensing the tools. See `REUSE.toml` and
-the submodule's [REUSE.toml](https://github.com/roobie/skelly-assets/blob/main/REUSE.toml).
+`packages/skelly-assets/REUSE.toml`.

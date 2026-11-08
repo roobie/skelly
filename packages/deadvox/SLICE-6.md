@@ -95,8 +95,8 @@ original owner until a destination has been admitted.
 VAT assembles things; the thing tool authors their shapes. The VAT export carries
 baked per-part collision geometry beside render geometry so simulation never
 reconstructs authoring shapes. Do not revive a second vehicle material or mass
-authority. The neutral export boundary is the asset submodule's
-[tools/packages/thing-core/src/schema.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-core/src/schema.ts), `NeutralModelSchema`; the reasons for keeping
+authority. The neutral export boundary is
+`packages/skelly-assets/tools/packages/thing-core/src/schema.ts`, `NeutralModelSchema`; the reasons for keeping
 geometry out of Deadvox are in `things/WORK.md`, "Decisions". Vehicle-specific
 capabilities and gameplay requirements belong to validated game content, not the
 neutral core. The export contract precedes full VAT editor productionisation.
