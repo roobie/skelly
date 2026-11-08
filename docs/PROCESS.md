@@ -29,8 +29,8 @@ because that is local and changes on its own schedule.
 
 Opening a new PR is subject to the #1532 freeze in
 `docs/decisions/0009-content-defined-products.md`, "Refactor gate". Work uses an
-existing PR or waits until the refactor is executed; the steps below grant no
-exception to that gate.
+existing PR or waits until the refactor is executed unless that gate permits it;
+the steps below grant no additional exception.
 
 1. **Spec:** one self-contained item. Its proof uses independent bounds, not values derived
    from the tuning under test.

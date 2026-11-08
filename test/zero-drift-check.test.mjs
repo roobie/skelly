@@ -10,6 +10,7 @@ import {
   comparePolicy,
   githubSlug,
   parsePythonReadIf,
+  trackedTextFiles,
 } from '../tools/zero-drift-check.mjs';
 
 const docPath = 'docs/test.md';
@@ -83,6 +84,15 @@ const scan = (text, { tracked = new Set(['src/known.ts']), ignored = new Set(), 
     pythonReadIf: pythonReadIf(reasons),
   });
 const checks = (failures) => failures.map(({ check }) => check);
+
+describe('zero-drift tracked files', () => {
+  it('skips gitlink directories without scanning submodule-owned text', () => {
+    const submodule = 'packages/asset-fixture';
+    mkdirSync(join(root, submodule), { recursive: true });
+    writeFileSync(join(root, submodule, 'README.md'), 'Owned by the submodule');
+    assert.deepEqual(trackedTextFiles([submodule, 'src/known.ts'], root), ['src/known.ts']);
+  });
+});
 
 describe('zero-drift read_if check', () => {
   it('accepts block and flow lists when they agree with the Python reader', () => {

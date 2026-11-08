@@ -5,6 +5,8 @@ on:
   push:
     branches: [main]
     paths:
+      - 'packages/skelly-assets'
+      - '.gitmodules'
       - 'packages/mods/**'
       - 'packages/deadvox/**'
       - 'packages/construct/**'
@@ -21,6 +23,8 @@ on:
       - 'test/browser-ci*.mjs'
   pull_request:
     paths:
+      - 'packages/skelly-assets'
+      - '.gitmodules'
       - 'packages/mods/**'
       - 'packages/deadvox/**'
       - 'packages/construct/**'
@@ -54,6 +58,8 @@ jobs:
         working-directory: packages/deadvox
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Cache go-jsonnet
         uses: actions/cache@v4
         with:
@@ -107,6 +113,8 @@ jobs:
         working-directory: packages/deadvox
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Cache go-jsonnet
         uses: actions/cache@v4
         with:
@@ -153,6 +161,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: actions/github-script@v7
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}

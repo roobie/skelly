@@ -35,6 +35,8 @@ jobs:
         working-directory: packages/thing-export
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Cache go-jsonnet
         uses: actions/cache@v4
         with:

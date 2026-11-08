@@ -21,6 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          submodules: true
       - name: Trust the checked-out repository
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Cache go-jsonnet

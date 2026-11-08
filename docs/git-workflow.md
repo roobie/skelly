@@ -3,6 +3,7 @@ read_if:
   - you start a feature branch, push, take in main, or clean up after a merge
   - you wonder why skelly never rebases or force-pushes a published branch
   - you check the framework refactor gate before opening a draft PR
+  - you update the shared asset submodule pin
 ---
 
 # Git workflow
@@ -40,6 +41,23 @@ defects before they reach `main`.
 - **Don't bypass the pre-push hook** with `--no-verify` to get past a real failure. The
   hook runs CI's shared root checks, while CI also checks generated content. A bypass only
   moves a shared-check failure to CI; content drift is caught there to keep the hook fast.
+
+## Shared asset pin bumps
+
+An asset pin-bump PR commits the `packages/skelly-assets` gitlink together with the
+content changes that need that revision. Run Deadvox's `validate`, root
+`content:check` and Deadvox's `digest:simulation` at the base and the proposed head,
+and report both digest values. This checks that the selected assets and their pack
+declarations agree without changing simulation behaviour. Report a digest difference
+to the lead; the bump must not merge with that difference.
+
+The pin that first includes actor outputs must also declare and admit those outputs
+in the same PR. Until that cutover, retain the pre-actor pin: otherwise the external
+root would expose files no bundled pack claims. See
+`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Staged admission".
+
+Asset-move PRs target `framework/refactor` and take it in by merging
+`origin/framework/refactor`, not `main`, so the extraction stays on its reviewed base.
 
 ## Merge and clean up
 

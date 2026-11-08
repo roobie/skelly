@@ -18,7 +18,7 @@
   "scripts": {
     "check": "biome check",
     "fix": "biome check --write",
-    "setup": "npm ci && npm ci --prefix packages/deadvox/tools/lit-check && npm run jsonnet:setup",
+    "setup": "git submodule update --init --recursive && npm ci && npm ci --prefix packages/deadvox/tools/lit-check && npm run jsonnet:setup",
     "jsonnet:setup": "node tools/jsonnet/setup.mjs",
     "content:compile": "node tools/jsonnet/compile.mjs",
     "content:check": "node tools/item-model-metadata.mjs --check && node tools/jsonnet/compile.mjs --check",

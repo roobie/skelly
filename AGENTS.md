@@ -105,11 +105,11 @@ GitHub artifact without private tooling, so references point only from the priva
 
 ## Git workflow and worktrees
 
-The #1532 freeze permits only the framework refactor's single PR to open before the
-refactor lands, so that work can receive CI and merge without admitting other new PRs.
-Open it as a draft for CI; other work may use an existing PR. See
-`docs/decisions/0009-content-defined-products.md`, "Refactor gate", for the in-flight
-closure trigger and its reason.
+New PRs are frozen under #1532 except as
+`docs/decisions/0009-content-defined-products.md`, "Refactor gate", permits. That
+section owns the exceptions, closure trigger and reasons; keeping one gate avoids
+conflicting delivery rules. Open permitted PRs as drafts for CI; other work may use
+an existing PR.
 
 One topic branch per feature, in a worktree at `.claude/worktrees/<name>` from
 `origin/main`, merged through a reviewed PR. Run the full install under "Installing check

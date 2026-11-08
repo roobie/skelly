@@ -1,5 +1,7 @@
 {
   "$schema": "./node_modules/knip/schema.json",
+  // Pipeline dependency checks belong to the submodule's own install and CI.
+  "ignore": ["packages/skelly-assets/**"],
   "workspaces": {
     ".": {
       "entry": ["site/launcher.js!", "test/**/*.mjs", "testPool.ts", "tools/**/*.mjs"],
