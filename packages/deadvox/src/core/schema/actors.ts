@@ -659,7 +659,7 @@ export const PoseClipSchema = pipe(
 );
 
 /** One death fall: a finite pose clip that render samples on Real time, so its span names that clock. */
-export const DeathClipSchema = strictObject({
+const DeathClipSchema = strictObject({
   kind: literal('pose'),
   loop: literal(false),
   frames: pipe(array(PoseFrameSchema), minLength(2, 'needs at least two frames')),
