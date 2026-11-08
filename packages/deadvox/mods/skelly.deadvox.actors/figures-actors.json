@@ -3,352 +3,422 @@
     {
       "body": "actors/acid_zombie.1.body.json",
       "clips": "actors/acid_zombie.1.clips.json",
-      "id": "acid_zombie.1"
+      "id": "acid_zombie.1",
+      "mesh": "assets/models/actors/acid_zombie.1.glb"
     },
     {
       "body": "actors/acid_zombie.2.body.json",
       "clips": "actors/acid_zombie.2.clips.json",
-      "id": "acid_zombie.2"
+      "id": "acid_zombie.2",
+      "mesh": "assets/models/actors/acid_zombie.2.glb"
     },
     {
       "body": "actors/acid_zombie.3.body.json",
       "clips": "actors/acid_zombie.3.clips.json",
-      "id": "acid_zombie.3"
+      "id": "acid_zombie.3",
+      "mesh": "assets/models/actors/acid_zombie.3.glb"
     },
     {
       "body": "actors/acid_zombie.4.body.json",
       "clips": "actors/acid_zombie.4.clips.json",
-      "id": "acid_zombie.4"
+      "id": "acid_zombie.4",
+      "mesh": "assets/models/actors/acid_zombie.4.glb"
     },
     {
       "body": "actors/acid_zombie.6.body.json",
       "clips": "actors/acid_zombie.6.clips.json",
-      "id": "acid_zombie.6"
+      "id": "acid_zombie.6",
+      "mesh": "assets/models/actors/acid_zombie.6.glb"
     },
     {
       "body": "actors/acid_zombie.8.body.json",
       "clips": "actors/acid_zombie.8.clips.json",
-      "id": "acid_zombie.8"
+      "id": "acid_zombie.8",
+      "mesh": "assets/models/actors/acid_zombie.8.glb"
     },
     {
       "body": "actors/amalgam.1.body.json",
       "clips": "actors/amalgam.1.clips.json",
-      "id": "amalgam.1"
+      "id": "amalgam.1",
+      "mesh": "assets/models/actors/amalgam.1.glb"
     },
     {
       "body": "actors/brute_shambler.1.body.json",
       "clips": "actors/brute_shambler.1.clips.json",
-      "id": "brute_shambler.1"
+      "id": "brute_shambler.1",
+      "mesh": "assets/models/actors/brute_shambler.1.glb"
     },
     {
       "body": "actors/brute_shambler.2.body.json",
       "clips": "actors/brute_shambler.2.clips.json",
-      "id": "brute_shambler.2"
+      "id": "brute_shambler.2",
+      "mesh": "assets/models/actors/brute_shambler.2.glb"
     },
     {
       "body": "actors/brute_shambler.3.body.json",
       "clips": "actors/brute_shambler.3.clips.json",
-      "id": "brute_shambler.3"
+      "id": "brute_shambler.3",
+      "mesh": "assets/models/actors/brute_shambler.3.glb"
     },
     {
       "body": "actors/brute_shambler.4.body.json",
       "clips": "actors/brute_shambler.4.clips.json",
-      "id": "brute_shambler.4"
+      "id": "brute_shambler.4",
+      "mesh": "assets/models/actors/brute_shambler.4.glb"
     },
     {
       "body": "actors/brute_shambler.5.body.json",
       "clips": "actors/brute_shambler.5.clips.json",
-      "id": "brute_shambler.5"
+      "id": "brute_shambler.5",
+      "mesh": "assets/models/actors/brute_shambler.5.glb"
     },
     {
       "body": "actors/brute_shambler.6.body.json",
       "clips": "actors/brute_shambler.6.clips.json",
-      "id": "brute_shambler.6"
+      "id": "brute_shambler.6",
+      "mesh": "assets/models/actors/brute_shambler.6.glb"
     },
     {
       "body": "actors/brute_shambler.7.body.json",
       "clips": "actors/brute_shambler.7.clips.json",
-      "id": "brute_shambler.7"
+      "id": "brute_shambler.7",
+      "mesh": "assets/models/actors/brute_shambler.7.glb"
     },
     {
       "body": "actors/brute_shambler.8.body.json",
       "clips": "actors/brute_shambler.8.clips.json",
-      "id": "brute_shambler.8"
+      "id": "brute_shambler.8",
+      "mesh": "assets/models/actors/brute_shambler.8.glb"
     },
     {
       "body": "actors/crawler.1.body.json",
       "clips": "actors/crawler.1.clips.json",
-      "id": "crawler.1"
+      "id": "crawler.1",
+      "mesh": "assets/models/actors/crawler.1.glb"
     },
     {
       "body": "actors/crawler.11.body.json",
       "clips": "actors/crawler.11.clips.json",
-      "id": "crawler.11"
+      "id": "crawler.11",
+      "mesh": "assets/models/actors/crawler.11.glb"
     },
     {
       "body": "actors/crawler.2.body.json",
       "clips": "actors/crawler.2.clips.json",
-      "id": "crawler.2"
+      "id": "crawler.2",
+      "mesh": "assets/models/actors/crawler.2.glb"
     },
     {
       "body": "actors/crawler.3.body.json",
       "clips": "actors/crawler.3.clips.json",
-      "id": "crawler.3"
+      "id": "crawler.3",
+      "mesh": "assets/models/actors/crawler.3.glb"
     },
     {
       "body": "actors/crawler.5.body.json",
       "clips": "actors/crawler.5.clips.json",
-      "id": "crawler.5"
+      "id": "crawler.5",
+      "mesh": "assets/models/actors/crawler.5.glb"
     },
     {
       "body": "actors/crawler.6.body.json",
       "clips": "actors/crawler.6.clips.json",
-      "id": "crawler.6"
+      "id": "crawler.6",
+      "mesh": "assets/models/actors/crawler.6.glb"
     },
     {
       "body": "actors/crawler.7.body.json",
       "clips": "actors/crawler.7.clips.json",
-      "id": "crawler.7"
+      "id": "crawler.7",
+      "mesh": "assets/models/actors/crawler.7.glb"
     },
     {
       "body": "actors/farmer_shambler.1.body.json",
       "clips": "actors/farmer_shambler.1.clips.json",
-      "id": "farmer_shambler.1"
+      "id": "farmer_shambler.1",
+      "mesh": "assets/models/actors/farmer_shambler.1.glb"
     },
     {
       "body": "actors/farmer_shambler.2.body.json",
       "clips": "actors/farmer_shambler.2.clips.json",
-      "id": "farmer_shambler.2"
+      "id": "farmer_shambler.2",
+      "mesh": "assets/models/actors/farmer_shambler.2.glb"
     },
     {
       "body": "actors/farmer_shambler.3.body.json",
       "clips": "actors/farmer_shambler.3.clips.json",
-      "id": "farmer_shambler.3"
+      "id": "farmer_shambler.3",
+      "mesh": "assets/models/actors/farmer_shambler.3.glb"
     },
     {
       "body": "actors/farmer_shambler.4.body.json",
       "clips": "actors/farmer_shambler.4.clips.json",
-      "id": "farmer_shambler.4"
+      "id": "farmer_shambler.4",
+      "mesh": "assets/models/actors/farmer_shambler.4.glb"
     },
     {
       "body": "actors/farmer_shambler.5.body.json",
       "clips": "actors/farmer_shambler.5.clips.json",
-      "id": "farmer_shambler.5"
+      "id": "farmer_shambler.5",
+      "mesh": "assets/models/actors/farmer_shambler.5.glb"
     },
     {
       "body": "actors/farmer_shambler.6.body.json",
       "clips": "actors/farmer_shambler.6.clips.json",
-      "id": "farmer_shambler.6"
+      "id": "farmer_shambler.6",
+      "mesh": "assets/models/actors/farmer_shambler.6.glb"
     },
     {
       "body": "actors/farmer_shambler.7.body.json",
       "clips": "actors/farmer_shambler.7.clips.json",
-      "id": "farmer_shambler.7"
+      "id": "farmer_shambler.7",
+      "mesh": "assets/models/actors/farmer_shambler.7.glb"
     },
     {
       "body": "actors/farmer_shambler.8.body.json",
       "clips": "actors/farmer_shambler.8.clips.json",
-      "id": "farmer_shambler.8"
+      "id": "farmer_shambler.8",
+      "mesh": "assets/models/actors/farmer_shambler.8.glb"
     },
     {
       "body": "actors/medic_shambler.1.body.json",
       "clips": "actors/medic_shambler.1.clips.json",
-      "id": "medic_shambler.1"
+      "id": "medic_shambler.1",
+      "mesh": "assets/models/actors/medic_shambler.1.glb"
     },
     {
       "body": "actors/medic_shambler.2.body.json",
       "clips": "actors/medic_shambler.2.clips.json",
-      "id": "medic_shambler.2"
+      "id": "medic_shambler.2",
+      "mesh": "assets/models/actors/medic_shambler.2.glb"
     },
     {
       "body": "actors/medic_shambler.3.body.json",
       "clips": "actors/medic_shambler.3.clips.json",
-      "id": "medic_shambler.3"
+      "id": "medic_shambler.3",
+      "mesh": "assets/models/actors/medic_shambler.3.glb"
     },
     {
       "body": "actors/medic_shambler.4.body.json",
       "clips": "actors/medic_shambler.4.clips.json",
-      "id": "medic_shambler.4"
+      "id": "medic_shambler.4",
+      "mesh": "assets/models/actors/medic_shambler.4.glb"
     },
     {
       "body": "actors/medic_shambler.5.body.json",
       "clips": "actors/medic_shambler.5.clips.json",
-      "id": "medic_shambler.5"
+      "id": "medic_shambler.5",
+      "mesh": "assets/models/actors/medic_shambler.5.glb"
     },
     {
       "body": "actors/medic_shambler.6.body.json",
       "clips": "actors/medic_shambler.6.clips.json",
-      "id": "medic_shambler.6"
+      "id": "medic_shambler.6",
+      "mesh": "assets/models/actors/medic_shambler.6.glb"
     },
     {
       "body": "actors/medic_shambler.7.body.json",
       "clips": "actors/medic_shambler.7.clips.json",
-      "id": "medic_shambler.7"
+      "id": "medic_shambler.7",
+      "mesh": "assets/models/actors/medic_shambler.7.glb"
     },
     {
       "body": "actors/medic_shambler.8.body.json",
       "clips": "actors/medic_shambler.8.clips.json",
-      "id": "medic_shambler.8"
+      "id": "medic_shambler.8",
+      "mesh": "assets/models/actors/medic_shambler.8.glb"
     },
     {
       "body": "actors/military_shambler.1.body.json",
       "clips": "actors/military_shambler.1.clips.json",
-      "id": "military_shambler.1"
+      "id": "military_shambler.1",
+      "mesh": "assets/models/actors/military_shambler.1.glb"
     },
     {
       "body": "actors/military_shambler.2.body.json",
       "clips": "actors/military_shambler.2.clips.json",
-      "id": "military_shambler.2"
+      "id": "military_shambler.2",
+      "mesh": "assets/models/actors/military_shambler.2.glb"
     },
     {
       "body": "actors/military_shambler.3.body.json",
       "clips": "actors/military_shambler.3.clips.json",
-      "id": "military_shambler.3"
+      "id": "military_shambler.3",
+      "mesh": "assets/models/actors/military_shambler.3.glb"
     },
     {
       "body": "actors/military_shambler.4.body.json",
       "clips": "actors/military_shambler.4.clips.json",
-      "id": "military_shambler.4"
+      "id": "military_shambler.4",
+      "mesh": "assets/models/actors/military_shambler.4.glb"
     },
     {
       "body": "actors/military_shambler.5.body.json",
       "clips": "actors/military_shambler.5.clips.json",
-      "id": "military_shambler.5"
+      "id": "military_shambler.5",
+      "mesh": "assets/models/actors/military_shambler.5.glb"
     },
     {
       "body": "actors/military_shambler.6.body.json",
       "clips": "actors/military_shambler.6.clips.json",
-      "id": "military_shambler.6"
+      "id": "military_shambler.6",
+      "mesh": "assets/models/actors/military_shambler.6.glb"
     },
     {
       "body": "actors/military_shambler.7.body.json",
       "clips": "actors/military_shambler.7.clips.json",
-      "id": "military_shambler.7"
+      "id": "military_shambler.7",
+      "mesh": "assets/models/actors/military_shambler.7.glb"
     },
     {
       "body": "actors/military_shambler.8.body.json",
       "clips": "actors/military_shambler.8.clips.json",
-      "id": "military_shambler.8"
+      "id": "military_shambler.8",
+      "mesh": "assets/models/actors/military_shambler.8.glb"
     },
     {
       "body": "actors/runner.1.body.json",
       "clips": "actors/runner.1.clips.json",
-      "id": "runner.1"
+      "id": "runner.1",
+      "mesh": "assets/models/actors/runner.1.glb"
     },
     {
       "body": "actors/runner.2.body.json",
       "clips": "actors/runner.2.clips.json",
-      "id": "runner.2"
+      "id": "runner.2",
+      "mesh": "assets/models/actors/runner.2.glb"
     },
     {
       "body": "actors/runner.3.body.json",
       "clips": "actors/runner.3.clips.json",
-      "id": "runner.3"
+      "id": "runner.3",
+      "mesh": "assets/models/actors/runner.3.glb"
     },
     {
       "body": "actors/runner.4.body.json",
       "clips": "actors/runner.4.clips.json",
-      "id": "runner.4"
+      "id": "runner.4",
+      "mesh": "assets/models/actors/runner.4.glb"
     },
     {
       "body": "actors/runner.5.body.json",
       "clips": "actors/runner.5.clips.json",
-      "id": "runner.5"
+      "id": "runner.5",
+      "mesh": "assets/models/actors/runner.5.glb"
     },
     {
       "body": "actors/runner.6.body.json",
       "clips": "actors/runner.6.clips.json",
-      "id": "runner.6"
+      "id": "runner.6",
+      "mesh": "assets/models/actors/runner.6.glb"
     },
     {
       "body": "actors/runner.7.body.json",
       "clips": "actors/runner.7.clips.json",
-      "id": "runner.7"
+      "id": "runner.7",
+      "mesh": "assets/models/actors/runner.7.glb"
     },
     {
       "body": "actors/runner.8.body.json",
       "clips": "actors/runner.8.clips.json",
-      "id": "runner.8"
+      "id": "runner.8",
+      "mesh": "assets/models/actors/runner.8.glb"
     },
     {
       "body": "actors/shambler.1.body.json",
       "clips": "actors/shambler.1.clips.json",
-      "id": "shambler.1"
+      "id": "shambler.1",
+      "mesh": "assets/models/actors/shambler.1.glb"
     },
     {
       "body": "actors/shambler.2.body.json",
       "clips": "actors/shambler.2.clips.json",
-      "id": "shambler.2"
+      "id": "shambler.2",
+      "mesh": "assets/models/actors/shambler.2.glb"
     },
     {
       "body": "actors/shambler.3.body.json",
       "clips": "actors/shambler.3.clips.json",
-      "id": "shambler.3"
+      "id": "shambler.3",
+      "mesh": "assets/models/actors/shambler.3.glb"
     },
     {
       "body": "actors/shambler.4.body.json",
       "clips": "actors/shambler.4.clips.json",
-      "id": "shambler.4"
+      "id": "shambler.4",
+      "mesh": "assets/models/actors/shambler.4.glb"
     },
     {
       "body": "actors/shambler.5.body.json",
       "clips": "actors/shambler.5.clips.json",
-      "id": "shambler.5"
+      "id": "shambler.5",
+      "mesh": "assets/models/actors/shambler.5.glb"
     },
     {
       "body": "actors/shambler.6.body.json",
       "clips": "actors/shambler.6.clips.json",
-      "id": "shambler.6"
+      "id": "shambler.6",
+      "mesh": "assets/models/actors/shambler.6.glb"
     },
     {
       "body": "actors/shambler.7.body.json",
       "clips": "actors/shambler.7.clips.json",
-      "id": "shambler.7"
+      "id": "shambler.7",
+      "mesh": "assets/models/actors/shambler.7.glb"
     },
     {
       "body": "actors/shambler.8.body.json",
       "clips": "actors/shambler.8.clips.json",
-      "id": "shambler.8"
+      "id": "shambler.8",
+      "mesh": "assets/models/actors/shambler.8.glb"
     },
     {
       "body": "actors/worker_shambler.1.body.json",
       "clips": "actors/worker_shambler.1.clips.json",
-      "id": "worker_shambler.1"
+      "id": "worker_shambler.1",
+      "mesh": "assets/models/actors/worker_shambler.1.glb"
     },
     {
       "body": "actors/worker_shambler.2.body.json",
       "clips": "actors/worker_shambler.2.clips.json",
-      "id": "worker_shambler.2"
+      "id": "worker_shambler.2",
+      "mesh": "assets/models/actors/worker_shambler.2.glb"
     },
     {
       "body": "actors/worker_shambler.3.body.json",
       "clips": "actors/worker_shambler.3.clips.json",
-      "id": "worker_shambler.3"
+      "id": "worker_shambler.3",
+      "mesh": "assets/models/actors/worker_shambler.3.glb"
     },
     {
       "body": "actors/worker_shambler.4.body.json",
       "clips": "actors/worker_shambler.4.clips.json",
-      "id": "worker_shambler.4"
+      "id": "worker_shambler.4",
+      "mesh": "assets/models/actors/worker_shambler.4.glb"
     },
     {
       "body": "actors/worker_shambler.5.body.json",
       "clips": "actors/worker_shambler.5.clips.json",
-      "id": "worker_shambler.5"
+      "id": "worker_shambler.5",
+      "mesh": "assets/models/actors/worker_shambler.5.glb"
     },
     {
       "body": "actors/worker_shambler.6.body.json",
       "clips": "actors/worker_shambler.6.clips.json",
-      "id": "worker_shambler.6"
+      "id": "worker_shambler.6",
+      "mesh": "assets/models/actors/worker_shambler.6.glb"
     },
     {
       "body": "actors/worker_shambler.7.body.json",
       "clips": "actors/worker_shambler.7.clips.json",
-      "id": "worker_shambler.7"
+      "id": "worker_shambler.7",
+      "mesh": "assets/models/actors/worker_shambler.7.glb"
     },
     {
       "body": "actors/worker_shambler.8.body.json",
       "clips": "actors/worker_shambler.8.clips.json",
-      "id": "worker_shambler.8"
+      "id": "worker_shambler.8",
+      "mesh": "assets/models/actors/worker_shambler.8.glb"
     }
   ]
 }

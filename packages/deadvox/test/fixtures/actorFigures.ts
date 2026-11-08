@@ -15,6 +15,11 @@ export const fixtureActorFigures = (...actors: readonly FixtureActor[]) =>
   actors.flatMap(({ id, model, figureSeeds }) =>
     (model === 'fused-mass' ? [FUSED_MASS_FIGURE_SEED] : (figureSeeds ?? [])).map((seed) => {
       const key = actorFigureKey(id, seed);
-      return { id: key, body: `actors/${key}.body.json`, clips: `actors/${key}.clips.json` };
+      return {
+        id: key,
+        body: `actors/${key}.body.json`,
+        clips: `actors/${key}.clips.json`,
+        mesh: `assets/models/actors/${key}.glb`,
+      };
     }),
   );

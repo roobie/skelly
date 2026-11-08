@@ -1024,10 +1024,10 @@ export const actorFigureKeyParts = (id: string): { type: string; seed: number } 
 };
 
 /**
- * One built figure: the declared pack files holding the body and clips the asset submodule bakes for one type and
- * seed. Only Node reads those bytes, so the browser admits figures without loading them.
+ * One built figure: the declared pack files holding the body, clips and GLB mesh the asset submodule bakes for one
+ * type and seed. Only Node reads those bytes, so the browser admits figures without loading them.
  */
 export const ActorFigureSchema = pipe(
-  strictObject({ id: string(), body: string(), clips: string() }),
+  strictObject({ id: string(), body: string(), clips: string(), mesh: string() }),
   check(({ id }) => actorFigureKeyParts(id) !== undefined, 'id must be the figure type and seed as "type.seed"'),
 );

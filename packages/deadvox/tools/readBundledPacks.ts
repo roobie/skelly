@@ -221,7 +221,7 @@ export const readStackActorFigureFiles = (packageRoot: string, stack: string, re
     const declaring = packs.filter(({ manifest }) => manifest.files.some((file) => file.path === contentFile));
     return declaring.length === 1 ? packFileBytes(packageRoot, declaring[0]!, path) : admittedRead(contentFile, path);
   };
-  return readActorFigureFiles(registry, (contentFile, path) => JSON.parse(read(contentFile, path).toString('utf8')));
+  return readActorFigureFiles(registry, read);
 };
 
 const CONTENT_PACKS_DEFINE = '__SKELLY_CONTENT_PACKS__';

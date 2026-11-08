@@ -696,7 +696,7 @@ export const fetchActorFigureFiles = (
     if (!response.ok) {
       throw new Error(`Figure file ${path}: HTTP ${response.status}`);
     }
-    return response.json() as Promise<unknown>;
+    return new Uint8Array(await response.arrayBuffer());
   });
 
 export const startPlay = async (

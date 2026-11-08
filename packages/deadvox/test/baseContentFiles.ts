@@ -32,6 +32,7 @@ export const stackActorFigureFiles = (registry: Registry): ActorFigureFiles => {
       row.id,
       row.body,
       row.clips,
+      row.mesh,
       registry.contentOrigins.get(`actorFigures:${row.id}`)?.source,
     ]),
   );

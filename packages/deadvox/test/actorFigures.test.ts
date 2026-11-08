@@ -22,6 +22,7 @@ const figure: ActorFigureDef = {
   id: actorFigureKey(type, seed),
   body: 'actors/fixture.body.json',
   clips: 'actors/fixture.clips.json',
+  mesh: 'assets/models/actors/fixture.glb',
 };
 
 // The fixture body's type is no actor type, so an authored figure of that name admits it as the player's admits the player.

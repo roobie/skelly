@@ -38,6 +38,7 @@ export const productAssets: PresentationAssets = {
     import.meta.glob<string>(
       [
         '../../../skelly-assets/built/*/actors/*.json',
+        '../../../skelly-assets/built/*/assets/models/actors/*.glb',
         '!../../../skelly-assets/built/skelly.armour/**',
         '!../../../skelly-assets/built/skelly.bestiary/**',
         '!../../../skelly-assets/built/skelly.bolt-guns/**',
