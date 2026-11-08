@@ -3,4 +3,4 @@
   overrides={
     baseball_cap: ['cloth', 'polymer'],
   },
-).pack({ models: import 'things/index.json' })
+).pack({ models: import 'packages/skelly-assets/built/skelly.deadvox.scenario.playtest/things/index.json' })
