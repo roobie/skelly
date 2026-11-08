@@ -24,7 +24,7 @@ import type { StreamerStats } from './game/streamer.ts';
 import { mountControlsCard } from './presentation/controls.ts';
 import { createEngine } from './presentation/engine.ts';
 import { requestInputLock } from './presentation/input.ts';
-import { startPlay } from './presentation/play.ts';
+import { fetchActorFigureFiles, startPlay } from './presentation/play.ts';
 import { renderFreeFromUrl } from './presentation/renderMode.ts';
 import { tutorialRequested, tutorialUrl } from './presentation/tutorialUrl.ts';
 import { WorldLoading } from './presentation/worldLoading.ts';
@@ -337,7 +337,8 @@ if (bench === 'report') {
     config.site = 'forest';
     config.start = parseTimeOfDay(run.time)!;
     applyBenchWeathering(config);
-    startShamblerBench(createEngine(config, view, undefined, { graphicsSource: 'mod' }), run);
+    const engine = createEngine(config, view, undefined, { graphicsSource: 'mod' });
+    startShamblerBench(engine, run, await fetchActorFigureFiles(engine.registry, assets.figures));
   } else {
     document.getElementById('hud')!.textContent =
       'Invalid shambler benchmark parameters. Use n as unique positive integers up to 500, seed as a signed 32-bit integer, and time as HH:MM (default 23:30).';
@@ -346,5 +347,6 @@ if (bench === 'report') {
   const run = benchRunFromUrl(params, content.registry);
   const stats: StreamerStats = { genMs: [], meshMs: [], triangles: [] };
   const config = benchGameConfig(run, params, content);
-  startBench(createEngine(config, view, stats, { graphicsSource: 'mod' }), run, stats);
+  const engine = createEngine(config, view, stats, { graphicsSource: 'mod' });
+  startBench(engine, run, stats, await fetchActorFigureFiles(engine.registry, assets.figures));
 }

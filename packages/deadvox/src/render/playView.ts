@@ -2,6 +2,7 @@
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
 import type { AcidGlobState } from '../core/acidGlob.ts';
 import type { AcidPuddleState } from '../core/acidPuddle.ts';
+import type { ActorFigureFiles } from '../core/actorFigureFiles.ts';
 import type { Actor } from '../core/actorState.ts';
 import { BACKGROUND_ACTOR_RATE } from '../core/actorSystem.ts';
 import { adsCameraEye, guardAdsCamera } from '../core/adsView.ts';
@@ -215,12 +216,15 @@ export const createPlayView = (
   report: (message: string) => void,
   {
     models: modelFiles,
+    actorFigureFiles,
     page = globalThis,
     poweredLights = () => [],
     physicalSolid = engine.isSolid,
   }: {
     /** The product's bundled models; see `PresentationAssets`, `models`. */
     models: PackAssetFiles;
+    /** The session's built actor figures, which live actors are posed over. */
+    actorFigureFiles: ActorFigureFiles;
     page?: Pick<EventTarget, 'addEventListener'>;
     poweredLights?: () => readonly PoweredLight[];
     /** The session's physical query, with parked vehicles, for corpses, the camera and flare occlusion. */
@@ -357,6 +361,7 @@ export const createPlayView = (
           canvas: engine.renderer?.domElement,
           reveal: meshes,
           actors: registry.actors,
+          actorFigureFiles,
           onBurst: (position, actor) => acidEffects.deathSplash(position, actor),
           onFleshLanded: (centre) => gore.landed(centre),
           bloodiness: (actor) => gore.severity(actor),

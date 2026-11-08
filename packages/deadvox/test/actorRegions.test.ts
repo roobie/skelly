@@ -5,13 +5,21 @@ import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { idlePose } from '@mobgen/mob/idle.ts';
 import { describe, expect, it } from 'vitest';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
+import { figureVariantOf } from '../src/core/actorModels.ts';
 import { type HumanoidHitRegion, posedHumanoidRegionBoxes, posedRegionHitDistance } from '../src/core/actorRegions.ts';
 import { type Vec3 as MobVec3, transpose } from '../src/core/boneMath.ts';
 import { HUMANOID_REGION_NAMES } from '../src/core/humanoidRegionNames.ts';
 import { boneTransforms, type Pose } from '../src/core/pose.ts';
+import type { ActorDef } from '../src/core/schema.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
 type Vec3 = [number, number, number];
 const BLOCK = 0.5;
+const registry = baseRegistry();
+const SHAMBLER = registry.actors.get('shambler')!;
+const FIGURES = stackActorFigureFiles(registry);
 // Fixture seeds: these cases test geometry, not which seeds the content authors.
 const SHAMBLER_FIGURE_SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
 const REGION_BONES: Record<HumanoidHitRegion, readonly string[]> = {
@@ -67,6 +75,7 @@ const posed = (seed: number, testPose: PoseCase) => {
   const transforms = boneTransforms(bones, pose);
   const boxes = posedHumanoidRegionBoxes({
     seed,
+    figure: actorFigure(FIGURES, SHAMBLER, seed),
     position: [0, 0, 0],
     facing: [0, 0, -1],
     headYaw: 0,
@@ -210,10 +219,11 @@ describe('posed shambler hit regions', () => {
   });
 
   it('stands an acid zombie about as tall as a shambler beside it', () => {
-    const headTop = (model: string, seed: number) => {
+    const headTop = (type: ActorDef, seed: number) => {
       const boxes = posedHumanoidRegionBoxes({
-        model,
+        model: figureVariantOf(type),
         seed,
+        figure: actorFigure(FIGURES, type, seed),
         position: [0, 0, 0],
         facing: [0, 0, -1],
         headYaw: 0,
@@ -228,14 +238,15 @@ describe('posed shambler hit regions', () => {
       return Math.max(...boxes.head.map((box) => box.topY!)) * BLOCK;
     };
     const seeds = SHAMBLER_FIGURE_SEEDS.slice(0, 4);
-    const mean = (model: string) => seeds.reduce((sum, seed) => sum + headTop(model, seed), 0) / seeds.length;
+    const mean = (type: ActorDef) => seeds.reduce((sum, seed) => sum + headTop(type, seed), 0) / seeds.length;
     // Within a tenth of the shambler's height, standing on the same floor.
-    expect(Math.abs(mean('acid') / mean('humanoid') - 1)).toBeLessThan(0.1);
+    expect(Math.abs(mean(registry.actors.get('acid_zombie')!) / mean(SHAMBLER) - 1)).toBeLessThan(0.1);
   });
 
   it('removes severed bones from their hit region without hiding the rest of the arm', () => {
     const present = posedHumanoidRegionBoxes({
       seed: 1,
+      figure: actorFigure(FIGURES, SHAMBLER, 1),
       position: [0, 0, 0],
       facing: [0, 0, -1],
       headYaw: 0,
@@ -249,6 +260,7 @@ describe('posed shambler hit regions', () => {
     });
     const severed = posedHumanoidRegionBoxes({
       seed: 1,
+      figure: actorFigure(FIGURES, SHAMBLER, 1),
       position: [0, 0, 0],
       facing: [0, 0, -1],
       headYaw: 0,

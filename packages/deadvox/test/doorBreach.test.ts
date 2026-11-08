@@ -95,6 +95,7 @@ const chaseThroughDoor = (strength: number, seconds: number) => {
     blockSize: SCALE.blockSize,
     physics: physicsFor(SCALE),
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: stackActorFigureFiles(registry),
     hurtPlayer: () => undefined,
     bashObstacle: (ahead, bash) => {
       const leaf = entities.pieceTouching(ahead);

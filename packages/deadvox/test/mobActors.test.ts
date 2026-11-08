@@ -50,12 +50,13 @@ import {
 } from '../src/render/mobActors.ts';
 import { initializeRagdollPhysics, ragdollContent } from '../src/render/ragdoll.ts';
 import RAPIER from '../src/render/ragdollRapier.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
-import { CORPSE_LIFECYCLE, HEARING_GAZE_JITTER, MobActorMeshes } from './mobActorsFixture.ts';
+import { CORPSE_LIFECYCLE, MobActorMeshes as FixtureMobActorMeshes, HEARING_GAZE_JITTER } from './mobActorsFixture.ts';
 import { PLAYER, physicsFor, WORLD_GRAVITY } from './playerFixture.ts';
 import { GORE_TUNING_FIXTURE } from './presentationFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
@@ -180,7 +181,7 @@ const hitParityErrorsForBox = ({
 
 const hitParityErrors = (renderer: MobActorMeshes, entries: readonly HitParityEntry[], pose: HitParityPose): string[] =>
   entries.flatMap(({ seed, id, actor }) => {
-    const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, 0.5));
+    const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, { blockSize: 0.5, actorFigureFiles: FIGURES }));
     return Object.entries(boxes).flatMap(([regionName, region]) =>
       region.flatMap((box) =>
         hitParityErrorsForBox({ renderer, seed, id, phase: pose.phase, windup: pose.windup, regionName, box }),
@@ -257,8 +258,20 @@ const partContainment = ({
 };
 
 const registry = baseRegistry();
+const FIGURES = stackActorFigureFiles(registry);
 const SHAMBLER = registry.actors.get('shambler')!;
 const SHAMBLER_FIGURE_SEEDS = SHAMBLER.figureSeeds!;
+
+/** Every renderer here draws the base stack's figures. */
+class MobActorMeshes extends FixtureMobActorMeshes {
+  constructor(
+    blockSize: number,
+    capacity: number | undefined,
+    options: Omit<ConstructorParameters<typeof FixtureMobActorMeshes>[2], 'actorFigureFiles'>,
+  ) {
+    super(blockSize, capacity, { ...options, actorFigureFiles: FIGURES });
+  }
+}
 const RUNNER = registry.actors.get('runner')!;
 const CRAWLER = registry.actors.get('crawler')!;
 
@@ -357,12 +370,13 @@ const incapacitate = (
     }),
     dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,
+    actorFigureFiles: FIGURES,
     ...presentation.effects,
   });
   const id = system.store.add(actor);
   presentation.beforeDamage?.(system);
   system.setFrozen(frozen);
-  const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, blockSize));
+  const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, { blockSize, actorFigureFiles: FIGURES }));
   const { center } = boxes.torso.find((box) => box.bone === 'chest')!;
   const origin: Vec3 = [center[0] - actor.facing[0] * 2, center[1], center[2] - actor.facing[2] * 2];
   const direction: Vec3 = [center[0] - origin[0], center[1] - origin[1], center[2] - origin[2]];
@@ -1245,6 +1259,7 @@ describe('MobActorMeshes reactions', () => {
       maxCorpses: row.mobActors.maxCorpses,
       handlingReachMetres: reachTuning(registry).reachMetres,
       gravityMetresPerSimSecondSquared: WORLD_GRAVITY,
+      actorFigureFiles: FIGURES,
     });
     const gore = new Gore(0.5, WORLD_GRAVITY, row.gore);
     try {

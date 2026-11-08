@@ -116,6 +116,7 @@ const chasePastWardrobe = (strength: number, walled: boolean) => {
     blockSize: SCALE.blockSize,
     physics: physicsFor(SCALE),
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: stackActorFigureFiles(registry),
     hurtPlayer: () => undefined,
     bashObstacle: (ahead, bash) => {
       const piece = entities.pieceTouching(ahead);

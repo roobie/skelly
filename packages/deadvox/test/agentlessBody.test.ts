@@ -7,6 +7,7 @@ import { decodeSave } from '../src/core/saveFormat.ts';
 import { ContentFileSchema } from '../src/core/schema.ts';
 import { siteGenerationOf } from '../src/core/sitePalette.ts';
 import { contentLookup as registryContentLookup } from '../src/ui/saveController.ts';
+import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { capture, createRuntime, encodeFixture, formatVersion, registry, scale } from './snapshotTestSupport.ts';
 
@@ -14,8 +15,10 @@ const driven = [...registry.actors.values()].find((row) => row.agent && row.mode
 const { agent: _agent, attack: _attack, chaseMotion: _chaseMotion, ...bodyRow } = driven;
 const body = parse(ContentFileSchema, { actors: [{ ...bodyRow, id: 'fixture_undriven' }] }).actors![0]!;
 const content = { ...registry, actors: new Map(registry.actors).set(body.id, body) };
+const fixtureFigures = { [body.id]: driven.id };
+const figures = withFixtureFigures(stackActorFigureFiles(content), fixtureFigures);
 const runtime = (snapshot: Parameters<typeof createRuntime>[0], rows: Registry) =>
-  createRuntime(snapshot, false, undefined, { registry: rows, fixtureFigures: { [body.id]: driven.id } });
+  createRuntime(snapshot, false, undefined, { registry: rows, fixtureFigures });
 
 it.each(['attack', 'chaseMotion'] as const)('refuses an agent content row without %s', (trait) => {
   const row = { ...driven, [trait]: undefined };
@@ -43,7 +46,9 @@ it('an agentless content body ticks, takes a hit and saves without decision stat
   expect(farActor.body.pos[1]).toBe(farHeight);
   source.zombies.tickBackground(1 / 60, 1 / 60);
   expect(farActor.body.pos[1]).toBeLessThan(farHeight);
-  const posed = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, scale.blockSize));
+  const posed = posedHumanoidRegionBoxes(
+    actorPoseInputFor(actor, id, { blockSize: scale.blockSize, actorFigureFiles: figures }),
+  );
   const { center } = posed.leftArm[0]!;
   const health = () => Object.values(actor.regions).reduce((sum, value) => sum + value, 0);
   const before = health();

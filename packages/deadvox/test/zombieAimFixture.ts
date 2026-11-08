@@ -3,6 +3,7 @@ import type { Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { type CrosshairTarget, crosshairTarget } from '../src/core/crosshairTarget.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { physicsFor } from './playerFixture.ts';
@@ -44,6 +45,7 @@ export const zombieAimFixture = (registry: Registry, origin: Vec3, direction: Ve
     blockSize,
     physics: physicsFor(scale),
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: stackActorFigureFiles(registry),
     player: () => ({
       pos: origin,
       facing: direction,

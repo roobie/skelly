@@ -11,6 +11,7 @@ import { templateByName } from '@mobgen/core/template.ts';
 import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
 import { type AttackClip, attackClipFor } from '@mobgen/mob/attack.ts';
 import { flinchClipFor, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { figureVariantOf } from '../src/core/actorModels.ts';
 import { type ActorPoseInput, posedActor } from '../src/core/actorPose.ts';
 import { posedFusedMassRegionBoxes, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
@@ -24,7 +25,7 @@ import type { ActorDef } from '../src/core/schema.ts';
 import { acidCorpsePose } from '../src/render/corpsePose.ts';
 import { MobActorMeshes } from '../src/render/mobActors.ts';
 import { RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
-import { readBundledPacks } from './readBundledPacks.ts';
+import { readBundledPacks, readStackActorFigureFiles } from './readBundledPacks.ts';
 
 const STACK = 'skelly.deadvox';
 // The covering set's sample points: idle clock times in seconds and shares of one stride. They choose
@@ -64,6 +65,7 @@ const { registry, issues } = buildRegistry(admitted.sources);
 if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
+const actorFigureFiles = readStackActorFigureFiles(packageRoot, STACK, registry);
 
 interface BoneRecord {
   readonly t: Vec3;
@@ -143,6 +145,7 @@ const peakTime = (clip: AttackClip): number =>
   ).t;
 
 const restInput = (type: ActorDef, seed: number): ActorPoseInput => ({
+  figure: actorFigure(actorFigureFiles, type, seed),
   id: FLINCH_ID,
   seed,
   model: figureVariantOf(type),
@@ -277,7 +280,9 @@ interface BodyRecord {
 }
 
 // The renderer owns the severable parts' rigid data; it is read the way its tests read it.
-const meshes = new MobActorMeshes(1, 1, { actors: registry.actors } as ConstructorParameters<typeof MobActorMeshes>[2]);
+const meshes = new MobActorMeshes(1, 1, { actors: registry.actors, actorFigureFiles } as ConstructorParameters<
+  typeof MobActorMeshes
+>[2]);
 const internal = meshes as unknown as {
   variants: readonly {
     model: string;

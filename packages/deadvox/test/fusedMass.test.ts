@@ -2,6 +2,7 @@
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { describe, expect, it } from 'vitest';
 import { fusedMassTypeOf, generatedActorFigure } from '../src/core/actorFigure.ts';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { PLAYER_CHEST_METRES } from '../src/core/actorMotion.ts';
 import { actorPoseInputFor, posedActor } from '../src/core/actorPose.ts';
 import { posedFusedMassRegionBoxes } from '../src/core/actorRegions.ts';
@@ -26,6 +27,7 @@ import { testedBricks } from '../src/core/solidBricks.ts';
 import { compileTemplate } from '../src/core/templates.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -35,7 +37,9 @@ import { capture, contentLookup, createRuntime, encodeFixture, formatVersion } f
 import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
+const FIGURES = stackActorFigureFiles(registry);
 const BLOCK_SIZE = makeScale(0.5).blockSize;
+const POSE_SCENE = { blockSize: BLOCK_SIZE, actorFigureFiles: FIGURES };
 const FLOOR = (_x: number, y: number): boolean => y === 0;
 const player = (): PlayerSense => ({
   pos: [20, 1, 20],
@@ -59,6 +63,7 @@ const system = (
     physics: physicsFor(makeScale(0.5)),
     tuning: TEST_SENSE_TUNING,
     hurtPlayer,
+    actorFigureFiles: FIGURES,
     seed,
   });
 
@@ -103,7 +108,7 @@ const findRegionRay = ({
 
 const findMemberRay = (simulation: ActorSystem, id: number, distanceMetres = 3) => {
   const actor = simulation.store.get(id)!;
-  const regions = posedFusedMassRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE));
+  const regions = posedFusedMassRegionBoxes(actorPoseInputFor(actor, id, POSE_SCENE));
   for (const member of activeFusedMassMembers(actor)) {
     for (const regionId of member.regionIds) {
       const ray = findRegionRay({ simulation, id, regionId, boxes: regions[regionId] ?? [], distanceMetres });
@@ -123,6 +128,7 @@ const poseInputForFigure = (
 ): Parameters<typeof posedFusedMassRegionBoxes>[0] => ({
   model: 'fused-mass',
   seed: figure.seed,
+  figure: actorFigure(FIGURES, fusedMassTypeOf(registry.actors)!, figure.seed),
   bodyScale: figure.scale,
   position,
   facing,
@@ -291,6 +297,7 @@ const runObstacleCase = (
     physics: physicsFor(makeScale(0.5)),
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
+    actorFigureFiles: FIGURES,
   });
   const type = registry.actors.get(typeId)!;
   const configuredType = canJumpObstacles === undefined ? type : { ...type, canJumpObstacles };
@@ -435,7 +442,7 @@ describe('fused-mass body and combat seam', () => {
   it('derives a tight collision envelope and region boxes from the realized body manifest', () => {
     expect(registry.actors.get('amalgam')?.authoredOnly).toBe(true);
     const amalgamType = registry.actors.get('amalgam')!;
-    const figure = fusedMassFigure(3, amalgamType.bodyScale!);
+    const figure = fusedMassFigure(FUSED_MASS_FIGURE_SEED, amalgamType.bodyScale!);
     const envelope = fusedMassCollisionEnvelope(figure, BLOCK_SIZE);
     const { bounds, originOffset } = figure;
     const localMin = [
@@ -510,6 +517,7 @@ describe('fused-mass body and combat seam', () => {
       physics: physicsFor(makeScale(0.5)),
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
+      actorFigureFiles: FIGURES,
       onSound: (event, _position, actor) => {
         if (event === type.sounds.alert && actor?.type.id === type.id) {
           heardBody = generatedActorFigure(actor.type, actor.figureSeed).realized.body.bones.length > 0;
@@ -535,6 +543,7 @@ describe('fused-mass body and combat seam', () => {
       physics: physicsFor(makeScale(0.5)),
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
+      actorFigureFiles: FIGURES,
       onSound: (event, _position, targetActor) => {
         if (event === FISTS_MELEE.hitSound && targetActor?.type.id === type.id) {
           heardBody = generatedActorFigure(targetActor.type, targetActor.figureSeed).realized.body.bones.length > 0;
@@ -551,7 +560,7 @@ describe('fused-mass body and combat seam', () => {
       combatSystem.tick(1 / 60);
     }
     const actor = combatSystem.store.get(id)!;
-    const poseInput = actorPoseInputFor(actor, id, BLOCK_SIZE);
+    const poseInput = actorPoseInputFor(actor, id, POSE_SCENE);
     const { hitFlinchTime, ...withoutFlinch } = poseInput;
     expect(hitFlinchTime).toBeGreaterThan(0);
 
@@ -616,6 +625,7 @@ describe('fused-mass body and combat seam', () => {
       physics: physicsFor(makeScale(0.5)),
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
+      actorFigureFiles: FIGURES,
     });
     const id = simulation.add(amalgam, start, [0, 0, -1]);
     const reached = (): number => simulation.store.get(id)!.body.pos[2];
@@ -651,6 +661,7 @@ describe('fused-mass body and combat seam', () => {
       physics: physicsFor(makeScale(0.5)),
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
+      actorFigureFiles: FIGURES,
     });
     const actor = simulation.store.get(simulation.add(registry.actors.get('amalgam')!, start, [0, 0, -1]))!;
     let struck = false;
@@ -677,6 +688,7 @@ describe('fused-mass body and combat seam', () => {
         physics: physicsFor(makeScale(0.5)),
         tuning: TEST_SENSE_TUNING,
         hurtPlayer: () => undefined,
+        actorFigureFiles: FIGURES,
       });
     // Facing the pillar, as near as its flesh comes to it: a step closer would meet it.
     const facingPillar: Vec3 = [0, 0, -1];
@@ -753,7 +765,7 @@ describe('fused-mass body and combat seam', () => {
     const firearm = registry.items.get('pump_shotgun')!.firearm!;
     const fire = (origin: Vec3, basis: ReturnType<typeof aimBasis>, key: string): number =>
       simulation.firePellets(pelletShotFromBasis({ ammo, firearm, origin, basis, seed: 73, key })).hits;
-    const coreBoxes = posedFusedMassRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE));
+    const coreBoxes = posedFusedMassRegionBoxes(actorPoseInputFor(actor, id, POSE_SCENE));
     const coreCenter = coreBoxes['core.trunk']?.[0]?.voxelCentroid;
     expect(coreCenter).toBeDefined();
     const rangeMetres = 6;
@@ -924,7 +936,7 @@ describe('fused-mass body and combat seam', () => {
       membersBefore.filter(({ partId }) => partId !== target.partId).map(({ partId }) => partId),
     );
 
-    const boxesAfter = posedFusedMassRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE));
+    const boxesAfter = posedFusedMassRegionBoxes(actorPoseInputFor(actor, id, POSE_SCENE));
     for (const region of target.regionIds) {
       expect(boxesAfter[region]).toHaveLength(0);
     }
@@ -964,6 +976,7 @@ const attackAlong = ({ typeId, elevation, reachShare, roof = false }: AttackLine
     physics: physicsFor(makeScale(0.5)),
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: (amount) => hits.push(amount),
+    actorFigureFiles: FIGURES,
   });
   const feet: Vec3 = [0, 1, 0];
   const id = simulation.add(registry.actors.get(typeId)!, feet, [0, 0, 1]);
@@ -1037,7 +1050,7 @@ describe('fused-mass flesh carving', () => {
   const coreTarget = (simulation = system(), type: typeof amalgam = amalgam) => {
     const id = simulation.add(type, [0, 1, 0]);
     const actor = simulation.store.get(id)!;
-    const core = posedFusedMassRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE))['core.trunk']![0]!.voxelCentroid;
+    const core = posedFusedMassRegionBoxes(actorPoseInputFor(actor, id, POSE_SCENE))['core.trunk']![0]!.voxelCentroid;
     const origin: Vec3 = [core[0], core[1], core[2] + 6 / BLOCK_SIZE];
     const direction: Vec3 = [0, 0, -1];
     const pellets = (count: number, damage: number) =>
@@ -1123,7 +1136,7 @@ describe('fused-mass flesh carving', () => {
     const restored = system();
     restored.restoreState(state, (type) => registry.actors.get(type));
     const actor = restored.store.get(id)!;
-    const input = actorPoseInputFor(actor, id, BLOCK_SIZE);
+    const input = actorPoseInputFor(actor, id, POSE_SCENE);
     const { hidden } = posedActor(input);
     const { owner } = figure.realized.voxels;
     const lost = (cell: number): boolean =>

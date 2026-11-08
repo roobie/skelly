@@ -5,6 +5,7 @@ import { type Body, bodyOverlapsBlock } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { spawnActorType, spawnShamblers } from '../src/debug/shamblerSpawning.ts';
 import type { Engine } from '../src/presentation/engine.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { createPlayerBody, physicsFor } from './playerFixture.ts';
@@ -40,6 +41,7 @@ const actorsFor = (body: ReturnType<typeof player>, isSolid: (x: number, y: numb
     blockSize: SCALE.blockSize,
     physics: physicsFor(SCALE),
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: stackActorFigureFiles(registry),
     player: () => ({
       pos: body.pos,
       body,

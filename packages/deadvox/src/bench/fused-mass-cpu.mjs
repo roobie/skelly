@@ -3,7 +3,7 @@ import { registerHooks, stripTypeScriptTypes } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { readStackContentSources } from '../../tools/readBundledPacks.ts';
+import { readStackActorFigureFiles, readStackContentSources } from '../../tools/readBundledPacks.ts';
 import { fusedMassTypeOf } from '../core/actorFigure.ts';
 import { BlockEntities } from '../core/blockEntities.ts';
 import { claimed } from '../core/capabilities.ts';
@@ -44,9 +44,9 @@ const { ActorSystem } = await import('../core/actorSystem.ts');
 if (args.length > 0 && !substituted) {
   throw new Error('The baseline shape was not loaded');
 }
-const { registry } = buildRegistry(
-  readStackContentSources(resolve(dirname(fileURLToPath(import.meta.url)), '../..'), 'skelly.deadvox'),
-);
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const { registry } = buildRegistry(readStackContentSources(packageRoot, 'skelly.deadvox'));
+const actorFigureFiles = readStackActorFigureFiles(packageRoot, 'skelly.deadvox', registry);
 const scale = makeScale(0.5);
 const PLAYER = playerTuning(registry);
 const type = fusedMassTypeOf(registry.actors);
@@ -126,6 +126,7 @@ for (const { name, corridor } of scenarios) {
   const createSystem = () =>
     new ActorSystem({
       activeActorRadiusMetres: siteGenerationOf(registry).activeActorRadiusMetres,
+      actorFigureFiles,
       player: () => sense,
       isSolid,
       solidBricks: terrain,

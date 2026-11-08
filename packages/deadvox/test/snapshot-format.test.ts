@@ -18,6 +18,7 @@ import { chunksFor } from '../src/core/scale.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { meleeWeaponFromContent, startPlayerMelee } from '../src/game/melee.ts';
 import { contentLookup as registryContentLookup } from '../src/ui/saveController.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { bodyWithFixtureKind } from './fixtures/damageKinds.ts';
 import { PLAYER } from './playerFixture.ts';
@@ -481,7 +482,9 @@ describe('canonical save format', () => {
     );
     const actor = source.zombies.store.get(id)!;
     source.zombies.setFrozen(true);
-    const posed = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, scale.blockSize));
+    const posed = posedHumanoidRegionBoxes(
+      actorPoseInputFor(actor, id, { blockSize: scale.blockSize, actorFigureFiles: stackActorFigureFiles(registry) }),
+    );
     const { center } = posed.head.find((box) => box.bone === 'head')!;
     const origin: import('../src/core/coords.ts').Vec3 = [
       source.player.body.pos[0],

@@ -4,6 +4,7 @@ import { crawlGaitPose } from '@mobgen/mob/crawl.ts';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { generatedActorFigure } from '../src/core/actorFigure.ts';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
 import { actorCrawls, actorPoseInputFor, HIT_FLINCH_DURATION, posedActor } from '../src/core/actorPose.ts';
 import {
@@ -41,6 +42,7 @@ import { gameTimeOfDay, simRate, simSeconds } from '../src/core/time.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
 import { type RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { SnapshotSite } from './fixtures/snapshotSite.ts';
@@ -61,6 +63,7 @@ const SHAMBLER_MOVE_DAMAGES = SHAMBLER.attack!.moves.map(({ damage }) => damage)
 const RUNNER = registry.actors.get('runner')!;
 const CRAWLER = registry.actors.get('crawler')!;
 const ACID = registry.actors.get('acid_zombie')!;
+const FIGURES = stackActorFigureFiles(registry);
 const speedRates = (wander: number, chase: number) => ({
   ...SHAMBLER.speed,
   wanderMetresPerSimSecond: simRate(wander),
@@ -68,6 +71,7 @@ const speedRates = (wander: number, chase: number) => ({
 });
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
+const POSE_SCENE = { blockSize: BLOCK_SIZE, actorFigureFiles: FIGURES };
 const PHYSICS = physicsFor(SCALE);
 const SENSE_TUNING = TEST_SENSE_TUNING;
 const FLOOR: SolidAt = (_x, y) => y === 0;
@@ -104,6 +108,7 @@ const senses = (
   blockSize: BLOCK_SIZE,
   physics: PHYSICS,
   tuning: SENSE_TUNING,
+  actorFigureFiles: FIGURES,
   hurtPlayer,
 });
 const sensesWithLocalSun = (
@@ -147,7 +152,7 @@ const spawnSite = (spawn: ActorSpawn): Site => ({
 });
 const nearestRegionDistance = (actor: import('../src/core/actorState.ts').Actor, origin: Vec3, direction: Vec3) => {
   let nearest = Number.POSITIVE_INFINITY;
-  const posed = posedHumanoidRegionBoxes(actorPoseInputFor(actor, 1, BLOCK_SIZE));
+  const posed = posedHumanoidRegionBoxes(actorPoseInputFor(actor, 1, POSE_SCENE));
   for (const region of HUMANOID_REGION_NAMES) {
     if (actor.regions[region]! <= 0) {
       continue;
@@ -196,7 +201,7 @@ const TARGET_BONES: Readonly<Record<string, Readonly<Record<HumanoidHitRegion, s
   acid: { head: 'skull', torso: 'belly', leftArm: 'fore.L', rightArm: 'fore.R', leftLeg: 'shin.L', rightLeg: 'shin.R' },
 };
 const posedBox = (actor: Actor, region: HumanoidHitRegion, bone: string, id: number) => {
-  const target = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE))[region].find(
+  const target = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, POSE_SCENE))[region].find(
     (box) => box.bone === bone,
   );
   if (!target) {
@@ -1681,6 +1686,7 @@ describe('shambler scenarios', () => {
     actor.figureSeed = 1;
     const origin: Vec3 = [0, 1 + PLAYER.eye / BLOCK_SIZE, 0];
     const head = posedHumanoidRegionBoxes({
+      figure: actorFigure(FIGURES, actor.type, actor.figureSeed),
       seed: actor.figureSeed,
       position: actor.body.pos,
       facing: actor.facing,
@@ -1853,7 +1859,7 @@ describe('shambler scenarios', () => {
     const type = { ...ACID, regions: { ...ACID.regions, torso: FISTS_MELEE.damage } };
     const id = system.add(type, [1, 1, 0], [0, 0, -1]);
     const actor = system.store.get(id)!;
-    const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE));
+    const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, POSE_SCENE));
     const { origin, direction } = outwardRay(actor, 'torso', 'sac.0', id);
     const [first] = HUMANOID_REGION_NAMES.flatMap((region) => {
       const hit = posedRegionHit(boxes[region], origin, direction, BLOCK_SIZE);
@@ -1969,7 +1975,7 @@ describe('shambler scenarios', () => {
       false,
     );
     expect(actorCrawls(actor)).toBe(false);
-    expect(actorPoseInputFor(actor, id, BLOCK_SIZE).crawling).toBe(false);
+    expect(actorPoseInputFor(actor, id, POSE_SCENE).crawling).toBe(false);
     expect(actor.horizontalSpeed).toBeGreaterThan(type.speed.crawlMetresPerSimSecond);
     expect(actor.horizontalSpeed).toBeLessThanOrEqual(type.speed.chaseMetresPerSimSecond);
   });
@@ -2079,7 +2085,7 @@ describe('shambler scenarios', () => {
       expect(actor.horizontalSpeed).toBeGreaterThan(0);
       expect(actor.horizontalSpeed).toBeLessThanOrEqual(type.speed.crawlMetresPerSimSecond);
       expect(actor.body.pos).not.toEqual(before);
-      const input = actorPoseInputFor(actor, id, BLOCK_SIZE);
+      const input = actorPoseInputFor(actor, id, POSE_SCENE);
       const posed = posedActor(input);
       const crawl = crawlGaitPose(posed.figure.realized, input.gaitPhase, input.speed);
       expect(posed.pose.rotations.pelvis).toEqual(crawl.rotations.pelvis);
@@ -2092,7 +2098,7 @@ describe('shambler scenarios', () => {
       const restored = new ActorSystem(senses(() => player([100, 2, 0])));
       restored.restoreState(system.snapshotState(), (typeId) => registry.actors.get(typeId));
       const loaded = restored.store.get(id)!;
-      expect(posedActor(actorPoseInputFor(loaded, id, BLOCK_SIZE)).pose).toEqual(posed.pose);
+      expect(posedActor(actorPoseInputFor(loaded, id, POSE_SCENE)).pose).toEqual(posed.pose);
       expect(loaded.regions).toEqual(actor.regions);
       expect(loaded.severed).toEqual(actor.severed);
     },
@@ -3927,6 +3933,7 @@ describe('dismemberment', () => {
       const actor = system.store.get(id)!;
       renderer = new MobActorMeshes(BLOCK_SIZE, 2, {
         actors: new Map([[type.id, { ...type, figureSeeds: [actor.figureSeed] }]]),
+        actorFigureFiles: FIGURES,
       });
       renderer.setWorld((_x, y, _z) => y === -1, BLOCK_SIZE);
       renderer.sync(system.store, 0, 1);

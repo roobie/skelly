@@ -899,6 +899,7 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
 
   const renderer = new MobActorMeshes(scale.blockSize, 2, {
     actors: new Map([[actor.type.id, { ...actor.type, figureSeeds: [actor.figureSeed] }]]),
+    actorFigureFiles: stackActorFigureFiles(registry),
   });
   try {
     const camera = new PerspectiveCamera(55, 1, 0.01, 50);

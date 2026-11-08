@@ -177,12 +177,14 @@ describe('passable but opaque vegetation', () => {
       eyeHeightMetres: 1.3,
     };
     const hits: number[] = [];
+    const figures = stackActorFigureFiles(registry);
     const system = new ActorSystem({
       isSolid: (x, y, z) => y === 0 || movement(x, y, z),
       isOpaque: opaque,
       blockSize: 0.5,
       physics: physicsFor(scale),
       tuning: senseTuning,
+      actorFigureFiles: figures,
       player: () => player,
       dayPhase: () => dayStateAtHour(12),
       hurtPlayer: () => undefined,
@@ -194,9 +196,9 @@ describe('passable but opaque vegetation', () => {
     const actor = system.store.get(id)!;
     expect(actor.agent!.mode).not.toBe('chase');
     system.setFrozen(true);
-    const { center } = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, 0.5)).head.find(
-      (box) => box.bone === 'head',
-    )!;
+    const { center } = posedHumanoidRegionBoxes(
+      actorPoseInputFor(actor, id, { blockSize: 0.5, actorFigureFiles: figures }),
+    ).head.find((box) => box.bone === 'head')!;
     const origin: [number, number, number] = [center[0], center[1], 0.5];
     const direction: [number, number, number] = [0, 0, 1];
     const weapon = {

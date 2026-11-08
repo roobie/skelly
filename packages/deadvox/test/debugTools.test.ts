@@ -13,6 +13,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { applyStartKit } from '../src/core/startState.ts';
 import { copyTextOrSelect, formatMeleeResult } from '../src/debug/index.ts';
 import { stepNoclip } from '../src/debug/noclip.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { fitFixtureOptic, grenadeStart, shortFirearmStart } from './fixtures/debugStarts.ts';
@@ -148,6 +149,7 @@ describe('debug starting equipment', () => {
     const weapon = { ...weaponDef, cooldown: weaponDef.cooldownSimSeconds };
     expect(weapon).toMatchObject({ damage: 15, reach: 0.8, impulse: 10 });
     let launchImpulse: number | undefined;
+    const figures = stackActorFigureFiles(registry);
     const system = new ActorSystem({
       player: () => ({
         pos: [0, playerEye[1] - PLAYER.eye / SCALE.blockSize, 0],
@@ -163,6 +165,7 @@ describe('debug starting equipment', () => {
       blockSize: SCALE.blockSize,
       physics: physicsFor(SCALE),
       tuning: TEST_SENSE_TUNING,
+      actorFigureFiles: figures,
       hurtPlayer: () => undefined,
       onSever: (_id, _actor, _part, hit) => {
         launchImpulse = hit.impulse;
@@ -176,7 +179,9 @@ describe('debug starting equipment', () => {
     const actor = system.store.get(id)!;
     actor.figureSeed = 1;
     actor.regions.head = weapon.damage;
-    const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, SCALE.blockSize)).head;
+    const boxes = posedHumanoidRegionBoxes(
+      actorPoseInputFor(actor, id, { blockSize: SCALE.blockSize, actorFigureFiles: figures }),
+    ).head;
     const target = boxes
       .map((box) => box.voxelCentroid)
       .find((candidate) => {

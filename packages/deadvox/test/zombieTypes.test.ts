@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
 import { posedActor } from '../src/core/actorPose.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
 const readJson = <T>(path: string): T => JSON.parse(readFileSync(path, 'utf8')) as T;
 const { actors } = readJson<{
@@ -17,8 +20,11 @@ const { actors } = readJson<{
 const soundDefs = readJson<{ sounds: { id: string }[] }>('mods/skelly.deadvox.actors/actors-sounds.json').sounds;
 const soundById = new Map(soundDefs.map((sound) => [sound.id, sound]));
 
-const figureForModel = (model: string, bodyScale?: number) =>
+const FIGURES = stackActorFigureFiles(baseRegistry());
+
+const figureForModel = (type: { readonly id: string }, model: string, bodyScale?: number) =>
   posedActor({
+    figure: actorFigure(FIGURES, type, 1),
     seed: 1,
     model,
     ...(bodyScale === undefined ? {} : { bodyScale }),
@@ -38,7 +44,7 @@ describe('zombie type content', () => {
   it('poses every zombie with the model selected by its type data', () => {
     expect(actors.length).toBeGreaterThan(0);
     for (const actor of actors) {
-      expect(figureForModel(figureVariantOf(actor), actor.bodyScale).genome.template).toBe(
+      expect(figureForModel(actor, figureVariantOf(actor), actor.bodyScale).genome.template).toBe(
         bodyPlanModel(figureVariantOf(actor)),
       );
     }

@@ -7,6 +7,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
@@ -55,6 +56,7 @@ const harness = (playerPos: () => PlayerSense, solid: SolidAt = FLOOR): Harness 
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: stackActorFigureFiles(registry),
     hurtPlayer: () => undefined,
     onSound: (id) => {
       sounds.push(id);

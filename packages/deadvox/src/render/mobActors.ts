@@ -79,8 +79,15 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { type ActorFigureType, fusedMassTypeOf, generatedActorFigure } from '../core/actorFigure.ts';
+import type { ActorFigureFiles } from '../core/actorFigureFiles.ts';
 import { type ActorModel, bodyPlanModel, FIGURE_VARIANTS, figureVariantOf } from '../core/actorModels.ts';
-import { acidSpitWindupProgress, actorCrawls, actorPoseInputFor, posedActor } from '../core/actorPose.ts';
+import {
+  type ActorPoseScene,
+  acidSpitWindupProgress,
+  actorCrawls,
+  actorPoseInputFor,
+  posedActor,
+} from '../core/actorPose.ts';
 import { type Actor, actorAttackReachMetres } from '../core/actorState.ts';
 import { BACKGROUND_ACTOR_RATE, type HitImpulse } from '../core/actorSystem.ts';
 import {
@@ -436,6 +443,8 @@ export interface MobActorMeshesOptions {
   readonly reveal?: ColumnReveal;
   /** The zombie types to draw: a variant per model they select and figure seed they author. */
   readonly actors: ReadonlyMap<string, DrawnActorType>;
+  /** The session's built actor figures, which live actors are posed over. */
+  readonly actorFigureFiles: ActorFigureFiles;
   /** Builds only the first this-many figure seeds of each model. */
   readonly poolSize?: number;
   /** A chunk of carved flesh came to rest at this centre (metres), for gore to mark. */
@@ -586,6 +595,7 @@ const buildActorVariants = (
 export class MobActorMeshes implements ActorRenderer {
   readonly group = new Group();
   private readonly blockSize: number;
+  private readonly poseScene: ActorPoseScene;
   private readonly reveal: ColumnReveal | undefined;
   private readonly capacity: number;
   private readonly variants: readonly Variant[];
@@ -639,6 +649,7 @@ export class MobActorMeshes implements ActorRenderer {
     this.options = options;
     const capacity = requestedCapacity ?? DEFAULT_CAPACITY;
     this.blockSize = blockSize;
+    this.poseScene = { blockSize, actorFigureFiles: options.actorFigureFiles };
     this.reveal = options.reveal;
     this.capacity = capacity;
     const fusedMassType = fusedMassTypeOf(options.actors);
@@ -2002,7 +2013,7 @@ export class MobActorMeshes implements ActorRenderer {
     const { position, worldPos, yaw, headYaw } = placement;
     const variant = this.variants[state.variantIndex]!;
     const posed = posedActor(
-      actorPoseInputFor(actor, state.id, this.blockSize, {
+      actorPoseInputFor(actor, state.id, this.poseScene, {
         position,
         facing: [-Math.sin(yaw), 0, -Math.cos(yaw)],
         headYaw,

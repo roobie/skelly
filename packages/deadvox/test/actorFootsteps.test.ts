@@ -12,6 +12,7 @@ import {
 } from '../src/core/footsteps.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry, FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
@@ -46,6 +47,10 @@ const makeWorld = (player: PlayerSense, isSolid = FLOOR) => {
     blockSize: BLOCK_SIZE,
     physics: PHYSICS,
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: withFixtureFigures(
+      stackActorFigureFiles(registry),
+      Object.fromEntries(['fixture_walker', 'fixture_soldier', 'fixture_crawler'].map((id) => [id, SHAMBLER.id])),
+    ),
     player: () => player,
     dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,

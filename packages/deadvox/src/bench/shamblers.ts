@@ -1,6 +1,7 @@
 // The shambler mode of the shared ?bench= harness. It loads the forest, runs the
 // real fixed-step ActorSystem and player physics, and records frame/tick/render costs.
 
+import type { ActorFigureFiles } from '../core/actorFigureFiles.ts';
 import {
   ActorSystem,
   BACKGROUND_ACTOR_RATE,
@@ -83,7 +84,11 @@ const nextUrl = (run: ShamblerBenchRun): string => {
 
 const playerFacing = (yaw: number): [number, number, number] => [-Math.sin(yaw), 0, -Math.cos(yaw)];
 
-export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun): void => {
+export const startShamblerBench = (
+  engine: RenderedEngine,
+  run: ShamblerBenchRun,
+  actorFigureFiles: ActorFigureFiles,
+): void => {
   const { camera, scene, streamer, config } = engine;
   const Player = playerTuning(engine.registry);
   const hud = document.getElementById('hud')!;
@@ -150,6 +155,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
     simulation.godMode = true;
     actors = new ActorSystem({
       activeActorRadiusMetres: siteGenerationOf(engine.registry).activeActorRadiusMetres,
+      actorFigureFiles,
       seed: run.seed,
       isSolid: engine.isSolid,
       isOpaque: engine.isOpaque,
@@ -195,6 +201,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       run.actors === 'detailed'
         ? new MobActorMeshes(s, count, {
             actors: engine.registry.actors,
+            actorFigureFiles,
             look: lookDefaultsOf(engine.registry).mobActors,
             maxCorpses: graphics.mobActors.maxCorpses,
             handlingReachMetres: reachTuning(engine.registry).reachMetres,

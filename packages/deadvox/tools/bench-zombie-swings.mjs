@@ -14,8 +14,10 @@ try {
   const { ActorSystem } = await server.ssrLoadModule('/src/core/actorSystem.ts');
   const { playerTuning, physicsFor } = await server.ssrLoadModule('/src/game/player.ts');
   const { makeScale } = await server.ssrLoadModule('/src/core/scale.ts');
-  const { readStackContentSources } = await server.ssrLoadModule('/tools/readBundledPacks.ts');
+  const { readStackActorFigureFiles, readStackContentSources } =
+    await server.ssrLoadModule('/tools/readBundledPacks.ts');
   const { registry } = buildRegistry(readStackContentSources(projectRoot, 'skelly.deadvox'));
+  const actorFigureFiles = readStackActorFigureFiles(projectRoot, 'skelly.deadvox', registry);
   const PLAYER = playerTuning(registry);
   const type = { ...registry.actors.get('shambler'), dismember: { chance: 0, headOnKillChance: 0 } };
   const player = {
@@ -28,6 +30,7 @@ try {
     eyeHeightMetres: PLAYER.eye,
   };
   const zombies = new ActorSystem({
+    actorFigureFiles,
     seed: 41,
     isSolid: () => false,
     blockSize: 0.5,

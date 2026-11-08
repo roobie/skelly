@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import {
   actorPoseInputFor,
   advanceStanceWeight,
@@ -12,6 +13,7 @@ import { IDENTITY_M } from '../src/core/boneMath.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { clampJointAngles, jointAngles } from '../src/core/joints.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -22,8 +24,10 @@ import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SHAMBLER = registry.actors.get('shambler')!;
+const FIGURES = stackActorFigureFiles(registry);
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
+const POSE_SCENE = { blockSize: BLOCK_SIZE, actorFigureFiles: FIGURES };
 const FLOOR = (_x: number, y: number) => y === 0;
 
 const livePoseActor = (type = SHAMBLER) => {
@@ -47,6 +51,7 @@ const livePoseActor = (type = SHAMBLER) => {
     hurtPlayer: (amount) => {
       damage += amount;
     },
+    actorFigureFiles: FIGURES,
   });
   const id = system.add(type, [2, 1, 3], [0, 0, -1]);
   const actor = system.store.get(id)!;
@@ -72,6 +77,7 @@ const startTurnedAttack = () => {
 const rendererFor = (actor: Actor) =>
   new MobActorMeshes(BLOCK_SIZE, 4, {
     actors: new Map([[actor.type.id, { ...actor.type, figureSeeds: [actor.figureSeed] }]]),
+    actorFigureFiles: FIGURES,
   });
 
 const offsetForBox = ({
@@ -121,7 +127,7 @@ const offsetForBox = ({
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: independently aggregates position and orientation maxima.
 const maxOffset = (renderer: MobActorMeshes, id: number, actor: Actor) => {
-  const input = actorPoseInputFor(actor, id, BLOCK_SIZE);
+  const input = actorPoseInputFor(actor, id, POSE_SCENE);
   const { figure } = posedActor(input);
   const hit = posedHumanoidRegionBoxes(input);
   let worst = {
@@ -189,7 +195,7 @@ describe('rendered and hit shambler poses', () => {
       system.tick(1 / 60);
     }
     expect(actor.agent!.mode).toBe('chase');
-    const head = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE)).head.find(
+    const head = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, POSE_SCENE)).head.find(
       (box) => box.bone === 'head',
     )!.center;
     expect(system.swing([head[0], head[1] + 1, head[2] - 1.5], [0, -1, 1.5], { ...FISTS_MELEE, damage: 1 })).toBe(id);
@@ -198,7 +204,7 @@ describe('rendered and hit shambler poses', () => {
     expect(actor.gaitPhase).toBeGreaterThan(0);
     expect(actor.hitFlinchTime).toBeGreaterThan(0);
     system.setFrozen(true);
-    const input = actorPoseInputFor(actor, id, BLOCK_SIZE);
+    const input = actorPoseInputFor(actor, id, POSE_SCENE);
     const { hitFlinchTime: _flinch, ...baseInput } = input;
     const flinched = posedActor(input);
     const basePose = posedActor(baseInput);
@@ -236,9 +242,10 @@ describe('rendered and hit shambler poses', () => {
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
       hurtPlayer: () => undefined,
+      actorFigureFiles: FIGURES,
     });
     const id = system.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
-    const input = actorPoseInputFor(system.store.get(id)!, id, BLOCK_SIZE);
+    const input = actorPoseInputFor(system.store.get(id)!, id, POSE_SCENE);
     expect(targetStanceWeight({ ...input, chasing: true })).toBe(1);
     expect(targetStanceWeight({ ...input, chasing: false, attackWindup: 0.2 })).toBe(1);
     expect(targetStanceWeight({ ...input, chasing: false, attackWait: 0.8 })).toBe(1);
@@ -272,10 +279,11 @@ describe('rendered and hit shambler poses', () => {
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
       hurtPlayer: () => undefined,
+      actorFigureFiles: FIGURES,
     });
     const id = system.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
     const actor = system.store.get(id)!;
-    const input = actorPoseInputFor(actor, id, BLOCK_SIZE);
+    const input = actorPoseInputFor(actor, id, POSE_SCENE);
     const { stanceWeight: _savedStanceWeight, ...legacyInput } = input;
     const untrackedChase = posedActor({ ...legacyInput, chasing: true });
     const trackedChase = posedActor({ ...input, chasing: true, stanceWeight: 1 });
@@ -302,6 +310,7 @@ describe('rendered and hit shambler poses', () => {
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
       hurtPlayer: () => undefined,
+      actorFigureFiles: FIGURES,
     });
     const freshId = freshSystem.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
     const freshActor = freshSystem.store.get(freshId)!;
@@ -321,7 +330,7 @@ describe('rendered and hit shambler poses', () => {
     const renderer = rendererFor(actor);
     try {
       renderer.sync(system.store, 0, 1, true);
-      const headBox = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE)).head.find(
+      const headBox = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, POSE_SCENE)).head.find(
         (box) => box.bone === 'head',
       )!;
       const local = humanoidRegionBoxes(actor.figureSeed).head.find((box) => box.bone === 'head')!.center;
@@ -363,6 +372,7 @@ describe('shared acid pose', () => {
     for (const headYaw of [reachable, -reachable]) {
       const posed = posedActor({
         seed: 1,
+        figure: actorFigure(FIGURES, acid, 1),
         model: 'acid',
         position: [0, 0, 0],
         facing: [0, 0, -1],

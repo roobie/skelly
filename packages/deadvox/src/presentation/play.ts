@@ -683,7 +683,10 @@ const focusNoticeOnce = (lines: ActionText, unknownFocus: string | undefined) =>
 };
 
 /** The figure files the stack's rows name, fetched before the session exists so no tick ever waits on a fetch. */
-const fetchActorFigureFiles = (registry: Engine['registry'], figures: PackAssetFiles): Promise<ActorFigureFiles> =>
+export const fetchActorFigureFiles = (
+  registry: Engine['registry'],
+  figures: PackAssetFiles,
+): Promise<ActorFigureFiles> =>
   loadActorFigureFiles(registry, async (contentFile, path) => {
     const url = bundledAssetUrl(figures, contentFile, path);
     if (url === undefined) {
@@ -1163,6 +1166,7 @@ const startPlayWith = (
     },
     {
       models: options.assets.models,
+      actorFigureFiles,
       poweredLights: () => session.power?.lights() ?? [],
       physicalSolid: session.physicalSolid,
     },

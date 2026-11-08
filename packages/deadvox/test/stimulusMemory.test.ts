@@ -4,6 +4,7 @@ import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { physicsFor } from './playerFixture.ts';
@@ -33,6 +34,7 @@ const senses = (playerFn: () => PlayerSense, isSolid: SolidAt = FLOOR, hour = 12
   physics: PHYSICS,
   tuning: TEST_SENSE_TUNING,
   hurtPlayer: () => undefined,
+  actorFigureFiles: stackActorFigureFiles(registry),
 });
 const noiseAtPlayer = (id: number, expiresAt: number): VocalNoise => ({
   id,

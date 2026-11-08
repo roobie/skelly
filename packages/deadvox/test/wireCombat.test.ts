@@ -13,6 +13,7 @@ import type { ActorDef } from '../src/core/schema.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -46,6 +47,7 @@ const fixture = (reachMetres = 2.1, moves?: NonNullable<ActorDef['attack']>['mov
   }
   wire(fence);
   const hits: number[] = [];
+  const figures = stackActorFigureFiles(registry);
   const system = new ActorSystem({
     isSolid: solid,
     isOpaque: opaque,
@@ -64,6 +66,7 @@ const fixture = (reachMetres = 2.1, moves?: NonNullable<ActorDef['attack']>['mov
     physics: physicsFor(makeScale(0.5)),
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: (damage) => hits.push(damage),
+    actorFigureFiles: figures,
   });
   const type = {
     ...registry.actors.get('shambler')!,
@@ -78,7 +81,8 @@ const fixture = (reachMetres = 2.1, moves?: NonNullable<ActorDef['attack']>['mov
   };
   const id = system.add(type, [3.5, 1, 0.5], [-1, 0, 0]);
   const actor = system.store.get(id)!;
-  const head = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, 0.5)).head[0]!.voxelCentroid;
+  const head = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, { blockSize: 0.5, actorFigureFiles: figures }))
+    .head[0]!.voxelCentroid;
   const origin: Vec3 = [0.5, head[1], 0.5];
   const delta = head.map((coordinate, axis) => coordinate - origin[axis]!) as Vec3;
   const direction = delta.map((coordinate) => coordinate / Math.hypot(...delta)) as Vec3;
@@ -199,6 +203,7 @@ it('admits the fused-mass tentacle thrust only when its reach clears the wire th
       physics: physicsFor(makeScale(0.5)),
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: (damage) => hits.push(damage),
+      actorFigureFiles: stackActorFigureFiles(registry),
     });
     const type = registry.actors.get('amalgam')!;
     const id = system.add(type, [0, 1, 0], [0, 0, 1]);

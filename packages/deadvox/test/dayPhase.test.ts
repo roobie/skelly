@@ -8,6 +8,7 @@ import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { SunExposureCache } from '../src/core/lights.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { skyAt, sunDirection } from '../src/core/sky.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { physicsFor } from './playerFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
@@ -47,6 +48,7 @@ const hordeModeAt = (time: number): HordeState['mode'] => {
     blockSize: scale.blockSize,
     physics: physicsFor(scale),
     tuning: registry.senses.get('player')!,
+    actorFigureFiles: stackActorFigureFiles(registry),
     dayPhase: () => state,
     hurtPlayer: () => undefined,
   });

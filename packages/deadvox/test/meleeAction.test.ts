@@ -23,6 +23,7 @@ import {
   startPlayerMelee,
 } from '../src/game/melee.ts';
 import { primaryMeleeAction } from '../src/game/primaryAction.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -32,6 +33,7 @@ import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
+const FIGURES = stackActorFigureFiles(registry);
 const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
@@ -102,6 +104,7 @@ const makeSystem = (
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: FIGURES,
     dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,
     onMeleeResult: (result) => results.push(result.id === undefined ? 'miss' : 'hit'),
@@ -124,7 +127,9 @@ const regionRay = (
   id: number,
   region: 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg',
 ): { origin: Vec3; direction: Vec3 } => {
-  const posed = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE));
+  const posed = posedHumanoidRegionBoxes(
+    actorPoseInputFor(actor, id, { blockSize: BLOCK_SIZE, actorFigureFiles: FIGURES }),
+  );
   const box = region === 'head' ? posed.head.find((candidate) => candidate.bone === 'head')! : posed[region][0]!;
   const { center } = box;
   const front = [-actor.facing[0], 0, -actor.facing[2]] as Vec3;

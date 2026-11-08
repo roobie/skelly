@@ -1617,6 +1617,7 @@ export const createSession = (options: SessionOptions) => {
   };
   const actorSystem = new ActorSystem({
     activeActorRadiusMetres: siteGenerationOf(registry).activeActorRadiusMetres,
+    actorFigureFiles,
     store: actorStore,
     restrained: (id) => traps.holds(id),
     seed: sim.seed,

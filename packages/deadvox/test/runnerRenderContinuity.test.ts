@@ -6,6 +6,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
@@ -14,6 +15,7 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
+const FIGURES = stackActorFigureFiles(registry);
 const RUNNER = registry.actors.get('runner')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
@@ -21,7 +23,7 @@ const FLOOR = (_x: number, y: number): boolean => y === 0;
 let renderer!: MobActorMeshes;
 
 beforeAll(() => {
-  renderer = new MobActorMeshes(BLOCK_SIZE, 4, { actors: registry.actors });
+  renderer = new MobActorMeshes(BLOCK_SIZE, 4, { actors: registry.actors, actorFigureFiles: FIGURES });
 });
 
 afterAll(() => renderer.dispose());
@@ -72,6 +74,7 @@ const runEngagement = (seed: number): EngagementResult => {
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: FIGURES,
     hurtPlayer: () => {
       hits += 1;
     },
@@ -202,6 +205,7 @@ const runTierHandoff = (): TierResult => {
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: FIGURES,
     hurtPlayer: () => undefined,
     seed: 73,
     isLoaded: () => true,

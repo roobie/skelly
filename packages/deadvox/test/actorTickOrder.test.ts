@@ -6,6 +6,7 @@ import { CONTACT_SKIN } from '../src/core/physics.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { simSeconds } from '../src/core/time.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
@@ -44,6 +45,7 @@ it('draws first-contact reactions before the stuck stroller draws its next idle 
     blockSize: scale.blockSize,
     physics: physicsFor(scale),
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: stackActorFigureFiles(registry),
     activeActorRadiusMetres: 1000,
     hurtPlayer: () => undefined,
   });

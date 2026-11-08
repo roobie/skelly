@@ -10,6 +10,7 @@ import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle
 import { LOOK_AT_PROFILES } from '@mobgen/mob/lookAtProfiles.ts';
 import { flinchClipFor, flinchPoseWithClip, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import type { ActorFigure } from './actorFigure.ts';
+import { type ActorFigureFile, type ActorFigureFiles, actorFigure } from './actorFigureFiles.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import type { Actor } from './actorState.ts';
 import { applyPoint, IDENTITY_M, type Mat3, mulMM, mulMV, rotX, rotY, rotZ } from './boneMath.ts';
@@ -21,6 +22,8 @@ import { clampJointAngles, jointAngles, jointRotation } from './joints.ts';
 import { blendPose, boneTransforms, type Pose } from './pose.ts';
 
 export interface ActorPoseInput {
+  /** The built body and clips the pose composes over. */
+  readonly figure: ActorFigureFile;
   readonly id?: number;
   readonly seed: number;
   readonly model?: string;
@@ -79,14 +82,21 @@ export const actorCrawls = (actor: Actor): boolean => {
   return [...severableParts.leftLeg, ...severableParts.rightLeg].some((part) => actor.severed.includes(part));
 };
 
+/** What every actor of one world poses against: its block scale and the built figures it loaded. */
+export interface ActorPoseScene {
+  readonly blockSize: number;
+  readonly actorFigureFiles: ActorFigureFiles;
+}
+
 export const actorPoseInputFor = (
   actor: Actor,
   id: number,
-  blockSize: number,
+  { blockSize, actorFigureFiles }: ActorPoseScene,
   root?: PoseRootOverride,
 ): ActorPoseInput => {
   const position = root?.position ?? actor.body.pos;
   return {
+    figure: actorFigure(actorFigureFiles, actor.type, actor.figureSeed),
     id,
     seed: actor.figureSeed,
     model: figureVariantOf(actor.type),

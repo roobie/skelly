@@ -3,7 +3,9 @@ import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { parse } from 'valibot';
+import { type ActorFigureFiles, readActorFigureFiles } from '../src/core/actorFigureFiles.ts';
 import { canonicalJson } from '../src/core/canonicalJson.ts';
+import type { Registry } from '../src/core/content.ts';
 import { admitPacks, type PackInput, PackManifestSchema, packContentHash } from '../src/core/packAdmission.ts';
 import { logicalKey, type PackFileEntry, type PackLocation, resolvePhysical } from '../src/core/packFiles.ts';
 import { EXTERNAL_ASSET_ROOT } from '../src/product/externalRoot.ts';
@@ -206,6 +208,21 @@ export const readStackContentSources = (packageRoot: string, stack: string) =>
   readStackContentFiles(packageRoot, stack)
     .map(({ file, data }) => ({ source: file, data }))
     .sort((left, right) => left.source.localeCompare(right.source));
+
+/**
+ * The figure files of a registry built from a stack's content. Content files may be named as admission names them,
+ * under a pack root, or relative to their pack, as `readStackContentSources` names them; a pack-relative name
+ * resolves to the one pack that declares it.
+ */
+export const readStackActorFigureFiles = (packageRoot: string, stack: string, registry: Registry): ActorFigureFiles => {
+  const packs = readBundledPacks(packageRoot, stack);
+  const admittedRead = declaredFileReader(packageRoot, admitPacks(packs).packs, packs);
+  const read = (contentFile: string, path: string): Buffer<ArrayBuffer> => {
+    const declaring = packs.filter(({ manifest }) => manifest.files.some((file) => file.path === contentFile));
+    return declaring.length === 1 ? packFileBytes(packageRoot, declaring[0]!, path) : admittedRead(contentFile, path);
+  };
+  return readActorFigureFiles(registry, (contentFile, path) => JSON.parse(read(contentFile, path).toString('utf8')));
+};
 
 const CONTENT_PACKS_DEFINE = '__SKELLY_CONTENT_PACKS__';
 const OPT_IN_PACKS_DEFINE = '__SKELLY_OPT_IN_PACKS__';

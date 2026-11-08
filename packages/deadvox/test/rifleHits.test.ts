@@ -133,9 +133,11 @@ describe('rifle hits', () => {
     const strike = (session: ReturnType<typeof runtime>, ammo: AmmoData, x: number, target: HumanoidHitRegion) => {
       const id = session.actors.add(shambler, [x, 0, -8]);
       const actor = session.actorStore.get(id)!;
-      const [box] = [...posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK))[target]].sort(
-        (a, b) => b.voxelCount - a.voxelCount,
-      );
+      const [box] = [
+        ...posedHumanoidRegionBoxes(
+          actorPoseInputFor(actor, id, { blockSize: BLOCK, actorFigureFiles: stackActorFigureFiles(registry) }),
+        )[target],
+      ].sort((a, b) => b.voxelCount - a.voxelCount);
       const aim = box!.voxelCentroid;
       const front: Vec3 = [-actor.facing[0], 0, -actor.facing[2]];
       const origin: Vec3 = [aim[0] + (front[0] * 0.75) / BLOCK, aim[1] + 1, aim[2] + (front[2] * 0.75) / BLOCK];

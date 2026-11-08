@@ -1,5 +1,6 @@
 import { type AcidGlobState, advanceAcidGlob } from './acidGlob.ts';
 import { type AcidPuddleState, feetInAcidPuddle } from './acidPuddle.ts';
+import type { ActorFigureFiles } from './actorFigureFiles.ts';
 import { figureVariantOf } from './actorModels.ts';
 import {
   angleOf,
@@ -19,6 +20,7 @@ import {
   wrapAngle,
 } from './actorMotion.ts';
 import {
+  type ActorPoseScene,
   actorCrawls,
   actorHitFlinchDuration,
   actorPoseInputFor,
@@ -299,6 +301,8 @@ export interface ActorSystemState {
 
 export interface ActorSystemOptions {
   activeActorRadiusMetres: number;
+  /** The built bodies and clips every actor poses over, keyed by figure row id. */
+  actorFigureFiles: ActorFigureFiles;
   store?: EntityStore<Actor>;
   terrainFloor?: TerrainFloorAt | undefined;
   seed?: number;
@@ -374,19 +378,19 @@ const FUSED_MASS_MEMBER_REGION = /^(member\.\d+)\./;
 const posedRegionsForActor = ({
   id,
   actor,
-  blockSize,
+  scene,
   poseCache,
 }: {
   id: EntityId;
   actor: Actor;
-  blockSize: number;
+  scene: ActorPoseScene;
   poseCache?: Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>> | undefined;
 }): Readonly<Record<string, readonly PosedBoneBox[]>> => {
   const cached = poseCache?.get(id);
   if (cached) {
     return cached;
   }
-  const poseInput = actorPoseInputFor(actor, id, blockSize);
+  const poseInput = actorPoseInputFor(actor, id, scene);
   const posed =
     actor.type.model === 'fused-mass' ? posedFusedMassRegionBoxes(poseInput) : posedHumanoidRegionBoxes(poseInput);
   poseCache?.set(id, posed);
@@ -426,8 +430,8 @@ const blastOrder = (actor: Actor): ActorHitRegion[] => {
 const OBSTACLE_LOOKAHEAD_METRES = 0.7;
 /** Where a spit leaves a zombie: its posed mouth, held at the end of the wind-up, so the line follows the
  * drawn-back head and its gaze. */
-const spitOrigin = (actor: Actor, id: EntityId, blockSize: number): Vec3 =>
-  posedMouth({ ...actorPoseInputFor(actor, id, blockSize), spitProgress: 1 });
+const spitOrigin = (actor: Actor, id: EntityId, scene: ActorPoseScene): Vec3 =>
+  posedMouth({ ...actorPoseInputFor(actor, id, scene), spitProgress: 1 });
 
 /** The chest follows the stance through the eye height, so crouching behind low cover lowers the spit's target. */
 const spitChest = (player: PlayerSense, tuning: SenseDef, blockSize: number): Vec3 => {
@@ -1449,7 +1453,7 @@ export class ActorSystem {
         return;
       }
       const chest = spitChest(player, this.options.tuning, blockSize);
-      const origin = spitOrigin(actor, scratch.id, blockSize);
+      const origin = spitOrigin(actor, scratch.id, this.options);
       if (!spitLineClear(origin, chest, isSolid)) {
         return;
       }
@@ -1497,11 +1501,11 @@ export class ActorSystem {
 
   private finishActorTick(): void {
     const scratch = this.tickScratch;
-    const { actor, blockSize, dt, id } = scratch;
+    const { actor, dt, id } = scratch;
     if (actor.agent) {
       this.agent.finishMovementDecision();
     }
-    const poseInput = actorPoseInputFor(actor, id, blockSize);
+    const poseInput = actorPoseInputFor(actor, id, this.options);
     const stanceTarget = targetStanceWeight(poseInput);
     actor.stanceWeight = advanceStanceWeight(actor.stanceWeight ?? stanceTarget, stanceTarget, dt);
   }
@@ -1882,7 +1886,7 @@ export class ActorSystem {
     nearest: RegionHit | undefined,
   ): RegionHit | undefined {
     const { blockSize } = this.options;
-    const posed = posedRegionsForActor({ id, actor, blockSize, poseCache });
+    const posed = posedRegionsForActor({ id, actor, scene: this.options, poseCache });
     const figure = actor.type.model === 'fused-mass' ? fusedMassFigureForType(actor.type, actor.figureSeed) : undefined;
     let found = nearest;
     for (const regionId of Object.keys(actor.regions)) {
