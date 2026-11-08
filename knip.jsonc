@@ -86,6 +86,10 @@
         "test/**/*.{js,mjs,ts,tsx}",
         "tools/**/*.{js,mjs,ts,tsx}"
       ],
+      // The actor schema module exports each clip schema as the per-clip contract, before any reader imports one.
+      "ignoreIssues": {
+        "src/core/schema/actors.ts": ["exports"]
+      },
       "paths": {
         "@mobgen/*": ["../mobgen/src/*"]
       }

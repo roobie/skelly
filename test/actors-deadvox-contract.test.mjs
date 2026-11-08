@@ -101,6 +101,10 @@ describe('actor fixture rejection', () => {
     });
   }
 
+  it('reports issues for a body with no bones instead of throwing', () => {
+    assert.ok(schemaIssues(ActorBodySchema, { ...rawBody, bones: [] }) > 0);
+  });
+
   it('rejects a fused-mass body whose animation carries attackPeak', () => {
     // Other fused-mass checks fail on this rig too, so the row counts the animation check's issue over a control.
     const asFusedMass = (copy) => {
@@ -156,6 +160,17 @@ describe('actor fixture rejection', () => {
       assert.ok(actorClipIssues(body, parsed).length > 0);
     });
   }
+
+  it('reports a creature attack that loops', () => {
+    const creature = { ...body, bodyPlan: 'quadruped' };
+    const creatureClips = (loop) => {
+      const attack = { ...structuredClone(readJson('fixture.finite-pose.json')), hitTime: 0.3, loop };
+      const idle = { ...structuredClone(rawClips.crawling.idle), period: 1 };
+      return parse(ActorClipsSchema, { standing: { idle, walk: structuredClone(rawClips.standing.walk), attack } });
+    };
+    assert.deepEqual(actorClipIssues(creature, creatureClips(false)), []);
+    assert.ok(actorClipIssues(creature, creatureClips(true)).length > 0);
+  });
 });
 
 describe('actor clip composition over the fixture', () => {

@@ -544,7 +544,7 @@ export const ActorBodySchema = pipe(
   }),
   check(({ bones }) => new Set(bones.map(({ id }) => id)).size === bones.length, 'bone ids must be unique'),
   check(
-    ({ bones }) => bones[0]!.parent === null && bones.filter(({ parent }) => parent === null).length === 1,
+    ({ bones }) => bones[0]?.parent === null && bones.filter(({ parent }) => parent === null).length === 1,
     'the first bone must be the only root',
   ),
   check(
@@ -651,7 +651,7 @@ export const PoseClipSchema = pipe(
 );
 
 /** Euler-degree angles composed onto a live base pose. */
-const OverlayClipSchema = pipe(
+export const OverlayClipSchema = pipe(
   strictObject({
     kind: literal('overlay'),
     duration: FinitePositive,
@@ -833,7 +833,7 @@ const HUMANOID_CRAWLING: Readonly<Record<string, Requirement>> = {
 const CREATURE_STANDING: Readonly<Record<string, Requirement>> = {
   idle: isPose((clip) => oneFrame(clip) && clip.period !== undefined),
   walk: isPose(walking),
-  attack: isPose((clip) => clip.duration !== undefined && clip.hitTime !== undefined),
+  attack: isPose((clip) => !clip.loop && clip.duration !== undefined && clip.hitTime !== undefined),
 };
 
 type RequiredSets = Readonly<Partial<Record<'standing' | 'crawling', Readonly<Record<string, Requirement>>>>>;
