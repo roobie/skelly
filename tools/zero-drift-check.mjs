@@ -149,7 +149,9 @@ const MARKDOWN_OPTIONS = {
 };
 
 function parseMarkdown(source) {
-  return fromMarkdown(source, MARKDOWN_OPTIONS);
+  const markdown = fromMarkdown(source, MARKDOWN_OPTIONS);
+  restoreMarkdownPositions(markdown, source);
+  return markdown;
 }
 
 function walkMarkdown(node, visit) {
@@ -177,6 +179,51 @@ function renderedText(node) {
     return '\n';
   }
   return (node.children ?? []).map(renderedText).join('');
+}
+
+function position(start, end) {
+  return { start: { offset: start }, end: { offset: end } };
+}
+
+function recoveredPosition(child, { nextLink, cursor, end, source }) {
+  const start = child.type === 'text' ? cursor : source.indexOf(renderedText(child), cursor);
+  let finish = start + renderedText(child).length;
+  if (child.type === 'text') {
+    finish = nextLink ? source.indexOf(renderedText(nextLink), cursor) : end;
+  }
+  return start < cursor || start > end || finish < cursor || finish > end ? undefined : position(start, finish);
+}
+
+function restoreMissingPositionRun(children, first, parent, source) {
+  const endIndex = children.findIndex((child, index) => index > first && child.position);
+  const run = children.slice(first, endIndex === -1 ? undefined : endIndex);
+  const { position: previousPosition } = children[first - 1] ?? {};
+  const end = children[endIndex]?.position?.start.offset ?? parent.position?.end.offset;
+  let cursor = previousPosition?.end.offset ?? parent.position?.start.offset;
+  if (cursor === undefined || end === undefined) {
+    return;
+  }
+  for (const [index, child] of run.entries()) {
+    const nextLink = run.slice(index + 1).find((sibling) => sibling.type === 'link');
+    const recovered = recoveredPosition(child, { nextLink, cursor, end, source });
+    if (!recovered) {
+      return;
+    }
+    child.position = recovered;
+    cursor = recovered.end.offset;
+  }
+}
+
+function restoreMarkdownPositions(node, source) {
+  const children = node.children ?? [];
+  for (const [index, child] of children.entries()) {
+    if (!child.position && (index === 0 || children[index - 1].position)) {
+      restoreMissingPositionRun(children, index, node, source);
+    }
+    if (child.position) {
+      restoreMarkdownPositions(child, source);
+    }
+  }
 }
 
 function markdownText(node, { skipBlockquotes = false, skipInlineCode = false } = {}) {
@@ -257,7 +304,7 @@ function cueTokens(nodes, source) {
 function textCueTokens(node, source) {
   const tokens = [];
   // Preserve escaped quotes within a text node: their decoded value loses the name's closing boundary.
-  const raw = node.position ? source.slice(node.position.start.offset, node.position.end.offset) : node.value;
+  const raw = source.slice(node.position.start.offset, node.position.end.offset);
   const text = ESCAPED_QUOTE.test(raw) ? raw : node.value;
   let offset = 0;
   for (const match of text.matchAll(TEXT_CUE_TOKEN)) {

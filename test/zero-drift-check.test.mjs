@@ -56,6 +56,7 @@ before(() => {
       '## Second',
       '## Escaped \\_name\\_',
       '## Doubled \\\\_name_',
+      '## Say "hi" now',
       '## `<!-- literal -->`',
       '[^unused]:',
       '    ## Footnote phantom',
@@ -224,8 +225,9 @@ describe('zero-drift path check', () => {
     assert.ok(!checks(failures).includes('path'));
   });
 
-  it('ignores bare URLs in Markdown without crashing or reporting a cue', () => {
-    assert.deepEqual(scan(document('Visit https://example.com/src/file.ts.')), []);
+  it('scans text that the GFM autolink transform leaves without source positions', () => {
+    const text = document(`${code('docs/anchors.md')}, "Say \\"hi\\" now" and —www.example.com/x.`);
+    assert.deepEqual(scan(text, { tracked: new Set(['docs/anchors.md']) }), []);
   });
 });
 
