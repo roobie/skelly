@@ -213,7 +213,7 @@ function restoreMissingPositionRun(children, first, parent, source) {
     const nextLink = run.slice(index + 1).find((sibling) => sibling.type === 'link');
     const recovered = recoveredPosition(child, { nextLink, cursor, end, source });
     if (!recovered) {
-      restoreRunPosition(run, cursor, end);
+      restoreRunPosition(run.slice(index), cursor, end);
       return;
     }
     child.position = recovered;

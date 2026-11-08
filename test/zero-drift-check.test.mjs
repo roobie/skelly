@@ -235,6 +235,15 @@ describe('zero-drift path check', () => {
     }
     assert.deepEqual(scan(document('—www.example.com/a&amp;b alone.')), []);
     assert.deepEqual(scan(document('—www.example.com/a\\_b alone.')), []);
+    assert.deepEqual(
+      scan(
+        document(
+          `${code('docs/anchors.md')}, "Say \\"hi\\" now" and —www.example.com/x then —www.example.com/a&amp;b.`,
+        ),
+        { tracked },
+      ),
+      [],
+    );
   });
 });
 
