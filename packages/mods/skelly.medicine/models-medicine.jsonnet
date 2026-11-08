@@ -2,5 +2,5 @@
   import 'presentation/item-materials.json',
   overrides={ bandage: ['cloth', 'paper'] },
 ).pack({
-  models: import 'things/index.json',
+  models: import 'packages/skelly-assets/built/skelly.medicine/things/index.json',
 })
