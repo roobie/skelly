@@ -17,5 +17,5 @@
       'circuit_board', 'glass_lens', 'broken_toaster', 'table_fan',
       'cracked_phone', 'broken_clock', 'electrical_repair_kit', 'glass_bulb',
     ]
-  ] + import 'things/index.json',
+  ] + import 'packages/skelly-assets/built/skelly.electronics/things/index.json',
 })

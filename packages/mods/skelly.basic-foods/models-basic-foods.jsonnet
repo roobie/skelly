@@ -2,5 +2,5 @@
   import 'presentation/item-materials.json',
   overrides={ apple: ['organic', 'wood', 'organic'] },
 ).pack({
-  models: import 'things/index.json',
+  models: import 'packages/skelly-assets/built/skelly.basic-foods/things/index.json',
 })

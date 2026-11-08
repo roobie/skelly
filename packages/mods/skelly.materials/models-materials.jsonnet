@@ -12,5 +12,5 @@
     { id: 'wood_offcut', file: 'assets/models/wood_offcut.glb' },
     { id: 'rubber_strip', file: 'assets/models/rubber_strip.glb' },
     { id: 'cloth_bundle', file: 'assets/models/cloth_bundle.glb' },
-  ] + import 'things/index.json',
+  ] + import 'packages/skelly-assets/built/skelly.materials/things/index.json',
 })
