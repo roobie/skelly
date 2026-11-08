@@ -115,8 +115,9 @@ Settled:
   neither construct nor the core knows its item kinds. Its home is the asset submodule's
   [tools/packages/thing-authoring-tool/README.md](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-authoring-tool/README.md).
 - The directory structure is fixed before any new feature work.
-- Packages live in the top-level `packages/` directory, or in the asset submodule's tools
-  once they move there, each a workspace of the root package. The gun tool has one
+- The suite's packages live in the asset submodule's tools (`things/README.md`,
+  "Packages"); skelly's root package takes only thing-core and its dependency construct
+  as workspaces. The gun tool has one
   implementation and one recipe authority, with no forwarding package or old-path alias.
 - At pre-pre-alpha no old format is kept alive; only deadvox validating and loading every
   export is owed.
