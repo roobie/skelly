@@ -19,7 +19,7 @@ Its home is a new workspace package, planned at `packages/mod-authoring-tool`, c
 a deliberate SkellyEngine authoring API. This keeps authoring separate from play and geometry
 tools without a later package extraction. The runtime must not import the tool; the tool must
 not reach into arbitrary game internals or import other authoring tools, gungen or the
-`packages/construct` geometry library. Existing boundaries still apply under `things/WORK.md`, "Decisions";
+construct geometry library. Existing boundaries still apply under `things/WORK.md`, "Decisions";
 the schema's transitive neutral thing-core contract is not a direct geometry-tool import.
 Thing and gun tools still own geometry and model export; this tool links their outputs.
 
@@ -113,7 +113,8 @@ start flow.
    first tool slice exercises both run modes and the single merge authority. Show only
    data an adapter can actually access; another origin's browser store is not implicitly
    readable. This slice has no editing dependency on field patches. Guard the API-only
-   import direction through `packages/construct/test/constructImportBoundary.test.ts`,
+   import direction with an import-boundary test like the asset submodule's
+   [tools/packages/construct/test/constructImportBoundary.test.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/construct/test/constructImportBoundary.test.ts),
    `packageEdges`, including subpath and forbidden reverse/private/tool imports.
 2. **Engine field-patch merge.** Design-check and build the merge, schema marking
    and per-field origins governed by ADR 0007. This is independently scheduled within

@@ -40,7 +40,8 @@ for (const side of [-1, 1]) {
   box(vest)('waist fastening', [0.07, 0.075, 0.1], straps, [side * 0.2, 0.05, 0.1]);
 }
 
-// The worn helmet is thing-tool content (`packages/thing-authoring-tool/head-gear.libsonnet`). Its inside view stays
+// The worn helmet is thing-tool content in the asset submodule
+// (https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-authoring-tool/head-gear.libsonnet). Its inside view stays
 // here: it is drawn in the camera's frame, not as a thing, and the renderer tells the pane from the rim by mesh name.
 const view = new Group();
 view.name = 'Riot helmet inside';

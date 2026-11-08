@@ -33,7 +33,8 @@ type Lattice = PlacedFitting['lattice'];
 
 /**
  * The plane of `lattice` nearest `value` along `axis`: a cargo space is a datum, so like every other it stands on
- * the drawn voxels of the floor it rests on (`packages/thing-export/README.md`, "Voxelized export").
+ * the drawn voxels of the floor it rests on (see the asset submodule's
+ * https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-export/README.md#voxelized-export).
  */
 const snap = (lattice: Lattice, value: number, axis: number): number => {
   if (!lattice) {

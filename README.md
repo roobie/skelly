@@ -7,19 +7,18 @@ read_if:
 
 # skelly
 
-skelly is a hobby monorepo built around **deadvox**, a voxel survival game that runs in the browser. Its firearms come from an authoring tool and its creatures from a generator, both in the same repository, and a shared engine sits under them. The point is to have fun.
+skelly is a hobby monorepo built around **deadvox**, a voxel survival game that runs in the browser. Its creatures come from a generator in the same repository, and its models from authoring tools in the shared asset submodule. The point is to have fun.
 
 ![skelly](assets/skelly.png)
 
-**Play:** <https://roobie.github.io/skelly/> opens a launcher for the game and the viewers of gungen and mobgen.
+**Play:** <https://roobie.github.io/skelly/> opens a launcher for the game and the mobgen viewer.
 
 ## Projects
 
 - **[deadvox](packages/deadvox/PROJECT.md)**: the game. You scavenge a large voxel world full of zombies, with detailed items, bodies and crafting. It runs entirely in the browser, with no server.
-- **[gun authoring tool](packages/gun-authoring-tool/PROJECT.md)**: a designer for low-poly firearms whose parts fit together and whose moving parts have room to move. It exports the guns deadvox loads.
 - **[mobgen](packages/mobgen/PROJECT.md)**: a procedural generator of voxel creatures, from humanoids to crawlers and dogs, with bodies that can be severed.
-- **[construct](packages/construct/README.md)**: the shared assembly, geometry and fit code that gungen builds on.
-- **[things](things/README.md)**: the authoring tools and shared core, in the `thing-*` workspaces under `packages/`, that are replacing gungen as the source of deadvox's models.
+- **[skelly-assets](https://github.com/roobie/skelly-assets)**: the shared models and the pipelines that build them, including the gun and thing authoring tools, checked out as the `packages/skelly-assets` submodule.
+- **[things](things/README.md)**: the plan for the thing authoring tools replacing gungen as the source of deadvox's models.
 
 ## Run and check locally
 
@@ -33,7 +32,6 @@ Start a project's dev server:
 
 ```sh
 npm run dev --prefix packages/deadvox
-npm run dev --workspace @skelly/gun-authoring-tool
 npm run dev --prefix packages/mobgen
 ```
 

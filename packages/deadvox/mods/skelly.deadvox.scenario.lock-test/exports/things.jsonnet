@@ -8,6 +8,6 @@ local keys = std.set(['shed_key']);
     voxel: voxel.of(voxel.item, row),
     options: { mass: row.exportMass },
   }
-  for row in (import 'packages/thing-authoring-tool/items.jsonnet').items
+  for row in (import 'packages/skelly-assets/tools/packages/thing-authoring-tool/items.jsonnet').items
   if std.setMember(row.id, keys)
 ]

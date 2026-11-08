@@ -35,7 +35,7 @@ export const syncItemModelMetadata = ({ check = false, repositoryRoot } = {}) =>
     const output = metadata && formatJson(JSON.stringify(metadata), file);
     if (check) {
       if (output === undefined ? present : !present || readFileSync(file, 'utf8') !== output) {
-        throw new Error(`Item model metadata is stale in ${base}; run npm run export:deadvox`);
+        throw new Error(`Item model metadata is stale in ${base}; run node tools/item-model-metadata.mjs`);
       }
     } else if (output === undefined) {
       rmSync(file, { force: true });

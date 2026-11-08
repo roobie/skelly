@@ -9,6 +9,6 @@ local gunGrained = std.set(['baseball_bat', 'kabar', 'machete', 'steel_pipe']);
     voxel: voxel.of(voxel.gun, row),
     options: { mass: row.exportMass },
   }
-  for row in (import 'packages/thing-authoring-tool/items.jsonnet').items
+  for row in (import 'packages/skelly-assets/tools/packages/thing-authoring-tool/items.jsonnet').items
   if std.setMember(row.id, gunGrained)
 ]
