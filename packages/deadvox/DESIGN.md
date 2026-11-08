@@ -330,6 +330,14 @@ action metadata follows Deadvox's clock-and-unit contract. Persisted temporal
 field renames require a save-schema change because pre-alpha saves are refused,
 not migrated. See the root gungen-to-deadvox export contract.
 
+Actor body and clip keys keep the producer's spelling; Deadvox never renames
+them at load. A load-time translation would only bridge two spellings, which is
+a compatibility shim (`AGENTS.md`, "Project stage"). Their keys that name no
+clock stay in `tools/time-lint-baseline.json` until
+[skelly-assets#23](https://github.com/roobie/skelly-assets/issues/23) renames
+them, and that rename reaches this repository by a pin bump before actors enter
+mod content, because the lint's content half has no baseline.
+
 ### Long actions
 
 Crafting, reading, building, disassembly, repair, searching, treatment, and
