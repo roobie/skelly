@@ -1,3 +1,4 @@
+import type { ActorFigureFiles } from '../../src/core/actorFigureFiles.ts';
 import { Chunk } from '../../src/core/chunk.ts';
 import type { Registry } from '../../src/core/content.ts';
 import { CHUNK } from '../../src/core/coords.ts';
@@ -5,9 +6,13 @@ import type { SaveSnapshot } from '../../src/core/saveState.ts';
 import { makeScale } from '../../src/core/scale.ts';
 import { World } from '../../src/core/world.ts';
 import { createSession, IDLE } from '../../src/game/session.ts';
-import { stackActorFigureFiles } from '../baseContentFiles.ts';
 
-export const createChargerSession = (base: Registry, restore?: Readonly<SaveSnapshot>) => {
+// The figure files come in from the caller, because this fixture also runs in the browser, which reads them by fetch.
+export const createChargerSession = (
+  base: Registry,
+  actorFigureFiles: ActorFigureFiles,
+  restore?: Readonly<SaveSnapshot>,
+) => {
   const charger = [...base.furniture.values()].find((entry) => entry.charger)!;
   const batteryType = charger.charger!.batteries[0]!;
   const battery = base.items.get(batteryType)!;
@@ -63,7 +68,7 @@ export const createChargerSession = (base: Registry, restore?: Readonly<SaveSnap
   }
   const session = createSession({
     registry,
-    actorFigureFiles: stackActorFigureFiles(registry),
+    actorFigureFiles,
     ...(restore ? { restore } : {}),
     world,
     isSolid: solid,
