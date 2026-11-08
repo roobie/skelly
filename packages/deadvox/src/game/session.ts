@@ -4,7 +4,6 @@
 // captures is what the game runs. Sounds, notices and debug tools reach in through
 // callbacks; nothing here draws or listens.
 
-import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { actionText, fillText } from '../core/actionText.ts';
 import { actorFigure, figureSeedPool } from '../core/actorFigure.ts';
 import type { PlayerMovement, VocalNoise } from '../core/actorSense.ts';
@@ -32,6 +31,7 @@ import {
 import { BearTraps } from '../core/bearTrap.ts';
 import type { BlockBlow } from '../core/blockDamage.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import type { ActorBody } from '../core/bones.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { claimed, claimedId } from '../core/capabilities.ts';
@@ -1015,7 +1015,7 @@ export const createSession = (options: SessionOptions) => {
       soundPitchMultiplier,
     }: SoundEmissionMeta & {
       player: boolean;
-      body?: MobBody;
+      body?: ActorBody;
     },
   ): boolean => {
     const selected = soundPicker.pick(event, time);
@@ -1072,7 +1072,7 @@ export const createSession = (options: SessionOptions) => {
     event: SoundId,
     position: Vec3,
     time = sim.time,
-    meta: SoundEmissionMeta & { body?: MobBody } = {},
+    meta: SoundEmissionMeta & { body?: ActorBody } = {},
   ): boolean => admitSound(event, position, time, { ...meta, player: false });
   const playPlayerSound = (event: SoundId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
     admitSound(event, chest(), time, { ...meta, listenerRelative: meta.listenerRelative ?? true, player: true });

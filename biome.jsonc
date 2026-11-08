@@ -174,7 +174,7 @@
       "linter": { "rules": { "style": { "noDefaultExport": "off" } } }
     },
     {
-      // mobgen's posing hot path runs once per bone per actor per frame. Profiling found
+      // The posing hot path runs once per bone per actor per frame. Profiling found
       // real time (V8's ArrayIteratorPrototypeNext) from destructuring a plain array here instead of
       // indexing it directly — a measured, deliberate choice at each of these call sites, not an
       // oversight useDestructuring should keep flagging.
@@ -182,7 +182,9 @@
         "**/mobgen/src/core/pose.ts",
         "**/mobgen/src/viewer/stressActors.ts",
         "**/mobgen/src/cli/bench.ts",
-        "**/mobgen/src/mob/crowd.ts"
+        "**/mobgen/src/mob/crowd.ts",
+        "**/deadvox/src/core/pose.ts",
+        "**/deadvox/src/render/crowd.ts"
       ],
       "linter": { "rules": { "style": { "useDestructuring": "off" } } }
     },
@@ -195,15 +197,17 @@
       "includes": [
         "**/deadvox/src/render/mobActors.ts",
         "**/deadvox/src/render/ragdoll.ts",
-        "**/deadvox/src/core/actorSystem.ts",
         "**/deadvox/src/core/actorMotion.ts",
         "**/deadvox/src/core/actorRegions.ts",
         "**/deadvox/src/core/actorPose.ts",
-        "**/deadvox/src/game/session.ts",
         "**/deadvox/src/game/actorAudio.ts",
         "**/deadvox/test/mobActors.test.ts",
-        "**/deadvox/test/poseAgreement.test.ts",
         "**/deadvox/test/actorClips.test.ts",
+        "**/deadvox/test/angles.test.ts",
+        "**/deadvox/test/crowd.test.ts",
+        "**/deadvox/test/dismember.test.ts",
+        "**/deadvox/test/lookAt.test.ts",
+        "**/deadvox/test/pose.test.ts",
         "**/deadvox/test/actorSystem.test.ts",
         "**/deadvox/test/actorAudio.test.ts",
         "**/deadvox/test/actorRegions.test.ts"

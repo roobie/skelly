@@ -1,10 +1,11 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen is a workspace source alias.
-import { quatToMat3 } from '@mobgen/core/math.ts';
+
 import { crawlPose } from '@mobgen/mob/crawl.ts';
-import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { describe, expect, it } from 'vitest';
 import { actorFigure, fusedMassTypeOf } from '../src/core/actorFigure.ts';
 import { FIGURE_VARIANTS } from '../src/core/actorModels.ts';
+import { quatToMat3 } from '../src/core/boneMath.ts';
+import { severedBoneSet } from '../src/core/boneTree.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { FUSED_MASS_FIGURE_SEED } from '../src/core/fusedMassFigure.ts';
 import { reachTuning } from '../src/core/reach.ts';

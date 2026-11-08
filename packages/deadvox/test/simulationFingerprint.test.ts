@@ -61,6 +61,7 @@ const DECLARATION_FILE_PATTERN = /\.d\.[cm]?ts$/;
 const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/soundEvents.ts': 'Erased sound-id type contracts; selections and validation stay in the runtime graph.',
   'src/core/actorSense.ts': 'Erased player-sense contracts; perception and motion remain in the runtime graph.',
+  'src/core/bones.ts': 'Erased skeleton type contracts; posing and dismemberment remain in the runtime graph.',
   'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
   'src/core/reachability.ts': 'CLI/test-only static content acceptance; no game runtime imports it.',
   'src/core/scenarioCertificate.ts': 'Test-only route proof; no game runtime imports it.',
@@ -375,7 +376,7 @@ describe('simulation source fingerprint', () => {
     const original = await actualSimulationFingerprint();
     await Promise.all(
       [
-        ['../mobgen/src/mob/ragdoll.json', 'gravity'],
+        ['src/config/ragdoll.json', 'gravity'],
         ['../mobgen/src/mob/acidTemplate.json', 'bodyMassKg'],
       ].map(async ([path, key]) => {
         const target = resolve(projectRoot, path!);
@@ -393,7 +394,7 @@ describe('simulation source fingerprint', () => {
         const fingerprint = fingerprintSimulationSourceMap(graph.sources);
         if (key === 'gravity') {
           expect(fingerprint).toBe(original);
-          expect(graph.sources.has('mobgen/mob/ragdoll.json')).toBe(false);
+          expect(graph.sources.has('src/config/ragdoll.json')).toBe(false);
         } else {
           expect(fingerprint).not.toBe(original);
         }
@@ -401,10 +402,11 @@ describe('simulation source fingerprint', () => {
     );
   });
 
-  it('fingerprints pure mobgen modules imported by the simulation', async () => {
+  it('fingerprints pure figure modules imported by the simulation', async () => {
     const graph = await actualSimulationGraph();
+    expect(graph.sources.has('src/core/pose.ts')).toBe(true);
+    expect(graph.sources.has('src/core/boneTree.ts')).toBe(true);
     expect(graph.sources.has('mobgen/mob/humanoidFigure.ts')).toBe(true);
-    expect(graph.sources.has('mobgen/core/pose.ts')).toBe(true);
     expect(graph.sources.has('mobgen/mob/attack.ts')).toBe(true);
     expect(graph.sources.has('mobgen/mob/fusedMassTemplate.ts')).toBe(true);
     expect(graph.sources.has('mobgen/mob/fusedMass.ts')).toBe(true);

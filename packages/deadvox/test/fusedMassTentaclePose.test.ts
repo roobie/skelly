@@ -1,10 +1,11 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves through this package's aliases.
-import { type Mat3, mulMV, rotX, rotY, transpose } from '@mobgen/core/math.ts';
-import { boneTransforms, type Pose } from '@mobgen/core/pose.ts';
-import { severedBoneSet } from '@mobgen/mob/dismember.ts';
+
 import { describe, expect, it } from 'vitest';
+import { type Mat3, mulMV, rotX, rotY, transpose } from '../src/core/boneMath.ts';
+import { severedBoneSet } from '../src/core/boneTree.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { FUSED_MASS_FIGURE_SEED, fusedMassFigure, fusedMassStrikeOrigin } from '../src/core/fusedMassFigure.ts';
+import { boneTransforms, type Pose } from '../src/core/pose.ts';
 import { fusedMassCoreInteriorAnchor, fusedMassTentaclePose } from '../src/render/fusedMassTentaclePose.ts';
 
 interface CoreVoxelPointInput {

@@ -1,4 +1,3 @@
-import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { type AcidGlobState, advanceAcidGlob } from './acidGlob.ts';
 import { type AcidPuddleState, feetInAcidPuddle } from './acidPuddle.ts';
 import { figureVariantOf } from './actorModels.ts';
@@ -59,6 +58,7 @@ import {
 import { type ActorTickScratch, createActorTickScratch } from './actorTickScratch.ts';
 import { snapshotAgent, validActorEventState, validHordeMemberState, validObstacleWanderState } from './agentSave.ts';
 import type { BodyRegion, DamageKind } from './body.ts';
+import { severedBoneSet } from './boneTree.ts';
 import type { MeleeBlocker } from './collision.ts';
 import type { ActorDef } from './content.ts';
 import type { Vec3 } from './coords.ts';

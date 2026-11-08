@@ -1,5 +1,3 @@
-import { clampJointAngles, jointAngles } from '@mobgen/core/joints.ts';
-import { IDENTITY_M } from '@mobgen/core/math.ts';
 import { describe, expect, it } from 'vitest';
 import {
   actorPoseInputFor,
@@ -10,7 +8,9 @@ import {
 } from '../src/core/actorPose.ts';
 import { type HumanoidHitRegion, humanoidRegionBoxes, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import type { Actor } from '../src/core/actorState.ts';
+import { IDENTITY_M } from '../src/core/boneMath.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { clampJointAngles, jointAngles } from '../src/core/joints.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

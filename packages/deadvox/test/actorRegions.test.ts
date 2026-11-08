@@ -1,5 +1,3 @@
-import { type Vec3 as MobVec3, transpose } from '@mobgen/core/math.ts';
-import { boneTransforms, type Pose } from '@mobgen/core/pose.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
 import { attackPose, LUNGE_GRAB } from '@mobgen/mob/attack.ts';
 import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobgen/mob/gait.ts';
@@ -8,7 +6,9 @@ import { humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { idlePose } from '@mobgen/mob/idle.ts';
 import { describe, expect, it } from 'vitest';
 import { type HumanoidHitRegion, posedHumanoidRegionBoxes, posedRegionHitDistance } from '../src/core/actorRegions.ts';
+import { type Vec3 as MobVec3, transpose } from '../src/core/boneMath.ts';
 import { HUMANOID_REGION_NAMES } from '../src/core/humanoidRegionNames.ts';
+import { boneTransforms, type Pose } from '../src/core/pose.ts';
 
 type Vec3 = [number, number, number];
 const BLOCK = 0.5;

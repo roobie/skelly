@@ -46,56 +46,16 @@
 // zeroed) and shares the corpse Rapier world and cap/eviction/lifecycle machinery
 // (a debris row counts toward the shared corpse budget exactly like a corpse does).
 
-import type { BodyAnchor } from '@mobgen/core/body.ts';
 import type { Realized } from '@mobgen/core/generate.ts';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
-import {
-  applyPoint,
-  type Mat3,
-  mat3ToQuat,
-  mulMM,
-  mulMV,
-  quatToMat3,
-  rotY,
-  slerpQuat,
-  type Transform,
-  transpose,
-} from '@mobgen/core/math.ts';
-import {
-  allocateBoneTransforms,
-  boneTransforms,
-  boneTransformsInto,
-  indexBonesByParent,
-  type MutableTransform,
-  type ParentIndex,
-  type Pose,
-} from '@mobgen/core/pose.ts';
 import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
 import { acidDeathPose } from '@mobgen/mob/acidPoses.ts';
 import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
-import {
-  CROWD_BEGIN_VERTEX,
-  CROWD_BEGINNORMAL_VERTEX,
-  CROWD_COLOR_FRAGMENT,
-  CROWD_EMISSIVE_FRAGMENT,
-  CROWD_FRAGMENT_DECLARATIONS,
-  CROWD_VERTEX_DECLARATIONS,
-  type CrowdPlacement,
-  type CrowdTextureLayout,
-  crowdTexelIndex,
-  crowdTextureLayout,
-  packBloodiness,
-  packCharge,
-  packCrowdBoneMatrix,
-  packSeveredMask,
-} from '@mobgen/mob/crowd.ts';
-import { burstBones, severableParts, severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { fusedMassTemplate } from '@mobgen/mob/fusedMassTemplate.ts';
 import { createGaitCache, footRestExtents, type WalkActor } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
-import { LOOK_AT_REST, type LookAtState, lookAtPose } from '@mobgen/mob/lookAt.ts';
-import { LOOK_AT_PROFILES, type LookAtProfile } from '@mobgen/mob/lookAtProfiles.ts';
+import { LOOK_AT_PROFILES } from '@mobgen/mob/lookAtProfiles.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import {
   type BufferGeometry,
@@ -124,18 +84,59 @@ import { type ActorModel, bodyPlanModel, FIGURE_VARIANTS, figureVariantOf } from
 import { acidSpitWindupProgress, actorCrawls, actorPoseInputFor, posedActor } from '../core/actorPose.ts';
 import { type Actor, actorAttackReachMetres } from '../core/actorState.ts';
 import { BACKGROUND_ACTOR_RATE, type HitImpulse } from '../core/actorSystem.ts';
+import {
+  applyPoint,
+  type Mat3,
+  mat3ToQuat,
+  mulMM,
+  mulMV,
+  quatToMat3,
+  rotY,
+  slerpQuat,
+  type Transform,
+  transpose,
+} from '../core/boneMath.ts';
+import type { BodyAnchor } from '../core/bones.ts';
+import { burstBones, severableParts, severedBoneSet } from '../core/boneTree.ts';
 import type { ColumnReveal } from '../core/columnReveal.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import { FUSED_MASS_FIGURE_SEED, type FusedMassFigure } from '../core/fusedMassFigure.ts';
 import type { LookDefaults } from '../core/mood.ts';
+import {
+  allocateBoneTransforms,
+  boneTransforms,
+  boneTransformsInto,
+  indexBonesByParent,
+  type MutableTransform,
+  type ParentIndex,
+  type Pose,
+} from '../core/pose.ts';
+import type { LookAtProfile } from '../core/schema/actors.ts';
 import type { Quaternion } from '../core/spatial.ts';
 import { ACTIVE_ACTOR_RATE } from '../game/simulationRates.ts';
 import { BLOOD_STAIN_COLOR_FRAGMENT, BLOOD_STAIN_FRAGMENT_DECLARATIONS } from './bloodStain.ts';
+import {
+  CROWD_BEGIN_VERTEX,
+  CROWD_BEGINNORMAL_VERTEX,
+  CROWD_COLOR_FRAGMENT,
+  CROWD_EMISSIVE_FRAGMENT,
+  CROWD_FRAGMENT_DECLARATIONS,
+  CROWD_VERTEX_DECLARATIONS,
+  type CrowdPlacement,
+  type CrowdTextureLayout,
+  crowdTexelIndex,
+  crowdTextureLayout,
+  packBloodiness,
+  packCharge,
+  packCrowdBoneMatrix,
+  packSeveredMask,
+} from './crowd.ts';
 import { buildCarvedGeometry, FleshChunks, mergeBoneMeshes } from './fusedMassFlesh.ts';
 import { fusedMassCoreInteriorAnchor, fusedMassTentaclePose } from './fusedMassTentaclePose.ts';
 import { woundSeverity } from './gore.ts';
 import { patchHeightFog } from './heightFog.ts';
+import { LOOK_AT_REST, type LookAtState, lookAtPose } from './lookAt.ts';
 import { PoseTextureUpdates } from './poseTextureUpdates.ts';
 import { type Ragdoll, RagdollWorld, ragdollContent } from './ragdoll.ts';
 import { angularVelocity, applyImpulseAtClampedPoint, type RigidBody, type RigidWorld } from './rigidImpulse.ts';

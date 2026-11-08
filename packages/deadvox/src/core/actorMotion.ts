@@ -1,8 +1,8 @@
-import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { templateFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import type { Actor } from './actorState.ts';
 import { activeFusedMassMembers, actorAttackReachMetres, requiredGrabBand } from './actorState.ts';
+import { severedBoneSet } from './boneTree.ts';
 import type { MeleeBlocker } from './collision.ts';
 import type { Vec3 } from './coords.ts';
 import { fusedMassFigureForType, fusedMassStrikeOrigin } from './fusedMassFigure.ts';

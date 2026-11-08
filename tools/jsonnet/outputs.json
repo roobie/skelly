@@ -565,6 +565,10 @@
       "output": "packages/deadvox/src/config/perf-baseline.json"
     },
     {
+      "source": "packages/deadvox/src/config/ragdoll.jsonnet",
+      "output": "packages/deadvox/src/config/ragdoll.json"
+    },
+    {
       "source": "packages/deadvox/src/feasibility/vehicleFeasibility.jsonnet",
       "output": "packages/deadvox/src/feasibility/vehicleFeasibility.json"
     },
@@ -727,10 +731,6 @@
     {
       "source": "packages/mobgen/src/mob/materialTemplates.jsonnet",
       "output": "packages/mobgen/src/mob/materialTemplates.json"
-    },
-    {
-      "source": "packages/mobgen/src/mob/ragdoll.jsonnet",
-      "output": "packages/mobgen/src/mob/ragdoll.json"
     },
     {
       "source": "packages/mobgen/src/mob/skeletonTemplate.jsonnet",

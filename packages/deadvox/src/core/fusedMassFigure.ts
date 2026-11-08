@@ -1,11 +1,11 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through this package's Vite and TypeScript aliases.
 import { generateValid } from '@mobgen/core/generate.ts';
-import { mulMV, rotY } from '@mobgen/core/math.ts';
-import { boneTransforms } from '@mobgen/core/pose.ts';
 import { consumableTemplate } from '@mobgen/core/template.ts';
 import { worldPosition } from '@mobgen/core/voxelize.ts';
-import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { type FusedMassManifest, fusedMassManifest } from '@mobgen/mob/fusedMass.ts';
+import { mulMV, rotY } from './boneMath.ts';
+import { severedBoneSet } from './boneTree.ts';
+import { boneTransforms } from './pose.ts';
 // Side effect: registers 'fused-mass' so `consumableTemplate` can resolve it and refuse it if it is ever
 // marked comparison-only.
 import '@mobgen/mob/fusedMassTemplate.ts';

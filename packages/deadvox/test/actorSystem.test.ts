@@ -1,5 +1,4 @@
 import process from 'node:process';
-import { mulMV, quatToMat3 } from '@mobgen/core/math.ts';
 import { templateByName } from '@mobgen/core/template.ts';
 import { crawlGaitPose } from '@mobgen/mob/crawl.ts';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
@@ -22,6 +21,7 @@ import { type HitImpulse, lethalRegion, pickActorHitRegion, pickActorMove } from
 import { hearPlayer, hearVocalNoise, perceivePlayer } from '../src/core/agentPerception.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { BodyRegion } from '../src/core/body.ts';
+import { mulMV, quatToMat3 } from '../src/core/boneMath.ts';
 import { resolveSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';

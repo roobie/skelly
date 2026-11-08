@@ -1,13 +1,8 @@
-import type { Bone } from '@mobgen/core/body.ts';
-import { clampJointAngles, jointAngles, jointRotation } from '@mobgen/core/joints.ts';
-import { applyPoint, IDENTITY_M, type Mat3, mulMM, mulMV, rotX, rotY, rotZ } from '@mobgen/core/math.ts';
-import { blendPose, boneTransforms, type Pose } from '@mobgen/core/pose.ts';
 import { type Template, templateByName } from '@mobgen/core/template.ts';
 import { acidAttackPose, acidHitPose, acidStrideLength, acidWalkPose, acidWindupPose } from '@mobgen/mob/acidPoses.ts';
 import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
 import { type AttackClip, attackClipFor, attackPose, attackRotations } from '@mobgen/mob/attack.ts';
 import { crawlGaitPose, crawlHitPose, groundCrawlPose } from '@mobgen/mob/crawl.ts';
-import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { type HumanoidFigure, templateFigure } from '@mobgen/mob/humanoidFigure.ts';
@@ -17,8 +12,13 @@ import { flinchClipFor, flinchPoseWithClip, HIT_FLINCH } from '@mobgen/mob/react
 import type { ActorFigure } from './actorFigure.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import type { Actor } from './actorState.ts';
+import { applyPoint, IDENTITY_M, type Mat3, mulMM, mulMV, rotX, rotY, rotZ } from './boneMath.ts';
+import type { Bone } from './bones.ts';
+import { severedBoneSet } from './boneTree.ts';
 import type { Vec3 } from './coords.ts';
 import { fusedMassFigure, fusedMassSeveredBones } from './fusedMassFigure.ts';
+import { clampJointAngles, jointAngles, jointRotation } from './joints.ts';
+import { blendPose, boneTransforms, type Pose } from './pose.ts';
 
 export interface ActorPoseInput {
   readonly id?: number;

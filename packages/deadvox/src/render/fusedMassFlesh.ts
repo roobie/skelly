@@ -1,11 +1,11 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves through this package's aliases.
 import type { Body } from '@mobgen/core/body.ts';
 import type { Realized } from '@mobgen/core/generate.ts';
-import { type Mat3, mat3ToQuat, quatToMat3 } from '@mobgen/core/math.ts';
 import { type BoneMesh, meshBones } from '@mobgen/core/mesh.ts';
 import { materialOf, shadeOf, type Voxels, worldPosition } from '@mobgen/core/voxelize.ts';
 import { crowdEmission } from '@mobgen/mob/crowd.ts';
 import { BufferAttribute, BufferGeometry, type Color, type Group, Mesh, MeshLambertMaterial } from 'three';
+import { type Mat3, mat3ToQuat, quatToMat3 } from '../core/boneMath.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Quaternion } from '../core/spatial.ts';
 import { patchHeightFog } from './heightFog.ts';
