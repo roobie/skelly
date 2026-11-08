@@ -1453,10 +1453,6 @@
       "output": "packages/thing-authoring-tool/test/fixtures/bend-strip.json"
     },
     {
-      "source": "packages/thing-core/src/materials.jsonnet",
-      "output": "packages/thing-core/src/materials.json"
-    },
-    {
       "source": "site/playtest.jsonnet",
       "output": "site/playtest.json"
     }

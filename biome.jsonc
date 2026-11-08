@@ -5,22 +5,34 @@
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
-    // The submodule owns its checks; parent rules must not relint another repository.
+    // The submodule's thing-core is a root workspace, so it is indexed for import resolution.
     "includes": [
       "**",
       "!**/dist",
       "!**/package-lock.json",
       "!**/__snapshots__",
       "!packages/deadvox/vendor/rapier-f64",
-      "!packages/skelly-assets"
+      "!packages/skelly-assets/*",
+      "packages/skelly-assets/tools",
+      "!packages/skelly-assets/tools/*",
+      "packages/skelly-assets/tools/packages",
+      "!packages/skelly-assets/tools/packages/*",
+      "packages/skelly-assets/tools/packages/thing-core"
     ]
   },
-  "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 120 },
+  // The submodule owns its checks; parent rules must not relint another repository.
+  "formatter": {
+    "includes": ["**", "!packages/skelly-assets/**"],
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 120
+  },
   "javascript": {
     "formatter": { "quoteStyle": "single", "trailingCommas": "all", "arrowParentheses": "always" }
   },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "assist": { "includes": ["**", "!packages/skelly-assets/**"], "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
+    "includes": ["**", "!packages/skelly-assets/**"],
     "rules": {
       "a11y": "error",
       "complexity": "error",

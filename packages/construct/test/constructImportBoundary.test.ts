@@ -11,6 +11,7 @@ interface Roots {
   readonly packages: string;
   readonly gungen: string;
   readonly constructSrc: string;
+  readonly thingCore: string;
 }
 interface PackageEdge {
   readonly from: string;
@@ -89,7 +90,12 @@ const rootsUnder = (repo: string): Roots => ({
   packages: join(repo, 'packages'),
   gungen: join(repo, 'gungen'),
   constructSrc: join(repo, 'packages', 'construct', 'src'),
+  // The one thing-core workspace lives in the asset submodule.
+  thingCore: join(repo, 'packages', 'skelly-assets', 'tools', 'packages', 'thing-core'),
 });
+
+const packageRoot = (roots: Roots, name: string): string =>
+  name === 'thing-core' ? roots.thingCore : join(roots.packages, name);
 
 // The directory an import lands in, or undefined for an external package.
 const importTarget = (file: string, specifier: string, roots: Roots): string | undefined => {
@@ -100,13 +106,13 @@ const importTarget = (file: string, specifier: string, roots: Roots): string | u
     return join(roots.repo, specifier);
   }
   const packageName = workspacePackage.exec(specifier)?.[1];
-  return packageName === undefined ? undefined : join(roots.packages, packageName);
+  return packageName === undefined ? undefined : packageRoot(roots, packageName);
 };
 
 // Each edge rejects an import from the files under `from` into the targets it forbids.
 const packageEdges = (roots: Roots): readonly PackageEdge[] => {
   const construct = join(roots.packages, 'construct');
-  const thingCore = join(roots.packages, 'thing-core');
+  const { thingCore } = roots;
   const thingExport = join(roots.packages, 'thing-export');
   const thingTool = join(roots.packages, 'thing-authoring-tool');
   const toolUi = join(roots.packages, 'tool-ui');
@@ -476,7 +482,7 @@ describe('construct import boundary', () => {
     ];
     try {
       for (const [from, target] of pairs) {
-        const directory = join(fixtureRoots.packages, from, 'src');
+        const directory = join(packageRoot(fixtureRoots, from), 'src');
         mkdirSync(directory, { recursive: true });
         const file = join(directory, 'boundary.ts');
         for (const specifier of [`@skelly/${target}/index.ts`, `../../${target}/src/index.ts`]) {
@@ -492,7 +498,7 @@ describe('construct import boundary', () => {
   it('keeps thing-core to the construct package among packages, and allows it', () => {
     const fixtureRoot = mkdtempSync(join(tmpdir(), 'thing-core-boundary-'));
     const fixtureRoots = rootsUnder(fixtureRoot);
-    const coreSrc = join(fixtureRoots.packages, 'thing-core', 'src');
+    const coreSrc = join(fixtureRoots.thingCore, 'src');
     mkdirSync(coreSrc, { recursive: true });
 
     try {
@@ -513,7 +519,7 @@ describe('construct import boundary', () => {
   it('allows thing-core to import its own modules', () => {
     const fixtureRoot = mkdtempSync(join(tmpdir(), 'thing-core-internal-boundary-'));
     const fixtureRoots = rootsUnder(fixtureRoot);
-    const coreSrc = join(fixtureRoots.packages, 'thing-core', 'src');
+    const coreSrc = join(fixtureRoots.thingCore, 'src');
     mkdirSync(coreSrc, { recursive: true });
 
     try {

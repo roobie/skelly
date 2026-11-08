@@ -14,7 +14,12 @@ type Tree = Record<string, string>;
 const cleanTree: Tree = {
   'package.json': JSON.stringify({
     type: 'module',
-    workspaces: ['packages/deadvox', 'packages/mobgen', 'packages/thing-core', 'packages/presentation'],
+    workspaces: [
+      'packages/deadvox',
+      'packages/mobgen',
+      'packages/skelly-assets/tools/packages/thing-core',
+      'packages/presentation',
+    ],
   }),
   'packages/deadvox/package.json': JSON.stringify({
     name: '@skelly/deadvox',
@@ -32,12 +37,12 @@ const cleanTree: Tree = {
     "import { session } from '../game/session.ts';\nexport const view = session;\n",
   'packages/mobgen/package.json': JSON.stringify({ name: 'mobgen', type: 'module' }),
   'packages/mobgen/src/pose.ts': 'export const pose = 1;\n',
-  'packages/thing-core/package.json': JSON.stringify({
+  'packages/skelly-assets/tools/packages/thing-core/package.json': JSON.stringify({
     name: '@skelly/thing-core',
     type: 'module',
     exports: { './schema': './src/schema.ts' },
   }),
-  'packages/thing-core/src/schema.ts': 'export const schema = 1;\n',
+  'packages/skelly-assets/tools/packages/thing-core/src/schema.ts': 'export const schema = 1;\n',
   'packages/presentation/package.json': JSON.stringify({
     name: '@skelly/presentation',
     type: 'module',
@@ -387,15 +392,17 @@ describe('runtime closure, stage 1', () => {
 
   it('follows every condition of a workspace export, the types target included', () => {
     const violations = violationsIn({
-      'packages/thing-core/package.json': JSON.stringify({
+      'packages/skelly-assets/tools/packages/thing-core/package.json': JSON.stringify({
         name: '@skelly/thing-core',
         type: 'module',
         exports: { './schema': { types: './src/types.ts', import: './src/schema.ts' } },
       }),
-      'packages/thing-core/src/types.ts': "export type V = import('three').Vector3;\n",
+      'packages/skelly-assets/tools/packages/thing-core/src/types.ts': "export type V = import('three').Vector3;\n",
       [catalog]: "export type { V } from '@skelly/thing-core/schema';\n",
     });
-    expect(violations.map((v) => [v.importer, v.target])).toEqual([['packages/thing-core/src/types.ts', 'three']]);
+    expect(violations.map((v) => [v.importer, v.target])).toEqual([
+      ['packages/skelly-assets/tools/packages/thing-core/src/types.ts', 'three'],
+    ]);
   });
 
   it('follows the TypeScript source an .mjs specifier also names', () => {

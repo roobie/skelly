@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'packages/thing-export/**'
-      - 'packages/thing-core/**'
+      - 'packages/skelly-assets'
       - 'packages/construct/**'
       - 'package.json'
       - 'package-lock.json'
@@ -15,7 +15,7 @@ on:
   pull_request:
     paths:
       - 'packages/thing-export/**'
-      - 'packages/thing-core/**'
+      - 'packages/skelly-assets'
       - 'packages/construct/**'
       - 'package.json'
       - 'package-lock.json'

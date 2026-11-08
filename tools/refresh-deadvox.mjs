@@ -9,7 +9,6 @@ const within = (base, directory) => relative(REPOSITORY_ROOT, resolve(base, dire
 // Recipe evaluation precedes exporter imports because their catalogues are static JSON imports.
 compileJsonnetSources({
   within: [
-    'packages/thing-core/src',
     'packages/thing-authoring-tool',
     'packages/gun-authoring-tool',
     ...modDirectories().map((base) => within(base, 'presentation')),

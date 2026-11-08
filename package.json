@@ -5,7 +5,7 @@
   "type": "module",
   "workspaces": [
     "packages/construct",
-    "packages/thing-core",
+    "packages/skelly-assets/tools/packages/thing-core",
     "packages/thing-export",
     "packages/tool-ui",
     "packages/thing-authoring-tool",
@@ -20,6 +20,7 @@
     "fix": "biome check --write",
     "setup": "git submodule update --init --recursive && npm ci && npm ci --prefix packages/deadvox/tools/lit-check && npm run jsonnet:setup",
     "jsonnet:setup": "node tools/jsonnet/setup.mjs",
+    "postinstall": "node packages/skelly-assets/tools/sources.mjs",
     "content:compile": "node tools/jsonnet/compile.mjs",
     "content:check": "node tools/item-model-metadata.mjs --check && node tools/jsonnet/compile.mjs --check",
     "export:deadvox": "node tools/refresh-deadvox.mjs",
