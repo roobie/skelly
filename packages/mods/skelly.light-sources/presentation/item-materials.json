@@ -1,5 +1,8 @@
 {
   "assets/models/candle.glb": { "materials": ["wax-ivory", "cloth-charred"] },
+  "assets/models/everburning_torch.glb": {
+    "materials": ["wood-oak", "brass-dull", "glow-flame", "cloth-yellow", "wood-walnut"]
+  },
   "assets/models/glowstick.glb": { "materials": ["chemical-light tube", "end caps"] },
   "assets/models/lighter.glb": { "materials": ["fuel-amber", "plastic-clear-red", "steel-grey"] },
   "assets/models/matches.glb": { "materials": ["paperboard-tan", "paint-terracotta", "paperboard-brown"] },

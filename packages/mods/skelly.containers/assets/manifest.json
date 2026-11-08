@@ -1,13 +1,18 @@
 {
   "sources": [
     {
-      "author": "Skelly contributors",
-      "changes": "Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.",
+      "author": "Björn Roberg",
+      "changes": null,
       "download": null,
-      "files": ["assets/models/jerry_can.glb"],
-      "licence": "CC0-1.0",
-      "title": "Thing tool authored models",
-      "url": "https://github.com/roobie/skelly/blob/main/packages/mods/skelly.containers/exports/things.jsonnet"
+      "files": [
+        "assets/models/cutting_board.glb",
+        "assets/models/iron_pot.glb",
+        "assets/models/jerry_can.glb",
+        "assets/models/pan.glb"
+      ],
+      "licence": "CC-BY-NC-SA-4.0",
+      "title": "skelly-assets built models",
+      "url": "https://github.com/roobie/skelly-assets"
     },
     {
       "author": "Skelly contributors",

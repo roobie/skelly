@@ -20,19 +20,15 @@
     },
     {
       "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
       "path": "things/baseball_bat.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/kabar.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/machete.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/steel_pipe.model.json"
     },
     {
       "kind": "json",
@@ -40,15 +36,31 @@
     },
     {
       "kind": "json",
-      "path": "assets/manifest.json"
+      "path": "things/kabar.model.json"
     },
     {
       "kind": "json",
-      "path": "exports/things.json"
+      "path": "things/lame_saber.model.json"
     },
     {
       "kind": "json",
-      "path": "presentation/item-materials.json"
+      "path": "things/long_pole.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/machete.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pike_pole.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steel_pipe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sun_shield.model.json"
     },
     {
       "kind": "asset",
@@ -60,11 +72,27 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/lame_saber.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/long_pole.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/machete.glb"
     },
     {
       "kind": "asset",
+      "path": "assets/models/pike_pole.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/steel_pipe.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sun_shield.glb"
     }
   ],
   "id": "skelly.melee",

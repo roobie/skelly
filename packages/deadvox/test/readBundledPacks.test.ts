@@ -6,7 +6,13 @@ import { validate } from '../src/cli/validate.ts';
 import { launcherModCatalogue } from '../src/core/bundledModCatalogue.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { admitPacks, packContentHash } from '../src/core/packAdmission.ts';
-import { bundledPackDefines, readAvailablePacks, readBundledPacks } from '../tools/readBundledPacks.ts';
+import {
+  bundledPackDefines,
+  packFileBytes,
+  packFileOrigin,
+  readAvailablePacks,
+  readBundledPacks,
+} from '../tools/readBundledPacks.ts';
 import { stampPacks } from '../tools/stampBundle.ts';
 
 it('injects exporter JSON digests without model payloads while preserving runtime pack identity', async () => {
@@ -127,6 +133,7 @@ const withMultiRootFixture = async (check: (root: string) => void | Promise<void
       const modRoot = existsSync(resolve('../mods', dependency)) ? '../mods' : 'mods';
       symlinkSync(resolve(modRoot, dependency), join(root, modRoot, dependency), 'dir');
     }
+    symlinkSync(resolve('../skelly-assets'), join(temporary, 'packages/skelly-assets'), 'dir');
     writeFileSync(join(root, 'src/config/bundled-mods.json'), JSON.stringify({ mods: [] }));
     const sharedManifest = {
       id: 'fixture.shared',
@@ -172,15 +179,107 @@ it('loads a shared-root row through bundled intake and refuses an undeclared cro
     expect(conflict.issues.some(({ message }) => message.includes('soundFamilies:fixture_family'))).toBe(true);
   }));
 
-it('validates the requested multi-root stack and rejects missing stack arguments and ids', () =>
+it('validates the requested multi-root stack', () =>
   withMultiRootFixture((root) => {
     const output: string[] = [];
     expect(
       validate(['--stack', 'fixture.entry'], (line) => output.push(line), root),
       output.join('\n'),
     ).toBe(0);
+  }));
+
+it('rejects a missing stack argument and an unknown stack id', () =>
+  withOptInPacks((root) => {
+    const output: string[] = [];
     expect(validate(['--stack', 'fixture.absent'], (line) => output.push(line), root)).toBe(1);
     expect(validate(['--stack'], (line) => output.push(line), root)).toBe(1);
+  }));
+
+/** The external root of these fixtures, relative to `PACK_ROOT_BASE` as the product's is. */
+const EXTERNAL = '../../built';
+const EXPORT = 'things/built.model.json';
+const MODEL = 'assets/models/built.glb';
+const SHA256 = /^[0-9a-f]{64}$/;
+
+/** One pack whose json and asset entries live only under the fixture's external root. */
+const withExternalPack = async (check: (root: string) => void | Promise<void>): Promise<void> => {
+  const root = mkdtempSync(join(tmpdir(), 'external-packs-'));
+  try {
+    const directory = join(root, 'mods/fixture.built');
+    mkdirSync(join(directory, 'pack'), { recursive: true });
+    writeFileSync(
+      join(directory, 'pack/manifest.json'),
+      JSON.stringify({
+        id: 'fixture.built',
+        version: '1',
+        tier: 'theme',
+        product: false,
+        dependencies: [],
+        overrides: [],
+        files: [
+          { path: 'rows.json', kind: 'content' },
+          { path: EXPORT, kind: 'json' },
+          { path: MODEL, kind: 'asset' },
+        ],
+      }),
+    );
+    writeFileSync(join(directory, 'rows.json'), JSON.stringify({ items: [] }));
+    mkdirSync(join(root, 'built/fixture.built/things'), { recursive: true });
+    mkdirSync(join(root, 'built/fixture.built/assets/models'), { recursive: true });
+    writeFileSync(join(root, 'built/fixture.built', EXPORT), JSON.stringify({ fixtureGeometry: 1 }));
+    writeFileSync(join(root, 'built/fixture.built', MODEL), new Uint8Array([1, 2, 3]));
+    await check(root);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+};
+
+it('the build-time reader finds external files and hashes them', () =>
+  withExternalPack((root) => {
+    const [pack] = readAvailablePacks(root, EXTERNAL);
+    expect([...packFileBytes(root, pack!, MODEL, EXTERNAL)]).toEqual([1, 2, 3]);
+    expect(packFileOrigin(root, pack!, EXPORT, EXTERNAL)).toBe('external');
+    expect(pack!.files.find(({ source }) => source === MODEL)!.data).toMatch(SHA256);
+    mkdirSync(join(root, 'mods/fixture.built/assets/models'), { recursive: true });
+    writeFileSync(join(root, 'mods/fixture.built', MODEL), new Uint8Array([1, 2, 3]));
+    expect(() => readAvailablePacks(root, EXTERNAL)).toThrow(`file found in both roots ${MODEL}`);
+    rmSync(join(root, 'mods/fixture.built', MODEL));
+    rmSync(join(root, 'built/fixture.built', MODEL));
+    expect(() => readAvailablePacks(root, EXTERNAL)).toThrow(`missing file ${MODEL}`);
+  }));
+
+it("an unlisted file inside a bundled pack's external directory throws", () =>
+  withExternalPack((root) => {
+    writeFileSync(join(root, 'built/fixture.built/assets/models/stray.glb'), new Uint8Array([0]));
+    expect(() => readAvailablePacks(root, EXTERNAL)).toThrow('unlisted external file assets/models/stray.glb');
+  }));
+
+it('a directory under the external root naming no bundled pack is not listed and raises nothing', () =>
+  withExternalPack((root) => {
+    mkdirSync(join(root, 'built/fixture.other'), { recursive: true });
+    writeFileSync(join(root, 'built/fixture.other/stray.json'), '{}');
+    expect(readAvailablePacks(root, EXTERNAL).map(({ manifest }) => manifest.id)).toEqual(['fixture.built']);
+  }));
+
+it('external json and asset entries admit in the browser with the reader hashes', () =>
+  withExternalPack(async (root) => {
+    const [input] = readAvailablePacks(root, EXTERNAL);
+    const defines = await bundledPackDefines([input!]);
+    const hashes: Record<string, string> = JSON.parse(defines.__SKELLY_FILE_HASHES__!);
+    const identities = JSON.parse(defines.__SKELLY_CONTENT_PACKS__!);
+    // The browser looks each entry up by its logical key, as `src/game/bundledContent.ts` does.
+    const runtime = {
+      ...input!,
+      files: input!.manifest.files.map(({ path, kind }) => ({
+        source: path,
+        data:
+          kind === 'content'
+            ? input!.files.find(({ source }) => source === path)!.data
+            : hashes[`${input!.source}/${path}`],
+      })),
+    };
+    expect(runtime.files.every(({ data }) => data !== undefined)).toBe(true);
+    expect(await packContentHash(runtime)).toBe(identities[0].canonicalHash);
   }));
 
 it('stamps each pack in a multi-root stack with its own content identity', () =>

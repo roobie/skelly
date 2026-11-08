@@ -133,7 +133,7 @@
       },
       "parts": {
         "package": {
-          "centreOfMass": [-0.00038275193798449587, 0.10025193798449612, -0.00095930232558139484],
+          "centreOfMass": [0, 0.10065543071161048, 0],
           "massKg": 1.05,
           "node": "package:vessel"
         }
@@ -269,7 +269,7 @@
     {
       "file": "assets/models/soda.glb",
       "grip": {
-        "at": [0, 0.059999999999999998, 0],
+        "at": [0, 0.055, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",

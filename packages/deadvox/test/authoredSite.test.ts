@@ -34,6 +34,7 @@ import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { fixtureActorFigures } from './fixtures/actorFigures.ts';
 import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';
 import { sweepGroup } from './sweeps.ts';
 
@@ -108,6 +109,7 @@ const layoutValidationBase = [
         actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
         return actor;
       }),
+      actorFigures: [...layoutActorIds].flatMap((id) => fixtureActorFigures(id, registry.actors.get(id)!)),
       // The zombies name the tool quality that dismembers them, so one tool has to have it.
       items: [
         {

@@ -35,9 +35,9 @@
   "assets/models/hatchback_windscreen.glb": { "materials": ["glass-clear"] },
   "assets/models/hoist_a_post.glb": { "materials": ["paint-cream"] },
   "assets/models/hoist_bench.glb": { "materials": ["cloth-seat"] },
-  "assets/models/hoist_boom.glb": { "materials": ["paint-crane-yellow"] },
   "assets/models/hoist_boom_extension.glb": { "materials": ["paint-crane-yellow"] },
   "assets/models/hoist_boom_rest.glb": { "materials": ["paint-crane-yellow"] },
+  "assets/models/hoist_boom.glb": { "materials": ["paint-crane-yellow"] },
   "assets/models/hoist_cab_back.glb": { "materials": ["paint-cream", "glass-clear"] },
   "assets/models/hoist_cab_floor.glb": { "materials": ["paint-charcoal", "rubber-black"] },
   "assets/models/hoist_cab_skirt.glb": { "materials": ["paint-cream", "plastic-black"] },
@@ -49,8 +49,8 @@
   "assets/models/hoist_door.glb": {
     "materials": ["paint-cream", "cloth-seat", "plastic-black", "glass-clear", "steel-stainless"]
   },
-  "assets/models/hoist_engine.glb": { "materials": ["steel-grey", "steel", "paint-charcoal", "plastic-black"] },
   "assets/models/hoist_engine_cover.glb": { "materials": ["plastic-black"] },
+  "assets/models/hoist_engine.glb": { "materials": ["steel-grey", "steel", "paint-charcoal", "plastic-black"] },
   "assets/models/hoist_exhaust.glb": { "materials": ["steel-grey"] },
   "assets/models/hoist_frame_rail.glb": { "materials": ["paint-charcoal"] },
   "assets/models/hoist_front_axle.glb": { "materials": ["paint-charcoal", "steel-grey"] },

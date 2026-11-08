@@ -25,15 +25,15 @@
     },
     {
       "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
       "path": "things/aa_battery.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/headlamp.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/portable_radio.model.json"
     },
     {
       "kind": "json",
@@ -41,7 +41,7 @@
     },
     {
       "kind": "json",
-      "path": "things/night_vision_goggles.model.json"
+      "path": "things/headlamp.model.json"
     },
     {
       "kind": "json",
@@ -49,15 +49,11 @@
     },
     {
       "kind": "json",
-      "path": "assets/manifest.json"
+      "path": "things/night_vision_goggles.model.json"
     },
     {
       "kind": "json",
-      "path": "exports/things.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
+      "path": "things/portable_radio.model.json"
     },
     {
       "kind": "asset",

@@ -11,6 +11,18 @@
     },
     {
       "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/beans.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/canned_beans.model.json"
     },
     {
@@ -19,15 +31,15 @@
     },
     {
       "kind": "json",
-      "path": "things/crackers.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/chocolate_bar.model.json"
     },
     {
       "kind": "json",
-      "path": "things/soda_can.model.json"
+      "path": "things/crackers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/empty_can.model.json"
     },
     {
       "kind": "json",
@@ -35,7 +47,7 @@
     },
     {
       "kind": "json",
-      "path": "things/water_bottle.model.json"
+      "path": "things/index.json"
     },
     {
       "kind": "json",
@@ -47,23 +59,11 @@
     },
     {
       "kind": "json",
-      "path": "things/opened_soup.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/empty_can.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/opened_soda.model.json"
     },
     {
       "kind": "json",
-      "path": "things/beans.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/soup.model.json"
+      "path": "things/opened_soup.model.json"
     },
     {
       "kind": "json",
@@ -71,19 +71,15 @@
     },
     {
       "kind": "json",
-      "path": "things/index.json"
+      "path": "things/soda_can.model.json"
     },
     {
       "kind": "json",
-      "path": "assets/manifest.json"
+      "path": "things/soup.model.json"
     },
     {
       "kind": "json",
-      "path": "exports/things.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
+      "path": "things/water_bottle.model.json"
     },
     {
       "kind": "asset",

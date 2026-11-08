@@ -11,11 +11,11 @@
     },
     {
       "kind": "json",
-      "path": "things/bandage.model.json"
+      "path": "assets/manifest.json"
     },
     {
       "kind": "json",
-      "path": "things/antiseptic.model.json"
+      "path": "presentation/item-materials.json"
     },
     {
       "kind": "json",
@@ -23,7 +23,11 @@
     },
     {
       "kind": "json",
-      "path": "things/painkillers.model.json"
+      "path": "things/antiseptic.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bandage.model.json"
     },
     {
       "kind": "json",
@@ -31,23 +35,15 @@
     },
     {
       "kind": "json",
-      "path": "things/morphine.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/index.json"
     },
     {
       "kind": "json",
-      "path": "assets/manifest.json"
+      "path": "things/morphine.model.json"
     },
     {
       "kind": "json",
-      "path": "exports/things.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
+      "path": "things/painkillers.model.json"
     },
     {
       "kind": "asset",

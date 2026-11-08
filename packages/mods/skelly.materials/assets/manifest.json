@@ -1,25 +1,25 @@
 {
   "sources": [
     {
-      "author": "Skelly contributors",
-      "changes": "Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.",
+      "author": "Björn Roberg",
+      "changes": null,
       "download": null,
       "files": [
-        "assets/models/rag.glb",
+        "assets/models/cord_coil.glb",
         "assets/models/duct_tape.glb",
-        "assets/models/nails.glb",
-        "assets/models/scrap_metal.glb",
-        "assets/models/stick.glb",
-        "assets/models/wax.glb",
-        "assets/models/small_spring.glb",
         "assets/models/fastener_pack.glb",
+        "assets/models/nails.glb",
+        "assets/models/rag.glb",
+        "assets/models/scrap_metal.glb",
+        "assets/models/small_spring.glb",
+        "assets/models/stick.glb",
         "assets/models/tape_roll.glb",
         "assets/models/thread_spool.glb",
-        "assets/models/cord_coil.glb"
+        "assets/models/wax.glb"
       ],
-      "licence": "CC0-1.0",
-      "title": "Thing tool authored models",
-      "url": "https://github.com/roobie/skelly/blob/main/packages/mods/skelly.materials/exports/things.jsonnet"
+      "licence": "CC-BY-NC-SA-4.0",
+      "title": "skelly-assets built models",
+      "url": "https://github.com/roobie/skelly-assets"
     },
     {
       "author": "Skelly contributors",

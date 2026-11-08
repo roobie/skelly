@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import { actorFigure } from '../src/core/actorFigure.ts';
+import { figureVariantOf } from '../src/core/actorModels.ts';
 import { claimed } from '../src/core/capabilities.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { footstepSoundId } from '../src/core/footsteps.ts';
@@ -7,6 +8,7 @@ import { settlementActorSpawns, settlementHordeSpawn } from '../src/core/settlem
 import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
+import { fixtureActorFigures } from './fixtures/actorFigures.ts';
 import { fixtureScenarioSources } from './fixtures/scenario.ts';
 
 it('admits an independent actor id selecting an existing body plan', () => {
@@ -18,7 +20,10 @@ it('admits an independent actor id selecting an existing body plan', () => {
     capability: undefined,
     authoredOnly: true,
   };
-  const { registry, issues } = buildRegistry([...baseSources, { source: 'fixture-actor', data: { actors: [actor] } }]);
+  const { registry, issues } = buildRegistry([
+    ...baseSources,
+    { source: 'fixture-actor', data: { actors: [actor], actorFigures: fixtureActorFigures(source.id, actor) } },
+  ]);
   expect(issues).toEqual([]);
   const admitted = registry.actors.get(actor.id)!;
   expect(admitted).toBeDefined();
@@ -37,9 +42,11 @@ it.each(['slim-humanoid', 'legless-humanoid', 'broad-humanoid'] as const)(
       figure,
       figureSeeds: [1],
     };
+    // A built figure is baked for one variant, so the fixture borrows one from a base type of that variant.
+    const built = [...baseRegistry().actors.values()].find((type) => figureVariantOf(type) === figure)!;
     const { registry, issues } = buildRegistry([
       ...baseSources,
-      { source: 'fixture-variant', data: { actors: [actor] } },
+      { source: 'fixture-variant', data: { actors: [actor], actorFigures: fixtureActorFigures(built.id, actor) } },
     ]);
     expect(issues).toEqual([]);
     const admitted = registry.actors.get(actor.id)!;
@@ -79,6 +86,7 @@ it('uses independently named providers for horde and wanderer settlement roles',
       source: 'fixture-roles',
       data: {
         actors: [{ ...template, capability: undefined }, horde, wanderer],
+        actorFigures: fixtureActorFigures(template.id, horde, wanderer),
       },
     },
   ]);

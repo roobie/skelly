@@ -1,0 +1,10 @@
+{
+  "assets/models/binder_top.glb": { "materials": ["cloth-cream", "latex-pale", "cloth-heather-grey"] },
+  "assets/models/crystal_butt_wand.glb": {
+    "materials": ["wood-walnut", "leather-brown", "brass-dull", "crystal-glow-blue"]
+  },
+  "assets/models/crystal_socket_wand.glb": {
+    "materials": ["crystal-glow-blue", "brass-dull", "wood-walnut", "wood-oak"]
+  },
+  "assets/models/rune_clay_tablet.glb": { "materials": ["clay-terracotta", "gem-aquamarine"] }
+}

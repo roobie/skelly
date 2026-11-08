@@ -31,7 +31,11 @@
     },
     {
       "kind": "json",
-      "path": "things/shed_key.model.json"
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
     },
     {
       "kind": "json",
@@ -39,15 +43,7 @@
     },
     {
       "kind": "json",
-      "path": "assets/manifest.json"
-    },
-    {
-      "kind": "json",
-      "path": "exports/things.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
+      "path": "things/shed_key.model.json"
     },
     {
       "kind": "asset",

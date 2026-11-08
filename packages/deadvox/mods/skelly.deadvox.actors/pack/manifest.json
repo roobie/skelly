@@ -21,6 +21,10 @@
     },
     {
       "kind": "content",
+      "path": "figures-actors.json"
+    },
+    {
+      "kind": "content",
       "path": "footstep-sounds.json"
     },
     {
@@ -33,7 +37,575 @@
     },
     {
       "kind": "json",
-      "path": "things/shambler_torso.model.json"
+      "path": "actors/acid_zombie.1.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/acid_zombie.1.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/acid_zombie.2.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/acid_zombie.2.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/acid_zombie.3.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/acid_zombie.3.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/acid_zombie.4.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/acid_zombie.4.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/acid_zombie.6.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/acid_zombie.6.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/acid_zombie.8.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/acid_zombie.8.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/amalgam.1.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/amalgam.1.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.1.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.1.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.2.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.2.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.3.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.3.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.4.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.4.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.5.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.5.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.6.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.6.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.7.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.7.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.8.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/brute_shambler.8.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/crawler.1.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/crawler.1.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/crawler.11.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/crawler.11.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/crawler.2.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/crawler.2.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/crawler.3.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/crawler.3.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/crawler.5.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/crawler.5.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/crawler.6.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/crawler.6.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/crawler.7.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/crawler.7.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.1.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.1.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.2.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.2.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.3.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.3.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.4.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.4.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.5.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.5.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.6.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.6.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.7.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.7.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.8.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/farmer_shambler.8.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.1.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.1.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.2.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.2.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.3.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.3.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.4.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.4.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.5.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.5.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.6.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.6.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.7.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.7.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.8.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/medic_shambler.8.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.1.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.1.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.2.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.2.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.3.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.3.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.4.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.4.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.5.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.5.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.6.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.6.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.7.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.7.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.8.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/military_shambler.8.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.1.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.1.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.2.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.2.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.3.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.3.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.4.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.4.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.5.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.5.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.6.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.6.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.7.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.7.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.8.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/runner.8.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.1.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.1.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.2.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.2.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.3.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.3.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.4.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.4.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.5.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.5.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.6.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.6.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.7.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.7.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.8.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/shambler.8.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.1.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.1.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.2.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.2.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.3.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.3.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.4.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.4.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.5.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.5.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.6.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.6.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.7.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.7.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.8.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/worker_shambler.8.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/index.json"
     },
     {
       "kind": "json",
@@ -45,11 +617,11 @@
     },
     {
       "kind": "json",
-      "path": "things/shambler_right_arm.model.json"
+      "path": "things/shambler_left_leg.model.json"
     },
     {
       "kind": "json",
-      "path": "things/shambler_left_leg.model.json"
+      "path": "things/shambler_right_arm.model.json"
     },
     {
       "kind": "json",
@@ -57,19 +629,7 @@
     },
     {
       "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
-      "path": "assets/manifest.json"
-    },
-    {
-      "kind": "json",
-      "path": "exports/things.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
+      "path": "things/shambler_torso.model.json"
     },
     {
       "kind": "asset",
@@ -206,6 +766,286 @@
     {
       "kind": "asset",
       "path": "assets/audio/shambler-idle-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/acid_zombie.1.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/acid_zombie.2.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/acid_zombie.3.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/acid_zombie.4.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/acid_zombie.6.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/acid_zombie.8.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/amalgam.1.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/brute_shambler.1.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/brute_shambler.2.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/brute_shambler.3.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/brute_shambler.4.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/brute_shambler.5.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/brute_shambler.6.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/brute_shambler.7.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/brute_shambler.8.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/crawler.1.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/crawler.11.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/crawler.2.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/crawler.3.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/crawler.5.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/crawler.6.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/crawler.7.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/farmer_shambler.1.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/farmer_shambler.2.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/farmer_shambler.3.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/farmer_shambler.4.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/farmer_shambler.5.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/farmer_shambler.6.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/farmer_shambler.7.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/farmer_shambler.8.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/medic_shambler.1.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/medic_shambler.2.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/medic_shambler.3.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/medic_shambler.4.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/medic_shambler.5.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/medic_shambler.6.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/medic_shambler.7.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/medic_shambler.8.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/military_shambler.1.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/military_shambler.2.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/military_shambler.3.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/military_shambler.4.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/military_shambler.5.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/military_shambler.6.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/military_shambler.7.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/military_shambler.8.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/runner.1.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/runner.2.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/runner.3.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/runner.4.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/runner.5.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/runner.6.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/runner.7.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/runner.8.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/shambler.1.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/shambler.2.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/shambler.3.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/shambler.4.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/shambler.5.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/shambler.6.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/shambler.7.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/shambler.8.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/worker_shambler.1.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/worker_shambler.2.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/worker_shambler.3.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/worker_shambler.4.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/worker_shambler.5.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/worker_shambler.6.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/worker_shambler.7.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/worker_shambler.8.glb"
     },
     {
       "kind": "asset",

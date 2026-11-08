@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
-import { basename, dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { readBundledPacks } from '../../tools/readBundledPacks.ts';
@@ -23,14 +23,18 @@ import { modelPresentationAssetIssues } from '../core/itemPresentation.ts';
 import { admitPacks, packStartIssues } from '../core/packAdmission.ts';
 import { checkStartReachability } from '../core/reachability.ts';
 import { CONTENT_SECTION_KEYS, CONTENT_SECTIONS } from '../core/schema.ts';
+import { EXTERNAL_ASSET_ROOT } from '../product/externalRoot.ts';
 import { controlIssues } from './controlIssues.ts';
 
 const CATALOGUE = 'src/config/bundled-mods.json';
 
-const presentationAssetIssues = (registry: Registry, root: string): ContentIssue[] =>
+const presentationAssetIssues = (
+  registry: Registry,
+  packFile: (contentFile: string, file: string) => string,
+): ContentIssue[] =>
   [...registry.models.values()].flatMap((model) => {
     const origin = registry.modelOrigins.get(model.id)!;
-    const file = resolve(root, dirname(origin.source), model.file);
+    const file = packFile(origin.source, model.file);
     if (!existsSync(file)) {
       return [];
     }
@@ -99,11 +103,34 @@ export const validate = (
     ...fragments.filter(isManifest),
   ];
 
-  /** Every file under a pack's assets directory, as paths within the pack. */
-  const assetFiles = (pack: string): string[] =>
-    readdirSync(resolve(root, pack, 'assets'), { recursive: true, withFileTypes: true })
-      .filter((entry) => entry.isFile())
-      .map((entry) => relative(resolve(root, pack), join(entry.parentPath, entry.name)).split('\\').join('/'));
+  /** A pack's external namespace, as validate's pack roots are relative to `src/game`. */
+  const namespace = (id: string): string => resolve(root, 'src/game', EXTERNAL_ASSET_ROOT, id);
+  const listed = (from: string, packRoot: string): string[] =>
+    existsSync(from)
+      ? readdirSync(from, { recursive: true, withFileTypes: true })
+          .filter((entry) => entry.isFile())
+          .map((entry) => relative(packRoot, join(entry.parentPath, entry.name)).split('\\').join('/'))
+      : [];
+  /** Every file under a pack's assets directory, in its root or its external namespace, as paths within the pack. */
+  const assetFiles = (pack: string): string[] => {
+    const id = admitted.packs.find(({ source }) => resolve(root, source) === resolve(root, pack))?.manifest.id;
+    const external = id === undefined ? [] : listed(join(namespace(id), 'assets'), namespace(id));
+    return [...new Set([...listed(resolve(root, pack, 'assets'), resolve(root, pack)), ...external])];
+  };
+  /** A file named from content, under its pack's root or, failing that, the same path in its external namespace. */
+  const packFile = (contentFile: string, file: string): string => {
+    const local = resolve(root, dirname(contentFile), file);
+    if (existsSync(local)) {
+      return local;
+    }
+    for (const pack of admitted.packs) {
+      const within = relative(resolve(root, pack.source), local);
+      if (!(within.startsWith('..') || isAbsolute(within))) {
+        return join(namespace(pack.manifest.id), within);
+      }
+    }
+    return local;
+  };
 
   let broken = 0;
   const read = (source: string): unknown => {
@@ -130,7 +157,7 @@ export const validate = (
   if (catalogue !== undefined) {
     issues.push(...bundledModCatalogueIssues(catalogue).map((message) => ({ source: CATALOGUE, path: '', message })));
   }
-  issues.push(...presentationAssetIssues(registry, root));
+  issues.push(...presentationAssetIssues(registry, packFile));
   let assets = 0;
   for (const source of manifests) {
     const data = read(source);
@@ -146,9 +173,7 @@ export const validate = (
   issues.push(
     ...cursorFileIssues(registry, (contentFile, file) => existsSync(resolve(root, dirname(contentFile), file))),
   );
-  issues.push(
-    ...modelFileIssues(registry, (contentFile, file) => existsSync(resolve(root, dirname(contentFile), file))),
-  );
+  issues.push(...modelFileIssues(registry, (contentFile, file) => existsSync(packFile(contentFile, file))));
   issues.push(
     ...soundFileIssues(registry, (contentFile, file) => existsSync(resolve(root, dirname(contentFile), file))),
   );

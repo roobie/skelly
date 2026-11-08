@@ -21,6 +21,11 @@ export const LICENCES = {
   'CC0-1.0': { name: 'CC0 1.0', url: 'https://creativecommons.org/publicdomain/zero/1.0/', credit: false },
   'CC-BY-3.0': { name: 'CC BY 3.0', url: 'https://creativecommons.org/licenses/by/3.0/', credit: true },
   'CC-BY-4.0': { name: 'CC BY 4.0', url: 'https://creativecommons.org/licenses/by/4.0/', credit: true },
+  'CC-BY-NC-SA-4.0': {
+    name: 'CC BY-NC-SA 4.0',
+    url: 'https://creativecommons.org/licenses/by-nc-sa/4.0/',
+    credit: true,
+  },
   NONE: { name: 'No licence required', url: null, credit: false },
 } as const;
 

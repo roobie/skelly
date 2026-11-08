@@ -1,8 +1,8 @@
 {
   models: [
-    import 'gungen/magazine_stanag_30.model.json',
-    import 'gungen/magazine_stanag_20.model.json',
-    import 'gungen/magazine_akm_30.model.json',
+    import 'packages/skelly-assets/built/skelly.firearms/gungen/magazine_stanag_30.model.json',
+    import 'packages/skelly-assets/built/skelly.firearms/gungen/magazine_stanag_20.model.json',
+    import 'packages/skelly-assets/built/skelly.firearms/gungen/magazine_akm_30.model.json',
   ],
   "items": [
     {

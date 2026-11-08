@@ -1,5 +1,5 @@
 {
   "assets/models/folded_note.glb": { "materials": ["paper", "fold"] },
-  "assets/models/notebook.glb": { "materials": ["cover", "pages"] },
+  "assets/models/notebook.glb": { "materials": ["paper-pages-cream", "paper-cover-sage"] },
   "assets/models/paper_sheet.glb": { "materials": ["paper", "fold"] }
 }

@@ -1,27 +1,32 @@
 {
   "sources": [
     {
-      "author": "Skelly contributors",
-      "changes": "Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.",
+      "author": "Björn Roberg",
+      "changes": null,
       "download": null,
       "files": [
-        "assets/models/can_opener.glb",
-        "assets/models/whetstone.glb",
-        "assets/models/repair_kit.glb",
-        "assets/models/wire_strippers.glb",
         "assets/models/adjustable_pliers.glb",
-        "assets/models/sewing_repair_kit.glb",
-        "assets/models/crowbar.glb",
-        "assets/models/hammer.glb",
-        "assets/models/sledgehammer.glb",
-        "assets/models/kitchen_knife.glb",
-        "assets/models/wrench.glb",
+        "assets/models/brush_axe.glb",
+        "assets/models/can_opener.glb",
         "assets/models/compass.glb",
-        "assets/models/screwdriver.glb"
+        "assets/models/crowbar.glb",
+        "assets/models/digging_stick.glb",
+        "assets/models/hammer.glb",
+        "assets/models/hammer_bronze.glb",
+        "assets/models/hatchet.glb",
+        "assets/models/kitchen_knife.glb",
+        "assets/models/primitive_axe.glb",
+        "assets/models/repair_kit.glb",
+        "assets/models/screwdriver.glb",
+        "assets/models/sewing_repair_kit.glb",
+        "assets/models/sledgehammer.glb",
+        "assets/models/whetstone.glb",
+        "assets/models/wire_strippers.glb",
+        "assets/models/wrench.glb"
       ],
-      "licence": "CC0-1.0",
-      "title": "Thing tool authored models",
-      "url": "https://github.com/roobie/skelly/blob/main/packages/mods/skelly.hand-tools/exports/things.jsonnet"
+      "licence": "CC-BY-NC-SA-4.0",
+      "title": "skelly-assets built models",
+      "url": "https://github.com/roobie/skelly-assets"
     },
     {
       "author": "Skelly contributors",

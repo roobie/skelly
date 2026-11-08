@@ -1,26 +1,5 @@
-local recipe = import 'packages/skelly-assets/tools/packages/gun-authoring-tool/exports/deadvox.jsonnet';
-local things = import '../exports/things.jsonnet';
-local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
 {
-  sources: [
-    {
-      title: 'Gungen authored model exports',
-      url: 'https://github.com/roobie/skelly-assets/blob/main/tools/packages/gun-authoring-tool/exports/deadvox.jsonnet',
-      author: 'Skelly contributors',
-      licence: 'CC0-1.0',
-      download: null,
-      files: exportFiles(recipe),
-      changes: 'Original project-built geometry exported from the authored recipe in metres, +x forward and +y up. Cartridge dimensions come from the recipe sources; unsupported internal dimensions remain visual proxies.',
-    },
-    {
-      title: 'Thing tool authored models',
-      url: 'https://github.com/roobie/skelly/blob/main/packages/mods/skelly.firearms/exports/things.jsonnet',
-      author: 'Skelly contributors',
-      licence: 'CC0-1.0',
-      download: null,
-      files: exportFiles(things),
-      changes: 'Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.',
-    },
+  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.firearms') + [
     {
       "title": "The Free Firearm Sound Library — Winchester Model 12",
       "url": "https://opengameart.org/content/the-free-firearm-sound-library",

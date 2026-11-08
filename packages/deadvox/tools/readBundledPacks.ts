@@ -6,12 +6,17 @@ import { parse } from 'valibot';
 import { canonicalJson } from '../src/core/canonicalJson.ts';
 import { admitPacks, type PackInput, PackManifestSchema, packContentHash } from '../src/core/packAdmission.ts';
 import { logicalKey, type PackFileEntry, type PackLocation, resolvePhysical } from '../src/core/packFiles.ts';
+import { EXTERNAL_ASSET_ROOT } from '../src/product/externalRoot.ts';
 
 /** Pack roots are relative to the product modules that glob them; see `src/product/packs.ts`, `bundledPacks`. */
 export const PACK_ROOT_BASE = 'src/product';
 
-/** Every shipped pack, opt-in ones included, as the bundle stamp and file hashes cover them. */
-export const readAvailablePacks = (packageRoot: string): PackInput[] => {
+/**
+ * Every shipped pack, opt-in ones included, as the bundle stamp and file hashes cover them. `external` is the shared
+ * root of built files, relative to `PACK_ROOT_BASE` as pack roots are; only the namespaces of the packs found here are
+ * listed, and a file there that its pack does not declare is an error.
+ */
+export const readAvailablePacks = (packageRoot: string, external: string = EXTERNAL_ASSET_ROOT): PackInput[] => {
   const roots = ['mods', '../mods']
     .flatMap((root) => {
       const directory = resolve(packageRoot, root);
@@ -43,11 +48,22 @@ export const readAvailablePacks = (packageRoot: string): PackInput[] => {
         throw new Error(`Pack ${manifest.id}: unlisted JSON file ${path}`);
       }
     }
+    const namespace = resolve(packageRoot, PACK_ROOT_BASE, external, manifest.id);
+    const claimed = new Set(manifest.files.filter(({ kind }) => kind !== 'content').map(({ path }) => path));
+    const externalFiles = existsSync(namespace)
+      ? readdirSync(namespace, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile())
+      : [];
+    for (const entry of externalFiles) {
+      const path = relative(namespace, resolve(entry.parentPath, entry.name)).split(sep).join('/');
+      if (!claimed.has(path)) {
+        throw new Error(`Pack ${manifest.id}: unlisted external file ${path}`);
+      }
+    }
     return {
       source: root,
       manifest,
       files: manifest.files.map((entry) => {
-        const bytes = readResolved(packageRoot, { root, manifest }, entry);
+        const bytes = readResolved(packageRoot, { root, manifest }, entry, external);
         const data: unknown = entry.kind === 'asset' ? undefined : JSON.parse(bytes.toString('utf8'));
         return {
           source: entry.path,
@@ -64,23 +80,55 @@ export const readAvailablePacks = (packageRoot: string): PackInput[] => {
   return inputs;
 };
 
-// No external root is supplied yet, so every entry resolves to its one local candidate.
-const readResolved = (packageRoot: string, pack: PackLocation, entry: PackFileEntry): Buffer<ArrayBuffer> => {
-  const physical = (key: string) => resolve(packageRoot, PACK_ROOT_BASE, key);
-  const resolved = resolvePhysical(pack, entry, { has: (key) => existsSync(physical(key)) });
+/** Where an entry's bytes live, relative to `PACK_ROOT_BASE`: the one candidate present on disk. */
+const resolvedKey = (packageRoot: string, pack: PackLocation, entry: PackFileEntry, external: string): string => {
+  const resolved = resolvePhysical(
+    pack,
+    entry,
+    { has: (key) => existsSync(resolve(packageRoot, PACK_ROOT_BASE, key)) },
+    external,
+  );
   if ('issue' in resolved) {
     throw new Error(resolved.issue.message);
   }
-  return readFileSync(physical(resolved.key));
+  return resolved.key;
 };
 
+const readResolved = (
+  packageRoot: string,
+  pack: PackLocation,
+  entry: PackFileEntry,
+  external: string,
+): Buffer<ArrayBuffer> =>
+  readFileSync(resolve(packageRoot, PACK_ROOT_BASE, resolvedKey(packageRoot, pack, entry, external)));
+
 /** The bytes of one file a pack declares, from wherever the reader resolves it. */
-export const packFileBytes = (packageRoot: string, pack: PackInput, path: string): Buffer<ArrayBuffer> => {
+export const packFileBytes = (
+  packageRoot: string,
+  pack: PackInput,
+  path: string,
+  external: string = EXTERNAL_ASSET_ROOT,
+): Buffer<ArrayBuffer> => {
   const entry = pack.manifest.files.find((file) => file.path === path);
   if (!entry) {
     throw new Error(`Pack ${pack.manifest.id}: no declared file ${path}`);
   }
-  return readResolved(packageRoot, { root: pack.source, manifest: pack.manifest }, entry);
+  return readResolved(packageRoot, { root: pack.source, manifest: pack.manifest }, entry, external);
+};
+
+/** Whether a declared json or asset entry resolves under the external root rather than its pack's root. */
+export const packFileOrigin = (
+  packageRoot: string,
+  pack: PackInput,
+  path: string,
+  external: string = EXTERNAL_ASSET_ROOT,
+): 'external' | 'local' => {
+  const entry = pack.manifest.files.find((file) => file.path === path);
+  if (!entry) {
+    throw new Error(`Pack ${pack.manifest.id}: no declared file ${path}`);
+  }
+  const key = resolvedKey(packageRoot, { root: pack.source, manifest: pack.manifest }, entry, external);
+  return key === logicalKey({ root: pack.source }, path) ? 'local' : 'external';
 };
 
 /** The default packs, or the named stack's closure, which may include opt-in packs it names. */

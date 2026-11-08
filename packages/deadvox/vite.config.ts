@@ -220,6 +220,7 @@ export default defineConfig({
       allow: [
         fileURLToPath(new URL('.', import.meta.url)),
         fileURLToPath(new URL('../mods', import.meta.url)),
+        fileURLToPath(new URL('../skelly-assets/built', import.meta.url)),
         mobgenSrc,
       ],
     },

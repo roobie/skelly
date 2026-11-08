@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import { syncItemModelMetadata } from './item-model-metadata.mjs';
 
 const STALE = /stale/;
+const BOTH_ROOTS = /both roots/;
 
 const writeModel = (mod, file, material) => {
   const json = Buffer.from(JSON.stringify({ materials: [{ name: material }], meshes: [] }));
@@ -25,6 +26,7 @@ test('each mod gets one metadata file over its own models, and a mod that lost t
     const emptied = join(repositoryRoot, 'packages/mods/fixture.emptied');
     writeModel(product, 'product_item.glb', 'steel');
     writeModel(shared, 'shared_item.glb', 'cloth');
+    writeModel(join(repositoryRoot, 'packages/skelly-assets/built/fixture.shared'), 'built_item.glb', 'wood');
     mkdirSync(join(emptied, 'presentation'), { recursive: true });
     writeFileSync(metadataOf(emptied), '{}\n');
 
@@ -35,10 +37,22 @@ test('each mod gets one metadata file over its own models, and a mod that lost t
       'assets/models/product_item.glb': { materials: ['steel'] },
     });
     assert.deepEqual(JSON.parse(readFileSync(metadataOf(shared), 'utf8')), {
+      'assets/models/built_item.glb': { materials: ['wood'] },
       'assets/models/shared_item.glb': { materials: ['cloth'] },
     });
     assert.equal(existsSync(metadataOf(emptied)), false);
     syncItemModelMetadata({ check: true, repositoryRoot });
+  } finally {
+    rmSync(repositoryRoot, { recursive: true, force: true });
+  }
+});
+
+test("a model in both its mod and its pack's external namespace is rejected", () => {
+  const repositoryRoot = mkdtempSync(join(tmpdir(), 'item-model-metadata-'));
+  try {
+    writeModel(join(repositoryRoot, 'packages/mods/fixture.shared'), 'twice.glb', 'cloth');
+    writeModel(join(repositoryRoot, 'packages/skelly-assets/built/fixture.shared'), 'twice.glb', 'cloth');
+    assert.throws(() => syncItemModelMetadata({ repositoryRoot }), BOTH_ROOTS);
   } finally {
     rmSync(repositoryRoot, { recursive: true, force: true });
   }

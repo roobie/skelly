@@ -1,6 +1,6 @@
 // The actor data contract. The fixture cases cover the hand-made fixture this repo owns; the pinned-pair case alone
-// covers what the pinned producer exports. The stack cases (enumeration through `buildRegistry` and GLB agreement per
-// admitted body) are added when deadvox loads baked actors.
+// covers what the pinned producer exports; the stack cases cover the figures the stack admits, read as deadvox reads
+// them.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -15,6 +15,7 @@ import {
   walkCursor,
 } from '../packages/deadvox/src/core/actorClips.ts';
 import { slerpQuat } from '../packages/deadvox/src/core/boneMath.ts';
+import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
 import { boneTransforms } from '../packages/deadvox/src/core/pose.ts';
 import {
   ActorBodySchema,
@@ -24,9 +25,17 @@ import {
   JointDeltaClipSchema,
   PoseClipSchema,
 } from '../packages/deadvox/src/core/schema/actors.ts';
+import {
+  packFileBytes,
+  packFileOrigin,
+  readBundledPacks,
+  readStackContentSources,
+} from '../packages/deadvox/tools/readBundledPacks.ts';
+import { PACKAGE_ROOT } from './model-export-sync.mjs';
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
+const { Box3 } = deadvoxRequire('three');
 const { parse, safeParse } = await import(deadvoxRequire.resolve('valibot'));
 
 const fixture = (name) => new URL(`../packages/deadvox/test/fixtures/actors/${name}`, import.meta.url);
@@ -41,6 +50,8 @@ const jointDelta = parse(JointDeltaClipSchema, readJson('fixture.joint-delta.jso
 const { standing, crawling } = clips;
 
 const TOLERANCE = 1e-9;
+/** A GLB stores positions as float32, the body its height as a double. */
+const HEIGHT_TOLERANCE = 1e-5;
 const near = (a, b) => a.length === b.length && a.every((value, i) => Math.abs(value - b[i]) <= TOLERANCE);
 const apart = (label, a, b) => `${label}: [${a}] vs [${b}]`;
 const bitEqual = (a, b) => a.length === b.length && a.every((value, i) => value === b[i]);
@@ -304,30 +315,152 @@ describe('pinned producer exports', () => {
   });
 });
 
+/**
+ * What an actor GLB's one bone-tabled mesh disagrees with in `bones`: the table must name the bones in order, every
+ * vertex attribute cover every vertex, each vertex's bone index be a table index and each triangle index a vertex.
+ * Also returns the bone indices that carry vertices and the scene's vertical span.
+ */
+const boneMesh = async (bytes, bones) => {
+  const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
+  const tabled = [];
+  loaded.scene.traverse((visited) => {
+    if (visited.userData.bones) {
+      tabled.push(visited);
+    }
+  });
+  const box = new Box3().setFromObject(loaded.scene);
+  const result = { issues: [], skinned: [], span: box.max.y - box.min.y };
+  if (tabled.length !== 1) {
+    result.issues.push(`${tabled.length} bone-tabled meshes`);
+    return result;
+  }
+  const [node] = tabled;
+  const ids = bones.map(({ id }) => id);
+  if (node.userData.bones.join() !== ids.join()) {
+    result.issues.push(`bone table [${node.userData.bones}] vs body bones [${ids}]`);
+  }
+  const { attributes, index } = node.geometry;
+  const { count } = attributes.position;
+  for (const name of ['normal', 'color', 'uv1', 'uv2'].filter((attribute) => attributes[attribute]?.count !== count)) {
+    result.issues.push(`${name} does not cover the ${count} vertices`);
+  }
+  const skinned = new Set();
+  for (let i = 0; i < count; i++) {
+    skinned.add(attributes.uv1.getX(i));
+  }
+  result.skinned = [...skinned].sort((a, b) => a - b);
+  if (!result.skinned.every((i) => Number.isInteger(i) && i >= 0 && i < bones.length)) {
+    result.issues.push(`bone indices [${result.skinned}] outside the table`);
+  }
+  if (!Array.from(index.array).every((vertex) => vertex < count)) {
+    result.issues.push('a triangle index beyond the vertices');
+  }
+  return result;
+};
+
 describe('actor fixture GLB', () => {
   it('decodes with the bone table and per-vertex bone indices', async () => {
-    const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(readFileSync(fixture('fixture.glb'))).buffer, '');
-    const tabled = [];
-    loaded.scene.traverse((visited) => {
-      if (visited.userData.bones) {
-        tabled.push(visited);
-      }
-    });
-    assert.equal(tabled.length, 1);
-    const [node] = tabled;
-    assert.deepEqual(
-      node.userData.bones,
-      body.bones.map(({ id }) => id),
+    const { issues } = await boneMesh(readFileSync(fixture('fixture.glb')), body.bones);
+    assert.deepEqual(issues, []);
+  });
+});
+
+/** Hull-bearing bones: what a stance's voxels can rest on. */
+const hulled = (figureBody) => figureBody.bones.filter(({ hull }) => hull).map(({ id }) => id);
+
+/**
+ * A stance idle stands where the reader's standing fit puts it: the fit is grounded by the extents, so its voxels may
+ * rest less than a voxel above the ground. A frame idle stores its own grounding: its lowest voxel is at the ground.
+ */
+const standingIssues = (figureBody, stand) => {
+  if (!stand.idle.slack) {
+    return stand.idle.frames
+      .map((frame) => groundFit(figureBody, decodeFrame(frame), hulled(figureBody)).lowest)
+      .filter((lowest) => !near([lowest], [0]))
+      .map((lowest) => `standing idle lowest voxel ${lowest}`);
+  }
+  return [stand.idle.slack.base, stand.idle.aggravated.base].map(decodeFrame).flatMap((base) => {
+    const fit = standingFit(figureBody, base.rotations);
+    const { lowest } = groundFit(figureBody, base, hulled(figureBody));
+    return [
+      ...(Number.isFinite(fit) && near([base.root[1]], [fit])
+        ? []
+        : [apart('standing root y vs fit', [base.root[1]], [fit])]),
+      ...(lowest >= -TOLERANCE && lowest < figureBody.voxelSize ? [] : [`standing lowest voxel ${lowest}`]),
+    ];
+  });
+};
+
+/** A crawling idle rests its lowest ground contact at the ground. */
+const crawlingIssues = (figureBody, crawl) => {
+  const contacts = figureBody.groundContactBones ?? [];
+  const { lowest } = groundFit(figureBody, decodeFrame(crawl.idle.frames[0]), contacts);
+  return near([lowest], [0]) ? [] : [`crawling lowest contact ${lowest} over [${contacts}]`];
+};
+
+/** Where a figure's stored idles leave the ground the reader fits, per stance it has. */
+const groundIssues = ({ body: figureBody, clips: { standing: stand, crawling: crawl } }) => [
+  ...(stand || crawl ? [] : ['no stance']),
+  ...(stand ? standingIssues(figureBody, stand) : []),
+  ...(crawl ? crawlingIssues(figureBody, crawl) : []),
+];
+
+describe('stack actor figures', () => {
+  const { registry, issues } = buildRegistry(readStackContentSources(PACKAGE_ROOT, 'skelly.deadvox'));
+  const figures = [...registry.actorFigures.values()];
+  const packs = readBundledPacks(PACKAGE_ROOT, 'skelly.deadvox');
+  const { models } = JSON.parse(
+    readFileSync(new URL('../packages/skelly-assets/built/manifest.json', import.meta.url), 'utf8'),
+  );
+
+  // biome-ignore lint/style/noDoneCallback: Node's TestContext prints the figure listing, not a done callback.
+  it('admits a non-empty set of stack figures with no issues', (t) => {
+    assert.deepEqual(issues, []);
+    assert.ok(figures.length > 0, 'the stack admits no actor figure');
+    for (const { id } of figures) {
+      t.diagnostic(`actor figure ${id}`);
+    }
+  });
+
+  /** What one figure's pinned GLB, body and clips, read as deadvox reads them, disagree with in its admitted body. */
+  const glbIssues = async ({ id, body: figureBody }) => {
+    const rows = models.filter((model) => model.id === id);
+    const pack = rows.length === 1 && packs.find(({ manifest }) => manifest.id === rows[0].pack);
+    if (!pack) {
+      return [`${rows.length} pinned model rows, or a pack outside the stack`];
+    }
+    const [{ path: glb, body: bodyPath, clips: clipsPath }] = rows;
+    const found = [glb, bodyPath, clipsPath]
+      .filter((path) => packFileOrigin(PACKAGE_ROOT, pack, path) !== 'external')
+      .map((path) => `${path} is not read from the external root`);
+    const readIds = JSON.parse(packFileBytes(PACKAGE_ROOT, pack, bodyPath).toString('utf8')).bones.map(
+      (bone) => bone.id,
     );
-    const { attributes, index } = node.geometry;
-    const { count } = attributes.position;
-    for (const name of ['normal', 'color', 'uv1', 'uv2']) {
-      assert.equal(attributes[name]?.count, count, name);
+    if (readIds.join() !== figureBody.bones.map((bone) => bone.id).join()) {
+      found.push(`read body bones [${readIds}] differ from the admitted body's`);
     }
-    for (let i = 0; i < count; i++) {
-      const boneIndex = attributes.uv1.getX(i);
-      assert.ok(Number.isInteger(boneIndex) && boneIndex >= 0 && boneIndex < body.bones.length);
+    const mesh = await boneMesh(packFileBytes(PACKAGE_ROOT, pack, glb), figureBody.bones);
+    found.push(...mesh.issues);
+    const voxelled = figureBody.bones.flatMap(({ voxels }, i) => ((voxels?.length ?? 0) > 0 ? [i] : []));
+    if (mesh.skinned.join() !== voxelled.join()) {
+      found.push(`bones with vertices [${mesh.skinned}] vs bones with voxels [${voxelled}]`);
     }
-    assert.ok(Array.from(index.array).every((vertex) => vertex < count));
+    if (!(Math.abs(mesh.span - figureBody.height) <= HEIGHT_TOLERANCE)) {
+      found.push(`GLB height ${mesh.span} vs body height ${figureBody.height}`);
+    }
+    return found.map((issue) => `${id}: ${issue}`);
+  };
+
+  it('reads each figure GLB from the external root with the body bone table and voxel-bearing bones', async () => {
+    assert.ok(figures.length > 0);
+    assert.deepEqual((await Promise.all(figures.map(glbIssues))).flat(), []);
+  });
+
+  it('grounds each figure in its standing and crawling stances', () => {
+    assert.ok(figures.length > 0);
+    assert.deepEqual(
+      figures.flatMap((figure) => groundIssues(figure).map((issue) => `${figure.id}: ${issue}`)),
+      [],
+    );
   });
 });

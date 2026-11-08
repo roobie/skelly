@@ -1,16 +1,5 @@
-local things = import '../exports/things.jsonnet';
-local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
 {
-  sources: [
-    {
-      title: 'Thing tool authored models',
-      url: 'https://github.com/roobie/skelly/blob/main/packages/mods/skelly.body/exports/things.jsonnet',
-      author: 'Skelly contributors',
-      licence: 'CC0-1.0',
-      download: null,
-      files: exportFiles(things),
-      changes: 'Original project-built geometry rebuilt from authored item and part data; masses and appearance belong to the tool source.',
-    },
+  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.body') + [
     {
       title: '15 vocal male strain/hurt/pain/jump sounds',
       url: 'https://opengameart.org/content/15-vocal-male-strainhurtpainjump-sounds',

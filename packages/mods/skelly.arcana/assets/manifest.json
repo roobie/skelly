@@ -1,0 +1,18 @@
+{
+  "sources": [
+    {
+      "author": "Björn Roberg",
+      "changes": null,
+      "download": null,
+      "files": [
+        "assets/models/binder_top.glb",
+        "assets/models/crystal_butt_wand.glb",
+        "assets/models/crystal_socket_wand.glb",
+        "assets/models/rune_clay_tablet.glb"
+      ],
+      "licence": "CC-BY-NC-SA-4.0",
+      "title": "skelly-assets built models",
+      "url": "https://github.com/roobie/skelly-assets"
+    }
+  ]
+}

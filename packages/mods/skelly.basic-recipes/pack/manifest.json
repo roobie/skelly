@@ -21,7 +21,11 @@
     },
     {
       "kind": "json",
-      "path": "things/wooden_plank.model.json"
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
     },
     {
       "kind": "json",
@@ -33,15 +37,7 @@
     },
     {
       "kind": "json",
-      "path": "assets/manifest.json"
-    },
-    {
-      "kind": "json",
-      "path": "exports/things.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
+      "path": "things/wooden_plank.model.json"
     },
     {
       "kind": "asset",

@@ -1,1 +1,4 @@
-{ "assets/models/hinge_set.glb": { "materials": ["brass", "steel-grey"] } }
+{
+  "assets/models/hinge_set.glb": { "materials": ["brass", "steel-grey"] },
+  "assets/models/oven_door.glb": { "materials": ["paint-charcoal", "glass-grey", "steel-stainless", "steel-grey"] }
+}

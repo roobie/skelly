@@ -26,6 +26,34 @@
     },
     {
       "anchors": {
+        "flame": [0.28000000000000003, 0, 0]
+      },
+      "file": "assets/models/everburning_torch.glb",
+      "grip": {
+        "at": [-0.080000000000000016, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "everburning_torch",
+      "itemPresentation": {
+        "materials": ["wood", "metal", "fuel", "cloth", "wood"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "everburning_torch": {
+          "centreOfMass": [0.082878787878787899, -8.6580086580086553e-5, 0],
+          "massKg": 0.83099999999999996,
+          "node": "everburning_torch:compound"
+        }
+      },
+      "rest": "upright",
+      "roll": 0
+    },
+    {
+      "anchors": {
         "flame": [0.41999999999999998, 0, 0]
       },
       "emissiveMaterial": "#2b241c",
@@ -52,7 +80,7 @@
       },
       "file": "assets/models/candle.glb",
       "grip": {
-        "at": [0.040000000000000008, -0.0010000000000000009, -0.0010000000000000009],
+        "at": [0.040000000000000008, 0, 0],
         "turn": [0, 0, 0]
       },
       "hold": "upright",
@@ -107,7 +135,7 @@
       },
       "parts": {
         "base": {
-          "centreOfMass": [0, 0.006000000000000001, 0],
+          "centreOfMass": [0, 0.0059999999999999993, 0],
           "massKg": 0.40000000000000002,
           "node": "base:base"
         },
@@ -117,12 +145,12 @@
           "node": "burner:burner"
         },
         "chimney": {
-          "centreOfMass": [-3.0047739399045255e-5, 0.1316902555461949, -3.7349059253066799e-5],
+          "centreOfMass": [-9.5730575444179293e-5, 0.13139087775125963, -6.1256961018345561e-5],
           "massKg": 0.080000000000000002,
           "node": "chimney:chimney"
         },
         "fuel_fill": {
-          "centreOfMass": [-7.5923459276826529e-5, 0.041997563431987267, -7.5858484129830468e-5],
+          "centreOfMass": [-1.8651362984217988e-5, 0.041976087996174083, -1.8651362984228143e-5],
           "massKg": 0.001,
           "node": "fuel_fill:fuel_fill"
         },

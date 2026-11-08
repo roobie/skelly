@@ -10,8 +10,8 @@
   "assets/models/opened_beans.glb": { "materials": ["steel-grey", "paint-terracotta", "paperboard-tan"] },
   "assets/models/opened_soda.glb": { "materials": ["steel-grey", "plastic-red", "paperboard-tan", "paint-oxblood"] },
   "assets/models/opened_soup.glb": { "materials": ["steel-grey", "paperboard-tan", "paint-terracotta"] },
-  "assets/models/soda.glb": { "materials": ["glass-clear", "paint-oxblood"] },
   "assets/models/soda_can.glb": { "materials": ["steel-grey", "plastic-red"] },
+  "assets/models/soda.glb": { "materials": ["glass-clear", "paint-oxblood"] },
   "assets/models/soup.glb": { "materials": ["paint-terracotta", "plastic-green"] },
   "assets/models/water_bottle.glb": { "materials": ["glass-grey", "steel-grey", "plastic-blue"] }
 }

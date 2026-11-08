@@ -1,5 +1,0 @@
-{
-  "id": "fuse",
-  "file": "assets/models/fuse.glb",
-  "parts": { "fuse": { "node": "fuse:fuse", "massKg": 0.01, "centreOfMass": [0, 0.009999999999999998, 0] } }
-}

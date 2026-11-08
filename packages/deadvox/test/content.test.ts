@@ -46,6 +46,7 @@ import {
   fixtureBreach,
   fixtureItemEconomy,
 } from './economyFixtures.ts';
+import { fixtureActorFigures } from './fixtures/actorFigures.ts';
 import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
 
 const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
@@ -2667,6 +2668,7 @@ describe('content references', () => {
           furniture: [furniture],
           templates: [template],
           actors: [actor],
+          actorFigures: fixtureActorFigures('shambler', actor),
           sounds,
         },
       },
@@ -2714,6 +2716,7 @@ describe('content references', () => {
             },
           },
         ],
+        actorFigures: fixtureActorFigures('shambler', { id: 'clerk', figureSeeds: [1] }),
         actors: [
           {
             id: 'clerk',
@@ -2906,7 +2909,13 @@ const templateBase = [
   ...(templateSoundDefinitions.length > 0
     ? [{ source: 'template-sounds.json', data: { sounds: templateSoundDefinitions } }]
     : []),
-  { source: 'template-enemies.json', data: { actors: [templateShambler] } },
+  {
+    source: 'template-enemies.json',
+    data: {
+      actors: [templateShambler],
+      actorFigures: fixtureActorFigures('shambler', baseRegistry.actors.get('shambler')!),
+    },
+  },
 ];
 
 describe('zombie voice references', () => {
@@ -2915,7 +2924,16 @@ describe('zombie voice references', () => {
     buildRegistry([
       ...templateBase.filter(({ source }) => source !== 'template-enemies.json'),
       { source: 'voice-sound.json', data: { sounds: [voiceSound] } },
-      { source: 'voice-zombie.json', data: { actors: [{ ...templateShambler, id: 'fixture_voiced', sounds }] } },
+      {
+        source: 'voice-zombie.json',
+        data: {
+          actors: [{ ...templateShambler, id: 'fixture_voiced', sounds }],
+          actorFigures: fixtureActorFigures('shambler', {
+            ...baseRegistry.actors.get('shambler')!,
+            id: 'fixture_voiced',
+          }),
+        },
+      },
     ]).issues.map(({ path, message }) => `${path}: ${message}`);
   const voices = (attack: string) => ({
     idle: 'fixture_voice',

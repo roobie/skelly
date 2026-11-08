@@ -1,7 +1,7 @@
 import { array, check, type InferOutput, optional, pipe, strictObject } from 'valibot';
 import { ItemScarcitySchema } from '../loot.ts';
 import { PowerDeviceSchema, PowerTuningSchema } from '../powerContent.ts';
-import { ActorSchema, actorAcidSpitMatchesAbility, actorRegionsMatchModel } from './actors.ts';
+import { ActorFigureSchema, ActorSchema, actorAcidSpitMatchesAbility, actorRegionsMatchModel } from './actors.ts';
 import { BlockMaterialSchema, BlockSchema, FootstepSoundSchema } from './blocks.ts';
 import { BodyTuningSchema } from './body.ts';
 import { CatalogueRowSchema } from './catalogueRows.ts';
@@ -105,6 +105,7 @@ const SECTION_DESCRIPTOR = {
     label: 'actor types',
     order: 6,
   },
+  actorFigures: { schema: optional(array(ActorFigureSchema)), label: 'actor figures', order: 6.1 },
   figures: { schema: optional(array(FigureSchema)), label: 'figures', order: 3 },
   models: { schema: optional(array(ModelSchema)), label: 'models', order: 7 },
   itemWear: { schema: optional(array(ItemWearSchema)), label: 'item wear looks', order: 7.1 },
@@ -202,6 +203,8 @@ export type DoorLockDef = InferOutput<typeof DoorLockSchema>;
 export type ActorDef = InferOutput<typeof ActorSchema>;
 
 export type FigureDef = InferOutput<typeof FigureSchema>;
+
+export type ActorFigureDef = InferOutput<typeof ActorFigureSchema>;
 
 export type GunModelDef = InferOutput<typeof GunModelSchema>;
 

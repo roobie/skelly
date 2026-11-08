@@ -55,10 +55,11 @@ Construct motion remains construct work and separately carded work stays separat
 ## Invariants
 
 Keep `test/gungen-deadvox-contract.test.mjs` under its retained name until retirement
-renames it atomically with its CI invocation. Its population is the firearms pack's
-declared gun exports, read through the pack reader, not a copied inventory. Credits,
+renames it atomically with its CI invocation. Its population is the pinned gun rows the
+bundled packs consume from the external root, read through the pack reader, not a copied
+inventory. The comparison with each pinned manifest row (path, part nodes, credits),
 registry validation and GLTF loading remain alongside the specialised motion checks;
-see `test/model-export-sync.mjs`, `assertRecipeCredits`.
+see `test/model-export-sync.mjs`, `readCutOver` and `assertPinnedRow`.
 Preserve `test/things-deadvox-contract.test.mjs` independently.
 
 Neither tool imports its peer; lower packages and Deadvox cannot import the gun tool.

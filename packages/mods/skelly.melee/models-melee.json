@@ -1,6 +1,90 @@
 {
   "models": [
     {
+      "file": "assets/models/long_pole.glb",
+      "grip": {
+        "at": [0.91500000000000004, 0.02, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "long_pole",
+      "itemPresentation": {
+        "materials": ["wood", "wood"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "long_pole": {
+          "centreOfMass": [1.5200326797385624, 0.020000000000000004, 0],
+          "massKg": 2.25,
+          "node": "long_pole:compound"
+        }
+      },
+      "roll": 90
+    },
+    {
+      "file": "assets/models/pike_pole.glb",
+      "grip": {
+        "at": [0.14999999999999999, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "pike_pole",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "pike_pole": {
+          "centreOfMass": [0.69118879576532866, 2.2055580061755624e-6, 0.00065063961182179109],
+          "massKg": 3.1000000000000001,
+          "node": "pike_pole:compound"
+        }
+      },
+      "roll": 90
+    },
+    {
+      "file": "assets/models/sun_shield.glb",
+      "id": "sun_shield",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "sun_shield": {
+          "centreOfMass": [0.0014670352003902057, 0.0040967401024306974, -0.062768717990407258],
+          "massKg": 0.098000000000000004,
+          "node": "sun_shield:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/lame_saber.glb",
+      "id": "lame_saber",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "lame_saber": {
+          "centreOfMass": [0.00067903893951947066, 0.0040325245591194209, -0.043182530476979515],
+          "massKg": 1.0429999999999999,
+          "node": "lame_saber:compound"
+        }
+      }
+    },
+    {
       "anchors": {
         "strike": [0.42730000000034007, 0, 0]
       },
@@ -20,7 +104,7 @@
       },
       "parts": {
         "baseball_bat": {
-          "centreOfMass": [0.16811516120885597, -9.4789123663608247e-5, -8.7381092684569501e-5],
+          "centreOfMass": [0.17157737264132125, -3.710057047113758e-5, -2.9441097857741297e-5],
           "massKg": 0.90000000000000002,
           "node": "baseball_bat:bat"
         }
@@ -47,7 +131,7 @@
       },
       "parts": {
         "kabar": {
-          "centreOfMass": [-0.011265993265993273, -0.00013973063973063976, -6.9023569023569088e-5],
+          "centreOfMass": [-0.014923549750288125, -9.4506338839800056e-5, -3.4575489819439031e-5],
           "massKg": 0.29999999999999999,
           "node": "kabar:knife"
         }
@@ -75,7 +159,7 @@
       },
       "parts": {
         "machete": {
-          "centreOfMass": [-0.054441009320300077, -0.010371902705160264, -3.4098658786087779e-5],
+          "centreOfMass": [-0.06056146469049694, -0.0099276373147340873, -1.3077593722755083e-5],
           "massKg": 0.55000000000000004,
           "node": "machete:knife"
         }
@@ -102,7 +186,7 @@
       },
       "parts": {
         "steel_pipe": {
-          "centreOfMass": [0.50986915470968708, 4.3119470671325572e-6, -0.004980298862538101],
+          "centreOfMass": [0.51410238305383937, 0, -0.0053751103265666364],
           "massKg": 1.8,
           "node": "steel_pipe:steelPipe"
         }
