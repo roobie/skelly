@@ -62,6 +62,7 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/soundEvents.ts': 'Erased sound-id type contracts; selections and validation stay in the runtime graph.',
   'src/core/actorSense.ts': 'Erased player-sense contracts; perception and motion remain in the runtime graph.',
   'src/core/bones.ts': 'Erased skeleton type contracts; posing and dismemberment remain in the runtime graph.',
+  'src/core/actorClips.ts': 'Baked clip composer that no runtime module imports; its tests read it over a fixture.',
   'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
   'src/core/reachability.ts': 'CLI/test-only static content acceptance; no game runtime imports it.',
   'src/core/scenarioCertificate.ts': 'Test-only route proof; no game runtime imports it.',
