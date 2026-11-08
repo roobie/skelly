@@ -122,6 +122,9 @@
     "core/scheduler.ts": {
       "time": 3
     },
+    "core/schema/actors.ts": {
+      "turnRateDegPerSecond": 1
+    },
     "core/sideButton.ts": {
       "windowMs": 1
     },
