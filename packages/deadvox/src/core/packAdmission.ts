@@ -117,6 +117,29 @@ const checkFiles = (pack: PackInput, fail: Report): void => {
   }
 };
 
+/**
+ * Figure rows name their body and clips by declared path, and Node reads those bytes; only a pack that declares both
+ * as `json` files can add a figure, so a content-only mod cannot.
+ */
+const checkFigureFiles = (pack: PackInput, fail: Report): void => {
+  const declared = new Set(pack.manifest.files.filter(({ kind }) => kind === 'json').map(({ path }) => path));
+  const content = new Set(pack.manifest.files.filter(({ kind }) => kind === 'content').map(({ path }) => path));
+  for (const { data } of pack.files.filter(({ source }) => content.has(source))) {
+    const rows = isPlainRecord(data) && Array.isArray(data.actorFigures) ? data.actorFigures : [];
+    for (const row of rows.filter(isPlainRecord)) {
+      for (const field of ['body', 'clips'] as const) {
+        if (!(typeof row[field] === 'string' && declared.has(row[field]))) {
+          fail(
+            pack,
+            'files',
+            `Pack ${pack.manifest.id}: figure ${String(row.id)} ${field} must be a json file the pack declares`,
+          );
+        }
+      }
+    }
+  }
+};
+
 const indexPacks = (inputs: readonly PackInput[], fail: Report): Map<string, PackInput> => {
   const byId = new Map<string, PackInput>();
   for (const pack of inputs) {
@@ -131,6 +154,7 @@ const indexPacks = (inputs: readonly PackInput[], fail: Report): Map<string, Pac
     }
     byId.set(id, pack);
     checkFiles(pack, fail);
+    checkFigureFiles(pack, fail);
   }
   return byId;
 };
