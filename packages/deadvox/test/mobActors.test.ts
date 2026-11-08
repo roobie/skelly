@@ -3,14 +3,12 @@
 // own report for what to look at in a real browser.
 
 import { generateValid, realize } from '@mobgen/core/generate.ts';
-import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
-import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
 import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { generatedActorFigure } from '../src/core/actorFigure.ts';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { figureVariantOf } from '../src/core/actorModels.ts';
 import { actorPoseInputFor, flinchSideForId, HIT_FLINCH_DURATION } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
@@ -18,7 +16,7 @@ import type { Actor, AgentMode } from '../src/core/actorState.ts';
 import type { ActorSystemOptions } from '../src/core/actorSystem.ts';
 import { applyPoint, IDENTITY_M, mulMV, quatToMat3, transpose } from '../src/core/boneMath.ts';
 import type { Bone } from '../src/core/bones.ts';
-import { severableParts, severedBoneSet } from '../src/core/boneTree.ts';
+import { severedBoneSet } from '../src/core/boneTree.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
@@ -198,64 +196,72 @@ interface ContainmentCheck {
   readonly renderer: MobActorMeshes;
   readonly id: number;
   readonly part: string;
-  readonly realized: ReturnType<typeof realize>;
-  readonly voxelSize: number;
+  readonly body: ActorBody;
 }
-const partContainment = ({
-  renderer,
-  id,
-  part,
-  realized,
-  voxelSize,
-}: ContainmentCheck): { count: number; maxOverflow: number } => {
+const partContainment = ({ renderer, id, part, body }: ContainmentCheck): { count: number; maxOverflow: number } => {
   const debris = [...debrisEntries(renderer).values()].find((entry) => entry.initialCenter !== undefined)!;
-  const variantBones = realized.body.bones;
-  const boneIndexById = new Map(variantBones.map((bone, index) => [bone.id, index]));
-  const selected = new Set(
-    [...severedBoneSet(variantBones, [part])]
-      .map((bone) => boneIndexById.get(bone)!)
-      .filter((index) => index !== undefined),
-  );
-  const matrices = new Map(
-    [...selected].map((index) => [index, renderer.boneMatrix(id, variantBones[index]!.id)!] as const),
-  );
+  const selected = new Set(severedBoneSet(body.bones, [part]));
   const rotation = quatToMat3(debris.body.orientation);
   const inverse = transpose(rotation);
   const halfExtents: Vec3 = [0, 1, 2].map((axis) =>
     Math.max(...debris.body.corners.map((corner) => Math.abs(corner[axis]!))),
   ) as Vec3;
-  const { voxels } = realized;
+  const allowance = body.voxelSize / 2 + 0.001;
   let checked = 0;
   let maxOverflow = Number.NEGATIVE_INFINITY;
-  for (let k = 0; k < voxels.dims[2]; k++) {
-    for (let j = 0; j < voxels.dims[1]; j++) {
-      for (let i = 0; i < voxels.dims[0]; i++) {
-        const owner = voxels.owner[cellIndex(voxels.dims, i, j, k)]! - 1;
-        if (!selected.has(owner)) {
-          continue;
-        }
-        const matrix = matrices.get(owner)!;
-        const local = worldPosition(voxels, i, j, k);
-        const point: Vec3 = [
-          matrix[0]! * local[0] + matrix[1]! * local[1] + matrix[2]! * local[2] + matrix[3]!,
-          matrix[4]! * local[0] + matrix[5]! * local[1] + matrix[6]! * local[2] + matrix[7]!,
-          matrix[8]! * local[0] + matrix[9]! * local[1] + matrix[10]! * local[2] + matrix[11]!,
-        ];
-        const relative: Vec3 = [
-          point[0] - debris.initialCenter[0],
-          point[1] - debris.initialCenter[1],
-          point[2] - debris.initialCenter[2],
-        ];
-        const localPoint = mulMV(inverse, relative);
-        const allowance = voxelSize / 2 + 0.001;
-        for (const axis of [0, 1, 2]) {
-          maxOverflow = Math.max(maxOverflow, Math.abs(localPoint[axis]!) - halfExtents[axis]! - allowance);
-        }
-        checked += 1;
+  for (const bone of body.bones.filter(({ id: boneId }) => selected.has(boneId))) {
+    const matrix = renderer.boneMatrix(id, bone.id)!;
+    for (const local of bone.voxels ?? []) {
+      const point: Vec3 = [
+        matrix[0]! * local[0] + matrix[1]! * local[1] + matrix[2]! * local[2] + matrix[3]!,
+        matrix[4]! * local[0] + matrix[5]! * local[1] + matrix[6]! * local[2] + matrix[7]!,
+        matrix[8]! * local[0] + matrix[9]! * local[1] + matrix[10]! * local[2] + matrix[11]!,
+      ];
+      const relative: Vec3 = [
+        point[0] - debris.initialCenter[0],
+        point[1] - debris.initialCenter[1],
+        point[2] - debris.initialCenter[2],
+      ];
+      const localPoint = mulMV(inverse, relative);
+      for (const axis of [0, 1, 2]) {
+        maxOverflow = Math.max(maxOverflow, Math.abs(localPoint[axis]!) - halfExtents[axis]! - allowance);
       }
+      checked += 1;
     }
   }
   return { count: checked, maxOverflow };
+};
+
+interface PartBox {
+  readonly corners: readonly Vec3[];
+  readonly boneIndices: readonly number[];
+}
+
+/** Whether `inner` is a different part whose bones all ride on `outer`. */
+const nestedIn = (inner: PartBox, outer: PartBox): boolean =>
+  inner !== outer && inner.boneIndices.every((index) => outer.boneIndices.includes(index));
+
+/**
+ * How far the part's voxel cubes reach past its box, whose corners sit about the part's centre of mass: the mean of
+ * its equal voxels. Throws when the part owns no voxels, so an empty part cannot pass.
+ */
+const partBoxOverflow = (body: ActorBody, scale: number, part: PartBox): number => {
+  const centres = part.boneIndices.flatMap((index) => body.bones[index]!.voxels ?? []);
+  if (centres.length === 0) {
+    throw new Error('part owns no voxels');
+  }
+  const half = (body.voxelSize / 2) * scale;
+  let overflow = Number.NEGATIVE_INFINITY;
+  for (const axis of [0, 1, 2]) {
+    const mean = centres.reduce((sum, centre) => sum + centre[axis]!, 0) / centres.length;
+    const low = Math.min(...part.corners.map((corner) => corner[axis]!));
+    const high = Math.max(...part.corners.map((corner) => corner[axis]!));
+    for (const centre of centres) {
+      const offset = (centre[axis]! - mean) * scale;
+      overflow = Math.max(overflow, low - (offset - half), offset + half - high);
+    }
+  }
+  return overflow;
 };
 
 const registry = baseRegistry();
@@ -404,10 +410,10 @@ const directionAngle = (a: Vec3, b: Vec3): number => {
 const renderedHead = (renderer: MobActorMeshes, id: number): { readonly forward: Vec3; readonly center: Vec3 } => {
   const internal = renderer as unknown as {
     states: Map<number, { variantIndex: number; lastPose: Pose | undefined }>;
-    variants: readonly { realized: { body: { bones: readonly Bone[] } } }[];
+    variants: readonly { bones: readonly Bone[] }[];
   };
   const state = internal.states.get(id)!;
-  const head = boneTransforms(internal.variants[state.variantIndex]!.realized.body.bones, state.lastPose!).get('head')!;
+  const head = boneTransforms(internal.variants[state.variantIndex]!.bones, state.lastPose!).get('head')!;
   return {
     forward: [...mulMV(head.r, [0, 0, -1])] as Vec3,
     center: [...applyPoint(head, [0, 0, 0])] as Vec3,
@@ -1015,18 +1021,18 @@ describe('MobActorMeshes', () => {
       renderer.sync(store, 0, 1);
       const internals = renderer as unknown as {
         states: Map<number, { variantIndex: number }>;
-        variants: readonly { walkActorTemplate: { seed: number } }[];
+        variants: readonly { body: { seed: number } }[];
       };
       for (let i = 0; i < ids.length; i++) {
         const state = internals.states.get(ids[i]!)!;
-        expect(internals.variants[state.variantIndex]!.walkActorTemplate.seed).toBe(seeds[i]);
+        expect(internals.variants[state.variantIndex]!.body.seed).toBe(seeds[i]);
       }
     } finally {
       renderer.dispose();
     }
   });
 
-  it('draws every registry zombie type, visibly, with the figure its content model realizes', () => {
+  it('draws every registry zombie type, visibly, with the built figure of its type and seed', () => {
     const renderer = new MobActorMeshes(0.5, registry.actors.size, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
@@ -1039,7 +1045,7 @@ describe('MobActorMeshes', () => {
       const internals = renderer as unknown as {
         group: { visible: boolean };
         states: Map<number, { variantIndex: number }>;
-        variants: readonly { mesh: InstancedMesh; realized: { body: { bones: readonly { id: string }[] } } }[];
+        variants: readonly { mesh: InstancedMesh; body: ActorBody }[];
       };
 
       expect(internals.group.visible).toBe(true);
@@ -1049,8 +1055,9 @@ describe('MobActorMeshes', () => {
         if (!state) {
           continue;
         }
-        const { mesh, realized } = internals.variants[state.variantIndex]!;
-        expect(realized, type.id).toBe(generatedActorFigure(type, figureSeed).realized);
+        const { mesh, body } = internals.variants[state.variantIndex]!;
+        const built = actorFigure(FIGURES, type, figureSeed).body;
+        expect({ ...body, type: built.type }, type.id).toEqual(built);
         expect(mesh.visible).toBe(true);
         expect(mesh.count).toBeGreaterThan(0);
         expect(mesh.geometry.getAttribute('position').count).toBeGreaterThan(0);
@@ -1058,7 +1065,7 @@ describe('MobActorMeshes', () => {
         expect(materials.length).toBeGreaterThan(0);
         expect(materials.every((material) => material.visible)).toBe(true);
         const isAmalgam = type === fusedMassTypeOf(registry.actors);
-        const matrix = renderer.boneMatrix(id, realized.body.bones[0]!.id);
+        const matrix = renderer.boneMatrix(id, body.bones[0]!.id);
         expect(matrix, type.id).toHaveLength(12);
         if (isAmalgam) {
           expect(Math.hypot(matrix![0]!, matrix![4]!, matrix![8]!)).toBeCloseTo(type.bodyScale!);
@@ -1084,13 +1091,13 @@ describe('MobActorMeshes', () => {
           windup: type.attack!.windupSimSeconds / 2,
           hitFlinchTime: HIT_FLINCH_DURATION / 4,
         });
-        return { type, realized: generatedActorFigure(type, figureSeed).realized, id: store.add(actor) };
+        return { type, body: actorFigure(FIGURES, type, figureSeed).body, id: store.add(actor) };
       });
       expect(entries.some(({ type }) => type.figure === 'legless-humanoid')).toBe(true);
       renderer.sync(store, 1 / 60, 1);
-      for (const { type, realized, id } of entries) {
-        expect(realized.body.bones.length, type.id).toBeGreaterThan(0);
-        for (const bone of realized.body.bones) {
+      for (const { type, body, id } of entries) {
+        expect(body.bones.length, type.id).toBeGreaterThan(0);
+        for (const bone of body.bones) {
           const matrix = renderer.boneMatrix(id, bone.id);
           expect(matrix, `${type.id} ${bone.id}`).toHaveLength(12);
           expect(matrix!.every(Number.isFinite), `${type.id} ${bone.id}`).toBe(true);
@@ -1368,9 +1375,7 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(system.store, 0, 1);
       expect(renderer.isBoneHidden(id, 'head')).toBe(true);
       expect(renderer.debrisCountFor(id)).toBeGreaterThan(0);
-      const head = generatedActorFigure({ model: 'humanoid' }, 1).realized.body.bones.findIndex(
-        (bone) => bone.id === 'head',
-      );
+      const head = actorFigure(FIGURES, SHAMBLER, 1).body.bones.findIndex((bone) => bone.id === 'head');
       const finished = (
         renderer as unknown as { corpses: ReadonlyMap<number, { ragdoll: import('../src/render/ragdoll.ts').Ragdoll }> }
       ).corpses.get(id)!;
@@ -1453,7 +1458,7 @@ describe('MobActorMeshes reactions', () => {
       await renderer.whenCorpsesReady();
       renderer.sync(store, ragdollContent.timestep);
       renderer.sync(store, ragdollContent.timestep);
-      const figure = generatedActorFigure(crawling.type, crawling.figureSeed).realized;
+      const figure = actorFigure(FIGURES, crawling.type, crawling.figureSeed);
       const before = renderer.boneMatrix(id, 'hand.L')!;
       renderer.actorSevered(id, 'hand.L', undefined, crawling);
       const debris = [
@@ -1769,9 +1774,7 @@ describe('MobActorMeshes dismemberment', () => {
       const actor = makeActor([2, 0, -3], [1, 0, 0]);
       const id = store.add(actor);
       renderer.sync(store, 1 / 60, 1);
-      const template = TEMPLATES.find((candidate) => candidate.name === 'humanoid')!;
-      const realized = realize(generateValid(template, 1)!.genome);
-      const boneIds = [...severedBoneSet(realized.body.bones, ['forearm.L'])];
+      const boneIds = [...severedBoneSet(actorFigure(FIGURES, actor.type, actor.figureSeed).body.bones, ['forearm.L'])];
       const before = new Map(boneIds.map((bone) => [bone, renderer.boneMatrix(id, bone)!]));
       renderer.actorSevered(id, 'forearm.L', undefined, actor);
       renderer.sync(store, 0, 1); // packs without advancing the rigid body
@@ -1825,36 +1828,38 @@ describe('MobActorMeshes dismemberment', () => {
     }
   });
 
-  it('caches template-assigned mass for every severable variant part', () => {
+  it('gives every severable part of every drawn figure a share of its body mass and a box around its voxels', () => {
     const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 1 });
     try {
       const { variants } = renderer as unknown as {
-        variants: readonly { rigidParts: ReadonlyMap<string, { mass: number }> }[];
+        variants: readonly {
+          body: ActorBody;
+          scale: number;
+          rigidParts: ReadonlyMap<string, { mass: number; corners: readonly Vec3[]; boneIndices: readonly number[] }>;
+        }[];
       };
-      const masses = [...variants[0]!.rigidParts.entries()].map(([part, properties]) => [part, properties.mass]);
-      const template = TEMPLATES.find((candidate) => candidate.name === 'humanoid')!;
-      const { realized } = generateValid(template, 1)!;
-      const { bones } = realized.body;
-      const indices = new Map(bones.map((bone, index) => [bone.id, index]));
-      const expected = severableParts(bones).map((part) => [
-        part,
-        templatePartMassProperties({
-          voxels: realized.voxels,
-          partBoneIndices: [...severedBoneSet(bones, [part])].map((bone) => indices.get(bone)!),
-          bodyBoneIndices: bones.map((_, index) => index),
-          voxelSize: realized.voxels.size,
-          template,
-          part,
-        }).mass,
-      ]);
-      expect(masses).toEqual(expected);
+      expect(variants.length).toBeGreaterThan(0);
+      for (const { body, scale, rigidParts } of variants) {
+        const key = `${body.model}.${body.seed}`;
+        const parts = [...rigidParts.entries()].map(([part, rigid]) => ({ part, ...rigid }));
+        expect(parts.length, key).toBeGreaterThan(0);
+        for (const part of parts) {
+          expect(part.mass, `${key} ${part.part}`).toBeGreaterThan(0);
+          for (const outer of parts.filter((candidate) => nestedIn(part, candidate))) {
+            expect(part.mass, `${key} ${part.part} within ${outer.part}`).toBeLessThanOrEqual(outer.mass);
+          }
+          expect(partBoxOverflow(body, scale, part), `${key} ${part.part}`).toBeLessThanOrEqual(1e-9);
+        }
+        const outermost = parts.filter((part) => !parts.some((outer) => nestedIn(part, outer)));
+        const total = outermost.reduce((sum, part) => sum + part.mass, 0);
+        expect(total, key).toBeLessThanOrEqual(body.bodyMassKg + 1e-9);
+      }
     } finally {
       renderer.dispose();
     }
   });
   it('debris OBB contains the posed limb at spawn', () => {
-    const template = TEMPLATES.find((candidate) => candidate.name === 'humanoid')!;
-    const { realized } = generateValid(template, 1)!;
+    const { body } = actorFigure(FIGURES, SHAMBLER, 1);
     const handRenderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 1 });
     try {
       const handStore = new MapEntityStore<Actor>();
@@ -1875,8 +1880,7 @@ describe('MobActorMeshes dismemberment', () => {
         renderer: handRenderer,
         id: handId,
         part: 'hand.L',
-        realized,
-        voxelSize: template.voxelSize,
+        body,
       });
       expect(handContainment.count).toBeGreaterThan(0);
       expect(handContainment.maxOverflow).toBeLessThanOrEqual(0);
@@ -1902,8 +1906,7 @@ describe('MobActorMeshes dismemberment', () => {
         renderer: headRenderer,
         id: headId,
         part: 'head',
-        realized,
-        voxelSize: template.voxelSize,
+        body,
       });
       expect(headContainment.count).toBeGreaterThan(0);
       expect(headContainment.maxOverflow).toBeLessThanOrEqual(0);

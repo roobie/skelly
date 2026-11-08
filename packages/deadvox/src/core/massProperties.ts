@@ -1,4 +1,6 @@
+import type { Vec3 as Point } from './boneMath.ts';
 import type { Vec3 } from './coords.ts';
+import type { ActorBody } from './schema/actors.ts';
 
 type Tensor3 = readonly [
   readonly [number, number, number],
@@ -26,14 +28,18 @@ const requirePositive = (value: number, name: string): void => {
   }
 };
 
-const requireVoxels = (centres: readonly Vec3[]): void => {
+const requireVoxels = (centres: readonly Point[]): void => {
   if (centres.length === 0) {
     throw new RangeError('selected bones contain no voxels');
   }
 };
 
 /** The axis-aligned box around solid voxel cubes given by their centres, as a built body stores them. */
-export const voxelBounds = (centres: readonly Vec3[], voxelSize: number, reference: Vec3 = [0, 0, 0]): VoxelBounds => {
+export const voxelBounds = (
+  centres: readonly Point[],
+  voxelSize: number,
+  reference: Point = [0, 0, 0],
+): VoxelBounds => {
   requirePositive(voxelSize, 'voxelSize');
   requireVoxels(centres);
   const half = voxelSize / 2;
@@ -59,7 +65,7 @@ export const voxelBounds = (centres: readonly Vec3[], voxelSize: number, referen
 };
 
 /** Solid-voxel mass, centre and inertia of voxel cubes given by their rest centres, in metres and kilograms. */
-export const massProperties = (centres: readonly Vec3[], voxelSize: number, density: number): MassProperties => {
+export const massProperties = (centres: readonly Point[], voxelSize: number, density: number): MassProperties => {
   requirePositive(voxelSize, 'voxelSize');
   requirePositive(density, 'density');
   requireVoxels(centres);
@@ -98,5 +104,34 @@ export const massProperties = (centres: readonly Vec3[], voxelSize: number, dens
       [xy, yy + ownCubes, yz],
       [xz, yz, zz + ownCubes],
     ],
+  };
+};
+
+/** The rest voxel centres the given bones own, in bone order. */
+export const boneVoxelCentres = (body: Pick<ActorBody, 'bones'>, indices: readonly number[]): Point[] =>
+  indices.flatMap((index) => body.bones[index]!.voxels ?? []);
+
+/**
+ * A severable part's share of the body's authored mass: its authored fraction, or else its share of the body's
+ * voxels, spread over the part's voxels so the inertia keeps their shape whatever the density.
+ */
+export const bodyPartMass = (
+  body: Pick<ActorBody, 'bones' | 'voxelSize' | 'bodyMassKg' | 'massFractions'>,
+  part: string,
+  indices: readonly number[],
+): MassProperties => {
+  const partCentres = boneVoxelCentres(body, indices);
+  const bodyVoxelCount = body.bones.reduce((count, bone) => count + (bone.voxels?.length ?? 0), 0);
+  const fraction = body.massFractions?.[part] ?? partCentres.length / bodyVoxelCount;
+  if (!(fraction > 0 && fraction <= 1)) {
+    throw new RangeError(`mass fraction for ${part} must be in (0, 1]`);
+  }
+  const mass = body.bodyMassKg * fraction;
+  const unitDensity = massProperties(partCentres, body.voxelSize, 1);
+  const density = mass / unitDensity.mass;
+  return {
+    mass,
+    center: unitDensity.center,
+    inertia: unitDensity.inertia.map((row) => row.map((value) => value * density)) as unknown as Tensor3,
   };
 };

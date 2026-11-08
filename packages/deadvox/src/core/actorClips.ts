@@ -134,14 +134,16 @@ const blendArmBase = (baseR: Mat3, weight: number): Mat3 => {
   return rotAxis(axis, (angle * 180 * weight) / Math.PI);
 };
 
-const skeleton = (body: ActorBody): Bone[] =>
-  body.bones.map(({ id, parent, head, tail, frame, limits }) => ({
+/** A built body's bones as the pose solver's skeleton, in body bone order. */
+export const bodySkeleton = (body: Pick<ActorBody, 'bones'>): Bone[] =>
+  body.bones.map(({ id, parent, head, tail, frame, limits, disposition }) => ({
     id,
     parent,
     head,
     tail,
     ...(frame && { frame }),
     ...(limits && { limits }),
+    ...(disposition && { disposition }),
   }));
 
 // ---- decoding and sampling ----
@@ -250,7 +252,7 @@ export const groundFit = (
   pose: Pose,
   boneIds: readonly string[],
 ): { lowest: number; byBone: Map<string, number> } => {
-  const transforms = boneTransforms(skeleton(body), pose);
+  const transforms = boneTransforms(bodySkeleton(body), pose);
   const half = body.voxelSize / 2;
   const hulls = new Map(body.bones.map((bone) => [bone.id, bone.hull]));
   const byBone = new Map<string, number>();
@@ -273,7 +275,7 @@ export const groundFit = (
 
 /** Root y that stands the body's extent bones on the ground for these rotations. */
 export const standingFit = (body: ActorBody, rotations: Record<string, Mat3>): number =>
-  groundOffset(skeleton(body), new Map(Object.entries(body.extents)), rotations, GROUND_SMOOTHING);
+  groundOffset(bodySkeleton(body), new Map(Object.entries(body.extents)), rotations, GROUND_SMOOTHING);
 
 /** Root y that rests the body's ground contact bones on the ground, fitted at root height zero. */
 const crawlingFit = (body: ActorBody, root: Vec3, rotations: Record<string, Mat3>): number => {
@@ -396,7 +398,7 @@ export const applyJointDelta = (
     return base;
   }
   const { a, b, w } = deltaFrames(clip, cursor);
-  const chain = skeleton(body);
+  const chain = bodySkeleton(body);
   const bones = new Map(chain.map((bone) => [bone.id, bone]));
   const weight = clip.speedWeight ? clamp(speed, 0, 1) : 1;
   const sideScale = clip.sideScalesZ ? clamp(side, -1, 1) : 1;

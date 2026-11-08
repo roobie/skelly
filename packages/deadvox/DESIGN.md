@@ -3054,7 +3054,7 @@ must realize a valid body by itself. Falling through to the next valid seed woul
 draw two seeds as one body and quietly shrink authored variety, so it is refused;
 a figure variant whose template rejects shared seeds authors its own. See
 `src/core/actorModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`, `figureVariantOf` and `bodyPlanModel`;
-`src/render/mobActors.ts`, `figureSeedsByModel`; and
+`src/render/mobActors.ts`, `drawnSeeds`; and
 `packages/mobgen/src/mob/humanoidFigure.ts`, `templateFigure`.
 
 Presentation must not change simulation outcomes. Test noise is different because

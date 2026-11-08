@@ -1,21 +1,20 @@
-// Draws zombies as full mobgen actors instead of ActorMeshes' six boxes — the default behind
+// Draws zombies as their built actor figures instead of ActorMeshes' six boxes — the default behind
 // `?actors=detailed` (GameConfig.actors; `?actors=boxes` selects the fallback; see src/game/config.ts).
 // Same shape as ActorMeshes
 // (group/sync/…, see ActorRenderer below) so play.ts can hold either behind one variable.
 //
-// mobgen's pure core/mob modules (bones, IK, gait, the crowd bone-matrix packing) are reused directly via
-// the `@mobgen/` alias (vite.config.ts, tsconfig.json) — no npm dependency, just a sibling-project source
-// import. three.js itself is `import`ed here directly; mobgen only reaches three from packages/mobgen/src/viewer,
-// which this file — and everything under @mobgen/ — must never import; see test/mobgenBoundary.test.ts. The draw strategy mirrors mobgen's own stress-page 'crowd'
-// mode (packages/mobgen/src/viewer/stressActors.ts's buildCrowdRender): one shared bone-matrix DataTexture for
-// every zombie so shadow and colour passes consume the same pose, and one InstancedMesh per body variant, each
-// vertex fetching its own bone's matrix with a single texelFetch — see packages/mobgen/src/mob/crowd.ts for the
+// Each figure is drawn from the session's built files (`src/core/actorFigureFiles.ts`): its mesh, body and clips,
+// so the game draws exactly the figure the authoring tools exported. The draw strategy mirrors mobgen's own
+// stress-page 'crowd' mode (packages/mobgen/src/viewer/stressActors.ts's buildCrowdRender): one shared bone-matrix
+// DataTexture for every zombie so shadow and colour passes consume the same pose, and one InstancedMesh per body
+// variant, each vertex fetching its own bone's matrix with a single texelFetch — see ./crowd.ts for the
 // packing/layout and the GLSL, patched into MeshLambertMaterial here via onBeforeCompile exactly as
 // stressActors.ts patches MeshStandardMaterial (checked against three r186's meshlambert.glsl.js: same
 // <begin_vertex>/<beginnormal_vertex> chunks, same relative order, so the same patch applies unchanged).
 //
-// Known simplification: each model/seed variant owns a block of `capacity` bone-texture rows. The models
-// and seeds are those the `actors` option's types select and author (`figureSeedsByModel`);
+// Known simplification: each drawn figure variant owns a block of `capacity` bone-texture rows. The figures
+// are those the `actors` option's types author (`drawnSeeds`), and types that bake the same figure share one
+// variant (`src/render/actorFigureVariants.ts`, `figureVariants`);
 // `DEFAULT_CAPACITY` provides the default capacity. A variant's overflow is not drawn, though its sim state
 // is unaffected — a hard per-variant cap for that zombie's whole life, not a rotating "nearest capacity"
 // set. Picking the nearest actors would require per-frame distance sorting within every overflowing variant.
@@ -28,34 +27,25 @@
 // Fixed-step state, not render dt or randomness, drives the simulation-owned pose. A
 // death is different — src/core/actorSystem.ts's onDeath removes the zombie from its store and calls actorDied
 // here in the very same step, so this renderer owns the corpse from then on: it keeps the existing
-// slot/variant/instance, falls from the frozen living pose, holds once lying, sinks, then frees
-// the slot. Corpses are render-only; incapacitated zombies remain simulation entities, fall once and lie in
-// their existing row, excluded from corpse eviction, until finishing one off makes it an ordinary corpse.
+// slot/variant/instance, falls (as a ragdoll, or through the figure's built death clip when it bakes one),
+// holds once lying, sinks, then frees the slot. Corpses are render-only; incapacitated zombies remain
+// simulation entities, fall once and lie in their existing row, excluded from corpse eviction, until finishing
+// one off makes it an ordinary corpse.
 //
-// Dismemberment (packages/mobgen/src/mob/dismember.ts): src/core/actorState.ts's Actor.severed (part names, e.g.
+// Dismemberment: src/core/actorState.ts's Actor.severed (part names, e.g.
 // "upperArm.L") is the *only* source of truth — this renderer never keeps its own copy for a live zombie,
 // just re-expands actor.severed via severedBoneSet every sync() (cheap, and it's what makes save/load
 // "just work": a restored zombie's severed list is already exactly right). A severed bone is hidden by
 // writing an all-zero 3x4 matrix for it in the shared texture (packZeroBone) — a zero matrix collapses
 // every one of that bone's vertices to the origin, degenerate, so hiding it needs no shader logic at all.
 // The severed-bone bitmask (crowd.ts's packSeveredMask) exists only for the *gore* effect: a survivor
-// bone's face whose neighbourBone has just been severed (see mobgen's mesh.ts) gets tinted in the fragment
+// bone's face whose neighbourBone has just been severed (see ./actorFigureGeometry.ts) gets tinted in the fragment
 // shader. A corpse's severed set is frozen at the instant of death, same as its pose. Severing also spawns
 // one piece of flying debris (see the Debris type below) — its own InstancedMesh row shows only the
 // severed subtree (the inverse of a live zombie/corpse: the carried bones are real, everything else is
 // zeroed) and shares the corpse Rapier world and cap/eviction/lifecycle machinery
 // (a debris row counts toward the shared corpse budget exactly like a corpse does).
 
-import type { Realized } from '@mobgen/core/generate.ts';
-import { voxelBounds } from '@mobgen/core/massProperties.ts';
-import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
-import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
-import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
-import { fusedMassTemplate } from '@mobgen/mob/fusedMassTemplate.ts';
-import { createGaitCache, footRestExtents, type WalkActor } from '@mobgen/mob/gait.ts';
-import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
-import { LOOK_AT_PROFILES } from '@mobgen/mob/lookAtProfiles.ts';
-import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import {
   type BufferGeometry,
   type Camera,
@@ -78,9 +68,8 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
-import { type ActorFigureType, generatedActorFigure } from '../core/actorFigure.ts';
-import type { ActorFigureFiles } from '../core/actorFigureFiles.ts';
-import { type ActorModel, bodyPlanModel, FIGURE_VARIANTS, figureVariantOf } from '../core/actorModels.ts';
+import { bodySkeleton } from '../core/actorClips.ts';
+import { type ActorFigureFiles, actorFigure } from '../core/actorFigureFiles.ts';
 import {
   type ActorPoseScene,
   acidSpitWindupProgress,
@@ -102,12 +91,18 @@ import {
   type Transform,
   transpose,
 } from '../core/boneMath.ts';
-import type { BodyAnchor } from '../core/bones.ts';
-import { burstBones, severableParts, severedBoneSet } from '../core/boneTree.ts';
+import type { BodyAnchor, Bone } from '../core/bones.ts';
+import { severableParts, severedBoneSet } from '../core/boneTree.ts';
 import type { ColumnReveal } from '../core/columnReveal.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
-import { FUSED_MASS_FIGURE_SEED, type FusedMassFigure, fusedMassTypeOf } from '../core/fusedMassFigure.ts';
+import {
+  FUSED_MASS_FIGURE_SEED,
+  type FusedMassFigure,
+  fusedMassFigureForType,
+  fusedMassTypeOf,
+} from '../core/fusedMassFigure.ts';
+import { bodyPartMass, boneVoxelCentres, voxelBounds } from '../core/massProperties.ts';
 import type { LookDefaults } from '../core/mood.ts';
 import {
   allocateBoneTransforms,
@@ -118,11 +113,12 @@ import {
   type ParentIndex,
   type Pose,
 } from '../core/pose.ts';
-import type { LookAtProfile } from '../core/schema/actors.ts';
+import { type ActorBody, type ActorClips, actorFigureKey, type LookAtProfile } from '../core/schema/actors.ts';
 import type { Quaternion } from '../core/spatial.ts';
 import { ACTIVE_ACTOR_RATE } from '../game/simulationRates.ts';
+import { figureVariants } from './actorFigureVariants.ts';
 import { BLOOD_STAIN_COLOR_FRAGMENT, BLOOD_STAIN_FRAGMENT_DECLARATIONS } from './bloodStain.ts';
-import { acidCorpsePose } from './corpsePose.ts';
+import { corpseFallPose, deathClip } from './corpsePose.ts';
 import {
   CROWD_BEGIN_VERTEX,
   CROWD_BEGINNORMAL_VERTEX,
@@ -139,7 +135,7 @@ import {
   packCrowdBoneMatrix,
   packSeveredMask,
 } from './crowd.ts';
-import { buildCarvedGeometry, FleshChunks, mergeBoneMeshes } from './fusedMassFlesh.ts';
+import { buildCarvedGeometry, FleshChunks } from './fusedMassFlesh.ts';
 import { fusedMassCoreInteriorAnchor, fusedMassTentaclePose } from './fusedMassTentaclePose.ts';
 import { woundSeverity } from './gore.ts';
 import { patchHeightFog } from './heightFog.ts';
@@ -198,7 +194,7 @@ export const mobFigurePoolSizeThrough = (figureSeeds: readonly number[], figureS
 
 const severedBoneIds = (variant: Variant, parts: readonly string[]): ReadonlySet<string> =>
   severedBoneSet(
-    variant.realized.body.bones,
+    variant.bones,
     parts.map((part) => variant.severedRoots.get(part) ?? part),
   );
 
@@ -221,36 +217,41 @@ const backgroundActorBlend = (actor: Actor, simulationTime: number | undefined, 
   simulationTime === undefined || actor.renderPrevious.time === undefined
     ? fallback
     : clamp01((simulationTime - actor.renderPrevious.time) * BACKGROUND_ACTOR_RATE);
-const buildVariantGeometry = (realized: Realized): BufferGeometry =>
-  mergeBoneMeshes(realized.meshes, realized.body.materials, realized.voxels);
 
 /** A live zombie is keyed by its EntityId; a piece of debris (there can be more than one per zombie, over
  * its lifetime) gets its own synthetic string key — see actorSevered. Corpses stay EntityId-keyed (one
  * per zombie). */
 type SlotKey = EntityId | string;
 
+/** A severable part's rigid body as debris, in the scaled rest frame about its centre of mass. */
+interface RigidPart {
+  readonly mass: number;
+  readonly inertiaBody: RigidBody['inertiaBody'];
+  readonly corners: readonly Vec3[];
+  readonly boneIndices: readonly number[];
+}
+
 interface Variant {
-  readonly model: string;
-  readonly lookAt: LookAtProfile;
-  readonly figureSeed: number;
-  readonly bodyScale?: number;
-  readonly realized: Realized;
-  /** Shared bones/extents/params/seed; each zombie using this variant clones it with its own GaitCache
-   * (packages/mobgen/src/mob/gait.ts's GaitCache — per zombie, not per variant, since several zombies sharing a
-   * variant have different speeds/step indices at once; see mobgen's own crowd-cache report). */
-  readonly walkActorTemplate: WalkActor;
-  readonly rigidParts: ReadonlyMap<
-    string,
-    { mass: number; inertiaBody: RigidBody['inertiaBody']; corners: readonly Vec3[]; boneIndices: readonly number[] }
-  >;
+  readonly body: ActorBody;
+  readonly clips: ActorClips;
+  /** The body's bones as the pose solver's skeleton, in body bone order. */
+  readonly bones: readonly Bone[];
+  /** The authored body scale, 1 for every model drawn at figure size. */
+  readonly scale: number;
+  /** A body gazes only while it keeps a head part, so a body without one never gazes. */
+  readonly gaze: { readonly profile: LookAtProfile; readonly headPart: string } | undefined;
+  /**
+   * The generated realization a fused-mass body's holes and flesh chunks are cut from: the built figure has no
+   * per-voxel colours or hole walls, and the simulation's carved cells index this same realization.
+   */
+  readonly carving: FusedMassFigure['realized'] | undefined;
+  readonly rigidParts: ReadonlyMap<string, RigidPart>;
   readonly severedRoots: ReadonlyMap<string, string>;
-  /** The part a cut at the head starts at; a body without one has no gaze. */
-  readonly headPart: string | undefined;
-  /** Bones a death removes without a severed part (mobgen's `burst` disposition), such as the acid sac. */
+  /** Bones a death removes without a severed part (the `burst` disposition), such as the acid sac. */
   readonly burstIndices: readonly number[];
   readonly parentIndex: ParentIndex;
-  /** Bone id -> this variant's own bone array index — translates mobgen's severedBoneSet (string ids, body-
-   * plan-generic) into the indices the shared texture and its severed mask are keyed by. */
+  /** Bone id -> this variant's own bone array index — translates severedBoneSet (string ids, body-plan-
+   * generic) into the indices the shared texture and its severed mask are keyed by. */
   readonly boneIndexById: ReadonlyMap<string, number>;
   readonly geometry: BufferGeometry;
   readonly mesh: InstancedMesh;
@@ -282,7 +283,6 @@ interface ActorRenderState extends SlotHolder {
   lookAtState: LookAtState;
   previousPerceptionSimSeconds: number | undefined;
   perceptionSimSeconds: number | undefined;
-  readonly walkActor: WalkActor;
   crawling: boolean;
   fallHit?: Vec3 | undefined;
   crawlFall?: { physics: Ragdoll; elapsedRealSeconds: number; released: boolean } | undefined;
@@ -360,7 +360,6 @@ export const hearingGazeTarget = (
 interface Corpse extends SlotHolder {
   /** Permanent incapacitation uses the fall pose but remains a saved simulation entity and is never evicted. */
   readonly incapacitated: boolean;
-  readonly walkActor: WalkActor;
   /** The pose frozen at the instant of death. */
   readonly basePose: Pose;
   /** The simulation's death point stays separate from render-only limb motion and sinking. */
@@ -401,7 +400,7 @@ interface Wound {
 interface DebrisSpawn {
   id: EntityId;
   part: string;
-  state: Pick<ActorRenderState, 'variantIndex' | 'walkActor'>;
+  state: Pick<ActorRenderState, 'variantIndex'>;
   variant: Variant;
   severedIndices: readonly number[];
   sourceTransforms: Map<number, MutableTransform>;
@@ -416,7 +415,6 @@ interface DebrisSpawn {
  * drawn as the *inverse* of a corpse: only `severedIndices` are visible (real, physics-placed matrices),
  * every other bone is zeroed. Reuses a corpse-shaped slot/lifecycle (see this module's header comment). */
 interface Debris extends SlotHolder {
-  readonly walkActor: WalkActor;
   /** The bone indices this debris carries (the cut bone and everything below it) — visible; every other
    * bone in the variant is hidden. */
   readonly severedIndices: readonly number[];
@@ -445,7 +443,7 @@ export interface MobActorMeshesOptions {
   readonly actors: ReadonlyMap<string, DrawnActorType>;
   /** The session's built actor figures, handed to each pose input (`src/core/actorPose.ts`, `ActorPoseInput`). */
   readonly actorFigureFiles: ActorFigureFiles;
-  /** Builds only the first this-many figure seeds of each model. */
+  /** Draws only the first this-many figure seeds of each type. */
   readonly poolSize?: number;
   /** A chunk of carved flesh came to rest at this centre (metres), for gore to mark. */
   readonly onFleshLanded?: (centre: Vec3) => void;
@@ -482,49 +480,64 @@ const anchorWorld = (
   return [placement.x + world[0], placement.y + world[1], placement.z + world[2]];
 };
 
-type DrawnActorType = ActorFigureType & {
-  readonly model: ActorModel;
+interface DrawnActorType {
+  readonly id: string;
+  readonly model: string;
+  readonly bodyScale?: number | undefined;
+  readonly figureSeeds?: readonly number[] | undefined;
   readonly carving?: { readonly interiorColor: string } | undefined;
-};
-interface BuiltActorVariant {
-  model: ActorModel;
-  figureSeed: number;
-  bodyScale?: number;
-  realized: Realized;
-  walkActorTemplate: WalkActor;
-  lookAt: LookAtProfile;
-  severedRoots: ReadonlyMap<string, string>;
-  headPart: string | undefined;
 }
 
-const requireFusedMassType = (type: ActorFigureType | undefined): ActorFigureType => {
-  if (type?.model !== 'fused-mass') {
-    throw new Error('MobActorMeshes requires the fused-mass content type when fused-mass actors are enabled');
+/** The figure seeds drawn for `type` in authored order, the first `poolSize` of them; the fused-mass seed is fixed. */
+const drawnSeeds = (type: DrawnActorType, poolSize: number | undefined): readonly number[] => {
+  const seeds = type.model === 'fused-mass' ? [FUSED_MASS_FIGURE_SEED] : (type.figureSeeds ?? []);
+  if (seeds.length === 0) {
+    throw new Error(`MobActorMeshes requires authored figureSeeds for actor type ${type.id}`);
   }
-  return type;
+  return poolSize === undefined ? seeds : seeds.slice(0, Math.max(1, poolSize));
 };
 
-const severedRootsFor = (figure: ReturnType<typeof generatedActorFigure>): ReadonlyMap<string, string> => {
-  if (!('manifest' in figure)) {
-    return new Map();
-  }
-  const fusedMass = figure as FusedMassFigure;
-  return new Map(fusedMass.manifest.parts.filter((part) => part.severable).map((part) => [part.id, part.rootBone]));
+/** Each severable part's rigid body, from its share of the body's mass and its bones' voxels. */
+const rigidPartsOf = (
+  body: ActorBody,
+  bones: readonly Bone[],
+  severedRoots: ReadonlyMap<string, string>,
+  boneIndexById: ReadonlyMap<string, number>,
+): ReadonlyMap<string, RigidPart> => {
+  const parts = severedRoots.size > 0 ? [...severedRoots.keys()] : severableParts(bones);
+  const { scale } = body;
+  return new Map(
+    parts.map((part) => {
+      const boneIndices = [...severedBoneSet(bones, [severedRoots.get(part) ?? part])].map(
+        (boneId) => boneIndexById.get(boneId)!,
+      );
+      const properties = bodyPartMass(body, part, boneIndices);
+      const bounds = voxelBounds(boneVoxelCentres(body, boneIndices), body.voxelSize, properties.center);
+      return [
+        part,
+        {
+          mass: properties.mass,
+          inertiaBody: properties.inertia.map((row) =>
+            row.map((value) => value * scale ** 2),
+          ) as unknown as RigidPart['inertiaBody'],
+          corners: bounds.corners.map((corner) => corner.map((value) => value * scale) as Vec3),
+          boneIndices,
+        },
+      ];
+    }),
+  );
 };
 
-const copyScaledTransform = (source: Transform, target: MutableTransform, scale?: number): void => {
+const copyScaledTransform = (source: Transform, target: MutableTransform, scale: number): void => {
   for (let i = 0; i < 9; i++) {
-    target.r[i] = scale === undefined ? source.r[i]! : source.r[i]! * scale;
+    target.r[i] = source.r[i]! * scale;
   }
   for (let i = 0; i < 3; i++) {
-    target.t[i] = scale === undefined ? source.t[i]! : source.t[i]! * scale;
+    target.t[i] = source.t[i]! * scale;
   }
 };
 
-const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale?: number): void => {
-  if (scale === undefined) {
-    return;
-  }
+const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale: number): void => {
   for (const transform of transforms) {
     for (let i = 0; i < 9; i++) {
       transform.r[i] = transform.r[i]! * scale;
@@ -535,62 +548,7 @@ const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale?:
   }
 };
 
-const buildActorVariant = (model: ActorModel, seed: number, fusedMassType?: ActorFigureType): BuiltActorVariant => {
-  const type =
-    model === 'fused-mass'
-      ? requireFusedMassType(fusedMassType)
-      : { model: FIGURE_VARIANTS[model].bodyPlan, figure: model };
-  const figure = generatedActorFigure(type, seed);
-  const { genome, realized } = figure;
-  const bodyScale = model === 'fused-mass' ? type.bodyScale : undefined;
-  return {
-    model,
-    figureSeed: seed,
-    ...(bodyScale === undefined ? {} : { bodyScale }),
-    realized,
-    walkActorTemplate: {
-      bones: realized.body.bones,
-      extents: footRestExtents(realized.body.bones, realized.voxels),
-      params: genome.params as HumanoidParams,
-      seed: genome.seed,
-    },
-    lookAt: LOOK_AT_PROFILES[model === 'fused-mass' ? 'humanoid' : bodyPlanModel(model)]!,
-    severedRoots: severedRootsFor(figure),
-    headPart: 'severableParts' in figure ? figure.severableParts.head[0] : undefined,
-  };
-};
-
-/** Each model the types select, with the figure seeds they author for it in authored order, the first
- * `poolSize` of them; the fused-mass seed is fixed. */
-const figureSeedsByModel = (
-  actors: ReadonlyMap<string, DrawnActorType>,
-  poolSize: number | undefined,
-): ReadonlyMap<ActorModel, readonly number[]> => {
-  const byModel = new Map<ActorModel, number[]>();
-  for (const type of actors.values()) {
-    const authored = type.model === 'fused-mass' ? [FUSED_MASS_FIGURE_SEED] : (type.figureSeeds ?? []);
-    const variant = figureVariantOf(type);
-    const seeds = byModel.get(variant) ?? [];
-    byModel.set(variant, [...new Set([...seeds, ...authored])]);
-  }
-  for (const [model, seeds] of byModel) {
-    if (seeds.length === 0) {
-      throw new Error(`MobActorMeshes requires authored figureSeeds for the ${model} model`);
-    }
-    if (poolSize !== undefined) {
-      seeds.splice(Math.max(1, poolSize));
-    }
-  }
-  return byModel;
-};
-
-const buildActorVariants = (
-  seedsByModel: ReadonlyMap<ActorModel, readonly number[]>,
-  fusedMassType?: ActorFigureType,
-): BuiltActorVariant[] =>
-  [...seedsByModel].flatMap(([model, seeds]) => seeds.map((seed) => buildActorVariant(model, seed, fusedMassType)));
-
-/** Draws zombies as full mobgen actors, one shared bone-matrix texture and one InstancedMesh per variant
+/** Draws zombies as their built figures, one shared bone-matrix texture and one InstancedMesh per variant
  * — see this module's own header comment for the whole design and its one documented simplification. */
 export class MobActorMeshes implements ActorRenderer {
   readonly group = new Group();
@@ -599,7 +557,8 @@ export class MobActorMeshes implements ActorRenderer {
   private readonly reveal: ColumnReveal | undefined;
   private readonly capacity: number;
   private readonly variants: readonly Variant[];
-  private readonly variantIndexBySeed: ReadonlyMap<string, number>;
+  /** Figure key (`actorFigureKey`) -> the variant drawing that figure. */
+  private readonly variantIndexByFigure: ReadonlyMap<string, number>;
   private readonly layout: CrowdTextureLayout;
   private readonly textureData: Float32Array;
   private readonly texture: DataTexture;
@@ -658,17 +617,21 @@ export class MobActorMeshes implements ActorRenderer {
     this.tentacleMaterial = fusedMassType
       ? new MeshLambertMaterial({ color: 0xb9_4c_3e, emissive: 0x2c_0b_08 })
       : undefined;
-    const templatesByModel = new Map(
-      [...TEMPLATES, acidTemplate, fusedMassTemplate].map((template) => [template.name, template]),
-    );
-
     const t0 = performance.now();
-    const built = buildActorVariants(figureSeedsByModel(options.actors, options.poolSize), fusedMassType);
-    const generationMs = performance.now() - t0;
+    const built = figureVariants(
+      [...options.actors.values()].flatMap((type) =>
+        drawnSeeds(type, options.poolSize).map((seed) => ({
+          key: actorFigureKey(type.id, seed),
+          type,
+          figure: actorFigure(options.actorFigureFiles, type, seed),
+        })),
+      ),
+    );
+    const buildMs = performance.now() - t0;
     // biome-ignore lint/suspicious/noConsole: a one-time, useful-to-see startup cost, not per-frame noise.
-    console.info(`MobActorMeshes: generated ${built.length} zombie model variants in ${generationMs.toFixed(1)} ms`);
+    console.info(`MobActorMeshes: built ${built.length} zombie figure variants in ${buildMs.toFixed(1)} ms`);
 
-    const bonesPerSlot = Math.max(1, ...built.map((v) => v.realized.body.bones.length));
+    const bonesPerSlot = Math.max(1, ...built.map((v) => v.figure.body.bones.length));
     // Each model/seed variant owns its own capacity rows in the shared bone texture, plus the hidden row.
     this.hiddenRow = built.length * capacity;
     this.layout = crowdTextureLayout(bonesPerSlot, this.hiddenRow + 1);
@@ -735,8 +698,7 @@ export class MobActorMeshes implements ActorRenderer {
       );
     };
 
-    this.variants = built.map((v, variantIndex) => {
-      const geometry = buildVariantGeometry(v.realized);
+    this.variants = built.map(({ type, figure: { body, clips }, geometry }) => {
       const mesh = new InstancedMesh(geometry, this.material, capacity);
       mesh.customDepthMaterial = depthMaterial;
       castsAndReceives(mesh);
@@ -758,72 +720,35 @@ export class MobActorMeshes implements ActorRenderer {
       for (let k = capacity - 1; k >= 0; k--) {
         freeLocalSlots.push(k);
       }
-      const boneIndexById = new Map<string, number>();
-      v.realized.body.bones.forEach((bone, index) => {
-        boneIndexById.set(bone.id, index);
-      });
-      const rigidParts = new Map<
-        string,
-        {
-          mass: number;
-          inertiaBody: RigidBody['inertiaBody'];
-          corners: readonly Vec3[];
-          boneIndices: readonly number[];
-        }
-      >();
-      const parts = v.severedRoots.size > 0 ? [...v.severedRoots.keys()] : severableParts(v.realized.body.bones);
-      const scale = v.bodyScale ?? 1;
-      for (const part of parts) {
-        const root = v.severedRoots.get(part) ?? part;
-        const boneIndices = [...severedBoneSet(v.realized.body.bones, [root])]
-          .map((boneId) => boneIndexById.get(boneId))
-          .filter((index): index is number => index !== undefined);
-        const properties = templatePartMassProperties({
-          voxels: v.realized.voxels,
-          partBoneIndices: boneIndices,
-          bodyBoneIndices: v.realized.body.bones.map((_, index) => index),
-          voxelSize: v.realized.voxels.size,
-          template: templatesByModel.get(bodyPlanModel(v.model))!,
-          part,
-        });
-        const bounds = voxelBounds(v.realized.voxels, boneIndices, properties.center);
-        rigidParts.set(part, {
-          mass: properties.mass,
-          inertiaBody: [
-            properties.inertia[0].map((value) => value * scale ** 2) as Vec3,
-            properties.inertia[1].map((value) => value * scale ** 2) as Vec3,
-            properties.inertia[2].map((value) => value * scale ** 2) as Vec3,
-          ],
-          corners: bounds.corners.map((corner) => corner.map((value) => value * scale) as Vec3),
-          boneIndices,
-        });
-      }
+      const bones = bodySkeleton(body);
+      const boneIndexById = new Map(bones.map((bone, index) => [bone.id, index]));
+      const severedRoots = new Map(
+        (body.manifest?.parts ?? []).filter((part) => part.severable).map((part) => [part.id, part.rootBone]),
+      );
+      const headPart = body.severableParts?.head?.[0];
       return {
-        model: v.model,
-        lookAt: v.lookAt,
-        figureSeed: v.figureSeed,
-        ...(v.bodyScale === undefined ? {} : { bodyScale: v.bodyScale }),
-        realized: v.realized,
-        walkActorTemplate: v.walkActorTemplate,
-        rigidParts,
-        severedRoots: v.severedRoots,
-        headPart: v.headPart,
-        burstIndices: burstBones(v.realized.body.bones).map((id) => boneIndexById.get(id)!),
-        parentIndex: indexBonesByParent(v.realized.body.bones),
+        body,
+        clips,
+        bones,
+        scale: body.scale,
+        gaze: body.lookAt && headPart !== undefined ? { profile: body.lookAt, headPart } : undefined,
+        carving:
+          body.bodyPlan === 'fused-mass' ? fusedMassFigureForType(type, FUSED_MASS_FIGURE_SEED).realized : undefined,
+        rigidParts: rigidPartsOf(body, bones, severedRoots, boneIndexById),
+        severedRoots,
+        burstIndices: body.burstBones.map((id) => boneIndexById.get(id)!),
+        parentIndex: indexBonesByParent(bones),
         boneIndexById,
         geometry,
         mesh,
         crowdSlotAttr,
-        scratch: allocateBoneTransforms(v.realized.body.bones.length),
+        scratch: allocateBoneTransforms(bones.length),
         freeLocalSlots,
         liveIds: [],
         idToInstanceIndex: new Map(),
-        variantIndex,
-      } satisfies Variant & { variantIndex: number };
+      } satisfies Variant;
     });
-    this.variantIndexBySeed = new Map(
-      this.variants.map((variant, index) => [`${variant.model}:${variant.figureSeed}`, index]),
-    );
+    this.variantIndexByFigure = new Map(built.flatMap(({ keys }, index) => keys.map((key) => [key, index])));
   }
 
   async whenCorpsesReady(): Promise<void> {
@@ -1088,7 +1013,7 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   private addActor(id: EntityId, actor: Actor): ActorRenderState | undefined {
-    const variantIndex = this.variantIndexBySeed.get(`${figureVariantOf(actor.type)}:${actor.figureSeed}`);
+    const variantIndex = this.variantIndexByFigure.get(actorFigureKey(actor.type.id, actor.figureSeed));
     if (variantIndex === undefined) {
       return undefined;
     }
@@ -1118,7 +1043,6 @@ export class MobActorMeshes implements ActorRenderer {
       localSlot,
       globalRow,
       instanceIndex,
-      walkActor: { ...variant.walkActorTemplate, cache: createGaitCache() },
       crawling: actorCrawls(actor),
       lastPose: undefined,
       lastPlacement: undefined,
@@ -1126,7 +1050,7 @@ export class MobActorMeshes implements ActorRenderer {
       lastSeenFrame: this.frameCounter,
     };
     this.states.set(id, state);
-    if (variant.model === 'fused-mass') {
+    if (variant.body.bodyPlan === 'fused-mass') {
       this.addTentacle(id);
     }
     return state;
@@ -1155,16 +1079,13 @@ export class MobActorMeshes implements ActorRenderer {
     this.tentacles.delete(id);
   }
 
-  private updateTentacle(
-    id: EntityId,
-    actor: Actor,
-    placement: { worldPos: Vec3; yaw: number },
-    lastPose: Pose | undefined,
-  ): void {
-    const meshes = this.tentacles.get(id);
+  private updateTentacle(state: ActorRenderState, actor: Actor, placement: { worldPos: Vec3; yaw: number }): void {
+    const meshes = this.tentacles.get(state.id);
     if (!meshes) {
       return;
     }
+    const { lastPose } = state;
+    const variant = this.variants[state.variantIndex]!;
     const target = this.playerChestPosition;
     const reachMetres = actorAttackReachMetres(actor);
     if (!target || reachMetres <= 0 || !lastPose) {
@@ -1172,19 +1093,18 @@ export class MobActorMeshes implements ActorRenderer {
       meshes.tip.visible = false;
       return;
     }
-    const figure = generatedActorFigure(actor.type, actor.figureSeed);
-    if (actor.type.model !== 'fused-mass') {
+    const { manifest, coreInteriorPoint } = variant.body;
+    if (!(manifest && coreInteriorPoint)) {
       throw new Error('Fused-mass tentacle requires the fused-mass figure');
     }
-    const fusedMass = figure as FusedMassFigure;
-    const transforms = boneTransforms(fusedMass.realized.body.bones, lastPose);
-    const partRoots = new Map(fusedMass.manifest.parts.map((part) => [part.id, part.rootBone]));
+    const transforms = boneTransforms(variant.bones, lastPose);
+    const partRoots = new Map(manifest.parts.map((part) => [part.id, part.rootBone]));
     const hidden = severedBoneSet(
-      fusedMass.realized.body.bones,
+      variant.bones,
       actor.severed.map((part) => partRoots.get(part) ?? part),
     );
     const start = fusedMassCoreInteriorAnchor({
-      figure: fusedMass,
+      figure: { coreInteriorPoint, scale: variant.scale },
       transforms,
       hidden,
       yaw: rotY((placement.yaw * 180) / Math.PI),
@@ -1270,7 +1190,10 @@ export class MobActorMeshes implements ActorRenderer {
       return;
     }
     const variant = this.variants[holder.variantIndex]!;
-    const geometry = buildCarvedGeometry(variant.realized, carved, this.fleshInterior);
+    if (!variant.carving) {
+      return;
+    }
+    const geometry = buildCarvedGeometry(variant.carving, carved, this.fleshInterior);
     geometry.setAttribute('crowdSlot', new InstancedBufferAttribute(new Float32Array([holder.globalRow]), 1));
     if (wound) {
       wound.mesh.geometry.dispose();
@@ -1312,20 +1235,20 @@ export class MobActorMeshes implements ActorRenderer {
     this.syncWound(id, holder, actor.carved);
     const variant = this.variants[holder.variantIndex]!;
     const pose = this.states.get(id)?.lastPose ?? corpse?.basePose;
-    if (!pose || variant.bodyScale === undefined) {
+    if (!(pose && variant.carving)) {
       return;
     }
     const placement = this.currentRenderPlacement(actor);
-    const bone = variant.realized.voxels.owner[cells[0]!]! - 1;
-    const transform = boneTransforms(variant.realized.body.bones, pose).get(variant.realized.body.bones[bone]!.id);
+    const bone = variant.carving.voxels.owner[cells[0]!]! - 1;
+    const transform = boneTransforms(variant.bones, pose).get(variant.bones[bone]!.id);
     if (!transform) {
       return;
     }
     const yaw = rotY((placement.yaw * 180) / Math.PI);
-    const scale = variant.bodyScale;
+    const { scale } = variant;
     const offset = mulMV(yaw, [transform.t[0] * scale, transform.t[1] * scale, transform.t[2] * scale]);
     this.fleshChunks.spawn({
-      realized: variant.realized,
+      realized: variant.carving,
       scale,
       cells,
       rotation: mulMM(yaw, transform.r),
@@ -1395,7 +1318,6 @@ export class MobActorMeshes implements ActorRenderer {
       localSlot: state.localSlot,
       globalRow: state.globalRow,
       instanceIndex: state.instanceIndex,
-      walkActor: state.walkActor,
       basePose,
       worldPos,
       yaw: Math.atan2(-actor.facing[0], -actor.facing[2]),
@@ -1463,7 +1385,6 @@ export class MobActorMeshes implements ActorRenderer {
       localSlot: state.localSlot,
       globalRow: state.globalRow,
       instanceIndex: state.instanceIndex,
-      walkActor: state.walkActor,
       basePose,
       worldPos,
       yaw: Math.atan2(-actor.facing[0], -actor.facing[2]),
@@ -1501,17 +1422,17 @@ export class MobActorMeshes implements ActorRenderer {
       return;
     }
     const variant = this.variants[corpse.variantIndex]!;
-    if (ragdollContent.models.includes(bodyPlanModel(variant.model))) {
+    if (ragdollContent.models.includes(variant.body.model)) {
       this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared);
       corpse.ragdoll = this.ragdolls.spawn({
-        realized: variant.realized,
-        model: bodyPlanModel(variant.model),
+        body: variant.body,
+        model: variant.body.model,
         pose: corpse.basePose,
         position: corpse.worldPos,
         yaw: corpse.yaw,
         direction: corpse.direction,
         seed: this.options.ragdollSeed ?? corpse.poseSeed,
-        scale: variant.bodyScale ?? 1,
+        scale: variant.scale,
         ground: this.rigidWorld(),
         excluded: new Set(this.indicesFor(variant, severedBoneIds(variant, corpse.severed))),
         ...(corpse.launch ? { launch: corpse.launch } : {}),
@@ -1529,9 +1450,9 @@ export class MobActorMeshes implements ActorRenderer {
     placement: CrowdPlacement,
     actor: Actor,
   ): void {
-    const glow = variant.realized.body.anchors?.glow;
+    const glow = variant.body.anchors?.glow;
     if (variant.burstIndices.length > 0 && glow && this.options.onBurst) {
-      this.options.onBurst(anchorWorld(transforms, glow, placement, variant.bodyScale), actor);
+      this.options.onBurst(anchorWorld(transforms, glow, placement, variant.scale), actor);
     }
   }
 
@@ -1551,12 +1472,7 @@ export class MobActorMeshes implements ActorRenderer {
       yawRad: downed.yaw,
     };
     if (!downed.ragdoll) {
-      this.burst(
-        variant,
-        boneTransforms(variant.realized.body.bones, this.corpsePose(downed, variant)),
-        placement,
-        actor,
-      );
+      this.burst(variant, boneTransforms(variant.bones, this.corpsePose(downed, variant)), placement, actor);
     }
     const corpse: Corpse = {
       ...this.corpses.get(id)!,
@@ -1568,9 +1484,9 @@ export class MobActorMeshes implements ActorRenderer {
     if (corpse.ragdoll) {
       this.ragdolls?.sever(
         corpse.ragdoll,
-        variant.realized,
+        variant.body,
         new Set(this.indicesFor(variant, severedBoneIds(variant, corpse.severed))),
-        variant.bodyScale ?? 1,
+        variant.scale,
       );
       corpse.elapsed = 0;
       if (corpse.ragdoll.settled) {
@@ -1624,7 +1540,7 @@ export class MobActorMeshes implements ActorRenderer {
     }
     // The cached OBB and inertia are in the rest-pose model frame. Orient them with the posed cut bone;
     // relative bends in carried descendants (e.g. an elbow in a whole arm) remain an approximation.
-    const scale = variant.bodyScale ?? 1;
+    const { scale } = variant;
     const initialOrientation = mat3ToQuat(
       sourceTransforms.get(topIndex)!.r.map((v) => v / scale) as unknown as Transform['r'],
     ) as Quaternion;
@@ -1677,7 +1593,7 @@ export class MobActorMeshes implements ActorRenderer {
       return undefined;
     }
     const sourceTransforms = new Map<number, MutableTransform>();
-    const scale = variant.bodyScale ?? 1;
+    const { scale } = variant;
     for (const index of data.boneIndices) {
       const source = corpse.ragdoll.transforms.get(index)!;
       sourceTransforms.set(index, {
@@ -1686,7 +1602,7 @@ export class MobActorMeshes implements ActorRenderer {
       });
     }
     const root = corpse.ragdoll.transforms.get(data.boneIndices[0]!)!;
-    const bounds = voxelBounds(variant.realized.voxels, data.boneIndices);
+    const bounds = voxelBounds(boneVoxelCentres(variant.body, data.boneIndices), variant.body.voxelSize);
     const initialCenter = applyPoint(root, bounds.center.map((value) => value * scale) as Vec3) as Vec3;
     const initialOrientation = mat3ToQuat(root.r) as Quaternion;
     const body: RigidBody = {
@@ -1715,7 +1631,7 @@ export class MobActorMeshes implements ActorRenderer {
       body,
       bloodiness: actor ? woundSeverity(actor) : corpse.bloodiness,
     });
-    this.ragdolls?.sever(corpse.ragdoll, variant.realized, new Set(data.boneIndices), scale);
+    this.ragdolls?.sever(corpse.ragdoll, variant.body, new Set(data.boneIndices), scale);
     this.corpses.set(id, { ...corpse, severed: actor ? [...actor.severed] : [...corpse.severed, part] });
     return [...body.velocity];
   }
@@ -1731,18 +1647,18 @@ export class MobActorMeshes implements ActorRenderer {
           const source = state.drawnFall!.get(index)!;
           return [
             index,
-            { r: source.r.map((v) => v * (variant.bodyScale ?? 1)) as MutableTransform['r'], t: [...source.t] as Vec3 },
+            { r: source.r.map((v) => v * variant.scale) as MutableTransform['r'], t: [...source.t] as Vec3 },
           ];
         }),
       );
     }
-    boneTransformsInto(variant.realized.body.bones, state.lastPose!, variant.parentIndex, variant.scratch);
+    boneTransformsInto(variant.bones, state.lastPose!, variant.parentIndex, variant.scratch);
     const yawMatrix = rotY((state.lastPlacement!.yawRad * 180) / Math.PI);
     const { x, y, z } = state.lastPlacement!;
     const transforms = new Map<number, MutableTransform>();
+    const { scale } = variant;
     for (const index of indices) {
       const source = variant.scratch[index]!;
-      const scale = variant.bodyScale ?? 1;
       const rotated = mulMV(yawMatrix, source.t.map((value) => value * scale) as Vec3);
       transforms.set(index, {
         r: mulMM(yawMatrix, source.r).map((value) => value * scale) as MutableTransform['r'],
@@ -1758,24 +1674,18 @@ export class MobActorMeshes implements ActorRenderer {
     transforms: ReadonlyMap<number, Transform>,
     selected: ReadonlySet<number>,
   ): Vec3 | undefined {
-    const { voxels } = variant.realized;
     let count = 0;
     let sumX = 0;
     let sumY = 0;
     let sumZ = 0;
-    for (let k = 0; k < voxels.dims[2]; k++) {
-      for (let j = 0; j < voxels.dims[1]; j++) {
-        for (let i = 0; i < voxels.dims[0]; i++) {
-          const owner = voxels.owner[cellIndex(voxels.dims, i, j, k)]! - 1;
-          if (owner < 0 || !selected.has(owner)) {
-            continue;
-          }
-          const point = applyPoint(transforms.get(owner)!, worldPosition(voxels, i, j, k));
-          sumX += point[0];
-          sumY += point[1];
-          sumZ += point[2];
-          count += 1;
-        }
+    for (const index of selected) {
+      const transform = transforms.get(index)!;
+      for (const centre of variant.body.bones[index]!.voxels ?? []) {
+        const point = applyPoint(transform, centre);
+        sumX += point[0];
+        sumY += point[1];
+        sumZ += point[2];
+        count += 1;
       }
     }
     return count ? [sumX / count, sumY / count, sumZ / count] : undefined;
@@ -1854,7 +1764,6 @@ export class MobActorMeshes implements ActorRenderer {
       localSlot,
       globalRow,
       instanceIndex,
-      walkActor: state.walkActor,
       severedIndices,
       sourceTransforms,
       initialCenter,
@@ -1906,9 +1815,8 @@ export class MobActorMeshes implements ActorRenderer {
     };
   }
 
-  /** Translates mobgen's severedBoneSet (bone id strings — body-plan-generic) into this variant's own bone
-   * array indices, dropping any id this variant's rig doesn't have (defensive; shouldn't happen since every
-   * variant is the same shambler body plan). */
+  /** Translates severedBoneSet's bone ids (body-plan-generic) into this variant's own bone array indices,
+   * dropping any id this variant's rig doesn't have. */
   private indicesFor(variant: Variant, boneIds: ReadonlySet<string>): Set<number> {
     const indices = new Set<number>();
     for (const boneId of boneIds) {
@@ -1949,15 +1857,15 @@ export class MobActorMeshes implements ActorRenderer {
   ): void {
     const { pose, placement, severedIndices, bloodiness, charge, transforms } = frame;
     if (transforms) {
-      for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
-        const source = transforms.get(variant.realized.body.bones[bone]!.id)!;
-        copyScaledTransform(source, variant.scratch[bone]!, variant.bodyScale);
+      for (let bone = 0; bone < variant.bones.length; bone++) {
+        const source = transforms.get(variant.bones[bone]!.id)!;
+        copyScaledTransform(source, variant.scratch[bone]!, variant.scale);
       }
     } else {
-      boneTransformsInto(variant.realized.body.bones, pose, variant.parentIndex, variant.scratch);
-      scaleTransformsInPlace(variant.scratch, variant.bodyScale);
+      boneTransformsInto(variant.bones, pose, variant.parentIndex, variant.scratch);
+      scaleTransformsInPlace(variant.scratch, variant.scale);
     }
-    for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
+    for (let bone = 0; bone < variant.bones.length; bone++) {
       if (severedIndices.has(bone)) {
         this.packZeroBone(globalRow, bone);
       } else {
@@ -2020,9 +1928,8 @@ export class MobActorMeshes implements ActorRenderer {
       }),
     );
     let { pose, transforms }: { pose: Pose; transforms: ReadonlyMap<string, Transform> } = posed;
-    const hasHead =
-      variant.headPart !== undefined && actor.regions.head! > 0 && !actor.severed.includes(variant.headPart);
-    if (hasHead) {
+    const { gaze } = variant;
+    if (gaze && actor.regions.head! > 0 && !actor.severed.includes(gaze.headPart)) {
       const rootRotation = transpose(rotY((yaw * 180) / Math.PI));
       const eye = this.playerEyePosition ?? [this.cameraPosition.x, this.cameraPosition.y, this.cameraPosition.z];
       let target: readonly [number, number, number] | undefined;
@@ -2040,17 +1947,17 @@ export class MobActorMeshes implements ActorRenderer {
           this.options.look.hearingGazeJitter,
         );
       }
-      const gaze = lookAtPose({
-        bones: variant.realized.body.bones,
+      const gazed = lookAtPose({
+        bones: variant.bones,
         pose,
         target,
-        profile: variant.lookAt,
+        profile: gaze.profile,
         state: state.lookAtState,
         gazeFrameDelta,
         baseTransforms: transforms,
       });
-      state.lookAtState = gaze.state;
-      ({ pose, transforms } = gaze);
+      state.lookAtState = gazed.state;
+      ({ pose, transforms } = gazed);
     } else {
       state.lookAtState = LOOK_AT_REST;
     }
@@ -2111,8 +2018,8 @@ export class MobActorMeshes implements ActorRenderer {
         elapsedRealSeconds: 0,
         released: false,
         physics: this.ragdolls.spawn({
-          realized: variant.realized,
-          model: bodyPlanModel(variant.model),
+          body: variant.body,
+          model: variant.body.model,
           pose: state.lastPose,
           position: [placement.x, placement.y, placement.z],
           yaw: placement.yawRad,
@@ -2129,7 +2036,7 @@ export class MobActorMeshes implements ActorRenderer {
     if (state.crawlFall && !state.crawlFall.released) {
       const excluded = this.indicesFor(variant, severedBoneIds(variant, actor.severed));
       if ([...excluded].some((index) => !state.crawlFall!.physics.excluded.has(index))) {
-        this.ragdolls?.sever(state.crawlFall.physics, variant.realized, excluded);
+        this.ragdolls?.sever(state.crawlFall.physics, variant.body, excluded);
       }
     }
     state.crawling = crawling;
@@ -2157,7 +2064,7 @@ export class MobActorMeshes implements ActorRenderer {
     const hidden = new Set(severedIndices);
     const drawn = new Map<number, Transform>();
     state.drawnFall = drawn;
-    variant.realized.body.bones.forEach((bone, index) => {
+    variant.bones.forEach((bone, index) => {
       const source = fall.physics.transforms.get(index)!;
       const target = posed.transforms.get(bone.id)!;
       const offset = mulMV(yaw, target.t);
@@ -2188,17 +2095,17 @@ export class MobActorMeshes implements ActorRenderer {
   *anchors(): Iterable<DrawnAnchors> {
     for (const state of this.states.values()) {
       const variant = this.variants[state.variantIndex]!;
-      const { anchors } = variant.realized.body;
+      const { anchors } = variant.body;
       const { actor } = state;
       if (!((anchors?.glow || anchors?.mouth) && state.lastPose && state.lastPlacement && actor)) {
         continue;
       }
       const transforms = state.drawnFall
-        ? new Map(variant.realized.body.bones.map((bone, index) => [bone.id, state.drawnFall!.get(index)!]))
-        : boneTransforms(variant.realized.body.bones, state.lastPose);
+        ? new Map(variant.bones.map((bone, index) => [bone.id, state.drawnFall!.get(index)!]))
+        : boneTransforms(variant.bones, state.lastPose);
       const placement = state.drawnFall ? { x: 0, y: 0, z: 0, yawRad: 0 } : state.lastPlacement;
       const at = (anchor: BodyAnchor | undefined): Vec3 | undefined =>
-        anchor && anchorWorld(transforms, anchor, placement!, variant.bodyScale);
+        anchor && anchorWorld(transforms, anchor, placement!, variant.scale);
       yield { actor, glow: at(anchors.glow), mouth: at(anchors.mouth) };
     }
   }
@@ -2233,14 +2140,15 @@ export class MobActorMeshes implements ActorRenderer {
     if (corpse.settledPose) {
       return corpse.settledPose;
     }
-    if (variant.model === 'acid') {
-      const pose = acidCorpsePose(variant, corpse.basePose, corpse.elapsed, corpse.direction);
-      if (corpse.elapsed >= acidTemplate.animation.deathDuration) {
-        corpse.settledPose = pose;
-      }
-      return pose;
+    const clip = deathClip(variant.clips, corpse.direction);
+    if (!clip) {
+      return corpse.basePose;
     }
-    return corpse.basePose;
+    const pose = corpseFallPose(clip, corpse.elapsed);
+    if (corpse.elapsed >= clip.durationRealSeconds) {
+      corpse.settledPose = pose;
+    }
+    return pose;
   }
 
   private packCorpse(corpse: Corpse): void {
@@ -2268,7 +2176,7 @@ export class MobActorMeshes implements ActorRenderer {
           this.textureData,
           { layout: this.layout, slot: corpse.globalRow, bone },
           {
-            r: transform.r.map((value) => value * (variant.bodyScale ?? 1)) as MutableTransform['r'],
+            r: transform.r.map((value) => value * variant.scale) as MutableTransform['r'],
             t: [...transform.t],
           },
           {
@@ -2324,7 +2232,7 @@ export class MobActorMeshes implements ActorRenderer {
     ];
     const carried = new Set(d.severedIndices);
     const hidden = new Set<number>();
-    for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
+    for (let bone = 0; bone < variant.bones.length; bone++) {
       const source = d.sourceTransforms.get(bone);
       if (carried.has(bone) && source) {
         const offset = mulMV(delta, [
@@ -2426,7 +2334,7 @@ export class MobActorMeshes implements ActorRenderer {
       gazeFrameDelta: gazeDt,
       presentationSimSeconds,
     });
-    this.updateTentacle(id, actor, placement, state.lastPose);
+    this.updateTentacle(state, actor, placement);
   }
 
   // biome-ignore lint/complexity/useMaxParams: Keep the renderer interface aligned with its base implementation.
@@ -2547,7 +2455,7 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   private corpseFallDuration(corpse: Corpse): number {
-    return this.variants[corpse.variantIndex]!.model === 'acid' ? acidTemplate.animation.deathDuration : 0;
+    return deathClip(this.variants[corpse.variantIndex]!.clips, corpse.direction)?.durationRealSeconds ?? 0;
   }
 
   private advanceCorpses(realDt: number): void {

@@ -1,6 +1,5 @@
-import type { Realized } from '@mobgen/core/generate.ts';
-import { massProperties, voxelBounds } from '@mobgen/core/massProperties.ts';
 import content from '../config/ragdoll.json' with { type: 'json' };
+import { bodySkeleton } from '../core/actorClips.ts';
 import {
   applyPoint,
   mat3ToQuat,
@@ -13,8 +12,10 @@ import {
   type Vec3,
 } from '../core/boneMath.ts';
 import type { Bone } from '../core/bones.ts';
+import { boneVoxelCentres, massProperties, voxelBounds } from '../core/massProperties.ts';
 import { boneTransforms, type Pose } from '../core/pose.ts';
 import { hash3 } from '../core/random.ts';
+import type { ActorBody } from '../core/schema/actors.ts';
 import RAPIER from './ragdollRapier.ts';
 import { angularVelocity, type RigidBody, type RigidWorld } from './rigidImpulse.ts';
 
@@ -111,6 +112,15 @@ export function ragdollGroups(
   }));
 }
 
+/** The built-body fields a ragdoll reads: bones in index order and their rest voxel centres. */
+export type RagdollBody = Pick<ActorBody, 'bones' | 'voxelSize'>;
+
+const groupBounds = (body: RagdollBody, indices: readonly number[]) =>
+  voxelBounds(boneVoxelCentres(body, indices), body.voxelSize);
+
+const groupMass = (body: RagdollBody, indices: readonly number[]): number =>
+  massProperties(boneVoxelCentres(body, indices), body.voxelSize, content.density).mass;
+
 interface Part {
   readonly body: InstanceType<typeof RAPIER.RigidBody>;
   readonly sources: Map<number, Transform>;
@@ -136,7 +146,7 @@ export const initializeRagdollPhysics = (): Promise<void> => {
   return initialization;
 };
 interface RagdollSpawn {
-  realized: Realized;
+  body: RagdollBody;
   model?: string;
   pose: Pose;
   position: Vec3;
@@ -181,12 +191,12 @@ export class RagdollWorld {
   }
 
   spawn(input: RagdollSpawn): Ragdoll {
-    const { realized, pose, position, yaw } = input;
+    const { body, pose, position, yaw } = input;
     const scale = input.scale ?? 1;
     const yawMatrix = rotY((yaw * 180) / Math.PI);
-    const posed = boneTransforms(realized.body.bones, pose);
+    const posed = boneTransforms(bodySkeleton(body), pose);
     const transforms = new Map<number, Transform>();
-    realized.body.bones.forEach((bone, index) => {
+    body.bones.forEach((bone, index) => {
       const source = posed.get(bone.id)!;
       const t = mulMV(yawMatrix, scaled(source.t, scale));
       transforms.set(index, {
@@ -217,7 +227,7 @@ export class RagdollWorld {
   private build(
     corpse: Ragdoll,
     {
-      realized,
+      body,
       model = 'humanoid',
       position,
       yaw,
@@ -233,7 +243,7 @@ export class RagdollWorld {
   ): void {
     const world = this.world!;
     const groups = ragdollGroups(
-      realized.body.bones,
+      bodySkeleton(body),
       corpse.excluded,
       (content.modelGroups as Record<string, typeof content.groups>)[model] ?? content.groups,
     );
@@ -260,27 +270,26 @@ export class RagdollWorld {
     ];
     for (const group of groups) {
       const source = corpse.transforms.get(group.indices[0]!)!;
-      const bounds = voxelBounds(realized.voxels, group.indices);
+      const bounds = groupBounds(body, group.indices);
       const center = applyPoint(source, scaled(bounds.center, scale));
       const initial: Transform = { r: source.r, t: center };
-      const body = world.createRigidBody(
+      const rigid = world.createRigidBody(
         RAPIER.RigidBodyDesc.dynamic()
           .setTranslation(...center)
           .setRotation(rotation(source.r))
           .setLinearDamping(content.linearDamping)
           .setAngularDamping(content.angularDamping),
       );
-      body.setLinvel(vector(velocity), true);
-      body.setAngvel(vector([spin(0), spin(1), spin(2)]), true);
-      const { mass } = massProperties(realized.voxels, group.indices, realized.voxels.size);
+      rigid.setLinvel(vector(velocity), true);
+      rigid.setAngvel(vector([spin(0), spin(1), spin(2)]), true);
       world.createCollider(
         RAPIER.ColliderDesc.cuboid(...scaled(bounds.halfExtents, scale))
-          .setMass(mass)
+          .setMass(groupMass(body, group.indices))
           .setFriction(content.friction),
-        body,
+        rigid,
       );
       corpse.parts.push({
-        body,
+        body: rigid,
         initial,
         sources: new Map(group.indices.map((index) => [index, corpse.transforms.get(index)!])),
       });
@@ -531,7 +540,7 @@ export class RagdollWorld {
     }
   }
 
-  sever(corpse: Ragdoll, realized: Realized, excluded: ReadonlySet<number>, scale = 1): void {
+  sever(corpse: Ragdoll, body: RagdollBody, excluded: ReadonlySet<number>, scale = 1): void {
     for (const index of excluded) {
       corpse.excluded.add(index);
     }
@@ -548,7 +557,7 @@ export class RagdollWorld {
         continue;
       }
       const indices = [...part.sources.keys()];
-      const bounds = voxelBounds(realized.voxels, indices);
+      const bounds = groupBounds(body, indices);
       const source = corpse.transforms.get(indices[0]!)!;
       const center = applyPoint(source, scaled(bounds.center, scale));
       const bodyCenter = array(part.body.translation());
@@ -560,7 +569,7 @@ export class RagdollWorld {
       const collider = part.body.collider(0);
       collider.setShape(new RAPIER.Cuboid(...scaled(bounds.halfExtents, scale)));
       collider.setTranslationWrtParent(vector(offset));
-      collider.setMass(massProperties(realized.voxels, indices, realized.voxels.size).mass);
+      collider.setMass(groupMass(body, indices));
     }
   }
 

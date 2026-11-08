@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { figureSeedPool } from '../src/core/actorFigure.ts';
 import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { type HumanoidHitRegion, posedHumanoidRegionBoxes, posedRegionHitDistance } from '../src/core/actorRegions.ts';
 import type { HitImpulse } from '../src/core/actorSystem.ts';
@@ -115,7 +114,7 @@ const createSeveredHit = (mode: CutMode) => {
   const actorMeshes = new MobActorMeshes(BLOCK, 16, {
     actors: new Map([[actor.type.id, actor.type]]),
     actorFigureFiles: FIGURES,
-    poolSize: mobFigurePoolSizeThrough(figureSeedPool(new Map([[actor.type.id, actor.type]])), actor.figureSeed),
+    poolSize: mobFigurePoolSizeThrough(actor.type.figureSeeds!, actor.figureSeed),
   });
   renderer = actorMeshes;
   actorMeshes.setWorld(isSolid, BLOCK);

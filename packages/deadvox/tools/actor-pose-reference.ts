@@ -16,13 +16,15 @@ import { figureVariantOf } from '../src/core/actorModels.ts';
 import { type ActorPoseInput, posedActor } from '../src/core/actorPose.ts';
 import { posedFusedMassRegionBoxes, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import { applyPoint, type Transform } from '../src/core/boneMath.ts';
+import type { Bone } from '../src/core/bones.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { FUSED_MASS_FIGURE_SEED } from '../src/core/fusedMassFigure.ts';
 import { admitPacks } from '../src/core/packAdmission.ts';
 import { boneTransforms, type Pose } from '../src/core/pose.ts';
+import type { ActorBody, ActorClips } from '../src/core/schema/actors.ts';
 import type { ActorDef } from '../src/core/schema.ts';
-import { acidCorpsePose } from '../src/render/corpsePose.ts';
+import { corpseFallPose, deathClip } from '../src/render/corpsePose.ts';
 import { MobActorMeshes } from '../src/render/mobActors.ts';
 import { RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
 import { readBundledPacks, readStackActorFigureFiles } from './readBundledPacks.ts';
@@ -175,7 +177,13 @@ const attackAt = (type: ActorDef, elapsed: number): Pick<ActorPoseInput, 'attack
 };
 
 const samples: SampleRecord[] = [];
-const acidBases: { key: string; seed: number; pose: Pose; figure: ReturnType<typeof posedActor>['figure'] }[] = [];
+const acidBases: {
+  key: string;
+  seed: number;
+  pose: Pose;
+  figure: ReturnType<typeof posedActor>['figure'];
+  clips: ActorClips;
+}[] = [];
 
 for (const type of registry.actors.values()) {
   const model = figureVariantOf(type);
@@ -201,7 +209,7 @@ for (const type of registry.actors.values()) {
       const base = (name: string, input: Partial<ActorPoseInput>) => {
         const { key, full } = at(name, input);
         const posed = posedActor(full);
-        acidBases.push({ key, seed, pose: posed.pose, figure: posed.figure });
+        acidBases.push({ key, seed, pose: posed.pose, figure: posed.figure, clips: full.figure.clips });
       };
       base('idle', {});
       for (const share of STRIDE_SHARES) {
@@ -240,15 +248,19 @@ for (const type of registry.actors.values()) {
   }
 }
 
-const { deathDuration } = acidTemplate.animation;
+// The renderer's fall is the figure's built death clip; each living base keeps its key so rounds stay comparable.
 for (const base of acidBases) {
   for (const direction of [1, -1] as const) {
+    const clip = deathClip(base.clips, direction);
+    if (!clip) {
+      throw new Error(`${base.key} bakes no death clip`);
+    }
     for (const [name, elapsed] of [
       ['start', 0],
-      ['half', deathDuration / 2],
-      ['settled', deathDuration],
+      ['half', clip.durationRealSeconds / 2],
+      ['settled', clip.durationRealSeconds],
     ] as const) {
-      const pose = acidCorpsePose({ realized: base.figure.realized }, base.pose, elapsed, direction);
+      const pose = corpseFallPose(clip, elapsed);
       samples.push(
         record(`${base.key}/death.${direction > 0 ? 'forward' : 'backward'}.${name}`, 'acid', base.seed, {
           figure: base.figure,
@@ -285,10 +297,9 @@ const meshes = new MobActorMeshes(1, 1, { actors: registry.actors, actorFigureFi
 >[2]);
 const internal = meshes as unknown as {
   variants: readonly {
-    model: string;
-    figureSeed: number;
-    bodyScale?: number;
-    realized: ReturnType<typeof posedActor>['figure']['realized'];
+    body: ActorBody;
+    bones: readonly Bone[];
+    scale: number;
     rigidParts: ReadonlyMap<
       string,
       { mass: number; inertiaBody: readonly Vec3[]; corners: readonly Vec3[]; boneIndices: readonly number[] }
@@ -304,8 +315,7 @@ const ragdolls = new RagdollWorld(0);
 await ragdolls.ready;
 const bodies: BodyRecord[] = [];
 for (const variant of internal.variants) {
-  const scale = variant.bodyScale ?? 1;
-  const { bones } = variant.realized.body;
+  const { body, bones, scale } = variant;
   const rest = boneTransforms(bones, { root: [0, 0, 0], rotations: {} });
   const restByIndex = new Map(
     bones.map((bone, index) => {
@@ -327,15 +337,15 @@ for (const variant of internal.variants) {
     corners: data.corners,
   }));
   let ragdoll: RagdollRecord[] | undefined;
-  if (ragdollContent.models.includes(variant.model)) {
+  if (ragdollContent.models.includes(body.model)) {
     const corpse = ragdolls.spawn({
-      realized: variant.realized,
-      model: variant.model,
+      body,
+      model: body.model,
       pose: { root: [0, 0, 0], rotations: {} },
       position: [0, 0, 0],
       yaw: 0,
       direction: 1,
-      seed: variant.figureSeed,
+      seed: body.seed,
       scale,
       ground: { blockSize: 1, isSolid: () => false },
     });
@@ -352,7 +362,7 @@ for (const variant of internal.variants) {
       };
     });
   }
-  bodies.push({ model: variant.model, seed: variant.figureSeed, parts, ...(ragdoll ? { ragdoll } : {}) });
+  bodies.push({ model: body.model, seed: body.seed, parts, ...(ragdoll ? { ragdoll } : {}) });
 }
 ragdolls.dispose();
 
