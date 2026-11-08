@@ -24,8 +24,8 @@ Why each boundary matters, and where it is checked:
   `forbiddenDomainIdentifiers`.
 - Import edges between packages are enforced by the same test's `packageEdges`. Deadvox must not import the construct or export package, so the game's
   dependency graph stays free of authoring geometry (see `things/WORK.md`, "Decisions").
-- Shared fields need one owner so tool and consumer contracts cannot diverge. See the asset submodule's
-  [tools/packages/thing-core/src/schema.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-core/src/schema.ts), `NeutralModelSchema`, and
+- Shared fields need one owner so tool and consumer contracts cannot diverge. See
+  `packages/skelly-assets/tools/packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
   `packages/deadvox/src/core/schema/models.ts`, `ModelSchema` and `GunModelSchema`.
 - Gungen's output must keep validating against deadvox's schema: `test/gungen-deadvox-contract.test.mjs`,
   "gungen exports satisfy deadvox model validation".
@@ -41,8 +41,8 @@ Why each boundary matters, and where it is checked:
 ## Aim
 
 One neutral, shared model envelope lets Deadvox consume every tool's output without
-making the core know which kind of thing it describes. See the asset submodule's
-[tools/packages/thing-core/src/schema.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-core/src/schema.ts), `NeutralModelSchema`, and
+making the core know which kind of thing it describes. See
+`packages/skelly-assets/tools/packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
 `packages/deadvox/src/core/schema/models.ts`, `ModelSchema`. Domain packs own their extensions;
 sharing a field requires an intentional promotion rather than leaking one pack's vocabulary
 into another.
@@ -61,10 +61,9 @@ Settled:
   centre-of-mass numbers and never loads construct's shapes, so construct's geometry stays
   out of the game's dependency graph.
 - The model schema is one neutral schema owned by `thing-core`; domain packs extend it, each
-  in a named block of its own (the asset submodule's
-  [thing-core contract](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-core/README.md#contract)).
-- Materials are one table of content in `thing-core` (the asset submodule's
-  [thing-core contract](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-core/README.md#contract)).
+  in a named block of its own (`packages/skelly-assets/tools/packages/thing-core/README.md`, "Contract").
+- Materials are one table of content in `thing-core`
+  (`packages/skelly-assets/tools/packages/thing-core/README.md`, "Contract").
 - Atoms have authored mass and assemblies sum their parts; the tools author a closed set of
   items rather than generate them (`things/README.md`, "Rules").
 - Gun part masses live in one gun-tool catalogue whose items carry their full construction;
@@ -85,16 +84,16 @@ Settled:
   shape adds a catalogue item and a loose model.
 - A fitted part's item reference travels on the assembly's physical part, so there is no
   separate composition record to keep in step with the parts. Deadvox checks that the
-  named item exists and weighs what the part does. See the asset submodule's
-  [tools/packages/thing-core/src/schema.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-core/src/schema.ts), `ModelPartSchema`, and
+  named item exists and weighs what the part does. See
+  `packages/skelly-assets/tools/packages/thing-core/src/schema.ts`, `ModelPartSchema`, and
   `packages/deadvox/src/core/content.ts`, `checkModelPartItems`.
 - An assembly's export carries each part's mass and centre of mass, and an export package
   above `thing-core` writes them with the GLB and the model entry (`things/README.md`,
   "Rules"; `things/README.md`, "Packages").
 - Every thing is an assembly; `thing-core` gives a single-part thing a short helper that
   wraps its one part. Export, mass and preview then have one path, the setup is written
-  once, and a single-part thing can gain parts later without a rewrite. See the asset submodule's
-  [tools/packages/thing-core/src/singlePart.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-core/src/singlePart.ts), `singlePart`.
+  once, and a single-part thing can gain parts later without a rewrite. See
+  `packages/skelly-assets/tools/packages/thing-core/src/singlePart.ts`, `singlePart`.
 - Each thing-tool item has its own row and model entry, even when several items reuse a
   family builder and geometry. Its authored mass then has one home, with no exception for
   shared visuals, and a later independent look needs no migration. See the asset submodule's
@@ -148,9 +147,9 @@ layer order inside construct is in the asset submodule's
 
 1. **Neutral schema and material table — complete.**
    A shared envelope and content-owned materials keep tools and the game from defining
-   competing contracts. See the asset submodule's
-   [tools/packages/thing-core/src/schema.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-core/src/schema.ts), `NeutralModelSchema`, and
-   [tools/packages/thing-core/src/materials.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-core/src/materials.ts), `MATERIALS`; and
+   competing contracts. See
+   `packages/skelly-assets/tools/packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
+   `packages/skelly-assets/tools/packages/thing-core/src/materials.ts`, `MATERIALS`; and
    `test/gungen-deadvox-contract.test.mjs`, "gungen exports satisfy deadvox model validation".
 2. **Export package and physical model — complete.**
    Construct ends at assembly so the game can consume authored mass and placed centres

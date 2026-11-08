@@ -39,6 +39,6 @@ Run the repository-wide checks with `npm run ci` and `npm run test:site`. Each p
 
 ## Licence
 
-Game code, pipeline tools and the asset showcase use EUPL-1.2. The shared models and built assets in [skelly-assets](https://github.com/roobie/skelly-assets) use CC-BY-NC-SA-4.0, which restricts commercial use. Keeping the scopes separate shares the tools without relicensing the models; see `REUSE.toml` and the submodule's [REUSE.toml](https://github.com/roobie/skelly-assets/blob/main/REUSE.toml).
+Game code, pipeline tools and the asset showcase use EUPL-1.2. The shared models and built assets in [skelly-assets](https://github.com/roobie/skelly-assets) use CC-BY-NC-SA-4.0, which restricts commercial use. Keeping the scopes separate shares the tools without relicensing the models; see `REUSE.toml` and `packages/skelly-assets/REUSE.toml`.
 
 Contributing? Start with [AGENTS.md](AGENTS.md), [PILLARS.md](PILLARS.md) and [docs/PROCESS.md](docs/PROCESS.md).

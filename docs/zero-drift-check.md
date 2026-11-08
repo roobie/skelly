@@ -60,6 +60,16 @@ Names in non-Markdown targets are literal text rather than normalized headings:
 normalization could silently turn a removed test name into a different test. Cached
 target reads keep cross-file resolution cheap without changing what is checked.
 
+## Submodule cues
+
+A cue into a submodule such as `packages/skelly-assets/` resolves against the files and
+content at the commit skelly pins, not the submodule's working tree or its `main`: a cue
+must describe the code skelly runs, and that is the pinned commit. Such cues take the same
+plain path and symbol form as every other cue, so one form serves the whole repository. A
+pin bump that drops a cued symbol therefore fails the check until its cues are fixed. A
+missing submodule checkout fails the check and names the fix, because an unread pin
+certifies nothing. See `tools/zero-drift-check.mjs`, `pinnedSubmodules`.
+
 ## Enforcement and limits
 
 Alternate section spellings cannot be baselined because accepting examples would

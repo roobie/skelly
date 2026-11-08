@@ -1464,8 +1464,8 @@ the back, and handedness stays mirroring of placement only. The hand's grip poin
 is the face of its palm, so the item's back sits on the palm and no part of the
 arm reaches past the palm into the item or its screen. Validation rejects a
 held-display item whose model has no screen. See `src/render/heldDisplay.ts`,
-`presentHeldDisplay`, and the asset submodule's
-[tools/packages/thing-core/src/schema.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-core/src/schema.ts), `NeutralModelSchema`.
+`presentHeldDisplay`, and
+`packages/skelly-assets/tools/packages/thing-core/src/schema.ts`, `NeutralModelSchema`.
 
 Primary action activates the capability of the held item. A held item must not
 become an unarmed attack, and a reserved support hand must not redirect an
@@ -3299,8 +3299,8 @@ a reworded pack relabels saved vehicles; see `src/core/vehicleInstances.ts`, `ve
 7. **Data-driven and moddable.** VAT assembles things whose shapes the thing tool
    authors. Exported render and baked collision geometry keep authoring operations
    out of the game; shared per-part mass and centre of mass avoid a second physical
-   authority. See the asset submodule's
-   [tools/packages/thing-core/src/schema.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-core/src/schema.ts), `NeutralModelSchema`, and
+   authority. See
+   `packages/skelly-assets/tools/packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
    `things/WORK.md`, "Decisions". Game capabilities remain schema-validated content
    so a mod adds compatible parts without code.
 8. **The grain is a useful disassembly action.** Factory welded structure is one

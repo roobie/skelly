@@ -14,25 +14,22 @@ Authoring tools for every model deadvox draws, built on one shared core.
 
 ## Packages
 
-The suite's packages live in the asset submodule's
-[tools/packages](https://github.com/roobie/skelly-assets/tree/main/tools/packages). Skelly's
-root package takes as workspaces only thing-core, which Deadvox imports, and construct,
-which thing-core depends on; see `package.json`, `workspaces`. Skelly content reaches the
-other tools by path, so it carries no second install of them.
+The suite's packages live in the asset submodule, `packages/skelly-assets/tools/packages/`.
+Skelly's root package takes as workspaces only thing-core, which Deadvox imports, and
+construct, which thing-core depends on; see `package.json`, `workspaces`. Skelly content
+reaches the other tools by path, so it carries no second install of them.
 
-- [thing-core](https://github.com/roobie/skelly-assets/tree/main/tools/packages/thing-core):
-  the shared modeling core, with no knowledge of any kind of thing.
-- [thing-authoring-tool](https://github.com/roobie/skelly-assets/tree/main/tools/packages/thing-authoring-tool):
-  authors and curates the non-gun things (tools, containers, food, the compass and so on)
-  on top of the core.
-- [gun-authoring-tool](https://github.com/roobie/skelly-assets/tree/main/tools/packages/gun-authoring-tool):
-  authors and curates guns on top of the shared packages. It owns the authored firearm
-  sources and consumption recipe.
-- [thing-export](https://github.com/roobie/skelly-assets/tree/main/tools/packages/thing-export):
-  writes the GLB, the model entry and each part's mass and centre of mass for both tools.
-  Placing a centre of mass needs construct's shapes, and deadvox loads the core, so this
-  code needs a home deadvox doesn't load. With one writer, every tool's exports load the
-  same way, and a second format has an obvious home.
+- `packages/skelly-assets/tools/packages/thing-core/`: the shared modeling core, with no
+  knowledge of any kind of thing.
+- `packages/skelly-assets/tools/packages/thing-authoring-tool/`: authors and curates the
+  non-gun things (tools, containers, food, the compass and so on) on top of the core.
+- `packages/skelly-assets/tools/packages/gun-authoring-tool/`: authors and curates guns on
+  top of the shared packages. It owns the authored firearm sources and consumption recipe.
+- `packages/skelly-assets/tools/packages/thing-export/`: writes the GLB, the model entry and
+  each part's mass and centre of mass for both tools. Placing a centre of mass needs
+  construct's shapes, and deadvox loads the core, so this code needs a home deadvox doesn't
+  load. With one writer, every tool's exports load the same way, and a second format has an
+  obvious home.
 
 Both tools depend on the core and the export package, and never on each other.
 `WORK.md`, "Phases" orders the work that creates and integrates them.
