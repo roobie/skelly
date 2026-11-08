@@ -62,7 +62,6 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/soundEvents.ts': 'Erased sound-id type contracts; selections and validation stay in the runtime graph.',
   'src/core/actorSense.ts': 'Erased player-sense contracts; perception and motion remain in the runtime graph.',
   'src/core/bones.ts': 'Erased skeleton type contracts; posing and dismemberment remain in the runtime graph.',
-  'src/core/actorFigure.ts': 'Mobgen figure realization that only the excluded renderer and its tools still draw.',
   'src/core/massProperties.ts':
     'Voxel mass and bounds of built bodies for ragdolls and severed parts; no simulation module imports it.',
   'src/core/actorClips.ts': 'Baked clip composer that no runtime module imports; its tests read it over a fixture.',

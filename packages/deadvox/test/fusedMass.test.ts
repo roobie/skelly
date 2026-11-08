@@ -1,7 +1,6 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through Deadvox's TypeScript alias.
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { describe, expect, it } from 'vitest';
-import { generatedActorFigure } from '../src/core/actorFigure.ts';
 import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { PLAYER_CHEST_METRES } from '../src/core/actorMotion.ts';
 import { actorPoseInputFor, posedActor } from '../src/core/actorPose.ts';
@@ -521,7 +520,7 @@ describe('fused-mass body and combat seam', () => {
       actorFigureFiles: FIGURES,
       onSound: (event, _position, actor) => {
         if (event === type.sounds.alert && actor?.type.id === type.id) {
-          heardBody = generatedActorFigure(actor.type, actor.figureSeed).realized.body.bones.length > 0;
+          heardBody = actorFigure(FIGURES, actor.type, actor.figureSeed).body.bones.length > 0;
         }
       },
     });
@@ -547,7 +546,7 @@ describe('fused-mass body and combat seam', () => {
       actorFigureFiles: FIGURES,
       onSound: (event, _position, targetActor) => {
         if (event === FISTS_MELEE.hitSound && targetActor?.type.id === type.id) {
-          heardBody = generatedActorFigure(targetActor.type, targetActor.figureSeed).realized.body.bones.length > 0;
+          heardBody = actorFigure(FIGURES, targetActor.type, targetActor.figureSeed).body.bones.length > 0;
         }
       },
     });

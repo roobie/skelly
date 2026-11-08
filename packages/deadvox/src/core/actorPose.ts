@@ -14,7 +14,6 @@ import {
   walkCursor,
   walkToIdle,
 } from './actorClips.ts';
-import type { ActorFigure } from './actorFigure.ts';
 import { type ActorFigureFile, type ActorFigureFiles, actorFigure } from './actorFigureFiles.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import type { Actor } from './actorState.ts';
@@ -22,7 +21,7 @@ import { applyPoint, IDENTITY_M, type Mat3, mulMM, mulMV, rotX, rotY, rotZ } fro
 import type { Bone } from './bones.ts';
 import { severedBoneSet } from './boneTree.ts';
 import type { Vec3 } from './coords.ts';
-import { fusedMassFigure, fusedMassSeveredBones } from './fusedMassFigure.ts';
+import { type FusedMassFigure, fusedMassFigure, fusedMassSeveredBones } from './fusedMassFigure.ts';
 import { clampJointAngles, jointAngles, jointRotation } from './joints.ts';
 import { boneTransforms, type Pose } from './pose.ts';
 import {
@@ -158,7 +157,7 @@ export interface PosedActor {
   readonly pose: Pose;
   readonly transforms: ReturnType<typeof boneTransforms>;
   readonly bones: readonly Bone[];
-  readonly figure: ActorFigure;
+  readonly figure: ReturnType<typeof templateFigure> | FusedMassFigure;
   readonly hidden: ReadonlySet<string>;
   readonly yaw: Mat3;
   readonly position: Vec3;
@@ -470,7 +469,7 @@ export const posedMouth = (input: ActorPoseInput): Vec3 => {
 /**
  * The shared living-actor pose source. Rendering and hit-region FK consume the same simulation-driven pose,
  * composed from the built clips; `figure`, its bones and the transforms over them stay the generated
- * realization the renderer draws.
+ * realization, which the simulation's hit regions read.
  */
 export const posedActor = (input: ActorPoseInput): PosedActor => {
   const model = bodyPlanModel(input.model ?? 'humanoid');

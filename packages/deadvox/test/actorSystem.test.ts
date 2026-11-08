@@ -1,9 +1,9 @@
 import process from 'node:process';
 import { templateByName } from '@mobgen/core/template.ts';
+import { templateFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { decodeFrame, sampleClip, walkCursor } from '../src/core/actorClips.ts';
-import { generatedActorFigure } from '../src/core/actorFigure.ts';
 import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
 import {
@@ -33,6 +33,7 @@ import { resolveSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
+import { fusedMassFigureForType } from '../src/core/fusedMassFigure.ts';
 import { HUMANOID_REGION_NAMES } from '../src/core/humanoidRegionNames.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { lightSenseSourceFor, toggleLight } from '../src/core/lights.ts';
@@ -71,6 +72,11 @@ const RUNNER = registry.actors.get('runner')!;
 const CRAWLER = registry.actors.get('crawler')!;
 const ACID = registry.actors.get('acid_zombie')!;
 const FIGURES = stackActorFigureFiles(registry);
+/** The generated figure the simulation poses and hits for `type`. */
+const simulationFigure = (type: ActorDef, seed: number) =>
+  type.model === 'fused-mass'
+    ? fusedMassFigureForType(type, seed)
+    : templateFigure(bodyPlanModel(figureVariantOf(type)), seed);
 const speedRates = (wander: number, chase: number) => ({
   ...SHAMBLER.speed,
   wanderMetresPerSimSecond: simRate(wander),
@@ -1852,7 +1858,7 @@ describe('shambler scenarios', () => {
       }
       expect(severed).toEqual([region]);
       // The cut follows the body's bone dispositions: the region's top severable part, or none.
-      const figure = generatedActorFigure(type, actor.figureSeed);
+      const figure = simulationFigure(type, actor.figureSeed);
       const parts = 'severableParts' in figure ? figure.severableParts[region] : [];
       expect(actor.severed).toEqual(parts.slice(0, 1));
       // A severed acid part drops what a shambler's would.
@@ -1978,7 +1984,7 @@ describe('shambler scenarios', () => {
     expect(actor.regions.leftLeg).toBe(0);
     run(system, 1);
     expect(templateByName(bodyPlanModel(figureVariantOf(type))).bodyPlan).toBe('humanoid');
-    expect(generatedActorFigure(type, actor.figureSeed).realized.body.bones.some((bone) => bone.id === 'shin.L')).toBe(
+    expect(simulationFigure(type, actor.figureSeed).realized.body.bones.some((bone) => bone.id === 'shin.L')).toBe(
       false,
     );
     expect(actorCrawls(actor)).toBe(false);
@@ -2074,10 +2080,10 @@ describe('shambler scenarios', () => {
     expect(() => restored.restoreState(snapshot, (id) => registry.actors.get(id))).toThrow('Invalid zombie state');
   });
 
-  it('realizes a figure for every authored seed of every type', () => {
+  it('realizes the simulation figure for every authored seed of every type', () => {
     for (const type of registry.actors.values()) {
       for (const seed of type.figureSeeds ?? []) {
-        expect(() => generatedActorFigure(type, seed)).not.toThrow();
+        expect(() => simulationFigure(type, seed)).not.toThrow();
       }
     }
   });
@@ -2098,7 +2104,7 @@ describe('shambler scenarios', () => {
       const crawl = decodeFrame(sampleClip(crawlWalk, walkCursor(input.gaitPhase, crawlWalk.cycles!)));
       expect(posed.pose.rotations.pelvis).toEqual(crawl.rotations.pelvis);
       expect(actor.type.id).toBe(type.id);
-      expect(posed.figure).toBe(generatedActorFigure(actor.type, actor.figureSeed));
+      expect(posed.figure).toBe(simulationFigure(actor.type, actor.figureSeed));
       const boxes = posedHumanoidRegionBoxes(input);
       expect(boxes.leftLeg).toEqual([]);
       expect(boxes.rightLeg.length).toBeGreaterThan(0);

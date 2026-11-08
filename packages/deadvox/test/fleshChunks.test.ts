@@ -1,6 +1,7 @@
+// biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through this package's Vite and TypeScript aliases.
+import { templateFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { Group } from 'three';
 import { expect, it } from 'vitest';
-import { generatedActorFigure } from '../src/core/actorFigure.ts';
 import { FleshChunks } from '../src/render/fusedMassFlesh.ts';
 import { RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
@@ -12,7 +13,7 @@ it('bounds carved flesh independently and removes evicted physics', async () => 
     physics: () => world,
     ground: () => ({ blockSize: 1, isSolid: (_x, y, _z) => y < 0 }),
   });
-  const { realized } = generatedActorFigure({ model: 'humanoid' }, 17);
+  const { realized } = templateFigure('humanoid', 17);
   const cell = realized.voxels.owner.findIndex((owner) => owner > 0);
   expect(cell).toBeGreaterThanOrEqual(0);
   try {
