@@ -37,6 +37,8 @@ jobs:
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
         run: npm --prefix ../.. run jsonnet:setup
+      - name: Install pinned skelly-assets release
+        run: npm --prefix ../.. run assets:setup
       - run: npm run test:sweeps
 
   mobgen:

@@ -46,6 +46,8 @@ jobs:
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
         run: npm --prefix ../.. run jsonnet:setup
+      - name: Install pinned skelly-assets release
+        run: npm --prefix ../.. run assets:setup
       - name: Cache Playwright Chromium
         if: ${{ inputs.shard != 'firefox' }}
         uses: actions/cache@v4

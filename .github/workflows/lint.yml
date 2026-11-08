@@ -55,6 +55,8 @@ jobs:
       - run: npm ci --prefix packages/deadvox/tools/lit-check
       - name: Install pinned go-jsonnet
         run: npm run jsonnet:setup
+      - name: Install pinned skelly-assets release
+        run: npm run assets:setup
       - run: npm run knip
       # The npm script runs the lockfile's @biomejs/biome and fails if it isn't installed;
       # `npx biome` could fall back to the unrelated `biome` package, which checks nothing.

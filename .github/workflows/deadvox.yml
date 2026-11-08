@@ -12,6 +12,8 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'tools/jsonnet/**'
+      - 'tools/skelly-assets/**'
+      - 'tools/pinned-download.mjs'
       - 'packages/mobgen/src/**'
       - 'testPool.ts'
       - '!**/*.md'
@@ -28,6 +30,8 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'tools/jsonnet/**'
+      - 'tools/skelly-assets/**'
+      - 'tools/pinned-download.mjs'
       - 'packages/mobgen/src/**'
       - 'testPool.ts'
       - '!**/*.md'
@@ -79,6 +83,8 @@ jobs:
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
         run: npm --prefix ../.. run jsonnet:setup
+      - name: Install pinned skelly-assets release
+        run: npm --prefix ../.. run assets:setup
       - name: Browser partition manifest
         timeout-minutes: 1
         run: node ../../test/browser-ci-manifest.mjs
@@ -137,6 +143,8 @@ jobs:
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
         run: npm --prefix ../.. run jsonnet:setup
+      - name: Install pinned skelly-assets release
+        run: npm --prefix ../.. run assets:setup
       # Any test file can hash to any shard, and some tests read the lit-check install.
       - run: npm ci --prefix tools/lit-check --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
