@@ -841,11 +841,13 @@ export const createSession = (options: SessionOptions) => {
   const dayCycle = requireDayCycle(registry);
   // Built on the first actor voice, so a stack without humanoid figures can run a session that voices no actor.
   let actorVoice: ReturnType<typeof actorVoiceLaw> | undefined;
-  const actorVoiceFor = () =>
-    (actorVoice ??= actorVoiceLaw(
+  const actorVoiceFor = () => {
+    actorVoice ??= actorVoiceLaw(
       [...actorFigureFiles.values()].flatMap((figure) => (figure.body.model === 'humanoid' ? [figure.body] : [])),
       claimed(registry.senses, 'player')!.actorVoice,
-    ));
+    );
+    return actorVoice;
+  };
   const actorBody = (actor: Actor): ActorBody => actorFigure(actorFigureFiles, actor.type, actor.figureSeed).body;
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
