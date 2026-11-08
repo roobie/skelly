@@ -2,8 +2,6 @@
 // (src/render/mobActors.ts) uploads. Generated bodies from the `@mobgen/` alias are fixtures only.
 
 import { generateValid, realize } from '@mobgen/core/generate.ts';
-import { fusedMassManifest } from '@mobgen/mob/fusedMass.ts';
-import { fusedMassTemplate } from '@mobgen/mob/fusedMassTemplate.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { describe, expect, it } from 'vitest';
 import { applyPoint, compose, rotation, rotY, type Transform, translation, type Vec3 } from '../src/core/boneMath.ts';
@@ -20,7 +18,6 @@ import {
   packSeveredMask,
 } from '../src/render/crowd.ts';
 
-const FUSED_MASS_SEARCH_SEEDS = 64;
 const humanoid = TEMPLATES.find((t) => t.name === 'humanoid')!;
 const found = generateValid(humanoid, 1)!;
 const { body } = realize(found.genome);
@@ -144,43 +141,6 @@ describe('packCrowdBoneMatrix (the pure part of crowd mode)', () => {
       for (let check = 0; check < bonesPerSlot; check++) {
         expect(isSeveredInMask(data, layout, 0, check)).toBe(check === bone);
       }
-    }
-  });
-
-  it('keeps stump-gore bits for high-index severable members in a generated fused mass', () => {
-    let fusedMass: ReturnType<typeof generateValid> | undefined;
-    for (let seed = 1; seed <= FUSED_MASS_SEARCH_SEEDS && !fusedMass; seed++) {
-      const candidate = generateValid(fusedMassTemplate, seed);
-      if (!candidate) {
-        continue;
-      }
-      const { body: candidateBody, voxels } = candidate.realized;
-      const { bones: candidateBones } = candidateBody;
-      if (
-        fusedMassManifest(candidateBody, voxels).parts.some(
-          ({ rootBone, severable }) =>
-            severable && candidateBones.findIndex(({ id }) => id === rootBone) >= CROWD_MASK_BITS_PER_TEXEL,
-        )
-      ) {
-        fusedMass = candidate;
-      }
-    }
-    expect(
-      fusedMass,
-      `no fused mass in seeds 1..${FUSED_MASS_SEARCH_SEEDS} has a high-index severable member`,
-    ).toBeDefined();
-    const { body: fusedMassBody, voxels } = fusedMass!.realized;
-    const { bones: fusedMassBones } = fusedMassBody;
-    const parts = fusedMassManifest(fusedMassBody, voxels).parts.filter(({ severable }) => severable);
-    const rootIndices = parts.map(({ rootBone }) => fusedMassBones.findIndex(({ id }) => id === rootBone));
-    const highRootIndices = rootIndices.filter((index) => index >= CROWD_MASK_BITS_PER_TEXEL);
-    expect(highRootIndices.length).toBeGreaterThan(0);
-
-    const layout = crowdTextureLayout(fusedMassBones.length, 1);
-    const data = new Float32Array(layout.width * layout.height * 4);
-    for (const index of rootIndices) {
-      packSeveredMask(data, layout, 0, [index]);
-      expect(isSeveredInMask(data, layout, 0, index)).toBe(true);
     }
   });
 

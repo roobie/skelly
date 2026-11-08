@@ -1,26 +1,62 @@
-import { build, generateValid, planOf } from '@mobgen/core/generate.ts';
+import { generateValid, planOf } from '@mobgen/core/generate.ts';
 import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
-import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { describe, expect, it } from 'vitest';
+import type { BodyRegion } from '../src/core/body.ts';
+import type { Bone } from '../src/core/bones.ts';
 import { burstBones, regionSeverableParts, severedBoneSet } from '../src/core/boneTree.ts';
 
-const humanoidBones = () => {
-  const t = TEMPLATES.find((x) => x.name === 'humanoid')!;
-  const found = generateValid(t, 1)!;
-  return build(found.genome).bones;
+const bone = (id: string, parent: string | null, disposition?: Bone['disposition']): Bone => ({
+  id,
+  parent,
+  head: [0, 0, 0],
+  tail: [0, 1, 0],
+  ...(disposition ? { disposition } : {}),
+});
+
+// A hand-authored, parents-first skeleton: a fixed trunk, a two-segment cuttable arm per side,
+// a cuttable leg on one side, a skull with a dependent jaw, and a sac that bursts.
+const BONES: readonly Bone[] = [
+  bone('trunk', null, 'fixed'),
+  bone('sac', 'trunk', 'burst'),
+  bone('neck', 'trunk', 'fixed'),
+  bone('skull', 'neck', 'sever'),
+  bone('jaw', 'skull'),
+  bone('armA.L', 'trunk', 'sever'),
+  bone('armB.L', 'armA.L', 'sever'),
+  bone('paw.L', 'armB.L'),
+  bone('armA.R', 'trunk', 'sever'),
+  bone('armB.R', 'armA.R', 'sever'),
+  bone('paw.R', 'armB.R'),
+  bone('leg.L', 'trunk', 'sever'),
+  bone('leg.R', 'trunk', 'fixed'),
+];
+
+const REGIONS: Readonly<Record<BodyRegion, readonly string[]>> = {
+  head: ['neck', 'skull', 'jaw'],
+  torso: ['trunk', 'sac'],
+  leftArm: ['armA.L', 'armB.L', 'paw.L'],
+  rightArm: ['armA.R', 'armB.R', 'paw.R'],
+  leftLeg: ['leg.L'],
+  rightLeg: ['leg.R'],
 };
 
 describe('regionSeverableParts', () => {
-  it('keeps the humanoid limbs and head cuttable but not its torso', () => {
-    const parts = regionSeverableParts(humanoidBones(), planOf('humanoid').regionBones!);
-    expect(parts.leftArm).toEqual(['upperArm.L', 'forearm.L', 'hand.L']);
-    expect(parts.head).toEqual(['head']);
-    expect(parts.torso).toEqual([]);
-    expect(parts.leftLeg.length).toBeGreaterThan(0);
-    expect(parts.rightLeg.length).toBeGreaterThan(0);
+  it('lists only sever-disposition bones per region, parents first', () => {
+    expect(regionSeverableParts(BONES, REGIONS)).toEqual({
+      head: ['skull'],
+      torso: [],
+      leftArm: ['armA.L', 'armB.L'],
+      rightArm: ['armA.R', 'armB.R'],
+      leftLeg: ['leg.L'],
+      rightLeg: [],
+    });
   });
 
-  it('follows the acid dispositions: limbs and skull cut, the sac bursts under the torso', () => {
+  it('lists burst-disposition bones apart from cuttable ones', () => {
+    expect(burstBones(BONES)).toEqual(['sac']);
+  });
+
+  it('keeps the authored acid dispositions consistent with its region map', () => {
     const { bones } = generateValid(acidTemplate, 1)!.realized.body;
     const regions = planOf('acid').regionBones!;
     const parts = regionSeverableParts(bones, regions);
@@ -35,42 +71,27 @@ describe('regionSeverableParts', () => {
 });
 
 describe('severedBoneSet', () => {
-  it('cutting a hand hides only that hand', () => {
-    const bones = humanoidBones();
-    expect(severedBoneSet(bones, ['hand.L'])).toEqual(new Set(['hand.L']));
+  it('cutting a leaf hides only that leaf', () => {
+    expect(severedBoneSet(BONES, ['paw.L'])).toEqual(new Set(['paw.L']));
   });
 
-  it('cutting a forearm takes its hand with it', () => {
-    const bones = humanoidBones();
-    expect(severedBoneSet(bones, ['forearm.R'])).toEqual(new Set(['forearm.R', 'hand.R']));
-  });
-
-  it('cutting an upperArm takes the whole arm (forearm + hand) with it', () => {
-    const bones = humanoidBones();
-    expect(severedBoneSet(bones, ['upperArm.L'])).toEqual(new Set(['upperArm.L', 'forearm.L', 'hand.L']));
-  });
-
-  it('cutting the head takes the jaw with it, but nothing below the neck', () => {
-    const bones = humanoidBones();
-    const hidden = severedBoneSet(bones, ['head']);
-    expect(hidden).toEqual(new Set(['head', 'jaw']));
+  it('cutting a bone takes every descendant with it, and nothing above it', () => {
+    expect(severedBoneSet(BONES, ['armA.L'])).toEqual(new Set(['armA.L', 'armB.L', 'paw.L']));
+    const hidden = severedBoneSet(BONES, ['skull']);
+    expect(hidden).toEqual(new Set(['skull', 'jaw']));
     expect(hidden.has('neck')).toBe(false);
-    expect(hidden.has('chest')).toBe(false);
   });
 
   it('combines multiple independent cuts', () => {
-    const bones = humanoidBones();
-    const hidden = severedBoneSet(bones, ['upperArm.L', 'head']);
-    expect(hidden).toEqual(new Set(['upperArm.L', 'forearm.L', 'hand.L', 'head', 'jaw']));
+    expect(severedBoneSet(BONES, ['armA.L', 'skull'])).toEqual(new Set(['armA.L', 'armB.L', 'paw.L', 'skull', 'jaw']));
   });
 
-  it('a redundant cut (both the arm and something already inside it) is harmless', () => {
-    const bones = humanoidBones();
-    expect(severedBoneSet(bones, ['upperArm.R', 'hand.R'])).toEqual(new Set(['upperArm.R', 'forearm.R', 'hand.R']));
+  it('a redundant cut inside an already-cut subtree is harmless', () => {
+    expect(severedBoneSet(BONES, ['armA.R', 'paw.R'])).toEqual(new Set(['armA.R', 'armB.R', 'paw.R']));
+    expect(severedBoneSet(BONES, ['paw.R', 'armA.R'])).toEqual(new Set(['armA.R', 'armB.R', 'paw.R']));
   });
 
   it('no cuts hides nothing', () => {
-    const bones = humanoidBones();
-    expect(severedBoneSet(bones, [])).toEqual(new Set());
+    expect(severedBoneSet(BONES, [])).toEqual(new Set());
   });
 });
