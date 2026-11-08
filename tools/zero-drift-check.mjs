@@ -194,6 +194,12 @@ function recoveredPosition(child, { nextLink, cursor, end, source }) {
   return start < cursor || start > end || finish < cursor || finish > end ? undefined : position(start, finish);
 }
 
+function restoreRunPosition(run, start, end) {
+  for (const child of run) {
+    child.position = position(start, end);
+  }
+}
+
 function restoreMissingPositionRun(children, first, parent, source) {
   const endIndex = children.findIndex((child, index) => index > first && child.position);
   const run = children.slice(first, endIndex === -1 ? undefined : endIndex);
@@ -207,6 +213,7 @@ function restoreMissingPositionRun(children, first, parent, source) {
     const nextLink = run.slice(index + 1).find((sibling) => sibling.type === 'link');
     const recovered = recoveredPosition(child, { nextLink, cursor, end, source });
     if (!recovered) {
+      restoreRunPosition(run, cursor, end);
       return;
     }
     child.position = recovered;

@@ -226,8 +226,15 @@ describe('zero-drift path check', () => {
   });
 
   it('scans text that the GFM autolink transform leaves without source positions', () => {
-    const text = document(`${code('docs/anchors.md')}, "Say \\"hi\\" now" and —www.example.com/x.`);
-    assert.deepEqual(scan(text, { tracked: new Set(['docs/anchors.md']) }), []);
+    const documentWithCue = (suffix) =>
+      document(`${code('docs/anchors.md')}, "Say \\"hi\\" now" and —www.example.com/${suffix}.`);
+    const tracked = new Set(['docs/anchors.md']);
+    assert.deepEqual(scan(documentWithCue('x'), { tracked }), []);
+    for (const suffix of ['a&amp;b', 'a\\_b', 'a&#95;b']) {
+      assert.deepEqual(scan(documentWithCue(suffix), { tracked }), []);
+    }
+    assert.deepEqual(scan(document('—www.example.com/a&amp;b alone.')), []);
+    assert.deepEqual(scan(document('—www.example.com/a\\_b alone.')), []);
   });
 });
 
