@@ -55,8 +55,15 @@ describe('voxel bounds', () => {
     expect(bounds.center[0]).toBeCloseTo(SIZE / 2, 12);
     expect(bounds.halfExtents[0]).toBeCloseTo(SIZE, 12);
     expect(bounds.halfExtents[1]).toBeCloseTo(SIZE / 2, 12);
-    for (const corner of bounds.corners) {
-      expect(Math.abs(corner[0])).toBeCloseTo(SIZE, 12);
+    const expected = [-SIZE, SIZE].flatMap((x) =>
+      [-SIZE / 2, SIZE / 2].flatMap((y) => [-SIZE / 2, SIZE / 2].map((z) => [x, y, z])),
+    );
+    expect(bounds.corners).toHaveLength(expected.length);
+    for (const corner of expected) {
+      const found = bounds.corners.some((actual) =>
+        actual.every((value, axis) => Math.abs(value - corner[axis]!) < 1e-12),
+      );
+      expect(found, `corner ${corner.join(', ')}`).toBe(true);
     }
   });
 });

@@ -41,6 +41,15 @@ describe('shambler body-sized audio', () => {
     }
   });
 
+  it('gives an equal-height pool the midpoint pitch of a converging range', () => {
+    const height = 1.8;
+    const converging = actorVoiceLaw([{ height }, { height: height * (1 + 1e-9) }], BASE_SENSE_TUNING.actorVoice);
+    const midpoint = converging.bodyPitch({ height: height * (1 + 5e-10) });
+    for (const pool of [[{ height }], [{ height }, { height }]]) {
+      expect(actorVoiceLaw(pool, BASE_SENSE_TUNING.actorVoice).bodyPitch({ height })).toBeCloseTo(midpoint, 6);
+    }
+  });
+
   it('refuses a body without a positive height', () => {
     expect(() => bodyPitch({ height: 0 })).toThrow();
   });

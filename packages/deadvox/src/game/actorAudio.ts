@@ -52,6 +52,11 @@ export const actorVoiceLaw = (pool: readonly SizedBody[], tuning: ActorVoiceTuni
       smallestAnchor,
       clampPitch(defaultTallestAnchor * debugVoicePitch(search, 'voicePitchLarge')),
     );
+    if (tallestHeight === smallestHeight) {
+      // An equal-height pool has no range to fall across, so every body takes the pitch a narrowing range
+      // gives its midpoint: the anchors' geometric mean, which keeps the law continuous as heights converge.
+      return Math.sqrt(smallestAnchor * tallestAnchor);
+    }
     const exponent = Math.log(tallestAnchor / smallestAnchor) / Math.log(tallestHeight / smallestHeight);
     return clampPitch(smallestAnchor * (height / smallestHeight) ** exponent);
   };
