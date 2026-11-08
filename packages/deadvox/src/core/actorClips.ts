@@ -4,7 +4,7 @@
 //
 // Layer order for the poser that adopts this module:
 //   humanoid: walk (cross-faded to the stance idle) → attack → head yaw → flinch;
-//   acid: idle → walk → attack → windup → head yaw → hit.
+//   acid: idle → walk → attack → spitDraw → head yaw → hit.
 
 import {
   applyPoint,
@@ -27,6 +27,7 @@ import { clampJointAngles, jointAngles, jointRotation } from './joints.ts';
 import { blendPose, boneTransforms, type EulerDeg, type Pose } from './pose.ts';
 import type {
   ActorBody,
+  DeathClip,
   HumanoidIdle,
   JointDeltaClip,
   OverlayClip,
@@ -151,11 +152,13 @@ export const decodeFrame = (frame: PoseFrame): Pose => ({
   rotations: Object.fromEntries(Object.entries(frame.rotations).map(([id, q]) => [id, quatToMat3(q)])),
 });
 
+type FiniteSpan = Pick<PoseClip, 'durationSimSeconds'> | Pick<DeathClip, 'durationRealSeconds'>;
+
 /**
  * A pose clip at `cursor`: normalised for a looping clip (the last frame wraps to frame zero), seconds for a
- * finite one (the last frame holds at and after `duration`). Exact frame cursors return the stored frame.
+ * finite one (the last frame holds at and after its span). Exact frame cursors return the stored frame.
  */
-export const sampleClip = (clip: PoseClip, cursor: number): PoseFrame => {
+export const sampleClip = (clip: PoseClip | DeathClip, cursor: number): PoseFrame => {
   const count = clip.frames.length;
   if (count === 1) {
     return clip.frames[0]!;
@@ -186,11 +189,17 @@ export const sampleClip = (clip: PoseClip, cursor: number): PoseFrame => {
   };
 };
 
-const finiteDuration = (clip: Pick<PoseClip, 'duration'>): number => {
-  if (clip.duration === undefined) {
-    throw new Error('a finite clip needs a duration');
+/** A finite clip's span in its own clock's seconds; the sampler stays clock-free, its caller picks the clock. */
+const finiteDuration = (clip: FiniteSpan): number => {
+  const sim = 'durationSimSeconds' in clip ? clip.durationSimSeconds : undefined;
+  const real = 'durationRealSeconds' in clip ? clip.durationRealSeconds : undefined;
+  if (sim !== undefined && real === undefined) {
+    return sim;
   }
-  return clip.duration;
+  if (real !== undefined && sim === undefined) {
+    return real;
+  }
+  throw new Error('a finite clip needs exactly one of durationSimSeconds and durationRealSeconds');
 };
 
 /** A walk clip's wrapped cursor: one normalised span covers `cycles` gait cycles. */
@@ -278,7 +287,7 @@ const crawlingFit = (body: ActorBody, root: Vec3, rotations: Record<string, Mat3
 
 /** Overlay values at `time` seconds, linear between frames; a stored frame at an exact frame time. */
 const sampleOverlay = (clip: OverlayClip, time: number): OverlayFrame => {
-  const u = clamp(time / clip.duration, 0, 1) * (clip.frames.length - 1);
+  const u = clamp(time / clip.durationSimSeconds, 0, 1) * (clip.frames.length - 1);
   const i = Math.floor(u);
   const w = u - i;
   const a = clip.frames[i]!;
@@ -341,7 +350,7 @@ const deltaFrames = (clip: JointDeltaClip, cursor: number): { a: Angles; b: Angl
   const u =
     clip.cursor === 'gaitPhase'
       ? ((((cursor / TAU) % 1) + 1) % 1) * count
-      : clamp(cursor / (clip.duration ?? 1), 0, 1) * (count - 1);
+      : clamp(cursor / (clip.durationSimSeconds ?? 1), 0, 1) * (count - 1);
   const i = Math.floor(u);
   return { a: clip.frames[i]!.angles, b: clip.frames[(i + 1) % count]!.angles, w: u - i };
 };

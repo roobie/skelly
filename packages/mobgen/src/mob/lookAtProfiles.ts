@@ -5,7 +5,7 @@ export interface LookAtProfile {
   readonly headBone?: string;
   readonly neck: { readonly yawDeg: number; readonly pitchDeg: number };
   readonly head: { readonly yawDeg: number; readonly pitchDeg: number };
-  readonly turnRateDegPerSecond: number;
+  readonly turnRateDegPerRealSecond: number;
 }
 
 /** Presentation limits for the registered rigs; kept outside simulation templates and state. */
@@ -15,31 +15,31 @@ export const LOOK_AT_PROFILES: Readonly<Record<string, LookAtProfile>> = {
   humanoid: {
     neck: { yawDeg: 25, pitchDeg: 20 },
     head: { yawDeg: 35, pitchDeg: 25 },
-    turnRateDegPerSecond: 120,
+    turnRateDegPerRealSecond: 120,
   },
   'slim-humanoid': {
     neck: { yawDeg: 22, pitchDeg: 18 },
     head: { yawDeg: 34, pitchDeg: 24 },
-    turnRateDegPerSecond: 140,
+    turnRateDegPerRealSecond: 140,
   },
   'legless-humanoid': {
     neck: { yawDeg: 28, pitchDeg: 50 },
     head: { yawDeg: 38, pitchDeg: 42 },
-    turnRateDegPerSecond: 110,
+    turnRateDegPerRealSecond: 110,
   },
   dog: {
     neck: { yawDeg: 24, pitchDeg: 30 },
     head: { yawDeg: 34, pitchDeg: 34 },
-    turnRateDegPerSecond: 130,
+    turnRateDegPerRealSecond: 130,
   },
   'broad-humanoid': {
     neck: { yawDeg: 20, pitchDeg: 16 },
     head: { yawDeg: 30, pitchDeg: 22 },
-    turnRateDegPerSecond: 90,
+    turnRateDegPerRealSecond: 90,
   },
   'fused-mass': {
     neck: { yawDeg: 20, pitchDeg: 16 },
     head: { yawDeg: 30, pitchDeg: 22 },
-    turnRateDegPerSecond: 90,
+    turnRateDegPerRealSecond: 90,
   },
 };

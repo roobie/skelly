@@ -131,7 +131,11 @@ export const lookAtPose = ({
       bounded = clampCorrection(required, profile);
     }
   }
-  const nextState = correctionStep(state, bounded, radians(profile.turnRateDegPerSecond) * Math.max(0, gazeFrameDelta));
+  const nextState = correctionStep(
+    state,
+    bounded,
+    radians(profile.turnRateDegPerRealSecond) * Math.max(0, gazeFrameDelta),
+  );
   const applied = quatToMat3(nextState);
   const { neck: neckCorrection, head: headCorrection } = splitCorrection(applied);
 

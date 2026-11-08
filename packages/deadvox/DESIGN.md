@@ -332,11 +332,15 @@ not migrated. See the root gungen-to-deadvox export contract.
 
 Actor body and clip keys keep the producer's spelling; Deadvox never renames
 them at load. A load-time translation would only bridge two spellings, which is
-a compatibility shim (`AGENTS.md`, "Project stage"). Their keys that name no
-clock stay in `tools/time-lint-baseline.json` until
-[skelly-assets#23](https://github.com/roobie/skelly-assets/issues/23) renames
-them, and that rename reaches this repository by a pin bump before actors enter
-mod content, because the lint's content half has no baseline.
+a compatibility shim (`AGENTS.md`, "Project stage"). A clip-local second is
+named by the clock its Deadvox caller samples it on: the death fall is sampled
+by render, so it is Real; attack, hit and flinch are sampled by the
+simulation, so they are Sim. That is why a death clip has its own duration
+key. Both kinds of `period`, the loop clip's and the idle oscillator's, stay
+bare until the gait reader settles their clocks
+([skelly-assets#25](https://github.com/roobie/skelly-assets/issues/25)): no
+Deadvox reader samples a loop clip or an idle oscillator yet, so no code fixes
+their clock, and the two may run on different clocks.
 
 ### Long actions
 

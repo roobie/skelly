@@ -74,9 +74,17 @@ describe('sampleClip', () => {
 
   it('interpolates a finite clip between neighbouring frames', () => {
     const [a, b] = [finitePose.frames[0]!, finitePose.frames[1]!];
-    const sample = sampleClip(finitePose, finitePose.duration! / 4);
+    const sample = sampleClip(finitePose, finitePose.durationSimSeconds! / 4);
     const midChest = slerpQuat(a.rotations.chest!, b.rotations.chest!, 1 / 2);
     expect(gap(sample.rotations.chest!, midChest)).toBeLessThanOrEqual(TOLERANCE);
+  });
+
+  it('spans a finite clip by whichever single clock key it carries', () => {
+    const { durationSimSeconds: span, ...rest } = finitePose;
+    const death = { kind: rest.kind, loop: false as const, frames: rest.frames, durationRealSeconds: span! };
+    expect(sampleClip(death, span! / 4)).toEqual(sampleClip(finitePose, span! / 4));
+    expect(() => sampleClip(rest, span! / 4)).toThrow();
+    expect(() => sampleClip({ ...finitePose, durationRealSeconds: span! } as PoseClip, span! / 4)).toThrow();
   });
 
   it('returns the only frame of a one-frame clip at any cursor', () => {
@@ -151,7 +159,7 @@ describe('stance idle', () => {
 describe('applyJointDelta', () => {
   const base = decodeFrame(finitePose.frames[1]!);
   const ids = body.bones.map(({ id }) => id);
-  const end = jointDelta.duration!;
+  const end = jointDelta.durationSimSeconds!;
   const delta = (side: number, clip: JointDeltaClip = jointDelta): Pose =>
     applyJointDelta(body, base, clip, end, { speed: 0, side });
   const anglesGap = (pose: Pose, id: string, expected: readonly number[]): number =>

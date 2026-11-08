@@ -129,7 +129,7 @@ local material(color, emissive=0, charged=false) =
     headBone: 'skull',
     neck: { yawDeg: 18, pitchDeg: 10 },
     head: { yawDeg: 24, pitchDeg: 10 },
-    turnRateDegPerSecond: 65,
+    turnRateDegPerRealSecond: 65,
   },
   limits: {
     belly: [[-15, 25], [-10, 10], [-15, 15]], chest: [[-20, 30], [-15, 15], [-25, 25]],

@@ -1,7 +1,7 @@
 {
   "kind": "pose",
   "loop": false,
-  "duration": 0.9,
+  "durationSimSeconds": 0.9,
   "frames": [
     {
       "root": [0, 0, 0],

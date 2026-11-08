@@ -121,11 +121,11 @@
       "yawDeg": 40,
       "pitchDeg": 30
     },
-    "turnRateDegPerSecond": 180
+    "turnRateDegPerRealSecond": 180
   },
   "animation": {
-    "attackPeak": 0.3,
-    "attackDuration": 0.6,
-    "hitDuration": 0.4
+    "attackPeakAtSimSeconds": 0.3,
+    "attackDurationSimSeconds": 0.6,
+    "hitDurationSimSeconds": 0.4
   }
 }

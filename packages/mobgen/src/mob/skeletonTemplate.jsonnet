@@ -94,6 +94,6 @@ local material(color, emissive=0) = { color: color, emissive: emissive };
   gaze: {
     neck: { yawDeg: 25, pitchDeg: 20 },
     head: { yawDeg: 35, pitchDeg: 25 },
-    turnRateDegPerSecond: 120,
+    turnRateDegPerRealSecond: 120,
   },
 }

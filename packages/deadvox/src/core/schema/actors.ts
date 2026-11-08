@@ -219,7 +219,7 @@ const LookAtProfileSchema = strictObject({
   headBone: optional(pipe(string(), nonEmpty('must not be empty'))),
   neck: GazeLimitSchema,
   head: GazeLimitSchema,
-  turnRateDegPerSecond: Positive,
+  turnRateDegPerRealSecond: Positive,
 });
 
 export type LookAtProfile = InferOutput<typeof LookAtProfileSchema>;
@@ -446,17 +446,23 @@ const ActorBoneSchema = pipe(
 const BoneVoxelBoxSchema = strictObject({ bone: BoneName, center: Vec3Schema, halfSize: Vec3Schema });
 
 const HumanoidAnimationSchema = strictObject({
-  attackPeak: FinitePositive,
-  attackDuration: FinitePositive,
-  hitDuration: FinitePositive,
+  attackPeakAtSimSeconds: FinitePositive,
+  attackDurationSimSeconds: FinitePositive,
+  hitDurationSimSeconds: FinitePositive,
 });
 
-const AcidAnimationSchema = strictObject({ ...HumanoidAnimationSchema.entries, deathDuration: FinitePositive });
+const AcidAnimationSchema = strictObject({
+  ...HumanoidAnimationSchema.entries,
+  deathDurationRealSeconds: FinitePositive,
+});
 
 const FusedMassAnimationSchema = strictObject({
   flinch: pipe(
-    strictObject({ peak: FinitePositive, duration: FinitePositive, pitch: Finite, roll: Finite }),
-    check(({ peak, duration }) => peak <= duration, 'flinch peak must be within its duration'),
+    strictObject({ peakAtSimSeconds: FinitePositive, durationSimSeconds: FinitePositive, pitch: Finite, roll: Finite }),
+    check(
+      ({ peakAtSimSeconds, durationSimSeconds }) => peakAtSimSeconds <= durationSimSeconds,
+      'flinch peak must be within its duration',
+    ),
   ),
 });
 
@@ -589,9 +595,9 @@ export const ActorBodySchema = pipe(
   check(({ bodyPlan, animation }) => {
     switch (bodyPlan) {
       case 'humanoid':
-        return 'attackPeak' in animation && !('deathDuration' in animation);
+        return 'attackPeakAtSimSeconds' in animation && !('deathDurationRealSeconds' in animation);
       case 'acid':
-        return 'deathDuration' in animation;
+        return 'deathDurationRealSeconds' in animation;
       case 'fused-mass':
         return 'flinch' in animation;
       default:
@@ -599,7 +605,9 @@ export const ActorBodySchema = pipe(
     }
   }, 'animation must have the fields of the body plan'),
   check(
-    ({ animation }) => !('attackPeak' in animation) || animation.attackPeak <= animation.attackDuration,
+    ({ animation }) =>
+      !('attackPeakAtSimSeconds' in animation) ||
+      animation.attackPeakAtSimSeconds <= animation.attackDurationSimSeconds,
     'attack peak must be within the attack duration',
   ),
   check(
@@ -625,14 +633,14 @@ const UnitQuatSchema = pipe(
 const PoseFrameSchema = strictObject({ root: Vec3Schema, rotations: record(BoneName, UnitQuatSchema) });
 
 interface Timed {
-  readonly duration?: number | undefined;
-  readonly hitTime?: number | undefined;
-  readonly peak?: number | undefined;
+  readonly durationSimSeconds?: number | undefined;
+  readonly hitAtSimSeconds?: number | undefined;
+  readonly peakAtSimSeconds?: number | undefined;
 }
 
-const timedWithin = (clip: Timed, key: 'hitTime' | 'peak'): boolean => {
+const timedWithin = (clip: Timed, key: 'hitAtSimSeconds' | 'peakAtSimSeconds'): boolean => {
   const time = clip[key];
-  return time === undefined || clip.duration === undefined || time <= clip.duration;
+  return time === undefined || clip.durationSimSeconds === undefined || time <= clip.durationSimSeconds;
 };
 
 /** Absolute local rotations per frame. Loop cursors are normalised; finite cursors are seconds. */
@@ -641,14 +649,22 @@ export const PoseClipSchema = pipe(
     kind: literal('pose'),
     loop: vBoolean(),
     frames: pipe(array(PoseFrameSchema), nonEmpty('needs at least one frame')),
-    duration: optional(FinitePositive),
+    durationSimSeconds: optional(FinitePositive),
     period: optional(FinitePositive),
     cycles: optional(PositiveInteger),
     idleBlendSpeed: optional(FinitePositive),
-    hitTime: optional(FinitePositive),
+    hitAtSimSeconds: optional(FinitePositive),
   }),
-  check((clip) => timedWithin(clip, 'hitTime'), 'hitTime must be within the duration'),
+  check((clip) => timedWithin(clip, 'hitAtSimSeconds'), 'hitAtSimSeconds must be within the duration'),
 );
+
+/** One death fall: a finite pose clip that render samples on Real time, so its span names that clock. */
+export const DeathClipSchema = strictObject({
+  kind: literal('pose'),
+  loop: literal(false),
+  frames: pipe(array(PoseFrameSchema), minLength(2, 'needs at least two frames')),
+  durationRealSeconds: FinitePositive,
+});
 
 /**
  * Euler-degree angles composed onto a live base pose.
@@ -657,9 +673,9 @@ export const PoseClipSchema = pipe(
 export const OverlayClipSchema = pipe(
   strictObject({
     kind: literal('overlay'),
-    duration: FinitePositive,
-    hitTime: optional(FinitePositive),
-    peak: optional(FinitePositive),
+    durationSimSeconds: FinitePositive,
+    hitAtSimSeconds: optional(FinitePositive),
+    peakAtSimSeconds: optional(FinitePositive),
     sideScalesZ: vBoolean(),
     walkBlendBones: array(BoneName),
     frames: pipe(
@@ -674,11 +690,11 @@ export const OverlayClipSchema = pipe(
     ),
   }),
   check(
-    ({ hitTime, peak }) => (hitTime === undefined) !== (peak === undefined),
-    'needs exactly one of hitTime and peak',
+    ({ hitAtSimSeconds, peakAtSimSeconds }) => (hitAtSimSeconds === undefined) !== (peakAtSimSeconds === undefined),
+    'needs exactly one of hitAtSimSeconds and peakAtSimSeconds',
   ),
-  check((clip) => timedWithin(clip, 'hitTime'), 'hitTime must be within the duration'),
-  check((clip) => timedWithin(clip, 'peak'), 'peak must be within the duration'),
+  check((clip) => timedWithin(clip, 'hitAtSimSeconds'), 'hitAtSimSeconds must be within the duration'),
+  check((clip) => timedWithin(clip, 'peakAtSimSeconds'), 'peakAtSimSeconds must be within the duration'),
 );
 
 /** Joint-angle deltas added to a live base pose inside each bone's limits. */
@@ -692,13 +708,13 @@ export const JointDeltaClipSchema = pipe(
     footSoleHold: vBoolean(),
     cycles: optional(PositiveInteger),
     period: optional(FinitePositive),
-    duration: optional(FinitePositive),
-    hitTime: optional(FinitePositive),
-    peak: optional(FinitePositive),
+    durationSimSeconds: optional(FinitePositive),
+    hitAtSimSeconds: optional(FinitePositive),
+    peakAtSimSeconds: optional(FinitePositive),
     frames: pipe(array(strictObject({ angles: record(BoneName, Vec3Schema) })), nonEmpty('needs at least one frame')),
   }),
-  check((clip) => timedWithin(clip, 'hitTime'), 'hitTime must be within the duration'),
-  check((clip) => timedWithin(clip, 'peak'), 'peak must be within the duration'),
+  check((clip) => timedWithin(clip, 'hitAtSimSeconds'), 'hitAtSimSeconds must be within the duration'),
+  check((clip) => timedWithin(clip, 'peakAtSimSeconds'), 'peakAtSimSeconds must be within the duration'),
   check(
     (clip) =>
       clip.cursor !== 'gaitPhase' || (clip.loop === true && clip.cycles !== undefined && clip.period !== undefined),
@@ -719,7 +735,7 @@ const StanceIdleSchema = strictObject({
 });
 
 const HumanoidIdleSchema = strictObject({ slack: StanceIdleSchema, aggravated: StanceIdleSchema });
-const DeathPairSchema = strictObject({ forward: PoseClipSchema, backward: PoseClipSchema });
+const DeathPairSchema = strictObject({ forward: DeathClipSchema, backward: DeathClipSchema });
 
 const ClipEntrySchema = union([
   variant('kind', [PoseClipSchema, OverlayClipSchema, JointDeltaClipSchema]),
@@ -752,6 +768,7 @@ export const ActorClipsSchema = pipe(
 
 export type ActorClips = InferOutput<typeof ActorClipsSchema>;
 export type PoseClip = InferOutput<typeof PoseClipSchema>;
+export type DeathClip = InferOutput<typeof DeathClipSchema>;
 export type PoseFrame = PoseClip['frames'][number];
 export type OverlayClip = InferOutput<typeof OverlayClipSchema>;
 export type OverlayFrame = OverlayClip['frames'][number];
@@ -811,7 +828,7 @@ const isPose =
   (entry) =>
     'kind' in entry && entry.kind === 'pose' && more(entry);
 const isOverlay =
-  (timing: 'hitTime' | 'peak'): Requirement =>
+  (timing: 'hitAtSimSeconds' | 'peakAtSimSeconds'): Requirement =>
   (entry) =>
     'kind' in entry && entry.kind === 'overlay' && entry[timing] !== undefined;
 const isJointDelta =
@@ -819,9 +836,7 @@ const isJointDelta =
   (entry) =>
     'kind' in entry && entry.kind === 'jointDelta' && entry.cursor === cursor && more(entry);
 const isStanceIdle: Requirement = (entry) => 'slack' in entry;
-const isDeathPair: Requirement = (entry) =>
-  'forward' in entry &&
-  [entry.forward, entry.backward].every((clip) => clip.duration !== undefined && clip.frames.length >= 2);
+const isDeathPair: Requirement = (entry) => 'forward' in entry;
 
 const oneFrame = (clip: PoseClip): boolean => clip.frames.length === 1;
 const walking = (clip: PoseClip): boolean => clip.cycles !== undefined && clip.period !== undefined;
@@ -829,14 +844,14 @@ const walking = (clip: PoseClip): boolean => clip.cycles !== undefined && clip.p
 const HUMANOID_CRAWLING: Readonly<Record<string, Requirement>> = {
   idle: isPose(oneFrame),
   walk: isPose(walking),
-  attack: isOverlay('hitTime'),
-  flinch: isOverlay('peak'),
+  attack: isOverlay('hitAtSimSeconds'),
+  flinch: isOverlay('peakAtSimSeconds'),
 };
 
 const CREATURE_STANDING: Readonly<Record<string, Requirement>> = {
   idle: isPose((clip) => oneFrame(clip) && clip.period !== undefined),
   walk: isPose(walking),
-  attack: isPose((clip) => !clip.loop && clip.duration !== undefined && clip.hitTime !== undefined),
+  attack: isPose((clip) => !clip.loop && clip.durationSimSeconds !== undefined && clip.hitAtSimSeconds !== undefined),
 };
 
 type RequiredSets = Readonly<Partial<Record<'standing' | 'crawling', Readonly<Record<string, Requirement>>>>>;
@@ -850,8 +865,8 @@ const requiredSets = (body: ActorBody): RequiredSets | undefined => {
             standing: {
               idle: isStanceIdle,
               walk: isPose((clip) => walking(clip) && clip.idleBlendSpeed !== undefined),
-              attack: isOverlay('hitTime'),
-              flinch: isOverlay('peak'),
+              attack: isOverlay('hitAtSimSeconds'),
+              flinch: isOverlay('peakAtSimSeconds'),
             },
             crawling: HUMANOID_CRAWLING,
           }
@@ -862,9 +877,15 @@ const requiredSets = (body: ActorBody): RequiredSets | undefined => {
           idle: isPose((clip) => clip.period !== undefined && clip.frames.length >= 2),
           death: isDeathPair,
           walk: isJointDelta('gaitPhase'),
-          attack: isJointDelta('time', (clip) => clip.duration !== undefined && clip.hitTime !== undefined),
-          windup: isJointDelta('progress'),
-          hit: isJointDelta('time', (clip) => clip.duration !== undefined && clip.peak !== undefined),
+          attack: isJointDelta(
+            'time',
+            (clip) => clip.durationSimSeconds !== undefined && clip.hitAtSimSeconds !== undefined,
+          ),
+          spitDraw: isJointDelta('progress'),
+          hit: isJointDelta(
+            'time',
+            (clip) => clip.durationSimSeconds !== undefined && clip.peakAtSimSeconds !== undefined,
+          ),
         },
       };
     case 'fused-mass':

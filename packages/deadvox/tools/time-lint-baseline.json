@@ -122,15 +122,6 @@
     "core/scheduler.ts": {
       "time": 3
     },
-    "core/schema/actors.ts": {
-      "attackDuration": 1,
-      "deathDuration": 1,
-      "duration": 5,
-      "hitDuration": 1,
-      "hitTime": 4,
-      "turnRateDegPerSecond": 1,
-      "windup": 1
-    },
     "core/sideButton.ts": {
       "windowMs": 1
     },
