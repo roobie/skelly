@@ -11,7 +11,7 @@ skelly is a hobby monorepo built around **deadvox**, a voxel survival game that 
 
 ![skelly](assets/skelly.png)
 
-**Play:** <https://roobie.github.io/skelly/> opens a launcher for the game and the mobgen viewer.
+**Play:** <https://roobie.github.io/skelly/> opens a launcher for the game and the mobgen viewer. The authoring tools moved to skelly-assets, so the launcher links that site rather than hosting them.
 
 ## Projects
 

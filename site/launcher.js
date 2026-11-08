@@ -169,6 +169,11 @@ const page = (state) => html`  <main>
         </ul>
       </section>
 
+      <section class="card">
+        <h2><a href="https://roobie.github.io/skelly-assets/">skelly-assets</a></h2>
+        <p>The shared asset library, with the gun, thing and vehicle authoring tools.</p>
+      </section>
+
       <section class="card" aria-labelledby="links-title">
         <h2 id="links-title">Links</h2>
         <ul>
