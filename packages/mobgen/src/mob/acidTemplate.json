@@ -91,7 +91,7 @@
       "pitchDeg": 10,
       "yawDeg": 18
     },
-    "turnRateDegPerSecond": 65
+    "turnRateDegPerRealSecond": 65
   },
   "geometry": {
     "ankleHeight": 0.14000000000000001,

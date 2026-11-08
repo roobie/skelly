@@ -18,7 +18,7 @@ const angleTo = (a: readonly number[], b: readonly number[]): number =>
 const profile = {
   neck: { yawDeg: 30, pitchDeg: 25 },
   head: { yawDeg: 35, pitchDeg: 30 },
-  turnRateDegPerSecond: 180,
+  turnRateDegPerRealSecond: 180,
 } as const;
 
 describe('look-at pose', () => {
@@ -48,7 +48,7 @@ describe('look-at pose', () => {
     const narrow = {
       neck: { yawDeg: 7, pitchDeg: 6 },
       head: { yawDeg: 9, pitchDeg: 8 },
-      turnRateDegPerSecond: 360,
+      turnRateDegPerRealSecond: 360,
     } as const;
     const target = [8, 4, -1] as const;
     const result = lookAtPose({
@@ -125,7 +125,7 @@ describe('look-at pose', () => {
 
     expect(after).toBeGreaterThan(0);
     expect(after).toBeLessThan(before);
-    expect(before - after).toBeLessThanOrEqual(((profile.turnRateDegPerSecond * Math.PI) / 180) * 0.1 + 1e-6);
+    expect(before - after).toBeLessThanOrEqual(((profile.turnRateDegPerRealSecond * Math.PI) / 180) * 0.1 + 1e-6);
   });
 
   it('every TEMPLATES entry has a LOOK_AT_PROFILES entry', () => {
@@ -146,6 +146,8 @@ describe('look-at pose', () => {
     });
     const dotWithRest = Math.abs(result.state[3]);
     const turnedRadians = 2 * Math.acos(Math.min(1, dotWithRest));
-    expect(turnedRadians).toBeLessThanOrEqual(((profile.turnRateDegPerSecond * Math.PI) / 180) * gazeFrameDelta + 1e-6);
+    expect(turnedRadians).toBeLessThanOrEqual(
+      ((profile.turnRateDegPerRealSecond * Math.PI) / 180) * gazeFrameDelta + 1e-6,
+    );
   });
 });

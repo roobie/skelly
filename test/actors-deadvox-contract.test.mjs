@@ -1,5 +1,6 @@
-// The actor data contract over the hand-made fixture. The stack cases (enumeration through `buildRegistry` and GLB
-// agreement per admitted body) are this file's second half, added when deadvox loads baked actors.
+// The actor data contract. The fixture cases cover the hand-made fixture this repo owns; the pinned-pair case alone
+// covers what the pinned producer exports. The stack cases (enumeration through `buildRegistry` and GLB agreement per
+// admitted body) are added when deadvox loads baked actors.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -105,11 +106,11 @@ describe('actor fixture rejection', () => {
     assert.ok(schemaIssues(ActorBodySchema, { ...rawBody, bones: [] }) > 0);
   });
 
-  it('rejects a fused-mass body whose animation carries attackPeak', () => {
+  it('rejects a fused-mass body whose animation carries attackPeakAtSimSeconds', () => {
     // Other fused-mass checks fail on this rig too, so the row counts the animation check's issue over a control.
     const asFusedMass = (copy) => {
       copy.bodyPlan = 'fused-mass';
-      copy.animation = { flinch: { peak: 0.1, duration: 0.2, pitch: 1, roll: 1 } };
+      copy.animation = { flinch: { peakAtSimSeconds: 0.1, durationSimSeconds: 0.2, pitch: 1, roll: 1 } };
     };
     const control = schemaIssues(ActorBodySchema, mutated(rawBody, asFusedMass));
     const withPeak = mutated(rawBody, (copy) => {
@@ -127,9 +128,9 @@ describe('actor fixture rejection', () => {
       },
     ],
     [
-      'a hitTime beyond the duration',
+      'a hitAtSimSeconds beyond the duration',
       (copy) => {
-        copy.standing.attack.hitTime = copy.standing.attack.duration * 2;
+        copy.standing.attack.hitAtSimSeconds = copy.standing.attack.durationSimSeconds * 2;
       },
     ],
   ];
@@ -164,7 +165,7 @@ describe('actor fixture rejection', () => {
   it('reports a creature attack that loops', () => {
     const creature = { ...body, bodyPlan: 'quadruped' };
     const creatureClips = (loop) => {
-      const attack = { ...structuredClone(readJson('fixture.finite-pose.json')), hitTime: 0.3, loop };
+      const attack = { ...structuredClone(readJson('fixture.finite-pose.json')), hitAtSimSeconds: 0.3, loop };
       const idle = { ...structuredClone(rawClips.crawling.idle), period: 1 };
       return parse(ActorClipsSchema, { standing: { idle, walk: structuredClone(rawClips.standing.walk), attack } });
     };
@@ -191,7 +192,8 @@ describe('actor clip composition over the fixture', () => {
     assert.ok([...crawl.values()].every(finite));
   });
 
-  const flinchAt = (side) => applyOverlay(body, slack, standing.flinch, standing.flinch.peak, side, 'standing');
+  const flinchAt = (side) =>
+    applyOverlay(body, slack, standing.flinch, standing.flinch.peakAtSimSeconds, side, 'standing');
 
   it('scales only a flinch z angle by the side', () => {
     const [right, left] = [flinchAt(1), flinchAt(-1)];
@@ -203,7 +205,8 @@ describe('actor clip composition over the fixture', () => {
         assert.ok(near(a, b), apart(id, a, b));
       }
     }
-    const attackAt = (side) => applyOverlay(body, slack, standing.attack, standing.attack.hitTime, side, 'standing');
+    const attackAt = (side) =>
+      applyOverlay(body, slack, standing.attack, standing.attack.hitAtSimSeconds, side, 'standing');
     const [attackRight, attackLeft] = [attackAt(1), attackAt(-1)];
     for (const { id } of body.bones) {
       const [a, b] = [attackRight.rotations[id] ?? [], attackLeft.rotations[id] ?? []];
@@ -224,7 +227,7 @@ describe('actor clip composition over the fixture', () => {
 
   it('refits the root to the ground for each stance', () => {
     const base = idleBase(standing.idle, 0);
-    const hit = applyOverlay(body, base, standing.attack, standing.attack.hitTime, 0, 'standing');
+    const hit = applyOverlay(body, base, standing.attack, standing.attack.hitAtSimSeconds, 0, 'standing');
     assert.equal(hit.root[0], base.root[0]);
     assert.equal(hit.root[2], base.root[2]);
     const standingY = standingFit(body, hit.rotations) - standing.attack.frames[1].dropMetres;
@@ -232,7 +235,7 @@ describe('actor clip composition over the fixture', () => {
     assert.ok(near([hit.root[1]], [standingY]), apart('standing root y', [hit.root[1]], [standingY]));
 
     const crawlBase = decodeFrame(crawling.idle.frames[0]);
-    const flinch = applyOverlay(body, crawlBase, crawling.flinch, crawling.flinch.peak, 1, 'crawling');
+    const flinch = applyOverlay(body, crawlBase, crawling.flinch, crawling.flinch.peakAtSimSeconds, 1, 'crawling');
     const probe = { root: [crawlBase.root[0], 0, crawlBase.root[2]], rotations: flinch.rotations };
     const crawlY = -groundFit(body, probe, body.groundContactBones).lowest;
     assert.ok(Math.abs(crawlY - crawlBase.root[1]) > TOLERANCE, 'the flinch must move the crawl fit');
@@ -274,13 +277,30 @@ describe('actor clip composition over the fixture', () => {
   });
 
   it('holds a finite clip at its last frame and samples between frames', () => {
-    const { duration, frames } = finitePose;
+    const { durationSimSeconds: duration, frames } = finitePose;
     assert.equal(sampleClip(finitePose, duration), frames[2]);
     assert.equal(sampleClip(finitePose, 2 * duration), frames[2]);
     assert.equal(sampleClip(finitePose, duration / 2), frames[1]);
     const between = sampleClip(finitePose, (3 / 4) * duration).rotations.chest;
     const [low, high] = [frames[1].rotations.chest[0], frames[2].rotations.chest[0]];
     assert.ok(between[0] > low && between[0] < high, `chest x ${between[0]} strictly between ${low} and ${high}`);
+  });
+});
+
+describe('pinned producer exports', () => {
+  it('pinned producer exports parse and agree', () => {
+    const built = new URL('../packages/skelly-assets/built/', import.meta.url);
+    const { models } = JSON.parse(readFileSync(new URL('manifest.json', built), 'utf8'));
+    const pairs = models
+      .filter((row) => row.body !== undefined && row.clips !== undefined)
+      .map((row) => ({ body: `${row.pack}/${row.body}`, clips: `${row.pack}/${row.clips}` }));
+    assert.ok(pairs.length > 0, 'the manifest lists no body and clips pair');
+    for (const pair of pairs) {
+      const read = (path) => JSON.parse(readFileSync(new URL(path, built), 'utf8'));
+      const pinnedBody = parse(ActorBodySchema, read(pair.body));
+      const pinnedClips = parse(ActorClipsSchema, read(pair.clips));
+      assert.deepEqual(actorClipIssues(pinnedBody, pinnedClips), [], `${pair.body} with ${pair.clips}`);
+    }
   });
 });
 

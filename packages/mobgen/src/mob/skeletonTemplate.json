@@ -31,7 +31,7 @@
       "pitchDeg": 20,
       "yawDeg": 25
     },
-    "turnRateDegPerSecond": 120
+    "turnRateDegPerRealSecond": 120
   },
   "geometry": {
     "archHeight": 0.035000000000000003,

@@ -147,8 +147,8 @@
     },
     "attack": {
       "kind": "overlay",
-      "duration": 0.6,
-      "hitTime": 0.3,
+      "durationSimSeconds": 0.6,
+      "hitAtSimSeconds": 0.3,
       "sideScalesZ": false,
       "walkBlendBones": ["upperArm.L", "upperArm.R"],
       "frames": [
@@ -180,8 +180,8 @@
     },
     "flinch": {
       "kind": "overlay",
-      "duration": 0.4,
-      "peak": 0.2,
+      "durationSimSeconds": 0.4,
+      "peakAtSimSeconds": 0.2,
       "sideScalesZ": true,
       "walkBlendBones": [],
       "frames": [
@@ -256,8 +256,8 @@
     },
     "attack": {
       "kind": "overlay",
-      "duration": 0.6,
-      "hitTime": 0.3,
+      "durationSimSeconds": 0.6,
+      "hitAtSimSeconds": 0.3,
       "sideScalesZ": false,
       "walkBlendBones": ["upperArm.L", "upperArm.R"],
       "frames": [
@@ -289,8 +289,8 @@
     },
     "flinch": {
       "kind": "overlay",
-      "duration": 0.4,
-      "peak": 0.2,
+      "durationSimSeconds": 0.4,
+      "peakAtSimSeconds": 0.2,
       "sideScalesZ": true,
       "walkBlendBones": [],
       "frames": [
