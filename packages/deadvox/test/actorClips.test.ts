@@ -124,7 +124,8 @@ describe('stance idle', () => {
 
   it('leaves the base unchanged where an oscillator sine is zero', () => {
     for (const oscillator of idle.slack.motion) {
-      const zeroTime = ((2 * Math.PI - phaseFor(body.seed, oscillator.salt)) * oscillator.periodSimSeconds) / (2 * Math.PI);
+      const zeroTime =
+        ((2 * Math.PI - phaseFor(body.seed, oscillator.salt)) * oscillator.periodSimSeconds) / (2 * Math.PI);
       const moved = applyMotion(slack, [oscillator], zeroTime, body.seed);
       expect(moved.root).toEqual(slack.root);
       for (const { bone } of oscillator.bones) {
