@@ -125,6 +125,11 @@ for (const [key, b] of baseSamples) {
     }
   }
   missing(`${key} anchor`, Object.keys(b.anchors), new Set(Object.keys(h.anchors)));
+  missing(`${key} anchor`, Object.keys(h.anchors), new Set(Object.keys(b.anchors)));
+  const baseRegions = Object.keys(b.regions ?? {});
+  const headRegions = Object.keys(h.regions ?? {});
+  missing(`${key} region`, baseRegions, new Set(headRegions));
+  missing(`${key} region`, headRegions, new Set(baseRegions));
   for (const [name, point] of Object.entries(b.anchors)) {
     const other = h.anchors[name];
     if (other) {
@@ -133,12 +138,14 @@ for (const [key, b] of baseSamples) {
     }
   }
   for (const [region, boxes] of Object.entries(b.regions ?? {})) {
-    const others = new Map((h.regions?.[region] ?? []).map((box) => [box.bone, box]));
-    missing(
-      `${key} region ${region} box`,
-      boxes.map((box) => box.bone),
-      new Set(others.keys()),
-    );
+    const headBoxes = h.regions?.[region];
+    if (!headBoxes) {
+      continue;
+    }
+    const others = new Map(headBoxes.map((box) => [box.bone, box]));
+    const baseBones = boxes.map((box) => box.bone);
+    missing(`${key} region ${region} box`, baseBones, new Set(others.keys()));
+    missing(`${key} region ${region} box`, others.keys(), new Set(baseBones));
     for (const box of boxes) {
       const other = others.get(box.bone);
       if (!other) {

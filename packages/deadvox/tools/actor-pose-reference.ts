@@ -3,8 +3,8 @@
 // Samples the actor pose seams of the commit it runs at over a fixed covering set and writes them as JSON
 // to `--out`, so a round that replaces procedural poses with built clips can compare base against head
 // with `tools/actor-pose-compare.ts`. It pins no values; `docs/deferred-assertions.md` says when to run it.
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, isAbsolute, relative, resolve } from 'node:path';
+import { existsSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { templateByName } from '@mobgen/core/template.ts';
@@ -43,8 +43,16 @@ if (!outPath) {
   throw new Error('Usage: actor-pose-reference --out <file outside the repository>');
 }
 const out = resolve(outPath);
-const inside = relative(repositoryRoot, out);
-if (!(inside.startsWith('..') || isAbsolute(inside))) {
+// Resolve the deepest existing ancestor, so a symlink cannot alias the output into the repository.
+const realPath = (path: string): string => {
+  let existing = path;
+  while (!existsSync(existing)) {
+    existing = dirname(existing);
+  }
+  return join(realpathSync(existing), relative(existing, path));
+};
+const inside = relative(realPath(repositoryRoot), realPath(out));
+if (!(inside.split(sep)[0] === '..' || isAbsolute(inside))) {
   throw new Error(`--out must be outside the repository, not ${out}`);
 }
 
