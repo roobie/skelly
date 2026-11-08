@@ -1,6 +1,6 @@
 import { type AcidGlobState, advanceAcidGlob } from './acidGlob.ts';
 import { type AcidPuddleState, feetInAcidPuddle } from './acidPuddle.ts';
-import type { ActorFigureFiles } from './actorFigureFiles.ts';
+import { type ActorFigureFiles, actorFigure } from './actorFigureFiles.ts';
 import { figureVariantOf } from './actorModels.ts';
 import {
   angleOf,
@@ -25,6 +25,7 @@ import {
   actorHitFlinchDuration,
   actorPoseInputFor,
   advanceStanceWeight,
+  gaitPhaseGain,
   posedMouth,
   targetStanceWeight,
 } from './actorPose.ts';
@@ -664,6 +665,14 @@ export class ActorSystem {
    * it doesn't also move back into what it was pushed off. When no push as far as the turn moved its flesh
    * frees it, it keeps the last facing that was clear. If both overlap (it started in terrain), the turn stands.
    */
+  private gaitPhaseGain(actor: Actor, travelledMetres: number): number {
+    return gaitPhaseGain(
+      actor,
+      actorFigure(this.options.actorFigureFiles, actor.type, actor.figureSeed),
+      travelledMetres,
+    );
+  }
+
   private settleTurn(actor: Actor): void {
     const collider = this.colliderOf(actor.body);
     if (!collider) {
@@ -1237,7 +1246,7 @@ export class ActorSystem {
         stepBody(actor.body, dt, isSolid, physics);
       }
       const travelled = horizontalDistance(before, actor.body.pos) * blockSize;
-      actor.gaitPhase += (travelled / actor.type.stepLength) * Math.PI;
+      actor.gaitPhase += this.gaitPhaseGain(actor, travelled);
       this.agent.finishBackgroundStroll(actor);
     }
   }
@@ -1412,7 +1421,7 @@ export class ActorSystem {
       },
     );
     actor.stepOffset = stepOffsetState.offset;
-    actor.gaitPhase += (travelled / actor.type.stepLength) * Math.PI;
+    actor.gaitPhase += this.gaitPhaseGain(actor, travelled);
     if (advanceWanderClock) {
       actor.wanderClock += dt;
     }

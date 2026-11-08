@@ -34,6 +34,7 @@ import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import { Rng } from '../src/core/random.ts';
 import { raycast, type SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
+import type { PoseClip } from '../src/core/schema/actors.ts';
 import type { ActorDef, DoorLockDef } from '../src/core/schema.ts';
 import { Simulation } from '../src/core/sim.ts';
 import type { ActorSpawn, Site } from '../src/core/site.ts';
@@ -2372,6 +2373,35 @@ describe('shambler scenarios', () => {
       actors: afterRestore,
     });
     expect(afterRestore.store.size).toBe(0);
+  });
+
+  it('a crawling actor advances one gait cycle per its crawl clip stride', () => {
+    // A fixture stride unlike two step lengths, so the standing rule would give a different phase.
+    const strideMetres = 3 * SHAMBLER.stepLength;
+    const figures = new Map(
+      [...FIGURES].map(([key, figure]) => {
+        const { crawling } = figure.clips;
+        const walk = crawling?.walk as PoseClip | undefined;
+        return [
+          key,
+          crawling && walk
+            ? { ...figure, clips: { ...figure.clips, crawling: { ...crawling, walk: { ...walk, strideMetres } } } }
+            : figure,
+        ];
+      }),
+    );
+    const system = new ActorSystem({ ...senses(() => player([1000, 1, 1000])), actorFigureFiles: figures });
+    const crawler = system.store.get(system.add(SHAMBLER, [0, 1, 0]))!;
+    crawler.regions.leftLeg = 0;
+    crawler.regions.rightLeg = 0;
+    let crawled = 0;
+    for (let tick = 0; tick < 10 * 60; tick++) {
+      const before = [...crawler.body.pos] as Vec3;
+      system.tick(1 / 60);
+      crawled += metres(before, crawler.body.pos);
+    }
+    expect(crawled).toBeGreaterThan(0);
+    expect(crawler.gaitPhase).toBeCloseTo((crawled / strideMetres) * 2 * Math.PI, 6);
   });
 
   it('gait phase tracks travelled distance during wander, chase and obstacle response', () => {

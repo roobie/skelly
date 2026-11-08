@@ -83,6 +83,11 @@ describe('actor figure file checks', () => {
     ).toBe(true);
   });
 
+  it('admits a standing humanoid without a crawling set', () => {
+    const { crawling: _, ...standingOnly } = rawClips;
+    expect(fileIssues(figure.id, rawBody, standingOnly)).toEqual([]);
+  });
+
   it('reports a body file that fails its schema under the row', () => {
     const issues = fileIssues(figure.id, { ...rawBody, bones: 'none' }, rawClips);
     expect(issues).toEqual([expect.objectContaining({ id: figure.id, path: '.body.bones' })]);

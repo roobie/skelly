@@ -20,6 +20,7 @@ import type { Vec3 } from './coords.ts';
 import { fusedMassFigure, fusedMassSeveredBones } from './fusedMassFigure.ts';
 import { clampJointAngles, jointAngles, jointRotation } from './joints.ts';
 import { blendPose, boneTransforms, type Pose } from './pose.ts';
+import { actorFigureKey } from './schema/actors.ts';
 
 export interface ActorPoseInput {
   /** The built body and clips the pose composes over. */
@@ -80,6 +81,22 @@ export const actorCrawls = (actor: Actor): boolean => {
   }
   const { severableParts } = templateFigure(bodyPlanModel(figureVariantOf(actor.type)), actor.figureSeed);
   return [...severableParts.leftLeg, ...severableParts.rightLeg].some((part) => actor.severed.includes(part));
+};
+
+/**
+ * The gait phase gained over a distance. An actor moving on its crawl set advances one cycle per its crawl walk's
+ * stride (`packages/deadvox/DESIGN.md`, "Clocks and units"); a standing gait advances half a cycle per step length,
+ * which footsteps also count.
+ */
+export const gaitPhaseGain = (actor: Actor, { clips }: ActorFigureFile, travelledMetres: number): number => {
+  if (clips.standing !== undefined && !actorCrawls(actor)) {
+    return (travelledMetres / actor.type.stepLength) * Math.PI;
+  }
+  const walk = clips.crawling?.walk;
+  if (!(walk && 'kind' in walk && walk.kind === 'pose' && walk.strideMetres !== undefined)) {
+    throw new Error(`Actor figure ${actorFigureKey(actor.type.id, actor.figureSeed)} crawls without a crawl walk`);
+  }
+  return (travelledMetres / walk.strideMetres) * 2 * Math.PI;
 };
 
 /** What every actor of one world poses against: its block scale and the built figures it loaded. */

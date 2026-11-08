@@ -346,6 +346,17 @@ humanoid and acid idles run on the actor's saved Sim wander clock, so they
 freeze on pause, follow compression and replay identically after a load or in
 a replay. Both idle forms share that one clock.
 
+An actor moving on its crawl set advances one gait cycle per the crawl walk's
+`strideMetres`, not per step length: a walk loop states its own true distance,
+and the asset row is the one place crawl pace is tuned. Step length still
+paces a standing gait and footsteps. See `src/core/actorPose.ts`,
+`gaitPhaseGain`.
+
+A standing humanoid may have no crawl set. Built data holds only what the
+game uses, and a row the game never crawls, such as the player, whose prone
+stance is a fixed pose, would leave a crawl stride with no owner. See
+`src/core/schema/actors.ts`, `planSets`.
+
 ### Long actions
 
 Crafting, reading, building, disassembly, repair, searching, treatment, and

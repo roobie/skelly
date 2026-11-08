@@ -863,47 +863,61 @@ const CREATURE_STANDING: Readonly<Record<string, Requirement>> = {
   attack: isPose((clip) => !clip.loop && clip.durationSimSeconds !== undefined && clip.hitAtSimSeconds !== undefined),
 };
 
-type RequiredSets = Readonly<Partial<Record<'standing' | 'crawling', Readonly<Record<string, Requirement>>>>>;
+/** One clip set a body plan admits: the clips it must hold, and whether the set may be left out. */
+interface PlanSet {
+  readonly clips: Readonly<Record<string, Requirement>>;
+  readonly optional?: true;
+}
 
-/** The clip sets the producer writes per body plan; a humanoid with a leg cut only crawls. */
-const requiredSets = (body: ActorBody): RequiredSets | undefined => {
+type PlanSets = Readonly<Partial<Record<'standing' | 'crawling', PlanSet>>>;
+
+/**
+ * The clip sets the producer writes per body plan; a humanoid with a leg cut only crawls. A standing humanoid's
+ * crawl set is optional because built data holds only what the game uses: a row the game never crawls, such as
+ * the player, has none (`packages/deadvox/DESIGN.md`, "Clocks and units").
+ */
+const planSets = (body: ActorBody): PlanSets | undefined => {
   switch (body.bodyPlan) {
     case 'humanoid':
       return body.legCut === undefined
         ? {
             standing: {
-              idle: isStanceIdle,
-              walk: isPose((clip) => walking(clip) && clip.idleBlendSpeed !== undefined),
-              attack: isOverlay('hitAtSimSeconds'),
-              flinch: isOverlay('peakAtSimSeconds'),
+              clips: {
+                idle: isStanceIdle,
+                walk: isPose((clip) => walking(clip) && clip.idleBlendSpeed !== undefined),
+                attack: isOverlay('hitAtSimSeconds'),
+                flinch: isOverlay('peakAtSimSeconds'),
+              },
             },
-            crawling: HUMANOID_CRAWLING,
+            crawling: { clips: HUMANOID_CRAWLING, optional: true },
           }
-        : { crawling: HUMANOID_CRAWLING };
+        : { crawling: { clips: HUMANOID_CRAWLING } };
     case 'acid':
       return {
         standing: {
-          idle: isPose((clip) => clip.periodSimSeconds !== undefined && clip.frames.length >= 2),
-          death: isDeathPair,
-          walk: isJointDelta('gaitPhase'),
-          attack: isJointDelta(
-            'time',
-            (clip) => clip.durationSimSeconds !== undefined && clip.hitAtSimSeconds !== undefined,
-          ),
-          spitDraw: isJointDelta('progress'),
-          hit: isJointDelta(
-            'time',
-            (clip) => clip.durationSimSeconds !== undefined && clip.peakAtSimSeconds !== undefined,
-          ),
+          clips: {
+            idle: isPose((clip) => clip.periodSimSeconds !== undefined && clip.frames.length >= 2),
+            death: isDeathPair,
+            walk: isJointDelta('gaitPhase'),
+            attack: isJointDelta(
+              'time',
+              (clip) => clip.durationSimSeconds !== undefined && clip.hitAtSimSeconds !== undefined,
+            ),
+            spitDraw: isJointDelta('progress'),
+            hit: isJointDelta(
+              'time',
+              (clip) => clip.durationSimSeconds !== undefined && clip.peakAtSimSeconds !== undefined,
+            ),
+          },
         },
       };
     case 'fused-mass':
-      return { standing: { idle: isPose(oneFrame) } };
+      return { standing: { clips: { idle: isPose(oneFrame) } } };
     case 'quadruped':
     case 'insect':
     case 'floater':
     case 'dragon':
-      return { standing: CREATURE_STANDING };
+      return { standing: { clips: CREATURE_STANDING } };
     default:
       return undefined;
   }
@@ -965,17 +979,17 @@ export const actorClipIssues = (body: ActorBody, clips: ActorClips): string[] =>
   const issues = Object.entries(clips).flatMap(([setName, set]) =>
     Object.entries(set ?? {}).flatMap(([name, entry]) => entryIssues(body, setName, name, entry)),
   );
-  const required = requiredSets(body);
-  if (!required) {
+  const sets = planSets(body);
+  if (!sets) {
     issues.push(`body plan ${body.bodyPlan} has no required clip set`);
     return issues;
   }
   for (const setName of ['standing', 'crawling'] as const) {
-    const want = required[setName];
+    const want = sets[setName];
     const have = clips[setName];
     if (want && have) {
-      issues.push(...setIssues(body.bodyPlan, setName, want, have));
-    } else if (want) {
+      issues.push(...setIssues(body.bodyPlan, setName, want.clips, have));
+    } else if (want && !want.optional) {
       issues.push(`missing clip set ${setName}`);
     } else if (have) {
       issues.push(`unexpected clip set ${setName}`);
