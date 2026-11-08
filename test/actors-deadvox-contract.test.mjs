@@ -31,13 +31,14 @@ import {
   readBundledPacks,
   readStackContentSources,
 } from '../packages/deadvox/tools/readBundledPacks.ts';
-import { temporalKeyFindings } from '../packages/deadvox/tools/time-lint.mjs';
 import { PACKAGE_ROOT } from './model-export-sync.mjs';
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
 const { Box3 } = deadvoxRequire('three');
 const { parse, safeParse } = await import(deadvoxRequire.resolve('valibot'));
+// Biome's import check misreports this export as missing, so the test loads it dynamically.
+const { temporalKeyFindings } = await import('../packages/deadvox/tools/time-lint.mjs');
 
 const fixture = (name) => new URL(`../packages/deadvox/test/fixtures/actors/${name}`, import.meta.url);
 const readJson = (name) => JSON.parse(readFileSync(fixture(name), 'utf8'));

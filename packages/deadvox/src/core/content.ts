@@ -1670,7 +1670,12 @@ export const actorFigureFileIssues = (
     return [
       ...(body.success ? [] : schemaIssues('.body', body.issues)),
       ...(clips.success ? [] : schemaIssues('.clips', clips.issues)),
-    ].map(({ source, path, message }) => ({ section: 'actorFigures', id, path: path ? `${source}.${path}` : source, message }));
+    ].map(({ source, path, message }) => ({
+      section: 'actorFigures',
+      id,
+      path: path ? `${source}.${path}` : source,
+      message,
+    }));
   }
   const issues: ActorFigureIssue[] = [];
   const report = (path: string, message: string) => issues.push({ section: 'actorFigures', id, path, message });
