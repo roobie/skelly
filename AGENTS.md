@@ -19,8 +19,8 @@ changes, so we owe no backwards compatibility. Change formats, exports and
 contracts freely when that makes the code simpler; don't add legacy paths, opt-in
 flags, compat shims or migrations to keep old output or old data working, and
 don't require byte-identical exports. What must still work: the gun and thing
-authoring tools (`packages/gun-authoring-tool`, `packages/thing-authoring-tool`) export
-models that deadvox validates and loads. Migration, especially of save games, starts
+authoring tools, in the `packages/skelly-assets` submodule, export models that deadvox
+validates and loads. Migration, especially of save games, starts
 mattering at v1.0 beta (#1023).
 
 Before writing or changing player-visible text, apply `packages/deadvox/INTERFACE.md`, "Text".
@@ -94,9 +94,8 @@ PRs and commits. A clone or contributor using only git and GitHub must be able t
 GitHub artifact without private tooling, so references point only from the private side.
 
 - **Feature:** `<subproject><number>` (`g` the gun authoring tool, `d` deadvox, `m` mobgen,
-  `r` repo-wide or docs), one PR on one branch; `packages/construct` work uses the `g`
-  prefix. Numbers count up per subproject; new work always gets a new
-  number, even when it grows out of another feature.
+  `r` repo-wide or docs), one PR on one branch. Numbers count up per subproject; new
+  work always gets a new number, even when it grows out of another feature.
 - **Round:** each dispatched piece of work on a feature is a round and its mail item
   (`g26-1`, `g26-2`, …). The first round is `-1`; BR's feedback, review fixes or a
   main merge start the next round.
@@ -192,7 +191,6 @@ So:
   cost too much to pay on every change, and a seed that blocks a route is a bug to file
   from the manual run, not a gate on every PR. See `packages/deadvox/vite.config.ts`,
   `SLOW_TEST_FILES`; `packages/deadvox/test/sweeps.ts`, `sweepGroup`; and
-  `packages/gun-authoring-tool/test/sweeps.ts`, `sweepGroup`; and
   `packages/mobgen/test/sweeps.ts`, `sweepGroup`.
 - Measure before adding or cutting: coverage classes show which cases exercise the same
   code; mutation testing (inject small bugs, see which tests catch them) shows which
@@ -201,8 +199,6 @@ So:
   `docs/deferred-assertions.md`.
 - Keep the default run fast and deterministic. A slow test gets split or gated as above,
   never a flat generous timeout.
-
-Detailed guidance: `packages/gun-authoring-tool/PROJECT.md`, "Testing".
 
 ## Further docs
 

@@ -13,6 +13,6 @@ local voxel = import 'tools/jsonnet/lib/voxel-grains.libsonnet';
     options: { mass: row.exportMass }
              + (if std.setMember(row.id, vehicleParts) then { collision: true } else {}),
   }
-  for row in (import 'packages/thing-authoring-tool/items.jsonnet').items
+  for row in (import 'packages/skelly-assets/tools/packages/thing-authoring-tool/items.jsonnet').items
   if std.setMember(row.id, vehicleParts) || std.setMember(row.id, jacks)
 ]

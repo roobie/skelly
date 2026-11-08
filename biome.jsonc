@@ -128,8 +128,6 @@
         "**/vite.config.ts",
         "testPool.ts",
         "tools/jsonnet/**",
-        "tools/refresh-deadvox.mjs",
-        "packages/thing-export/src/files.ts",
         "packages/deadvox/tools/publish-playtest.mjs",
         "packages/deadvox/tools/police-item-models.mjs",
         "packages/deadvox/tools/item-fuel-models.mjs",
@@ -153,17 +151,6 @@
         "rules": {
           "correctness": { "noNodejsModules": "off" },
           "suspicious": { "noConsole": "off" }
-        }
-      }
-    },
-    {
-      // Standalone Playwright check scripts (run by hand, not by vitest): they assert, read env and print.
-      "includes": ["**/gun-authoring-tool/test/browser/*.mjs"],
-      "linter": {
-        "rules": {
-          "correctness": { "noProcessGlobal": "off" },
-          "style": { "noProcessEnv": "off" },
-          "suspicious": { "noConsole": "off", "noMisplacedAssertion": "off" }
         }
       }
     },

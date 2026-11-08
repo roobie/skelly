@@ -13,7 +13,7 @@ const page = (state) => html`  <main>
         <form id="deadvox-form" @input=${onInput} @change=${onInput} @submit=${onSubmit}>
           <div class="form-grid">
             <label>Start mode
-              <select name="bench" data-url-param="bench" id="deadvox-bench" data-state-key="bench" .value=${state.deadvox.bench} .disabled=${!enabled('deadvox', 'bench', state)}>
+              <select name="bench" data-url-param="bench" id="deadvox-bench" data-state-key="bench" .value=${state.deadvox.bench} .disabled=${!enabled('bench', state)}>
                 <option value="">Play</option>
                 <option value="1">World benchmark</option>
                 <option value="shamblers">Shambler benchmark</option>
@@ -22,18 +22,18 @@ const page = (state) => html`  <main>
             </label>
             <div>
               <label id="deadvox-seed-field" ?hidden=${!visible('deadvox-seed-field', state)}>Seed
-                <input name="seed" data-url-param="seed" type="number" step="1" min="-2147483648" max="2147483647" value="1" required  data-state-key="seed" .value=${state.deadvox.seed} .disabled=${!enabled('deadvox', 'seed', state)}/>
+                <input name="seed" data-url-param="seed" type="number" step="1" min="-2147483648" max="2147483647" value="1" required  data-state-key="seed" .value=${state.deadvox.seed} .disabled=${!enabled('seed', state)}/>
               </label>
               The seed is the starting value the random number generator uses to generate a sequence of seemingly random numbers. This means that a new seed will cause a completely 'new' world to be generated.
             </div>
             <label id="deadvox-time-field" ?hidden=${!visible('deadvox-time-field', state)}>Start time
-              <input name="time" data-url-param="time" type="time" value="19:30" data-default-time="19:30" required  data-state-key="time" .value=${state.deadvox.time} .disabled=${!enabled('deadvox', 'time', state)}/>
+              <input name="time" data-url-param="time" type="time" value="19:30" data-default-time="19:30" required  data-state-key="time" .value=${state.deadvox.time} .disabled=${!enabled('time', state)}/>
             </label>
             <label id="deadvox-radius-field" ?hidden=${!visible('deadvox-radius-field', state)}>View distance (m)
-              <input name="radius" data-url-param="radius" type="number" min="32" max="256" step="1" value="96" required  data-state-key="radius" .value=${state.deadvox.radius} .disabled=${!enabled('deadvox', 'radius', state)}/>
+              <input name="radius" data-url-param="radius" type="number" min="32" max="256" step="1" value="96" required  data-state-key="radius" .value=${state.deadvox.radius} .disabled=${!enabled('radius', state)}/>
             </label>
             <label id="deadvox-site-field" ?hidden=${!visible('deadvox-site-field', state)}>Site
-              <select name="site" data-url-param="site" id="deadvox-site" data-state-key="site" .value=${state.deadvox.site} .disabled=${!enabled('deadvox', 'site', state)}>
+              <select name="site" data-url-param="site" id="deadvox-site" data-state-key="site" .value=${state.deadvox.site} .disabled=${!enabled('site', state)}>
                 <option id="deadvox-default-site" value="">${state.deadvox.bench === '1' ? 'Test house (benchmark default)' : 'Gauntlet (default)'}</option>
                 <option value="city">Stress-test city</option>
                 <option value="forest">Forest (tree first look)</option>
@@ -43,13 +43,13 @@ const page = (state) => html`  <main>
               </select>
             </label>
             <label id="deadvox-storeys-field" ?hidden=${!visible('deadvox-storeys-field', state)}>Tallest city building (storeys)
-              <input name="storeys" data-url-param="storeys" type="number" min="1" max="20" step="1" value="1" required  data-state-key="storeys" .value=${state.deadvox.storeys} .disabled=${!enabled('deadvox', 'storeys', state)}/>
+              <input name="storeys" data-url-param="storeys" type="number" min="1" max="20" step="1" value="1" required  data-state-key="storeys" .value=${state.deadvox.storeys} .disabled=${!enabled('storeys', state)}/>
             </label>
             <label id="deadvox-density-field" ?hidden=${!visible('deadvox-density-field', state)}>Forest fixed density (blank: seeded 0.2–0.75 field)
-              <input name="density" data-url-param="density" type="number" min="0" max="1" step="0.05" value=""  data-state-key="density" .value=${state.deadvox.density} .disabled=${!enabled('deadvox', 'density', state)}/>
+              <input name="density" data-url-param="density" type="number" min="0" max="1" step="0.05" value=""  data-state-key="density" .value=${state.deadvox.density} .disabled=${!enabled('density', state)}/>
             </label>
             <label id="deadvox-actors-field" ?hidden=${!visible('deadvox-actors-field', state)}>Zombie models
-              <select name="actors" data-url-param="actors" data-state-key="actors" .value=${state.deadvox.actors} .disabled=${!enabled('deadvox', 'actors', state)}>
+              <select name="actors" data-url-param="actors" data-state-key="actors" .value=${state.deadvox.actors} .disabled=${!enabled('actors', state)}>
                 <option value="">Detailed (default)</option>
                 <option value="boxes">Boxes</option>
               </select>
@@ -62,38 +62,38 @@ const page = (state) => html`  <main>
               ${state.bundledMods.map(
                 (mod) => html`
               <label class="check" title=${mod.detail}>
-                <input name="mods" data-url-param="mods" data-mod-id=${mod.id} type="checkbox" .checked=${state.deadvox.mods.includes(mod.id)} .disabled=${!enabled('deadvox', 'mods', state)}/> ${mod.label}
+                <input name="mods" data-url-param="mods" data-mod-id=${mod.id} type="checkbox" .checked=${state.deadvox.mods.includes(mod.id)} .disabled=${!enabled('mods', state)}/> ${mod.label}
               </label>`,
               )}
             </fieldset>`
                 : ''
             }
             <label class="check" id="deadvox-debug-field" ?hidden=${!visible('deadvox-debug-field', state)}>
-              <input name="debug" data-url-param="debug" type="checkbox" data-state-key="debug" .checked=${state.deadvox.debug} .disabled=${!enabled('deadvox', 'debug', state)}/> Enable development tools (?debug=1)
+              <input name="debug" data-url-param="debug" type="checkbox" data-state-key="debug" .checked=${state.deadvox.debug} .disabled=${!enabled('debug', state)}/> Enable development tools (?debug=1)
             </label>
             <label id="deadvox-at-field" ?hidden=${!visible('deadvox-at-field', state)}>Debug start position (m): x,z[,yaw°]
-              <input name="at" data-url-param="at" type="text" placeholder="x,z[,yaw]" autocomplete="off"  data-state-key="at" .value=${state.deadvox.at} .disabled=${!enabled('deadvox', 'at', state)}/>
+              <input name="at" data-url-param="at" type="text" placeholder="x,z[,yaw]" autocomplete="off"  data-state-key="at" .value=${state.deadvox.at} .disabled=${!enabled('at', state)}/>
             </label>
             <label id="deadvox-focus-field" ?hidden=${!visible('deadvox-focus-field', state)}>Showroom focus (furniture id; blank: default spawn)
-              <input name="focus" data-url-param="focus" type="text" placeholder="grinding_wheel" autocomplete="off" spellcheck="false" data-state-key="focus" .value=${state.deadvox.focus} .disabled=${!enabled('deadvox', 'focus', state)}/>
+              <input name="focus" data-url-param="focus" type="text" placeholder="grinding_wheel" autocomplete="off" spellcheck="false" data-state-key="focus" .value=${state.deadvox.focus} .disabled=${!enabled('focus', state)}/>
             </label>
             <label id="deadvox-handedness-field" ?hidden=${!visible('deadvox-handedness-field', state)}>Debug dominant hand
-              <select name="handedness" data-url-param="handedness" data-state-key="handedness" .value=${state.deadvox.handedness} .disabled=${!enabled('deadvox', 'handedness', state)}>
+              <select name="handedness" data-url-param="handedness" data-state-key="handedness" .value=${state.deadvox.handedness} .disabled=${!enabled('handedness', state)}>
                 <option value="">Start-card choice</option>
                 <option value="left">Left</option>
               </select>
             </label>
             <label id="deadvox-wobble-flat-field" ?hidden=${!visible('deadvox-wobble-flat-field', state)}>Debug wobble vertical/horizontal ratio (blank: content default)
-              <input name="wobbleFlat" data-url-param="wobbleFlat" type="number" min="0" max="1" step="any" placeholder="content default"  data-state-key="wobbleFlat" .value=${state.deadvox.wobbleFlat} .disabled=${!enabled('deadvox', 'wobbleFlat', state)}/>
+              <input name="wobbleFlat" data-url-param="wobbleFlat" type="number" min="0" max="1" step="any" placeholder="content default"  data-state-key="wobbleFlat" .value=${state.deadvox.wobbleFlat} .disabled=${!enabled('wobbleFlat', state)}/>
             </label>
             <label id="deadvox-weathering-field" ?hidden=${!visible('deadvox-weathering-field', state)}>Debug weathering strength (blank: content default)
-              <input name="weathering" data-url-param="weathering" type="number" min="0" max="${WEATHERING_STRENGTH_MAX}" step="any" placeholder="content default" data-state-key="weathering" .value=${state.deadvox.weathering} .disabled=${!enabled('deadvox', 'weathering', state)}/>
+              <input name="weathering" data-url-param="weathering" type="number" min="0" max="${WEATHERING_STRENGTH_MAX}" step="any" placeholder="content default" data-state-key="weathering" .value=${state.deadvox.weathering} .disabled=${!enabled('weathering', state)}/>
             </label>
             <label id="deadvox-weathering-variation-field" ?hidden=${!visible('deadvox-weathering-variation-field', state)}>Debug world-scale weathering variation (blank: content default)
-              <input name="weatheringVariation" data-url-param="weatheringVariation" type="number" min="0" max="1" step="any" placeholder="content default" data-state-key="weatheringVariation" .value=${state.deadvox.weatheringVariation} .disabled=${!enabled('deadvox', 'weatheringVariation', state)}/>
+              <input name="weatheringVariation" data-url-param="weatheringVariation" type="number" min="0" max="1" step="any" placeholder="content default" data-state-key="weatheringVariation" .value=${state.deadvox.weatheringVariation} .disabled=${!enabled('weatheringVariation', state)}/>
             </label>
             <label id="deadvox-weathering-split-field" ?hidden=${!visible('deadvox-weathering-split-field', state)}>Debug weathering split (world x in metres; comparison site defaults to 0)
-              <input name="weatheringSplit" data-url-param="weatheringSplit" type="number" min="-256" max="256" step="any" placeholder="comparison site default" data-state-key="weatheringSplit" .value=${state.deadvox.weatheringSplit} .disabled=${!enabled('deadvox', 'weatheringSplit', state)}/>
+              <input name="weatheringSplit" data-url-param="weatheringSplit" type="number" min="-256" max="256" step="any" placeholder="comparison site default" data-state-key="weatheringSplit" .value=${state.deadvox.weatheringSplit} .disabled=${!enabled('weatheringSplit', state)}/>
             </label>
           </div>
 
@@ -102,16 +102,16 @@ const page = (state) => html`  <main>
             <h3>World benchmark</h3>
             <div class="form-grid">
               <label>Benchmark plan (block size:radius m, comma-separated)
-                <input name="plan" data-url-param="plan" type="text" value="0.5:64,0.5:96,0.5:128" autocomplete="off" required  data-state-key="plan" .value=${state.deadvox.plan} .disabled=${!enabled('deadvox', 'plan', state)}/>
+                <input name="plan" data-url-param="plan" type="text" value="0.5:64,0.5:96,0.5:128" autocomplete="off" required  data-state-key="plan" .value=${state.deadvox.plan} .disabled=${!enabled('plan', state)}/>
               </label>
               <label>Start at plan entry
-                <input id="deadvox-world-index" name="i" data-url-param="i" type="number" min="0" step="1" value="0" required  data-state-key="worldIndex" .value=${state.deadvox.worldIndex} .disabled=${!enabled('deadvox', 'worldIndex', state)}/>
+                <input id="deadvox-world-index" name="i" data-url-param="i" type="number" min="0" step="1" value="0" required  data-state-key="worldIndex" .value=${state.deadvox.worldIndex} .disabled=${!enabled('worldIndex', state)}/>
               </label>
               <label>Detailed shamblers (0 disables them)
-                <input name="shamblers" data-url-param="shamblers" type="number" min="0" max="500" step="1" value="60" required  data-state-key="shamblers" .value=${state.deadvox.shamblers} .disabled=${!enabled('deadvox', 'shamblers', state)}/>
+                <input name="shamblers" data-url-param="shamblers" type="number" min="0" max="500" step="1" value="60" required  data-state-key="shamblers" .value=${state.deadvox.shamblers} .disabled=${!enabled('shamblers', state)}/>
               </label>
               <label class="check">
-                <input name="quick" data-url-param="quick" type="checkbox"  data-state-key="quick" .checked=${state.deadvox.quick} .disabled=${!enabled('deadvox', 'quick', state)}/> Quick check (short, not a result)
+                <input name="quick" data-url-param="quick" type="checkbox"  data-state-key="quick" .checked=${state.deadvox.quick} .disabled=${!enabled('quick', state)}/> Quick check (short, not a result)
               </label>
               <p class="muted">Plan block sizes: 0.25, 0.5 or 1 m; radius: 16–512 m per entry. Time defaults to noon.</p>
             </div>
@@ -122,10 +122,10 @@ const page = (state) => html`  <main>
             <h3>Shambler benchmark</h3>
             <div class="form-grid">
               <label>Shambler counts (unique integers, 1–500)
-                <input name="n" data-url-param="n" type="text" value="10,25,50,100" inputmode="numeric" autocomplete="off" required  data-state-key="n" .value=${state.deadvox.n} .disabled=${!enabled('deadvox', 'n', state)}/>
+                <input name="n" data-url-param="n" type="text" value="10,25,50,100" inputmode="numeric" autocomplete="off" required  data-state-key="n" .value=${state.deadvox.n} .disabled=${!enabled('n', state)}/>
               </label>
               <label>Start at count entry
-                <input id="deadvox-shambler-index" name="i" data-url-param="i" type="number" min="0" step="1" value="0" required  data-state-key="shamblerIndex" .value=${state.deadvox.shamblerIndex} .disabled=${!enabled('deadvox', 'shamblerIndex', state)}/>
+                <input id="deadvox-shambler-index" name="i" data-url-param="i" type="number" min="0" step="1" value="0" required  data-state-key="shamblerIndex" .value=${state.deadvox.shamblerIndex} .disabled=${!enabled('shamblerIndex', state)}/>
               </label>
               <p class="muted">Time defaults to 23:30. The fixture site and view radius are fixed by this benchmark.</p>
             </div>
@@ -155,48 +155,6 @@ const page = (state) => html`  <main>
         <p class="status">Debug tools and their current keys are documented in-game.</p>
       </section>
 
-      <section class="card" aria-labelledby="gungen-title">
-        <div class="card-heading">
-          <h2 id="gungen-title"><a href="gun-authoring-tool/">gungen</a> <code>(gun authoring tool)</code></h2>
-          <p>A super-low-poly firearm generator. Generate from a template, open a validation fixture, or view a curated design.</p>
-        </div>
-        <form id="gungen-form" @input=${onInput} @change=${onInput} @submit=${onSubmit}>
-          <fieldset class="choice-row">
-            <legend class="sr-only">Gungen starting point</legend>
-            <label><input type="radio" name="gungen-mode" value="template" checked  data-state-key="mode" .checked=${state.gungen.mode === 'template'} .disabled=${!enabled('gungen', 'mode', state)}/> Generate template</label>
-            <label><input type="radio" name="gungen-mode" value="fixture"  data-state-key="mode" .checked=${state.gungen.mode === 'fixture'} .disabled=${!enabled('gungen', 'mode', state)}/> Open fixture</label>
-            <label><input type="radio" name="gungen-mode" value="design"  data-state-key="mode" .checked=${state.gungen.mode === 'design'} .disabled=${!enabled('gungen', 'mode', state)}/> Open design</label>
-          </fieldset>
-          <div id="gungen-template-fields" class="form-grid" ?hidden=${!visible('gungen-template-fields', state)}>
-            <label>Seed
-              <input name="seed" data-url-param="seed" type="number" step="1" min="-2147483648" max="2147483647" value="0" required  data-state-key="seed" .value=${state.gungen.seed} .disabled=${!enabled('gungen', 'seed', state)}/>
-            </label>
-            <p class="muted">The viewer has controls to step seeds and search for a valid build.</p>
-          </div>
-          <div id="gungen-fixture-fields" class="form-grid" ?hidden=${!visible('gungen-fixture-fields', state)}>
-            <p class="muted">Fixtures show the assembly and its expected validation result.</p>
-          </div>
-          <div id="gungen-design-fields" class="form-grid" ?hidden=${!visible('gungen-design-fields', state)}>
-            <p class="muted">Designs open read-only metadata with in-memory parameter editing in the viewer.</p>
-          </div>
-          <div class="form-grid">
-            <label>Overrides (optional)
-              <input name="set" data-url-param="set" id="gungen-set" type="text" placeholder="magazine.variant:akm,rear-sight:off" spellcheck="false"  data-state-key="set" .value=${state.gungen.set} .disabled=${!enabled('gungen', 'set', state)}/>
-            </label>
-            <p class="muted">Param overrides and optional parts, as the viewer's panel writes them.</p>
-          </div>
-          <div class="action-row">
-            <button class="primary" type="submit">Open viewer</button>
-          </div>
-          <label class="url-label" for="gungen-url">Direct link</label>
-          <div class="url-row">
-            <input id="gungen-url" .value=${state.gungen.url} type="text" readonly aria-label="Composed gungen URL" />
-            <button type="button" data-copy="gungen-url" @click=${onCopy}>${state.copied === 'gungen-url' ? 'Copied' : 'Copy link'}</button>
-          </div>
-          <p id="gungen-status" class="status" role="status" aria-live="polite">${state.gungen.status}</p>
-        </form>
-      </section>
-
       <section class="card">
         <h2><a href="mobgen/">mobgen</a></h2>
         <p>
@@ -211,20 +169,9 @@ const page = (state) => html`  <main>
         </ul>
       </section>
 
-      <section class="card" aria-labelledby="tat-title">
-        <h2 id="tat-title"><a href="thing-authoring-tool/">Thing authoring tool</a></h2>
-        <p>Views and exports non-gun items for deadvox.</p>
-        <ul class="links">
-          <li><a href="thing-authoring-tool/">Open the tool</a></li>
-        </ul>
-      </section>
-
-      <section class="card" aria-labelledby="vat-title">
-        <h2 id="vat-title"><a href="vehicle-authoring-tool/">Vehicle authoring tool</a></h2>
-        <p>Lists, validates and exports vehicle blueprints. No editing yet.</p>
-        <ul class="links">
-          <li><a href="vehicle-authoring-tool/">Open the tool</a></li>
-        </ul>
+      <section class="card">
+        <h2><a href="https://roobie.github.io/skelly-assets/">skelly-assets</a></h2>
+        <p>The shared asset library, with the gun, thing and vehicle authoring tools.</p>
       </section>
 
       <section class="card" aria-labelledby="links-title">
@@ -266,13 +213,6 @@ const model = {
     status: '',
     lastDefault: '12:30',
   },
-  gungen: {
-    mode: 'template',
-    seed: '0',
-    set: '',
-    url: '',
-    status: '',
-  },
   copied: '',
   bundledMods: [],
 };
@@ -298,17 +238,8 @@ const visibility = {
   'deadvox-weathering-split-field': (d) => d.bench === '' && d.debug,
   'deadvox-world-bench': (d) => d.bench === '1',
   'deadvox-shambler-bench': (d) => d.bench === 'shamblers',
-  'gungen-template-fields': (_, g) => g.mode === 'template',
-  'gungen-fixture-fields': (_, g) => g.mode === 'fixture',
-  'gungen-design-fields': (_, g) => g.mode === 'design',
 };
-const visible = (id, s) => (visibility[id] ? visibility[id](s.deadvox, s.gungen) : true);
-const gungenControlVisibility = {
-  fixture: 'gungen-fixture-fields',
-  design: 'gungen-design-fields',
-  template: 'gungen-template-fields',
-  seed: 'gungen-template-fields',
-};
+const visible = (id, s) => (visibility[id] ? visibility[id](s.deadvox) : true);
 const deadvoxControlVisibility = {
   seed: 'deadvox-seed-field',
   time: 'deadvox-time-field',
@@ -333,10 +264,7 @@ const deadvoxControlVisibility = {
   n: 'deadvox-shambler-bench',
   shamblerIndex: 'deadvox-shambler-bench',
 };
-const enabled = (form, key, s) => {
-  const fields = form === 'gungen' ? gungenControlVisibility : deadvoxControlVisibility;
-  return fields[key] ? visible(fields[key], s) : true;
-};
+const enabled = (key, s) => (deadvoxControlVisibility[key] ? visible(deadvoxControlVisibility[key], s) : true);
 const defaultTime = (d) => {
   if (d.bench === '' && d.site === 'weatheringTest') {
     return '12:00';
@@ -392,7 +320,7 @@ const addDebugParams = (params, d) => {
   if (siteOffered(d, d.site) && (d.site === 'testHouse' || d.site === 'weatheringTest')) {
     params.set('site', d.site);
   }
-  if (enabled('deadvox', 'focus', { deadvox: d })) {
+  if (enabled('focus', { deadvox: d })) {
     setDefault(params, 'focus', d.focus.trim(), '');
   }
 };
@@ -447,20 +375,6 @@ const makeDeadvox = (d) => {
   }
   return u;
 };
-const makeGungen = (g) => {
-  const u = new URL('gun-authoring-tool/', location.href);
-  const p = u.searchParams;
-  if (g.mode === 'fixture') {
-    p.set('fixture', 'ak-standard-handguard');
-  } else if (g.mode === 'design') {
-    p.set('design', 'archetype-ak-akm');
-  } else {
-    p.set('template', 'battle-rifle');
-    setDefault(p, 'seed', g.seed, '0');
-  }
-  setDefault(p, 'set', g.set.trim(), '');
-  return u;
-};
 const inRange = (value, min, max, integer = true) => {
   const number = Number(value);
   return (
@@ -469,54 +383,44 @@ const inRange = (value, min, max, integer = true) => {
 };
 const validOptionalRange = (value, min, max) => value === '' || inRange(value, min, max, false);
 const validWeatheringOverrides = (d) =>
-  (!enabled('deadvox', 'weathering', model) || validOptionalRange(d.weathering, 0, WEATHERING_STRENGTH_MAX)) &&
-  (!enabled('deadvox', 'weatheringVariation', model) || validOptionalRange(d.weatheringVariation, 0, 1)) &&
-  (!enabled('deadvox', 'weatheringSplit', model) || validOptionalRange(d.weatheringSplit, -256, 256));
+  (!enabled('weathering', model) || validOptionalRange(d.weathering, 0, WEATHERING_STRENGTH_MAX)) &&
+  (!enabled('weatheringVariation', model) || validOptionalRange(d.weatheringVariation, 0, 1)) &&
+  (!enabled('weatheringSplit', model) || validOptionalRange(d.weatheringSplit, -256, 256));
 const validDeadvox = (d) => {
   const plan = parsePlan(d.plan);
   const counts = parseCounts(d.n);
   return (
-    (!enabled('deadvox', 'seed', model) || inRange(d.seed, -2_147_483_648, 2_147_483_647)) &&
-    (!enabled('deadvox', 'time', model) || d.time !== '') &&
-    (!enabled('deadvox', 'radius', model) || inRange(d.radius, 32, 256)) &&
-    (!enabled('deadvox', 'storeys', model) || inRange(d.storeys, 1, 20)) &&
-    (!enabled('deadvox', 'density', model) || d.density === '' || inRange(d.density, 0, 1, false)) &&
+    (!enabled('seed', model) || inRange(d.seed, -2_147_483_648, 2_147_483_647)) &&
+    (!enabled('time', model) || d.time !== '') &&
+    (!enabled('radius', model) || inRange(d.radius, 32, 256)) &&
+    (!enabled('storeys', model) || inRange(d.storeys, 1, 20)) &&
+    (!enabled('density', model) || d.density === '' || inRange(d.density, 0, 1, false)) &&
     validWeatheringOverrides(d) &&
-    (!enabled('deadvox', 'plan', model) || Boolean(plan)) &&
-    (!enabled('deadvox', 'worldIndex', model) || inRange(d.worldIndex, 0, (plan?.length ?? 1) - 1)) &&
-    (!enabled('deadvox', 'shamblers', model) || inRange(d.shamblers, 0, 500)) &&
-    (!enabled('deadvox', 'n', model) || Boolean(counts)) &&
-    (!enabled('deadvox', 'shamblerIndex', model) || inRange(d.shamblerIndex, 0, (counts?.length ?? 1) - 1))
+    (!enabled('plan', model) || Boolean(plan)) &&
+    (!enabled('worldIndex', model) || inRange(d.worldIndex, 0, (plan?.length ?? 1) - 1)) &&
+    (!enabled('shamblers', model) || inRange(d.shamblers, 0, 500)) &&
+    (!enabled('n', model) || Boolean(counts)) &&
+    (!enabled('shamblerIndex', model) || inRange(d.shamblerIndex, 0, (counts?.length ?? 1) - 1))
   );
 };
-const refresh = (form) => {
+const refresh = () => {
   const d = model.deadvox;
-  const g = model.gungen;
-  if (form === 'deadvox' && d.time === d.lastDefault) {
+  if (d.time === d.lastDefault) {
     d.time = defaultTime(d);
   }
   d.lastDefault = defaultTime(d);
   const dv = validDeadvox(d);
   d.url = dv ? makeDeadvox(d).href : '';
   d.status = dv ? '' : 'Correct the highlighted values to make a launch link.';
-  const gv =
-    g.mode !== 'template' ||
-    (g.seed !== '' &&
-      Number.isInteger(Number(g.seed)) &&
-      Number(g.seed) >= -2_147_483_648 &&
-      Number(g.seed) <= 2_147_483_647);
-  g.url = gv ? makeGungen(g).href : '';
-  g.status = gv ? '' : 'Enter a whole-number seed in range to make a launch link.';
   renderPage();
 };
 const onInput = (e) => {
-  const f = e.currentTarget.id === 'deadvox-form' ? 'deadvox' : 'gungen';
   const t = e.target;
-  const m = model[f];
+  const m = model.deadvox;
   const mod = t.dataset.modId;
   if (mod) {
     m.mods = t.checked ? [...m.mods.filter((id) => id !== mod), mod] : m.mods.filter((id) => id !== mod);
-    refresh(f);
+    refresh();
     return;
   }
   const k = t.dataset.stateKey;
@@ -532,16 +436,15 @@ const onInput = (e) => {
   } else {
     m[k] = t.value;
   }
-  if (f === 'deadvox' && !siteOffered(m, m.site)) {
+  if (!siteOffered(m, m.site)) {
     m.site = '';
   }
-  refresh(f);
+  refresh();
 };
 const onSubmit = (e) => {
   e.preventDefault();
-  const f = e.currentTarget.id === 'deadvox-form' ? 'deadvox' : 'gungen';
-  refresh(f);
-  const m = model[f];
+  refresh();
+  const m = model.deadvox;
   const valid = e.currentTarget.reportValidity();
   if (m.url && valid) {
     location.assign(m.url);
@@ -622,16 +525,16 @@ const onPreset = (e) => {
     focus: '',
     lastDefault: '',
   });
-  refresh('deadvox');
+  refresh();
 };
 const onCopy = async (e) => {
   const id = e.currentTarget.dataset.copy;
-  const formState = model[id === 'deadvox-url' ? 'deadvox' : 'gungen'];
-  if (!formState.url) {
+  const { url } = model.deadvox;
+  if (!url) {
     return;
   }
   try {
-    await navigator.clipboard.writeText(formState.url);
+    await navigator.clipboard.writeText(url);
     model.copied = id;
     renderPage();
     setTimeout(() => {
@@ -663,9 +566,8 @@ const loadBundledMods = async (fetcher, url) => {
     return [];
   }
 };
-refresh('deadvox');
-refresh('gungen');
+refresh();
 loadBundledMods(fetch, new URL('deadvox/bundled-mods.json', location.href)).then((mods) => {
   model.bundledMods = mods;
-  refresh('deadvox');
+  refresh();
 });
