@@ -75,6 +75,58 @@ const QUOTE_ESCAPE = /\\(["\\])/g;
 
 const exec = (command, args, options = {}) => execFileSync(command, args, { cwd: ROOT, encoding: 'utf8', ...options });
 
+const GITLINK = /^160000 ([0-9a-f]+) \d\t(.+)$/;
+
+// A hook exports the pushing repository's GIT_DIR, which would otherwise redirect commands meant for a submodule.
+function unboundGit(dir, args, options = {}) {
+  // biome-ignore lint/style/noProcessEnv: the child keeps caller settings except Git's local repository bindings.
+  const env = { ...process.env };
+  for (const name of execFileSync('git', ['rev-parse', '--local-env-vars'], { encoding: 'utf8' }).split('\n')) {
+    delete env[name];
+  }
+  return execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', env, maxBuffer: 1 << 28, ...options });
+}
+
+export function pinnedSubmodules(root = ROOT) {
+  const pinned = new Map();
+  for (const line of unboundGit(root, ['ls-files', '--stage', '-z']).split('\0')) {
+    const match = line.match(GITLINK);
+    if (!match) {
+      continue;
+    }
+    const [, commit, path] = match;
+    const dir = resolve(root, path);
+    let files;
+    try {
+      // An uninitialized submodule directory would otherwise resolve to the superproject.
+      if (resolve(unboundGit(dir, ['rev-parse', '--show-toplevel'], { stdio: 'pipe' }).trim()) !== dir) {
+        throw new Error('not a checkout');
+      }
+      files = new Set(
+        unboundGit(dir, ['ls-tree', '-r', '-z', '--name-only', commit], { stdio: 'pipe' }).split('\0').filter(Boolean),
+      );
+    } catch (cause) {
+      throw new Error(
+        `zero-drift: cannot read submodule ${path} at its pinned commit ${commit}; run git submodule update --init ${path}`,
+        { cause },
+      );
+    }
+    pinned.set(path, {
+      files,
+      read: (file) => unboundGit(dir, ['cat-file', 'blob', `${commit}:${file}`]),
+    });
+  }
+  return pinned;
+}
+
+function pinnedEntry(rel, tree) {
+  for (const [path, submodule] of tree.pinned) {
+    if (rel.startsWith(`${path}/`)) {
+      return { submodule, file: rel.slice(path.length + 1) };
+    }
+  }
+}
+
 export function parsePythonReadIf(output) {
   const docs = new Map();
   let current;
@@ -615,6 +667,12 @@ function resolvedCandidates(docPath, value, root) {
 
 function pathExists(candidate, value, tree) {
   const rel = relative(tree.root, candidate).split(sep).join('/');
+  const pinned = pinnedEntry(rel, tree);
+  if (pinned) {
+    const { files } = pinned.submodule;
+    const dir = pinned.file.replace(TRAILING_SLASH, '');
+    return files.has(pinned.file) || (value.endsWith('/') && [...files].some((file) => file.startsWith(`${dir}/`)));
+  }
   if (tree.tracked.has(rel)) {
     return true;
   }
@@ -695,7 +753,8 @@ function checkSymbols({ path, visible, markdown, tree, failures }) {
 
 function sourceFor(target, tree) {
   if (!tree.sources.has(target)) {
-    tree.sources.set(target, readFileSync(target, 'utf8'));
+    const pinned = pinnedEntry(relative(tree.root, target).split(sep).join('/'), tree);
+    tree.sources.set(target, pinned ? pinned.submodule.read(pinned.file) : readFileSync(target, 'utf8'));
   }
   return tree.sources.get(target);
 }
@@ -1082,6 +1141,7 @@ export function checkDocument({
   root = ROOT,
   tracked,
   ignored = new Set(),
+  pinned = new Map(),
   pythonReadIf = new Map(),
   sources = new Map(),
   anchors = new Map(),
@@ -1110,7 +1170,7 @@ export function checkDocument({
       checkReadIfParity(path, reasons, pythonReadIf, failures);
     }
   }
-  const tree = { root, tracked, ignored, sources, anchors, markdown: parsedMarkdown };
+  const tree = { root, tracked, ignored, pinned, sources, anchors, markdown: parsedMarkdown };
   const visible = markdown ? markdownText(markdown) : joinedCues(text);
   checkLineNumbers(path, markdown ? markdownSourceText(text, markdown) : text, failures);
   checkPaths({ path, visible, markdown, tree, failures });
@@ -1146,6 +1206,7 @@ function ignoredPaths(candidates) {
 
 function observedFailures(paths) {
   const tracked = new Set(exec('git', ['ls-files', '-z']).split('\0').filter(Boolean));
+  const pinned = pinnedSubmodules();
   const docTexts = new Map(paths.map((path) => [path, readFileSync(resolve(ROOT, path), 'utf8')]));
   const sources = new Map([...docTexts].map(([path, text]) => [resolve(ROOT, path), text]));
   const parsedMarkdown = new Map(
@@ -1163,7 +1224,12 @@ function observedFailures(paths) {
       ),
     );
   });
-  const ignored = ignoredPaths(candidates);
+  // Git refuses ignore queries for paths inside a submodule, and the pinned tree answers those paths anyway.
+  const ignored = ignoredPaths(
+    candidates.map((docCandidates) =>
+      docCandidates.filter((item) => !pinnedEntry(item.split(sep).join('/'), { pinned })),
+    ),
+  );
   const pythonReadIf = parsePythonReadIf(exec('python3', ['tools/read_if.py']));
   const failures = new Map();
   const mergeFailure = (failure) => {
@@ -1177,6 +1243,7 @@ function observedFailures(paths) {
       text,
       tracked,
       ignored,
+      pinned,
       pythonReadIf,
       sources,
       anchors,

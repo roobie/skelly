@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import process from 'node:process';
 import { after, before, describe, it } from 'node:test';
 import {
   checkDocument,
@@ -10,6 +12,7 @@ import {
   comparePolicy,
   githubSlug,
   parsePythonReadIf,
+  pinnedSubmodules,
   trackedTextFiles,
 } from '../tools/zero-drift-check.mjs';
 
@@ -237,6 +240,89 @@ describe('zero-drift symbol check', () => {
 
   it('checks a symbol pair wrapped across a line break', () => {
     assert.ok(checks(scan(document(`See ${code('src/known.ts')},\n${code('missingSymbol')}.`))).includes('symbol'));
+  });
+});
+
+describe('zero-drift submodule cues', () => {
+  // A pre-push hook exports GIT_DIR; fixtures must not bind to the pushing repository.
+  // biome-ignore lint/style/noProcessEnv: fixture git keeps caller settings except Git's repository bindings.
+  const gitEnv = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')));
+  const git = (dir, ...args) =>
+    execFileSync('git', ['-C', dir, '-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', ...args], {
+      encoding: 'utf8',
+      env: gitEnv,
+      stdio: 'pipe',
+    }).trim();
+  const assets = 'packages/assets';
+  const superproject = (name) => {
+    const dir = join(root, name);
+    mkdirSync(dir, { recursive: true });
+    git(dir, 'init', '-q');
+    return dir;
+  };
+  const scanPinned = (dir, text) =>
+    checkDocument({
+      path: docPath,
+      text: document(text),
+      root: dir,
+      tracked: new Set([assets]),
+      pinned: pinnedSubmodules(dir),
+      pythonReadIf: pythonReadIf(),
+    });
+
+  let pinnedRoot;
+  before(() => {
+    pinnedRoot = superproject('pinned');
+    const sub = join(pinnedRoot, assets);
+    mkdirSync(join(sub, 'src'), { recursive: true });
+    git(sub, 'init', '-q');
+    writeFileSync(join(sub, 'src/a.ts'), 'export const pinnedSymbol = 1;\n');
+    writeFileSync(join(sub, 'README.md'), '# Assets\n## Contract\n');
+    git(sub, 'add', '.');
+    git(sub, 'commit', '-qm', 'pin');
+    git(pinnedRoot, '-c', 'advice.addEmbeddedRepo=false', 'add', assets);
+    writeFileSync(join(sub, 'src/a.ts'), 'export const pinnedSymbol = 1;\nexport const laterSymbol = 2;\n');
+    writeFileSync(join(sub, 'src/later.ts'), 'export const laterFile = 1;\n');
+    git(sub, 'add', '.');
+    git(sub, 'commit', '-qm', 'later');
+    writeFileSync(join(sub, 'src/a.ts'), 'export const pinnedSymbol = 1;\nexport const worktreeSymbol = 3;\n');
+  });
+
+  it('resolves paths, symbols and sections at the pinned commit', () => {
+    assert.deepEqual(
+      scanPinned(
+        pinnedRoot,
+        `See ${code(`${assets}/src/a.ts`)}, ${code('pinnedSymbol')}, ${code(`${assets}/src/`)} and ${cue(`${assets}/README.md`, 'Contract')}.`,
+      ),
+      [],
+    );
+  });
+
+  it('rejects cues that exist only in the working tree or on an unpinned commit', () => {
+    const failures = scanPinned(
+      pinnedRoot,
+      [
+        `See ${code(`${assets}/src/a.ts`)}, ${code('worktreeSymbol')}.`,
+        `See ${code(`${assets}/src/a.ts`)}, ${code('laterSymbol')}.`,
+        `See ${code(`${assets}/src/later.ts`)}.`,
+      ].join('\n\n'),
+    );
+    assert.deepEqual(
+      failures.map(({ check, text }) => [check, text]),
+      [
+        ['path', `${assets}/src/later.ts`],
+        ['symbol', `${assets}/src/a.ts, worktreeSymbol`],
+        ['symbol', `${assets}/src/a.ts, laterSymbol`],
+      ],
+    );
+  });
+
+  it('fails loudly with the fix when the submodule is not checked out', () => {
+    const dir = superproject('unchecked');
+    mkdirSync(join(dir, assets), { recursive: true });
+    const commit = git(pinnedRoot, 'rev-parse', `:${assets}`);
+    git(dir, 'update-index', '--add', '--cacheinfo', `160000,${commit},${assets}`);
+    assert.throws(() => pinnedSubmodules(dir), new RegExp(`git submodule update --init ${assets}`));
   });
 });
 
