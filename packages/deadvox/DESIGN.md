@@ -330,6 +330,11 @@ action metadata follows Deadvox's clock-and-unit contract. Persisted temporal
 field renames require a save-schema change because pre-alpha saves are refused,
 not migrated. See the root gungen-to-deadvox export contract.
 
+Actor poses compose the built clips as they are baked: skelly-assets authors
+poses, so a stance or gait is tuned in one place and Deadvox never regenerates
+or corrects one. A fused mass, whose built idle holds only its rest pose, still
+generates its pose. See `src/core/actorPose.ts`, `posedActor`.
+
 Actor body and clip keys keep the producer's spelling; Deadvox never renames
 them at load. A load-time translation would only bridge two spellings, which is
 a compatibility shim (`AGENTS.md`, "Project stage"). A clip-local second is

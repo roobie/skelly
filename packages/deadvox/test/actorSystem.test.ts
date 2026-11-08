@@ -1,8 +1,8 @@
 import process from 'node:process';
 import { templateByName } from '@mobgen/core/template.ts';
-import { crawlGaitPose } from '@mobgen/mob/crawl.ts';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
+import { decodeFrame, sampleClip, walkCursor } from '../src/core/actorClips.ts';
 import { generatedActorFigure } from '../src/core/actorFigure.ts';
 import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
@@ -2094,7 +2094,8 @@ describe('shambler scenarios', () => {
       expect(actor.body.pos).not.toEqual(before);
       const input = actorPoseInputFor(actor, id, POSE_SCENE);
       const posed = posedActor(input);
-      const crawl = crawlGaitPose(posed.figure.realized, input.gaitPhase, input.speed);
+      const crawlWalk = input.figure.clips.crawling!.walk as PoseClip;
+      const crawl = decodeFrame(sampleClip(crawlWalk, walkCursor(input.gaitPhase, crawlWalk.cycles!)));
       expect(posed.pose.rotations.pelvis).toEqual(crawl.rotations.pelvis);
       expect(actor.type.id).toBe(type.id);
       expect(posed.figure).toBe(generatedActorFigure(actor.type, actor.figureSeed));

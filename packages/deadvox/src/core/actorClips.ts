@@ -283,6 +283,14 @@ const crawlingFit = (body: ActorBody, root: Vec3, rotations: Record<string, Mat3
   return -groundFit(body, { root: [root[0], 0, root[2]], rotations }, body.groundContactBones).lowest;
 };
 
+/** Root y that grounds these rotations the way the stance's overlays ground theirs. */
+export const stanceFit = (
+  body: ActorBody,
+  root: Vec3,
+  rotations: Record<string, Mat3>,
+  stance: 'standing' | 'crawling',
+): number => (stance === 'crawling' ? crawlingFit(body, root, rotations) : standingFit(body, rotations));
+
 // ---- overlays ----
 
 /** Overlay values at `time` seconds, linear between frames; a stored frame at an exact frame time. */
@@ -328,8 +336,10 @@ export const applyOverlay = (
     const blended = blendBones.has(id) ? blendArmBase(baseR, frame.walkBlendWeight) : baseR;
     rotations[id] = mulMM(blended, eulerToMat3([x, y, z * (clip.sideScalesZ ? side : 1)]));
   }
-  const fit = stance === 'crawling' ? crawlingFit(body, base.root, rotations) : standingFit(body, rotations);
-  return { root: [base.root[0], fit - frame.dropMetres, base.root[2]], rotations };
+  return {
+    root: [base.root[0], stanceFit(body, base.root, rotations, stance) - frame.dropMetres, base.root[2]],
+    rotations,
+  };
 };
 
 // ---- joint deltas ----
