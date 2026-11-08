@@ -6,7 +6,13 @@ import { describe, expect, it } from 'vitest';
 import { generatedActorFigure } from '../src/core/actorFigure.ts';
 import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
-import { actorCrawls, actorPoseInputFor, HIT_FLINCH_DURATION, posedActor } from '../src/core/actorPose.ts';
+import {
+  actorCrawls,
+  actorPoseInputFor,
+  gaitPhaseGain,
+  HIT_FLINCH_DURATION,
+  posedActor,
+} from '../src/core/actorPose.ts';
 import {
   FIGURE_BOXES,
   FIGURE_PARTS,
@@ -2378,30 +2384,20 @@ describe('shambler scenarios', () => {
   it('a crawling actor advances one gait cycle per its crawl clip stride', () => {
     // A fixture stride unlike two step lengths, so the standing rule would give a different phase.
     const strideMetres = 3 * SHAMBLER.stepLength;
-    const figures = new Map(
-      [...FIGURES].map(([key, figure]) => {
-        const { crawling } = figure.clips;
-        const walk = crawling?.walk as PoseClip | undefined;
-        return [
-          key,
-          crawling && walk
-            ? { ...figure, clips: { ...figure.clips, crawling: { ...crawling, walk: { ...walk, strideMetres } } } }
-            : figure,
-        ];
-      }),
-    );
-    const system = new ActorSystem({ ...senses(() => player([1000, 1, 1000])), actorFigureFiles: figures });
-    const crawler = system.store.get(system.add(SHAMBLER, [0, 1, 0]))!;
-    crawler.regions.leftLeg = 0;
-    crawler.regions.rightLeg = 0;
-    let crawled = 0;
-    for (let tick = 0; tick < 10 * 60; tick++) {
-      const before = [...crawler.body.pos] as Vec3;
-      system.tick(1 / 60);
-      crawled += metres(before, crawler.body.pos);
-    }
-    expect(crawled).toBeGreaterThan(0);
-    expect(crawler.gaitPhase).toBeCloseTo((crawled / strideMetres) * 2 * Math.PI, 6);
+    const system = new ActorSystem(senses(() => player([1000, 1, 1000])));
+    const spawned = system.store.get(system.add(SHAMBLER, [0, 1, 0]))!;
+    // An input copy with both legs lost; the live actor's injuries stay with the system.
+    const crawler = { ...spawned, regions: { ...spawned.regions, leftLeg: 0, rightLeg: 0 } };
+    const figure = actorFigure(FIGURES, SHAMBLER, crawler.figureSeed);
+    const { crawling } = figure.clips;
+    const walk = crawling!.walk as PoseClip;
+    const strided = {
+      ...figure,
+      clips: { ...figure.clips, crawling: { ...crawling!, walk: { ...walk, strideMetres } } },
+    };
+    const crawled = 2.5;
+    expect(gaitPhaseGain(crawler, strided, crawled)).toBeCloseTo((crawled / strideMetres) * 2 * Math.PI, 12);
+    expect(gaitPhaseGain(spawned, strided, crawled)).toBeCloseTo((crawled / SHAMBLER.stepLength) * Math.PI, 12);
   });
 
   it('gait phase tracks travelled distance during wander, chase and obstacle response', () => {

@@ -303,7 +303,10 @@ export interface ActorSystemState {
 
 export interface ActorSystemOptions {
   activeActorRadiusMetres: number;
-  /** The built bodies and clips every actor poses over, keyed by figure row id. */
+  /**
+   * The built bodies and clips, keyed by figure row id: the source of hit boxes, severable parts and crawl pace. Poses
+   * are still generated (`src/core/actorPose.ts`, `ActorPoseInput`).
+   */
   actorFigureFiles: ActorFigureFiles;
   store?: EntityStore<Actor>;
   terrainFloor?: TerrainFloorAt | undefined;

@@ -23,7 +23,10 @@ import { blendPose, boneTransforms, type Pose } from './pose.ts';
 import { actorFigureKey } from './schema/actors.ts';
 
 export interface ActorPoseInput {
-  /** The built body and clips the pose composes over. */
+  /**
+   * The actor's built body and clips. Hit boxes and voxels are read from the body; the pose itself is still generated
+   * from the mobgen template, fused mass included, because the built clips were baked from a different idle stance.
+   */
   readonly figure: ActorFigureFile;
   readonly id?: number;
   readonly seed: number;

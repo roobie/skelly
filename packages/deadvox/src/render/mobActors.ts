@@ -443,7 +443,7 @@ export interface MobActorMeshesOptions {
   readonly reveal?: ColumnReveal;
   /** The zombie types to draw: a variant per model they select and figure seed they author. */
   readonly actors: ReadonlyMap<string, DrawnActorType>;
-  /** The session's built actor figures, which live actors are posed over. */
+  /** The session's built actor figures, handed to each pose input (`src/core/actorPose.ts`, `ActorPoseInput`). */
   readonly actorFigureFiles: ActorFigureFiles;
   /** Builds only the first this-many figure seeds of each model. */
   readonly poolSize?: number;

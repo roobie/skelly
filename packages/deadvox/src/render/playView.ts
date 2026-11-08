@@ -223,7 +223,7 @@ export const createPlayView = (
   }: {
     /** The product's bundled models; see `PresentationAssets`, `models`. */
     models: PackAssetFiles;
-    /** The session's built actor figures, which live actors are posed over. */
+    /** The session's built actor figures, handed to each pose input (`src/core/actorPose.ts`, `ActorPoseInput`). */
     actorFigureFiles: ActorFigureFiles;
     page?: Pick<EventTarget, 'addEventListener'>;
     poweredLights?: () => readonly PoweredLight[];
