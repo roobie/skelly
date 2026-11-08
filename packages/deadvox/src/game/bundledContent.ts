@@ -1,6 +1,7 @@
 import { BundleAdmission, type BundleStamp } from '../core/bundleAdmission.ts';
 import { buildRegistry, type ContentSource } from '../core/content.ts';
 import { admitPacks, type PackInput, type PackManifest, packStartIssues } from '../core/packAdmission.ts';
+import { logicalKey } from '../core/packFiles.ts';
 import type { SaveVersionComponents } from '../core/saveFormat.ts';
 
 declare const __SKELLY_BUNDLE_STAMP__: Record<string, BundleStamp> | undefined;
@@ -60,7 +61,7 @@ export const createBundledContent = async ({
     manifest,
     files: manifest.files.map(({ path, kind }) => ({
       source: path,
-      data: kind === 'content' ? files[`${root}/${path}`] : __SKELLY_FILE_HASHES__[`${root}/${path}`],
+      data: (kind === 'content' ? files : __SKELLY_FILE_HASHES__)[logicalKey({ root }, path)],
     })),
   }));
   const packs = available.filter(({ manifest }) => !manifest.optIn);

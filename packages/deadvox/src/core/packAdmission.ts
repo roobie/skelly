@@ -15,6 +15,7 @@ import {
 import { isPlainRecord } from './canonicalJson.ts';
 import type { ContentIssue, ContentSource, Registry } from './content.ts';
 import { contentDigest, contentSourceKey } from './contentHash.ts';
+import { logicalKey } from './packFiles.ts';
 import { CONTENT_SECTION_KEYS } from './schema.ts';
 
 const name = pipe(string(), minLength(1));
@@ -95,7 +96,7 @@ export const packSources = (pack: PackInput): ContentSource[] =>
   pack.manifest.files
     .filter(({ kind }) => kind === 'content')
     .map(({ path }) => ({
-      source: `${pack.source}/${path}`,
+      source: logicalKey({ root: pack.source }, path),
       data: pack.files.find(({ source }) => source === path)!.data,
     }));
 

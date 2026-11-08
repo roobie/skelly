@@ -50,10 +50,10 @@ Construct motion remains construct work and separately carded work stays separat
 ## Invariants
 
 Keep `test/gungen-deadvox-contract.test.mjs` under its retained name until retirement
-renames it atomically with its CI invocation. Its population comes from the recipe,
-including companions and parts, not a copied inventory. Credits, orphan detection,
+renames it atomically with its CI invocation. Its population is the firearms pack's
+declared gun exports, read through the pack reader, not a copied inventory. Credits,
 registry validation and GLTF loading remain alongside the specialised motion checks;
-see `test/model-export-sync.mjs`, `assertExportSynced` and `assertRecipeCredits`.
+see `test/model-export-sync.mjs`, `assertRecipeCredits`.
 Preserve `test/things-deadvox-contract.test.mjs` independently.
 
 Neither tool imports its peer; lower packages and Deadvox cannot import the gun tool.

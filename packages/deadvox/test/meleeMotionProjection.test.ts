@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { Box3, LoadingManager, PerspectiveCamera, Quaternion, Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
@@ -12,7 +11,7 @@ import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { heldState } from './heldState.ts';
-import { modFile } from './modFile.ts';
+import { modFileBytes } from './modFile.ts';
 
 const registry = baseRegistry();
 const playerFigure = registry.figures.get('player')!;
@@ -23,7 +22,7 @@ const realHeldModels = new Map<string, import('three').Object3D>();
 await Promise.all(
   ['baseball_bat', 'steel_pipe', 'kitchen_knife', 'machete', 'kabar'].map(async (id) => {
     const def = registry.models.get(id)!;
-    const bytes = readFileSync(modFile(def.file));
+    const bytes = modFileBytes(def.file);
     const gltf = await gltfLoader.parseAsync(Uint8Array.from(bytes).buffer, '').then(indexModelMaterials);
     realHeldModels.set(id, prepareModel(def, gltf.scene).held);
   }),

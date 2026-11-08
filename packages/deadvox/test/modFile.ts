@@ -1,18 +1,24 @@
-import { existsSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { resolve } from 'node:path';
+import type { PackInput } from '../src/core/packAdmission.ts';
+import { packFileBytes, readAvailablePacks } from '../tools/readBundledPacks.ts';
 
-/** The deadvox mods and the shared mods, relative to the deadvox package. */
-export const MOD_ROOTS = ['mods', '../mods'];
+const PACKAGE_ROOT = resolve(import.meta.dirname, '..');
+let available: PackInput[] | undefined;
 
-/** Where a pack-relative asset file lives, for a test holding a row but not the pack that defined it. */
-export const modFile = (file: string): string => {
-  for (const root of MOD_ROOTS) {
-    for (const mod of readdirSync(root)) {
-      const path = join(root, mod, file);
-      if (existsSync(path)) {
-        return path;
-      }
-    }
+/** Every shipped pack, read once per test file. */
+export const shippedPacks = (): PackInput[] => {
+  available ??= readAvailablePacks(PACKAGE_ROOT);
+  return available;
+};
+
+/** The bytes of one file a pack declares, wherever the pack reader resolves it. */
+export const packFile = (pack: PackInput, path: string): Buffer => packFileBytes(PACKAGE_ROOT, pack, path);
+
+/** The bytes of a pack file a row names, for a test holding the row but not the pack that declares it. */
+export const modFileBytes = (file: string): Buffer => {
+  const owners = shippedPacks().filter(({ manifest }) => manifest.files.some(({ path }) => path === file));
+  if (owners.length !== 1) {
+    throw new Error(`${owners.length} packs declare ${file}`);
   }
-  throw new Error(`no mod holds ${file}`);
+  return packFile(owners[0]!, file);
 };
