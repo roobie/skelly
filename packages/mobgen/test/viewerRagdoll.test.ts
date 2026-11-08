@@ -8,6 +8,7 @@ import type { HumanoidParams } from '../src/mob/humanoid.ts';
 import { idlePose } from '../src/mob/idle.ts';
 import { quadrupedPose } from '../src/mob/quadruped.ts';
 import { skeletonTemplate } from '../src/mob/skeletonTemplate.ts';
+import { ragdollBody } from '../src/viewer/ragdollBody.ts';
 import { buildActor, disposeActor } from '../src/viewer/scene.ts';
 
 describe('viewer ragdoll transforms', () => {
@@ -36,7 +37,7 @@ describe('viewer ragdoll transforms', () => {
         actor.applyPose(pose);
         const before = actor.flesh.children[0]!.matrix.clone();
         const corpse = world.spawn({
-          realized,
+          body: ragdollBody(realized),
           model: template.name,
           pose,
           position: [0, 0, 0],
