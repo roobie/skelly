@@ -99,9 +99,9 @@ an intentional shared-export look from an unnoticed change.
 
 ## Staged admission
 
-The initial submodule pin contains model exports but no actor entries under its
-built root. Keep that pin until the PR that admits actor data also declares those
-files: a later asset revision can otherwise expose unclaimed files to the external
+The initial submodule pin contains model exports but no Deadvox actor bodies or
+clips under its built root. Keep that pin until the PR that admits actor data also
+declares those files: a later asset revision can otherwise expose unclaimed files to the external
 root's orphan check. Consumer cutovers change declarations, metadata and bytes
 together, so a model is never admitted without its files or exposed without a claim.
 See `docs/git-workflow.md`, "Shared asset pin bumps".

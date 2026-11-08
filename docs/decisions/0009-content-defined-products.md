@@ -275,5 +275,5 @@ Open permitted PRs as drafts for CI; unrelated new PRs remain frozen until the
 refactor lands, though other work can use an existing PR. The freeze prevents unrelated
 file moves during extraction, not CI for the extraction itself. One extraction avoids
 paying for a temporary internal-edge phase and its later removal. See
-`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision", and
-`packages/deadvox/docs/pack-split.md`.
+`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision", for the asset
+boundary, and `packages/deadvox/docs/pack-split.md` for the content-extraction plan.
