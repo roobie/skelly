@@ -2,12 +2,12 @@
 
 import { crawlPose } from '@mobgen/mob/crawl.ts';
 import { describe, expect, it } from 'vitest';
-import { fusedMassTypeOf, generatedActorFigure } from '../src/core/actorFigure.ts';
+import { generatedActorFigure } from '../src/core/actorFigure.ts';
 import { FIGURE_VARIANTS } from '../src/core/actorModels.ts';
 import { quatToMat3 } from '../src/core/boneMath.ts';
 import { severedBoneSet } from '../src/core/boneTree.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { FUSED_MASS_FIGURE_SEED } from '../src/core/fusedMassFigure.ts';
+import { FUSED_MASS_FIGURE_SEED, fusedMassTypeOf } from '../src/core/fusedMassFigure.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { RagdollWorld, ragdollContent, ragdollGroups, ragdollMotion } from '../src/render/ragdoll.ts';
 import type RAPIER from '../src/render/ragdollRapier.ts';

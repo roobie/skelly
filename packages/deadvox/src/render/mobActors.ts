@@ -78,7 +78,7 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
-import { type ActorFigureType, fusedMassTypeOf, generatedActorFigure } from '../core/actorFigure.ts';
+import { type ActorFigureType, generatedActorFigure } from '../core/actorFigure.ts';
 import type { ActorFigureFiles } from '../core/actorFigureFiles.ts';
 import { type ActorModel, bodyPlanModel, FIGURE_VARIANTS, figureVariantOf } from '../core/actorModels.ts';
 import {
@@ -107,7 +107,7 @@ import { burstBones, severableParts, severedBoneSet } from '../core/boneTree.ts'
 import type { ColumnReveal } from '../core/columnReveal.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
-import { FUSED_MASS_FIGURE_SEED, type FusedMassFigure } from '../core/fusedMassFigure.ts';
+import { FUSED_MASS_FIGURE_SEED, type FusedMassFigure, fusedMassTypeOf } from '../core/fusedMassFigure.ts';
 import type { LookDefaults } from '../core/mood.ts';
 import {
   allocateBoneTransforms,

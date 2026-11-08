@@ -10,7 +10,7 @@ import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { fusedMassTypeOf, generatedActorFigure } from '../src/core/actorFigure.ts';
+import { generatedActorFigure } from '../src/core/actorFigure.ts';
 import { figureVariantOf } from '../src/core/actorModels.ts';
 import { actorPoseInputFor, flinchSideForId, HIT_FLINCH_DURATION } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
@@ -24,7 +24,7 @@ import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { initialActorFootstepClock } from '../src/core/footsteps.ts';
 import { carveAround, missingFlesh } from '../src/core/fusedMassCarving.ts';
-import { FUSED_MASS_FIGURE_SEED, fusedMassFigureForType } from '../src/core/fusedMassFigure.ts';
+import { FUSED_MASS_FIGURE_SEED, fusedMassFigureForType, fusedMassTypeOf } from '../src/core/fusedMassFigure.ts';
 import {
   allocateBoneTransforms,
   boneTransforms,

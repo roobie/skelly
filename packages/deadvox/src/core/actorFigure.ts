@@ -15,10 +15,6 @@ export const figureSeedPool = (actors: ReadonlyMap<string, ActorFigureType>): re
   ...new Set([...actors.values()].flatMap((type) => type.figureSeeds ?? [])),
 ];
 
-/** The content type realized as the fused-mass model, chosen by its model rather than its id. */
-export const fusedMassTypeOf = <T extends ActorFigureType>(actors: ReadonlyMap<string, T>): T | undefined =>
-  [...actors.values()].find((type) => type.model === 'fused-mass');
-
 /** The mobgen realization the renderer still draws from, for every content-selected actor model. */
 export const generatedActorFigure = (type: ActorFigureType, seed: number) => {
   if (type.model !== 'fused-mass') {

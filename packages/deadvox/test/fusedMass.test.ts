@@ -1,7 +1,7 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through Deadvox's TypeScript alias.
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { describe, expect, it } from 'vitest';
-import { fusedMassTypeOf, generatedActorFigure } from '../src/core/actorFigure.ts';
+import { generatedActorFigure } from '../src/core/actorFigure.ts';
 import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { PLAYER_CHEST_METRES } from '../src/core/actorMotion.ts';
 import { actorPoseInputFor, posedActor } from '../src/core/actorPose.ts';
@@ -18,6 +18,7 @@ import {
   fusedMassFigure,
   fusedMassFigureForType,
   fusedMassStrikeOrigin,
+  fusedMassTypeOf,
 } from '../src/core/fusedMassFigure.ts';
 import { FusedMassShape } from '../src/core/fusedMassShape.ts';
 import { pelletShotFromBasis, projectileShot } from '../src/core/pellets.ts';

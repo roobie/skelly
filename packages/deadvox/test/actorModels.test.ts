@@ -3,10 +3,10 @@ import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
 import { fusedMassTemplate } from '@mobgen/mob/fusedMassTemplate.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { describe, expect, it } from 'vitest';
-import { fusedMassTypeOf, generatedActorFigure } from '../src/core/actorFigure.ts';
+import { generatedActorFigure } from '../src/core/actorFigure.ts';
 import { FIGURE_VARIANTS } from '../src/core/actorModels.ts';
 import { validateContent } from '../src/core/content.ts';
-import { FUSED_MASS_FIGURE_SEED } from '../src/core/fusedMassFigure.ts';
+import { FUSED_MASS_FIGURE_SEED, fusedMassTypeOf } from '../src/core/fusedMassFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

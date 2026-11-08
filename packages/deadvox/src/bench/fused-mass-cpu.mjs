@@ -4,13 +4,17 @@ import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { readStackActorFigureFiles, readStackContentSources } from '../../tools/readBundledPacks.ts';
-import { fusedMassTypeOf } from '../core/actorFigure.ts';
 import { BlockEntities } from '../core/blockEntities.ts';
 import { claimed } from '../core/capabilities.ts';
 import { worldSolid } from '../core/collision.ts';
 import { buildRegistry, requireDayCycle } from '../core/content.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
-import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope, fusedMassFigureForType } from '../core/fusedMassFigure.ts';
+import {
+  FUSED_MASS_FIGURE_SEED,
+  fusedMassCollisionEnvelope,
+  fusedMassFigureForType,
+  fusedMassTypeOf,
+} from '../core/fusedMassFigure.ts';
 import { makeScale } from '../core/scale.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
 import { worldBricks } from '../core/solidBricks.ts';
