@@ -267,7 +267,7 @@ const humanoidAttackTimeFor = (input: ActorPoseInput, clip: OverlayClip): number
   return time <= durationSimSeconds ? time : undefined;
 };
 
-/** Acid clip time: the wind-up covers the clip up to its peak, then the clip runs out in real time. */
+/** Acid clip time: the wind-up covers the clip up to its peak, then the clip runs on at the attack's Sim pace. */
 const acidAttackTimeFor = (input: ActorPoseInput, clip: JointDeltaClip): number | undefined => {
   const elapsed = attackElapsed(input);
   if (elapsed === undefined) {
