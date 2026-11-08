@@ -22,7 +22,7 @@ import {
   transpose,
   type Vec3,
 } from './boneMath.ts';
-import type { Bone } from './bones.ts';
+import { type Bone, bodySkeleton } from './bones.ts';
 import { clampJointAngles, jointAngles, jointRotation } from './joints.ts';
 import { blendPose, boneTransforms, type EulerDeg, type Pose } from './pose.ts';
 import type {
@@ -133,18 +133,6 @@ const blendArmBase = (baseR: Mat3, weight: number): Mat3 => {
   ];
   return rotAxis(axis, (angle * 180 * weight) / Math.PI);
 };
-
-/** A built body's bones as the pose solver's skeleton, in body bone order. */
-export const bodySkeleton = (body: Pick<ActorBody, 'bones'>): Bone[] =>
-  body.bones.map(({ id, parent, head, tail, frame, limits, disposition }) => ({
-    id,
-    parent,
-    head,
-    tail,
-    ...(frame && { frame }),
-    ...(limits && { limits }),
-    ...(disposition && { disposition }),
-  }));
 
 // ---- decoding and sampling ----
 

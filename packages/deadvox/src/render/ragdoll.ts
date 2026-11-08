@@ -1,5 +1,4 @@
 import content from '../config/ragdoll.json' with { type: 'json' };
-import { bodySkeleton } from '../core/actorClips.ts';
 import {
   applyPoint,
   mat3ToQuat,
@@ -11,11 +10,10 @@ import {
   transpose,
   type Vec3,
 } from '../core/boneMath.ts';
-import type { Bone } from '../core/bones.ts';
+import { type Bone, type BuiltBone, bodySkeleton } from '../core/bones.ts';
 import { boneVoxelCentres, massProperties, voxelBounds } from '../core/massProperties.ts';
 import { boneTransforms, type Pose } from '../core/pose.ts';
 import { hash3 } from '../core/random.ts';
-import type { ActorBody } from '../core/schema/actors.ts';
 import RAPIER from './ragdollRapier.ts';
 import { angularVelocity, type RigidBody, type RigidWorld } from './rigidImpulse.ts';
 
@@ -113,7 +111,10 @@ export function ragdollGroups(
 }
 
 /** The built-body fields a ragdoll reads: bones in index order and their rest voxel centres. */
-export type RagdollBody = Pick<ActorBody, 'bones' | 'voxelSize'>;
+export interface RagdollBody {
+  readonly bones: readonly BuiltBone[];
+  readonly voxelSize: number;
+}
 
 const groupBounds = (body: RagdollBody, indices: readonly number[]) =>
   voxelBounds(boneVoxelCentres(body, indices), body.voxelSize);

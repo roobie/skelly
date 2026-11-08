@@ -1,6 +1,10 @@
 import type { Vec3 as Point } from './boneMath.ts';
+import type { BuiltBone } from './bones.ts';
 import type { Vec3 } from './coords.ts';
-import type { ActorBody } from './schema/actors.ts';
+
+interface VoxelledBones {
+  readonly bones: readonly Pick<BuiltBone, 'voxels'>[];
+}
 
 type Tensor3 = readonly [
   readonly [number, number, number],
@@ -108,7 +112,7 @@ export const massProperties = (centres: readonly Point[], voxelSize: number, den
 };
 
 /** The rest voxel centres the given bones own, in bone order. */
-export const boneVoxelCentres = (body: Pick<ActorBody, 'bones'>, indices: readonly number[]): Point[] =>
+export const boneVoxelCentres = (body: VoxelledBones, indices: readonly number[]): Point[] =>
   indices.flatMap((index) => body.bones[index]!.voxels ?? []);
 
 /**
@@ -116,7 +120,11 @@ export const boneVoxelCentres = (body: Pick<ActorBody, 'bones'>, indices: readon
  * voxels, spread over the part's voxels so the inertia keeps their shape whatever the density.
  */
 export const bodyPartMass = (
-  body: Pick<ActorBody, 'bones' | 'voxelSize' | 'bodyMassKg' | 'massFractions'>,
+  body: VoxelledBones & {
+    readonly voxelSize: number;
+    readonly bodyMassKg: number;
+    readonly massFractions?: Readonly<Record<string, number>> | undefined;
+  },
   part: string,
   indices: readonly number[],
 ): MassProperties => {

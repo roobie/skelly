@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { bodySkeleton, decodeFrame, sampleClip } from '../src/core/actorClips.ts';
+import { decodeFrame, sampleClip } from '../src/core/actorClips.ts';
 import type { ActorFigureFile } from '../src/core/actorFigureFiles.ts';
 import { quatToMat3 } from '../src/core/boneMath.ts';
+import { bodySkeleton } from '../src/core/bones.ts';
 import { severedBoneSet } from '../src/core/boneTree.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { Pose } from '../src/core/pose.ts';

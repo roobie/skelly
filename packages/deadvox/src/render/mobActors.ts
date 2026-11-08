@@ -68,7 +68,6 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
-import { bodySkeleton } from '../core/actorClips.ts';
 import { type ActorFigureFiles, actorFigure } from '../core/actorFigureFiles.ts';
 import {
   type ActorPoseScene,
@@ -91,7 +90,7 @@ import {
   type Transform,
   transpose,
 } from '../core/boneMath.ts';
-import type { BodyAnchor, Bone } from '../core/bones.ts';
+import { type BodyAnchor, type Bone, bodySkeleton } from '../core/bones.ts';
 import { severableParts, severedBoneSet } from '../core/boneTree.ts';
 import type { ColumnReveal } from '../core/columnReveal.ts';
 import type { Vec3 } from '../core/coords.ts';
