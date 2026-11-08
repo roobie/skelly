@@ -650,7 +650,10 @@ export const PoseClipSchema = pipe(
   check((clip) => timedWithin(clip, 'hitTime'), 'hitTime must be within the duration'),
 );
 
-/** Euler-degree angles composed onto a live base pose. */
+/**
+ * Euler-degree angles composed onto a live base pose.
+ * @public Planned per-clip schema API; its consumer lands with the actor cutover.
+ */
 export const OverlayClipSchema = pipe(
   strictObject({
     kind: literal('overlay'),
