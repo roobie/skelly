@@ -1,6 +1,42 @@
 {
   "models": [
     {
+      "file": "assets/models/tower_shield.glb",
+      "id": "tower_shield",
+      "itemPresentation": {
+        "materials": ["metal", "glass", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "tower_shield": {
+          "centreOfMass": [0, 0.025064035703540252, 0.0011815264266372477],
+          "massKg": 10,
+          "node": "tower_shield:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/kite_shield.glb",
+      "id": "kite_shield",
+      "itemPresentation": {
+        "materials": ["metal", "glass", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "kite_shield": {
+          "centreOfMass": [-0.069168946172747936, 0.025296814873197643, -2.7214984468450093e-5],
+          "massKg": 8,
+          "node": "kite_shield:compound"
+        }
+      }
+    },
+    {
       "file": "assets/models/long_pole.glb",
       "grip": {
         "at": [0.91500000000000004, 0.02, 0],

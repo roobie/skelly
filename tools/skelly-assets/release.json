@@ -1,9 +1,9 @@
 {
   "repository": "roobie/skelly-assets",
-  "tag": "v0.1.0",
-  "commit": "4c47b761233ed90c0f15b596c4ddae06fa8eee2f",
+  "tag": "v0.2.0",
+  "commit": "5051b076cd3ef8691da168d8f7813b2c97bf8430",
   "sha256": {
-    "manifest.json": "d6d752eea6874b9c469cb45df945ed158985c0d9338daf260784a82913c2f207",
+    "manifest.json": "b8ec16a08eb3d8609e1f86d33f5ecae00ed0404ebdf50b6511a7f0654b8191a7",
     "skelly.arcana.tar.gz": "d7b3a7d44bbda8eb54c2a798c4dab7762af363788525d0c22c3fb12c86e37b0f",
     "skelly.armour.tar.gz": "071b9d6de5d81dd61f78b078a262959cbd805dd3fd3d071e9cb062da608f6fbe",
     "skelly.basic-foods.tar.gz": "c8e27f06bec66743bd31fa65d68d80f66dfa32f66e29f5babf3b303b2c0c5253",
@@ -29,7 +29,7 @@
     "skelly.light-sources.tar.gz": "87d33e9860bbf50355183ec5549e359ed3de0149f8649b2084443af2fc314dac",
     "skelly.materials.tar.gz": "c3e0960c89186d438692d4d3a06143b16f3dc89afd8f24b7f1a9fb149fa20f81",
     "skelly.medicine.tar.gz": "261b1bacc134ab04ee0c353e76d33bdb2cf8c2db220f4d57afe020dd25024d32",
-    "skelly.melee.tar.gz": "43449b9506f7ea4788355fcbf636bf5b16a1f47a9c58950179b9c84055d0011a",
+    "skelly.melee.tar.gz": "1a9e75c6ff57ad4fad5b170fc9e2974a707fac0d0ca890787269e491f3ce9a26",
     "skelly.packaged-foods.tar.gz": "8c16d4da63977b00343bbc1f041c21cad4441ffc36354b3a17f6b070d81ead67",
     "skelly.readables.tar.gz": "da1db74e19b854449af506411dbe6ee2f969312f60b428993c0d29e2abecce2e",
     "skelly.structures.tar.gz": "a29692f6633d4b3f25cb642bd2a317e850b8fba23ab9c576c4e0aecd722cdd89",
