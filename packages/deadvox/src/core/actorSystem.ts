@@ -1,6 +1,6 @@
 import { type AcidGlobState, advanceAcidGlob } from './acidGlob.ts';
 import { type AcidPuddleState, feetInAcidPuddle } from './acidPuddle.ts';
-import { type ActorFigureFiles, actorFigure } from './actorFigureFiles.ts';
+import { type ActorFigureFile, type ActorFigureFiles, actorFigure } from './actorFigureFiles.ts';
 import { figureVariantOf } from './actorModels.ts';
 import {
   angleOf,
@@ -89,6 +89,7 @@ import {
 } from './physics.ts';
 import { Rng } from './random.ts';
 import { raycast, type SolidAt } from './raycast.ts';
+import type { ActorBody } from './schema/actors.ts';
 import type { MeleeCharge, SenseDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { type SolidBricks, testedBricks } from './solidBricks.ts';
@@ -483,16 +484,17 @@ const holdSpitGround = (scratch: ActorTickScratch, toward: Vec3, chasing: boolea
 };
 
 /** The part a destroyed region cuts at, parents first, so the whole region goes; undefined where it can't be cut. */
-const regionCut = (actor: Actor, region: HumanoidHitRegion): string | undefined => cutsFor(actor).parts[region][0];
+const regionCut = (body: ActorBody, region: HumanoidHitRegion): string | undefined => cutsFor(body).parts(region)[0];
 
 /** Arm parts still worth severing: neither severed nor below a severed part. Deepest first and left before
  * right, so the dismember roll draws the same parts in the same order on every humanoid-like arm. */
-const availableArmParts = (actor: Actor): string[] => {
-  const { parts, bones } = cutsFor(actor);
+const availableArmParts = (actor: Actor, body: ActorBody): string[] => {
+  const { parts, bones } = cutsFor(body);
   const hidden = severedBoneSet(bones, actor.severed);
   const ordered: string[] = [];
-  for (let depth = Math.max(parts.leftArm.length, parts.rightArm.length) - 1; depth >= 0; depth--) {
-    for (const arm of [parts.leftArm, parts.rightArm]) {
+  const arms = [parts('leftArm'), parts('rightArm')];
+  for (let depth = Math.max(...arms.map((arm) => arm.length)) - 1; depth >= 0; depth--) {
+    for (const arm of arms) {
       const part = arm[depth];
       if (part !== undefined && !hidden.has(part)) {
         ordered.push(part);
@@ -659,20 +661,20 @@ export class ActorSystem {
     return missing;
   }
 
+  private figureOf(actor: Actor): ActorFigureFile {
+    return actorFigure(this.options.actorFigureFiles, actor.type, actor.figureSeed);
+  }
+
+  private gaitPhaseGain(actor: Actor, travelledMetres: number): number {
+    return gaitPhaseGain(actor, this.figureOf(actor), travelledMetres);
+  }
+
   /**
    * Turns an amalgam clear of terrain. A turn that swings its flesh into terrain shoves the body off it by the
    * shortest push that frees the turned flesh, as a body against a wall pivots off it to turn, and that tick
    * it doesn't also move back into what it was pushed off. When no push as far as the turn moved its flesh
    * frees it, it keeps the last facing that was clear. If both overlap (it started in terrain), the turn stands.
    */
-  private gaitPhaseGain(actor: Actor, travelledMetres: number): number {
-    return gaitPhaseGain(
-      actor,
-      actorFigure(this.options.actorFigureFiles, actor.type, actor.figureSeed),
-      travelledMetres,
-    );
-  }
-
   private settleTurn(actor: Actor): void {
     const collider = this.colliderOf(actor.body);
     if (!collider) {
@@ -2156,7 +2158,7 @@ export class ActorSystem {
     const killed = healthAfter === 0 && lethalRegion(actor.type, region);
     const incapacitated = this.applyMeleeEffects({ id, actor, region, healthAfter, killed, hit });
     const newParts = actor.severed.filter((candidate) => !severedBefore.has(candidate));
-    const headPart = actor.type.model === 'fused-mass' ? undefined : regionCut(actor, 'head');
+    const headPart = actor.type.model === 'fused-mass' ? undefined : regionCut(this.figureOf(actor).body, 'head');
     const part = headPart !== undefined && newParts.includes(headPart) ? headPart : newParts[0];
     const outcome = meleeOutcome(killed, incapacitated, part, headPart);
     if (!projectile) {
@@ -2227,7 +2229,7 @@ export class ActorSystem {
     } else {
       const cut =
         healthAfter === 0 && region !== 'head' && region !== 'torso'
-          ? regionCut(actor, region as HumanoidHitRegion)
+          ? regionCut(this.figureOf(actor).body, region as HumanoidHitRegion)
           : undefined;
       if (cut !== undefined) {
         this.sever(id, actor, cut, hit);
@@ -2295,8 +2297,9 @@ export class ActorSystem {
     }
     if (dismember) {
       const hit: HitImpulse = { point: copy(actor.body.pos), direction: [0, -1, 0], impulse: 0 };
+      const { body } = this.figureOf(actor);
       for (const region of ['leftArm', 'rightArm', 'head'] as const) {
-        const part = regionCut(actor, region);
+        const part = regionCut(body, region);
         if (part !== undefined && !actor.severed.includes(part)) {
           this.sever(id, actor, part, hit);
           this.options.onSevered?.(actor, region);
@@ -2324,14 +2327,15 @@ export class ActorSystem {
    * Actor.dismemberRng's own doc comment. */
   private rollDismember(id: EntityId, actor: Actor, killed: boolean, hit: HitImpulse): void {
     const { dismember } = actor.type;
+    const { body } = this.figureOf(actor);
     if (actor.dismemberRng.chance(dismember.chance)) {
-      const available = availableArmParts(actor);
+      const available = availableArmParts(actor, body);
       if (available.length > 0) {
         const part = available[actor.dismemberRng.int(0, available.length - 1)]!;
         this.sever(id, actor, part, hit);
       }
     }
-    const head = regionCut(actor, 'head');
+    const head = regionCut(body, 'head');
     if (
       killed &&
       head !== undefined &&

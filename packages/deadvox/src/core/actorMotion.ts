@@ -1,5 +1,3 @@
-import { templateFigure } from '@mobgen/mob/humanoidFigure.ts';
-import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import type { Actor } from './actorState.ts';
 import { activeFusedMassMembers, actorAttackReachMetres, requiredGrabBand } from './actorState.ts';
 import { severedBoneSet } from './boneTree.ts';
@@ -10,6 +8,8 @@ import type { FusedMassShape } from './fusedMassShape.ts';
 import type { Body } from './physics.ts';
 import type { Rng } from './random.ts';
 import { raycast, type SolidAt } from './raycast.ts';
+import type { ActorBody } from './schema/actors.ts';
+import type { HumanoidHitRegion } from './schema.ts';
 
 export const pickByWeight = <T extends { weight: number }>(choices: readonly T[], roll: number): T => {
   let left = roll * choices.reduce((sum, choice) => sum + choice.weight, 0);
@@ -244,24 +244,29 @@ export function reachableActorMoves(
   );
 }
 // ---- dismemberment: which part a hit can sever, and the gameplay effect of already-severed parts ----
-// The body's bone dispositions say what each hit region may lose, so no skeleton's bone names are listed
-// here; see packages/mobgen/src/mob/humanoidFigure.ts, `HumanoidFigure`. The random roll picks among arm
-// parts; a destroyed region cuts at its top part; the head has its own headOnKillChance roll.
-export const cutsFor = (actor: Actor) => {
-  const figure = templateFigure(bodyPlanModel(figureVariantOf(actor.type)), actor.figureSeed);
-  return { parts: figure.severableParts, bones: figure.realized.body.bones };
+// The built body's severable parts say what each hit region may lose, so no skeleton's bone names are listed
+// here. The random roll picks among arm parts; a destroyed region cuts at its top part; the head has its own
+// headOnKillChance roll.
+export const cutsFor = (body: ActorBody) => {
+  const { severableParts } = body;
+  if (severableParts === undefined) {
+    throw new Error(`Actor body ${body.type} has no severable parts`);
+  }
+  // A region the body lists no parts for has nothing to sever.
+  const parts = (region: HumanoidHitRegion): readonly string[] => severableParts[region] ?? [];
+  return { parts, bones: body.bones };
 };
 /** True once an arm's cut reaches above its last part: a lost hand alone still lets it grab with the stump. */
 const armDisabled = (arm: readonly string[], hidden: ReadonlySet<string>): boolean =>
   arm.length > 0 && hidden.has(arm[Math.max(0, arm.length - 2)]!);
 /** Both disabled arms leave nothing to grab or claw with; an already-started windup is not cancelled. */
-const canStillAttack = (actor: Actor): boolean => {
+const canStillAttack = (actor: Actor, body: ActorBody): boolean => {
   if (actor.severed.length === 0) {
     return true;
   }
-  const { parts, bones } = cutsFor(actor);
+  const { parts, bones } = cutsFor(body);
   const hidden = severedBoneSet(bones, actor.severed);
-  return !(armDisabled(parts.leftArm, hidden) && armDisabled(parts.rightArm, hidden));
+  return !(armDisabled(parts('leftArm'), hidden) && armDisabled(parts('rightArm'), hidden));
 };
 
 export function setActorChaseStance(actor: Actor, chasing: boolean): void {
@@ -283,6 +288,6 @@ export function setActorAttackWindup(actor: Actor, windup: number): void {
 export function faceActorDirection(actor: Actor, direction: Vec3): void {
   actor.facing = [direction[0], direction[1], direction[2]];
 }
-export function canStartBodyAttack(actor: Actor) {
-  return actor.type.model === 'fused-mass' ? activeFusedMassMembers(actor).length > 0 : canStillAttack(actor);
+export function canStartBodyAttack(actor: Actor, body: ActorBody) {
+  return actor.type.model === 'fused-mass' ? activeFusedMassMembers(actor).length > 0 : canStillAttack(actor, body);
 }
