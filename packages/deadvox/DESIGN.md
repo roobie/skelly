@@ -341,13 +341,10 @@ key.
 A walk loop states `strideMetres`, the distance of one gait cycle, and no
 clock: the sampler advances it by gait phase, which grows with distance
 travelled, so a time span would claim a clock the pose never reads. An idle
-oscillator states `periodSimSeconds`: the live idle runs on the actor's saved
-Sim wander clock, so it freezes on pause, follows compression and resumes at
-the same phase after a load or in a replay. An idle loop clip keeps a bare
-`period` until its clock is ruled
-([skelly-assets#25](https://github.com/roobie/skelly-assets/issues/25)); it may
-then take a different clock from the oscillators, because no actor mixes the
-two.
+oscillator and an idle loop clip both state `periodSimSeconds`: the live
+humanoid and acid idles run on the actor's saved Sim wander clock, so they
+freeze on pause, follow compression and replay identically after a load or in
+a replay. Both idle forms share that one clock.
 
 ### Long actions
 

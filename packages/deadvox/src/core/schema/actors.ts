@@ -645,7 +645,7 @@ const timedWithin = (clip: Timed, key: 'hitAtSimSeconds' | 'peakAtSimSeconds'): 
 
 /**
  * Absolute local rotations per frame. Loop cursors are normalised; finite cursors are seconds. A walk loop
- * states `strideMetres` and an idle loop a bare `period` (see `packages/deadvox/DESIGN.md`, "Clocks and units").
+ * states `strideMetres` and an idle loop `periodSimSeconds` (see `packages/deadvox/DESIGN.md`, "Clocks and units").
  */
 export const PoseClipSchema = pipe(
   strictObject({
@@ -653,7 +653,7 @@ export const PoseClipSchema = pipe(
     loop: vBoolean(),
     frames: pipe(array(PoseFrameSchema), nonEmpty('needs at least one frame')),
     durationSimSeconds: optional(FinitePositive),
-    period: optional(FinitePositive),
+    periodSimSeconds: optional(FinitePositive),
     strideMetres: optional(FinitePositive),
     cycles: optional(PositiveInteger),
     idleBlendSpeed: optional(FinitePositive),
@@ -661,8 +661,8 @@ export const PoseClipSchema = pipe(
   }),
   check((clip) => timedWithin(clip, 'hitAtSimSeconds'), 'hitAtSimSeconds must be within the duration'),
   check(
-    (clip) => clip.period === undefined || clip.strideMetres === undefined,
-    'a loop states a period or strideMetres, not both',
+    (clip) => clip.periodSimSeconds === undefined || clip.strideMetres === undefined,
+    'a loop states periodSimSeconds or strideMetres, not both',
   ),
 );
 
@@ -858,7 +858,7 @@ const HUMANOID_CRAWLING: Readonly<Record<string, Requirement>> = {
 };
 
 const CREATURE_STANDING: Readonly<Record<string, Requirement>> = {
-  idle: isPose((clip) => oneFrame(clip) && clip.period !== undefined),
+  idle: isPose((clip) => oneFrame(clip) && clip.periodSimSeconds !== undefined),
   walk: isPose(walking),
   attack: isPose((clip) => !clip.loop && clip.durationSimSeconds !== undefined && clip.hitAtSimSeconds !== undefined),
 };
@@ -883,7 +883,7 @@ const requiredSets = (body: ActorBody): RequiredSets | undefined => {
     case 'acid':
       return {
         standing: {
-          idle: isPose((clip) => clip.period !== undefined && clip.frames.length >= 2),
+          idle: isPose((clip) => clip.periodSimSeconds !== undefined && clip.frames.length >= 2),
           death: isDeathPair,
           walk: isJointDelta('gaitPhase'),
           attack: isJointDelta(

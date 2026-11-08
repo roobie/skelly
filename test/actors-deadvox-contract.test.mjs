@@ -177,7 +177,7 @@ describe('actor fixture rejection', () => {
     const creature = { ...body, bodyPlan: 'quadruped' };
     const creatureClips = (loop) => {
       const attack = { ...structuredClone(readJson('fixture.finite-pose.json')), hitAtSimSeconds: 0.3, loop };
-      const idle = { ...structuredClone(rawClips.crawling.idle), period: 1 };
+      const idle = { ...structuredClone(rawClips.crawling.idle), periodSimSeconds: 1 };
       return parse(ActorClipsSchema, { standing: { idle, walk: structuredClone(rawClips.standing.walk), attack } });
     };
     assert.deepEqual(actorClipIssues(creature, creatureClips(false)), []);
