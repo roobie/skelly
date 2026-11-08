@@ -605,122 +605,6 @@
       "output": "packages/deadvox/test/fixtures/packs/lamp/lamp.json"
     },
     {
-      "source": "packages/gun-authoring-tool/cartridges/12-gauge-00-buck.jsonnet",
-      "output": "packages/gun-authoring-tool/cartridges/12-gauge-00-buck.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/cartridges/308-winchester.jsonnet",
-      "output": "packages/gun-authoring-tool/cartridges/308-winchester.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/cartridges/357-magnum.jsonnet",
-      "output": "packages/gun-authoring-tool/cartridges/357-magnum.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/cartridges/5.56x45.jsonnet",
-      "output": "packages/gun-authoring-tool/cartridges/5.56x45.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/cartridges/7.62x39.jsonnet",
-      "output": "packages/gun-authoring-tool/cartridges/7.62x39.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/cartridges/9x19.jsonnet",
-      "output": "packages/gun-authoring-tool/cartridges/9x19.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/cartridges/catalogue/bolt.jsonnet",
-      "output": "packages/gun-authoring-tool/cartridges/catalogue/bolt.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/designs/archetype-ar-large.jsonnet",
-      "output": "packages/gun-authoring-tool/designs/archetype-ar-large.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/designs/archetype-revolver.jsonnet",
-      "output": "packages/gun-authoring-tool/designs/archetype-revolver.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/designs/compact-smg-plain.jsonnet",
-      "output": "packages/gun-authoring-tool/designs/compact-smg-plain.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/designs/compact-smg.jsonnet",
-      "output": "packages/gun-authoring-tool/designs/compact-smg.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/designs/hunting-rifle.jsonnet",
-      "output": "packages/gun-authoring-tool/designs/hunting-rifle.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/designs/service-nine.jsonnet",
-      "output": "packages/gun-authoring-tool/designs/service-nine.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/exports/deadvox.jsonnet",
-      "output": "packages/gun-authoring-tool/exports/deadvox.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/references/fal-profile.trace.jsonnet",
-      "output": "packages/gun-authoring-tool/references/fal-profile.trace.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/src/gun/appearance.jsonnet",
-      "output": "packages/gun-authoring-tool/src/gun/appearance.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/src/gun/arFrames.jsonnet",
-      "output": "packages/gun-authoring-tool/src/gun/arFrames.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/src/gun/catalogue.jsonnet",
-      "output": "packages/gun-authoring-tool/src/gun/catalogue.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/src/gun/fixedPrism.jsonnet",
-      "output": "packages/gun-authoring-tool/src/gun/fixedPrism.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/src/gun/gunVoxel.jsonnet",
-      "output": "packages/gun-authoring-tool/src/gun/gunVoxel.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/src/gun/magazines.jsonnet",
-      "output": "packages/gun-authoring-tool/src/gun/magazines.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet",
-      "output": "packages/gun-authoring-tool/src/gun/opticPresentation.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/src/gun/physical.jsonnet",
-      "output": "packages/gun-authoring-tool/src/gun/physical.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/src/gun/pistolAction.jsonnet",
-      "output": "packages/gun-authoring-tool/src/gun/pistolAction.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/src/gun/pistolDimensions.jsonnet",
-      "output": "packages/gun-authoring-tool/src/gun/pistolDimensions.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/src/gun/reticles.jsonnet",
-      "output": "packages/gun-authoring-tool/src/gun/reticles.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/src/gun/sightView.jsonnet",
-      "output": "packages/gun-authoring-tool/src/gun/sightView.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/src/gun/triggerGuards.jsonnet",
-      "output": "packages/gun-authoring-tool/src/gun/triggerGuards.json"
-    },
-    {
-      "source": "packages/gun-authoring-tool/src/gun/unitScale.jsonnet",
-      "output": "packages/gun-authoring-tool/src/gun/unitScale.json"
-    },
-    {
       "source": "packages/mobgen/src/mob/acidTemplate.jsonnet",
       "output": "packages/mobgen/src/mob/acidTemplate.json"
     },
@@ -1443,14 +1327,6 @@
     {
       "source": "packages/mods/skelly.weathering/weathering.jsonnet",
       "output": "packages/mods/skelly.weathering/weathering.json"
-    },
-    {
-      "source": "packages/thing-authoring-tool/items.jsonnet",
-      "output": "packages/thing-authoring-tool/items.json"
-    },
-    {
-      "source": "packages/thing-authoring-tool/test/fixtures/bend-strip.jsonnet",
-      "output": "packages/thing-authoring-tool/test/fixtures/bend-strip.json"
     },
     {
       "source": "site/playtest.jsonnet",

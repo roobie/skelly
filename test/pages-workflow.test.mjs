@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, matchesGlob } from 'node:path';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
@@ -14,7 +14,6 @@ const ENV_ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=\S+$/;
 const TIMEOUT_VALUE = /^\d+$/;
 const readWorkflow = (name) => parse(readFileSync(join(ROOT, '.github/workflows', name), 'utf8'));
 const pages = readWorkflow('pages.yml');
-const gungen = readWorkflow('gungen.yml');
 const deadvox = readWorkflow('deadvox.yml');
 const mobgen = readWorkflow('mobgen.yml');
 
@@ -41,28 +40,11 @@ const commandIsCovered = (expected, actual) => {
   const actualCommand = normalizeCommand(actual);
   return actualCommand === expectedCommand || actualCommand.startsWith(`${expectedCommand} `);
 };
-const workflowIncludesPath = (workflow, event, file) => {
-  let included = false;
-  for (const pattern of workflow.on[event].paths ?? []) {
-    const excluded = pattern.startsWith('!');
-    if (matchesGlob(file, excluded ? pattern.slice(1) : pattern)) {
-      included = !excluded;
-    }
-  }
-  return included;
-};
 
 test('Pages project checks run in their PR workflows', () => {
   const projects = [
-    { name: 'Gungen', pageStep: 'Check and build gungen', workflow: gungen, job: ['fast', 'unit'] },
     { name: 'Deadvox', pageStep: 'Check and build deadvox', workflow: deadvox, job: ['fast', 'unit'] },
     { name: 'Mobgen', pageStep: 'Check and build mobgen', workflow: mobgen, job: 'check' },
-    {
-      name: 'Thing authoring',
-      pageStep: 'Check and build thing-authoring-tool',
-      workflow: readWorkflow('thing-authoring-tool.yml'),
-      job: 'check',
-    },
   ];
 
   for (const { name, pageStep, workflow, job } of projects) {
@@ -81,32 +63,6 @@ test('Pages project checks run in their PR workflows', () => {
   }
 });
 
-test('Gungen filters include representative Deadvox and Mobgen import files', () => {
-  const importedFiles = ['packages/deadvox/src/core/fusedMassFigure.ts', 'packages/mobgen/src/core/generate.ts'];
-  for (const event of ['push', 'pull_request']) {
-    for (const file of importedFiles) {
-      assert.ok(workflowIncludesPath(gungen, event, file), `Gungen ${event} filter includes ${file}`);
-    }
-  }
-});
-
-test('thing-export has its own typecheck and unit job covering its dependency paths', () => {
-  const workflow = readWorkflow('thing-export.yml');
-  const commands = commandLinesIn(workflow.jobs.check.steps);
-  assert.ok(commands.includes('npm run typecheck'));
-  assert.ok(commands.includes('npm test'));
-  for (const event of ['push', 'pull_request']) {
-    for (const file of [
-      'packages/thing-export/src/physical.ts',
-      'packages/construct/src/shapes/solid.ts',
-      'packages/skelly-assets',
-      'package-lock.json',
-    ]) {
-      assert.ok(workflowIncludesPath(workflow, event, file), `${event} includes ${file}`);
-    }
-  }
-});
-
 test('Pages assembly puts project builds beside the Round 1 page', () => {
   const assembly = pages.jobs.build.steps.find((step) => step.name === 'Assemble the site');
   assert.ok(assembly?.run, 'Pages workflow has an assembly command');
@@ -114,13 +70,7 @@ test('Pages assembly puts project builds beside the Round 1 page', () => {
   const temp = mkdtempSync(join(tmpdir(), 'skelly-pages-assembly-'));
   try {
     cpSync(join(ROOT, 'site'), join(temp, 'site'), { recursive: true });
-    for (const project of [
-      'packages/gun-authoring-tool',
-      'packages/deadvox',
-      'packages/mobgen',
-      'packages/thing-authoring-tool',
-      'packages/vehicle-authoring-tool',
-    ]) {
+    for (const project of ['packages/deadvox', 'packages/mobgen']) {
       const dist = join(temp, project, 'dist');
       mkdirSync(dist, { recursive: true });
       writeFileSync(join(dist, 'index.html'), `<main>${project}</main>`);
@@ -128,13 +78,7 @@ test('Pages assembly puts project builds beside the Round 1 page', () => {
 
     execFileSync('bash', ['-euo', 'pipefail', '-c', assembly.run], { cwd: temp });
 
-    for (const project of [
-      'gun-authoring-tool',
-      'deadvox',
-      'mobgen',
-      'thing-authoring-tool',
-      'vehicle-authoring-tool',
-    ]) {
+    for (const project of ['deadvox', 'mobgen']) {
       assert.ok(existsSync(join(temp, '_site', project, 'index.html')), `${project} index is at its Pages path`);
     }
     assert.ok(

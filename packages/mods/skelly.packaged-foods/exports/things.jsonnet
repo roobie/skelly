@@ -8,6 +8,6 @@ local owned = std.set(['canned_beans', 'canned_soup', 'opened_beans', 'opened_so
     voxel: voxel.of(voxel.item, row),
     options: { mass: row.exportMass },
   }
-  for row in (import 'packages/thing-authoring-tool/items.jsonnet').items
+  for row in (import 'packages/skelly-assets/tools/packages/thing-authoring-tool/items.jsonnet').items
   if std.setMember(row.id, owned)
 ]

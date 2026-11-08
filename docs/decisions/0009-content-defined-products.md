@@ -245,8 +245,10 @@ mechanisms still require scoped engine work.
 The runtime moves out of `packages/deadvox` into its own workspace package, and content
 splits into `skelly.*` mods in one refactor. The runtime package is `packages/engine`,
 `@skelly/engine`, when it moves under #1532. The assembly/geometry library therefore gave
-up that name and is `packages/construct`, `@skelly/construct`; the reasons for that name
-are in `packages/construct/README.md`, "Name".
+up that name and is construct, `@skelly/construct`, in the asset submodule; the reasons
+for that name are in its
+`packages/skelly-assets/tools/packages/construct/README.md`,
+"Name".
 
 Runtime code (`packages/deadvox/src/core`, `packages/deadvox/src/vehicles`,
 `packages/deadvox/src/game` and the shared libraries it follows) never imports presentation, render or UI code, not even for

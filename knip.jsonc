@@ -69,6 +69,7 @@
         // A type-level witness compiled by typecheck, never imported.
         "src/worker/mesherPort.witness.ts",
         "tools/police-item-models.mjs",
+        "tools/item-fuel-models.mjs",
         "tools/probe-wasm-expressions.mjs",
         "tools/rapier-f64/candidate.ts",
         "src/spikes/expressions/benchmark.ts",
@@ -88,23 +89,6 @@
       "paths": {
         "@mobgen/*": ["../mobgen/src/*"]
       }
-    },
-    "packages/gun-authoring-tool": {
-      "entry": ["index.html!"],
-      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
-    },
-    "packages/construct": {
-      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
-    },
-    "packages/thing-export": {
-      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
-    },
-    "packages/thing-authoring-tool": {
-      "entry": ["index.html!"],
-      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
-    },
-    "packages/tool-ui": {
-      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
     },
     "packages/mobgen": {
       "entry": ["index.html!", "stress.html!", "src/viewer/stress.ts!"],

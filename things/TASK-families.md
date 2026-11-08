@@ -24,8 +24,7 @@ Phase 4 is complete when all of these hold:
 To derive what remains, compare each mod's model registrations with what its own recipe exports.
 A registration no recipe exports is a hand-made model, and a datum a registration adds over its
 export is an override. Recipes live beside their item rows in whichever mod owns them, in either
-mod root, so discovery finds them all and no central list can fall behind. See
-`tools/thing-recipes.ts`, `thingRecipeDirectories`, and `test/things-deadvox-contract.test.mjs`,
+mod root. See `test/things-deadvox-contract.test.mjs`,
 "thing tool exports satisfy the Deadvox contract", for the check of each committed export.
 
 ## Exceptions

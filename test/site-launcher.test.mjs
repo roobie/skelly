@@ -28,8 +28,6 @@ const UMBRELLA_PLAYTEST_MARKUP_PATTERN = /playtestBrief|playtest-title|\bid=["']
 const LINKS_CARD_PATTERN = /<section class="card" aria-labelledby="links-title">([\s\S]*?)<\/section>/;
 const ENGLISH_DOCUMENT_LANGUAGE_PATTERN = /<html lang="en">/;
 const DEADVOX_FORM_PATTERN = /<form\b[^>]*id="deadvox-form"[^>]*>([\s\S]*?)<\/form>/;
-const PAGES_ASSEMBLY_LOOP_PATTERN = /for P in ([^;]+); do/;
-const WHITESPACE_PATTERN = /\s+/;
 const HREF_PATTERN = /\bhref="([^"]+)"/;
 const LAYOUT_FILE_PATTERN = /^layouts.*\.json$/;
 const DEADVOX_MODS = 'packages/deadvox/mods';
@@ -81,20 +79,6 @@ const intentionallyUnofferedDeadvoxParams = {
   weatheringMossBias: 'A debug-panel weathering look slider, not a launch-time site option.',
   weatheringMixCeiling: 'A debug-panel weathering look slider, not a launch-time site option.',
   weatheringBlend: 'A debug-panel weathering look slider, not a launch-time site option.',
-};
-const intentionallyUnofferedGungenParams = {
-  camera:
-    'Opaque serialized OrbitControls position/target; the viewer generates and consumes it for shareable camera state.',
-  facets:
-    'Facet count of revolved solids (3-128; default 6, 24 for close-ups). A display detail with no model to choose, so the launcher has nothing to offer; no gun design has a revolved solid yet.',
-  pose: 'A fixed, view-only pump action-open presentation; not an editable design parameter.',
-  template: 'The launcher uses its default template without a picker.',
-  fixture: 'The launcher uses its default fixture without a picker.',
-  design: 'The launcher uses its default design without a picker.',
-  colors: 'The launcher does not offer a color-mode picker.',
-  ammo: 'The launcher does not offer an ammunition-model picker.',
-  ammoCase: 'The launcher does not offer a case-finish picker.',
-  mag: 'The launcher does not offer a detached-magazine picker.',
 };
 
 const paramsReadBy = (sources) => {
@@ -409,22 +393,6 @@ describe('site launchers track the games’ URL parameters', () => {
       );
     }
   });
-
-  it('offers every launcher-editable gungen URL parameter except documented omissions', () => {
-    const supported = paramsReadBy(['packages/gun-authoring-tool/src/viewer/main.ts']);
-    for (const [name, reason] of Object.entries(intentionallyUnofferedGungenParams)) {
-      assert.ok(supported.includes(name), `${name} is intentionally omitted: ${reason}`);
-    }
-    assert.deepEqual(
-      coverageFailures(
-        'gungen parameter',
-        supported,
-        paramsOfferedBy('gungen-form'),
-        new Set(Object.keys(intentionallyUnofferedGungenParams)),
-      ),
-      [],
-    );
-  });
 });
 
 describe('site launcher playtest entry', () => {
@@ -441,16 +409,6 @@ describe('site launcher playtest entry', () => {
     assert.ok(linksCard[1].includes('href="deadvox/playtest/round1/"'));
     assert.ok(linksCard[1].includes(`href="${playtestRound(2).url}"`));
     assert.match(page, DEADVOX_FORM_PATTERN);
-  });
-
-  it('links each authoring tool to a page the Pages workflow assembles', () => {
-    const workflow = read('.github/workflows/pages.yml');
-    const assembled = workflow.match(PAGES_ASSEMBLY_LOOP_PATTERN)?.[1].split(WHITESPACE_PATTERN) ?? [];
-    for (const tool of ['gun-authoring-tool', 'thing-authoring-tool', 'vehicle-authoring-tool']) {
-      assert.ok(page.includes(`href="${tool}/"`), `the launcher links ${tool}`);
-      assert.ok(assembled.includes(`packages/${tool}`), `${tool} is assembled into the site`);
-      assert.ok(existsSync(join(ROOT, 'packages', tool, 'index.html')), `${tool} has a page to deploy`);
-    }
   });
 
   it('renders consent terms before play and withholds the play link on catalog failure', () => {
