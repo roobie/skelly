@@ -257,7 +257,7 @@ function cueTokens(nodes, source) {
 function textCueTokens(node, source) {
   const tokens = [];
   // Preserve escaped quotes within a text node: their decoded value loses the name's closing boundary.
-  const raw = source.slice(node.position.start.offset, node.position.end.offset);
+  const raw = node.position ? source.slice(node.position.start.offset, node.position.end.offset) : node.value;
   const text = ESCAPED_QUOTE.test(raw) ? raw : node.value;
   let offset = 0;
   for (const match of text.matchAll(TEXT_CUE_TOKEN)) {

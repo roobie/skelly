@@ -223,6 +223,10 @@ describe('zero-drift path check', () => {
     );
     assert.ok(!checks(failures).includes('path'));
   });
+
+  it('ignores bare URLs in Markdown without crashing or reporting a cue', () => {
+    assert.deepEqual(scan(document('Visit https://example.com/src/file.ts.')), []);
+  });
 });
 
 describe('zero-drift symbol check', () => {
