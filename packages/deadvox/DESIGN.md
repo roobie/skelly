@@ -355,7 +355,10 @@ paces a standing gait and footsteps. See `src/core/actorPose.ts`,
 A standing humanoid may have no crawl set. Built data holds only what the
 game uses, and a row the game never crawls, such as the player, whose prone
 stance is a fixed pose, would leave a crawl stride with no owner. See
-`src/core/schema/actors.ts`, `planSets`.
+`src/core/schema/actors.ts`, `planSets`. An actor type that can lose a leg
+must have a crawl set: every humanoid zombie crawls after leg loss, so a
+missing set is a content error that validate reports, not a throw mid-game.
+See `src/core/content.ts`, `actorFigureFileIssues`.
 
 ### Long actions
 

@@ -200,6 +200,7 @@
         "**/deadvox/src/core/actorMotion.ts",
         "**/deadvox/src/core/actorRegions.ts",
         "**/deadvox/src/core/actorPose.ts",
+        "**/deadvox/src/core/legLoss.ts",
         "**/deadvox/src/game/actorAudio.ts",
         "**/deadvox/test/mobActors.test.ts",
         "**/deadvox/test/angles.test.ts",

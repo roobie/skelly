@@ -1,9 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { actorFigureFileIssues, actorFigureIssues, validateContent } from '../src/core/content.ts';
 import { FUSED_MASS_FIGURE_SEED } from '../src/core/fusedMassFigure.ts';
 import { actorFigureKey } from '../src/core/schema/actors.ts';
 import type { ActorFigureDef } from '../src/core/schema.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
 type FigureContent = Parameters<typeof actorFigureIssues>[0];
 type FigureActor = FigureContent['actors'] extends ReadonlyMap<string, infer T> ? T : never;
@@ -86,6 +89,17 @@ describe('actor figure file checks', () => {
   it('admits a standing humanoid without a crawling set', () => {
     const { crawling: _, ...standingOnly } = rawClips;
     expect(fileIssues(figure.id, rawBody, standingOnly)).toEqual([]);
+  });
+
+  it('reports an actor type that crawls after leg loss whose figure has no crawling set', () => {
+    const registry = baseRegistry();
+    const shambler = registry.actors.get('shambler')!;
+    const key = actorFigureKey(shambler.id, shambler.figureSeeds![0]!);
+    const { body, clips } = actorFigure(stackActorFigureFiles(registry), shambler, shambler.figureSeeds![0]!);
+    const { crawling: _, ...standingOnly } = clips;
+    expect(actorFigureFileIssues(registry, key, body, standingOnly)).toEqual([
+      expect.objectContaining({ id: key, path: '.clips.crawling' }),
+    ]);
   });
 
   it('reports a body file that fails its schema under the row', () => {
