@@ -227,7 +227,7 @@ export const applyMotion = (base: Pose, motion: StanceIdle['motion'], time: numb
   const rotations: Record<string, Mat3> = { ...base.rotations };
   for (const oscillator of motion) {
     const angle =
-      Math.sin((TAU * time) / oscillator.period + phaseFor(seed, oscillator.salt)) * oscillator.amplitudeDeg;
+      Math.sin((TAU * time) / oscillator.periodSimSeconds + phaseFor(seed, oscillator.salt)) * oscillator.amplitudeDeg;
     for (const { bone, axis, scale } of oscillator.bones) {
       rotations[bone] = mulMM(rotations[bone] ?? IDENTITY_M, AXIS_ROTATIONS[axis](angle * scale));
     }

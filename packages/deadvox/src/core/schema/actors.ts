@@ -643,7 +643,10 @@ const timedWithin = (clip: Timed, key: 'hitAtSimSeconds' | 'peakAtSimSeconds'): 
   return time === undefined || clip.durationSimSeconds === undefined || time <= clip.durationSimSeconds;
 };
 
-/** Absolute local rotations per frame. Loop cursors are normalised; finite cursors are seconds. */
+/**
+ * Absolute local rotations per frame. Loop cursors are normalised; finite cursors are seconds. A walk loop
+ * states `strideMetres` and an idle loop a bare `period` (see `packages/deadvox/DESIGN.md`, "Clocks and units").
+ */
 export const PoseClipSchema = pipe(
   strictObject({
     kind: literal('pose'),
@@ -651,11 +654,16 @@ export const PoseClipSchema = pipe(
     frames: pipe(array(PoseFrameSchema), nonEmpty('needs at least one frame')),
     durationSimSeconds: optional(FinitePositive),
     period: optional(FinitePositive),
+    strideMetres: optional(FinitePositive),
     cycles: optional(PositiveInteger),
     idleBlendSpeed: optional(FinitePositive),
     hitAtSimSeconds: optional(FinitePositive),
   }),
   check((clip) => timedWithin(clip, 'hitAtSimSeconds'), 'hitAtSimSeconds must be within the duration'),
+  check(
+    (clip) => clip.period === undefined || clip.strideMetres === undefined,
+    'a loop states a period or strideMetres, not both',
+  ),
 );
 
 /** One death fall: a finite pose clip that render samples on Real time, so its span names that clock. */
@@ -707,7 +715,7 @@ export const JointDeltaClipSchema = pipe(
     sideScalesZ: vBoolean(),
     footSoleHold: vBoolean(),
     cycles: optional(PositiveInteger),
-    period: optional(FinitePositive),
+    strideMetres: optional(FinitePositive),
     durationSimSeconds: optional(FinitePositive),
     hitAtSimSeconds: optional(FinitePositive),
     peakAtSimSeconds: optional(FinitePositive),
@@ -717,8 +725,9 @@ export const JointDeltaClipSchema = pipe(
   check((clip) => timedWithin(clip, 'peakAtSimSeconds'), 'peakAtSimSeconds must be within the duration'),
   check(
     (clip) =>
-      clip.cursor !== 'gaitPhase' || (clip.loop === true && clip.cycles !== undefined && clip.period !== undefined),
-    'a gaitPhase clip must loop and carry cycles and period',
+      clip.cursor !== 'gaitPhase' ||
+      (clip.loop === true && clip.cycles !== undefined && clip.strideMetres !== undefined),
+    'a gaitPhase clip must loop and carry cycles and strideMetres',
   ),
 );
 
@@ -726,7 +735,7 @@ const StanceIdleSchema = strictObject({
   base: PoseFrameSchema,
   motion: array(
     strictObject({
-      period: FinitePositive,
+      periodSimSeconds: FinitePositive,
       amplitudeDeg: Finite,
       salt: pipe(number(), integer('must be a whole number')),
       bones: array(strictObject({ bone: BoneName, axis: picklist(['x', 'y', 'z']), scale: Finite })),
@@ -839,7 +848,7 @@ const isStanceIdle: Requirement = (entry) => 'slack' in entry;
 const isDeathPair: Requirement = (entry) => 'forward' in entry;
 
 const oneFrame = (clip: PoseClip): boolean => clip.frames.length === 1;
-const walking = (clip: PoseClip): boolean => clip.cycles !== undefined && clip.period !== undefined;
+const walking = (clip: PoseClip): boolean => clip.cycles !== undefined && clip.strideMetres !== undefined;
 
 const HUMANOID_CRAWLING: Readonly<Record<string, Requirement>> = {
   idle: isPose(oneFrame),

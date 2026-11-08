@@ -336,11 +336,18 @@ a compatibility shim (`AGENTS.md`, "Project stage"). A clip-local second is
 named by the clock its Deadvox caller samples it on: the death fall is sampled
 by render, so it is Real; attack, hit and flinch are sampled by the
 simulation, so they are Sim. That is why a death clip has its own duration
-key. Both kinds of `period`, the loop clip's and the idle oscillator's, stay
-bare until the gait reader settles their clocks
-([skelly-assets#25](https://github.com/roobie/skelly-assets/issues/25)): no
-Deadvox reader samples a loop clip or an idle oscillator yet, so no code fixes
-their clock, and the two may run on different clocks.
+key.
+
+A walk loop states `strideMetres`, the distance of one gait cycle, and no
+clock: the sampler advances it by gait phase, which grows with distance
+travelled, so a time span would claim a clock the pose never reads. An idle
+oscillator states `periodSimSeconds`: the live idle runs on the actor's saved
+Sim wander clock, so it freezes on pause, follows compression and resumes at
+the same phase after a load or in a replay. An idle loop clip keeps a bare
+`period` until its clock is ruled
+([skelly-assets#25](https://github.com/roobie/skelly-assets/issues/25)); it may
+then take a different clock from the oscillators, because no actor mixes the
+two.
 
 ### Long actions
 
