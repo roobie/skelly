@@ -1,3 +1,4 @@
+import { type ActorFigureFiles, actorFigure } from './actorFigureFiles.ts';
 import type { Actor } from './actorState.ts';
 import { activeFusedMassMembers, actorAttackReachMetres, requiredGrabBand } from './actorState.ts';
 import { severedBoneSet } from './boneTree.ts';
@@ -288,6 +289,9 @@ export function setActorAttackWindup(actor: Actor, windup: number): void {
 export function faceActorDirection(actor: Actor, direction: Vec3): void {
   actor.facing = [direction[0], direction[1], direction[2]];
 }
-export function canStartBodyAttack(actor: Actor, body: ActorBody) {
-  return actor.type.model === 'fused-mass' ? activeFusedMassMembers(actor).length > 0 : canStillAttack(actor, body);
+export function canStartBodyAttack(actor: Actor, figures: ActorFigureFiles) {
+  if (actor.type.model === 'fused-mass') {
+    return activeFusedMassMembers(actor).length > 0;
+  }
+  return canStillAttack(actor, actorFigure(figures, actor.type, actor.figureSeed).body);
 }

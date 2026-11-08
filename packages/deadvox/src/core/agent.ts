@@ -1,4 +1,3 @@
-import { actorFigure } from './actorFigureFiles.ts';
 import {
   angleOf,
   canStartBodyAttack,
@@ -856,7 +855,7 @@ export class AgentController {
       actor.staggerSimSeconds <= 0 &&
       actor.attackWait <= 0 &&
       actor.spitWindup <= 0 &&
-      canStartBodyAttack(actor, actorFigure(this.options.actorFigureFiles, type, actor.figureSeed).body) &&
+      canStartBodyAttack(actor, this.options.actorFigureFiles) &&
       reachableActorMoves(actor, pos, player.pos, this.options).length > 0
     ) {
       this.options.onSound?.(type.sounds.attack, copy(pos), actor);
