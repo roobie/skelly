@@ -6,6 +6,7 @@ import { CONTACT_SKIN } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ScenarioDiscovery } from '../src/core/scenarioDiscovery.ts';
 import { World } from '../src/core/world.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
@@ -41,6 +42,7 @@ const startSession = ({
 }) =>
   createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     scenario: profile,
     discovery,
     world: new World(),

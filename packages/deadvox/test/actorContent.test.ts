@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { actorFigure } from '../src/core/actorFigure.ts';
+import { generatedActorFigure } from '../src/core/actorFigure.ts';
 import { claimed } from '../src/core/capabilities.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { footstepSoundId } from '../src/core/footsteps.ts';
@@ -26,7 +26,7 @@ it('admits an independent actor id selecting an existing body plan', () => {
   expect(issues).toEqual([]);
   const admitted = registry.actors.get(actor.id)!;
   expect(admitted).toBeDefined();
-  expect(actorFigure(admitted, admitted.figureSeeds![0]!).realized.body.bones.length).toBeGreaterThan(0);
+  expect(generatedActorFigure(admitted, admitted.figureSeeds![0]!).realized.body.bones.length).toBeGreaterThan(0);
 });
 
 it.each(['slim-humanoid', 'legless-humanoid', 'broad-humanoid'] as const)(
@@ -48,7 +48,7 @@ it.each(['slim-humanoid', 'legless-humanoid', 'broad-humanoid'] as const)(
     expect(issues).toEqual([]);
     const admitted = registry.actors.get(actor.id)!;
     expect(admitted.model).toBe('humanoid');
-    expect(actorFigure(admitted, 1).genome.template).toBe(figure);
+    expect(generatedActorFigure(admitted, 1).genome.template).toBe(figure);
     const invalid = validateContent({
       source: 'fixture-invalid-plan',
       data: { actors: [{ ...actor, model: figure }] },

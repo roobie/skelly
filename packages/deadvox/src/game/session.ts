@@ -5,8 +5,7 @@
 // callbacks; nothing here draws or listens.
 
 import { actionText, fillText } from '../core/actionText.ts';
-import { actorFigure, figureSeedPool } from '../core/actorFigure.ts';
-import type { ActorFigureFiles } from '../core/actorFigureFiles.ts';
+import { type ActorFigureFiles, actorFigure } from '../core/actorFigureFiles.ts';
 import type { PlayerMovement, VocalNoise } from '../core/actorSense.ts';
 import { ActorSpawner } from '../core/actorSpawns.ts';
 import { type Actor, PLAYER_ARM_REACH_M } from '../core/actorState.ts';
@@ -32,7 +31,6 @@ import {
 import { BearTraps } from '../core/bearTrap.ts';
 import type { BlockBlow } from '../core/blockDamage.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
-import type { ActorBody } from '../core/bones.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { claimed, claimedId } from '../core/capabilities.ts';
@@ -114,6 +112,7 @@ import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../
 import type { Scale } from '../core/scale.ts';
 import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
 import { assertScenarioRun, ScenarioRun } from '../core/scenarioRun.ts';
+import type { ActorBody } from '../core/schema/actors.ts';
 import type { EventRuleDef } from '../core/schema.ts';
 import { type ShotTrace, traceShot } from '../core/shotTrace.ts';
 import { Simulation } from '../core/sim.ts';
@@ -492,7 +491,7 @@ export interface SessionOptions {
   powerDevices?: readonly PlacedPowerDevice[];
   registry: Registry;
   /** The registry's figure rows decoded, every one resolved before the first tick. */
-  actorFigureFiles?: ActorFigureFiles;
+  actorFigureFiles: ActorFigureFiles;
   scenario?:
     | Readonly<{ id: string; body: string; compression: string; eventRules?: readonly EventRuleDef[] }>
     | undefined;
@@ -837,10 +836,17 @@ const sessionSkyFields = (shared: SkyFields | undefined, owner: SkyFieldOwner, s
   shared ?? new SkyFields(owner, { bottom: scale.minCy * CHUNK, top });
 
 export const createSession = (options: SessionOptions) => {
-  const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
+  const { registry, world, isSolid, scale, seed, controls, audio, debug, actorFigureFiles } = options;
   const text = actionText(registry);
   const dayCycle = requireDayCycle(registry);
-  const actorVoice = actorVoiceLaw(figureSeedPool(registry.actors), claimed(registry.senses, 'player')!.actorVoice);
+  // Built on the first actor voice, so a stack without humanoid figures can run a session that voices no actor.
+  let actorVoice: ReturnType<typeof actorVoiceLaw> | undefined;
+  const actorVoiceFor = () =>
+    (actorVoice ??= actorVoiceLaw(
+      [...actorFigureFiles.values()].flatMap((figure) => (figure.body.model === 'humanoid' ? [figure.body] : [])),
+      claimed(registry.senses, 'player')!.actorVoice,
+    ));
+  const actorBody = (actor: Actor): ActorBody => actorFigure(actorFigureFiles, actor.type, actor.figureSeed).body;
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
   const Player = playerTuning(registry);
@@ -1026,7 +1032,7 @@ export const createSession = (options: SessionOptions) => {
       return false;
     }
     const definition = registry.sounds.get(event)!;
-    const bodyPitch = soundPitchMultiplier ?? (mobBody ? actorVoice.bodyPitch(mobBody, options.urlSearch) : 1);
+    const bodyPitch = soundPitchMultiplier ?? (mobBody ? actorVoiceFor().bodyPitch(mobBody, options.urlSearch) : 1);
     const pitch = selected.pitch * bodyPitch;
     const pick = { ...selected, pitch };
     const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);
@@ -1659,7 +1665,7 @@ export const createSession = (options: SessionOptions) => {
         playWorldSound(event, position, sim.time, {
           listenerRelative: true,
           sourceLabel: 'player melee',
-          ...(actor ? { body: actorFigure(actor.type, actor.figureSeed).realized.body } : {}),
+          ...(actor ? { body: actorBody(actor) } : {}),
         });
         return;
       }
@@ -1669,7 +1675,7 @@ export const createSession = (options: SessionOptions) => {
         sim.time,
         actor
           ? {
-              body: actorFigure(actor.type, actor.figureSeed).realized.body,
+              body: actorBody(actor),
               ...(actor.type.soundPitchMultiplier === undefined
                 ? {}
                 : { soundPitchMultiplier: actor.type.soundPitchMultiplier }),
@@ -1692,7 +1698,7 @@ export const createSession = (options: SessionOptions) => {
       }
       playWorldSound(event, position, sim.time, {
         sourceLabel: `${actor.type.name.toLowerCase()} #${id}${actor.agent ? ` · ${actor.agent.mode}` : ''}`,
-        body: actorFigure(actor.type, actor.figureSeed).realized.body,
+        body: actorBody(actor),
       });
     },
     onSevered: (actor, region) => {

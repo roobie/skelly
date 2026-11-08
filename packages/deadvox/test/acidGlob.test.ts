@@ -11,6 +11,7 @@ import type { ActorDef } from '../src/core/schema.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const base = startupContent().registry;
@@ -119,6 +120,12 @@ const runtime = (
   };
   const session = createSession({
     registry,
+    actorFigureFiles: withFixtureFigures(stackActorFigureFiles(registry), {
+      [spitter.id]: template.id,
+      [spreadSpitter.id]: template.id,
+      [shambler.id]: 'shambler',
+      [resistant.id]: 'shambler',
+    }),
     world: new World(),
     scale,
     seed,

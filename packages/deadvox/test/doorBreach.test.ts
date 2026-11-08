@@ -10,7 +10,7 @@ import { makeScale } from '../src/core/scale.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { baseContentSources } from './baseContentFiles.ts';
+import { baseContentSources, stackActorFigureFiles } from './baseContentFiles.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { physicsFor } from './playerFixture.ts';
@@ -115,6 +115,7 @@ const strikeDoor = (strength: number) => {
   const played: Readonly<SoundEmission>[] = [];
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     isSolid: FLOOR,
     isOpaque: () => false,

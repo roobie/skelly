@@ -2,7 +2,7 @@
 
 import { crawlPose } from '@mobgen/mob/crawl.ts';
 import { describe, expect, it } from 'vitest';
-import { actorFigure, fusedMassTypeOf } from '../src/core/actorFigure.ts';
+import { fusedMassTypeOf, generatedActorFigure } from '../src/core/actorFigure.ts';
 import { FIGURE_VARIANTS } from '../src/core/actorModels.ts';
 import { quatToMat3 } from '../src/core/boneMath.ts';
 import { severedBoneSet } from '../src/core/boneTree.ts';
@@ -16,7 +16,7 @@ import { baseRegistry } from './baseRegistry.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
 import { sweepGroup } from './sweeps.ts';
 
-const fixtureFigure = actorFigure({ model: 'humanoid' }, 17).realized;
+const fixtureFigure = generatedActorFigure({ model: 'humanoid' }, 17).realized;
 const ground = { blockSize: 1, isSolid: (_x: number, y: number, _z: number) => y < 0 };
 const pose = { rotations: {}, root: [0, 0, 0] as const };
 
@@ -27,7 +27,7 @@ describe('render ragdoll', () => {
       .map(([plan]) => plan),
   )('%s partitions every skeleton bone once with one limited link per non-root group', async (model) => {
     const type = model === 'fused-mass' ? fusedMassTypeOf(baseRegistry().actors)! : { model };
-    const figure = actorFigure(type, model === 'fused-mass' ? FUSED_MASS_FIGURE_SEED : 17).realized;
+    const figure = generatedActorFigure(type, model === 'fused-mass' ? FUSED_MASS_FIGURE_SEED : 17).realized;
     const groups = ragdollGroups(figure.body.bones);
     const indices = groups.flatMap((group) => group.indices);
     expect(indices.length).toBe(figure.body.bones.length);
@@ -73,7 +73,7 @@ describe('render ragdoll', () => {
 
   // biome-ignore-start lint/suspicious/noMisplacedAssertion: shared invariant probe runs only inside default cases or the gated seed sweep.
   const assertRest = async ({ model, cuts, seed = 17 }: { model: string; cuts: string[]; seed?: number }) => {
-    const figure = actorFigure({ model }, seed).realized;
+    const figure = generatedActorFigure({ model }, seed).realized;
     const excluded = new Set(
       [...severedBoneSet(figure.body.bones, cuts)].map((id) => figure.body.bones.findIndex((bone) => bone.id === id)),
     );
@@ -139,7 +139,7 @@ describe('render ragdoll', () => {
     try {
       const reach = reachTuning(baseRegistry()).reachMetres;
       const corpse = world.spawn({
-        realized: actorFigure({ model: 'broad-humanoid' }, 17).realized,
+        realized: generatedActorFigure({ model: 'broad-humanoid' }, 17).realized,
         pose,
         position: [0, 0, 0],
         yaw: 0,

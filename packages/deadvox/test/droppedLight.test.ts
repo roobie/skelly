@@ -4,6 +4,7 @@ import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const { registry } = startupContent();
@@ -13,6 +14,7 @@ const FRAME = 1 / 60;
 const runtime = (restore?: Readonly<SaveSnapshot>) => {
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     scale,
     seed: 5,

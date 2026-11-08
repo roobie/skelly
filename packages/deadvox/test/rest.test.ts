@@ -11,7 +11,7 @@ import { World } from '../src/core/world.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
 import { createSession, HANDLING_RATE, IDLE } from '../src/game/session.ts';
-import { baseContentSources } from './baseContentFiles.ts';
+import { baseContentSources, stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
@@ -349,6 +349,7 @@ describe('waking with an alarm', () => {
     const entities = new BlockEntities(fixtureRegistry);
     const session = createSession({
       registry: fixtureRegistry,
+      actorFigureFiles: stackActorFigureFiles(fixtureRegistry),
       world: new World(),
       isSolid: (_x, y) => y === 0,
       isOpaque: (_x, y) => y === 0,
@@ -540,6 +541,7 @@ describe('Session long-action input lock', () => {
     const world = new World();
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world,
       isSolid: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
       isOpaque: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
@@ -583,6 +585,7 @@ describe('Session long-action input lock', () => {
     const entities = new BlockEntities(registry);
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world: new World(),
       isSolid: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
       isOpaque: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
@@ -640,6 +643,7 @@ describe('Session long-action input lock', () => {
     const intent = { ...IDLE, forward: 1 };
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world: new World(),
       isSolid: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
       isOpaque: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
@@ -690,6 +694,7 @@ describe('long-action interruptions', () => {
     }
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world: new World(),
       isSolid: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
       isOpaque: (x, y, z) => y === 0 || entities.isSolid(x, y, z),

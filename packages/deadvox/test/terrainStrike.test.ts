@@ -24,6 +24,7 @@ import { Streamer } from '../src/game/streamer.ts';
 import type { Engine } from '../src/presentation/engine.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { blockMaterialFixture, fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { fixtureLootPoint } from './economyFixtures.ts';
@@ -169,6 +170,7 @@ const fixture = (
   };
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     scale,
     seed: 7,

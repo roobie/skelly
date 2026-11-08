@@ -11,6 +11,7 @@ import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { WORLD_REGION_METRES } from '../src/core/worldRegion.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const base = startupContent().registry;
@@ -42,6 +43,7 @@ const runtime = (restore?: Readonly<SaveSnapshot>) => {
   let intent = IDLE;
   const session = createSession({
     registry: content,
+    actorFigureFiles: withFixtureFigures(stackActorFigureFiles(content), { [walker.id]: 'shambler' }),
     world: new World(),
     scale,
     seed: 5,

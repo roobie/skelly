@@ -1,6 +1,6 @@
 import { Group } from 'three';
 import { expect, it } from 'vitest';
-import { actorFigure } from '../src/core/actorFigure.ts';
+import { generatedActorFigure } from '../src/core/actorFigure.ts';
 import { FleshChunks } from '../src/render/fusedMassFlesh.ts';
 import { RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
@@ -12,7 +12,7 @@ it('bounds carved flesh independently and removes evicted physics', async () => 
     physics: () => world,
     ground: () => ({ blockSize: 1, isSolid: (_x, y, _z) => y < 0 }),
   });
-  const { realized } = actorFigure({ model: 'humanoid' }, 17);
+  const { realized } = generatedActorFigure({ model: 'humanoid' }, 17);
   const cell = realized.voxels.owner.findIndex((owner) => owner > 0);
   expect(cell).toBeGreaterThanOrEqual(0);
   try {

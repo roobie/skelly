@@ -7,6 +7,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { WORLD_REGION_METRES } from '../src/core/worldRegion.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
@@ -57,6 +58,7 @@ describe('seeded regional map supply', () => {
     const point = source('rolled-once', [3, 0, 0], [0, 1, 0]);
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       seed: 19,
       scale: makeScale(2),
       world: new World(),

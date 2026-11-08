@@ -10,6 +10,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { emptyDiscovery } from '../src/core/scenarioDiscovery.ts';
 import { ScenarioRun } from '../src/core/scenarioRun.ts';
 import { World } from '../src/core/world.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 
@@ -84,6 +85,7 @@ const fixture = (
   let intent = { ...IDLE };
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     scenario: profile,
     objective: designated,
     discovery: {

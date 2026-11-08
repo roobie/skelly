@@ -5,6 +5,7 @@ import type { ActorDef } from '../src/core/schema.ts';
 import { simRate } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { withoutCombatSkills } from './fixtures/withoutCombatSkills.ts';
@@ -71,6 +72,7 @@ const strike = ({ content = registry, blocking = true, seed = 73 } = {}) => {
   const blocks: { jolt: number; full: boolean }[] = [];
   const session = createSession({
     registry: content,
+    actorFigureFiles: stackActorFigureFiles(content),
     world: new World(),
     isSolid: FLAT,
     isOpaque: FLAT,

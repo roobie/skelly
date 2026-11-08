@@ -23,6 +23,7 @@ import {
 import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { presentationFlight } from './itemFlightFixture.ts';
@@ -55,6 +56,7 @@ const session = (
 ) =>
   createSession({
     registry: options.registry ?? registry,
+    actorFigureFiles: stackActorFigureFiles(options.registry ?? registry),
     world: new World(),
     isSolid: (_x, y) => y < 0,
     isOpaque: () => false,

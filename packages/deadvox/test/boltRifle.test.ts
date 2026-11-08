@@ -8,6 +8,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { FirearmMechanics, type FirearmShotEffect } from '../src/game/firearmHandling.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
@@ -109,6 +110,7 @@ const fixture = (skill = 0) => {
 const savedInventory = async (f: ReturnType<typeof fixture>) => {
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     isSolid: () => false,
     isOpaque: () => false,

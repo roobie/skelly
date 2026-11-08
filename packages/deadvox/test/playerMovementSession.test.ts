@@ -27,6 +27,7 @@ import { World } from '../src/core/world.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -59,6 +60,7 @@ const makeRuntime = ({
   const refusals: string[] = [];
   const session = createSession({
     registry: content,
+    actorFigureFiles: stackActorFigureFiles(content),
     ...(restore ? { restore } : {}),
     world,
     isSolid,

@@ -10,7 +10,7 @@ import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { actorFigure, fusedMassTypeOf } from '../src/core/actorFigure.ts';
+import { fusedMassTypeOf, generatedActorFigure } from '../src/core/actorFigure.ts';
 import { figureVariantOf } from '../src/core/actorModels.ts';
 import { actorPoseInputFor, flinchSideForId, HIT_FLINCH_DURATION } from '../src/core/actorPose.ts';
 import { humanoidRegionBoxes, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
@@ -1035,7 +1035,7 @@ describe('MobActorMeshes', () => {
           continue;
         }
         const { mesh, realized } = internals.variants[state.variantIndex]!;
-        expect(realized, type.id).toBe(actorFigure(type, figureSeed).realized);
+        expect(realized, type.id).toBe(generatedActorFigure(type, figureSeed).realized);
         expect(mesh.visible).toBe(true);
         expect(mesh.count).toBeGreaterThan(0);
         expect(mesh.geometry.getAttribute('position').count).toBeGreaterThan(0);
@@ -1069,7 +1069,7 @@ describe('MobActorMeshes', () => {
           windup: type.attack!.windupSimSeconds / 2,
           hitFlinchTime: HIT_FLINCH_DURATION / 4,
         });
-        return { type, realized: actorFigure(type, figureSeed).realized, id: store.add(actor) };
+        return { type, realized: generatedActorFigure(type, figureSeed).realized, id: store.add(actor) };
       });
       expect(entries.some(({ type }) => type.figure === 'legless-humanoid')).toBe(true);
       renderer.sync(store, 1 / 60, 1);
@@ -1352,7 +1352,9 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(system.store, 0, 1);
       expect(renderer.isBoneHidden(id, 'head')).toBe(true);
       expect(renderer.debrisCountFor(id)).toBeGreaterThan(0);
-      const head = actorFigure({ model: 'humanoid' }, 1).realized.body.bones.findIndex((bone) => bone.id === 'head');
+      const head = generatedActorFigure({ model: 'humanoid' }, 1).realized.body.bones.findIndex(
+        (bone) => bone.id === 'head',
+      );
       const finished = (
         renderer as unknown as { corpses: ReadonlyMap<number, { ragdoll: import('../src/render/ragdoll.ts').Ragdoll }> }
       ).corpses.get(id)!;
@@ -1435,7 +1437,7 @@ describe('MobActorMeshes reactions', () => {
       await renderer.whenCorpsesReady();
       renderer.sync(store, ragdollContent.timestep);
       renderer.sync(store, ragdollContent.timestep);
-      const figure = actorFigure(crawling.type, crawling.figureSeed).realized;
+      const figure = generatedActorFigure(crawling.type, crawling.figureSeed).realized;
       const before = renderer.boneMatrix(id, 'hand.L')!;
       renderer.actorSevered(id, 'hand.L', undefined, crawling);
       const debris = [

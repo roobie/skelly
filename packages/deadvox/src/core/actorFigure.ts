@@ -19,8 +19,8 @@ export const figureSeedPool = (actors: ReadonlyMap<string, ActorFigureType>): re
 export const fusedMassTypeOf = <T extends ActorFigureType>(actors: ReadonlyMap<string, T>): T | undefined =>
   [...actors.values()].find((type) => type.model === 'fused-mass');
 
-/** One realization boundary for every content-selected actor model. */
-export const actorFigure = (type: ActorFigureType, seed: number) => {
+/** The mobgen realization the renderer still draws from, for every content-selected actor model. */
+export const generatedActorFigure = (type: ActorFigureType, seed: number) => {
   if (type.model !== 'fused-mass') {
     return templateFigure(bodyPlanModel(figureVariantOf(type)), seed);
   }
@@ -30,4 +30,4 @@ export const actorFigure = (type: ActorFigureType, seed: number) => {
   return fusedMassFigure(seed, type.bodyScale);
 };
 
-export type ActorFigure = ReturnType<typeof actorFigure>;
+export type ActorFigure = ReturnType<typeof generatedActorFigure>;

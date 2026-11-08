@@ -3,7 +3,7 @@ import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
 import { fusedMassTemplate } from '@mobgen/mob/fusedMassTemplate.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { describe, expect, it } from 'vitest';
-import { actorFigure, fusedMassTypeOf } from '../src/core/actorFigure.ts';
+import { fusedMassTypeOf, generatedActorFigure } from '../src/core/actorFigure.ts';
 import { FIGURE_VARIANTS } from '../src/core/actorModels.ts';
 import { validateContent } from '../src/core/content.ts';
 import { FUSED_MASS_FIGURE_SEED } from '../src/core/fusedMassFigure.ts';
@@ -40,7 +40,7 @@ describe('actor models', () => {
     const amalgam = fusedMassTypeOf(registry.actors)!;
     for (const model of Object.keys(FIGURE_VARIANTS)) {
       const [type, seed] = model === 'fused-mass' ? [amalgam, FUSED_MASS_FIGURE_SEED] : [{ model }, FIXTURE_SEED];
-      expect(() => actorFigure(type, seed), model).not.toThrow();
+      expect(() => generatedActorFigure(type, seed), model).not.toThrow();
     }
   });
 });

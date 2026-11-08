@@ -21,6 +21,7 @@ import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { SnapshotSite } from './fixtures/snapshotSite.ts';
@@ -202,6 +203,7 @@ export function createRuntime(
   }
   const session = createSession({
     registry: contentRegistry,
+    actorFigureFiles: stackActorFigureFiles(contentRegistry),
     ...(options.powerDevices ? { powerDevices: options.powerDevices } : {}),
     ...(options.skyBoxes
       ? {

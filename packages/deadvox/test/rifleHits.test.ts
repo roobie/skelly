@@ -14,6 +14,7 @@ import { projectVehicleParts, VehicleOccupancy } from '../src/core/vehicleProjec
 import { World } from '../src/core/world.ts';
 import { FirearmMechanics, type FirearmShotInput, type FirearmTrajectory } from '../src/game/firearmHandling.ts';
 import { createSession, IDLE, type ResolvedFirearmTrajectory } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { PLAYER } from './playerFixture.ts';
 import { chargedRifle, rifleAmmunition } from './rifleFixture.ts';
@@ -44,6 +45,7 @@ const runtime = (
 ) =>
   createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     isSolid,
     isOpaque: () => false,

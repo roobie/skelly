@@ -18,6 +18,7 @@ import { simSeconds } from '../src/core/time.ts';
 import { forestDensityAt, leafLitterAt, placeTree, stampTrees, TreeIndex } from '../src/core/vegetation.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { physicsFor } from './playerFixture.ts';
@@ -69,6 +70,7 @@ const verticalBrushSession = (spawnY: number) => {
   }
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     entities,
     isSolid: worldSolid(world, registry, entities),
@@ -264,6 +266,7 @@ describe('passable but opaque vegetation', () => {
     }
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world,
       entities,
       isSolid: worldSolid(world, registry, entities),

@@ -7,6 +7,7 @@ import { World } from '../src/core/world.ts';
 import { createSession, IDLE, type SessionAudio } from '../src/game/session.ts';
 import { GameAudio } from '../src/presentation/audio.ts';
 import { productAssets } from '../src/product/assets.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
@@ -15,6 +16,7 @@ const seed = 73;
 const makeSession = (play: SessionAudio['play'], content: Registry = registry) =>
   createSession({
     registry: content,
+    actorFigureFiles: stackActorFigureFiles(content),
     world: new World(),
     isSolid: () => false,
     isOpaque: () => false,

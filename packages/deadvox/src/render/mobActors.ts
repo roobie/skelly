@@ -78,7 +78,7 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
-import { type ActorFigureType, actorFigure, fusedMassTypeOf } from '../core/actorFigure.ts';
+import { type ActorFigureType, fusedMassTypeOf, generatedActorFigure } from '../core/actorFigure.ts';
 import { type ActorModel, bodyPlanModel, FIGURE_VARIANTS, figureVariantOf } from '../core/actorModels.ts';
 import { acidSpitWindupProgress, actorCrawls, actorPoseInputFor, posedActor } from '../core/actorPose.ts';
 import { type Actor, actorAttackReachMetres } from '../core/actorState.ts';
@@ -495,7 +495,7 @@ const requireFusedMassType = (type: ActorFigureType | undefined): ActorFigureTyp
   return type;
 };
 
-const severedRootsFor = (figure: ReturnType<typeof actorFigure>): ReadonlyMap<string, string> => {
+const severedRootsFor = (figure: ReturnType<typeof generatedActorFigure>): ReadonlyMap<string, string> => {
   if (!('manifest' in figure)) {
     return new Map();
   }
@@ -531,7 +531,7 @@ const buildActorVariant = (model: ActorModel, seed: number, fusedMassType?: Acto
     model === 'fused-mass'
       ? requireFusedMassType(fusedMassType)
       : { model: FIGURE_VARIANTS[model].bodyPlan, figure: model };
-  const figure = actorFigure(type, seed);
+  const figure = generatedActorFigure(type, seed);
   const { genome, realized } = figure;
   const bodyScale = model === 'fused-mass' ? type.bodyScale : undefined;
   return {
@@ -1161,7 +1161,7 @@ export class MobActorMeshes implements ActorRenderer {
       meshes.tip.visible = false;
       return;
     }
-    const figure = actorFigure(actor.type, actor.figureSeed);
+    const figure = generatedActorFigure(actor.type, actor.figureSeed);
     if (actor.type.model !== 'fused-mass') {
       throw new Error('Fused-mass tentacle requires the fused-mass figure');
     }

@@ -3,7 +3,7 @@ import { templateByName } from '@mobgen/core/template.ts';
 import { crawlGaitPose } from '@mobgen/mob/crawl.ts';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { actorFigure } from '../src/core/actorFigure.ts';
+import { generatedActorFigure } from '../src/core/actorFigure.ts';
 import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
 import { actorCrawls, actorPoseInputFor, HIT_FLINCH_DURATION, posedActor } from '../src/core/actorPose.ts';
 import {
@@ -1839,7 +1839,7 @@ describe('shambler scenarios', () => {
       }
       expect(severed).toEqual([region]);
       // The cut follows the body's bone dispositions: the region's top severable part, or none.
-      const figure = actorFigure(type, actor.figureSeed);
+      const figure = generatedActorFigure(type, actor.figureSeed);
       const parts = 'severableParts' in figure ? figure.severableParts[region] : [];
       expect(actor.severed).toEqual(parts.slice(0, 1));
       // A severed acid part drops what a shambler's would.
@@ -1965,7 +1965,9 @@ describe('shambler scenarios', () => {
     expect(actor.regions.leftLeg).toBe(0);
     run(system, 1);
     expect(templateByName(bodyPlanModel(figureVariantOf(type))).bodyPlan).toBe('humanoid');
-    expect(actorFigure(type, actor.figureSeed).realized.body.bones.some((bone) => bone.id === 'shin.L')).toBe(false);
+    expect(generatedActorFigure(type, actor.figureSeed).realized.body.bones.some((bone) => bone.id === 'shin.L')).toBe(
+      false,
+    );
     expect(actorCrawls(actor)).toBe(false);
     expect(actorPoseInputFor(actor, id, BLOCK_SIZE).crawling).toBe(false);
     expect(actor.horizontalSpeed).toBeGreaterThan(type.speed.crawlMetresPerSimSecond);
@@ -2062,7 +2064,7 @@ describe('shambler scenarios', () => {
   it('realizes a figure for every authored seed of every type', () => {
     for (const type of registry.actors.values()) {
       for (const seed of type.figureSeeds ?? []) {
-        expect(() => actorFigure(type, seed)).not.toThrow();
+        expect(() => generatedActorFigure(type, seed)).not.toThrow();
       }
     }
   });
@@ -2082,7 +2084,7 @@ describe('shambler scenarios', () => {
       const crawl = crawlGaitPose(posed.figure.realized, input.gaitPhase, input.speed);
       expect(posed.pose.rotations.pelvis).toEqual(crawl.rotations.pelvis);
       expect(actor.type.id).toBe(type.id);
-      expect(posed.figure).toBe(actorFigure(actor.type, actor.figureSeed));
+      expect(posed.figure).toBe(generatedActorFigure(actor.type, actor.figureSeed));
       const boxes = posedHumanoidRegionBoxes(input);
       expect(boxes.leftLeg).toEqual([]);
       expect(boxes.rightLeg.length).toBeGreaterThan(0);

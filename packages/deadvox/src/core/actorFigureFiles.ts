@@ -1,6 +1,6 @@
 import { safeParse } from 'valibot';
 import type { Registry } from './content.ts';
-import { type ActorBody, ActorBodySchema, type ActorClips, ActorClipsSchema } from './schema/actors.ts';
+import { type ActorBody, ActorBodySchema, type ActorClips, ActorClipsSchema, actorFigureKey } from './schema/actors.ts';
 
 export interface ActorFigureFile {
   readonly body: ActorBody;
@@ -9,6 +9,16 @@ export interface ActorFigureFile {
 
 /** Decoded figure files keyed by figure row id; built once per session start, before the first tick. */
 export type ActorFigureFiles = ReadonlyMap<string, ActorFigureFile>;
+
+/** The built body and clips of one figure from the loaded map; a missing figure throws. */
+export const actorFigure = (files: ActorFigureFiles, type: { readonly id: string }, seed: number): ActorFigureFile => {
+  const key = actorFigureKey(type.id, seed);
+  const figure = files.get(key);
+  if (!figure) {
+    throw new Error(`Actor figure ${key} was not loaded`);
+  }
+  return figure;
+};
 
 /** One declared file of a figure row, named by the content file that declares the row and the pack path. */
 export type FigureFileRead<T> = (contentFile: string, path: string) => T;

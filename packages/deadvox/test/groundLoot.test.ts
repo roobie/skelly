@@ -13,6 +13,7 @@ import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
@@ -152,6 +153,7 @@ const fixture = (withFurniture = true, supply: 'table' | 'fixed' = 'table') => {
   const session = (restore?: Readonly<SaveSnapshot>) =>
     createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       seed,
       scale: makeScale(0.5),
       world: new World(),

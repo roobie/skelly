@@ -14,6 +14,7 @@ import { makeScale } from '../src/core/scale.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { AIM, type MoveIntent, type StanceToggle } from './playerFixture.ts';
@@ -145,6 +146,7 @@ const makeRuntime = (restore?: Readonly<SaveSnapshot>) => {
   const played: Readonly<SoundEmission>[] = [];
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     ...(restore ? { restore } : {}),
     world: new World(),
     isSolid: (_x, y) => y === 0,

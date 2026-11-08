@@ -21,6 +21,7 @@ import { firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import type { Engine } from '../src/presentation/engine.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -177,6 +178,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     let session: ReturnType<typeof createSession>;
     session = createSession({
       registry: content,
+      actorFigureFiles: stackActorFigureFiles(content),
       world,
       isSolid: (_x, y) => y === 0,
       isOpaque: (_x, y) => y === 0,
@@ -780,6 +782,7 @@ it('lets a roller-door noise wake a nearby shambler through hearing', () => {
   const scale = makeScale(0.5);
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     isSolid: (_x, y) => y === 0,
     isOpaque: (_x, y) => y === 0,
@@ -837,6 +840,7 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
     y === 0 || ((Math.abs(x) === 2 || Math.abs(z) === 2) && y >= 1 && y <= 4);
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     isSolid,
     isOpaque: isSolid,
@@ -915,6 +919,7 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
   const world = new World();
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     isSolid: (_x, y) => y === 0,
     isOpaque: (_x, y) => y === 0,
@@ -985,6 +990,7 @@ it('applies attachment noise factors and far-tier cutoffs to suppressed AR shots
   const scale = makeScale(0.5);
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     isSolid: (_x, y) => y === 0,
     isOpaque: (_x, y) => y === 0,

@@ -27,6 +27,7 @@ import {
 } from '../src/game/firearmHandling.ts';
 import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { pumpStart } from './fixtures/debugStarts.ts';
@@ -133,6 +134,7 @@ const fixture = (
 const runtime = (play: Parameters<typeof createSession>[0]['audio']['play'] = () => undefined) =>
   createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     isSolid: () => false,
     isOpaque: () => false,
@@ -949,6 +951,7 @@ describe('real pump ammunition', () => {
     const open = runtime();
     const blocked = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world: new World(),
       isSolid: (_x, _y, z) => z === -4,
       isOpaque: () => false,

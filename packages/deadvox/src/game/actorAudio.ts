@@ -1,15 +1,13 @@
-import { humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
-import type { ActorBody } from '../core/bones.ts';
 import type { SenseDef } from '../core/schema.ts';
 
 export type ActorVoiceTuning = SenseDef['actorVoice'];
 
-const bodyHeight = (body: ActorBody): number => {
-  const y = body.bones.flatMap(({ head, tail }) => [head[1], tail[1]]);
-  if (y.length === 0) {
-    throw new Error('Cannot size the voice of a body with no bones');
-  }
-  const height = Math.max(...y) - Math.min(...y);
+/** A built body's standing height in metres (`schema/actors.ts`, `ActorBodySchema`). */
+interface SizedBody {
+  readonly height: number;
+}
+
+const bodyHeight = ({ height }: SizedBody): number => {
   if (!(height > 0 && Number.isFinite(height))) {
     throw new Error('Cannot size the voice of a body with invalid height');
   }
@@ -26,16 +24,16 @@ const debugVoicePitch = (search: string, param: 'voicePitch' | 'voicePitchLarge'
 };
 
 /**
- * The humanoid voice-pitch law, calibrated on the bodies of the authored figure pool (`figureSeedPool`):
+ * The humanoid voice-pitch law, calibrated on the plain humanoid bodies the session loaded:
  * a falling power law between its smallest and tallest bodies, clamped around the smallest body's old-law pitch.
  * The smallest body is pitched at its anchor multiple of the old law and the tallest keeps its old-law pitch.
  */
-export const actorVoiceLaw = (figureSeeds: readonly number[], tuning: ActorVoiceTuning) => {
-  if (figureSeeds.length === 0) {
-    throw new Error('The humanoid voice law needs at least one authored figure seed');
+export const actorVoiceLaw = (pool: readonly SizedBody[], tuning: ActorVoiceTuning) => {
+  if (pool.length === 0) {
+    throw new Error('The humanoid voice law needs at least one humanoid body');
   }
   const oldLawPitch = (height: number): number => Math.sqrt(tuning.oldLawReferenceHeightMetres / height);
-  const poolHeights = figureSeeds.map((seed) => bodyHeight(humanoidFigure(seed).realized.body));
+  const poolHeights = pool.map(bodyHeight);
   const smallestHeight = Math.min(...poolHeights);
   const tallestHeight = Math.max(...poolHeights);
   const smallestOldLawPitch = oldLawPitch(smallestHeight);
@@ -47,7 +45,7 @@ export const actorVoiceLaw = (figureSeeds: readonly number[], tuning: ActorVoice
   const defaultTallestAnchor = oldLawPitch(tallestHeight);
   const clampPitch = (pitch: number): number => Math.max(pitchClamp[0], Math.min(pitchClamp[1], pitch));
 
-  const bodyPitch = (body: ActorBody, search = ''): number => {
+  const bodyPitch = (body: SizedBody, search = ''): number => {
     const height = bodyHeight(body);
     const smallestAnchor = clampPitch(defaultSmallestAnchor * debugVoicePitch(search, 'voicePitch'));
     const tallestAnchor = Math.min(

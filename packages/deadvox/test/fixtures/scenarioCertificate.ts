@@ -13,6 +13,7 @@ import type { ScenarioDef } from '../../src/core/schema.ts';
 import { compileTemplate, placedPieces } from '../../src/core/templates.ts';
 import { DOOR_ACTION } from '../../src/game/doorAction.ts';
 import { createSession, IDLE, type SessionOptions } from '../../src/game/session.ts';
+import { stackActorFigureFiles } from '../baseContentFiles.ts';
 import { buildFixtureRegistry } from '../economyFixtures.ts';
 import { descentLid, queueDescentLidOpening } from './descentLid.ts';
 import { leaveRoof } from './scenarioStart.ts';
@@ -135,6 +136,7 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
   let pitch = 0;
   const options: SessionOptions = {
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     scenario: profile,
     objective: plan.composition!.objective,
     world: space.world,

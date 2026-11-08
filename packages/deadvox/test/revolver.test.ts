@@ -12,6 +12,7 @@ import { World } from '../src/core/world.ts';
 import { FirearmMechanics, spentCaseItemId } from '../src/game/firearmHandling.ts';
 import { RevolverHandling } from '../src/game/revolverHandling.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { content } from './fixtures/startupContent.ts';
 
 const fixtureRegistry = (): Registry => {
@@ -473,6 +474,7 @@ describe('revolver cylinder handling', () => {
 const codecInventory = async (f: ReturnType<typeof fixture>): Promise<Inventory> => {
   const session = createSession({
     registry: f.registry,
+    actorFigureFiles: stackActorFigureFiles(f.registry),
     world: new World(),
     isSolid: () => false,
     isOpaque: () => false,

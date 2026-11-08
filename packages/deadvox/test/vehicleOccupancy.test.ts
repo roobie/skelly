@@ -11,6 +11,7 @@ import { spawnOverlappingSolidBlock } from '../src/core/spawnClearance.ts';
 import { projectVehicleParts, VehicleOccupancy } from '../src/core/vehicleProjection.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { createPlayerBody } from './playerFixture.ts';
@@ -94,6 +95,7 @@ it('wires vehicle occupancy into session furniture placement and landing', () =>
   }
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     isSolid: (_x, y, _z) => y === 0,
     isOpaque: () => false,
