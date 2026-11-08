@@ -64,7 +64,32 @@ const voxelContainmentErrors = (figure: HumanoidFigure): string[] => {
   return errors;
 };
 
+const ownedCentersByBone = (figure: HumanoidFigure): Map<string, Set<string>> => {
+  const owned = new Map<string, Set<string>>();
+  const { voxels } = figure.realized;
+  for (let k = 0; k < voxels.dims[2]; k++) {
+    for (let j = 0; j < voxels.dims[1]; j++) {
+      for (let i = 0; i < voxels.dims[0]; i++) {
+        const owner = voxels.owner[cellIndex(voxels.dims, i, j, k)]! - 1;
+        if (owner >= 0) {
+          const bone = figure.realized.body.bones[owner]!.id;
+          owned.set(bone, (owned.get(bone) ?? new Set()).add(worldPosition(voxels, i, j, k).join()));
+        }
+      }
+    }
+  }
+  return owned;
+};
+
 describe('shared humanoid hit-region figures', () => {
+  it('lists every bone voxel centre as the centre of a voxel that bone owns', () => {
+    const figure = humanoidFigure(FIXTURE_SEEDS[0]!);
+    const listed = new Map(
+      [...figure.voxelCentersByBone].map(([bone, centers]) => [bone, new Set(centers.map((c) => c.join()))]),
+    );
+    expect(listed).toEqual(ownedCentersByBone(figure));
+  });
+
   it('realizes valid figures and caches tight per-bone rest boxes', () => {
     for (const seed of FIXTURE_SEEDS) {
       const figure = humanoidFigure(seed);

@@ -1,7 +1,7 @@
 import type { BodyRegion } from '../core/body.ts';
 import { generateValid, planOf } from '../core/generate.ts';
 import { consumableTemplate } from '../core/template.ts';
-import { worldPosition } from '../core/voxelize.ts';
+import { voxelCentersByBone } from '../core/voxelize.ts';
 import { regionSeverableParts } from './dismember.ts';
 // Side effect: registers the shipped archetypes so `consumableTemplate` can resolve them.
 import './templates.ts';
@@ -32,43 +32,22 @@ interface Bounds {
 }
 const cache = new Map<string, HumanoidFigure>();
 
-const includeOwnedVoxel = (
-  bone: string,
-  point: readonly number[],
-  limits: Map<string, Bounds>,
-  voxelCentersByBone: Map<string, [number, number, number][]>,
-) => {
-  const center = [...point] as [number, number, number];
-  const centers = voxelCentersByBone.get(bone) ?? [];
-  centers.push(center);
-  voxelCentersByBone.set(bone, centers);
-  const bounds = limits.get(bone);
-  if (!bounds) {
-    limits.set(bone, { min: center, max: [...center] });
-    return;
+const centerBounds = (centers: readonly (readonly [number, number, number])[]): Bounds => {
+  const min: [number, number, number] = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+  const max: [number, number, number] = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
+  for (const center of centers) {
+    for (let axis = 0; axis < 3; axis++) {
+      min[axis] = Math.min(min[axis]!, center[axis]!);
+      max[axis] = Math.max(max[axis]!, center[axis]!);
+    }
   }
-  for (let axis = 0; axis < 3; axis++) {
-    bounds.min[axis] = Math.min(bounds.min[axis]!, point[axis]!);
-    bounds.max[axis] = Math.max(bounds.max[axis]!, point[axis]!);
-  }
+  return { min, max };
 };
 
 const findBoneVoxelData = (realized: HumanoidFigure['realized']) => {
-  const limits = new Map<string, Bounds>();
-  const voxelCentersByBone = new Map<string, [number, number, number][]>();
-  const { voxels, body } = realized;
-  for (let k = 0; k < voxels.dims[2]; k++) {
-    for (let j = 0; j < voxels.dims[1]; j++) {
-      for (let i = 0; i < voxels.dims[0]; i++) {
-        const owner = voxels.owner[i + j * voxels.dims[0] + k * voxels.dims[0] * voxels.dims[1]]! - 1;
-        if (owner >= 0) {
-          const bone = body.bones[owner]!.id;
-          includeOwnedVoxel(bone, worldPosition(voxels, i, j, k), limits, voxelCentersByBone);
-        }
-      }
-    }
-  }
-  return { limits, voxelCentersByBone };
+  const centersByBone = voxelCentersByBone(realized.voxels, realized.body.bones);
+  const limits = new Map([...centersByBone].map(([bone, centers]) => [bone, centerBounds(centers)]));
+  return { limits, voxelCentersByBone: centersByBone };
 };
 
 const buildRegionBoxes = (
