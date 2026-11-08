@@ -24,7 +24,7 @@ function hostFor(sources: Sources): SimulationModuleGraphHost {
     resolve(specifier, importer) {
       let base = isAbsolute(specifier) ? specifier : resolve(dirname(importer ?? root), specifier);
       if (specifier === '@skelly/thing-core/schema') {
-        base = resolve(root, '../thing-core/src/schema.ts');
+        base = resolve(root, '../skelly-assets/tools/packages/thing-core/src/schema.ts');
       }
       for (const candidate of [base, `${base}.ts`, `${base}.tsx`, `${base}.js`]) {
         if (sources.has(candidate)) {
@@ -415,7 +415,7 @@ describe('simulation source fingerprint', () => {
 
   it('fingerprints shared model-schema changes imported by the simulation', async () => {
     const entry = `${root}/src/core/sim.ts`;
-    const schema = resolve(root, '../thing-core/src/schema.ts');
+    const schema = resolve(root, '../skelly-assets/tools/packages/thing-core/src/schema.ts');
     const sources = new Map([
       [entry, "import { validate } from '@skelly/thing-core/schema'; export { validate };"],
       [schema, 'export const validate = () => true;'],
@@ -453,7 +453,7 @@ describe('simulation source fingerprint', () => {
   it.each([
     '../config/intake.json',
     '../../../mobgen/src/mob/materials.json',
-    '../../../thing-core/src/materials.json',
+    '../../../skelly-assets/tools/packages/thing-core/src/materials.json',
   ])('fingerprints declarative JSON dependency %s without parsing it as a module', async (specifier) => {
     const entry = resolve(root, entries[0]!);
     const dependency = resolve(entry, '..', specifier);

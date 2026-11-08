@@ -101,8 +101,8 @@ aligns the model's up to the camera's. An optic keeps its optical axis, which no
 defines. See `packages/gun-authoring-tool/src/gun/exportGlb.ts`, `sightMetadata` and `drawnMuzzle`.
 
 A part with baked collision also names its grain, so a consumer's own datums can snap to
-the same lattice. A cargo space does this to fit the drawn bed it fills; see
-`packages/thing-core/src/schema.ts`, `ModelPartSchema`, and `packages/deadvox/DESIGN.md`,
+the same lattice. A cargo space does this to fit the drawn bed it fills; see the asset submodule's
+[tools/packages/thing-core/src/schema.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-core/src/schema.ts), `ModelPartSchema`, and `packages/deadvox/DESIGN.md`,
 "Vehicles".
 
 No solid or stretch of a solid vanishes. Any stretch thinner than the grain, such as a

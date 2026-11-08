@@ -8,9 +8,9 @@ import { typeWeightGrams } from '../packages/deadvox/src/core/items.ts';
 import { ARM_SEGMENTS, LEG_SEGMENTS, ModelSchema } from '../packages/deadvox/src/core/schema.ts';
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
 import { readStackContentSources } from '../packages/deadvox/tools/readBundledPacks.ts';
+import { modelMassKg } from '../packages/skelly-assets/tools/packages/thing-core/src/mass.ts';
 import { catalogue } from '../packages/thing-authoring-tool/src/catalogue.ts';
 import { loadThingRecipe } from '../packages/thing-authoring-tool/src/exports.ts';
-import { modelMassKg } from '../packages/thing-core/src/mass.ts';
 import { readThingRecipes } from '../tools/thing-recipes.ts';
 import { assertExportSynced, assertRecipeCredits, assertVoxelized, exportDifference } from './model-export-sync.mjs';
 

@@ -13,7 +13,6 @@ on:
       - 'packages/gun-authoring-tool/**'
       - 'packages/construct/**'
       - 'packages/tool-ui/**'
-      - 'packages/thing-core/**'
       - 'packages/thing-export/**'
       - 'packages/thing-authoring-tool/**'
       - 'packages/deadvox/**'

@@ -14,10 +14,12 @@ Authoring tools for every model deadvox draws, built on one shared core.
 
 ## Packages
 
-The suite's packages live in the repository's top-level `packages/` directory, as workspaces
-of the root package.
+The suite's packages are workspaces of the root package. They live in the repository's
+top-level `packages/` directory, except thing-core, which lives in the asset submodule.
 
-- `packages/thing-core`: the shared modeling core, with no knowledge of any kind of thing.
+- thing-core, the asset submodule's
+  [tools/packages/thing-core](https://github.com/roobie/skelly-assets/tree/main/tools/packages/thing-core): the shared modeling core, with no
+  knowledge of any kind of thing.
 - `packages/thing-authoring-tool`: authors and curates the non-gun things (tools, containers,
   food, the compass and so on) on top of the core.
 - `packages/gun-authoring-tool`: authors and curates guns on top of the shared packages.

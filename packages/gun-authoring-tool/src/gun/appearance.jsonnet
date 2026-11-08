@@ -24,7 +24,7 @@ local roles = {
 local slots = [['metal', 'steel-parkerized'], ['furniture', 'polymer-black'], ['accent', 'rubber-black']];
 local slotMaterials = { [slot[0]]: slot[1] for slot in slots };
 local roleMaterials = { sight: 'alu-anodized-black', 'tactical-flashlight-mount': 'alu-anodized-black', suppressor: 'steel-stainless' };
-local materials = import '../../../thing-core/src/materials.jsonnet';
+local materials = import '../../../skelly-assets/tools/packages/thing-core/src/materials.jsonnet';
 local opticLenses = {
   'mini-reflex': 'glass-lens-amber', 'tube-dot': 'glass-lens-amber', holographic: 'glass-lens-amber',
   'fixed-prism-4x': 'glass-lens-green', 'lpvo-1-6x': 'glass-lens-green', 'hunting-3-9x': 'glass-lens-green',

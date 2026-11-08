@@ -99,7 +99,7 @@ test('thing-export has its own typecheck and unit job covering its dependency pa
     for (const file of [
       'packages/thing-export/src/physical.ts',
       'packages/construct/src/shapes/solid.ts',
-      'packages/thing-core/src/schema.ts',
+      'packages/skelly-assets',
       'package-lock.json',
     ]) {
       assert.ok(workflowIncludesPath(workflow, event, file), `${event} includes ${file}`);
