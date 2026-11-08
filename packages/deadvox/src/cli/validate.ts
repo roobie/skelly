@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { readBundledPacks } from '../../tools/readBundledPacks.ts';
+import { packFileBytes, readBundledPacks } from '../../tools/readBundledPacks.ts';
 import {
   assetFileIssues,
   cursorFileIssues,
@@ -13,6 +13,7 @@ import {
 } from '../core/assets.ts';
 import { bundledModCatalogueIssues } from '../core/bundledModCatalogue.ts';
 import {
+  actorFigureFileIssues,
   buildRegistry,
   type ContentIssue,
   type ContentSource,
@@ -20,7 +21,7 @@ import {
   requiredContentIssues,
 } from '../core/content.ts';
 import { modelPresentationAssetIssues } from '../core/itemPresentation.ts';
-import { admitPacks, packStartIssues } from '../core/packAdmission.ts';
+import { admitPacks, type PackInput, packStartIssues } from '../core/packAdmission.ts';
 import { checkStartReachability } from '../core/reachability.ts';
 import { CONTENT_SECTION_KEYS, CONTENT_SECTIONS } from '../core/schema.ts';
 import { EXTERNAL_ASSET_ROOT } from '../product/externalRoot.ts';
@@ -51,6 +52,22 @@ const presentationAssetIssues = (
       path: origin.path,
       message,
     }));
+  });
+
+/** Each figure row's body and clips, read in Node from the files its pack declares; the browser never reads them. */
+const figureFileIssues = (registry: Registry, read: (contentFile: string, file: string) => Buffer): ContentIssue[] =>
+  [...registry.actorFigures.values()].flatMap(({ id, body, clips }) => {
+    const origin = registry.contentOrigins.get(`actorFigures:${id}`)!;
+    let found: { path: string; message: string }[];
+    try {
+      const parse = (file: string): unknown => JSON.parse(read(origin.source, file).toString('utf8'));
+      found = actorFigureFileIssues(registry, id, parse(body), parse(clips));
+    } catch (error) {
+      found = [
+        { path: '', message: `cannot read figure files: ${error instanceof Error ? error.message : String(error)}` },
+      ];
+    }
+    return found.map(({ path, message }) => ({ source: origin.source, path: origin.path + path, message }));
   });
 
 const playableStartIssues = (registry: Registry, write: (line: string) => void): ContentIssue[] =>
@@ -85,10 +102,10 @@ export const validate = (
     return 1;
   }
   let admitted: ReturnType<typeof admitPacks>;
+  let packs: PackInput[];
   try {
-    admitted = admitPacks(
-      readBundledPacks(root, stack).map((pack) => ({ ...pack, source: join('src/game', pack.source) })),
-    );
+    packs = readBundledPacks(root, stack);
+    admitted = admitPacks(packs.map((pack) => ({ ...pack, source: join('src/game', pack.source) })));
   } catch (error) {
     write(`FAIL  bundled packs: ${error instanceof Error ? error.message : String(error)}`);
     return 1;
@@ -158,6 +175,23 @@ export const validate = (
     issues.push(...bundledModCatalogueIssues(catalogue).map((message) => ({ source: CATALOGUE, path: '', message })));
   }
   issues.push(...presentationAssetIssues(registry, packFile));
+  /** The pack whose root holds a content file, as the reader read it. */
+  const packOf = (contentFile: string): PackInput | undefined => {
+    const owner = admitted.packs.find(({ source }) => {
+      const within = relative(resolve(root, source), resolve(root, contentFile));
+      return !(within.startsWith('..') || isAbsolute(within));
+    });
+    return packs.find(({ manifest }) => manifest.id === owner?.manifest.id);
+  };
+  issues.push(
+    ...figureFileIssues(registry, (contentFile, file) => {
+      const pack = packOf(contentFile);
+      if (!pack) {
+        throw new Error('only a pack can declare figure files');
+      }
+      return packFileBytes(root, pack, file);
+    }),
+  );
   let assets = 0;
   for (const source of manifests) {
     const data = read(source);

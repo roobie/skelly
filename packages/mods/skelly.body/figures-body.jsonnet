@@ -1,6 +1,4 @@
-local figure = import 'tools/jsonnet/lib/actor-figure.libsonnet';
+local built = import 'tools/jsonnet/lib/built-pack.libsonnet';
 {
-  actorFigures: [
-    figure(import 'packages/skelly-assets/built/skelly.body/actors/player.1.body.json', import 'packages/skelly-assets/built/skelly.body/actors/player.1.clips.json'),
-  ],
+  actorFigures: built.figures('skelly.body'),
 }

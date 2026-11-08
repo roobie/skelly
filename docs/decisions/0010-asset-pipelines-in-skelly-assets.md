@@ -105,6 +105,18 @@ namespace. Consumer cutovers change declarations, metadata and bytes
 together, so a model is never admitted without its files or exposed without a claim.
 See `docs/git-workflow.md`, "Shared asset pin bumps".
 
+Actor figures are admitted by declared pack file path. A figure row holds its key
+and the paths of the body and clips files its pack declares from the pinned build
+manifest; see `tools/jsonnet/lib/built-pack.libsonnet`, `figures`. The bytes then
+have one copy, declared once and changed only by pin bumps, with no tracked compiled
+copy and no eager startup bundle, so a changed model reaches the game fast. The
+browser registry checks only that every drawn seed has a row; the body, clips and
+actor type checks run in Node, in `validate` and the stack actor contract test; see
+`packages/deadvox/src/core/content.ts`, `actorFigureFileIssues`. A runtime that
+loads baked bodies adds loading on top without changing this admission. The cost
+accepted: the browser checks no figure bytes, and URL mods cannot add figures,
+because they carry content only and cannot declare files.
+
 The shared worn family fits the shared player body, not generated mob bodies;
 fitting it over generated bodies requires its own development round. The paper-sheet
 and folded-note models still have no producer, and no closure is decided for that

@@ -47,7 +47,7 @@ it('uses a content-only damage kind on bodies, actors and terrain with an existi
         damageKinds: [{ id: kind, class: 'melee' }],
         meleeClasses: [{ ...templateClass, id: kind }],
         actors: [actor],
-        actorFigures: fixtureActorFigures(templateActor.id, actor),
+        actorFigures: fixtureActorFigures(actor),
         items: [item],
         body: [...base.body.values()].map((entry) => bodyWithFixtureKind(entry, kind)).concat(tuning),
         blockMaterials: [...base.blockMaterials.values()].map((entry) => ({

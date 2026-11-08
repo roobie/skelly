@@ -1,10 +1,8 @@
 import { readFileSync } from 'node:fs';
-import { parse } from 'valibot';
 import { describe, expect, it } from 'vitest';
-import { actorFigureIssues, validateContent } from '../src/core/content.ts';
+import { actorFigureFileIssues, actorFigureIssues, validateContent } from '../src/core/content.ts';
 import { FUSED_MASS_FIGURE_SEED } from '../src/core/fusedMassFigure.ts';
-import { type PackInput, packContentHash } from '../src/core/packAdmission.ts';
-import { ActorFigureSchema, actorFigureKey } from '../src/core/schema/actors.ts';
+import { actorFigureKey } from '../src/core/schema/actors.ts';
 import type { ActorFigureDef } from '../src/core/schema.ts';
 
 type FigureContent = Parameters<typeof actorFigureIssues>[0];
@@ -15,91 +13,91 @@ const readFixture = (name: string): Record<string, unknown> =>
 
 const rawBody = readFixture('fixture.body.json');
 const rawClips = readFixture('fixture.clips.json');
-const row = (body = rawBody, clips = rawClips) => ({
-  id: actorFigureKey(body.type as string, body.seed as number),
-  body,
-  clips,
-});
-const figure = parse(ActorFigureSchema, row());
+const type = rawBody.type as string;
+const seed = rawBody.seed as number;
+const figure: ActorFigureDef = {
+  id: actorFigureKey(type, seed),
+  body: 'actors/fixture.body.json',
+  clips: 'actors/fixture.clips.json',
+};
 
 // The fixture body's type is no actor type, so an authored figure of that name admits it as the player's admits the player.
 const content = (
   actorFigures: readonly ActorFigureDef[],
   actors: readonly Partial<FigureActor>[] = [],
-  figures: readonly string[] = [figure.body.type],
+  figures: readonly string[] = [type],
 ): FigureContent => ({
   actors: new Map(actors.map((actor) => [actor.id!, actor as FigureActor])),
   figures: new Map(figures.map((id) => [id, {}])),
   actorFigures: new Map(actorFigures.map((def) => [def.id, def])),
 });
 
-describe('actor figure admission', () => {
-  it('admits the fixture figure with no issues', () => {
+describe('actor figure row admission', () => {
+  it('admits the fixture row with no issues', () => {
     expect(actorFigureIssues(content([figure]))).toEqual([]);
   });
 
   it.each([
-    ['a drawn figure seed', { id: 'drawn', model: 'humanoid', figureSeeds: [figure.body.seed + 1] }, '.figureSeeds[0]'],
+    ['a drawn figure seed', { id: 'drawn', model: 'humanoid', figureSeeds: [seed + 1] }, '.figureSeeds[0]'],
     ['the fused mass seed', { id: 'mass', model: 'fused-mass' }, '.model'],
-  ] as const)('reports %s with no figure', (_, actor, path) => {
+  ] as const)('reports %s with no row', (_, actor, path) => {
     const issues = actorFigureIssues(content([figure], [actor as Partial<FigureActor>]));
-    const seed = actor.model === 'fused-mass' ? FUSED_MASS_FIGURE_SEED : figure.body.seed + 1;
+    const drawn = actor.model === 'fused-mass' ? FUSED_MASS_FIGURE_SEED : seed + 1;
     expect(issues).toEqual([
-      { section: 'actors', id: actor.id, path, message: `no actor figure "${actorFigureKey(actor.id, seed)}"` },
+      { section: 'actors', id: actor.id, path, message: `no actor figure "${actorFigureKey(actor.id, drawn)}"` },
     ]);
   });
 
+  it('reports a row whose key names neither an actor type nor an authored figure', () => {
+    expect(actorFigureIssues(content([figure], [], []))).toEqual([
+      { section: 'actorFigures', id: figure.id, path: '.id', message: `no actor type or figure "${type}"` },
+    ]);
+  });
+
+  it('admits each key once, as "type.seed"', () => {
+    const source = 'figures.json';
+    expect(validateContent({ source, data: { actorFigures: [figure] } })).toEqual([]);
+    expect(validateContent({ source, data: { actorFigures: [figure, figure] } })).toEqual([
+      expect.objectContaining({ path: 'actorFigures[1].id' }),
+    ]);
+    expect(validateContent({ source, data: { actorFigures: [figure, { ...figure, id: type }] } })).toEqual([
+      expect.objectContaining({ path: 'actorFigures[1]' }),
+    ]);
+  });
+});
+
+describe('actor figure file checks', () => {
+  const fileIssues = (id: string, body: unknown, clips: unknown, figures = [type]) =>
+    actorFigureFileIssues(content([], [], figures), id, body, clips);
+
+  it('admits the fixture body and clips with no issues', () => {
+    expect(fileIssues(figure.id, rawBody, rawClips)).toEqual([]);
+  });
+
   it('reports clips that fail the body', () => {
-    const { standing: _, ...crawlingOnly } = figure.clips;
-    const issues = actorFigureIssues(content([{ ...figure, clips: crawlingOnly }]));
+    const { standing: _, ...crawlingOnly } = rawClips;
+    const issues = fileIssues(figure.id, rawBody, crawlingOnly);
     expect(issues.length).toBeGreaterThan(0);
     expect(
       issues.every(({ section, id, path }) => section === 'actorFigures' && id === figure.id && path === '.clips'),
     ).toBe(true);
   });
 
-  it('reports a figure whose type names neither an actor type nor an authored figure', () => {
-    expect(actorFigureIssues(content([figure], [], []))).toEqual([
-      {
-        section: 'actorFigures',
-        id: figure.id,
-        path: '.body.type',
-        message: `no actor type or figure "${figure.body.type}"`,
-      },
+  it('reports a body file that fails its schema under the row', () => {
+    const issues = fileIssues(figure.id, { ...rawBody, bones: 'none' }, rawClips);
+    expect(issues).toEqual([expect.objectContaining({ id: figure.id, path: '.body.bones' })]);
+  });
+
+  // Under any other key the same type and seed fail, so no second row can admit them twice.
+  it('reports a row whose key is not its body type and seed', () => {
+    expect(fileIssues(actorFigureKey(type, seed + 1), rawBody, rawClips)).toEqual([
+      expect.objectContaining({ path: '.id' }),
     ]);
   });
 
-  it('admits each type and seed once', () => {
-    const source = 'figures.json';
-    expect(validateContent({ source, data: { actorFigures: [row()] } })).toEqual([]);
-    expect(validateContent({ source, data: { actorFigures: [row(), row()] } })).toEqual([
-      expect.objectContaining({ path: 'actorFigures[1].id' }),
+  it('reports a body whose type names neither an actor type nor an authored figure', () => {
+    expect(fileIssues(figure.id, rawBody, rawClips, [])).toEqual([
+      { section: 'actorFigures', id: figure.id, path: '.body.type', message: `no actor type or figure "${type}"` },
     ]);
-    // Under any other id the same type and seed fail the key check, so no second id can admit them twice.
-    const misKeyed = { ...row(), id: actorFigureKey(figure.body.type, figure.body.seed + 1) };
-    expect(validateContent({ source, data: { actorFigures: [row(), misKeyed] } })).toEqual([
-      expect.objectContaining({ path: 'actorFigures[1]' }),
-    ]);
-  });
-});
-
-describe('actor figure content identity', () => {
-  const pack = (body: Record<string, unknown>): PackInput => ({
-    source: 'fixture.figures',
-    manifest: {
-      id: 'fixture.figures',
-      version: '1',
-      tier: 'product',
-      product: false,
-      dependencies: [],
-      overrides: [],
-      files: [{ path: 'figures.json', kind: 'content' }],
-    },
-    files: [{ source: 'figures.json', data: { actorFigures: [row(body)] } }],
-  });
-
-  it('changes the pack content hash when one body value changes', async () => {
-    const changed = { ...rawBody, scale: (rawBody.scale as number) + 1 };
-    expect(await packContentHash(pack(changed))).not.toBe(await packContentHash(pack(rawBody)));
   });
 });

@@ -15,7 +15,7 @@ import {
   walkCursor,
 } from '../packages/deadvox/src/core/actorClips.ts';
 import { applyPoint, slerpQuat } from '../packages/deadvox/src/core/boneMath.ts';
-import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
+import { actorFigureFileIssues, buildRegistry } from '../packages/deadvox/src/core/content.ts';
 import { boneTransforms } from '../packages/deadvox/src/core/pose.ts';
 import {
   ActorBodySchema,
@@ -31,6 +31,7 @@ import {
   readBundledPacks,
   readStackContentSources,
 } from '../packages/deadvox/tools/readBundledPacks.ts';
+import { temporalKeyFindings } from '../packages/deadvox/tools/time-lint.mjs';
 import { PACKAGE_ROOT } from './model-export-sync.mjs';
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
@@ -451,39 +452,66 @@ const posedIssues = ({ body: figureBody, clips: figureClips }, { attributes: { p
 
 describe('stack actor figures', () => {
   const { registry, issues } = buildRegistry(readStackContentSources(PACKAGE_ROOT, 'skelly.deadvox'));
-  const figures = [...registry.actorFigures.values()];
   const packs = readBundledPacks(PACKAGE_ROOT, 'skelly.deadvox');
   const { models } = JSON.parse(
     readFileSync(new URL('../packages/skelly-assets/built/manifest.json', import.meta.url), 'utf8'),
   );
+  /** Each admitted figure row with its pinned pack and GLB, and the files it names read as JSON through the reader. */
+  const rows = [...registry.actorFigures.values()].map((row) => {
+    const pinned = models.filter((model) => model.id === row.id);
+    const pack = pinned.length === 1 ? packs.find(({ manifest }) => manifest.id === pinned[0].pack) : undefined;
+    const read = (path) => JSON.parse(packFileBytes(PACKAGE_ROOT, pack, path).toString('utf8'));
+    return pack
+      ? { ...row, pack, glb: pinned[0].path, bodyData: read(row.body), clipsData: read(row.clips) }
+      : { ...row, missing: `${pinned.length} pinned model rows, or a pack outside the stack` };
+  });
+  /** The figures as the game's schemas admit their bytes. */
+  const figures = rows
+    .filter(({ pack }) => pack)
+    .map((row) => ({
+      ...row,
+      bodyFile: row.body,
+      clipsFile: row.clips,
+      body: parse(ActorBodySchema, row.bodyData),
+      clips: parse(ActorClipsSchema, row.clipsData),
+    }));
 
   // biome-ignore lint/style/noDoneCallback: Node's TestContext prints the figure listing, not a done callback.
-  it('admits a non-empty set of stack figures with no issues', (t) => {
+  it('admits a non-empty set of stack figures whose declared files agree with their rows and types', (t) => {
     assert.deepEqual(issues, []);
-    assert.ok(figures.length > 0, 'the stack admits no actor figure');
-    for (const { id } of figures) {
+    assert.ok(rows.length > 0, 'the stack admits no actor figure');
+    assert.deepEqual(
+      rows.flatMap((row) =>
+        row.missing
+          ? [`${row.id}: ${row.missing}`]
+          : actorFigureFileIssues(registry, row.id, row.bodyData, row.clipsData).map(
+              ({ path, message }) => `${row.id}${path}: ${message}`,
+            ),
+      ),
+      [],
+    );
+    for (const { id } of rows) {
       t.diagnostic(`actor figure ${id}`);
     }
   });
 
+  it('names a clock and unit in every timing key of each figure body and clips file', () => {
+    assert.ok(figures.length > 0);
+    assert.deepEqual(
+      figures.flatMap(({ id, bodyFile, clipsFile, bodyData, clipsData }) => [
+        ...temporalKeyFindings(`${id} ${bodyFile}`, bodyData),
+        ...temporalKeyFindings(`${id} ${clipsFile}`, clipsData),
+      ]),
+      [],
+    );
+  });
+
   /** What one figure's pinned GLB, body and clips, read as deadvox reads them, disagree with in its admitted body. */
   const glbIssues = async (figure) => {
-    const { id, body: figureBody } = figure;
-    const rows = models.filter((model) => model.id === id);
-    const pack = rows.length === 1 && packs.find(({ manifest }) => manifest.id === rows[0].pack);
-    if (!pack) {
-      return [`${rows.length} pinned model rows, or a pack outside the stack`];
-    }
-    const [{ path: glb, body: bodyPath, clips: clipsPath }] = rows;
-    const found = [glb, bodyPath, clipsPath]
+    const { id, pack, glb, bodyFile, clipsFile, body: figureBody } = figure;
+    const found = [glb, bodyFile, clipsFile]
       .filter((path) => packFileOrigin(PACKAGE_ROOT, pack, path) !== 'external')
       .map((path) => `${path} is not read from the external root`);
-    const readIds = JSON.parse(packFileBytes(PACKAGE_ROOT, pack, bodyPath).toString('utf8')).bones.map(
-      (bone) => bone.id,
-    );
-    if (readIds.join() !== figureBody.bones.map((bone) => bone.id).join()) {
-      found.push(`read body bones [${readIds}] differ from the admitted body's`);
-    }
     const mesh = await boneMesh(packFileBytes(PACKAGE_ROOT, pack, glb), figureBody);
     found.push(...mesh.issues);
     if (mesh.issues.length === 0) {

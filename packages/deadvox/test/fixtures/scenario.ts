@@ -236,7 +236,7 @@ export const fixtureScenarioSources = (
       data: {
         damageKinds: fixtureDamageContent().damageKinds,
         actors: [actor],
-        actorFigures: fixtureActorFigures(actorSource.id, actor),
+        actorFigures: fixtureActorFigures(actor),
         furnitureMaterials: fixtureMaterials(),
         blockMaterials: [fixtureBlockMaterial('fixture_solid')],
         sounds: [...fixtureSounds(), ...bodySounds],

@@ -31,7 +31,7 @@ export function compileJsonnetFile(sourcePath, repositoryRoot = REPOSITORY_ROOT)
     return execFileSync(jsonnetExecutable(), ['-J', repositoryRoot, absoluteSource], {
       cwd: repositoryRoot,
       encoding: 'utf8',
-      maxBuffer: Number.POSITIVE_INFINITY,
+      maxBuffer: 16 * 1024 * 1024,
     });
   } catch (error) {
     if (error instanceof Error && error.message.startsWith('jsonnet binary missing:')) {

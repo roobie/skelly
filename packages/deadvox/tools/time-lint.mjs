@@ -349,6 +349,28 @@ const collectAuthoredFields = (value, path, file, state) => {
   }
 };
 
+/** A parsed JSON value's temporal keys that name no clock and unit, for declared files outside the content roots. */
+export const temporalKeyFindings = (file, value) => {
+  const findings = [];
+  const visit = (node) => {
+    if (!node || typeof node !== 'object') {
+      return;
+    }
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+    for (const [name, child] of Object.entries(node)) {
+      if (hasTemporalName(name) && !hasClockUnit(name)) {
+        findings.push(`${file}: temporal field "${name}" must include a clock and unit`);
+      }
+      visit(child);
+    }
+  };
+  visit(value);
+  return findings;
+};
+
 export const temporalCatalogueFindings = (contentFiles, read = readFileSync) => {
   const known = new Set(TEMPORAL_FIELDS.map(({ path }) => normalizedPath(path)));
   const state = { known, findings: [] };

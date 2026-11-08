@@ -109,7 +109,7 @@ const layoutValidationBase = [
         actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
         return actor;
       }),
-      actorFigures: [...layoutActorIds].flatMap((id) => fixtureActorFigures(id, registry.actors.get(id)!)),
+      actorFigures: fixtureActorFigures(...[...layoutActorIds].map((id) => registry.actors.get(id)!)),
       // The zombies name the tool quality that dismembers them, so one tool has to have it.
       items: [
         {

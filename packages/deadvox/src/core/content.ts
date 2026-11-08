@@ -35,7 +35,14 @@ import { modelBodyMassKg } from './modelMass.ts';
 import { pieceItemIssues } from './placementLoot.ts';
 import { POWER_UNITS } from './powerContent.ts';
 import { scenarioSources } from './scenarioComposition.ts';
-import { actorClipIssues, actorFigureKey } from './schema/actors.ts';
+import {
+  type ActorBody,
+  ActorBodySchema,
+  ActorClipsSchema,
+  actorClipIssues,
+  actorFigureKey,
+  actorFigureKeyParts,
+} from './schema/actors.ts';
 import {
   type ActorDef,
   type ActorFigureDef,
@@ -1604,7 +1611,7 @@ const typeRegionKey = (bodyRegion: string): string => bodyRegion.replace(FUSED_M
 
 const figureTypeIssues = (
   type: Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'regions'>,
-  body: ActorFigureDef['body'],
+  body: ActorBody,
 ): [string, string][] => {
   const issues: [string, string][] = [];
   if (body.model !== figureVariantOf(type)) {
@@ -1622,23 +1629,16 @@ const figureTypeIssues = (
 };
 
 /**
- * Built figures admit when every seed an actor type draws has one, the fused mass's fixed seed included, and each
- * belongs to an actor type, or to an authored figure such as the player's, with clips fit for its body.
+ * Built figure rows admit when every seed an actor type draws has one, the fused mass's fixed seed included, and each
+ * row's key names an actor type, or an authored figure such as the player's. The browser has no figure bytes, so
+ * `actorFigureFileIssues` checks them in Node.
  */
 export const actorFigureIssues = (content: ActorFigureContent): ActorFigureIssue[] => {
   const issues: ActorFigureIssue[] = [];
-  for (const [id, { body, clips }] of content.actorFigures) {
-    const report = (path: string, message: string) => issues.push({ section: 'actorFigures', id, path, message });
-    for (const message of actorClipIssues(body, clips)) {
-      report('.clips', message);
-    }
-    const type = content.actors.get(body.type);
-    if (type) {
-      for (const [path, message] of figureTypeIssues(type, body)) {
-        report(path, message);
-      }
-    } else if (!content.figures.has(body.type)) {
-      report('.body.type', `no actor type or figure "${body.type}"`);
+  for (const id of content.actorFigures.keys()) {
+    const type = actorFigureKeyParts(id)?.type ?? id;
+    if (!(content.actors.has(type) || content.figures.has(type))) {
+      issues.push({ section: 'actorFigures', id, path: '.id', message: `no actor type or figure "${type}"` });
     }
   }
   for (const type of content.actors.values()) {
@@ -1650,6 +1650,43 @@ export const actorFigureIssues = (content: ActorFigureContent): ActorFigureIssue
         issues.push({ section: 'actors', id: type.id, path, message: `no actor figure "${key}"` });
       }
     });
+  }
+  return issues;
+};
+
+/**
+ * What one figure row's body and clips, parsed from the files it names, disagree with: their schemas, the row's key,
+ * the body's clips and its actor type.
+ */
+export const actorFigureFileIssues = (
+  content: Pick<ActorFigureContent, 'actors' | 'figures'>,
+  id: string,
+  bodyData: unknown,
+  clipsData: unknown,
+): ActorFigureIssue[] => {
+  const body = safeParse(ActorBodySchema, bodyData);
+  const clips = safeParse(ActorClipsSchema, clipsData);
+  if (!(body.success && clips.success)) {
+    return [
+      ...(body.success ? [] : schemaIssues('.body', body.issues)),
+      ...(clips.success ? [] : schemaIssues('.clips', clips.issues)),
+    ].map(({ source, path, message }) => ({ section: 'actorFigures', id, path: path ? `${source}.${path}` : source, message }));
+  }
+  const issues: ActorFigureIssue[] = [];
+  const report = (path: string, message: string) => issues.push({ section: 'actorFigures', id, path, message });
+  if (id !== actorFigureKey(body.output.type, body.output.seed)) {
+    report('.id', 'must be the body type and seed as "type.seed"');
+  }
+  for (const message of actorClipIssues(body.output, clips.output)) {
+    report('.clips', message);
+  }
+  const type = content.actors.get(body.output.type);
+  if (type) {
+    for (const [path, message] of figureTypeIssues(type, body.output)) {
+      report(path, message);
+    }
+  } else if (!content.figures.has(body.output.type)) {
+    report('.body.type', `no actor type or figure "${body.output.type}"`);
   }
   return issues;
 };

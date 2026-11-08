@@ -2668,7 +2668,7 @@ describe('content references', () => {
           furniture: [furniture],
           templates: [template],
           actors: [actor],
-          actorFigures: fixtureActorFigures('shambler', actor),
+          actorFigures: fixtureActorFigures(actor),
           sounds,
         },
       },
@@ -2716,7 +2716,7 @@ describe('content references', () => {
             },
           },
         ],
-        actorFigures: fixtureActorFigures('shambler', { id: 'clerk', figureSeeds: [1] }),
+        actorFigures: fixtureActorFigures({ id: 'clerk', figureSeeds: [1] }),
         actors: [
           {
             id: 'clerk',
@@ -2913,7 +2913,7 @@ const templateBase = [
     source: 'template-enemies.json',
     data: {
       actors: [templateShambler],
-      actorFigures: fixtureActorFigures('shambler', baseRegistry.actors.get('shambler')!),
+      actorFigures: fixtureActorFigures(baseRegistry.actors.get('shambler')!),
     },
   },
 ];
@@ -2928,7 +2928,7 @@ describe('zombie voice references', () => {
         source: 'voice-zombie.json',
         data: {
           actors: [{ ...templateShambler, id: 'fixture_voiced', sounds }],
-          actorFigures: fixtureActorFigures('shambler', {
+          actorFigures: fixtureActorFigures({
             ...baseRegistry.actors.get('shambler')!,
             id: 'fixture_voiced',
           }),

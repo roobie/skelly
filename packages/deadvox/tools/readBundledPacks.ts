@@ -63,21 +63,42 @@ export const readAvailablePacks = (packageRoot: string, external: string = EXTER
       source: root,
       manifest,
       files: manifest.files.map((entry) => {
-        const bytes = readResolved(packageRoot, { root, manifest }, entry, external);
-        const data: unknown = entry.kind === 'asset' ? undefined : JSON.parse(bytes.toString('utf8'));
-        return {
-          source: entry.path,
-          data:
-            entry.kind === 'content'
-              ? data
-              : createHash('sha256')
-                  .update(entry.kind === 'json' ? canonicalJson(data) : bytes)
-                  .digest('hex'),
-        };
+        const file = resolve(
+          packageRoot,
+          PACK_ROOT_BASE,
+          resolvedKey(packageRoot, { root, manifest }, entry, external),
+        );
+        if (entry.kind === 'content') {
+          return { source: entry.path, data: JSON.parse(readFileSync(file, 'utf8')) as unknown };
+        }
+        return { source: entry.path, data: fileDigest(readFileSync(file), entry.kind) };
       }),
     };
   });
   return inputs;
+};
+
+const sha256 = (data: string | Buffer): string => createHash('sha256').update(data).digest('hex');
+
+/** Canonical JSON digests by the digest of the bytes they were computed from. */
+const canonicalDigests = new Map<string, string>();
+
+/**
+ * A declared file's identity hash: an asset's bytes, or a `json` entry's canonical JSON. Build tools and tests read
+ * the packs many times per process, and canonicalising the pinned actor files dominates each read, so the same bytes
+ * keep their canonical digest. Hashing the raw bytes costs a small part of parsing and canonicalising them.
+ */
+const fileDigest = (bytes: Buffer, kind: 'json' | 'asset'): string => {
+  const raw = sha256(bytes);
+  if (kind === 'asset') {
+    return raw;
+  }
+  let digest = canonicalDigests.get(raw);
+  if (digest === undefined) {
+    digest = sha256(canonicalJson(JSON.parse(bytes.toString('utf8'))));
+    canonicalDigests.set(raw, digest);
+  }
+  return digest;
 };
 
 /** Where an entry's bytes live, relative to `PACK_ROOT_BASE`: the one candidate present on disk. */
