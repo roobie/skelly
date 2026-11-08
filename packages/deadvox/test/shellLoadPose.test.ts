@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { Box3, Group, Mesh, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
@@ -12,13 +11,14 @@ import { HeldItems } from '../src/render/hands.ts';
 import { indexModelMaterials, type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { modFileBytes } from './modFile.ts';
 
 const registry = baseRegistry();
 
 it('the firing hand follows the exported bolt knob rather than moving the support hand', async () => {
   const rifle = [...registry.items.values()].find((item) => item.firearm?.bolt)!;
   const model = registry.models.get(rifle.model!)!;
-  const bytes = readFileSync(`../mods/skelly.firearms/${model.file}`);
+  const bytes = modFileBytes(model.file);
   const gltf = await new GLTFLoader()
     .parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '')
     .then(indexModelMaterials);

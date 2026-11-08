@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -39,10 +37,10 @@ import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
+import { modFileBytes } from './modFile.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
 import { chargedRifle, settle } from './rifleFixture.ts';
 
-const BASE = '../mods/skelly.firearms';
 const base = baseContentSources();
 const registry = baseRegistry();
 const { registry: skillZeroRegistry } = buildRegistry([
@@ -774,7 +772,7 @@ describe('rifle firearm handling', () => {
     expect(fixture.issues).toEqual([]);
     const model = fixture.registry.models.get('unannotated_gun_model')!;
     expect(model.gun?.calibre).toBeUndefined();
-    const bytes = readFileSync(join(BASE, model.file));
+    const bytes = modFileBytes(model.file);
     const gltf = await new GLTFLoader().parseAsync(
       bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
       '',

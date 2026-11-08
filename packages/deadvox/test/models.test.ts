@@ -44,7 +44,6 @@ import { loadFigureModels } from './figureModels.ts';
 import { modFileBytes } from './modFile.ts';
 import { thingModels } from './thingModels.ts';
 
-const BASE = '../mods/skelly.firearms';
 const MODEL_FILE = /^assets\/models\/[a-z0-9_]+\.glb$/;
 const AXIS_INDEX = { x: 0, y: 1, z: 2 } as const;
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
@@ -688,8 +687,8 @@ describe('fitted attachment model frames', () => {
     if (!(slot.model && slot.mountFrame)) {
       throw new Error('Default optic look is incomplete');
     }
-    const gunScene = (await parseGlb(readFileSync(`${BASE}/${firearm.file}`))).scene;
-    const opticScene = (await parseGlb(readFileSync(`${BASE}/${registry.models.get(slot.model)!.file}`))).scene;
+    const gunScene = (await parseGlb(modFileBytes(firearm.file))).scene;
+    const opticScene = (await parseGlb(modFileBytes(registry.models.get(slot.model)!.file))).scene;
     const { held } = prepareModel(firearm, gunScene);
     const modelFrame = held.children[0]!.children[0]!;
     const fitted = fittedPartFrame(slot).add(opticScene);
@@ -734,7 +733,7 @@ describe('fitted magazine model frame', () => {
     if (!slot) {
       throw new Error('Rifle magazine look is incomplete');
     }
-    const gltf = await parseGlb(readFileSync(`${BASE}/${firearm.file}`));
+    const gltf = await parseGlb(modFileBytes(firearm.file));
     const node = gltf.parser.json.nodes.find(
       (candidate: { name?: string; translation?: number[] }) => candidate.name === 'magazine:magazine',
     ) as unknown as { translation?: number[] } | undefined;
@@ -929,7 +928,7 @@ describe('base pack modeled ammunition and spent cases', () => {
       [...ids].map(async (id) => ({
         id,
         def: registry.models.get(id)!,
-        ...(await parseGlb(readFileSync(`${BASE}/${registry.models.get(id)!.file}`))),
+        ...(await parseGlb(modFileBytes(registry.models.get(id)!.file))),
       })),
     );
     for (const { id, def, scene } of loaded) {
@@ -957,7 +956,7 @@ it('loads both exported STANAG magazine GLBs with the same body width', async ()
     ['magazine_stanag_20', 'magazine_stanag_30'].map(async (id) => {
       const definition = registry.models.get(id);
       expect(definition).toBeDefined();
-      const { scene } = await parseGlb(readFileSync(`${BASE}/${definition!.file}`));
+      const { scene } = await parseGlb(modFileBytes(definition!.file));
       scene.updateMatrixWorld(true);
       const size = new Box3().setFromObject(scene).getSize(new Vector3());
       expect(size.x).toBeGreaterThan(0);
@@ -977,7 +976,7 @@ describe('base pack guns', () => {
   const guns = [...models.values()].filter((m) => m.anchors?.muzzle);
 
   it.each(guns.map((m) => [m.id, m] as const))('%s is held muzzle forward, top up', async (_, def) => {
-    const bytes = readFileSync(`${BASE}/${def.file}`);
+    const bytes = modFileBytes(def.file);
     const gltf = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
     if (gltf.parser.json.asset.generator === 'skelly gungen glb export') {
       expect(def.gun?.sight, `${def.id} Gungen exports need sight metadata`).toBeDefined();
@@ -995,7 +994,7 @@ describe('base pack guns', () => {
 
   it('uses the exported AR with zero turn and its muzzle at the forward end', async () => {
     const def = models.get('rifle_assault')!;
-    const bytes = readFileSync(`${BASE}/${def.file}`);
+    const bytes = modFileBytes(def.file);
     const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
     const bounds = new Box3().setFromObject(scene);
     expect(def.grip?.turn).toEqual([0, 0, 0]);

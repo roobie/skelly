@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
@@ -32,6 +31,7 @@ import { loadFigureModels } from './figureModels.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { heldState } from './heldState.ts';
+import { modFileBytes } from './modFile.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
 it('authors a free two-hand pistol hold with a forward bore at hip and ADS', () => {
@@ -110,7 +110,7 @@ const pistolFixture = async (
   const figure = registry.figures.get('player')!;
   const model = registry.models.get(registry.items.get('pistol_service')!.model!)!;
   const figures = await loadFigureModels(registry);
-  const bytes = readFileSync(new URL(`../../mods/skelly.firearms/${model.file}`, import.meta.url));
+  const bytes = modFileBytes(model.file);
   const gltf = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '').then(indexModelMaterials);
   const prepared = prepareModel(model, gltf.scene);
   const paths = actionPartPaths(gltf.scene, model.gun!.action, gltf.parser);

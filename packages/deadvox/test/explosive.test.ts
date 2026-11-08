@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { Mesh } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it, vi } from 'vitest';
@@ -27,10 +26,10 @@ import { itemLook } from '../src/render/itemLook.ts';
 import { ModelLibrary } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { modFileBytes } from './modFile.ts';
 import type { MoveIntent } from './playerFixture.ts';
 
 const registry = baseRegistry();
-const MODEL_ROOT = '../mods/skelly.explosives';
 const BLOCK = 0.5;
 const GRENADE = 'frag_grenade';
 const FUSE = registry.items.get(GRENADE)!.explosive!.fuseSimSeconds;
@@ -223,14 +222,14 @@ describe('hand grenade', () => {
     const { piece } = def.pin!;
     const loads: Promise<void>[] = [];
     const spy = vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad, _onProgress, onError) => {
-      loads.push(new GLTFLoader().parseAsync(Uint8Array.from(readFileSync(path)).buffer, '').then(onLoad, onError));
+      loads.push(new GLTFLoader().parseAsync(Uint8Array.from(modFileBytes(path)).buffer, '').then(onLoad, onError));
     });
     const models = new ModelLibrary(
       { ...registry, models: new Map([[model, def]]) },
       (message) => {
         throw new Error(message);
       },
-      { [def.file]: `${MODEL_ROOT}/${def.file}` },
+      { [def.file]: def.file },
       1,
     );
     spy.mockRestore();

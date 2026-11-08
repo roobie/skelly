@@ -12,10 +12,10 @@ export const shippedPacks = (): PackInput[] => {
 };
 
 /** The bytes of one file a pack declares, wherever the pack reader resolves it. */
-export const packFile = (pack: PackInput, path: string): Buffer => packFileBytes(PACKAGE_ROOT, pack, path);
+export const packFile = (pack: PackInput, path: string): Buffer<ArrayBuffer> => packFileBytes(PACKAGE_ROOT, pack, path);
 
 /** The bytes of a pack file a row names, for a test holding the row but not the pack that declares it. */
-export const modFileBytes = (file: string): Buffer => {
+export const modFileBytes = (file: string): Buffer<ArrayBuffer> => {
   const owners = shippedPacks().filter(({ manifest }) => manifest.files.some(({ path }) => path === file));
   if (owners.length !== 1) {
     throw new Error(`${owners.length} packs declare ${file}`);

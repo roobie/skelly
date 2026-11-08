@@ -65,7 +65,7 @@ export const readAvailablePacks = (packageRoot: string): PackInput[] => {
 };
 
 // No external root is supplied yet, so every entry resolves to its one local candidate.
-const readResolved = (packageRoot: string, pack: PackLocation, entry: PackFileEntry): Buffer => {
+const readResolved = (packageRoot: string, pack: PackLocation, entry: PackFileEntry): Buffer<ArrayBuffer> => {
   const physical = (key: string) => resolve(packageRoot, PACK_ROOT_BASE, key);
   const resolved = resolvePhysical(pack, entry, { has: (key) => existsSync(physical(key)) });
   if ('issue' in resolved) {
@@ -75,7 +75,7 @@ const readResolved = (packageRoot: string, pack: PackLocation, entry: PackFileEn
 };
 
 /** The bytes of one file a pack declares, from wherever the reader resolves it. */
-export const packFileBytes = (packageRoot: string, pack: PackInput, path: string): Buffer => {
+export const packFileBytes = (packageRoot: string, pack: PackInput, path: string): Buffer<ArrayBuffer> => {
   const entry = pack.manifest.files.find((file) => file.path === path);
   if (!entry) {
     throw new Error(`Pack ${pack.manifest.id}: no declared file ${path}`);

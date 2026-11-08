@@ -7,14 +7,13 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { modFileBytes } from '../modFile.ts';
 import { launchChromium } from './chromium.mjs';
 import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
-const magazineModel = JSON.parse(
-  readFileSync(resolve(root, '../mods/skelly.firearms/gungen/magazine_stanag_30.model.json'), 'utf8'),
-);
+const magazineModel = JSON.parse(modFileBytes('gungen/magazine_stanag_30.model.json').toString('utf8'));
 const anchors = new Map([
   ['src/presentation/play.ts', '  const onForwardPress = (e: MouseEvent) => {'],
   [
