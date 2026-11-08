@@ -247,7 +247,7 @@ splits into `skelly.*` mods in one refactor. The runtime package is `packages/en
 `@skelly/engine`, when it moves under #1532. The assembly/geometry library therefore gave
 up that name and is construct, `@skelly/construct`, in the asset submodule; the reasons
 for that name are in its
-[tools/packages/construct/README.md](https://github.com/roobie/skelly-assets/blob/main/tools/packages/construct/README.md),
+`packages/skelly-assets/tools/packages/construct/README.md`,
 "Name".
 
 Runtime code (`packages/deadvox/src/core`, `packages/deadvox/src/vehicles`,

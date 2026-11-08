@@ -63,7 +63,6 @@ reason. `things/WORK.md`, "Phases" tracks retirement and close-out.
   every atom it draws has a mass someone authored. The gun tool's parts (barrels, receivers
   and so on) are such items.
 - An assembly's model entry carries each part's mass and centre of mass. The tools place each
-  centre from the part's shapes, and deadvox sums the entries and never loads shapes, so the asset submodule's
-  [construct](https://github.com/roobie/skelly-assets/tree/main/tools/packages/construct)
-  stays out of the game.
+  centre from the part's shapes, and deadvox sums the entries and never loads shapes, so
+  `packages/skelly-assets/tools/packages/construct` stays out of the game.
 - Every export must validate and load in deadvox; `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility" names the contract.

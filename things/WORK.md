@@ -19,8 +19,7 @@ a gun authoring tool that together replace gungen. Delete this file at close-out
 Why each boundary matters, and where it is checked:
 
 - Construct stays domain-neutral so that each consumer can change its own data and rules
-  without construct knowing; the neutral-name check is the asset submodule's
-  [tools/packages/construct/test/constructImportBoundary.test.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/construct/test/constructImportBoundary.test.ts),
+  without construct knowing; the neutral-name check is `packages/skelly-assets/tools/packages/construct/test/constructImportBoundary.test.ts`,
   `forbiddenDomainIdentifiers`.
 - Import edges between packages are enforced by the same test's `packageEdges`. Deadvox must not import the construct or export package, so the game's
   dependency graph stays free of authoring geometry (see `things/WORK.md`, "Decisions").
@@ -70,7 +69,7 @@ Settled:
   a design's part names an item and sets only its placement. A part of a design not yet
   converted takes its mass from the row its params match, until the gun tool phase gives
   every row an item (the gun tool's
-  [PROJECT.md](https://github.com/roobie/skelly-assets/blob/main/tools/packages/gun-authoring-tool/PROJECT.md#attachments-and-export);
+  `packages/skelly-assets/tools/packages/gun-authoring-tool/PROJECT.md`, "Attachments and export";
   `things/WORK.md`, "Phases").
 - Gun parts are items only: each exports and registers in Deadvox as a loose item, but the
   player cannot take a gun apart or assemble one yet. Dis/assembly comes later with its own
@@ -96,8 +95,7 @@ Settled:
   `packages/skelly-assets/tools/packages/thing-core/src/singlePart.ts`, `singlePart`.
 - Each thing-tool item has its own row and model entry, even when several items reuse a
   family builder and geometry. Its authored mass then has one home, with no exception for
-  shared visuals, and a later independent look needs no migration. See the asset submodule's
-  [tools/packages/thing-authoring-tool/src/catalogue.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-authoring-tool/src/catalogue.ts), `ToolItem`.
+  shared visuals, and a later independent look needs no migration. See `packages/skelly-assets/tools/packages/thing-authoring-tool/src/catalogue.ts`, `ToolItem`.
 - The thing tool authors grip, hold and roll against its geometry so reshaping a handle
   also moves its hand datum; Deadvox keeps gameplay fields rather than a second geometry
   authority. This governs families with handling datums in the remaining-families phase.
@@ -107,12 +105,10 @@ Settled:
 - Construct's family and parameter types serve non-gun parts, so the thing tool needs no
   parallel assembly schema. See the same file's `buildItem`.
 - Construct ends at assembly; export belongs above the neutral core so material and model
-  contracts cannot pull dependencies back into geometry (the asset submodule's
-  [tools/packages/construct/README.md](https://github.com/roobie/skelly-assets/blob/main/tools/packages/construct/README.md),
+  contracts cannot pull dependencies back into geometry (`packages/skelly-assets/tools/packages/construct/README.md`,
   "Layers").
 - The thing authoring tool owns non-gun family policy above the shared packages, so
-  neither construct nor the core knows its item kinds. Its home is the asset submodule's
-  [tools/packages/thing-authoring-tool/README.md](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-authoring-tool/README.md).
+  neither construct nor the core knows its item kinds. Its home is `packages/skelly-assets/tools/packages/thing-authoring-tool/README.md`.
 - The directory structure is fixed before any new feature work.
 - The suite's packages live in the asset submodule's tools (`things/README.md`,
   "Packages"); skelly's root package takes only thing-core and its dependency construct
@@ -131,10 +127,9 @@ The open questions below remain unsettled.
 Each concern has one package home, and imports run one way from the domain-neutral
 geometry up to the tools. A lower package then never learns a kind of thing, and the
 game never loads authoring geometry. The homes follow `things/WORK.md`, "Decisions"; the
-layer order inside construct is in the asset submodule's
-[tools/packages/construct/README.md](https://github.com/roobie/skelly-assets/blob/main/tools/packages/construct/README.md),
+layer order inside construct is in `packages/skelly-assets/tools/packages/construct/README.md`,
 "Layers", enforced by its
-[tools/packages/construct/test/constructImportBoundary.test.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/construct/test/constructImportBoundary.test.ts),
+`packages/skelly-assets/tools/packages/construct/test/constructImportBoundary.test.ts`,
 `constructLayers`, and the package edges by the same test's `packageEdges`.
 
 ## Open questions
@@ -154,9 +149,8 @@ layer order inside construct is in the asset submodule's
 2. **Export package and physical model — complete.**
    Construct ends at assembly so the game can consume authored mass and placed centres
    without loading authoring geometry. Atoms read their item weight; gun bodies sum authored
-   part masses and fitted child items keep their own weight. See the asset submodule's
-   [tools/packages/thing-export/README.md](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-export/README.md#physical-model);
-   [tools/packages/gun-authoring-tool/src/gun/catalogue.jsonnet](https://github.com/roobie/skelly-assets/blob/main/tools/packages/gun-authoring-tool/src/gun/catalogue.jsonnet), `parts`; and
+   part masses and fitted child items keep their own weight. See `packages/skelly-assets/tools/packages/thing-export/README.md`, "Physical model";
+   `packages/skelly-assets/tools/packages/gun-authoring-tool/src/gun/catalogue.jsonnet`, `parts`; and
    `packages/deadvox/src/core/items.ts`, `typeWeightGrams`.
 3. **Thing tool, first slice — complete.** Tape, thread, cord and fuse atoms plus a
    multi-part desk lamp share the source-to-preview and export path. The lamp proves that the single-part helper's users
@@ -168,15 +162,14 @@ layer order inside construct is in the asset submodule's
 4. **Thing tool, remaining families.** Family by family, each with source, GLB, entry and
    load test together. The compass keeps its dedicated display renderer.
 5. **Gun tool — complete.** Gun and ammo policy, authored sources, tests and lasting
-   reasons have one home in the asset submodule's
-   [tools/packages/gun-authoring-tool](https://github.com/roobie/skelly-assets/tree/main/tools/packages/gun-authoring-tool). Recipe designs use closed part
+   reasons have one home in `packages/skelly-assets/tools/packages/gun-authoring-tool`. Recipe designs use closed part
    items with standalone geometry, consumer records and assembly references; a mass row
    alone is not item identity. Other designs convert from mass rows when needed, because
    converting the whole corpus is not required to reproduce the consumer boundary.
    The recipe, not the design files, is the boundary because designs omit companions;
    see the gun tool's
-   [exports/deadvox.jsonnet](https://github.com/roobie/skelly-assets/blob/main/tools/packages/gun-authoring-tool/exports/deadvox.jsonnet),
-   [src/cli/exportRecipe.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/gun-authoring-tool/src/cli/exportRecipe.ts), `loadExportRecipe`, and
+   `packages/skelly-assets/tools/packages/gun-authoring-tool/exports/deadvox.jsonnet`,
+   `packages/skelly-assets/tools/packages/gun-authoring-tool/src/cli/exportRecipe.ts`, `loadExportRecipe`, and
    `test/gungen-deadvox-contract.test.mjs`, "registers every recipe export in the full base and keeps each gun companion inside the recipe".
    No skelly gungen package remains. Phase 6 retains only names: the root contract,
    exporter metadata and consumer output directory, plus dead old-name support in the

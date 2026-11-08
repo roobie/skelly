@@ -14,32 +14,32 @@ package docs rather than a completed task sequence.
 
 The gun implementation, authored sources, tests and still-valid docs have one owner: the
 asset submodule's
-[tools/packages/gun-authoring-tool](https://github.com/roobie/skelly-assets/tree/main/tools/packages/gun-authoring-tool),
+`packages/skelly-assets/tools/packages/gun-authoring-tool`,
 with no skelly copy, forwarding package or second recipe authority
 (`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision"). The retained
 names in skelly are the root consumption contract, exporter metadata and the consumer
 output directory. Phase 6 also retires the dead old-name support in the submodule's
-[tools/packages/construct/test/constructImportBoundary.test.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/construct/test/constructImportBoundary.test.ts),
+`packages/skelly-assets/tools/packages/construct/test/constructImportBoundary.test.ts`,
 `rootsUnder`, `importTarget` and its canary fixtures; `tools/zero-drift-check.mjs`,
 `SUBPROJECTS`; the zero-drift and Deadvox import-boundary fixtures; and the gun tool's
 `GUNGEN_SWEEPS`. None is a second authoring implementation or an old source-path alias.
 
 The consumption boundary is the gun tool's
-[exports/deadvox.jsonnet](https://github.com/roobie/skelly-assets/blob/main/tools/packages/gun-authoring-tool/exports/deadvox.jsonnet),
+`packages/skelly-assets/tools/packages/gun-authoring-tool/exports/deadvox.jsonnet`,
 interpreted by its
-[src/cli/exportRecipe.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/gun-authoring-tool/src/cli/exportRecipe.ts),
+`packages/skelly-assets/tools/packages/gun-authoring-tool/src/cli/exportRecipe.ts`,
 `loadExportRecipe`. Reproduction means refreshing consumer assets and records from those
 authored inputs, not byte identity.
 
 Recipe designs reference closed part items; placement does not create identity. The editor
 requires item-backed body parts before export; see the gun tool's
-[src/viewer/designExport.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/gun-authoring-tool/src/viewer/designExport.ts),
+`packages/skelly-assets/tools/packages/gun-authoring-tool/src/viewer/designExport.ts`,
 `exportEditorDesign`. File and recipe export still use the matching mass row for a body
 part that names no item, until its design is converted (#509); see its
-[src/gun/physical.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/gun-authoring-tool/src/gun/physical.ts),
+`packages/skelly-assets/tools/packages/gun-authoring-tool/src/gun/physical.ts`,
 `gunModelParts`. Retirement does not depend on converting the remaining corpus because
 the consumption recipe's designs name items. See its
-[src/gun/catalogue.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/gun-authoring-tool/src/gun/catalogue.ts),
+`packages/skelly-assets/tools/packages/gun-authoring-tool/src/gun/catalogue.ts`,
 `loadPartCatalogue`.
 Gameplay disassembly remains deferred to #1040. Shared camera and parameter mechanisms belong in tool-ui;
 gun selection and presentation remain caller policy.
@@ -47,9 +47,9 @@ gun selection and presentation remain caller policy.
 CARRY_ALL on #509 transfers ownership without implementing or closing the backlog.
 The lead re-points #135, #333, #362, #364, #414, #447 and #649 without renumbering.
 Deferred geometry reasons travel with the gun tool's
-[src/gun/parts.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/gun-authoring-tool/src/gun/parts.ts),
+`packages/skelly-assets/tools/packages/gun-authoring-tool/src/gun/parts.ts`,
 `magazineGeometryFor`, and
-[docs/decisions/0001-calibre-driven-sizing.md](https://github.com/roobie/skelly-assets/blob/main/tools/packages/gun-authoring-tool/docs/decisions/0001-calibre-driven-sizing.md).
+`packages/skelly-assets/tools/packages/gun-authoring-tool/docs/decisions/0001-calibre-driven-sizing.md`.
 Construct motion remains construct work and separately carded work stays separate.
 
 ## Invariants
@@ -63,7 +63,7 @@ Preserve `test/things-deadvox-contract.test.mjs` independently.
 
 Neither tool imports its peer; lower packages and Deadvox cannot import the gun tool.
 See the submodule's
-[tools/packages/construct/test/constructImportBoundary.test.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/construct/test/constructImportBoundary.test.ts),
+`packages/skelly-assets/tools/packages/construct/test/constructImportBoundary.test.ts`,
 `packageEdges`. Shared construct
 shapes are not shared authored parts: an actual cross-tool authored part needs BR's
 ownership decision rather than duplication or promotion into the neutral core.

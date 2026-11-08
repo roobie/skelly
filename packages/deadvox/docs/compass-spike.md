@@ -12,7 +12,7 @@ The compass reads as a magnetic needle compass: a light card with bold cardinal 
 
 The whole card turns with the needle, so its letters always name real directions and the mark on the rim reads the heading. It uses the world's canonical north convention and converts actor yaw to a clockwise bearing. See `src/core/coords.ts`, `WORLD_NORTH`.
 
-A live handheld uses its exported model plus live parts on the model's display and named anchors. The world and hand therefore share one model while the card stays dynamic. How a display is held is in `DESIGN.md`, "Held screens". See `src/render/actorAnimator.ts`, `ActorAnimator`, and [tools/packages/thing-authoring-tool/src/catalogue.ts](https://github.com/roobie/skelly-assets/blob/main/tools/packages/thing-authoring-tool/src/catalogue.ts), `buildItem`.
+A live handheld uses its exported model plus live parts on the model's display and named anchors. The world and hand therefore share one model while the card stays dynamic. How a display is held is in `DESIGN.md`, "Held screens". See `src/render/actorAnimator.ts`, `ActorAnimator`, and `packages/skelly-assets/tools/packages/thing-authoring-tool/src/catalogue.ts`, `buildItem`.
 
 The compass is dark at night: it has no glow and no light of its own. It is a plain physical object with no self-lit parts, so it is lit like the rest of the held model and darkens with the world's light.
 
