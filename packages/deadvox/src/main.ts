@@ -194,7 +194,7 @@ if (bench === 'report') {
         contentLookup: (kind, id) => contentLookup(engine.registry, kind, id),
       });
       clearPendingInputReplay(replayStash);
-      startPlay(engine, debugModule!, {
+      await startPlay(engine, debugModule!, {
         assets,
         keyboard: keyboardInput,
         restore: decoded.snapshot,
@@ -215,11 +215,15 @@ if (bench === 'report') {
     practiceParams.set('site', 'tutorial');
     const practiceConfig = configFromUrl(practiceParams, content);
     const engine = createEngine(practiceConfig, view, undefined, { render: !renderFree });
-    startPlay(engine, undefined, { assets, keyboard: keyboardInput, tutorial: true });
-    document.getElementById('new-character-options')!.hidden = true;
-    document.getElementById('tutorial-start')!.hidden = true;
-    document.getElementById('save-status')!.textContent = 'Unsaved practice';
-    hideStartupScreen();
+    try {
+      await startPlay(engine, undefined, { assets, keyboard: keyboardInput, tutorial: true });
+      document.getElementById('new-character-options')!.hidden = true;
+      document.getElementById('tutorial-start')!.hidden = true;
+      document.getElementById('save-status')!.textContent = 'Unsaved practice';
+      hideStartupScreen();
+    } catch (error) {
+      showStartupFailure(`Practice failed to load: ${error instanceof Error ? error.message : String(error)}`);
+    }
   } else {
     document.getElementById('tutorial-start')!.addEventListener('click', (event) => {
       event.stopPropagation();
@@ -275,14 +279,18 @@ if (bench === 'report') {
     const engine = createEngine(config, view, undefined, { render: !renderFree });
     const restored = await saveController.validateContent(engine.registry);
     if (saveController.isRestored && restored) {
-      startPlay(engine, debugModule, {
-        assets,
-        keyboard: keyboardInput,
-        saveController,
-        restore: restored,
-        ...(skyRoute ? { skyRoute } : {}),
-      });
-      hideStartupScreen();
+      try {
+        await startPlay(engine, debugModule, {
+          assets,
+          keyboard: keyboardInput,
+          saveController,
+          restore: restored,
+          ...(skyRoute ? { skyRoute } : {}),
+        });
+        hideStartupScreen();
+      } catch (error) {
+        showStartupFailure(`Saved world failed to load: ${error instanceof Error ? error.message : String(error)}`);
+      }
     } else {
       saveController.setNewWorldLauncher(async (creation) => {
         // Capture transient activation before setup, then return the gesture handler before doing expensive work.
@@ -292,9 +300,9 @@ if (bench === 'report') {
         const draw = mountWorldLoading(owner, screenText.worldLoading);
         await locked;
         await new Promise<void>((done) => setTimeout(done, 0));
-        let entry: ReturnType<typeof startPlay>;
+        let entry: Awaited<ReturnType<typeof startPlay>>;
         try {
-          entry = startPlay(engine, debugModule, {
+          entry = await startPlay(engine, debugModule, {
             assets,
             keyboard: keyboardInput,
             saveController,

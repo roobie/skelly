@@ -112,10 +112,21 @@ have one copy, declared once and changed only by pin bumps, with no tracked comp
 copy and no eager startup bundle, so a changed model reaches the game fast. The
 browser registry checks only that every drawn seed has a row; the body, clips and
 actor type checks run in Node, in `validate` and the stack actor contract test; see
-`packages/deadvox/src/core/content.ts`, `actorFigureFileIssues`. A runtime that
-loads baked bodies adds loading on top without changing this admission. The cost
-accepted: the browser checks no figure bytes, and URL mods cannot add figures,
-because they carry content only and cannot declare files.
+`packages/deadvox/src/core/content.ts`, `actorFigureFileIssues`. The cost
+accepted: the browser checks no figure bytes at admission, and URL mods cannot add
+figures, because they carry content only and cannot declare files.
+
+Figure files load per session start. Before a session is created, the game fetches
+and decodes the body and clips of every figure row the selected stack's registry
+holds, and the decoded map travels with the registry into the session; see
+`packages/deadvox/src/presentation/play.ts`, `startPlay`, and
+`packages/deadvox/src/core/actorFigureFiles.ts`. Node reads the same files
+synchronously through the pack reader. Fetching what the stack uses keeps load time
+scaling with the stack, not with the whole model catalogue, which will grow to
+thousands of models. A changed model is fetched fresh at the next session start, so
+changing a model and seeing the change stays fast. The simulation never sees fetch
+timing, because every figure is resolved before the first tick. The cost accepted: a
+session start is asynchronous, and each entry path has a load error path.
 
 The shared worn family fits the shared player body, not generated mob bodies;
 fitting it over generated bodies requires its own development round. The paper-sheet

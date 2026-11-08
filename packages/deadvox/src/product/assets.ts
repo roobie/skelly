@@ -33,6 +33,18 @@ export const productAssets: PresentationAssets = {
       { eager: true, query: '?url', import: 'default' },
     ),
   }),
+  // URLs only: the bytes are fetched at session start, so a changed figure is read fresh by the next session.
+  figures: owned(
+    import.meta.glob<string>(
+      [
+        '../../../skelly-assets/built/*/actors/*.json',
+        '!../../../skelly-assets/built/skelly.armour/**',
+        '!../../../skelly-assets/built/skelly.bestiary/**',
+        '!../../../skelly-assets/built/skelly.bolt-guns/**',
+      ],
+      { eager: true, query: '?url', import: 'default' },
+    ),
+  ),
   cursors: owned({
     ...import.meta.glob<string>('../../mods/*/assets/cursors/*.png', { eager: true, query: '?url', import: 'default' }),
     ...import.meta.glob<string>('../../../mods/*/assets/cursors/*.png', {

@@ -1,7 +1,7 @@
 // biome-ignore-all lint/correctness/noNodejsModules: bundled file provider for build tools and the CLI.
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { relative, resolve, sep } from 'node:path';
+import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { parse } from 'valibot';
 import { canonicalJson } from '../src/core/canonicalJson.ts';
 import { admitPacks, type PackInput, PackManifestSchema, packContentHash } from '../src/core/packAdmission.ts';
@@ -136,6 +136,25 @@ export const packFileBytes = (
   }
   return readResolved(packageRoot, { root: pack.source, manifest: pack.manifest }, entry, external);
 };
+
+/** Reads a file that a content file's pack declares; the pack is the admitted one whose root holds the content file. */
+export const declaredFileReader =
+  (
+    packageRoot: string,
+    admittedPacks: readonly { readonly source: string; readonly manifest: { readonly id: string } }[],
+    packs: readonly PackInput[],
+  ) =>
+  (contentFile: string, path: string): Buffer<ArrayBuffer> => {
+    const owner = admittedPacks.find(({ source }) => {
+      const within = relative(resolve(packageRoot, source), resolve(packageRoot, contentFile));
+      return !(within.startsWith('..') || isAbsolute(within));
+    });
+    const pack = packs.find(({ manifest }) => manifest.id === owner?.manifest.id);
+    if (!pack) {
+      throw new Error(`only a pack can declare ${path}`);
+    }
+    return packFileBytes(packageRoot, pack, path);
+  };
 
 /** Whether a declared json or asset entry resolves under the external root rather than its pack's root. */
 export const packFileOrigin = (

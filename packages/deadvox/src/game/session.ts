@@ -6,6 +6,7 @@
 
 import { actionText, fillText } from '../core/actionText.ts';
 import { actorFigure, figureSeedPool } from '../core/actorFigure.ts';
+import type { ActorFigureFiles } from '../core/actorFigureFiles.ts';
 import type { PlayerMovement, VocalNoise } from '../core/actorSense.ts';
 import { ActorSpawner } from '../core/actorSpawns.ts';
 import { type Actor, PLAYER_ARM_REACH_M } from '../core/actorState.ts';
@@ -490,6 +491,8 @@ export interface ResolvedFirearmTrajectory extends FirearmTrajectory {
 export interface SessionOptions {
   powerDevices?: readonly PlacedPowerDevice[];
   registry: Registry;
+  /** The registry's figure rows decoded, every one resolved before the first tick. */
+  actorFigureFiles?: ActorFigureFiles;
   scenario?:
     | Readonly<{ id: string; body: string; compression: string; eventRules?: readonly EventRuleDef[] }>
     | undefined;
