@@ -66,7 +66,7 @@ export const voxelCentersByBone = (voxels: Voxels, bones: readonly { readonly id
         if (owner === 0) {
           continue;
         }
-        const id = bones[owner - 1]!.id;
+        const { id } = bones[owner - 1]!;
         const owned = centers.get(id) ?? [];
         owned.push(worldPosition(voxels, i, j, k));
         centers.set(id, owned);

@@ -47,7 +47,7 @@ const centerBounds = (centers: readonly (readonly [number, number, number])[]): 
 const findBoneVoxelData = (realized: HumanoidFigure['realized']) => {
   const centersByBone = voxelCentersByBone(realized.voxels, realized.body.bones);
   const limits = new Map([...centersByBone].map(([bone, centers]) => [bone, centerBounds(centers)]));
-  return { limits, voxelCentersByBone: centersByBone };
+  return { limits, centersByBone };
 };
 
 const buildRegionBoxes = (
@@ -93,7 +93,7 @@ export const templateFigure = (model: string, seed: number): HumanoidFigure => {
   if (!regionBones) {
     throw new Error(`Body plan ${template.bodyPlan} has no hit regions`);
   }
-  const { limits, voxelCentersByBone } = findBoneVoxelData(generated.realized);
+  const { limits, centersByBone } = findBoneVoxelData(generated.realized);
   const boxes = buildRegionBoxes(regionBones, limits, generated.realized.voxels.size / 2 + 0.001);
   const figure: HumanoidFigure = {
     seed,
@@ -101,7 +101,7 @@ export const templateFigure = (model: string, seed: number): HumanoidFigure => {
     realized: generated.realized,
     boxes,
     severableParts: regionSeverableParts(generated.realized.body.bones, regionBones),
-    voxelCentersByBone,
+    voxelCentersByBone: centersByBone,
   };
   cache.set(key, figure);
   return figure;
