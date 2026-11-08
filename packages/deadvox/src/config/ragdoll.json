@@ -22,6 +22,7 @@
     "impulseScale": 1,
     "linearDamping": 0.80000000000000004
   },
+  "density": 1000,
   "downedDriftMetres": 2,
   "flesh": {
     "capacity": 24,
