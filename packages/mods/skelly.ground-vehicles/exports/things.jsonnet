@@ -1,5 +1,5 @@
 // Vehicle parts carry baked collision because a fitting places it on the vehicle.
-local vehicleParts = std.set([part.id for part in import 'packages/thing-authoring-tool/vehicle-parts.libsonnet']);
+local vehicleParts = std.set([part.id for part in import 'packages/skelly-assets/tools/packages/thing-authoring-tool/vehicle-parts.libsonnet']);
 local jacks = std.set(['bottle_jack', 'engine_hoist', 'scissor_jack']);
 // A vehicle part takes the vehicle class, so it matches the vehicle it sits on; a jack is an ordinary item.
 // A catalogue row may name its own grain in place of its class's.

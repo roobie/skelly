@@ -1,11 +1,11 @@
-local recipe = import 'packages/gun-authoring-tool/exports/deadvox.jsonnet';
+local recipe = import 'packages/skelly-assets/tools/packages/gun-authoring-tool/exports/deadvox.jsonnet';
 local things = import '../exports/things.jsonnet';
 local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
 {
   sources: [
     {
       title: 'Gungen authored model exports',
-      url: 'https://github.com/roobie/skelly/blob/main/packages/gun-authoring-tool/exports/deadvox.jsonnet',
+      url: 'https://github.com/roobie/skelly-assets/blob/main/tools/packages/gun-authoring-tool/exports/deadvox.jsonnet',
       author: 'Skelly contributors',
       licence: 'CC0-1.0',
       download: null,
