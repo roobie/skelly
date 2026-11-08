@@ -91,14 +91,38 @@ describe('actor figure file checks', () => {
     expect(fileIssues(figure.id, rawBody, standingOnly)).toEqual([]);
   });
 
-  it('reports an actor type that crawls after leg loss whose figure has no crawling set', () => {
+  // A loaded shambler row: the figure fixture has neither hit boxes nor an actor type that crawls.
+  const shamblerRow = () => {
     const registry = baseRegistry();
     const shambler = registry.actors.get('shambler')!;
-    const key = actorFigureKey(shambler.id, shambler.figureSeeds![0]!);
-    const { body, clips } = actorFigure(stackActorFigureFiles(registry), shambler, shambler.figureSeeds![0]!);
+    const drawn = shambler.figureSeeds![0]!;
+    return {
+      registry,
+      key: actorFigureKey(shambler.id, drawn),
+      ...actorFigure(stackActorFigureFiles(registry), shambler, drawn),
+    };
+  };
+
+  it('reports an actor type that crawls after leg loss whose figure has no crawling set', () => {
+    const { registry, key, body, clips } = shamblerRow();
     const { crawling: _, ...standingOnly } = clips;
     expect(actorFigureFileIssues(registry, key, body, standingOnly)).toEqual([
       expect.objectContaining({ id: key, path: '.clips.crawling' }),
+    ]);
+  });
+
+  it('reports a hit-box bone that carries no voxels', () => {
+    const { registry, key, body, clips } = shamblerRow();
+    const boxed = body.boxes!.head![0]!.bone;
+    const bones = body.bones.map((bone) => {
+      if (bone.id !== boxed) {
+        return bone;
+      }
+      const { voxels: _, hull: __, ...bare } = bone;
+      return bare;
+    });
+    expect(actorFigureFileIssues(registry, key, { ...body, bones }, clips)).toEqual([
+      expect.objectContaining({ id: key, path: '.body', message: expect.stringContaining(boxed) }),
     ]);
   });
 

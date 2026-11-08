@@ -409,6 +409,16 @@ const pointKey = (p: readonly number[]): string => p.join(',');
 const hasBone = (body: { readonly bones: readonly { readonly id: string }[] }, id: string): boolean =>
   body.bones.some((bone) => bone.id === id);
 
+/** Hit boxes are posed from their bone's voxels, so a boxed bone without them cannot be hit-tested. */
+const boxBonesWithoutVoxels = (body: {
+  readonly bones: readonly { readonly id: string; readonly voxels?: unknown }[];
+  readonly boxes?: Readonly<Record<string, readonly { readonly bone: string }[]>> | undefined;
+}): string[] => {
+  const voxelled = new Set(body.bones.filter(({ voxels }) => voxels !== undefined).map(({ id }) => id));
+  const boxed = Object.values(body.boxes ?? {}).flatMap((rows) => rows.map(({ bone }) => bone));
+  return [...new Set(boxed)].filter((bone) => !voxelled.has(bone));
+};
+
 const ActorBoneSchema = pipe(
   strictObject({
     id: BoneName,
@@ -574,6 +584,10 @@ export const ActorBodySchema = pipe(
         ...Object.values(body.severableParts ?? {}).flat(),
       ].every((bone) => hasBone(body, bone)),
     'every region, box and severable part bone must be a body bone',
+  ),
+  check(
+    (body) => boxBonesWithoutVoxels(body).length === 0,
+    ({ input }) => `every box bone must carry voxels; missing on ${boxBonesWithoutVoxels(input).join(', ')}`,
   ),
   check((body) => body.burstBones.every((bone) => hasBone(body, bone)), 'every burst bone must be a body bone'),
   check((body) => Object.keys(body.extents).every((bone) => hasBone(body, bone)), 'every extent must key a body bone'),
