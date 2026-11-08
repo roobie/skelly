@@ -5,7 +5,15 @@
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
-    "includes": ["**", "!**/dist", "!**/package-lock.json", "!**/__snapshots__", "!packages/deadvox/vendor/rapier-f64"]
+    // The submodule owns its checks; parent rules must not relint another repository.
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/package-lock.json",
+      "!**/__snapshots__",
+      "!packages/deadvox/vendor/rapier-f64",
+      "!packages/skelly-assets"
+    ]
   },
   "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 120 },
   "javascript": {
