@@ -1,82 +1,191 @@
-import { registerTemplate } from '@mobgen/core/template.ts';
-import { attackClipFor, attackPose } from '@mobgen/mob/attack.ts';
-import { footRestExtents } from '@mobgen/mob/gait.ts';
-import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
-import { flinchPoseWithClip, SLIM_HIT_FLINCH } from '@mobgen/mob/reactions.ts';
-import { humanoid } from '@mobgen/mob/templates.ts';
-import { afterAll, describe, expect, it } from 'vitest';
-import { type ActorPoseInput, flinchSideForId, posedActor } from '../src/core/actorPose.ts';
-import type { Pose } from '../src/core/pose.ts';
+import { readFileSync } from 'node:fs';
+import { parse } from 'valibot';
+import { describe, expect, it } from 'vitest';
+import {
+  applyJointDelta,
+  applyMotion,
+  decodeFrame,
+  groundFit,
+  idleBase,
+  idleBlendWeight,
+  sampleClip,
+  stanceMotion,
+  walkCursor,
+  walkToIdle,
+} from '../src/core/actorClips.ts';
+import { IDENTITY_M, type Mat3, slerpQuat } from '../src/core/boneMath.ts';
+import type { Bone } from '../src/core/bones.ts';
+import { jointAngles } from '../src/core/joints.ts';
+import { blendPose, type Pose } from '../src/core/pose.ts';
+import {
+  ActorBodySchema,
+  ActorClipsSchema,
+  type HumanoidIdle,
+  type JointDeltaClip,
+  JointDeltaClipSchema,
+  type PoseClip,
+  PoseClipSchema,
+} from '../src/core/schema/actors.ts';
 
-const template = { ...humanoid, attackClip: 'swipe', flinchClip: 'slim-hit-flinch' };
-registerTemplate(template);
-afterAll(() => registerTemplate(humanoid));
-const input: ActorPoseInput = {
-  model: 'humanoid',
-  seed: 1,
-  position: [0, 0, 0],
-  facing: [0, 0, -1],
-  headYaw: 0,
-  gaitPhase: 0,
-  speed: 0,
-  chasing: true,
-  stanceWeight: 1,
-  attackWindup: 0,
-  attackWindupSeconds: 0,
-  severed: [],
-  blockSize: 0.5,
+const readFixture = (name: string): unknown =>
+  JSON.parse(readFileSync(new URL(`./fixtures/actors/${name}`, import.meta.url), 'utf8'));
+
+const body = parse(ActorBodySchema, readFixture('fixture.body.json'));
+const { standing, crawling } = parse(ActorClipsSchema, readFixture('fixture.clips.json'));
+const finitePose = parse(PoseClipSchema, readFixture('fixture.finite-pose.json'));
+const jointDelta = parse(JointDeltaClipSchema, readFixture('fixture.joint-delta.json'));
+
+const pick = <T>(entry: unknown, name: string): T => {
+  if (entry === undefined) {
+    throw new Error(`the fixture lacks ${name}`);
+  }
+  return entry as T;
 };
-const base = () => {
-  const posed = posedActor(input);
-  const { bones } = posed;
-  return {
-    posed,
-    actor: {
-      bones,
-      extents: footRestExtents(bones, posed.figure.realized.voxels),
-      params: posed.figure.genome.params as HumanoidParams,
-      seed: input.seed,
-    },
-  };
+const walk = pick<PoseClip>(standing?.walk, 'standing.walk');
+const crawlIdle = pick<PoseClip>(crawling?.idle, 'crawling.idle');
+const idle = pick<HumanoidIdle>(standing?.idle, 'standing.idle');
+const boneOf = (id: string): Bone =>
+  pick<Bone>(
+    body.bones.find((entry) => entry.id === id),
+    id,
+  );
+
+const TOLERANCE = 1e-9;
+/** The largest per-component difference; unequal lengths never compare close. */
+const gap = (a: readonly number[], b: readonly number[]): number =>
+  a.length === b.length ? Math.max(0, ...a.map((value, i) => Math.abs(value - b[i]!))) : Number.POSITIVE_INFINITY;
+const close = (a: readonly number[], b: readonly number[]): boolean => gap(a, b) <= TOLERANCE;
+
+// The stance motion hash of `packages/deadvox/src/core/actorClips.ts`, `phaseFor`, restated so a test can find an oscillator's zero.
+const phaseFor = (seed: number, salt: number): number => {
+  const h = Math.sin(seed * 12.9898 + salt * 78.233) * 43_758.5453;
+  return (h - Math.floor(h)) * 2 * Math.PI;
 };
 
-const closePose = (pose: Pose) => ({
-  root: pose.root.map((value) => expect.closeTo(value, 10)),
-  rotations: Object.fromEntries(
-    Object.entries(pose.rotations).map(([bone, rotation]) => [
-      bone,
-      rotation?.map((value) => expect.closeTo(value, 10)),
-    ]),
-  ),
-});
-
-describe('template-selected zombie clips', () => {
-  it('uses the selected non-lunge attack and its hit timing', () => {
-    const clip = attackClipFor(template);
-    const windup = clip.hitTime / 2;
-    const remaining = windup / 2;
-    const { posed, actor } = base();
-    const expectedTime = clip.hitTime - remaining;
-    const attacked = posedActor({ ...input, attackWindupSeconds: windup, attackWindup: remaining });
-    const expected = attackPose(actor, clip, expectedTime, posed.pose);
-    expect(expected).not.toEqual(posed.pose);
-    expect(attacked.pose).toEqual(expected);
-    const cooldown = clip.duration + windup;
-    expect(
-      posedActor({
-        ...input,
-        attackWindupSeconds: windup,
-        attackWait: cooldown - (windup - remaining),
-        attackCooldown: cooldown,
-      }).pose,
-    ).toEqual(closePose(expected));
+describe('sampleClip', () => {
+  it('interpolates a looping clip between neighbouring frames', () => {
+    const [a, b] = [walk.frames[0]!, walk.frames[1]!];
+    const sample = sampleClip(walk, 1 / 8);
+    const midRoot = a.root.map((value, axis) => value + (b.root[axis]! - value) / 2);
+    expect(gap(sample.root, midRoot)).toBeLessThanOrEqual(TOLERANCE);
+    const midArm = slerpQuat(a.rotations['upperArm.L']!, b.rotations['upperArm.L']!, 1 / 2);
+    expect(gap(sample.rotations['upperArm.L']!, midArm)).toBeLessThanOrEqual(TOLERANCE);
   });
 
-  it('uses the selected flinch without selecting by model name', () => {
-    const { posed, actor } = base();
-    const time = SLIM_HIT_FLINCH.keys[1]!.t;
-    const expected = flinchPoseWithClip(actor, time, posed.pose, { clip: SLIM_HIT_FLINCH, side: flinchSideForId(0) });
-    expect(expected).not.toEqual(posed.pose);
-    expect(posedActor({ ...input, hitFlinchTime: time }).pose).toEqual(expected);
+  it('interpolates a finite clip between neighbouring frames', () => {
+    const [a, b] = [finitePose.frames[0]!, finitePose.frames[1]!];
+    const sample = sampleClip(finitePose, finitePose.duration! / 4);
+    const midChest = slerpQuat(a.rotations.chest!, b.rotations.chest!, 1 / 2);
+    expect(gap(sample.rotations.chest!, midChest)).toBeLessThanOrEqual(TOLERANCE);
+  });
+
+  it('returns the only frame of a one-frame clip at any cursor', () => {
+    for (const cursor of [0, 0.37, 5, -2]) {
+      expect(sampleClip(crawlIdle, cursor)).toBe(crawlIdle.frames[0]);
+    }
+  });
+});
+
+describe('walkCursor', () => {
+  it('spans the given number of gait cycles and wraps into [0, 1)', () => {
+    expect(walkCursor(2 * Math.PI, 2)).toBe(0.5);
+    expect(walkCursor(4 * Math.PI, 2)).toBe(0);
+    expect(walkCursor(-Math.PI, 1)).toBe(0.5);
+    for (const phase of [-7, -0.1, 0, 3, 6.2, 40]) {
+      const cursor = walkCursor(phase, 2);
+      expect(cursor).toBeGreaterThanOrEqual(0);
+      expect(cursor).toBeLessThan(1);
+    }
+  });
+});
+
+describe('stance idle', () => {
+  const slack = decodeFrame(idle.slack.base);
+  const aggravated = decodeFrame(idle.aggravated.base);
+
+  it('blends the slack and aggravated bases by stance weight', () => {
+    expect(idleBase(idle, 0)).toEqual(slack);
+    expect(idleBase(idle, 1)).toEqual(aggravated);
+    expect(idleBase(idle, 0.5)).toEqual(blendPose(slack, aggravated, 0.5));
+  });
+
+  it('selects the aggravated oscillators from a stance weight of one half', () => {
+    expect(stanceMotion(idle, 0.49)).toBe(idle.slack.motion);
+    expect(stanceMotion(idle, 0.5)).toBe(idle.aggravated.motion);
+  });
+
+  it('leaves the base unchanged where an oscillator sine is zero', () => {
+    for (const oscillator of idle.slack.motion) {
+      const zeroTime = ((2 * Math.PI - phaseFor(body.seed, oscillator.salt)) * oscillator.period) / (2 * Math.PI);
+      const moved = applyMotion(slack, [oscillator], zeroTime, body.seed);
+      expect(moved.root).toEqual(slack.root);
+      for (const { bone } of oscillator.bones) {
+        expect(gap(moved.rotations[bone]!, slack.rotations[bone] ?? IDENTITY_M)).toBeLessThanOrEqual(TOLERANCE);
+      }
+    }
+  });
+
+  it('multiplies the oscillators in list order', () => {
+    const [first, second] = idle.slack.motion;
+    const firstBones = new Set(first!.bones.map(({ bone }) => bone));
+    const shared = pick<string>(second!.bones.find(({ bone }) => firstBones.has(bone))?.bone, 'a shared bone');
+    const time = 0.37;
+    const inOrder = applyMotion(slack, [first!, second!], time, body.seed);
+    const stepwise = applyMotion(applyMotion(slack, [first!], time, body.seed), [second!], time, body.seed);
+    const reversed = applyMotion(slack, [second!, first!], time, body.seed);
+    expect(gap(inOrder.rotations[shared]!, stepwise.rotations[shared]!)).toBeLessThanOrEqual(TOLERANCE);
+    expect(close(inOrder.rotations[shared]!, reversed.rotations[shared]!)).toBe(false);
+  });
+
+  it('fades the walk fully into the idle at rest and out of it at idleBlendSpeed', () => {
+    const blendSpeed = walk.idleBlendSpeed!;
+    const stride = decodeFrame(walk.frames[2]!);
+    expect(idleBlendWeight(0, blendSpeed)).toBe(1);
+    expect(idleBlendWeight(blendSpeed, blendSpeed)).toBe(0);
+    expect(idleBlendWeight(2 * blendSpeed, blendSpeed)).toBe(0);
+    expect(walkToIdle(stride, slack, 0, blendSpeed)).toBe(slack);
+    expect(walkToIdle(stride, slack, blendSpeed, blendSpeed)).toBe(stride);
+  });
+});
+
+describe('applyJointDelta', () => {
+  const base = decodeFrame(finitePose.frames[1]!);
+  const ids = body.bones.map(({ id }) => id);
+  const end = jointDelta.duration!;
+  const delta = (side: number, clip: JointDeltaClip = jointDelta): Pose =>
+    applyJointDelta(body, base, clip, end, { speed: 0, side });
+  const anglesGap = (pose: Pose, id: string, expected: readonly number[]): number =>
+    gap(jointAngles(boneOf(id), pose.rotations[id] as Mat3), expected);
+
+  it('keeps the base rotations at zero deltas and refits the root to the ground', () => {
+    const start = applyJointDelta(body, base, jointDelta, 0, { speed: 0, side: 1 });
+    for (const id of Object.keys(jointDelta.frames[0]!.angles)) {
+      expect(gap(start.rotations[id]!, base.rotations[id] ?? IDENTITY_M)).toBeLessThanOrEqual(TOLERANCE);
+    }
+    const { lowest } = groundFit(body, { root: base.root, rotations: start.rotations }, ids);
+    expect(gap(start.root, [base.root[0], base.root[1] - lowest, base.root[2]])).toBeLessThanOrEqual(TOLERANCE);
+  });
+
+  it('adds the last frame deltas to the base joint angles at the duration', () => {
+    const result = delta(1);
+    expect(anglesGap(result, 'chest', [30, 0, 10])).toBeLessThanOrEqual(TOLERANCE);
+    expect(anglesGap(result, 'head', [5, 0, 0])).toBeLessThanOrEqual(TOLERANCE);
+  });
+
+  it('flips only the z delta for the other side', () => {
+    const result = delta(-1);
+    expect(anglesGap(result, 'chest', [30, 0, -10])).toBeLessThanOrEqual(TOLERANCE);
+    expect(anglesGap(result, 'head', [5, 0, 0])).toBeLessThanOrEqual(TOLERANCE);
+  });
+
+  it('clamps the summed angles to the bone limits', () => {
+    const wide = structuredClone(jointDelta);
+    wide.frames[1]!.angles.chest = [0, 0, 60];
+    expect(anglesGap(delta(1, wide), 'chest', [30, 0, 45])).toBeLessThanOrEqual(TOLERANCE);
+  });
+
+  it('returns the base itself for a speed-weighted clip at rest', () => {
+    const weighted = { ...jointDelta, speedWeight: true };
+    expect(applyJointDelta(body, base, weighted, end, { speed: 0, side: 1 })).toBe(base);
   });
 });

@@ -39,7 +39,7 @@ export const HIT_FLINCH: AttackClip = {
   ],
 };
 
-export const SLIM_HIT_FLINCH: AttackClip = {
+const SLIM_HIT_FLINCH: AttackClip = {
   ...HIT_FLINCH,
   name: 'slim-hit-flinch',
   keys: [

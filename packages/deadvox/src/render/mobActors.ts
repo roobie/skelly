@@ -50,7 +50,6 @@ import type { Realized } from '@mobgen/core/generate.ts';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
-import { acidDeathPose } from '@mobgen/mob/acidPoses.ts';
 import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
 import { fusedMassTemplate } from '@mobgen/mob/fusedMassTemplate.ts';
 import { createGaitCache, footRestExtents, type WalkActor } from '@mobgen/mob/gait.ts';
@@ -116,6 +115,7 @@ import type { LookAtProfile } from '../core/schema/actors.ts';
 import type { Quaternion } from '../core/spatial.ts';
 import { ACTIVE_ACTOR_RATE } from '../game/simulationRates.ts';
 import { BLOOD_STAIN_COLOR_FRAGMENT, BLOOD_STAIN_FRAGMENT_DECLARATIONS } from './bloodStain.ts';
+import { acidCorpsePose } from './corpsePose.ts';
 import {
   CROWD_BEGIN_VERTEX,
   CROWD_BEGINNORMAL_VERTEX,
@@ -2223,7 +2223,7 @@ export class MobActorMeshes implements ActorRenderer {
       return corpse.settledPose;
     }
     if (variant.model === 'acid') {
-      const pose = acidDeathPose(variant.realized, corpse.basePose, corpse.elapsed, corpse.direction);
+      const pose = acidCorpsePose(variant, corpse.basePose, corpse.elapsed, corpse.direction);
       if (corpse.elapsed >= acidTemplate.animation.deathDuration) {
         corpse.settledPose = pose;
       }
