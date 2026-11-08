@@ -1,6 +1,6 @@
 // biome-ignore-all lint/correctness/noNodejsModules: This command-line checker runs only under Node.js.
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -1118,14 +1118,15 @@ export function checkDocument({
   return [...failures.values()];
 }
 
-function trackedTextFiles() {
-  return exec('git', ['ls-files', '-z'])
-    .split('\0')
-    .filter(Boolean)
-    .filter((path) => {
-      const bytes = readFileSync(resolve(ROOT, path));
-      return !bytes.subarray(0, 8192).includes(0);
-    });
+export function trackedTextFiles(paths = exec('git', ['ls-files', '-z']).split('\0').filter(Boolean), root = ROOT) {
+  return paths.filter((path) => {
+    const absolute = resolve(root, path);
+    if (!statSync(absolute).isFile()) {
+      return false;
+    }
+    const bytes = readFileSync(absolute);
+    return !bytes.subarray(0, 8192).includes(0);
+  });
 }
 
 function ignoredPaths(candidates) {

@@ -267,10 +267,13 @@ See `packages/deadvox/src/product/input.ts`, `keyboardInput`.
 
 The #1532 gate is closure or merge of every PR in its frozen in-flight set: #1531,
 #1529, #1528, #1527, #1526, #1524, #1520, #1509, #1503, #1496, #1493, #1488, #1477,
-#1403 and #1369. The framework refactor's own single PR is allowed under the freeze:
-open it as a draft for CI so the refactor can be checked and merged. Other new PRs
-remain frozen until it lands; other work can use an existing PR. The freeze keeps
-unrelated branches from moving files during extraction, not the extraction itself
-from receiving CI. One extraction avoids paying for a temporary internal-edge phase
-and its later removal. The content-extraction plan belongs in
+#1403 and #1369. The framework refactor's own PR and the asset-pipeline move PRs are allowed under
+the freeze. The asset move targets `framework/refactor`; framework extraction pauses
+after content ownership is split until that move finishes. Moving the pipelines first
+avoids extracting runtime around tool dependencies that would then be removed again.
+Open permitted PRs as drafts for CI; unrelated new PRs remain frozen until the
+refactor lands, though other work can use an existing PR. The freeze prevents unrelated
+file moves during extraction, not CI for the extraction itself. One extraction avoids
+paying for a temporary internal-edge phase and its later removal. See
+`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision", and
 `packages/deadvox/docs/pack-split.md`.
