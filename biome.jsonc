@@ -195,13 +195,13 @@
       // undeclared npm package; these simulation/rendering and test files deliberately use that alias.
       "includes": [
         "**/deadvox/src/render/mobActors.ts",
+        "**/deadvox/src/render/corpsePose.ts",
         "**/deadvox/src/render/ragdoll.ts",
         "**/deadvox/src/core/actorMotion.ts",
         "**/deadvox/src/core/actorRegions.ts",
         "**/deadvox/src/core/actorPose.ts",
         "**/deadvox/src/game/actorAudio.ts",
         "**/deadvox/test/mobActors.test.ts",
-        "**/deadvox/test/actorClips.test.ts",
         "**/deadvox/test/angles.test.ts",
         "**/deadvox/test/crowd.test.ts",
         "**/deadvox/test/dismember.test.ts",

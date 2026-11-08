@@ -1,0 +1,23 @@
+{
+  "kind": "jointDelta",
+  "cursor": "time",
+  "duration": 0.5,
+  "loop": false,
+  "speedWeight": false,
+  "sideScalesZ": true,
+  "footSoleHold": false,
+  "frames": [
+    {
+      "angles": {
+        "chest": [0, 0, 0],
+        "head": [0, 0, 0]
+      }
+    },
+    {
+      "angles": {
+        "chest": [0, 0, 10],
+        "head": [5, 0, 0]
+      }
+    }
+  ]
+}
