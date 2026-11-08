@@ -1,10 +1,10 @@
-import type { Body } from '@mobgen/core/body.ts';
 import { humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
+import type { ActorBody } from '../core/bones.ts';
 import type { SenseDef } from '../core/schema.ts';
 
 export type ActorVoiceTuning = SenseDef['actorVoice'];
 
-const bodyHeight = (body: Body): number => {
+const bodyHeight = (body: ActorBody): number => {
   const y = body.bones.flatMap(({ head, tail }) => [head[1], tail[1]]);
   if (y.length === 0) {
     throw new Error('Cannot size the voice of a body with no bones');
@@ -47,7 +47,7 @@ export const actorVoiceLaw = (figureSeeds: readonly number[], tuning: ActorVoice
   const defaultTallestAnchor = oldLawPitch(tallestHeight);
   const clampPitch = (pitch: number): number => Math.max(pitchClamp[0], Math.min(pitchClamp[1], pitch));
 
-  const bodyPitch = (body: Body, search = ''): number => {
+  const bodyPitch = (body: ActorBody, search = ''): number => {
     const height = bodyHeight(body);
     const smallestAnchor = clampPitch(defaultSmallestAnchor * debugVoicePitch(search, 'voicePitch'));
     const tallestAnchor = Math.min(

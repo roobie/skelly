@@ -207,6 +207,19 @@ const AgentSchema = strictObject({
   }),
 });
 
+const GazeLimitSchema = strictObject({ yawDeg: NonNegative, pitchDeg: NonNegative });
+
+/** How far and how fast a rig's neck and head turn to track a target (src/render/lookAt.ts). Presentation only. */
+const LookAtProfileSchema = strictObject({
+  /** The bone that turns as the head; omitted is `head`. */
+  headBone: optional(pipe(string(), nonEmpty('must not be empty'))),
+  neck: GazeLimitSchema,
+  head: GazeLimitSchema,
+  turnRateDegPerSecond: Positive,
+});
+
+export type LookAtProfile = InferOutput<typeof LookAtProfileSchema>;
+
 export const ActorSchema = strictObject({
   id: Id,
   capability: capabilityClaimsField('actors'),

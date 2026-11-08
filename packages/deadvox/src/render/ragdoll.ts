@@ -1,6 +1,6 @@
-import type { Bone } from '@mobgen/core/body.ts';
 import type { Realized } from '@mobgen/core/generate.ts';
 import { massProperties, voxelBounds } from '@mobgen/core/massProperties.ts';
+import content from '../config/ragdoll.json' with { type: 'json' };
 import {
   applyPoint,
   mat3ToQuat,
@@ -11,9 +11,9 @@ import {
   type Transform,
   transpose,
   type Vec3,
-} from '@mobgen/core/math.ts';
-import { boneTransforms, type Pose } from '@mobgen/core/pose.ts';
-import content from '@mobgen/mob/ragdoll.json' with { type: 'json' };
+} from '../core/boneMath.ts';
+import type { Bone } from '../core/bones.ts';
+import { boneTransforms, type Pose } from '../core/pose.ts';
 import { hash3 } from '../core/random.ts';
 import RAPIER from './ragdollRapier.ts';
 import { angularVelocity, type RigidBody, type RigidWorld } from './rigidImpulse.ts';

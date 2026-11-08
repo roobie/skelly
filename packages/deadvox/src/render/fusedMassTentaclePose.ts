@@ -1,5 +1,5 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves through this package's aliases.
-import { type Mat3, mulMV, type Transform } from '@mobgen/core/math.ts';
+import { type Mat3, mulMV, type Transform } from '../core/boneMath.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { FusedMassFigure } from '../core/fusedMassFigure.ts';
 

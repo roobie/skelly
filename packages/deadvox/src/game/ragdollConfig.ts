@@ -1,5 +1,4 @@
-// biome-ignore lint/correctness/noUndeclaredDependencies: @mobgen is a workspace source alias.
-import ragdoll from '@mobgen/mob/ragdoll.json' with { type: 'json' };
+import ragdoll from '../config/ragdoll.json' with { type: 'json' };
 import { bundledModIdsFromUrl } from './bundledMods.ts';
 import type { GameConfig } from './config.ts';
 

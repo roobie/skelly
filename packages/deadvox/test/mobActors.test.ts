@@ -2,22 +2,11 @@
 // here), so these check the maths and the state machine, not what anything looks like. See the module's
 // own report for what to look at in a real browser.
 
-import type { Bone } from '@mobgen/core/body.ts';
 import { generateValid, realize } from '@mobgen/core/generate.ts';
-import { applyPoint, IDENTITY_M, mulMV, quatToMat3, transpose } from '@mobgen/core/math.ts';
-import {
-  allocateBoneTransforms,
-  boneTransforms,
-  boneTransformsInto,
-  indexBonesByParent,
-  type Pose,
-} from '@mobgen/core/pose.ts';
 import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
-import { severableParts, severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
-import { LOOK_AT_REST } from '@mobgen/mob/lookAt.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
 import { describe, expect, it, vi } from 'vitest';
@@ -27,12 +16,22 @@ import { actorPoseInputFor, flinchSideForId, HIT_FLINCH_DURATION } from '../src/
 import { humanoidRegionBoxes, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import type { Actor, AgentMode } from '../src/core/actorState.ts';
 import type { ActorSystemOptions } from '../src/core/actorSystem.ts';
+import { applyPoint, IDENTITY_M, mulMV, quatToMat3, transpose } from '../src/core/boneMath.ts';
+import type { Bone } from '../src/core/bones.ts';
+import { severableParts, severedBoneSet } from '../src/core/boneTree.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { initialActorFootstepClock } from '../src/core/footsteps.ts';
 import { carveAround, missingFlesh } from '../src/core/fusedMassCarving.ts';
 import { FUSED_MASS_FIGURE_SEED, fusedMassFigureForType } from '../src/core/fusedMassFigure.ts';
+import {
+  allocateBoneTransforms,
+  boneTransforms,
+  boneTransformsInto,
+  indexBonesByParent,
+  type Pose,
+} from '../src/core/pose.ts';
 import { Rng } from '../src/core/random.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -42,6 +41,7 @@ import { ActorMeshes } from '../src/render/actors.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { CARVED_NEIGHBOUR } from '../src/render/fusedMassFlesh.ts';
 import { Gore } from '../src/render/gore.ts';
+import { LOOK_AT_REST } from '../src/render/lookAt.ts';
 import {
   fallDirectionAwayFromPlayer,
   perceptionLabelFor,

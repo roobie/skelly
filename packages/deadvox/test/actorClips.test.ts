@@ -1,4 +1,3 @@
-import type { Pose } from '@mobgen/core/pose.ts';
 import { registerTemplate } from '@mobgen/core/template.ts';
 import { attackClipFor, attackPose } from '@mobgen/mob/attack.ts';
 import { footRestExtents } from '@mobgen/mob/gait.ts';
@@ -7,6 +6,7 @@ import { flinchPoseWithClip, SLIM_HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import { humanoid } from '@mobgen/mob/templates.ts';
 import { afterAll, describe, expect, it } from 'vitest';
 import { type ActorPoseInput, flinchSideForId, posedActor } from '../src/core/actorPose.ts';
+import type { Pose } from '../src/core/pose.ts';
 
 const template = { ...humanoid, attackClip: 'swipe', flinchClip: 'slim-hit-flinch' };
 registerTemplate(template);

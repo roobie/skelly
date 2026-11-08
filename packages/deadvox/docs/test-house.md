@@ -122,7 +122,7 @@ The ragdoll sample requires explicit debug mod selection as well as debug tools 
 staged deaths are evaluation fixtures, not residents of the haven. Its viewer stands
 downrange of the authored rack so the sample stays out of domestic space. See
 `src/debug/ragdollSweep.ts`, `stageRagdollSweep`; `src/game/ragdollConfig.ts`, `sweepFromUrl`;
-and `packages/mobgen/src/mob/ragdoll.jsonnet`, `sweep`.
+and `src/config/ragdoll.jsonnet`, `sweep`.
 
 House power and its controls belong in normal mode: mixed generation and storage,
 lighting, refrigeration demand and charging demonstrate ordinary home systems rather

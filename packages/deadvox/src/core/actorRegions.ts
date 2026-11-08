@@ -1,12 +1,12 @@
 // Detailed melee hit geometry shares the seeded, posed mobgen figures with MobActorMeshes. FIGURE_BOXES below
 // remains only for the optional blocky renderer; it is deliberately not used by the hit test.
 
-import type { Mat3 } from '@mobgen/core/math.ts';
-import { mulMM, transpose } from '@mobgen/core/math.ts';
-import type { boneTransforms } from '@mobgen/core/pose.ts';
 import { type BoneVoxelBox, humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
+import type { Mat3 } from './boneMath.ts';
+import { mulMM, transpose } from './boneMath.ts';
 import type { FusedMassFigure } from './fusedMassFigure.ts';
 import { HUMANOID_REGION_NAMES } from './humanoidRegionNames.ts';
+import type { boneTransforms } from './pose.ts';
 import type { ActorHitRegion, HumanoidHitRegion } from './schema.ts';
 
 export type { ActorHitRegion, ActorRegions, HumanoidHitRegion } from './schema.ts';
