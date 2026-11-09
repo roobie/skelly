@@ -94,9 +94,11 @@ Private tooling may cite GitHub issues,
 PRs and commits. A clone or contributor using only git and GitHub must be able to read every
 GitHub artifact without private tooling, so references point only from the private side.
 
-- **Feature:** `<subproject><number>` (`g` the gun authoring tool, `d` deadvox,
-  `r` repo-wide or docs), one PR on one branch. Numbers count up per subproject; new
-  work always gets a new number, even when it grows out of another feature.
+- **Feature:** `<area><number>`, one PR on one branch. An area is a work area, not
+  necessarily a subproject in this repo: `g` the gun authoring tool wherever its code
+  lives, `d` deadvox, `r` repo-wide or docs. One prefix per tool keeps its history in one
+  namespace, wherever the tool's code lives. Numbers count up per area; new work always
+  gets a new number, even when it grows out of another feature.
 - **Round:** each dispatched piece of work on a feature is a round and its mail item
   (`g26-1`, `g26-2`, …). The first round is `-1`; BR's feedback, review fixes or a
   main merge start the next round.
