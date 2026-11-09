@@ -3285,7 +3285,7 @@ to make a part a support, without giving `structure` a second meaning. See
 `src/core/inventory.ts`, `Inventory.vehiclePlacementRefusal`. A player-fitted plate
 belongs with add-ons because it proves support chains without bringing scratch-building
 forward. See `packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `mounting_plate`, and
-`packages/skelly-assets/tools/packages/thing-authoring-tool/vehicle-parts.libsonnet`, `mounting_plate`.
+`packages/skelly-assets/models/vehicle-parts.libsonnet`, `mounting_plate`.
 
 A stopped or refused action must not orphan or duplicate the selected item; see
 `src/core/inventory.ts`, `Inventory.vehicleTransfer`, and `src/core/vehicleWork.ts`,
