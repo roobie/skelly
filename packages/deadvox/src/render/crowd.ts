@@ -102,6 +102,46 @@ export const isSeveredInMask = (
   return (((mask >>> 0) >>> bit) & 1) === 1;
 };
 
+/** A fused-mass variant's carved-cell mask: one single-channel row per slot, CROWD_MASK_BITS_PER_TEXEL cells per texel. */
+export interface CrowdCellMaskLayout {
+  readonly cellCount: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export const crowdCellMaskLayout = (cellCount: number, slotCount: number): CrowdCellMaskLayout => ({
+  cellCount,
+  width: Math.max(1, Math.ceil(cellCount / CROWD_MASK_BITS_PER_TEXEL)),
+  height: Math.max(1, slotCount),
+});
+
+/** Packs every carved cell index into `slot`'s row, clearing the rest. An index outside the grid is a caller error. */
+export const packCellMask = (
+  data: Float32Array,
+  layout: CrowdCellMaskLayout,
+  slot: number,
+  cells: Iterable<number>,
+): void => {
+  const first = slot * layout.width;
+  data.fill(0, first, first + layout.width);
+  for (const cell of cells) {
+    if (!Number.isInteger(cell) || cell < 0 || cell >= layout.cellCount) {
+      throw new RangeError(`Carved cell ${cell} is outside a ${layout.cellCount}-cell grid`);
+    }
+    const index = first + Math.floor(cell / CROWD_MASK_BITS_PER_TEXEL);
+    data[index] = data[index]! | (1 << (cell % CROWD_MASK_BITS_PER_TEXEL));
+  }
+};
+
+/** Whether the cell mask says `cell` is carved in `slot`'s row, by the same word/bit split as crowdCellCarved. */
+export const isCellInMask = (data: Float32Array, layout: CrowdCellMaskLayout, slot: number, cell: number): boolean => {
+  if (cell < 0 || cell >= layout.cellCount) {
+    return false;
+  }
+  const mask = data[slot * layout.width + Math.floor(cell / CROWD_MASK_BITS_PER_TEXEL)]!;
+  return (((mask >>> 0) >>> (cell % CROWD_MASK_BITS_PER_TEXEL)) & 1) === 1;
+};
+
 /** A crowd placement: yaw about Y (radians, three.js convention: yaw 0 faces -Z) plus a translation,
  * applied to every bone. `y` is an ADDITIONAL offset on top of whatever Y the pose itself already has
  * (a walk pose puts the lowest foot at the pose's local y = 0), so `y` is exactly "where the ground is":
@@ -252,6 +292,28 @@ vCrowdBloodiness = crowdBloodiness( crowdSlot );
 vCrowdLocal = position;
 vCrowdBone = boneIndex;
 vCrowdEmission = crowdEmission.x * mix( 1.0, crowdCharge( crowdSlot ), crowdEmission.y );
+`;
+
+// Carving: a vertex of a carved cell (packCellMask) collapses to the origin, as a severed bone's do. The mask's
+// rows start at the variant's first slot; a slot outside them (the hidden row) is never carved.
+export const CROWD_CELL_VERTEX_DECLARATIONS = /* glsl */ `
+uniform highp sampler2D crowdCellTexture;
+uniform float crowdCellSlotBase;
+attribute float cellIndex;
+
+bool crowdCellCarved( float slot, float cell ) {
+
+	int row = int( slot ) - int( crowdCellSlotBase );
+	if ( row < 0 || row >= textureSize( crowdCellTexture, 0 ).y ) return false;
+	int index = int( cell );
+	int mask = int( texelFetch( crowdCellTexture, ivec2( index / ${CROWD_MASK_BITS_PER_TEXEL}, row ), 0 ).x );
+	return ( mask & ( 1 << ( index % ${CROWD_MASK_BITS_PER_TEXEL} ) ) ) != 0;
+
+}
+`;
+
+export const CROWD_CELL_BEGIN_VERTEX = /* glsl */ `
+if ( crowdCellCarved( crowdSlot, cellIndex ) ) transformed = vec3( 0.0 );
 `;
 
 export const CROWD_BEGINNORMAL_VERTEX = /* glsl */ `

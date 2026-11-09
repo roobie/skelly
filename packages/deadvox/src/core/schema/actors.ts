@@ -234,6 +234,13 @@ export const ActorSchema = strictObject({
   figure: optional(picklist(Object.keys(FIGURE_VARIANTS) as ActorModel[])),
   /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
   bodyScale: optional(Positive),
+  /**
+   * A fused mass's collision box about its ground origin, in metres: content admission reads it because the browser
+   * loads no figure file before admission, and the Node figure check holds it to the built body.
+   */
+  spawnEnvelope: optional(
+    strictObject({ halfWidthMetres: Positive, halfDepthMetres: Positive, heightMetres: Positive }),
+  ),
   /** Mobgen figure seeds an individual of this type is drawn from. Every model but fused-mass, whose figure seed is fixed, defines them. */
   figureSeeds: optional(
     pipe(
@@ -336,8 +343,6 @@ export const ActorSchema = strictObject({
     strictObject({
       radiusMetresPerDamage: pipe(NonNegative, maxValue(0.01, 'must be at most 0.01')),
       maxRadiusMetres: pipe(NonNegative, maxValue(1, 'must be at most 1')),
-      /** The hole's inner faces. */
-      interiorColor: Color,
     }),
   ),
   /** Per-hit chance of severing a random not-yet-severed arm part (src/core/actorSystem.ts's swing); a

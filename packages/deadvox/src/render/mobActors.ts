@@ -49,7 +49,6 @@
 import {
   type BufferGeometry,
   type Camera,
-  Color,
   CylinderGeometry,
   DataTexture,
   FloatType,
@@ -62,6 +61,7 @@ import {
   MeshDepthMaterial,
   MeshLambertMaterial,
   NearestFilter,
+  RedFormat,
   RGBAFormat,
   Sphere,
   SphereGeometry,
@@ -95,12 +95,7 @@ import { severableParts, severedBoneSet } from '../core/boneTree.ts';
 import type { ColumnReveal } from '../core/columnReveal.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
-import {
-  FUSED_MASS_FIGURE_SEED,
-  type FusedMassFigure,
-  fusedMassFigureForType,
-  fusedMassTypeOf,
-} from '../core/fusedMassFigure.ts';
+import { FUSED_MASS_FIGURE_SEED, fusedMassTypeOf } from '../core/fusedMassFigure.ts';
 import { bodyPartMass, boneVoxelCentres, voxelBounds } from '../core/massProperties.ts';
 import type { LookDefaults } from '../core/mood.ts';
 import {
@@ -121,20 +116,24 @@ import { corpseFallPose, deathClip } from './corpsePose.ts';
 import {
   CROWD_BEGIN_VERTEX,
   CROWD_BEGINNORMAL_VERTEX,
+  CROWD_CELL_BEGIN_VERTEX,
+  CROWD_CELL_VERTEX_DECLARATIONS,
   CROWD_COLOR_FRAGMENT,
   CROWD_EMISSIVE_FRAGMENT,
   CROWD_FRAGMENT_DECLARATIONS,
   CROWD_VERTEX_DECLARATIONS,
+  type CrowdCellMaskLayout,
   type CrowdPlacement,
   type CrowdTextureLayout,
+  crowdCellMaskLayout,
   crowdTexelIndex,
   crowdTextureLayout,
   packBloodiness,
+  packCellMask,
   packCharge,
   packCrowdBoneMatrix,
   packSeveredMask,
 } from './crowd.ts';
-import { buildCarvedGeometry, FleshChunks } from './fusedMassFlesh.ts';
 import { fusedMassCoreInteriorAnchor, fusedMassTentaclePose } from './fusedMassTentaclePose.ts';
 import { woundSeverity } from './gore.ts';
 import { patchHeightFog } from './heightFog.ts';
@@ -174,7 +173,7 @@ export interface ActorRenderer {
   setWorld?: (isSolid: RigidWorld['isSolid'], blockSize: number) => void;
   actorSevered?: (id: EntityId, part: string, hit?: HitImpulse, actor?: Actor) => Vec3 | undefined;
   /** Called when a hit knocks flesh out of a fused-mass body (src/core/actorSystem.ts's onCarve, forwarded by play.ts). */
-  actorCarved?: (id: EntityId, actor: Actor, cells: readonly number[], hit: HitImpulse) => void;
+  actorCarved?: (id: EntityId, actor: Actor) => void;
 }
 
 const DEFAULT_CAPACITY = 64; // matches ActorMeshes' own default
@@ -239,11 +238,8 @@ interface Variant {
   readonly scale: number;
   /** A body gazes only while it keeps a head part, so a body without one never gazes. */
   readonly gaze: { readonly profile: LookAtProfile; readonly headPart: string } | undefined;
-  /**
-   * The generated realization a fused-mass body's holes and flesh chunks are cut from: the built figure has no
-   * per-voxel colours or hole walls, and the simulation's carved cells index this same realization.
-   */
-  readonly carving: FusedMassFigure['realized'] | undefined;
+  /** The carved-cell mask of a figure whose mesh carries cell indices: the fused mass. */
+  readonly cells: VariantCells | undefined;
   readonly rigidParts: ReadonlyMap<string, RigidPart>;
   readonly severedRoots: ReadonlyMap<string, string>;
   /** Bones a death removes without a severed part (the `burst` disposition), such as the acid sac. */
@@ -384,22 +380,22 @@ interface Corpse extends SlotHolder {
   readonly insertOrder: number;
 }
 
-/**
- * A carved fused-mass body's own mesh, rebuilt without its carved voxels. It reads the same bone-texture row
- * as the body's instance in the shared variant mesh, which is pointed at the all-zero hidden row so
- * only this one draws.
- */
-interface Wound {
-  readonly mesh: InstancedMesh;
-  /** How many cells the current geometry has carved out; `carved` only grows. */
-  cells: number;
+/** One variant's carved cells: a mask row per local slot, read by its own materials' vertex shaders. */
+interface VariantCells {
+  readonly layout: CrowdCellMaskLayout;
+  readonly data: Float32Array;
+  readonly texture: DataTexture;
+  readonly material: MeshLambertMaterial;
+  readonly depthMaterial: MeshDepthMaterial;
+  /** How many carved cells each local slot's row holds; `carved` only grows, so an equal count needs no upload. */
+  readonly packed: number[];
 }
 
 /** Arguments kept together for inserting one physics-backed debris slot. */
 interface DebrisSpawn {
   id: EntityId;
   part: string;
-  state: Pick<ActorRenderState, 'variantIndex'>;
+  state: Pick<SlotHolder, 'variantIndex' | 'localSlot'>;
   variant: Variant;
   severedIndices: readonly number[];
   sourceTransforms: Map<number, MutableTransform>;
@@ -444,8 +440,6 @@ export interface MobActorMeshesOptions {
   readonly actorFigureFiles: ActorFigureFiles;
   /** Draws only the first this-many figure seeds of each type. */
   readonly poolSize?: number;
-  /** A chunk of carved flesh came to rest at this centre (metres), for gore to mark. */
-  readonly onFleshLanded?: (centre: Vec3) => void;
   /** How bloodied a live body is drawn, 0 to 1; gore.ts's woundSeverity unless gore shares its per-frame value. */
   readonly bloodiness?: (actor: Actor) => number;
   /** A death burst bones away (the acid sac) at this glow-anchor position in metres, for the splash. */
@@ -484,7 +478,6 @@ interface DrawnActorType {
   readonly model: string;
   readonly bodyScale?: number | undefined;
   readonly figureSeeds?: readonly number[] | undefined;
-  readonly carving?: { readonly interiorColor: string } | undefined;
 }
 
 /** The figure seeds drawn for `type` in authored order, the first `poolSize` of them; the fused-mass seed is fixed. */
@@ -547,6 +540,54 @@ const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale: 
   }
 };
 
+/**
+ * The crowd's colour and shadow materials over the shared bone texture; with `cells`, they also hide the carved
+ * cells that mask holds. The shadow pass draws with a depth material, which would leave every actor in its bind
+ * pose: this one fetches the same bone matrices (the gore varying it declares is simply unused).
+ */
+const crowdMaterials = (
+  texture: DataTexture,
+  layout: CrowdTextureLayout,
+  cells?: { readonly texture: DataTexture; readonly slotBase: number },
+): { material: MeshLambertMaterial; depthMaterial: MeshDepthMaterial } => {
+  const declarations = cells
+    ? `${CROWD_VERTEX_DECLARATIONS}\n${CROWD_CELL_VERTEX_DECLARATIONS}`
+    : CROWD_VERTEX_DECLARATIONS;
+  const beginVertex = cells ? `${CROWD_BEGIN_VERTEX}\n${CROWD_CELL_BEGIN_VERTEX}` : CROWD_BEGIN_VERTEX;
+  const key = cells ? 'skelly-mob-actor-crowd-cells' : 'skelly-mob-actor-crowd-texture';
+  const uniforms = (shader: { uniforms: Record<string, { value: unknown }> }): void => {
+    shader.uniforms.crowdBoneTexture = { value: texture };
+    shader.uniforms.crowdBonesPerSlot = { value: layout.bonesPerSlot };
+    if (cells) {
+      shader.uniforms.crowdCellTexture = { value: cells.texture };
+      shader.uniforms.crowdCellSlotBase = { value: cells.slotBase };
+    }
+  };
+  const material = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
+  material.customProgramCacheKey = () => key;
+  material.onBeforeCompile = (shader) => {
+    uniforms(shader);
+    patchHeightFog(shader, 'mob');
+    shader.vertexShader = `${declarations}\n${shader.vertexShader}`
+      .replace('#include <begin_vertex>', beginVertex)
+      .replace('#include <beginnormal_vertex>', CROWD_BEGINNORMAL_VERTEX);
+    shader.fragmentShader =
+      `${CROWD_FRAGMENT_DECLARATIONS}\n${BLOOD_STAIN_FRAGMENT_DECLARATIONS}\n${shader.fragmentShader}`
+        .replace(
+          '#include <color_fragment>',
+          `#include <color_fragment>\n${CROWD_COLOR_FRAGMENT}\n${BLOOD_STAIN_COLOR_FRAGMENT}`,
+        )
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n${CROWD_EMISSIVE_FRAGMENT}`);
+  };
+  const depthMaterial = new MeshDepthMaterial();
+  depthMaterial.customProgramCacheKey = () => `${key}-depth`;
+  depthMaterial.onBeforeCompile = (shader) => {
+    uniforms(shader);
+    shader.vertexShader = `${declarations}\n${shader.vertexShader}`.replace('#include <begin_vertex>', beginVertex);
+  };
+  return { material, depthMaterial };
+};
+
 /** Draws zombies as their built figures, one shared bone-matrix texture and one InstancedMesh per variant
  * — see this module's own header comment for the whole design and its one documented simplification. */
 export class MobActorMeshes implements ActorRenderer {
@@ -572,12 +613,9 @@ export class MobActorMeshes implements ActorRenderer {
   private readonly tentacleUp = new Vector3(0, 1, 0);
   private readonly tentacleDirection = new Vector3();
   private readonly debris = new Map<string, Debris>();
-  private readonly wounds = new Map<EntityId, Wound>();
   /** One bone-texture row past every variant's, left all zero: an instance pointed at it collapses unseen. */
   private readonly hiddenRow: number;
   private readonly depthMaterial: MeshDepthMaterial;
-  private readonly fleshInterior: Color | undefined;
-  private readonly fleshChunks: FleshChunks;
   private readonly bloodiness: (actor: Actor) => number;
   /** Shared by corpses and debris, so "oldest across both" (evictOldestDeadThing*) is a simple comparison
    * instead of needing to interleave two Maps' own iteration orders. */
@@ -650,56 +688,17 @@ export class MobActorMeshes implements ActorRenderer {
     this.texture.needsUpdate = true;
     this.textureUpdates = new PoseTextureUpdates(this.texture, options.canvas);
 
-    this.material = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
-    this.material.customProgramCacheKey = () => 'skelly-mob-actor-crowd-texture';
-    const { texture, layout } = this;
-    this.material.onBeforeCompile = (shader) => {
-      shader.uniforms.crowdBoneTexture = { value: texture };
-      shader.uniforms.crowdBonesPerSlot = { value: layout.bonesPerSlot };
-      patchHeightFog(shader, 'mob');
-      shader.vertexShader = `${CROWD_VERTEX_DECLARATIONS}\n${shader.vertexShader}`
-        .replace('#include <begin_vertex>', CROWD_BEGIN_VERTEX)
-        .replace('#include <beginnormal_vertex>', CROWD_BEGINNORMAL_VERTEX);
-      shader.fragmentShader =
-        `${CROWD_FRAGMENT_DECLARATIONS}\n${BLOOD_STAIN_FRAGMENT_DECLARATIONS}\n${shader.fragmentShader}`
-          .replace(
-            '#include <color_fragment>',
-            `#include <color_fragment>\n${CROWD_COLOR_FRAGMENT}\n${BLOOD_STAIN_COLOR_FRAGMENT}`,
-          )
-          .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n${CROWD_EMISSIVE_FRAGMENT}`);
-    };
-
-    // The shadow pass draws with a depth material, which would leave every actor in its bind pose: this
-    // one fetches the same bone matrices (the gore varying it declares is simply unused).
-    const depthMaterial = new MeshDepthMaterial();
-    this.depthMaterial = depthMaterial;
-    const interiorColor = fusedMassType?.carving?.interiorColor;
-    this.fleshInterior = interiorColor === undefined ? undefined : new Color(interiorColor);
-    this.fleshChunks = new FleshChunks(
-      this.group,
-      {
-        physics: () => {
-          this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared);
-          return this.ragdolls;
-        },
-        ground: () => this.rigidWorld(),
-      },
-      options.onFleshLanded,
-    );
+    const materials = crowdMaterials(this.texture, this.layout);
+    this.material = materials.material;
+    this.depthMaterial = materials.depthMaterial;
     this.bloodiness = options.bloodiness ?? woundSeverity;
-    depthMaterial.customProgramCacheKey = () => 'skelly-mob-actor-crowd-depth';
-    depthMaterial.onBeforeCompile = (shader) => {
-      shader.uniforms.crowdBoneTexture = { value: texture };
-      shader.uniforms.crowdBonesPerSlot = { value: layout.bonesPerSlot };
-      shader.vertexShader = `${CROWD_VERTEX_DECLARATIONS}\n${shader.vertexShader}`.replace(
-        '#include <begin_vertex>',
-        CROWD_BEGIN_VERTEX,
-      );
-    };
 
-    this.variants = built.map(({ type, figure: { body, clips }, geometry }) => {
-      const mesh = new InstancedMesh(geometry, this.material, capacity);
-      mesh.customDepthMaterial = depthMaterial;
+    this.variants = built.map(({ figure: { body, clips, fusedMass }, geometry }, variantIndex) => {
+      const cells = geometry.hasAttribute('cellIndex')
+        ? this.variantCells(body, fusedMass?.grid.owner.length, variantIndex * capacity)
+        : undefined;
+      const mesh = new InstancedMesh(geometry, cells?.material ?? this.material, capacity);
+      mesh.customDepthMaterial = cells?.depthMaterial ?? this.depthMaterial;
       castsAndReceives(mesh);
       mesh.count = 0;
       mesh.frustumCulled = false; // see this module's header comment — same reasoning as mobgen's crowd mode
@@ -731,8 +730,7 @@ export class MobActorMeshes implements ActorRenderer {
         bones,
         scale: body.scale,
         gaze: body.lookAt && headPart !== undefined ? { profile: body.lookAt, headPart } : undefined,
-        carving:
-          body.bodyPlan === 'fused-mass' ? fusedMassFigureForType(type, FUSED_MASS_FIGURE_SEED).realized : undefined,
+        cells,
         rigidParts: rigidPartsOf(body, bones, severedRoots, boneIndexById),
         severedRoots,
         burstIndices: body.burstBones.map((id) => boneIndexById.get(id)!),
@@ -1086,7 +1084,7 @@ export class MobActorMeshes implements ActorRenderer {
     const { lastPose } = state;
     const variant = this.variants[state.variantIndex]!;
     const target = this.playerChestPosition;
-    const reachMetres = actorAttackReachMetres(actor);
+    const reachMetres = actorAttackReachMetres(actor, variant.body);
     if (!target || reachMetres <= 0 || !lastPose) {
       meshes.shaft.visible = false;
       meshes.tip.visible = false;
@@ -1162,11 +1160,9 @@ export class MobActorMeshes implements ActorRenderer {
       variant.liveIds[entry.instanceIndex] = movedKey;
       variant.idToInstanceIndex.set(movedKey, entry.instanceIndex);
       moved.instanceIndex = entry.instanceIndex;
-      variant.crowdSlotAttr.setX(entry.instanceIndex, this.rowFor(movedKey, moved.globalRow));
+      variant.crowdSlotAttr.setX(entry.instanceIndex, moved.globalRow);
     }
-    if (typeof key === 'number') {
-      this.removeWound(key);
-    }
+    this.packCells(entry, []);
     variant.liveIds.pop();
     variant.idToInstanceIndex.delete(key);
     variant.freeLocalSlots.push(entry.localSlot);
@@ -1174,90 +1170,57 @@ export class MobActorMeshes implements ActorRenderer {
     variant.crowdSlotAttr.needsUpdate = true;
   }
 
-  /** The bone-texture row an instance in a shared variant mesh reads: hidden while its own wound mesh draws it. */
-  private rowFor(key: SlotKey, globalRow: number): number {
-    return typeof key === 'number' && this.wounds.has(key) ? this.hiddenRow : globalRow;
+  /** The carved-cell mask of a variant whose mesh carries cell indices, over its block of slots from `slotBase`. */
+  private variantCells(body: ActorBody, cellCount: number | undefined, slotBase: number): VariantCells {
+    if (cellCount === undefined) {
+      throw new Error(`Actor figure ${body.type}.${body.seed} carries cell indices but no fused-mass grid`);
+    }
+    const layout = crowdCellMaskLayout(cellCount, this.capacity);
+    const data = new Float32Array(layout.width * layout.height);
+    const texture = new DataTexture(data, layout.width, layout.height, RedFormat, FloatType);
+    texture.magFilter = NearestFilter;
+    texture.minFilter = NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return {
+      layout,
+      data,
+      texture,
+      ...crowdMaterials(this.texture, this.layout, { texture, slotBase }),
+      packed: new Array<number>(this.capacity).fill(0),
+    };
   }
 
-  /**
-   * Brings a fused-mass body's wound mesh up to date with its carved cells: built on its first hole, rebuilt when
-   * more are carved. Its shared instance then reads the hidden row, so only the wound mesh draws the body.
-   */
-  private syncWound(id: EntityId, holder: SlotHolder, carved: readonly number[]): void {
-    const wound = this.wounds.get(id);
-    if (carved.length === 0 || !this.fleshInterior || (wound && wound.cells === carved.length)) {
+  /** Writes `carved` into the holder's cell-mask row when it differs from what the row holds. */
+  private packCells(holder: SlotHolder, carved: readonly number[]): void {
+    const { cells } = this.variants[holder.variantIndex]!;
+    if (!cells || cells.packed[holder.localSlot] === carved.length) {
       return;
     }
-    const variant = this.variants[holder.variantIndex]!;
-    if (!variant.carving) {
-      return;
-    }
-    const geometry = buildCarvedGeometry(variant.carving, carved, this.fleshInterior);
-    geometry.setAttribute('crowdSlot', new InstancedBufferAttribute(new Float32Array([holder.globalRow]), 1));
-    if (wound) {
-      wound.mesh.geometry.dispose();
-      wound.mesh.geometry = geometry;
-      wound.cells = carved.length;
-      return;
-    }
-    const mesh = new InstancedMesh(geometry, this.material, 1);
-    mesh.customDepthMaterial = this.depthMaterial;
-    mesh.frustumCulled = false; // as the variant meshes: the bone texture, not the geometry, places it
-    mesh.setMatrixAt(0, new Matrix4());
-    castsAndReceives(mesh);
-    this.group.add(mesh);
-    this.wounds.set(id, { mesh, cells: carved.length });
-    variant.crowdSlotAttr.setX(holder.instanceIndex, this.hiddenRow);
-    variant.crowdSlotAttr.needsUpdate = true;
+    packCellMask(cells.data, cells.layout, holder.localSlot, carved);
+    cells.packed[holder.localSlot] = carved.length;
+    cells.texture.needsUpdate = true;
   }
 
-  private removeWound(id: EntityId): void {
-    const wound = this.wounds.get(id);
-    if (wound) {
-      this.group.remove(wound.mesh);
-      wound.mesh.geometry.dispose();
-      this.wounds.delete(id);
+  /** A severed piece keeps the holes its body had at the cut. */
+  private copyCells(variant: Variant, from: number, to: number): void {
+    const { cells } = variant;
+    if (!cells || from === to) {
+      return;
     }
+    const { width } = cells.layout;
+    cells.data.copyWithin(to * width, from * width, (from + 1) * width);
+    cells.packed[to] = cells.packed[from]!;
+    cells.texture.needsUpdate = true;
   }
 
-  /**
-   * Called when a hit knocks flesh out of a fused-mass body (src/core/actorSystem.ts's onCarve, forwarded by play.ts).
-   * Rebuilds its wound mesh — a corpse's too, since the shot that kills it carves after its death — and
-   * throws the knocked-out cells as one chunk of flesh along the strike.
-   */
-  actorCarved(id: EntityId, actor: Actor, cells: readonly number[], hit: HitImpulse): void {
-    const corpse = this.corpses.get(id);
-    const holder = this.states.get(id) ?? corpse;
-    if (!holder) {
-      return;
+  /** Called when a hit knocks flesh out of a fused-mass body (src/core/actorSystem.ts's onCarve, forwarded by play.ts):
+   * hides the carved cells, a corpse's too, since the shot that kills it carves after its death. */
+  actorCarved(id: EntityId, actor: Actor): void {
+    const holder = this.states.get(id) ?? this.corpses.get(id);
+    if (holder) {
+      this.packCells(holder, actor.carved);
     }
-    this.syncWound(id, holder, actor.carved);
-    const variant = this.variants[holder.variantIndex]!;
-    const pose = this.states.get(id)?.lastPose ?? corpse?.basePose;
-    if (!(pose && variant.carving)) {
-      return;
-    }
-    const placement = this.currentRenderPlacement(actor);
-    const bone = variant.carving.voxels.owner[cells[0]!]! - 1;
-    const transform = boneTransforms(variant.bones, pose).get(variant.bones[bone]!.id);
-    if (!transform) {
-      return;
-    }
-    const yaw = rotY((placement.yaw * 180) / Math.PI);
-    const { scale } = variant;
-    const offset = mulMV(yaw, [transform.t[0] * scale, transform.t[1] * scale, transform.t[2] * scale]);
-    this.fleshChunks.spawn({
-      realized: variant.carving,
-      scale,
-      cells,
-      rotation: mulMM(yaw, transform.r),
-      translation: [
-        placement.worldPos[0] + offset[0],
-        placement.worldPos[1] + offset[1],
-        placement.worldPos[2] + offset[2],
-      ],
-      direction: hit.direction,
-    });
   }
 
   /** A plain vanish (despawn/unload) — not a death; see this module's header comment and actorDied. */
@@ -1756,6 +1719,7 @@ export class MobActorMeshes implements ActorRenderer {
     variant.crowdSlotAttr.setX(instanceIndex, globalRow);
     variant.crowdSlotAttr.needsUpdate = true;
     variant.mesh.count = variant.liveIds.length;
+    this.copyCells(variant, state.localSlot, localSlot);
     this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared);
     this.debris.set(key, {
       physics: this.ragdolls.spawnRigid(body, this.rigidWorld()),
@@ -2323,7 +2287,7 @@ export class MobActorMeshes implements ActorRenderer {
     }
     state.lastSeenFrame = this.frameCounter;
     this.observePerceptionTime(state, actor);
-    this.syncWound(id, state, actor.carved);
+    this.packCells(state, actor.carved);
     const variant = this.variants[state.variantIndex]!;
     const placement = this.currentRenderPlacement(actor);
     this.beginCrawlFall(state, variant, actor);
@@ -2375,7 +2339,6 @@ export class MobActorMeshes implements ActorRenderer {
     }
     this.advanceCorpses(realDt);
     this.advanceDebris(realDt);
-    this.fleshChunks.update(realDt);
     this.applyReveal();
     this.textureUpdates.flush();
   }
@@ -2423,19 +2386,12 @@ export class MobActorMeshes implements ActorRenderer {
   private revealSlot(key: SlotKey, holder: SlotHolder, x: number, z: number): void {
     const allowed = this.reveal!.isRevealed(x, z);
     const variant = this.variants[holder.variantIndex]!;
-    const row = allowed ? this.rowFor(key, holder.globalRow) : this.hiddenRow;
+    const row = allowed ? holder.globalRow : this.hiddenRow;
     if (variant.crowdSlotAttr.getX(holder.instanceIndex) !== row) {
       variant.crowdSlotAttr.setX(holder.instanceIndex, row);
       variant.crowdSlotAttr.needsUpdate = true;
     }
-    if (typeof key !== 'number') {
-      return;
-    }
-    const wound = this.wounds.get(key);
-    if (wound) {
-      wound.mesh.visible = allowed;
-    }
-    if (!allowed) {
+    if (typeof key === 'number' && !allowed) {
       const tentacle = this.tentacles.get(key);
       if (tentacle) {
         tentacle.shaft.visible = false;
@@ -2547,16 +2503,16 @@ export class MobActorMeshes implements ActorRenderer {
     this.tentacleGeometry?.dispose();
     this.tentacleTipGeometry?.dispose();
     this.tentacleMaterial?.dispose();
-    for (const id of [...this.wounds.keys()]) {
-      this.removeWound(id);
-    }
-    this.fleshChunks.dispose();
     this.ragdolls?.dispose();
     this.textureUpdates.dispose();
     this.texture.dispose();
     this.material.dispose();
+    this.depthMaterial.dispose();
     for (const variant of this.variants) {
       variant.geometry.dispose();
+      variant.cells?.texture.dispose();
+      variant.cells?.material.dispose();
+      variant.cells?.depthMaterial.dispose();
     }
   }
 }

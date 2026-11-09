@@ -1014,7 +1014,7 @@ const startPlayWith = (
         view.gore.severed(hit, launchVelocity, actor.type.severedSpurt);
       },
       onCarve: (id, actor, cells, hit) => {
-        actorMeshes.actorCarved?.(id, actor, cells, hit);
+        actorMeshes.actorCarved?.(id, actor);
         view.gore.carved(hit, cells.length);
       },
       onIncapacitated: (id, actor) => actorMeshes.actorIncapacitated?.(id, actor),

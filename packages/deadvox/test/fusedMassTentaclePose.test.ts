@@ -1,15 +1,40 @@
-// biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves through this package's aliases.
-
 import { describe, expect, it } from 'vitest';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { type Mat3, mulMV, rotX, rotY, transpose } from '../src/core/boneMath.ts';
 import { severedBoneSet } from '../src/core/boneTree.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { FUSED_MASS_FIGURE_SEED, fusedMassFigure, fusedMassStrikeOrigin } from '../src/core/fusedMassFigure.ts';
+import { worldPosition } from '../src/core/fusedMassCarving.ts';
+import {
+  FUSED_MASS_FIGURE_SEED,
+  type FusedMassFigure,
+  fusedMassStrikeOrigin,
+  fusedMassTypeOf,
+} from '../src/core/fusedMassFigure.ts';
 import { boneTransforms, type Pose } from '../src/core/pose.ts';
 import { fusedMassCoreInteriorAnchor, fusedMassTentaclePose } from '../src/render/fusedMassTentaclePose.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
+import { baseRegistry } from './baseRegistry.ts';
+
+const registry = baseRegistry();
+const FIGURE = actorFigure(stackActorFigureFiles(registry), fusedMassTypeOf(registry.actors)!, FUSED_MASS_FIGURE_SEED)
+  .fusedMass!;
+
+/** The unscaled rest-frame centre of every core voxel of the built body's grid. */
+const coreVoxelCentres = (figure: FusedMassFigure): Vec3[] => {
+  const { dims, owner } = figure.grid;
+  const core = figure.bones.findIndex((bone) => bone.id === 'core') + 1;
+  const centres: Vec3[] = [];
+  owner.forEach((bone, cell) => {
+    if (bone === core) {
+      const [i, j, k] = [cell % dims[0], Math.floor(cell / dims[0]) % dims[1], Math.floor(cell / (dims[0] * dims[1]))];
+      centres.push(worldPosition(figure.grid, i, j, k));
+    }
+  });
+  return centres;
+};
 
 interface CoreVoxelPointInput {
-  readonly figure: ReturnType<typeof fusedMassFigure>;
+  readonly figure: FusedMassFigure;
   readonly transforms: ReturnType<typeof boneTransforms>;
   readonly yaw: Mat3;
   readonly position: Vec3;
@@ -30,8 +55,8 @@ const coreVoxelLocalPoint = ({ figure, transforms, yaw, position, point }: CoreV
 const coreVoxelUnionDistance = (input: CoreVoxelPointInput): number => {
   const { figure } = input;
   const local = coreVoxelLocalPoint(input);
-  const halfVoxel = figure.realized.voxels.size / 2;
-  return (figure.voxelCentersByBone.get('core') ?? []).reduce(
+  const halfVoxel = figure.grid.size / 2;
+  return coreVoxelCentres(figure).reduce(
     (nearest, center) =>
       Math.min(
         nearest,
@@ -48,8 +73,8 @@ const coreVoxelUnionDistance = (input: CoreVoxelPointInput): number => {
 const coreVoxelInteriorMargin = (input: CoreVoxelPointInput): number => {
   const { figure } = input;
   const local = coreVoxelLocalPoint(input);
-  const halfVoxel = figure.realized.voxels.size / 2;
-  return (figure.voxelCentersByBone.get('core') ?? []).reduce(
+  const halfVoxel = figure.grid.size / 2;
+  return coreVoxelCentres(figure).reduce(
     (best, center) =>
       Math.max(
         best,
@@ -101,7 +126,7 @@ describe('fused-mass attack tentacle pose', () => {
   });
 
   it('anchors the tentacle root to the posed core after attack, flinch and member loss', () => {
-    const figure = fusedMassFigure(FUSED_MASS_FIGURE_SEED, 1);
+    const figure = FIGURE;
     const position: Vec3 = [13, 7, -4];
     const target: Vec3 = [position[0] + 2, position[1], position[2] - 3];
     const yaw = rotY(37);
@@ -114,7 +139,7 @@ describe('fused-mass attack tentacle pose', () => {
     const shedMembers = figure.manifest.parts
       .filter((part) => part.severable)
       .map((part) => partRoots.get(part.id) ?? part.id);
-    const shed = severedBoneSet(figure.realized.body.bones, shedMembers);
+    const shed = severedBoneSet(figure.bones, shedMembers);
     expect(shed.size).toBeGreaterThan(0);
     const poses = [
       { pose: basePose, attack: 0, hidden: new Set<string>() },
@@ -122,9 +147,9 @@ describe('fused-mass attack tentacle pose', () => {
       { pose: flinchPose, attack: 0.2, hidden: new Set<string>() },
       { pose: flinchPose, attack: 0, hidden: shed },
     ];
-    const halfVoxelMetres = (figure.realized.voxels.size * figure.scale) / 2;
-    const restTransforms = boneTransforms(figure.realized.body.bones, basePose);
-    const flinchTransforms = boneTransforms(figure.realized.body.bones, flinchPose);
+    const halfVoxelMetres = (figure.grid.size * figure.scale) / 2;
+    const restTransforms = boneTransforms(figure.bones, basePose);
+    const flinchTransforms = boneTransforms(figure.bones, flinchPose);
     const restCore = restTransforms.get('core')!;
     const flinchAtRestTranslation = new Map(flinchTransforms);
     flinchAtRestTranslation.set('core', { ...flinchTransforms.get('core')!, t: restCore.t });
@@ -147,7 +172,7 @@ describe('fused-mass attack tentacle pose', () => {
     ).toBeGreaterThan(0);
 
     for (const scenario of poses) {
-      const transforms = boneTransforms(figure.realized.body.bones, scenario.pose);
+      const transforms = boneTransforms(figure.bones, scenario.pose);
       const start = fusedMassCoreInteriorAnchor({ figure, transforms, hidden: scenario.hidden, yaw, position });
       const tentacle = fusedMassTentaclePose({
         start,
@@ -163,7 +188,7 @@ describe('fused-mass attack tentacle pose', () => {
       expect(scenario.hidden.has('core')).toBe(false);
       const anchorInput = { figure, transforms, yaw, position, point: tentacle.start };
       expect(coreVoxelUnionDistance(anchorInput)).toBeLessThanOrEqual(halfVoxelMetres * 1e-6);
-      expect(coreVoxelInteriorMargin(anchorInput)).toBeGreaterThan(figure.realized.voxels.size * 1e-6);
+      expect(coreVoxelInteriorMargin(anchorInput)).toBeGreaterThan(figure.grid.size * 1e-6);
       expect(
         Math.hypot(tentacle.end[0] - start[0], tentacle.end[1] - start[1], tentacle.end[2] - start[2]),
       ).toBeLessThanOrEqual(4 + 1e-9);
@@ -171,7 +196,7 @@ describe('fused-mass attack tentacle pose', () => {
   });
 
   it('starts the rendered tentacle at rest where the simulation starts its strike line', () => {
-    const figure = fusedMassFigure(FUSED_MASS_FIGURE_SEED, 4);
+    const figure = FIGURE;
     const position: Vec3 = [13, 7, -4];
     const facing: Vec3 = [Math.sin(0.6), 0, -Math.cos(0.6)];
     const restPose: Pose = {
@@ -180,7 +205,7 @@ describe('fused-mass attack tentacle pose', () => {
     };
     const rendered = fusedMassCoreInteriorAnchor({
       figure,
-      transforms: boneTransforms(figure.realized.body.bones, restPose),
+      transforms: boneTransforms(figure.bones, restPose),
       hidden: new Set(),
       yaw: rotY((Math.atan2(-facing[0], -facing[2]) * 180) / Math.PI),
       position,

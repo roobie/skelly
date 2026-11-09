@@ -6,7 +6,13 @@ import { generateValid, realize } from '@mobgen/core/generate.ts';
 import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
-import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
+import {
+  type BufferGeometry,
+  type DataTexture,
+  type InstancedBufferAttribute,
+  type InstancedMesh,
+  PerspectiveCamera,
+} from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { figureVariantOf } from '../src/core/actorModels.ts';
@@ -21,8 +27,7 @@ import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { initialActorFootstepClock } from '../src/core/footsteps.ts';
-import { carveAround, missingFlesh } from '../src/core/fusedMassCarving.ts';
-import { FUSED_MASS_FIGURE_SEED, fusedMassFigureForType, fusedMassTypeOf } from '../src/core/fusedMassFigure.ts';
+import { FUSED_MASS_FIGURE_SEED, fusedMassTypeOf } from '../src/core/fusedMassFigure.ts';
 import {
   allocateBoneTransforms,
   boneTransforms,
@@ -38,7 +43,7 @@ import { ACTIVE_ACTOR_RATE } from '../src/game/simulationRates.ts';
 import { AcidEffects } from '../src/render/acidEffects.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
-import { CARVED_NEIGHBOUR } from '../src/render/fusedMassFlesh.ts';
+import { type CrowdCellMaskLayout, isCellInMask } from '../src/render/crowd.ts';
 import { Gore } from '../src/render/gore.ts';
 import { LOOK_AT_REST } from '../src/render/lookAt.ts';
 import {
@@ -1123,68 +1128,36 @@ describe('MobActorMeshes', () => {
     }
   });
 
-  it('draws a carved fused-mass body once, from a wound mesh with flesh walls, and drops it with the actor', () => {
-    const amalgam = registry.actors.get('amalgam')!;
+  it("a carved cell's bit is set in the cell mask and no other, until its slot is freed", () => {
+    const amalgam = fusedMassTypeOf(registry.actors)!;
     const renderer = new MobActorMeshes(0.5, 2, { actors: registry.actors, poolSize: 1 });
     try {
       const store = new MapEntityStore<Actor>();
       const actor = makeActor([0, 0, 0], [0, 0, -1], [], { type: amalgam });
       const id = store.add(actor);
       renderer.sync(store, 0, 1);
-      // What a light hit along +x takes: the first flesh cell of a grid row, whose neighbour further in is
-      // flesh too, so the hole has a wall.
-      const figure = fusedMassFigureForType(amalgam, actor.figureSeed);
-      const { dims, owner } = figure.realized.voxels;
-      const firstFlesh = (row: number): number => {
-        const start = row * dims[0];
-        const offset = owner.subarray(start, start + dims[0]).findIndex((value) => value > 0);
-        return offset < 0 || offset + 1 >= dims[0] ? -1 : start + offset;
-      };
-      const struck = Array.from({ length: dims[1] * dims[2] }, (_, row) => firstFlesh(row)).find(
-        (cell) => cell >= 0 && owner[cell + 1]! > 0,
-      )!;
-      expect(struck).toBeGreaterThanOrEqual(0);
-      const cells = carveAround({
-        figure,
-        carving: amalgam.carving!,
-        missing: missingFlesh(figure, actor),
-        struck,
-        damage: 1,
-      });
-      actor.carved = cells;
-      renderer.actorCarved(id, actor, cells, { point: [0, 2, 0], direction: [1, 0, 0], impulse: 0 });
-
       const internals = renderer as unknown as {
-        wounds: Map<number, { mesh: InstancedMesh }>;
-        states: Map<number, { variantIndex: number; instanceIndex: number }>;
-        variants: readonly { crowdSlotAttr: InstancedBufferAttribute }[];
-        hiddenRow: number;
-        fleshChunks: { count: number };
+        states: Map<number, { variantIndex: number; localSlot: number }>;
+        variants: readonly {
+          geometry: BufferGeometry;
+          cells: { data: Float32Array; layout: CrowdCellMaskLayout } | undefined;
+        }[];
       };
-      const wound = internals.wounds.get(id)!;
       const state = internals.states.get(id)!;
-      expect(renderer.group.children).toContain(wound.mesh);
-      expect(internals.variants[state.variantIndex]!.crowdSlotAttr.getX(state.instanceIndex)).toBe(internals.hiddenRow);
-      expect(internals.fleshChunks.count).toBe(1);
-      const neighbours = wound.mesh.geometry.getAttribute('neighbourBone');
-      const colors = wound.mesh.geometry.getAttribute('color');
-      const interior = new Color(amalgam.carving!.interiorColor);
-      const walls = Array.from({ length: neighbours.count }, (_, v) => v).filter(
-        (v) => neighbours.getX(v) === CARVED_NEIGHBOUR,
-      );
-      expect(walls.length).toBeGreaterThan(0);
-      expect(
-        walls.every((v) =>
-          [colors.getX(v), colors.getY(v), colors.getZ(v)].every(
-            (c, axis) => Math.abs(c - interior.toArray()[axis]!) < 1e-6,
-          ),
-        ),
-      ).toBe(true);
+      const { geometry, cells } = internals.variants[state.variantIndex]!;
+      const { owner } = actorFigure(FIGURES, amalgam, actor.figureSeed).fusedMass!.grid;
+      const carved = geometry.getAttribute('cellIndex').getX(0);
+      expect(owner[carved]).toBeGreaterThan(0);
+      const marked = () =>
+        Array.from(owner.keys()).filter((cell) => isCellInMask(cells!.data, cells!.layout, state.localSlot, cell));
+
+      actor.carved = [carved];
+      renderer.actorCarved(id, actor);
+      expect(marked()).toEqual([carved]);
 
       store.remove(id);
       renderer.sync(store, 0, 1);
-      expect(internals.wounds.has(id)).toBe(false);
-      expect(renderer.group.children).not.toContain(wound.mesh);
+      expect(marked()).toEqual([]);
     } finally {
       renderer.dispose();
     }
@@ -1819,7 +1792,7 @@ describe('MobActorMeshes dismemberment', () => {
       const store = new MapEntityStore<Actor>();
       const actor = makeActor([0, 0, 0], [0, 0, -1], [], { type });
       const id = store.add(actor);
-      const figure = fusedMassFigureForType(type, actor.figureSeed);
+      const figure = actorFigure(FIGURES, type, actor.figureSeed).fusedMass!;
       const part = figure.manifest.parts.find((candidate) => candidate.severable)!;
       expect(part).toBeDefined();
       renderer.sync(store, 0, 1);

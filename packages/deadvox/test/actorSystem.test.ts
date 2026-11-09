@@ -33,7 +33,6 @@ import { resolveSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import { fusedMassFigureForType } from '../src/core/fusedMassFigure.ts';
 import { HUMANOID_REGION_NAMES } from '../src/core/humanoidRegionNames.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { lightSenseSourceFor, toggleLight } from '../src/core/lights.ts';
@@ -73,10 +72,7 @@ const CRAWLER = registry.actors.get('crawler')!;
 const ACID = registry.actors.get('acid_zombie')!;
 const FIGURES = stackActorFigureFiles(registry);
 /** The generated figure the simulation poses and hits for `type`. */
-const simulationFigure = (type: ActorDef, seed: number) =>
-  type.model === 'fused-mass'
-    ? fusedMassFigureForType(type, seed)
-    : templateFigure(bodyPlanModel(figureVariantOf(type)), seed);
+const simulationFigure = (type: ActorDef, seed: number) => templateFigure(bodyPlanModel(figureVariantOf(type)), seed);
 const speedRates = (wander: number, chase: number) => ({
   ...SHAMBLER.speed,
   wanderMetresPerSimSecond: simRate(wander),

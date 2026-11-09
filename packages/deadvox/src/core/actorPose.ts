@@ -19,7 +19,7 @@ import { applyPoint, IDENTITY_M, type Mat3, mulMM, mulMV, rotX, rotY, rotZ } fro
 import { type Bone, bodySkeleton } from './bones.ts';
 import { severedBoneSet } from './boneTree.ts';
 import type { Vec3 } from './coords.ts';
-import { type FusedMassFigure, fusedMassFigure, fusedMassSeveredBones } from './fusedMassFigure.ts';
+import { fusedMassSeveredBones } from './fusedMassFigure.ts';
 import { clampJointAngles, jointAngles, jointRotation } from './joints.ts';
 import { boneTransforms, type Pose } from './pose.ts';
 import {
@@ -35,15 +35,13 @@ import {
 export interface ActorPoseInput {
   /**
    * The built body and clips the pose composes over. A fused mass takes its flinch from the body's `animation`,
-   * since its built idle holds only the rest pose; its skeleton and figure still generate.
+   * since its built idle holds only the rest pose.
    */
   readonly figure: ActorFigureFile;
   readonly id?: number;
   readonly seed: number;
   readonly model?: string;
   readonly crawling?: boolean;
-  /** Authored scale for the fused-mass generated body. */
-  readonly bodyScale?: number;
   /** Simulation position in block units. */
   readonly position: Vec3;
   readonly facing: Vec3;
@@ -136,7 +134,6 @@ export const actorPoseInputFor = (
     seed: actor.figureSeed,
     model: figureVariantOf(actor.type),
     crawling: actorCrawls(actor),
-    ...(actor.type.bodyScale === undefined ? {} : { bodyScale: actor.type.bodyScale }),
     position: [position[0], position[1] + (actor.stepOffset ?? 0) / blockSize, position[2]],
     facing: root?.facing ?? actor.facing,
     headYaw: root?.headYaw ?? actor.headYaw,
@@ -160,8 +157,8 @@ export interface PosedActor {
   readonly pose: Pose;
   readonly transforms: ReturnType<typeof boneTransforms>;
   readonly bones: readonly Bone[];
-  /** The generated realization a humanoid or fused mass still poses; an acid poses its built body alone. */
-  readonly figure?: ReturnType<typeof templateFigure> | FusedMassFigure;
+  /** The generated realization a humanoid still poses; an acid and a fused mass pose their built bodies alone. */
+  readonly figure?: ReturnType<typeof templateFigure>;
   readonly hidden: ReadonlySet<string>;
   readonly yaw: Mat3;
   readonly position: Vec3;
@@ -437,13 +434,13 @@ const acidPose = (input: ActorPoseInput, bones: ReadonlyMap<string, Bone>): Pose
     : applyJointDelta(body, gazed, clipOf(set, 'hit', 'jointDelta'), input.hitFlinchTime, motion);
 };
 
-// The built fused-mass clips hold only its rest pose; its flinch is the body's, and its figure still generates.
+// The built fused-mass clips hold only its rest pose, so it composes rest and its body's flinch.
 const posedFusedMass = (input: ActorPoseInput): PosedActor => {
-  if (input.bodyScale === undefined) {
-    throw new Error('Fused-mass pose is missing its authored bodyScale');
+  const figure = input.figure.fusedMass;
+  if (!figure) {
+    throw new Error(`Actor figure ${figureKeyOf(input.figure)} has no fused-mass figure`);
   }
-  const figure = fusedMassFigure(input.seed, input.bodyScale);
-  const { bones } = figure.realized.body;
+  const { bones } = figure;
   const basePose: Pose = {
     root: figure.originOffset.map((coordinate) => coordinate / figure.scale) as Vec3,
     rotations: {},
@@ -456,7 +453,6 @@ const posedFusedMass = (input: ActorPoseInput): PosedActor => {
     pose,
     transforms: boneTransforms(bones, pose),
     bones,
-    figure,
     hidden: fusedMassSeveredBones(figure, input.severed),
     yaw: yawOf(input.facing),
     position: input.position,
@@ -474,8 +470,7 @@ export const posedMouth = (input: ActorPoseInput): Vec3 => {
   const { figure } = posed;
   const anchors = figure ? figure.realized.body.anchors : input.figure.body.anchors;
   const anchor = anchors?.mouth ?? { bone: highest.id, position: highest.tail };
-  const generatedScale = figure && 'scale' in figure && typeof figure.scale === 'number' ? figure.scale : 1;
-  const scale = figure ? generatedScale : input.figure.body.scale;
+  const scale = figure ? 1 : input.figure.body.scale;
   const local = applyPoint(posed.transforms.get(anchor.bone)!, anchor.position);
   const world = mulMV(posed.yaw, [local[0] * scale, local[1] * scale, local[2] * scale]);
   return [

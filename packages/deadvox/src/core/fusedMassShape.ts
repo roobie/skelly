@@ -167,7 +167,7 @@ const parentLevel = (level: TreeLevel, tree: TreeNodes): TreeLevel => {
 };
 
 const buildTree = (figure: FusedMassFigure, blockSize: number): ShapeTree => {
-  const { dims, owner, size, origin } = figure.realized.voxels;
+  const { dims, owner, size, origin } = figure.grid;
   const metres = size * figure.scale;
   const tree: TreeNodes = {
     childStart: [],

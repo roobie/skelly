@@ -363,7 +363,6 @@ export const createPlayView = (
           actors: registry.actors,
           actorFigureFiles,
           onBurst: (position, actor) => acidEffects.deathSplash(position, actor),
-          onFleshLanded: (centre) => gore.landed(centre),
           bloodiness: (actor) => gore.severity(actor),
         })
       : new ActorMeshes(s, undefined, meshes);

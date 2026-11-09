@@ -1,10 +1,10 @@
-import { type ActorFigureFiles, actorFigure } from './actorFigureFiles.ts';
+import { type ActorFigureFile, type ActorFigureFiles, actorFigure } from './actorFigureFiles.ts';
 import type { Actor } from './actorState.ts';
 import { activeFusedMassMembers, actorAttackReachMetres, requiredGrabBand } from './actorState.ts';
 import { severedBoneSet } from './boneTree.ts';
 import type { MeleeBlocker } from './collision.ts';
 import type { Vec3 } from './coords.ts';
-import { fusedMassFigureForType, fusedMassStrikeOrigin } from './fusedMassFigure.ts';
+import { fusedMassStrikeOrigin } from './fusedMassFigure.ts';
 import type { FusedMassShape } from './fusedMassShape.ts';
 import type { Body } from './physics.ts';
 import type { Rng } from './random.ts';
@@ -64,6 +64,8 @@ interface AttackReachProbe {
   playerPos: Vec3;
   blockSize: number;
   isSolid: SolidAt;
+  /** The actor's built figure: its body sets the reach, and a fused mass's figure the strike origin. */
+  figure: ActorFigureFile;
 }
 
 /** A grab reaches horizontally from the body, within its type's vertical band, chest to chest. */
@@ -79,11 +81,14 @@ const grabOrigin = (
 
 /** An amalgam's tentacle strikes in a straight line from its core, at any height, as far as its reach. */
 const strikeOrigin = (
-  { actor, actorPos, blockSize }: AttackReachProbe,
+  { actor, actorPos, blockSize, figure }: AttackReachProbe,
   reachMetres: number,
   playerChest: Vec3,
 ): Vec3 | undefined => {
-  const offset = fusedMassStrikeOrigin(fusedMassFigureForType(actor.type, actor.figureSeed), actor.facing);
+  if (!figure.fusedMass) {
+    throw new Error(`Actor type ${actor.type.id} strikes without a fused-mass figure`);
+  }
+  const offset = fusedMassStrikeOrigin(figure.fusedMass, actor.facing);
   const origin: Vec3 = [
     actorPos[0] + offset[0] / blockSize,
     actorPos[1] + offset[1] / blockSize,
@@ -97,7 +102,7 @@ const strikeOrigin = (
  * "still in reach" at resolve means exactly what "in reach" meant at start. */
 const withinAttackReach = (probe: AttackReachProbe): boolean => {
   const { actor, playerPos, blockSize, isSolid } = probe;
-  const reachMetres = actorAttackReachMetres(actor);
+  const reachMetres = actorAttackReachMetres(actor, probe.figure.body);
   if (reachMetres <= 0) {
     return false;
   }
@@ -224,22 +229,24 @@ export function reachableActorMoves(
   actor: Actor,
   actorPos: Vec3,
   playerPos: Vec3,
-  options: { blockSize: number; isSolid: SolidAt; meleeBlocker?: MeleeBlocker },
+  options: { blockSize: number; isSolid: SolidAt; meleeBlocker?: MeleeBlocker; actorFigureFiles: ActorFigureFiles },
 ): NonNullable<Actor['type']['attack']>['moves'] {
   if (!actor.type.attack) {
     return [];
   }
+  const figure = actorFigure(options.actorFigureFiles, actor.type, actor.figureSeed);
   return actor.type.attack.moves.filter((move) =>
     withinAttackReach({
       actor,
       actorPos,
       playerPos,
       blockSize: options.blockSize,
+      figure,
       isSolid:
         options.meleeBlocker?.({
           kind: 'actor',
           motion: move.motion,
-          reachMetres: actorAttackReachMetres(actor),
+          reachMetres: actorAttackReachMetres(actor, figure.body),
         }) ?? options.isSolid,
     }),
   );
@@ -290,8 +297,9 @@ export function faceActorDirection(actor: Actor, direction: Vec3): void {
   actor.facing = [direction[0], direction[1], direction[2]];
 }
 export function canStartBodyAttack(actor: Actor, figures: ActorFigureFiles) {
+  const { body } = actorFigure(figures, actor.type, actor.figureSeed);
   if (actor.type.model === 'fused-mass') {
-    return activeFusedMassMembers(actor).length > 0;
+    return activeFusedMassMembers(actor, body).length > 0;
   }
-  return canStillAttack(actor, actorFigure(figures, actor.type, actor.figureSeed).body);
+  return canStillAttack(actor, body);
 }

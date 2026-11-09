@@ -1,24 +1,20 @@
 import { describe, expect, it } from 'vitest';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { FUSED_MASS_FIGURE_SEED, fusedMassFigure } from '../src/core/fusedMassFigure.ts';
+import { FUSED_MASS_FIGURE_SEED, type FusedMassFigure, fusedMassTypeOf } from '../src/core/fusedMassFigure.ts';
 import { FusedMassShape } from '../src/core/fusedMassShape.ts';
 import { testedBricks } from '../src/core/solidBricks.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const source = fusedMassFigure(FUSED_MASS_FIGURE_SEED, 1);
-const cube = {
+const registry = baseRegistry();
+const source = actorFigure(stackActorFigureFiles(registry), fusedMassTypeOf(registry.actors)!, FUSED_MASS_FIGURE_SEED)
+  .fusedMass!;
+const cube: FusedMassFigure = {
   ...source,
   scale: 1,
-  originOffset: [0, 0, 0] as const,
-  realized: {
-    ...source.realized,
-    voxels: {
-      ...source.realized.voxels,
-      dims: [2, 2, 2] as const,
-      origin: [0, 0, 0] as const,
-      size: 1,
-      owner: new Uint8Array(8).fill(1),
-    },
-  },
+  originOffset: [0, 0, 0],
+  grid: { dims: [2, 2, 2], origin: [0, 0, 0], size: 1, owner: new Uint8Array(8).fill(1) },
 };
 const pos: Vec3 = [0, 0, 0];
 const shapeFor = (solid: (x: number, y: number, z: number) => boolean) => {

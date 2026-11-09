@@ -19,4 +19,4 @@ Rest-pose feasibility cannot establish that every animated pose stays within use
 
 ## Cross-engine voxel identity
 
-A seed is repeatable within a JavaScript engine, but floating-point differences near shape boundaries can change voxel ownership across engines. Deadvox hit and carving behavior depends on the generated figure, so seed identity alone does not promise identical geometry across browsers. See `src/core/random.ts`, `seededRng`, `src/core/voxelize.ts`, `voxelize`, `packages/deadvox/src/core/fusedMassFigure.ts`, `fusedMassFigure`, and `packages/deadvox/src/core/saveFormat.ts`.
+A seed is repeatable within a JavaScript engine, but floating-point differences near shape boundaries can change voxel ownership across engines. Deadvox reads baked bodies instead, so a figure's geometry is the pinned release's bytes, not a per-browser generation. See `src/core/random.ts`, `seededRng`, `src/core/voxelize.ts`, `voxelize`, and `packages/deadvox/src/core/fusedMassFigure.ts`, `fusedMassFigureOf`.

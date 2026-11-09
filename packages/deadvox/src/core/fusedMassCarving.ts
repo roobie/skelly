@@ -1,8 +1,6 @@
-// biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through this package's Vite and TypeScript aliases.
-import { cellIndex } from '@mobgen/core/voxelize.ts';
 import { type PosedBoneBox, posedBoxEntry } from './actorRegions.ts';
 import type { Vec3 } from './coords.ts';
-import { type FusedMassFigure, fusedMassSeveredBones } from './fusedMassFigure.ts';
+import { type FusedMassFigure, type FusedMassGrid, fusedMassSeveredBones } from './fusedMassFigure.ts';
 import { raycast } from './raycast.ts';
 import type { ActorDef } from './schema.ts';
 
@@ -12,6 +10,16 @@ import type { ActorDef } from './schema.ts';
 // through a hole that goes all the way (`fleshHit`).
 
 export type FusedMassCarving = NonNullable<ActorDef['carving']>;
+
+/** A cell's index in the grid's owner array. */
+const cellIndex = (dims: FusedMassGrid['dims'], i: number, j: number, k: number): number =>
+  i + j * dims[0] + k * dims[0] * dims[1];
+
+/** A cell's centre in the unscaled rest frame: cell (i, j, k) sits on the ground at its j. */
+export const worldPosition = (grid: Pick<FusedMassGrid, 'size' | 'origin'>, i: number, j: number, k: number): Vec3 => {
+  const { size, origin } = grid;
+  return [(origin[0] + i) * size, (origin[1] + j + 0.5) * size, (origin[2] + k) * size];
+};
 
 /** A ray in the figure's rest voxel grid, where floor() of a point is its cell (i, j, k). */
 interface GridRay {
@@ -53,7 +61,7 @@ const gridRayForHit = (
   hit: { readonly point: Vec3; readonly direction: Vec3 },
   blockSize: number,
 ): GridRay => {
-  const { size, origin } = figure.realized.voxels;
+  const { size, origin } = figure.grid;
   const center = restBoxCenter(figure, box.bone);
   const toRest = blockSize / figure.scale;
   const offset = applyTransposed(box.rotation, [
@@ -90,15 +98,13 @@ export const missingFlesh = (
   const hidden = fusedMassSeveredBones(figure, actor.severed);
   return {
     carved: new Set(actor.carved),
-    severedOwners: new Set(
-      figure.realized.body.bones.flatMap((bone, index) => (hidden.has(bone.id) ? [index + 1] : [])),
-    ),
+    severedOwners: new Set(figure.bones.flatMap((bone, index) => (hidden.has(bone.id) ? [index + 1] : []))),
   };
 };
 
 /** The cell's index if it holds visible flesh that hasn't been carved, else undefined. */
 const fleshAt = (figure: FusedMassFigure, missing: MissingFlesh, [i, j, k]: Vec3): number | undefined => {
-  const { dims, owner } = figure.realized.voxels;
+  const { dims, owner } = figure.grid;
   const inside = i >= 0 && j >= 0 && k >= 0 && i < dims[0] && j < dims[1] && k < dims[2];
   const index = inside ? cellIndex(dims, i, j, k) : -1;
   const bone = inside ? owner[index]! : 0;
@@ -111,7 +117,7 @@ const boneOwners = new WeakMap<FusedMassFigure, ReadonlyMap<string, number>>();
 const ownerOf = (figure: FusedMassFigure, bone: string): number => {
   let owners = boneOwners.get(figure);
   if (!owners) {
-    owners = new Map(figure.realized.body.bones.map((entry, index) => [entry.id, index + 1]));
+    owners = new Map(figure.bones.map((entry, index) => [entry.id, index + 1]));
     boneOwners.set(figure, owners);
   }
   return owners.get(bone)!;
@@ -146,7 +152,7 @@ export const fleshHit = ({
   readonly direction: Vec3;
   readonly blockSize: number;
 }): FleshHit | undefined => {
-  const { dims, owner, size } = figure.realized.voxels;
+  const { dims, owner, size } = figure.grid;
   const cellBlocks = (size * figure.scale) / blockSize;
   let nearest: FleshHit | undefined;
   for (const box of boxes) {
@@ -198,8 +204,8 @@ export const protectedCoreCell = (figure: FusedMassFigure): number => {
   if (cached !== undefined) {
     return cached;
   }
-  const { dims, owner, size, origin } = figure.realized.voxels;
-  const coreOwner = figure.realized.body.bones.findIndex((bone) => bone.id === 'core') + 1;
+  const { dims, owner } = figure.grid;
+  const coreOwner = figure.bones.findIndex((bone) => bone.id === 'core') + 1;
   const point = figure.coreInteriorPoint;
   let best = -1;
   let bestDistance = Number.POSITIVE_INFINITY;
@@ -207,18 +213,15 @@ export const protectedCoreCell = (figure: FusedMassFigure): number => {
     if (owner[index] !== coreOwner) {
       continue;
     }
-    const [i, j, k] = cellOf(dims, index);
-    const distance =
-      ((origin[0] + i) * size - point[0]) ** 2 +
-      ((origin[1] + j + 0.5) * size - point[1]) ** 2 +
-      ((origin[2] + k) * size - point[2]) ** 2;
+    const [x, y, z] = worldPosition(figure.grid, ...cellOf(dims, index));
+    const distance = (x - point[0]) ** 2 + (y - point[1]) ** 2 + (z - point[2]) ** 2;
     if (distance < bestDistance) {
       best = index;
       bestDistance = distance;
     }
   }
   if (best < 0) {
-    throw new Error(`Fused-mass seed ${figure.seed} has no core voxels`);
+    throw new Error('Fused-mass body has no core voxels');
   }
   protectedCells.set(figure, best);
   return best;
@@ -226,7 +229,7 @@ export const protectedCoreCell = (figure: FusedMassFigure): number => {
 
 /** The struck cell nearest the mean of several: one shot's pellets make one hole. */
 export const centralCell = (figure: FusedMassFigure, cells: readonly number[]): number => {
-  const { dims } = figure.realized.voxels;
+  const { dims } = figure.grid;
   const points = cells.map((cell) => cellOf(dims, cell));
   const mean = points
     .reduce((sum, point) => [sum[0] + point[0], sum[1] + point[1], sum[2] + point[2]], [0, 0, 0])
@@ -259,7 +262,7 @@ export const carveAround = ({
   readonly struck: number;
   readonly damage: number;
 }): number[] => {
-  const { dims, size } = figure.realized.voxels;
+  const { dims, size } = figure.grid;
   const radius = Math.min(carving.maxRadiusMetres, carving.radiusMetresPerDamage * damage) / (size * figure.scale);
   const reach = Math.floor(radius);
   const [i0, j0, k0] = cellOf(dims, struck);

@@ -126,6 +126,8 @@ local actors = [
   shambler + {
     id: 'amalgam', name: 'Amalgam', cause: 'an amalgam', model: 'fused-mass', canJumpObstacles: false,
     strength: 0, locomotion: 'omnidirectional', bodyScale: 4, soundPitchMultiplier: 0.5, authoredOnly: true,
+    // The built body's collision box; `validate` fails when it no longer matches the pinned body.
+    spawnEnvelope: { halfWidthMetres: 3, halfDepthMetres: 2.666666666666667, heightMetres: 4.666666666666666 },
     figureSeeds:: null, footstepSound:: null, stagger:: null, downed:: null,
     sounds: { idle: 'amalgam_idle', alert: 'amalgam_alert', attack: 'amalgam_attack', hurt: 'amalgam_hurt' },
     regions: { 'core.trunk': 2400, 'member.head': 60, 'member.torso': 60,
@@ -134,7 +136,7 @@ local actors = [
     chaseMotion: chaseMotion + { swayDegrees: 0, speedMultiplier: { min: 1, max: 1 }, stumbleChancePerSimSecond: 0 },
     attack: { reach: 2.2, cooldownSimSeconds: 2.8, windupSimSeconds: 1,
               moves: [{ id: 'tentacle_strike', weight: 1, damage: 22, damageKind: 'blunt', hitRegions: clobber(9, 3).hitRegions }] },
-    carving: { radiusMetresPerDamage: 0.0023, maxRadiusMetres: 0.75, interiorColor: '#7a1e22' },
+    carving: { radiusMetresPerDamage: 0.0023, maxRadiusMetres: 0.75 },
   },
   shambler + {
     id: 'acid_zombie', name: 'Acid zombie', cause: 'an acid zombie', model: 'acid', figureSeeds: acidFigureSeeds, authoredOnly: true,

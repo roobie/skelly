@@ -1,5 +1,4 @@
 import type { Vec3 } from './coords.ts';
-import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope, fusedMassFigureForType } from './fusedMassFigure.ts';
 import type { ActorDef } from './schema.ts';
 
 export interface SpawnBodyDimensions {
@@ -8,11 +7,24 @@ export interface SpawnBodyDimensions {
   readonly height: number;
 }
 
-/** Collision dimensions in voxel blocks, matching the bodies used by ActorSystem. */
-export const actorBodyDimensions = (type: ActorDef, blockSize: number): SpawnBodyDimensions =>
-  type.model === 'fused-mass'
-    ? fusedMassCollisionEnvelope(fusedMassFigureForType(type, FUSED_MASS_FIGURE_SEED), blockSize)
-    : { halfWidth: 0.28 / blockSize, height: 1.7 / blockSize };
+/**
+ * Collision dimensions in voxel blocks, matching the bodies used by ActorSystem. A fused mass's come from its content
+ * `spawnEnvelope`, so content admission needs no figure file.
+ */
+export const actorBodyDimensions = (type: ActorDef, blockSize: number): SpawnBodyDimensions => {
+  if (type.model !== 'fused-mass') {
+    return { halfWidth: 0.28 / blockSize, height: 1.7 / blockSize };
+  }
+  const envelope = type.spawnEnvelope;
+  if (!envelope) {
+    throw new Error(`Fused-mass actor type ${type.id} has no spawnEnvelope`);
+  }
+  return {
+    halfWidth: envelope.halfWidthMetres / blockSize,
+    halfDepth: envelope.halfDepthMetres / blockSize,
+    height: envelope.heightMetres / blockSize,
+  };
+};
 
 export const spawnOverlappingSolidBlock = (
   position: Vec3,

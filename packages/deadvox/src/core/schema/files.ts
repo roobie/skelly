@@ -75,6 +75,10 @@ const SECTION_DESCRIPTOR = {
           'fused-mass must define bodyScale',
         ),
         check(
+          (types) => types.every((actor) => (actor.model === 'fused-mass') === (actor.spawnEnvelope !== undefined)),
+          'spawnEnvelope must be defined exactly on a fused-mass body',
+        ),
+        check(
           (types) => types.every((actor) => actor.model === 'fused-mass' || actor.carving === undefined),
           'only a fused-mass body may define carving',
         ),

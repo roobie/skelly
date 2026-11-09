@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { bodyIsClear, placeShamblerRing } from '../src/bench/shamblerPlacement.ts';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { actorAttackReachForDef, actorAttackReachMetres, actorBodyDimensions } from '../src/core/actorState.ts';
+import { FUSED_MASS_FIGURE_SEED } from '../src/core/fusedMassFigure.ts';
 import { type Body, bodyOverlapsBlock } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { spawnActorType, spawnShamblers } from '../src/debug/shamblerSpawning.ts';
@@ -105,7 +107,9 @@ describe('debug shambler spawning', () => {
     const initialDistance =
       Math.hypot(body.pos[0] - actor.body.pos[0], body.pos[2] - actor.body.pos[2]) * SCALE.blockSize;
     expect(bodyIsClear(actor.body, solid)).toBe(true);
-    expect(initialDistance).toBeGreaterThan(actorAttackReachMetres(actor));
+    expect(initialDistance).toBeGreaterThan(
+      actorAttackReachMetres(actor, actors.figureFor(actor.type, actor.figureSeed).body),
+    );
     for (let tick = 0; tick < 20 * 60; tick++) {
       actors.tick(1 / 60);
     }
@@ -121,7 +125,9 @@ describe('debug shambler spawning', () => {
     const body = player();
     const floor = (_x: number, y: number) => y === 0;
     const openEngine = testEngine(floor, 73);
-    const minRadiusMetres = Math.max(8, actorAttackReachForDef(type) + 1);
+    const figureSeed = type.model === 'fused-mass' ? FUSED_MASS_FIGURE_SEED : type.figureSeeds![0]!;
+    const { body: built } = actorFigure(stackActorFigureFiles(registry), type, figureSeed);
+    const minRadiusMetres = Math.max(8, actorAttackReachForDef(type, built) + 1);
     const [position] = placeShamblerRing({
       count: 1,
       seed: openEngine.config.seed,

@@ -14,7 +14,7 @@ import { checkDamageKinds } from './damageContent.ts';
 import { checkDropSounds } from './dropSounds.ts';
 import { BLOCK_FOOTSTEP_FAMILY, footstepEventForBlock } from './footsteps.ts';
 import { liftableFurniture } from './furnitureMove.ts';
-import { FUSED_MASS_FIGURE_SEED } from './fusedMassFigure.ts';
+import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope } from './fusedMassFigure.ts';
 import { guidanceIssues } from './guidance.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import {
@@ -1593,7 +1593,7 @@ const checkActorFigure = (actor: ActorDef, report: Report): void => {
 interface ActorFigureContent {
   readonly actors: ReadonlyMap<
     string,
-    Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'figureSeeds' | 'regions'>
+    Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'figureSeeds' | 'regions'>
   >;
   readonly figures: ReadonlyMap<string, unknown>;
   readonly actorFigures: ReadonlyMap<string, ActorFigureDef>;
@@ -1611,7 +1611,7 @@ const FUSED_MEMBER_PREFIX = /^member\.\d+\./;
 const typeRegionKey = (bodyRegion: string): string => bodyRegion.replace(FUSED_MEMBER_PREFIX, 'member.');
 
 const figureTypeIssues = (
-  type: Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'regions'>,
+  type: Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'regions'>,
   body: ActorBody,
 ): [string, string][] => {
   const issues: [string, string][] = [];
@@ -1625,6 +1625,21 @@ const figureTypeIssues = (
   }
   if (type.model === 'fused-mass' && body.scale !== type.bodyScale) {
     issues.push(['.body.scale', `must equal the bodyScale of actor type "${type.id}"`]);
+  }
+  if (type.model === 'fused-mass' && body.bounds && body.originOffset) {
+    // At a block size of one metre the envelope is in metres, the content field's unit.
+    const built = fusedMassCollisionEnvelope({ bounds: body.bounds, originOffset: body.originOffset }, 1);
+    const authored = type.spawnEnvelope;
+    if (
+      authored?.halfWidthMetres !== built.halfWidth ||
+      authored.halfDepthMetres !== built.halfDepth ||
+      authored.heightMetres !== built.height
+    ) {
+      issues.push([
+        '.body.bounds',
+        `must give the spawnEnvelope of actor type "${type.id}" (${built.halfWidth}, ${built.halfDepth}, ${built.height} m)`,
+      ]);
+    }
   }
   return issues;
 };

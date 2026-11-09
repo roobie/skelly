@@ -2,6 +2,7 @@ import { placeShamblerRing } from '../bench/shamblerPlacement.ts';
 import { actorAttackReachForDef, actorBodyDimensions } from '../core/actorState.ts';
 import type { ActorSystem } from '../core/actorSystem.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { FUSED_MASS_FIGURE_SEED } from '../core/fusedMassFigure.ts';
 import type { Body } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
 import type { Engine } from '../presentation/engine.ts';
@@ -18,6 +19,8 @@ export const spawnActorType = (
   if (!type) {
     return 0;
   }
+  // Reach differs by figure only for the fused mass, which has one seed.
+  const figure = actors.figureFor(type, type.model === 'fused-mass' ? FUSED_MASS_FIGURE_SEED : type.figureSeeds![0]!);
   const positions = placeShamblerRing({
     count,
     seed: engine.config.seed + actors.store.size,
@@ -25,7 +28,7 @@ export const spawnActorType = (
     engine,
     occupied: [...actors.store.entries()].map(([, actor]) => actor.body),
     bodyDimensions: actorBodyDimensions(type, engine.config.scale.blockSize),
-    minRadiusMetres: Math.max(8, actorAttackReachForDef(type) + 1),
+    minRadiusMetres: Math.max(8, actorAttackReachForDef(type, figure.body) + 1),
     allowPartial: true,
   });
   for (const pos of positions) {

@@ -4,6 +4,7 @@ read_if:
   - you consume shared models or rigs, choose pack homes or change clip representation
   - you change how a baked death clip starts, plays or settles
   - you update the asset release pin or submodule, or admit its outputs into a product
+  - you change how admission learns an actor body's dimensions before figure files load
   - you change shared model licensing, turned-piece defaults or copied-model provenance
 ---
 
@@ -143,6 +144,15 @@ thousands of models. A changed model is fetched fresh at the next session start,
 changing a model and seeing the change stays fast. The simulation never sees fetch
 timing, because every figure is resolved before the first tick. The cost accepted: a
 session start is asynchronous, and each entry path has a load error path.
+
+A fused mass's spawn envelope lives in content. The browser reads no figure bytes at
+content load, yet admission checks that templates, map kits and layouts spawn an
+amalgam clear of walls, so admission takes the body's dimensions from the actor type's
+`spawnEnvelope`. Node holds that copy to the pinned body's collision box, so the two
+cannot drift: a pin bump that changes the box fails `validate` until the content is
+updated. See `packages/deadvox/src/core/spawnClearance.ts`, `actorBodyDimensions`, and
+`packages/deadvox/src/core/content.ts`, `actorFigureFileIssues`. The cost accepted: the
+envelope is copied by hand, because the build manifest carries no body bounds.
 
 The shared worn family fits the shared player body, not generated mob bodies;
 fitting it over generated bodies requires its own development round. The paper-sheet

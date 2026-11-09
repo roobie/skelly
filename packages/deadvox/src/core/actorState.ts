@@ -3,10 +3,11 @@ import type { ActorDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { ActorFootstepClock } from './footsteps.ts';
 import { protectedCoreCell } from './fusedMassCarving.ts';
-import { FUSED_MASS_FIGURE_SEED, fusedMassFigureForType } from './fusedMassFigure.ts';
+import type { FusedMassFigure } from './fusedMassFigure.ts';
 import type { Modifier } from './modifiers.ts';
 import type { Body } from './physics.ts';
 import type { Rng, RngState } from './random.ts';
+import type { ActorBody } from './schema/actors.ts';
 import { actorBodyDimensions as measureActorBody } from './spawnClearance.ts';
 
 export type ActorTier = 'active' | 'background' | 'unloaded';
@@ -27,13 +28,11 @@ export const requiredGrabBand = (type: ActorDef): number => {
   return type.attack.grabBandMetres;
 };
 
-export const actorAttackReachForDef = (type: ActorDef, figureSeed = FUSED_MASS_FIGURE_SEED): number => {
+export const actorAttackReachForDef = (type: ActorDef, body: ActorBody): number => {
   if (!type.attack) {
     return 0;
   }
-  return type.model === 'fused-mass'
-    ? type.attack.reach * fusedMassFigureForType(type, figureSeed).scale
-    : type.attack.reach;
+  return type.model === 'fused-mass' ? type.attack.reach * body.scale : type.attack.reach;
 };
 
 /**
@@ -160,23 +159,24 @@ export interface FusedMassMemberContribution {
 
 /** Active member ownership is the seam for per-member attacks and reach; core is never a severable member. */
 export const activeFusedMassMembers = (
-  actor: Pick<Actor, 'type' | 'figureSeed' | 'severed'>,
+  actor: Pick<Actor, 'type' | 'severed'>,
+  body: ActorBody,
 ): readonly FusedMassMemberContribution[] => {
   if (actor.type.model !== 'fused-mass') {
     return [];
   }
   const severed = new Set(actor.severed);
-  return fusedMassFigureForType(actor.type, actor.figureSeed)
-    .manifest.parts.filter((part) => part.severable && !severed.has(part.id))
+  return (body.manifest?.parts ?? [])
+    .filter((part) => part.severable && !severed.has(part.id))
     .map((part) => ({ partId: part.id, rootBone: part.rootBone, regionIds: part.regionIds }));
 };
 
 /** Remaining manifest members share the authored attack reach; with none, the unseverable core cannot attack. */
-export const actorAttackReachMetres = (actor: Pick<Actor, 'type' | 'figureSeed' | 'severed'>): number => {
-  if (actor.type.model !== 'fused-mass' || activeFusedMassMembers(actor).length === 0) {
+export const actorAttackReachMetres = (actor: Pick<Actor, 'type' | 'severed'>, body: ActorBody): number => {
+  if (actor.type.model !== 'fused-mass' || activeFusedMassMembers(actor, body).length === 0) {
     return actor.type.model === 'fused-mass' ? 0 : (actor.type.attack?.reach ?? 0);
   }
-  return actorAttackReachForDef(actor.type, actor.figureSeed);
+  return actorAttackReachForDef(actor.type, body);
 };
 
 export type SavedAgentState = Omit<AgentState, 'behaviorRng' | 'soundRng' | 'lastVocalNoiseId'> & {
@@ -210,12 +210,11 @@ export const validActorBodyEventState = (actor: ActorState): boolean =>
   ) &&
   validActorFootstepClock(actor.footstepClock);
 /** Holes play could make: only a type that carves has any, each on flesh in its grid, never the core cell. */
-export const validCarvedCells = (type: ActorDef, figureSeed: number, carved: readonly number[]): boolean => {
-  if (!type.carving) {
+export const validCarvedCells = (figure: FusedMassFigure | undefined, carved: readonly number[]): boolean => {
+  if (!figure) {
     return carved.length === 0;
   }
-  const figure = fusedMassFigureForType(type, figureSeed);
-  const { owner } = figure.realized.voxels;
+  const { owner } = figure.grid;
   const keep = protectedCoreCell(figure);
   return carved.every((cell) => cell < owner.length && owner[cell]! > 0 && cell !== keep);
 };

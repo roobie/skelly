@@ -50,17 +50,6 @@ local ball(bones, flex, swing, twist) = { bones: bones, limits: [flex, twist, sw
     linearDamping: 0.8,
     angularDamping: 1.5,
   },
-  flesh: {
-    capacity: 24,
-    lieSeconds: 6,
-    sinkSeconds: 1.5,
-    sinkDepthMetres: 0.5,
-    maxAgeSeconds: 20,
-    launchSpeed: 3.5,
-    launchLift: 1.5,
-    launchSpin: 6,
-    density: 1000,
-  },
   viewer: { blockSizeMetres: 1 },
   modelGroups: {
     dog: [
