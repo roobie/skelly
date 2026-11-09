@@ -45,7 +45,7 @@ Gameplay disassembly remains deferred to #1040. Shared camera and parameter mech
 gun selection and presentation remain caller policy.
 
 CARRY_ALL on #509 transfers ownership without implementing or closing the backlog.
-The lead re-points #135, #333, #362, #364, #414, #447 and #649 without renumbering.
+The open gungen issues #333, #362, #414, #447 and #649 belong to the gun tool under their own numbers.
 Deferred geometry reasons travel with the gun tool's
 `packages/skelly-assets/tools/packages/gun-authoring-tool/src/gun/parts.ts`,
 `magazineGeometryFor`, and
