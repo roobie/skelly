@@ -21,6 +21,8 @@ import type { HitImpulse } from '../core/actorSystem.ts';
 import { BODY_REGIONS, type BodyRegion } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
+import { missingFlesh } from '../core/fusedMassCarving.ts';
+import type { FusedMassFigure } from '../core/fusedMassFigure.ts';
 import { Rng } from '../core/random.ts';
 import type { GraphicsTuningDef } from '../core/schema.ts';
 import type { ModelLibrary } from './models.ts';
@@ -102,6 +104,13 @@ interface SeverityMemo {
   value: number;
 }
 
+/** A fused-mass body's drip cells, kept while its carved list (replaced on every carve) and severed count stay. */
+interface DripCells {
+  readonly carved: readonly number[];
+  readonly severed: number;
+  readonly cells: Int32Array;
+}
+
 /** What drips: the bodies in the world, and where the listener is (blocks). */
 export interface GorePlayer {
   readonly pos: Vec3;
@@ -116,6 +125,8 @@ export interface GoreBodies {
   readonly actors: Pick<EntityStore<Actor>, 'entries'>;
   readonly listener: Vec3;
   readonly player?: GorePlayer;
+  /** A body's fused-mass figure, undefined for any other body. */
+  readonly fusedMass?: (actor: Actor) => FusedMassFigure | undefined;
 }
 
 const setPlayerDripOrigin = (
@@ -176,6 +187,7 @@ export class Gore {
   private readonly splats: Splat[];
   private readonly drippers: Dripper[];
   private readonly severities = new WeakMap<Actor, SeverityMemo>();
+  private readonly dripCells = new WeakMap<Actor, DripCells>();
   private readonly dropletMesh: InstancedMesh<BoxGeometry, MeshLambertMaterial>;
   private readonly splatMesh: InstancedMesh<CircleGeometry, MeshLambertMaterial>;
   private readonly splatOpacity: InstancedBufferAttribute;
@@ -396,7 +408,7 @@ export class Gore {
     this.flyChunks(step, substeps, isSolid);
     this.fadeSplats(step);
     this.pickDrippers(bodies);
-    this.drip(step);
+    this.drip(step, bodies?.fusedMass);
     this.dripPlayer(step, bodies?.player);
     this.drawDroplets();
     this.drawChunks();
@@ -622,30 +634,82 @@ export class Gore {
     this.dripperCount = Math.min(this.dripperCount + 1, this.tuning.dripSourceCap);
   }
 
-  private drip(dt: number): void {
-    const s = this.blockSize;
+  private drip(dt: number, fusedMass: GoreBodies['fusedMass']): void {
     for (let index = 0; index < this.dripperCount; index++) {
       const { actor, severity } = this.drippers[index]!;
       if (!(actor && this.rng.chance(DRIPS_PER_SECOND * severity * dt))) {
         continue;
       }
-      const { pos, halfWidth, height } = actor.body;
-      const reach = halfWidth * s;
-      const heightMetres = actor.incapacitated ? DOWNED_DRIP_HEIGHT_M : height * s;
-      const x = pos[0] * s + this.rng.range(-reach, reach);
-      const y = pos[1] * s + heightMetres * this.rng.range(0.35, 0.85);
-      const z = pos[2] * s + this.rng.range(-reach, reach);
-      if (
-        !this.emit(
-          this.origin.set(x, y, z),
-          this.scratch.set(0, -0.2, 0),
-          this.rng.range(0.01, 0.02),
-          DROPLET_MAX_AGE_S,
-        )
-      ) {
+      const figure = actor.incapacitated ? undefined : fusedMass?.(actor);
+      if (!(figure ? this.fleshDripOrigin(actor, figure) : this.boxDripOrigin(actor))) {
+        continue;
+      }
+      if (!this.emit(this.origin, this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02), DROPLET_MAX_AGE_S)) {
         return;
       }
     }
+  }
+
+  /** Sets `origin` somewhere in a body's box; a downed body's from near the ground. */
+  private boxDripOrigin(actor: Actor): boolean {
+    const s = this.blockSize;
+    const { pos, halfWidth, height } = actor.body;
+    const reach = halfWidth * s;
+    const heightMetres = actor.incapacitated ? DOWNED_DRIP_HEIGHT_M : height * s;
+    this.origin.set(
+      pos[0] * s + this.rng.range(-reach, reach),
+      pos[1] * s + heightMetres * this.rng.range(0.35, 0.85),
+      pos[2] * s + this.rng.range(-reach, reach),
+    );
+    return true;
+  }
+
+  /** Sets `origin` to the underside of one of a standing fused-mass body's drip cells; false when it has none.
+   * Its bounding box is mostly air around a rounded mass, so a drip placed in the box would start in the air beside
+   * or above the flesh. The cell is placed at rest pose, turned to the body's facing as the posed figure turns. */
+  private fleshDripOrigin(actor: Actor, figure: FusedMassFigure): boolean {
+    const cells = this.fleshDripCells(actor, figure);
+    if (cells.length === 0) {
+      return false;
+    }
+    const cell = cells[this.rng.int(0, cells.length - 1)]!;
+    const { dims, size, origin } = figure.grid;
+    const metres = size * figure.scale;
+    const [offsetX, offsetY, offsetZ] = figure.originOffset;
+    const x = (origin[0] + (cell % dims[0])) * metres + offsetX;
+    const y = (origin[1] + (Math.floor(cell / dims[0]) % dims[1])) * metres + offsetY;
+    const z = (origin[2] + Math.floor(cell / (dims[0] * dims[1]))) * metres + offsetZ;
+    const yaw = Math.atan2(-actor.facing[0], -actor.facing[2]);
+    const c = Math.cos(yaw);
+    const sin = Math.sin(yaw);
+    const s = this.blockSize;
+    const { pos } = actor.body;
+    this.origin.set(pos[0] * s + c * x + sin * z, pos[1] * s + y, pos[2] * s - sin * x + c * z);
+    return true;
+  }
+
+  /** The cells a fused-mass body drips from: live flesh with open air under it, above the ground layer, so each
+   * drop falls clear of the body. That is an overhang, the roof of a hole or the stump a shed member left. */
+  private fleshDripCells(actor: Actor, figure: FusedMassFigure): Int32Array {
+    const kept = this.dripCells.get(actor);
+    if (kept && kept.carved === actor.carved && kept.severed === actor.severed.length) {
+      return kept.cells;
+    }
+    const { dims, owner } = figure.grid;
+    const missing = missingFlesh(figure, actor);
+    const live = (cell: number): boolean => {
+      const bone = owner[cell]!;
+      return bone > 0 && !missing.severedOwners.has(bone) && !missing.carved.has(cell);
+    };
+    const cells: number[] = [];
+    for (let cell = 0; cell < owner.length; cell++) {
+      if (Math.floor(cell / dims[0]) % dims[1] > 0 && live(cell) && !live(cell - dims[0])) {
+        cells.push(cell);
+      }
+    }
+    const made = { carved: actor.carved, severed: actor.severed.length, cells: Int32Array.from(cells) };
+    this.dripCells.set(actor, made);
+    return made.cells;
   }
 
   /** Player wounds drip from their matching world-figure region in either camera view. */

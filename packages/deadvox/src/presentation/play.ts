@@ -5,6 +5,7 @@
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import { type ActorFigureFiles, loadActorFigureFiles } from '../core/actorFigureFiles.ts';
 import { PLAYER_CHEST_METRES } from '../core/actorMotion.ts';
+import type { Actor } from '../core/actorState.ts';
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import type { BodyRegion } from '../core/body.ts';
@@ -2728,6 +2729,8 @@ const startPlayWith = (
   };
 
   const playerDrip = (region: BodyRegion) => sim.body.bleedingTier(region)?.drip;
+  const goreFusedMass = (actor: Actor) =>
+    actor.type.model === 'fused-mass' ? actorSystem.figureFor(actor.type, actor.figureSeed).fusedMass : undefined;
   // Blood holds still while the game is paused.
   const updateGore = (dt: RealSeconds): void => {
     view.gore.update(sim.paused ? 0 : dt, session.physicalSolid, {
@@ -2739,6 +2742,7 @@ const startPlayWith = (
         drip: playerDrip,
         thirdPerson: isPlayerFigureWhole(thirdPersonViewEnabled, spectator.enabled),
       },
+      fusedMass: goreFusedMass,
     });
   };
   const waitViewAction = (): WaitViewAction | undefined => {

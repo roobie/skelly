@@ -5,11 +5,18 @@ import type { HitImpulse } from '../src/core/actorSystem.ts';
 import { BODY_REGIONS, type BodyRegion } from '../src/core/body.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
-import { BLOCK_SIZE } from '../src/core/scale.ts';
+import { carveAround, missingFlesh } from '../src/core/fusedMassCarving.ts';
+import { fusedMassTypeOf } from '../src/core/fusedMassFigure.ts';
+import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import { Gore, type GoreBodies } from '../src/render/gore.ts';
 import { PLAYER_REGION_BOXES } from '../src/render/playerFigure.ts';
-import { WORLD_GRAVITY } from './playerFixture.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
+import { baseRegistry } from './baseRegistry.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { physicsFor, WORLD_GRAVITY } from './playerFixture.ts';
 import { GORE_TUNING_FIXTURE } from './presentationFixture.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const floor = (_x: number, y: number, _z: number) => y < 0;
 // A heavy downward hit just above the floor, so most droplets land within a few updates.
@@ -99,6 +106,87 @@ describe('Gore', () => {
 
     assertWithinDrawnRegion(dripPosition(false));
     assertWithinDrawnRegion(dripPosition(true));
+  });
+
+  it('drips a wounded amalgam from its own flesh, never from the air in its bounding box', () => {
+    const registry = baseRegistry();
+    const scale = makeScale(0.5);
+    const actors = new ActorSystem({
+      player: () => ({
+        pos: [40, 1, 40],
+        facing: [-1, 0, 0],
+        movement: 'still',
+        lit: false,
+        lightSeenFrom: 40,
+        eyeHeightMetres: 1.3,
+      }),
+      isSolid: (_x, y) => y === 0,
+      isOpaque: (_x, y) => y === 0,
+      dayPhase: () => dayStateAtHour(12),
+      blockSize: scale.blockSize,
+      physics: physicsFor(scale),
+      tuning: TEST_SENSE_TUNING,
+      hurtPlayer: () => undefined,
+      actorFigureFiles: stackActorFigureFiles(registry),
+      seed: 17,
+    });
+    const type = fusedMassTypeOf(registry.actors)!;
+    const id = actors.add(type, [3, 1, 5], [0.6, 0, -0.8]);
+    const actor = actors.store.get(id)!;
+    const figure = actors.figureFor(type, actor.figureSeed).fusedMass!;
+    const { dims, owner, size, origin } = figure.grid;
+    // A hole in its front, so carved cells are on hand to be wrongly dripped from.
+    const front = owner.findIndex((bone, cell) => bone > 0 && Math.floor(cell / dims[0]) % dims[1] > dims[1] / 3);
+    actor.carved = carveAround({
+      figure,
+      carving: type.carving!,
+      missing: missingFlesh(figure, actor),
+      struck: front,
+      damage: 1000,
+    }).sort((a, b) => a - b);
+    for (const region of Object.keys(actor.regions)) {
+      actor.regions[region] = actor.regions[region]! / 2;
+    }
+    const missing = missingFlesh(figure, actor);
+
+    const gore = new Gore(scale.blockSize, WORLD_GRAVITY, GORE_TUNING_FIXTURE);
+    const origins: Vector3[] = [];
+    const spy = gore as unknown as { emit: (at: Vector3, ...rest: unknown[]) => boolean };
+    const emit = spy.emit.bind(gore);
+    spy.emit = (at, ...rest) => {
+      origins.push(at.clone());
+      return emit(at, ...rest);
+    };
+    const bodies: GoreBodies = {
+      actors: actors.store,
+      listener: actor.body.pos,
+      fusedMass: (body) => (body === actor ? figure : undefined),
+    };
+    for (let frame = 0; frame < 200; frame++) {
+      gore.update(0.1, () => false, bodies);
+    }
+    expect(origins.length).toBeGreaterThan(0);
+
+    // Each origin, back in the figure's rest grid (facing -z, from its ground origin), lies in a live flesh cell.
+    const metres = size * figure.scale;
+    const yaw = Math.atan2(-actor.facing[0], -actor.facing[2]);
+    const [px, py, pz] = actor.body.pos.map((value) => value * scale.blockSize) as Vec3;
+    for (const at of origins) {
+      const dx = at.x - px;
+      const dz = at.z - pz;
+      const rest = [
+        (dx * Math.cos(yaw) - dz * Math.sin(yaw) - figure.originOffset[0]) / metres - origin[0] + 0.5,
+        (at.y - py - figure.originOffset[1]) / metres - origin[1] + 1e-6,
+        (dx * Math.sin(yaw) + dz * Math.cos(yaw) - figure.originOffset[2]) / metres - origin[2] + 0.5,
+      ].map(Math.floor) as Vec3;
+      const inside = rest.every((value, axis) => value >= 0 && value < dims[axis]!);
+      const cell = rest[0] + rest[1] * dims[0] + rest[2] * dims[0] * dims[1];
+      const bone = inside ? owner[cell]! : 0;
+      expect({ at: at.toArray(), cell: rest, live: bone > 0 && !missing.carved.has(cell) }).toMatchObject({
+        live: true,
+      });
+    }
+    gore.dispose();
   });
 
   it('stops player wound drips once the wound stops bleeding', () => {

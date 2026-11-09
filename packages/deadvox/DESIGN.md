@@ -2613,7 +2613,10 @@ application rather than weapon-class special cases. See `src/core/schema/actors.
   `test/actorSystem.test.ts` checks that a run with a listener matches one without.
   Droplets and splats live in fixed pools, drips come from the nearest few
   bodies, and a cap limits the droplets started per frame. Everything here
-  covers the amalgam too, which is fused from shamblers. See
+  covers the amalgam too, which is fused from shamblers, except where a drip
+  starts: a standing amalgam drips from the underside of its own live flesh, not
+  from anywhere in its bounding box, because that box is mostly air around a
+  rounded mass and a drip placed in it would start beside or above the body. See
   `src/core/actorSystem.ts`, `ActorSystemOptions.onWound`; `src/render/gore.ts`,
   `Gore` and `woundSeverity`; `src/render/bloodStain.ts`, `bloodStain`; and
   `packages/mobgen/src/mob/crowd.ts`, `packBloodiness`.
