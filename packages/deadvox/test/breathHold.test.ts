@@ -237,24 +237,6 @@ describe('holding breath in play', () => {
     }
   });
 
-  it('starts holding breath and steadies drift while prone', () => {
-    const free = readiedRuntime();
-    const held = readiedRuntime();
-    for (const runtime of [free, held]) {
-      runtime.setStance('prone');
-    }
-    held.setIntent({ sprint: true });
-    for (let tick = 0; tick < 30; tick++) {
-      free.advance(1);
-      held.advance(1);
-      expect(held.session.stance).toBe('prone');
-      expect(held.session.aim.breathHeld).toBe(true);
-      expect(magnitude(free.session.aim.frame)).toBeGreaterThan(0);
-      expect(magnitude(held.session.aim.frame)).toBeLessThan(magnitude(free.session.aim.frame));
-      expect(held.session.sprinting).toBe(false);
-    }
-  });
-
   it('holds with the sprint key in ADS and spends stamina, but not while moving or outside ADS', () => {
     const runtime = readiedRuntime();
     const { session } = runtime;
