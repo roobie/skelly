@@ -49,6 +49,7 @@
 import {
   type BufferGeometry,
   type Camera,
+  Color,
   CylinderGeometry,
   DataTexture,
   FloatType,
@@ -95,7 +96,7 @@ import { severableParts, severedBoneSet } from '../core/boneTree.ts';
 import type { ColumnReveal } from '../core/columnReveal.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
-import { FUSED_MASS_FIGURE_SEED, fusedMassTypeOf } from '../core/fusedMassFigure.ts';
+import { FUSED_MASS_FIGURE_SEED, type FusedMassGrid, fusedMassTypeOf } from '../core/fusedMassFigure.ts';
 import { bodyPartMass, boneVoxelCentres, voxelBounds } from '../core/massProperties.ts';
 import type { LookDefaults } from '../core/mood.ts';
 import {
@@ -137,6 +138,7 @@ import {
 import { fusedMassCoreInteriorAnchor, fusedMassTentaclePose } from './fusedMassTentaclePose.ts';
 import { woundSeverity } from './gore.ts';
 import { patchHeightFog } from './heightFog.ts';
+import { holeWallGeometry } from './holeWalls.ts';
 import { LOOK_AT_REST, type LookAtState, lookAtPose } from './lookAt.ts';
 import { PoseTextureUpdates } from './poseTextureUpdates.ts';
 import { type Ragdoll, RagdollWorld, ragdollContent } from './ragdoll.ts';
@@ -389,6 +391,12 @@ interface VariantCells {
   readonly depthMaterial: MeshDepthMaterial;
   /** How many carved cells each local slot's row holds; `carved` only grows, so an equal count needs no upload. */
   readonly packed: number[];
+  readonly grid: FusedMassGrid;
+  readonly slotBase: number;
+  /** Each local slot's last packed carved cells, which a severed piece's walls are built from. */
+  readonly carved: (readonly number[])[];
+  /** Each local slot's hole walls (src/render/holeWalls.ts), freed with the slot. */
+  readonly walls: (Mesh | undefined)[];
 }
 
 /** Arguments kept together for inserting one physics-backed debris slot. */
@@ -478,6 +486,7 @@ interface DrawnActorType {
   readonly model: string;
   readonly bodyScale?: number | undefined;
   readonly figureSeeds?: readonly number[] | undefined;
+  readonly carving?: { readonly interiorColor: string } | undefined;
 }
 
 /** The figure seeds drawn for `type` in authored order, the first `poolSize` of them; the fused-mass seed is fixed. */
@@ -614,6 +623,8 @@ export class MobActorMeshes implements ActorRenderer {
   private readonly tentacleUp = new Vector3(0, 1, 0);
   private readonly tentacleDirection = new Vector3();
   private readonly debris = new Map<string, Debris>();
+  /** The fused mass's hole-wall flesh, in the renderer's working colour space; none without carving. */
+  private readonly flesh: Color | undefined;
   /** One bone-texture row past every variant's, left all zero: an instance pointed at it collapses unseen. */
   private readonly hiddenRow: number;
   private readonly depthMaterial: MeshDepthMaterial;
@@ -650,6 +661,8 @@ export class MobActorMeshes implements ActorRenderer {
     this.reveal = options.reveal;
     this.capacity = capacity;
     const fusedMassType = fusedMassTypeOf(options.actors);
+    const interiorColor = fusedMassType?.carving?.interiorColor;
+    this.flesh = interiorColor === undefined ? undefined : new Color(interiorColor);
     this.tentacleGeometry = fusedMassType ? new CylinderGeometry(0.08, 0.22, 1, 8) : undefined;
     this.tentacleTipGeometry = fusedMassType ? new SphereGeometry(0.16, 8, 6) : undefined;
     this.tentacleMaterial = fusedMassType
@@ -696,7 +709,7 @@ export class MobActorMeshes implements ActorRenderer {
 
     this.variants = built.map(({ figure: { body, clips, fusedMass }, geometry }, variantIndex) => {
       const cells = geometry.hasAttribute('cellIndex')
-        ? this.variantCells(body, fusedMass?.grid.owner.length, variantIndex * capacity)
+        ? this.variantCells(body, fusedMass?.grid, variantIndex * capacity)
         : undefined;
       const mesh = new InstancedMesh(geometry, cells?.material ?? this.material, capacity);
       mesh.customDepthMaterial = cells?.depthMaterial ?? this.depthMaterial;
@@ -1172,11 +1185,11 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   /** The carved-cell mask of a variant whose mesh carries cell indices, over its block of slots from `slotBase`. */
-  private variantCells(body: ActorBody, cellCount: number | undefined, slotBase: number): VariantCells {
-    if (cellCount === undefined) {
+  private variantCells(body: ActorBody, grid: FusedMassGrid | undefined, slotBase: number): VariantCells {
+    if (grid === undefined) {
       throw new Error(`Actor figure ${body.type}.${body.seed} carries cell indices but no fused-mass grid`);
     }
-    const layout = crowdCellMaskLayout(cellCount, this.capacity);
+    const layout = crowdCellMaskLayout(grid.owner.length, this.capacity);
     const data = new Float32Array(layout.width * layout.height);
     const texture = new DataTexture(data, layout.width, layout.height, RedFormat, FloatType);
     texture.magFilter = NearestFilter;
@@ -1189,6 +1202,10 @@ export class MobActorMeshes implements ActorRenderer {
       texture,
       ...crowdMaterials(this.texture, this.layout, { texture, slotBase, rowsPerSlot: layout.rowsPerSlot }),
       packed: new Array<number>(this.capacity).fill(0),
+      grid,
+      slotBase,
+      carved: new Array<readonly number[]>(this.capacity).fill([]),
+      walls: new Array<Mesh | undefined>(this.capacity).fill(undefined),
     };
   }
 
@@ -1201,9 +1218,10 @@ export class MobActorMeshes implements ActorRenderer {
     packCellMask(cells.data, cells.layout, holder.localSlot, carved);
     cells.packed[holder.localSlot] = carved.length;
     cells.texture.needsUpdate = true;
+    this.buildWalls(cells, holder.localSlot, carved);
   }
 
-  /** A severed piece keeps the holes its body had at the cut. */
+  /** A severed piece keeps the holes its body had at the cut, walls included. */
   private copyCells(variant: Variant, from: number, to: number): void {
     const { cells } = variant;
     if (!cells || from === to) {
@@ -1213,6 +1231,29 @@ export class MobActorMeshes implements ActorRenderer {
     cells.data.copyWithin(to * span, from * span, (from + 1) * span);
     cells.packed[to] = cells.packed[from]!;
     cells.texture.needsUpdate = true;
+    this.buildWalls(cells, to, cells.carved[from]!);
+  }
+
+  /** Replaces a slot's hole walls with those of `carved`; an empty list only frees them. */
+  private buildWalls(cells: VariantCells, localSlot: number, carved: readonly number[]): void {
+    cells.carved[localSlot] = carved;
+    const previous = cells.walls[localSlot];
+    if (previous) {
+      this.group.remove(previous);
+      previous.geometry.dispose();
+      cells.walls[localSlot] = undefined;
+    }
+    const geometry = this.flesh && holeWallGeometry(cells.grid, carved, this.flesh, cells.slotBase + localSlot);
+    if (!geometry) {
+      return;
+    }
+    const mesh = new Mesh(geometry, cells.material);
+    mesh.customDepthMaterial = cells.depthMaterial;
+    castsAndReceives(mesh);
+    // Its vertices are placed by the bone texture, like the crowd mesh's, so its own bounds mean nothing.
+    mesh.frustumCulled = false;
+    this.group.add(mesh);
+    cells.walls[localSlot] = mesh;
   }
 
   /** Called when a hit knocks flesh out of a fused-mass body (src/core/actorSystem.ts's onCarve, forwarded by play.ts):
@@ -2392,6 +2433,10 @@ export class MobActorMeshes implements ActorRenderer {
       variant.crowdSlotAttr.setX(holder.instanceIndex, row);
       variant.crowdSlotAttr.needsUpdate = true;
     }
+    const walls = variant.cells?.walls[holder.localSlot];
+    if (walls) {
+      walls.visible = allowed;
+    }
     if (typeof key === 'number' && !allowed) {
       const tentacle = this.tentacles.get(key);
       if (tentacle) {
@@ -2511,6 +2556,9 @@ export class MobActorMeshes implements ActorRenderer {
     this.depthMaterial.dispose();
     for (const variant of this.variants) {
       variant.geometry.dispose();
+      for (const walls of variant.cells?.walls ?? []) {
+        walls?.geometry.dispose();
+      }
       variant.cells?.texture.dispose();
       variant.cells?.material.dispose();
       variant.cells?.depthMaterial.dispose();

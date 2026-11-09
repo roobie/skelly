@@ -40,8 +40,12 @@ to the game, not the exporter. Mobgen becomes a pipeline, not a Deadvox runtime
 import: generated bodies, GLBs and clips cross the boundary as data, while per-tick
 composition, injury, ragdolls and rendering remain runtime mechanisms. The viewer's
 ragdoll stage is removed rather than carrying a game-runtime dependency into the
-pipeline. Fused-mass carving operates on the loaded GLB, without generated hole walls,
-so consuming a baked body does not require runtime voxel remeshing.
+pipeline. Fused-mass carving hides cells of the loaded GLB, and deadvox builds flesh
+walls for each hole at runtime from the rest grid the actor already holds. The loaded
+GLB alone cannot show a hole's inside, so a hole would show the world through it;
+walls built from the grid show flesh on every side of the pit with no full remesh and
+no mobgen runtime import. See `packages/deadvox/src/render/holeWalls.ts`,
+`holeWallGeometry`.
 
 ## Shared production and content homes
 
