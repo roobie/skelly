@@ -1,6 +1,6 @@
 // The actor data contract. The fixture cases cover the hand-made fixture this repo owns; the pinned-pair case alone
-// covers what the pinned producer exports; the stack cases cover the figures the stack admits, read as deadvox reads
-// them.
+// covers what the pinned producer exports in the packs skelly ships, the only ones setup installs; the stack cases
+// cover the figures the stack admits, read as deadvox reads them.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -28,6 +28,7 @@ import {
 import {
   packFileBytes,
   packFileOrigin,
+  readAvailablePacks,
   readBundledPacks,
   readStackContentSources,
 } from '../packages/deadvox/tools/readBundledPacks.ts';
@@ -302,8 +303,9 @@ describe('pinned producer exports', () => {
   it('pinned producer exports parse and agree', () => {
     const built = new URL('../packages/skelly-assets/built/', import.meta.url);
     const { models } = JSON.parse(readFileSync(new URL('manifest.json', built), 'utf8'));
+    const shipped = new Set(readAvailablePacks(PACKAGE_ROOT).map(({ manifest }) => manifest.id));
     const pairs = models
-      .filter((row) => row.body !== undefined && row.clips !== undefined)
+      .filter((row) => shipped.has(row.pack) && row.body !== undefined && row.clips !== undefined)
       .map((row) => ({ body: `${row.pack}/${row.body}`, clips: `${row.pack}/${row.clips}` }));
     assert.ok(pairs.length > 0, 'the manifest lists no body and clips pair');
     for (const pair of pairs) {
