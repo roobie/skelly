@@ -5,6 +5,6 @@ local partless = std.set(['canned_beans', 'canned_soup']);
 ).pack({
   models: [
     if std.setMember(model.id, partless) then std.objectRemoveKey(model, 'parts') else model
-    for model in import 'packages/skelly-assets/built/skelly.packaged-foods/things/index.json'
+    for model in (import 'tools/jsonnet/lib/used-models.libsonnet')(import 'packages/skelly-assets/built/skelly.packaged-foods/things/index.json', [import 'packaged-foods-items.jsonnet'])
   ],
 })

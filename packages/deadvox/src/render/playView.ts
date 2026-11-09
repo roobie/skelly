@@ -261,7 +261,7 @@ export const createPlayView = (
   const piles = new PileMeshes(s, models, config.seed, meshes);
   const vehicles = new VehicleMeshes(registry, models, s);
   const caseEffects = new CaseEffects(s, gravityMetresPerSimSecondSquared, models);
-  const gore = new Gore(s, gravityMetresPerSimSecondSquared, graphics.gore, config.seed);
+  const gore = new Gore(s, gravityMetresPerSimSecondSquared, graphics.gore, { seed: config.seed, models });
   const decals =
     engine.scenario && config.authoredDecals
       ? new AuthoredDecals(engine.site?.authoredPlacements ?? [], {
@@ -363,7 +363,6 @@ export const createPlayView = (
           actors: registry.actors,
           actorFigureFiles,
           onBurst: (position, actor) => acidEffects.deathSplash(position, actor),
-          onFleshLanded: (centre) => gore.landed(centre),
           bloodiness: (actor) => gore.severity(actor),
         })
       : new ActorMeshes(s, undefined, meshes);

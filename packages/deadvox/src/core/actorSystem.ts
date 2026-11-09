@@ -70,7 +70,7 @@ import type { DayPhaseState } from './dayPhase.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { advanceActorFootsteps, initialActorFootstepClock } from './footsteps.ts';
 import { carveAround, centralCell, fleshHit, type MissingFlesh, missingFlesh } from './fusedMassCarving.ts';
-import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope, fusedMassFigureForType } from './fusedMassFigure.ts';
+import { FUSED_MASS_FIGURE_SEED, type FusedMassFigure } from './fusedMassFigure.ts';
 import { FusedMassShape } from './fusedMassShape.ts';
 import { HUMANOID_REGION_NAMES } from './humanoidRegionNames.ts';
 import type { MeleeMotion } from './meleeMotion.ts';
@@ -128,13 +128,12 @@ const maxActorRegionHealth = (type: ActorDef, region: ActorHitRegion): number | 
   return type.regions[region];
 };
 
-const actorRegionsFor = (type: ActorDef, seed: number): ActorRegions => {
+const actorRegionsFor = (type: ActorDef, body: ActorBody): ActorRegions => {
   if (type.model !== 'fused-mass') {
     return Object.fromEntries(HUMANOID_REGION_NAMES.map((region) => [region, type.regions[region]!])) as ActorRegions;
   }
-  const figure = fusedMassFigureForType(type, seed);
   return Object.fromEntries(
-    figure.manifest.regions.map((region) => {
+    (body.manifest?.regions ?? []).map((region) => {
       const health = maxActorRegionHealth(type, region.id as ActorHitRegion);
       if (health === undefined) {
         throw new Error(`Zombie type ${type.id} has no health for amalgam region ${region.id}`);
@@ -632,7 +631,7 @@ export class ActorSystem {
           ? {
               actor,
               shape: new FusedMassShape(
-                fusedMassFigureForType(actor.type, actor.figureSeed),
+                this.fusedMassOf(actor.type, actor.figureSeed),
                 this.options.blockSize,
                 this.solidBricks,
               ),
@@ -656,17 +655,27 @@ export class ActorSystem {
     if (cached && cached.carved === actor.carved && cached.severed === actor.severed.length) {
       return cached.missing;
     }
-    const missing = missingFlesh(fusedMassFigureForType(actor.type, actor.figureSeed), actor);
+    const missing = missingFlesh(this.fusedMassOf(actor.type, actor.figureSeed), actor);
     this.missing.set(actor, { carved: actor.carved, severed: actor.severed.length, missing });
     return missing;
   }
 
-  private figureOf(actor: Actor): ActorFigureFile {
-    return actorFigure(this.options.actorFigureFiles, actor.type, actor.figureSeed);
+  /** The built figure an actor of `type` and figure seed draws, from this system's loaded figure files. */
+  figureFor(type: ActorDef, figureSeed: number): ActorFigureFile {
+    return actorFigure(this.options.actorFigureFiles, type, figureSeed);
+  }
+
+  /** The fused-mass figure of an amalgam; throws for any other body. */
+  private fusedMassOf(type: ActorDef, figureSeed: number): FusedMassFigure {
+    const { fusedMass } = this.figureFor(type, figureSeed);
+    if (!fusedMass) {
+      throw new Error(`Actor type ${type.id} has no fused-mass figure`);
+    }
+    return fusedMass;
   }
 
   private gaitPhaseGain(actor: Actor, travelledMetres: number): number {
-    return gaitPhaseGain(actor, this.figureOf(actor), travelledMetres);
+    return gaitPhaseGain(actor, this.figureFor(actor.type, actor.figureSeed), travelledMetres);
   }
 
   /**
@@ -871,7 +880,7 @@ export class ActorSystem {
         if (type.model !== 'fused-mass' && !requiredFigureSeeds(type).includes(actor.figureSeed)) {
           throw new Error(`Invalid zombie state for entity ${id}`);
         }
-        const expectedRegions = actorRegionsFor(type, actor.figureSeed);
+        const expectedRegions = actorRegionsFor(type, this.figureFor(type, actor.figureSeed).body);
         const expectedRegionIds = Object.keys(expectedRegions);
         if (
           !actor.regions ||
@@ -884,10 +893,7 @@ export class ActorSystem {
           throw new Error(`Invalid zombie regions for entity ${id}`);
         }
         if (type.model === 'fused-mass') {
-          const envelope = fusedMassCollisionEnvelope(
-            fusedMassFigureForType(type, actor.figureSeed),
-            this.options.blockSize,
-          );
+          const envelope = actorBodyDimensions(type, this.options.blockSize);
           if (
             actor.body.halfWidth !== envelope.halfWidth ||
             actor.body.halfDepth !== envelope.halfDepth ||
@@ -896,7 +902,7 @@ export class ActorSystem {
             throw new Error(`Invalid amalgam collision envelope for entity ${id}`);
           }
           const validParts = new Set(
-            fusedMassFigureForType(type, actor.figureSeed)
+            this.fusedMassOf(type, actor.figureSeed)
               .manifest.parts.filter((part) => part.severable)
               .map((part) => part.id),
           );
@@ -907,7 +913,7 @@ export class ActorSystem {
             throw new Error(`Invalid amalgam severed parts for entity ${id}`);
           }
         }
-        if (!validCarvedCells(type, actor.figureSeed, actor.carved)) {
+        if (!validCarvedCells(type.carving ? this.fusedMassOf(type, actor.figureSeed) : undefined, actor.carved)) {
           throw new Error(`Invalid carved cells for entity ${id}`);
         }
         if (actor.spitWindup > 0 && type.acidSpit === undefined) {
@@ -1059,7 +1065,7 @@ export class ActorSystem {
       stumbleElapsed: 0,
       stumbleDuration: 0,
       renderPrevious: { pos: copy(position), facing: copy(direction), headYaw: 0, gaitPhase: 0 },
-      regions: actorRegionsFor(type, figureSeed),
+      regions: actorRegionsFor(type, this.figureFor(type, figureSeed).body),
       figureSeed,
       incapacitated: false,
       attackWait: 0,
@@ -1271,7 +1277,7 @@ export class ActorSystem {
         nextFlinchTime >
         actorHitFlinchDuration(
           actorCrawls(actor) ? 'legless-humanoid' : figureVariantOf(actor.type),
-          this.figureOf(actor),
+          this.figureFor(actor.type, actor.figureSeed),
         )
           ? undefined
           : nextFlinchTime;
@@ -1902,7 +1908,7 @@ export class ActorSystem {
   ): RegionHit | undefined {
     const { blockSize } = this.options;
     const posed = posedRegionsForActor({ id, actor, scene: this.options, poseCache });
-    const figure = actor.type.model === 'fused-mass' ? fusedMassFigureForType(actor.type, actor.figureSeed) : undefined;
+    const figure = actor.type.model === 'fused-mass' ? this.fusedMassOf(actor.type, actor.figureSeed) : undefined;
     let found = nearest;
     for (const regionId of Object.keys(actor.regions)) {
       const region = regionId as ActorHitRegion;
@@ -2162,7 +2168,10 @@ export class ActorSystem {
     const killed = healthAfter === 0 && lethalRegion(actor.type, region);
     const incapacitated = this.applyMeleeEffects({ id, actor, region, healthAfter, killed, hit });
     const newParts = actor.severed.filter((candidate) => !severedBefore.has(candidate));
-    const headPart = actor.type.model === 'fused-mass' ? undefined : regionCut(this.figureOf(actor).body, 'head');
+    const headPart =
+      actor.type.model === 'fused-mass'
+        ? undefined
+        : regionCut(this.figureFor(actor.type, actor.figureSeed).body, 'head');
     const part = headPart !== undefined && newParts.includes(headPart) ? headPart : newParts[0];
     const outcome = meleeOutcome(killed, incapacitated, part, headPart);
     if (!projectile) {
@@ -2185,7 +2194,7 @@ export class ActorSystem {
     if (!carving || strikes.length === 0) {
       return;
     }
-    const figure = fusedMassFigureForType(actor.type, actor.figureSeed);
+    const figure = this.fusedMassOf(actor.type, actor.figureSeed);
     const struck = centralCell(
       figure,
       strikes.map((strike) => strike.cell),
@@ -2233,7 +2242,7 @@ export class ActorSystem {
     } else {
       const cut =
         healthAfter === 0 && region !== 'head' && region !== 'torso'
-          ? regionCut(this.figureOf(actor).body, region as HumanoidHitRegion)
+          ? regionCut(this.figureFor(actor.type, actor.figureSeed).body, region as HumanoidHitRegion)
           : undefined;
       if (cut !== undefined) {
         this.sever(id, actor, cut, hit);
@@ -2301,7 +2310,7 @@ export class ActorSystem {
     }
     if (dismember) {
       const hit: HitImpulse = { point: copy(actor.body.pos), direction: [0, -1, 0], impulse: 0 };
-      const { body } = this.figureOf(actor);
+      const { body } = this.figureFor(actor.type, actor.figureSeed);
       for (const region of ['leftArm', 'rightArm', 'head'] as const) {
         const part = regionCut(body, region);
         if (part !== undefined && !actor.severed.includes(part)) {
@@ -2331,7 +2340,7 @@ export class ActorSystem {
    * Actor.dismemberRng's own doc comment. */
   private rollDismember(id: EntityId, actor: Actor, killed: boolean, hit: HitImpulse): void {
     const { dismember } = actor.type;
-    const { body } = this.figureOf(actor);
+    const { body } = this.figureFor(actor.type, actor.figureSeed);
     if (actor.dismemberRng.chance(dismember.chance)) {
       const available = availableArmParts(actor, body);
       if (available.length > 0) {

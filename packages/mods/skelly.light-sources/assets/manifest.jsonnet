@@ -1,5 +1,7 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.light-sources', [import '../models-light-sources.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.light-sources') + [
+  releasedFiles:: release.files,
+  sources: release.sources + [
     {
       title: 'Project-built low-poly hand-tool and content stand-ins',
       url: 'https://github.com/roobie/skelly',

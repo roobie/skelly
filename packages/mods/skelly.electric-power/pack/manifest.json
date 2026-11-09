@@ -45,10 +45,6 @@
     },
     {
       "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
       "path": "things/night_vision_goggles.model.json"
     },
     {

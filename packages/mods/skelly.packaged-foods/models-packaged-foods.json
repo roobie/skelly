@@ -51,7 +51,7 @@
       },
       "parts": {
         "package": {
-          "centreOfMass": [0, 0.10166666666666667, 0],
+          "centreOfMass": [0, 0.10306451612903228, 0],
           "massKg": 0.25,
           "node": "package:carton"
         }
@@ -75,7 +75,7 @@
       },
       "parts": {
         "package": {
-          "centreOfMass": [-0.0016666666666666666, 0.005000000000000001, -0.0015555555555555555],
+          "centreOfMass": [0, 0.0049999999999999992, 0],
           "massKg": 0.10000000000000001,
           "node": "package:carton"
         }
@@ -133,7 +133,7 @@
       },
       "parts": {
         "package": {
-          "centreOfMass": [0, 0.10065543071161048, 0],
+          "centreOfMass": [0, 0.10430711610486891, 0],
           "massKg": 1.05,
           "node": "package:vessel"
         }
@@ -157,7 +157,7 @@
       },
       "parts": {
         "package": {
-          "centreOfMass": [0, 0.09844827586206896, 0],
+          "centreOfMass": [0, 0.10200000000000001, 0],
           "massKg": 1.05,
           "node": "package:carton"
         }
@@ -218,7 +218,7 @@
     {
       "file": "assets/models/opened_soda.glb",
       "grip": {
-        "at": [0, 0.055, 0],
+        "at": [0, 0.059999999999999998, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
@@ -269,7 +269,7 @@
     {
       "file": "assets/models/soda.glb",
       "grip": {
-        "at": [0, 0.055, 0],
+        "at": [0, 0.059999999999999998, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",

@@ -81,7 +81,7 @@ const { registry, issues } = buildRegistry([
 const playerFigure = registry.figures.get('player')!;
 const figureModels = await loadFigureModels(registry);
 
-it('prepares every thing recipe export for ground and held drawing with its grip at the hand origin', async () => {
+it('prepares every consumed thing recipe export for ground and held drawing with its grip at the hand origin', async () => {
   const models = thingModels();
   expect(models.length).toBeGreaterThan(0);
   await Promise.all(

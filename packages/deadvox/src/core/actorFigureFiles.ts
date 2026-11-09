@@ -1,5 +1,6 @@
 import { safeParse } from 'valibot';
 import type { Registry } from './content.ts';
+import { type FusedMassFigure, fusedMassFigureOf } from './fusedMassFigure.ts';
 import { type ActorBody, ActorBodySchema, type ActorClips, ActorClipsSchema, actorFigureKey } from './schema/actors.ts';
 
 export interface ActorFigureFile {
@@ -7,6 +8,8 @@ export interface ActorFigureFile {
   readonly clips: ActorClips;
   /** The built GLB, kept as bytes: only the renderer decodes it, so the simulation never pays for a mesh. */
   readonly mesh: Uint8Array;
+  /** A fused-mass body decoded once with its owner grid; undefined for every other body plan. */
+  readonly fusedMass: FusedMassFigure | undefined;
 }
 
 /** Decoded figure files keyed by figure row id; built once per session start, before the first tick. */
@@ -34,7 +37,12 @@ const decoded = (id: string, bodyBytes: Uint8Array, clipsBytes: Uint8Array, mesh
     const first = (body.success ? undefined : body.issues[0]) ?? (clips.success ? undefined : clips.issues[0]);
     throw new Error(`Actor figure ${id}: ${first?.message ?? 'invalid figure files'}`);
   }
-  return { body: body.output, clips: clips.output, mesh };
+  return {
+    body: body.output,
+    clips: clips.output,
+    mesh,
+    fusedMass: body.output.bodyPlan === 'fused-mass' ? fusedMassFigureOf(body.output) : undefined,
+  };
 };
 
 const figureRows = (registry: Registry) =>

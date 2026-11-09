@@ -8,9 +8,9 @@ import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
 import {
   actorCrawls,
+  actorHitFlinchDuration,
   actorPoseInputFor,
   gaitPhaseGain,
-  HIT_FLINCH_DURATION,
   posedActor,
 } from '../src/core/actorPose.ts';
 import {
@@ -33,7 +33,6 @@ import { resolveSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import { fusedMassFigureForType } from '../src/core/fusedMassFigure.ts';
 import { HUMANOID_REGION_NAMES } from '../src/core/humanoidRegionNames.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { lightSenseSourceFor, toggleLight } from '../src/core/lights.ts';
@@ -73,10 +72,7 @@ const CRAWLER = registry.actors.get('crawler')!;
 const ACID = registry.actors.get('acid_zombie')!;
 const FIGURES = stackActorFigureFiles(registry);
 /** The generated figure the simulation poses and hits for `type`. */
-const simulationFigure = (type: ActorDef, seed: number) =>
-  type.model === 'fused-mass'
-    ? fusedMassFigureForType(type, seed)
-    : templateFigure(bodyPlanModel(figureVariantOf(type)), seed);
+const simulationFigure = (type: ActorDef, seed: number) => templateFigure(bodyPlanModel(figureVariantOf(type)), seed);
 const speedRates = (wander: number, chase: number) => ({
   ...SHAMBLER.speed,
   wanderMetresPerSimSecond: simRate(wander),
@@ -3673,11 +3669,15 @@ describe('attack windup', () => {
     const ray = regionRay(actor, 'head');
     expect(system.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(id);
     expect(actor.hitFlinchTime).toBe(0);
+    const flinchDuration = actorHitFlinchDuration(
+      figureVariantOf(SHAMBLER),
+      actorFigure(FIGURES, SHAMBLER, actor.figureSeed),
+    );
 
-    run(system, HIT_FLINCH_DURATION / 4);
+    run(system, flinchDuration / 4);
     const { hitFlinchTime: savedTime, stanceWeight, stepOffset } = system.store.get(id)!;
     expect(savedTime).toBeGreaterThan(0);
-    expect(savedTime).toBeLessThan(HIT_FLINCH_DURATION);
+    expect(savedTime).toBeLessThan(flinchDuration);
     expect(stanceWeight).toBeGreaterThan(0);
     expect(stepOffset).toBeLessThan(0);
     const restored = new ActorSystem(sense);
@@ -3687,12 +3687,12 @@ describe('attack windup', () => {
     expect(restored.store.get(id)!.stepOffset).toBe(stepOffset);
 
     restored.setFrozen(true);
-    run(restored, HIT_FLINCH_DURATION * 2);
+    run(restored, flinchDuration * 2);
     expect(restored.store.get(id)!.hitFlinchTime).toBe(savedTime);
     expect(restored.store.get(id)!.stanceWeight).toBe(stanceWeight);
     expect(restored.store.get(id)!.stepOffset).toBe(stepOffset);
     restored.setFrozen(false);
-    run(restored, HIT_FLINCH_DURATION);
+    run(restored, flinchDuration);
     expect(restored.store.get(id)!.hitFlinchTime).toBeUndefined();
   });
 

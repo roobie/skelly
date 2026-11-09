@@ -41,10 +41,6 @@
       "path": "things/fuse.model.json"
     },
     {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
       "kind": "asset",
       "path": "assets/models/broken_clock.glb"
     },

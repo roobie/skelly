@@ -108,7 +108,8 @@ const components = (values: Float32Array, stride: number, from: number, width: n
 
 /**
  * The figure's built mesh as crowd geometry: per-vertex position, normal, colour, owning bone, neighbouring bone and
- * emission, indexed by the body's own bone order, which the mesh's bone list must repeat.
+ * emission, indexed by the body's own bone order, which the mesh's bone list must repeat. A fused-mass mesh also
+ * carries each vertex's rest-grid cell as `cellIndex`, so carved cells can be hidden.
  */
 export const actorFigureGeometry = (
   mesh: Uint8Array,
@@ -131,7 +132,8 @@ export const actorFigureGeometry = (
   const position = attribute('POSITION', 'VEC3');
   const parts = [attribute('NORMAL', 'VEC3'), attribute('COLOR_0', 'VEC4'), attribute('TEXCOORD_1', 'VEC2')];
   const emission = attribute('TEXCOORD_2', 'VEC2');
-  if ([...parts, emission].some(({ count }) => count !== position.count)) {
+  const cell = primitive.attributes.TEXCOORD_3 === undefined ? undefined : attribute('TEXCOORD_3', 'VEC2');
+  if ([...parts, emission, ...(cell ? [cell] : [])].some(({ count }) => count !== position.count)) {
     throw new Error(`Actor mesh ${id} attributes must share one vertex count`);
   }
   const [normal, color, bone] = parts.map(({ values }) => values as Float32Array) as [
@@ -153,6 +155,9 @@ export const actorFigureGeometry = (
   geometry.setAttribute('boneIndex', new BufferAttribute(components(bone, 2, 0, 1), 1));
   geometry.setAttribute('neighbourBone', new BufferAttribute(components(bone, 2, 1, 1), 1));
   geometry.setAttribute('crowdEmission', new BufferAttribute(emission.values, 2));
+  if (cell) {
+    geometry.setAttribute('cellIndex', new BufferAttribute(components(cell.values as Float32Array, 2, 0, 1), 1));
+  }
   geometry.setIndex(new BufferAttribute(indices.values, 1));
   geometry.computeBoundingSphere();
   return geometry;

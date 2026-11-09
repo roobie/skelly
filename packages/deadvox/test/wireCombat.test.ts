@@ -7,7 +7,7 @@ import type { MeleeWeapon } from '../src/core/actorSystem.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { worldMeleeBlocker, worldOpaque, worldSolid, worldSoundBlocking } from '../src/core/collision.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { fusedMassFigureForType, fusedMassStrikeOrigin } from '../src/core/fusedMassFigure.ts';
+import { fusedMassStrikeOrigin } from '../src/core/fusedMassFigure.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ActorDef } from '../src/core/schema.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
@@ -208,8 +208,9 @@ it('admits the fused-mass tentacle thrust only when its reach clears the wire th
     const type = registry.actors.get('amalgam')!;
     const id = system.add(type, [0, 1, 0], [0, 0, 1]);
     const actor = system.store.get(id)!;
-    const reach = actorAttackReachMetres(actor);
-    const origin = fusedMassStrikeOrigin(fusedMassFigureForType(type, actor.figureSeed), actor.facing).map(
+    const built = system.figureFor(type, actor.figureSeed);
+    const reach = actorAttackReachMetres(actor, built.body);
+    const origin = fusedMassStrikeOrigin(built.fusedMass!, actor.facing).map(
       (value, axis) => value / 0.5 + actor.body.pos[axis]!,
     ) as Vec3;
     playerPos = [origin[0], origin[1] - PLAYER_CHEST_METRES / 0.5, origin[2] + (reach * 0.9) / 0.5];

@@ -2418,7 +2418,7 @@
       "bodyScale": 4,
       "canJumpObstacles": false,
       "carving": {
-        "interiorColor": "#7a1e22",
+        "interiorColor": "#7a1c16",
         "maxRadiusMetres": 0.75,
         "radiusMetresPerDamage": 0.0023
       },
@@ -2558,6 +2558,11 @@
         "attack": "amalgam_attack",
         "hurt": "amalgam_hurt",
         "idle": "amalgam_idle"
+      },
+      "spawnEnvelope": {
+        "halfDepthMetres": 2.666666666666667,
+        "halfWidthMetres": 3,
+        "heightMetres": 4.6666666666666661
       },
       "spawnWeight": 1,
       "speed": {

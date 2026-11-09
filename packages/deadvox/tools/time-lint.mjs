@@ -30,6 +30,10 @@ const isUnitToken = (tokens, index) => {
   );
 };
 const hasTemporalName = (name) => {
+  // Path-keyed records identify assets rather than naming temporal quantities.
+  if (name.includes('/')) {
+    return false;
+  }
   const tokens = nameTokens(name);
   return tokens.some((_, index) => isUnitToken(tokens, index)) || TEMPORAL_SEMANTIC.test(tokens.join(''));
 };

@@ -42,8 +42,7 @@ The viewer must not approve a fall the game never draws. Sharing the game's cont
 
 **Losing a leg must read as a collapse caused by the hit, not a pose swap.** The living fall remains presentation-only so simulation movement and timing never wait for a visual recovery. Reuse corpse contact physics, then catch up to the current crawl pose rather than moving the simulation to the fallen body. See `packages/deadvox/src/render/mobActors.ts`, `MobActorMeshes.beginCrawlFall` and `MobActorMeshes.packCrawlFall`, and `packages/deadvox/src/config/ragdoll.jsonnet`, `crawlFall`.
 
-Contact rather than a pose rule should settle an open jaw. Shared corpse contact lets a flying part land on another body, but sinking bodies must not become invisible supports. See `packages/deadvox/src/render/mobActors.ts`, `MobActorMeshes.startRagdoll`, `MobActorMeshes.finishDownedCorpse` and `MobActorMeshes.packCorpse`, and `packages/deadvox/src/render/ragdoll.ts`, `RagdollWorld`. Carving must not evict a corpse or a severed limb, and launch tuning must not outrun the available terrain. See `packages/deadvox/src/render/fusedMassFlesh.ts`, `FleshChunks`, `packages/deadvox/src/render/ragdoll.ts`, `RagdollWorld.buildGround`, and `packages/deadvox/src/config/ragdoll.jsonnet`, `flesh`.
-
+Contact rather than a pose rule should settle an open jaw. Shared corpse contact lets a flying part land on another body, but sinking bodies must not become invisible supports. See `packages/deadvox/src/render/mobActors.ts`, `MobActorMeshes.startRagdoll`, `MobActorMeshes.finishDownedCorpse` and `MobActorMeshes.packCorpse`, and `packages/deadvox/src/render/ragdoll.ts`, `RagdollWorld`.
 Humanoid coarse builds intentionally omit forearm and hand flesh while retaining forced marrow for connectivity. Those bones explicitly declare a marrow material so this omission preserves their appearance without a core skin fallback. See `src/mob/humanoid.ts`, `buildBones`, and `src/core/body.ts`, `Bone`.
 
 ## Recipe spike
@@ -81,13 +80,13 @@ limp. See `src/mob/quadruped.ts`, `QUADRUPED_TROT`, `quadrupedStepGeometry`, `qu
 
 ### Template readiness
 
-Comparison-only templates remain available for gait comparisons but must never reach player-facing consumers. Readiness belongs at the selection boundary, not in a naming convention or an incidental list, so a caller cannot bypass it by selecting a model directly. The viewer and development CLIs are exempt from `consumableTemplate` because they must inspect and compare bodies before those bodies are fit to ship. See `src/core/template.ts`, `TemplateStatus` and `consumableTemplate`; `src/mob/humanoidFigure.ts`, `templateFigure`; `packages/deadvox/src/core/fusedMassFigure.ts`, `fusedMassFigure`; `src/cli/generate.ts`; `src/viewer/main.ts`; and `test/dog.test.ts`.
+Comparison-only templates remain available for gait comparisons but must never reach player-facing consumers. Readiness belongs at the selection boundary, not in a naming convention or an incidental list, so a caller cannot bypass it by selecting a model directly. The viewer and development CLIs are exempt from `consumableTemplate` because they must inspect and compare bodies before those bodies are fit to ship. See `src/core/template.ts`, `TemplateStatus` and `consumableTemplate`; `src/mob/humanoidFigure.ts`, `templateFigure`; `src/cli/generate.ts`; `src/viewer/main.ts`; and `test/dog.test.ts`.
 
 The playtest apex enemy must read as one grotesque fusion, not several unrelated actors. Complete shambler members remain severable subtrees beneath a non-severable shared core; members may hang or turn in any orientation, while support comes from actual ground contacts. The core's spreading lower mass should read as flesh rather than a platform or extra limbs. Its member count is a visual choice, not a budget ceiling. See `src/mob/fusedMass.ts`, `fusedMassManifest`, `src/core/generate.ts`, `resolveSupportBones`, and `test/fusedMass.test.ts`.
 
 A cut's surviving boundary needs the severed state of its neighbouring bone to show stump gore; every bone index in a body plan must therefore survive the crowd mask handoff. See `src/mob/crowd.ts`, `packSeveredMask` and `crowdBoneSevered`.
 
-Sharing the generated figure keeps gameplay contact tied to the visible anatomy. Regular actor consumers must opt into the fused body explicitly rather than treating it as an ordinary template. See `src/mob/fusedMassTemplate.ts`, `VIEWER_TEMPLATES`, `packages/deadvox/src/core/fusedMassFigure.ts`, `fusedMassFigure`, and `packages/deadvox/test/simulationFingerprint.test.ts`.
+Regular actor consumers must opt into the fused body explicitly rather than treating it as an ordinary template. See `src/mob/fusedMassTemplate.ts`, `VIEWER_TEMPLATES`.
 
 The Mobgen viewer keeps the amalgam static because arbitrarily oriented member heads have no single humanoid gaze target. Do not enable its gaze solver until it can resolve each member's head transform. See `src/viewer/main.ts`, `applyLiveFrame`, `src/mob/fusedMass.ts`, and `src/mob/lookAt.ts`, `lookAtPose`.
 

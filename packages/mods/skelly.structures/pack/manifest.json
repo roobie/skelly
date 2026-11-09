@@ -30,14 +30,6 @@
       "path": "things/hinge_set.model.json"
     },
     {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/oven_door.model.json"
-    },
-    {
       "kind": "asset",
       "path": "assets/audio/door-close-01.ogg"
     },
@@ -68,10 +60,6 @@
     {
       "kind": "asset",
       "path": "assets/models/hinge_set.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/oven_door.glb"
     }
   ],
   "id": "skelly.structures",

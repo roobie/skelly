@@ -4,7 +4,9 @@ read_if:
   - you consume shared models or rigs, choose pack homes or change clip representation
   - you change how a baked death clip starts, plays or settles
   - you update the asset release pin or submodule, or admit its outputs into a product
+  - you change how admission learns an actor body's dimensions before figure files load
   - you change shared model licensing, turned-piece defaults or copied-model provenance
+  - you change declared asset URL imports or Vite dependency scanning
 ---
 
 # 10. Asset pipelines in skelly-assets
@@ -39,8 +41,12 @@ to the game, not the exporter. Mobgen becomes a pipeline, not a Deadvox runtime
 import: generated bodies, GLBs and clips cross the boundary as data, while per-tick
 composition, injury, ragdolls and rendering remain runtime mechanisms. The viewer's
 ragdoll stage is removed rather than carrying a game-runtime dependency into the
-pipeline. Fused-mass carving operates on the loaded GLB, without generated hole walls,
-so consuming a baked body does not require runtime voxel remeshing.
+pipeline. Fused-mass carving hides cells of the loaded GLB, and deadvox builds flesh
+walls for each hole at runtime from the rest grid the actor already holds. The loaded
+GLB alone cannot show a hole's inside, so a hole would show the world through it;
+walls built from the grid show flesh on every side of the pit with no full remesh and
+no mobgen runtime import. See `packages/deadvox/src/render/holeWalls.ts`,
+`holeWallGeometry`.
 
 ## Shared production and content homes
 
@@ -102,7 +108,7 @@ Turned pieces share a library-wide eight-flat default, with authored side counts
 taking precedence and `sides: null` opting into round geometry. This replaces a
 look determined by a model's origin with a consistent library look while preserving
 authoring control. See
-`packages/skelly-assets/tools/packages/thing-authoring-tool/items.jsonnet`, `turnedSides`, and
+`packages/skelly-assets/models/item-settings.libsonnet`, `turnedSides`, and
 `packages/skelly-assets/tools/packages/thing-authoring-tool/src/families/compound.ts`, `compound`.
 
 Delete a copy as duplicate elimination only when its producer equals it. A differing
@@ -113,13 +119,24 @@ an intentional shared-export look from an unnoticed change.
 
 ## Staged admission
 
-The pinned release may carry actor bodies and clips in a bundled pack's archive before
-Deadvox declares them. The hazard is the external root's orphan check, which meets every
-installed file no bundled pack claims; see `packages/deadvox/tools/readBundledPacks.ts`,
-`readResolved`. A pin bump therefore admits a pack's new files with their declarations.
-Consumer cutovers change declarations, metadata and bytes together, so a model is never
-admitted without its files or exposed without a claim. See `docs/git-workflow.md`,
-"Shared asset pin bumps".
+Declare and ship only released files needed by admitted content rows. The rest of
+the pinned release may remain installed without declarations; files outside that
+release still fail the orphan check. Library growth must not impose hashing, config,
+build or deploy work on content that does not consume it. See
+`tools/jsonnet/lib/built-pack.libsonnet`, `consumed`,
+`packages/deadvox/tools/readBundledPacks.ts`, `readAvailablePacks`, and
+`docs/git-workflow.md`, "Shared asset pin bumps".
+
+Narrow eager URL imports before Vite processes assets, because filtering a URL map
+at runtime cannot undo emitted files or inlined model payloads. Placeholder globs
+must remain valid relative wildcard globs: Vite's dependency scanner reads raw product source
+without the asset pre-transform. Keep dependency discovery enabled; scanning does
+not need model URLs, but a failed scan interrupts dependency pre-bundling and can
+invalidate running browser requests. See
+`packages/deadvox/tools/declaredAssetGlobsPlugin.ts`, `declaredAssetGlobsPlugin`, and
+`packages/deadvox/test/devDependencyScan.test.ts`.
+Consumer cutovers keep declarations, credits and selected bytes together, so a model
+is never admitted without its files or shipped without a claim.
 
 Actor figures are admitted by declared pack file path. A figure row holds its key
 and the paths of the body and clips files its pack declares from the pinned build
@@ -143,6 +160,15 @@ thousands of models. A changed model is fetched fresh at the next session start,
 changing a model and seeing the change stays fast. The simulation never sees fetch
 timing, because every figure is resolved before the first tick. The cost accepted: a
 session start is asynchronous, and each entry path has a load error path.
+
+A fused mass's spawn envelope lives in content. The browser reads no figure bytes at
+content load, yet admission checks that templates, map kits and layouts spawn an
+amalgam clear of walls, so admission takes the body's dimensions from the actor type's
+`spawnEnvelope`. Node holds that copy to the pinned body's collision box, so the two
+cannot drift: a pin bump that changes the box fails `validate` until the content is
+updated. See `packages/deadvox/src/core/spawnClearance.ts`, `actorBodyDimensions`, and
+`packages/deadvox/src/core/content.ts`, `actorFigureFileIssues`. The cost accepted: the
+envelope is copied by hand, because the build manifest carries no body bounds.
 
 The shared worn family fits the shared player body, not generated mob bodies;
 fitting it over generated bodies requires its own development round. The paper-sheet

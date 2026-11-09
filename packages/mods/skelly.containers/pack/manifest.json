@@ -23,31 +23,7 @@
     },
     {
       "kind": "json",
-      "path": "things/cutting_board.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/iron_pot.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/jerry_can.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/pan.model.json"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/cutting_board.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/iron_pot.glb"
     },
     {
       "kind": "asset",
@@ -56,10 +32,6 @@
     {
       "kind": "asset",
       "path": "assets/models/lamp_oil_bottle.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/pan.glb"
     }
   ],
   "id": "skelly.containers",

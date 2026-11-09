@@ -32,23 +32,7 @@
     },
     {
       "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
       "path": "things/kabar.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/kite_shield.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/lame_saber.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/long_pole.model.json"
     },
     {
       "kind": "json",
@@ -56,19 +40,7 @@
     },
     {
       "kind": "json",
-      "path": "things/pike_pole.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/steel_pipe.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/sun_shield.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/tower_shield.model.json"
     },
     {
       "kind": "asset",
@@ -80,35 +52,11 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/kite_shield.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/lame_saber.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/long_pole.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/machete.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/pike_pole.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/steel_pipe.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/sun_shield.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/tower_shield.glb"
     }
   ],
   "id": "skelly.melee",

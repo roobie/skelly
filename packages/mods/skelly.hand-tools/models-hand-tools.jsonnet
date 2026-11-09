@@ -19,6 +19,6 @@ local dial = {
 ).pack({
   models: [{ id: 'sewing_kit', file: 'assets/models/sewing_kit.glb' }] + [
     if model.id == 'compass' then model + { dial: dial } else model
-    for model in import 'packages/skelly-assets/built/skelly.hand-tools/things/index.json'
+    for model in (import 'tools/jsonnet/lib/used-models.libsonnet')(import 'packages/skelly-assets/built/skelly.hand-tools/things/index.json', [import 'hand-tools-items.jsonnet'])
   ],
 })

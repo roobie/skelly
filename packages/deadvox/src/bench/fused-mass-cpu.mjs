@@ -4,17 +4,13 @@ import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { readStackActorFigureFiles, readStackContentSources } from '../../tools/readBundledPacks.ts';
+import { actorFigure } from '../core/actorFigureFiles.ts';
 import { BlockEntities } from '../core/blockEntities.ts';
 import { claimed } from '../core/capabilities.ts';
 import { worldSolid } from '../core/collision.ts';
 import { buildRegistry, requireDayCycle } from '../core/content.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
-import {
-  FUSED_MASS_FIGURE_SEED,
-  fusedMassCollisionEnvelope,
-  fusedMassFigureForType,
-  fusedMassTypeOf,
-} from '../core/fusedMassFigure.ts';
+import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope, fusedMassTypeOf } from '../core/fusedMassFigure.ts';
 import { makeScale } from '../core/scale.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
 import { worldBricks } from '../core/solidBricks.ts';
@@ -54,7 +50,10 @@ const actorFigureFiles = readStackActorFigureFiles(packageRoot, 'skelly.deadvox'
 const scale = makeScale(0.5);
 const PLAYER = playerTuning(registry);
 const type = fusedMassTypeOf(registry.actors);
-const envelope = fusedMassCollisionEnvelope(fusedMassFigureForType(type, FUSED_MASS_FIGURE_SEED), scale.blockSize);
+const envelope = fusedMassCollisionEnvelope(
+  actorFigure(actorFigureFiles, type, FUSED_MASS_FIGURE_SEED).fusedMass,
+  scale.blockSize,
+);
 const dt = 1 / 60;
 const ticks = 75;
 const warmups = 5;

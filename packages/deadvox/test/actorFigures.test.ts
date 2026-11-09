@@ -127,6 +127,19 @@ describe('actor figure file checks', () => {
     ]);
   });
 
+  it("reports a fused mass whose content spawn envelope is not its body's collision box", () => {
+    const registry = baseRegistry();
+    const amalgam = [...registry.actors.values()].find((actor) => actor.model === 'fused-mass')!;
+    const key = actorFigureKey(amalgam.id, FUSED_MASS_FIGURE_SEED);
+    const { body, clips } = actorFigure(stackActorFigureFiles(registry), amalgam, FUSED_MASS_FIGURE_SEED);
+    expect(actorFigureFileIssues(registry, key, body, clips)).toEqual([]);
+    const spawnEnvelope = { halfWidthMetres: 0.5, halfDepthMetres: 0.5, heightMetres: 0.5 };
+    const actors = new Map([...registry.actors, [amalgam.id, { ...amalgam, spawnEnvelope }]]);
+    expect(actorFigureFileIssues({ ...registry, actors }, key, body, clips)).toEqual([
+      expect.objectContaining({ id: key, path: '.body.bounds' }),
+    ]);
+  });
+
   it('reports a body file that fails its schema under the row', () => {
     const issues = fileIssues(figure.id, { ...rawBody, bones: 'none' }, rawClips);
     expect(issues).toEqual([expect.objectContaining({ id: figure.id, path: '.body.bones' })]);

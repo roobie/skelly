@@ -5,6 +5,7 @@
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import { type ActorFigureFiles, loadActorFigureFiles } from '../core/actorFigureFiles.ts';
 import { PLAYER_CHEST_METRES } from '../core/actorMotion.ts';
+import type { Actor } from '../core/actorState.ts';
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import type { BodyRegion } from '../core/body.ts';
@@ -1002,19 +1003,20 @@ const startPlayWith = (
     onAcidImpact: (position, type) => view.acidEffects.splash(position, type.acidSpit!.presentation),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
-    // corpse, and blood for every wound. Only MobActorMeshes implements the zombie hooks; ActorMeshes leaves
+    // corpse, blood for every wound, and flesh chunks for a carve or a hard hit. Only MobActorMeshes implements the zombie hooks; ActorMeshes leaves
     // them undefined.
     actorEffects: {
       onWound: (id, _actor, hit, damage) => {
         actorMeshes.actorWounded?.(id, hit);
         view.gore.spray(hit, damage);
+        view.gore.wounded(hit, damage);
       },
       onSever: (id, actor, part, hit) => {
         const launchVelocity = actorMeshes.actorSevered?.(id, part, hit, actor);
         view.gore.severed(hit, launchVelocity, actor.type.severedSpurt);
       },
       onCarve: (id, actor, cells, hit) => {
-        actorMeshes.actorCarved?.(id, actor, cells, hit);
+        actorMeshes.actorCarved?.(id, actor);
         view.gore.carved(hit, cells.length);
       },
       onIncapacitated: (id, actor) => actorMeshes.actorIncapacitated?.(id, actor),
@@ -2727,6 +2729,8 @@ const startPlayWith = (
   };
 
   const playerDrip = (region: BodyRegion) => sim.body.bleedingTier(region)?.drip;
+  const goreFusedMass = (actor: Actor) =>
+    actor.type.model === 'fused-mass' ? actorSystem.figureFor(actor.type, actor.figureSeed).fusedMass : undefined;
   // Blood holds still while the game is paused.
   const updateGore = (dt: RealSeconds): void => {
     view.gore.update(sim.paused ? 0 : dt, session.physicalSolid, {
@@ -2738,6 +2742,7 @@ const startPlayWith = (
         drip: playerDrip,
         thirdPerson: isPlayerFigureWhole(thirdPersonViewEnabled, spectator.enabled),
       },
+      fusedMass: goreFusedMass,
     });
   };
   const waitViewAction = (): WaitViewAction | undefined => {

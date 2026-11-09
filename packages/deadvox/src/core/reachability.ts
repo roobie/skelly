@@ -7,6 +7,7 @@ import { scenarioSources } from './scenarioComposition.ts';
 import type { StartDef } from './schema/starts.ts';
 import type { ScenarioDef, SiteLayoutDef } from './schema.ts';
 import { ordinarySpawnWeights } from './settlementSpawns.ts';
+import { startSkills } from './startState.ts';
 import { type CompiledTemplate, compileMapPiece, compileTemplate, kitSlotChoices } from './templates.ts';
 
 interface RecipeDiagnostic {
@@ -602,7 +603,7 @@ export const checkStartReachability = (registry: Registry, start: StartDef, scop
       ]),
     ),
     skills: new Map(
-      Object.entries(start.skills).flatMap(([id, level]) => {
+      Object.entries(startSkills(registry.skills, start)).flatMap(([id, level]) => {
         const role = registry.skills.get(id)?.capability;
         return role ? [[role, level] as const] : [];
       }),

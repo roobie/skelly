@@ -1,6 +1,5 @@
 import { templateByName } from '@mobgen/core/template.ts';
 import { templateFigure } from '@mobgen/mob/humanoidFigure.ts';
-import { flinchClipFor, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import {
   applyJointDelta,
   applyMotion,
@@ -20,7 +19,7 @@ import { applyPoint, IDENTITY_M, type Mat3, mulMM, mulMV, rotX, rotY, rotZ } fro
 import { type Bone, bodySkeleton } from './bones.ts';
 import { severedBoneSet } from './boneTree.ts';
 import type { Vec3 } from './coords.ts';
-import { type FusedMassFigure, fusedMassFigure, fusedMassSeveredBones } from './fusedMassFigure.ts';
+import { fusedMassSeveredBones } from './fusedMassFigure.ts';
 import { clampJointAngles, jointAngles, jointRotation } from './joints.ts';
 import { boneTransforms, type Pose } from './pose.ts';
 import {
@@ -35,16 +34,14 @@ import {
 
 export interface ActorPoseInput {
   /**
-   * The built body and clips the pose composes over. A fused mass still generates its pose and figure, since
-   * its built idle holds only the rest pose and none of its flinch.
+   * The built body and clips the pose composes over. A fused mass takes its flinch from the body's `animation`,
+   * since its built idle holds only the rest pose.
    */
   readonly figure: ActorFigureFile;
   readonly id?: number;
   readonly seed: number;
   readonly model?: string;
   readonly crawling?: boolean;
-  /** Authored scale for the fused-mass generated body. */
-  readonly bodyScale?: number;
   /** Simulation position in block units. */
   readonly position: Vec3;
   readonly facing: Vec3;
@@ -137,7 +134,6 @@ export const actorPoseInputFor = (
     seed: actor.figureSeed,
     model: figureVariantOf(actor.type),
     crawling: actorCrawls(actor),
-    ...(actor.type.bodyScale === undefined ? {} : { bodyScale: actor.type.bodyScale }),
     position: [position[0], position[1] + (actor.stepOffset ?? 0) / blockSize, position[2]],
     facing: root?.facing ?? actor.facing,
     headYaw: root?.headYaw ?? actor.headYaw,
@@ -161,8 +157,8 @@ export interface PosedActor {
   readonly pose: Pose;
   readonly transforms: ReturnType<typeof boneTransforms>;
   readonly bones: readonly Bone[];
-  /** The generated realization a humanoid or fused mass still poses; an acid poses its built body alone. */
-  readonly figure?: ReturnType<typeof templateFigure> | FusedMassFigure;
+  /** The generated realization a humanoid still poses; an acid and a fused mass pose their built bodies alone. */
+  readonly figure?: ReturnType<typeof templateFigure>;
   readonly hidden: ReadonlySet<string>;
   readonly yaw: Mat3;
   readonly position: Vec3;
@@ -230,11 +226,20 @@ export const flinchSideForId = (id: number): number => {
   return (h % 2000) / 1000 - 1;
 };
 
-const fusedMassHitFlinchPose = (pose: Pose, time: number, id: number): Pose => {
-  const peak = HIT_FLINCH.keys[1]!;
-  const chest = peak.rotations.chest!;
-  const recovery = (HIT_FLINCH.duration - time) / (HIT_FLINCH.duration - peak.t);
-  const snap = time <= peak.t ? time / peak.t : recovery;
+type FusedMassFlinch = Extract<ActorBody['animation'], { flinch: unknown }>['flinch'];
+
+/** The fused-mass body's own flinch timing and peak tilt; a body of another plan has none. */
+const fusedMassFlinchOf = ({ body }: ActorFigureFile): FusedMassFlinch => {
+  if (!('flinch' in body.animation)) {
+    throw new Error(`Actor figure ${actorFigureKey(body.type, body.seed)} has no fused-mass flinch`);
+  }
+  return body.animation.flinch;
+};
+
+const fusedMassHitFlinchPose = (pose: Pose, time: number, id: number, flinch: FusedMassFlinch): Pose => {
+  const { peakAtSimSeconds: peak, durationSimSeconds: duration } = flinch;
+  const recovery = (duration - time) / (duration - peak);
+  const snap = time <= peak ? time / peak : recovery;
   const weight = Math.max(0, Math.min(1, snap));
   const eased = weight * weight * (3 - 2 * weight);
   const side = flinchSideForId(id);
@@ -242,7 +247,10 @@ const fusedMassHitFlinchPose = (pose: Pose, time: number, id: number): Pose => {
     ...pose,
     rotations: {
       ...pose.rotations,
-      core: mulMM(mulMM(pose.rotations.core ?? IDENTITY_M, rotX(chest[0] * eased)), rotZ(chest[2] * side * eased)),
+      core: mulMM(
+        mulMM(pose.rotations.core ?? IDENTITY_M, rotX(flinch.pitch * eased)),
+        rotZ(flinch.roll * side * eased),
+      ),
     },
   };
 };
@@ -426,13 +434,13 @@ const acidPose = (input: ActorPoseInput, bones: ReadonlyMap<string, Bone>): Pose
     : applyJointDelta(body, gazed, clipOf(set, 'hit', 'jointDelta'), input.hitFlinchTime, motion);
 };
 
-// The built fused-mass clips hold only its rest pose, and its flinch and figure are not built, so it generates.
+// The built fused-mass clips hold only its rest pose, so it composes rest and its body's flinch.
 const posedFusedMass = (input: ActorPoseInput): PosedActor => {
-  if (input.bodyScale === undefined) {
-    throw new Error('Fused-mass pose is missing its authored bodyScale');
+  const figure = input.figure.fusedMass;
+  if (!figure) {
+    throw new Error(`Actor figure ${figureKeyOf(input.figure)} has no fused-mass figure`);
   }
-  const figure = fusedMassFigure(input.seed, input.bodyScale);
-  const { bones } = figure.realized.body;
+  const { bones } = figure;
   const basePose: Pose = {
     root: figure.originOffset.map((coordinate) => coordinate / figure.scale) as Vec3,
     rotations: {},
@@ -440,12 +448,11 @@ const posedFusedMass = (input: ActorPoseInput): PosedActor => {
   const pose =
     input.hitFlinchTime === undefined
       ? basePose
-      : fusedMassHitFlinchPose(basePose, input.hitFlinchTime, input.id ?? input.seed);
+      : fusedMassHitFlinchPose(basePose, input.hitFlinchTime, input.id ?? input.seed, fusedMassFlinchOf(input.figure));
   return {
     pose,
     transforms: boneTransforms(bones, pose),
     bones,
-    figure,
     hidden: fusedMassSeveredBones(figure, input.severed),
     yaw: yawOf(input.facing),
     position: input.position,
@@ -463,8 +470,7 @@ export const posedMouth = (input: ActorPoseInput): Vec3 => {
   const { figure } = posed;
   const anchors = figure ? figure.realized.body.anchors : input.figure.body.anchors;
   const anchor = anchors?.mouth ?? { bone: highest.id, position: highest.tail };
-  const generatedScale = figure && 'scale' in figure && typeof figure.scale === 'number' ? figure.scale : 1;
-  const scale = figure ? generatedScale : input.figure.body.scale;
+  const scale = figure ? 1 : input.figure.body.scale;
   const local = applyPoint(posed.transforms.get(anchor.bone)!, anchor.position);
   const world = mulMV(posed.yaw, [local[0] * scale, local[1] * scale, local[2] * scale]);
   return [
@@ -517,21 +523,21 @@ export const posedActor = (input: ActorPoseInput): PosedActor => {
   };
 };
 
-export const HIT_FLINCH_DURATION = HIT_FLINCH.duration;
-
-/** How long a hit flinch lasts in Sim seconds; an acid's is its built hit clip's own span. */
+/**
+ * How long a hit flinch lasts in Sim seconds, so the flinch clock ends where the pose's recovery does: a fused mass's
+ * is its body's flinch, an acid's its built hit clip's span, and a humanoid's its flinch clip's, from the crawl set
+ * when it crawls (`legless-humanoid`) or its body is cut at the legs.
+ */
 export const actorHitFlinchDuration = (model: string, figure: ActorFigureFile): number => {
   if (model === 'fused-mass') {
-    return HIT_FLINCH_DURATION;
+    return fusedMassFlinchOf(figure).durationSimSeconds;
   }
-  if (model === 'acid') {
-    const set = figure.clips.standing;
-    const duration = set && clipOf(set, 'hit', 'jointDelta').durationSimSeconds;
-    if (duration === undefined) {
-      throw new Error(`Actor figure ${figureKeyOf(figure)} has no timed hit clip`);
-    }
-    return duration;
+  const crawls = model === 'legless-humanoid' || figure.body.legCut !== undefined;
+  const set = figure.clips[model === 'acid' || !crawls ? 'standing' : 'crawling'];
+  const clip = set && (model === 'acid' ? clipOf(set, 'hit', 'jointDelta') : clipOf(set, 'flinch', 'overlay'));
+  const duration = clip?.durationSimSeconds;
+  if (duration === undefined) {
+    throw new Error(`Actor figure ${figureKeyOf(figure)} has no timed flinch clip`);
   }
-  const template = templateByName(bodyPlanModel(model));
-  return template.legCut === undefined ? flinchClipFor(template).duration : HIT_FLINCH_DURATION;
+  return duration;
 };

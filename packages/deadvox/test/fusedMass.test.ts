@@ -1,21 +1,18 @@
-// biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through Deadvox's TypeScript alias.
-import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { describe, expect, it } from 'vitest';
 import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { PLAYER_CHEST_METRES } from '../src/core/actorMotion.ts';
-import { actorPoseInputFor, posedActor } from '../src/core/actorPose.ts';
+import { actorPoseInputFor, posedActor, targetStanceWeight } from '../src/core/actorPose.ts';
 import { posedFusedMassRegionBoxes } from '../src/core/actorRegions.ts';
 import type { PlayerSense } from '../src/core/actorSense.ts';
 import { activeFusedMassMembers, actorAttackReachMetres } from '../src/core/actorState.ts';
 import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { carveAround, missingFlesh, protectedCoreCell } from '../src/core/fusedMassCarving.ts';
+import { carveAround, missingFlesh, protectedCoreCell, worldPosition } from '../src/core/fusedMassCarving.ts';
 import {
   FUSED_MASS_FIGURE_SEED,
+  type FusedMassFigure,
   fusedMassCollisionEnvelope,
-  fusedMassFigure,
-  fusedMassFigureForType,
   fusedMassStrikeOrigin,
   fusedMassTypeOf,
 } from '../src/core/fusedMassFigure.ts';
@@ -23,6 +20,7 @@ import { FusedMassShape } from '../src/core/fusedMassShape.ts';
 import { pelletShotFromBasis, projectileShot } from '../src/core/pellets.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { actorFigureKey } from '../src/core/schema/actors.ts';
 import { testedBricks } from '../src/core/solidBricks.ts';
 import { compileTemplate } from '../src/core/templates.ts';
 import { simSeconds } from '../src/core/time.ts';
@@ -40,6 +38,11 @@ const registry = baseRegistry();
 const FIGURES = stackActorFigureFiles(registry);
 const BLOCK_SIZE = makeScale(0.5).blockSize;
 const POSE_SCENE = { blockSize: BLOCK_SIZE, actorFigureFiles: FIGURES };
+const AMALGAM_FIGURE = actorFigure(FIGURES, fusedMassTypeOf(registry.actors)!, FUSED_MASS_FIGURE_SEED);
+const FIGURE: FusedMassFigure = AMALGAM_FIGURE.fusedMass!;
+/** The built body an actor draws, which its attack reach and members read. */
+const bodyOf = (actor: { readonly type: { readonly id: string }; readonly figureSeed: number }) =>
+  actorFigure(FIGURES, actor.type, actor.figureSeed).body;
 const FLOOR = (_x: number, y: number): boolean => y === 0;
 const player = (): PlayerSense => ({
   pos: [20, 1, 20],
@@ -109,7 +112,7 @@ const findRegionRay = ({
 const findMemberRay = (simulation: ActorSystem, id: number, distanceMetres = 3) => {
   const actor = simulation.store.get(id)!;
   const regions = posedFusedMassRegionBoxes(actorPoseInputFor(actor, id, POSE_SCENE));
-  for (const member of activeFusedMassMembers(actor)) {
+  for (const member of activeFusedMassMembers(actor, bodyOf(actor))) {
     for (const regionId of member.regionIds) {
       const ray = findRegionRay({ simulation, id, regionId, boxes: regions[regionId] ?? [], distanceMetres });
       if (ray) {
@@ -120,16 +123,14 @@ const findMemberRay = (simulation: ActorSystem, id: number, distanceMetres = 3) 
   throw new Error('Could not aim at an exposed fused-mass member region');
 };
 
-const poseInputForFigure = (
-  figure: ReturnType<typeof fusedMassFigure>,
+const fusedMassPoseInput = (
   position: Vec3,
   facing: Vec3,
   severed: readonly string[] = [],
 ): Parameters<typeof posedFusedMassRegionBoxes>[0] => ({
   model: 'fused-mass',
-  seed: figure.seed,
-  figure: actorFigure(FIGURES, fusedMassTypeOf(registry.actors)!, figure.seed),
-  bodyScale: figure.scale,
+  seed: FUSED_MASS_FIGURE_SEED,
+  figure: AMALGAM_FIGURE,
   position,
   facing,
   headYaw: 0,
@@ -205,21 +206,25 @@ const boundsOfPosedRegions = (regions: ReturnType<typeof posedFusedMassRegionBox
  * The centre of each flesh voxel in the fused-mass body's own frame (facing -z, from its ground origin), and the voxel edge,
  * in blocks: the rest pose the rendered figure stands in.
  */
-const fleshVoxels = (figure: ReturnType<typeof fusedMassFigure>): { voxel: number; centres: Vec3[] } => {
-  const { dims, owner, size, origin } = figure.realized.voxels;
-  const metres = size * figure.scale;
+const fleshVoxels = (figure: FusedMassFigure): { voxel: number; centres: Vec3[] } => {
+  const { grid, scale, originOffset } = figure;
+  const centres = ownedCellCentres(grid).map(
+    (point) => point.map((value, axis) => (value * scale + originOffset[axis]!) / BLOCK_SIZE) as Vec3,
+  );
+  return { voxel: (grid.size * scale) / BLOCK_SIZE, centres };
+};
+
+/** The rest-frame centre of every owned cell of the grid, unscaled. */
+const ownedCellCentres = (grid: FusedMassFigure['grid']): Vec3[] => {
+  const { dims, owner } = grid;
   const centres: Vec3[] = [];
   owner.forEach((bone, cell) => {
     if (bone > 0) {
       const [i, j, k] = [cell % dims[0], Math.floor(cell / dims[0]) % dims[1], Math.floor(cell / (dims[0] * dims[1]))];
-      centres.push([
-        ((origin[0] + i) * metres + figure.originOffset[0]) / BLOCK_SIZE,
-        ((origin[1] + j + 0.5) * metres + figure.originOffset[1]) / BLOCK_SIZE,
-        ((origin[2] + k) * metres + figure.originOffset[2]) / BLOCK_SIZE,
-      ]);
+      centres.push(worldPosition(grid, i, j, k));
     }
   });
-  return { voxel: metres / BLOCK_SIZE, centres };
+  return centres;
 };
 
 type ObstacleKind = 'fence' | 'crates';
@@ -441,8 +446,7 @@ describe('fused-mass body and combat seam', () => {
 
   it('derives a tight collision envelope and region boxes from the realized body manifest', () => {
     expect(registry.actors.get('amalgam')?.authoredOnly).toBe(true);
-    const amalgamType = registry.actors.get('amalgam')!;
-    const figure = fusedMassFigure(FUSED_MASS_FIGURE_SEED, amalgamType.bodyScale!);
+    const figure = FIGURE;
     const envelope = fusedMassCollisionEnvelope(figure, BLOCK_SIZE);
     const { bounds, originOffset } = figure;
     const localMin = [
@@ -465,10 +469,10 @@ describe('fused-mass body and combat seam', () => {
     );
     expect(envelope.height * BLOCK_SIZE).toBeGreaterThanOrEqual(localMax[1]! - localMin[1]!);
 
-    const posed = posedFusedMassRegionBoxes(poseInputForFigure(figure, [0, 0, 0], [0, 0, -1]));
+    const posed = posedFusedMassRegionBoxes(fusedMassPoseInput([0, 0, 0], [0, 0, -1]));
     expect(regionsInsideBounds(posed, localMin, localMax)).toBe(true);
     const regionBounds = boundsOfPosedRegions(posed);
-    const scaledVoxel = figure.realized.voxels.size * figure.scale;
+    const scaledVoxel = figure.grid.size * figure.scale;
     for (let axis = 0; axis < 3; axis++) {
       expect(Math.abs(regionBounds.min[axis]! - localMin[axis]!)).toBeLessThanOrEqual(scaledVoxel);
       expect(Math.abs(regionBounds.max[axis]! - localMax[axis]!)).toBeLessThanOrEqual(scaledVoxel);
@@ -482,17 +486,22 @@ describe('fused-mass body and combat seam', () => {
     }
   });
 
-  it('keeps Deadvox metre bounds aligned with the generated mobgen body', () => {
-    const type = registry.actors.get('amalgam')!;
-    const figure = fusedMassFigure(3, type.bodyScale!);
-    const generatedBounds = voxelBounds(
-      figure.realized.voxels,
-      figure.realized.body.bones.map((_, index) => index),
-    );
-
-    expect((figure.bounds.max[1] - figure.bounds.min[1]) / figure.scale).toBeCloseTo(
-      generatedBounds.halfExtents[1] * 2,
-    );
+  it("keeps Deadvox metre bounds on the faces of the built body's flesh voxels", () => {
+    const { bounds, grid, scale } = FIGURE;
+    const half = grid.size / 2;
+    const faces = ownedCellCentres(grid).map((centre) => ({
+      min: centre.map((value) => (value - half) * scale),
+      max: centre.map((value) => (value + half) * scale),
+    }));
+    expect(faces.length).toBeGreaterThan(0);
+    for (let axis = 0; axis < 3; axis++) {
+      const lowest = Math.min(...faces.map((face) => face.min[axis]!));
+      const highest = Math.max(...faces.map((face) => face.max[axis]!));
+      expect(lowest).toBeGreaterThanOrEqual(bounds.min[axis]! - 1e-6);
+      expect(highest).toBeLessThanOrEqual(bounds.max[axis]! + 1e-6);
+      expect(lowest).toBeCloseTo(bounds.min[axis]!);
+      expect(highest).toBeCloseTo(bounds.max[axis]!);
+    }
   });
 
   it('realizes the authored figure when perception emits an amalgam alert sound', () => {
@@ -564,7 +573,7 @@ describe('fused-mass body and combat seam', () => {
     const { hitFlinchTime, ...withoutFlinch } = poseInput;
     expect(hitFlinchTime).toBeGreaterThan(0);
 
-    const memberRegion = activeFusedMassMembers(actor)[0]!.regionIds[0]!;
+    const memberRegion = activeFusedMassMembers(actor, bodyOf(actor))[0]!.regionIds[0]!;
     const posedBoxes = posedFusedMassRegionBoxes(poseInput)[memberRegion] ?? [];
     const unflinchedBoxes = posedFusedMassRegionBoxes(withoutFlinch)[memberRegion] ?? [];
     const aim = combatSystem.aimAt(ray.origin, ray.direction, FISTS_MELEE);
@@ -588,7 +597,7 @@ describe('fused-mass body and combat seam', () => {
 
   it('walks through an opening its flesh fits but its old collision box does not', () => {
     const amalgam = registry.actors.get('amalgam')!;
-    const figure = fusedMassFigureForType(amalgam, FUSED_MASS_FIGURE_SEED);
+    const figure = FIGURE;
     const envelope = fusedMassCollisionEnvelope(figure, BLOCK_SIZE);
     const start: Vec3 = [0.5, 1, 8];
     // A wall at z = 0, open in each block row half a block beyond the flesh that crosses it facing -z (the
@@ -832,7 +841,8 @@ describe('fused-mass body and combat seam', () => {
     const simulation = system();
     const id = simulation.add(registry.actors.get('amalgam')!, [0, 1, 0]);
     const actor = simulation.store.get(id)!;
-    const reach = actorAttackReachMetres(actor);
+    const body = bodyOf(actor);
+    const reach = actorAttackReachMetres(actor, body);
     const severOne = () => {
       const ray = findMemberRay(simulation, id);
       const damage = actor.regions[ray.regionId]! + 1;
@@ -849,19 +859,14 @@ describe('fused-mass body and combat seam', () => {
     expect(reach).toBeGreaterThan(0);
     expect(reach).toBeCloseTo(actor.type.attack!.reach * actor.type.bodyScale!);
     severOne();
-    expect(activeFusedMassMembers(actor).length).toBeGreaterThan(0);
-    expect(actorAttackReachMetres(actor)).toBe(reach);
+    expect(activeFusedMassMembers(actor, body).length).toBeGreaterThan(0);
+    expect(actorAttackReachMetres(actor, body)).toBe(reach);
     const noMembers = {
       ...actor,
-      severed: [
-        ...actor.severed,
-        ...fusedMassFigureForType(actor.type, actor.figureSeed)
-          .manifest.parts.filter((part) => part.severable)
-          .map((part) => part.id),
-      ],
+      severed: [...actor.severed, ...FIGURE.manifest.parts.filter((part) => part.severable).map((part) => part.id)],
     };
-    expect(activeFusedMassMembers(noMembers)).toHaveLength(0);
-    expect(actorAttackReachMetres(noMembers)).toBe(0);
+    expect(activeFusedMassMembers(noMembers, body)).toHaveLength(0);
+    expect(actorAttackReachMetres(noMembers, body)).toBe(0);
   });
 
   it('rejects a fused-mass save with a seed that has no rendered variant', () => {
@@ -870,19 +875,8 @@ describe('fused-mass body and combat seam', () => {
     const id = simulation.add(type, [0, 1, 0]);
     const state = structuredClone(simulation.snapshotState());
     const { actor } = state.actors.find((entry) => entry.id === id)!;
-    const unsupportedSeed = FUSED_MASS_FIGURE_SEED + 1;
-    const unsupportedFigure = fusedMassFigureForType(type, unsupportedSeed);
-    actor.figureSeed = unsupportedSeed;
-    actor.regions = Object.fromEntries(
-      unsupportedFigure.manifest.regions.map(({ id: region }) => {
-        const healthKey = region === 'core.trunk' ? region : `member.${region.slice(region.lastIndexOf('.') + 1)}`;
-        return [region, type.regions[healthKey]!];
-      }),
-    );
-    const envelope = fusedMassCollisionEnvelope(unsupportedFigure, BLOCK_SIZE);
-    actor.body.halfWidth = envelope.halfWidth;
-    actor.body.halfDepth = envelope.halfDepth;
-    actor.body.height = envelope.height;
+    // Only the seed is wrong: the regions and envelope stay those of a valid amalgam, so the seed alone is refused.
+    actor.figureSeed = FUSED_MASS_FIGURE_SEED + 1;
 
     expect(() => system().restoreState(state, (typeId) => registry.actors.get(typeId))).toThrow(
       `Invalid amalgam figure seed for entity ${id}`,
@@ -911,7 +905,8 @@ describe('fused-mass body and combat seam', () => {
     const type = registry.actors.get('amalgam')!;
     const id = simulation.add(type, [0, 1, 0]);
     const actor = simulation.store.get(id)!;
-    const membersBefore = activeFusedMassMembers(actor);
+    const body = bodyOf(actor);
+    const membersBefore = activeFusedMassMembers(actor, body);
     const ray = findMemberRay(simulation, id);
     const target = membersBefore.find((member) => member.partId === ray.partId)!;
     const { regionId } = ray;
@@ -932,7 +927,7 @@ describe('fused-mass body and combat seam', () => {
         expect(actor.regions[region]).toBe(before[region]);
       }
     }
-    expect(activeFusedMassMembers(actor).map(({ partId }) => partId)).toEqual(
+    expect(activeFusedMassMembers(actor, body).map(({ partId }) => partId)).toEqual(
       membersBefore.filter(({ partId }) => partId !== target.partId).map(({ partId }) => partId),
     );
 
@@ -946,8 +941,8 @@ describe('fused-mass body and combat seam', () => {
     const restored = system();
     restored.restoreState(saved, (typeId) => registry.actors.get(typeId));
     expect(restored.snapshotState()).toEqual(saved);
-    expect(activeFusedMassMembers(restored.store.get(id)!).map(({ partId }) => partId)).toEqual(
-      activeFusedMassMembers(actor).map(({ partId }) => partId),
+    expect(activeFusedMassMembers(restored.store.get(id)!, body).map(({ partId }) => partId)).toEqual(
+      activeFusedMassMembers(actor, body).map(({ partId }) => partId),
     );
   });
 });
@@ -981,11 +976,11 @@ const attackAlong = ({ typeId, elevation, reachShare, roof = false }: AttackLine
   const feet: Vec3 = [0, 1, 0];
   const id = simulation.add(registry.actors.get(typeId)!, feet, [0, 0, 1]);
   const actor = simulation.store.get(id)!;
-  const reachMetres = actorAttackReachMetres(actor);
-  const offsetMetres =
-    typeId === 'amalgam'
-      ? fusedMassStrikeOrigin(fusedMassFigureForType(actor.type, actor.figureSeed), actor.facing)
-      : [0, PLAYER_CHEST_METRES, 0];
+  const built = actorFigure(FIGURES, actor.type, actor.figureSeed);
+  const reachMetres = actorAttackReachMetres(actor, built.body);
+  const offsetMetres = built.fusedMass
+    ? fusedMassStrikeOrigin(built.fusedMass, actor.facing)
+    : [0, PLAYER_CHEST_METRES, 0];
   const origin = feet.map((coordinate, axis) => coordinate + offsetMetres[axis]! / BLOCK_SIZE) as Vec3;
   const line = (reachMetres * reachShare) / BLOCK_SIZE;
   const chest: Vec3 = [origin[0], origin[1] + line * Math.sin(elevation), origin[2] + line * Math.cos(elevation)];
@@ -1043,8 +1038,8 @@ describe('fused-mass flesh carving', () => {
   const { carving: _ignored, ...uncarvedAmalgam } = amalgam;
   const buck = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
   const firearm = registry.items.get('pump_shotgun')!.firearm!;
-  const figure = fusedMassFigureForType(amalgam, FUSED_MASS_FIGURE_SEED);
-  const voxelMetres = figure.realized.voxels.size * figure.scale;
+  const figure = FIGURE;
+  const voxelMetres = figure.grid.size * figure.scale;
 
   /** One amalgam, and a straight line at its core from a few metres out. */
   const coreTarget = (simulation = system(), type: typeof amalgam = amalgam) => {
@@ -1083,8 +1078,8 @@ describe('fused-mass flesh carving', () => {
 
   it('never carves the core cell the tentacle roots in, whatever is carved around it', () => {
     const keep = protectedCoreCell(figure);
-    const core = figure.realized.body.bones.findIndex((bone) => bone.id === 'core') + 1;
-    expect(figure.realized.voxels.owner[keep]).toBe(core);
+    const core = figure.bones.findIndex((bone) => bone.id === 'core') + 1;
+    expect(figure.grid.owner[keep]).toBe(core);
     const around = carveAround({
       figure,
       carving,
@@ -1111,8 +1106,8 @@ describe('fused-mass flesh carving', () => {
   });
 
   it.each([
-    { hole: 'a cell outside the grid', typeId: 'amalgam', carved: [figure.realized.voxels.owner.length] },
-    { hole: 'a cell with no flesh', typeId: 'amalgam', carved: [figure.realized.voxels.owner.indexOf(0)] },
+    { hole: 'a cell outside the grid', typeId: 'amalgam', carved: [figure.grid.owner.length] },
+    { hole: 'a cell with no flesh', typeId: 'amalgam', carved: [figure.grid.owner.indexOf(0)] },
     { hole: 'the protected core cell', typeId: 'amalgam', carved: [protectedCoreCell(figure)] },
     { hole: 'a hole on a type that does not carve', typeId: 'shambler', carved: [0] },
   ])('refuses a save with $hole', ({ typeId, carved }) => {
@@ -1138,9 +1133,8 @@ describe('fused-mass flesh carving', () => {
     const actor = restored.store.get(id)!;
     const input = actorPoseInputFor(actor, id, POSE_SCENE);
     const { hidden } = posedActor(input);
-    const { owner } = figure.realized.voxels;
-    const lost = (cell: number): boolean =>
-      owner[cell]! > 0 && hidden.has(figure.realized.body.bones[owner[cell]! - 1]!.id);
+    const { owner } = figure.grid;
+    const lost = (cell: number): boolean => owner[cell]! > 0 && hidden.has(figure.bones[owner[cell]! - 1]!.id);
     return { simulation: restored, actor, input, lost };
   };
 
@@ -1235,7 +1229,7 @@ describe('fused-mass flesh carving', () => {
     // posed figure turns: by its core box's turn from facing -z.
     const facing: Vec3 = [Math.sin(0.7), 0, -Math.cos(0.7)];
     const coreTurn = (toward: Vec3) =>
-      posedFusedMassRegionBoxes(poseInputForFigure(figure, [0, 0, 0], toward))['core.trunk']![0]!.rotation;
+      posedFusedMassRegionBoxes(fusedMassPoseInput([0, 0, 0], toward))['core.trunk']![0]!.rotation;
     const [turned, unturned] = [coreTurn(facing), coreTurn([0, 0, -1])];
     const turn = (row: number, column: number): number =>
       [0, 1, 2].reduce((sum, k) => sum + turned[row * 3 + k]! * unturned[column * 3 + k]!, 0);
@@ -1284,7 +1278,7 @@ describe('fused-mass flesh carving', () => {
 
   it("never knocks out a lost member's hidden voxels, even with a blast struck beside them", () => {
     const { actor, lost } = severedAmalgam();
-    const { dims, owner } = figure.realized.voxels;
+    const { dims, owner } = figure.grid;
     const faceNeighbours = (cell: number): number[] => {
       const [i, j, k] = [cell % dims[0], Math.floor(cell / dims[0]) % dims[1], Math.floor(cell / (dims[0] * dims[1]))];
       return [
@@ -1358,5 +1352,59 @@ describe('fused-mass flesh carving', () => {
     expect(carved.carved.length).toBeGreaterThan(0);
     expect(whole.carved).toEqual([]);
     expect({ ...carved, carved: [] }).toEqual(whole);
+  });
+});
+
+describe('fused-mass flinch timing', () => {
+  it('ends the flinch clock and the pose recovery at the body flinch duration, with no attack timing on the body', () => {
+    const amalgam = fusedMassTypeOf(registry.actors)!;
+    const built = actorFigure(FIGURES, amalgam, FUSED_MASS_FIGURE_SEED);
+    if (!('flinch' in built.body.animation)) {
+      throw new Error('the built fused-mass body has no flinch');
+    }
+    const builtFlinch = built.body.animation.flinch;
+    const flinch = { ...builtFlinch, durationSimSeconds: builtFlinch.durationSimSeconds * 3 };
+    const fixture = { ...built, body: { ...built.body, animation: { flinch } } };
+    expect(Object.keys(fixture.body.animation)).toEqual(['flinch']);
+    const key = actorFigureKey(amalgam.id, FUSED_MASS_FIGURE_SEED);
+    const figures = new Map([...FIGURES, [key, fixture]]);
+    const scene = { blockSize: BLOCK_SIZE, actorFigureFiles: figures };
+
+    const simulation = new ActorSystem({
+      player,
+      isSolid: FLOOR,
+      isOpaque: FLOOR,
+      dayPhase: () => dayStateAtHour(12),
+      blockSize: BLOCK_SIZE,
+      physics: physicsFor(makeScale(0.5)),
+      tuning: TEST_SENSE_TUNING,
+      hurtPlayer: () => undefined,
+      actorFigureFiles: figures,
+    });
+    const id = simulation.add(amalgam, [0, 1, 0], [1, 0, 0]);
+    const ray = findMemberRay(simulation, id);
+    expect(simulation.swing(ray.origin, ray.direction, { ...FISTS_MELEE, damage: 1, reach: 4, impulse: 0 })).toBe(id);
+    const actor = simulation.store.get(id)!;
+    const dt = 1 / 60;
+    let elapsed = 0;
+    while (actor.hitFlinchTime !== undefined && elapsed < flinch.durationSimSeconds * 2) {
+      simulation.tick(dt);
+      elapsed += dt;
+    }
+    expect(actor.hitFlinchTime).toBeUndefined();
+    expect(elapsed).toBeGreaterThan(flinch.durationSimSeconds);
+    expect(elapsed).toBeLessThanOrEqual(flinch.durationSimSeconds + dt + 1e-9);
+
+    const { hitFlinchTime: _cleared, ...rest } = actorPoseInputFor(actor, id, scene);
+    const base = posedActor(rest).transforms;
+    const pastBuiltRecovery = (builtFlinch.durationSimSeconds + flinch.durationSimSeconds) / 2;
+    expect(posedActor({ ...rest, hitFlinchTime: pastBuiltRecovery }).transforms).not.toEqual(base);
+    expect(posedActor({ ...rest, hitFlinchTime: flinch.durationSimSeconds }).transforms).toEqual(base);
+
+    for (const attackWindup of [amalgam.attack!.windupSimSeconds / 2, 0]) {
+      const input = { ...rest, chasing: false, attackWindup, hitFlinchTime: flinch.peakAtSimSeconds };
+      expect(posedActor(input).transforms.size).toBe(fixture.body.bones.length);
+      expect(Number.isFinite(targetStanceWeight(input))).toBe(true);
+    }
   });
 });

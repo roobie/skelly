@@ -1,3 +1,5 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.deadvox.rural-sites', [import '../models-rural-sites.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.deadvox.rural-sites'),
+  releasedFiles:: release.files,
+  sources: release.sources,
 }

@@ -1,4 +1,4 @@
-import { access, readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveConfig } from 'vite';
@@ -410,10 +410,9 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('src/core/pose.ts')).toBe(true);
     expect(graph.sources.has('src/core/boneTree.ts')).toBe(true);
     expect(graph.sources.has('mobgen/mob/humanoidFigure.ts')).toBe(true);
-    expect(graph.sources.has('mobgen/mob/attack.ts')).toBe(true);
-    expect(graph.sources.has('mobgen/mob/fusedMassTemplate.ts')).toBe(true);
-    expect(graph.sources.has('mobgen/mob/fusedMass.ts')).toBe(true);
-    await expect(access(resolve(projectRoot, '../mobgen/src/mob/fusedMassTemplate.ts'))).resolves.toBeUndefined();
+    expect(graph.sources.has('mobgen/core/template.ts')).toBe(true);
+    expect(graph.sources.has('src/core/fusedMassFigure.ts')).toBe(true);
+    expect(graph.sources.has('src/core/fusedMassCarving.ts')).toBe(true);
   });
 
   it('fingerprints shared model-schema changes imported by the simulation', async () => {

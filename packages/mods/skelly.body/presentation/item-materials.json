@@ -1,4 +1,5 @@
 {
+  "assets/models/float_bladders.glb": { "materials": ["jelly-pale", "body-gore"] },
   "assets/models/player_arm.glb": { "materials": ["body-skin-player"] },
   "assets/models/player_bust.glb": {
     "materials": ["body-skin-player", "body-hair", "body-eye", "body-mouth", "cloth-pants-player"]

@@ -250,7 +250,6 @@ describe('posed voxel centres of a scaled body', () => {
       model: 'fused-mass',
       seed: FUSED_MASS_FIGURE_SEED,
       figure,
-      bodyScale: amalgam.bodyScale!,
       position: [7, 3, -11],
       facing: normalize([1, 0, -2]),
       headYaw: 0,

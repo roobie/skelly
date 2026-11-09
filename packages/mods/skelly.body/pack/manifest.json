@@ -47,10 +47,6 @@
     },
     {
       "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
       "path": "things/player_arm.model.json"
     },
     {

@@ -1,7 +1,6 @@
 import { templateByName } from '@mobgen/core/template.ts';
-// Registers the generated templates actor types still name, so lookups hold wherever validation runs.
+// Registers the humanoid templates actor types still name, so lookups hold wherever validation runs.
 import '@mobgen/mob/templates.ts';
-import '@mobgen/mob/fusedMassTemplate.ts';
 import { bodyPlanModel, FIGURE_VARIANTS, figureVariantOf } from './actorModels.ts';
 
 /** Whether losing a leg drops this actor type to its crawl set; an authored leg cut is a shape, not an injury. */

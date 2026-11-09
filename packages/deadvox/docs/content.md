@@ -219,7 +219,7 @@ Where each look sits in its phase is content too, because it is timing tuning a 
 
 Footstep and vocal-noise tuning is a property of the player's body, so it lives in the player's sense row beside the other hearing tunables and a mod that changes the body needs no engine code. Every field is required, with no code default, so a pack that omits one fails to load. See `src/core/schema/senses.ts`, `SenseSchema`.
 
-Two nearby constants stay in code on purpose. The stride-phase origin is mechanism: it aligns the first footfall with the shared gait phase that presentation and aim wobble also read, so a pack tuning spacing never needs it (`src/core/footsteps.ts`, `initialFootstepClock`). The hit-flinch duration is the length of mobgen's flinch clip, so a second copy in content could disagree with the animation it must match (`src/core/actorPose.ts`, `HIT_FLINCH_DURATION`). Tests take the row from `test/senseFixture.ts`, `BASE_SENSE_TUNING`, and never restate it.
+Two nearby values stay out of the sense tuning on purpose. The stride-phase origin is mechanism: it aligns the first footfall with the shared gait phase that presentation and aim wobble also read, so a pack tuning spacing never needs it (`src/core/footsteps.ts`, `initialFootstepClock`). The hit-flinch duration is the length of the figure's built flinch, so a second copy in content could disagree with the animation it must match (`src/core/actorPose.ts`, `actorHitFlinchDuration`). Tests take the row from `test/senseFixture.ts`, `BASE_SENSE_TUNING`, and never restate it.
 
 ## Content test registries
 

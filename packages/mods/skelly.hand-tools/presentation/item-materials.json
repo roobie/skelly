@@ -1,23 +1,484 @@
 {
   "assets/models/adjustable_pliers.glb": { "materials": ["steel-grey", "plastic-blue", "paint-charcoal"] },
+  "assets/models/airhorn.glb": {
+    "materials": ["alu-bare", "paint-white", "plastic-red", "plastic-black", "plastic-charcoal"]
+  },
+  "assets/models/alembic.glb": { "materials": ["glass-clear", "resin-honey", "clay-terracotta"] },
+  "assets/models/aludel.glb": { "materials": ["clay-terracotta", "brick-buff"] },
+  "assets/models/angle_grinder.glb": {
+    "materials": ["plastic-charcoal", "plastic-matte-black", "plastic-red", "alu-bare", "ceramic-grey", "steel-bright"]
+  },
+  "assets/models/anvil.glb": { "materials": ["iron-dull", "steel-bright", "coal-black"] },
+  "assets/models/aramid_shears.glb": { "materials": ["plastic-yellow", "steel-stainless", "steel-grey"] },
+  "assets/models/astrolabe.glb": { "materials": ["brass", "brass-dull"] },
+  "assets/models/ax.glb": { "materials": ["wood-oak", "steel-grey", "steel-bright"] },
+  "assets/models/barometer.glb": {
+    "materials": [
+      "plastic-charcoal",
+      "plastic-gloss-white",
+      "paint-red",
+      "plastic-blue",
+      "plastic-yellow",
+      "plastic-black"
+    ]
+  },
+  "assets/models/battery_chainsaw.glb": {
+    "materials": [
+      "plastic-green",
+      "plastic-black",
+      "steel-bright",
+      "steel-parkerized",
+      "rubber-black",
+      "plastic-charcoal"
+    ]
+  },
+  "assets/models/bench_vise.glb": { "materials": ["paint-drum-blue", "steel-grey", "steel-bright"] },
+  "assets/models/birchbark_funnel.glb": { "materials": ["bark-birch", "bark", "wood-walnut"] },
+  "assets/models/block_and_tackle.glb": {
+    "materials": ["paint-drum-blue", "steel-grey", "steel-bright", "cord-cotton"]
+  },
+  "assets/models/bolt_cutters.glb": {
+    "materials": ["steel-grey", "plastic-red", "steel-blued", "steel-hardened", "coal-black", "steel-bright"]
+  },
+  "assets/models/bone_awl.glb": { "materials": ["bone", "body-bone"] },
+  "assets/models/bone_billet.glb": { "materials": ["bone", "body-bone"] },
+  "assets/models/bone_needle.glb": { "materials": ["bone"] },
+  "assets/models/bone_punch.glb": { "materials": ["bone", "body-bone"] },
+  "assets/models/bore_brush.glb": { "materials": ["steel-galvanised", "cloth-bright-white"] },
+  "assets/models/bow_saw.glb": { "materials": ["paint-red", "plastic-black", "steel-bright", "steel-grey"] },
+  "assets/models/boxcutter.glb": {
+    "materials": ["plastic-yellow", "steel-grey", "rubber-black", "plastic-black", "steel-stainless"]
+  },
+  "assets/models/bronze_hammer.glb": { "materials": ["wood-birch", "bronze", "skin-rawhide"] },
+  "assets/models/bronze_nail_puller.glb": { "materials": ["bronze", "bronze-polished", "coal-black"] },
+  "assets/models/bronze_pickaxe.glb": { "materials": ["wood-walnut", "bronze-polished", "brass-polished"] },
+  "assets/models/bronze_saw.glb": { "materials": ["wood-oak", "bronze", "bronze-polished"] },
   "assets/models/brush_axe.glb": { "materials": ["wood-oak", "steel-grey"] },
+  "assets/models/butchering_kit.glb": {
+    "materials": ["cloth-canvas", "leather-brown", "leather-tan", "steel-stainless", "steel-grey", "plastic-black"]
+  },
   "assets/models/can_opener.glb": { "materials": ["steel-grey", "plastic-red", "steel-parkerized", "paint-charcoal"] },
+  "assets/models/carding_paddles.glb": { "materials": ["wood-birch", "leather-tan", "steel-bright"] },
+  "assets/models/cargo_parachute.glb": {
+    "materials": ["cloth-olive-drab", "nylon-ranger-green", "webbing-olive-dark", "steel-grey", "paper-white"]
+  },
+  "assets/models/casting_mold.glb": { "materials": ["wood-oak", "brick-buff", "coal-black", "steel-grey"] },
+  "assets/models/chainsaw.glb": {
+    "materials": [
+      "plastic-orange",
+      "plastic-black",
+      "plastic-charcoal",
+      "steel-bright",
+      "steel-parkerized",
+      "rubber-black"
+    ]
+  },
+  "assets/models/charcoal_stick.glb": { "materials": ["coal-black", "cloth-rag", "cord-cotton"] },
+  "assets/models/childs_scissors.glb": { "materials": ["steel-grey", "plastic-red", "steel-stainless"] },
+  "assets/models/chisel.glb": { "materials": ["steel-heat-tint", "steel-grey", "steel-bright"] },
+  "assets/models/circular_saw_blade.glb": { "materials": ["steel-stainless", "steel-blued", "steel-grey"] },
+  "assets/models/clamp.glb": { "materials": ["paint-red", "steel-grey", "steel-bright"] },
+  "assets/models/claw_bar.glb": { "materials": ["steel-parkerized", "coal-black"] },
   "assets/models/compass.glb": { "materials": ["plastic-black", "steel-grey", "paint-cream", "plastic-white"] },
+  "assets/models/concrete_float.glb": { "materials": ["iron-dull", "wood-oak"] },
+  "assets/models/copper_ax.glb": { "materials": ["wood-birch", "copper", "skin-rawhide"] },
+  "assets/models/corded_power_drill.glb": {
+    "materials": ["plastic-charcoal", "steel-grey", "steel-blued", "rubber-black", "plastic-red", "plastic-black"]
+  },
+  "assets/models/cordless_circular_saw.glb": {
+    "materials": ["alu-bare", "steel-bright", "plastic-red", "plastic-yellow", "rubber-black", "plastic-black"]
+  },
+  "assets/models/cordless_cut_off_saw.glb": {
+    "materials": ["steel-bright", "paint-charcoal", "rubber-black", "plastic-black", "plastic-red"]
+  },
+  "assets/models/cordless_drill.glb": {
+    "materials": ["plastic-orange", "steel-grey", "steel-blued", "plastic-black", "plastic-charcoal"]
+  },
+  "assets/models/craft_knife.glb": { "materials": ["plastic-charcoal", "alu-bare", "steel-mirror"] },
   "assets/models/crowbar.glb": { "materials": ["steel-grey"] },
+  "assets/models/crucible.glb": { "materials": ["ceramic-grey", "coal-black"] },
+  "assets/models/crude_picklock.glb": { "materials": ["scrap-rusted", "tape-grey"] },
+  "assets/models/cucurbit.glb": { "materials": ["glass-clear"] },
+  "assets/models/cupel.glb": { "materials": ["bone", "metal-silver"] },
+  "assets/models/cut_off_wheel.glb": { "materials": ["plastic-charcoal", "paper-white", "steel-grey"] },
+  "assets/models/damaged_shelter_kit.glb": {
+    "materials": ["bark", "wood-birch", "leather-tan", "skin-rawhide", "coal-black"]
+  },
+  "assets/models/diamond_cutting_disc.glb": { "materials": ["steel-grey", "plastic-yellow", "plastic-charcoal"] },
   "assets/models/digging_stick.glb": { "materials": ["wood-pine", "bark", "coal-black"] },
-  "assets/models/hammer_bronze.glb": { "materials": ["wood-birch", "bronze", "skin-rawhide"] },
+  "assets/models/dissecting_microscope.glb": {
+    "materials": ["plastic-charcoal", "paint-white", "steel-stainless", "enamel-white", "plastic-black", "glass-clear"]
+  },
+  "assets/models/distaff_spindle.glb": { "materials": ["wood-birch", "fleece-pale", "knit-wool"] },
+  "assets/models/distilling_worm.glb": { "materials": ["wood-oak", "water", "iron-dull", "copper", "brass"] },
+  "assets/models/dog_whistle.glb": { "materials": ["steel-mirror", "steel-grey", "plastic-matte-black"] },
+  "assets/models/draw_plate.glb": { "materials": ["steel-grey", "coal-black"] },
+  "assets/models/drift.glb": { "materials": ["steel-hardened", "steel-heat-tint"] },
+  "assets/models/electric_jackhammer.glb": {
+    "materials": ["steel-grey", "rubber-black", "plastic-red", "steel-parkerized", "steel-hardened", "plastic-charcoal"]
+  },
+  "assets/models/emergency_lockpick.glb": { "materials": ["steel-galvanised"] },
+  "assets/models/extinguisher.glb": {
+    "materials": ["paint-red", "plastic-black", "paper-white", "brass", "plastic-white", "steel-grey", "rubber-black"]
+  },
+  "assets/models/field_repair_kit.glb": {
+    "materials": ["canvas-grey", "webbing-black", "plastic-orange", "steel-bright", "plastic-yellow", "cloth-yellow"]
+  },
+  "assets/models/filter_straw.glb": { "materials": ["plastic-black", "plastic-blue", "plastic-grey"] },
+  "assets/models/fire_ax.glb": { "materials": ["wood-oak", "paint-red", "steel-bright"] },
+  "assets/models/firearm_repair_kit.glb": {
+    "materials": [
+      "paint-olive",
+      "foam-eva",
+      "steel-grey",
+      "plastic-charcoal",
+      "lcd-green",
+      "rubber-black",
+      "wood-walnut",
+      "steel-blued",
+      "steel-stainless"
+    ]
+  },
+  "assets/models/fish_trap.glb": {
+    "materials": ["plastic-clear", "plastic-clear-blue", "cord-cotton", "plastic-charcoal"]
+  },
+  "assets/models/folding_shovel.glb": {
+    "materials": ["steel-parkerized", "rubber-black", "steel-grey", "paint-olive", "steel-bright"]
+  },
+  "assets/models/forged_shears.glb": { "materials": ["iron-dull", "steel-bright"] },
+  "assets/models/frame_loom.glb": { "materials": ["wood-pine", "wood-oak", "cloth-cream", "cloth-red", "cord-cotton"] },
+  "assets/models/giant_pipe_wrench.glb": {
+    "materials": ["paint-red", "void-black", "iron-dull", "steel-grey", "steel-parkerized"]
+  },
+  "assets/models/glass_cutter.glb": {
+    "materials": ["alu-bare", "rubber-black", "brass", "coal-black", "steel-bright"]
+  },
+  "assets/models/glass_prism.glb": { "materials": ["glass-clear"] },
+  "assets/models/glass_thermometer.glb": {
+    "materials": ["glass-clear", "paper-white", "metal-silver", "plastic-black"]
+  },
+  "assets/models/grinding_wheel.glb": { "materials": ["stone-grey", "paper-white", "steel-grey"] },
+  "assets/models/gunsmith_repair_kit.glb": {
+    "materials": [
+      "alu-bare",
+      "polymer-black",
+      "steel-grey",
+      "wood-walnut",
+      "plastic-red",
+      "plastic-blue",
+      "plastic-charcoal"
+    ]
+  },
+  "assets/models/hacksaw.glb": { "materials": ["paint-red", "steel-bright", "plastic-black", "steel-grey"] },
+  "assets/models/halligan.glb": { "materials": ["steel-grey", "steel-bright", "steel-parkerized"] },
   "assets/models/hammer.glb": { "materials": ["wood-walnut", "steel-grey"] },
+  "assets/models/hand_axe.glb": { "materials": ["stone-grey"] },
+  "assets/models/hand_crank.glb": { "materials": ["iron-dull", "iron-cast"] },
+  "assets/models/hand_drill.glb": {
+    "materials": ["wood-walnut", "steel-grey", "paint-red", "steel-bright", "steel-blued"]
+  },
+  "assets/models/hand_pump.glb": { "materials": ["alu-bare", "plastic-black", "steel-bright", "steel-stainless"] },
   "assets/models/hatchet.glb": { "materials": ["wood-walnut", "steel-blued", "steel-grey", "steel-bright"] },
+  "assets/models/heavy_anvil.glb": { "materials": ["iron-dull", "steel-bright", "coal-black"] },
+  "assets/models/heavy_crowbar.glb": { "materials": ["steel-parkerized", "steel-bright"] },
+  "assets/models/heavy_duty_tow_cable.glb": { "materials": ["plastic-charcoal", "steel-galvanised", "paint-red"] },
+  "assets/models/hedge_trimmer.glb": {
+    "materials": ["plastic-black", "plastic-grey", "plastic-orange", "plastic-frosted", "steel-grey", "steel-bright"]
+  },
+  "assets/models/hoe.glb": { "materials": ["wood-pine", "steel-grey", "steel-bright"] },
+  "assets/models/hole_punch.glb": {
+    "materials": ["plastic-charcoal", "plastic-black", "alu-bare", "coal-black", "steel-stainless", "steel-bright"]
+  },
+  "assets/models/homemade_telescope.glb": {
+    "materials": ["rubber-black", "plastic-black", "tape-grey", "plastic-grey", "glass-clear"]
+  },
+  "assets/models/honey_scraper.glb": { "materials": ["wood-walnut", "brass", "steel-stainless", "steel-grey"] },
+  "assets/models/horse_tack.glb": {
+    "materials": [
+      "cloth-navy",
+      "leather-tan",
+      "leather-chestnut",
+      "wood-oak",
+      "cord-cotton",
+      "steel-stainless",
+      "leather-brown"
+    ]
+  },
+  "assets/models/hot_cut.glb": { "materials": ["wood-oak", "steel-hardened", "steel-heat-tint", "steel-bright"] },
+  "assets/models/hourglass.glb": { "materials": ["wood-walnut", "glass-clear", "brick-buff"] },
+  "assets/models/hygrometer.glb": {
+    "materials": ["plastic-blue", "paper-white", "plastic-orange", "plastic-green", "plastic-black"]
+  },
+  "assets/models/hygroscope.glb": {
+    "materials": ["wood-walnut", "brass", "paper-white", "plastic-black", "paint-cream", "steel-blued"]
+  },
+  "assets/models/ice_axe.glb": { "materials": ["steel-stainless", "paint-police-blue", "rubber-black"] },
+  "assets/models/iron_ladle.glb": { "materials": ["iron-dull", "wood-walnut"] },
+  "assets/models/iron_tripod.glb": { "materials": ["iron-dull"] },
+  "assets/models/jackhammer.glb": {
+    "materials": [
+      "steel-grey",
+      "rubber-black",
+      "steel-parkerized",
+      "steel-hardened",
+      "paint-charcoal",
+      "paint-crane-yellow",
+      "plastic-red",
+      "plastic-black"
+    ]
+  },
+  "assets/models/ketene_lamp.glb": {
+    "materials": ["glass-clear", "plastic-frosted", "copper", "plastic-white", "plastic-black", "brass"]
+  },
   "assets/models/kitchen_knife.glb": { "materials": ["plastic-black", "steel-stainless"] },
+  "assets/models/knitting_needles.glb": { "materials": ["wood-birch", "wood-walnut"] },
+  "assets/models/large_adjustable_wrench.glb": { "materials": ["steel-bright", "steel-grey", "void-black"] },
+  "assets/models/large_shelter_kit.glb": { "materials": ["bark", "wood-pine", "leather-brown", "skin-rawhide"] },
+  "assets/models/large_tent_kit.glb": {
+    "materials": [
+      "nylon-ranger-green",
+      "webbing-black",
+      "cord-cotton",
+      "plastic-black",
+      "nylon-black",
+      "paint-white",
+      "plastic-matte-black"
+    ]
+  },
+  "assets/models/lawnmower.glb": {
+    "materials": [
+      "paint-red",
+      "plastic-black",
+      "alu-bare",
+      "plastic-yellow",
+      "rubber-black",
+      "plastic-grey",
+      "steel-grey"
+    ]
+  },
+  "assets/models/leather_bellows.glb": { "materials": ["wood-oak", "leather-brown", "leather-chestnut", "brass"] },
+  "assets/models/leather_funnel.glb": {
+    "materials": ["leather-brown", "leather-chestnut", "cord-cotton", "leather-tan"]
+  },
+  "assets/models/leather_hose.glb": { "materials": ["leather-tan", "leather-chestnut", "cord-cotton"] },
+  "assets/models/light_snare_kit.glb": { "materials": ["wood-birch", "steel-galvanised", "wood-oak", "cord-cotton"] },
+  "assets/models/lockpick_set.glb": {
+    "materials": ["leather-brown", "brass-dull", "webbing-black", "plastic-matte-black", "steel-stainless"]
+  },
+  "assets/models/lug_wrench.glb": { "materials": ["steel-grey", "steel-bright", "plastic-matte-black"] },
+  "assets/models/lux_meter.glb": {
+    "materials": ["plastic-yellow", "plastic-charcoal", "lcd-green", "plastic-frosted", "plastic-black"]
+  },
+  "assets/models/magnifying_glass.glb": { "materials": ["glass-clear", "plastic-black", "wood-walnut"] },
+  "assets/models/makeshift_funnel.glb": { "materials": ["plastic-clear", "tape-silver"] },
+  "assets/models/makeshift_hammer.glb": { "materials": ["bark", "iron-dull", "steel-bright", "steel-galvanised"] },
+  "assets/models/makeshift_jack.glb": { "materials": ["scrap-rusted", "steel-bright", "steel-grey"] },
+  "assets/models/makeshift_vacuum_mold.glb": {
+    "materials": ["board-mdf", "wood-pine", "plastic-matte-black", "plastic-clear", "rubber-black"]
+  },
+  "assets/models/makeshift_welding_blanket.glb": { "materials": ["aramid-gold", "cloth-turnout", "jute"] },
+  "assets/models/metal_file.glb": { "materials": ["vinyl-black", "webbing-black", "plastic-red", "steel-grey"] },
+  "assets/models/metal_funnel.glb": { "materials": ["steel-galvanised", "steel-grey", "mesh-black"] },
+  "assets/models/metalworking_tongs.glb": { "materials": ["steel-blued", "steel-bright", "steel-grey"] },
+  "assets/models/microscope.glb": {
+    "materials": ["enamel-white", "glass-clear", "plastic-black", "steel-stainless", "paint-red"]
+  },
+  "assets/models/mitre_saw.glb": {
+    "materials": ["alu-bare", "steel-stainless", "plastic-yellow", "steel-grey", "plastic-black"]
+  },
+  "assets/models/multitool.glb": { "materials": ["steel-bright", "steel-grey", "steel-blued"] },
+  "assets/models/nail_punch.glb": { "materials": ["wood-pine", "steel-grey", "jute"] },
+  "assets/models/notched_stick.glb": { "materials": ["bark", "wood-pine", "coal-black"] },
+  "assets/models/oxyacetylene_torch.glb": {
+    "materials": [
+      "brass-polished",
+      "brass-dull",
+      "plastic-red",
+      "plastic-blue",
+      "rubber-black",
+      "steel-bright",
+      "copper"
+    ]
+  },
+  "assets/models/paint_brush.glb": { "materials": ["wood-birch", "coal-black", "steel-galvanised", "horsehair-black"] },
+  "assets/models/paint_chipper.glb": { "materials": ["wood-pine", "brass-dull", "steel-grey", "steel-bright"] },
+  "assets/models/pelican.glb": { "materials": ["glass-clear", "syrup-green", "clay-terracotta"] },
+  "assets/models/petrol_cut_off_saw.glb": {
+    "materials": [
+      "steel-bright",
+      "plastic-orange",
+      "rubber-black",
+      "plastic-black",
+      "paint-charcoal",
+      "plastic-white",
+      "steel-grey"
+    ]
+  },
+  "assets/models/philosophers_egg.glb": { "materials": ["glass-clear", "coal-black", "straw-wicker"] },
+  "assets/models/pickaxe.glb": { "materials": ["wood-oak", "steel-grey", "steel-bright"] },
+  "assets/models/pin_reamer.glb": { "materials": ["steel-grey", "steel-galvanised", "steel-bright"] },
+  "assets/models/pinking_scissors.glb": { "materials": ["steel-stainless", "plastic-orange", "steel-grey"] },
+  "assets/models/plastic_leaf_rake.glb": { "materials": ["wood-pine", "plastic-green"] },
+  "assets/models/pliers.glb": { "materials": ["steel-grey", "plastic-red", "paint-charcoal"] },
+  "assets/models/pocket_knife.glb": { "materials": ["plastic-red", "steel-stainless", "steel-grey"] },
+  "assets/models/polishing_stone.glb": { "materials": ["stone-grey", "stone-whet"] },
+  "assets/models/pressure_gauge.glb": {
+    "materials": ["steel-grey", "brass", "steel-bright", "paint-white", "plastic-black", "paint-red"]
+  },
+  "assets/models/primitive_adze.glb": { "materials": ["wood-oak", "stone-grey", "skin-rawhide"] },
   "assets/models/primitive_axe.glb": { "materials": ["wood-birch", "stone-grey", "skin-rawhide"] },
+  "assets/models/primitive_hammer.glb": { "materials": ["wood-birch", "stone-grey", "skin-rawhide"] },
+  "assets/models/primitive_shovel.glb": { "materials": ["wood-oak"] },
+  "assets/models/propane_torch.glb": {
+    "materials": ["brass", "plastic-red", "plastic-yellow", "steel-stainless", "steel-heat-tint", "coal-black"]
+  },
+  "assets/models/rain_catcher_kit.glb": { "materials": ["plastic-blue", "alu-bare", "bark", "cord-cotton"] },
+  "assets/models/rake.glb": { "materials": ["wood-pine", "paint-green"] },
+  "assets/models/receiver_flask.glb": { "materials": ["glass-clear", "resin-honey", "straw-wicker"] },
+  "assets/models/reciprocating_saw.glb": {
+    "materials": [
+      "plastic-charcoal",
+      "rubber-black",
+      "plastic-red",
+      "plastic-matte-black",
+      "steel-bright",
+      "steel-grey"
+    ]
+  },
   "assets/models/repair_kit.glb": { "materials": ["paint-charcoal", "steel-grey", "paperboard-tan"] },
+  "assets/models/retort.glb": { "materials": ["glass-clear", "straw-wicker"] },
+  "assets/models/rifle_maintenance_kit.glb": {
+    "materials": ["nylon-black", "webbing-black", "steel-grey", "webbing-olive-dark", "plastic-grey", "paint-charcoal"]
+  },
+  "assets/models/ring_stand_clamps.glb": {
+    "materials": ["paper-butcher", "cardboard-corrugated", "steel-bright", "alu-bare", "plastic-red", "tape-silver"]
+  },
+  "assets/models/ring_stand.glb": { "materials": ["paint-oxblood", "steel-stainless", "iron-dull"] },
+  "assets/models/sand_bath.glb": { "materials": ["iron-dull", "brick-buff", "glass-clear"] },
+  "assets/models/sandpaper.glb": { "materials": ["rust-red", "paper-butcher"] },
+  "assets/models/saw.glb": { "materials": ["wood-pine", "steel-bright", "steel-grey", "brass"] },
+  "assets/models/scavenged_anvil.glb": {
+    "materials": ["steel-parkerized", "steel-bright", "iron-dull", "paint-olive", "rust-red", "steel-heat-tint"]
+  },
+  "assets/models/scissors.glb": { "materials": ["steel-stainless", "plastic-black", "steel-grey"] },
+  "assets/models/screwdriver_set.glb": {
+    "materials": ["plastic-charcoal", "plastic-matte-black", "plastic-red", "steel-stainless", "plastic-yellow"]
+  },
   "assets/models/screwdriver.glb": { "materials": ["plastic-yellow", "steel-blued"] },
+  "assets/models/scythe_blade.glb": { "materials": ["steel", "steel-blued", "steel-stainless"] },
+  "assets/models/scythe.glb": { "materials": ["wood-oak", "steel-grey", "wood-birch", "steel-heat-tint"] },
+  "assets/models/separating_funnel.glb": { "materials": ["glass-clear"] },
   "assets/models/sewing_kit.glb": { "materials": [null, null, null, null] },
   "assets/models/sewing_repair_kit.glb": {
     "materials": ["paint-terracotta", "cord-olive", "plastic-red", "paperboard-tan", "steel-grey"]
   },
+  "assets/models/sextant.glb": {
+    "materials": [
+      "plastic-black",
+      "plastic-white",
+      "plastic-grey",
+      "mirror-silver",
+      "glass-clear",
+      "lens-smoke",
+      "glass-lens-green",
+      "plastic-matte-black",
+      "plastic-charcoal"
+    ]
+  },
+  "assets/models/shears.glb": { "materials": ["steel-bright", "steel-stainless", "plastic-red"] },
+  "assets/models/shed_stick.glb": { "materials": ["wood-oak"] },
+  "assets/models/shelter_kit.glb": { "materials": ["bark", "wood-birch", "leather-tan", "skin-rawhide"] },
+  "assets/models/shovel.glb": { "materials": ["wood-pine", "paint-charcoal"] },
+  "assets/models/sickle.glb": { "materials": ["wood-oak", "steel-grey", "steel-heat-tint"] },
   "assets/models/sledgehammer.glb": { "materials": ["wood-walnut", "steel-grey"] },
+  "assets/models/small_adjustable_wrench.glb": { "materials": ["steel-bright", "steel-grey", "void-black"] },
+  "assets/models/small_anvil.glb": { "materials": ["iron-dull", "steel-bright", "coal-black"] },
+  "assets/models/small_fire_extinguisher.glb": {
+    "materials": ["paint-red", "plastic-black", "paper-white", "steel-grey", "plastic-white", "rubber-black"]
+  },
+  "assets/models/small_glass_tube.glb": { "materials": ["glass-clear"] },
+  "assets/models/soldering_iron.glb": { "materials": ["rubber-black", "plastic-blue", "steel-stainless", "copper"] },
+  "assets/models/spatula.glb": { "materials": ["iron-dull"] },
+  "assets/models/stapler.glb": {
+    "materials": ["plastic-black", "rubber-black", "steel-grey", "alu-bare", "plastic-charcoal"]
+  },
+  "assets/models/steel_needle.glb": { "materials": ["steel-stainless"] },
+  "assets/models/steel_scraper.glb": { "materials": ["steel-blued", "steel-bright", "brass-dull", "wood-walnut"] },
+  "assets/models/stepladder.glb": { "materials": ["wood-pine", "wood-oak", "steel-grey", "rubber-black"] },
+  "assets/models/stick_rock_drill.glb": { "materials": ["wood-birch", "stone-grey", "cord-cotton"] },
+  "assets/models/stone_chopper.glb": { "materials": ["stone-whet", "stone-grey"] },
+  "assets/models/stone_sickle.glb": { "materials": ["bark", "skin-rawhide", "stone-grey"] },
+  "assets/models/storage_line.glb": { "materials": ["nylon-red", "steel-bright", "plastic-charcoal"] },
+  "assets/models/stump_anvil.glb": {
+    "materials": ["bark", "wood-pine", "wood-oak", "steel-grey", "steel-bright", "iron-dull"]
+  },
+  "assets/models/swage.glb": { "materials": ["steel-grey", "steel-bright", "steel-blued", "steel-hardened"] },
+  "assets/models/tailors_kit.glb": {
+    "materials": [
+      "plastic-blue",
+      "plastic-grey",
+      "felt-grey",
+      "velvet-red",
+      "wood-walnut",
+      "steel-stainless",
+      "plastic-white",
+      "cloth-red",
+      "cloth-yellow",
+      "cloth-navy",
+      "plastic-black",
+      "steel-grey"
+    ]
+  },
+  "assets/models/tent_kit.glb": {
+    "materials": [
+      "nylon-red",
+      "webbing-black",
+      "cord-cotton",
+      "plastic-black",
+      "nylon-black",
+      "paint-white",
+      "plastic-matte-black"
+    ]
+  },
+  "assets/models/thread_cutting_set.glb": {
+    "materials": ["steel-bright", "steel-parkerized", "steel-grey", "steel-heat-tint", "coal-black", "steel-hardened"]
+  },
+  "assets/models/throw_extinguisher.glb": { "materials": ["paint-red", "paper-white", "plastic-black", "steel-grey"] },
+  "assets/models/tin_snips.glb": { "materials": ["steel-grey", "plastic-yellow", "steel-bright", "steel-blued"] },
+  "assets/models/tongue_and_groove_pliers.glb": { "materials": ["steel-grey", "plastic-red", "paint-charcoal"] },
+  "assets/models/touchstone.glb": { "materials": ["gem-onyx", "metal-gold"] },
+  "assets/models/tree_spile.glb": { "materials": ["steel-galvanised", "steel-grey"] },
+  "assets/models/triple_beam_balance.glb": {
+    "materials": ["paint-charcoal", "steel-stainless", "plastic-black", "brass"]
+  },
+  "assets/models/trowel.glb": { "materials": ["wood-oak", "steel-grey", "steel-bright"] },
+  "assets/models/water_bath.glb": { "materials": ["copper", "water", "glass-clear"] },
+  "assets/models/weather_glass.glb": { "materials": ["wood-oak", "glass-clear", "water", "cork"] },
+  "assets/models/welding_blanket.glb": { "materials": ["canvas-grey", "cord-cotton", "brass"] },
+  "assets/models/welding_kit.glb": {
+    "materials": [
+      "cloth-turnout",
+      "canvas-grey",
+      "paint-drum-blue",
+      "paint-charcoal",
+      "plastic-matte-black",
+      "plastic-gloss-white",
+      "brass-dull",
+      "rubber-black",
+      "plastic-red",
+      "steel-heat-tint",
+      "copper"
+    ]
+  },
   "assets/models/whetstone.glb": { "materials": ["stone-whet"] },
+  "assets/models/whistle_multitool.glb": {
+    "materials": ["plastic-orange", "plastic-black", "plastic-charcoal", "enamel-white", "plastic-red", "glass-clear"]
+  },
+  "assets/models/wicker_fish_trap.glb": { "materials": ["straw-wicker", "plant-dried", "straw-rope", "bark"] },
   "assets/models/wire_strippers.glb": { "materials": ["steel-grey", "plastic-red"] },
+  "assets/models/wooden_billet.glb": { "materials": ["wood-oak", "bark", "wood-walnut"] },
+  "assets/models/wooden_block_and_tackle.glb": { "materials": ["wood-birch", "wood-oak", "jute"] },
+  "assets/models/wooden_float.glb": { "materials": ["wood-pine", "wood-oak", "steel-grey"] },
+  "assets/models/wooden_needle.glb": { "materials": ["wood-pine"] },
   "assets/models/wrench.glb": { "materials": ["steel-grey"] }
 }

@@ -1,4 +1,8 @@
 {
+  "assets/models/flesh_chunk_large.glb": { "materials": ["body-skin-sickly", "body-gore"] },
+  "assets/models/flesh_chunk_medium.glb": { "materials": ["body-skin-sickly", "body-gore"] },
+  "assets/models/flesh_chunk_small.glb": { "materials": ["body-skin-sickly", "body-gore"] },
+  "assets/models/flesh_chunk_strip.glb": { "materials": ["body-skin-sickly", "body-gore"] },
   "assets/models/shambler_head.glb": {
     "materials": ["body-skin-sickly", "body-hair", "body-eye", "body-mouth", "body-gore", "body-bone"]
   },

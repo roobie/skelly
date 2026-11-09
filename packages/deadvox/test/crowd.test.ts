@@ -8,11 +8,15 @@ import { applyPoint, compose, rotation, rotY, type Transform, translation, type 
 import { allocateBoneTransforms, boneTransformsInto, indexBonesByParent, type Pose } from '../src/core/pose.ts';
 import {
   CROWD_MASK_BITS_PER_TEXEL,
+  type CrowdCellMaskLayout,
+  crowdCellMaskLayout,
   crowdMaskTexelIndex,
   crowdTexelIndex,
   crowdTextureLayout,
+  isCellInMask,
   isSeveredInMask,
   packBloodiness,
+  packCellMask,
   packCharge,
   packCrowdBoneMatrix,
   packSeveredMask,
@@ -149,5 +153,45 @@ describe('packCrowdBoneMatrix (the pure part of crowd mode)', () => {
     const data = new Float32Array(layout.width * layout.height * 4);
     expect(() => packSeveredMask(data, layout, 0, [-1])).toThrow(RangeError);
     expect(() => packSeveredMask(data, layout, 0, [layout.bonesPerSlot])).toThrow(RangeError);
+  });
+});
+
+describe('cell mask layout', () => {
+  // A fixture grid whose mask words need three rows per slot under a fixture size limit.
+  const maxSize = 16;
+  const cellCount = CROWD_MASK_BITS_PER_TEXEL * (maxSize * 2 + 3);
+  const slotCount = 3;
+
+  /** The texel the vertex shader (CROWD_CELL_VERTEX_DECLARATIONS) reads for `cell` in `slot`, as a flat index. */
+  const shaderTexel = (layout: CrowdCellMaskLayout, slot: number, cell: number): number => {
+    const word = Math.floor(cell / CROWD_MASK_BITS_PER_TEXEL);
+    const row = slot * layout.rowsPerSlot + Math.floor(word / layout.width);
+    return row * layout.width + (word % layout.width);
+  };
+
+  it('wraps a slot wider than the size limit over rows and keeps the texture within it', () => {
+    const layout = crowdCellMaskLayout(cellCount, slotCount, maxSize);
+    expect(layout.width).toBeLessThanOrEqual(maxSize);
+    expect(layout.rowsPerSlot).toBeGreaterThan(1);
+    expect(layout.height).toBeLessThanOrEqual(maxSize);
+    expect(() => crowdCellMaskLayout(cellCount, maxSize, maxSize)).toThrow(RangeError);
+  });
+
+  it("sets a carved cell's bit in its own slot only, where the shader reads it, and clears it on repacking", () => {
+    const layout = crowdCellMaskLayout(cellCount, slotCount, maxSize);
+    const data = new Float32Array(layout.width * layout.height);
+    // Cells at word and row boundaries, and the last cell.
+    const carved = [0, CROWD_MASK_BITS_PER_TEXEL - 1, CROWD_MASK_BITS_PER_TEXEL * maxSize, cellCount - 1];
+    packCellMask(data, layout, 1, carved);
+    for (let slot = 0; slot < slotCount; slot++) {
+      for (let cell = 0; cell < cellCount; cell++) {
+        const expected = slot === 1 && carved.includes(cell);
+        expect(isCellInMask(data, layout, slot, cell)).toBe(expected);
+        const word = data[shaderTexel(layout, slot, cell)]!;
+        expect(((word >>> (cell % CROWD_MASK_BITS_PER_TEXEL)) & 1) === 1).toBe(expected);
+      }
+    }
+    packCellMask(data, layout, 1, []);
+    expect(data.every((word) => word === 0)).toBe(true);
   });
 });
