@@ -8,7 +8,6 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { templateByName } from '@mobgen/core/template.ts';
-import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
 import { type AttackClip, attackClipFor } from '@mobgen/mob/attack.ts';
 import { flinchClipFor, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import { actorFigure } from '../src/core/actorFigureFiles.ts';
@@ -89,17 +88,30 @@ interface SampleRecord {
   readonly regions?: Record<string, readonly BoxRecord[]>;
 }
 
-const scaleOf = (figure: object): number => ('scale' in figure && typeof figure.scale === 'number' ? figure.scale : 1);
+/** What a record measures a pose against: the generated realization where one is posed, else the built body. */
+interface Frame {
+  readonly scale: number;
+  readonly voxelSize: number;
+  readonly anchors: ActorBody['anchors'];
+}
+
+const frameOf = (posed: ReturnType<typeof posedActor>, body: ActorBody): Frame => {
+  const { figure } = posed;
+  if (!figure) {
+    return { scale: body.scale, voxelSize: body.voxelSize, anchors: body.anchors };
+  }
+  const scale = 'scale' in figure && typeof figure.scale === 'number' ? figure.scale : 1;
+  return { scale, voxelSize: figure.realized.voxels.size, anchors: figure.realized.body.anchors };
+};
 
 /** Model-frame bone transforms and anchors in metres; facing and position are fixed so yaw is identity. */
 const record = (
   key: string,
   model: string,
   seed: number,
-  posed: { figure: ReturnType<typeof posedActor>['figure']; transforms: ReadonlyMap<string, Transform> },
+  posed: { frame: Frame; transforms: ReadonlyMap<string, Transform> },
 ): SampleRecord => {
-  const scale = scaleOf(posed.figure);
-  const { body, voxels } = posed.figure.realized;
+  const { scale, voxelSize, anchors: bodyAnchors } = posed.frame;
   const bones = Object.fromEntries(
     [...posed.transforms].map(([id, transform]) => [
       id,
@@ -107,12 +119,12 @@ const record = (
     ]),
   );
   const anchors = Object.fromEntries(
-    Object.entries(body.anchors ?? {}).map(([name, anchor]) => [
+    Object.entries(bodyAnchors ?? {}).map(([name, anchor]) => [
       name,
       applyPoint(posed.transforms.get(anchor.bone)!, anchor.position).map((value) => value * scale) as Vec3,
     ]),
   );
-  return { key, model, seed, voxelMetres: voxels.size * scale, bones, anchors };
+  return { key, model, seed, voxelMetres: voxelSize * scale, bones, anchors };
 };
 
 const boxRecords = (
@@ -130,7 +142,11 @@ const boxRecords = (
 const living = (key: string, input: ActorPoseInput): SampleRecord => {
   const posed = posedActor(input);
   const regions = input.model === 'fused-mass' ? posedFusedMassRegionBoxes(input) : posedHumanoidRegionBoxes(input);
-  return { ...record(key, input.model!, input.seed, posed), regions: boxRecords(regions) };
+  const frame = frameOf(posed, input.figure.body);
+  return {
+    ...record(key, input.model!, input.seed, { frame, transforms: posed.transforms }),
+    regions: boxRecords(regions),
+  };
 };
 
 /** The clip key whose rotations are largest: the flinch's peak. */
@@ -181,7 +197,8 @@ const acidBases: {
   key: string;
   seed: number;
   pose: Pose;
-  figure: ReturnType<typeof posedActor>['figure'];
+  frame: Frame;
+  bones: readonly Bone[];
   clips: ActorClips;
 }[] = [];
 
@@ -205,11 +222,16 @@ for (const type of registry.actors.values()) {
     const windup = rest.attackWindupSeconds;
     const stride = (share: number) => ({ gaitPhase: share * 2 * Math.PI, speed: wander });
     if (type.model === 'acid') {
-      const { hitPeak } = acidTemplate.animation;
+      const hit = rest.figure.clips.standing?.hit;
+      const hitPeak = hit && 'peakAtSimSeconds' in hit ? hit.peakAtSimSeconds : undefined;
+      if (hitPeak === undefined) {
+        throw new Error(`${type.id}/${seed} bakes no hit clip peak`);
+      }
       const base = (name: string, input: Partial<ActorPoseInput>) => {
         const { key, full } = at(name, input);
         const posed = posedActor(full);
-        acidBases.push({ key, seed, pose: posed.pose, figure: posed.figure, clips: full.figure.clips });
+        const frame = frameOf(posed, full.figure.body);
+        acidBases.push({ key, seed, pose: posed.pose, frame, bones: posed.bones, clips: full.figure.clips });
       };
       base('idle', {});
       for (const share of STRIDE_SHARES) {
@@ -260,11 +282,11 @@ for (const base of acidBases) {
       ['half', clip.durationRealSeconds / 2],
       ['settled', clip.durationRealSeconds],
     ] as const) {
-      const pose = corpseFallPose(clip, elapsed);
+      const pose = corpseFallPose(clip, base.pose, elapsed);
       samples.push(
         record(`${base.key}/death.${direction > 0 ? 'forward' : 'backward'}.${name}`, 'acid', base.seed, {
-          figure: base.figure,
-          transforms: boneTransforms(base.figure.realized.body.bones, pose),
+          frame: base.frame,
+          transforms: boneTransforms(base.bones, pose),
         }),
       );
     }

@@ -13,6 +13,7 @@ import { IDENTITY_M } from '../src/core/boneMath.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { clampJointAngles, jointAngles } from '../src/core/joints.ts';
 import { makeScale } from '../src/core/scale.ts';
+import type { ActorBody } from '../src/core/schema/actors.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
@@ -85,16 +86,16 @@ const offsetForBox = ({
   id,
   region,
   box,
-  figure,
+  body,
 }: {
   renderer: MobActorMeshes;
   id: number;
   region: HumanoidHitRegion;
   box: { bone: string; center: Vec3; rotation: readonly number[] };
-  figure: ReturnType<typeof posedActor>['figure'];
+  body: ActorBody;
 }) => {
   const matrix = renderer.boneMatrix(id, box.bone)!;
-  const local = figure.boxes[region].find((candidate) => candidate.bone === box.bone)!.center;
+  const local = body.boxes![region]!.find((candidate) => candidate.bone === box.bone)!.center;
   const world = [0, 1, 2].map(
     (axis) =>
       matrix[axis * 4]! * local[0]! +
@@ -128,7 +129,7 @@ const offsetForBox = ({
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: independently aggregates position and orientation maxima.
 const maxOffset = (renderer: MobActorMeshes, id: number, actor: Actor) => {
   const input = actorPoseInputFor(actor, id, POSE_SCENE);
-  const { figure } = posedActor(input);
+  const { body } = input.figure;
   const hit = posedHumanoidRegionBoxes(input);
   let worst = {
     bone: '',
@@ -143,7 +144,7 @@ const maxOffset = (renderer: MobActorMeshes, id: number, actor: Actor) => {
   for (const [regionName, boxes] of Object.entries(hit)) {
     const region = regionName as HumanoidHitRegion;
     for (const box of boxes) {
-      const current = offsetForBox({ renderer, id, region, box, figure });
+      const current = offsetForBox({ renderer, id, region, box, body });
       if (current.centreCm > worst.centreCm) {
         worst = current;
       }

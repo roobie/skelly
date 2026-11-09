@@ -2143,7 +2143,7 @@ export class MobActorMeshes implements ActorRenderer {
     if (!clip) {
       return corpse.basePose;
     }
-    const pose = corpseFallPose(clip, corpse.elapsed);
+    const pose = corpseFallPose(clip, corpse.basePose, corpse.elapsed);
     if (corpse.elapsed >= clip.durationRealSeconds) {
       corpse.settledPose = pose;
     }

@@ -1,9 +1,10 @@
-import { generateValid, planOf } from '@mobgen/core/generate.ts';
-import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
 import { describe, expect, it } from 'vitest';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import type { BodyRegion } from '../src/core/body.ts';
-import type { Bone } from '../src/core/bones.ts';
+import { type Bone, bodySkeleton } from '../src/core/bones.ts';
 import { burstBones, regionSeverableParts, severedBoneSet } from '../src/core/boneTree.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
 const bone = (id: string, parent: string | null, disposition?: Bone['disposition']): Bone => ({
   id,
@@ -56,9 +57,15 @@ describe('regionSeverableParts', () => {
     expect(burstBones(BONES)).toEqual(['sac']);
   });
 
-  it('keeps the authored acid dispositions consistent with its region map', () => {
-    const { bones } = generateValid(acidTemplate, 1)!.realized.body;
-    const regions = planOf('acid').regionBones!;
+  it('keeps the built acid dispositions consistent with its region map', () => {
+    const registry = baseRegistry();
+    const acid = [...registry.actors.values()].find(({ model }) => model === 'acid')!;
+    const { body } = actorFigure(stackActorFigureFiles(registry), acid, acid.figureSeeds![0]!);
+    const bones = bodySkeleton(body);
+    const names: readonly BodyRegion[] = ['head', 'torso', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+    const regions = Object.fromEntries(names.map((name) => [name, body.regions?.[name] ?? []])) as Readonly<
+      Partial<Record<BodyRegion, readonly string[]>>
+    > as Readonly<Record<BodyRegion, readonly string[]>>;
     const parts = regionSeverableParts(bones, regions);
     for (const region of ['head', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const) {
       expect(parts[region].length, region).toBeGreaterThan(0);
