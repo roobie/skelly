@@ -4,7 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type ConfigEnv, loadConfigFromFile, type UserConfig } from 'vite';
 import { describe, expect, it } from 'vitest';
-import { runtimeClosureViolations, STAGE_ONE_POLICY } from '../tools/runtimeClosure.ts';
+import { RUNTIME_POLICY, runtimeClosureViolations } from '../tools/runtimeClosure.ts';
 
 const repoRoot = fileURLToPath(new URL('../../..', import.meta.url));
 type Tree = Record<string, string>;
@@ -13,12 +13,17 @@ type Tree = Record<string, string>;
 const cleanTree: Tree = {
   'package.json': JSON.stringify({
     type: 'module',
-    workspaces: ['packages/deadvox', 'packages/skelly-assets/tools/packages/thing-core', 'packages/presentation'],
+    workspaces: [
+      'packages/deadvox',
+      'packages/skelly-assets/tools/packages/thing-core',
+      'packages/presentation',
+      'packages/mods',
+    ],
   }),
   'packages/deadvox/package.json': JSON.stringify({
     name: '@skelly/deadvox',
     type: 'module',
-    dependencies: { '@skelly/presentation': '*' },
+    dependencies: { '@skelly/presentation': '*', '@skelly/thing-core': '*', kit: '*' },
   }),
   'packages/deadvox/tsconfig.json':
     '{\n  // Only resolution the check models.\n  "compilerOptions": {\n    "module": "ESNext",\n    "moduleResolution": "Bundler",\n    "types": ["node"],\n  },\n  "include": ["src"],\n}\n',
@@ -41,6 +46,12 @@ const cleanTree: Tree = {
     exports: { './*': './src/*.ts' },
   }),
   'packages/presentation/src/hud.ts': 'export const hud = 1;\n',
+  // Product configuration, mods and a page, which the runtime may not reach.
+  'packages/deadvox/src/config/tuning.json': '{}\n',
+  'packages/deadvox/mods/skelly.fixture/pack.json': '{}\n',
+  'packages/deadvox/src/main.ts': "import { session } from './game/session.ts';\nexport const page = session;\n",
+  'packages/mods/package.json': JSON.stringify({ name: '@skelly/mods', type: 'module' }),
+  'packages/mods/skelly.fixture/pack.json': '{}\n',
 };
 
 /** `links` maps a link path to the file or directory it points at, relative to the link's own directory. */
@@ -54,13 +65,13 @@ function violationsIn(changes: Tree, links: Tree = {}) {
     for (const [path, target] of Object.entries(links)) {
       symlinkSync(target, join(root, path));
     }
-    return runtimeClosureViolations(root, STAGE_ONE_POLICY);
+    return runtimeClosureViolations(root, RUNTIME_POLICY);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 }
 
-const viteRoot = join(repoRoot, STAGE_ONE_POLICY.viteRoot);
+const viteRoot = join(repoRoot, RUNTIME_POLICY.viteRoot);
 const resolutionHooks = new Set(['config', 'configEnvironment', 'resolveId']);
 
 /** Vite awaits and flattens the plugin option; so does the gate before it reads hooks. */
@@ -120,6 +131,9 @@ function kitWorkspace(extra: Record<string, unknown>): Tree {
 }
 
 const importers = (violations: ReturnType<typeof violationsIn>) => violations.map((v) => v.importer);
+// Each importer with its reason, without the path a reason may end with.
+const reasons = (violations: ReturnType<typeof violationsIn>) =>
+  violations.map((v) => [v.importer, v.reason.split(':')[0]]);
 // thing-core is a library the runtime follows through its workspace.
 const thingCoreSchema = 'packages/skelly-assets/tools/packages/thing-core/src/schema.ts';
 const thingCoreStep = 'packages/skelly-assets/tools/packages/thing-core/src/step.ts';
@@ -133,9 +147,9 @@ const oddlyNamedRender: Tree = {
   'packages/deadvox/src/render/alternation/a.ts': 'export const a = 1;\n',
 };
 
-describe('runtime closure, stage 1', () => {
-  it('keeps the runtime and the libraries it follows from reaching presentation, render, UI, three or Lit', () => {
-    expect(runtimeClosureViolations(repoRoot, STAGE_ONE_POLICY)).toEqual([]);
+describe('runtime closure', () => {
+  it('keeps the runtime and the libraries it follows inside the runtime set and away from three and Lit', () => {
+    expect(runtimeClosureViolations(repoRoot, RUNTIME_POLICY)).toEqual([]);
   });
 
   // The loaded config is checked, not the file's text, because a config file may compute its values.
@@ -185,17 +199,43 @@ describe('runtime closure, stage 1', () => {
     expect(importers(violations)).toEqual([thingCoreStep]);
   });
 
-  it('fails a forbidden file reached only through a local source outside the runtime roots', () => {
+  it('fails a runtime file that imports product configuration JSON (W3)', () => {
     const violations = violationsIn({
-      'packages/deadvox/src/core/a.ts': "export { view } from '../config/helper.ts';\n",
-      'packages/deadvox/src/config/helper.ts': "export { view } from '../render/view.ts';\n",
+      [catalog]: "import tuning from '../config/tuning.json' with { type: 'json' };\nexport const t = tuning;\n",
     });
-    expect(violations.map((v) => [v.importer, v.target])).toEqual([
-      ['packages/deadvox/src/config/helper.ts', 'packages/deadvox/src/render/view.ts'],
+    expect(violations.map((v) => [v.importer, v.target, v.reason])).toEqual([
+      [catalog, 'packages/deadvox/src/config/tuning.json', 'reaches outside the runtime set'],
     ]);
   });
 
-  it('fails a followed library that imports three (W5)', () => {
+  it('fails a runtime glob that matches product mods (W4)', () => {
+    const violations = violationsIn({
+      [catalog]: "export const packs = import.meta.glob('../../mods/**/*.json');\n",
+    });
+    expect(violations.map((v) => [v.importer, v.target, v.reason])).toEqual([
+      [catalog, 'packages/deadvox/mods/skelly.fixture/pack.json', 'reaches outside the runtime set'],
+    ]);
+  });
+
+  it.each([
+    ['a product page', "export { page } from '../main.ts';\n", 'packages/deadvox/src/main.ts'],
+    [
+      'a workspace the runtime package does not depend on',
+      "import pack from '@skelly/mods/skelly.fixture/pack.json' with { type: 'json' };\nexport const p = pack;\n",
+      'packages/mods/skelly.fixture/pack.json',
+    ],
+    [
+      'a dependency library entered by a relative path',
+      `export { schema } from '${'../'.repeat(3)}skelly-assets/tools/packages/thing-core/src/schema.ts';\n`,
+      thingCoreSchema,
+    ],
+  ])('fails a runtime file that reaches %s', (_name, source, target) => {
+    expect(violationsIn({ [catalog]: source }).map((v) => [v.importer, v.target, v.reason])).toEqual([
+      [catalog, target, 'reaches outside the runtime set'],
+    ]);
+  });
+
+  it('fails a followed library that imports three', () => {
     const violations = violationsIn({
       [thingCoreSchema]: "import { Vector3 } from 'three';\nexport const schema = Vector3;\n",
     });
@@ -269,13 +309,10 @@ describe('runtime closure, stage 1', () => {
 
   it('fails a wildcard over a symlinked directory, which Vite follows', () => {
     const violations = violationsIn(
-      {
-        'packages/deadvox/src/core/catalog.ts': "export const views = import.meta.glob('/src/config/*/view.ts');\n",
-        'packages/deadvox/src/config/tuning.json': '{}\n',
-      },
+      { [catalog]: "export const views = import.meta.glob('/src/config/*/view.ts');\n" },
       { 'packages/deadvox/src/config/views': '../render' },
     );
-    expect(importers(violations)).toEqual(['packages/deadvox/src/core/catalog.ts']);
+    expect(reasons(violations)).toEqual([[catalog, 'globs through a symlink, which the bundler follows']]);
   });
 
   it('matches an allowlisted glob with ** and * exactly', () => {
@@ -400,12 +437,18 @@ describe('runtime closure, stage 1', () => {
   });
 
   it('follows the TypeScript source an .mjs specifier also names', () => {
+    const rig = 'packages/skelly-assets/tools/packages/thing-core/src/rig';
     const violations = violationsIn({
-      'packages/deadvox/src/config/rig.mjs': 'export const rig = 1;\n',
-      'packages/deadvox/src/config/rig.mts': "export type V = import('three').Vector3;\n",
-      [catalog]: "export type { V } from '../config/rig.mjs';\n",
+      'packages/skelly-assets/tools/packages/thing-core/package.json': JSON.stringify({
+        name: '@skelly/thing-core',
+        type: 'module',
+        exports: { './schema': './src/schema.ts', './rig': './src/rig.mjs' },
+      }),
+      [`${rig}.mjs`]: 'export const rig = 1;\n',
+      [`${rig}.mts`]: "export type V = import('three').Vector3;\n",
+      [catalog]: "export type { V } from '@skelly/thing-core/rig';\n",
     });
-    expect(violations.map((v) => [v.importer, v.target])).toEqual([['packages/deadvox/src/config/rig.mts', 'three']]);
+    expect(violations.map((v) => [v.importer, v.target])).toEqual([[`${rig}.mts`, 'three']]);
   });
 
   // Each forbidden dependency sits only in the implementation file tsc substitutes for the named one.
@@ -423,7 +466,7 @@ describe('runtime closure, stage 1', () => {
       [`packages/deadvox/src/config/${substitute}`]: "export type V = import('three').Vector3;\n",
       [catalog]: `export type { V } from '../config/${named}';\n`,
     });
-    expect(importers(violations)).toEqual([catalog]);
+    expect(reasons(violations)).toEqual([[catalog, 'a specifier extension outside .ts, .mjs and .json']]);
   });
 
   it.each([
@@ -487,22 +530,21 @@ describe('runtime closure, stage 1', () => {
   });
 
   it.each([
-    [
-      'a symlinked directory on the literal path',
-      "'/src/config/views/*.ts'",
-      'packages/deadvox/src/config/views',
-      '../render',
-    ],
-    ['a symlinked matched file', "'/src/config/view.ts'", 'packages/deadvox/src/config/view.ts', '../render/view.ts'],
-  ])('fails a glob through %s', (_name, pattern, link, target) => {
-    const violations = violationsIn(
-      {
-        [catalog]: `export const views = import.meta.glob(${pattern});\n`,
-        'packages/deadvox/src/config/tuning.json': '{}\n',
-      },
-      { [link]: target },
-    );
-    expect(importers(violations)).toEqual([catalog]);
+    {
+      name: 'a symlinked directory on the literal path',
+      pattern: "'/src/config/views/*.ts'",
+      link: { 'packages/deadvox/src/config/views': '../render' },
+      reason: 'globs through a symlink, which the bundler follows',
+    },
+    {
+      name: 'a symlinked matched file',
+      pattern: "'/src/config/view.ts'",
+      link: { 'packages/deadvox/src/config/view.ts': '../render/view.ts' },
+      reason: 'reaches through a symlink',
+    },
+  ])('fails a glob through $name', ({ pattern, link, reason }) => {
+    const violations = violationsIn({ [catalog]: `export const views = import.meta.glob(${pattern});\n` }, link);
+    expect(reasons(violations)).toEqual([[catalog, reason]]);
   });
 
   it('fails a glob whose base does not resolve, but passes a resolvable glob that matches nothing', () => {

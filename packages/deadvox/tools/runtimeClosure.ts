@@ -1,4 +1,4 @@
-// The runtime closure check catches honest edits that let the runtime reach presentation code; the routes
+// The runtime closure check catches honest edits that let the runtime reach presentation or product code; the routes
 // it accepts or never sees are in `packages/deadvox/docs/runtime-closure-limits.md`, "Not checked".
 // biome-ignore lint/correctness/noNodejsModules: This check reads the source tree in Node.js.
 import { existsSync, globSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -8,10 +8,15 @@ import { parseSync } from 'vite';
 
 /** Where the runtime starts, what it may follow, and what it may never reach. Paths are repository-relative. */
 export interface RuntimeClosurePolicy {
-  /** Every source file under these directories is runtime. Every local source file they reach is followed. */
+  /** The runtime set: every file under these directories. A reached local file outside it fails, except below. */
   readonly start: readonly string[];
-  /** Local directories whose source files are deliberately not followed; a leaf is named here, never implied. */
+  /** Local directories the runtime may reach without following their source files; named here, never implied. */
   readonly leaves: readonly string[];
+  /**
+   * The runtime package's manifest. The workspaces its `dependencies` name are the libraries the runtime
+   * follows: a file of one is allowed when reached by the package name or from inside that library.
+   */
+  readonly manifest: string;
   /** Directories no runtime file, or local file it reaches, may reach, by any import route. */
   readonly forbidden: readonly string[];
   /** npm packages no runtime file, or local file it reaches, may import, with every subpath. */
@@ -29,10 +34,12 @@ export interface RuntimeClosureViolation {
   readonly reason: string;
 }
 
-// Stage 1: the presentation side leaves deadvox whole (#1532), so the runtime may not reach it.
-export const STAGE_ONE_POLICY: RuntimeClosurePolicy = {
+// The runtime leaves deadvox as its own package (#1532), so it may reach neither presentation code nor a
+// product's configuration, mods or pages; the forbidden entries name presentation even through a library.
+export const RUNTIME_POLICY: RuntimeClosurePolicy = {
   start: ['packages/deadvox/src/core', 'packages/deadvox/src/vehicles', 'packages/deadvox/src/game'],
   leaves: [],
+  manifest: 'packages/deadvox/package.json',
   forbidden: [
     'packages/deadvox/src/render',
     'packages/deadvox/src/ui',
@@ -684,7 +691,11 @@ function symlinkedDirectoryUnder(
   return found === undefined ? undefined : relative(repoRoot, found).split(sep).join('/');
 }
 
-type Resolved = { readonly files: readonly string[] } | { readonly npm: string } | { readonly unresolved: string };
+/** `library` is the workspace directory a bare package name resolved into. */
+type Resolved =
+  | { readonly files: readonly string[]; readonly library?: string }
+  | { readonly npm: string }
+  | { readonly unresolved: string };
 
 // A module URL the check reads: a path relative to the importer, without escapes or percent-encoding that
 // URL parsing would rewrite.
@@ -700,6 +711,8 @@ class ClosureWalk {
   private readonly judgedManifests = new Set<string>();
   private readonly queue: string[];
   private readonly workspaces: readonly Workspace[];
+  /** The directories of the workspace libraries the runtime package depends on. */
+  private readonly libraries: readonly string[];
   private readonly root: string;
   private readonly policy: RuntimeClosurePolicy;
 
@@ -707,6 +720,11 @@ class ClosureWalk {
     this.root = root;
     this.policy = policy;
     this.workspaces = workspacesOf(root);
+    const manifest = JSON.parse(readFileSync(join(root, policy.manifest), 'utf8')) as {
+      dependencies?: Record<string, string>;
+    };
+    const dependencies = Object.keys(manifest.dependencies ?? {});
+    this.libraries = this.workspaces.filter(({ name }) => dependencies.includes(name)).map(({ dir }) => dir);
     const roots = policy.start.map((dir) => sourceFilesUnder(root, dir));
     this.queue = roots.flatMap(({ files }) => files);
     for (const link of roots.flatMap(({ links }) => links)) {
@@ -751,7 +769,8 @@ class ClosureWalk {
     }
     // The workspace manifest steers this resolution (exports, typesVersions), whatever manifest the target has.
     this.judgeManifestFile(importer, specifier, posix.join(workspace.dir, 'package.json'));
-    return this.found(workspacePaths(workspace, specifier.slice(name.length)));
+    const resolved = this.found(workspacePaths(workspace, specifier.slice(name.length)));
+    return 'files' in resolved ? { files: resolved.files, library: workspace.dir } : resolved;
   }
 
   /** The nearest package.json above a repository-relative directory, inside the repository. */
@@ -918,14 +937,14 @@ class ClosureWalk {
       this.violations.push({ importer, specifier, target: '', reason: target.unresolved });
     } else if ('files' in target) {
       for (const file of target.files) {
-        this.reach(importer, specifier, file);
+        this.reach(importer, specifier, file, target.library);
       }
     } else if (this.policy.forbiddenPackages.includes(target.npm)) {
       this.violations.push({ importer, specifier, target: target.npm, reason: 'imports a forbidden package' });
     }
   }
 
-  private reach(importer: string, specifier: string, target: string): void {
+  private reach(importer: string, specifier: string, target: string, library?: string): void {
     const { leaves, forbidden } = this.policy;
     this.judgeManifest(importer, specifier, target);
     // Classification is by path, so a symlink could hide the owner the bundler resolves it to.
@@ -934,16 +953,30 @@ class ClosureWalk {
       this.violations.push({ importer, specifier, target, reason: `reaches through a symlink: ${link}` });
     } else if (forbidden.some((dir) => within(target, dir))) {
       this.violations.push({ importer, specifier, target, reason: 'reaches a forbidden directory' });
+    } else if (!this.inRuntimeSet(importer, target, library)) {
+      this.violations.push({ importer, specifier, target, reason: 'reaches outside the runtime set' });
     } else if (SOURCE_FILE.test(target) && !leaves.some((dir) => within(target, dir))) {
-      // Vite follows every local source it resolves, so the walk does too, wherever the file lies.
       this.queue.push(target);
     }
+  }
+
+  /**
+   * Whether a reached file belongs to the runtime: under a start or leaf directory, or in a library the
+   * runtime package depends on, reached by its package name or from inside it. A library entered by a
+   * relative path would bypass the package's exports.
+   */
+  private inRuntimeSet(importer: string, target: string, library: string | undefined): boolean {
+    const { start, leaves } = this.policy;
+    if ([...start, ...leaves].some((dir) => within(target, dir))) {
+      return true;
+    }
+    return this.libraries.some((dir) => within(target, dir) && (library === dir || within(importer, dir)));
   }
 }
 
 /**
- * Walk every import, type-only ones included, from the runtime start set and every local source
- * file it reaches, and report each edge into a forbidden directory or package.
+ * Walk every import, type-only ones included, from the runtime start set and every runtime source
+ * file it reaches, and report each edge into a forbidden directory or package or outside the runtime set.
  */
 export function runtimeClosureViolations(repoRoot: string, policy: RuntimeClosurePolicy): RuntimeClosureViolation[] {
   const walk = new ClosureWalk(resolve(repoRoot), policy);

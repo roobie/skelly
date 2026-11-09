@@ -1,7 +1,8 @@
 ---
 read_if:
-  - you rely on the runtime closure check to prove the runtime never reaches presentation, render or UI code
-  - you change the closure check, the Vite config, the deadvox tsconfig or a workspace manifest
+  - you rely on the runtime closure check to prove the runtime reaches nothing outside the runtime set
+  - you rely on the no-DOM typecheck to keep browser APIs out of the runtime
+  - you change the closure check, the Vite config, a deadvox tsconfig or a workspace manifest
   - a reviewer reports a route around the closure check and you need to know whether it is already accepted
 tags: [deadvox, refactor, testing, tooling]
 ---
@@ -9,9 +10,11 @@ tags: [deadvox, refactor, testing, tooling]
 # Runtime closure check: limits
 
 The closure check (`tools/runtimeClosure.ts`, `runtimeClosureViolations`, and the Vite gate in
-`test/runtimeClosure.test.ts`, `viteGateIssues`) exists to catch honest mistakes: a contributor
-who adds an import, a manifest field, a tsconfig option, a symlink or a Vite root that lets the
-runtime reach presentation code. It does not defend against a deliberate bypass. Closing every
+`test/runtimeClosure.test.ts`, `viteGateIssues`) and the no-DOM typecheck
+(`tsconfig.runtime.json`) exist to catch honest mistakes: a contributor who adds an import, a
+glob, a manifest field, a tsconfig option, a symlink or a Vite root that lets the runtime reach
+presentation or product code, or who uses a browser API in the runtime. They do not defend
+against a deliberate bypass. Closing every
 deliberate route would mean re-implementing tsc and Vite resolution inside the check, with each gap
 adding code to the check for little gain, so the known gaps are listed here instead of closed.
 Anything the check does not model fails closed; the items below are routes it accepts or never
@@ -28,13 +31,10 @@ sees.
 - **Plugin hooks other than config and id resolution:** hooks such as `buildStart` can mutate shared
   state that resolution reads later; modelling every hook is the Vite re-implementation this check
   avoids.
-- **Ambient declarations from included presentation files:** the tsconfig `include` puts
-  presentation files in the same compilation, so a `declare global` there types runtime code without
-  an import; it adds no module edge, and the presentation side leaving the package under #1532
-  removes it.
-- **DOM types from `lib` or from `target`'s default libraries:** runtime files compile against DOM
-  declarations; they are compiler libraries, not project code, and `tsconfigInputs` only limits
-  `lib` to library names.
+- **Browser names that Node also declares:** the no-DOM typecheck compiles the runtime set with
+  the ES libraries and Node's types only, so a DOM-only name such as `document` fails. A name
+  `@types/node` declares as a Node global, such as `navigator` or `localStorage`, still
+  compiles; telling a browser use from a Node use of the same global needs a rule beyond types.
 - **Vite runs started outside the package:** an absent Vite `root` is the working directory, which
   the package's scripts set to the policy root; a run from another directory or with a CLI root
   flag is not seen.
@@ -56,8 +56,9 @@ sees.
   registers, and data files that name presentation modules are not imports, so the check never sees
   them; it guards module edges only.
 - **Insides of npm packages:** a package that is neither a workspace nor named in
-  `STAGE_ONE_POLICY`, `forbiddenPackages` is a leaf, so what it imports is not walked. Local
-  source files are always followed, except under a directory `STAGE_ONE_POLICY`, `leaves` names.
+  `RUNTIME_POLICY`, `forbiddenPackages` is a leaf, so what it imports is not walked, and its own
+  DOM use is the typecheck's to find, not the walk's. Local source files in the runtime set are
+  always followed, except under a directory `RUNTIME_POLICY`, `leaves` names.
 - **Negated glob patterns:** skipped, so the check matches more than Vite does; this over-reports
   and never hides an edge.
 

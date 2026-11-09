@@ -251,10 +251,14 @@ for that name are in its
 "Name".
 
 Runtime code (`packages/deadvox/src/core`, `packages/deadvox/src/vehicles`,
-`packages/deadvox/src/game` and the shared libraries it follows) never imports presentation, render or UI code, not even for
-types, because the presentation side moves out of the runtime package whole. See
-`packages/deadvox/tools/runtimeClosure.ts`, `STAGE_ONE_POLICY`. The check guards honest
-edits, not deliberate bypasses; what it does not check is in
+`packages/deadvox/src/game` and the workspace libraries the deadvox package depends on)
+reaches nothing outside that set, not even for types: no presentation, render or UI code
+and no product configuration, mods or pages, whether by import or by glob. The runtime
+then moves out as its own package with nothing left behind to import, and the presentation
+side moves out whole. See `packages/deadvox/tools/runtimeClosure.ts`, `RUNTIME_POLICY`.
+The same set also compiles without DOM types, so a browser API used in the runtime fails
+the deadvox typecheck; see `packages/deadvox/tsconfig.runtime.json`. The checks guard
+honest edits, not deliberate bypasses; what they do not check is in
 `packages/deadvox/docs/runtime-closure-limits.md`, "Not checked".
 
 Runtime and presentation code name no product path. The product globs its own mod roots
