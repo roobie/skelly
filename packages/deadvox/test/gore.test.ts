@@ -332,10 +332,59 @@ describe('Gore', () => {
     }
     expect(gore.activeChunks).toBe(2);
     expect(gore.activeSplats).toBe(2);
-    while (gore.activeChunks > 0) {
+    // Bounded, so a chunk that outlives its lifetime fails here rather than hanging.
+    for (let frame = 0; frame < (chunks.lifetimeRealSeconds + 1) * 60 && gore.activeChunks > 0; frame++) {
       gore.update(1 / 60, floor);
     }
+    expect(gore.activeChunks).toBe(0);
     expect(gore.activeSplats).toBe(0);
     gore.dispose();
+  });
+
+  describe('when a throw reuses a landed chunk before it expires', () => {
+    const chunks = {
+      models: ['fixture_chunk'],
+      cap: 2,
+      perThrow: [2, 2] as [number, number],
+      hardHitDamage: 30,
+      speedMetresPerRealSecond: { min: 1, max: 1 },
+      spreadFraction: 0,
+      spinRadiansPerRealSecond: { min: 1, max: 1 },
+      scale: { min: 1, max: 1 },
+      lifetimeRealSeconds: 10,
+      fadeRealSeconds: 1,
+      landedSplatRadiusMetres: { min: 0.1, max: 0.1 },
+    };
+    const farHit: HitImpulse = { ...lowHit, point: [9.5, 0.05, 9.5] };
+    /** A pool of two chunks, both landed on their splats; hard hits throw chunks and no spray. */
+    const landedPool = (splatCap: number) => {
+      const gore = new Gore(1, WORLD_GRAVITY, { ...GORE_TUNING_FIXTURE, splatCap, chunks });
+      gore.wounded(lowHit, chunks.hardHitDamage);
+      for (let frame = 0; frame < 120 && gore.activeSplats < 2; frame++) {
+        gore.update(1 / 60, floor);
+      }
+      return gore;
+    };
+
+    it('ends the old chunk splats with them, leaving none bare where the chunks were', () => {
+      const gore = landedPool(GORE_TUNING_FIXTURE.splatCap);
+      expect([gore.activeChunks, gore.activeSplats]).toEqual([2, 2]);
+      gore.wounded(farHit, chunks.hardHitDamage);
+      expect(gore.activeChunks).toBe(2);
+      expect(gore.activeSplats).toBe(0);
+      gore.dispose();
+    });
+
+    it('keeps a splat that has since reused the old chunk splat slot', () => {
+      // A two-slot splat pool: these two splats take the slots the chunks landed on.
+      const gore = landedPool(2);
+      expect([gore.activeChunks, gore.activeSplats]).toEqual([2, 2]);
+      gore.landed([3.5, 0, 3.5]);
+      gore.landed([5.5, 0, 5.5]);
+      gore.wounded(farHit, chunks.hardHitDamage);
+      expect(gore.activeChunks).toBe(2);
+      expect(gore.activeSplats).toBe(2);
+      gore.dispose();
+    });
   });
 });

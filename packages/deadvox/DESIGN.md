@@ -2594,7 +2594,9 @@ application rather than weapon-class special cases. See `src/core/schema/actors.
   Where a droplet lands it leaves a splat. Splats fade and are not
   saved, so a reload starts clean. A flesh chunk lands on a splat of its own,
   small enough that the chunk stands out from it, and that splat ends with the
-  chunk: a bare splat where a chunk was reads as a chunk that never came. Chunks
+  chunk, whether the chunk expires or a new throw reuses its pool slot: a bare
+  splat where a chunk was reads as a chunk that never came. A splat that has
+  since reused that splat's own slot belongs to something else and stays. Chunks
   outlast a fight long enough for the player to walk up and find them
   (`mods/skelly.deadvox.actors/graphics-actors.jsonnet`, `chunks`). Wounded bodies drip and wear blood stains,
   both derived from saved state (lost region health, severed parts, carved
