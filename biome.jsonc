@@ -176,6 +176,31 @@
       // oversight useDestructuring should keep flagging.
       "includes": ["**/deadvox/src/core/pose.ts", "**/deadvox/src/render/crowd.ts"],
       "linter": { "rules": { "style": { "useDestructuring": "off" } } }
+    },
+    {
+      // The runtime set's no-DOM typecheck (packages/deadvox/tsconfig.runtime.json) keeps Node types,
+      // which declare these browser names, so the typecheck alone lets them through. The paths are the
+      // ones that tsconfig includes. `event` and `error` keep the rule's default ban.
+      "includes": ["packages/deadvox/src/core/**", "packages/deadvox/src/vehicles/**", "packages/deadvox/src/game/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "event": "Use the event your handler receives, not the global one.",
+                  "error": "Use a local variable, not the global error.",
+                  "navigator": "Runtime code runs without the browser; take what you need from navigator as an argument.",
+                  "MessageEvent": "Runtime code runs without the browser; MessageEvent is a browser type.",
+                  "localStorage": "Runtime code runs without the browser; take storage as an argument instead.",
+                  "sessionStorage": "Runtime code runs without the browser; take storage as an argument instead."
+                }
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }

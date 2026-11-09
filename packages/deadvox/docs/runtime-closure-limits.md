@@ -1,7 +1,7 @@
 ---
 read_if:
   - you rely on the runtime closure check to prove the runtime reaches nothing outside the runtime set
-  - you rely on the no-DOM typecheck to keep browser APIs out of the runtime
+  - you rely on the no-DOM typecheck or the runtime's browser-name lint ban to keep browser APIs out of the runtime
   - you change the closure check, the Vite config, a deadvox tsconfig or a workspace manifest
   - a reviewer reports a route around the closure check and you need to know whether it is already accepted
 tags: [deadvox, refactor, testing, tooling]
@@ -10,8 +10,9 @@ tags: [deadvox, refactor, testing, tooling]
 # Runtime closure check: limits
 
 The closure check (`tools/runtimeClosure.ts`, `runtimeClosureViolations`, and the Vite gate in
-`test/runtimeClosure.test.ts`, `viteGateIssues`) and the no-DOM typecheck
-(`tsconfig.runtime.json`) exist to catch honest mistakes: a contributor who adds an import, a
+`test/runtimeClosure.test.ts`, `viteGateIssues`), the no-DOM typecheck
+(`tsconfig.runtime.json`) and the browser-name lint ban (`biome.jsonc`, `noRestrictedGlobals`)
+exist to catch honest mistakes: a contributor who adds an import, a
 glob, a manifest field, a tsconfig option, a symlink or a Vite root that lets the runtime reach
 presentation or product code, or who uses a browser API in the runtime. They do not defend
 against a deliberate bypass. Closing every
@@ -31,10 +32,11 @@ sees.
 - **Plugin hooks other than config and id resolution:** hooks such as `buildStart` can mutate shared
   state that resolution reads later; modelling every hook is the Vite re-implementation this check
   avoids.
-- **Browser names that Node also declares:** the no-DOM typecheck compiles the runtime set with
-  the ES libraries and Node's types only, so a DOM-only name such as `document` fails. A name
-  `@types/node` declares as a Node global, such as `navigator` or `localStorage`, still
-  compiles; telling a browser use from a Node use of the same global needs a rule beyond types.
+- **Browser names a later `@types/node` declares:** the no-DOM typecheck compiles the runtime set
+  with the ES libraries and Node's types, so a DOM-only name such as `document` fails, but a
+  browser name that `@types/node` declares as a Node global compiles. The lint ban
+  (`biome.jsonc`, `noRestrictedGlobals`, on the runtime set's paths) fails the ones it names;
+  a name a later `@types/node` upgrade adds passes both checks until it is added to the ban.
 - **Vite runs started outside the package:** an absent Vite `root` is the working directory, which
   the package's scripts set to the policy root; a run from another directory or with a CLI root
   flag is not seen.
