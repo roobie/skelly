@@ -1040,7 +1040,7 @@ export class MobActorMeshes implements ActorRenderer {
       localSlot,
       globalRow,
       instanceIndex,
-      crawling: actorCrawls(actor),
+      crawling: actorCrawls(actor, variant.body),
       lastPose: undefined,
       lastPlacement: undefined,
       actor: undefined,
@@ -1477,7 +1477,7 @@ export class MobActorMeshes implements ActorRenderer {
       return this.severDowned(id, part, hit, actor);
     }
     const variant = this.variants[state.variantIndex]!;
-    if (actor && !state.drawnFall && !(actorCrawls(actor) && !state.crawling && state.lastPose)) {
+    if (actor && !state.drawnFall && !(actorCrawls(actor, variant.body) && !state.crawling && state.lastPose)) {
       const posed = this.posedFrame(state, actor, this.currentRenderPlacement(actor));
       state.lastPose = posed.pose;
       state.lastPlacement = posed.placement;
@@ -1973,7 +1973,7 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   private beginCrawlFall(state: ActorRenderState, variant: Variant, actor: Actor): void {
-    const crawling = actorCrawls(actor);
+    const crawling = actorCrawls(actor, variant.body);
     if (crawling && !state.crawling && state.lastPose && state.lastPlacement && !this.ragdolls?.failed) {
       this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared);
       const placement = state.lastPlacement;

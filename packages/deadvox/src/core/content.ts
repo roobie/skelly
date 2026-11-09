@@ -1706,7 +1706,7 @@ export const actorFigureFileIssues = (
     for (const [path, message] of figureTypeIssues(type, body.output)) {
       report(path, message);
     }
-    if (crawlsAfterLegLoss(type) && clips.output.crawling === undefined) {
+    if (crawlsAfterLegLoss(body.output) && clips.output.crawling === undefined) {
       report('.clips.crawling', `actor type "${type.id}" crawls after losing a leg and needs a crawling set`);
     }
   } else if (!content.figures.has(body.output.type)) {
