@@ -33,14 +33,18 @@
       "gore": {
         "chunks": {
           "cap": 48,
-          "fadeRealSeconds": 4,
+          "fadeRealSeconds": 30,
           "hardHitDamage": 60,
-          "lifetimeRealSeconds": 20,
+          "landedSplatRadiusMetres": {
+            "max": 0.10000000000000001,
+            "min": 0.059999999999999998
+          },
+          "lifetimeRealSeconds": 90,
           "models": ["flesh_chunk_small", "flesh_chunk_medium", "flesh_chunk_large", "flesh_chunk_strip"],
           "perThrow": [2, 4],
           "scale": {
-            "max": 1.3,
-            "min": 0.80000000000000004
+            "max": 2.7999999999999998,
+            "min": 1.8
           },
           "speedMetresPerRealSecond": {
             "max": 4,

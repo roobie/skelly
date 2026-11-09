@@ -90,6 +90,8 @@ interface Chunk {
 interface Splat {
   active: boolean;
   ageRealSeconds: number;
+  lifeRealSeconds: number;
+  fadeRealSeconds: number;
 }
 
 /** One of the nearest wounded bodies, picked afresh each update. */
@@ -250,7 +252,12 @@ export class Gore {
       maxAgeRealSeconds: DROPLET_MAX_AGE_S,
       sizeMetres: 0,
     }));
-    this.splats = Array.from({ length: tuning.splatCap }, () => ({ active: false, ageRealSeconds: 0 }));
+    this.splats = Array.from({ length: tuning.splatCap }, () => ({
+      active: false,
+      ageRealSeconds: 0,
+      lifeRealSeconds: SPLAT_LIFE_S,
+      fadeRealSeconds: SPLAT_FADE_S,
+    }));
     this.drippers = Array.from({ length: tuning.dripSourceCap }, () => ({
       actor: undefined,
       distanceBlocks: 0,
@@ -384,7 +391,8 @@ export class Gore {
   /** A large splat on the floor under something wet that came to rest there, such as a flesh chunk (its centre,
    * metres). The floor is the top of the block the centre is in. */
   landed(centre: Vec3): void {
-    this.splatUnder(centre[0], centre[1], centre[2]);
+    const floor = Math.floor(centre[1] / this.blockSize) * this.blockSize;
+    this.splat(this.point.set(centre[0], floor, centre[2]), this.normal.set(0, 1, 0), this.rng.range(0.14, 0.24));
   }
 
   /** Flies the droplets, leaves a splat where each lands, fades the splats and lets the nearest wounded
@@ -467,10 +475,17 @@ export class Gore {
     }
   }
 
-  /** `landed`'s splat, from a centre given as numbers so the per-frame path builds no array. */
-  private splatUnder(x: number, y: number, z: number): void {
-    const floor = Math.floor(y / this.blockSize) * this.blockSize;
-    this.splat(this.point.set(x, floor, z), this.normal.set(0, 1, 0), this.rng.range(0.14, 0.24));
+  /** The splat a chunk lands on. It ends with the chunk: a splat left bare where a chunk was reads as a chunk that
+   * never came. */
+  private splatUnderChunk(chunk: Chunk, tuning: NonNullable<GoreTuning['chunks']>): void {
+    const { position } = chunk;
+    const radius = this.rng.range(tuning.landedSplatRadiusMetres.min, tuning.landedSplatRadiusMetres.max);
+    const left = Math.max(0, tuning.lifetimeRealSeconds - chunk.ageRealSeconds);
+    const splat = this.splat(this.point.copy(position), this.normal.set(0, 1, 0), radius);
+    if (splat) {
+      splat.lifeRealSeconds = left;
+      splat.fadeRealSeconds = Math.min(left, tuning.fadeRealSeconds);
+    }
   }
 
   private flyChunks(dt: number, substeps: number, isSolid: (x: number, y: number, z: number) => boolean): void {
@@ -513,7 +528,9 @@ export class Gore {
         velocity.set(0, 0, 0);
         chunk.landed = true;
         chunk.orientation.setFromAxisAngle(this.up, this.rng.range(0, Math.PI * 2));
-        this.splatUnder(position.x, position.y, position.z);
+        if (this.tuning.chunks) {
+          this.splatUnderChunk(chunk, this.tuning.chunks);
+        }
         return;
       }
     }
@@ -757,15 +774,18 @@ export class Gore {
     }
   }
 
-  private splat(point: Vector3, normal: Vector3, radiusMetres: number): void {
+  /** Lays a splat with a droplet's life, which the caller may change on the splat returned. */
+  private splat(point: Vector3, normal: Vector3, radiusMetres: number): Splat | undefined {
     if (this.splats.length === 0) {
-      return;
+      return undefined;
     }
     const slot = this.nextSplat;
     this.nextSplat = (this.nextSplat + 1) % this.tuning.splatCap;
     const splat = this.splats[slot]!;
     splat.active = true;
     splat.ageRealSeconds = 0;
+    splat.lifeRealSeconds = SPLAT_LIFE_S;
+    splat.fadeRealSeconds = SPLAT_FADE_S;
     // Successive splats sit a hair apart so overlapping ones don't fight for depth.
     this.dummy.position.copy(point).addScaledVector(normal, 0.003 + (slot % 8) * 0.0004);
     this.dummy.quaternion
@@ -777,6 +797,7 @@ export class Gore {
     this.splatMesh.instanceMatrix.needsUpdate = true;
     this.splatOpacity.setX(slot, SPLAT_OPACITY);
     this.splatOpacity.needsUpdate = true;
+    return splat;
   }
 
   private fadeSplats(dt: number): void {
@@ -786,8 +807,8 @@ export class Gore {
         continue;
       }
       splat.ageRealSeconds += dt;
-      const left = SPLAT_LIFE_S - splat.ageRealSeconds;
-      this.splatOpacity.setX(slot, SPLAT_OPACITY * Math.min(1, Math.max(0, left / SPLAT_FADE_S)));
+      const left = splat.lifeRealSeconds - splat.ageRealSeconds;
+      this.splatOpacity.setX(slot, SPLAT_OPACITY * Math.min(1, Math.max(0, left / splat.fadeRealSeconds)));
       this.splatOpacity.needsUpdate = true;
       if (left <= 0) {
         splat.active = false;
