@@ -113,7 +113,7 @@ Whoever merges ticks by hand what the workflow cannot. Slice 3's checklist is #2
 
 - **Review references use page paths, never LAN addresses.** The maintainer reviews from
   another machine, so the review origin is supplied outside tracked work.
-- **gungen:** give a page path per design with a `camera=` view (side, rear, rear-¾), from a
+- **Gun authoring tool:** give a page path per design with a `camera=` view (side, rear, rear-¾), from a
   stable review server pinned to the reviewed commit, not a contributor's live worktree.
 - **deadvox:** put a feature sent to the maintainer for a look in the test house, and use a
   look link that spawns them beside it (`/?site=testHouse&seed=<n>&debug=1`). The maintainer

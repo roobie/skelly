@@ -270,9 +270,9 @@ See `packages/deadvox/src/product/input.ts`, `keyboardInput`.
 The #1532 gate is closure or merge of every PR in its frozen in-flight set: #1531,
 #1529, #1528, #1527, #1526, #1524, #1520, #1509, #1503, #1496, #1493, #1488, #1477,
 #1403 and #1369. The framework refactor's own PR and the asset-pipeline move PRs are allowed under
-the freeze. The asset move targets `framework/refactor`; framework extraction pauses
-after content ownership is split until that move finishes. Moving the pipelines first
-avoids extracting runtime around tool dependencies that would then be removed again.
+the freeze. The asset move targets `framework/refactor` and precedes framework
+extraction beyond the content-ownership split. Moving the pipelines first avoids
+extracting runtime around tool dependencies that would then be removed again.
 Open permitted PRs as drafts for CI; unrelated new PRs remain frozen until the
 refactor lands, though other work can use an existing PR. The freeze prevents unrelated
 file moves during extraction, not CI for the extraction itself. One extraction avoids
