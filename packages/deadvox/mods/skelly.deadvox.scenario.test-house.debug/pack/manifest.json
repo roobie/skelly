@@ -16,7 +16,9 @@
     "skelly.manuals",
     "skelly.manufactured-blocks",
     "skelly.materials",
+    "skelly.medicine",
     "skelly.melee",
+    "skelly.packaged-foods",
     "skelly.readables",
     "skelly.structures",
     "skelly.wearables",
@@ -26,6 +28,10 @@
     {
       "kind": "content",
       "path": "layouts.json"
+    },
+    {
+      "kind": "content",
+      "path": "starts.json"
     }
   ],
   "id": "skelly.deadvox.scenario.test-house.debug",

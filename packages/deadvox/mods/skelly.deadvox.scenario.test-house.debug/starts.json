@@ -1,0 +1,107 @@
+{
+  "starts": [
+    {
+      "debugOnly": true,
+      "defaultForSite": true,
+      "density": null,
+      "id": "amalgamlook",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "condition": 1,
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "shotgun",
+          "item": "pump_shotgun"
+        },
+        {
+          "count": 8,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 0
+          },
+          "id": "buckshot",
+          "item": "shell_12_gauge_00_buck"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "testHouseAmalgam",
+      "skills": {},
+      "startTimeGameTimeOfDay": "12:00",
+      "storeys": 1,
+      "wounds": []
+    }
+  ]
+}
