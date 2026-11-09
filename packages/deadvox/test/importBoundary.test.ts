@@ -8,6 +8,10 @@ const ROOTS = ['src', 'test', 'tools'];
 const SKIPPED_DIRECTORIES = new Set(['node_modules', 'dist']);
 const SOURCE_FILE = /\.(?:[cm]?[jt]sx?)$/;
 const SIBLING = /(^|[\\/])(gungen|mobgen|site)([\\/]|$)/;
+// Shared root tooling any package may import, as repository paths: the Jsonnet compiler's entry, and
+// the Lit check's whole install, which lives at the root so every package's UI can use it.
+const SHARED_ROOT_TOOLS = ['tools/jsonnet/index.mjs', 'tools/lit-check/'];
+const REPOSITORY_ROOT = join('..', '..');
 // Static `from '…'`, side-effect `import '…'`, dynamic `import('…')` and `require('…')`.
 const SPECIFIER = /\b(?:from\s*|import\s*\(?\s*|require\s*\(\s*)(['"`])([^'"`\n]+)\1/g;
 
@@ -36,6 +40,19 @@ const escapesProject = (file: string, specifier: string): boolean => {
   return fromProject === '..' || fromProject.startsWith(`..${sep}`);
 };
 
+/** Whether a relative specifier names shared root tooling (`SHARED_ROOT_TOOLS`). */
+const sharedRootTool = (file: string, specifier: string): boolean => {
+  if (!specifier.startsWith('.')) {
+    return false;
+  }
+  const fromRepository = relative(REPOSITORY_ROOT, normalize(join(file, '..', specifier)))
+    .split(sep)
+    .join('/');
+  return SHARED_ROOT_TOOLS.some((tool) =>
+    tool.endsWith('/') ? fromRepository.startsWith(tool) : fromRepository === tool,
+  );
+};
+
 describe('deadvox stays independent of its sibling projects', () => {
   const files = ROOTS.flatMap(sourceFiles);
 
@@ -44,12 +61,11 @@ describe('deadvox stays independent of its sibling projects', () => {
     expect(files).toContain('test/importBoundary.test.ts');
   });
 
-  it('imports no sibling source and allows only the shared root Jsonnet compiler', () => {
-    const sharedJsonnetCompiler = '../../../tools/jsonnet/index.mjs';
+  it('imports no sibling source, allowing only shared root tooling (the Jsonnet compiler and the Lit check)', () => {
     const offenders = files.flatMap((file) =>
       [...readFileSync(file, 'utf8').matchAll(SPECIFIER)]
         .map((match) => match[2] ?? '')
-        .filter((specifier) => escapesProject(file, specifier) && specifier !== sharedJsonnetCompiler)
+        .filter((specifier) => escapesProject(file, specifier) && !sharedRootTool(file, specifier))
         .map((specifier) => `${file}: ${specifier}`),
     );
     expect(offenders).toEqual([]);
@@ -66,5 +82,13 @@ describe('deadvox stays independent of its sibling projects', () => {
     expect(escapesProject('src/a.ts', 'three')).toBe(false);
     expect(escapesProject('test/fixtures/a.ts', '../../../mods/fixture.mod/rows.json')).toBe(false);
     expect(escapesProject('test/fixtures/a.ts', '../../../mods/fixture.mod/source.ts')).toBe(true);
+  });
+
+  it('recognises shared root tooling and nothing else under the root tools', () => {
+    expect(sharedRootTool('test/a.ts', '../../../tools/jsonnet/index.mjs')).toBe(true);
+    expect(sharedRootTool('test/fixtures/a.ts', '../../../../tools/lit-check/inputGuard.ts')).toBe(true);
+    expect(sharedRootTool('test/a.ts', '../../../tools/jsonnet/compile.mjs')).toBe(false);
+    expect(sharedRootTool('test/a.ts', '../../../tools/lit-checker/x.ts')).toBe(false);
+    expect(sharedRootTool('test/a.ts', '../../../tools/zero-drift-check.mjs')).toBe(false);
   });
 });
