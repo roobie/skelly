@@ -1,12 +1,15 @@
 import { BoxGeometry, InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
+import { actorPoseInputFor } from '../src/core/actorPose.ts';
+import { posedFusedMassRegionBoxes } from '../src/core/actorRegions.ts';
 import type { Actor } from '../src/core/actorState.ts';
 import type { HitImpulse } from '../src/core/actorSystem.ts';
 import { BODY_REGIONS, type BodyRegion } from '../src/core/body.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
-import { carveAround, missingFlesh } from '../src/core/fusedMassCarving.ts';
+import { missingFlesh } from '../src/core/fusedMassCarving.ts';
 import { fusedMassTypeOf } from '../src/core/fusedMassFigure.ts';
+import { projectileShot } from '../src/core/pellets.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import { Gore, type GoreBodies } from '../src/render/gore.ts';
 import { PLAYER_REGION_BOXES } from '../src/render/playerFigure.ts';
@@ -135,18 +138,22 @@ describe('Gore', () => {
     const actor = actors.store.get(id)!;
     const figure = actors.figureFor(type, actor.figureSeed).fusedMass!;
     const { dims, owner, size, origin } = figure.grid;
-    // A hole in its front, so carved cells are on hand to be wrongly dripped from.
-    const front = owner.findIndex((bone, cell) => bone > 0 && Math.floor(cell / dims[0]) % dims[1] > dims[1] / 3);
-    actor.carved = carveAround({
-      figure,
-      carving: type.carving!,
-      missing: missingFlesh(figure, actor),
-      struck: front,
-      damage: 1000,
-    }).sort((a, b) => a - b);
-    for (const region of Object.keys(actor.regions)) {
-      actor.regions[region] = actor.regions[region]! / 2;
-    }
+    // A shot into its core from in front wounds it and leaves a hole, so carved cells are on hand to be
+    // wrongly dripped from.
+    const healthBefore = { ...actor.regions };
+    const core = posedFusedMassRegionBoxes(
+      actorPoseInputFor(actor, id, { blockSize: scale.blockSize, actorFigureFiles: stackActorFigureFiles(registry) }),
+    )['core.trunk']![0]!.voxelCentroid;
+    const from = core.map((value, axis) => value + (actor.facing[axis]! * 4) / scale.blockSize) as Vec3;
+    const buck = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
+    const toward = actor.facing.map((value) => -value) as Vec3;
+    expect(actors.firePellets(projectileShot(buck, from, new Array(buck.pellets).fill(toward))).hits).toBeGreaterThan(
+      0,
+    );
+    expect(actors.store.get(id)).toBe(actor);
+    expect(actor.incapacitated).toBe(false);
+    expect(actor.carved.length).toBeGreaterThan(0);
+    expect(Object.keys(healthBefore).some((region) => actor.regions[region]! < healthBefore[region]!)).toBe(true);
     const missing = missingFlesh(figure, actor);
 
     const gore = new Gore(scale.blockSize, WORLD_GRAVITY, GORE_TUNING_FIXTURE);
