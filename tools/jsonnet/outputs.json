@@ -25,6 +25,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.actors/footstep-sounds.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.actors/graphics-actors.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.actors/graphics-actors.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.actors/item-economy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.actors/item-economy.json"
     },

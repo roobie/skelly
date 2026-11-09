@@ -31,27 +31,6 @@
       },
       "fogFarPlaneScale": 1.5,
       "gore": {
-        "chunks": {
-          "cap": 48,
-          "fadeRealSeconds": 4,
-          "hardHitDamage": 60,
-          "lifetimeRealSeconds": 20,
-          "models": ["flesh_chunk_small", "flesh_chunk_medium", "flesh_chunk_large", "flesh_chunk_strip"],
-          "perThrow": [2, 4],
-          "scale": {
-            "max": 1.3,
-            "min": 0.80000000000000004
-          },
-          "speedMetresPerRealSecond": {
-            "max": 4,
-            "min": 1.5
-          },
-          "spinRadiansPerRealSecond": {
-            "max": 14,
-            "min": 4
-          },
-          "spreadFraction": 0.59999999999999998
-        },
         "dripSourceCap": 6,
         "dropletCap": 128,
         "dropletSpawnsPerFrame": 48,
