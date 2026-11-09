@@ -5,10 +5,12 @@ import type { ActorPoseInput } from '../src/core/actorPose.ts';
 import {
   type HumanoidHitRegion,
   posedActorBoneVoxelCenters,
+  posedFusedMassRegionBoxes,
   posedHumanoidRegionBoxes,
   posedRegionHitDistance,
 } from '../src/core/actorRegions.ts';
 import { type Vec3 as MobVec3, transpose } from '../src/core/boneMath.ts';
+import { FUSED_MASS_FIGURE_SEED, fusedMassTypeOf } from '../src/core/fusedMassFigure.ts';
 import { HUMANOID_REGION_NAMES } from '../src/core/humanoidRegionNames.ts';
 import type { ActorDef } from '../src/core/schema.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
@@ -233,6 +235,41 @@ describe('posed shambler hit regions', () => {
           boxes.flatMap((box) => posedBoxErrors(figure, box)),
           `${seed} ${testPose.name}`,
         ).toEqual([]);
+      }
+    }
+  });
+});
+
+describe('posed voxel centres of a scaled body', () => {
+  it("places each bone's voxel centres around its box's voxel centroid on a body drawn at non-unit scale", () => {
+    const amalgam = fusedMassTypeOf(registry.actors)!;
+    const figure = actorFigure(FIGURES, amalgam, FUSED_MASS_FIGURE_SEED);
+    expect(figure.body.scale).not.toBe(1);
+    // Off the world origin and turned, so scaling about the wrong point or before yaw shows.
+    const input: ActorPoseInput = {
+      model: 'fused-mass',
+      seed: FUSED_MASS_FIGURE_SEED,
+      figure,
+      bodyScale: amalgam.bodyScale!,
+      position: [7, 3, -11],
+      facing: normalize([1, 0, -2]),
+      headYaw: 0,
+      gaitPhase: 0,
+      speed: 0,
+      chasing: false,
+      attackWindup: 0,
+      attackWindupSeconds: 0,
+      severed: [],
+      blockSize: BLOCK,
+    };
+    const boxes = Object.values(posedFusedMassRegionBoxes(input)).flat();
+    expect(boxes.length).toBeGreaterThan(0);
+    for (const box of boxes) {
+      const centres = posedActorBoneVoxelCenters(input, [box.bone]);
+      expect(centres.length, box.bone).toBe(box.voxelCount);
+      const sum = centres.reduce<Vec3>((total, { center }) => add(total, center), [0, 0, 0]);
+      for (let axis = 0; axis < 3; axis++) {
+        expect(sum[axis]! / centres.length, `${box.bone} axis ${axis}`).toBeCloseTo(box.voxelCentroid[axis]!, 6);
       }
     }
   });

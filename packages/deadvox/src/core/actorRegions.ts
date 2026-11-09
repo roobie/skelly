@@ -2,7 +2,7 @@
 // draws. FIGURE_BOXES below remains only for the optional blocky renderer; it is deliberately not used by
 // the hit test.
 
-import type { Mat3 } from './boneMath.ts';
+import type { Mat3, Transform } from './boneMath.ts';
 import { mulMM, transpose } from './boneMath.ts';
 import { HUMANOID_REGION_NAMES } from './humanoidRegionNames.ts';
 import type { boneTransforms } from './pose.ts';
@@ -121,6 +121,24 @@ interface PoseBoxContext {
   readonly geometryScale: number;
 }
 
+/** A point in a bone's rest frame, posed and scaled about the actor origin, in block coordinates. */
+const posedBlockPoint = (context: PoseBoxContext, transform: Transform, point: readonly number[]): Vec3 => {
+  const local = applyR(
+    transform.r,
+    point.map((coordinate) => coordinate * context.geometryScale),
+  );
+  const world = applyR(context.yaw, [
+    transform.t[0] * context.geometryScale + local[0],
+    transform.t[1] * context.geometryScale + local[1],
+    transform.t[2] * context.geometryScale + local[2],
+  ]);
+  return [
+    context.position[0] + world[0] / context.blockSize,
+    context.position[1] + world[1] / context.blockSize,
+    context.position[2] + world[2] / context.blockSize,
+  ];
+};
+
 const makePosedBoneBox = (region: ActorHitRegion, box: BodyBox, context: PoseBoxContext): PosedBoneBox | undefined => {
   if (context.hidden.has(box.bone)) {
     return undefined;
@@ -129,16 +147,6 @@ const makePosedBoneBox = (region: ActorHitRegion, box: BodyBox, context: PoseBox
   if (!transform) {
     return undefined;
   }
-  const localCenter = applyR(
-    transform.r,
-    box.center.map((coordinate) => coordinate * context.geometryScale),
-  );
-  const centered = [
-    transform.t[0] * context.geometryScale + localCenter[0],
-    transform.t[1] * context.geometryScale + localCenter[1],
-    transform.t[2] * context.geometryScale + localCenter[2],
-  ] as const;
-  const worldOffset = applyR(context.yaw, centered);
   let bottomY: number | undefined;
   let topY: number | undefined;
   const summary = context.voxels.get(box.bone)!;
@@ -161,31 +169,13 @@ const makePosedBoneBox = (region: ActorHitRegion, box: BodyBox, context: PoseBox
     bottomY! -= margin;
     topY! += margin;
   }
-  const posedCentroid = applyR(
-    transform.r,
-    summary.centroid.map((coordinate) => coordinate * context.geometryScale),
-  );
-  const worldCentroid = applyR(context.yaw, [
-    transform.t[0] * context.geometryScale + posedCentroid[0],
-    transform.t[1] * context.geometryScale + posedCentroid[1],
-    transform.t[2] * context.geometryScale + posedCentroid[2],
-  ]);
-  const voxelCentroid: Vec3 = [
-    context.position[0] + worldCentroid[0] / context.blockSize,
-    context.position[1] + worldCentroid[1] / context.blockSize,
-    context.position[2] + worldCentroid[2] / context.blockSize,
-  ];
   return {
     bone: box.bone,
     ...(bottomY === undefined || topY === undefined ? {} : { bottomY, topY }),
-    center: [
-      context.position[0] + worldOffset[0] / context.blockSize,
-      context.position[1] + worldOffset[1] / context.blockSize,
-      context.position[2] + worldOffset[2] / context.blockSize,
-    ],
+    center: posedBlockPoint(context, transform, box.center),
     rotation: mulMM(context.yaw, transform.r),
     halfSize: box.halfSize.map((extent) => extent * context.geometryScale) as Vec3,
-    voxelCentroid,
+    voxelCentroid: posedBlockPoint(context, transform, summary.centroid),
     voxelCount: summary.count,
   };
 };
@@ -258,22 +248,7 @@ export const posedActorBoneVoxelCenters = (
       return [];
     }
     const centres = context.voxels.get(bone)?.centres ?? [];
-    return centres.map((center) => {
-      const posed = applyR(transform.r, center);
-      const world = applyR(context.yaw, [
-        transform.t[0] + posed[0],
-        transform.t[1] + posed[1],
-        transform.t[2] + posed[2],
-      ]);
-      return {
-        bone,
-        center: [
-          context.position[0] + world[0] / context.blockSize,
-          context.position[1] + world[1] / context.blockSize,
-          context.position[2] + world[2] / context.blockSize,
-        ] as Vec3,
-      };
-    });
+    return centres.map((center) => ({ bone, center: posedBlockPoint(context, transform, center) }));
   });
 };
 
