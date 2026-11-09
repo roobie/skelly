@@ -1,1 +1,1 @@
-(import 'item-presentation.libsonnet').pack({ models: import 'packages/skelly-assets/built/skelly.deadvox.scenario.gauntlet.city/things/index.json' })
+(import 'item-presentation.libsonnet').pack({ models: (import 'tools/jsonnet/lib/used-models.libsonnet')(import 'packages/skelly-assets/built/skelly.deadvox.scenario.gauntlet.city/things/index.json', [import 'gauntlet.jsonnet']) })

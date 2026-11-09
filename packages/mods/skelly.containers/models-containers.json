@@ -32,66 +32,6 @@
       }
     },
     {
-      "file": "assets/models/cutting_board.glb",
-      "id": "cutting_board",
-      "itemPresentation": {
-        "materials": ["wood"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "cutting_board": {
-          "centreOfMass": [-0.0026758753613877273, 0.0099999999999999985, 0],
-          "massKg": 0.45500000000000002,
-          "node": "cutting_board:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/iron_pot.glb",
-      "id": "iron_pot",
-      "itemPresentation": {
-        "materials": ["metal", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "iron_pot": {
-          "centreOfMass": [0, 0.042730538922155684, 0],
-          "massKg": 2.4900000000000002,
-          "node": "iron_pot:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/pan.glb",
-      "grip": {
-        "at": [0.19800000000000001, 0.042000000000000003, 0],
-        "turn": [0, 0, 0]
-      },
-      "hold": "upright",
-      "id": "pan",
-      "itemPresentation": {
-        "materials": ["metal", "mineral"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "pan": {
-          "centreOfMass": [0.0082431284558057531, 0.017394182226139913, 4.8080775703180746e-7],
-          "massKg": 2.427,
-          "node": "pan:compound"
-        }
-      },
-      "roll": 90
-    },
-    {
       "file": "assets/models/jerry_can.glb",
       "grip": {
         "at": [0, 0.47499999999999998, 0],

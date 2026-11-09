@@ -13,5 +13,5 @@ local fill = import 'tools/jsonnet/lib/fuel-supply.libsonnet';
   models: [
     { id: 'glowstick', file: 'assets/models/glowstick.glb', emissiveMaterial: 'chemical-light tube' },
     { id: 'road_flare', file: 'assets/models/glowstick.glb', emissiveMaterial: 'chemical-light tube' },
-  ] + import 'packages/skelly-assets/built/skelly.light-sources/things/index.json',
+  ] + (import 'tools/jsonnet/lib/used-models.libsonnet')(import 'packages/skelly-assets/built/skelly.light-sources/things/index.json', [import 'light-sources-items.jsonnet']),
 })
