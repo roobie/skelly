@@ -585,22 +585,6 @@
       "output": "packages/deadvox/test/fixtures/packs/lamp/lamp.json"
     },
     {
-      "source": "packages/mobgen/src/mob/acidTemplate.jsonnet",
-      "output": "packages/mobgen/src/mob/acidTemplate.json"
-    },
-    {
-      "source": "packages/mobgen/src/mob/attackClips.jsonnet",
-      "output": "packages/mobgen/src/mob/attackClips.json"
-    },
-    {
-      "source": "packages/mobgen/src/mob/materialTemplates.jsonnet",
-      "output": "packages/mobgen/src/mob/materialTemplates.json"
-    },
-    {
-      "source": "packages/mobgen/src/mob/skeletonTemplate.jsonnet",
-      "output": "packages/mobgen/src/mob/skeletonTemplate.json"
-    },
-    {
       "source": "packages/mods/skelly.arcana/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.arcana/assets/manifest.json"
     },

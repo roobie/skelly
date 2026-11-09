@@ -156,20 +156,6 @@ const page = (state) => html`  <main>
       </section>
 
       <section class="card">
-        <h2><a href="mobgen/">mobgen</a></h2>
-        <p>
-          A procedural generator of detailed voxel mobile actors (zombies and other NPCs) for deadvox, built up
-          from small voxels and a validated pipeline, with a procedural walk cycle. Milestone 1 is in progress.
-        </p>
-        <ul class="links">
-          <li><a href="mobgen/">Open the viewer</a></li>
-          <li><a href="mobgen/?template=shambler&amp;seed=7">Generated shambler</a></li>
-          <li><a href="mobgen/?template=runner&amp;seed=0">Generated runner</a></li>
-          <li><a href="mobgen/?template=brute&amp;seed=11">Generated brute</a></li>
-        </ul>
-      </section>
-
-      <section class="card">
         <h2><a href="https://roobie.github.io/skelly-assets/">skelly-assets</a></h2>
         <p>The shared asset library, with the gun, thing and vehicle authoring tools.</p>
       </section>

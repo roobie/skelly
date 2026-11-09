@@ -2070,7 +2070,6 @@ describe('shambler scenarios', () => {
     expect(() => restored.restoreState(snapshot, (id) => registry.actors.get(id))).toThrow('Invalid zombie state');
   });
 
-
   it.each([SHAMBLER, RUNNER])(
     '$id crawls after losing one leg, with matching hit regions and a derived pose after restore',
     (type) => {

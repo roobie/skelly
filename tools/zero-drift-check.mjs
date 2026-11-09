@@ -1098,7 +1098,7 @@ const CITATION_PATTERNS = [
 ];
 
 function policyExempt(path) {
-  return POLICY_EXEMPT.has(path) || PACKAGE_LOCK.test(path) || path.startsWith('packages/mobgen/reference/');
+  return POLICY_EXEMPT.has(path) || PACKAGE_LOCK.test(path);
 }
 
 function checkCitations(path, text, markdown, failures) {
@@ -1202,9 +1202,6 @@ export function checkDocument({
   parsedMarkdown = new Map(),
 }) {
   const failures = new Map();
-  if (path.startsWith('packages/mobgen/reference/')) {
-    return [];
-  }
   if (!tracked) {
     throw new Error('tracked file set is required for path checks');
   }

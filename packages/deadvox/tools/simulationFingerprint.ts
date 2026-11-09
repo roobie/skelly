@@ -261,7 +261,6 @@ function sourceRelativePath(projectRoot: string, sourceRoot: string, file: strin
     { root: sourceRoot, prefix: 'src/' },
     { root: resolve(projectRoot, 'mods'), prefix: 'mods/' },
     { root: resolve(projectRoot, '../mods'), prefix: 'shared-mods/' },
-    { root: resolve(projectRoot, '../mobgen/src'), prefix: 'mobgen/' },
     { root: resolve(projectRoot, '../skelly-assets/tools/packages/thing-core/src'), prefix: 'thing-core/' },
     { root: resolve(projectRoot, '../../node_modules'), prefix: 'node_modules/' },
   ];
@@ -335,7 +334,7 @@ async function resolveTrackableModule(
   const relativePath = sourceRelativePath(context.projectRoot, context.sourceRoot, file);
   if (!relativePath) {
     throw new Error(
-      `Runtime dependency ${specifier} resolves outside src/, sibling mobgen/src/, the submodule's thing-core/src/, and node_modules: ${resolvedId}`,
+      `Runtime dependency ${specifier} resolves outside src/, the submodule's thing-core/src/, and node_modules: ${resolvedId}`,
     );
   }
   if (recordExcludedImport(relativePath, importer, context.excludedImportContext)) {
@@ -350,7 +349,7 @@ async function resolveTrackableModule(
   }
   if (
     extension === '.json' &&
-    ['src/config/', 'src/feasibility/', 'mobgen/', 'thing-core/'].some((prefix) => relativePath.startsWith(prefix))
+    ['src/config/', 'src/feasibility/', 'thing-core/'].some((prefix) => relativePath.startsWith(prefix))
   ) {
     return { file, relativePath };
   }

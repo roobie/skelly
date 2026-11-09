@@ -1,4 +1,4 @@
-import { access, readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveConfig } from 'vite';
@@ -112,9 +112,6 @@ const actualSimulationHost = (): Promise<SimulationModuleGraphHost> => {
     const viteResolve = config.createResolver();
     return {
       resolve(specifier, importer) {
-        if (specifier.startsWith('@mobgen/')) {
-          return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
-        }
         return Promise.resolve(viteResolve(specifier, importer));
       },
       readFile(path) {
@@ -374,46 +371,29 @@ describe('simulation source fingerprint', () => {
     ).rejects.toThrow(UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR);
   });
 
-  it('ignores ragdoll tuning but fingerprints simulation body content', async () => {
+  it('ignores ragdoll tuning', async () => {
     const host = await actualSimulationHost();
     const original = await actualSimulationFingerprint();
-    await Promise.all(
-      [
-        ['src/config/ragdoll.json', 'gravity'],
-        ['../mobgen/src/mob/acidTemplate.json', 'bodyMassKg'],
-      ].map(async ([path, key]) => {
-        const target = resolve(projectRoot, path!);
-        const content = JSON.parse(await host.readFile(target));
-        const changed = JSON.stringify({ ...content, [key!]: content[key!] + 1 });
-        const graph = await collectSimulationSourceGraph(
-          SIMULATION_ENTRIES,
-          projectRoot,
-          {
-            ...host,
-            readFile: (file) => (file === target ? Promise.resolve(changed) : host.readFile(file)),
-          },
-          { exclude: SIMULATION_EXCLUSIONS },
-        );
-        const fingerprint = fingerprintSimulationSourceMap(graph.sources);
-        if (key === 'gravity') {
-          expect(fingerprint).toBe(original);
-          expect(graph.sources.has('src/config/ragdoll.json')).toBe(false);
-        } else {
-          expect(fingerprint).not.toBe(original);
-        }
-      }),
+    const target = resolve(projectRoot, 'src/config/ragdoll.json');
+    const content = JSON.parse(await host.readFile(target));
+    const changed = JSON.stringify({ ...content, gravity: content.gravity + 1 });
+    const graph = await collectSimulationSourceGraph(
+      SIMULATION_ENTRIES,
+      projectRoot,
+      {
+        ...host,
+        readFile: (file) => (file === target ? Promise.resolve(changed) : host.readFile(file)),
+      },
+      { exclude: SIMULATION_EXCLUSIONS },
     );
+    expect(fingerprintSimulationSourceMap(graph.sources)).toBe(original);
+    expect(graph.sources.has('src/config/ragdoll.json')).toBe(false);
   });
 
   it('fingerprints pure figure modules imported by the simulation', async () => {
     const graph = await actualSimulationGraph();
     expect(graph.sources.has('src/core/pose.ts')).toBe(true);
     expect(graph.sources.has('src/core/boneTree.ts')).toBe(true);
-    expect(graph.sources.has('mobgen/mob/humanoidFigure.ts')).toBe(true);
-    expect(graph.sources.has('mobgen/mob/attack.ts')).toBe(true);
-    expect(graph.sources.has('mobgen/mob/fusedMassTemplate.ts')).toBe(true);
-    expect(graph.sources.has('mobgen/mob/fusedMass.ts')).toBe(true);
-    await expect(access(resolve(projectRoot, '../mobgen/src/mob/fusedMassTemplate.ts'))).resolves.toBeUndefined();
   });
 
   it('fingerprints shared model-schema changes imported by the simulation', async () => {
@@ -453,21 +433,20 @@ describe('simulation source fingerprint', () => {
     expect(await hash(runtimeChanged, ...entries)).not.toBe(original);
   });
 
-  it.each([
-    '../config/intake.json',
-    '../../../mobgen/src/mob/materials.json',
-    '../../../skelly-assets/tools/packages/thing-core/src/materials.json',
-  ])('fingerprints declarative JSON dependency %s without parsing it as a module', async (specifier) => {
-    const entry = resolve(root, entries[0]!);
-    const dependency = resolve(entry, '..', specifier);
-    const sources = new Map([
-      [entry, `import config from '${specifier}'; export const cap = config.cap;`],
-      [dependency, '{"cap": 100}'],
-    ]);
-    const before = await hash(sources, ...entries);
-    sources.set(dependency, '{"cap": 200}');
-    expect(await hash(sources, ...entries)).not.toBe(before);
-  });
+  it.each(['../config/intake.json', '../../../skelly-assets/tools/packages/thing-core/src/materials.json'])(
+    'fingerprints declarative JSON dependency %s without parsing it as a module',
+    async (specifier) => {
+      const entry = resolve(root, entries[0]!);
+      const dependency = resolve(entry, '..', specifier);
+      const sources = new Map([
+        [entry, `import config from '${specifier}'; export const cap = config.cap;`],
+        [dependency, '{"cap": 100}'],
+      ]);
+      const before = await hash(sources, ...entries);
+      sources.set(dependency, '{"cap": 200}');
+      expect(await hash(sources, ...entries)).not.toBe(before);
+    },
+  );
 
   it('recomputes the identity for create, update, and delete hot changes', async () => {
     const results = await Promise.all(
