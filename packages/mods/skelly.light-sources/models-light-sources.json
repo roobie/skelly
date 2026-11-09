@@ -13,18 +13,6 @@
       }
     },
     {
-      "emissiveMaterial": "chemical-light tube",
-      "file": "assets/models/glowstick.glb",
-      "id": "road_flare",
-      "itemPresentation": {
-        "materials": ["polymer", "polymer"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      }
-    },
-    {
       "emissiveMaterial": "#453b2b",
       "file": "assets/models/road_flare.glb",
       "grip": {

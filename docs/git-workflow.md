@@ -68,7 +68,10 @@ Pack file declarations remain independent of model consumption so installed file
 are owned even when unused. See
 `docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Staged admission".
 Consumed rows must still match the pinned exports; see `test/model-export-sync.mjs`,
-`readCutOver` and `assertCutOver`.
+`readCutOver` and `assertCutOver`. The asset owns its emissive material selection,
+so the glow tag and material names change together in one released model row,
+not in a consumer mapping. See
+`packages/mods/skelly.light-sources/models-light-sources.jsonnet`.
 
 Asset-move PRs target `framework/refactor` and take it in by merging
 `origin/framework/refactor`, not `main`, so the extraction stays on its reviewed base.
