@@ -136,7 +136,7 @@ local actors = [
     chaseMotion: chaseMotion + { swayDegrees: 0, speedMultiplier: { min: 1, max: 1 }, stumbleChancePerSimSecond: 0 },
     attack: { reach: 2.2, cooldownSimSeconds: 2.8, windupSimSeconds: 1,
               moves: [{ id: 'tentacle_strike', weight: 1, damage: 22, damageKind: 'blunt', hitRegions: clobber(9, 3).hitRegions }] },
-    carving: { radiusMetresPerDamage: 0.0023, maxRadiusMetres: 0.75 },
+    carving: { radiusMetresPerDamage: 0.0023, maxRadiusMetres: 0.75, interiorColor: '#7a1c16' },
   },
   shambler + {
     id: 'acid_zombie', name: 'Acid zombie', cause: 'an acid zombie', model: 'acid', figureSeeds: acidFigureSeeds, authoredOnly: true,
