@@ -103,7 +103,7 @@ export const isSeveredInMask = (
 };
 
 /** WebGL2's guaranteed `MAX_TEXTURE_SIZE`: a texture no wider or taller uploads on every conforming implementation. */
-export const CROWD_TEXTURE_MAX_SIZE = 2048;
+const CROWD_TEXTURE_MAX_SIZE = 2048;
 
 /**
  * A fused-mass variant's carved-cell mask, single-channel, CROWD_MASK_BITS_PER_TEXEL cells per texel. Each slot owns

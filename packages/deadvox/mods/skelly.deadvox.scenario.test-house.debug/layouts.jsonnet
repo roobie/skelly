@@ -15,5 +15,7 @@ local layout = (import '../skelly.deadvox.scenario.test-house/layouts-test-house
       lootContext: { usage: ['Residential', 'Hunting', 'Police', 'Military'], tier: 'Tier4', lowerTiers: true },
       fixedLoot: [{ at: [3, 1, 24], items: import 'test-house-rack.libsonnet' }],
     }],
+    // One amalgam in the open south of the garden wall, to look at carving; the range rack's shotgun carves it.
+    shamblers: layout.shamblers + [{ type: 'amalgam', position: [-8, 21, 14] }],
   }],
 }
