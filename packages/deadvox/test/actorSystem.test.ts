@@ -8,9 +8,9 @@ import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
 import {
   actorCrawls,
+  actorHitFlinchDuration,
   actorPoseInputFor,
   gaitPhaseGain,
-  HIT_FLINCH_DURATION,
   posedActor,
 } from '../src/core/actorPose.ts';
 import {
@@ -3673,11 +3673,15 @@ describe('attack windup', () => {
     const ray = regionRay(actor, 'head');
     expect(system.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(id);
     expect(actor.hitFlinchTime).toBe(0);
+    const flinchDuration = actorHitFlinchDuration(
+      figureVariantOf(SHAMBLER),
+      actorFigure(FIGURES, SHAMBLER, actor.figureSeed),
+    );
 
-    run(system, HIT_FLINCH_DURATION / 4);
+    run(system, flinchDuration / 4);
     const { hitFlinchTime: savedTime, stanceWeight, stepOffset } = system.store.get(id)!;
     expect(savedTime).toBeGreaterThan(0);
-    expect(savedTime).toBeLessThan(HIT_FLINCH_DURATION);
+    expect(savedTime).toBeLessThan(flinchDuration);
     expect(stanceWeight).toBeGreaterThan(0);
     expect(stepOffset).toBeLessThan(0);
     const restored = new ActorSystem(sense);
@@ -3687,12 +3691,12 @@ describe('attack windup', () => {
     expect(restored.store.get(id)!.stepOffset).toBe(stepOffset);
 
     restored.setFrozen(true);
-    run(restored, HIT_FLINCH_DURATION * 2);
+    run(restored, flinchDuration * 2);
     expect(restored.store.get(id)!.hitFlinchTime).toBe(savedTime);
     expect(restored.store.get(id)!.stanceWeight).toBe(stanceWeight);
     expect(restored.store.get(id)!.stepOffset).toBe(stepOffset);
     restored.setFrozen(false);
-    run(restored, HIT_FLINCH_DURATION);
+    run(restored, flinchDuration);
     expect(restored.store.get(id)!.hitFlinchTime).toBeUndefined();
   });
 

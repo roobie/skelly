@@ -10,7 +10,7 @@ import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedM
 import { describe, expect, it, vi } from 'vitest';
 import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { figureVariantOf } from '../src/core/actorModels.ts';
-import { actorPoseInputFor, flinchSideForId, HIT_FLINCH_DURATION } from '../src/core/actorPose.ts';
+import { actorHitFlinchDuration, actorPoseInputFor, flinchSideForId } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import type { Actor, AgentMode } from '../src/core/actorState.ts';
 import type { ActorSystemOptions } from '../src/core/actorSystem.ts';
@@ -1104,7 +1104,7 @@ describe('MobActorMeshes', () => {
           speed: 1,
           phase: 1,
           windup: type.attack!.windupSimSeconds / 2,
-          hitFlinchTime: HIT_FLINCH_DURATION / 4,
+          hitFlinchTime: actorHitFlinchDuration(figureVariantOf(type), actorFigure(FIGURES, type, figureSeed)) / 4,
         });
         return { type, body: actorFigure(FIGURES, type, figureSeed).body, id: store.add(actor) };
       });

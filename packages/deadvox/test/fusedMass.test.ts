@@ -3,7 +3,7 @@ import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { describe, expect, it } from 'vitest';
 import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { PLAYER_CHEST_METRES } from '../src/core/actorMotion.ts';
-import { actorPoseInputFor, posedActor } from '../src/core/actorPose.ts';
+import { actorPoseInputFor, posedActor, targetStanceWeight } from '../src/core/actorPose.ts';
 import { posedFusedMassRegionBoxes } from '../src/core/actorRegions.ts';
 import type { PlayerSense } from '../src/core/actorSense.ts';
 import { activeFusedMassMembers, actorAttackReachMetres } from '../src/core/actorState.ts';
@@ -23,6 +23,7 @@ import { FusedMassShape } from '../src/core/fusedMassShape.ts';
 import { pelletShotFromBasis, projectileShot } from '../src/core/pellets.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { actorFigureKey } from '../src/core/schema/actors.ts';
 import { testedBricks } from '../src/core/solidBricks.ts';
 import { compileTemplate } from '../src/core/templates.ts';
 import { simSeconds } from '../src/core/time.ts';
@@ -1358,5 +1359,59 @@ describe('fused-mass flesh carving', () => {
     expect(carved.carved.length).toBeGreaterThan(0);
     expect(whole.carved).toEqual([]);
     expect({ ...carved, carved: [] }).toEqual(whole);
+  });
+});
+
+describe('fused-mass flinch timing', () => {
+  it('ends the flinch clock and the pose recovery at the body flinch duration, with no attack timing on the body', () => {
+    const amalgam = fusedMassTypeOf(registry.actors)!;
+    const built = actorFigure(FIGURES, amalgam, FUSED_MASS_FIGURE_SEED);
+    if (!('flinch' in built.body.animation)) {
+      throw new Error('the built fused-mass body has no flinch');
+    }
+    const builtFlinch = built.body.animation.flinch;
+    const flinch = { ...builtFlinch, durationSimSeconds: builtFlinch.durationSimSeconds * 3 };
+    const fixture = { ...built, body: { ...built.body, animation: { flinch } } };
+    expect(Object.keys(fixture.body.animation)).toEqual(['flinch']);
+    const key = actorFigureKey(amalgam.id, FUSED_MASS_FIGURE_SEED);
+    const figures = new Map([...FIGURES, [key, fixture]]);
+    const scene = { blockSize: BLOCK_SIZE, actorFigureFiles: figures };
+
+    const simulation = new ActorSystem({
+      player,
+      isSolid: FLOOR,
+      isOpaque: FLOOR,
+      dayPhase: () => dayStateAtHour(12),
+      blockSize: BLOCK_SIZE,
+      physics: physicsFor(makeScale(0.5)),
+      tuning: TEST_SENSE_TUNING,
+      hurtPlayer: () => undefined,
+      actorFigureFiles: figures,
+    });
+    const id = simulation.add(amalgam, [0, 1, 0], [1, 0, 0]);
+    const ray = findMemberRay(simulation, id);
+    expect(simulation.swing(ray.origin, ray.direction, { ...FISTS_MELEE, damage: 1, reach: 4, impulse: 0 })).toBe(id);
+    const actor = simulation.store.get(id)!;
+    const dt = 1 / 60;
+    let elapsed = 0;
+    while (actor.hitFlinchTime !== undefined && elapsed < flinch.durationSimSeconds * 2) {
+      simulation.tick(dt);
+      elapsed += dt;
+    }
+    expect(actor.hitFlinchTime).toBeUndefined();
+    expect(elapsed).toBeGreaterThan(flinch.durationSimSeconds);
+    expect(elapsed).toBeLessThanOrEqual(flinch.durationSimSeconds + dt + 1e-9);
+
+    const { hitFlinchTime: _cleared, ...rest } = actorPoseInputFor(actor, id, scene);
+    const base = posedActor(rest).transforms;
+    const pastBuiltRecovery = (builtFlinch.durationSimSeconds + flinch.durationSimSeconds) / 2;
+    expect(posedActor({ ...rest, hitFlinchTime: pastBuiltRecovery }).transforms).not.toEqual(base);
+    expect(posedActor({ ...rest, hitFlinchTime: flinch.durationSimSeconds }).transforms).toEqual(base);
+
+    for (const attackWindup of [amalgam.attack!.windupSimSeconds / 2, 0]) {
+      const input = { ...rest, chasing: false, attackWindup, hitFlinchTime: flinch.peakAtSimSeconds };
+      expect(posedActor(input).transforms.size).toBe(fixture.body.bones.length);
+      expect(Number.isFinite(targetStanceWeight(input))).toBe(true);
+    }
   });
 });

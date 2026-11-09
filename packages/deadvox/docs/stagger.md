@@ -26,7 +26,7 @@ Slice 5 defence needs hits that interrupt an approaching threat (`SLICE-5.md`, "
 
 **Only melee staggers.** Stagger rewards a committed strike, so thrown, projectile and blast hits keep their own effects. Whether they should stagger too is open: see `docs/charged-attacks.md`, "Open questions".
 
-**It is not the hit flinch.** The flinch is presentation and runs on every damaging hit; stagger is simulation and changes what the zombie may do. See `src/core/actorPose.ts`, `HIT_FLINCH_DURATION`.
+**It is not the hit flinch.** The flinch is presentation and runs on every damaging hit; stagger is simulation and changes what the zombie may do. See `src/core/actorPose.ts`, `actorHitFlinchDuration`.
 
 ## Which types stagger
 

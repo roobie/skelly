@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import {
+  actorHitFlinchDuration,
   actorPoseInputFor,
   advanceStanceWeight,
-  HIT_FLINCH_DURATION,
   posedActor,
   targetStanceWeight,
 } from '../src/core/actorPose.ts';
@@ -201,7 +201,9 @@ describe('rendered and hit shambler poses', () => {
     )!.center;
     expect(system.swing([head[0], head[1] + 1, head[2] - 1.5], [0, -1, 1.5], { ...FISTS_MELEE, damage: 1 })).toBe(id);
     expect(actor.hitFlinchTime).toBe(0);
-    system.tick(HIT_FLINCH_DURATION / 4);
+    const struck = actorPoseInputFor(actor, id, POSE_SCENE);
+    const flinchDuration = actorHitFlinchDuration(struck.crawling ? 'legless-humanoid' : struck.model!, struck.figure);
+    system.tick(flinchDuration / 4);
     expect(actor.gaitPhase).toBeGreaterThan(0);
     expect(actor.hitFlinchTime).toBeGreaterThan(0);
     system.setFrozen(true);
@@ -209,7 +211,7 @@ describe('rendered and hit shambler poses', () => {
     const { hitFlinchTime: _flinch, ...baseInput } = input;
     const flinched = posedActor(input);
     const basePose = posedActor(baseInput);
-    const recovered = posedActor({ ...input, hitFlinchTime: HIT_FLINCH_DURATION });
+    const recovered = posedActor({ ...input, hitFlinchTime: flinchDuration });
     expect(flinched.pose.rotations.head).not.toEqual(basePose.pose.rotations.head);
     expect(recovered.transforms).toEqual(basePose.transforms);
 
