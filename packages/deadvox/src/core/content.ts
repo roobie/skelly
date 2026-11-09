@@ -2456,6 +2456,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkKeys(registry, report);
   checkActors(registry, report);
   checkActorFigures(registry, report);
+  checkGoreChunkModels(registry, report);
   checkDamageKinds(registry, report);
   checkRecipes(registry, report);
   checkSkillAndUiReferences(registry, report);
@@ -2474,6 +2475,16 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
     report(section, id, path, message);
   }
   return issues;
+};
+
+const checkGoreChunkModels = (registry: Registry, report: Report): void => {
+  for (const graphics of registry.graphics.values()) {
+    for (const [index, model] of (graphics.gore.chunks?.models ?? []).entries()) {
+      if (!registry.models.has(model)) {
+        report('graphics', graphics.id, `.gore.chunks.models[${index}]`, `no model "${model}"`);
+      }
+    }
+  }
 };
 
 const checkActionSounds = (registry: Registry, report: Report): void => {

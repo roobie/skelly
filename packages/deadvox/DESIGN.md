@@ -3033,7 +3033,9 @@ height-extents table: its upkeep costs more than the collision it avoids. See
 
 The amalgam must steer its size around obstacles without gaining a separate decision system. Body-shape contact matters where a centre-line ray would miss a corner; a usable slide direction should keep it threatening rather than back it out of a doorway. Seeded ambiguity preserves deterministic behaviour. See `src/core/schema/actors.ts`, `ActorSchema`; `mods/skelly.deadvox.actors/enemies.jsonnet`, `amalgam`; `src/core/actorMotion.ts`, `steer`; and `src/core/actorSystem.ts`, `ActorSystem.wallAhead` and `ActorSystem.openSide`.
 
-A carved cell vanishes from the drawn body, and a corpse must retain its visible wounds. The cost accepted: a hole shows no flesh walls and a hit knocks out no flying flesh, because the game draws the baked mesh and nothing re-meshes at runtime (`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision"). See `src/render/crowd.ts`, `packCellMask`, and `src/render/mobActors.ts`, `MobActorMeshes.actorCarved`.
+A carved cell vanishes from the drawn body, and a corpse must retain its visible wounds. The cost accepted: a hole shows no flesh walls, because the game draws the baked mesh and nothing re-meshes at runtime (`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision"). See `src/render/crowd.ts`, `packCellMask`, and `src/render/mobActors.ts`, `MobActorMeshes.actorCarved`.
+
+Every carve, and a hard hit to any enemy, throws flesh chunks with the blood, because the cell mask draws no flesh of its own and the chunks give the hit its visible flesh. The chunks are content models, so mods swap them; the gore path owns them, so nothing re-meshes at runtime. See `src/render/gore.ts`, `Gore.carved` and `Gore.wounded`, with their tuning in `src/core/schema/graphics.ts`, `GraphicsTuningSchema`.
 
 The runner's threat comes from speed rather than stronger attacks; the crawler's
 low posture confines its bite to the legs. Keep their moves, hit regions, sounds and

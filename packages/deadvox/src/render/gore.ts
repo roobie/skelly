@@ -10,6 +10,7 @@ import {
   Group,
   InstancedBufferAttribute,
   InstancedMesh,
+  Matrix4,
   MeshLambertMaterial,
   Object3D,
   Quaternion,
@@ -22,6 +23,7 @@ import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
 import type { GraphicsTuningDef } from '../core/schema.ts';
+import type { ModelLibrary } from './models.ts';
 import { PLAYER_REGION_BOXES, type PlayerFigurePlacement, setPlayerFigurePosition } from './playerFigure.ts';
 
 export type GoreTuning = GraphicsTuningDef['gore'];
@@ -58,6 +60,30 @@ interface Droplet {
 }
 
 type SeveredSpurt = Actor['type']['severedSpurt'];
+
+/** One part of a chunk model, instanced: the part's mesh and its transform from the model's ground root. */
+interface ChunkMesh {
+  readonly mesh: InstancedMesh;
+  readonly matrix: Matrix4;
+}
+
+/** Where a flesh chunk's model parts come from once loaded (`src/render/models.ts`, `ModelLibrary`). */
+export type ChunkModels = Pick<ModelLibrary, 'groundParts'>;
+
+/** A flying flesh chunk, in metres; once landed it lies still on the floor until it fades. */
+interface Chunk {
+  active: boolean;
+  /** Index into the tuning's model list. */
+  model: number;
+  readonly position: Vector3;
+  readonly velocity: Vector3;
+  readonly spinAxis: Vector3;
+  spinRadiansPerRealSecond: number;
+  readonly orientation: Quaternion;
+  scale: number;
+  ageRealSeconds: number;
+  landed: boolean;
+}
 
 interface Splat {
   active: boolean;
@@ -166,17 +192,44 @@ export class Gore {
   private readonly normal = new Vector3();
   private readonly launch = new Vector3();
   private readonly partVelocity = new Vector3();
+  private readonly chunks: Chunk[];
+  private readonly chunkModels: ChunkModels | undefined;
+  /** Per chunk model, one instanced mesh per model part, made once the model has loaded. */
+  private readonly chunkMeshes: (readonly ChunkMesh[] | undefined)[];
+  private readonly chunkMatrix = new Matrix4();
+  private readonly up = new Vector3(0, 1, 0);
   private nextDroplet = 0;
   private nextSplat = 0;
+  private nextChunk = 0;
   private spawnedSinceUpdate = 0;
   private dripperCount = 0;
   private updates = 0;
 
-  constructor(blockSize: number, gravityMetresPerSimSecondSquared: number, tuning: GoreTuning, seed = 1) {
+  /** `models` draws the flesh chunks; without it chunks still fly and land but nothing draws them. */
+  constructor(
+    blockSize: number,
+    gravityMetresPerSimSecondSquared: number,
+    tuning: GoreTuning,
+    { seed = 1, models }: { readonly seed?: number; readonly models?: ChunkModels } = {},
+  ) {
     this.blockSize = blockSize;
     this.gravityMetresPerSimSecondSquared = gravityMetresPerSimSecondSquared;
     this.tuning = tuning;
     this.rng = Rng.stream(seed, 'gore');
+    this.chunkModels = models;
+    this.chunks = Array.from({ length: tuning.chunks?.cap ?? 0 }, () => ({
+      active: false,
+      model: 0,
+      position: new Vector3(),
+      velocity: new Vector3(),
+      spinAxis: new Vector3(),
+      spinRadiansPerRealSecond: 0,
+      orientation: new Quaternion(),
+      scale: 1,
+      ageRealSeconds: 0,
+      landed: false,
+    }));
+    this.chunkMeshes = (tuning.chunks?.models ?? []).map(() => undefined);
     this.droplets = Array.from({ length: tuning.dropletCap }, () => ({
       active: false,
       position: new Vector3(),
@@ -231,6 +284,10 @@ export class Gore {
     return this.splats.reduce((count, splat) => count + Number(splat.active), 0);
   }
 
+  get activeChunks(): number {
+    return this.chunks.reduce((count, chunk) => count + Number(chunk.active), 0);
+  }
+
   /** A body's woundSeverity, worked out at most once per update: the drips and the stains on live bodies
    * (mobActors.ts) both read it every frame. */
   severity(actor: Actor): number {
@@ -269,10 +326,19 @@ export class Gore {
     }
   }
 
-  /** The extra burst as flesh is carved out of a fused-mass body, on top of the wound's own spray: more for a
-   * bigger hole. */
+  /** The extra burst as flesh is carved out of a fused-mass body, on top of the wound's own spray: more blood for
+   * a bigger hole, and flesh chunks, since the carved mesh shows no flesh of its own. */
   carved(hit: HitImpulse, cells: number): void {
     this.spray(hit, cells * CARVED_CELL_SPRAY_DAMAGE);
+    this.throwChunks(hit);
+  }
+
+  /** Flesh chunks a wound throws beside its spray: only a hit at or over the content's hard-hit damage. */
+  wounded(hit: HitImpulse, damage: number): void {
+    const { chunks } = this.tuning;
+    if (chunks && damage >= chunks.hardHitDamage) {
+      this.throwChunks(hit);
+    }
   }
 
   /** The blood a cut throws as its part flies off (`spurt`, the kind's content): each droplet leaves the wound
@@ -303,8 +369,8 @@ export class Gore {
     }
   }
 
-  /** A large splat on the floor under something wet that came to rest there, such as a chunk of fused-mass
-   * flesh (its centre, metres). The floor is the top of the block the centre is in. */
+  /** A large splat on the floor under something wet that came to rest there, such as a flesh chunk (its centre,
+   * metres). The floor is the top of the block the centre is in. */
   landed(centre: Vec3): void {
     const floor = Math.floor(centre[1] / this.blockSize) * this.blockSize;
     this.splat(this.point.set(centre[0], floor, centre[2]), this.normal.set(0, 1, 0), this.rng.range(0.14, 0.24));
@@ -328,11 +394,13 @@ export class Gore {
         droplet.active = false;
       }
     }
+    this.flyChunks(step, substeps, isSolid);
     this.fadeSplats(step);
     this.pickDrippers(bodies);
     this.drip(step);
     this.dripPlayer(step, bodies?.player);
     this.drawDroplets();
+    this.drawChunks();
     this.spawnedSinceUpdate = 0;
   }
 
@@ -343,6 +411,150 @@ export class Gore {
       mesh.material.dispose();
       mesh.dispose();
     }
+    // The chunk meshes share the model library's geometry and materials, which it owns.
+    for (const meshes of this.chunkMeshes) {
+      for (const { mesh } of meshes ?? []) {
+        mesh.dispose();
+      }
+    }
+  }
+
+  /** Starts a throw of chunks from the hit, each reusing the oldest slot in the pool. */
+  private throwChunks(hit: HitImpulse): void {
+    const tuning = this.tuning.chunks;
+    if (!tuning || this.chunks.length === 0) {
+      return;
+    }
+    const count = this.rng.int(tuning.perThrow[0], tuning.perThrow[1]);
+    const { speedMetresPerRealSecond: speed, spinRadiansPerRealSecond: spin, scale, spreadFraction } = tuning;
+    for (let i = 0; i < count; i++) {
+      const chunk = this.chunks[this.nextChunk]!;
+      this.nextChunk = (this.nextChunk + 1) % this.chunks.length;
+      chunk.active = true;
+      chunk.landed = false;
+      chunk.ageRealSeconds = 0;
+      chunk.model = this.rng.int(0, tuning.models.length - 1);
+      chunk.position.set(hit.point[0], hit.point[1], hit.point[2]).multiplyScalar(this.blockSize);
+      chunk.velocity
+        .set(
+          hit.direction[0] + this.rng.range(-1, 1) * spreadFraction,
+          hit.direction[1] + this.rng.range(0, 1) * spreadFraction,
+          hit.direction[2] + this.rng.range(-1, 1) * spreadFraction,
+        )
+        .normalize()
+        .multiplyScalar(this.rng.range(speed.min, speed.max));
+      chunk.spinAxis.set(this.rng.range(-1, 1), this.rng.range(-1, 1), this.rng.range(-1, 1));
+      if (chunk.spinAxis.lengthSq() === 0) {
+        chunk.spinAxis.copy(this.up);
+      }
+      chunk.spinAxis.normalize();
+      chunk.spinRadiansPerRealSecond = this.rng.range(spin.min, spin.max);
+      chunk.orientation.setFromAxisAngle(chunk.spinAxis, this.rng.range(0, Math.PI * 2));
+      chunk.scale = this.rng.range(scale.min, scale.max);
+    }
+  }
+
+  private flyChunks(dt: number, substeps: number, isSolid: (x: number, y: number, z: number) => boolean): void {
+    const lifetime = this.tuning.chunks?.lifetimeRealSeconds ?? 0;
+    for (const chunk of this.chunks) {
+      if (!chunk.active) {
+        continue;
+      }
+      chunk.ageRealSeconds += dt;
+      if (chunk.ageRealSeconds >= lifetime) {
+        chunk.active = false;
+        continue;
+      }
+      for (let substep = 0; substep < substeps && !chunk.landed; substep++) {
+        this.advanceChunk(chunk, dt / substeps, isSolid);
+      }
+    }
+  }
+
+  /** Moves one axis at a time like a droplet. A floor lands it upright at a random yaw, with a splat under it;
+   * a wall or ceiling stops that axis of its flight. */
+  private advanceChunk(chunk: Chunk, dt: number, isSolid: (x: number, y: number, z: number) => boolean): void {
+    const { position, velocity } = chunk;
+    const s = this.blockSize;
+    velocity.y -= this.gravityMetresPerSimSecondSquared * dt;
+    chunk.orientation.premultiply(this.turn.setFromAxisAngle(chunk.spinAxis, chunk.spinRadiansPerRealSecond * dt));
+    for (const axis of AXES) {
+      const speed = velocity.getComponent(axis);
+      const next = position.getComponent(axis) + speed * dt;
+      const bx = Math.floor((axis === 0 ? next : position.x) / s);
+      const by = Math.floor((axis === 1 ? next : position.y) / s);
+      const bz = Math.floor((axis === 2 ? next : position.z) / s);
+      if (!isSolid(bx, by, bz)) {
+        position.setComponent(axis, next);
+        continue;
+      }
+      velocity.setComponent(axis, 0);
+      if (axis === 1 && speed < 0) {
+        position.y = (Math.floor(next / s) + 1) * s;
+        velocity.set(0, 0, 0);
+        chunk.landed = true;
+        chunk.orientation.setFromAxisAngle(this.up, this.rng.range(0, Math.PI * 2));
+        this.landed([position.x, position.y, position.z]);
+        return;
+      }
+    }
+  }
+
+  /** Draws each live chunk on its model's parts, shrinking it away over the fade at the end of its lifetime. */
+  private drawChunks(): void {
+    const tuning = this.tuning.chunks;
+    if (!tuning) {
+      return;
+    }
+    for (const [index, model] of tuning.models.entries()) {
+      const meshes = this.chunkMeshesFor(index, model);
+      if (!meshes) {
+        continue;
+      }
+      let count = 0;
+      for (const chunk of this.chunks) {
+        if (!(chunk.active && chunk.model === index)) {
+          continue;
+        }
+        const left = tuning.lifetimeRealSeconds - chunk.ageRealSeconds;
+        this.dummy.position.copy(chunk.position);
+        this.dummy.quaternion.copy(chunk.orientation);
+        this.dummy.scale.setScalar(chunk.scale * Math.min(1, Math.max(0, left / tuning.fadeRealSeconds)));
+        this.dummy.updateMatrix();
+        for (const { mesh, matrix } of meshes) {
+          mesh.setMatrixAt(count, this.chunkMatrix.multiplyMatrices(this.dummy.matrix, matrix));
+        }
+        count += 1;
+      }
+      for (const { mesh } of meshes) {
+        mesh.count = count;
+        mesh.instanceMatrix.needsUpdate = true;
+      }
+    }
+  }
+
+  /** A chunk model's meshes, made the first update after its model has loaded. */
+  private chunkMeshesFor(index: number, model: string): readonly ChunkMesh[] | undefined {
+    const made = this.chunkMeshes[index];
+    if (made || !this.chunkModels) {
+      return made;
+    }
+    const parts = this.chunkModels.groundParts(model);
+    if (!parts?.length) {
+      return undefined;
+    }
+    const meshes = parts.map((part) => {
+      const mesh = new InstancedMesh(part.geometry, part.material, this.chunks.length);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.instanceMatrix.setUsage(DynamicDrawUsage);
+      mesh.frustumCulled = false;
+      mesh.count = 0;
+      this.group.add(mesh);
+      return { mesh, matrix: part.matrix };
+    });
+    this.chunkMeshes[index] = meshes;
+    return meshes;
   }
 
   /** Starts one droplet, reusing the oldest; false once this update's spawn budget is spent. */

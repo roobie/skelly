@@ -1,4 +1,4 @@
-import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
+import { BoxGeometry, InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { Actor } from '../src/core/actorState.ts';
 import type { HitImpulse } from '../src/core/actorSystem.ts';
@@ -135,5 +135,53 @@ describe('Gore', () => {
     // The splat ring filled and then reused its oldest entries instead of growing.
     expect(gore.activeSplats).toBe(GORE_TUNING_FIXTURE.splatCap);
     gore.dispose();
+  });
+
+  it('throws flesh chunks on a carve and a hard hit, drawn from a bounded pool until they fade', () => {
+    const chunks = {
+      models: ['fixture_chunk'],
+      cap: 5,
+      perThrow: [2, 2] as [number, number],
+      hardHitDamage: 30,
+      speedMetresPerRealSecond: { min: 1, max: 1 },
+      spreadFraction: 0,
+      spinRadiansPerRealSecond: { min: 1, max: 1 },
+      scale: { min: 1, max: 1 },
+      lifetimeRealSeconds: 10,
+      fadeRealSeconds: 1,
+    };
+    const geometry = new BoxGeometry(0.05, 0.05, 0.05);
+    const material = new MeshLambertMaterial();
+    const parts = [{ geometry, material, matrix: new Matrix4() }];
+    const gore = new Gore(
+      1,
+      WORLD_GRAVITY,
+      { ...GORE_TUNING_FIXTURE, chunks },
+      {
+        models: { groundParts: (id) => (id === 'fixture_chunk' ? parts : undefined) },
+      },
+    );
+    const drawn = () =>
+      gore.group.children.find(
+        (child): child is InstancedMesh => child instanceof InstancedMesh && child.geometry === geometry,
+      )?.count;
+
+    gore.wounded(lowHit, chunks.hardHitDamage - 1);
+    expect(gore.activeChunks).toBe(0);
+    gore.wounded(lowHit, chunks.hardHitDamage);
+    expect(gore.activeChunks).toBe(2);
+    for (let carve = 0; carve < 3; carve++) {
+      gore.carved(lowHit, 1);
+    }
+    // The pool reused its oldest chunks instead of growing.
+    expect(gore.activeChunks).toBe(chunks.cap);
+    gore.update(1 / 60, floor);
+    expect(drawn()).toBe(chunks.cap);
+    gore.update(chunks.lifetimeRealSeconds, floor);
+    expect(gore.activeChunks).toBe(0);
+    expect(drawn()).toBe(0);
+    gore.dispose();
+    geometry.dispose();
+    material.dispose();
   });
 });

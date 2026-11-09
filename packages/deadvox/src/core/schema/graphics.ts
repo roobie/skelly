@@ -1,8 +1,27 @@
-import { check, finite, integer, maxValue, minValue, number, pipe, strictObject } from 'valibot';
+import {
+  array,
+  check,
+  finite,
+  integer,
+  maxValue,
+  minLength,
+  minValue,
+  number,
+  optional,
+  pipe,
+  strictObject,
+} from 'valibot';
 import { GraphicsOptionsSchema } from '../graphics.ts';
 import { capabilityField } from './capability.ts';
 import { Degrees } from './layouts.ts';
-import { Count, Fraction, Id, Positive } from './primitives.ts';
+import { Count, Fraction, Id, NonNegative, Positive, range } from './primitives.ts';
+
+/** An inclusive { min, max } range of one kind of number. */
+const orderedRange = (item: typeof NonNegative | typeof Positive) =>
+  pipe(
+    strictObject({ min: item, max: item }),
+    check(({ min, max }) => min <= max, 'min must not be more than max'),
+  );
 
 export const GraphicsTuningSchema = strictObject({
   id: Id,
@@ -55,6 +74,29 @@ export const GraphicsTuningSchema = strictObject({
     splatCap: Count,
     dropletSpawnsPerFrame: Count,
     dripSourceCap: Count,
+    /**
+     * Flesh chunks thrown with the blood on every carve and on hard hits (`src/render/gore.ts`, `Gore.carved` and
+     * `Gore.wounded`): which models, how many a throw starts, the pool they recycle oldest first, how they fly,
+     * spin and fade. A row without it throws none.
+     */
+    chunks: optional(
+      strictObject({
+        models: pipe(array(Id), minLength(1, 'must name at least one model')),
+        cap: Count,
+        perThrow: range(Count),
+        /** The least damage of one hit that throws chunks from any enemy. */
+        hardHitDamage: Positive,
+        speedMetresPerRealSecond: orderedRange(NonNegative),
+        /** How far a chunk's launch fans from the strike, as a share of its direction. */
+        spreadFraction: NonNegative,
+        spinRadiansPerRealSecond: orderedRange(NonNegative),
+        /** Size against the model's own. */
+        scale: orderedRange(Positive),
+        lifetimeRealSeconds: Positive,
+        /** The end of its lifetime over which a chunk shrinks away. */
+        fadeRealSeconds: Positive,
+      }),
+    ),
   }),
   ...GraphicsOptionsSchema.entries,
 });
