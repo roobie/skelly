@@ -3,7 +3,6 @@ read_if:
   - you plan or pick up work on the things suite or on retiring gungen
   - you wonder which gungen names remain to retire
   - you decide where a shared concept, consumer schema extension or tool UI part belongs
-  - you move construct's export layer, the material data or mass out of gungen or construct
   - you change the recipe defining the gun tool's reproduction exit
   - you turn gun parts into Deadvox items
   - you continue the non-gun slice or migrate shared visuals and handling datums
@@ -26,13 +25,11 @@ Why each boundary matters, and where it is checked:
 - Shared fields need one owner so tool and consumer contracts cannot diverge. See
   `packages/skelly-assets/tools/packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
   `packages/deadvox/src/core/schema/models.ts`, `ModelSchema` and `GunModelSchema`.
-- Gungen's output must keep validating against deadvox's schema: `test/gungen-deadvox-contract.test.mjs`,
+- The gun tool's output must keep validating against deadvox's schema: `test/gungen-deadvox-contract.test.mjs`,
   "gungen exports satisfy deadvox model validation".
 
 ## To check before relying on it
 
-- Which parts of gungen's viewer are generic and which are gun-specific; settled when the gun
-  tool phase moves gun code onto the shared packages.
 - How validation, collision and the viewer rebuild scale with part count; no benchmark exists,
   so measure before optimising.
 - The smallest benchmark set to add before the thing tool adds load.
@@ -51,7 +48,7 @@ into another.
 Settled:
 
 - A shared core serves two tools, a thing authoring tool and a gun authoring tool; the gun
-  tool succeeds gungen, and gungen is deleted at the end.
+  tool succeeds gungen, and no gungen name survives retirement.
 - Neither authoring tool imports its peer, and lower packages and Deadvox cannot import
   the gun tool, so content ownership cannot reverse the shared dependency layers.
 - `thing-core` imports no package but construct, so the core stays free of gun modules and
@@ -67,8 +64,8 @@ Settled:
   items rather than generate them (`things/README.md`, "Rules").
 - Gun part masses live in one gun-tool catalogue whose items carry their full construction;
   a design's part names an item and sets only its placement. A part of a design not yet
-  converted takes its mass from the row its params match, until the gun tool phase gives
-  every row an item (the gun tool's
+  converted takes its mass from the row its params match, until that design is converted
+  (the gun tool's
   `packages/skelly-assets/tools/packages/gun-authoring-tool/PROJECT.md`, "Attachments and export";
   `things/WORK.md`, "Phases").
 - Gun parts are items only: each exports and registers in Deadvox as a loose item, but the
@@ -103,7 +100,8 @@ Settled:
   datum only where the default looks wrong at a look in game. A datum that reproduces the
   default adds work and a second value to keep in step without changing what the player sees.
 - Construct's family and parameter types serve non-gun parts, so the thing tool needs no
-  parallel assembly schema. See the same file's `buildItem`.
+  parallel assembly schema. See
+  `packages/skelly-assets/tools/packages/thing-authoring-tool/src/catalogue.ts`, `buildItem`.
 - Construct ends at assembly; export belongs above the neutral core so material and model
   contracts cannot pull dependencies back into geometry (`packages/skelly-assets/tools/packages/construct/README.md`,
   "Layers").
@@ -155,8 +153,7 @@ layer order inside construct is in `packages/skelly-assets/tools/packages/constr
 3. **Thing tool, first slice — complete.** Tape, thread, cord and fuse atoms plus a
    multi-part desk lamp share the source-to-preview and export path. The lamp proves that the single-part helper's users
    can gain parts, and that non-gun parts carry summed mass and a weighted centre without
-   a competing item weight. The remaining-families phase then starts on an exercised path.
-   The pinned release's manifest names the exports Deadvox validates and loads; see
+   a competing item weight. The pinned release's manifest names the exports Deadvox validates and loads; see
    `tools/skelly-assets/setup.mjs`, `installRelease`, and `test/things-deadvox-contract.test.mjs`.
 4. **Thing tool, remaining families.** Family by family, each with source, GLB, entry and
    load test together. The compass keeps its dedicated display renderer.
@@ -170,11 +167,8 @@ layer order inside construct is in `packages/skelly-assets/tools/packages/constr
    `packages/skelly-assets/tools/packages/gun-authoring-tool/exports/deadvox.jsonnet`,
    `packages/skelly-assets/tools/packages/gun-authoring-tool/src/cli/exportRecipe.ts`, `loadExportRecipe`, and
    `test/gungen-deadvox-contract.test.mjs`, "registers every recipe export in the full base and keeps each gun companion inside the recipe".
-   No skelly gungen package remains. Phase 6 retains only names: the root contract,
-   exporter metadata and consumer output directory, plus dead old-name support in the
-   construct boundary test and zero-drift scanner, boundary/scanner fixtures and the gun
-   tool's `GUNGEN_SWEEPS`. These do not preserve a second
-   implementation. The retirement audit and deferred ownership transfer follow
+   Only residual gungen names remain for phase 6, none a second implementation; they,
+   the retirement audit and the deferred ownership transfer are in
    `things/TASK-gun-tool.md`, "Phase 5: complete".
 6. **Retire gungen.** Retire residual names and references after the single phase 5 move;
    rename the retained consumption contract atomically with its CI invocation so the gate
