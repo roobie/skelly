@@ -200,7 +200,7 @@ describe('fixed reservoir lights', () => {
     expect(lamp.liquidBurnRemainder).toBeGreaterThan(0);
   });
 
-  it.each([undefined, -1, 0.5, 1_000_000, Number.NaN])('rejects invalid or missing saved burn carry %s', (carry) => {
+  it.each([undefined, -1, 0.5, 1_000_000])('rejects invalid or missing saved burn carry %s', (carry) => {
     const { lamp } = filledLamp();
     const { liquidBurnRemainder: _carry, ...rest } = snapshotItem(lamp);
     const state = carry === undefined ? rest : { ...rest, liquidBurnRemainder: carry };

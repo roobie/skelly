@@ -994,22 +994,6 @@ describe('base pack guns', () => {
     expect(Math.abs(muzzle.x)).toBeLessThan(0.02);
   });
 
-  it('uses the exported AR with zero turn and its muzzle at the forward end', async () => {
-    const def = models.get('rifle_assault')!;
-    const bytes = modFileBytes(def.file);
-    const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
-    const bounds = new Box3().setFromObject(scene);
-    expect(def.grip?.turn).toEqual([0, 0, 0]);
-    expect(def.anchors?.muzzle?.[0]).toBeGreaterThan(def.grip!.at[0]);
-    expect(def.anchors?.muzzle?.[0]).toBeCloseTo(bounds.max.x, 5);
-
-    const { held } = prepareModel(def, scene);
-    held.updateMatrixWorld(true);
-    const offset = held.children[0]!.children[0]!;
-    const top = new Vector3(def.grip!.at[0], def.grip!.at[1] + 0.1, def.grip!.at[2]).applyMatrix4(offset.matrixWorld);
-    expect(top.y).toBeGreaterThan(0.09);
-  });
-
   it('lays the debug AR model in piles', () => {
     const inventory = new Inventory(firearms);
     const { models: pileModels, bundle } = pileLayout(

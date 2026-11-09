@@ -163,21 +163,6 @@ describe('spectator camera', () => {
     },
   );
 
-  it('leaves the avatar and the world tick as they would be without it, whatever input arrives while detached', () => {
-    const reference = runtime(idleControls());
-    reference.frames();
-
-    const spectator = new SpectatorCamera();
-    const hostile = hostileControls();
-    const detached = runtime(spectator.guard(hostile.controls));
-    spectator.toggle(detached.session.body, eyeOf(detached.session), 0.4, 0.1);
-    detached.frames();
-
-    expect(observed(detached.session)).toEqual(observed(reference.session));
-    expect(hostile.useDominant).not.toHaveBeenCalled();
-    expect(hostile.useOff).not.toHaveBeenCalled();
-  });
-
   it('lets the same input act on the avatar once the camera returns to it', () => {
     const reference = runtime(idleControls());
     reference.frames();

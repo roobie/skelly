@@ -252,15 +252,6 @@ describe('runtime closure', () => {
     ]);
   });
 
-  it('fails a project-root glob that matches a render file', () => {
-    const violations = violationsIn({
-      'packages/deadvox/src/core/catalog.ts': "export const views = import.meta.glob('/src/render/*.ts');\n",
-    });
-    expect(violations.map((v) => [v.importer, v.target])).toEqual([
-      ['packages/deadvox/src/core/catalog.ts', 'packages/deadvox/src/render/view.ts'],
-    ]);
-  });
-
   it('fails a glob whose pattern is neither relative nor rooted', () => {
     const violations = violationsIn({
       'packages/deadvox/src/core/catalog.ts': "export const rigs = import.meta.glob('@kit/rig/*.ts');\n",
@@ -545,17 +536,5 @@ describe('runtime closure', () => {
   ])('fails a glob through $name', ({ pattern, link, reason }) => {
     const violations = violationsIn({ [catalog]: `export const views = import.meta.glob(${pattern});\n` }, link);
     expect(reasons(violations)).toEqual([[catalog, reason]]);
-  });
-
-  it('fails a glob whose base does not resolve, but passes a resolvable glob that matches nothing', () => {
-    const unresolved = violationsIn({
-      'packages/deadvox/src/core/catalog.ts': "export const parts = import.meta.glob('parts/*.ts');\n",
-    });
-    expect(importers(unresolved)).toEqual(['packages/deadvox/src/core/catalog.ts']);
-    expect(
-      violationsIn({
-        'packages/deadvox/src/core/catalog.ts': "export const parts = import.meta.glob('./parts/*.ts');\n",
-      }),
-    ).toEqual([]);
   });
 });

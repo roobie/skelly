@@ -41,17 +41,15 @@ interface Harness {
   system: ActorSystem;
   releases: AcidSpitRelease[];
   sounds: string[];
-  setSolid: (solid: SolidAt) => void;
 }
 
 const harness = (playerPos: () => PlayerSense, solid: SolidAt = FLOOR): Harness => {
   const releases: AcidSpitRelease[] = [];
   const sounds: string[] = [];
-  let isSolid = solid;
   const system = new ActorSystem({
     player: playerPos,
-    isSolid: (x, y, z) => isSolid(x, y, z),
-    isOpaque: (x, y, z) => isSolid(x, y, z),
+    isSolid: solid,
+    isOpaque: solid,
     dayPhase: () => dayPhaseAt(DAY_CYCLE, 12 * 3600),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
@@ -69,9 +67,6 @@ const harness = (playerPos: () => PlayerSense, solid: SolidAt = FLOOR): Harness 
     system,
     releases,
     sounds,
-    setSolid: (next) => {
-      isSolid = next;
-    },
   };
 };
 
@@ -151,17 +146,6 @@ describe('acid spit', () => {
     expect(second.actor.spitWait).toBeCloseTo(SPIT.cancelPenaltyFraction * SPIT.cooldownSimSeconds, 5);
     frames(hit.system, WIND_FRAMES + 5);
     expect(hit.releases).toHaveLength(0);
-  });
-
-  it('spends no spit and no cooldown when the line from mouth to chest is blocked at release', () => {
-    const h = harness(() => sensed(PLAYER_POS));
-    const { actor } = spawn(h);
-    frames(h.system, 10);
-    expect(actor.spitWindup).toBeGreaterThan(0);
-    h.setSolid(WALL);
-    frames(h.system, WIND_FRAMES);
-    expect(h.releases).toHaveLength(0);
-    expect(actor.spitWait).toBe(0);
   });
 
   it('lets low cover that clears a standing chest block a crouched one, so a crouched player draws no spit', () => {

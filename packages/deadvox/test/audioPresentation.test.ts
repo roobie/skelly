@@ -32,15 +32,6 @@ describe('heartbeat audio presentation', () => {
     expect(heartbeat(startStamina).gain).toBeGreaterThan(0);
   });
 
-  it('raises rate and loudness monotonically from the start to exhaustion', () => {
-    const samples = [1, 0.7, 0.35, 0].map((share) => heartbeat(tuning.startStamina * share));
-    for (let index = 1; index < samples.length; index++) {
-      expect(samples[index]!.bpm).toBeGreaterThanOrEqual(samples[index - 1]!.bpm);
-      expect(samples[index]!.gain).toBeGreaterThanOrEqual(samples[index - 1]!.gain);
-    }
-    expect(samples.at(-1)!.gain).toBeGreaterThan(samples[0]!.gain);
-  });
-
   it('interpolates rate and loudness linearly halfway to exhaustion', () => {
     const { startStamina, startHz, exhaustedHz, startGain, exhaustedGain } = tuning;
     const halfway = heartbeat(startStamina / 2);

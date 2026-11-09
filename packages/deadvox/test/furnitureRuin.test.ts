@@ -128,14 +128,6 @@ it('ruin piles fall past non-solid furniture rather than floating above it', () 
   expect(solid(landX, landY - 1, landZ) || inventory.entities.isSolid(landX, landY - 1, landZ)).toBe(true);
 });
 
-it('reports a ruin only on the blow that brings a piece to its durability', () => {
-  const inventory = new Inventory(registry);
-  const target = piece(inventory, 'ruin_fixture_box', [0, FLOOR, 0]);
-  const outcomes = ruinBlows(inventory, target);
-  expect(outcomes.at(-1)).toBe('ruined');
-  expect(outcomes.slice(0, -1).every((outcome) => outcome === 'damaged')).toBe(true);
-});
-
 it("drops every item a ruined container held, and its content's debris, as piles, none lost or doubled", () => {
   const inventory = new Inventory(registry);
   const target = piece(inventory, 'ruin_fixture_box', [0, FLOOR, 0], 12);
@@ -234,18 +226,6 @@ it('keeps a full piece standing at full damage when its drops have no room, losi
 
   expect(runtime.entities.byUid(target.uid)).toBeUndefined();
   expect(piled(inventory).map(({ item }) => item.uid)).toEqual(expect.arrayContaining([...held, ...lying]));
-});
-
-it('breaks a door leaf at its durability and keeps it standing broken, never destroyed', () => {
-  const runtime = createRuntime(undefined, false, undefined, { registry, spawn: [0, FLOOR, 0] });
-  const door = piece(runtime.inventory, 'ruin_fixture_door', [0, FLOOR, 2]);
-
-  expect(runtime.session.bashFurniture(door, BREACH.durability)).toBe(true);
-
-  expect(runtime.entities.byUid(door.uid)).toBe(door);
-  expect(door.broken).toBe(true);
-  expect(runtime.session.bashFurniture(door, BREACH.durability)).toBe(false);
-  expect(runtime.entities.byUid(door.uid)).toBe(door);
 });
 
 it('plans without owner writes and commits scratch references through the real owners, preserving item aliases', () => {

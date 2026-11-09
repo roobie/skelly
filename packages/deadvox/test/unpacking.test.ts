@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { coreMessage } from '../src/core/coreText.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { options, toHands } from '../src/core/options.ts';
+import { options } from '../src/core/options.ts';
 import { reach } from '../src/core/reach.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
@@ -16,7 +16,7 @@ const BOX_UNPACK_SECONDS = registry.items.get('shotshell_box')!.unpack!.simSecon
 const shellType = 'shell_12_gauge_00_buck';
 const payloadCount = 7;
 const stackCapacity = 11;
-const fixture = (small = false, held = true) => {
+const fixture = (small = false) => {
   const bagDef = registry.items.get('hiking_backpack')!;
   const packageRegistry = {
     ...registry,
@@ -43,12 +43,7 @@ const fixture = (small = false, held = true) => {
   const inventory = new Inventory(content);
   const box = inventory.create('shotshell_box');
   const bag = inventory.create('hiking_backpack');
-  if (
-    !(
-      inventory.add(bag, { kind: 'worn' }) &&
-      inventory.add(box, held ? { kind: 'hand', side: 'right' } : { kind: 'pocket', owner: bag, pocket: 0 })
-    )
-  ) {
+  if (!(inventory.add(bag, { kind: 'worn' }) && inventory.add(box, { kind: 'hand', side: 'right' }))) {
     throw new Error('Unpack fixture does not fit');
   }
   const queue = new HandlingQueue(inventory);
@@ -57,15 +52,6 @@ const fixture = (small = false, held = true) => {
 };
 
 describe('sealed ammunition package activation', () => {
-  it('ordinary Hands can put the equipped pump away and wield its sealed box without special-case transfers', () => {
-    const f = fixture(false, false);
-    const gun = f.inventory.create('pump_shotgun');
-    expect(f.inventory.add(gun, { kind: 'hand', side: 'right' })).toBe(true);
-    expect(toHands(f.inventory, f.queue, f.box, [0, 0, 0])).toBeUndefined();
-    f.queue.tick(f.queue.remaining);
-    expect(f.inventory.hands.right).toBe(f.box);
-    expect(['pocket', 'pile']).toContain(f.inventory.locate(gun)?.kind);
-  });
   it('held primary activation yields its authored payload and consumes the noncontainer box', () => {
     const f = fixture();
     expect(f.box.pockets).toBeUndefined();

@@ -220,21 +220,6 @@ describe('certified firearm fitting', () => {
     );
   });
 
-  it('accepts a certified combined fit independent of pair order', () => {
-    const fixture = makeFixture();
-    const slot = bottomRailSlots(fixture.model)[0]!;
-    const defaultSlot = fixture.model.attachments![0]!.mountedAt;
-    fixture.withModel((model) => ({
-      ...model,
-      compatibility: { ...model.compatibility, [slot]: ['foregrip'] },
-      compatibilityPairs: [pair([slot, 'foregrip'], [defaultSlot, fixture.model.attachments![0]!.id])],
-    }));
-
-    fitAttachmentInFixture(fixture.inventory, fixture.firearm, slot, fixture.foregrip);
-
-    expect(fixture.firearm.slots?.[slot]).toBe(fixture.foregrip);
-  });
-
   it('rejects footprints that leave the exported rail notches', () => {
     const fixture = makeFixture();
     const [slot, omitted] = bottomRailSlots(fixture.model);

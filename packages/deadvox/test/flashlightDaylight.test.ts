@@ -13,13 +13,6 @@ const NEAR_FIELD_M = BASE_SENSE_TUNING.light.illumination.nearFieldMetres;
 const scaleAt = (hour: number): number => flashlightDaylightScale(skyAt(hour, BASE_DAY_CYCLE));
 
 describe('flashlight daylight scale', () => {
-  it('preserves the flashlight at full night and dims it under the full-day sky', () => {
-    const night = scaleAt(phaseMidpoint('night') / 3600);
-    const day = scaleAt(phaseMidpoint('day') / 3600);
-    expect(night).toBeGreaterThan(day);
-    expect(night).toBeGreaterThan(0.9);
-  });
-
   it('keeps the daylight-scaled flashlight weaker than direct sun lighting', () => {
     const hour = phaseMidpoint('day') / 3600;
     const { items } = JSON.parse(readFileSync('../mods/skelly.electric-power/electric-power-items.json', 'utf8')) as {

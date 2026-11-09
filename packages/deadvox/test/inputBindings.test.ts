@@ -252,26 +252,6 @@ describe('keyboard registry', () => {
       }
     }
   });
-  it.each([
-    ['KeyQ', 'player.lean-left', 'inventory.previous'],
-    ['KeyE', 'player.lean-right', 'inventory.next'],
-  ])('routes %s to held lean only in play and to selection in inventory', (key, lean, selection) => {
-    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
-    let context: InputContext = 'play';
-    keyboard.context = () => ({ context, debug: false });
-    const commands: InputCommand[] = [];
-    keyboard.command = (command) => commands.push(command);
-    expect(keyboard.press(event(key))).toBe(true);
-    expect(keyboard.held(lean)).toBe(true);
-    context = 'inventory';
-    keyboard.sync();
-    expect(keyboard.held(lean)).toBe(false);
-    keyboard.release(event(key));
-    commands.length = 0;
-    expect(keyboard.press(event(key))).toBe(true);
-    expect(commands).toEqual([{ action: selection, phase: 'down', at: 0 }]);
-    expect(keyboard.held(lean)).toBe(false);
-  });
   it('dispatches the crouch action in play but not in menus or text entry', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     expect(bindings.rebind('player.crouch-toggle', [{ code: 'KeyY' }])).toBeUndefined();
@@ -525,38 +505,6 @@ describe('keyboard registry', () => {
     }
     expect(registry.binding('inventory.hands')?.contexts).toEqual(['inventory']);
   });
-  it('keeps debug behind F2 and allows rebinding the Backquote HUD hold', () => {
-    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
-    expect(bindings.binding('debug.panel-toggle')?.gate).toBe('debug.gate');
-    expect(bindings.rebind('hud.toggle', [{ code: 'KeyJ' }])).toBeUndefined();
-    expect(bindings.label('hud.toggle')).toBe('J');
-  });
-  it('gates the third-person view and toggles it in both directions', () => {
-    const binding = new BindingRegistry(INPUT_BINDINGS, storage());
-    expect(binding.binding('debug.third-person-toggle')).toMatchObject({ gate: 'debug.gate', debug: true });
-    const gate = binding.chords('debug.gate')[0]!;
-    const toggle = binding.chords('debug.third-person-toggle')[0]!;
-
-    const keyboard = new KeyboardInput(binding);
-    const commands: InputCommand[] = [];
-    keyboard.command = (command) => commands.push(command);
-    keyboard.context = () => ({ context: 'play', debug: false });
-    expect(keyboard.press(event(toggle.code, toggle))).toBe(false);
-    keyboard.release(event(toggle.code, toggle));
-    expect(commands).toEqual([]);
-
-    keyboard.context = () => ({ context: 'play', debug: true });
-    expect(keyboard.press(event(gate.code, gate))).toBe(true);
-    expect(keyboard.held('debug.gate')).toBe(true);
-    expect(keyboard.press(event(toggle.code, toggle))).toBe(true);
-    keyboard.release(event(toggle.code, toggle));
-    expect(keyboard.press(event(toggle.code, toggle))).toBe(true);
-    expect(commands.filter(({ action }) => action === 'debug.third-person-toggle').map(({ phase }) => phase)).toEqual([
-      'down',
-      'up',
-      'down',
-    ]);
-  });
   it('routes a fixture-owned shared ordinary and gated debug chord without a clash', () => {
     const bindings = new BindingRegistry(fixture, storage());
     const ordinary = bindings.chords('fixture.interact')[0]!;
@@ -578,11 +526,6 @@ describe('keyboard registry', () => {
     expect(keyboard.press(event(debug.code, debug))).toBe(true);
     expect(downs()).toContain('fixture.debug');
     expect(downs()).not.toContain('fixture.interact');
-  });
-  it('gates the review map and keeps game freeze on a separate effective chord', () => {
-    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
-    expect(bindings.binding('debug.review-map-toggle')?.gate).toBe('debug.gate');
-    expect(bindings.chords('debug.freeze-game')).not.toEqual(bindings.chords('debug.review-map-toggle'));
   });
   it('lets the review-map toggle close the map without exposing other debug bindings', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());

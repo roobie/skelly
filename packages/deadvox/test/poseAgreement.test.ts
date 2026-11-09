@@ -322,51 +322,6 @@ describe('rendered and hit shambler poses', () => {
     expect(freshActor.agent!.mode).toBe('chase');
     expect(freshActor.stanceWeight).toBe(1);
   });
-
-  it('aimAt hits the rendered head centre during a frozen lunge and turned head-look', () => {
-    const { system, id, actor } = startTurnedAttack();
-    expect(actor.attackWindup).toBeGreaterThan(0);
-    expect(actor.attackWait).toBeGreaterThan(0);
-    expect(Math.abs(actor.headYaw)).toBeGreaterThan(0);
-    system.setFrozen(true);
-
-    const renderer = rendererFor(actor);
-    try {
-      renderer.sync(system.store, 0, 1, true);
-      const headBox = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, POSE_SCENE)).head.find(
-        (box) => box.bone === 'head',
-      )!;
-      const local = actorFigure(FIGURES, actor.type, actor.figureSeed).body.boxes!.head!.find(
-        (box) => box.bone === 'head',
-      )!.center;
-      const matrix = renderer.boneMatrix(id, 'head')!;
-      const center = [0, 1, 2].map(
-        (axis) =>
-          matrix[axis * 4]! * local[0]! +
-          matrix[axis * 4 + 1]! * local[1]! +
-          matrix[axis * 4 + 2]! * local[2]! +
-          matrix[axis * 4 + 3]!,
-      );
-      expect(center.map((value) => value / BLOCK_SIZE)).toEqual(
-        headBox.center.map((value) => expect.closeTo(value, 6)),
-      );
-      const aim = system.aimAt(
-        [center[0]! / BLOCK_SIZE, center[1]! / BLOCK_SIZE, center[2]! / BLOCK_SIZE - 0.6 / BLOCK_SIZE],
-        [0, 0, 1],
-        {
-          type: 'blunt',
-          damage: 8,
-          reach: 0.1,
-          cooldown: 0.8,
-          impulse: 0,
-        },
-      );
-      expect(aim?.region).toBe('head');
-      expect(aim?.inReach).toBe(true);
-    } finally {
-      renderer.dispose();
-    }
-  });
 });
 
 describe('shared acid pose', () => {

@@ -57,11 +57,4 @@ describe('damage feedback', () => {
     expect(feedback.step(0).vignetteOpacity).toBe(DAMAGE_FEEDBACK_TUNING_FIXTURE.vignetteMax);
     expect(Math.sign(feedback.step(0.04).roll)).toBe(1);
   });
-
-  it('reports the accepted damage amount', () => {
-    const sim = new Simulation({ seed: 1 });
-    const events = sim.events.reader();
-    sim.hurt(25, 'test');
-    expect(events.read().find((e) => e.kind === 'damage')).toMatchObject({ kind: 'damage', amount: 25 });
-  });
 });

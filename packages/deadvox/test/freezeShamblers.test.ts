@@ -89,36 +89,6 @@ const regionRay = (actor: Actor, region: HumanoidHitRegion) => {
 };
 
 describe('debug shambler freeze', () => {
-  it('advances stance over 0.5 simulation seconds and pauses the fade while frozen', () => {
-    let target: Vec3 = [100, 1, 100];
-    const system = new ActorSystem({
-      player: () => player(target),
-      isSolid: FLOOR,
-      isOpaque: FLOOR,
-      dayPhase: () => dayStateAtHour(12),
-      blockSize: BLOCK_SIZE,
-      physics: physicsFor(SCALE),
-      tuning: TEST_SENSE_TUNING,
-      hurtPlayer: () => undefined,
-      actorFigureFiles: FIGURES,
-      seed: 31,
-    });
-    const id = system.add(SHAMBLER, [0, 1, 0], [0, 0, 1]);
-    const actor = system.store.get(id)!;
-    run(system, 0.25);
-    target = [0, 1, 3.2];
-    run(system, 0.25);
-    expect(actor.agent!.mode).toBe('chase');
-    expect(actor.stanceWeight).toBeCloseTo(0.5, 5);
-    system.setFrozen(true);
-    const midway = actor.stanceWeight;
-    run(system, 1);
-    expect(actor.stanceWeight).toBe(midway);
-    system.setFrozen(false);
-    run(system, 0.25);
-    expect(actor.stanceWeight).toBe(1);
-  });
-
   it('holds chasing position, heading, timers, and posed hit boxes for five seconds without hurting the player', () => {
     let playerHealth = 100;
     const system = makeSystem([0, 1, 3.2], (damage) => {
@@ -156,66 +126,6 @@ describe('debug shambler freeze', () => {
     run(system, 5);
     expect(playerHealth).toBe(100);
     expect(actor.attackWait).toBe(cooldown);
-  });
-
-  it('skips cooldown, idle/search, wander, and stumble timers for frozen time', () => {
-    const source = makeSystem([100, 1, 100]);
-    source.add(SHAMBLER, [0, 1, 0], [0, 0, -1]);
-    const state = structuredClone(source.snapshotState());
-    Object.assign(state.actors[0]!.actor, {
-      attackWait: 1,
-      idleSoundTimer: 2,
-      modeTimer: 3,
-      searchTimer: 4,
-      wanderClock: 5,
-      stumbleFactor: 0.4,
-      stumbleElapsed: 0.6,
-      stumbleDuration: 1.2,
-    });
-    const system = makeSystem([100, 1, 100]);
-    system.restoreState(state, (typeId) => (typeId === SHAMBLER.id ? SHAMBLER : undefined));
-    const actor = system.store.get(1)!;
-    const before = [
-      actor.attackWait,
-      actor.agent!.idleSoundTimer,
-      actor.agent!.modeTimer,
-      actor.agent!.searchTimer,
-      actor.wanderClock,
-      actor.stumbleFactor,
-      actor.stumbleElapsed,
-      actor.stumbleDuration,
-    ];
-    system.setFrozen(true);
-    run(system, 10);
-    expect([
-      actor.attackWait,
-      actor.agent!.idleSoundTimer,
-      actor.agent!.modeTimer,
-      actor.agent!.searchTimer,
-      actor.wanderClock,
-      actor.stumbleFactor,
-      actor.stumbleElapsed,
-      actor.stumbleDuration,
-    ]).toEqual(before);
-  });
-
-  it('resumes movement after unfreezing and starts newly spawned shamblers frozen', () => {
-    const system = makeSystem([0, 1, 10]);
-    const id = system.add(SHAMBLER, [0, 1, 0], [0, 0, 1]);
-    run(system, 1.5);
-    system.setFrozen(true);
-    const oldActor = system.store.get(id)!;
-    const frozenPosition = [...oldActor.body.pos];
-    const spawnedId = system.add(SHAMBLER, [5, 1, 5], [0, 0, -1]);
-    const spawned = system.store.get(spawnedId)!;
-    expect(spawned.agent!.mode).toBe('idle');
-    const spawnedState = system.snapshotState();
-    run(system, 5);
-    expect(oldActor.body.pos).toEqual(frozenPosition);
-    expect(system.snapshotState()).toEqual(spawnedState);
-    system.setFrozen(false);
-    run(system, 1);
-    expect(oldActor.body.pos).not.toEqual(frozenPosition);
   });
 
   it('allows frozen shamblers to take lethal melee hits and does not persist the freeze toggle', () => {

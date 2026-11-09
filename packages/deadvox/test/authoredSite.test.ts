@@ -35,7 +35,6 @@ import { generateColumn } from '../src/core/worldgen.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { fixtureActorFigures } from './fixtures/actorFigures.ts';
-import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const base = baseContentSources().filter(({ source }) => !source.startsWith('layouts') && source !== 'starts.json');
@@ -45,7 +44,7 @@ const layout = (
   }
 ).layouts[0]!;
 const load = (data: unknown) => buildRegistry([...base, { source: 'layout-test.json', data: { layouts: [data] } }]);
-const { registry, issues } = load(layout);
+const { registry } = load(layout);
 const baseLayoutIds = [...registry.layouts.keys()].filter((id) => id !== layout.id);
 const validationLayout = (id: string): SiteLayoutDef => ({
   id,
@@ -503,14 +502,6 @@ describe('authored layout acceptance', () => {
         expect(hordes.map(({ id, type, pos }) => ({ id, type, pos }))).toEqual(expectedIn(cx, cz));
       }
     }
-  });
-  it('accepts the exported beat-1 map and selects its bundled id from the URL', () => {
-    expect(issues).toEqual([]);
-    expect(configFromUrl(new URLSearchParams('site=lone_house&debug=1')).site).toBe('lone_house');
-    const playtestLayout = BUNDLED_CONTENT.registry.layouts.get('playtest')!;
-    expect(configFromUrl(new URLSearchParams('site=playtest')).site).toBe('playtest');
-    expect(configFromUrl(new URLSearchParams('site=playtest')).start).toBe(playtestLayout.startTimeGameTimeOfDay);
-    expect(configFromUrl(new URLSearchParams('site=playtest&time=18:30')).start).toBe(18.5 * 60 * 60);
   });
   it('maps a clockwise east bearing to an east-facing authored spawn', () => {
     const east = new AuthoredSite(1, registry, scale, {

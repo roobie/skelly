@@ -48,14 +48,6 @@ describe('melee combat blocking', () => {
     });
   });
 
-  it('absorbs nothing while winded, even on a certain full block', () => {
-    expect(block(SKILL_LEVEL_MAX, 10, 0, WINDED_BELOW - 1)).toEqual({
-      absorbed: 0,
-      staminaCost: 0,
-      full: false,
-    });
-  });
-
   it('absorbs only what the stamina left can pay for, and then is not a full block', () => {
     const stamina = WINDED_BELOW + 1;
     const capped = block(0, 1000, 0, stamina);

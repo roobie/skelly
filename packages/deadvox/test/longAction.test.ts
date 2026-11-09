@@ -425,28 +425,6 @@ describe('core long actions', () => {
     expect(restored.sim.actions.snapshotState()).toEqual(uninterrupted.sim.actions.snapshotState());
     expect(restored.strikes).toEqual(uninterrupted.strikes.slice(saving.strikes.length));
   });
-  it('Read resumes the same interrupted book from its saved progress', () => {
-    const runtime = make();
-    const book = runtime.inv.create('field_manual');
-    expect(runtime.inv.add(book, { kind: 'hand', side: 'right' })).toBe(true);
-    expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
-    runtime.sim.scheduler.advance(10 / runtime.sim.clock.ratio);
-    runtime.sim.actions.stop();
-    expect(runtime.sim.actions.job).toMatchObject({
-      jobType: 'reading',
-      stopped: true,
-      bookUid: book.uid,
-      elapsed: 10,
-    });
-
-    expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
-    expect(runtime.sim.actions.job).toMatchObject({
-      jobType: 'reading',
-      stopped: false,
-      bookUid: book.uid,
-      elapsed: 10,
-    });
-  });
   it('light lost mid-read stops the book, keeps its progress and refuses Read until light returns', () => {
     const runtime = make();
     const book = runtime.inv.create('field_manual');

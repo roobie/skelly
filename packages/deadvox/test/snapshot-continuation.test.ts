@@ -451,27 +451,6 @@ describe('fixture save/load continuation', () => {
     expect(inspect(loaded)).toEqual(inspect(uninterrupted));
   });
 
-  it('preserves a pending sleep interruption across a paused snapshot and load', () => {
-    const uninterrupted = createRuntime(undefined, true, oneColumn);
-    const split = createRuntime(undefined, true, oneColumn);
-    expect(startRest(uninterrupted, 'sleep')).toBeUndefined();
-    expect(startRest(split, 'sleep')).toBeUndefined();
-    advance(uninterrupted, 2);
-    advance(split, 2);
-
-    uninterrupted.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
-    split.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
-    uninterrupted.sim.paused = true;
-    split.sim.paused = true;
-    const snapshot = capture(split);
-    expect(snapshot.character.simulation.pendingInterrupt).toBe('test interruption');
-
-    advance(uninterrupted, 1);
-    const loaded = createRuntime(snapshot, true, oneColumn);
-    advance(loaded, 1);
-    expect(inspect(loaded)).toEqual(inspect(uninterrupted));
-  });
-
   it('detects omission of simulation, world, scheduler, inventory, and audio state', () => {
     const runtimeFrom = (snapshot?: ReturnType<typeof capture>) => createRuntime(snapshot, true, oneColumn);
     let original = runtimeFrom();

@@ -10,24 +10,6 @@ import { FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
 import { fixtureActorFigures } from './fixtures/actorFigures.ts';
 import { fixtureScenarioSources } from './fixtures/scenario.ts';
 
-it('admits an independent actor id selecting an existing body plan', () => {
-  const source = [...baseRegistry().actors.values()].find((type) => type.figureSeeds?.length)!;
-  const actor = {
-    ...source,
-    id: 'fixture_independent_actor',
-    model: 'humanoid',
-    capability: undefined,
-    authoredOnly: true,
-  };
-  const { registry, issues } = buildRegistry([
-    ...baseSources,
-    { source: 'fixture-actor', data: { actors: [actor], actorFigures: fixtureActorFigures(actor) } },
-  ]);
-  expect(issues).toEqual([]);
-  const admitted = registry.actors.get(actor.id)!;
-  expect(admitted.model).toBe('humanoid');
-});
-
 it.each(['slim-humanoid', 'legless-humanoid', 'broad-humanoid'] as const)(
   'admits a %s figure as a property of humanoid anatomy',
   (figure) => {

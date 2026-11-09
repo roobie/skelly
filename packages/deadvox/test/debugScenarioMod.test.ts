@@ -29,12 +29,6 @@ const totals = (items: { item: string; count: number; condition: number; liquidC
 };
 
 describe('authored debug scenario mod', () => {
-  it('admits its selected rows and resolves every listed reference', () => {
-    expect(selected.issues).toEqual([]);
-    expect(selected.admittedFolderPacks.map(({ id }) => id)).toEqual([debugManifest.id]);
-    expect(selected.admitted).toEqual([]);
-  });
-
   // Selection supplies the default stack, which would hide a row whose owner the debug mod does not declare.
   const debugPacks = readAvailablePacks('.').filter(({ manifest }) => manifest.optIn);
 

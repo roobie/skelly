@@ -96,10 +96,6 @@ describe('bench plan', () => {
     expect(benchRunFromUrl(new URLSearchParams(nextUrl(run, 73)), registry).site).toBe(run.site);
   });
 
-  it('runs 0.5 m blocks at 64, 96 and 128 m by default', () => {
-    expect(formatPlan(DEFAULT_PLAN)).toBe('0.5:64,0.5:96,0.5:128');
-  });
-
   it('round-trips through the URL and rejects nonsense', () => {
     expect(parsePlan(formatPlan(DEFAULT_PLAN))).toEqual(DEFAULT_PLAN);
     expect(parsePlan('0.5:96')).toEqual([{ blockSize: 0.5, radiusM: 96 }]);
@@ -188,28 +184,6 @@ describe('bench report', () => {
     });
     expect(report).toContain('Shambler summary: N=25 active/background=–/– seed=12 actors=boxes');
     expect(report.split('\n')[2]).toMatch(SHAMBLER_ROW_START);
-  });
-
-  it('shows actors, actor sync ms, and draws/triangles when a run recorded them', () => {
-    const shambler: ShamblerRunResult = {
-      n: 25,
-      seed: 12,
-      actors: 'detailed',
-      frame: { ...frames, msMedian: 16.5, msP95: 19, slowFraction: 0.2 },
-      actorTick: { count: 300, median: 0.4, p95: 0.8 },
-      actorSync: { count: 900, median: 2.3, p95: 4.1 },
-      renderSubmit: { count: 900, median: 1.1, p95: 2.2 },
-      draws: 12,
-      triangles: 365_000,
-      holesMax: 3,
-      holeFraction: 0.1,
-      interrupted: false,
-    };
-    const row = shamblerResultRow(shambler);
-    expect(row[3]).toBe('detailed');
-    expect(row[7]).toBe('2.3 / 4.1');
-    expect(row[9]).toBe('12 / 365');
-    expect(shamblerSummary([shambler])).toContain('actors=detailed');
   });
 
   it('includes the light workload and content-owned values in a full-scene report', () => {

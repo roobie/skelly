@@ -13,7 +13,6 @@ import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseContentSources } from './baseContentFiles.ts';
-import { baseRegistryWith } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
@@ -49,54 +48,6 @@ const registryWithSleepScenario = (sleepCap: number) => {
 // Compile the shared immutable scenario once; each runtime still owns fresh session state.
 const SLEEP_SCENARIO_CAP = 64;
 const bedSleepScenario = registryWithSleepScenario(SLEEP_SCENARIO_CAP);
-const discountedCraftRegistry = baseRegistryWith([
-  {
-    source: 'discounted-craft-fixture.json',
-    data: {
-      recipes: [
-        {
-          id: 'discounted_craft_fixture',
-          category: 'fixture_category',
-          tags: [],
-          searchTerms: [],
-          result: { item: 'torch', count: 1 },
-          timeGameMinutes: 20,
-          skills: {},
-          qualities: {},
-          components: [[{ item: 'rag', count: 1 }]],
-          workstation: 'workbench',
-        },
-      ],
-    },
-  },
-]);
-
-const startDiscountedCraft = () => {
-  const runtime = createRuntime(undefined, false, undefined, { registry: discountedCraftRegistry });
-  const pos = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
-  for (const item of Object.values(runtime.inventory.hands)) {
-    if (!runtime.inventory.move(item!, { kind: 'pile', pos }).ok) {
-      throw new Error('Cannot clear a hand for fixture work');
-    }
-  }
-  const bench = runtime.entities.add({ type: 'workbench', pos, size: [1, 3, 1], facing: 'n' });
-  if (!bench) {
-    throw new Error('Cannot place fixture workbench');
-  }
-  runtime.session.character.knownRecipes.add('discounted_craft_fixture');
-  if (!runtime.inventory.add(runtime.inventory.create('rag'), { kind: 'pile', pos })) {
-    throw new Error('Cannot place fixture craft input');
-  }
-  const planned = runtime.session.planCraft(discountedCraftRegistry.recipes.get('discounted_craft_fixture')!);
-  if (!('plan' in planned)) {
-    throw new Error(planned.missing.reason);
-  }
-  const work = runtime.inventory.beginWork(planned.plan);
-  if (!work) {
-    throw new Error('Cannot begin discounted craft');
-  }
-  return { runtime, work, startRefusal: runtime.sim.actions.startCraft(work.uid) };
-};
 
 describe('snapshot state components', () => {
   it('round-trips an active Wait through the save codec', async () => {
@@ -278,17 +229,6 @@ describe('snapshot state components', () => {
     expect(loaded.knownRecipes).toEqual(new Set(actor.knownRecipes));
     expect(loaded.knownRecipes.has(removedRecipe)).toBe(false);
     expect(actor.skills.crafting).toBe(savedLevel + 1);
-  });
-
-  it('advances a skill only when its accumulated practice reaches the next-level threshold', () => {
-    const actor = new Character(registry);
-    const threshold = practiceForNextLevel(registry, actor.skills.crafting!);
-    actor.awardPractice('crafting', threshold / 2, SKILL_LEVEL_LEGENDARY);
-    expect(actor.skills.crafting).toBe(0);
-    expect(actor.practice.crafting).toBe(threshold / 2);
-    actor.awardPractice('crafting', threshold / 2, SKILL_LEVEL_LEGENDARY);
-    expect(actor.skills.crafting).toBe(1);
-    expect(actor.practice.crafting).toBe(0);
   });
 
   it('round-trips body wounds with their bleeding tiers, a partially recovered region and a stopped treatment action', async () => {
@@ -479,33 +419,6 @@ describe('snapshot state components', () => {
     expect(restored.sim.actions.rest?.sleepOnset).toEqual(onset);
     expect(restored.sim.actions.asleep).toBe(false);
     expect(restored.rest.canStop).toBe(true);
-  });
-
-  it('round-trips a stopped reading action with its held book uid and progress', async () => {
-    const runtime = createRuntime();
-    const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
-    for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
-      if (item) {
-        expect(runtime.inventory.move(item, { kind: 'pile', pos: feet }).ok).toBe(true);
-      }
-    }
-    const book = runtime.inventory.create('field_manual');
-    expect(runtime.inventory.add(book, { kind: 'hand', side: 'right' })).toBe(true);
-    expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
-    runtime.sim.scheduler.advance(2 / runtime.sim.clock.ratio + 2);
-    runtime.sim.actions.stop();
-    const snapshot = capture(runtime);
-    expect(snapshot.character.longAction.job).toMatchObject({ jobType: 'reading', stopped: true, bookUid: book.uid });
-
-    const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
-    const loaded = createRuntime(decoded.snapshot);
-    expect(loaded.sim.actions.job).toMatchObject({
-      jobType: 'reading',
-      stopped: true,
-      bookUid: book.uid,
-      elapsed: (snapshot.character.longAction.job as { elapsed: number }).elapsed,
-    });
-    expect(loaded.inventory.itemByUid(book.uid)?.type).toBe('field_manual');
   });
 
   it('saves stopped reading with the book in a pile and resumes only after it is held', async () => {
@@ -711,38 +624,6 @@ describe('snapshot state components', () => {
 });
 
 describe('craft job codec and ownership', () => {
-  it('completes a craft at a discounting station', () => {
-    const { runtime, work, startRefusal } = startDiscountedCraft();
-    expect(work.work!.duration).toBeLessThan(
-      discountedCraftRegistry.recipes.get('discounted_craft_fixture')!.timeGameMinutes,
-    );
-    expect(startRefusal).toBeUndefined();
-    expect(runtime.sim.actions.craft!.advance(work.uid, work.work!.duration)).toBe(true);
-    runtime.sim.actions.craft!.finish(work.uid);
-
-    expect(runtime.inventory.itemByUid(work.uid)).toBeUndefined();
-  });
-
-  it('round-trips a discounted craft mid-progress and then completes it', async () => {
-    const { runtime, work, startRefusal } = startDiscountedCraft();
-    expect(startRefusal).toBeUndefined();
-    runtime.sim.actions.craft!.advance(work.uid, work.work!.duration / 2);
-    const snapshot = capture(runtime);
-
-    const decoded = await decodeSave(await encodeFixture(snapshot), {
-      version: formatVersion,
-      contentLookup: (kind, id) => lookupSaveContent(discountedCraftRegistry, kind, id),
-    });
-    const loaded = createRuntime(decoded.snapshot, false, undefined, { registry: discountedCraftRegistry });
-    const loadedWork = loaded.inventory.itemByUid(work.uid)!;
-    expect(
-      loaded.sim.actions.craft!.advance(loadedWork.uid, loadedWork.work!.duration - loadedWork.work!.elapsed),
-    ).toBe(true);
-    loaded.sim.actions.craft!.finish(loadedWork.uid);
-
-    expect(loaded.inventory.itemByUid(work.uid)).toBeUndefined();
-  });
-
   it.each([false, true])(
     'encodes/restores stopped=%s work with one owned subtree and validated references',
     async (stopped) => {

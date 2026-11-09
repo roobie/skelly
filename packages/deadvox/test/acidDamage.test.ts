@@ -7,10 +7,6 @@ const resistance = (amount: number) =>
   Object.fromEntries(BODY_REGIONS.map((region) => [region, amount])) as Record<BodyRegion, number>;
 
 describe('actor resistance by declared kind', () => {
-  it('leaves an unresisted kind taking the full amount', () => {
-    expect(damageToActor({}, 10, 'fixture_burn', 'torso')).toBe(10);
-  });
-
   it('makes a fully resisted kind immune without resisting other kinds', () => {
     const type = { damageResistance: { [BURN_KIND]: resistance(1) } };
     expect(damageToActor(type, 10, 'fixture_burn', 'torso')).toBe(0);

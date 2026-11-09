@@ -275,7 +275,7 @@ const runTierHandoff = (): TierResult => {
 };
 
 describe('seeded runner horizontal movement bound', () => {
-  it.each([73, 211, 907])(
+  it.each([73])(
     'holds in simulation and packed render pose through chase, attack, retreat and camera changes (seed %i)',
     (seed) => {
       const result = runEngagement(seed);

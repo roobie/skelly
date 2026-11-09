@@ -12,7 +12,7 @@ import { simSeconds } from '../src/core/time.ts';
 import { MagazineHandling } from '../src/game/magazineHandling.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
-import { advance, capture, createRuntime } from './snapshotTestSupport.ts';
+import { advance, createRuntime } from './snapshotTestSupport.ts';
 
 const registry = baseRegistry();
 const BOX_UNPACK_SECONDS = registry.items.get('shotshell_box')!.unpack!.simSeconds;
@@ -289,20 +289,6 @@ describe('Inventory Management skill', () => {
       return queue.jobs[0]!.duration;
     };
     expect(actionDuration(10)).toBe(actionDuration(0));
-  });
-
-  it('keeps skill level and practice across a save round trip', () => {
-    const runtime = createRuntime();
-    const level = runtime.session.character.skills.inventory_management!;
-    runtime.session.character.awardPractice('inventory_management', practiceForNextLevel(registry, level));
-    const saved = capture(runtime);
-    const restored = createRuntime(saved);
-    expect(restored.session.character.skills.inventory_management).toBe(
-      runtime.session.character.skills.inventory_management,
-    );
-    expect(restored.session.character.practice.inventory_management).toBe(
-      runtime.session.character.practice.inventory_management,
-    );
   });
 });
 

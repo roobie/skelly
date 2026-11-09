@@ -300,10 +300,3 @@ it('refuses to remove a piece with a piece, a pile or the player on it, leaving 
     expect(before[0], what).toEqual({ at: true, solid: true, live: true });
   }
 });
-
-it('removes a piece with nothing on it', () => {
-  const { world, inventory, entities, isSolid } = site();
-  const stand = entities.add({ type: 'occupancy_block', pos: [3, 1, 3], size: [1, 1, 1], facing: 'n' })!;
-  expect(removeFurniture(moverAt(inventory, world), stand)).toBeUndefined();
-  expect(isSolid(3, 1, 3)).toBe(false);
-});

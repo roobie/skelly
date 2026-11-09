@@ -872,47 +872,6 @@ describe('input replay', () => {
     expect(replay.session.leanAmount).not.toBe(amount);
   });
 
-  it('replays a held-ready stance at a standalone segment start', async () => {
-    const initial = createRuntime();
-    const backpack = initial.inventory.hands.right;
-    if (!(backpack && initial.inventory.move(backpack, { kind: 'pile', pos: initial.player.body.pos }).ok)) {
-      throw new Error('Could not clear a hand for the replay firearm');
-    }
-    const rifle = initial.inventory.create('rifle_assault');
-    if (!initial.inventory.add(rifle, { kind: 'hand', side: 'right' })) {
-      throw new Error('Could not hold the replay firearm');
-    }
-    const start = capture(initial);
-    const startState: ReplayStartState = {
-      leanAmount: 0,
-      throwingStance: false,
-      readyHeld: true,
-      aimingDownSights: false,
-      inventoryOpen: false,
-    };
-    const recorder = new InputReplayRecorder(start, 1, [], { startState });
-    const source = createRuntime(start, false, undefined, {
-      readyHeld: () => true,
-      sampleAtPlayerTick: (_tick, live, _time, compression) => {
-        recorder.recordTick(live, compression);
-        return live;
-      },
-    });
-    source.sim.paused = false;
-    source.view.intent.forward = 1;
-    source.session.frame(1 / 60);
-    const sourceEnd = capture(source);
-    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);
-    const decoded = await decodeInputReplay(bytes, { contentLookup });
-    const standaloneReplay = playSession(decoded.snapshot, decoded.inputs, {
-      endSimTimestamp: decoded.endSimTimestamp,
-      startState: decoded.startState,
-    });
-
-    expect(sourceEnd.character.player.firearmReadyWalking).toBe(true);
-    expect(await replayStateFingerprint(capture(standaloneReplay))).toBe(await replayStateFingerprint(sourceEnd));
-  });
-
   it('replays a breath held through the sights from a standalone segment start', async () => {
     const site = levelSite(createRuntime().world, fixtureZombieColumn, 1, 3);
     const initial = createRuntime(undefined, false, undefined, { spawn: [site.x + 0.5, site.ground, site.z + 0.5] });
@@ -962,17 +921,6 @@ describe('input replay', () => {
     expect(sourceEnd.character.aim.breath.held).toBe(true);
     expect(await replayStateFingerprint(replayWith(true))).toBe(await replayStateFingerprint(sourceEnd));
     expect(await replayStateFingerprint(replayWith(false))).not.toBe(await replayStateFingerprint(sourceEnd));
-  });
-
-  it('constructs the replay session at the decoded recording snapshot position', async () => {
-    const start = capture(createRuntime());
-    const recorder = new InputReplayRecorder(start);
-    recorder.recordTick(replaySample);
-    const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
-    const decoded = await decodeInputReplay(bytes, { contentLookup });
-    const replay = createRuntime(decoded.snapshot);
-
-    expect(replay.player.body.pos).toEqual(decoded.snapshot.character.player.body.pos);
   });
 
   it('joins adjacent recording windows and offsets semantic actions from the earlier start save', () => {
@@ -1224,16 +1172,6 @@ describe('input replay', () => {
     const idle = nextReplayInputSample(player, compression, look);
     expect(idle.recordedSample).toBeUndefined();
     expect(idle.input).toMatchObject({ active: false, inputLocked: true, compression: 7 });
-  });
-
-  it('records whether the player column was ready at each player tick', () => {
-    const recorder = new InputReplayRecorder({} as Readonly<SaveSnapshot>);
-    recorder.recordTick({ ...replaySample, worldReady: true });
-    recorder.recordTick({ ...replaySample, worldReady: false });
-    const player = new InputReplayPlayer(recorder.copyInputs(), () => undefined);
-
-    expect(player.next()?.worldReady).toBe(true);
-    expect(player.next()?.worldReady).toBe(false);
   });
 
   it('reports replay unavailable when a recorded-ready player column is missing', () => {

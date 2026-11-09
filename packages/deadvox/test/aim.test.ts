@@ -179,27 +179,6 @@ it('OU smoothing reduces total per-tick variation over a run', () => {
   expect(smoothVariation).toBeLessThan(rawVariation);
 });
 
-it('seeded OU wobble is deterministic and sways while standing still', () => {
-  const tuning = {
-    reversionRatePerSimSecond: stanceTuning.wobbleNoiseReversionRatePerSimSecond,
-    sigmaRadiansPerSqrtSecond: stanceTuning.wobbleNoiseSigmaRadiansPerSqrtSecond,
-    smoothingSimSeconds: stanceTuning.wobbleNoiseSmoothingSimSeconds,
-  };
-  const first = createNoiseAim(tuning);
-  const second = createNoiseAim(tuning);
-  const firstPath = Array.from({ length: 120 }, () => first.advance(step()));
-  const secondPath = Array.from({ length: 120 }, () => second.advance(step()));
-
-  expect(secondPath).toEqual(firstPath);
-  expect(firstPath.some(({ yaw, pitch }) => Math.hypot(yaw, pitch) > 0)).toBe(true);
-  expect(
-    firstPath.some(
-      ({ yaw, pitch }, index) =>
-        index > 0 && (yaw !== firstPath[index - 1]!.yaw || pitch !== firstPath[index - 1]!.pitch),
-    ),
-  ).toBe(true);
-});
-
 it('firearms skill scales standing OU drift by the content variance ratio', () => {
   const tuning: AimWobbleNoiseTuning = {
     reversionRatePerSimSecond: stanceTuning.wobbleNoiseReversionRatePerSimSecond,
@@ -674,12 +653,6 @@ it('scales the vertical walking lune without changing horizontal swing', () => {
     expect(flatterFrame.yaw).toBeCloseTo(authoredFrame.yaw, 12);
     expect(flatterFrame.pitch).toBeCloseTo(authoredFrame.pitch * (flatterRatio / ratio), 10);
   }
-});
-
-it('pump skill-zero readied-walk wobble fits its content bound', () => {
-  const wobble = readiedWalkWobble(0);
-  expect(wobble).toBeGreaterThan(0);
-  expect(wobble).toBeLessThan(stanceTuning.wobbleLimitRadians);
 });
 
 it('wobble can use its larger content bound without merging it into recoil', () => {

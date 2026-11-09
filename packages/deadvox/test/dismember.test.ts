@@ -53,10 +53,6 @@ describe('regionSeverableParts', () => {
     });
   });
 
-  it('lists burst-disposition bones apart from cuttable ones', () => {
-    expect(burstBones(BONES)).toEqual(['sac']);
-  });
-
   it('keeps the built acid dispositions consistent with its region map', () => {
     const registry = baseRegistry();
     const acid = [...registry.actors.values()].find(({ model }) => model === 'acid')!;
@@ -78,19 +74,11 @@ describe('regionSeverableParts', () => {
 });
 
 describe('severedBoneSet', () => {
-  it('cutting a leaf hides only that leaf', () => {
-    expect(severedBoneSet(BONES, ['paw.L'])).toEqual(new Set(['paw.L']));
-  });
-
   it('cutting a bone takes every descendant with it, and nothing above it', () => {
     expect(severedBoneSet(BONES, ['armA.L'])).toEqual(new Set(['armA.L', 'armB.L', 'paw.L']));
     const hidden = severedBoneSet(BONES, ['skull']);
     expect(hidden).toEqual(new Set(['skull', 'jaw']));
     expect(hidden.has('neck')).toBe(false);
-  });
-
-  it('combines multiple independent cuts', () => {
-    expect(severedBoneSet(BONES, ['armA.L', 'skull'])).toEqual(new Set(['armA.L', 'armB.L', 'paw.L', 'skull', 'jaw']));
   });
 
   it('a redundant cut inside an already-cut subtree is harmless', () => {

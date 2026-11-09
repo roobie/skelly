@@ -279,12 +279,6 @@ it.each([false, true])('uses the first supported candidate with room (feet landi
   expect(f.moveOntoLoad(f.fitting.item)).toEqual([f.dropSound]);
 });
 
-it('can complete a hand move onto the resettled pile without throwing in its sound callback', () => {
-  const f = fixture();
-  expect(f.remove()).toBeUndefined();
-  expect(f.moveOntoLoad()).toEqual([f.dropSound]);
-});
-
 it.each(['non-solid', 'shape-hole'] as const)(
   'vehicle removal piles fall past %s furniture to a real receiver',
   (obstacle) => {

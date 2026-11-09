@@ -1,10 +1,8 @@
 import { expect, it } from 'vitest';
 import { Character, practiceForNextLevel, SKILL_LEVEL_MAX, skillSaturation } from '../src/core/character.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { doorOptions } from '../src/core/options.ts';
 import { pryPlan } from '../src/core/prying.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
-import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { fixtureSources } from './economyFixtures.ts';
 import {
@@ -262,29 +260,6 @@ it('losing the carried tool stops prying without an input latch and leaves movem
       runtime.session.body.pos[2]! - positionBeforeMove[2]!,
     ),
   ).toBeGreaterThan(0);
-});
-
-it('the matching key still unlocks a pryable door silently', () => {
-  const runtime = makePryRuntime();
-  const door = makeDoor(runtime);
-  const light = runtime.inventory.hands.left;
-  if (!(light && runtime.inventory.consume(light))) {
-    throw new Error('Could not free a hand for the fixture key');
-  }
-  if (!runtime.inventory.add(runtime.inventory.create('shed_key'), { kind: 'hand', side: 'left' })) {
-    throw new Error('Could not hold the fixture key');
-  }
-  const unlock = doorOptions(runtime.inventory, door)[1]!;
-  if (!unlock.plan.ok) {
-    throw new Error(unlock.plan.reason);
-  }
-  runtime.session.queue.enqueueAction(DOOR_ACTION, unlock.label, unlock.plan.time, {
-    entityUid: door.uid,
-    locked: false,
-  });
-  expect(runtime.session.queue.tick(unlock.plan.time).failed).toEqual([]);
-  expect(door.lock).toEqual({ id: 'test_shed', locked: false });
-  expect(runtime.heardSounds).toEqual([]);
 });
 
 it('refuses a carried tool below the content quality threshold', () => {

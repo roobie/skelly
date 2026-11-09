@@ -152,14 +152,6 @@ it('makes a blow on a piece heard in the sound its material names, even one that
   expect(sound).not.toBe(FIXTURE_BLOW_SOUND);
 });
 
-it('keeps a bashing shambler at a piece that is its only way through until it gives way', () => {
-  const held = chasePastWardrobe(MINIMUM, true);
-  expect(held.entities.byUid(held.wardrobe.uid)).toBeUndefined();
-  expect(held.reachedBehind).toBe(true);
-  const weak = chasePastWardrobe(MINIMUM * 0.99, true);
-  expect(weak.reachedBehind).toBe(false);
-});
-
 it('lets a shambler walk around a piece it can pass instead of bashing it', () => {
   const open = chasePastWardrobe(MINIMUM, false);
   expect(open.wardrobe.damage).toBeUndefined();

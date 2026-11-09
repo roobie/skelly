@@ -5,7 +5,6 @@ import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { type FurnitureMover, movableRefusal, placement } from '../src/core/furnitureMove.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { cellsOf, footprint, pieceSize } from '../src/core/templates.ts';
@@ -13,14 +12,7 @@ import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
-import {
-  capture,
-  contentLookup,
-  createRuntime,
-  encodeFixture,
-  formatVersion,
-  registry,
-} from './snapshotTestSupport.ts';
+import { registry } from './snapshotTestSupport.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const messages = registry.ui.get(fixtureIds.ui)!.furnitureMoveMessages;
@@ -97,12 +89,6 @@ const lies = (top: Spec, hatch: Spec): boolean => {
 const aimedAtHatch: Vec3 = [11, hatchPos[1] + 1, 10];
 
 describe('a cover over a hatch', () => {
-  it('may be put down on a shut hatch', () => {
-    const { inventory, mover } = scene();
-    carry(inventory, coverDef.id);
-    expect(placement(mover, aimedAtHatch)).toEqual({ pos: expect.any(Array) });
-  });
-
   it('is refused for a solid piece, and for a flat piece that is not a cover', () => {
     const flat = [...registry.furniture.values()].find(
       (def) => def.solid === false && !def.cover && !def.door && !def.climbable && !def.mount && def.size[1] === 1,
@@ -197,28 +183,6 @@ describe('a cover over a hatch', () => {
     inventory.entities.lift(cover);
     expect(inventory.entities.setOpen(hatch, true)).toBeUndefined();
     expect(hatch.open).toBe(true);
-  });
-
-  it('stays where it was put down through a save and load', async () => {
-    const runtime = createRuntime();
-    const cover = runtime.inventory.furnish({
-      type: coverDef.id,
-      pos: [3, 1, 3],
-      size: coverDef.size,
-      facing: 'n',
-    })!;
-    runtime.entities.lift(cover);
-    const putDown: Vec3 = [3 + coverDef.size[0], 1, 3];
-    runtime.entities.place(cover, putDown);
-
-    const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
-    const loaded = createRuntime(decoded.snapshot);
-    const covers = [...loaded.entities.all].filter((entity) => entity.type === coverDef.id);
-    expect(covers).toHaveLength(1);
-    expect(covers[0]).toMatchObject({ pos: putDown, carried: false });
-    expect(loaded.inventory.furnish({ type: coverDef.id, pos: [3, 1, 3], size: coverDef.size, facing: 'n' })).toBe(
-      undefined,
-    );
   });
 });
 

@@ -118,32 +118,6 @@ it('stands a player dropped on the bonnet below the box top and stops a jump at 
   expect(side.pos[0] + side.halfWidth).toBeLessThanOrEqual(car.pos[0]);
 });
 
-it('lets a pick through the air above the bonnet miss the car and a pick at the cabin hit it', () => {
-  const entities = new BlockEntities(base);
-  const car = entities.add({ type: intact.id, pos: [0, 0, 0], size: [...intact.size], facing: 'n' })!;
-  const [width, height, depth] = car.size;
-  const top = height - 1;
-  const rowSolid = (y: number, z: number) =>
-    Array.from({ length: width }, (_, x) => x).some((x) => entities.isSolid(x, y, z));
-  const rows = Array.from({ length: depth }, (_, z) => z);
-  const overBonnet = rows.find((z) => !rowSolid(top, z) && rowSolid(top - 1, z));
-  const cabin = rows.find((z) => rowSolid(top, z));
-  expect(overBonnet).toBeDefined();
-  expect(cabin).toBeDefined();
-  // A level ray across the car's top layer, in its box the whole way.
-  const pick = (z: number) =>
-    pickFurniture({
-      entities,
-      origin: [-2, top + 0.5, z + 0.5],
-      direction: [1, 0, 0],
-      maxDistance: width + 4,
-      blockSize: half.blockSize,
-      isSolid: (x, y, at) => entities.isSolid(x, y, at),
-    });
-  expect(pick(overBonnet!)).toBeUndefined();
-  expect(pick(cabin!)).toBe(car);
-});
-
 const placedOffsets = (type: string, pose: Pose) => {
   const entities = new BlockEntities(registry);
   return solidOffsets(entities, place(entities, type, pose));

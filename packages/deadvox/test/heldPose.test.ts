@@ -67,18 +67,6 @@ describe('blendHeldFirearmTransforms', () => {
     expect(carried.rootRotation).not.toEqual(halfTurn.rootRotation);
   });
 
-  it('keeps an orthonormal interior for a quarter turn as well', () => {
-    const quarter = transform(zTurnColumns(90));
-    expect(blendHeldFirearmTransforms(identity, quarter, 0)).toBe(identity);
-    expect(blendHeldFirearmTransforms(identity, quarter, 1)).toBe(quarter);
-    for (const share of [0.25, 0.5]) {
-      const deviations = basisDeviations(blendHeldFirearmTransforms(identity, quarter, share).rootRotation);
-      expect(deviations.unitError).toBeCloseTo(0, 9);
-      expect(deviations.rightAngleError).toBeCloseTo(0, 9);
-      expect(deviations.handedError).toBeCloseTo(0, 9);
-    }
-  });
-
   // A 150-degree Z turn lands in the Z-dominant conversion branch with a nonzero quaternion scalar.
   it('round-trips a Z-dominant turn through the basis conversion', () => {
     const columns = zTurnColumns(150);

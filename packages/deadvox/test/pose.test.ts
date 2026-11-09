@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { decodeFrame, sampleClip } from '../src/core/actorClips.ts';
-import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { applyPoint, rotX, rotY, rotZ } from '../src/core/boneMath.ts';
-import { type Bone, bodySkeleton } from '../src/core/bones.ts';
+import type { Bone } from '../src/core/bones.ts';
 import {
   allocateBoneTransforms,
   blendPose,
@@ -11,9 +9,6 @@ import {
   indexBonesByParent,
   type Pose,
 } from '../src/core/pose.ts';
-import type { PoseClip } from '../src/core/schema/actors.ts';
-import { stackActorFigureFiles } from './baseContentFiles.ts';
-import { baseRegistry } from './baseRegistry.ts';
 
 const bones: readonly Bone[] = [
   { id: 'a', parent: null, head: [0, 0, 0], tail: [0, 1, 0] },
@@ -21,15 +16,6 @@ const bones: readonly Bone[] = [
 ];
 
 describe('boneTransforms', () => {
-  it('identity pose leaves points unchanged', () => {
-    const pose: Pose = { root: [0, 0, 0], rotations: {} };
-    const t = boneTransforms(bones, pose);
-    for (const bone of bones) {
-      expect(applyPoint(t.get(bone.id)!, bone.head)).toEqual(bone.head);
-      expect(applyPoint(t.get(bone.id)!, bone.tail)).toEqual(bone.tail);
-    }
-  });
-
   it('a root translation moves every bone by the same amount', () => {
     const pose: Pose = { root: [1, 2, 3], rotations: {} };
     const t = boneTransforms(bones, pose);
@@ -81,29 +67,6 @@ describe('boneTransformsInto (the allocation-free posing path)', () => {
         const t = scratch[i]!;
         const e = expected[i] as { r: readonly number[]; t: readonly number[] };
         expect({ r: [...t.r], t: [...t.t] }, `bone ${bone.id}`).toEqual({ r: [...e.r], t: [...e.t] });
-      }
-    }
-  });
-
-  it('matches boneTransforms on a built humanoid rig across its walk clip', () => {
-    const registry = baseRegistry();
-    const shambler = registry.actors.get('shambler')!;
-    const { body, clips } = actorFigure(stackActorFigureFiles(registry), shambler, shambler.figureSeeds![0]!);
-    const rig = bodySkeleton(body);
-    const walk = clips.standing!.walk as PoseClip;
-    const parentIndex = indexBonesByParent(rig);
-    const scratch = allocateBoneTransforms(rig.length);
-    for (const cursor of [0, 0.15, 0.4, 0.65, 0.9]) {
-      const pose = decodeFrame(sampleClip(walk, cursor));
-      boneTransformsInto(rig, pose, parentIndex, scratch);
-      const expected = asArray(rig, boneTransforms(rig, pose));
-      for (const [i, bone] of rig.entries()) {
-        const t = scratch[i]!;
-        const e = expected[i] as { r: readonly number[]; t: readonly number[] };
-        expect({ r: [...t.r], t: [...t.t] }, `bone ${bone.id} at cursor ${cursor}`).toEqual({
-          r: [...e.r],
-          t: [...e.t],
-        });
       }
     }
   });

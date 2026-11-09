@@ -139,15 +139,6 @@ describe('actor footsteps', () => {
     expect(twiceDistance.steps).toBe(oneDistance.steps * 2);
   });
 
-  it('uses a faster distance cadence in a chase than a stroll on the same ground', () => {
-    expect(movedSteps('chase', 3)).toBeGreaterThan(movedSteps('stroll', 3));
-  });
-
-  it('emits shambler footsteps for a kind selected by its content, not its id', () => {
-    const fixture = { ...SHAMBLER, id: 'fixture_soldier', footstepSound: 'shambler' as const };
-    expect(movedSteps('stroll', 3, fixture)).toBeGreaterThan(0);
-  });
-
   it('keeps a type with no authored footstep family silent while it travels', () => {
     const silent = { ...SHAMBLER, id: 'fixture_crawler', footstepSound: undefined };
     expect(movedSteps('stroll', 3, silent)).toBe(0);

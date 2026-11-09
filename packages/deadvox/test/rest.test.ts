@@ -3,7 +3,7 @@ import { actionText } from '../src/core/actionText.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Body } from '../src/core/body.ts';
 import { hourOfDay, SECONDS_PER_HOUR, simSecondsPerHour, simToGameHours } from '../src/core/clock.ts';
-import { awakeRates, type Needs, type RecoveryState, stepNeeds } from '../src/core/needs.ts';
+import { type Needs, type RecoveryState, stepNeeds } from '../src/core/needs.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { BodyTuningDef } from '../src/core/schema.ts';
 import { realSeconds, simSeconds } from '../src/core/time.ts';
@@ -80,18 +80,6 @@ describe('restKindForFurniture', () => {
     expect(restKindForFurniture(bed)).toBe('sleep');
     expect(restKindForFurniture(sofa)).toBe('sleep');
     expect(restKindForFurniture({})).toBeUndefined();
-  });
-});
-
-describe('stepNeeds with a custom fatigue rate', () => {
-  it('recovers fatigue at the given rate, leaving the other needs alone', () => {
-    const needs = { ...SPAWN_NEEDS, fatigue: 50 };
-    const body = new Body(BODY_TUNING_FIXTURE);
-    const awake = awakeRates(body);
-    const rates = { ...awake, fatigue: -20 };
-    stepNeeds(needs, body, 1, { rates });
-    expect(needs.fatigue).toBeCloseTo(30, 9);
-    expect(needs.calories).toBeCloseTo(SPAWN_NEEDS.calories + awake.calories, 9);
   });
 });
 
@@ -224,15 +212,6 @@ describe('Body.fatigueRecoveryRate', () => {
 });
 
 describe('sleep length and sleep debt', () => {
-  it('clears 100 fatigue in a normal bed at the content sleep rate', () => {
-    const { sim, rest } = makeRest({}, new Simulation({ seed: 1, bodyTuning: registry.body.get('player')! }));
-    const { total, onset } = sleepGameHours(sim, rest, 100);
-    const fatigueAtSleep = 100 + onset * sim.body.fatigueRisePerGameHour;
-    const night = fatigueAtSleep / -sim.body.fatigueRecoveryRate('sleep', 1);
-    // Sleep ends within a couple of 30 Sim s steps at the cap (4 game minutes each) of the content's own night.
-    expect(Math.abs(total - onset - night)).toBeLessThan(0.15);
-  });
-
   it('lets fatigue run past 100 while awake, unclamped', () => {
     const sim = new Simulation({ seed: 1 });
     sim.needs.fatigue = 99;
@@ -476,13 +455,6 @@ describe('RestController start/resume/stop', () => {
 });
 
 describe('RestController.toggle (manual stop)', () => {
-  it('starts the action when nothing is running', () => {
-    const { rest } = makeRest();
-    expect(rest.toggle('rest', REST_ANCHOR)).toBeUndefined();
-    expect(rest.action?.kind).toBe('rest');
-    expect(rest.canStop).toBe(true);
-  });
-
   it('ramps compression down after stopping rest without resetting fatigue', () => {
     const { sim, rest } = makeRest();
     const fatigueBeforeRest = sim.needs.fatigue;

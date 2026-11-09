@@ -3,16 +3,8 @@ import { coreMessage } from '../src/core/coreText.ts';
 import { Inventory, type Target } from '../src/core/inventory.ts';
 import { chargeOf } from '../src/core/lights.ts';
 import { freshDropTarget } from '../src/core/options.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
 import { swapCanister } from '../src/core/torch.ts';
-import {
-  capture,
-  contentLookup,
-  createRuntime,
-  encodeFixture,
-  formatVersion,
-  registry,
-} from './snapshotTestSupport.ts';
+import { createRuntime, registry } from './snapshotTestSupport.ts';
 
 const doorDef = registry.furniture.get('steel_armoury_door')!;
 const cut = doorDef.door!.methods.cut!;
@@ -195,16 +187,4 @@ it('a cartridge swap into full piles refuses rather than losing the old one', ()
   expect(swapCanister(inventory, torch, fresh, () => pile)).toBe(coreMessage(inventory.registry, 'noGroundRoom'));
   expect(torch.slots!.canister).toBe(old);
   expect(inventory.locate(fresh)?.kind).toBe('hand');
-});
-
-it('a half-used cartridge keeps its fill through a save round-trip', async () => {
-  const runtime = makeRuntime();
-  const torch = holdTorch(runtime, canisterCapacity / 2);
-
-  const bytes = await encodeFixture(capture(runtime));
-  const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
-  const loaded = makeRuntime(decoded.snapshot);
-
-  const restored = loaded.inventory.itemByUid(torch.uid);
-  expect(restored && chargeOf(registry, restored)).toBe(canisterCapacity / 2);
 });

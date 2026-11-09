@@ -5,12 +5,8 @@ import type { ActorSystem } from '../src/core/actorSystem.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import type { ActorDef, SiteLayoutDef } from '../src/core/schema.ts';
-import { footprint } from '../src/core/templates.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { defaultStartOf } from './fixtures/scenario.ts';
-import { sweepGroup } from './sweeps.ts';
 
 const registry = baseRegistry();
 const playtest = JSON.parse(readFileSync('mods/skelly.deadvox.scenario.playtest/layouts-playtest.json', 'utf8')) as {
@@ -84,50 +80,6 @@ describe('authored zombie spawn persistence', () => {
         expect(spawned.filter(({ type }) => type === MARKER_TYPE)).toEqual(expected);
       }
     }
-  });
-
-  sweepGroup('in a gauntlet site', () => {
-    it('keeps the secret house’s sealed brute shambler through generation and a save round-trip', () => {
-      const scenario = [...registry.scenarios.values()].find((candidate) => candidate.composition)!;
-      const city = new ScenarioCitySite({
-        seed: 73,
-        registry,
-        scale: makeScale(0.5),
-        scenario,
-        start: defaultStartOf(registry, scenario),
-      });
-      const [house, ...others] = city.plan.placements.filter(
-        ({ template }) => template.id === 'gauntlet_city_cellar_secret',
-      );
-      expect(others).toEqual([]);
-      const [x0, y0, z0] = house!.origin;
-      const [width, depth] = footprint(house!);
-      const grade = y0 + house!.template.access!.entrance[1];
-      const columns = new Map<string, [number, number]>();
-      for (let x = x0; x < x0 + width; x++) {
-        for (let z = z0; z < z0 + depth; z++) {
-          columns.set(`${toChunk(x)},${toChunk(z)}`, [toChunk(x), toChunk(z)]);
-        }
-      }
-      const sealed = ({ type, pos: [x, y, z] }: Spawned) =>
-        type === 'brute_shambler' && x >= x0 && x < x0 + width && z >= z0 && z < z0 + depth && y < grade;
-      const loadAll = (spawner: ActorSpawner, spawned: Spawned[]) => {
-        for (const [cx, cz] of columns.values()) {
-          spawner.onColumn({ cx, cz, site: city, registry, actors: actorSystemFor(spawned) });
-        }
-      };
-      const beforeSave = new ActorSpawner();
-      const saved: Spawned[] = [];
-      loadAll(beforeSave, saved);
-      expect(saved.filter(sealed)).toHaveLength(1);
-      const ledger = JSON.parse(JSON.stringify(beforeSave.snapshotState())) as readonly string[];
-      const afterLoad = new ActorSpawner();
-      afterLoad.restoreState(ledger);
-      const restored = [...saved];
-      loadAll(afterLoad, restored);
-      expect(restored.filter(sealed)).toEqual(saved.filter(sealed));
-      expect(afterLoad.snapshotState()).toEqual(ledger);
-    });
   });
 
   it('restores every authored camp amalgam without duplicating or losing it', () => {

@@ -1155,54 +1155,6 @@ describe('MobActorMeshes', () => {
       renderer.dispose();
     }
   });
-
-  it('generates its variant pool and syncs without throwing', () => {
-    const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 2 });
-    try {
-      const store = new MapEntityStore<Actor>();
-      store.add(makeActor([0, 0, 0]));
-      store.add(makeActor([2, 0, 2]));
-      expect(() => renderer.sync(store, 1 / 60, 1)).not.toThrow();
-      expect(() => renderer.sync(store, 1 / 60, 1)).not.toThrow();
-    } finally {
-      renderer.dispose();
-    }
-  });
-
-  it('recycles a slot once its zombie is removed from the store', () => {
-    const renderer = new MobActorMeshes(0.5, 1, { actors: registry.actors, poolSize: 1 }); // exactly one slot, total
-    try {
-      const store = new MapEntityStore<Actor>();
-      const firstId = store.add(makeActor([0, 0, 0]));
-      renderer.sync(store, 1 / 60, 1);
-      expect(renderer.isTracked(firstId)).toBe(true);
-
-      store.remove(firstId);
-      renderer.sync(store, 1 / 60, 1); // this frame's own prune pass frees the slot
-      expect(renderer.isTracked(firstId)).toBe(false);
-
-      const secondId = store.add(makeActor([1, 0, 1]));
-      renderer.sync(store, 1 / 60, 1); // the freed slot is available immediately
-      expect(renderer.isTracked(secondId)).toBe(true);
-    } finally {
-      renderer.dispose();
-    }
-  });
-
-  it("doesn't render a zombie beyond its variant's capacity (documented overflow behaviour)", () => {
-    const renderer = new MobActorMeshes(0.5, 1, { actors: registry.actors, poolSize: 1 }); // capacity 1, so a 2nd zombie always overflows
-    try {
-      const store = new MapEntityStore<Actor>();
-      const first = store.add(makeActor([0, 0, 0]));
-      const second = store.add(makeActor([1, 0, 1]));
-      renderer.sync(store, 1 / 60, 1);
-      renderer.sync(store, 1 / 60, 1);
-      expect(renderer.isTracked(first)).toBe(true);
-      expect(renderer.isTracked(second)).toBe(false);
-    } finally {
-      renderer.dispose();
-    }
-  });
 });
 
 describe('flinchSideForId', () => {

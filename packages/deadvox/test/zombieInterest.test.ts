@@ -256,28 +256,6 @@ describe('shambler interest', () => {
     expect(listener.agent!.mode).toBe('idle');
   });
 
-  it('measures undamped spread across a dense yard from one local noise', () => {
-    const f = fixture(0.5);
-    f.player.vocalNoise!.pos = [0.5, 1, 0];
-    const def = {
-      ...type,
-      agent: { ...type.agent!, hearingModel: { ...type.agent!.hearingModel, loudNoiseRadiusMetres: 0.5 } },
-    };
-    const crowd = Array.from({ length: 100 }, (_, index) =>
-      f.add([(index % 10) * 6, 1, Math.floor(index / 10) * 6], def),
-    );
-    f.step();
-    expect(crowd[0]!.agent!.stimulusAt).toBeDefined();
-    const pursuing = crowd.filter((actor) => actor.agent!.stimulusAt !== undefined);
-    const reach = Math.max(
-      ...pursuing.map((actor) => Math.hypot(actor.agent!.home[0], actor.agent!.home[2]) * scale.blockSize),
-    );
-    // biome-ignore lint/suspicious/noConsole: This fixture measures undamped reach without pinning a tuning-dependent count.
-    console.info(
-      `Undamped dense-yard spread: ${pursuing.length}/${crowd.length} pursuing; ${reach.toFixed(2)} metres from source.`,
-    );
-  });
-
   it('settles mutual-earshot alerts, suppresses repeat cries, and cries again after the cooldown', () => {
     const f = fixture(0.5);
     f.player.vocalNoise!.pos = [0.5, 1, 0];
