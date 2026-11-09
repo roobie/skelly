@@ -61,6 +61,11 @@ external root's orphan check rejects every installed file no bundled pack claims
 the bump admits them in the same PR. See
 `docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Staged admission".
 
+A bump need not make Deadvox consume every pinned model: skelly-assets will always
+carry models skelly does not use. The root contracts check only that each model Deadvox
+does consume is a pinned row and matches it. See `test/model-export-sync.mjs`,
+`readCutOver` and `assertCutOver`.
+
 Asset-move PRs target `framework/refactor` and take it in by merging
 `origin/framework/refactor`, not `main`, so the extraction stays on its reviewed base.
 

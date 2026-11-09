@@ -67,11 +67,8 @@ const packKind = (pack, kind, dir) => {
   const entryOf = (row) => `${dir}/${row.id}.model.json`;
   const pinned = PINNED.models.filter((row) => row.pack === id && row.kind === kind);
   const consumed = producedUses(pack).filter(({ row }) => row.kind === kind);
-  const issues = consumed.length === 0 ? [`${id} ${kind}: pending, pinned rows and none consumed`] : [];
+  const issues = [];
   for (const row of pinned) {
-    if (!consumed.some((use) => use.row === row)) {
-      issues.push(`${id} ${kind}: pinned ${row.id} is not consumed`);
-    }
     if (!pinnedPaths(id).has(entryOf(row))) {
       issues.push(`${id} ${kind}: pinned ${row.id} has no ${entryOf(row)}`);
     }
@@ -98,9 +95,9 @@ const packKind = (pack, kind, dir) => {
 
 /**
  * The cut-over state of one producer's models: `dir` is where it writes model entries in a pack namespace, and its
- * kinds are those of the pinned rows that have an entry there. Per kind, every bundled pack with pinned rows of that
- * kind must consume exactly those rows from the external root; a pack that pins rows and consumes none is pending,
- * which is an issue, never a skip. Namespaces no bundled pack owns belong to another product and are only listed.
+ * kinds are those of the pinned rows that have an entry there. Per kind, every row a bundled pack consumes must be one
+ * of its pinned rows and come from the external root; a pinned row may stay unconsumed, because the producer carries
+ * models Deadvox does not use. Namespaces no bundled pack owns belong to another product and are only listed.
  */
 export const readCutOver = (dir) => {
   const bundled = new Map(readAvailablePacks(PACKAGE_ROOT).map((pack) => [pack.manifest.id, pack]));
@@ -131,18 +128,16 @@ export const readCutOver = (dir) => {
   };
 };
 
-/** A clean cut-over that consumes a row of every kind, listing each pack's consumed rows and the packs it skips. */
+/**
+ * A clean cut-over, listing each pack's consumed rows and the packs it skips. At least one consumed row keeps the
+ * row-matching checks that read `rows` from passing vacuously.
+ */
 export const assertCutOver = ({ kinds, issues, listing, notApplicable, rows }, context) => {
   context.diagnostic(`consumed: ${listing.join('; ')}`);
   context.diagnostic(`not applicable, no bundled pack: ${notApplicable.join(', ') || 'none'}`);
   assert.deepEqual(issues, []);
   assert.ok(kinds.length > 0, 'no pinned row has an entry of this producer');
-  for (const kind of kinds) {
-    assert.ok(
-      rows.some((use) => use.kind === kind),
-      `${kind}: no consumed row`,
-    );
-  }
+  assert.ok(rows.length > 0, 'no pinned row is consumed');
 };
 
 /** The pinned bytes and entry of a consumed row, read through the pack reader. */
