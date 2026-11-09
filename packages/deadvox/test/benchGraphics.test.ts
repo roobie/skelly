@@ -9,6 +9,7 @@ import { configFromUrl } from '../src/game/config.ts';
 import { createEngine } from '../src/presentation/engine.ts';
 import { GraphicsControls } from '../src/presentation/graphicsControls.ts';
 import { writeGraphicsSettings } from '../src/presentation/graphicsSettings.ts';
+import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { Mood } from '../src/render/mood.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 
@@ -101,7 +102,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
       observe = vi.fn();
     },
   );
-  const config = configFromUrl(new URLSearchParams('debug=1'), content);
+  const config = configFromUrl(new URLSearchParams('debug=1'), content, ragdollSweepViewer);
   const view = { clientWidth: 1, clientHeight: 1 } as HTMLElement;
   const player = createEngine(config, view, undefined, { render: false });
   expect(player.graphics.values.fastCamo).toBe(false);

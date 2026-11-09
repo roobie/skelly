@@ -16,9 +16,10 @@ it('refuses startup rather than inventing a run when rejected content removes th
   vi.doMock('../mods/skelly.deadvox.scenario.lone-house/layouts.json', () => ({ default: { layouts: {} } }));
   const { buildBundledContent } = await import('../src/product/content.ts');
   const { configFromUrl } = await import('../src/game/config.ts');
+  const { ragdollSweepViewer } = await import('../src/product/ragdoll.ts');
   const content = buildBundledContent();
   expect(content.issues.some(({ path }) => path === 'defaultStart')).toBe(true);
-  expect(() => configFromUrl(new URLSearchParams(), content)).toThrow(
+  expect(() => configFromUrl(new URLSearchParams(), content, ragdollSweepViewer)).toThrow(
     `No admitted playable start "${content.defaultStart}"`,
   );
 });

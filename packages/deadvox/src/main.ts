@@ -31,6 +31,7 @@ import { WorldLoading } from './presentation/worldLoading.ts';
 import { productAssets as assets } from './product/assets.ts';
 import { inputBindings, keyboardInput } from './product/input.ts';
 import { productModIntake } from './product/mods.ts';
+import { ragdollSweepViewer } from './product/ragdoll.ts';
 import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
 import { mountFullscreenOptions } from './ui/fullscreenOptions.ts';
@@ -151,7 +152,7 @@ if (bench === 'report') {
 } else if (bench === null) {
   keyboardInput.install();
   inputBindings.loadLayout();
-  let config = configFromUrl(params, content);
+  let config = configFromUrl(params, content, ragdollSweepViewer);
   keyboardInput.context = () => ({ context: 'title', debug: config.debug });
   const replayStash = () => sessionStorage;
   let pendingReplay: Uint8Array | undefined;
@@ -213,7 +214,7 @@ if (bench === 'report') {
   } else if (tutorialRequested(params)) {
     const practiceParams = new URLSearchParams(new URL(tutorialUrl(location.href, true)).search);
     practiceParams.set('site', 'tutorial');
-    const practiceConfig = configFromUrl(practiceParams, content);
+    const practiceConfig = configFromUrl(practiceParams, content, ragdollSweepViewer);
     const engine = createEngine(practiceConfig, view, undefined, { render: !renderFree });
     try {
       await startPlay(engine, undefined, { assets, keyboard: keyboardInput, tutorial: true });

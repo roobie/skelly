@@ -1,8 +1,7 @@
-import ragdoll from '../config/ragdoll.json' with { type: 'json' };
 import { bundledModIdsFromUrl } from './bundledMods.ts';
-import type { GameConfig } from './config.ts';
+import type { DebugStart, GameConfig } from './config.ts';
 
-export const sweepFromUrl = (params: URLSearchParams, config: GameConfig): Partial<GameConfig> => {
+export const sweepFromUrl = (params: URLSearchParams, config: GameConfig, viewer: DebugStart): Partial<GameConfig> => {
   if (
     config.debug &&
     config.site === 'testHouse' &&
@@ -11,7 +10,7 @@ export const sweepFromUrl = (params: URLSearchParams, config: GameConfig): Parti
   ) {
     const seed = Number(params.get('ragdollSweep'));
     if (Number.isSafeInteger(seed)) {
-      return { ragdollSweep: seed, debugStart: { ...ragdoll.sweep.viewer } };
+      return { ragdollSweep: seed, debugStart: { ...viewer } };
     }
   }
   return {};

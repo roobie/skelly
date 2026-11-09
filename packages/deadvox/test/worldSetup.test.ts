@@ -4,6 +4,7 @@ import { makeScale } from '../src/core/scale.ts';
 import type { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { configFromUrl as readConfig } from '../src/game/config.ts';
 import { createWorldSetup, playerStartFromWorld, siteForReviewMap } from '../src/game/worldSetup.ts';
+import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { makeAttemptLayout } from './fixtures/attemptPolicy.ts';
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';
@@ -26,7 +27,7 @@ it('selects the active authored layout policy and supplies none for a rowless di
   };
   const content = { ...original.content, registry };
   const setup = (params: string) => {
-    const config = readConfig(new URLSearchParams(params), content);
+    const config = readConfig(new URLSearchParams(params), content, ragdollSweepViewer);
     return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
   };
   expect(setup(`site=${layout.id}`).attemptPolicy).toEqual(layout.attemptPolicy);

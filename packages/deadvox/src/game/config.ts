@@ -250,8 +250,13 @@ const applyStartConfig = (config: GameConfig, params: URLSearchParams): void => 
 /**
  * Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults.
  * A site uses its authored weathering profile or the default; debug URLs can select a profile and tune its values, or set `?weatheringSplit=<x metres>` to limit it to world x at or east of the split. The debug tools also read and write look parameters, documented in src/debug/lookUrl.ts.
+ * The product supplies where its ragdoll sweep places the viewer.
  */
-export const configFromUrl = (params: URLSearchParams, content: StartupContent): GameConfig => {
+export const configFromUrl = (
+  params: URLSearchParams,
+  content: StartupContent,
+  ragdollSweepViewer: DebugStart,
+): GameConfig => {
   const radius = Number(params.get('radius') ?? DEFAULT_RADIUS_M);
   const config = makeConfig(
     Number(params.get('seed')) | 0,
@@ -261,7 +266,7 @@ export const configFromUrl = (params: URLSearchParams, content: StartupContent):
   config.debug = params.get('debug') === '1';
   applyStartConfig(config, params);
   config.authoredDecals = params.get('decals') !== '0';
-  Object.assign(config, sweepFromUrl(params, config));
+  Object.assign(config, sweepFromUrl(params, config, ragdollSweepViewer));
   applyWeatheringConfig(config, params);
   const weatheringSplit = debugWeatheringSplitFromUrl(params, config.debug, config.site);
   if (weatheringSplit !== undefined) {

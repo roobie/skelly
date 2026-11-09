@@ -8,6 +8,7 @@ import { columnArrival } from '../src/game/columnArrival.ts';
 import { configFromUrl } from '../src/game/config.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { createWorldSetup, type WorldSetup } from '../src/game/worldSetup.ts';
+import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
@@ -42,7 +43,7 @@ const cx = toChunk(crate.pos[0]);
 const cz = toChunk(crate.pos[2]);
 
 const worldSetup = (): WorldSetup => {
-  const config = configFromUrl(new URLSearchParams('site=testHouse'), content);
+  const config = configFromUrl(new URLSearchParams('site=testHouse'), content, ragdollSweepViewer);
   const source = createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
   const chunk = new Chunk(cx, 0, cz);
   for (let z = 0; z < CHUNK; z++) {

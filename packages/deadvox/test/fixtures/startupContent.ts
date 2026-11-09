@@ -3,10 +3,11 @@ import {
   configFromUrl as readConfig,
   siteFromUrl as readSite,
 } from '../../src/game/config.ts';
+import { ragdollSweepViewer } from '../../src/product/ragdoll.ts';
 import { startupContent } from '../baseRegistry.ts';
 
 export const content = startupContent();
-export const configFromUrl = (params: URLSearchParams) => readConfig(params, content);
+export const configFromUrl = (params: URLSearchParams) => readConfig(params, content, ragdollSweepViewer);
 export const makeConfig = (seed: number, radiusM: number, blockSize?: number) =>
   buildConfig(seed, radiusM, content, blockSize);
 export const siteFromUrl = (

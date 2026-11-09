@@ -12,6 +12,7 @@ import { configFromUrl } from '../src/game/config.ts';
 import { playerStartFromWorld } from '../src/game/worldSetup.ts';
 import { availablePackInputs } from '../src/product/content.ts';
 import { productModIntake } from '../src/product/mods.ts';
+import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { withReusedBuilds } from './bundledContentReuse.ts';
 import { content as baseContent } from './fixtures/startupContent.ts';
 import { testHouseSite } from './testHouseSite.ts';
@@ -19,7 +20,7 @@ import { testHouseSite } from './testHouseSite.ts';
 // The showroom host shows rows only from loaded mods, so the product debug mod brings rows to show.
 const debugMods = ['skelly.deadvox.scenario.test-house.debug', 'skelly.deadvox.scenario.debug'];
 const selected = withReusedBuilds(() => selectBundledMods(productModIntake, debugMods));
-const config = configFromUrl(new URLSearchParams('site=testHouse'), selected.content);
+const config = configFromUrl(new URLSearchParams('site=testHouse'), selected.content, ragdollSweepViewer);
 const { registry } = config.content;
 const area = (authored: AuthoredSite) => {
   const { bounds } = registry.layouts.get('testHouse')!;
@@ -98,7 +99,7 @@ describe('test house showroom', () => {
     ];
     const withRows = withReusedBuilds(() => selectBundledMods(productModIntake, debugMods, mods));
     expect(withRows.issues).toEqual([]);
-    const rowsConfig = configFromUrl(new URLSearchParams('site=testHouse'), withRows.content);
+    const rowsConfig = configFromUrl(new URLSearchParams('site=testHouse'), withRows.content, ragdollSweepViewer);
     const rowsRegistry = rowsConfig.content.registry;
     const authored = new AuthoredSite(7, rowsRegistry, rowsConfig.scale, rowsRegistry.layouts.get('testHouse')!);
     const shown = authored.catalogue!.props.map(({ furniture: type }) => type);

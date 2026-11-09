@@ -7,6 +7,7 @@ import { columnArrival } from '../src/game/columnArrival.ts';
 import { configFromUrl } from '../src/game/config.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { createWorldSetup, type WorldSetup } from '../src/game/worldSetup.ts';
+import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
@@ -44,7 +45,7 @@ const version = {
 };
 
 const worldSetup = (): WorldSetup => {
-  const config = configFromUrl(new URLSearchParams('site=city'), content);
+  const config = configFromUrl(new URLSearchParams('site=city'), content, ragdollSweepViewer);
   return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
 };
 

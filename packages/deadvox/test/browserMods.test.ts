@@ -5,6 +5,7 @@ import { configFromUrl } from '../src/game/config.ts';
 import { createWorldSetup } from '../src/game/worldSetup.ts';
 import { productContent } from '../src/product/content.ts';
 import { productModIntake } from '../src/product/mods.ts';
+import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { reuseBundledBuilds } from './bundledContentReuse.ts';
 import fixture from './fixtures/mods/browser-mod.json' with { type: 'json' };
@@ -139,7 +140,7 @@ describe('browser mod admission', () => {
     const actor = data.actors[0]!;
     expect(result.content.registry.actors.get(actor.id)?.speed).toEqual(actor.speed);
     expect(result.content.origins.get(`actors:${actor.id}`)?.source).toBe('fixture.json/content.json');
-    const config = configFromUrl(new URLSearchParams('site=testHouse'), result.content);
+    const config = configFromUrl(new URLSearchParams('site=testHouse'), result.content, ragdollSweepViewer);
     const meshes = new ChunkMeshes(config.scale.blockSize, result.content.registry);
     const world = createWorldSetup(config, meshes, quietMesherSource());
     expect(world.registry).toBe(result.content.registry);
@@ -166,7 +167,7 @@ describe('browser mod admission', () => {
     expect(disabled.admitted).toEqual([]);
     expect(disabled.issues.get(broken.source)?.length).toBeGreaterThan(0);
     expect(disabled.content.origins).toEqual(base.origins);
-    const config = configFromUrl(new URLSearchParams('site=testHouse'), disabled.content);
+    const config = configFromUrl(new URLSearchParams('site=testHouse'), disabled.content, ragdollSweepViewer);
     expect(config.content.registry).toBe(disabled.content.registry);
   });
 });
