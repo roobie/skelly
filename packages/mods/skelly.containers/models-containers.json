@@ -34,23 +34,23 @@
     {
       "file": "assets/models/jerry_can.glb",
       "grip": {
-        "at": [0, 0.47499999999999998, 0],
+        "at": [0.040000000000000001, 0.46000000000000002, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
       "id": "jerry_can",
       "itemPresentation": {
-        "materials": ["polymer", "metal"],
+        "materials": ["polymer", "metal", "metal"],
         "supply": {
           "kind": "none"
         },
         "wear": "core"
       },
       "parts": {
-        "package": {
-          "centreOfMass": [0, 0.21430656288696265, 0],
-          "massKg": 2.5,
-          "node": "package:carton"
+        "jerry_can": {
+          "centreOfMass": [-0.00027423897337937455, 0.21481420419758526, 9.4139543996277537e-5],
+          "massKg": 4,
+          "node": "jerry_can:compound"
         }
       },
       "roll": 0

@@ -535,7 +535,7 @@
       },
       "parts": {
         "shell": {
-          "centreOfMass": [0, 0.43721729163255285, 0.02708902352491677],
+          "centreOfMass": [0, 0.43802930806522705, 0.027341229616571185],
           "massKg": 0.90000000000000002,
           "node": "shell:compound"
         }
@@ -553,7 +553,7 @@
       },
       "parts": {
         "shell": {
-          "centreOfMass": [0, 0.46368790671266952, 0],
+          "centreOfMass": [0, 0.46454334242717554, 0],
           "massKg": 2.5,
           "node": "shell:compound"
         }

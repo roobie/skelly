@@ -1,1 +1,5 @@
-{ "assets/models/frag_grenade.glb": { "materials": ["polymer-od-green", "steel-grey"] } }
+{
+  "assets/models/delay_fuze.glb": { "materials": ["steel-grey", "polymer-od-green"] },
+  "assets/models/frag_grenade.glb": { "materials": ["polymer-od-green", "steel-grey"] },
+  "assets/models/impact_fuze.glb": { "materials": ["brass", "plastic-black", "steel-grey"] }
+}

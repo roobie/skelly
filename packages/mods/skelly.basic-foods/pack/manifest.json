@@ -23,11 +23,163 @@
     },
     {
       "kind": "json",
+      "path": "things/cattail_jelly.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crystallizing_sugar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fermenting_eggs.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fermenting_pickles.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fermenting_sauerkraut.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hard_rind_fruit.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/jelly_fruit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/koji_rice.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/koji_rice_parcel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mouldy_soy_wheat_cake.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pale_bush_berries.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ration_dessert_pouch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ration_entree_pouch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ration_jam_packet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ration_meal_bag.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ration_side_pouch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ration_spread_packet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/snack_box.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/stimulant_cola.model.json"
     },
     {
       "kind": "asset",
       "path": "assets/models/apple.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cattail_jelly.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crystallizing_sugar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fermenting_eggs.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fermenting_pickles.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fermenting_sauerkraut.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hard_rind_fruit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/jelly_fruit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/koji_rice.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/koji_rice_parcel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mouldy_soy_wheat_cake.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pale_bush_berries.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ration_dessert_pouch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ration_entree_pouch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ration_jam_packet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ration_meal_bag.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ration_side_pouch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ration_spread_packet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/snack_box.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stimulant_cola.glb"
     }
   ],
   "id": "skelly.basic-foods",

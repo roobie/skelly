@@ -26,7 +26,59 @@
     },
     {
       "kind": "json",
+      "path": "things/acetylene_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bow_drill.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/butane_torch_lighter.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/candle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/candlestick.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/clay_oil_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crude_firestarter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crude_lens.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crystal_cell_flashlight.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crystal_floor_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crystal_lantern.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/electric_lantern.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/electric_lighter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ember_carrier.model.json"
     },
     {
       "kind": "json",
@@ -34,7 +86,51 @@
     },
     {
       "kind": "json",
+      "path": "things/everburning_torch_candelabra.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/everburning_wall_sconce.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_piston.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flint_and_steel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flip_top_lighter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gasoline_lantern.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/glow_light.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/glow_light_covered.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/heavy_flashlight.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/led_strip.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_bulb.model.json"
     },
     {
       "kind": "json",
@@ -46,11 +142,87 @@
     },
     {
       "kind": "json",
+      "path": "things/menorah.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mini_diving_flashlight.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/oil_lamp.model.json"
     },
     {
       "kind": "json",
+      "path": "things/propane_lantern.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pump_drill.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/reading_light.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/road_flare.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/small_candle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/small_lighter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/smart_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/smouldering_ember_carrier.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/standing_floodlight.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/standing_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/survival_match.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/torch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/twin_spout_rune_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/variable_diving_flashlight.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wall_light.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acetylene_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bow_drill.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/butane_torch_lighter.glb"
     },
     {
       "kind": "asset",
@@ -58,11 +230,95 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/candlestick.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/clay_oil_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crude_firestarter.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crude_lens.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crystal_cell_flashlight.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crystal_floor_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crystal_lantern.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/electric_lantern.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/electric_lighter.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ember_carrier.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/everburning_torch.glb"
     },
     {
       "kind": "asset",
+      "path": "assets/models/everburning_torch_candelabra.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/everburning_wall_sconce.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_piston.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flint_and_steel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flip_top_lighter.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gasoline_lantern.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/glow_light.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/glow_light_covered.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/glowstick.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/heavy_flashlight.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/led_strip.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_bulb.glb"
     },
     {
       "kind": "asset",
@@ -74,11 +330,75 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/menorah.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mini_diving_flashlight.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/oil_lamp.glb"
     },
     {
       "kind": "asset",
+      "path": "assets/models/propane_lantern.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pump_drill.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/reading_light.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/road_flare.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/small_candle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/small_lighter.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/smart_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/smouldering_ember_carrier.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/standing_floodlight.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/standing_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/survival_match.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/torch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/twin_spout_rune_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/variable_diving_flashlight.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wall_light.glb"
     }
   ],
   "id": "skelly.light-sources",

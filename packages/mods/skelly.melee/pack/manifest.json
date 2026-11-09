@@ -32,6 +32,42 @@
     },
     {
       "kind": "json",
+      "path": "things/blade_trap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/booby_trap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/braided_steel_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bundle_javelin.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/caltrops.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/copper_knife.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crossbow_trap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flame_marked_fist_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/glass_caltrops.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/index.json"
     },
     {
@@ -44,6 +80,10 @@
     },
     {
       "kind": "json",
+      "path": "things/landmine.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/long_pole.model.json"
     },
     {
@@ -52,7 +92,23 @@
     },
     {
       "kind": "json",
+      "path": "things/nailboard.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/pike_pole.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/primitive_knife.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rune_carved_steel_gauntlet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shotgun_trap.model.json"
     },
     {
       "kind": "json",
@@ -60,11 +116,59 @@
     },
     {
       "kind": "json",
+      "path": "things/tear_gas_spray.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tooth_caltrops.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/tower_shield.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tripwire.model.json"
     },
     {
       "kind": "asset",
       "path": "assets/models/baseball_bat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/blade_trap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/booby_trap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/braided_steel_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bundle_javelin.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/caltrops.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/copper_knife.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crossbow_trap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flame_marked_fist_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/glass_caltrops.glb"
     },
     {
       "kind": "asset",
@@ -76,6 +180,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/landmine.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/long_pole.glb"
     },
     {
@@ -84,7 +192,23 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/nailboard.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/pike_pole.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/primitive_knife.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rune_carved_steel_gauntlet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shotgun_trap.glb"
     },
     {
       "kind": "asset",
@@ -92,7 +216,19 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/tear_gas_spray.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tooth_caltrops.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/tower_shield.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tripwire.glb"
     }
   ],
   "id": "skelly.melee",

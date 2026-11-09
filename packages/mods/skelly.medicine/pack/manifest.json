@@ -19,7 +19,39 @@
     },
     {
       "kind": "json",
+      "path": "things/acetaminophen.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/adhesive_bandages.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/alcohol_wipes.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/anaesthetic_cream.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/anesthetic_kit.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/antibiotics.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/antifungal.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/antihistamine.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/antiparasitic.model.json"
     },
     {
       "kind": "json",
@@ -27,7 +59,79 @@
     },
     {
       "kind": "json",
+      "path": "things/antiseptic_cotton_balls.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/antiseptic_powder.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/antiseptic_rag.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/bandage.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/blood_draw_kit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bone_syringe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/broad_spectrum_antibiotic.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/caffeine_gum.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/caffeine_pills.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/calcium_tablets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cannabis.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cannabis_oil.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cannabis_shatter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cannabis_wax.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chewing_tobacco.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chlorpromazine.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cigar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cigarette.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cocaine.model.json"
     },
     {
       "kind": "json",
@@ -35,7 +139,159 @@
     },
     {
       "kind": "json",
+      "path": "things/condom.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/contact_lenses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cotton_ball.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cough_syrup.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crystal_dust_vial.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crystal_tonic_vial.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/curved_needle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dental_tools.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dentures.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/disposable_vape.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/examination_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/eyedrops.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fast_acting_sedative.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/first_aid_box.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flu_shot.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fluoxetine.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/handrolled_cig.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/heartburn_syrup.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/heatpack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hemostatic_powder.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/heroin.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/homeopathic_pills.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hydrogen_peroxide.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ibuprofen.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/inhaler.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/injectable_iron.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/jet_injector.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/joint.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/liquid_bandage_spray.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/lsd.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/makeshift_antiseptic.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/makeshift_bandage.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/medical_gauze.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/melatonin_tablet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/menstrual_pad.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/meth.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/metoprolol.model.json"
     },
     {
       "kind": "json",
@@ -43,7 +299,199 @@
     },
     {
       "kind": "json",
+      "path": "things/mugwort_oil.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/multivitamin.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/naproxen.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/narrow_spectrum_antibiotic.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nicotine_gum.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nicotine_pouch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/night_cough_syrup.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/oxycodone.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/oxygen_concentrator.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/oxygen_tank.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/painkillers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/petri_dish.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pillbox.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/police_first_aid_pack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/poppy_cough_syrup.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/poppy_painkiller.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/poppy_sleeping_tablets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/potassium_iodide_tablets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/prescription_sedative.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/prescription_stimulant.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/prophylactic_antivenom.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/prussian_blue.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/red_capsule.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/refined_crystal_powder_phial.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rolling_tobacco.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rune_banded_steel_syringe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/saline.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scalpel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sealed_radiation_badge.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/skunk_neutralizer.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sleeping_pills.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/small_blue_potion.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/small_oxygen_tank.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steroid_eyedrops.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/syringe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thermometer.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thyme_oil.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tramadol.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/trauma_kit_pouch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/trauma_shears.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/used_heat_pack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/vitamin_c.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/vitamin_c_fragment.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wintergreen_ointment.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acetaminophen.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/adhesive_bandages.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/alcohol_wipes.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/anaesthetic_cream.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/anesthetic_kit.glb"
     },
     {
       "kind": "asset",
@@ -51,7 +499,31 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/antifungal.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/antihistamine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/antiparasitic.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/antiseptic.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/antiseptic_cotton_balls.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/antiseptic_powder.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/antiseptic_rag.glb"
     },
     {
       "kind": "asset",
@@ -59,7 +531,219 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/blood_draw_kit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bone_syringe.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/broad_spectrum_antibiotic.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/caffeine_gum.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/caffeine_pills.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/calcium_tablets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cannabis.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cannabis_oil.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cannabis_shatter.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cannabis_wax.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chewing_tobacco.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chlorpromazine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cigar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cigarette.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cocaine.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/codeine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/condom.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/contact_lenses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cotton_ball.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cough_syrup.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crack.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crystal_dust_vial.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crystal_tonic_vial.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/curved_needle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dental_tools.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dentures.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/disposable_vape.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/examination_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/eyedrops.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fast_acting_sedative.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/first_aid_box.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flu_shot.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fluoxetine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/handrolled_cig.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/heartburn_syrup.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/heatpack.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hemostatic_powder.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/heroin.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/homeopathic_pills.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hydrogen_peroxide.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ibuprofen.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/inhaler.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/injectable_iron.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/jet_injector.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/joint.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/liquid_bandage_spray.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/lsd.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/makeshift_antiseptic.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/makeshift_bandage.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medical_gauze.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/melatonin_tablet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/menstrual_pad.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/meth.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/metoprolol.glb"
     },
     {
       "kind": "asset",
@@ -67,7 +751,179 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/mugwort_oil.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/multivitamin.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/naproxen.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/narrow_spectrum_antibiotic.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nicotine_gum.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nicotine_pouch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/night_cough_syrup.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/oxycodone.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/oxygen_concentrator.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/oxygen_tank.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/painkillers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/petri_dish.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pillbox.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/police_first_aid_pack.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/poppy_cough_syrup.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/poppy_painkiller.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/poppy_sleeping_tablets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/potassium_iodide_tablets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/prescription_sedative.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/prescription_stimulant.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/prophylactic_antivenom.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/prussian_blue.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/red_capsule.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/refined_crystal_powder_phial.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rolling_tobacco.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rune_banded_steel_syringe.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/saline.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/scalpel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sealed_radiation_badge.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/skunk_neutralizer.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sleeping_pills.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/small_blue_potion.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/small_oxygen_tank.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steroid_eyedrops.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/syringe.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thermometer.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thyme_oil.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tramadol.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/trauma_kit_pouch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/trauma_shears.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/used_heat_pack.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/vitamin_c.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/vitamin_c_fragment.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wintergreen_ointment.glb"
     }
   ],
   "id": "skelly.medicine",

@@ -4,7 +4,13 @@
       "author": "Björn Roberg",
       "changes": null,
       "download": null,
-      "files": ["assets/models/hinge_set.glb", "assets/models/oven_door.glb"],
+      "files": [
+        "assets/models/half_length_of_rail.glb",
+        "assets/models/hinge_set.glb",
+        "assets/models/length_of_light_rail.glb",
+        "assets/models/length_of_rail.glb",
+        "assets/models/peephole.glb"
+      ],
       "licence": "CC-BY-NC-SA-4.0",
       "title": "skelly-assets built models",
       "url": "https://github.com/roobie/skelly-assets"

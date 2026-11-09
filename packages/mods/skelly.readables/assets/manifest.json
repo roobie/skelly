@@ -4,7 +4,17 @@
       "author": "Björn Roberg",
       "changes": null,
       "download": null,
-      "files": ["assets/models/notebook.glb"],
+      "files": [
+        "assets/models/access_code_printout.glb",
+        "assets/models/accounting_records.glb",
+        "assets/models/envelope.glb",
+        "assets/models/gift_card.glb",
+        "assets/models/greeting_card.glb",
+        "assets/models/letter.glb",
+        "assets/models/notebook.glb",
+        "assets/models/postcard.glb",
+        "assets/models/tailoring_pattern_set.glb"
+      ],
       "licence": "CC-BY-NC-SA-4.0",
       "title": "skelly-assets built models",
       "url": "https://github.com/roobie/skelly-assets"

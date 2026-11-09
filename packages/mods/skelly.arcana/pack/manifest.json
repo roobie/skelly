@@ -15,7 +15,15 @@
     },
     {
       "kind": "json",
-      "path": "things/binder_top.model.json"
+      "path": "things/angular_whistle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/carved_beetle_ball.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/clockwork_rune_case.model.json"
     },
     {
       "kind": "json",
@@ -27,15 +35,87 @@
     },
     {
       "kind": "json",
+      "path": "things/glowing_rune_scroll.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/golem_heart.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/grimoire.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/grown_wildwood_weaver.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/holy_symbol.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/holy_symbol_wood.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leaf_wrapped_resin_rune.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/petrified_eye.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rune_candle.model.json"
     },
     {
       "kind": "json",
       "path": "things/rune_clay_tablet.model.json"
     },
     {
+      "kind": "json",
+      "path": "things/rune_engine_case.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/silver_weapon_token.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/small_relic.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/storage_ring.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/strung_rune_frame.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/violet_glow_pearl.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/young_wildwood_weaver.model.json"
+    },
+    {
       "kind": "asset",
-      "path": "assets/models/binder_top.glb"
+      "path": "assets/models/angular_whistle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/carved_beetle_ball.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/clockwork_rune_case.glb"
     },
     {
       "kind": "asset",
@@ -47,7 +127,71 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/glowing_rune_scroll.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/golem_heart.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/grimoire.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/grown_wildwood_weaver.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/holy_symbol.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/holy_symbol_wood.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leaf_wrapped_resin_rune.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/petrified_eye.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rune_candle.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/rune_clay_tablet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rune_engine_case.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/silver_weapon_token.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/small_relic.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/storage_ring.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/strung_rune_frame.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/violet_glow_pearl.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/young_wildwood_weaver.glb"
     }
   ],
   "id": "skelly.arcana",

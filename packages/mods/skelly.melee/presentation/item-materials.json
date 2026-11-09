@@ -1,10 +1,58 @@
 {
   "assets/models/baseball_bat.glb": { "materials": ["wood-birch"] },
+  "assets/models/blade_trap.glb": {
+    "materials": [
+      "wood-pine",
+      "plastic-red",
+      "steel-grey",
+      "plastic-white",
+      "plastic-black",
+      "tape-silver",
+      "steel-bright",
+      "cord-cotton"
+    ]
+  },
+  "assets/models/booby_trap.glb": {
+    "materials": ["steel-galvanised", "plastic-black", "steel-grey", "steel-bright", "cord-cotton"]
+  },
+  "assets/models/braided_steel_belt.glb": { "materials": ["steel-grey", "steel-parkerized", "steel-bright"] },
+  "assets/models/bundle_javelin.glb": { "materials": ["wood-pine", "wood-walnut", "cord-olive"] },
+  "assets/models/caltrops.glb": { "materials": ["iron-dull"] },
+  "assets/models/copper_knife.glb": { "materials": ["copper", "bronze"] },
+  "assets/models/crossbow_trap.glb": {
+    "materials": ["wood-pine", "wood-walnut", "plastic-black", "cord-olive", "alu-bare", "steel-grey", "cord-cotton"]
+  },
+  "assets/models/flame_marked_fist_guards.glb": {
+    "materials": ["leather-tan", "leather-oxblood", "steel-grey", "steel-bright", "crystal-glow-violet"]
+  },
+  "assets/models/glass_caltrops.glb": { "materials": ["resin-honey", "glass-clear"] },
   "assets/models/kabar.glb": { "materials": ["rubber-black", "steel-blued"] },
   "assets/models/kite_shield.glb": { "materials": ["paint-charcoal", "glass-grey", "steel-stainless"] },
+  "assets/models/landmine.glb": { "materials": ["paint-olive", "cloth-yellow", "steel-grey", "steel-bright"] },
   "assets/models/long_pole.glb": { "materials": ["wood-birch", "wood-oak"] },
   "assets/models/machete.glb": { "materials": ["wood-walnut", "steel-grey"] },
+  "assets/models/nailboard.glb": { "materials": ["wood-oak", "wood-pine", "steel-bright"] },
   "assets/models/pike_pole.glb": { "materials": ["plastic-yellow", "rubber-black", "steel-grey"] },
+  "assets/models/primitive_knife.glb": { "materials": ["wood-walnut", "stone-grey", "stone-whet", "skin-rawhide"] },
+  "assets/models/rune_carved_steel_gauntlet.glb": {
+    "materials": ["leather-black", "steel-bright", "steel-grey", "crystal-glow-blue"]
+  },
+  "assets/models/shotgun_trap.glb": {
+    "materials": [
+      "wood-pine",
+      "steel-grey",
+      "void-black",
+      "steel-galvanised",
+      "rubber-offblack",
+      "tape-silver",
+      "cord-cotton"
+    ]
+  },
   "assets/models/steel_pipe.glb": { "materials": ["steel-grey"] },
-  "assets/models/tower_shield.glb": { "materials": ["paint-charcoal", "glass-grey", "steel-stainless", "steel-grey"] }
+  "assets/models/tear_gas_spray.glb": {
+    "materials": ["plastic-black", "paint-police-blue", "plastic-red", "steel-stainless"]
+  },
+  "assets/models/tooth_caltrops.glb": { "materials": ["resin-honey", "bone"] },
+  "assets/models/tower_shield.glb": { "materials": ["paint-charcoal", "glass-grey", "steel-stainless", "steel-grey"] },
+  "assets/models/tripwire.glb": { "materials": ["cord-cotton", "brass-polished"] }
 }

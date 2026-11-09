@@ -23,11 +23,479 @@
     },
     {
       "kind": "json",
-      "path": "things/boots_combat_worn_foot.model.json"
+      "path": "things/abaya.model.json"
     },
     {
       "kind": "json",
-      "path": "things/boots_combat_worn_shaft.model.json"
+      "path": "things/agency_ballistic_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/airsoft_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/airsoft_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/angel_halo_headband.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/angel_wings.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ankle_holster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ankle_socks.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/antarvasa.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/aramid_nape_guard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/arm_warmers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/armoured_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/armoured_denim_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/armoured_fingerless_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/armoured_jeans.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/armoured_leather_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/army_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/army_winter_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/army_winter_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/army_winter_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/axe_ring.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/back_holster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/back_scabbard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bag_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bag_socks.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/balaclava.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/baldric_holster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ballistic_collar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ballistic_face_mask.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ballistic_glasses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ballistic_groin_protector.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ballistic_mandible_guard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ballistic_shoulder_protectors.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ballistic_throat_guard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bandana.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/barbute.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/barrette.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/basketball_shorts.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bast_sandals.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bat_anklet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/batting_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bead_bracelet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bead_ear.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bead_necklace.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bedsheet_ghost_costume.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bee_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/beekeeping_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/beekeeping_hood.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/beekeeping_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/belly_band_holster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bellyband.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/beret.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bifocal_glasses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bifocal_sunglasses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bike_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bikini_bottom.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bikini_top.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bin_bag_poncho.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/birch_bark_boot_sheath.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/birch_bark_sheath.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/birch_bark_shoes.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bite_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/black_bunny_ears.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/black_wrap_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/blast_protection_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/blast_visor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/blazer.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/boiled_leather_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bomb_disposal_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bomb_disposal_overboots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bomb_disposal_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bomb_suit_chest_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bondage_mask.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bondage_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bone_studded_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/book_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/boonie_hat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/boot_sheath.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bow_sling.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bow_tie.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bow_tie_collar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bowler_hat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bowling_shoes.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/boxer_briefs.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/boxer_shorts.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/boy_shorts.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bra.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/brass_buckled_leather_coat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/breeches.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/briefs.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bronze_bell_cuirass.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bronze_cuirass.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bronze_greaves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bronze_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bronze_laminar_leggings.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bronze_medal.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bronze_scale_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bronze_vambraces.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bunny_bodysuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bunny_tail.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/button_shirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/camera_cloak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/camisole.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/canning_pot_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/canvas_aketon.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/canvas_aketon_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/canvas_arming_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/canvas_arming_mittens.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/canvas_arming_pants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/canvas_arming_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/canvas_coif.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/canvas_gambeson.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/canvas_gambeson_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cardboard_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cardboard_badge.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cardboard_crown.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cardboard_cuirass.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cardboard_great_helm.model.json"
     },
     {
       "kind": "json",
@@ -35,7 +503,547 @@
     },
     {
       "kind": "json",
+      "path": "things/cargo_shorts.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/carpet_armguards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/carpet_bracers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/carpet_cuirass.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/carpet_greaves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/carpet_legguards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/carved_bone_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cassock.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ceramic_armor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ceramic_front_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ceramic_side_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chainmail_chausses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chainmail_half_leggings.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chainmail_leggings.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chainmail_sleeves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chainsaw_chaps.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chaplet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/checkered_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cheerleader_crop_top.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cheerleader_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cheerleader_skirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chefs_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chefs_toque.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chest_binder.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chitin_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chitin_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chitin_gauntlets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chitin_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/claw_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cleansuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/clear_outsert_lens.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cleats.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/clip_on_tie.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cloak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/clogs.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/clown_nose.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/clown_shoes.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/clown_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/clown_wig.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/collar_bar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/combat_blouse.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/combat_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/combat_boots_worn_foot.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/combat_boots_worn_shaft.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/combat_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/combat_shirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/compression_shorts.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/compression_top.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/concealable_ballistic_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/conical_helm.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/copper_circlet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/copper_ear.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/copper_hairpin.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/copper_locket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/copper_necklace.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/corinthian_helm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/corset.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cotton_apron.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cotton_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cotton_hand_wraps.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cotton_hat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/counterweight_pouch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cowboy_hat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cowrie_bracelet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cowrie_hair_beads.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cowrie_necklace.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cracked_ceramic_front_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cracked_ceramic_side_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crop_top.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cropped_hoodie.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crystal_sight_glasses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cufflinks.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cuffs.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cut_resistant_apron.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cut_resistant_arm_sleeves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cut_resistant_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cutting_outsert_lens.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dance_shoes.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dark_cloak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/deltoid_plates.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/denim_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/denim_cloak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/denim_cut_offs.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/denim_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/denim_overalls.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/denim_shirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/denim_skirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/denim_sneakers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/denim_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dental_grill.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/deputy_badge.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/detective_badge.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/devil_horn_headband.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/devil_onesie.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/devil_tail.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/disposable_socks.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/diving_watch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/doctors_name_tag.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dog_tag.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/double_garter_sheath.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/double_holster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dragon_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dragonhide_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dragonhide_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dragonhide_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dragonhide_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dragonscale_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dragonscale_gauntlets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dragonscale_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dragonscale_helmet_visor_up.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dragonscale_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dress_shirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dress_shoes.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dress_watch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/drinking_hat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dust_mask.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/duster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/duty_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/eagle_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ear_pads.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ear_spool.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/eboshi.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/eclipse_glasses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/eight_point_cap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/elbow_pads.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/emergency_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/engagement_ring.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/entry_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/espadrilles.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/face_shield.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/face_veil.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/faded_jeans.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fancy_ordnance_cartridge_necklace.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fancy_pistol_cartridge_necklace.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fancy_rifle_cartridge_necklace.model.json"
     },
     {
       "kind": "json",
@@ -51,39 +1059,847 @@
     },
     {
       "kind": "json",
-      "path": "things/gloves_leather_worn_fingers.model.json"
+      "path": "things/faraday_mail_suit.model.json"
     },
     {
       "kind": "json",
-      "path": "things/gloves_leather_worn_palm.model.json"
+      "path": "things/faraday_shark_suit.model.json"
     },
     {
       "kind": "json",
-      "path": "things/gloves_leather_worn_thumb.model.json"
+      "path": "things/fast_draw_holster.model.json"
     },
     {
       "kind": "json",
-      "path": "things/hat_cotton.model.json"
+      "path": "things/faux_fur_boots.model.json"
     },
     {
       "kind": "json",
-      "path": "things/helmet_barbute.model.json"
+      "path": "things/faux_fur_cat_ears.model.json"
     },
     {
       "kind": "json",
-      "path": "things/helmet_bronze.model.json"
+      "path": "things/faux_fur_cat_tail.model.json"
     },
     {
       "kind": "json",
-      "path": "things/helmet_conical.model.json"
+      "path": "things/faux_fur_coat.model.json"
     },
     {
       "kind": "json",
-      "path": "things/helmet_corinthian.model.json"
+      "path": "things/faux_fur_collar.model.json"
     },
     {
       "kind": "json",
-      "path": "things/helmet_galea.model.json"
+      "path": "things/faux_fur_duster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/faux_fur_foot_wraps.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/faux_fur_hat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/faux_fur_trenchcoat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/faux_fur_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/federal_agent_badge.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/felt_foot_wraps.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fencing_gorget.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fencing_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fencing_mask.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fencing_pants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fencing_underarm_protector.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ferraiolo.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/field_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fingerless_leather_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fingerless_wool_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_gauntlets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_resistant_socks.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/firefighter_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fireman_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fishing_waders.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fitover_sunglasses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flag_jumpsuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flag_swimsuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flak_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flame_resistant_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flame_resistant_hood.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flame_resistant_sock_mitts.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flame_resistant_undersuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flame_ward_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flame_ward_belt_cracked.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flannel_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flight_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flip_flops.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flotation_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flower_anklet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/foil_fencing_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/football_armor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/football_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/footrags.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/forged_steel_front_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/forged_steel_side_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/friendship_bracelet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/frilled_headpiece.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/full_face_diving_mask_without_regulator.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_belly_wrap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_bikini_top.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_cat_ears.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_cat_tail.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_chest_wrap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_cloak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_coat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_collar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_duster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_foot_wraps.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_hand_wraps.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_hot_pants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_leggings.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_loincloth.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_scarf.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fur_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fursuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/galea.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gambeson.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gambeson_sleeve.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gambeson_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/garter_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/garter_sheath.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gearwork_cufflinks.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gem_bracelet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gem_earrings.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gem_pendant_necklace.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gem_ring.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gem_tiara.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/geta.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ghost_robe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gi_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gilded_steel_half_mask.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/girdle_of_hidden_arms.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/glass_goggles.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/glasses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/goalie_mask.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gold_anklet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gold_hair_beads.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gold_lip_ring.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gold_lip_stud.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gold_nose_ring.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gold_nose_stud.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gold_toe_ring.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gold_watch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/golden_crown.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/golf_cap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/golf_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/golf_shoes.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gothic_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gothic_gown.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/grass_cloak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/grass_keffiyeh.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/grass_shirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/grass_skirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/great_helm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/greatcoat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/greater_bottomless_tool_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/grim_reaper_robe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gutskin_hood.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gutskin_parka.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hakama.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hakama_gi.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/halter_top.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/haori.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hard_arm_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hard_armour_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hard_chest_guard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hard_hat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hard_leg_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hard_steel_armor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_brigandine_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_elbow_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_knee_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_mail_chausses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_sabaton.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_scrap_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_sheet_metal_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_sheet_metal_chest_guard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_sheet_sabatons.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_sheet_steel_gauntlets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_sheet_steel_great_helm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_sheet_steel_greaves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_sheet_steel_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_sheet_steel_knee_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_sheet_steel_leg_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_sheet_steel_skirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_shoulder_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_splint_arm_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_splint_greaves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_splint_vambraces.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_arm_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_arm_harness.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_bracers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_brigandine.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_brigandine_coat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_brigandine_coat_with_shoulder_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_brigandine_with_shoulder_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_close_helm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_close_helm_visor_up.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_demi_gauntlets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_elbow_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_heavy_close_helm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_heavy_close_helm_visor_up.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_heavy_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_light_close_helm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_light_close_helm_visor_up.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_light_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_mail_aventail.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_mail_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_mail_half_aventail.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_mail_half_leggings.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_mail_hauberk.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_mail_jumpsuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_mail_leggings.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_mail_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_mail_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_mirror_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_mitten_gauntlets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_nasal_helm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_pauldrons.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_splint_leg_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hardened_steel_turban_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hazmat_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/head_bandana.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/headscarf.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/heavy_hardened_scrap_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/heavy_hardened_sheet_metal_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/heavy_hardened_sheet_metal_chest_guard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/heavy_junkyard_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/heavy_plate_carrier.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/heavy_sheet_metal_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/heavy_sheet_metal_chest_guard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/heavy_steel_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/heavy_tempered_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/heels.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/helmet_ear_muffs.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/helmet_ear_muffs_lowered.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/helmet_liner.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/heraldic_cape.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hide_float.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/high_carbon_steel_brigandine.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/high_carbon_steel_close_helm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/high_carbon_steel_demi_gauntlets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/high_carbon_steel_heavy_close_helm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/high_carbon_steel_heavy_close_helm_visor_up.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/high_carbon_steel_light_close_helm_visor_up.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/high_carbon_steel_mail_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/high_carbon_steel_mail_half_leggings.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/high_carbon_steel_mail_leggings.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/high_carbon_steel_mail_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/high_carbon_steel_mirror_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/high_carbon_steel_splint_vambraces.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hijab.model.json"
     },
     {
       "kind": "json",
@@ -99,7 +1915,27 @@
     },
     {
       "kind": "json",
-      "path": "things/hood_ninja.model.json"
+      "path": "things/hiking_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hiking_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/holster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/holster_suspenders.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hooded_black_robe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hooded_robe.model.json"
     },
     {
       "kind": "json",
@@ -107,7 +1943,35 @@
     },
     {
       "kind": "json",
+      "path": "things/hoof_furs.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hot_pants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/house_coat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hunting_cap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/improvised_tyre_arm_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/improvised_tyre_leg_guards.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/insulated_work_coveralls.model.json"
     },
     {
       "kind": "json",
@@ -115,15 +1979,7 @@
     },
     {
       "kind": "json",
-      "path": "things/jacket_leather_worn_body.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/jacket_leather_worn_fore.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/jacket_leather_worn_upper.model.json"
+      "path": "things/jade_brooch.model.json"
     },
     {
       "kind": "json",
@@ -131,11 +1987,975 @@
     },
     {
       "kind": "json",
+      "path": "things/jersey.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/jewelled_gold_crown.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/jikatabi.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/jikatabi_sneakers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/jockey_skull_cap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/judo_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/judo_gi.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/jumpsuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/junkyard_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/kabuto.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/karate_gi.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/kariginu.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/kasaya.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/keffiyeh.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/keikogi.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/kettle_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/kids_star_badge.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/kilt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/kimono.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/kippah.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/kittel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/knee_high_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/knee_pads.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/knit_cowl.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/knit_hat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/knit_scarf.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/kufi_cap.model.json"
     },
     {
       "kind": "json",
-      "path": "things/lame_saber.model.json"
+      "path": "things/lab_coat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/lacquered_lamellar_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/large_holster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_apron.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_arm_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_armour_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_armour_gauntlets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_belly_wrap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_bikini_top.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_body_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_cat_ears.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_cat_tail.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_chaps.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_chest_wrap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_cloak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_collar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_cuirass.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_duster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_eyepatch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_flip_flops.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_foot_wraps.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_gloves_worn_fingers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_gloves_worn_palm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_gloves_worn_thumb.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_hand_wraps.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_hot_pants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_jacket_worn_body.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_jacket_worn_fore.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_jacket_worn_upper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_kilt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_lamellar_cuirass.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_leg_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_loincloth.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_miniskirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_padded_pants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_padded_shirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_padded_sleeveless_shirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_padded_sleeves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_sandals.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_suspenders.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_trenchcoat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leather_vambraces.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leg_warmers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leggings.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/leotard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/lesser_bottomless_tool_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_bomb_disposal_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_bomb_disposal_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_chitin_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_hardened_sheet_metal_chest_guard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_plate_carrier.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_plate_carrier_with_pouch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_plate_carrier_with_radio_pouch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_sheet_metal_chest_guard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tempered_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/loincloth.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/long_blue_wig.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/long_fur_scarf.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/long_glove_white.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/long_knit_scarf.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/long_patchwork_scarf.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/long_santa_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/long_scarf.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/long_skirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/long_sleeved_shirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/long_sleeved_wetsuit_top.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/long_underpants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/long_underwear_top.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/long_witch_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/long_wool_scarf.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/loosely_laced_corset.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/loosely_laced_waist_corset.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/loosened_cardboard_crown.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/lowtops.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/maid_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mail_carrier_cap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/marshal_badge.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/martial_arts_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mascot_cape.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mask_lens_insert.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/medium_steel_chestplate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/medium_steel_heavy_chestplate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/medium_steel_light_chestplate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/medium_steel_mail_sleeves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/medium_steel_mirror_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mesh_nape_protector.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_arm_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_brigandine_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_chestplate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_close_helm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_close_helm_visor_up.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_demi_gauntlets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_elbow_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_front_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_half_mask.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_heavy_arm_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_heavy_chestplate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_heavy_close_helm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_heavy_close_helm_visor_up.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_heavy_leg_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_heavy_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_knee_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_lamellar_cuirass.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_leg_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_light_arm_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_light_chestplate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_light_close_helm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_light_close_helm_visor_up.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_light_leg_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_light_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_mail_aventail.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_mail_coif.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_mail_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_mail_half_aventail.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_mail_hauberk.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_mail_jumpsuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_mail_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_mail_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_mirror_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_mitten_gauntlets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_nasal_helm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_shoulder_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_side_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_sleeveless_mail_jumpsuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_splint_greaves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mild_steel_turban_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mittens.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/moccasins.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/modular_full_face_diving_mask.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/monocle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/motorbike_armor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/motorcycle_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/motorcycle_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/motorcycle_helmet_visor_up.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/motorcycle_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/motorcycle_jeans.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/motorcycle_police_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/moustached_steel_half_mask.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mummy_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mummy_jumpsuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nanoskirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nape_protector.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nasal_helm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/necktie.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/neoprene_arm_sleeves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/newsboy_cap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ninja_hood.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ninja_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/niqab.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nun_habit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nun_wimple.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nylon_aketon.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nylon_aketon_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nylon_arming_mittens.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nylon_arming_pants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nylon_coif.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nylon_gambeson.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nylon_gambeson_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/officer_uniform.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/onyx_gold_bracelet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/onyx_gold_cufflinks.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/onyx_gold_earring.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/onyx_gold_pendant_necklace.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/onyx_gold_ring.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/onyx_gold_tiara.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/open_sealed_environment_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ornamental_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/oversized_ballistic_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/oversized_dragonhide_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/oversized_dragonhide_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/oversized_dragonhide_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/oversized_dragonhide_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/oversized_dragonscale_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/oversized_dragonscale_gauntlets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/oversized_dragonscale_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/oversized_dragonscale_helmet_visor_up.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/oversized_dragonscale_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/padded_arming_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/padded_canvas_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/padded_cloth_sleeves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/padded_coif.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/padded_sleeveless_shirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/padded_sweatshirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/panties.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/paper_arm_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/paper_leg_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/patchwork_aramid_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/patchwork_aramid_vest_with_steel_plates.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/patchwork_scarf.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/patrol_cap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/peacoat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pearl_collar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pickelhaube.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pin_badge.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/plague_doctor_robe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/plague_mask.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/plank_arm_guard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/plank_shin_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/plastic_apron.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/plastic_chest_protector.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/plastic_chin_guard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/plastic_mandible_guard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/plate_carrier.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/plated_denim_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/plated_leather_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/plated_motorcycle_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pleated_costume_skirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pocketless_jumpsuit.model.json"
     },
     {
       "kind": "json",
@@ -143,11 +2963,227 @@
     },
     {
       "kind": "json",
+      "path": "things/police_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/police_breeches.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/polo_shirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/poncho.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/porkpie_hat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/postman_shirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/postman_shorts.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pot_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/powered_ventilated_heavy_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/powered_ventilated_light_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/powered_ventilated_mail_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/prescription_sunglasses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/promise_ring.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pumpkin_mask.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/quilted_cotton_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/racing_briefs.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/radiation_badge.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rag_belly_wrap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rag_chest_wrap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rag_tunic.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rain_hood.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rain_poncho.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/raincoat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rashguard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/reading_glasses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/reversible_black_cloak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rhinestone_glove.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/riding_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/riot_arm_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/riot_armour_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/riot_chest_guard.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/riot_helmet.model.json"
     },
     {
       "kind": "json",
+      "path": "things/riot_leg_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ripped_jeans.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/riveted_steel_half_mask.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/robe.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/rubber_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rubber_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rune_forged_tool_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rusted_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rusty_mail_chausses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rusty_mail_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sabaton.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sabre_fencing_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/safety_glasses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/samghati.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/santa_beard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/santa_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/santa_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/santa_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/santa_hat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/santa_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/santa_pants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/santa_shorts.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scabbard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scarf.model.json"
     },
     {
       "kind": "json",
@@ -163,7 +3199,347 @@
     },
     {
       "kind": "json",
+      "path": "things/scrap_arm_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scrap_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scrap_cuirass.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scrap_front_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scrap_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scrap_metal_leg_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scrap_side_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scrap_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sealed_environment_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/segmented_iron_cuirass.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/service_medal.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shark_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sheath.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sheet_metal_arm_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sheet_metal_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sheet_metal_chest_guard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sheet_metal_great_helm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sheet_metal_greaves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sheet_metal_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sheet_metal_knee_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sheet_metal_leg_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sheet_metal_sabatons.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sheet_metal_skirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sheet_steel_bracers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sheet_steel_elbow_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sheet_steel_mitten_gauntlets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sheet_steel_pauldrons.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shield_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shield_belt_cracked.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shield_visor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shimmering_wool_arming_mittens.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shimmering_wool_arming_pants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shimmering_wool_blouse.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shimmering_wool_breeches.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shimmering_wool_gambeson.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shimmering_wool_gambeson_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/short_cheerleader_skirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/short_gothic_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/short_maid_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/short_santa_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/short_santa_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/short_witch_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shorts.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shoulder_holster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/signet_ring.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/simple_ordnance_cartridge_necklace.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/simple_pistol_cartridge_necklace.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/simple_rifle_cartridge_necklace.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/single_point_sling.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/skeleton_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/skeleton_jumpsuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ski_goggles.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ski_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ski_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/skid_lid.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/skinny_jeans.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/skinny_tie.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/skirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/skull_mask.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sleeved_blanket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sleeveless_dragon_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sleeveless_duster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sleeveless_faux_fur_duster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sleeveless_faux_fur_trenchcoat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sleeveless_fur_duster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sleeveless_fur_trenchcoat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sleeveless_leather_duster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sleeveless_leather_trenchcoat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sleeveless_spring_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sleeveless_trenchcoat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sleeveless_tunic.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sleeveless_undershirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/slippers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/small_bikini_top.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/small_cotton_socks.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/small_wool_socks.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/sneakers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/snow_goggles.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/socks.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/soft_armour_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sombrero.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sparring_headgear.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/spear_sling.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sports_bra.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/spring_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/stab_plate.model.json"
     },
     {
       "kind": "json",
@@ -175,7 +3551,399 @@
     },
     {
       "kind": "json",
+      "path": "things/stacked_double_holster.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steel_arm_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steel_armor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steel_ballistic_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steel_bracer.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steel_bracers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steel_cuirass.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steel_gauntlets.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steel_leg_harness.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steel_toe_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steel_toe_sneakers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/stockings.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/stockpot_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/straw_cape.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/straw_hat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/straw_sandals.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/stretch_bodysuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/striped_pants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/summer_hard_hat.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/sun_shield.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sundress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sunglasses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/suspenders.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/swat_badge.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sweater.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sweatshirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/swim_briefs.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/swim_cap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/swim_fins.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/swim_goggles.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tabi.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tactical_full_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tactical_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tactical_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tactical_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tactical_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tallit_gadol.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tallit_katan.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tank_crew_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tank_top.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/technical_wetsuit_shorts.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/teeth_necklace.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tefillin_arm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tefillin_head.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tempered_mail_chausses.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tempered_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tempered_sabaton.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tempered_steel_chestplate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tempered_steel_heavy_chestplate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tempered_steel_leg_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tempered_steel_light_chestplate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ten_gallon_hat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tentacle_sleeves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tentacle_stockings.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thawb.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thermal_shirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thick_wetsuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thick_wetsuit_booties.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thick_wetsuit_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thick_wetsuit_hood.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thigh_concealment_band.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thigh_high_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thin_long_sleeved_wetsuit_top.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thin_sleeved_canvas_gambeson.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thin_sleeved_nylon_gambeson.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thin_sleeved_shimmering_wool_gambeson.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thin_wetsuit_pants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thong_bikini_bottoms.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/throat_guard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/throwing_knife_leg_sheath.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tie_clip.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tied_shirt_mask.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tights.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tinted_outsert_lens.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/toecaps.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tool_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/top_hat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/touring_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/trenchcoat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tricorne.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/trunks.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tshirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tunic.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/turban.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/turnout_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/turnout_coat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/turnout_trousers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tuxedo.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tyre_arm_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tyre_cuirass.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tyre_leg_guards.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tyre_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tyre_plated_motorcycle_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tyre_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/undershirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/union_suit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/unitard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/utility_kilt.model.json"
     },
     {
       "kind": "json",
@@ -191,7 +3959,215 @@
     },
     {
       "kind": "json",
-      "path": "things/wizard_hat_costume.model.json"
+      "path": "things/uttarasanga.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/vampire_fangs.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/varsity_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ventilated_plate_armour.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/vest_leather.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/waist_apron_long.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/waist_apron_short.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/waist_corset.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/waistcoat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/webbing_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wedding_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wedding_ring.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wedding_veil.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/welding_goggles.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/western_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/western_gun_belt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wetsuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wetsuit_booties.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wetsuit_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wetsuit_hood.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wetsuit_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wetsuit_pants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wetsuit_shorts.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wetsuit_top.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/white_cotton_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/windbreaker.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/winter_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/winter_coat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/winter_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/witch_dress.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wizard_hat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wizard_robe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wolf_skull_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wooden_hair_beads.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wool_aketon.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wool_aketon_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wool_arming_mittens.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wool_arming_pants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wool_belly_wrap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wool_beret.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wool_cloak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wool_coif.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wool_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wool_hand_wraps.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wool_hoodie.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wool_loincloth.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wool_onesie.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wool_scarf.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wool_socks.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/work_coveralls.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/work_gloves.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/work_t_shirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/work_trousers.model.json"
     },
     {
       "kind": "json",
@@ -242,16 +4218,512 @@
       "path": "things/worn_trousers_thigh.model.json"
     },
     {
+      "kind": "json",
+      "path": "things/woven_anklet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wristwatch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/yukata.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/zentai.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/zipped_bondage_mask.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/zipped_skeleton_jumpsuit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/zucchetto.model.json"
+    },
+    {
       "kind": "asset",
       "path": "assets/audio/pouch_take-01.ogg"
     },
     {
       "kind": "asset",
-      "path": "assets/models/boots_combat_worn_foot.glb"
+      "path": "assets/models/abaya.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/boots_combat_worn_shaft.glb"
+      "path": "assets/models/agency_ballistic_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/airsoft_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/airsoft_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/angel_halo_headband.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/angel_wings.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ankle_holster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ankle_socks.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/antarvasa.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/aramid_nape_guard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/arm_warmers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/armoured_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/armoured_denim_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/armoured_fingerless_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/armoured_jeans.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/armoured_leather_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/army_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/army_winter_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/army_winter_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/army_winter_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/axe_ring.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/back_holster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/back_scabbard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bag_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bag_socks.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/balaclava.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/baldric_holster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ballistic_collar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ballistic_face_mask.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ballistic_glasses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ballistic_groin_protector.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ballistic_mandible_guard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ballistic_shoulder_protectors.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ballistic_throat_guard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bandana.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/barbute.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/barrette.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/basketball_shorts.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bast_sandals.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bat_anklet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/batting_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bead_bracelet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bead_ear.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bead_necklace.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bedsheet_ghost_costume.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bee_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/beekeeping_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/beekeeping_hood.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/beekeeping_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/belly_band_holster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bellyband.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/beret.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bifocal_glasses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bifocal_sunglasses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bike_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bikini_bottom.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bikini_top.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bin_bag_poncho.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/birch_bark_boot_sheath.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/birch_bark_sheath.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/birch_bark_shoes.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bite_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/black_bunny_ears.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/black_wrap_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/blast_protection_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/blast_visor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/blazer.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/boiled_leather_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bomb_disposal_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bomb_disposal_overboots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bomb_disposal_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bomb_suit_chest_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bondage_mask.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bondage_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bone_studded_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/book_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/boonie_hat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/boot_sheath.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bow_sling.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bow_tie.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bow_tie_collar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bowler_hat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bowling_shoes.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/boxer_briefs.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/boxer_shorts.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/boy_shorts.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bra.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brass_buckled_leather_coat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/breeches.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/briefs.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bronze_bell_cuirass.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bronze_cuirass.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bronze_greaves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bronze_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bronze_laminar_leggings.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bronze_medal.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bronze_scale_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bronze_vambraces.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bunny_bodysuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bunny_tail.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/button_shirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/camera_cloak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/camisole.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/canning_pot_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/canvas_aketon.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/canvas_aketon_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/canvas_arming_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/canvas_arming_mittens.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/canvas_arming_pants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/canvas_arming_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/canvas_coif.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/canvas_gambeson.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/canvas_gambeson_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cardboard_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cardboard_badge.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cardboard_crown.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cardboard_cuirass.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cardboard_great_helm.glb"
     },
     {
       "kind": "asset",
@@ -259,7 +4731,547 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/cargo_shorts.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/carpet_armguards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/carpet_bracers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/carpet_cuirass.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/carpet_greaves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/carpet_legguards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/carved_bone_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cassock.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ceramic_armor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ceramic_front_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ceramic_side_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chainmail_chausses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chainmail_half_leggings.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chainmail_leggings.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chainmail_sleeves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chainsaw_chaps.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chaplet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/checkered_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cheerleader_crop_top.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cheerleader_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cheerleader_skirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chefs_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chefs_toque.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chest_binder.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chitin_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chitin_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chitin_gauntlets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chitin_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/claw_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cleansuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/clear_outsert_lens.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cleats.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/clip_on_tie.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cloak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/clogs.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/clown_nose.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/clown_shoes.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/clown_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/clown_wig.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/collar_bar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/combat_blouse.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/combat_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/combat_boots_worn_foot.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/combat_boots_worn_shaft.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/combat_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/combat_shirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/compression_shorts.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/compression_top.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/concealable_ballistic_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/conical_helm.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/copper_circlet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/copper_ear.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/copper_hairpin.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/copper_locket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/copper_necklace.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/corinthian_helm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/corset.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cotton_apron.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cotton_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cotton_hand_wraps.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cotton_hat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/counterweight_pouch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cowboy_hat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cowrie_bracelet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cowrie_hair_beads.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cowrie_necklace.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cracked_ceramic_front_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cracked_ceramic_side_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crop_top.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cropped_hoodie.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crystal_sight_glasses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cufflinks.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cuffs.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cut_resistant_apron.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cut_resistant_arm_sleeves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cut_resistant_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cutting_outsert_lens.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dance_shoes.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dark_cloak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/deltoid_plates.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/denim_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/denim_cloak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/denim_cut_offs.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/denim_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/denim_overalls.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/denim_shirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/denim_skirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/denim_sneakers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/denim_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dental_grill.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/deputy_badge.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/detective_badge.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/devil_horn_headband.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/devil_onesie.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/devil_tail.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/disposable_socks.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/diving_watch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/doctors_name_tag.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dog_tag.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/double_garter_sheath.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/double_holster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dragon_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dragonhide_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dragonhide_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dragonhide_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dragonhide_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dragonscale_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dragonscale_gauntlets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dragonscale_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dragonscale_helmet_visor_up.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dragonscale_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dress_shirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dress_shoes.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dress_watch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/drinking_hat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dust_mask.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/duster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/duty_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/eagle_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ear_pads.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ear_spool.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/eboshi.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/eclipse_glasses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/eight_point_cap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/elbow_pads.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/emergency_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/engagement_ring.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/entry_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/espadrilles.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/face_shield.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/face_veil.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/faded_jeans.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fancy_ordnance_cartridge_necklace.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fancy_pistol_cartridge_necklace.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fancy_rifle_cartridge_necklace.glb"
     },
     {
       "kind": "asset",
@@ -275,39 +5287,847 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/gloves_leather_worn_fingers.glb"
+      "path": "assets/models/faraday_mail_suit.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/gloves_leather_worn_palm.glb"
+      "path": "assets/models/faraday_shark_suit.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/gloves_leather_worn_thumb.glb"
+      "path": "assets/models/fast_draw_holster.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/hat_cotton.glb"
+      "path": "assets/models/faux_fur_boots.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/helmet_barbute.glb"
+      "path": "assets/models/faux_fur_cat_ears.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/helmet_bronze.glb"
+      "path": "assets/models/faux_fur_cat_tail.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/helmet_conical.glb"
+      "path": "assets/models/faux_fur_coat.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/helmet_corinthian.glb"
+      "path": "assets/models/faux_fur_collar.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/helmet_galea.glb"
+      "path": "assets/models/faux_fur_duster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/faux_fur_foot_wraps.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/faux_fur_hat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/faux_fur_trenchcoat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/faux_fur_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/federal_agent_badge.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/felt_foot_wraps.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fencing_gorget.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fencing_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fencing_mask.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fencing_pants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fencing_underarm_protector.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ferraiolo.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/field_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fingerless_leather_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fingerless_wool_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_gauntlets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_resistant_socks.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/firefighter_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fireman_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fishing_waders.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fitover_sunglasses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flag_jumpsuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flag_swimsuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flak_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flame_resistant_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flame_resistant_hood.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flame_resistant_sock_mitts.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flame_resistant_undersuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flame_ward_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flame_ward_belt_cracked.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flannel_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flight_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flip_flops.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flotation_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flower_anklet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/foil_fencing_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/football_armor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/football_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/footrags.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/forged_steel_front_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/forged_steel_side_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/friendship_bracelet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/frilled_headpiece.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/full_face_diving_mask_without_regulator.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_belly_wrap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_bikini_top.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_cat_ears.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_cat_tail.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_chest_wrap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_cloak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_coat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_collar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_duster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_foot_wraps.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_hand_wraps.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_hot_pants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_leggings.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_loincloth.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_scarf.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fur_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fursuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/galea.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gambeson.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gambeson_sleeve.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gambeson_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/garter_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/garter_sheath.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gearwork_cufflinks.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gem_bracelet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gem_earrings.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gem_pendant_necklace.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gem_ring.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gem_tiara.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/geta.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ghost_robe.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gi_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gilded_steel_half_mask.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/girdle_of_hidden_arms.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/glass_goggles.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/glasses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/goalie_mask.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gold_anklet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gold_hair_beads.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gold_lip_ring.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gold_lip_stud.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gold_nose_ring.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gold_nose_stud.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gold_toe_ring.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gold_watch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/golden_crown.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/golf_cap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/golf_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/golf_shoes.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gothic_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gothic_gown.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/grass_cloak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/grass_keffiyeh.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/grass_shirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/grass_skirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/great_helm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/greatcoat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/greater_bottomless_tool_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/grim_reaper_robe.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gutskin_hood.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gutskin_parka.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hakama.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hakama_gi.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/halter_top.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/haori.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hard_arm_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hard_armour_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hard_chest_guard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hard_hat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hard_leg_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hard_steel_armor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_brigandine_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_elbow_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_knee_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_mail_chausses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_sabaton.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_scrap_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_sheet_metal_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_sheet_metal_chest_guard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_sheet_sabatons.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_sheet_steel_gauntlets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_sheet_steel_great_helm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_sheet_steel_greaves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_sheet_steel_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_sheet_steel_knee_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_sheet_steel_leg_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_sheet_steel_skirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_shoulder_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_splint_arm_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_splint_greaves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_splint_vambraces.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_arm_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_arm_harness.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_bracers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_brigandine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_brigandine_coat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_brigandine_coat_with_shoulder_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_brigandine_with_shoulder_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_close_helm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_close_helm_visor_up.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_demi_gauntlets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_elbow_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_heavy_close_helm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_heavy_close_helm_visor_up.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_heavy_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_light_close_helm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_light_close_helm_visor_up.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_light_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_mail_aventail.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_mail_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_mail_half_aventail.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_mail_half_leggings.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_mail_hauberk.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_mail_jumpsuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_mail_leggings.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_mail_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_mail_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_mirror_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_mitten_gauntlets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_nasal_helm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_pauldrons.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_splint_leg_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hardened_steel_turban_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hazmat_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/head_bandana.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/headscarf.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/heavy_hardened_scrap_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/heavy_hardened_sheet_metal_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/heavy_hardened_sheet_metal_chest_guard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/heavy_junkyard_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/heavy_plate_carrier.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/heavy_sheet_metal_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/heavy_sheet_metal_chest_guard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/heavy_steel_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/heavy_tempered_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/heels.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/helmet_ear_muffs.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/helmet_ear_muffs_lowered.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/helmet_liner.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/heraldic_cape.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hide_float.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/high_carbon_steel_brigandine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/high_carbon_steel_close_helm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/high_carbon_steel_demi_gauntlets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/high_carbon_steel_heavy_close_helm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/high_carbon_steel_heavy_close_helm_visor_up.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/high_carbon_steel_light_close_helm_visor_up.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/high_carbon_steel_mail_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/high_carbon_steel_mail_half_leggings.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/high_carbon_steel_mail_leggings.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/high_carbon_steel_mail_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/high_carbon_steel_mirror_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/high_carbon_steel_splint_vambraces.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hijab.glb"
     },
     {
       "kind": "asset",
@@ -323,7 +6143,27 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/hood_ninja.glb"
+      "path": "assets/models/hiking_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hiking_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/holster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/holster_suspenders.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hooded_black_robe.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hooded_robe.glb"
     },
     {
       "kind": "asset",
@@ -331,19 +6171,39 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/hoof_furs.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hot_pants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/house_coat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hunting_cap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/improvised_tyre_arm_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/improvised_tyre_leg_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/insulated_work_coveralls.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/jacket.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/jacket_leather_worn_body.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/jacket_leather_worn_fore.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/jacket_leather_worn_upper.glb"
+      "path": "assets/models/jade_brooch.glb"
     },
     {
       "kind": "asset",
@@ -351,15 +6211,1103 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/jersey.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/jewelled_gold_crown.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/jikatabi.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/jikatabi_sneakers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/jockey_skull_cap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/judo_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/judo_gi.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/jumpsuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/junkyard_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/kabuto.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/karate_gi.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/kariginu.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/kasaya.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/keffiyeh.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/keikogi.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/kettle_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/kids_star_badge.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/kilt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/kimono.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/kippah.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/kittel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/knee_high_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/knee_pads.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/knit_cowl.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/knit_hat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/knit_scarf.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/kufi_cap.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/lame_saber.glb"
+      "path": "assets/models/lab_coat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/lacquered_lamellar_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/large_holster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_apron.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_arm_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_armour_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_armour_gauntlets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_belly_wrap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_bikini_top.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_body_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_cat_ears.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_cat_tail.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_chaps.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_chest_wrap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_cloak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_collar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_cuirass.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_duster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_eyepatch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_flip_flops.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_foot_wraps.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_gloves_worn_fingers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_gloves_worn_palm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_gloves_worn_thumb.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_hand_wraps.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_hot_pants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_jacket_worn_body.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_jacket_worn_fore.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_jacket_worn_upper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_kilt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_lamellar_cuirass.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_leg_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_loincloth.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_miniskirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_padded_pants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_padded_shirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_padded_sleeveless_shirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_padded_sleeves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_sandals.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_suspenders.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_trenchcoat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leather_vambraces.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leg_warmers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leggings.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/leotard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/lesser_bottomless_tool_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_bomb_disposal_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_bomb_disposal_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_chitin_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_hardened_sheet_metal_chest_guard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_plate_carrier.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_plate_carrier_with_pouch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_plate_carrier_with_radio_pouch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_sheet_metal_chest_guard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tempered_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/loincloth.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/long_blue_wig.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/long_fur_scarf.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/long_glove_white.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/long_knit_scarf.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/long_patchwork_scarf.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/long_santa_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/long_scarf.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/long_skirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/long_sleeved_shirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/long_sleeved_wetsuit_top.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/long_underpants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/long_underwear_top.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/long_witch_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/long_wool_scarf.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/loosely_laced_corset.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/loosely_laced_waist_corset.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/loosened_cardboard_crown.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/lowtops.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/maid_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mail_carrier_cap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/marshal_badge.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/martial_arts_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mascot_cape.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mask_lens_insert.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medium_steel_chestplate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medium_steel_heavy_chestplate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medium_steel_light_chestplate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medium_steel_mail_sleeves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medium_steel_mirror_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mesh_nape_protector.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_arm_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_brigandine_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_chestplate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_close_helm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_close_helm_visor_up.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_demi_gauntlets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_elbow_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_front_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_half_mask.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_heavy_arm_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_heavy_chestplate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_heavy_close_helm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_heavy_close_helm_visor_up.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_heavy_leg_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_heavy_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_knee_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_lamellar_cuirass.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_leg_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_light_arm_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_light_chestplate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_light_close_helm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_light_close_helm_visor_up.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_light_leg_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_light_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_mail_aventail.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_mail_coif.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_mail_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_mail_half_aventail.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_mail_hauberk.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_mail_jumpsuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_mail_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_mail_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_mirror_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_mitten_gauntlets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_nasal_helm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_shoulder_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_side_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_sleeveless_mail_jumpsuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_splint_greaves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mild_steel_turban_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mittens.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/moccasins.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/modular_full_face_diving_mask.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/monocle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/motorbike_armor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/motorcycle_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/motorcycle_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/motorcycle_helmet_visor_up.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/motorcycle_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/motorcycle_jeans.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/motorcycle_police_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/moustached_steel_half_mask.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mummy_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mummy_jumpsuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nanoskirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nape_protector.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nasal_helm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/necktie.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/neoprene_arm_sleeves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/newsboy_cap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ninja_hood.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ninja_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/niqab.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nun_habit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nun_wimple.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nylon_aketon.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nylon_aketon_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nylon_arming_mittens.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nylon_arming_pants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nylon_coif.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nylon_gambeson.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nylon_gambeson_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/officer_uniform.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/onyx_gold_bracelet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/onyx_gold_cufflinks.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/onyx_gold_earring.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/onyx_gold_pendant_necklace.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/onyx_gold_ring.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/onyx_gold_tiara.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/open_sealed_environment_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ornamental_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/oversized_ballistic_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/oversized_dragonhide_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/oversized_dragonhide_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/oversized_dragonhide_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/oversized_dragonhide_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/oversized_dragonscale_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/oversized_dragonscale_gauntlets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/oversized_dragonscale_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/oversized_dragonscale_helmet_visor_up.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/oversized_dragonscale_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/padded_arming_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/padded_canvas_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/padded_cloth_sleeves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/padded_coif.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/padded_sleeveless_shirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/padded_sweatshirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/panties.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/paper_arm_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/paper_leg_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/patchwork_aramid_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/patchwork_aramid_vest_with_steel_plates.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/patchwork_scarf.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/patrol_cap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/peacoat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pearl_collar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pickelhaube.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pin_badge.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/plague_doctor_robe.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/plague_mask.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/plank_arm_guard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/plank_shin_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/plastic_apron.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/plastic_chest_protector.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/plastic_chin_guard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/plastic_mandible_guard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/plate_carrier.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/plated_denim_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/plated_leather_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/plated_motorcycle_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pleated_costume_skirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pocketless_jumpsuit.glb"
     },
     {
       "kind": "asset",
       "path": "assets/models/pointed_hat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/police_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/police_breeches.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/polo_shirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/poncho.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/porkpie_hat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/postman_shirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/postman_shorts.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pot_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/powered_ventilated_heavy_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/powered_ventilated_light_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/powered_ventilated_mail_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/prescription_sunglasses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/promise_ring.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pumpkin_mask.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/quilted_cotton_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/racing_briefs.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/radiation_badge.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rag_belly_wrap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rag_chest_wrap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rag_tunic.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rain_hood.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rain_poncho.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/raincoat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rashguard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/reading_glasses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/reversible_black_cloak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rhinestone_glove.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/riding_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/riot_arm_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/riot_armour_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/riot_chest_guard.glb"
     },
     {
       "kind": "asset",
@@ -371,7 +7319,99 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/riot_leg_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ripped_jeans.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/riveted_steel_half_mask.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/robe.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/rubber_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rubber_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rune_forged_tool_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rusted_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rusty_mail_chausses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rusty_mail_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sabaton.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sabre_fencing_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/safety_glasses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/samghati.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/santa_beard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/santa_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/santa_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/santa_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/santa_hat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/santa_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/santa_pants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/santa_shorts.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/scabbard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/scarf.glb"
     },
     {
       "kind": "asset",
@@ -387,7 +7427,347 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/scrap_arm_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/scrap_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/scrap_cuirass.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/scrap_front_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/scrap_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/scrap_metal_leg_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/scrap_side_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/scrap_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sealed_environment_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/segmented_iron_cuirass.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/service_medal.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shark_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sheath.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sheet_metal_arm_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sheet_metal_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sheet_metal_chest_guard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sheet_metal_great_helm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sheet_metal_greaves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sheet_metal_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sheet_metal_knee_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sheet_metal_leg_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sheet_metal_sabatons.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sheet_metal_skirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sheet_steel_bracers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sheet_steel_elbow_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sheet_steel_mitten_gauntlets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sheet_steel_pauldrons.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shield_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shield_belt_cracked.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shield_visor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shimmering_wool_arming_mittens.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shimmering_wool_arming_pants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shimmering_wool_blouse.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shimmering_wool_breeches.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shimmering_wool_gambeson.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shimmering_wool_gambeson_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/short_cheerleader_skirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/short_gothic_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/short_maid_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/short_santa_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/short_santa_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/short_witch_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shorts.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shoulder_holster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/signet_ring.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/simple_ordnance_cartridge_necklace.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/simple_pistol_cartridge_necklace.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/simple_rifle_cartridge_necklace.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/single_point_sling.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/skeleton_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/skeleton_jumpsuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ski_goggles.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ski_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ski_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/skid_lid.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/skinny_jeans.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/skinny_tie.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/skirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/skull_mask.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sleeved_blanket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sleeveless_dragon_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sleeveless_duster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sleeveless_faux_fur_duster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sleeveless_faux_fur_trenchcoat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sleeveless_fur_duster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sleeveless_fur_trenchcoat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sleeveless_leather_duster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sleeveless_leather_trenchcoat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sleeveless_spring_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sleeveless_trenchcoat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sleeveless_tunic.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sleeveless_undershirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/slippers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/small_bikini_top.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/small_cotton_socks.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/small_wool_socks.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/sneakers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/snow_goggles.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/socks.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/soft_armour_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sombrero.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sparring_headgear.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/spear_sling.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sports_bra.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/spring_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stab_plate.glb"
     },
     {
       "kind": "asset",
@@ -403,7 +7783,399 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/stacked_double_holster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steel_arm_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steel_armor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steel_ballistic_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steel_bracer.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steel_bracers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steel_cuirass.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steel_gauntlets.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steel_leg_harness.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steel_toe_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steel_toe_sneakers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stockings.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stockpot_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/straw_cape.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/straw_hat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/straw_sandals.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stretch_bodysuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/striped_pants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/summer_hard_hat.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/sun_shield.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sundress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sunglasses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/suspenders.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/swat_badge.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sweater.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sweatshirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/swim_briefs.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/swim_cap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/swim_fins.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/swim_goggles.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tabi.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tactical_full_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tactical_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tactical_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tactical_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tactical_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tallit_gadol.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tallit_katan.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tank_crew_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tank_top.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/technical_wetsuit_shorts.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/teeth_necklace.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tefillin_arm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tefillin_head.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tempered_mail_chausses.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tempered_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tempered_sabaton.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tempered_steel_chestplate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tempered_steel_heavy_chestplate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tempered_steel_leg_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tempered_steel_light_chestplate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ten_gallon_hat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tentacle_sleeves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tentacle_stockings.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thawb.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thermal_shirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thick_wetsuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thick_wetsuit_booties.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thick_wetsuit_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thick_wetsuit_hood.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thigh_concealment_band.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thigh_high_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thin_long_sleeved_wetsuit_top.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thin_sleeved_canvas_gambeson.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thin_sleeved_nylon_gambeson.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thin_sleeved_shimmering_wool_gambeson.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thin_wetsuit_pants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thong_bikini_bottoms.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/throat_guard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/throwing_knife_leg_sheath.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tie_clip.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tied_shirt_mask.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tights.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tinted_outsert_lens.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/toecaps.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tool_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/top_hat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/touring_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/trenchcoat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tricorne.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/trunks.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tshirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tunic.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/turban.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/turnout_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/turnout_coat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/turnout_trousers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tuxedo.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tyre_arm_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tyre_cuirass.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tyre_leg_guards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tyre_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tyre_plated_motorcycle_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tyre_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/undershirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/union_suit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/unitard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/utility_kilt.glb"
     },
     {
       "kind": "asset",
@@ -419,7 +8191,215 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/wizard_hat_costume.glb"
+      "path": "assets/models/uttarasanga.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/vampire_fangs.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/varsity_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ventilated_plate_armour.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/vest_leather.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/waist_apron_long.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/waist_apron_short.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/waist_corset.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/waistcoat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/webbing_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wedding_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wedding_ring.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wedding_veil.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/welding_goggles.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/western_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/western_gun_belt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wetsuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wetsuit_booties.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wetsuit_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wetsuit_hood.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wetsuit_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wetsuit_pants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wetsuit_shorts.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wetsuit_top.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/white_cotton_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/windbreaker.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/winter_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/winter_coat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/winter_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/witch_dress.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wizard_hat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wizard_robe.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wolf_skull_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wooden_hair_beads.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wool_aketon.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wool_aketon_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wool_arming_mittens.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wool_arming_pants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wool_belly_wrap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wool_beret.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wool_cloak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wool_coif.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wool_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wool_hand_wraps.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wool_hoodie.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wool_loincloth.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wool_onesie.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wool_scarf.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wool_socks.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/work_coveralls.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/work_gloves.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/work_t_shirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/work_trousers.glb"
     },
     {
       "kind": "asset",
@@ -468,6 +8448,34 @@
     {
       "kind": "asset",
       "path": "assets/models/worn_trousers_thigh.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/woven_anklet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wristwatch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/yukata.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/zentai.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/zipped_bondage_mask.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/zipped_skeleton_jumpsuit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/zucchetto.glb"
     }
   ],
   "id": "skelly.wearables",

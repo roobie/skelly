@@ -25,6 +25,31 @@
       }
     },
     {
+      "emissiveMaterial": "#453b2b",
+      "file": "assets/models/road_flare.glb",
+      "grip": {
+        "at": [0.018000000000000002, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "road_flare",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "paper", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "road_flare": {
+          "centreOfMass": [0.16025400641025642, 0, 0],
+          "massKg": 0.12,
+          "node": "road_flare:compound"
+        }
+      },
+      "roll": 90
+    },
+    {
       "anchors": {
         "flame": [0.41999999999999998, 0, 0]
       },

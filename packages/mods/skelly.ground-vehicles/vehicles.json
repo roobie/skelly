@@ -46,7 +46,7 @@
       "category": "misc",
       "description": "A pressed steel shelf for a battery.",
       "id": "hatchback_battery_tray",
-      "model": "hatchback_battery_tray",
+      "model": "battery_tray",
       "name": "Hatchback battery tray",
       "size": [3, 2],
       "vehicle": {
@@ -1584,8 +1584,8 @@
       "anchors": {
         "seat": [0, 0.03125, 0]
       },
-      "file": "assets/models/hatchback_battery_tray.glb",
-      "id": "hatchback_battery_tray",
+      "file": "assets/models/battery_tray.glb",
+      "id": "battery_tray",
       "itemPresentation": {
         "materials": ["metal"],
         "supply": {
