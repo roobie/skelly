@@ -11,7 +11,7 @@ const ROUNDS = {
   2: { url: 'https://deadvox-playtest-round2.surge.sh/', playPath: 'play/', playQuery: 'site=gauntlet' },
 };
 const FULL_SHA_PATTERN = /^[a-f\d]{40}$/;
-const DEPENDENCY_ROOTS = ['', 'packages/deadvox/tools/lit-check'];
+const DEPENDENCY_ROOTS = ['', 'tools/lit-check'];
 
 export const playtestRound = (round) => {
   const config = ROUNDS[round];

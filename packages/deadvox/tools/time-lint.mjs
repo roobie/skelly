@@ -3,8 +3,8 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, extname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import ts from '../../../tools/lit-check/node_modules/typescript/lib/typescript.js';
 import { TEMPORAL_FIELDS } from '../src/core/temporalFields.ts';
-import ts from './lit-check/node_modules/typescript/lib/typescript.js';
 
 const DEADVOX = resolve(dirname(new URL(import.meta.url).pathname), '..');
 const SOURCE = join(DEADVOX, 'src');

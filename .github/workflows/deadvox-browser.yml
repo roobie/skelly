@@ -40,7 +40,7 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            packages/deadvox/tools/lit-check/package-lock.json
+            tools/lit-check/package-lock.json
       # Registry-free install, same reason as the fast job in deadvox.yml.
       - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
         timeout-minutes: 3

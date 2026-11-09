@@ -145,8 +145,10 @@ pinned skelly-assets release every reader of its built files needs; see
 The projects are npm workspaces (`package.json`, `workspaces`), so one lockfile keeps
 shared packages, `three` above all, on one version and one instance. Some workspaces live
 in the `packages/skelly-assets` submodule, so setup checks it out before installing. Add a dependency
-with `npm install <pkg> --workspace <name>`. `packages/deadvox/tools/lit-check` stays a separate
-install because its analyzer pins its own TypeScript.
+with `npm install <pkg> --workspace <name>`. `tools/lit-check` stays a separate install
+because its analyzer pins its own TypeScript. It lives at the repository root, where any
+package can use it, because it checks more than one package's UI once the presentation
+package leaves deadvox (#1532).
 
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.
 

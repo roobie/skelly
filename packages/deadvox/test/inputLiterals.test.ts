@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { expect, it } from 'vitest';
-import { keyboardViolations } from '../tools/lit-check/inputGuard.ts';
+import { keyboardViolations } from '../../../tools/lit-check/inputGuard.ts';
 
 const sourceExtension = /\.[cm]?[jt]s$/;
 // This visual-only page pans a Three.js preview; its camera keys are not gameplay bindings.

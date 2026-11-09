@@ -12,7 +12,7 @@
   "scripts": {
     "check": "biome check",
     "fix": "biome check --write",
-    "setup": "git submodule update --init --recursive && npm ci && npm ci --prefix packages/deadvox/tools/lit-check && npm run jsonnet:setup && npm run assets:setup",
+    "setup": "git submodule update --init --recursive && npm ci && npm ci --prefix tools/lit-check && npm run jsonnet:setup && npm run assets:setup",
     "jsonnet:setup": "node tools/jsonnet/setup.mjs",
     "assets:setup": "node tools/skelly-assets/setup.mjs",
     "postinstall": "node packages/skelly-assets/tools/sources.mjs",

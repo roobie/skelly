@@ -14,6 +14,7 @@ on:
       - 'tools/jsonnet/**'
       - 'tools/skelly-assets/**'
       - 'tools/pinned-download.mjs'
+      - 'tools/lit-check/**'
       - 'testPool.ts'
       - '!**/*.md'
       - 'packages/deadvox/TROUBLESHOOTING.md'
@@ -31,6 +32,7 @@ on:
       - 'tools/jsonnet/**'
       - 'tools/skelly-assets/**'
       - 'tools/pinned-download.mjs'
+      - 'tools/lit-check/**'
       - 'testPool.ts'
       - '!**/*.md'
       - 'packages/deadvox/TROUBLESHOOTING.md'
@@ -74,7 +76,7 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            packages/deadvox/tools/lit-check/package-lock.json
+            tools/lit-check/package-lock.json
       # A cold install takes seconds, so the 3-minute limit stays. A stalled registry request
       # is what timed the step out, and the root .npmrc bounds each request so a retry fits (#1108).
       - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
@@ -86,7 +88,7 @@ jobs:
       - name: Browser partition manifest
         timeout-minutes: 1
         run: node ../../test/browser-ci-manifest.mjs
-      - run: npm ci --prefix tools/lit-check --no-audit --no-fund --prefer-offline
+      - run: npm ci --prefix ../../tools/lit-check --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - run: timeout 300 npm run lint:lit
       - run: timeout 300 npm run lint:time
@@ -136,7 +138,7 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            packages/deadvox/tools/lit-check/package-lock.json
+            tools/lit-check/package-lock.json
       - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
@@ -144,7 +146,7 @@ jobs:
       - name: Install pinned skelly-assets release
         run: npm --prefix ../.. run assets:setup
       # Any test file can hash to any shard, and some tests read the lit-check install.
-      - run: npm ci --prefix tools/lit-check --no-audit --no-fund --prefer-offline
+      - run: npm ci --prefix ../../tools/lit-check --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - name: Unit suite shard ${{ matrix.shard }}
         run: timeout 180 npx vitest run --maxWorkers=2 --shard=${{ matrix.shard }}
