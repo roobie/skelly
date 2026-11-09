@@ -72,6 +72,16 @@
           "item": "pump_shotgun"
         },
         {
+          "condition": 1,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 1
+          },
+          "id": "flare",
+          "item": "road_flare"
+        },
+        {
           "count": 8,
           "destination": {
             "kind": "pocket",
