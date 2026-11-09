@@ -244,6 +244,7 @@ describe('Gore', () => {
       scale: { min: 1, max: 1 },
       lifetimeRealSeconds: 10,
       fadeRealSeconds: 1,
+      landedSplatRadiusMetres: { min: 0.1, max: 0.1 },
     };
     const geometry = new BoxGeometry(0.05, 0.05, 0.05);
     const material = new MeshLambertMaterial();
@@ -292,6 +293,7 @@ describe('Gore', () => {
       scale: { min: 1, max: 1 },
       lifetimeRealSeconds: 10,
       fadeRealSeconds: 1,
+      landedSplatRadiusMetres: { min: 0.1, max: 0.1 },
     };
     const gore = new Gore(1, WORLD_GRAVITY, { ...GORE_TUNING_FIXTURE, chunks });
     const strike: HitImpulse = { point: [0.5, 1.5, 0.5], direction: [1, 0, 0], impulse: 4 };
@@ -305,6 +307,35 @@ describe('Gore', () => {
     for (const chunk of thrown) {
       expect(chunk.velocity.dot(new Vector3(...strike.direction))).toBeLessThan(0);
     }
+    gore.dispose();
+  });
+
+  it('ends the splat a chunk lands on with the chunk, never leaving it bare', () => {
+    const chunks = {
+      models: ['fixture_chunk'],
+      cap: 4,
+      perThrow: [2, 2] as [number, number],
+      hardHitDamage: 30,
+      speedMetresPerRealSecond: { min: 1, max: 1 },
+      spreadFraction: 0,
+      spinRadiansPerRealSecond: { min: 1, max: 1 },
+      scale: { min: 1, max: 1 },
+      lifetimeRealSeconds: 10,
+      fadeRealSeconds: 1,
+      landedSplatRadiusMetres: { min: 0.1, max: 0.1 },
+    };
+    const gore = new Gore(1, WORLD_GRAVITY, { ...GORE_TUNING_FIXTURE, chunks });
+    // A hard hit throws chunks and no spray, so every splat here is one a chunk landed on.
+    gore.wounded(lowHit, chunks.hardHitDamage);
+    for (let frame = 0; frame < 120 && gore.activeSplats < 2; frame++) {
+      gore.update(1 / 60, floor);
+    }
+    expect(gore.activeChunks).toBe(2);
+    expect(gore.activeSplats).toBe(2);
+    while (gore.activeChunks > 0) {
+      gore.update(1 / 60, floor);
+    }
+    expect(gore.activeSplats).toBe(0);
     gore.dispose();
   });
 });

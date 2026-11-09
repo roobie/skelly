@@ -92,9 +92,12 @@ export const GraphicsTuningSchema = strictObject({
         spinRadiansPerRealSecond: orderedRange(NonNegative),
         /** Size against the model's own. */
         scale: orderedRange(Positive),
+        /** Also the life of the splat a landed chunk lies on, so no bare splat is left where a chunk was. */
         lifetimeRealSeconds: Positive,
-        /** The end of its lifetime over which a chunk shrinks away. */
+        /** The end of its lifetime over which a chunk shrinks away and its splat fades. */
         fadeRealSeconds: Positive,
+        /** The splat a landed chunk lies on: small enough that the chunk stands out from it, not lost in it. */
+        landedSplatRadiusMetres: orderedRange(Positive),
       }),
     ),
   }),

@@ -2592,7 +2592,11 @@ application rather than weapon-class special cases. See `src/core/schema/actors.
   `src/core/actorSystem.ts`, `ActorSystem.sever`; `src/render/gore.ts`, `Gore.severed`).
   See `src/render/mobActors.ts`, `MobActorMeshes.actorSevered`, for the shared launch.
   Where a droplet lands it leaves a splat. Splats fade and are not
-  saved, so a reload starts clean. Wounded bodies drip and wear blood stains,
+  saved, so a reload starts clean. A flesh chunk lands on a splat of its own,
+  small enough that the chunk stands out from it, and that splat ends with the
+  chunk: a bare splat where a chunk was reads as a chunk that never came. Chunks
+  outlast a fight long enough for the player to walk up and find them
+  (`mods/skelly.deadvox.actors/graphics-actors.jsonnet`, `chunks`). Wounded bodies drip and wear blood stains,
   both derived from saved state (lost region health, severed parts, carved
   flesh), so they survive a reload with no state of their own; a corpse keeps
   the stains it fell with. Blood shares scene lighting rather than glowing over
