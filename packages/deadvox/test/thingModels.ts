@@ -5,6 +5,7 @@ const THING_MODEL = /^things\/[^/]+\.model\.json$/;
 
 /**
  * Only consumed exports belong to the drawing contract: a pinned release may also carry unused models.
+ * Read through the pack reader so the contract follows a row between packs or roots.
  */
 export const thingModels = (): { id: string; glb: Buffer }[] => {
   const { models } = baseRegistry();
