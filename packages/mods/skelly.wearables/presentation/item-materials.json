@@ -28,6 +28,7 @@
   "assets/models/jacket.glb": { "materials": ["paperboard-brown", "paint-charcoal"] },
   "assets/models/jeans.glb": { "materials": ["plastic-blue"] },
   "assets/models/kufi_cap.glb": { "materials": ["cloth-cream", "cloth-yellow"] },
+  "assets/models/lame_saber.glb": { "materials": ["cloth-shimmer", "cloth-cream", "steel-bright"] },
   "assets/models/pointed_hat.glb": { "materials": ["cloth-charcoal", "cloth-purple", "brass-dull"] },
   "assets/models/riot_helmet_view.glb": { "materials": [null, null] },
   "assets/models/riot_helmet.glb": {
@@ -41,6 +42,7 @@
   "assets/models/stab_vest_worn_jacket.glb": { "materials": ["paint-police-blue", "polymer-black"] },
   "assets/models/stab_vest_worn.glb": { "materials": ["paint-police-blue", "polymer-black"] },
   "assets/models/stab_vest.glb": { "materials": [null, null] },
+  "assets/models/sun_shield.glb": { "materials": ["plastic-white", "plastic-matte-black"] },
   "assets/models/utility_vest_worn_jacket.glb": { "materials": ["polymer-od-green", "cord-olive"] },
   "assets/models/utility_vest_worn.glb": { "materials": ["polymer-od-green", "cord-olive"] },
   "assets/models/utility_vest.glb": { "materials": ["polymer-od-green", "paint-charcoal"] },

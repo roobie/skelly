@@ -44,10 +44,6 @@
     },
     {
       "kind": "json",
-      "path": "things/lame_saber.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/long_pole.model.json"
     },
     {
@@ -61,10 +57,6 @@
     {
       "kind": "json",
       "path": "things/steel_pipe.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/sun_shield.model.json"
     },
     {
       "kind": "json",
@@ -84,10 +76,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/lame_saber.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/long_pole.glb"
     },
     {
@@ -101,10 +89,6 @@
     {
       "kind": "asset",
       "path": "assets/models/steel_pipe.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/sun_shield.glb"
     },
     {
       "kind": "asset",

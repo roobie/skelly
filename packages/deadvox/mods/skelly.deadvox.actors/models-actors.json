@@ -17,7 +17,7 @@
       },
       "parts": {
         "part": {
-          "centreOfMass": [-1.0470865087760951e-5, 0.28300319523305756, 0.0005853969213497701],
+          "centreOfMass": [0, 0.28319970656770505, 0.00059549495123845672],
           "massKg": 12,
           "node": "part:torso"
         }
@@ -140,6 +140,102 @@
           "centreOfMass": [0, 0.45882863649302591, 0.0074010816965556512],
           "massKg": 4,
           "node": "part:limb"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/flesh_chunk_small.glb",
+      "grip": {
+        "at": [0, 0.01, 0.0020000000000000018],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "flesh_chunk_small",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "lump": {
+          "centreOfMass": [-0.00016974169741697419, 0.010059040590405905, 8.1180811808118225e-5],
+          "massKg": 0.029999999999999999,
+          "node": "lump:compound"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/flesh_chunk_medium.glb",
+      "grip": {
+        "at": [0, 0.014, 0.0019999999999999983],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "flesh_chunk_medium",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "lump": {
+          "centreOfMass": [-0.00014285714285714281, 0.012657142857142853, 0.00010952380952380949],
+          "massKg": 0.10000000000000001,
+          "node": "lump:compound"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/flesh_chunk_large.glb",
+      "grip": {
+        "at": [0, 0.018000000000000002, 0.0020000000000000018],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "flesh_chunk_large",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "lump": {
+          "centreOfMass": [-2.337662337662336e-5, 0.016772727272727272, 4.1558441558441643e-5],
+          "massKg": 0.29999999999999999,
+          "node": "lump:compound"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/flesh_chunk_strip.glb",
+      "grip": {
+        "at": [0, 0.01, 0.0020000000000000018],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "flesh_chunk_strip",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "lump": {
+          "centreOfMass": [-0.0010171428571428571, 0.010251428571428571, 0.00020571428571428542],
+          "massKg": 0.10000000000000001,
+          "node": "lump:compound"
         }
       },
       "roll": 0

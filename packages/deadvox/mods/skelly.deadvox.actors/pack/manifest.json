@@ -605,6 +605,22 @@
     },
     {
       "kind": "json",
+      "path": "things/flesh_chunk_large.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flesh_chunk_medium.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flesh_chunk_small.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flesh_chunk_strip.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/index.json"
     },
     {
@@ -1046,6 +1062,22 @@
     {
       "kind": "asset",
       "path": "assets/models/actors/worker_shambler.8.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flesh_chunk_large.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flesh_chunk_medium.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flesh_chunk_small.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flesh_chunk_strip.glb"
     },
     {
       "kind": "asset",

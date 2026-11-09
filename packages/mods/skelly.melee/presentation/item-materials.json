@@ -2,11 +2,9 @@
   "assets/models/baseball_bat.glb": { "materials": ["wood-birch"] },
   "assets/models/kabar.glb": { "materials": ["rubber-black", "steel-blued"] },
   "assets/models/kite_shield.glb": { "materials": ["paint-charcoal", "glass-grey", "steel-stainless"] },
-  "assets/models/lame_saber.glb": { "materials": ["cloth-shimmer", "cloth-cream", "steel-bright"] },
   "assets/models/long_pole.glb": { "materials": ["wood-birch", "wood-oak"] },
   "assets/models/machete.glb": { "materials": ["wood-walnut", "steel-grey"] },
   "assets/models/pike_pole.glb": { "materials": ["plastic-yellow", "rubber-black", "steel-grey"] },
   "assets/models/steel_pipe.glb": { "materials": ["steel-grey"] },
-  "assets/models/sun_shield.glb": { "materials": ["plastic-white", "plastic-matte-black"] },
   "assets/models/tower_shield.glb": { "materials": ["paint-charcoal", "glass-grey", "steel-stainless", "steel-grey"] }
 }

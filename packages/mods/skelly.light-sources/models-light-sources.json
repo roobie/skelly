@@ -44,7 +44,7 @@
       },
       "parts": {
         "everburning_torch": {
-          "centreOfMass": [0.082878787878787899, -8.6580086580086553e-5, 0],
+          "centreOfMass": [0.084312567132116031, 5.3705692803437237e-6, 5.3705692803437237e-6],
           "massKg": 0.83099999999999996,
           "node": "everburning_torch:compound"
         }
@@ -145,12 +145,12 @@
           "node": "burner:burner"
         },
         "chimney": {
-          "centreOfMass": [-9.5730575444179293e-5, 0.13139087775125963, -6.1256961018345561e-5],
+          "centreOfMass": [0, 0.13101269841269841, -4.7942219144682534e-17],
           "massKg": 0.080000000000000002,
           "node": "chimney:chimney"
         },
         "fuel_fill": {
-          "centreOfMass": [-1.8651362984217988e-5, 0.041976087996174083, -1.8651362984228143e-5],
+          "centreOfMass": [0, 0.042000000000000003, -1.0205004347264057e-17],
           "massKg": 0.001,
           "node": "fuel_fill:fuel_fill"
         },
@@ -165,7 +165,7 @@
     {
       "file": "assets/models/lighter.glb",
       "grip": {
-        "at": [0, 0.027, 0],
+        "at": [0, 0.028000000000000001, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
@@ -199,12 +199,12 @@
       },
       "parts": {
         "fuel_fill": {
-          "centreOfMass": [-4.1916167664670657e-5, 0.024880239520958088, -2.8683080385566047e-18],
+          "centreOfMass": [0, 0.025000000000000001, -2.8829744672889082e-18],
           "massKg": 0.001,
           "node": "fuel_fill:fuel_fill"
         },
         "lighter": {
-          "centreOfMass": [0, 0.029564393939393935, -1.1363636363636363e-5],
+          "centreOfMass": [0, 0.030402930402930402, -1.0989010989010987e-5],
           "massKg": 0.019,
           "node": "lighter:lighter"
         }
@@ -214,7 +214,7 @@
     {
       "file": "assets/models/matches.glb",
       "grip": {
-        "at": [0, 0.0050000000000000001, 0],
+        "at": [0, 0.01, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
@@ -228,7 +228,7 @@
       },
       "parts": {
         "matches": {
-          "centreOfMass": [0, 0.0096153846153846142, 0.0011538461538461537],
+          "centreOfMass": [0, 0.01131578947368421, 0.00078947368421052619],
           "massKg": 0.02,
           "node": "matches:matchbox"
         }
