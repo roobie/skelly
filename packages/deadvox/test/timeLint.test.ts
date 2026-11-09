@@ -60,6 +60,16 @@ describe('time lint boundary and naming rules', () => {
     ]);
   });
 
+  it('treats asset-path keys as identities while still checking the fields beneath them', () => {
+    const valid = JSON.stringify({ 'assets/models/fixture_timer.glb': { materials: ['fixture_material'] } });
+    expect(temporalNameFindings('fixture.json', valid, 'json')).toEqual([]);
+    const invalid = JSON.stringify({ 'assets/models/fixture_sim_seconds.glb': { duration: 1 } });
+    expect(
+      temporalNameFindings('fixture.json', invalid, 'json').map((finding) => finding.match(FIELD_NAME)?.[1]),
+    ).toEqual(['duration']);
+    expect(temporalCatalogueFindings(['fixture.json'], () => invalid)).toEqual([]);
+  });
+
   it('recognizes authored inventory handling durations and rejects missing clocks', () => {
     const source = readFileSync('../mods/skelly.inventory/inventory.json', 'utf8');
     const data = JSON.parse(source) as { inventory: { handling: Record<string, number> }[] };

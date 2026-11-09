@@ -107,7 +107,7 @@ Turned pieces share a library-wide eight-flat default, with authored side counts
 taking precedence and `sides: null` opting into round geometry. This replaces a
 look determined by a model's origin with a consistent library look while preserving
 authoring control. See
-`packages/skelly-assets/tools/packages/thing-authoring-tool/items.jsonnet`, `turnedSides`, and
+`packages/skelly-assets/models/item-settings.libsonnet`, `turnedSides`, and
 `packages/skelly-assets/tools/packages/thing-authoring-tool/src/families/compound.ts`, `compound`.
 
 Delete a copy as duplicate elimination only when its producer equals it. A differing

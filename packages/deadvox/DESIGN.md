@@ -1472,7 +1472,7 @@ held light needs both its world illumination and a self-lit held presentation.
 A flame hidden inside the palm cannot communicate ignition, even when its world
 source is working. Clear glass does not hide a flame because it still shows ignition.
 The lamp's authored grip must leave the flame visible; see
-`packages/skelly-assets/tools/packages/thing-authoring-tool/lights.libsonnet`, `oil_lamp`, and `src/render/modelFlame.ts`, `ModelFlames`.
+`packages/skelly-assets/models/lights.libsonnet`, `oil_lamp`, and `src/render/modelFlame.ts`, `ModelFlames`.
 
 Holding right mouse with empty hands must read as a boxer guard, ready to
 punch; an empty offhand must follow a melee weapon into en-garde. Empty hands
@@ -1526,16 +1526,17 @@ servings, not measured fuel, so liquid transfer does not mix them. See `src/core
 
 Can vessels are inventory atoms because opening and eating retain one vessel,
 not a disassemblable set of parts. Sharing filled-package geometry must not impose
-its mass on an empty vessel; shell and food tuning must remain independent. See `packages/mods/skelly.packaged-foods/models-packaged-foods.jsonnet`, `models`,
+its mass on an empty vessel; shell and food tuning must remain independent.
+Game content owns these atoms' inventory mass so geometry-helper refactors cannot
+remove carried-weight tuning. See `packages/mods/skelly.packaged-foods/models-packaged-foods.jsonnet`, `models`,
 `packages/mods/skelly.packaged-foods/packaged-foods-items.jsonnet`, `canShellGrams`,
-`packages/skelly-assets/tools/packages/thing-authoring-tool/cans.libsonnet`, `shellMassKg`, and
 `src/core/items.ts`, `typeWeightGrams` and `weightOf`.
 
 An opened vessel must read as opened even after its food is gone, so the lid
 stays attached and raised rather than relying on a food surface or an item name.
 The dedicated opener needs the silhouette of a hand tool rather than a storage
 bundle. These are visual distinctions, not extra inventory parts or mass sources.
-See `packages/skelly-assets/tools/packages/thing-authoring-tool/cans.libsonnet`, `items`, and
+See `packages/skelly-assets/models/cans.libsonnet`,
 `packages/skelly-assets/tools/packages/thing-authoring-tool/src/families/openTin.ts`, `openTin`, and
 `packages/skelly-assets/tools/packages/thing-authoring-tool/src/families/handOpener.ts`, `handOpener`.
 
@@ -1679,7 +1680,7 @@ scatter is involved. See `src/core/pileDisplay.ts`, `effectivePileDisplay` and
 Pill medicines show a blister strip or bottle regardless of stack size, including
 when one item is one pill. A pack is easier to see and reads as medicine; the
 visual pack does not change dose counts or carried mass. See
-`packages/skelly-assets/tools/packages/thing-authoring-tool/food-medical.libsonnet`, `bottle`, and
+`packages/skelly-assets/models/food-medical.libsonnet`, `bottle`, and
 `packages/mods/skelly.medicine/medicine-items.jsonnet`, `pillPack`.
 
 Food portions depict food rather than a second vessel, so a serving does not
@@ -1707,7 +1708,7 @@ lose its presentation. Copies belong to the rendered instance, not the library;
 replacing a viewer model or painting a still must release them without disposing
 shared geometry. Recipe-owned geometry must stay in its recipe so refresh and
 export checks agree; hand-authored assets retain a separate preparation owner.
-See `packages/skelly-assets/tools/packages/thing-authoring-tool/handhelds.libsonnet`, `carrier`,
+See `packages/skelly-assets/models/handhelds.libsonnet`, `carrier`,
 `tools/item-fuel-models.mjs`, `recipes`, `tools/item-model-metadata.mjs`, `metadata`,
 `src/core/itemPresentation.ts`, `modelPresentationAssetIssues`, and
 `src/render/itemStateLook.ts`, `disposeItemStateMaterials`.
@@ -2145,7 +2146,7 @@ and of each other, standing or crouched; swinging limbs are excluded because the
 already pass through the body. A worn item keeps its fitted parts, including their
 own worn presentation, so equipping it does not change its identity or lose its sling.
 Carry stays visible in first person for the same reason as the body. See
-`packages/skelly-assets/tools/packages/thing-authoring-tool/worn-carry.libsonnet`, `fit`;
+`packages/skelly-assets/models/worn-carry.libsonnet`, `fit`;
 `src/render/wornModels.ts`, `wornEntries`; and `test/wornCarry.test.ts`.
 
 Head gear can sit in front of the eyes, so the player should see what they look
@@ -2163,7 +2164,7 @@ Vests and carry shells have a fit per under-layer, selected by the torso garment
 so they stay snug over a bare torso and over a jacket rather than burying the outer
 shell or floating away from the body. Clothing coverage hides only the base body,
 not gear layered above it. See `src/render/wornModels.ts`, `WornModels`, and
-`packages/skelly-assets/tools/packages/thing-authoring-tool/worn-carry.libsonnet`, `carry`.
+`packages/skelly-assets/models/worn-carry.libsonnet`, `carry`.
 One vest at a time makes the player pick pouches or protection. Whole-region
 coverage keeps layering simple rather than asking the player to judge uncovered
 fractions. Contact can meet a different layer because a puddle reaches boots
