@@ -1,3 +1,5 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.deadvox.scenario.lock-test', [import '../models-lock-test.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.deadvox.scenario.lock-test'),
+  releasedFiles:: release.files,
+  sources: release.sources,
 }

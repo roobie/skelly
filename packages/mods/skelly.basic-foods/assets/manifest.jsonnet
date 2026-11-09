@@ -1,3 +1,5 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.basic-foods', [import '../models-basic-foods.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.basic-foods'),
+  releasedFiles:: release.files,
+  sources: release.sources,
 }

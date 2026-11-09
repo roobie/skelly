@@ -1,3 +1,5 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.traps', [import '../models-traps.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.traps'),
+  releasedFiles:: release.files,
+  sources: release.sources,
 }

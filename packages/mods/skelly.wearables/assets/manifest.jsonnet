@@ -1,5 +1,7 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.wearables', [import '../models-wearables.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.wearables') + [
+  releasedFiles:: release.files,
+  sources: release.sources + [
     {
       title: '75 CC0 Breaking/Falling/Hit SFX',
       url: 'https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx',

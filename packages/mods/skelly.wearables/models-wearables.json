@@ -23,348 +23,6 @@
       }
     },
     {
-      "file": "assets/models/hat_cotton.glb",
-      "id": "hat_cotton",
-      "itemPresentation": {
-        "materials": ["cloth"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "hat_cotton": {
-          "centreOfMass": [-4.7144544441302264e-5, 0.071453196479962705, -2.8978756674928952e-5],
-          "massKg": 0.078,
-          "node": "hat_cotton:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/kufi_cap.glb",
-      "id": "kufi_cap",
-      "itemPresentation": {
-        "materials": ["cloth", "cloth"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "kufi_cap": {
-          "centreOfMass": [-9.600763123193897e-5, 0.042910024408719841, -6.1667087506663459e-5],
-          "massKg": 0.087999999999999995,
-          "node": "kufi_cap:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/pointed_hat.glb",
-      "id": "pointed_hat",
-      "itemPresentation": {
-        "materials": ["cloth", "cloth", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "pointed_hat": {
-          "centreOfMass": [0.0039620627360814576, 0.07441369683034979, -1.395959927738525e-5],
-          "massKg": 0.040000000000000001,
-          "node": "pointed_hat:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/wizard_hat_costume.glb",
-      "id": "wizard_hat_costume",
-      "itemPresentation": {
-        "materials": ["cloth", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "wizard_hat_costume": {
-          "centreOfMass": [-0.00059265388351260992, 0.063238550922761511, -7.6339173292081682e-5],
-          "massKg": 0.29999999999999999,
-          "node": "wizard_hat_costume:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/helmet_barbute.glb",
-      "id": "helmet_barbute",
-      "itemPresentation": {
-        "materials": ["metal", "cloth", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "helmet_barbute": {
-          "centreOfMass": [-8.875173741727357e-5, 0.12826408742556197, -0.0041376672064880569],
-          "massKg": 1.175,
-          "node": "helmet_barbute:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/helmet_bronze.glb",
-      "id": "helmet_bronze",
-      "itemPresentation": {
-        "materials": ["metal", "cloth"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "helmet_bronze": {
-          "centreOfMass": [-7.3595459502562549e-5, 0.12053184328717005, -0.0041178981436964246],
-          "massKg": 1.1100000000000001,
-          "node": "helmet_bronze:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/helmet_conical.glb",
-      "id": "helmet_conical",
-      "itemPresentation": {
-        "materials": ["metal", "organic", "organic"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "helmet_conical": {
-          "centreOfMass": [-0.0003867076862974894, 0.13954160562554951, -0.0032460689520460973],
-          "massKg": 1.425,
-          "node": "helmet_conical:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/helmet_corinthian.glb",
-      "id": "helmet_corinthian",
-      "itemPresentation": {
-        "materials": ["metal", "cloth"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "helmet_corinthian": {
-          "centreOfMass": [-2.1376617759211414e-5, 0.12032718290781191, -0.0070499812186265685],
-          "massKg": 1.3100000000000001,
-          "node": "helmet_corinthian:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/helmet_galea.glb",
-      "id": "helmet_galea",
-      "itemPresentation": {
-        "materials": ["metal", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "helmet_galea": {
-          "centreOfMass": [-2.5217577803113175e-5, 0.1449263678334782, -0.010632719637878294],
-          "massKg": 1.3100000000000001,
-          "node": "helmet_galea:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/hood_ninja.glb",
-      "id": "hood_ninja",
-      "itemPresentation": {
-        "materials": ["cloth", "cloth", "cloth"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "hood_ninja": {
-          "centreOfMass": [-0.00022664471798399834, 0.16448079080776146, 0.0051161887914302033],
-          "massKg": 0.080000000000000002,
-          "node": "hood_ninja:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/copper_circlet.glb",
-      "id": "copper_circlet",
-      "itemPresentation": {
-        "materials": ["wood", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "copper_circlet": {
-          "centreOfMass": [0.0013875846389561602, 0.013934512924430388, 0.0071469875945237953],
-          "massKg": 0.69999999999999996,
-          "node": "copper_circlet:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/boots_combat_worn_foot.glb",
-      "id": "boots_combat_worn_foot",
-      "itemPresentation": {
-        "materials": ["polymer", "cloth", "polymer", "cloth"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "boots_combat_worn_foot": {
-          "centreOfMass": [0, -0.044962674241923774, 0.061694919733104321],
-          "massKg": 0.10000000000000001,
-          "node": "boots_combat_worn_foot:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/boots_combat_worn_shaft.glb",
-      "id": "boots_combat_worn_shaft",
-      "itemPresentation": {
-        "materials": ["cloth", "polymer", "cloth"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "boots_combat_worn_shaft": {
-          "centreOfMass": [0, -0.25090151724137927, 0.0015348965517241375],
-          "massKg": 0.10000000000000001,
-          "node": "boots_combat_worn_shaft:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/gloves_leather_worn_palm.glb",
-      "id": "gloves_leather_worn_palm",
-      "itemPresentation": {
-        "materials": ["organic", "cloth"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "gloves_leather_worn_palm": {
-          "centreOfMass": [-0.00039133205863607412, -0.0091826003824091798, -0.0001736775015933715],
-          "massKg": 0.10000000000000001,
-          "node": "gloves_leather_worn_palm:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/gloves_leather_worn_fingers.glb",
-      "id": "gloves_leather_worn_fingers",
-      "itemPresentation": {
-        "materials": ["organic"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "gloves_leather_worn_fingers": {
-          "centreOfMass": [0, -0.040000000000000001, -0.002],
-          "massKg": 0.10000000000000001,
-          "node": "gloves_leather_worn_fingers:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/gloves_leather_worn_thumb.glb",
-      "id": "gloves_leather_worn_thumb",
-      "itemPresentation": {
-        "materials": ["organic"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "gloves_leather_worn_thumb": {
-          "centreOfMass": [0, -0.032000000000000001, 0.0080000000000000002],
-          "massKg": 0.10000000000000001,
-          "node": "gloves_leather_worn_thumb:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/jacket_leather_worn_body.glb",
-      "id": "jacket_leather_worn_body",
-      "itemPresentation": {
-        "materials": ["organic", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "jacket_leather_worn_body": {
-          "centreOfMass": [-0.00011688928858806269, 0.37459539735882996, -2.3867089506318864e-5],
-          "massKg": 0.10000000000000001,
-          "node": "jacket_leather_worn_body:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/jacket_leather_worn_upper.glb",
-      "id": "jacket_leather_worn_upper",
-      "itemPresentation": {
-        "materials": ["organic"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "jacket_leather_worn_upper": {
-          "centreOfMass": [0, -0.14200000000000002, -0.0014090909090909091],
-          "massKg": 0.10000000000000001,
-          "node": "jacket_leather_worn_upper:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/jacket_leather_worn_fore.glb",
-      "id": "jacket_leather_worn_fore",
-      "itemPresentation": {
-        "materials": ["organic"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "jacket_leather_worn_fore": {
-          "centreOfMass": [-0.00016897305171158049, -0.13033357611070651, 0],
-          "massKg": 0.10000000000000001,
-          "node": "jacket_leather_worn_fore:compound"
-        }
-      }
-    },
-    {
       "file": "assets/models/jeans.glb",
       "grip": {
         "at": [0, 0.025000000000000001, 0],
@@ -583,7 +241,7 @@
     {
       "file": "assets/models/hiking_backpack.glb",
       "grip": {
-        "at": [0, 0.60499999999999998, -0.005000000000000001],
+        "at": [0, 0.60499999999999998, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
@@ -597,7 +255,7 @@
       },
       "parts": {
         "hiking_backpack": {
-          "centreOfMass": [0, 0.28675334178944278, -0.0089906332325104914],
+          "centreOfMass": [0, 0.28711519719316475, -0.0089633552075888516],
           "massKg": 1.3999999999999999,
           "node": "hiking_backpack:bag"
         }
@@ -621,7 +279,7 @@
       },
       "parts": {
         "helmet": {
-          "centreOfMass": [0.00022388059701492502, 0.044351457000710789, 0.0032889125799573679],
+          "centreOfMass": [3.0047284400649191e-19, 0.044485633203263597, 0.0036803831145796407],
           "massKg": 1.3999999999999999,
           "node": "helmet:compound"
         }
@@ -772,7 +430,7 @@
       },
       "parts": {
         "shell": {
-          "centreOfMass": [0.0031677156844046009, 0.43289363595905656, 0.024436200648483682],
+          "centreOfMass": [0, 0.44373071798208924, 0.024998853459762632],
           "massKg": 0.90000000000000002,
           "node": "shell:compound"
         }
@@ -790,7 +448,7 @@
       },
       "parts": {
         "shell": {
-          "centreOfMass": [0.0019683822326272203, 0.47175982076552253, 0.0058561089503958571],
+          "centreOfMass": [0, 0.46968208497119152, 1.4253287169079143e-18],
           "massKg": 2.5,
           "node": "shell:compound"
         }
@@ -808,12 +466,12 @@
       },
       "parts": {
         "bag": {
-          "centreOfMass": [7.7213057776159976e-5, 0.3735526027324011, -0.24779172793626178],
+          "centreOfMass": [4.5714296374985628e-17, 0.37361609741768365, -0.24766614147995833],
           "massKg": 0.59999999999999998,
           "node": "bag:bag"
         },
         "straps": {
-          "centreOfMass": [0, 0.55107547169811322, 0.0043227408142999012],
+          "centreOfMass": [0, 0.52673724368144981, 0.028065808297567961],
           "massKg": 0.10000000000000001,
           "node": "straps:straps"
         }
@@ -831,12 +489,12 @@
       },
       "parts": {
         "bag": {
-          "centreOfMass": [4.2424128322903646e-17, 0.34674104677493467, -0.29055790462864456],
+          "centreOfMass": [4.2452375543193857e-17, 0.34697147655865407, -0.29054457227248476],
           "massKg": 1.3999999999999999,
           "node": "bag:bag"
         },
         "straps": {
-          "centreOfMass": [0, 0.54831614785992233, 0.001333657587548633],
+          "centreOfMass": [0, 0.52440186697782964, 0.024460676779463252],
           "massKg": 0.10000000000000001,
           "node": "straps:straps"
         }
@@ -854,12 +512,12 @@
       },
       "parts": {
         "bag": {
-          "centreOfMass": [1.924312414439925e-17, 0.15526326635754767, 0.17494693456980939],
+          "centreOfMass": [1.9439711246214923e-17, 0.15714013058764442, 0.17482270215971873],
           "massKg": 0.14999999999999999,
           "node": "bag:bag"
         },
         "belt": {
-          "centreOfMass": [-3.9249376633595619e-18, 0.152, 0.00029181494661921926],
+          "centreOfMass": [-3.9389552978715605e-18, 0.152, 9.8473882446789013e-19],
           "massKg": 0.050000000000000003,
           "node": "belt:belt"
         }
@@ -877,7 +535,7 @@
       },
       "parts": {
         "shell": {
-          "centreOfMass": [0.00017977528089887604, 0.44398901373283406, 0.038466716604244694],
+          "centreOfMass": [0, 0.43802930806522705, 0.027341229616571185],
           "massKg": 0.90000000000000002,
           "node": "shell:compound"
         }
@@ -895,7 +553,7 @@
       },
       "parts": {
         "shell": {
-          "centreOfMass": [0.0002245390560029198, 0.46766966187298414, 0.011311900367132515],
+          "centreOfMass": [0, 0.46454334242717554, 0],
           "massKg": 2.5,
           "node": "shell:compound"
         }
@@ -913,12 +571,12 @@
       },
       "parts": {
         "bag": {
-          "centreOfMass": [7.7213057776159976e-5, 0.3735526027324011, -0.27979172793626184],
+          "centreOfMass": [4.5714296374985628e-17, 0.37361609741768365, -0.27966614147995839],
           "massKg": 0.59999999999999998,
           "node": "bag:bag"
         },
         "straps": {
-          "centreOfMass": [0, 0.54339638783269983, 0.051175855513308006],
+          "centreOfMass": [0, 0.55803874643874651, 0.027423361823361823],
           "massKg": 0.10000000000000001,
           "node": "straps:straps"
         }
@@ -936,12 +594,12 @@
       },
       "parts": {
         "bag": {
-          "centreOfMass": [4.2424128322903646e-17, 0.34674104677493467, -0.32255790462864453],
+          "centreOfMass": [4.2452375543193857e-17, 0.34697147655865407, -0.32254457227248473],
           "massKg": 1.3999999999999999,
           "node": "bag:bag"
         },
         "straps": {
-          "centreOfMass": [0, 0.54172326454033781, 0.048192307692307722],
+          "centreOfMass": [0, 0.55580818844643864, 0.0242288278182838],
           "massKg": 0.10000000000000001,
           "node": "straps:straps"
         }
@@ -959,12 +617,12 @@
       },
       "parts": {
         "bag": {
-          "centreOfMass": [1.9331839858186666e-17, 0.15538492063492065, 0.21280853174603176],
+          "centreOfMass": [1.9516847384630277e-17, 0.15726112185686655, 0.21268762088974857],
           "massKg": 0.14999999999999999,
           "node": "bag:bag"
         },
         "belt": {
-          "centreOfMass": [0.00043609022556390944, 0.15199999999999997, 0.015769423558897239],
+          "centreOfMass": [0, 0.15199999999999997, -7.7451368216575613e-19],
           "massKg": 0.050000000000000003,
           "node": "belt:belt"
         }

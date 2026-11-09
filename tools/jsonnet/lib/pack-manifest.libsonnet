@@ -1,7 +1,5 @@
-local builtPack = import 'built-pack.libsonnet';
-// A pack declares its own files plus every file skelly-assets builds for it.
 function(id, tier, content=[], assets={ sources: [] }, json=[], dependencies=[], overrides=[], product=false, defaultStart=null, optIn=false)
-  local built = builtPack.files(id);
+  local built = if std.objectHasAll(assets, 'releasedFiles') then assets.releasedFiles else [];
   local isJson(path) = std.endsWith(path, '.json');
   {
     id: id,

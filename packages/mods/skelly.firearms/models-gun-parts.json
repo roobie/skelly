@@ -53,7 +53,7 @@
       },
       "parts": {
         "barrel_ar_large_medium": {
-          "centreOfMass": [0.18857473800330946, 0, -5.5157198014340778e-6],
+          "centreOfMass": [0.18869900771775083, 0, 0],
           "item": "barrel_ar_large_medium",
           "massKg": 1.1499999999999999,
           "node": "barrel_ar_large_medium:barrel"
@@ -73,7 +73,7 @@
       },
       "parts": {
         "barrel_ar_medium": {
-          "centreOfMass": [0.19537891737891741, 0, -5.6980056980056883e-6],
+          "centreOfMass": [0.19550341685649206, 0, 0],
           "item": "barrel_ar_medium",
           "massKg": 0.94999999999999996,
           "node": "barrel_ar_medium:barrel"
@@ -133,7 +133,7 @@
       },
       "parts": {
         "bolt_carrier_ak": {
-          "centreOfMass": [-0.019016949152542376, -9.7928436911487744e-5, -0.00092278719397363425],
+          "centreOfMass": [-0.019016949152542376, -9.7928436911487744e-5, -0.0009340866290018829],
           "item": "bolt_carrier_ak",
           "massKg": 0.52000000000000002,
           "node": "bolt_carrier_ak:bolt-carrier"
@@ -273,7 +273,7 @@
       },
       "parts": {
         "charging_handle_ar": {
-          "centreOfMass": [-0.13807017543859651, 0.022000000000000002, 0.00017543859649122814],
+          "centreOfMass": [-0.13807017543859651, 0.022000000000000002, -0.00017543859649122814],
           "item": "charging_handle_ar",
           "massKg": 0.059999999999999998,
           "node": "charging_handle_ar:ar-charging-handle"
@@ -293,7 +293,7 @@
       },
       "parts": {
         "charging_handle_ar_large": {
-          "centreOfMass": [-0.17587654320987656, 0.022000000000000002, 0.000419753086419753],
+          "centreOfMass": [-0.17587654320987656, 0.022000000000000002, -0.00032098765432098775],
           "item": "charging_handle_ar_large",
           "massKg": 0.070000000000000007,
           "node": "charging_handle_ar_large:ar-charging-handle"
@@ -313,7 +313,7 @@
       },
       "parts": {
         "forend_pump": {
-          "centreOfMass": [0.087996620987422572, -0.0024708090857893765, -8.3724422752018952e-5],
+          "centreOfMass": [0.087916091739697916, -0.0023333954876002252, -3.8411336938281538e-5],
           "item": "forend_pump",
           "massKg": 0.20000000000000001,
           "node": "forend_pump:forend"
@@ -333,7 +333,7 @@
       },
       "parts": {
         "front_bead": {
-          "centreOfMass": [-2.0242914979757166e-5, 0.0070728744939271265, -2.0242914979757166e-5],
+          "centreOfMass": [0, 0.0070967741935483884, 0],
           "item": "front_bead",
           "massKg": 0.0050000000000000001,
           "node": "front_bead:front-sight-bead"
@@ -353,7 +353,7 @@
       },
       "parts": {
         "front_sight_ak": {
-          "centreOfMass": [-5.9808612440191416e-5, 0.013568181818181814, -1.0765550239234365e-5],
+          "centreOfMass": [0, 0.013612826603325414, 4.7505938242278099e-6],
           "item": "front_sight_ak",
           "massKg": 0.050000000000000003,
           "node": "front_sight_ak:front-sight"
@@ -373,7 +373,7 @@
       },
       "parts": {
         "front_sight_ar": {
-          "centreOfMass": [-3.0268418046830404e-5, 0.018361507709880071, 5.9965733866362162e-5],
+          "centreOfMass": [0, 0.01877985948477752, 0],
           "item": "front_sight_ar",
           "massKg": 0.11,
           "node": "front_sight_ar:front-sight"
@@ -393,7 +393,7 @@
       },
       "parts": {
         "front_sight_sporter": {
-          "centreOfMass": [-5.8201058201058184e-5, 0.0017566137566137571, 0.00014550264550264568],
+          "centreOfMass": [0, 0.0017787114845938376, 2.8011204481792731e-6],
           "item": "front_sight_sporter",
           "massKg": 0.02,
           "node": "front_sight_sporter:front-sight"
@@ -413,7 +413,7 @@
       },
       "parts": {
         "gas_block_ak": {
-          "centreOfMass": [-0.012168674698795182, 0.012409638554216866, -9.1386813298348228e-20],
+          "centreOfMass": [-0.011952380952380954, 0.012428571428571429, -9.0298875044796464e-20],
           "item": "gas_block_ak",
           "massKg": 0.070000000000000007,
           "node": "gas_block_ak:gas-block"
@@ -453,7 +453,7 @@
       },
       "parts": {
         "grip_ak": {
-          "centreOfMass": [0.00025814863102998698, -0.048018252933507172, 0],
+          "centreOfMass": [0.00028051948051948061, -0.047823376623376622, 0],
           "item": "grip_ak",
           "massKg": 0.10000000000000001,
           "node": "grip_ak:grip"
@@ -473,7 +473,7 @@
       },
       "parts": {
         "grip_ar_long": {
-          "centreOfMass": [-0.010869565217391304, -0.05940778032036613, -1.9221967963386715e-5],
+          "centreOfMass": [-0.010816773017319961, -0.059360072926162265, 0],
           "item": "grip_ar_long",
           "massKg": 0.12,
           "node": "grip_ar_long:grip"
@@ -493,7 +493,7 @@
       },
       "parts": {
         "grip_standard": {
-          "centreOfMass": [0.00025814863102998698, -0.048018252933507172, 0],
+          "centreOfMass": [0.00028051948051948061, -0.047823376623376622, 0],
           "item": "grip_standard",
           "massKg": 0.10000000000000001,
           "node": "grip_standard:grip"
@@ -513,7 +513,7 @@
       },
       "parts": {
         "handguard_ak": {
-          "centreOfMass": [0.089129411764705846, 0.0042901960784313704, 0],
+          "centreOfMass": [0.089384615384615368, 0.0041262327416173548, 0],
           "item": "handguard_ak",
           "massKg": 0.25,
           "node": "handguard_ak:handguard"
@@ -573,7 +573,7 @@
       },
       "parts": {
         "handguard_ar_large_free_float": {
-          "centreOfMass": [0.19598096359532927, 0.0064604062408007068, -2.1587675399860938e-6],
+          "centreOfMass": [0.19599999999999998, 0.0064615384615384595, 0],
           "item": "handguard_ar_large_free_float",
           "massKg": 0.62,
           "node": "handguard_ar_large_free_float:handguard"
@@ -693,7 +693,7 @@
       },
       "parts": {
         "lower_pump": {
-          "centreOfMass": [-0.13845901639344263, -0.0086994535519125688, 0],
+          "centreOfMass": [-0.13845901639344263, -0.0087103825136612013, 0],
           "item": "lower_pump",
           "massKg": 0.14999999999999999,
           "node": "lower_pump:lower"
@@ -713,7 +713,7 @@
       },
       "parts": {
         "lower_sporter": {
-          "centreOfMass": [-0.10520704845814982, 0.0012687224669603525, 2.6431718061674023e-5],
+          "centreOfMass": [-0.10525991189427318, 0.0012599118942731276, 0],
           "item": "lower_sporter",
           "massKg": 0.17999999999999999,
           "node": "lower_sporter:lower"
@@ -733,7 +733,7 @@
       },
       "parts": {
         "rear_sight_ak": {
-          "centreOfMass": [0.00086666666666666674, 0.0030000000000000001, 0],
+          "centreOfMass": [0.00093333333333333343, 0.0030000000000000001, 0],
           "item": "rear_sight_ak",
           "massKg": 0.050000000000000003,
           "node": "rear_sight_ak:sight"
@@ -753,7 +753,7 @@
       },
       "parts": {
         "rear_sight_sporter": {
-          "centreOfMass": [0.00059090909090909083, 0.0056363636363636364, 0],
+          "centreOfMass": [0.00081818181818181827, 0.0056363636363636364, 0],
           "item": "rear_sight_sporter",
           "massKg": 0.035000000000000003,
           "node": "rear_sight_sporter:sporting-rear-sight"
@@ -853,7 +853,7 @@
       },
       "parts": {
         "receiver_sporter": {
-          "centreOfMass": [-0.089818012999071536, -0.00012441968430826342, -0.00076323119777158769],
+          "centreOfMass": [-0.089818012999071536, -0.00012441968430826342, -0.0007632311977715878],
           "item": "receiver_sporter",
           "massKg": 0.69999999999999996,
           "node": "receiver_sporter:receiver"
@@ -933,7 +933,7 @@
       },
       "parts": {
         "revolver_ejector": {
-          "centreOfMass": [0.039511111111111122, -6.3209212531357549e-20, -4.444444444444446e-5],
+          "centreOfMass": [0.03800000000000002, -2.0611699738486156e-20, -2.0611699738486156e-20],
           "item": "revolver_ejector",
           "massKg": 0.025000000000000001,
           "node": "revolver_ejector:revolver-ejector"
@@ -953,7 +953,7 @@
       },
       "parts": {
         "revolver_frame": {
-          "centreOfMass": [-0.059156943303204548, -0.032027937551355794, -9.8603122432210289e-6],
+          "centreOfMass": [-0.058827473426001593, -0.031828291087489774, 6.202048653935324e-21],
           "item": "revolver_frame",
           "massKg": 0.40000000000000002,
           "node": "revolver_frame:revolver-frame"
@@ -993,7 +993,7 @@
       },
       "parts": {
         "pistol_slide": {
-          "centreOfMass": [0.010224598930481284, 0.024267379679144375, -0.00015329768270944753],
+          "centreOfMass": [0.010224598930481284, 0.024267379679144375, -0.00016042780748663104],
           "item": "pistol_slide",
           "massKg": 0.27000000000000002,
           "node": "pistol_slide:slide"
@@ -1033,7 +1033,7 @@
       },
       "parts": {
         "revolver_grip": {
-          "centreOfMass": [-0.021072768192048012, -0.039497374343585898, 0],
+          "centreOfMass": [-0.0206430155210643, -0.03932742054693273, 0],
           "item": "revolver_grip",
           "massKg": 0.080000000000000002,
           "node": "revolver_grip:revolver-grip"
@@ -1113,7 +1113,7 @@
       },
       "parts": {
         "stock_m4_long": {
-          "centreOfMass": [-0.16648781458271161, -0.015490898239331544, -5.948473092609202e-5],
+          "centreOfMass": [-0.1664737155326324, -0.015491767506447134, 1.9259938593169044e-19],
           "item": "stock_m4_long",
           "massKg": 0.40000000000000002,
           "node": "stock_m4_long:stock"
@@ -1133,7 +1133,7 @@
       },
       "parts": {
         "stock_m4_medium": {
-          "centreOfMass": [-0.12639972470750171, -0.015806469373709567, -8.2312456985546905e-5],
+          "centreOfMass": [-0.12638278036742523, -0.015806416232519875, 0],
           "item": "stock_m4_medium",
           "massKg": 0.34999999999999998,
           "node": "stock_m4_medium:stock"
@@ -1153,7 +1153,7 @@
       },
       "parts": {
         "stock_sporting_medium": {
-          "centreOfMass": [-0.18056912056089008, -0.04658832495046486, -5.3040695016003652e-5],
+          "centreOfMass": [-0.17990476190476196, -0.04644464664846832, 0],
           "item": "stock_sporting_medium",
           "massKg": 0.5,
           "node": "stock_sporting_medium:stock"
@@ -1173,7 +1173,7 @@
       },
       "parts": {
         "stock_tapered_medium": {
-          "centreOfMass": [-0.2152514720314033, -0.055930323846908728, -4.2688910696761521e-5],
+          "centreOfMass": [-0.2146325308566541, -0.055791030184528918, 0],
           "item": "stock_tapered_medium",
           "massKg": 0.54500000000000004,
           "node": "stock_tapered_medium:stock"

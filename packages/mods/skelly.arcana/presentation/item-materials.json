@@ -1,10 +1,53 @@
 {
-  "assets/models/binder_top.glb": { "materials": ["cloth-cream", "latex-pale", "cloth-heather-grey"] },
+  "assets/models/angular_whistle.glb": { "materials": ["steel-blued", "void-black"] },
+  "assets/models/carved_beetle_ball.glb": { "materials": ["wood-oak", "wood-walnut", "chitin-brown"] },
+  "assets/models/clockwork_rune_case.glb": {
+    "materials": ["brass-polished", "glass-clear", "brass-dull", "steel-bright", "crystal-glow-violet"]
+  },
   "assets/models/crystal_butt_wand.glb": {
     "materials": ["wood-walnut", "leather-brown", "brass-dull", "crystal-glow-blue"]
   },
   "assets/models/crystal_socket_wand.glb": {
     "materials": ["crystal-glow-blue", "brass-dull", "wood-walnut", "wood-oak"]
   },
-  "assets/models/rune_clay_tablet.glb": { "materials": ["clay-terracotta", "gem-aquamarine"] }
+  "assets/models/glowing_rune_scroll.glb": {
+    "materials": ["paper-butcher", "wood-walnut", "crystal-glow-violet", "cloth-crimson", "lacquer-red"]
+  },
+  "assets/models/golem_heart.glb": { "materials": ["bronze-polished", "steel-blued", "crystal-glow-violet"] },
+  "assets/models/grimoire.glb": { "materials": ["leather-oxblood", "paper-pages-cream", "brass-dull"] },
+  "assets/models/grown_wildwood_weaver.glb": {
+    "materials": ["wood-oak", "gem-onyx", "leaf-green", "bark-birch", "bark", "bone"]
+  },
+  "assets/models/holy_symbol_wood.glb": { "materials": ["cord-cotton", "wood-pine", "bark"] },
+  "assets/models/holy_symbol.glb": { "materials": ["metal-gold", "brass-polished"] },
+  "assets/models/leaf_wrapped_resin_rune.glb": {
+    "materials": ["leaf-green", "plant-dried", "resin-honey", "wood-walnut"]
+  },
+  "assets/models/petrified_eye.glb": { "materials": ["stone-grey", "jade-green", "obsidian"] },
+  "assets/models/rune_candle.glb": { "materials": ["wax-ivory", "cloth-charred", "crystal-glow-blue"] },
+  "assets/models/rune_clay_tablet.glb": { "materials": ["clay-terracotta", "gem-aquamarine"] },
+  "assets/models/rune_engine_case.glb": {
+    "materials": [
+      "steel-grey",
+      "steel-blued",
+      "glass-clear",
+      "gem-aquamarine",
+      "brass-dull",
+      "copper",
+      "plastic-matte-black",
+      "rubber-black"
+    ]
+  },
+  "assets/models/silver_weapon_token.glb": { "materials": ["metal-silver", "steel-grey"] },
+  "assets/models/small_relic.glb": { "materials": ["metal-silver", "velvet-red", "bone"] },
+  "assets/models/storage_ring.glb": { "materials": ["metal-platinum", "crystal-glow-violet"] },
+  "assets/models/strung_rune_frame.glb": {
+    "materials": ["wood-birch", "cord-cotton", "stone-grey", "crystal-glow-violet"]
+  },
+  "assets/models/violet_glow_pearl.glb": {
+    "materials": ["gem-purple", "gem-aquamarine", "crystal-glow-blue", "crystal-glow-white"]
+  },
+  "assets/models/young_wildwood_weaver.glb": {
+    "materials": ["wood-oak", "gem-citrine", "leaf-green", "bark-birch", "bark"]
+  }
 }

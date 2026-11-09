@@ -1,6 +1,7 @@
 {
   "assets/models/ak_slant_compensator.glb": { "materials": ["steel-parkerized"] },
   "assets/models/ammo_can.glb": { "materials": ["polymer-od-green", "paperboard-tan"] },
+  "assets/models/baldric.glb": { "materials": ["leather-black", "steel-grey", "plastic-matte-black", "leather-brown"] },
   "assets/models/barrel_ak_medium.glb": { "materials": ["steel-blued"] },
   "assets/models/barrel_ar_large_long.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/barrel_ar_large_medium.glb": { "materials": ["alu-anodized-black"] },
@@ -35,6 +36,10 @@
   "assets/models/front_sight_sporter.glb": { "materials": ["steel-blued"] },
   "assets/models/gas_block_ak.glb": { "materials": ["steel-blued"] },
   "assets/models/gas_cylinder_ak.glb": { "materials": ["steel-blued"] },
+  "assets/models/grenade_container.glb": {
+    "materials": ["steel-grey", "paint-charcoal", "cloth-olive-drab", "plastic-yellow"]
+  },
+  "assets/models/grenade_launcher_stock.glb": { "materials": ["polymer-black", "steel-parkerized", "rubber-black"] },
   "assets/models/grip_ak.glb": { "materials": ["wood-walnut"] },
   "assets/models/grip_ar_long.glb": { "materials": ["polymer-black"] },
   "assets/models/grip_standard.glb": { "materials": ["polymer-black"] },
@@ -54,6 +59,9 @@
   "assets/models/magazine_pistol_9.glb": { "materials": ["steel-blued"] },
   "assets/models/magazine_stanag_20.glb": { "materials": ["alu-anodized-black", "steel-blued"] },
   "assets/models/magazine_stanag_30.glb": { "materials": ["alu-anodized-black"] },
+  "assets/models/mortar_round_container.glb": {
+    "materials": ["steel-grey", "paint-charcoal", "cloth-olive-drab", "plastic-yellow"]
+  },
   "assets/models/optic_digital_thermal.glb": { "materials": ["alu-anodized-black", "glass-lens-amber"] },
   "assets/models/optic_fixed_prism_4x.glb": { "materials": ["alu-anodized-black", "glass-lens-green"] },
   "assets/models/optic_high_mag_5_25x.glb": { "materials": ["alu-anodized-black", "glass-lens-amber"] },
@@ -74,6 +82,9 @@
   "assets/models/receiver_ar.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/receiver_pump.glb": { "materials": ["steel-blued"] },
   "assets/models/receiver_sporter.glb": { "materials": ["steel-blued"] },
+  "assets/models/recoilless_round_container.glb": {
+    "materials": ["paint-charcoal", "paint-olive", "plastic-yellow", "steel", "plastic-black"]
+  },
   "assets/models/revolver_barrel.glb": { "materials": ["steel-stainless"] },
   "assets/models/revolver_crane.glb": { "materials": ["steel-stainless"] },
   "assets/models/revolver_cylinder.glb": { "materials": ["steel-stainless"] },
@@ -164,6 +175,7 @@
   "assets/models/taped_flashlight_mount.glb": {
     "materials": ["steel-grey", "polymer-black", "plastic-white", "tape-grey"]
   },
+  "assets/models/three_clip_ammunition_carton.glb": { "materials": ["paperboard-brown", "paint-charcoal"] },
   "assets/models/tube_magazine.glb": { "materials": ["steel-blued"] },
   "assets/models/weapon_sling_worn_jacket.glb": { "materials": ["cord-olive", "steel-grey"] },
   "assets/models/weapon_sling_worn.glb": { "materials": ["cord-olive", "steel-grey"] },

@@ -22,10 +22,6 @@
       "path": "things/gas_canister.model.json"
     },
     {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
       "kind": "asset",
       "path": "assets/models/gas_canister.glb"
     }

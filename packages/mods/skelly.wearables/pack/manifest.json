@@ -23,19 +23,7 @@
     },
     {
       "kind": "json",
-      "path": "things/boots_combat_worn_foot.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/boots_combat_worn_shaft.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/cargo_pants.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/copper_circlet.model.json"
     },
     {
       "kind": "json",
@@ -51,42 +39,6 @@
     },
     {
       "kind": "json",
-      "path": "things/gloves_leather_worn_fingers.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/gloves_leather_worn_palm.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/gloves_leather_worn_thumb.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/hat_cotton.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/helmet_barbute.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/helmet_bronze.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/helmet_conical.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/helmet_corinthian.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/helmet_galea.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/hiking_backpack.model.json"
     },
     {
@@ -99,15 +51,7 @@
     },
     {
       "kind": "json",
-      "path": "things/hood_ninja.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/hoodie.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/index.json"
     },
     {
       "kind": "json",
@@ -115,27 +59,7 @@
     },
     {
       "kind": "json",
-      "path": "things/jacket_leather_worn_body.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/jacket_leather_worn_fore.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/jacket_leather_worn_upper.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/jeans.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/kufi_cap.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/pointed_hat.model.json"
     },
     {
       "kind": "json",
@@ -180,10 +104,6 @@
     {
       "kind": "json",
       "path": "things/utility_vest_worn_jacket.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/wizard_hat_costume.model.json"
     },
     {
       "kind": "json",
@@ -239,19 +159,7 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/boots_combat_worn_foot.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/boots_combat_worn_shaft.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/cargo_pants.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/copper_circlet.glb"
     },
     {
       "kind": "asset",
@@ -267,42 +175,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/gloves_leather_worn_fingers.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/gloves_leather_worn_palm.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/gloves_leather_worn_thumb.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/hat_cotton.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/helmet_barbute.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/helmet_bronze.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/helmet_conical.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/helmet_corinthian.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/helmet_galea.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/hiking_backpack.glb"
     },
     {
@@ -315,10 +187,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/hood_ninja.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/hoodie.glb"
     },
     {
@@ -327,27 +195,7 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/jacket_leather_worn_body.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/jacket_leather_worn_fore.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/jacket_leather_worn_upper.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/jeans.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/kufi_cap.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/pointed_hat.glb"
     },
     {
       "kind": "asset",
@@ -400,10 +248,6 @@
     {
       "kind": "asset",
       "path": "assets/models/utility_vest_worn_jacket.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/wizard_hat_costume.glb"
     },
     {
       "kind": "asset",

@@ -16,9 +16,13 @@ export const PACK_ROOT_BASE = 'src/product';
 /**
  * Every shipped pack, opt-in ones included, as the bundle stamp and file hashes cover them. `external` is the shared
  * root of built files, relative to `PACK_ROOT_BASE` as pack roots are; only the namespaces of the packs found here are
- * listed, and a file there that its pack does not declare is an error.
+ * listed. Undeclared release files may remain installed; other unclaimed external files are errors.
  */
 export const readAvailablePacks = (packageRoot: string, external: string = EXTERNAL_ASSET_ROOT): PackInput[] => {
+  const releasePath = resolve(packageRoot, PACK_ROOT_BASE, external, 'manifest.json');
+  const release: { packs: Record<string, { files: string[] }> } = existsSync(releasePath)
+    ? JSON.parse(readFileSync(releasePath, 'utf8'))
+    : { packs: {} };
   const roots = ['mods', '../mods']
     .flatMap((root) => {
       const directory = resolve(packageRoot, root);
@@ -55,9 +59,10 @@ export const readAvailablePacks = (packageRoot: string, external: string = EXTER
     const externalFiles = existsSync(namespace)
       ? readdirSync(namespace, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile())
       : [];
+    const released = new Set(release.packs[manifest.id]?.files ?? []);
     for (const entry of externalFiles) {
       const path = relative(namespace, resolve(entry.parentPath, entry.name)).split(sep).join('/');
-      if (!claimed.has(path)) {
+      if (!(claimed.has(path) || released.has(path))) {
         throw new Error(`Pack ${manifest.id}: unlisted external file ${path}`);
       }
     }

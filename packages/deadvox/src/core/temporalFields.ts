@@ -38,6 +38,20 @@ export const TEMPORAL_FIELDS = [
     unit: 'Milliseconds',
     dimension: 'duration',
   },
+  {
+    path: 'graphics[].gore.chunks.speedMetresPerRealSecond',
+    clock: 'Real',
+    unit: 'PerSecond',
+    dimension: 'rate',
+  },
+  {
+    path: 'graphics[].gore.chunks.spinRadiansPerRealSecond',
+    clock: 'Real',
+    unit: 'PerSecond',
+    dimension: 'rate',
+  },
+  { path: 'graphics[].gore.chunks.lifetimeRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
+  { path: 'graphics[].gore.chunks.fadeRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'scenarios.outbreakAgeGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   {
     path: 'scenarios[].attemptPolicy.persistIntervalRealMs',

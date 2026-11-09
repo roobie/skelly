@@ -10,6 +10,7 @@ import { TEST_POOL } from '../../testPool.ts';
 import { buildRevisionFromGit } from './src/core/buildRevision.ts';
 import { launcherModCatalogue } from './src/core/bundledModCatalogue.ts';
 import { bundleStampPlugin, UNSTAMPED_BUNDLE_DEFINES } from './tools/bundleStampPlugin.ts';
+import { declaredAssetGlobsPlugin } from './tools/declaredAssetGlobsPlugin.ts';
 import { bundledPackDefines, readAvailablePacks } from './tools/readBundledPacks.ts';
 import {
   fingerprintAfterHotChange,
@@ -19,7 +20,8 @@ import {
 } from './tools/simulationFingerprint.ts';
 
 const packageRoot = fileURLToPath(new URL('.', import.meta.url));
-const packDefines = await bundledPackDefines(readAvailablePacks(packageRoot));
+const packs = readAvailablePacks(packageRoot);
+const packDefines = await bundledPackDefines(packs);
 const filesUnder = (directory: string, prefix: string): { name: string; path: string }[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const relative = `${prefix}${entry.name}`;
@@ -194,6 +196,7 @@ export default defineConfig({
     simulationFingerprintPlugin(),
     bundleStampPlugin(packageRoot),
     bundledModListPlugin(),
+    declaredAssetGlobsPlugin(packageRoot, packs),
     // biome-ignore lint/style/noProcessEnv: HTTPS is an opt-in local development server mode.
     ...(process.env.SKELLY_HTTPS === '1' ? [basicSsl()] : []),
   ],

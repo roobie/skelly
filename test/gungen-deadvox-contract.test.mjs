@@ -93,7 +93,7 @@ const COMPOSED_GUNS = [...EXPORT_IDS]
 
 describe('gungen exports satisfy deadvox model validation', () => {
   // biome-ignore lint/style/noDoneCallback: Node's TestContext prints the per-pack listing, not a done callback.
-  it('consumes every pinned gun row of each kind from the external root, with no pending pack', (t) => {
+  it('consumes only pinned gun rows, from the external root', (t) => {
     assertCutOver(CUT_OVER, t);
   });
 

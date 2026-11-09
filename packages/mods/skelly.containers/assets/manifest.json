@@ -4,12 +4,7 @@
       "author": "Björn Roberg",
       "changes": null,
       "download": null,
-      "files": [
-        "assets/models/cutting_board.glb",
-        "assets/models/iron_pot.glb",
-        "assets/models/jerry_can.glb",
-        "assets/models/pan.glb"
-      ],
+      "files": ["assets/models/jerry_can.glb"],
       "licence": "CC-BY-NC-SA-4.0",
       "title": "skelly-assets built models",
       "url": "https://github.com/roobie/skelly-assets"

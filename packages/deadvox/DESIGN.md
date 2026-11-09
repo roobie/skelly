@@ -1472,7 +1472,7 @@ held light needs both its world illumination and a self-lit held presentation.
 A flame hidden inside the palm cannot communicate ignition, even when its world
 source is working. Clear glass does not hide a flame because it still shows ignition.
 The lamp's authored grip must leave the flame visible; see
-`packages/skelly-assets/tools/packages/thing-authoring-tool/lights.libsonnet`, `oil_lamp`, and `src/render/modelFlame.ts`, `ModelFlames`.
+`packages/skelly-assets/models/lights.libsonnet`, `oil_lamp`, and `src/render/modelFlame.ts`, `ModelFlames`.
 
 Holding right mouse with empty hands must read as a boxer guard, ready to
 punch; an empty offhand must follow a melee weapon into en-garde. Empty hands
@@ -1526,16 +1526,17 @@ servings, not measured fuel, so liquid transfer does not mix them. See `src/core
 
 Can vessels are inventory atoms because opening and eating retain one vessel,
 not a disassemblable set of parts. Sharing filled-package geometry must not impose
-its mass on an empty vessel; shell and food tuning must remain independent. See `packages/mods/skelly.packaged-foods/models-packaged-foods.jsonnet`, `models`,
+its mass on an empty vessel; shell and food tuning must remain independent.
+Game content owns these atoms' inventory mass so geometry-helper refactors cannot
+remove carried-weight tuning. See `packages/mods/skelly.packaged-foods/models-packaged-foods.jsonnet`, `models`,
 `packages/mods/skelly.packaged-foods/packaged-foods-items.jsonnet`, `canShellGrams`,
-`packages/skelly-assets/tools/packages/thing-authoring-tool/cans.libsonnet`, `shellMassKg`, and
 `src/core/items.ts`, `typeWeightGrams` and `weightOf`.
 
 An opened vessel must read as opened even after its food is gone, so the lid
 stays attached and raised rather than relying on a food surface or an item name.
 The dedicated opener needs the silhouette of a hand tool rather than a storage
 bundle. These are visual distinctions, not extra inventory parts or mass sources.
-See `packages/skelly-assets/tools/packages/thing-authoring-tool/cans.libsonnet`, `items`, and
+See `packages/skelly-assets/models/cans.libsonnet`,
 `packages/skelly-assets/tools/packages/thing-authoring-tool/src/families/openTin.ts`, `openTin`, and
 `packages/skelly-assets/tools/packages/thing-authoring-tool/src/families/handOpener.ts`, `handOpener`.
 
@@ -1679,7 +1680,7 @@ scatter is involved. See `src/core/pileDisplay.ts`, `effectivePileDisplay` and
 Pill medicines show a blister strip or bottle regardless of stack size, including
 when one item is one pill. A pack is easier to see and reads as medicine; the
 visual pack does not change dose counts or carried mass. See
-`packages/skelly-assets/tools/packages/thing-authoring-tool/food-medical.libsonnet`, `bottle`, and
+`packages/skelly-assets/models/food-medical.libsonnet`, `bottle`, and
 `packages/mods/skelly.medicine/medicine-items.jsonnet`, `pillPack`.
 
 Food portions depict food rather than a second vessel, so a serving does not
@@ -1707,7 +1708,7 @@ lose its presentation. Copies belong to the rendered instance, not the library;
 replacing a viewer model or painting a still must release them without disposing
 shared geometry. Recipe-owned geometry must stay in its recipe so refresh and
 export checks agree; hand-authored assets retain a separate preparation owner.
-See `packages/skelly-assets/tools/packages/thing-authoring-tool/handhelds.libsonnet`, `carrier`,
+See `packages/skelly-assets/models/handhelds.libsonnet`, `carrier`,
 `tools/item-fuel-models.mjs`, `recipes`, `tools/item-model-metadata.mjs`, `metadata`,
 `src/core/itemPresentation.ts`, `modelPresentationAssetIssues`, and
 `src/render/itemStateLook.ts`, `disposeItemStateMaterials`.
@@ -2145,7 +2146,7 @@ and of each other, standing or crouched; swinging limbs are excluded because the
 already pass through the body. A worn item keeps its fitted parts, including their
 own worn presentation, so equipping it does not change its identity or lose its sling.
 Carry stays visible in first person for the same reason as the body. See
-`packages/skelly-assets/tools/packages/thing-authoring-tool/worn-carry.libsonnet`, `fit`;
+`packages/skelly-assets/models/worn-carry.libsonnet`, `fit`;
 `src/render/wornModels.ts`, `wornEntries`; and `test/wornCarry.test.ts`.
 
 Head gear can sit in front of the eyes, so the player should see what they look
@@ -2163,7 +2164,7 @@ Vests and carry shells have a fit per under-layer, selected by the torso garment
 so they stay snug over a bare torso and over a jacket rather than burying the outer
 shell or floating away from the body. Clothing coverage hides only the base body,
 not gear layered above it. See `src/render/wornModels.ts`, `WornModels`, and
-`packages/skelly-assets/tools/packages/thing-authoring-tool/worn-carry.libsonnet`, `carry`.
+`packages/skelly-assets/models/worn-carry.libsonnet`, `carry`.
 One vest at a time makes the player pick pouches or protection. Whole-region
 coverage keeps layering simple rather than asking the player to judge uncovered
 fractions. Contact can meet a different layer because a puddle reaches boots
@@ -2592,7 +2593,13 @@ application rather than weapon-class special cases. See `src/core/schema/actors.
   `src/core/actorSystem.ts`, `ActorSystem.sever`; `src/render/gore.ts`, `Gore.severed`).
   See `src/render/mobActors.ts`, `MobActorMeshes.actorSevered`, for the shared launch.
   Where a droplet lands it leaves a splat. Splats fade and are not
-  saved, so a reload starts clean. Wounded bodies drip and wear blood stains,
+  saved, so a reload starts clean. A flesh chunk lands on a splat of its own,
+  small enough that the chunk stands out from it, and that splat ends with the
+  chunk, whether the chunk expires or a new throw reuses its pool slot: a bare
+  splat where a chunk was reads as a chunk that never came. A splat that has
+  since reused that splat's own slot belongs to something else and stays. Chunks
+  outlast a fight long enough for the player to walk up and find them
+  (`mods/skelly.deadvox.actors/graphics-actors.jsonnet`, `chunks`). Wounded bodies drip and wear blood stains,
   both derived from saved state (lost region health, severed parts, carved
   flesh), so they survive a reload with no state of their own; a corpse keeps
   the stains it fell with. Blood shares scene lighting rather than glowing over
@@ -2613,7 +2620,10 @@ application rather than weapon-class special cases. See `src/core/schema/actors.
   `test/actorSystem.test.ts` checks that a run with a listener matches one without.
   Droplets and splats live in fixed pools, drips come from the nearest few
   bodies, and a cap limits the droplets started per frame. Everything here
-  covers the amalgam too, which is fused from shamblers. See
+  covers the amalgam too, which is fused from shamblers, except where a drip
+  starts: a standing amalgam drips from the underside of its own live flesh, not
+  from anywhere in its bounding box, because that box is mostly air around a
+  rounded mass and a drip placed in it would start beside or above the body. See
   `src/core/actorSystem.ts`, `ActorSystemOptions.onWound`; `src/render/gore.ts`,
   `Gore` and `woundSeverity`; `src/render/bloodStain.ts`, `bloodStain`; and
   `src/render/crowd.ts`, `packBloodiness`.
@@ -3033,7 +3043,9 @@ height-extents table: its upkeep costs more than the collision it avoids. See
 
 The amalgam must steer its size around obstacles without gaining a separate decision system. Body-shape contact matters where a centre-line ray would miss a corner; a usable slide direction should keep it threatening rather than back it out of a doorway. Seeded ambiguity preserves deterministic behaviour. See `src/core/schema/actors.ts`, `ActorSchema`; `mods/skelly.deadvox.actors/enemies.jsonnet`, `amalgam`; `src/core/actorMotion.ts`, `steer`; and `src/core/actorSystem.ts`, `ActorSystem.wallAhead` and `ActorSystem.openSide`.
 
-A carved cell vanishes from the drawn body, and a corpse must retain its visible wounds. The body is the baked mesh, one quad per exposed cell face, and a per-slot cell mask hides carved cells in the vertex shader, because nothing re-meshes at runtime (`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision"). The cost accepted: a hole shows no flesh walls, since the interior faces a carve would expose are not in the mesh, and a hit knocks out no flying flesh. See `src/render/crowd.ts`, `packCellMask`, and `src/render/mobActors.ts`, `MobActorMeshes.actorCarved`.
+A carved cell vanishes from the drawn body, and a corpse and a severed piece must retain their visible wounds. Each hole shows flesh walls built at runtime from the rest grid, so it never shows the world through it; the reason is in `docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision". See `src/render/crowd.ts`, `packCellMask`; `src/render/holeWalls.ts`, `holeWallGeometry`; and `src/render/mobActors.ts`, `MobActorMeshes.actorCarved`.
+
+Every carve, and a hard hit to any enemy, throws flesh chunks with the blood, so the hit visibly knocks flesh loose. They leave the wound back toward the attacker: chunks meet only world blocks, so one thrown along the strike would fly into the body and land hidden under it. The chunks are content models, so mods swap them; the gore path owns them, so nothing re-meshes at runtime. See `src/render/gore.ts`, `Gore.carved` and `Gore.wounded`, with their tuning in `src/core/schema/graphics.ts`, `GraphicsTuningSchema`.
 
 The runner's threat comes from speed rather than stronger attacks; the crawler's
 low posture confines its bite to the legs. Keep their moves, hit regions, sounds and
@@ -3281,7 +3293,7 @@ to make a part a support, without giving `structure` a second meaning. See
 `src/core/inventory.ts`, `Inventory.vehiclePlacementRefusal`. A player-fitted plate
 belongs with add-ons because it proves support chains without bringing scratch-building
 forward. See `packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `mounting_plate`, and
-`packages/skelly-assets/tools/packages/thing-authoring-tool/vehicle-parts.libsonnet`, `mounting_plate`.
+`packages/skelly-assets/models/vehicle-parts.libsonnet`, `mounting_plate`.
 
 A stopped or refused action must not orphan or duplicate the selected item; see
 `src/core/inventory.ts`, `Inventory.vehicleTransfer`, and `src/core/vehicleWork.ts`,

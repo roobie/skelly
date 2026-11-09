@@ -1,7 +1,345 @@
 {
-  "assets/models/cutting_board.glb": { "materials": ["wood-birch"] },
-  "assets/models/iron_pot.glb": { "materials": ["iron-cast", "paint-cream"] },
-  "assets/models/jerry_can.glb": { "materials": ["polymer-od-green", "paint-charcoal"] },
+  "assets/models/aluminium_foot_locker.glb": { "materials": ["alu-bare", "steel", "plastic-black", "brass"] },
+  "assets/models/ammo_pouch.glb": { "materials": ["leather-brown", "leather-black", "brass"] },
+  "assets/models/ammo_satchel.glb": { "materials": ["cloth-canvas", "steel-grey"] },
+  "assets/models/ankle_magazine_pouch.glb": { "materials": ["cloth-olive-drab", "plastic-black", "polymer-black"] },
+  "assets/models/ankle_wallet_pouch.glb": {
+    "materials": ["cloth-charcoal", "hook-loop-grey", "nylon-black", "plastic-matte-black"]
+  },
+  "assets/models/apothecary_jar.glb": {
+    "materials": ["ceramic-white", "paint-armour-blue", "paper-pages-cream", "paper-butcher", "cord-cotton"]
+  },
+  "assets/models/aquarium_medium_drying.glb": { "materials": ["glass-clear", "plastic-white", "paint-cream"] },
+  "assets/models/aquarium_medium.glb": { "materials": ["plastic-black", "glass-clear"] },
+  "assets/models/armband_pouch.glb": { "materials": ["webbing-black", "plastic-matte-black", "cloth-canvas"] },
+  "assets/models/backpack.glb": { "materials": ["cloth-navy", "plastic-matte-black", "nylon-black"] },
+  "assets/models/bedsheet_sling_bag.glb": { "materials": ["cloth-cream", "cloth-white"] },
+  "assets/models/bindle.glb": { "materials": ["cloth-red", "wood-oak"] },
+  "assets/models/birch_bark_quiver.glb": { "materials": ["bark", "cloth-cotton", "wood-pine", "skin-rawhide"] },
+  "assets/models/bookstrap.glb": { "materials": ["leather-tan", "brass-dull", "leather-brown"] },
+  "assets/models/bottle_pouch.glb": { "materials": ["cloth-olive-drab", "polymer-od-green", "plastic-black"] },
+  "assets/models/box_backpack.glb": { "materials": ["wood-pine", "iron-dull", "wood-oak", "jute"] },
+  "assets/models/breachers_load_bearing_vest.glb": {
+    "materials": ["cloth-olive-drab", "plastic-black", "cord-olive", "polymer-black", "steel-grey"]
+  },
+  "assets/models/briefcase.glb": { "materials": ["plastic-charcoal", "steel-grey", "plastic-black", "metal-silver"] },
+  "assets/models/bucket.glb": { "materials": ["steel-grey", "steel-stainless", "steel-parkerized"] },
+  "assets/models/butcher_paper.glb": { "materials": ["paperboard-tan"] },
+  "assets/models/camera_bag.glb": {
+    "materials": ["nylon-black", "cloth-charcoal", "steel-grey", "plastic-matte-black", "webbing-black"]
+  },
+  "assets/models/canteen_pouch.glb": { "materials": ["cloth-olive-drab", "polymer-od-green", "plastic-black"] },
+  "assets/models/canvas_chest_pouch.glb": { "materials": ["cloth-canvas", "cloth-khaki", "steel-grey"] },
+  "assets/models/canvas_sack.glb": { "materials": ["cloth-canvas", "cord-olive"] },
+  "assets/models/cartridge_box.glb": { "materials": ["leather-black", "leather-brown", "brass"] },
+  "assets/models/caulk_cartridge.glb": { "materials": ["plastic-white", "plastic-blue", "plastic-black"] },
+  "assets/models/charging_foot_locker.glb": {
+    "materials": ["paint-olive", "steel-grey", "plastic-black", "glass-lens-green"]
+  },
+  "assets/models/chest_rig.glb": { "materials": ["cloth-canvas", "steel-grey", "cloth-khaki"] },
+  "assets/models/cloth_magazine_bandolier.glb": {
+    "materials": ["cloth-olive-drab", "webbing-olive-dark", "plastic-matte-black"]
+  },
+  "assets/models/cloth_quiver.glb": { "materials": ["cloth-canvas", "cloth-khaki"] },
+  "assets/models/coarse_filter_paper.glb": { "materials": ["paperboard-tan", "paper-white", "plastic-red"] },
+  "assets/models/collapsible_bottle.glb": { "materials": ["plastic-clear-blue", "plastic-blue", "plastic-white"] },
+  "assets/models/collapsible_fuel_drum.glb": {
+    "materials": ["rubber-black", "steel-grey", "steel", "paint-crane-yellow"]
+  },
+  "assets/models/collapsible_water_drum.glb": {
+    "materials": ["polymer-fde", "steel-grey", "brass", "steel", "paint-charcoal"]
+  },
+  "assets/models/cuvettes.glb": {
+    "materials": ["plastic-white", "plastic-clear", "paper-white", "plastic-blue", "plastic-frosted"]
+  },
+  "assets/models/daypack.glb": { "materials": ["nylon-red", "nylon-black", "webbing-black"] },
+  "assets/models/deployment_bag.glb": {
+    "materials": ["cloth-olive-drab", "plastic-matte-black", "webbing-olive-dark"]
+  },
+  "assets/models/dive_bag.glb": { "materials": ["plastic-hivis", "nylon-black", "cord-cotton", "plastic-orange"] },
+  "assets/models/diving_thigh_pouches.glb": {
+    "materials": ["nylon-black", "cloth-blue", "steel-grey", "mesh-black", "rubber-black"]
+  },
+  "assets/models/dragonhide_backpack.glb": {
+    "materials": ["hide-dragon-black", "leather-chestnut", "bone", "leather-charcoal"]
+  },
+  "assets/models/drink_can.glb": { "materials": ["alu-bare", "paint-red", "steel-stainless"] },
+  "assets/models/drop_leg_bag.glb": {
+    "materials": ["cloth-canvas", "cloth-khaki", "steel-grey", "cloth-olive-drab", "plastic-matte-black"]
+  },
+  "assets/models/drop_leg_pouch.glb": {
+    "materials": ["cloth-olive-drab", "hook-loop-grey", "webbing-olive-dark", "plastic-matte-black"]
+  },
+  "assets/models/dry_bag.glb": {
+    "materials": ["rubber-yellow", "plastic-charcoal", "webbing-black", "plastic-matte-black"]
+  },
+  "assets/models/dry_duffel_bag.glb": {
+    "materials": ["plastic-blue", "plastic-charcoal", "plastic-matte-black", "cord-cotton", "webbing-black"]
+  },
+  "assets/models/duffel_bag.glb": { "materials": ["cloth-canvas", "cloth-khaki", "steel-grey", "webbing-olive-dark"] },
+  "assets/models/dump_pouch.glb": {
+    "materials": ["nylon-coyote", "webbing-olive-dark", "hook-loop-grey", "cord-cotton", "plastic-matte-black"]
+  },
+  "assets/models/empty_canister.glb": {
+    "materials": ["steel", "paint-olive", "paint-crane-yellow", "steel-stainless"]
+  },
+  "assets/models/extra_large_duffel_bag.glb": {
+    "materials": ["nylon-ranger-green", "webbing-olive-dark", "plastic-matte-black"]
+  },
+  "assets/models/extra_large_gym_bag.glb": { "materials": ["cloth-blue", "webbing-black", "plastic-matte-black"] },
+  "assets/models/extra_large_propane_tank.glb": { "materials": ["paint-white", "brass", "plastic-black"] },
+  "assets/models/field_chemistry_kit.glb": {
+    "materials": [
+      "alu-bare",
+      "plastic-matte-black",
+      "neoprene-black",
+      "plastic-gloss-white",
+      "steel-stainless",
+      "lcd-green",
+      "plastic-grey",
+      "plastic-charcoal",
+      "plastic-clear",
+      "plastic-frosted",
+      "paper-white"
+    ]
+  },
+  "assets/models/five_gallon_bucket.glb": { "materials": ["plastic-orange", "plastic-black", "steel-grey"] },
+  "assets/models/flashlight_pouch.glb": { "materials": ["cloth-olive-drab", "polymer-od-green", "plastic-black"] },
+  "assets/models/flattened_large_box.glb": { "materials": ["paperboard-tan", "paperboard-brown"] },
+  "assets/models/flattened_medium_box.glb": { "materials": ["paperboard-tan", "paperboard-brown"] },
+  "assets/models/flattened_oversize_box.glb": { "materials": ["paperboard-tan", "paperboard-brown"] },
+  "assets/models/flattened_small_box.glb": { "materials": ["paperboard-tan", "paperboard-brown"] },
+  "assets/models/four_grenade_pouch.glb": {
+    "materials": ["webbing-olive-dark", "nylon-coyote", "plastic-matte-black"]
+  },
+  "assets/models/frame_pack.glb": { "materials": ["wood-oak", "wood-pine", "leather-tan", "brass-dull"] },
+  "assets/models/gadget_pouch.glb": { "materials": ["cloth-olive-drab", "polymer-od-green"] },
+  "assets/models/garment_bag.glb": { "materials": ["cloth-navy", "plastic-black", "steel", "plastic-clear"] },
+  "assets/models/gas_mask_pouch.glb": { "materials": ["cloth-olive-drab", "polymer-od-green", "plastic-black"] },
+  "assets/models/giant_novelty_backpack.glb": {
+    "materials": ["cloth-yellow", "nylon-red", "plastic-matte-black", "cloth-blue"]
+  },
+  "assets/models/golf_bag.glb": {
+    "materials": [
+      "cloth-navy",
+      "plastic-charcoal",
+      "velvet-black",
+      "leather-white",
+      "steel-grey",
+      "steel-bright",
+      "webbing-black"
+    ]
+  },
+  "assets/models/grenade_bandolier.glb": { "materials": ["leather-brown", "brass", "leather-black"] },
+  "assets/models/grenade_pouch.glb": { "materials": ["webbing-olive-dark", "cloth-olive-drab", "plastic-matte-black"] },
+  "assets/models/gun_briefcase.glb": {
+    "materials": [
+      "plastic-black",
+      "steel-grey",
+      "steel-bright",
+      "plastic-charcoal",
+      "plastic-matte-black",
+      "velvet-black"
+    ]
+  },
+  "assets/models/gym_bag.glb": { "materials": ["cloth-navy", "webbing-black", "plastic-matte-black"] },
+  "assets/models/handgun_case.glb": { "materials": ["polymer-black", "plastic-grey", "rubber-black"] },
+  "assets/models/heavy_load_bearing_vest_with_sling.glb": {
+    "materials": ["cloth-olive-drab", "plastic-black", "cord-olive", "polymer-black", "steel-grey"]
+  },
+  "assets/models/heavy_load_bearing_vest.glb": {
+    "materials": ["cloth-olive-drab", "plastic-black", "webbing-olive-dark"]
+  },
+  "assets/models/heavy_machine_gun_belt_pouch.glb": {
+    "materials": ["cloth-olive-drab", "webbing-olive-dark", "plastic-matte-black"]
+  },
+  "assets/models/hide_bag.glb": { "materials": ["skin-rawhide", "leather-chestnut", "leather-charcoal"] },
+  "assets/models/high_volume_rucksack.glb": {
+    "materials": ["leather-brown", "leather-chestnut", "brass-dull", "leather-black"]
+  },
+  "assets/models/hunting_pack.glb": {
+    "materials": ["nylon-coyote", "cloth-brown", "plastic-matte-black", "nylon-black"]
+  },
+  "assets/models/javelin_bag.glb": { "materials": ["leather-brown", "leather-black", "skin-rawhide"] },
+  "assets/models/jerry_can.glb": { "materials": ["polymer-od-green", "steel-grey", "paint-charcoal"] },
+  "assets/models/jerrycan_backpack.glb": { "materials": ["plastic-red", "plastic-matte-black", "cloth-khaki"] },
+  "assets/models/jerrycan.glb": { "materials": ["plastic-red", "plastic-black"] },
+  "assets/models/keg.glb": { "materials": ["alu-bare", "steel-stainless"] },
   "assets/models/lamp_oil_bottle.glb": { "materials": [null, null, null, "fuel"] },
-  "assets/models/pan.glb": { "materials": ["iron-cast", "coal-black"] }
+  "assets/models/large_belt_loop.glb": { "materials": ["cloth-olive-drab", "plastic-black"] },
+  "assets/models/large_birch_bark_quiver.glb": { "materials": ["bark", "cloth-cotton", "wood-pine", "skin-rawhide"] },
+  "assets/models/large_dragonhide_backpack.glb": {
+    "materials": ["hide-dragon-black", "leather-chestnut", "bone", "leather-charcoal"]
+  },
+  "assets/models/large_duffel_bag.glb": {
+    "materials": ["cloth-navy", "cloth-charcoal", "plastic-matte-black", "steel-bright", "webbing-black"]
+  },
+  "assets/models/large_frame_pack.glb": { "materials": ["wood-pine", "leather-brown", "iron-dull"] },
+  "assets/models/large_gym_bag.glb": { "materials": ["nylon-red", "webbing-black", "plastic-matte-black"] },
+  "assets/models/large_military_rucksack.glb": {
+    "materials": ["cloth-olive-drab", "webbing-olive-dark", "plastic-matte-black"]
+  },
+  "assets/models/large_propane_tank.glb": { "materials": ["paint-white", "brass", "plastic-black"] },
+  "assets/models/large_quiver.glb": { "materials": ["leather-brown", "steel-grey", "leather-black"] },
+  "assets/models/large_suitcase.glb": {
+    "materials": ["plastic-blue", "plastic-matte-black", "steel-grey", "rubber-black"]
+  },
+  "assets/models/large_tactical_backpack.glb": {
+    "materials": ["cloth-olive-drab", "plastic-matte-black", "webbing-olive-dark"]
+  },
+  "assets/models/large_trapper_pack.glb": { "materials": ["canvas-grey", "cord-cotton", "wood-oak", "cloth-canvas"] },
+  "assets/models/large_trashcan.glb": { "materials": ["plastic-green", "steel", "rubber-black"] },
+  "assets/models/laundry_basket.glb": { "materials": ["plastic-blue"] },
+  "assets/models/leather_ammo_satchel.glb": { "materials": ["leather-brown", "brass"] },
+  "assets/models/leather_chest_pouch.glb": { "materials": ["leather-brown", "leather-black", "brass"] },
+  "assets/models/leather_double_rifle_case.glb": { "materials": ["leather-chestnut", "leather-black", "brass-dull"] },
+  "assets/models/leather_pouch.glb": {
+    "materials": ["leather-brown", "leather-chestnut", "leather-tan", "bone", "skin-rawhide"]
+  },
+  "assets/models/leather_rifle_case.glb": { "materials": ["leather-tan", "leather-chestnut", "brass-dull"] },
+  "assets/models/leather_stone_pouch.glb": { "materials": ["leather-brown", "leather-black", "brass"] },
+  "assets/models/light_load_bearing_vest.glb": { "materials": ["cloth-olive-drab", "cord-olive", "plastic-black"] },
+  "assets/models/load_bearing_vest_with_sling.glb": {
+    "materials": ["cloth-olive-drab", "plastic-black", "cord-olive", "polymer-black", "steel-grey"]
+  },
+  "assets/models/load_bearing_vest.glb": { "materials": ["cloth-olive-drab", "plastic-black", "cord-olive"] },
+  "assets/models/long_leather_rifle_case.glb": { "materials": ["leather-oxblood", "leather-black", "brass-dull"] },
+  "assets/models/longarm_bag.glb": { "materials": ["cloth-canvas", "leather-brown", "steel-grey", "cloth-khaki"] },
+  "assets/models/lunchbox.glb": { "materials": ["plastic-blue", "plastic-white"] },
+  "assets/models/machine_gun_belt_pouch.glb": {
+    "materials": ["cloth-olive-drab", "webbing-olive-dark", "plastic-matte-black"]
+  },
+  "assets/models/makeshift_knapsack.glb": { "materials": ["cloth-denim", "cloth-denim-faded", "brass", "cord-cotton"] },
+  "assets/models/medium_belt_loop.glb": { "materials": ["cloth-olive-drab", "plastic-black"] },
+  "assets/models/medium_military_rucksack.glb": { "materials": ["nylon-coyote", "cloth-khaki", "plastic-matte-black"] },
+  "assets/models/medium_propane_tank.glb": {
+    "materials": ["steel-grey", "paint-white", "paint-charcoal", "brass", "plastic-black"]
+  },
+  "assets/models/messenger_bag.glb": {
+    "materials": ["cloth-charcoal", "nylon-black", "reflective-yellow", "webbing-black", "plastic-matte-black"]
+  },
+  "assets/models/metal_paint_can.glb": { "materials": ["steel-grey", "alu-bare", "paint-red", "steel", "wood-pine"] },
+  "assets/models/military_assault_pack.glb": {
+    "materials": ["nylon-ranger-green", "webbing-olive-dark", "plastic-matte-black"]
+  },
+  "assets/models/net_backpack.glb": { "materials": ["cord-cotton", "cloth-cream"] },
+  "assets/models/nylon_quiver.glb": { "materials": ["cloth-olive-drab", "polymer-black"] },
+  "assets/models/pencil_case.glb": { "materials": ["paint-police-blue", "plastic-black", "steel", "plastic-red"] },
+  "assets/models/pet_carrier_backpack.glb": {
+    "materials": ["cloth-blue", "nylon-black", "plastic-clear", "steel-grey", "mesh-black", "plastic-black"]
+  },
+  "assets/models/pill_bottle.glb": { "materials": ["plastic-amber", "paper-white", "plastic-white"] },
+  "assets/models/pipe_quiver.glb": { "materials": ["steel-grey", "steel-galvanised", "leather-brown"] },
+  "assets/models/pistol_bandolier.glb": {
+    "materials": ["leather-brown", "brass-polished", "skin-rawhide", "cloth-red", "metal-gold"]
+  },
+  "assets/models/plastic_bag.glb": { "materials": ["plastic-white", "plastic-red"] },
+  "assets/models/plastic_barrel.glb": { "materials": ["plastic-blue", "plastic-white"] },
+  "assets/models/plastic_bottle.glb": { "materials": ["plastic-clear-blue", "plastic-blue", "plastic-white"] },
+  "assets/models/plastic_food_tub.glb": { "materials": ["plastic-frosted", "plastic-blue"] },
+  "assets/models/plastic_paint_pail.glb": { "materials": ["plastic-white", "plastic-blue", "plastic-black"] },
+  "assets/models/plastic_tub.glb": { "materials": ["plastic-white", "plastic-blue"] },
+  "assets/models/pressurized_canister.glb": { "materials": ["steel-grey", "paint-white", "plastic-black"] },
+  "assets/models/purse.glb": { "materials": ["leather-oxblood", "metal-gold"] },
+  "assets/models/quiver.glb": { "materials": ["leather-brown", "leather-black"] },
+  "assets/models/radio_pouch.glb": { "materials": ["nylon-coyote", "plastic-matte-black"] },
+  "assets/models/rag_pouch.glb": { "materials": ["cloth-brown", "cord-cotton", "cloth-khaki", "cloth-cream"] },
+  "assets/models/red_paint.glb": {
+    "materials": ["steel-stainless", "steel-grey", "paint-red", "paper-white", "steel-bright", "plastic-black"]
+  },
+  "assets/models/refrigerant_tank.glb": {
+    "materials": ["paint-white", "paint-drum-blue", "brass-polished", "plastic-black"]
+  },
+  "assets/models/rifle_bandolier.glb": { "materials": ["leather-brown", "brass-polished", "skin-rawhide"] },
+  "assets/models/rucksack.glb": { "materials": ["cloth-olive-drab", "webbing-olive-dark", "plastic-matte-black"] },
+  "assets/models/rune_iron_preservation_chest.glb": {
+    "materials": ["iron-dull", "steel-parkerized", "crystal-glow-violet"]
+  },
+  "assets/models/rune_stitched_satchel.glb": {
+    "materials": ["leather-chestnut", "leather-tan", "brass-dull", "cord-cotton", "crystal-glow-violet"]
+  },
+  "assets/models/running_pack.glb": { "materials": ["cloth-blue", "mesh-black", "nylon-black", "reflective-yellow"] },
+  "assets/models/safe_box.glb": {
+    "materials": [
+      "paint-charcoal",
+      "plastic-matte-black",
+      "steel-stainless",
+      "plastic-black",
+      "paint-white",
+      "rubber-black"
+    ]
+  },
+  "assets/models/sealed_glass_jar.glb": { "materials": ["glass-clear", "steel-grey", "foil-gold"] },
+  "assets/models/sealed_hazard_canister.glb": {
+    "materials": ["steel-stainless", "steel-grey", "plastic-hivis", "jelly-teal", "steel-blued", "plastic-black"]
+  },
+  "assets/models/sealed_large_stomach.glb": { "materials": ["wax-cream", "cord-olive"] },
+  "assets/models/sealed_phials.glb": {
+    "materials": ["wood-oak", "glass-clear", "resin-honey", "cork", "lacquer-red", "syrup-green", "syrup-orange"]
+  },
+  "assets/models/sealed_stomach.glb": { "materials": ["wax-cream", "cord-olive"] },
+  "assets/models/shotgun_shell_bandolier.glb": { "materials": ["leather-brown", "brass", "leather-black"] },
+  "assets/models/shotgun_shell_belt.glb": { "materials": ["leather-brown", "brass-polished", "skin-rawhide"] },
+  "assets/models/sling_pack.glb": {
+    "materials": ["nylon-black", "cloth-charcoal", "webbing-black", "plastic-matte-black"]
+  },
+  "assets/models/small_backpack.glb": {
+    "materials": ["nylon-red", "plastic-matte-black", "cloth-yellow", "webbing-black"]
+  },
+  "assets/models/small_belt_loop.glb": { "materials": ["cloth-olive-drab", "plastic-black"] },
+  "assets/models/small_box.glb": { "materials": ["paperboard-tan", "paperboard-brown", "paper-white"] },
+  "assets/models/small_gym_bag.glb": { "materials": ["cloth-charcoal", "webbing-black", "plastic-matte-black"] },
+  "assets/models/small_leg_purse.glb": {
+    "materials": ["cloth-navy", "steel-grey", "webbing-black", "plastic-matte-black"]
+  },
+  "assets/models/small_metal_box.glb": { "materials": ["steel-grey", "steel"] },
+  "assets/models/small_plastic_case.glb": { "materials": ["plastic-grey", "plastic-black", "plastic-yellow"] },
+  "assets/models/small_propane_tank.glb": { "materials": ["plastic-green", "plastic-yellow", "brass"] },
+  "assets/models/small_squeeze_tube.glb": { "materials": ["plastic-white", "plastic-red"] },
+  "assets/models/small_wooden_box.glb": { "materials": ["wood-walnut", "wood-birch", "brass"] },
+  "assets/models/soft_double_rifle_case.glb": { "materials": ["cloth-khaki", "webbing-black", "plastic-matte-black"] },
+  "assets/models/soft_rifle_case.glb": {
+    "materials": ["cloth-olive-drab", "webbing-olive-dark", "plastic-matte-black", "webbing-black"]
+  },
+  "assets/models/spray_can.glb": { "materials": ["alu-bare", "paint-red", "paper-white", "plastic-red"] },
+  "assets/models/steel_drum_100.glb": { "materials": ["paint-red", "steel", "steel-grey"] },
+  "assets/models/steel_drum_200.glb": { "materials": ["paint-olive", "steel-grey"] },
+  "assets/models/steel_water_bottle.glb": { "materials": ["steel-stainless", "steel-grey", "plastic-black"] },
+  "assets/models/stone_pouch.glb": { "materials": ["cloth-canvas", "leather-brown", "steel-grey"] },
+  "assets/models/straw_basket.glb": { "materials": ["straw-wicker", "straw-pale"] },
+  "assets/models/suitcase.glb": { "materials": ["cloth-navy", "plastic-matte-black", "steel-grey", "rubber-black"] },
+  "assets/models/sustainment_pouch.glb": {
+    "materials": ["cloth-olive-drab", "webbing-olive-dark", "plastic-matte-black"]
+  },
+  "assets/models/swag_bag.glb": { "materials": ["cloth-canvas", "cord-cotton"] },
+  "assets/models/tactical_grenade_pouch.glb": {
+    "materials": ["cloth-olive-drab", "plastic-matte-black", "webbing-olive-dark"]
+  },
+  "assets/models/tactical_holster.glb": {
+    "materials": ["nylon-coyote", "webbing-olive-dark", "void-black", "plastic-matte-black"]
+  },
+  "assets/models/tactical_shotshell_pouch.glb": {
+    "materials": ["cloth-charcoal", "cloth-black", "hook-loop-grey", "plastic-matte-black", "webbing-black"]
+  },
+  "assets/models/takedown_bow_quiver.glb": { "materials": ["cloth-olive-drab", "webbing-olive-dark"] },
+  "assets/models/thigh_magazine_pouch.glb": { "materials": ["cloth-olive-drab", "plastic-black", "polymer-black"] },
+  "assets/models/tiny_gym_bag.glb": {
+    "materials": ["cloth-blue", "nylon-black", "plastic-matte-black", "steel-bright", "webbing-black"]
+  },
+  "assets/models/tool_pouch.glb": { "materials": ["nylon-coyote", "plastic-matte-black"] },
+  "assets/models/toolbox.glb": { "materials": ["paint-red", "paint-charcoal", "plastic-matte-black", "steel-bright"] },
+  "assets/models/trapper_pack.glb": { "materials": ["wood-pine", "cloth-olive-drab", "skin-rawhide", "leather-tan"] },
+  "assets/models/trashcan.glb": { "materials": ["plastic-grey", "plastic-black"] },
+  "assets/models/travelpack.glb": { "materials": ["nylon-red", "nylon-black", "plastic-matte-black", "mesh-black"] },
+  "assets/models/triple_magazine_pouch.glb": {
+    "materials": ["cloth-olive-drab", "webbing-olive-dark", "plastic-matte-black"]
+  },
+  "assets/models/triple_pipe_quiver.glb": { "materials": ["steel-grey", "steel-galvanised", "cloth-olive-drab"] },
+  "assets/models/violin_case.glb": { "materials": ["leather-charcoal", "steel-bright", "leather-black"] },
+  "assets/models/wicker_backpack.glb": { "materials": ["straw-wicker", "jute", "leather-tan"] },
+  "assets/models/wicker_basket_large.glb": { "materials": ["wax-cream", "wood-pine"] },
+  "assets/models/wicker_flask.glb": { "materials": ["glass-clear", "cork", "straw-wicker", "straw-pale"] },
+  "assets/models/wooden_barrel.glb": { "materials": ["wood-pine", "steel", "wood-walnut"] },
+  "assets/models/wooden_bucket.glb": { "materials": ["wood-pine", "wood-walnut"] },
+  "assets/models/wrist_cartridge_band.glb": { "materials": ["cloth-canvas", "hook-loop-grey"] }
 }

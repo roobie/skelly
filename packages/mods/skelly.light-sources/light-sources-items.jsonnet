@@ -102,7 +102,6 @@ local burns(ignition, douse, sprint, stow, drop, relight) = {
       id: 'road_flare',
       name: 'Road flare',
       category: 'light',
-      weight: 200,
       size: [1, 2],
       description: 'A road flare. It burns red and bright until it is spent.',
       model: 'road_flare',

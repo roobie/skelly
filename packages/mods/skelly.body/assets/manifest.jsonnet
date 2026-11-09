@@ -1,5 +1,7 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.body', [import '../models-body.jsonnet', import '../figures-body.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.body') + [
+  releasedFiles:: release.files,
+  sources: release.sources + [
     {
       title: '15 vocal male strain/hurt/pain/jump sounds',
       url: 'https://opengameart.org/content/15-vocal-male-strainhurtpainjump-sounds',

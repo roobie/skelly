@@ -67,10 +67,6 @@
       "path": "things/gauntlet_lab_entry_card.model.json"
     },
     {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
       "kind": "asset",
       "path": "assets/models/gauntlet_lab_entry_card.glb"
     }

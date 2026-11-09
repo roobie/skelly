@@ -12,42 +12,6 @@
     {
       "kind": "json",
       "path": "presentation/item-materials.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/binder_top.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/crystal_butt_wand.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/crystal_socket_wand.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/rune_clay_tablet.model.json"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/binder_top.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/crystal_butt_wand.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/crystal_socket_wand.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/rune_clay_tablet.glb"
     }
   ],
   "id": "skelly.arcana",

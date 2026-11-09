@@ -78,10 +78,6 @@
       "path": "things/dad_cabin_key.model.json"
     },
     {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
       "kind": "asset",
       "path": "assets/models/baseball_cap.glb"
     },

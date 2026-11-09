@@ -1,7 +1,7 @@
 local use = import 'tools/jsonnet/lib/food-use.libsonnet';
 local eats = use.eats;
 local drinks = use.drinks;
-local canShellGrams = (import 'packages/skelly-assets/tools/packages/thing-authoring-tool/cans.libsonnet').shellMassKg * 1000;
+local canShellGrams = 100;
 local sodaShellGrams = 15;
 local sodaDrinkGrams = 345;
 local beansGrams = 350;

@@ -39,10 +39,6 @@
     },
     {
       "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
       "path": "things/shed_key.model.json"
     },
     {

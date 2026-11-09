@@ -1,5 +1,7 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.firearms', [import '../models-firearms.jsonnet', import '../models-firearm-things.jsonnet', import '../models-attachments.jsonnet', import '../models-gun-parts.jsonnet', import '../items-ammunition.json', import '../items-pistol.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.firearms') + [
+  releasedFiles:: release.files,
+  sources: release.sources + [
     {
       "title": "The Free Firearm Sound Library — Winchester Model 12",
       "url": "https://opengameart.org/content/the-free-firearm-sound-library",

@@ -1,3 +1,5 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.deadvox.scenario.gauntlet.city', [import '../models-items.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.deadvox.scenario.gauntlet.city'),
+  releasedFiles:: release.files,
+  sources: release.sources,
 }

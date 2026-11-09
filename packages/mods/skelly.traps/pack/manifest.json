@@ -22,10 +22,6 @@
       "path": "things/bear_trap.model.json"
     },
     {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
       "kind": "asset",
       "path": "assets/models/bear_trap.glb"
     }

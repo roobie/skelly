@@ -394,6 +394,8 @@ describe('simulation source fingerprint', () => {
     const graph = await actualSimulationGraph();
     expect(graph.sources.has('src/core/pose.ts')).toBe(true);
     expect(graph.sources.has('src/core/boneTree.ts')).toBe(true);
+    expect(graph.sources.has('src/core/fusedMassFigure.ts')).toBe(true);
+    expect(graph.sources.has('src/core/fusedMassCarving.ts')).toBe(true);
   });
 
   it('fingerprints shared model-schema changes imported by the simulation', async () => {

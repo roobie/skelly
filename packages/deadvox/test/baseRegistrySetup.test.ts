@@ -15,7 +15,12 @@ it('keeps snapshots and cleanup isolated between runs, including watch reruns', 
   const second = { provide: vi.fn<TestProject['provide']>(), onTestsRerun: vi.fn<TestProject['onTestsRerun']>() };
   const cleanups: unknown[] = [];
   try {
-    cleanups.push(setup(first), setup(second));
+    const readBaseSources = () => [{ source: 'fixture-base', data: {} }];
+    const readStartupSources = () => [{ source: 'fixture-startup', data: {} }];
+    cleanups.push(
+      setup(first, readBaseSources, readStartupSources),
+      setup(second, readBaseSources, readStartupSources),
+    );
     const [, firstPath] = first.provide.mock.calls[0]!;
     const [, secondPath] = second.provide.mock.calls[0]!;
     expect(dirname(firstPath)).not.toBe(dirname(secondPath));

@@ -148,7 +148,7 @@ local boxVan = [
   models: [
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/car_battery.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/car_headlamp.model.json',
-    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/hatchback_battery_tray.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/battery_tray.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/pickup_battery_tray.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/wheel_205_55r16.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/front_seat.model.json',
@@ -224,7 +224,7 @@ local boxVan = [
   items: [
     part('car_battery', 'Car battery', [3, 2], ['electricity'], 'Twelve volts, if it still holds a charge.'),
     part('car_headlamp', 'Headlamp unit', [2, 2], ['light', 'glazing'], 'A sealed lamp and its lens.'),
-    part('hatchback_battery_tray', 'Hatchback battery tray', [3, 2], ['structure'], 'A pressed steel shelf for a battery.'),
+    part('hatchback_battery_tray', 'Hatchback battery tray', [3, 2], ['structure'], 'A pressed steel shelf for a battery.') + { model: 'battery_tray' },
     part('pickup_battery_tray', 'Pickup battery tray', [4, 3], ['structure'], 'A heavy steel shelf for a battery.'),
     part('wheel_205_55r16', 'Wheel 205/55 R16', [6, 6], ['wheel']) + { vehicle+: { mount: 'hatchback_wheel' } },
     part('front_seat', 'Front seat', [5, 10], ['seat']),
