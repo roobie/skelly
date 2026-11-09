@@ -4,6 +4,7 @@ read_if:
   - "you run a #1532 refactor round that moves runtime code out of deadvox or cuts a seam"
   - you need to show that a code move left the actor simulation unchanged
   - you change what the simulation digest hashes, or why no test asserts its output
+  - you wonder why a refactor round's fingerprint changed while its digest stayed equal
 tags: [deadvox, simulation, refactor, testing]
 ---
 
@@ -29,5 +30,10 @@ Deadvox's typecheck does not cover the tool, because `tsconfig.json` includes on
 source, the tests and the Vite config; running the tool is what shows it still works.
 
 The simulation fingerprint answers a different question: which source files the simulation
-depends on. Its value changes whenever those paths move, so it cannot show that behaviour held;
-see `tools/simulationFingerprint.ts`.
+depends on and what they contain. Its value changes whenever those paths or files change, so it
+cannot show that behaviour held; see `tools/simulationFingerprint.ts`.
+
+The #1532 rounds that moved runtime code out of Mobgen into deadvox, then deleted Mobgen, show
+the two tools together. Each move round changed the fingerprint by design, because
+admitted paths and files changed, and kept the digest equal, which is what showed that the
+intended change was a move and nothing more. Neither value alone would have shown both.

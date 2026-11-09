@@ -20,8 +20,9 @@ contracts freely when that makes the code simpler; don't add legacy paths, opt-i
 flags, compat shims or migrations to keep old output or old data working, and
 don't require byte-identical exports. What must still work: the gun and thing
 authoring tools, in the `packages/skelly-assets` submodule, export models that deadvox
-validates and loads. Migration, especially of save games, starts
-mattering at v1.0 beta (#1023).
+validates and loads. Those models reach deadvox only through an asset pin bump PR, which
+proves that; see `docs/git-workflow.md`, "Shared asset pin bumps". Migration, especially
+of save games, starts mattering at v1.0 beta (#1023).
 
 Before writing or changing player-visible text, apply `packages/deadvox/INTERFACE.md`, "Text".
 
@@ -93,7 +94,7 @@ Private tooling may cite GitHub issues,
 PRs and commits. A clone or contributor using only git and GitHub must be able to read every
 GitHub artifact without private tooling, so references point only from the private side.
 
-- **Feature:** `<subproject><number>` (`g` the gun authoring tool, `d` deadvox, `m` mobgen,
+- **Feature:** `<subproject><number>` (`g` the gun authoring tool, `d` deadvox,
   `r` repo-wide or docs), one PR on one branch. Numbers count up per subproject; new
   work always gets a new number, even when it grows out of another feature.
 - **Round:** each dispatched piece of work on a feature is a round and its mail item
@@ -140,7 +141,8 @@ pinned skelly-assets release every reader of its built files needs; see
 `tools/skelly-assets/setup.mjs`, `ensureSkellyAssets`.
 
 The projects are npm workspaces (`package.json`, `workspaces`), so one lockfile keeps
-shared packages, `three` above all, on one version and one instance. Add a dependency
+shared packages, `three` above all, on one version and one instance. Some workspaces live
+in the `packages/skelly-assets` submodule, so setup checks it out before installing. Add a dependency
 with `npm install <pkg> --workspace <name>`. `packages/deadvox/tools/lit-check` stays a separate
 install because its analyzer pins its own TypeScript.
 
@@ -188,7 +190,7 @@ So:
   over full cartesian products and long seed loops.
 - **Slow tests run only on demand.** Tests that build whole worlds or city plans, walk
   scenarios, or sweep seeds and variants stay out of the default run, the pre-push hook and
-  per-PR CI. They run under the project's sweep flag in the manually triggered workflow
+  per-PR CI. They run under Deadvox's sweep flag in the manually triggered workflow
   `.github/workflows/slow-tests.yml`, without wall-clock budgets. At pre-pre-alpha they
   cost too much to pay on every change, and a seed that blocks a route is a bug to file
   from the manual run, not a gate on every PR. See `packages/deadvox/vite.config.ts`,
@@ -220,7 +222,7 @@ push to a PR, so don't repeat it locally.
   - `validate` if content or schema changed;
   - Lit if UI changed;
   - only the browser stage(s) that exercise the behaviour you changed, once each.
-  - Build only if build config changed; a project's `test:sweeps` only if the change is in a
+  - Build only if build config changed; Deadvox's `test:sweeps` only if the change is in a
     gated test's path.
   - The pre-push hook runs root `npm run ci:checks` and `npm run test:site`; CI runs
     `content:check` before those shared checks. Content drift is caught at CI so the hook
