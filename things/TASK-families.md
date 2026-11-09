@@ -22,7 +22,7 @@ Phase 4 is complete when all of these hold:
   Deadvox's default hold; a default judged wrong at a look in game gets an authored datum.
 
 To find hand-made models, compare each pack's model registrations with the rows the pinned
-`packages/skelly-assets/built/manifest.json` names for that pack: a registration no pinned row
+release's manifest names for that pack (`tools/skelly-assets/setup.mjs`, `installRelease`): a registration no pinned row
 names is hand-made. Manifest rows carry no handling datums, so find overrides by comparing a
 registration's datums with its pinned model entry,
 `packages/skelly-assets/built/<pack>/things/<id>.model.json`: a datum that differs from the
