@@ -248,7 +248,9 @@ splits into `skelly.*` mods in one refactor. The runtime package is `packages/en
 up that name and is construct, `@skelly/construct`, in the asset submodule; the reasons
 for that name are in its
 `packages/skelly-assets/tools/packages/construct/README.md`,
-"Name".
+"Name". The product package is `@skelly/deadvox` (`packages/deadvox/package.json`,
+`name`): every workspace package shares the `@skelly/` scope, so the product's name
+matches the runtime and presentation packages the refactor adds.
 
 Runtime code (`packages/deadvox/src/core`, `packages/deadvox/src/vehicles`,
 `packages/deadvox/src/game` and the workspace libraries the deadvox package depends on)
