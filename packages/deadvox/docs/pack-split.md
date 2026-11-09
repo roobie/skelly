@@ -137,11 +137,11 @@ zombie types are Deadvox content. Body plans name anatomy by shape, not behaviou
 character, so another product can reuse a figure without inheriting Deadvox's setting.
 Product content ids may keep setting names. Speed, gait and size are figure properties,
 not reasons to invent another anatomy. Cut legs do not create a new plan: a legs-cut
-humanoid remains humanoid, with its cut and crawl posing selected by template content.
+humanoid remains humanoid, with its cut and crawl posing selected by its built body.
 Build words describe the figure rather than its behaviour or character. Figure variants
 retain those realizations without making actor identity select implementation. See
 `src/core/actorModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`, `figureVariantOf` and
-`bodyPlanModel`; `packages/mobgen/src/core/template.ts`, `Template.legCut`;
+`bodyPlanModel`; `src/core/legLoss.ts`, `crawlsAfterLegLoss`;
 `src/core/actorPose.ts`, `actorCrawls`; and `src/core/schema/actors.ts`, `ActorSchema`
 and `actorRegionsMatchModel`.
 The body/Agent ownership rule belongs to

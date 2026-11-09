@@ -45,10 +45,8 @@ interface Extent {
   readonly max: Vec3;
 }
 
-// The producer's arithmetic, kept equal so a runtime refit matches the baked frames: see
-// `packages/skelly-assets/tools/packages/mobgen/src/mob/gait.ts`, `groundOffset`;
-// `packages/skelly-assets/tools/packages/mobgen/src/mob/attack.ts`, `blendArmBase`; and
-// `packages/skelly-assets/tools/packages/mobgen/src/core/math.ts`, `rotAxis`.
+// The skelly-assets pose producer's arithmetic for the ground fit, arm blend and axis rotation, kept equal so a
+// runtime refit matches the baked frames.
 
 const smoothMinAll = (values: readonly number[], smoothing: number): number => {
   const trueMin = Math.min(...values);

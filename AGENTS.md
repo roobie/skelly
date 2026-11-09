@@ -192,8 +192,7 @@ So:
   `.github/workflows/slow-tests.yml`, without wall-clock budgets. At pre-pre-alpha they
   cost too much to pay on every change, and a seed that blocks a route is a bug to file
   from the manual run, not a gate on every PR. See `packages/deadvox/vite.config.ts`,
-  `SLOW_TEST_FILES`; `packages/deadvox/test/sweeps.ts`, `sweepGroup`; and
-  `packages/mobgen/test/sweeps.ts`, `sweepGroup`.
+  `SLOW_TEST_FILES`; and `packages/deadvox/test/sweeps.ts`, `sweepGroup`.
 - Measure before adding or cutting: coverage classes show which cases exercise the same
   code; mutation testing (inject small bugs, see which tests catch them) shows which
   tests actually detect anything. A removal states what the test protected and which

@@ -23,7 +23,6 @@ Author new content in Jsonnet, except maps edited in Tiled. Convert existing JSO
 - A pack declares the files the asset submodule builds for it from the pinned build manifest, not from a copied list, so a pin bump changes the declarations with the files. See `tools/jsonnet/lib/built-pack.libsonnet` and `tools/jsonnet/lib/pack-manifest.libsonnet`.
 - Do not impose a subprocess capture limit on trusted formatter output: growing a content document must not fail because of the process API's default buffer. See `tools/jsonnet/compile.mjs`, `formatJson`.
 - Keep shared topic content under `packages/mods` and Deadvox product and scenario content under `packages/deadvox/mods` so ownership follows the consumer boundary. See `packages/deadvox/src/game/bundledContent.ts`, `buildBundledContent`, and `packages/deadvox/src/core/content.ts`, `buildRegistry`. Keep local helpers beside their source and shared helpers under `tools/jsonnet/lib` so module ownership is explicit.
-- Mobgen's material tables stay separate from body-plan construction so look tuning remains content-owned. See `packages/mobgen/src/mob/materialTemplates.jsonnet` and `packages/mobgen/src/mob/materials.ts`, `resolveMaterials`.
 - Build-specific settings must be explicit top-level arguments, not hidden environment inputs, so identical sources produce identical output.
 
 ## Curated map features

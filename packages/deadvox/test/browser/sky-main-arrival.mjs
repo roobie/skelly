@@ -100,13 +100,12 @@ const SHARED_SEED_POOL = `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : fig
       buildActorVariant(model, seed, amalgamType),
     ),`;
 
-// A base renderer that builds every model on one shared seed pool meets the branch's figure realization, which
-// refuses a seed that is not valid for a model by itself rather than drawing the next seed's body. The base
-// renderer then builds, per model, only the pool seeds that realize, as the branch builds each model's own
-// authored seeds; any other build error still fails the run. A base that builds per-model seeds needs no seed rewrite.
-// The overlay retains branch body-plan identities, while mobgen profiles, templates and ragdoll catalogs keep
-// implementation names; reverting either side would mix content and mechanism contracts.
-// See `packages/mobgen/src/mob/humanoidFigure.ts`, `templateFigure`.
+// A base renderer that builds every model on one shared seed pool meets the branch's figures, which exist only for
+// each model's own authored seeds rather than drawing another seed's body. The base renderer then builds, per
+// model, only the pool seeds that realize, as the branch builds each model's own authored seeds; any other build
+// error still fails the run. A base that builds per-model seeds needs no seed rewrite. The overlay retains branch
+// body-plan identities, while the base's profiles, templates and ragdoll catalogs keep implementation names;
+// reverting either side would mix content and mechanism contracts. See `src/core/content.ts`, `actorFigureIssues`.
 export function adaptMainSeedPool(source) {
   return source
     .replaceAll('ZombieModel', 'ActorModel')
