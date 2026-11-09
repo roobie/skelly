@@ -3,9 +3,11 @@ import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { buildRegistry } from '../src/core/content.ts';
 import type { ContentFile, ModelDef } from '../src/core/schema.ts';
 
-const fixture = JSON.parse(
-  compileJsonnetFile('packages/deadvox/test/fixtures/content/model-admission.libsonnet'),
-) as { content: ContentFile; missing: ContentFile; contexts: ModelDef[][] };
+const fixture = JSON.parse(compileJsonnetFile('packages/deadvox/test/fixtures/content/model-admission.libsonnet')) as {
+  content: ContentFile;
+  missing: ContentFile;
+  contexts: ModelDef[][];
+};
 
 it('admits named released rows from each model consumer without admitting unnamed catalogue rows', () => {
   expect(fixture.contexts).not.toEqual([]);
