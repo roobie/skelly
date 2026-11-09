@@ -15,6 +15,7 @@ const RESTRICTED_GLOBAL = 'lint/style/noRestrictedGlobals';
  * The lines of each fixture file that the repository's Biome config bans as restricted globals. The
  * fixtures sit at repository paths in a temporary copy, so the config's path overrides apply to them.
  * Biome skips any path under node_modules, so this runs where the temp directory lies outside one.
+ * Biome reports nothing for a file it excludes, so a fixture proves it was linted by a diagnostic of its own.
  */
 const restrictedGlobalLines = (files) => {
   const dir = mkdtempSync(join(tmpdir(), 'runtime-browser-globals-'));
@@ -29,11 +30,7 @@ const restrictedGlobalLines = (files) => {
       [BIOME, 'lint', '--vcs-enabled=false', `--config-path=${dir}`, '--reporter=json', ...Object.keys(files)],
       { cwd: dir, encoding: 'utf8' },
     );
-    const { summary, diagnostics } = JSON.parse(result.stdout);
-    // A skipped fixture reports nothing, which would let the ban look absent or scoped.
-    if (summary.skipped > 0 || diagnostics.some(({ category }) => category.startsWith('internalError'))) {
-      throw new Error(`Biome did not lint every fixture: ${result.stdout}`);
-    }
+    const { diagnostics } = JSON.parse(result.stdout);
     const lines = Object.fromEntries(Object.keys(files).map((path) => [path, []]));
     for (const { category, location } of diagnostics) {
       if (category === RESTRICTED_GLOBAL) {
@@ -46,14 +43,16 @@ const restrictedGlobalLines = (files) => {
   }
 };
 
-// Node types declare these four, so the runtime's no-DOM typecheck lets them through; only the lint ban
-// keeps them out of the runtime set. The last line is a Node-and-browser global the runtime may use.
+// Node types declare the first four, so the runtime's no-DOM typecheck lets them through; only the lint
+// ban keeps them out of the runtime set. Line 5 is a Node-and-browser global the runtime may use. Line 6
+// uses `event`, which the rule bans in every file, so its diagnostic shows the file was linted.
 const SEEDED = [
   'export const agent = navigator.userAgent;',
   'export type Message = MessageEvent;',
   'export const saved = localStorage.length;',
   'export const session = sessionStorage.length;',
   'export const now = performance.now();',
+  'export const current = event;',
 ].join('\n');
 
 test('lint fails each Node-declared browser name in a runtime file, and only in the runtime set', () => {
@@ -63,8 +62,8 @@ test('lint fails each Node-declared browser name in a runtime file, and only in 
       'packages/deadvox/src/render/probe.ts': SEEDED,
     }),
     {
-      'packages/deadvox/src/core/probe.ts': [1, 2, 3, 4],
-      'packages/deadvox/src/render/probe.ts': [],
+      'packages/deadvox/src/core/probe.ts': [1, 2, 3, 4, 6],
+      'packages/deadvox/src/render/probe.ts': [6],
     },
   );
 });
