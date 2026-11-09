@@ -128,10 +128,13 @@ export const validate = (
           .filter((entry) => entry.isFile())
           .map((entry) => relative(packRoot, join(entry.parentPath, entry.name)).split('\\').join('/'))
       : [];
-  /** Every file under a pack's assets directory, in its root or its external namespace, as paths within the pack. */
+  /** Local assets and declared external assets; unused installed release files are not part of the product. */
   const assetFiles = (pack: string): string[] => {
-    const id = admitted.packs.find(({ source }) => resolve(root, source) === resolve(root, pack))?.manifest.id;
-    const external = id === undefined ? [] : listed(join(namespace(id), 'assets'), namespace(id));
+    const owner = admitted.packs.find(({ source }) => resolve(root, source) === resolve(root, pack));
+    const external =
+      owner?.manifest.files
+        .filter(({ path }) => path.startsWith('assets/') && existsSync(join(namespace(owner.manifest.id), path)))
+        .map(({ path }) => path) ?? [];
     return [...new Set([...listed(resolve(root, pack, 'assets'), resolve(root, pack)), ...external])];
   };
   /** A file named from content, under its pack's root or, failing that, the same path in its external namespace. */

@@ -2,10 +2,12 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, 
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { expect, it } from 'vitest';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { validate } from '../src/cli/validate.ts';
 import { launcherModCatalogue } from '../src/core/bundledModCatalogue.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { admitPacks, packContentHash } from '../src/core/packAdmission.ts';
+import { declaredAssetGlobsPlugin } from '../tools/declaredAssetGlobsPlugin.ts';
 import {
   bundledPackDefines,
   packFileBytes,
@@ -262,8 +264,72 @@ it('the build-time reader finds external files and hashes them', () =>
     expect(() => readAvailablePacks(root, EXTERNAL)).toThrow(`missing file ${MODEL}`);
   }));
 
-it("an unlisted file inside a bundled pack's external directory throws", () =>
+it('leaves an unconsumed released model installed without declaring or hashing its files', () =>
   withExternalPack((root) => {
+    const sidecar = 'gungen/built.model.json';
+    rmSync(join(root, 'built/fixture.built', EXPORT));
+    const unusedModel = 'assets/models/unused.glb';
+    const unusedExport = 'things/unused.model.json';
+    const auxiliary = 'needed.json';
+    const body = 'actors/fixture.body.json';
+    const clips = 'actors/fixture.clips.json';
+    const files = [MODEL, sidecar, unusedModel, unusedExport, auxiliary, body, clips];
+    const release = {
+      packs: { 'fixture.built': { files } },
+      models: [
+        { id: 'built', pack: 'fixture.built', path: MODEL, credits: { author: 'Fixture', licence: 'CC0-1.0' } },
+        { id: 'unused', pack: 'fixture.built', path: unusedModel, credits: { author: 'Fixture', licence: 'CC0-1.0' } },
+      ],
+    };
+    writeFileSync(join(root, 'built/manifest.json'), JSON.stringify(release));
+    for (const path of [sidecar, unusedModel, unusedExport, auxiliary, body, clips]) {
+      mkdirSync(join(root, 'built/fixture.built', path, '..'), { recursive: true });
+      writeFileSync(join(root, 'built/fixture.built', path), path.endsWith('.json') ? '{}' : 'unused');
+    }
+    const jsonnetSource = join(root, 'manifest.jsonnet');
+    writeFileSync(
+      jsonnetSource,
+      `local select = import 'tools/jsonnet/lib/used-models.libsonnet';
+       local built = import 'tools/jsonnet/lib/built-pack.libsonnet';
+       local manifest = import 'tools/jsonnet/lib/pack-manifest.libsonnet';
+       local index = [{id: 'built', file: '${MODEL}', extra: '${auxiliary}'}, {id: 'unused', file: '${unusedModel}'}];
+       local admitted = {models: select(index, [{items: [{model: 'built'}]}]),
+         actorFigures: [{id: 'fixture', body: '${body}', clips: '${clips}', mesh: '${MODEL}'}]};
+       local selected = built.consumed('fixture.built', [admitted], ${JSON.stringify(release)});
+       {admitted: admitted, pack: manifest(id='fixture.built', tier='theme', content=['rows'],
+         assets={releasedFiles:: selected.files, sources: selected.sources})}`,
+    );
+    const { pack: manifest, admitted } = JSON.parse(compileJsonnetFile(jsonnetSource));
+    expect(manifest.files.map(({ path }: { path: string }) => path).sort()).toEqual(
+      ['rows.json', MODEL, sidecar, auxiliary, body, clips].sort(),
+    );
+    writeFileSync(join(root, 'mods/fixture.built/pack/manifest.json'), JSON.stringify(manifest));
+    writeFileSync(join(root, 'mods/fixture.built/rows.json'), JSON.stringify(admitted));
+    const [pack] = readAvailablePacks(root, EXTERNAL);
+    expect(pack!.files.map(({ source }) => source).sort()).toEqual(
+      manifest.files.map(({ path }: { path: string }) => path).sort(),
+    );
+    expect(existsSync(join(root, 'built/fixture.built', unusedModel))).toBe(true);
+    const plugin = declaredAssetGlobsPlugin(root, [pack!], EXTERNAL);
+    const transformed = plugin.transform.call(
+      {} as never,
+      `const models = import.meta.glob(['@skelly/released-models']);
+       const figures = import.meta.glob(['@skelly/released-figures']);`,
+      resolve(root, 'src/product/assets.ts'),
+    );
+    expect(transformed).toContain(`${EXTERNAL}/fixture.built/${MODEL}`);
+    expect(transformed).toContain(`${EXTERNAL}/fixture.built/${body}`);
+    expect(transformed).toContain(`${EXTERNAL}/fixture.built/${clips}`);
+    expect(transformed).not.toContain(unusedModel);
+    expect(transformed).not.toContain('@skelly/');
+  }));
+
+it('rejects an undeclared external file absent from the pinned release manifest', () =>
+  withExternalPack((root) => {
+    writeFileSync(
+      join(root, 'built/manifest.json'),
+      JSON.stringify({ packs: { 'fixture.built': { files: [MODEL, EXPORT] } } }),
+    );
     writeFileSync(join(root, 'built/fixture.built/assets/models/stray.glb'), new Uint8Array([0]));
     expect(() => readAvailablePacks(root, EXTERNAL)).toThrow('unlisted external file assets/models/stray.glb');
   }));

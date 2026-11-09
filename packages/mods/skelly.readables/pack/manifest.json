@@ -19,71 +19,11 @@
     },
     {
       "kind": "json",
-      "path": "things/access_code_printout.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/accounting_records.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/envelope.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/gift_card.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/greeting_card.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/letter.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/notebook.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/postcard.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/tailoring_pattern_set.model.json"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/access_code_printout.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/accounting_records.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/envelope.glb"
     },
     {
       "kind": "asset",
       "path": "assets/models/folded_note.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/gift_card.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/greeting_card.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/letter.glb"
     },
     {
       "kind": "asset",
@@ -92,14 +32,6 @@
     {
       "kind": "asset",
       "path": "assets/models/paper_sheet.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/postcard.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/tailoring_pattern_set.glb"
     }
   ],
   "id": "skelly.readables",

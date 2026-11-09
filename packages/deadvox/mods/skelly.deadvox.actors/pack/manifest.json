@@ -626,10 +626,6 @@
     },
     {
       "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
       "path": "things/shambler_head.model.json"
     },
     {

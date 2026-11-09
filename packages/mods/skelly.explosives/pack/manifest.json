@@ -23,19 +23,7 @@
     },
     {
       "kind": "json",
-      "path": "things/delay_fuze.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/frag_grenade.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/impact_fuze.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/index.json"
     },
     {
       "kind": "asset",
@@ -47,15 +35,7 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/delay_fuze.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/frag_grenade.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/impact_fuze.glb"
     }
   ],
   "id": "skelly.explosives",

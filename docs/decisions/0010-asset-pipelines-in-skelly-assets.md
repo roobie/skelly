@@ -118,13 +118,19 @@ an intentional shared-export look from an unnoticed change.
 
 ## Staged admission
 
-The pinned release may carry actor bodies and clips in a bundled pack's archive before
-Deadvox declares them. The hazard is the external root's orphan check, which meets every
-installed file no bundled pack claims; see `packages/deadvox/tools/readBundledPacks.ts`,
-`readResolved`. A pin bump therefore admits a pack's new files with their declarations.
-Consumer cutovers change declarations, metadata and bytes together, so a model is never
-admitted without its files or exposed without a claim. See `docs/git-workflow.md`,
-"Shared asset pin bumps".
+Declare and ship only released files needed by admitted content rows. The rest of
+the pinned release may remain installed without declarations; files outside that
+release still fail the orphan check. Library growth must not impose hashing, config,
+build or deploy work on content that does not consume it. See
+`tools/jsonnet/lib/built-pack.libsonnet`, `consumed`,
+`packages/deadvox/tools/readBundledPacks.ts`, `readAvailablePacks`, and
+`docs/git-workflow.md`, "Shared asset pin bumps".
+
+Narrow eager URL imports before Vite processes assets, because filtering a URL map
+at runtime cannot undo emitted files or inlined model payloads. See
+`packages/deadvox/tools/declaredAssetGlobsPlugin.ts`, `declaredAssetGlobsPlugin`.
+Consumer cutovers keep declarations, credits and selected bytes together, so a model
+is never admitted without its files or shipped without a claim.
 
 Actor figures are admitted by declared pack file path. A figure row holds its key
 and the paths of the body and clips files its pack declares from the pinned build

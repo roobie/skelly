@@ -47,14 +47,6 @@
     },
     {
       "kind": "json",
-      "path": "things/float_bladders.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
       "path": "things/player_arm.model.json"
     },
     {
@@ -124,10 +116,6 @@
     {
       "kind": "asset",
       "path": "assets/models/actors/player.1.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/float_bladders.glb"
     },
     {
       "kind": "asset",

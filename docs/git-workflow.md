@@ -56,17 +56,18 @@ base and proposed head, and report both digest values. Selected assets and pack
 declarations must agree without an unexplained simulation change; report any digest
 difference to the lead before merging.
 
-Declare released files without requiring the game to consume every model row:
-skelly-assets will always contain models that skelly is not actively using.
-Catalogue growth must not break content compilation. Admit only rows named by
-content consumers, before assigning presentation; retain missing named references
-as validation errors. See `tools/jsonnet/lib/used-models.libsonnet`, `references`,
-and `packages/deadvox/src/core/content.ts`, `referenceIssues`. Content imports its
-consumer documents rather than maintaining a second list of model IDs.
+Admit only rows named by content consumers, before assigning presentation; retain
+missing named references as validation errors. Declare, hash and ship only the
+released files those admitted rows need. Unused release files may stay installed
+without declarations; undeclared files outside the pinned release still fail the
+orphan check. Skelly-assets always carries models skelly does not use, so declaring,
+hashing and shipping the entire release would make config, build and deploy work
+grow with the library instead of the game's content. Content imports its consumer
+documents rather than maintaining a second list of model IDs. See
+`tools/jsonnet/lib/used-models.libsonnet`, `references`,
+`tools/jsonnet/lib/built-pack.libsonnet`, `consumed`, and
+`packages/deadvox/tools/readBundledPacks.ts`, `readAvailablePacks`.
 
-Pack file declarations remain independent of model consumption so installed files
-are owned even when unused. See
-`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Staged admission".
 Consumed rows must still match the pinned exports; see `test/model-export-sync.mjs`,
 `readCutOver` and `assertCutOver`. The asset owns its emissive material selection,
 so the glow tag and material names change together in one released model row,

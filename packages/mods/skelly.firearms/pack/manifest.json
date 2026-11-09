@@ -474,10 +474,6 @@
     },
     {
       "kind": "json",
-      "path": "things/baldric.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/cartridge_box_308_h_winchester.model.json"
     },
     {
@@ -494,26 +490,6 @@
     },
     {
       "kind": "json",
-      "path": "things/grenade_container.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/grenade_launcher_stock.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/mortar_round_container.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/recoilless_round_container.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/scrap_foregrip.model.json"
     },
     {
@@ -523,10 +499,6 @@
     {
       "kind": "json",
       "path": "things/taped_flashlight_mount.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/three_clip_ammunition_carton.model.json"
     },
     {
       "kind": "json",
@@ -694,10 +666,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/baldric.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/barrel_ak_medium.glb"
     },
     {
@@ -834,14 +802,6 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/grenade_container.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/grenade_launcher_stock.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/grip_ak.glb"
     },
     {
@@ -915,10 +875,6 @@
     {
       "kind": "asset",
       "path": "assets/models/magazine_stanag_30.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/mortar_round_container.glb"
     },
     {
       "kind": "asset",
@@ -999,10 +955,6 @@
     {
       "kind": "asset",
       "path": "assets/models/receiver_sporter.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/recoilless_round_container.glb"
     },
     {
       "kind": "asset",
@@ -1115,10 +1067,6 @@
     {
       "kind": "asset",
       "path": "assets/models/taped_flashlight_mount.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/three_clip_ammunition_carton.glb"
     },
     {
       "kind": "asset",

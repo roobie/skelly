@@ -6,7 +6,6 @@
       "download": null,
       "files": [
         "assets/models/actors/player.1.glb",
-        "assets/models/float_bladders.glb",
         "assets/models/player_arm.glb",
         "assets/models/player_bust.glb",
         "assets/models/player_leg.glb"

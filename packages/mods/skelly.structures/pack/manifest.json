@@ -27,27 +27,7 @@
     },
     {
       "kind": "json",
-      "path": "things/half_length_of_rail.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/hinge_set.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/length_of_light_rail.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/length_of_rail.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/peephole.model.json"
     },
     {
       "kind": "asset",
@@ -79,23 +59,7 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/half_length_of_rail.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/hinge_set.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/length_of_light_rail.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/length_of_rail.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/peephole.glb"
     }
   ],
   "id": "skelly.structures",

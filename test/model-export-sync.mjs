@@ -1,7 +1,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared contract assertions run inside the caller's Node test.
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
-import { relative, resolve, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
 import { packFileBytes, packFileOrigin, readAvailablePacks } from '../packages/deadvox/tools/readBundledPacks.ts';
@@ -18,10 +18,6 @@ export const glbJson = (bytes) =>
       .toString()
       .trim(),
   );
-const namespaceFiles = (id) =>
-  readdirSync(resolve(BUILT, id), { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => relative(resolve(BUILT, id), resolve(entry.parentPath, entry.name)).split(sep).join('/'));
 const pinnedPaths = (id) => new Set(PINNED.packs[id]?.files ?? []);
 // Content files resolve a model's file within their own pack.
 const contentModels = (pack) =>
@@ -46,19 +42,6 @@ const unpinnedIssues = (pack) => {
       ({ file }) => declared.has(file) && !named.has(file) && packFileOrigin(PACKAGE_ROOT, pack, file) === 'external',
     )
     .map((model) => `${id}: model ${model.id} draws external ${model.file}, which no pinned row names`);
-};
-
-/** The external orphan check: a bundled namespace holds only what its pack declares and the manifest pins. */
-const orphanIssues = (pack) => {
-  const { id } = pack.manifest;
-  if (PINNED.packs[id] === undefined) {
-    return [];
-  }
-  const declared = new Set(pack.manifest.files.map(({ path }) => path));
-  return namespaceFiles(id).flatMap((path) => [
-    ...(declared.has(path) ? [] : [`${id}: external ${path} is not declared`]),
-    ...(pinnedPaths(id).has(path) ? [] : [`${id}: external ${path} is not pinned`]),
-  ]);
 };
 
 /** One bundled pack's rows of one kind: both sides of the pinned-to-consumed comparison and the origins it reads. */
@@ -118,10 +101,7 @@ export const readCutOver = (dir) => {
     .map(({ id, kind }) => packKind(bundled.get(id), kind, dir));
   return {
     kinds,
-    issues: [
-      ...applicable.flatMap(({ issues }) => issues),
-      ...[...bundled.values()].flatMap((pack) => [...unpinnedIssues(pack), ...orphanIssues(pack)]),
-    ],
+    issues: [...applicable.flatMap(({ issues }) => issues), ...[...bundled.values()].flatMap(unpinnedIssues)],
     listing: applicable.map(({ listing }) => listing),
     notApplicable: [...new Set(packKinds.filter(({ id }) => !bundled.has(id)).map(({ id }) => id))],
     rows: applicable.flatMap(({ rows }) => rows),
