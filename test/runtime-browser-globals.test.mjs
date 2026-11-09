@@ -67,3 +67,24 @@ test('lint fails each Node-declared browser name in a runtime file, and only in 
     },
   );
 });
+
+// The no-DOM typecheck never reads a JavaScript runtime file, so its DOM names rest on the lint ban alone.
+const SEEDED_JAVASCRIPT = [
+  'export const title = document.title;',
+  'export const view = window;',
+  'export const frame = requestAnimationFrame;',
+  'export const current = event;',
+].join('\n');
+
+test('lint fails DOM names in a JavaScript runtime file, which the typecheck does not read', () => {
+  assert.deepEqual(
+    restrictedGlobalLines({
+      'packages/deadvox/src/core/probe.mjs': SEEDED_JAVASCRIPT,
+      'packages/deadvox/src/render/probe.mjs': SEEDED_JAVASCRIPT,
+    }),
+    {
+      'packages/deadvox/src/core/probe.mjs': [1, 2, 3, 4],
+      'packages/deadvox/src/render/probe.mjs': [4],
+    },
+  );
+});

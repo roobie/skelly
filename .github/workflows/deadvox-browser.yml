@@ -159,10 +159,6 @@ jobs:
         if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 1
         run: node test/browser/vehicle-feasibility.mjs
-      - name: Isolated expression Wasm cross-engine contract
-        if: ${{ inputs.shard == 'firefox' }}
-        timeout-minutes: 1
-        run: node tools/probe-wasm-expressions.mjs
       # Native first-click #168, Firefox OPFS #224 and Continue #170 remain quarantined.
       - name: Firefox UI contract (synthetic pointer lock; native case remains quarantined)
         if: ${{ inputs.shard == 'firefox' }}

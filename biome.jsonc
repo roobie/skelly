@@ -143,11 +143,7 @@
     },
     {
       // Standalone Node benchmarks import game systems and print measured timings.
-      "includes": [
-        "**/src/bench/*-cpu.mjs",
-        "**/deadvox/tools/bench-zombie-swings.mjs",
-        "packages/deadvox/tools/probe-wasm-expressions.mjs"
-      ],
+      "includes": ["**/src/bench/*-cpu.mjs", "**/deadvox/tools/bench-zombie-swings.mjs"],
       "linter": {
         "rules": {
           "correctness": { "noNodejsModules": "off" },
@@ -179,8 +175,10 @@
     },
     {
       // The runtime set's no-DOM typecheck (packages/deadvox/tsconfig.runtime.json) keeps Node types,
-      // which declare these browser names, so the typecheck alone lets them through. The paths are the
-      // ones that tsconfig includes. `event` and `error` keep the rule's default ban.
+      // which declare navigator, MessageEvent, localStorage and sessionStorage, so the typecheck alone
+      // lets them through. It also never reads JavaScript runtime files (src/core/authoredTerrain.mjs),
+      // so document, window and requestAnimationFrame are banned here too. The paths are the ones that
+      // tsconfig includes. `event` and `error` keep the rule's default ban.
       "includes": ["packages/deadvox/src/core/**", "packages/deadvox/src/vehicles/**", "packages/deadvox/src/game/**"],
       "linter": {
         "rules": {
@@ -194,7 +192,10 @@
                   "navigator": "Runtime code runs without the browser; take what you need from navigator as an argument.",
                   "MessageEvent": "Runtime code runs without the browser; MessageEvent is a browser type.",
                   "localStorage": "Runtime code runs without the browser; take storage as an argument instead.",
-                  "sessionStorage": "Runtime code runs without the browser; take storage as an argument instead."
+                  "sessionStorage": "Runtime code runs without the browser; take storage as an argument instead.",
+                  "document": "Runtime code runs without the browser; there is no document.",
+                  "window": "Runtime code runs without the browser; use globalThis or take the value as an argument.",
+                  "requestAnimationFrame": "Runtime code runs without the browser; the caller owns the frame loop."
                 }
               }
             }

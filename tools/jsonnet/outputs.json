@@ -581,10 +581,6 @@
       "output": "packages/deadvox/test/fixtures/mods/browser-mod.json"
     },
     {
-      "source": "packages/deadvox/test/fixtures/mods/expression-spike.jsonnet",
-      "output": "packages/deadvox/test/fixtures/mods/expression-spike.json"
-    },
-    {
       "source": "packages/deadvox/test/fixtures/mods/reading-world.jsonnet",
       "output": "packages/deadvox/test/fixtures/mods/reading-world.json"
     },
