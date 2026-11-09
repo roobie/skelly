@@ -372,8 +372,7 @@ export class Gore {
   /** A large splat on the floor under something wet that came to rest there, such as a flesh chunk (its centre,
    * metres). The floor is the top of the block the centre is in. */
   landed(centre: Vec3): void {
-    const floor = Math.floor(centre[1] / this.blockSize) * this.blockSize;
-    this.splat(this.point.set(centre[0], floor, centre[2]), this.normal.set(0, 1, 0), this.rng.range(0.14, 0.24));
+    this.splatUnder(centre[0], centre[1], centre[2]);
   }
 
   /** Flies the droplets, leaves a splat where each lands, fades the splats and lets the nearest wounded
@@ -454,6 +453,12 @@ export class Gore {
     }
   }
 
+  /** `landed`'s splat, from a centre given as numbers so the per-frame path builds no array. */
+  private splatUnder(x: number, y: number, z: number): void {
+    const floor = Math.floor(y / this.blockSize) * this.blockSize;
+    this.splat(this.point.set(x, floor, z), this.normal.set(0, 1, 0), this.rng.range(0.14, 0.24));
+  }
+
   private flyChunks(dt: number, substeps: number, isSolid: (x: number, y: number, z: number) => boolean): void {
     const lifetime = this.tuning.chunks?.lifetimeRealSeconds ?? 0;
     for (const chunk of this.chunks) {
@@ -494,7 +499,7 @@ export class Gore {
         velocity.set(0, 0, 0);
         chunk.landed = true;
         chunk.orientation.setFromAxisAngle(this.up, this.rng.range(0, Math.PI * 2));
-        this.landed([position.x, position.y, position.z]);
+        this.splatUnder(position.x, position.y, position.z);
         return;
       }
     }
@@ -506,8 +511,8 @@ export class Gore {
     if (!tuning) {
       return;
     }
-    for (const [index, model] of tuning.models.entries()) {
-      const meshes = this.chunkMeshesFor(index, model);
+    for (let index = 0; index < tuning.models.length; index++) {
+      const meshes = this.chunkMeshesFor(index, tuning.models[index]!);
       if (!meshes) {
         continue;
       }
