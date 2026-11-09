@@ -21,6 +21,7 @@ import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
+import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { SnapshotSite } from './fixtures/snapshotSite.ts';
@@ -150,6 +151,8 @@ export function createRuntime(
     ) => PlayerInputSample;
     onOpaque?: () => void;
     registry?: Registry;
+    /** Fixture type ids, each wearing the figures of the registered type it copies. */
+    fixtureFigures?: Readonly<Record<string, string>>;
     powerDevices?: import('../src/core/sitePower.ts').PlacedPowerDevice[];
     skyBoxes?: readonly import('../src/core/skylight.ts').SkyBounds[];
   } = {},
@@ -202,6 +205,7 @@ export function createRuntime(
   }
   const session = createSession({
     registry: contentRegistry,
+    actorFigureFiles: withFixtureFigures(stackActorFigureFiles(contentRegistry), options.fixtureFigures ?? {}),
     ...(options.powerDevices ? { powerDevices: options.powerDevices } : {}),
     ...(options.skyBoxes
       ? {

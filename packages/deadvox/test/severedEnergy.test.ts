@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { figureSeedPool } from '../src/core/actorFigure.ts';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { type HumanoidHitRegion, posedHumanoidRegionBoxes, posedRegionHitDistance } from '../src/core/actorRegions.ts';
 import type { HitImpulse } from '../src/core/actorSystem.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { angularVelocity, type RigidBody } from '../src/render/rigidImpulse.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
@@ -16,6 +17,7 @@ import { ActorSystem } from './zombieSystemFixture.ts';
 
 const BLOCK = 0.5;
 const registry = baseRegistry();
+const FIGURES = stackActorFigureFiles(registry);
 const SHAMBLER = registry.actors.get('shambler')!;
 const BAT_DEF = registry.items.get('baseball_bat')!.weapon!.melee!;
 const BAT = { ...BAT_DEF, cooldown: BAT_DEF.cooldownSimSeconds };
@@ -26,6 +28,7 @@ const senses = (isSolid: (x: number, y: number, z: number) => boolean) => ({
   blockSize: BLOCK,
   physics: physicsFor(makeScale(BLOCK)),
   tuning: TEST_SENSE_TUNING,
+  actorFigureFiles: FIGURES,
   player: () => ({
     pos: [100, 2, 100] as Vec3,
     facing: [0, 0, -1] as Vec3,
@@ -110,7 +113,8 @@ const createSeveredHit = (mode: CutMode) => {
   const actor = system.store.get(id)!;
   const actorMeshes = new MobActorMeshes(BLOCK, 16, {
     actors: new Map([[actor.type.id, actor.type]]),
-    poolSize: mobFigurePoolSizeThrough(figureSeedPool(new Map([[actor.type.id, actor.type]])), actor.figureSeed),
+    actorFigureFiles: FIGURES,
+    poolSize: mobFigurePoolSizeThrough(actor.type.figureSeeds!, actor.figureSeed),
   });
   renderer = actorMeshes;
   actorMeshes.setWorld(isSolid, BLOCK);
@@ -126,6 +130,7 @@ const createSeveredHit = (mode: CutMode) => {
   };
   actorMeshes.sync(system.store, 0, 1);
   const boxes = posedHumanoidRegionBoxes({
+    figure: actorFigure(FIGURES, actor.type, actor.figureSeed),
     seed: actor.figureSeed,
     position: actor.body.pos,
     facing: actor.facing,

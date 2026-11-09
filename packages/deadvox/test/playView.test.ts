@@ -35,6 +35,7 @@ import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { ITEM_POINT_LIGHTS } from '../src/render/lightPool.ts';
 import { createPlayView } from '../src/render/playView.ts';
 import { Skylight } from '../src/render/skylight.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { skyWorldFixture } from './fixtures/skyWorld.ts';
@@ -43,6 +44,7 @@ import { makeConfig } from './fixtures/startupContent.ts';
 const FAR_PLANE_SCALE = graphicsFile.graphics[0]!.fogFarPlaneScale;
 
 const registry = baseRegistry();
+const actorFigureFiles = stackActorFigureFiles(registry);
 /** Only the figure's model rows, which the drawn body needs to lay out; held items draw their fallbacks. */
 const figureModels = new Set(
   [...registry.figures.values()].flatMap(({ body, limbs }) => [
@@ -127,7 +129,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     },
     isSolid,
   } as unknown as Engine;
-  const view = createPlayView(engine, inventory, vi.fn(), { models: productAssets.models, page });
+  const view = createPlayView(engine, inventory, vi.fn(), { models: productAssets.models, actorFigureFiles, page });
   syncActor(view, engine.camera);
   return {
     engine,
@@ -262,6 +264,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), {
     models: productAssets.models,
+    actorFigureFiles,
     page: new EventTarget(),
     poweredLights,
   });
@@ -571,7 +574,11 @@ describe('play presentation ownership', () => {
       sky: {},
       isSolid: () => false,
     } as unknown as Engine;
-    const view = createPlayView(engine, inventory, vi.fn(), { models: productAssets.models, page: new EventTarget() });
+    const view = createPlayView(engine, inventory, vi.fn(), {
+      models: productAssets.models,
+      actorFigureFiles,
+      page: new EventTarget(),
+    });
 
     expect(view.pictures).toBeUndefined();
     expect(view.render()).toBeNull();

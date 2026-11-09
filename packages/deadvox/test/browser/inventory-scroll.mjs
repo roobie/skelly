@@ -2102,7 +2102,10 @@ try {
       globalThis.scrollFixture.screen.close();
       const { mountChargerFlow } = await import(chargerModule);
       const { buildBundledContent } = await import(contentModule);
-      globalThis.chargerFlow = mountChargerFlow(buildBundledContent().registry, document.querySelector('#inventory'));
+      globalThis.chargerFlow = await mountChargerFlow(
+        buildBundledContent().registry,
+        document.querySelector('#inventory'),
+      );
     },
     { chargerModule: '/test/browser/charger-flow.ts', contentModule: '/src/product/content.ts' },
   );

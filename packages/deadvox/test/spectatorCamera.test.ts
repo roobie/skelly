@@ -7,6 +7,7 @@ import { World } from '../src/core/world.ts';
 import { createSession, IDLE, type SessionControls } from '../src/game/session.ts';
 import { DebugGunPose } from '../src/presentation/debugGunPose.ts';
 import { SpectatorCamera } from '../src/presentation/spectatorCamera.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const { registry } = startupContent();
@@ -62,6 +63,7 @@ const idleControls = (): SessionControls => ({
 const runtime = (controls: SessionControls) => {
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     scale,
     seed: 5,

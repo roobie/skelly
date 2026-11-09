@@ -135,7 +135,9 @@ rebase or force-push a published branch. The steps and their reasons are in
 
 Run `npm run setup` in each fresh worktree before its first push. The shared setup keeps
 root lint from misreading missing dependencies as unresolved imports and installs the
-pinned compiler required by `tools/jsonnet/compile.mjs`, `compileJsonnetSources`.
+pinned compiler required by `tools/jsonnet/compile.mjs`, `compileJsonnetSources`, and the
+pinned skelly-assets release every reader of its built files needs; see
+`tools/skelly-assets/setup.mjs`, `ensureSkellyAssets`.
 
 The projects are npm workspaces (`package.json`, `workspaces`), so one lockfile keeps
 shared packages, `three` above all, on one version and one instance. Add a dependency

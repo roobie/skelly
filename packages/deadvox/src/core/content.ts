@@ -26,6 +26,7 @@ import {
   rolledFitIssue,
 } from './inventoryScale.ts';
 import { itemPresentationIssues } from './itemPresentation.ts';
+import { crawlsAfterLegLoss } from './legLoss.ts';
 import { vesselAccepts } from './liquids.ts';
 import { lootTypeIssue } from './loot.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
@@ -1689,6 +1690,9 @@ export const actorFigureFileIssues = (
   if (type) {
     for (const [path, message] of figureTypeIssues(type, body.output)) {
       report(path, message);
+    }
+    if (crawlsAfterLegLoss(type) && clips.output.crawling === undefined) {
+      report('.clips.crawling', `actor type "${type.id}" crawls after losing a leg and needs a crawling set`);
     }
   } else if (!content.figures.has(body.output.type)) {
     report('.body.type', `no actor type or figure "${body.output.type}"`);

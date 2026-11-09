@@ -16,6 +16,7 @@ import {
 import { createSession, IDLE } from '../src/game/session.ts';
 import { createWorldSetup } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';
@@ -57,6 +58,7 @@ const fixture = (start = 0, restore?: SaveSnapshot, far = false) => {
   world.addChunk(chunk);
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     scale: makeScale(0.5),
     seed: 7,

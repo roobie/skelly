@@ -1,9 +1,11 @@
 // biome-ignore-all lint/correctness/noNodejsModules: bundled file provider for build tools and the CLI.
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { relative, resolve, sep } from 'node:path';
+import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { parse } from 'valibot';
+import { type ActorFigureFiles, readActorFigureFiles } from '../src/core/actorFigureFiles.ts';
 import { canonicalJson } from '../src/core/canonicalJson.ts';
+import type { Registry } from '../src/core/content.ts';
 import { admitPacks, type PackInput, PackManifestSchema, packContentHash } from '../src/core/packAdmission.ts';
 import { logicalKey, type PackFileEntry, type PackLocation, resolvePhysical } from '../src/core/packFiles.ts';
 import { EXTERNAL_ASSET_ROOT } from '../src/product/externalRoot.ts';
@@ -137,6 +139,25 @@ export const packFileBytes = (
   return readResolved(packageRoot, { root: pack.source, manifest: pack.manifest }, entry, external);
 };
 
+/** Reads a file that a content file's pack declares; the pack is the admitted one whose root holds the content file. */
+export const declaredFileReader =
+  (
+    packageRoot: string,
+    admittedPacks: readonly { readonly source: string; readonly manifest: { readonly id: string } }[],
+    packs: readonly PackInput[],
+  ) =>
+  (contentFile: string, path: string): Buffer<ArrayBuffer> => {
+    const owner = admittedPacks.find(({ source }) => {
+      const within = relative(resolve(packageRoot, source), resolve(packageRoot, contentFile));
+      return !(within.startsWith('..') || isAbsolute(within));
+    });
+    const pack = packs.find(({ manifest }) => manifest.id === owner?.manifest.id);
+    if (!pack) {
+      throw new Error(`only a pack can declare ${path}`);
+    }
+    return packFileBytes(packageRoot, pack, path);
+  };
+
 /** Whether a declared json or asset entry resolves under the external root rather than its pack's root. */
 export const packFileOrigin = (
   packageRoot: string,
@@ -187,6 +208,21 @@ export const readStackContentSources = (packageRoot: string, stack: string) =>
   readStackContentFiles(packageRoot, stack)
     .map(({ file, data }) => ({ source: file, data }))
     .sort((left, right) => left.source.localeCompare(right.source));
+
+/**
+ * The figure files of a registry built from a stack's content. Content files may be named as admission names them,
+ * under a pack root, or relative to their pack, as `readStackContentSources` names them; a pack-relative name
+ * resolves to the one pack that declares it.
+ */
+export const readStackActorFigureFiles = (packageRoot: string, stack: string, registry: Registry): ActorFigureFiles => {
+  const packs = readBundledPacks(packageRoot, stack);
+  const admittedRead = declaredFileReader(packageRoot, admitPacks(packs).packs, packs);
+  const read = (contentFile: string, path: string): Buffer<ArrayBuffer> => {
+    const declaring = packs.filter(({ manifest }) => manifest.files.some((file) => file.path === contentFile));
+    return declaring.length === 1 ? packFileBytes(packageRoot, declaring[0]!, path) : admittedRead(contentFile, path);
+  };
+  return readActorFigureFiles(registry, read);
+};
 
 const CONTENT_PACKS_DEFINE = '__SKELLY_CONTENT_PACKS__';
 const OPT_IN_PACKS_DEFINE = '__SKELLY_OPT_IN_PACKS__';

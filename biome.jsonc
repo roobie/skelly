@@ -128,6 +128,8 @@
         "**/vite.config.ts",
         "testPool.ts",
         "tools/jsonnet/**",
+        "tools/skelly-assets/**",
+        "tools/pinned-download.mjs",
         "packages/deadvox/tools/publish-playtest.mjs",
         "packages/deadvox/tools/police-item-models.mjs",
         "packages/deadvox/tools/item-fuel-models.mjs",
@@ -144,8 +146,7 @@
       "includes": [
         "**/src/bench/*-cpu.mjs",
         "**/deadvox/tools/bench-zombie-swings.mjs",
-        "packages/deadvox/tools/probe-wasm-expressions.mjs",
-        "packages/deadvox/tools/measure-ragdolls.mjs"
+        "packages/deadvox/tools/probe-wasm-expressions.mjs"
       ],
       "linter": {
         "rules": {
@@ -155,11 +156,7 @@
       }
     },
     {
-      "includes": [
-        "packages/deadvox/tools/perf-baseline.mjs",
-        "packages/deadvox/tools/perf-baseline-trace.mjs",
-        "packages/deadvox/tools/measure-ragdolls.mjs"
-      ],
+      "includes": ["packages/deadvox/tools/perf-baseline.mjs", "packages/deadvox/tools/perf-baseline-trace.mjs"],
       "linter": { "rules": { "suspicious": { "noConsole": "off" }, "performance": { "noAwaitInLoops": "off" } } }
     },
     {
@@ -200,6 +197,7 @@
         "**/deadvox/src/core/actorMotion.ts",
         "**/deadvox/src/core/actorRegions.ts",
         "**/deadvox/src/core/actorPose.ts",
+        "**/deadvox/src/core/legLoss.ts",
         "**/deadvox/src/game/actorAudio.ts",
         "**/deadvox/test/mobActors.test.ts",
         "**/deadvox/test/angles.test.ts",

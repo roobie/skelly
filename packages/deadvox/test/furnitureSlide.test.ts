@@ -24,6 +24,7 @@ import { createSession, IDLE } from '../src/game/session.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { encodeFixture, formatVersion } from './snapshotTestSupport.ts';
@@ -88,6 +89,7 @@ const runtime = (restore?: SaveSnapshot, spawn = player().pos) => {
   const solid = (x: number, y: number, z: number) => registry.blocks[world.getBlock(x, y, z)]?.solid === true;
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     isSolid: solid,
     isOpaque: solid,

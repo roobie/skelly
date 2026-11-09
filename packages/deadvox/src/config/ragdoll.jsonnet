@@ -16,6 +16,8 @@ local ball(bones, flex, swing, twist) = { bones: bones, limits: [flex, twist, sw
     crawlCuts: [['thigh.L'], ['thigh.L', 'thigh.R']],
     crawlDelaySeconds: 2,
   },
+  // Kilograms per cubic metre of actor body voxels; ragdoll masses and inertia follow from it.
+  density: 1000,
   timestep: 1 / 60,
   stepBudget: 600,
   maxStepsPerFrame: 8,

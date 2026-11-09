@@ -3,6 +3,7 @@
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
+import { type ActorFigureFiles, loadActorFigureFiles } from '../core/actorFigureFiles.ts';
 import { PLAYER_CHEST_METRES } from '../core/actorMotion.ts';
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
@@ -141,7 +142,7 @@ import { showWin } from '../ui/win.ts';
 import { mountWorldLoading } from '../ui/worldLoading.ts';
 import { GameAudio } from './audio.ts';
 import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
-import type { PresentationAssets } from './bundledAssets.ts';
+import { bundledAssetUrl, type PackAssetFiles, type PresentationAssets } from './bundledAssets.ts';
 import { DebugGunPose } from './debugGunPose.ts';
 import type {
   DebugHooks,
@@ -681,12 +682,39 @@ const focusNoticeOnce = (lines: ActionText, unknownFocus: string | undefined) =>
   };
 };
 
-export const startPlay = (
+/** The figure files the stack's rows name, fetched before the session exists so no tick ever waits on a fetch. */
+export const fetchActorFigureFiles = (
+  registry: Engine['registry'],
+  figures: PackAssetFiles,
+): Promise<ActorFigureFiles> =>
+  loadActorFigureFiles(registry, async (contentFile, path) => {
+    const url = bundledAssetUrl(figures, contentFile, path);
+    if (url === undefined) {
+      throw new Error(`No bundled figure file ${path} for ${contentFile}`);
+    }
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Figure file ${path}: HTTP ${response.status}`);
+    }
+    return new Uint8Array(await response.arrayBuffer());
+  });
+
+export const startPlay = async (
   engine: Engine,
   debugModule: DebugModule | undefined,
   options: StartPlayOptions,
-): { enter: () => void } => {
+): Promise<{ enter: () => void }> => {
   assertPracticeIsolation(options, Boolean(engine.site?.guidance));
+  const actorFigureFiles = await fetchActorFigureFiles(engine.registry, options.assets.figures);
+  return startPlayWith(engine, debugModule, options, actorFigureFiles);
+};
+
+const startPlayWith = (
+  engine: Engine,
+  debugModule: DebugModule | undefined,
+  options: StartPlayOptions,
+  actorFigureFiles: ActorFigureFiles,
+): { enter: () => void } => {
   const keyboardInput = options.keyboard;
   const inputBindings = keyboardInput.registry;
   const { config, registry, streamer, renderer, camera, meshes } = engine;
@@ -866,6 +894,7 @@ export const startPlay = (
   });
   const session = createSession({
     registry,
+    actorFigureFiles,
     scenario: engine.scenario,
     powerDevices: engine.powerDevices,
     objective: scenarioObjective(engine.site),
@@ -1137,6 +1166,7 @@ export const startPlay = (
     },
     {
       models: options.assets.models,
+      actorFigureFiles,
       poweredLights: () => session.power?.lights() ?? [],
       physicalSolid: session.physicalSolid,
     },

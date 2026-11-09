@@ -1,26 +1,45 @@
-import { type Template, templateByName } from '@mobgen/core/template.ts';
-import { acidAttackPose, acidHitPose, acidStrideLength, acidWalkPose, acidWindupPose } from '@mobgen/mob/acidPoses.ts';
+import { templateByName } from '@mobgen/core/template.ts';
 import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
-import { type AttackClip, attackClipFor, attackPose, attackRotations } from '@mobgen/mob/attack.ts';
-import { crawlGaitPose, crawlHitPose, groundCrawlPose } from '@mobgen/mob/crawl.ts';
-import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobgen/mob/gait.ts';
-import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
-import { type HumanoidFigure, templateFigure } from '@mobgen/mob/humanoidFigure.ts';
-import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle.ts';
-import { LOOK_AT_PROFILES } from '@mobgen/mob/lookAtProfiles.ts';
-import { flinchClipFor, flinchPoseWithClip, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
-import type { ActorFigure } from './actorFigure.ts';
+import { templateFigure } from '@mobgen/mob/humanoidFigure.ts';
+import { flinchClipFor, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
+import {
+  applyJointDelta,
+  applyMotion,
+  applyOverlay,
+  decodeFrame,
+  idleBase,
+  sampleClip,
+  stanceFit,
+  stanceMotion,
+  walkCursor,
+  walkToIdle,
+} from './actorClips.ts';
+import { type ActorFigureFile, type ActorFigureFiles, actorFigure } from './actorFigureFiles.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import type { Actor } from './actorState.ts';
 import { applyPoint, IDENTITY_M, type Mat3, mulMM, mulMV, rotX, rotY, rotZ } from './boneMath.ts';
 import type { Bone } from './bones.ts';
 import { severedBoneSet } from './boneTree.ts';
 import type { Vec3 } from './coords.ts';
-import { fusedMassFigure, fusedMassSeveredBones } from './fusedMassFigure.ts';
+import { type FusedMassFigure, fusedMassFigure, fusedMassSeveredBones } from './fusedMassFigure.ts';
 import { clampJointAngles, jointAngles, jointRotation } from './joints.ts';
-import { blendPose, boneTransforms, type Pose } from './pose.ts';
+import { boneTransforms, type Pose } from './pose.ts';
+import {
+  type ActorBody,
+  type ActorClips,
+  actorFigureKey,
+  type HumanoidIdle,
+  type JointDeltaClip,
+  type OverlayClip,
+  type PoseClip,
+} from './schema/actors.ts';
 
 export interface ActorPoseInput {
+  /**
+   * The built body and clips the pose composes over. A fused mass still generates its pose and figure, since
+   * its built idle holds only the rest pose and none of its flinch.
+   */
+  readonly figure: ActorFigureFile;
   readonly id?: number;
   readonly seed: number;
   readonly model?: string;
@@ -79,14 +98,37 @@ export const actorCrawls = (actor: Actor): boolean => {
   return [...severableParts.leftLeg, ...severableParts.rightLeg].some((part) => actor.severed.includes(part));
 };
 
+/**
+ * The gait phase gained over a distance. An actor moving on its crawl set advances one cycle per its crawl walk's
+ * stride (`packages/deadvox/DESIGN.md`, "Clocks and units"); a standing gait advances half a cycle per step length,
+ * which footsteps also count.
+ */
+export const gaitPhaseGain = (actor: Actor, { clips }: ActorFigureFile, travelledMetres: number): number => {
+  if (clips.standing !== undefined && !actorCrawls(actor)) {
+    return (travelledMetres / actor.type.stepLength) * Math.PI;
+  }
+  const walk = clips.crawling?.walk;
+  if (!(walk && 'kind' in walk && walk.kind === 'pose' && walk.strideMetres !== undefined)) {
+    throw new Error(`Actor figure ${actorFigureKey(actor.type.id, actor.figureSeed)} crawls without a crawl walk`);
+  }
+  return (travelledMetres / walk.strideMetres) * 2 * Math.PI;
+};
+
+/** What every actor of one world poses against: its block scale and the built figures it loaded. */
+export interface ActorPoseScene {
+  readonly blockSize: number;
+  readonly actorFigureFiles: ActorFigureFiles;
+}
+
 export const actorPoseInputFor = (
   actor: Actor,
   id: number,
-  blockSize: number,
+  { blockSize, actorFigureFiles }: ActorPoseScene,
   root?: PoseRootOverride,
 ): ActorPoseInput => {
   const position = root?.position ?? actor.body.pos;
   return {
+    figure: actorFigure(actorFigureFiles, actor.type, actor.figureSeed),
     id,
     seed: actor.figureSeed,
     model: figureVariantOf(actor.type),
@@ -115,69 +157,64 @@ export interface PosedActor {
   readonly pose: Pose;
   readonly transforms: ReturnType<typeof boneTransforms>;
   readonly bones: readonly Bone[];
-  readonly figure: ActorFigure;
+  readonly figure: ReturnType<typeof templateFigure> | FusedMassFigure;
   readonly hidden: ReadonlySet<string>;
   readonly yaw: Mat3;
   readonly position: Vec3;
   readonly blockSize: number;
 }
 
-interface SeededActor {
-  readonly actor: WalkActor;
-  readonly bones: readonly Bone[];
-  /** Built on first use: the idle stances stand on legs, which a crawler's amputated body lacks. */
-  idleBases?: Readonly<Record<IdleStance, Pose>>;
-}
+// ---- built clip lookup ----
 
-const actorForFigure = (figure: HumanoidFigure): SeededActor => {
-  const {
-    realized: {
-      body: { bones },
-      voxels,
-    },
-    genome,
-  } = figure;
-  const actor: WalkActor = {
-    bones,
-    extents: footRestExtents(bones, voxels),
-    params: genome.params as HumanoidParams,
-    seed: figure.seed,
-  };
-  return { actor, bones };
-};
+type ClipSet = NonNullable<ActorClips['standing']>;
+type Locomotion = 'standing' | 'crawling';
 
-const idleBasesOf = (seeded: SeededActor): Readonly<Record<IdleStance, Pose>> => {
-  seeded.idleBases ??= {
-    slack: idleBasePose(seeded.actor, 'slack'),
-    aggravated: idleBasePose(seeded.actor, 'aggravated'),
-  };
-  return seeded.idleBases;
-};
+const figureKeyOf = ({ body }: ActorFigureFile): string => actorFigureKey(body.type, body.seed);
 
-const actorCache = new Map<string, SeededActor>();
-const actorForSeed = (model: string, seed: number): SeededActor => {
-  const key = `${model}:${seed}`;
-  let actor = actorCache.get(key);
-  if (!actor) {
-    actor = actorForFigure(templateFigure(model, seed));
-    actorCache.set(key, actor);
+/** The clip set the pose reads: a legless body and an injured standing one move on their crawl set. */
+const locomotionOf = (input: ActorPoseInput): Locomotion =>
+  input.crawling || input.figure.clips.standing === undefined ? 'crawling' : 'standing';
+
+const clipSetOf = (input: ActorPoseInput, locomotion: Locomotion): ClipSet => {
+  const set = input.figure.clips[locomotion];
+  if (!set) {
+    throw new Error(`Actor figure ${figureKeyOf(input.figure)} has no ${locomotion} clips`);
   }
-  return actor;
+  return set;
 };
 
-/** A legged body's walk over its stance-blended idle. */
-const humanoidWalkPose = (seeded: SeededActor, input: ActorPoseInput, stanceWeight: number): Pose => {
-  const idleBases = idleBasesOf(seeded);
-  const phase = ((input.gaitPhase % Math.PI) + Math.PI) % Math.PI;
-  const clock: GaitClock = { stepIndex: Math.floor(input.gaitPhase / Math.PI), progress: phase / Math.PI };
-  const stance: IdleStance = stanceWeight >= 0.5 ? 'aggravated' : 'slack';
-  const idle = applyIdleMotion(
-    blendPose(idleBases.slack, idleBases.aggravated, stanceWeight),
-    stance,
-    input.idleTime ?? 0,
-    input.id ?? input.seed,
-  );
-  return walkPose(seeded.actor, clock, input.speed, { idle });
+const clipOf = <K extends 'pose' | 'overlay' | 'jointDelta'>(
+  set: ClipSet,
+  name: string,
+  kind: K,
+): Extract<PoseClip | OverlayClip | JointDeltaClip, { kind: K }> => {
+  const entry = set[name];
+  if (!(entry && 'kind' in entry && entry.kind === kind)) {
+    throw new Error(`Clip ${name} is not a ${kind} clip`);
+  }
+  return entry as Extract<PoseClip | OverlayClip | JointDeltaClip, { kind: K }>;
+};
+
+const stanceIdleOf = (set: ClipSet): HumanoidIdle => {
+  const entry = set.idle;
+  if (!(entry && 'slack' in entry)) {
+    throw new Error('Clip idle is not a stance idle');
+  }
+  return entry;
+};
+
+/** A finite clip's timing; the producer writes both fields on every clip this module times. */
+const timingOf = ({
+  durationSimSeconds,
+  hitAtSimSeconds,
+}: {
+  readonly durationSimSeconds?: number | undefined;
+  readonly hitAtSimSeconds?: number | undefined;
+}): { readonly durationSimSeconds: number; readonly hitAtSimSeconds: number } => {
+  if (durationSimSeconds === undefined || hitAtSimSeconds === undefined) {
+    throw new Error('An attack clip needs durationSimSeconds and hitAtSimSeconds');
+  }
+  return { durationSimSeconds, hitAtSimSeconds };
 };
 
 /** Stable per-entity hit-flinch side; shared by render and simulation pose generation. */
@@ -205,45 +242,40 @@ const fusedMassHitFlinchPose = (pose: Pose, time: number, id: number): Pose => {
   };
 };
 
-const attackTimeFor = (
-  { attackWait, attackCooldown, attackWindup, attackWindupSeconds }: ActorPoseInput,
-  clip: AttackClip,
-): number | undefined => {
+/** Seconds since the attack began, from the persisted cooldown when supplied, else from the wind-up. */
+const attackElapsed = ({
+  attackWait,
+  attackCooldown,
+  attackWindup,
+  attackWindupSeconds,
+}: ActorPoseInput): number | undefined => {
   if (attackWait !== undefined && attackCooldown !== undefined) {
-    if (attackWait <= 0) {
-      return undefined;
-    }
-    const elapsed = Math.max(0, attackCooldown - attackWait);
-    return Math.max(0, clip.hitTime - attackWindupSeconds) + elapsed;
+    return attackWait > 0 ? Math.max(0, attackCooldown - attackWait) : undefined;
   }
-  return attackWindup > 0
-    ? Math.max(0, clip.hitTime - attackWindupSeconds) + attackWindupSeconds - attackWindup
-    : undefined;
+  return attackWindup > 0 ? attackWindupSeconds - attackWindup : undefined;
 };
 
-interface ModelPoseContext {
-  readonly template: Template;
-  readonly figure: HumanoidFigure;
-  readonly actor: WalkActor;
-}
-
-const withAttackPose = (context: ModelPoseContext, base: Pose, attackTime: number | undefined): Pose => {
-  const clip = attackClipFor(context.template);
-  if (attackTime === undefined || attackTime > clip.duration) {
-    return base;
+/** Humanoid clip time: the wind-up ends on the hit, so a short wind-up starts the clip part way through. */
+const humanoidAttackTimeFor = (input: ActorPoseInput, clip: OverlayClip): number | undefined => {
+  const elapsed = attackElapsed(input);
+  if (elapsed === undefined) {
+    return undefined;
   }
-  if (context.template.legCut !== undefined) {
-    const { rotations } = attackRotations(context.actor, clip, attackTime, base);
-    return groundCrawlPose(context.figure.realized, { ...base, rotations });
-  }
-  return attackPose(context.actor, clip, attackTime, base);
+  const { durationSimSeconds, hitAtSimSeconds } = timingOf(clip);
+  const time = Math.max(0, hitAtSimSeconds - input.attackWindupSeconds) + elapsed;
+  return time <= durationSimSeconds ? time : undefined;
 };
 
-const withHitFlinch = (context: ModelPoseContext, base: Pose, time: number, side: number): Pose => {
-  if (context.template.legCut !== undefined) {
-    return crawlHitPose(context.figure.realized, base, time, side);
+/** Acid clip time: the wind-up covers the clip up to its peak, then the clip runs on at the attack's Sim pace. */
+const acidAttackTimeFor = (input: ActorPoseInput, clip: JointDeltaClip): number | undefined => {
+  const elapsed = attackElapsed(input);
+  if (elapsed === undefined) {
+    return undefined;
   }
-  return flinchPoseWithClip(context.actor, time, base, { clip: flinchClipFor(context.template), side });
+  const { durationSimSeconds, hitAtSimSeconds: peak } = timingOf(clip);
+  const windup = input.attackWindupSeconds;
+  const time = elapsed < windup ? (peak * elapsed) / windup : peak + elapsed - windup;
+  return time <= durationSimSeconds ? time : undefined;
 };
 
 const STANCE_CROSSFADE_SECONDS = 0.5;
@@ -253,15 +285,15 @@ export const targetStanceWeight = (input: ActorPoseInput): number => {
     return 1;
   }
   const model = bodyPlanModel(input.model ?? 'humanoid');
-  if (model === 'acid') {
-    return acidAttackTimeFor(input) === undefined ? 0 : 1;
-  }
   if (model === 'fused-mass') {
     return 0;
   }
-  const clip = attackClipFor(templateByName(model));
-  const attackTime = attackTimeFor(input, clip);
-  return attackTime !== undefined && attackTime <= clip.duration ? 1 : 0;
+  const set = clipSetOf(input, locomotionOf(input));
+  const attackTime =
+    model === 'acid'
+      ? acidAttackTimeFor(input, clipOf(set, 'attack', 'jointDelta'))
+      : humanoidAttackTimeFor(input, clipOf(set, 'attack', 'overlay'));
+  return attackTime === undefined ? 0 : 1;
 };
 
 export const advanceStanceWeight = (current: number, target: number, dt: number): number => {
@@ -273,6 +305,123 @@ export const advanceStanceWeight = (current: number, target: number, dt: number)
   return Math.abs(delta) <= maxDelta + 1e-12 ? target : current + Math.sign(delta) * maxDelta;
 };
 
+// ---- composition ----
+
+const yawOf = (facing: Vec3): Mat3 => rotY((Math.atan2(-facing[0], -facing[2]) * 180) / Math.PI);
+
+const withHeadYaw = (
+  pose: Pose,
+  headId: string,
+  headYaw: number,
+  clamp: (rotation: Mat3) => Mat3 = (rotation) => rotation,
+): Pose =>
+  headYaw === 0
+    ? pose
+    : {
+        ...pose,
+        rotations: {
+          ...pose.rotations,
+          [headId]: clamp(mulMM(pose.rotations[headId] ?? IDENTITY_M, rotY((headYaw * 180) / Math.PI))),
+        },
+      };
+
+/** Simulation gaze lands on framed joints after the action layers, so it is clamped like them: hit boxes and
+ * the spit anchor must stay inside the bone's articulated limits. */
+const clampedJointRotation = (bone: Bone, rotation: Mat3): Mat3 =>
+  bone.frame && bone.limits ? jointRotation(bone, clampJointAngles(bone, jointAngles(bone, rotation))) : rotation;
+
+/** A standing body's walk cross-faded into its stance-blended idle, which it holds exactly at rest. */
+const standingLocomotion = (set: ClipSet, input: ActorPoseInput): Pose => {
+  const idle = stanceIdleOf(set);
+  const stanceWeight = input.stanceWeight ?? targetStanceWeight(input);
+  const idlePose = applyMotion(
+    idleBase(idle, stanceWeight),
+    stanceMotion(idle, stanceWeight),
+    input.idleTime ?? 0,
+    input.id ?? input.seed,
+  );
+  if (input.speed <= 0) {
+    return idlePose;
+  }
+  const walk = clipOf(set, 'walk', 'pose');
+  if (walk.idleBlendSpeed === undefined) {
+    throw new Error('A standing walk needs idleBlendSpeed');
+  }
+  return walkToIdle(walkFrame(input, walk, 'standing'), idlePose, input.speed, walk.idleBlendSpeed);
+};
+
+/**
+ * A walk clip's pose at the input's gait phase; the producer states the cycles every walk spans. Between stored
+ * frames the root is refitted to the slerped rotations, so an overlay's own fit leaves an unchanged walk where it is.
+ */
+const walkFrame = ({ figure: { body }, gaitPhase }: ActorPoseInput, walk: PoseClip, stance: Locomotion): Pose => {
+  if (walk.cycles === undefined) {
+    throw new Error('A walk clip needs cycles');
+  }
+  const { root, rotations } = decodeFrame(sampleClip(walk, walkCursor(gaitPhase, walk.cycles)));
+  return { root: [root[0], stanceFit(body, root, rotations, stance), root[2]], rotations };
+};
+
+const crawlingLocomotion = (set: ClipSet, input: ActorPoseInput): Pose =>
+  input.speed <= 0
+    ? decodeFrame(sampleClip(clipOf(set, 'idle', 'pose'), 0))
+    : walkFrame(input, clipOf(set, 'walk', 'pose'), 'crawling');
+
+const humanoidPose = (input: ActorPoseInput): Pose => {
+  const { body } = input.figure;
+  const locomotion = locomotionOf(input);
+  const set = clipSetOf(input, locomotion);
+  const walked = locomotion === 'standing' ? standingLocomotion(set, input) : crawlingLocomotion(set, input);
+  const attackClip = clipOf(set, 'attack', 'overlay');
+  const attackTime = humanoidAttackTimeFor(input, attackClip);
+  const attacked =
+    attackTime === undefined ? walked : applyOverlay(body, walked, attackClip, attackTime, 0, locomotion);
+  const gazed = withHeadYaw(attacked, 'head', input.headYaw);
+  return input.hitFlinchTime === undefined
+    ? gazed
+    : applyOverlay(
+        body,
+        gazed,
+        clipOf(set, 'flinch', 'overlay'),
+        input.hitFlinchTime,
+        flinchSideForId(input.id ?? 0),
+        locomotion,
+      );
+};
+
+const headBoneOf = (body: ActorBody): string => {
+  const head = body.lookAt?.headBone;
+  if (head === undefined) {
+    throw new Error(`Actor body ${body.type} has no look-at head bone`);
+  }
+  return head;
+};
+
+const acidPose = (input: ActorPoseInput, bones: ReadonlyMap<string, Bone>): Pose => {
+  const { body } = input.figure;
+  const set = clipSetOf(input, 'standing');
+  const idle = clipOf(set, 'idle', 'pose');
+  if (idle.periodSimSeconds === undefined) {
+    throw new Error('An acid idle needs periodSimSeconds');
+  }
+  const base = decodeFrame(sampleClip(idle, (input.idleTime ?? 0) / idle.periodSimSeconds));
+  const motion = { speed: input.speed, side: flinchSideForId(input.id ?? 0) };
+  const walked = applyJointDelta(body, base, clipOf(set, 'walk', 'jointDelta'), input.gaitPhase, motion);
+  const attackClip = clipOf(set, 'attack', 'jointDelta');
+  const attackTime = acidAttackTimeFor(input, attackClip);
+  const attacked = attackTime === undefined ? walked : applyJointDelta(body, walked, attackClip, attackTime, motion);
+  const progress = input.spitProgress ?? 0;
+  const drawn =
+    progress > 0 ? applyJointDelta(body, attacked, clipOf(set, 'spitDraw', 'jointDelta'), progress, motion) : attacked;
+  const headId = headBoneOf(body);
+  const head = bones.get(headId)!;
+  const gazed = withHeadYaw(drawn, headId, input.headYaw, (rotation) => clampedJointRotation(head, rotation));
+  return input.hitFlinchTime === undefined
+    ? gazed
+    : applyJointDelta(body, gazed, clipOf(set, 'hit', 'jointDelta'), input.hitFlinchTime, motion);
+};
+
+// The built fused-mass clips hold only its rest pose, and its flinch and figure are not built, so it generates.
 const posedFusedMass = (input: ActorPoseInput): PosedActor => {
   if (input.bodyScale === undefined) {
     throw new Error('Fused-mass pose is missing its authored bodyScale');
@@ -293,68 +442,7 @@ const posedFusedMass = (input: ActorPoseInput): PosedActor => {
     bones,
     figure,
     hidden: fusedMassSeveredBones(figure, input.severed),
-    yaw: rotY((Math.atan2(-input.facing[0], -input.facing[2]) * 180) / Math.PI),
-    position: input.position,
-    blockSize: input.blockSize,
-  };
-};
-
-/** Melee clip time: the wind-up covers the clip up to its peak, then the clip runs out in real time. */
-const acidAttackTimeFor = (input: ActorPoseInput): number | undefined => {
-  const { attackPeak, attackDuration } = acidTemplate.animation;
-  const timed = input.attackWait !== undefined && input.attackCooldown !== undefined;
-  const running = timed ? input.attackWait! > 0 : input.attackWindup > 0;
-  if (!running) {
-    return undefined;
-  }
-  const elapsed = timed ? input.attackCooldown! - input.attackWait! : input.attackWindupSeconds - input.attackWindup;
-  const time =
-    elapsed < input.attackWindupSeconds
-      ? (attackPeak * elapsed) / input.attackWindupSeconds
-      : attackPeak + elapsed - input.attackWindupSeconds;
-  return time > attackDuration ? undefined : time;
-};
-
-/** Simulation gaze lands on framed joints after the action layers, so it is clamped like them: hit boxes and
- * the spit anchor must stay inside the bone's articulated limits. */
-const clampedJointRotation = (bone: Bone, rotation: Mat3): Mat3 =>
-  bone.frame && bone.limits ? jointRotation(bone, clampJointAngles(bone, jointAngles(bone, rotation))) : rotation;
-
-const posedAcid = (input: ActorPoseInput, figure: HumanoidFigure): PosedActor => {
-  const { realized } = figure;
-  const { bones } = realized.body;
-  const distance = (input.gaitPhase / (2 * Math.PI)) * acidStrideLength(realized);
-  const walk = acidWalkPose(realized, distance, input.speed, input.idleTime ?? 0);
-  const attackTime = acidAttackTimeFor(input);
-  const attacked = attackTime === undefined ? walk : acidAttackPose(realized, walk, attackTime);
-  const progress = input.spitProgress ?? 0;
-  const woundUp = progress > 0 ? acidWindupPose(realized, attacked, progress) : attacked;
-  const headId = LOOK_AT_PROFILES.acid?.headBone ?? 'skull';
-  const head = bones.find((bone) => bone.id === headId)!;
-  const gazed: Pose =
-    input.headYaw === 0
-      ? woundUp
-      : {
-          ...woundUp,
-          rotations: {
-            ...woundUp.rotations,
-            [headId]: clampedJointRotation(
-              head,
-              mulMM(woundUp.rotations[headId] ?? IDENTITY_M, rotY((input.headYaw * 180) / Math.PI)),
-            ),
-          },
-        };
-  const pose =
-    input.hitFlinchTime === undefined
-      ? gazed
-      : acidHitPose(realized, gazed, input.hitFlinchTime, flinchSideForId(input.id ?? 0));
-  return {
-    pose,
-    transforms: boneTransforms(bones, pose),
-    bones,
-    figure,
-    hidden: severedBoneSet(bones, input.severed),
-    yaw: rotY((Math.atan2(-input.facing[0], -input.facing[2]) * 180) / Math.PI),
+    yaw: yawOf(input.facing),
     position: input.position,
     blockSize: input.blockSize,
   };
@@ -378,46 +466,26 @@ export const posedMouth = (input: ActorPoseInput): Vec3 => {
   ];
 };
 
-/** The shared living-actor pose source. Rendering and hit-region FK consume the same simulation-driven pose. */
+/**
+ * The shared living-actor pose source. Rendering and hit-region FK consume the same simulation-driven pose,
+ * composed from the built clips; `figure`, its bones and the transforms over them stay the generated
+ * realization, which the simulation's hit regions read.
+ */
 export const posedActor = (input: ActorPoseInput): PosedActor => {
   const model = bodyPlanModel(input.model ?? 'humanoid');
   if (model === 'fused-mass') {
     return posedFusedMass(input);
   }
   const figure = templateFigure(model, input.seed);
-  if (model === 'acid') {
-    return posedAcid(input, figure);
-  }
-  const seeded = actorForSeed(model, input.seed);
-  const { actor, bones } = seeded;
-  const template = templateByName(input.crawling ? 'legless-humanoid' : model);
-  const attackTime = attackTimeFor(input, attackClipFor(template));
-  const walk =
-    template.legCut === undefined
-      ? humanoidWalkPose(seeded, input, input.stanceWeight ?? targetStanceWeight(input))
-      : crawlGaitPose(figure.realized, input.gaitPhase, input.speed);
-  const context = { template, figure, actor };
-  const basePose = withAttackPose(context, walk, attackTime);
-  const headPose: Pose =
-    input.headYaw === 0
-      ? basePose
-      : {
-          ...basePose,
-          rotations: {
-            ...basePose.rotations,
-            head: mulMM(basePose.rotations.head ?? IDENTITY_M, rotY((input.headYaw * 180) / Math.PI)),
-          },
-        };
-  const flinchSide = flinchSideForId(input.id ?? 0);
-  const pose =
-    input.hitFlinchTime === undefined ? headPose : withHitFlinch(context, headPose, input.hitFlinchTime, flinchSide);
+  const { bones } = figure.realized.body;
+  const pose = model === 'acid' ? acidPose(input, new Map(bones.map((bone) => [bone.id, bone]))) : humanoidPose(input);
   return {
     pose,
     transforms: boneTransforms(bones, pose),
     bones,
     figure,
     hidden: severedBoneSet(bones, input.severed),
-    yaw: rotY((Math.atan2(-input.facing[0], -input.facing[2]) * 180) / Math.PI),
+    yaw: yawOf(input.facing),
     position: input.position,
     blockSize: input.blockSize,
   };

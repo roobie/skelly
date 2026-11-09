@@ -18,6 +18,7 @@ import {
 } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
@@ -88,6 +89,7 @@ describe('owned hatch/ladder portal fixtures', () => {
     const isSolid = worldSolid(world, registry, entities);
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       scenario: profile,
       world,
       entities,

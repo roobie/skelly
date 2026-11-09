@@ -4,6 +4,7 @@ import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { stageRagdollSweep } from '../src/debug/ragdollSweep.ts';
 import { ragdollContent } from '../src/render/ragdoll.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
@@ -11,12 +12,14 @@ import { ActorSystem } from './zombieSystemFixture.ts';
 
 it('stages ragdoll mechanisms using actor figure variants, not anatomy keys', () => {
   const scale = makeScale(0.5);
+  const registry = baseRegistry();
   const system = new ActorSystem({
     isSolid: () => false,
     isOpaque: () => false,
     blockSize: scale.blockSize,
     physics: physicsFor(scale),
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: stackActorFigureFiles(registry),
     player: () => ({
       pos: [0, 0, 0],
       facing: [0, 0, -1],
@@ -35,7 +38,7 @@ it('stages ragdoll mechanisms using actor figure variants, not anatomy keys', ()
   stageRagdollSweep({
     system,
     renderer: { group: new Group(), sync: vi.fn() },
-    registry: baseRegistry(),
+    registry,
     origin: [0, 0, 0],
     blockSize: scale.blockSize,
     seed: 1,

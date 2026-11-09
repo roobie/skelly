@@ -56,6 +56,26 @@ export const worldPosition = (voxels: Pick<Voxels, 'size' | 'origin'>, i: number
   return [(origin[0] + i) * size, (origin[1] + j + 0.5) * size, (origin[2] + k) * size];
 };
 
+/** Rest-frame centres of the voxels each bone owns, by bone id; a bone that owns none has no entry. */
+export const voxelCentersByBone = (voxels: Voxels, bones: readonly { readonly id: string }[]): Map<string, Vec3[]> => {
+  const centers = new Map<string, Vec3[]>();
+  for (let k = 0; k < voxels.dims[2]; k++) {
+    for (let j = 0; j < voxels.dims[1]; j++) {
+      for (let i = 0; i < voxels.dims[0]; i++) {
+        const owner = voxels.owner[cellIndex(voxels.dims, i, j, k)]!;
+        if (owner === 0) {
+          continue;
+        }
+        const { id } = bones[owner - 1]!;
+        const owned = centers.get(id) ?? [];
+        owned.push(worldPosition(voxels, i, j, k));
+        centers.set(id, owned);
+      }
+    }
+  }
+  return centers;
+};
+
 /** Filled if the field is within this much of the surface: a slight dilation so thin limbs survive. */
 const fillTolerance = (v: number): number => 0.15 * v;
 const DEFAULT_BLEND = 0.02;

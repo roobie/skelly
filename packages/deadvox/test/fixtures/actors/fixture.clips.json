@@ -13,7 +13,7 @@
         },
         "motion": [
           {
-            "period": 3,
+            "periodSimSeconds": 3,
             "amplitudeDeg": 2,
             "salt": 1,
             "bones": [
@@ -25,7 +25,7 @@
             ]
           },
           {
-            "period": 5,
+            "periodSimSeconds": 5,
             "amplitudeDeg": 4,
             "salt": 2,
             "bones": [
@@ -56,7 +56,7 @@
         },
         "motion": [
           {
-            "period": 3,
+            "periodSimSeconds": 3,
             "amplitudeDeg": 2,
             "salt": 1,
             "bones": [
@@ -68,7 +68,7 @@
             ]
           },
           {
-            "period": 5,
+            "periodSimSeconds": 5,
             "amplitudeDeg": 4,
             "salt": 2,
             "bones": [
@@ -85,7 +85,7 @@
             ]
           },
           {
-            "period": 0.7,
+            "periodSimSeconds": 0.7,
             "amplitudeDeg": 3,
             "salt": 3,
             "bones": [
@@ -108,7 +108,7 @@
       "kind": "pose",
       "loop": true,
       "cycles": 1,
-      "period": 1.2,
+      "strideMetres": 1.2,
       "idleBlendSpeed": 0.8,
       "frames": [
         {
@@ -230,7 +230,7 @@
       "kind": "pose",
       "loop": true,
       "cycles": 1,
-      "period": 1.5,
+      "strideMetres": 1.5,
       "frames": [
         {
           "root": [0, -0.6208671752982807, 0],

@@ -12,6 +12,7 @@ import { type Body, bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
@@ -241,6 +242,7 @@ const makeCaseSession = ({ world, spawn, intent: startingIntent, crouched = fals
   let crouchToggle = crouched;
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     entities,
     isSolid,

@@ -1,7 +1,7 @@
 import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { readStackContentSources } from '../../tools/readBundledPacks.ts';
+import { readStackActorFigureFiles, readStackContentSources } from '../../tools/readBundledPacks.ts';
 import { ActorSystem, BACKGROUND_ACTOR_RATE, BACKGROUND_ACTOR_SLICE_COUNT } from '../core/actorSystem.ts';
 import { claimed } from '../core/capabilities.ts';
 import { parseTimeOfDay } from '../core/clock.ts';
@@ -16,6 +16,7 @@ import { createHeadlessShamblerWorld } from './shamblerWorld.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const { registry } = buildRegistry(readStackContentSources(root, 'skelly.deadvox'));
+const actorFigureFiles = readStackActorFigureFiles(root, 'skelly.deadvox', registry);
 const PLAYER = playerTuning(registry);
 const shambler = registry.actors.get('shambler');
 if (!shambler) {
@@ -77,6 +78,7 @@ for (const count of counts) {
   const backgroundCount = count - activeCount;
   const system = new ActorSystem({
     activeActorRadiusMetres: siteGenerationOf(registry).activeActorRadiusMetres,
+    actorFigureFiles,
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
     blockSize: engine.config.scale.blockSize,

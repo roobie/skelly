@@ -4,6 +4,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { applyStartKit } from '../src/core/startState.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { pumpStart } from './fixtures/debugStarts.ts';
 import { withFixtureBody } from './simulationFixture.ts';
 import { registry } from './snapshotTestSupport.ts';
@@ -16,6 +17,7 @@ const content = withFixtureBody(registry);
 const handlingTimes = (painful: boolean) => {
   const session = createSession({
     registry: content,
+    actorFigureFiles: stackActorFigureFiles(content),
     world: new World(),
     isSolid: () => false,
     isOpaque: () => false,

@@ -6,6 +6,7 @@ import type { Actor } from '../src/core/actorState.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { DebugAimOverlay } from '../src/debug/aimOverlay.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -14,6 +15,7 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
+const FIGURES = stackActorFigureFiles(registry);
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;
@@ -34,13 +36,15 @@ const standing = (position: Vec3, facing: Vec3) => {
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: FIGURES,
     hurtPlayer: () => undefined,
   });
   const id = system.add(registry.actors.get('shambler')!, position, facing);
   return { system, id, actor: system.store.get(id)! };
 };
 
-const posed = (actor: Actor, id: number) => posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE));
+const posed = (actor: Actor, id: number) =>
+  posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, { blockSize: BLOCK_SIZE, actorFigureFiles: FIGURES }));
 
 const expectedVertices = (aim: NonNullable<ReturnType<ActorSystem['aimAt']>>) => {
   const edges = [

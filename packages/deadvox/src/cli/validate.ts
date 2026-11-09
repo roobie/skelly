@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { packFileBytes, readBundledPacks } from '../../tools/readBundledPacks.ts';
+import { declaredFileReader, readBundledPacks } from '../../tools/readBundledPacks.ts';
 import {
   assetFileIssues,
   cursorFileIssues,
@@ -175,23 +175,7 @@ export const validate = (
     issues.push(...bundledModCatalogueIssues(catalogue).map((message) => ({ source: CATALOGUE, path: '', message })));
   }
   issues.push(...presentationAssetIssues(registry, packFile));
-  /** The pack whose root holds a content file, as the reader read it. */
-  const packOf = (contentFile: string): PackInput | undefined => {
-    const owner = admitted.packs.find(({ source }) => {
-      const within = relative(resolve(root, source), resolve(root, contentFile));
-      return !(within.startsWith('..') || isAbsolute(within));
-    });
-    return packs.find(({ manifest }) => manifest.id === owner?.manifest.id);
-  };
-  issues.push(
-    ...figureFileIssues(registry, (contentFile, file) => {
-      const pack = packOf(contentFile);
-      if (!pack) {
-        throw new Error('only a pack can declare figure files');
-      }
-      return packFileBytes(root, pack, file);
-    }),
-  );
+  issues.push(...figureFileIssues(registry, declaredFileReader(root, admitted.packs, packs)));
   let assets = 0;
   for (const source of manifests) {
     const data = read(source);

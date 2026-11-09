@@ -66,7 +66,7 @@ const hullCandidateCells = (
   });
 };
 
-const voxelCentersByBone = (realized: Pick<Realized, 'body' | 'voxels'>): ReadonlyMap<string, readonly Vec3[]> => {
+const hullCentersByBone = (realized: Pick<Realized, 'body' | 'voxels'>): ReadonlyMap<string, readonly Vec3[]> => {
   const cached = centersByRealized.get(realized);
   if (cached) {
     return cached;
@@ -105,7 +105,7 @@ export const posedVoxelSurfaceBoundsForBones = (
   boneIds: Iterable<string>,
 ): ReadonlyMap<string, number> => {
   const transforms = boneTransforms(realized.body.bones, pose);
-  const centersByBone = voxelCentersByBone(realized);
+  const centersByBone = hullCentersByBone(realized);
   const half = realized.voxels.size / 2;
   const byBone = new Map<string, number>();
   for (const boneId of boneIds) {

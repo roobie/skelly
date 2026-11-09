@@ -143,7 +143,7 @@ const GROUND_CONTACT_BONES = [
   'foot.R',
 ];
 
-export const groundCrawlPose = (realized: Realized, pose: Pose): Pose => {
+const groundCrawlPose = (realized: Realized, pose: Pose): Pose => {
   const probe: Pose = { root: [pose.root[0], 0, pose.root[2]], rotations: pose.rotations };
   const surfaces = posedVoxelSurfaceBoundsForBones(realized, probe, GROUND_CONTACT_BONES);
   const lowest = Math.min(...surfaces.values());

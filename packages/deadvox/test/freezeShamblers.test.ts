@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { type HumanoidHitRegion, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import type { Actor } from '../src/core/actorState.ts';
 import type { MeleeResult } from '../src/core/actorSystem.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -13,6 +15,7 @@ import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SHAMBLER = registry.actors.get('shambler')!;
+const FIGURES = stackActorFigureFiles(registry);
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;
@@ -40,6 +43,7 @@ const makeSystem = (
     physics: physicsFor(SCALE),
     tuning: TEST_SENSE_TUNING,
     hurtPlayer,
+    actorFigureFiles: FIGURES,
     ...(onMeleeResult ? { onMeleeResult } : {}),
     seed: 31,
   });
@@ -51,6 +55,7 @@ const run = (system: ActorSystem, seconds: number): void => {
 const posedBoxes = (actor: Actor) =>
   posedHumanoidRegionBoxes({
     seed: actor.figureSeed,
+    figure: actorFigure(FIGURES, actor.type, actor.figureSeed),
     position: actor.body.pos,
     facing: actor.facing,
     headYaw: actor.headYaw,
@@ -95,6 +100,7 @@ describe('debug shambler freeze', () => {
       physics: physicsFor(SCALE),
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
+      actorFigureFiles: FIGURES,
       seed: 31,
     });
     const id = system.add(SHAMBLER, [0, 1, 0], [0, 0, 1]);

@@ -330,17 +330,40 @@ action metadata follows Deadvox's clock-and-unit contract. Persisted temporal
 field renames require a save-schema change because pre-alpha saves are refused,
 not migrated. See the root gungen-to-deadvox export contract.
 
+Actor poses compose the built clips as they are baked: skelly-assets authors
+poses, so a stance or gait is tuned in one place and Deadvox never regenerates
+or corrects one. A fused mass, whose built idle holds only its rest pose, still
+generates its pose. See `src/core/actorPose.ts`, `posedActor`.
+
 Actor body and clip keys keep the producer's spelling; Deadvox never renames
 them at load. A load-time translation would only bridge two spellings, which is
 a compatibility shim (`AGENTS.md`, "Project stage"). A clip-local second is
 named by the clock its Deadvox caller samples it on: the death fall is sampled
 by render, so it is Real; attack, hit and flinch are sampled by the
 simulation, so they are Sim. That is why a death clip has its own duration
-key. Both kinds of `period`, the loop clip's and the idle oscillator's, stay
-bare until the gait reader settles their clocks
-([skelly-assets#25](https://github.com/roobie/skelly-assets/issues/25)): no
-Deadvox reader samples a loop clip or an idle oscillator yet, so no code fixes
-their clock, and the two may run on different clocks.
+key.
+
+A walk loop states `strideMetres`, the distance of one gait cycle, and no
+clock: the sampler advances it by gait phase, which grows with distance
+travelled, so a time span would claim a clock the pose never reads. An idle
+oscillator and an idle loop clip both state `periodSimSeconds`: the live
+humanoid and acid idles run on the actor's saved Sim wander clock, so they
+freeze on pause, follow compression and replay identically after a load or in
+a replay. Both idle forms share that one clock.
+
+An actor moving on its crawl set advances one gait cycle per the crawl walk's
+`strideMetres`, not per step length: a walk loop states its own true distance,
+and the asset row is the one place crawl pace is tuned. Step length still
+paces a standing gait and footsteps. See `src/core/actorPose.ts`,
+`gaitPhaseGain`.
+
+A standing humanoid may have no crawl set. Built data holds only what the
+game uses, and a row the game never crawls, such as the player, whose prone
+stance is a fixed pose, would leave a crawl stride with no owner. See
+`src/core/schema/actors.ts`, `planSets`. An actor type that can lose a leg
+must have a crawl set: every humanoid zombie crawls after leg loss, so a
+missing set is a content error that validate reports, not a throw mid-game.
+See `src/core/content.ts`, `actorFigureFileIssues`.
 
 ### Long actions
 
@@ -3031,7 +3054,7 @@ must realize a valid body by itself. Falling through to the next valid seed woul
 draw two seeds as one body and quietly shrink authored variety, so it is refused;
 a figure variant whose template rejects shared seeds authors its own. See
 `src/core/actorModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`, `figureVariantOf` and `bodyPlanModel`;
-`src/render/mobActors.ts`, `figureSeedsByModel`; and
+`src/render/mobActors.ts`, `drawnSeeds`; and
 `packages/mobgen/src/mob/humanoidFigure.ts`, `templateFigure`.
 
 Presentation must not change simulation outcomes. Test noise is different because

@@ -17,6 +17,7 @@ import {
 } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
@@ -303,6 +304,7 @@ it('lets a player climb to the fixed matching key beside the roof corpse in the 
       const scale = makeScale(0.5);
       const session = createSession({
         registry,
+        actorFigureFiles: stackActorFigureFiles(registry),
         world: new World(),
         entities,
         isSolid: solid,

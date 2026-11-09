@@ -10,6 +10,7 @@ import { createSession, IDLE } from '../src/game/session.ts';
 import { createWorldSetup, type WorldSetup } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
@@ -56,6 +57,7 @@ const worldSetup = (): WorldSetup => {
 const session = (source: WorldSetup, restore?: Readonly<SaveSnapshot>) =>
   createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: source.world,
     entities: source.entities,
     isSolid: source.isSolid,

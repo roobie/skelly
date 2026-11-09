@@ -1,12 +1,16 @@
-import type { Realized } from '@mobgen/core/generate.ts';
-import { acidDeathPose } from '@mobgen/mob/acidPoses.ts';
+import { decodeFrame, sampleClip } from '../core/actorClips.ts';
 import type { Pose } from '../core/pose.ts';
+import type { ActorClips, DeathClip } from '../core/schema/actors.ts';
 
-/** What the acid fall reads of a corpse's figure. */
-export interface AcidCorpseVariant {
-  readonly realized: Realized;
-}
+/** The built fall away from `direction`, when the figure bakes a death pair; other corpses keep their last pose. */
+export const deathClip = (clips: ActorClips, direction: 1 | -1): DeathClip | undefined => {
+  const death = clips.standing?.death;
+  if (!(death && 'forward' in death)) {
+    return undefined;
+  }
+  return direction === 1 ? death.forward : death.backward;
+};
 
-/** The acid corpse's fall at `elapsed` seconds; pure, so settling stays with the caller. */
-export const acidCorpsePose = (variant: AcidCorpseVariant, basePose: Pose, elapsed: number, direction: 1 | -1): Pose =>
-  acidDeathPose(variant.realized, basePose, elapsed, direction);
+/** The fall at `elapsedRealSeconds`; pure, so settling stays with the caller. */
+export const corpseFallPose = (clip: DeathClip, elapsedRealSeconds: number): Pose =>
+  decodeFrame(sampleClip(clip, elapsedRealSeconds));

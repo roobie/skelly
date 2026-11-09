@@ -1,5 +1,6 @@
 import { type AcidGlobState, advanceAcidGlob } from './acidGlob.ts';
 import { type AcidPuddleState, feetInAcidPuddle } from './acidPuddle.ts';
+import { type ActorFigureFile, type ActorFigureFiles, actorFigure } from './actorFigureFiles.ts';
 import { figureVariantOf } from './actorModels.ts';
 import {
   angleOf,
@@ -19,10 +20,12 @@ import {
   wrapAngle,
 } from './actorMotion.ts';
 import {
+  type ActorPoseScene,
   actorCrawls,
   actorHitFlinchDuration,
   actorPoseInputFor,
   advanceStanceWeight,
+  gaitPhaseGain,
   posedMouth,
   targetStanceWeight,
 } from './actorPose.ts';
@@ -86,6 +89,7 @@ import {
 } from './physics.ts';
 import { Rng } from './random.ts';
 import { raycast, type SolidAt } from './raycast.ts';
+import type { ActorBody } from './schema/actors.ts';
 import type { MeleeCharge, SenseDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { type SolidBricks, testedBricks } from './solidBricks.ts';
@@ -299,6 +303,8 @@ export interface ActorSystemState {
 
 export interface ActorSystemOptions {
   activeActorRadiusMetres: number;
+  /** The built bodies and clips every actor poses over, keyed by figure row id. */
+  actorFigureFiles: ActorFigureFiles;
   store?: EntityStore<Actor>;
   terrainFloor?: TerrainFloorAt | undefined;
   seed?: number;
@@ -374,19 +380,19 @@ const FUSED_MASS_MEMBER_REGION = /^(member\.\d+)\./;
 const posedRegionsForActor = ({
   id,
   actor,
-  blockSize,
+  scene,
   poseCache,
 }: {
   id: EntityId;
   actor: Actor;
-  blockSize: number;
+  scene: ActorPoseScene;
   poseCache?: Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>> | undefined;
 }): Readonly<Record<string, readonly PosedBoneBox[]>> => {
   const cached = poseCache?.get(id);
   if (cached) {
     return cached;
   }
-  const poseInput = actorPoseInputFor(actor, id, blockSize);
+  const poseInput = actorPoseInputFor(actor, id, scene);
   const posed =
     actor.type.model === 'fused-mass' ? posedFusedMassRegionBoxes(poseInput) : posedHumanoidRegionBoxes(poseInput);
   poseCache?.set(id, posed);
@@ -426,8 +432,8 @@ const blastOrder = (actor: Actor): ActorHitRegion[] => {
 const OBSTACLE_LOOKAHEAD_METRES = 0.7;
 /** Where a spit leaves a zombie: its posed mouth, held at the end of the wind-up, so the line follows the
  * drawn-back head and its gaze. */
-const spitOrigin = (actor: Actor, id: EntityId, blockSize: number): Vec3 =>
-  posedMouth({ ...actorPoseInputFor(actor, id, blockSize), spitProgress: 1 });
+const spitOrigin = (actor: Actor, id: EntityId, scene: ActorPoseScene): Vec3 =>
+  posedMouth({ ...actorPoseInputFor(actor, id, scene), spitProgress: 1 });
 
 /** The chest follows the stance through the eye height, so crouching behind low cover lowers the spit's target. */
 const spitChest = (player: PlayerSense, tuning: SenseDef, blockSize: number): Vec3 => {
@@ -478,16 +484,17 @@ const holdSpitGround = (scratch: ActorTickScratch, toward: Vec3, chasing: boolea
 };
 
 /** The part a destroyed region cuts at, parents first, so the whole region goes; undefined where it can't be cut. */
-const regionCut = (actor: Actor, region: HumanoidHitRegion): string | undefined => cutsFor(actor).parts[region][0];
+const regionCut = (body: ActorBody, region: HumanoidHitRegion): string | undefined => cutsFor(body).parts(region)[0];
 
 /** Arm parts still worth severing: neither severed nor below a severed part. Deepest first and left before
  * right, so the dismember roll draws the same parts in the same order on every humanoid-like arm. */
-const availableArmParts = (actor: Actor): string[] => {
-  const { parts, bones } = cutsFor(actor);
+const availableArmParts = (actor: Actor, body: ActorBody): string[] => {
+  const { parts, bones } = cutsFor(body);
   const hidden = severedBoneSet(bones, actor.severed);
   const ordered: string[] = [];
-  for (let depth = Math.max(parts.leftArm.length, parts.rightArm.length) - 1; depth >= 0; depth--) {
-    for (const arm of [parts.leftArm, parts.rightArm]) {
+  const arms = [parts('leftArm'), parts('rightArm')];
+  for (let depth = Math.max(...arms.map((arm) => arm.length)) - 1; depth >= 0; depth--) {
+    for (const arm of arms) {
       const part = arm[depth];
       if (part !== undefined && !hidden.has(part)) {
         ordered.push(part);
@@ -652,6 +659,14 @@ export class ActorSystem {
     const missing = missingFlesh(fusedMassFigureForType(actor.type, actor.figureSeed), actor);
     this.missing.set(actor, { carved: actor.carved, severed: actor.severed.length, missing });
     return missing;
+  }
+
+  private figureOf(actor: Actor): ActorFigureFile {
+    return actorFigure(this.options.actorFigureFiles, actor.type, actor.figureSeed);
+  }
+
+  private gaitPhaseGain(actor: Actor, travelledMetres: number): number {
+    return gaitPhaseGain(actor, this.figureOf(actor), travelledMetres);
   }
 
   /**
@@ -1233,7 +1248,7 @@ export class ActorSystem {
         stepBody(actor.body, dt, isSolid, physics);
       }
       const travelled = horizontalDistance(before, actor.body.pos) * blockSize;
-      actor.gaitPhase += (travelled / actor.type.stepLength) * Math.PI;
+      actor.gaitPhase += this.gaitPhaseGain(actor, travelled);
       this.agent.finishBackgroundStroll(actor);
     }
   }
@@ -1408,7 +1423,7 @@ export class ActorSystem {
       },
     );
     actor.stepOffset = stepOffsetState.offset;
-    actor.gaitPhase += (travelled / actor.type.stepLength) * Math.PI;
+    actor.gaitPhase += this.gaitPhaseGain(actor, travelled);
     if (advanceWanderClock) {
       actor.wanderClock += dt;
     }
@@ -1449,7 +1464,7 @@ export class ActorSystem {
         return;
       }
       const chest = spitChest(player, this.options.tuning, blockSize);
-      const origin = spitOrigin(actor, scratch.id, blockSize);
+      const origin = spitOrigin(actor, scratch.id, this.options);
       if (!spitLineClear(origin, chest, isSolid)) {
         return;
       }
@@ -1497,11 +1512,11 @@ export class ActorSystem {
 
   private finishActorTick(): void {
     const scratch = this.tickScratch;
-    const { actor, blockSize, dt, id } = scratch;
+    const { actor, dt, id } = scratch;
     if (actor.agent) {
       this.agent.finishMovementDecision();
     }
-    const poseInput = actorPoseInputFor(actor, id, blockSize);
+    const poseInput = actorPoseInputFor(actor, id, this.options);
     const stanceTarget = targetStanceWeight(poseInput);
     actor.stanceWeight = advanceStanceWeight(actor.stanceWeight ?? stanceTarget, stanceTarget, dt);
   }
@@ -1882,7 +1897,7 @@ export class ActorSystem {
     nearest: RegionHit | undefined,
   ): RegionHit | undefined {
     const { blockSize } = this.options;
-    const posed = posedRegionsForActor({ id, actor, blockSize, poseCache });
+    const posed = posedRegionsForActor({ id, actor, scene: this.options, poseCache });
     const figure = actor.type.model === 'fused-mass' ? fusedMassFigureForType(actor.type, actor.figureSeed) : undefined;
     let found = nearest;
     for (const regionId of Object.keys(actor.regions)) {
@@ -2143,7 +2158,7 @@ export class ActorSystem {
     const killed = healthAfter === 0 && lethalRegion(actor.type, region);
     const incapacitated = this.applyMeleeEffects({ id, actor, region, healthAfter, killed, hit });
     const newParts = actor.severed.filter((candidate) => !severedBefore.has(candidate));
-    const headPart = actor.type.model === 'fused-mass' ? undefined : regionCut(actor, 'head');
+    const headPart = actor.type.model === 'fused-mass' ? undefined : regionCut(this.figureOf(actor).body, 'head');
     const part = headPart !== undefined && newParts.includes(headPart) ? headPart : newParts[0];
     const outcome = meleeOutcome(killed, incapacitated, part, headPart);
     if (!projectile) {
@@ -2214,7 +2229,7 @@ export class ActorSystem {
     } else {
       const cut =
         healthAfter === 0 && region !== 'head' && region !== 'torso'
-          ? regionCut(actor, region as HumanoidHitRegion)
+          ? regionCut(this.figureOf(actor).body, region as HumanoidHitRegion)
           : undefined;
       if (cut !== undefined) {
         this.sever(id, actor, cut, hit);
@@ -2282,8 +2297,9 @@ export class ActorSystem {
     }
     if (dismember) {
       const hit: HitImpulse = { point: copy(actor.body.pos), direction: [0, -1, 0], impulse: 0 };
+      const { body } = this.figureOf(actor);
       for (const region of ['leftArm', 'rightArm', 'head'] as const) {
-        const part = regionCut(actor, region);
+        const part = regionCut(body, region);
         if (part !== undefined && !actor.severed.includes(part)) {
           this.sever(id, actor, part, hit);
           this.options.onSevered?.(actor, region);
@@ -2311,14 +2327,15 @@ export class ActorSystem {
    * Actor.dismemberRng's own doc comment. */
   private rollDismember(id: EntityId, actor: Actor, killed: boolean, hit: HitImpulse): void {
     const { dismember } = actor.type;
+    const { body } = this.figureOf(actor);
     if (actor.dismemberRng.chance(dismember.chance)) {
-      const available = availableArmParts(actor);
+      const available = availableArmParts(actor, body);
       if (available.length > 0) {
         const part = available[actor.dismemberRng.int(0, available.length - 1)]!;
         this.sever(id, actor, part, hit);
       }
     }
-    const head = regionCut(actor, 'head');
+    const head = regionCut(body, 'head');
     if (
       killed &&
       head !== undefined &&

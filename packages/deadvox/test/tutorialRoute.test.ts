@@ -8,6 +8,7 @@ import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
 import { World } from '../src/core/world.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';
 
 const practiceWorld = () => {
@@ -71,6 +72,7 @@ it('the authored essentials and optional range paths can be walked with the ordi
   let moving = false;
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     entities,
     scale: config.scale,

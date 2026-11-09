@@ -9,6 +9,7 @@ on:
     paths:
       - 'site/**'
       - 'packages/skelly-assets'
+      - 'tools/skelly-assets/**'
       - '.gitmodules'
       - 'packages/deadvox/**'
       - 'packages/mods/**'
@@ -64,6 +65,7 @@ jobs:
           npm ci
           npm ci --prefix packages/deadvox/tools/lit-check
           npm run jsonnet:setup
+          npm run assets:setup
           npm run ci
           npm run test:site
       - name: Check and build deadvox

@@ -38,6 +38,8 @@ export const mainSourceOverlays = [
   'render/acidEffects.ts',
   'render/gore.ts',
   'render/mobActors.ts',
+  // The renderer hands its ragdolls the figure body it draws, so the two change their spawn contract together.
+  'render/ragdoll.ts',
   // The engine builds the sky's targets and the sky installs the fog that the height fog patches; the three change together.
   'render/heightFog.ts',
   'render/sky.ts',

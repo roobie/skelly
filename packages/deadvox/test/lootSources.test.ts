@@ -15,11 +15,13 @@ import { compileTemplate, type Placement, placedPieces } from '../src/core/templ
 import { World } from '../src/core/world.ts';
 import { handlingMoveCompleteCue } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureEconomy } from './economyFixtures.ts';
 
 const content = startupContent();
 const stock = 'fixture_economy_stock';
+const CORPSE_FIXTURE = 'fixture_corpse';
 const fixtureRegistry = (): Registry => {
   const base = content.registry;
   const registry = {
@@ -218,6 +220,9 @@ describe('loot source routing', () => {
     const moveSounds: string[] = [];
     const session: ReturnType<typeof createSession> = createSession({
       registry,
+      actorFigureFiles: withFixtureFigures(stackActorFigureFiles(registry), {
+        [CORPSE_FIXTURE]: [...registry.actors.keys()][0]!,
+      }),
       world,
       isSolid: solid,
       isOpaque: () => false,
@@ -265,7 +270,7 @@ describe('loot source routing', () => {
     const id = session.actors.add(
       {
         ...base,
-        id: 'fixture_corpse',
+        id: CORPSE_FIXTURE,
         loot: table,
         dismember: { chance: 0, headOnKillChance: 0 },
         severedItems: {

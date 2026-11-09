@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import type { Actor } from '../src/core/actorState.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -12,12 +14,14 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
+const FIGURES = stackActorFigureFiles(registry);
 const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;
 const posed = (actor: Actor) =>
   posedHumanoidRegionBoxes({
+    figure: actorFigure(FIGURES, actor.type, actor.figureSeed),
     seed: actor.figureSeed,
     position: actor.body.pos,
     facing: actor.facing,
@@ -51,7 +55,11 @@ describe('melee while debug-frozen', () => {
       regions: { ...SHAMBLER.regions, rightArm: FISTS_MELEE.damage },
       dismember: { chance: 0, headOnKillChance: 0 },
     };
-    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { actors: registry.actors, poolSize: 2 });
+    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, {
+      actors: registry.actors,
+      actorFigureFiles: FIGURES,
+      poolSize: 2,
+    });
     try {
       renderer.setWorld(FLOOR, BLOCK_SIZE);
       const severedParts: string[] = [];
@@ -70,6 +78,7 @@ describe('melee while debug-frozen', () => {
         blockSize: BLOCK_SIZE,
         physics: physicsFor(SCALE),
         tuning: TEST_SENSE_TUNING,
+        actorFigureFiles: FIGURES,
         hurtPlayer: () => undefined,
         onSever: (sourceId, sourceActor, part, hit) => {
           severedParts.push(part);

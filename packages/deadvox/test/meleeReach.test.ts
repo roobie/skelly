@@ -9,6 +9,7 @@ import {
 import { PLAYER_ARM_REACH_M } from '../src/core/actorState.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -17,6 +18,7 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
+const FIGURES = stackActorFigureFiles(registry);
 const runtimeWeapon = <T extends { cooldownSimSeconds: number }>(weapon: T) => ({
   ...weapon,
   cooldown: weapon.cooldownSimSeconds,
@@ -53,6 +55,7 @@ const makeSystem = (seed: number, pose: (typeof poses)[number], distanceMetres: 
     blockSize: BLOCK_SIZE,
     physics: physicsFor(makeScale(0.5)),
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: FIGURES,
     hurtPlayer: () => undefined,
   });
   const id = system.add(registry.actors.get('shambler')!, [distanceMetres / BLOCK_SIZE, 1, 0], [-1, 0, 0]);
@@ -70,7 +73,8 @@ const makeSystem = (seed: number, pose: (typeof poses)[number], distanceMetres: 
   return { system, id, actor };
 };
 
-const poseInput = (actor: ReturnType<typeof makeSystem>['actor']) => actorPoseInputFor(actor, 1, BLOCK_SIZE);
+const poseInput = (actor: ReturnType<typeof makeSystem>['actor']) =>
+  actorPoseInputFor(actor, 1, { blockSize: BLOCK_SIZE, actorFigureFiles: FIGURES });
 
 const regionCentroid = (actor: ReturnType<typeof makeSystem>['actor'], region: HumanoidHitRegion): Vec3 => {
   const boxes = posedHumanoidRegionBoxes(poseInput(actor))[region].filter((box) => {

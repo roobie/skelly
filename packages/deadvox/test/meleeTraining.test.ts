@@ -3,6 +3,7 @@ import type { Registry } from '../src/core/content.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
@@ -36,6 +37,7 @@ it('awards content-authored melee practice after a landed fist hit', () => {
   let landed = false;
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     isSolid: (_x, y) => y === 0,
     isOpaque: () => false,

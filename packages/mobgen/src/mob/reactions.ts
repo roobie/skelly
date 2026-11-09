@@ -95,7 +95,7 @@ const scaleClipZ = (clip: AttackClip, scale: number): AttackClip =>
         })),
       };
 
-export const flinchPoseWithClip = (
+const flinchPoseWithClip = (
   actor: WalkActor,
   time: number,
   walkBase: Pose,

@@ -6,6 +6,7 @@ import { generateColumn } from '../src/core/worldgen.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { createWorldSetup, playerStartFromWorld } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';
 
@@ -16,6 +17,7 @@ it('lets a player charge a nearby rechargeable cell from the test-house spawn', 
   const start = playerStartFromWorld(source, config.scale);
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: source.world,
     entities: source.entities,
     isSolid: source.isSolid,

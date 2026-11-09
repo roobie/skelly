@@ -311,10 +311,10 @@ try {
   const drawnModel = (typeId) => {
     const { session, view, figureVariantOf } = globalThis.firefoxUiTest;
     for (const [id, actor] of session.actors.store.entries()) {
-      const state = actor.type.id === typeId && view.actorMeshes.states?.get(id);
+      const state = actor.type.id === typeId ? view.actorMeshes.states?.get(id) : undefined;
       const variant = state && view.actorMeshes.variants?.[state.variantIndex];
-      if (variant?.model === figureVariantOf(actor.type) && variant.mesh.count > 0) {
-        return variant.model;
+      if (variant?.body.model === figureVariantOf(actor.type) && variant.mesh.count > 0) {
+        return variant.body.model;
       }
     }
     return false;
@@ -350,7 +350,7 @@ try {
         (light) => light.color.getHexString() === body?.color.slice(1) && light.distance === body?.light.radiusMetres,
       );
       const sac = found && view.actorMeshes.boneMatrix(found[0], 'sac.0');
-      return variant?.model === 'acid' &&
+      return variant?.body.model === 'acid' &&
         variant.mesh.count > 0 &&
         lit &&
         sac?.some((value) => value !== 0) &&

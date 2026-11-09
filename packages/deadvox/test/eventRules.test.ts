@@ -13,6 +13,7 @@ import { gameHours } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { ACTIVE_ACTOR_RATE } from '../src/game/simulationRates.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 import { formatVersion } from './snapshotTestSupport.ts';
@@ -47,6 +48,7 @@ const fixture = (rule: EventRuleDef, restore?: Readonly<SaveSnapshot>) => {
   const solid = worldSolid(world, registry, entities);
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     scenario: { ...profile, eventRules: [rule] },
     world,
     entities,

@@ -13,6 +13,7 @@ import { projectVehicleParts } from '../src/core/vehicleProjection.ts';
 import { World } from '../src/core/world.ts';
 import { applyToHeldItem, PlayerTickActions } from '../src/game/playerTickActions.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { type MoveIntent, PLAYER } from './playerFixture.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
@@ -47,6 +48,7 @@ const makeRuntime = (terrain: SolidAt, spawn: Vec3, entities: BlockEntities, res
   const isSolid: SolidAt = (x, y, z) => terrain(x, y, z) || entities.isSolid(x, y, z);
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     entities,
     isSolid,

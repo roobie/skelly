@@ -25,6 +25,7 @@ import { createSession, IDLE } from '../src/game/session.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import { ModelLibrary } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
+import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { modFileBytes } from './modFile.ts';
 import type { MoveIntent } from './playerFixture.ts';
@@ -34,6 +35,7 @@ const BLOCK = 0.5;
 const GRENADE = 'frag_grenade';
 const FUSE = registry.items.get(GRENADE)!.explosive!.fuseSimSeconds;
 const SHAMBLER = registry.actors.get('shambler')!;
+const PARTS_FIXTURE = 'fixture_parts';
 const OPEN: SolidAt = (_x, y) => y < 0;
 /** A wall across the x axis in block column 2, well above head height. */
 const WALL_AT_X2: SolidAt = (x, y) => y < 0 || (x === 2 && y < 10);
@@ -77,6 +79,7 @@ const runtime = (
 ) =>
   createSession({
     registry: content,
+    actorFigureFiles: withFixtureFigures(stackActorFigureFiles(content), { [PARTS_FIXTURE]: SHAMBLER.id }),
     world: new World(),
     isSolid,
     isOpaque: () => false,
@@ -388,7 +391,7 @@ describe('hand grenade', () => {
     const session = runtime();
     const type = {
       ...SHAMBLER,
-      id: 'fixture_parts',
+      id: PARTS_FIXTURE,
       severedItems: { ...SHAMBLER.severedItems, leftArm: 'rag', rightLeg: null } as typeof SHAMBLER.severedItems,
     };
     const id = session.actors.add(type, [1, 0, 0]);

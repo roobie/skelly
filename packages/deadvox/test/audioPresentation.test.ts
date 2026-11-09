@@ -7,6 +7,7 @@ import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { createRefusalPresenter, firearmShotSound, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
@@ -143,6 +144,7 @@ describe('firearm audio presentation', () => {
     const played: SoundEmission[] = [];
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world: new World(),
       isSolid: () => false,
       isOpaque: () => false,

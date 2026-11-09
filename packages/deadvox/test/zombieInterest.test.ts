@@ -7,6 +7,7 @@ import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ActorDef } from '../src/core/schema.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
@@ -54,6 +55,7 @@ const fixture = (radiusMetres = 4) => {
     physics: physicsFor(scale),
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
+    actorFigureFiles: stackActorFigureFiles(registry),
   };
   const system = new ActorSystem(options);
   let time = 0;

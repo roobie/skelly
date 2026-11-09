@@ -118,21 +118,23 @@ const checkFiles = (pack: PackInput, fail: Report): void => {
 };
 
 /**
- * Figure rows name their body and clips by declared path, and Node reads those bytes; only a pack that declares both
- * as `json` files can add a figure, so a content-only mod cannot.
+ * Figure rows name their body, clips and mesh by declared path, and Node reads those bytes; only a pack that declares
+ * the body and clips as `json` files and the mesh as an `asset` can add a figure, so a content-only mod cannot.
  */
+const FIGURE_FILE_KINDS = { body: 'json', clips: 'json', mesh: 'asset' } as const;
+
 const checkFigureFiles = (pack: PackInput, fail: Report): void => {
-  const declared = new Set(pack.manifest.files.filter(({ kind }) => kind === 'json').map(({ path }) => path));
+  const declared = new Set(pack.manifest.files.map(({ kind, path }) => `${kind}:${path}`));
   const content = new Set(pack.manifest.files.filter(({ kind }) => kind === 'content').map(({ path }) => path));
   for (const { data } of pack.files.filter(({ source }) => content.has(source))) {
     const rows = isPlainRecord(data) && Array.isArray(data.actorFigures) ? data.actorFigures : [];
     for (const row of rows.filter(isPlainRecord)) {
-      for (const field of ['body', 'clips'] as const) {
-        if (!(typeof row[field] === 'string' && declared.has(row[field]))) {
+      for (const [field, kind] of Object.entries(FIGURE_FILE_KINDS)) {
+        if (!(typeof row[field] === 'string' && declared.has(`${kind}:${row[field]}`))) {
           fail(
             pack,
             'files',
-            `Pack ${pack.manifest.id}: figure ${String(row.id)} ${field} must be a json file the pack declares`,
+            `Pack ${pack.manifest.id}: figure ${String(row.id)} ${field} must be a file the pack declares as ${kind}`,
           );
         }
       }

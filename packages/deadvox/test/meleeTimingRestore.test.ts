@@ -8,6 +8,7 @@ import { World } from '../src/core/world.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
@@ -31,6 +32,7 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore'], h
   let useDominant = false;
   session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     isSolid: () => false,
     isOpaque: () => false,

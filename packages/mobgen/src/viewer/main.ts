@@ -15,7 +15,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { type Ragdoll, RagdollWorld, ragdollContent } from '../../../deadvox/src/render/ragdoll.ts';
+import { type Ragdoll, type RagdollBody, RagdollWorld, ragdollContent } from '../../../deadvox/src/render/ragdoll.ts';
 import player from '../../../mods/skelly.body/player.json' with { type: 'json' };
 import { generate, generateValid, type Realized, realize, realizeLod } from '../core/generate.ts';
 import type { Pose } from '../core/pose.ts';
@@ -54,6 +54,7 @@ import { LOOK_AT_PROFILES, type LookAtProfile } from '../mob/lookAtProfiles.ts';
 import { QUADRUPED_SEVERABLE_PARTS, quadrupedGaitPose, quadrupedHitPose, quadrupedPose } from '../mob/quadruped.ts';
 import { flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
 import { skeletonTemplate } from '../mob/skeletonTemplate.ts';
+import { ragdollBody } from './ragdollBody.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
 
 // Comparison-only bodies are explicit viewer opt-ins rather than consumer entries.
@@ -221,7 +222,7 @@ let hitSide = 0; // -1..1, alternates each press so the side-mirror is visible a
 let deathTime: number | undefined;
 let deathBasePose: Pose | undefined;
 let deathDirection: 1 | -1 = 1;
-let deathPhysics: { world: RagdollWorld; body: Ragdoll } | undefined;
+let deathPhysics: { world: RagdollWorld; body: Ragdoll; built: RagdollBody } | undefined;
 let lastAcidPose: Pose | undefined;
 /** Every part cut so far — cumulative, so "Sever" a second part while the first is still missing just adds
  * to it (severedBoneSet handles any redundancy, e.g. severing a hand after its own upperArm already took
@@ -866,10 +867,12 @@ const applyDeathFrame = (loaded: Loaded, dt: number): void => {
   }
   if (!deathPhysics) {
     const world = new RagdollWorld(player.player[0]!.gravityMetresPerSimSecondSquared);
+    const built = ragdollBody(loaded.realized);
     deathPhysics = {
       world,
+      built,
       body: world.spawn({
-        realized: loaded.realized,
+        body: built,
         model: loaded.template.name,
         pose: deathBasePose!,
         position: [0, 0, 0],
@@ -883,10 +886,10 @@ const applyDeathFrame = (loaded: Loaded, dt: number): void => {
       }),
     };
   }
-  const { world, body } = deathPhysics;
+  const { world, body, built } = deathPhysics;
   world.sever(
     body,
-    loaded.realized,
+    built,
     new Set(loaded.realized.body.bones.flatMap((bone, index) => (severedBones.has(bone.id) ? [index] : []))),
   );
   world.advance(dt);

@@ -5,9 +5,9 @@ local rows(id) = [model for model in built.models if model.pack == id];
 local credit(row) = row.credits.author + '\n' + row.credits.licence;
 {
   files(id):: if std.objectHas(built.packs, id) then built.packs[id].files else [],
-  // One actor figure row per built model with a body: its key and the declared files holding its body and clips.
+  // One actor figure row per built model with a body: its key and the declared files holding its body, clips and mesh.
   figures(id):: [
-    { id: row.id, body: row.body, clips: row.clips }
+    { id: row.id, body: row.body, clips: row.clips, mesh: row.path }
     for row in rows(id)
     if std.objectHas(row, 'body')
   ],

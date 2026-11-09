@@ -12,6 +12,8 @@ export interface PresentationAssets {
   readonly audio: PackAssetFiles;
   readonly models: PackAssetFiles;
   readonly cursors: PackAssetFiles;
+  /** Actor body and clip files; a session start fetches the ones its stack's figure rows name. */
+  readonly figures: PackAssetFiles;
 }
 
 const bundledAssetKey = (packId: string, path: string): string => `${packId}/${path}`;

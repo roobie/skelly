@@ -15,6 +15,7 @@ import { firearmShotEmission, heartbeatForStamina, playerHeartbeat } from '../sr
 import { createSession, IDLE } from '../src/game/session.ts';
 import { GameAudio } from '../src/presentation/audio.ts';
 import { productAssets } from '../src/product/assets.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const audios: GameAudio[] = [];
@@ -436,6 +437,7 @@ describe('game audio playback', () => {
     const scale = makeScale(0.5);
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world: new World(),
       isSolid: () => false,
       isOpaque: () => false,

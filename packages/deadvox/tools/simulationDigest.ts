@@ -13,7 +13,7 @@ import { admitPacks } from '../src/core/packAdmission.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { siteGenerationOf } from '../src/core/sitePalette.ts';
 import { physicsFor, playerTuning } from '../src/game/player.ts';
-import { readBundledPacks } from './readBundledPacks.ts';
+import { readBundledPacks, readStackActorFigureFiles } from './readBundledPacks.ts';
 
 const SEED = 1539;
 const TICKS = 2000;
@@ -110,6 +110,7 @@ const { registry, issues } = buildRegistry(admitted.sources);
 if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
+const actorFigureFiles = readStackActorFigureFiles(packageRoot, STACK, registry);
 
 const player: PlayerSense = {
   pos: [8, 1, 0],
@@ -126,6 +127,7 @@ const solid = (x: number, y: number, z: number): boolean =>
 const system = new ActorSystem({
   seed: SEED,
   activeActorRadiusMetres: siteGenerationOf(registry).activeActorRadiusMetres,
+  actorFigureFiles,
   isSolid: solid,
   isOpaque: solid,
   blockSize: 0.5,

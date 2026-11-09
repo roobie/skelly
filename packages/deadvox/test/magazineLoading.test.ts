@@ -21,6 +21,7 @@ import {
   readMagazineLoadFrame,
   stepMagazineRaise,
 } from '../src/render/magazineLoadPose.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
@@ -274,6 +275,7 @@ describe('magazines loaded round by round', () => {
     const loaded = [...f.magazine.cartridges!];
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world: new World(),
       isSolid: () => false,
       isOpaque: () => false,

@@ -78,7 +78,7 @@ const writeVertexSurface = (
 /** Merged geometry for one body: like mobgen's own buildCrowdGeometry (stressActors.ts, not importable for
  * the same reason as vertexColorsFrom above) — one float `boneIndex` per vertex instead of
  * skinIndex/skinWeight, fetched straight from the shared bone texture in the vertex shader. */
-export const mergeBoneMeshes = (
+const mergeBoneMeshes = (
   meshes: ReadonlyMap<number, BoneMesh>,
   materials: Body['materials'],
   voxels: Pick<Voxels, 'materials'>,

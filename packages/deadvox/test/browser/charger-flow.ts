@@ -4,6 +4,8 @@ import { toHands } from '../../src/core/options.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../../src/core/saveFormat.ts';
 import { BindingRegistry } from '../../src/game/bindingRegistry.ts';
 import type { ReplayActionPayload } from '../../src/game/replayCommands.ts';
+import { fetchActorFigureFiles } from '../../src/presentation/play.ts';
+import { productAssets } from '../../src/product/assets.ts';
 import { INPUT_BINDINGS } from '../../src/product/controls.ts';
 import { chargerPanel } from '../../src/ui/chargerPanel.ts';
 import { InventoryScreen } from '../../src/ui/inventoryScreen.ts';
@@ -24,8 +26,9 @@ const queueMove = (
   return plan.ok ? undefined : plan.reason;
 };
 
-export const mountChargerFlow = (base: Registry, root: HTMLElement) => {
-  let runtime = createChargerSession(base);
+export const mountChargerFlow = async (base: Registry, root: HTMLElement) => {
+  const figures = await fetchActorFigureFiles(base, productAssets.figures);
+  let runtime = createChargerSession(base, figures);
   let screen: InventoryScreen;
   const refusals: string[] = [];
   const version = {
@@ -118,7 +121,7 @@ export const mountChargerFlow = (base: Registry, root: HTMLElement) => {
         contentLookup: (kind, id) => contentLookup(runtime.registry, kind, id),
       });
       screen.close();
-      runtime = createChargerSession(base, saved.snapshot);
+      runtime = createChargerSession(base, figures, saved.snapshot);
       mount();
     },
     inspect: () => {

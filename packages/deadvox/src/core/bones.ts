@@ -19,14 +19,35 @@ export interface Bone {
   readonly disposition?: 'fixed' | 'sever' | 'burst';
 }
 
+/**
+ * A bone as a built body stores it, with the rest centres of the voxels it owns. Parsed content may hold an
+ * absent optional field as undefined, so this is typed apart from the schema for readers that need no schema.
+ */
+export interface BuiltBone {
+  readonly id: string;
+  readonly parent: string | null;
+  readonly head: Vec3;
+  readonly tail: Vec3;
+  readonly frame?: Bone['frame'] | undefined;
+  readonly limits?: Bone['limits'] | undefined;
+  readonly disposition?: Bone['disposition'] | undefined;
+  readonly voxels?: readonly Vec3[] | undefined;
+}
+
 export interface BodyAnchor {
   readonly bone: string;
   /** Rest-pose world coordinates; apply the owning bone's posed transform. */
   readonly position: Vec3;
 }
 
-export interface ActorBody {
-  readonly anchors?: Readonly<Record<string, BodyAnchor>>;
-  /** Parents-first: every bone's parent appears earlier in the array (or is null). */
-  readonly bones: readonly Bone[];
-}
+/** A built body's bones as the pose solver's skeleton, in body bone order. */
+export const bodySkeleton = (body: { readonly bones: readonly BuiltBone[] }): Bone[] =>
+  body.bones.map(({ id, parent, head, tail, frame, limits, disposition }) => ({
+    id,
+    parent,
+    head,
+    tail,
+    ...(frame && { frame }),
+    ...(limits && { limits }),
+    ...(disposition && { disposition }),
+  }));

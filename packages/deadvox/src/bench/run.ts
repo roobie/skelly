@@ -3,6 +3,7 @@
 // speed while streaming. Each phase records frame times; moving phases also record
 // holes (nearby columns not meshed yet). The next run starts from a fresh page.
 
+import type { ActorFigureFiles } from '../core/actorFigureFiles.ts';
 import {
   ActorSystem,
   BACKGROUND_ACTOR_RATE,
@@ -187,7 +188,12 @@ export const benchSiteLabel = (run: BenchRun): string =>
     testHouse: 'test house',
   })[run.site] ?? `authored site ${run.site}`;
 
-export const startBench = (engine: RenderedEngine, run: BenchRun, stats: StreamerStats): void => {
+export const startBench = (
+  engine: RenderedEngine,
+  run: BenchRun,
+  stats: StreamerStats,
+  actorFigureFiles: ActorFigureFiles,
+): void => {
   const { config, streamer, renderer, camera, world } = engine;
   const Player = playerTuning(engine.registry);
   const s = config.scale.blockSize;
@@ -333,6 +339,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       const lightSeenFrom = engine.registry.items.get('torch')!.light!.seenFrom;
       actors = new ActorSystem({
         activeActorRadiusMetres: siteGenerationOf(engine.registry).activeActorRadiusMetres,
+        actorFigureFiles,
         seed: config.seed,
         isSolid: engine.isSolid,
         isOpaque: engine.isOpaque,
@@ -362,6 +369,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       const graphics = graphicsTuningOf(engine.registry);
       actorMeshes = new MobActorMeshes(s, shamblerCount, {
         actors: engine.registry.actors,
+        actorFigureFiles,
         look: lookDefaultsOf(engine.registry).mobActors,
         maxCorpses: graphics.mobActors.maxCorpses,
         handlingReachMetres: reachTuning(engine.registry).reachMetres,

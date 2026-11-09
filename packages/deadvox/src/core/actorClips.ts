@@ -22,7 +22,7 @@ import {
   transpose,
   type Vec3,
 } from './boneMath.ts';
-import type { Bone } from './bones.ts';
+import { type Bone, bodySkeleton } from './bones.ts';
 import { clampJointAngles, jointAngles, jointRotation } from './joints.ts';
 import { blendPose, boneTransforms, type EulerDeg, type Pose } from './pose.ts';
 import type {
@@ -134,16 +134,6 @@ const blendArmBase = (baseR: Mat3, weight: number): Mat3 => {
   return rotAxis(axis, (angle * 180 * weight) / Math.PI);
 };
 
-const skeleton = (body: ActorBody): Bone[] =>
-  body.bones.map(({ id, parent, head, tail, frame, limits }) => ({
-    id,
-    parent,
-    head,
-    tail,
-    ...(frame && { frame }),
-    ...(limits && { limits }),
-  }));
-
 // ---- decoding and sampling ----
 
 /** A stored frame as a pose; decode after interpolating, never per bone before it. */
@@ -227,7 +217,7 @@ export const applyMotion = (base: Pose, motion: StanceIdle['motion'], time: numb
   const rotations: Record<string, Mat3> = { ...base.rotations };
   for (const oscillator of motion) {
     const angle =
-      Math.sin((TAU * time) / oscillator.period + phaseFor(seed, oscillator.salt)) * oscillator.amplitudeDeg;
+      Math.sin((TAU * time) / oscillator.periodSimSeconds + phaseFor(seed, oscillator.salt)) * oscillator.amplitudeDeg;
     for (const { bone, axis, scale } of oscillator.bones) {
       rotations[bone] = mulMM(rotations[bone] ?? IDENTITY_M, AXIS_ROTATIONS[axis](angle * scale));
     }
@@ -250,7 +240,7 @@ export const groundFit = (
   pose: Pose,
   boneIds: readonly string[],
 ): { lowest: number; byBone: Map<string, number> } => {
-  const transforms = boneTransforms(skeleton(body), pose);
+  const transforms = boneTransforms(bodySkeleton(body), pose);
   const half = body.voxelSize / 2;
   const hulls = new Map(body.bones.map((bone) => [bone.id, bone.hull]));
   const byBone = new Map<string, number>();
@@ -273,7 +263,7 @@ export const groundFit = (
 
 /** Root y that stands the body's extent bones on the ground for these rotations. */
 export const standingFit = (body: ActorBody, rotations: Record<string, Mat3>): number =>
-  groundOffset(skeleton(body), new Map(Object.entries(body.extents)), rotations, GROUND_SMOOTHING);
+  groundOffset(bodySkeleton(body), new Map(Object.entries(body.extents)), rotations, GROUND_SMOOTHING);
 
 /** Root y that rests the body's ground contact bones on the ground, fitted at root height zero. */
 const crawlingFit = (body: ActorBody, root: Vec3, rotations: Record<string, Mat3>): number => {
@@ -282,6 +272,14 @@ const crawlingFit = (body: ActorBody, root: Vec3, rotations: Record<string, Mat3
   }
   return -groundFit(body, { root: [root[0], 0, root[2]], rotations }, body.groundContactBones).lowest;
 };
+
+/** Root y that grounds these rotations the way the stance's overlays ground theirs. */
+export const stanceFit = (
+  body: ActorBody,
+  root: Vec3,
+  rotations: Record<string, Mat3>,
+  stance: 'standing' | 'crawling',
+): number => (stance === 'crawling' ? crawlingFit(body, root, rotations) : standingFit(body, rotations));
 
 // ---- overlays ----
 
@@ -328,8 +326,10 @@ export const applyOverlay = (
     const blended = blendBones.has(id) ? blendArmBase(baseR, frame.walkBlendWeight) : baseR;
     rotations[id] = mulMM(blended, eulerToMat3([x, y, z * (clip.sideScalesZ ? side : 1)]));
   }
-  const fit = stance === 'crawling' ? crawlingFit(body, base.root, rotations) : standingFit(body, rotations);
-  return { root: [base.root[0], fit - frame.dropMetres, base.root[2]], rotations };
+  return {
+    root: [base.root[0], stanceFit(body, base.root, rotations, stance) - frame.dropMetres, base.root[2]],
+    rotations,
+  };
 };
 
 // ---- joint deltas ----
@@ -386,7 +386,7 @@ export const applyJointDelta = (
     return base;
   }
   const { a, b, w } = deltaFrames(clip, cursor);
-  const chain = skeleton(body);
+  const chain = bodySkeleton(body);
   const bones = new Map(chain.map((bone) => [bone.id, bone]));
   const weight = clip.speedWeight ? clamp(speed, 0, 1) : 1;
   const sideScale = clip.sideScalesZ ? clamp(side, -1, 1) : 1;

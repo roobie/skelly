@@ -8,6 +8,7 @@ import { bindReach } from '../src/core/reach.ts';
 import { READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT, type Readable, type ReadRequest } from '../src/core/readable.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
@@ -178,6 +179,7 @@ describe('authored readable text', () => {
         dayCycle: BUNDLED_CONTENT.registry.dayCycle,
         ui: BUNDLED_CONTENT.registry.ui,
       },
+      actorFigureFiles: stackActorFigureFiles(registry),
       world: new World(),
       isSolid: () => false,
       isOpaque: () => false,

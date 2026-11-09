@@ -4,6 +4,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 import { content as BUNDLED_CONTENT, siteFromUrl } from './fixtures/startupContent.ts';
 
@@ -32,6 +33,7 @@ it('uses the selected scenario body and wait cap through the ordinary session ow
   };
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     scenario: profile,
     world: new World(),
     scale: makeScale(0.5),

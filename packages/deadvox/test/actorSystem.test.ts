@@ -1,11 +1,18 @@
 import process from 'node:process';
 import { templateByName } from '@mobgen/core/template.ts';
-import { crawlGaitPose } from '@mobgen/mob/crawl.ts';
+import { templateFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { actorFigure } from '../src/core/actorFigure.ts';
+import { decodeFrame, sampleClip, walkCursor } from '../src/core/actorClips.ts';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
-import { actorCrawls, actorPoseInputFor, HIT_FLINCH_DURATION, posedActor } from '../src/core/actorPose.ts';
+import {
+  actorCrawls,
+  actorPoseInputFor,
+  gaitPhaseGain,
+  HIT_FLINCH_DURATION,
+  posedActor,
+} from '../src/core/actorPose.ts';
 import {
   FIGURE_BOXES,
   FIGURE_PARTS,
@@ -26,6 +33,7 @@ import { resolveSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
+import { fusedMassFigureForType } from '../src/core/fusedMassFigure.ts';
 import { HUMANOID_REGION_NAMES } from '../src/core/humanoidRegionNames.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { lightSenseSourceFor, toggleLight } from '../src/core/lights.ts';
@@ -33,6 +41,7 @@ import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import { Rng } from '../src/core/random.ts';
 import { raycast, type SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
+import type { PoseClip } from '../src/core/schema/actors.ts';
 import type { ActorDef, DoorLockDef } from '../src/core/schema.ts';
 import { Simulation } from '../src/core/sim.ts';
 import type { ActorSpawn, Site } from '../src/core/site.ts';
@@ -41,6 +50,7 @@ import { gameTimeOfDay, simRate, simSeconds } from '../src/core/time.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
 import { type RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { SnapshotSite } from './fixtures/snapshotSite.ts';
@@ -61,6 +71,12 @@ const SHAMBLER_MOVE_DAMAGES = SHAMBLER.attack!.moves.map(({ damage }) => damage)
 const RUNNER = registry.actors.get('runner')!;
 const CRAWLER = registry.actors.get('crawler')!;
 const ACID = registry.actors.get('acid_zombie')!;
+const FIGURES = stackActorFigureFiles(registry);
+/** The generated figure the simulation poses and hits for `type`. */
+const simulationFigure = (type: ActorDef, seed: number) =>
+  type.model === 'fused-mass'
+    ? fusedMassFigureForType(type, seed)
+    : templateFigure(bodyPlanModel(figureVariantOf(type)), seed);
 const speedRates = (wander: number, chase: number) => ({
   ...SHAMBLER.speed,
   wanderMetresPerSimSecond: simRate(wander),
@@ -68,6 +84,7 @@ const speedRates = (wander: number, chase: number) => ({
 });
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
+const POSE_SCENE = { blockSize: BLOCK_SIZE, actorFigureFiles: FIGURES };
 const PHYSICS = physicsFor(SCALE);
 const SENSE_TUNING = TEST_SENSE_TUNING;
 const FLOOR: SolidAt = (_x, y) => y === 0;
@@ -104,6 +121,7 @@ const senses = (
   blockSize: BLOCK_SIZE,
   physics: PHYSICS,
   tuning: SENSE_TUNING,
+  actorFigureFiles: FIGURES,
   hurtPlayer,
 });
 const sensesWithLocalSun = (
@@ -147,7 +165,7 @@ const spawnSite = (spawn: ActorSpawn): Site => ({
 });
 const nearestRegionDistance = (actor: import('../src/core/actorState.ts').Actor, origin: Vec3, direction: Vec3) => {
   let nearest = Number.POSITIVE_INFINITY;
-  const posed = posedHumanoidRegionBoxes(actorPoseInputFor(actor, 1, BLOCK_SIZE));
+  const posed = posedHumanoidRegionBoxes(actorPoseInputFor(actor, 1, POSE_SCENE));
   for (const region of HUMANOID_REGION_NAMES) {
     if (actor.regions[region]! <= 0) {
       continue;
@@ -196,7 +214,7 @@ const TARGET_BONES: Readonly<Record<string, Readonly<Record<HumanoidHitRegion, s
   acid: { head: 'skull', torso: 'belly', leftArm: 'fore.L', rightArm: 'fore.R', leftLeg: 'shin.L', rightLeg: 'shin.R' },
 };
 const posedBox = (actor: Actor, region: HumanoidHitRegion, bone: string, id: number) => {
-  const target = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE))[region].find(
+  const target = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, POSE_SCENE))[region].find(
     (box) => box.bone === bone,
   );
   if (!target) {
@@ -1681,6 +1699,7 @@ describe('shambler scenarios', () => {
     actor.figureSeed = 1;
     const origin: Vec3 = [0, 1 + PLAYER.eye / BLOCK_SIZE, 0];
     const head = posedHumanoidRegionBoxes({
+      figure: actorFigure(FIGURES, actor.type, actor.figureSeed),
       seed: actor.figureSeed,
       position: actor.body.pos,
       facing: actor.facing,
@@ -1839,7 +1858,7 @@ describe('shambler scenarios', () => {
       }
       expect(severed).toEqual([region]);
       // The cut follows the body's bone dispositions: the region's top severable part, or none.
-      const figure = actorFigure(type, actor.figureSeed);
+      const figure = simulationFigure(type, actor.figureSeed);
       const parts = 'severableParts' in figure ? figure.severableParts[region] : [];
       expect(actor.severed).toEqual(parts.slice(0, 1));
       // A severed acid part drops what a shambler's would.
@@ -1853,7 +1872,7 @@ describe('shambler scenarios', () => {
     const type = { ...ACID, regions: { ...ACID.regions, torso: FISTS_MELEE.damage } };
     const id = system.add(type, [1, 1, 0], [0, 0, -1]);
     const actor = system.store.get(id)!;
-    const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE));
+    const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, POSE_SCENE));
     const { origin, direction } = outwardRay(actor, 'torso', 'sac.0', id);
     const [first] = HUMANOID_REGION_NAMES.flatMap((region) => {
       const hit = posedRegionHit(boxes[region], origin, direction, BLOCK_SIZE);
@@ -1965,9 +1984,11 @@ describe('shambler scenarios', () => {
     expect(actor.regions.leftLeg).toBe(0);
     run(system, 1);
     expect(templateByName(bodyPlanModel(figureVariantOf(type))).bodyPlan).toBe('humanoid');
-    expect(actorFigure(type, actor.figureSeed).realized.body.bones.some((bone) => bone.id === 'shin.L')).toBe(false);
+    expect(simulationFigure(type, actor.figureSeed).realized.body.bones.some((bone) => bone.id === 'shin.L')).toBe(
+      false,
+    );
     expect(actorCrawls(actor)).toBe(false);
-    expect(actorPoseInputFor(actor, id, BLOCK_SIZE).crawling).toBe(false);
+    expect(actorPoseInputFor(actor, id, POSE_SCENE).crawling).toBe(false);
     expect(actor.horizontalSpeed).toBeGreaterThan(type.speed.crawlMetresPerSimSecond);
     expect(actor.horizontalSpeed).toBeLessThanOrEqual(type.speed.chaseMetresPerSimSecond);
   });
@@ -2059,10 +2080,10 @@ describe('shambler scenarios', () => {
     expect(() => restored.restoreState(snapshot, (id) => registry.actors.get(id))).toThrow('Invalid zombie state');
   });
 
-  it('realizes a figure for every authored seed of every type', () => {
+  it('realizes the simulation figure for every authored seed of every type', () => {
     for (const type of registry.actors.values()) {
       for (const seed of type.figureSeeds ?? []) {
-        expect(() => actorFigure(type, seed)).not.toThrow();
+        expect(() => simulationFigure(type, seed)).not.toThrow();
       }
     }
   });
@@ -2077,12 +2098,13 @@ describe('shambler scenarios', () => {
       expect(actor.horizontalSpeed).toBeGreaterThan(0);
       expect(actor.horizontalSpeed).toBeLessThanOrEqual(type.speed.crawlMetresPerSimSecond);
       expect(actor.body.pos).not.toEqual(before);
-      const input = actorPoseInputFor(actor, id, BLOCK_SIZE);
+      const input = actorPoseInputFor(actor, id, POSE_SCENE);
       const posed = posedActor(input);
-      const crawl = crawlGaitPose(posed.figure.realized, input.gaitPhase, input.speed);
+      const crawlWalk = input.figure.clips.crawling!.walk as PoseClip;
+      const crawl = decodeFrame(sampleClip(crawlWalk, walkCursor(input.gaitPhase, crawlWalk.cycles!)));
       expect(posed.pose.rotations.pelvis).toEqual(crawl.rotations.pelvis);
       expect(actor.type.id).toBe(type.id);
-      expect(posed.figure).toBe(actorFigure(actor.type, actor.figureSeed));
+      expect(posed.figure).toBe(simulationFigure(actor.type, actor.figureSeed));
       const boxes = posedHumanoidRegionBoxes(input);
       expect(boxes.leftLeg).toEqual([]);
       expect(boxes.rightLeg.length).toBeGreaterThan(0);
@@ -2090,7 +2112,7 @@ describe('shambler scenarios', () => {
       const restored = new ActorSystem(senses(() => player([100, 2, 0])));
       restored.restoreState(system.snapshotState(), (typeId) => registry.actors.get(typeId));
       const loaded = restored.store.get(id)!;
-      expect(posedActor(actorPoseInputFor(loaded, id, BLOCK_SIZE)).pose).toEqual(posed.pose);
+      expect(posedActor(actorPoseInputFor(loaded, id, POSE_SCENE)).pose).toEqual(posed.pose);
       expect(loaded.regions).toEqual(actor.regions);
       expect(loaded.severed).toEqual(actor.severed);
     },
@@ -2364,6 +2386,25 @@ describe('shambler scenarios', () => {
       actors: afterRestore,
     });
     expect(afterRestore.store.size).toBe(0);
+  });
+
+  it('a crawling actor advances one gait cycle per its crawl clip stride', () => {
+    // A fixture stride unlike two step lengths, so the standing rule would give a different phase.
+    const strideMetres = 3 * SHAMBLER.stepLength;
+    const system = new ActorSystem(senses(() => player([1000, 1, 1000])));
+    const spawned = system.store.get(system.add(SHAMBLER, [0, 1, 0]))!;
+    // An input copy with both legs lost; the live actor's injuries stay with the system.
+    const crawler = { ...spawned, regions: { ...spawned.regions, leftLeg: 0, rightLeg: 0 } };
+    const figure = actorFigure(FIGURES, SHAMBLER, crawler.figureSeed);
+    const { crawling } = figure.clips;
+    const walk = crawling!.walk as PoseClip;
+    const strided = {
+      ...figure,
+      clips: { ...figure.clips, crawling: { ...crawling!, walk: { ...walk, strideMetres } } },
+    };
+    const crawled = 2.5;
+    expect(gaitPhaseGain(crawler, strided, crawled)).toBeCloseTo((crawled / strideMetres) * 2 * Math.PI, 12);
+    expect(gaitPhaseGain(spawned, strided, crawled)).toBeCloseTo((crawled / SHAMBLER.stepLength) * Math.PI, 12);
   });
 
   it('gait phase tracks travelled distance during wander, chase and obstacle response', () => {
@@ -3925,6 +3966,7 @@ describe('dismemberment', () => {
       const actor = system.store.get(id)!;
       renderer = new MobActorMeshes(BLOCK_SIZE, 2, {
         actors: new Map([[type.id, { ...type, figureSeeds: [actor.figureSeed] }]]),
+        actorFigureFiles: FIGURES,
       });
       renderer.setWorld((_x, y, _z) => y === -1, BLOCK_SIZE);
       renderer.sync(system.store, 0, 1);

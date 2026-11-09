@@ -27,6 +27,7 @@ import { World } from '../src/core/world.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -59,6 +60,7 @@ const makeRuntime = ({
   const refusals: string[] = [];
   const session = createSession({
     registry: content,
+    actorFigureFiles: stackActorFigureFiles(content),
     ...(restore ? { restore } : {}),
     world,
     isSolid,
@@ -659,9 +661,9 @@ const downShambler = (session: Session, position: Vec3): { id: EntityId; actor: 
   const id = session.actors.add(FRAGILE, position, [0, 0, -1]);
   const actor = session.actors.store.get(id)!;
   const { blockSize } = makeScale(0.5);
-  const chest = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, blockSize)).torso.find(
-    (box) => box.bone === 'chest',
-  )!.center;
+  const chest = posedHumanoidRegionBoxes(
+    actorPoseInputFor(actor, id, { blockSize, actorFigureFiles: stackActorFigureFiles(registry) }),
+  ).torso.find((box) => box.bone === 'chest')!.center;
   const origin: Vec3 = [chest[0], chest[1], chest[2] + 0.45 / blockSize];
   if (session.actors.swing(origin, [0, 0, -1], FISTS_MELEE) !== id || !actor.incapacitated) {
     throw new Error('The blow did not down the shambler');

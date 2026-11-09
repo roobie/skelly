@@ -29,7 +29,10 @@ export const regionSeverableParts = (
  * descendant (a cut at an upper arm takes the forearm and hand with it). Generic over any parent-linked
  * bone list; a duplicate or already-covered cut is harmless, just redundant.
  */
-export const severedBoneSet = (bones: readonly Bone[], cuts: readonly string[]): ReadonlySet<string> => {
+export const severedBoneSet = (
+  bones: readonly Pick<Bone, 'id' | 'parent'>[],
+  cuts: readonly string[],
+): ReadonlySet<string> => {
   const childrenOf = new Map<string, string[]>();
   for (const bone of bones) {
     if (bone.parent !== null) {

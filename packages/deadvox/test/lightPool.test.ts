@@ -15,6 +15,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { gameSeconds } from '../src/core/time.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { LightPool } from '../src/render/lightPool.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE, dayStateAtHour } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
@@ -240,6 +241,7 @@ describe('made-light point pool', () => {
       blockSize: SCALE.blockSize,
       physics: physicsFor(SCALE),
       tuning: TEST_SENSE_TUNING,
+      actorFigureFiles: stackActorFigureFiles(registry),
       hurtPlayer: () => undefined,
     });
     const id = actors.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);

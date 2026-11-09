@@ -1,9 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { actorFigureFileIssues, actorFigureIssues, validateContent } from '../src/core/content.ts';
 import { FUSED_MASS_FIGURE_SEED } from '../src/core/fusedMassFigure.ts';
 import { actorFigureKey } from '../src/core/schema/actors.ts';
 import type { ActorFigureDef } from '../src/core/schema.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
 type FigureContent = Parameters<typeof actorFigureIssues>[0];
 type FigureActor = FigureContent['actors'] extends ReadonlyMap<string, infer T> ? T : never;
@@ -19,6 +22,7 @@ const figure: ActorFigureDef = {
   id: actorFigureKey(type, seed),
   body: 'actors/fixture.body.json',
   clips: 'actors/fixture.clips.json',
+  mesh: 'assets/models/actors/fixture.glb',
 };
 
 // The fixture body's type is no actor type, so an authored figure of that name admits it as the player's admits the player.
@@ -81,6 +85,46 @@ describe('actor figure file checks', () => {
     expect(
       issues.every(({ section, id, path }) => section === 'actorFigures' && id === figure.id && path === '.clips'),
     ).toBe(true);
+  });
+
+  it('admits a standing humanoid without a crawling set', () => {
+    const { crawling: _, ...standingOnly } = rawClips;
+    expect(fileIssues(figure.id, rawBody, standingOnly)).toEqual([]);
+  });
+
+  // A loaded shambler row: the figure fixture has neither hit boxes nor an actor type that crawls.
+  const shamblerRow = () => {
+    const registry = baseRegistry();
+    const shambler = registry.actors.get('shambler')!;
+    const drawn = shambler.figureSeeds![0]!;
+    return {
+      registry,
+      key: actorFigureKey(shambler.id, drawn),
+      ...actorFigure(stackActorFigureFiles(registry), shambler, drawn),
+    };
+  };
+
+  it('reports an actor type that crawls after leg loss whose figure has no crawling set', () => {
+    const { registry, key, body, clips } = shamblerRow();
+    const { crawling: _, ...standingOnly } = clips;
+    expect(actorFigureFileIssues(registry, key, body, standingOnly)).toEqual([
+      expect.objectContaining({ id: key, path: '.clips.crawling' }),
+    ]);
+  });
+
+  it('reports a hit-box bone that carries no voxels', () => {
+    const { registry, key, body, clips } = shamblerRow();
+    const boxed = body.boxes!.head![0]!.bone;
+    const bones = body.bones.map((bone) => {
+      if (bone.id !== boxed) {
+        return bone;
+      }
+      const { voxels: _, hull: __, ...bare } = bone;
+      return bare;
+    });
+    expect(actorFigureFileIssues(registry, key, { ...body, bones }, clips)).toEqual([
+      expect.objectContaining({ id: key, path: '.body', message: expect.stringContaining(boxed) }),
+    ]);
   });
 
   it('reports a body file that fails its schema under the row', () => {

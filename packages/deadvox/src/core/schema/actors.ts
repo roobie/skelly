@@ -409,6 +409,16 @@ const pointKey = (p: readonly number[]): string => p.join(',');
 const hasBone = (body: { readonly bones: readonly { readonly id: string }[] }, id: string): boolean =>
   body.bones.some((bone) => bone.id === id);
 
+/** Hit boxes are posed from their bone's voxels, so a boxed bone without them cannot be hit-tested. */
+const boxBonesWithoutVoxels = (body: {
+  readonly bones: readonly { readonly id: string; readonly voxels?: unknown }[];
+  readonly boxes?: Readonly<Record<string, readonly { readonly bone: string }[]>> | undefined;
+}): string[] => {
+  const voxelled = new Set(body.bones.filter(({ voxels }) => voxels !== undefined).map(({ id }) => id));
+  const boxed = Object.values(body.boxes ?? {}).flatMap((rows) => rows.map(({ bone }) => bone));
+  return [...new Set(boxed)].filter((bone) => !voxelled.has(bone));
+};
+
 const ActorBoneSchema = pipe(
   strictObject({
     id: BoneName,
@@ -575,6 +585,10 @@ export const ActorBodySchema = pipe(
       ].every((bone) => hasBone(body, bone)),
     'every region, box and severable part bone must be a body bone',
   ),
+  check(
+    (body) => boxBonesWithoutVoxels(body).length === 0,
+    ({ input }) => `every box bone must carry voxels; missing on ${boxBonesWithoutVoxels(input).join(', ')}`,
+  ),
   check((body) => body.burstBones.every((bone) => hasBone(body, bone)), 'every burst bone must be a body bone'),
   check((body) => Object.keys(body.extents).every((bone) => hasBone(body, bone)), 'every extent must key a body bone'),
   check(
@@ -643,19 +657,27 @@ const timedWithin = (clip: Timed, key: 'hitAtSimSeconds' | 'peakAtSimSeconds'): 
   return time === undefined || clip.durationSimSeconds === undefined || time <= clip.durationSimSeconds;
 };
 
-/** Absolute local rotations per frame. Loop cursors are normalised; finite cursors are seconds. */
+/**
+ * Absolute local rotations per frame. Loop cursors are normalised; finite cursors are seconds. A walk loop
+ * states `strideMetres` and an idle loop `periodSimSeconds` (see `packages/deadvox/DESIGN.md`, "Clocks and units").
+ */
 export const PoseClipSchema = pipe(
   strictObject({
     kind: literal('pose'),
     loop: vBoolean(),
     frames: pipe(array(PoseFrameSchema), nonEmpty('needs at least one frame')),
     durationSimSeconds: optional(FinitePositive),
-    period: optional(FinitePositive),
+    periodSimSeconds: optional(FinitePositive),
+    strideMetres: optional(FinitePositive),
     cycles: optional(PositiveInteger),
     idleBlendSpeed: optional(FinitePositive),
     hitAtSimSeconds: optional(FinitePositive),
   }),
   check((clip) => timedWithin(clip, 'hitAtSimSeconds'), 'hitAtSimSeconds must be within the duration'),
+  check(
+    (clip) => clip.periodSimSeconds === undefined || clip.strideMetres === undefined,
+    'a loop states periodSimSeconds or strideMetres, not both',
+  ),
 );
 
 /** One death fall: a finite pose clip that render samples on Real time, so its span names that clock. */
@@ -707,7 +729,7 @@ export const JointDeltaClipSchema = pipe(
     sideScalesZ: vBoolean(),
     footSoleHold: vBoolean(),
     cycles: optional(PositiveInteger),
-    period: optional(FinitePositive),
+    strideMetres: optional(FinitePositive),
     durationSimSeconds: optional(FinitePositive),
     hitAtSimSeconds: optional(FinitePositive),
     peakAtSimSeconds: optional(FinitePositive),
@@ -717,8 +739,9 @@ export const JointDeltaClipSchema = pipe(
   check((clip) => timedWithin(clip, 'peakAtSimSeconds'), 'peakAtSimSeconds must be within the duration'),
   check(
     (clip) =>
-      clip.cursor !== 'gaitPhase' || (clip.loop === true && clip.cycles !== undefined && clip.period !== undefined),
-    'a gaitPhase clip must loop and carry cycles and period',
+      clip.cursor !== 'gaitPhase' ||
+      (clip.loop === true && clip.cycles !== undefined && clip.strideMetres !== undefined),
+    'a gaitPhase clip must loop and carry cycles and strideMetres',
   ),
 );
 
@@ -726,7 +749,7 @@ const StanceIdleSchema = strictObject({
   base: PoseFrameSchema,
   motion: array(
     strictObject({
-      period: FinitePositive,
+      periodSimSeconds: FinitePositive,
       amplitudeDeg: Finite,
       salt: pipe(number(), integer('must be a whole number')),
       bones: array(strictObject({ bone: BoneName, axis: picklist(['x', 'y', 'z']), scale: Finite })),
@@ -839,7 +862,7 @@ const isStanceIdle: Requirement = (entry) => 'slack' in entry;
 const isDeathPair: Requirement = (entry) => 'forward' in entry;
 
 const oneFrame = (clip: PoseClip): boolean => clip.frames.length === 1;
-const walking = (clip: PoseClip): boolean => clip.cycles !== undefined && clip.period !== undefined;
+const walking = (clip: PoseClip): boolean => clip.cycles !== undefined && clip.strideMetres !== undefined;
 
 const HUMANOID_CRAWLING: Readonly<Record<string, Requirement>> = {
   idle: isPose(oneFrame),
@@ -849,52 +872,66 @@ const HUMANOID_CRAWLING: Readonly<Record<string, Requirement>> = {
 };
 
 const CREATURE_STANDING: Readonly<Record<string, Requirement>> = {
-  idle: isPose((clip) => oneFrame(clip) && clip.period !== undefined),
+  idle: isPose((clip) => oneFrame(clip) && clip.periodSimSeconds !== undefined),
   walk: isPose(walking),
   attack: isPose((clip) => !clip.loop && clip.durationSimSeconds !== undefined && clip.hitAtSimSeconds !== undefined),
 };
 
-type RequiredSets = Readonly<Partial<Record<'standing' | 'crawling', Readonly<Record<string, Requirement>>>>>;
+/** One clip set a body plan admits: the clips it must hold, and whether the set may be left out. */
+interface PlanSet {
+  readonly clips: Readonly<Record<string, Requirement>>;
+  readonly optional?: true;
+}
 
-/** The clip sets the producer writes per body plan; a humanoid with a leg cut only crawls. */
-const requiredSets = (body: ActorBody): RequiredSets | undefined => {
+type PlanSets = Readonly<Partial<Record<'standing' | 'crawling', PlanSet>>>;
+
+/**
+ * The clip sets the producer writes per body plan; a humanoid with a leg cut only crawls. A standing humanoid's
+ * crawl set is optional because built data holds only what the game uses: a row the game never crawls, such as
+ * the player, has none (`packages/deadvox/DESIGN.md`, "Clocks and units").
+ */
+const planSets = (body: ActorBody): PlanSets | undefined => {
   switch (body.bodyPlan) {
     case 'humanoid':
       return body.legCut === undefined
         ? {
             standing: {
-              idle: isStanceIdle,
-              walk: isPose((clip) => walking(clip) && clip.idleBlendSpeed !== undefined),
-              attack: isOverlay('hitAtSimSeconds'),
-              flinch: isOverlay('peakAtSimSeconds'),
+              clips: {
+                idle: isStanceIdle,
+                walk: isPose((clip) => walking(clip) && clip.idleBlendSpeed !== undefined),
+                attack: isOverlay('hitAtSimSeconds'),
+                flinch: isOverlay('peakAtSimSeconds'),
+              },
             },
-            crawling: HUMANOID_CRAWLING,
+            crawling: { clips: HUMANOID_CRAWLING, optional: true },
           }
-        : { crawling: HUMANOID_CRAWLING };
+        : { crawling: { clips: HUMANOID_CRAWLING } };
     case 'acid':
       return {
         standing: {
-          idle: isPose((clip) => clip.period !== undefined && clip.frames.length >= 2),
-          death: isDeathPair,
-          walk: isJointDelta('gaitPhase'),
-          attack: isJointDelta(
-            'time',
-            (clip) => clip.durationSimSeconds !== undefined && clip.hitAtSimSeconds !== undefined,
-          ),
-          spitDraw: isJointDelta('progress'),
-          hit: isJointDelta(
-            'time',
-            (clip) => clip.durationSimSeconds !== undefined && clip.peakAtSimSeconds !== undefined,
-          ),
+          clips: {
+            idle: isPose((clip) => clip.periodSimSeconds !== undefined && clip.frames.length >= 2),
+            death: isDeathPair,
+            walk: isJointDelta('gaitPhase'),
+            attack: isJointDelta(
+              'time',
+              (clip) => clip.durationSimSeconds !== undefined && clip.hitAtSimSeconds !== undefined,
+            ),
+            spitDraw: isJointDelta('progress'),
+            hit: isJointDelta(
+              'time',
+              (clip) => clip.durationSimSeconds !== undefined && clip.peakAtSimSeconds !== undefined,
+            ),
+          },
         },
       };
     case 'fused-mass':
-      return { standing: { idle: isPose(oneFrame) } };
+      return { standing: { clips: { idle: isPose(oneFrame) } } };
     case 'quadruped':
     case 'insect':
     case 'floater':
     case 'dragon':
-      return { standing: CREATURE_STANDING };
+      return { standing: { clips: CREATURE_STANDING } };
     default:
       return undefined;
   }
@@ -956,17 +993,17 @@ export const actorClipIssues = (body: ActorBody, clips: ActorClips): string[] =>
   const issues = Object.entries(clips).flatMap(([setName, set]) =>
     Object.entries(set ?? {}).flatMap(([name, entry]) => entryIssues(body, setName, name, entry)),
   );
-  const required = requiredSets(body);
-  if (!required) {
+  const sets = planSets(body);
+  if (!sets) {
     issues.push(`body plan ${body.bodyPlan} has no required clip set`);
     return issues;
   }
   for (const setName of ['standing', 'crawling'] as const) {
-    const want = required[setName];
+    const want = sets[setName];
     const have = clips[setName];
     if (want && have) {
-      issues.push(...setIssues(body.bodyPlan, setName, want, have));
-    } else if (want) {
+      issues.push(...setIssues(body.bodyPlan, setName, want.clips, have));
+    } else if (want && !want.optional) {
       issues.push(`missing clip set ${setName}`);
     } else if (have) {
       issues.push(`unexpected clip set ${setName}`);
@@ -987,10 +1024,10 @@ export const actorFigureKeyParts = (id: string): { type: string; seed: number } 
 };
 
 /**
- * One built figure: the declared pack files holding the body and clips the asset submodule bakes for one type and
- * seed. Only Node reads those bytes, so the browser admits figures without loading them.
+ * One built figure: the declared pack files holding the body, clips and GLB mesh the asset submodule bakes for one
+ * type and seed. Only Node reads those bytes, so the browser admits figures without loading them.
  */
 export const ActorFigureSchema = pipe(
-  strictObject({ id: string(), body: string(), clips: string() }),
+  strictObject({ id: string(), body: string(), clips: string(), mesh: string() }),
   check(({ id }) => actorFigureKeyParts(id) !== undefined, 'id must be the figure type and seed as "type.seed"'),
 );
