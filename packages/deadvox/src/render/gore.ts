@@ -85,10 +85,16 @@ interface Chunk {
   scale: number;
   ageRealSeconds: number;
   landed: boolean;
+  /** The splat slot it landed on, -1 for none, and that splat's generation then: the splat pool may have reused
+   * the slot since, and the newer splat is not this chunk's. */
+  splatSlot: number;
+  splatGeneration: number;
 }
 
 interface Splat {
   active: boolean;
+  /** Counts the slot's reuses, so an owner can tell its own splat from a later one in the same slot. */
+  generation: number;
   ageRealSeconds: number;
   lifeRealSeconds: number;
   fadeRealSeconds: number;
@@ -242,6 +248,8 @@ export class Gore {
       scale: 1,
       ageRealSeconds: 0,
       landed: false,
+      splatSlot: -1,
+      splatGeneration: 0,
     }));
     this.chunkMeshes = (tuning.chunks?.models ?? []).map(() => undefined);
     this.droplets = Array.from({ length: tuning.dropletCap }, () => ({
@@ -254,6 +262,7 @@ export class Gore {
     }));
     this.splats = Array.from({ length: tuning.splatCap }, () => ({
       active: false,
+      generation: 0,
       ageRealSeconds: 0,
       lifeRealSeconds: SPLAT_LIFE_S,
       fadeRealSeconds: SPLAT_FADE_S,
@@ -401,6 +410,8 @@ export class Gore {
     this.updates += 1;
     const step = Math.max(0, dt);
     const substeps = Math.max(1, Math.ceil(step / 0.02));
+    // Before anything lands this update, so a new splat starts aging with the next one, as its chunk does.
+    this.fadeSplats(step);
     for (const droplet of this.droplets) {
       if (!droplet.active) {
         continue;
@@ -414,7 +425,6 @@ export class Gore {
       }
     }
     this.flyChunks(step, substeps, isSolid);
-    this.fadeSplats(step);
     this.pickDrippers(bodies);
     this.drip(step, bodies?.fusedMass);
     this.dripPlayer(step, bodies?.player);
@@ -451,6 +461,7 @@ export class Gore {
     for (let i = 0; i < count; i++) {
       const chunk = this.chunks[this.nextChunk]!;
       this.nextChunk = (this.nextChunk + 1) % this.chunks.length;
+      this.retireChunkSplat(chunk);
       chunk.active = true;
       chunk.landed = false;
       chunk.ageRealSeconds = 0;
@@ -481,10 +492,24 @@ export class Gore {
     const { position } = chunk;
     const radius = this.rng.range(tuning.landedSplatRadiusMetres.min, tuning.landedSplatRadiusMetres.max);
     const left = Math.max(0, tuning.lifetimeRealSeconds - chunk.ageRealSeconds);
-    const splat = this.splat(this.point.copy(position), this.normal.set(0, 1, 0), radius);
-    if (splat) {
-      splat.lifeRealSeconds = left;
-      splat.fadeRealSeconds = Math.min(left, tuning.fadeRealSeconds);
+    const slot = this.splat(this.point.copy(position), this.normal.set(0, 1, 0), radius);
+    if (slot < 0) {
+      return;
+    }
+    const splat = this.splats[slot]!;
+    splat.lifeRealSeconds = left;
+    splat.fadeRealSeconds = Math.min(left, tuning.fadeRealSeconds);
+    chunk.splatSlot = slot;
+    chunk.splatGeneration = splat.generation;
+  }
+
+  /** Ends a chunk's splat as the chunk ends, by expiry or by its pool slot being reused; a splat that has since
+   * taken that splat slot belongs to something else and stays. */
+  private retireChunkSplat(chunk: Chunk): void {
+    const slot = chunk.splatSlot;
+    chunk.splatSlot = -1;
+    if (slot >= 0 && this.splats[slot]!.active && this.splats[slot]!.generation === chunk.splatGeneration) {
+      this.retireSplat(slot);
     }
   }
 
@@ -497,6 +522,7 @@ export class Gore {
       chunk.ageRealSeconds += dt;
       if (chunk.ageRealSeconds >= lifetime) {
         chunk.active = false;
+        this.retireChunkSplat(chunk);
         continue;
       }
       for (let substep = 0; substep < substeps && !chunk.landed; substep++) {
@@ -774,15 +800,16 @@ export class Gore {
     }
   }
 
-  /** Lays a splat with a droplet's life, which the caller may change on the splat returned. */
-  private splat(point: Vector3, normal: Vector3, radiusMetres: number): Splat | undefined {
+  /** Lays a splat with a droplet's life, which the caller may change; returns its slot, -1 if there is no pool. */
+  private splat(point: Vector3, normal: Vector3, radiusMetres: number): number {
     if (this.splats.length === 0) {
-      return undefined;
+      return -1;
     }
     const slot = this.nextSplat;
     this.nextSplat = (this.nextSplat + 1) % this.tuning.splatCap;
     const splat = this.splats[slot]!;
     splat.active = true;
+    splat.generation += 1;
     splat.ageRealSeconds = 0;
     splat.lifeRealSeconds = SPLAT_LIFE_S;
     splat.fadeRealSeconds = SPLAT_FADE_S;
@@ -797,7 +824,15 @@ export class Gore {
     this.splatMesh.instanceMatrix.needsUpdate = true;
     this.splatOpacity.setX(slot, SPLAT_OPACITY);
     this.splatOpacity.needsUpdate = true;
-    return splat;
+    return slot;
+  }
+
+  private retireSplat(slot: number): void {
+    this.splats[slot]!.active = false;
+    this.dummy.scale.setScalar(0);
+    this.dummy.updateMatrix();
+    this.splatMesh.setMatrixAt(slot, this.dummy.matrix);
+    this.splatMesh.instanceMatrix.needsUpdate = true;
   }
 
   private fadeSplats(dt: number): void {
@@ -811,11 +846,7 @@ export class Gore {
       this.splatOpacity.setX(slot, SPLAT_OPACITY * Math.min(1, Math.max(0, left / splat.fadeRealSeconds)));
       this.splatOpacity.needsUpdate = true;
       if (left <= 0) {
-        splat.active = false;
-        this.dummy.scale.setScalar(0);
-        this.dummy.updateMatrix();
-        this.splatMesh.setMatrixAt(slot, this.dummy.matrix);
-        this.splatMesh.instanceMatrix.needsUpdate = true;
+        this.retireSplat(slot);
       }
     }
   }
