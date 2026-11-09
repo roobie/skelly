@@ -40,6 +40,10 @@
     },
     {
       "kind": "json",
+      "path": "things/kite_shield.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/lame_saber.model.json"
     },
     {
@@ -63,12 +67,20 @@
       "path": "things/sun_shield.model.json"
     },
     {
+      "kind": "json",
+      "path": "things/tower_shield.model.json"
+    },
+    {
       "kind": "asset",
       "path": "assets/models/baseball_bat.glb"
     },
     {
       "kind": "asset",
       "path": "assets/models/kabar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/kite_shield.glb"
     },
     {
       "kind": "asset",
@@ -93,6 +105,10 @@
     {
       "kind": "asset",
       "path": "assets/models/sun_shield.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tower_shield.glb"
     }
   ],
   "id": "skelly.melee",

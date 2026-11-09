@@ -3,7 +3,7 @@ read_if:
   - you start a feature branch, push, take in main, or clean up after a merge
   - you wonder why skelly never rebases or force-pushes a published branch
   - you check the framework refactor gate before opening a draft PR
-  - you update the shared asset submodule pin
+  - you bump the shared asset release pin and submodule
 ---
 
 # Git workflow
@@ -44,18 +44,21 @@ defects before they reach `main`.
 
 ## Shared asset pin bumps
 
-An asset pin-bump PR commits the `packages/skelly-assets` gitlink together with the
-content changes that need that revision. Run Deadvox's `validate`, root
-`content:check` and Deadvox's `digest:simulation` at the base and the proposed head,
-and report both digest values. This checks that the selected assets and their pack
-declarations agree without changing simulation behaviour. Report a digest difference
-to the lead; the bump must not merge with that difference.
+An asset pin bump moves the release pin to a published skelly-assets tag and the
+`packages/skelly-assets` gitlink to that tag's commit, in one commit with the content
+changes the new assets need. Setup refuses a gitlink that differs from the tag's commit,
+because the submodule's sources and the released bytes must come from one revision.
+See `tools/skelly-assets/setup.mjs`, `pinRelease` and `assertGitlinkMatchesRelease`.
 
-A pin may carry actor outputs before Deadvox admits them, because nothing reads the
-submodule's built root until Deadvox supplies it as the external root. The hazard is
-the external root, not the pin: once supplied, it exposes files no bundled pack claims.
-The change that supplies the external root therefore admits the actor outputs in the
-same PR, or skips the actor namespace. See
+Run Deadvox's `validate`, root `content:check` and Deadvox's `digest:simulation` at the
+base and the proposed head, and report both digest values. This checks that the
+selected assets and their pack declarations agree without changing simulation
+behaviour. Report a digest difference to the lead; the bump must not merge with that
+difference.
+
+A release may carry files in a bundled pack before Deadvox declares them, and the
+external root's orphan check rejects every installed file no bundled pack claims, so
+the bump admits them in the same PR. See
 `docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Staged admission".
 
 Asset-move PRs target `framework/refactor` and take it in by merging

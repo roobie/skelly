@@ -2,7 +2,7 @@
 read_if:
   - you move asset producers, authoring tools or their shared libraries between repositories
   - you consume shared models or rigs, choose pack homes or change clip representation
-  - you update the asset submodule pin or admit its outputs into a product
+  - you update the asset release pin or submodule, or admit its outputs into a product
   - you change shared model licensing, turned-piece defaults or copied-model provenance
 ---
 
@@ -19,7 +19,14 @@ runtime is not extracted around tool dependencies that are about to disappear; s
 `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
 
 Use a git submodule, not a second tracked copy, so each product revision selects an
-explicit asset revision. Copy pipeline sources from the refactor tree, recording the
+explicit asset revision. Built output comes from that revision's CI release, not from
+files tracked in skelly-assets: binaries in git grow history with every rebuild, cannot
+merge and can drift from their source, while a release pins bytes immutably and has one
+producer. The gitlink is the commit the pinned release tag points to, so the tool sources
+skelly reads from the submodule and the built output it installs cannot drift apart. Setup
+installs only the packs one of skelly's mods bundles, because the mods are the one list of
+what skelly ships. See `tools/skelly-assets/release.json` and
+`tools/skelly-assets/setup.mjs`, `assertGitlinkMatchesRelease`. Copy pipeline sources from the refactor tree, recording the
 source commit per package in `packages/skelly-assets/tools/README.md`; git history stays in
 skelly rather than being rewritten into another repository. Shared thing-core has
 one workspace instance and one root lockfile so tools and consumers resolve the same
@@ -37,7 +44,8 @@ so consuming a baked body does not require runtime voxel remeshing.
 ## Shared production and content homes
 
 A model either product uses has one source row, one builder and one output at
-`built/<packId>/<logical path>` in the submodule. Keep no hand copy beside a
+`built/<packId>/<logical path>`, released in its pack's archive and installed at that
+path in the submodule. Keep no hand copy beside a
 producer. A consumer that wants a model bundles its pack and reads the same bytes
 as every other consumer; no product must bundle the entire library. This makes the
 same models usable homogeneously by deadvox and arpg1, rather than merely keeping
@@ -95,15 +103,13 @@ an intentional shared-export look from an unnoticed change.
 
 ## Staged admission
 
-The submodule pin may carry Deadvox actor bodies and clips under its built root
-before Deadvox declares them, because nothing reads that root until Deadvox supplies
-it as the external root; see `packages/deadvox/tools/readBundledPacks.ts`,
-`readResolved`. The hazard is the external root, not the pin: once supplied, its
-orphan check meets actor files no bundled pack claims. The change that supplies the
-external root therefore admits actor data with its declarations, or skips the actor
-namespace. Consumer cutovers change declarations, metadata and bytes
-together, so a model is never admitted without its files or exposed without a claim.
-See `docs/git-workflow.md`, "Shared asset pin bumps".
+The pinned release may carry actor bodies and clips in a bundled pack's archive before
+Deadvox declares them. The hazard is the external root's orphan check, which meets every
+installed file no bundled pack claims; see `packages/deadvox/tools/readBundledPacks.ts`,
+`readResolved`. A pin bump therefore admits a pack's new files with their declarations.
+Consumer cutovers change declarations, metadata and bytes together, so a model is never
+admitted without its files or exposed without a claim. See `docs/git-workflow.md`,
+"Shared asset pin bumps".
 
 Actor figures are admitted by declared pack file path. A figure row holds its key
 and the paths of the body and clips files its pack declares from the pinned build
@@ -135,7 +141,9 @@ gap. These limits are not proof that the entire shared-library goal is met.
 
 ## Licence scopes
 
-Models and built assets remain CC-BY-NC-SA-4.0; pipeline tools, the showcase and
-workflow code remain EUPL-1.2. Keeping those scopes separate preserves the models'
-non-commercial terms without relicensing the tools. See `REUSE.toml` and
+Models and built assets remain CC-BY-NC-SA-4.0, released archives included;
+pipeline tools, the showcase and workflow code remain EUPL-1.2. Keeping those scopes
+separate preserves the models' non-commercial terms without relicensing the tools.
+Installing the release at the submodule's built path keeps that path's licence entry
+true without a second scope for downloaded files. See `REUSE.toml` and
 `packages/skelly-assets/REUSE.toml`.
