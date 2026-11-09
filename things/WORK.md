@@ -32,7 +32,7 @@ Why each boundary matters, and where it is checked:
 
 - How validation, collision and the viewer rebuild scale with part count; no benchmark exists,
   so measure before optimising.
-- The smallest benchmark set to add before the thing tool adds load.
+- The smallest benchmark set that measures that scaling, added before the tools add more load.
 
 ## Aim
 
@@ -107,7 +107,7 @@ Settled:
   "Layers").
 - The thing authoring tool owns non-gun family policy above the shared packages, so
   neither construct nor the core knows its item kinds. Its home is `packages/skelly-assets/tools/packages/thing-authoring-tool/README.md`.
-- The directory structure is fixed before any new feature work.
+- Each concern keeps one package home; see `things/WORK.md`, "Target structure".
 - The suite's packages live in the asset submodule's tools (`things/README.md`,
   "Packages"); skelly's root package takes only thing-core and its dependency construct
   as workspaces. The gun tool has one
@@ -133,7 +133,7 @@ layer order inside construct is in `packages/skelly-assets/tools/packages/constr
 ## Open questions
 
 1. Where parts shared by both tools live (a turned stock, for instance).
-2. Which work-item prefix the things packages use, beside `g`, `d`, `m` and `r` in
+2. Which work-item prefix the things packages use, beside `g`, `d` and `r` in
    `AGENTS.md`, "Work item IDs"; the close-out phase writes the answer into `AGENTS.md`.
 
 ## Phases

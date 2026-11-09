@@ -232,7 +232,10 @@ export const ActorSchema = strictObject({
   cause: Name,
   model: BODY_PLAN,
   figure: optional(picklist(Object.keys(FIGURE_VARIANTS) as ActorModel[])),
-  /** Uniform scale for this model's realized body, in addition to its built body's dimensions. */
+  /**
+   * The uniform scale a fused mass's built body was baked at, not a further multiplier: resizing changes the body in
+   * the asset pipeline, and admission holds this value to the built body's scale. See `src/core/content.ts`, `figureTypeIssues`.
+   */
   bodyScale: optional(Positive),
   /**
    * A fused mass's collision box about its ground origin, in metres: content admission reads it because the browser

@@ -3604,15 +3604,10 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
   The targets are 96–128 m near detail and 512 m or more of far terrain; to be
   measured.
-- **Zombie bodies:** each drawn figure variant owns a block of pose rows,
-  one per drawn actor. Missing per-actor rows leave the shared bone texture
-  unable to place that actor's mesh in the world. Each live actor with an
-  allocated row keeps its root placement current on every sync, including while
-  off-screen; its cached pose moves the bones with that root until full pose
-  packing resumes. Skipping both left stale bones in rows still drawn by the
-  instanced mesh, so re-entry could snap by the movement accumulated while
-  culled. A despawn or streamed unload can reuse a variant row, so the new actor
-  must build its own pose before drawing. See `src/render/mobActors.ts`,
+- **Zombie bodies:** an actor moving off-screen must not come back with stale
+  bones or snap by the distance it moved while culled, and an actor taking over
+  a reused slot after a despawn or streamed unload must not draw with the
+  previous actor's pose. See `src/render/mobActors.ts`,
   `MobActorMeshes.syncActor`, `test/runnerRenderContinuity.test.ts`,
   `runEngagement`, and `test/mobActors.test.ts`, `MobActorMeshes`.
 - **Far zombie bodies draw at full detail:** a coarser mesh for distant bodies

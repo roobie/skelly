@@ -33,7 +33,7 @@ The simulation fingerprint answers a different question: which source files the 
 depends on and what they contain. Its value changes whenever those paths or files change, so it
 cannot show that behaviour held; see `tools/simulationFingerprint.ts`.
 
-The #1532 rounds that moved runtime code out of Mobgen into deadvox, then deleted Mobgen, show
-the two tools together. Each move round changed the fingerprint by design, because
-admitted paths and files changed, and kept the digest equal, which is what showed that the
-intended change was a move and nothing more. Neither value alone would have shown both.
+A round that moves simulation sources between packages therefore changes the fingerprint by
+design, because admitted paths and files change, while the digest of the sampled simulation
+stays equal. The digest covers only that fixed simulation run, so equality does not show that
+presentation or other unsampled behaviour held.
