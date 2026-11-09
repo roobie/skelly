@@ -22,11 +22,15 @@ export const productAssets: PresentationAssets = {
   models: owned({
     ...import.meta.glob<string>('../../mods/*/assets/**/*.glb', { eager: true, query: '?url', import: 'default' }),
     ...import.meta.glob<string>('../../../mods/*/assets/**/*.glb', { eager: true, query: '?url', import: 'default' }),
-    ...import.meta.glob<string>(['@skelly/released-models'], { eager: true, query: '?url', import: 'default' }),
+    ...import.meta.glob<string>(['./@skelly/released-models/*.glb'], { eager: true, query: '?url', import: 'default' }),
   }),
   // URLs only: the bytes are fetched at session start, so a changed figure is read fresh by the next session.
   figures: owned(
-    import.meta.glob<string>(['@skelly/released-figures'], { eager: true, query: '?url', import: 'default' }),
+    import.meta.glob<string>(['./@skelly/released-figures/*.{glb,json}'], {
+      eager: true,
+      query: '?url',
+      import: 'default',
+    }),
   ),
   cursors: owned({
     ...import.meta.glob<string>('../../mods/*/assets/cursors/*.png', { eager: true, query: '?url', import: 'default' }),

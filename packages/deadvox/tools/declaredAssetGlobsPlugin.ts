@@ -5,7 +5,10 @@ import type { PackInput } from '../src/core/packAdmission.ts';
 import { EXTERNAL_ASSET_ROOT } from '../src/product/externalRoot.ts';
 import { packFileOrigin } from './readBundledPacks.ts';
 
-/** Runtime URL filtering cannot undo asset emission or inlined payloads. */
+/**
+ * Runtime URL filtering cannot undo asset emission or inlined payloads. Relative wildcard placeholders also remain valid
+ * when Vite's dependency scanner reads the source without this transform.
+ */
 export const declaredAssetGlobsPlugin = (
   packageRoot: string,
   packs: readonly PackInput[],
@@ -42,8 +45,8 @@ export const declaredAssetGlobsPlugin = (
         return;
       }
       return code
-        .replace("'@skelly/released-models'", models.map((path) => JSON.stringify(path)).join(','))
-        .replace("'@skelly/released-figures'", figures.map((path) => JSON.stringify(path)).join(','));
+        .replace("'./@skelly/released-models/*.glb'", models.map((path) => JSON.stringify(path)).join(','))
+        .replace("'./@skelly/released-figures/*.{glb,json}'", figures.map((path) => JSON.stringify(path)).join(','));
     },
   } satisfies Plugin;
 };

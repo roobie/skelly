@@ -313,8 +313,8 @@ it('leaves an unconsumed released model installed without declaring or hashing i
     const plugin = declaredAssetGlobsPlugin(root, [pack!], EXTERNAL);
     const transformed = plugin.transform.call(
       {} as never,
-      `const models = import.meta.glob(['@skelly/released-models']);
-       const figures = import.meta.glob(['@skelly/released-figures']);`,
+      `const models = import.meta.glob(['./@skelly/released-models/*.glb']);
+       const figures = import.meta.glob(['./@skelly/released-figures/*.{glb,json}']);`,
       resolve(root, 'src/product/assets.ts'),
     );
     expect(transformed).toContain(`${EXTERNAL}/fixture.built/${MODEL}`);

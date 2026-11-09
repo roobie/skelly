@@ -6,6 +6,7 @@ read_if:
   - you update the asset release pin or submodule, or admit its outputs into a product
   - you change how admission learns an actor body's dimensions before figure files load
   - you change shared model licensing, turned-piece defaults or copied-model provenance
+  - you change declared asset URL imports or Vite dependency scanning
 ---
 
 # 10. Asset pipelines in skelly-assets
@@ -127,8 +128,13 @@ build or deploy work on content that does not consume it. See
 `docs/git-workflow.md`, "Shared asset pin bumps".
 
 Narrow eager URL imports before Vite processes assets, because filtering a URL map
-at runtime cannot undo emitted files or inlined model payloads. See
-`packages/deadvox/tools/declaredAssetGlobsPlugin.ts`, `declaredAssetGlobsPlugin`.
+at runtime cannot undo emitted files or inlined model payloads. Placeholder globs
+must remain valid relative wildcard globs: Vite's dependency scanner reads raw product source
+without the asset pre-transform. Keep dependency discovery enabled; scanning does
+not need model URLs, but a failed scan interrupts dependency pre-bundling and can
+invalidate running browser requests. See
+`packages/deadvox/tools/declaredAssetGlobsPlugin.ts`, `declaredAssetGlobsPlugin`, and
+`packages/deadvox/test/devDependencyScan.test.ts`.
 Consumer cutovers keep declarations, credits and selected bytes together, so a model
 is never admitted without its files or shipped without a claim.
 
