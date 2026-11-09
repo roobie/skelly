@@ -16,7 +16,6 @@ const SOURCE_ROOTS = [
   'packages/deadvox/test/fixtures/mods',
   'packages/deadvox/test/fixtures/content',
   'packages/deadvox/test/fixtures/packs',
-  'packages/mobgen/src/mob',
   'site',
 ];
 

@@ -1,7 +1,5 @@
-import { generate, realize } from '@mobgen/core/generate.ts';
-import { VIEWER_TEMPLATES as TEMPLATES } from '@mobgen/mob/fusedMassTemplate.ts';
-import { LOOK_AT_PROFILES } from '@mobgen/mob/lookAtProfiles.ts';
 import { describe, expect, it } from 'vitest';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import {
   applyPoint,
   dot,
@@ -12,13 +10,18 @@ import {
   type Transform,
   transpose,
 } from '../src/core/boneMath.ts';
+import { bodySkeleton } from '../src/core/bones.ts';
 import { boneTransforms, type Pose } from '../src/core/pose.ts';
 import { LOOK_AT_REST, lookAtPose } from '../src/render/lookAt.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-const template = TEMPLATES.find((candidate) => candidate.name === 'humanoid')!;
-const realized = realize(generate(template, 7));
+// A shipped humanoid's built skeleton, which has the neck and head bones gaze turns.
+const registry = baseRegistry();
+const shambler = registry.actors.get('shambler')!;
+const bones = bodySkeleton(actorFigure(stackActorFigureFiles(registry), shambler, shambler.figureSeeds![0]!).body);
 const restPose: Pose = { root: [0, 0, 0], rotations: {} };
-const baseTransforms = boneTransforms(realized.body.bones, restPose);
+const baseTransforms = boneTransforms(bones, restPose);
 const forward = (rotation: Mat3): readonly [number, number, number] => mulMV(rotation, [0, 0, -1]);
 const angleTo = (a: readonly number[], b: readonly number[]): number =>
   Math.acos(
@@ -34,7 +37,7 @@ describe('look-at pose', () => {
   it('turns the neck and head toward the target eye point', () => {
     const target = [2, 1, -6] as const;
     const result = lookAtPose({
-      bones: realized.body.bones,
+      bones,
       pose: restPose,
       target,
       profile,
@@ -42,7 +45,7 @@ describe('look-at pose', () => {
       gazeFrameDelta: 2,
       baseTransforms,
     });
-    const headBone = realized.body.bones.find((bone) => bone.id === 'head')!;
+    const headBone = bones.find((bone) => bone.id === 'head')!;
     const headCenter = applyPoint(result.transforms.get('head')!, [
       (headBone.head[0] + headBone.tail[0]) / 2,
       (headBone.head[1] + headBone.tail[1]) / 2,
@@ -61,7 +64,7 @@ describe('look-at pose', () => {
     } as const;
     const target = [8, 4, -1] as const;
     const result = lookAtPose({
-      bones: realized.body.bones,
+      bones,
       pose: restPose,
       target,
       profile: narrow,
@@ -83,7 +86,7 @@ describe('look-at pose', () => {
     expect(Math.abs(headYaw)).toBeLessThanOrEqual(narrow.head.yawDeg + 0.1);
     expect(Math.abs(headPitch)).toBeLessThanOrEqual(narrow.head.pitchDeg + 0.1);
 
-    const headBone = realized.body.bones.find((bone) => bone.id === 'head')!;
+    const headBone = bones.find((bone) => bone.id === 'head')!;
     const headCenter = [
       (headBone.head[0] + headBone.tail[0]) / 2,
       (headBone.head[1] + headBone.tail[1]) / 2,
@@ -111,7 +114,7 @@ describe('look-at pose', () => {
 
   it('eases gaze back to the base pose within the turn-rate bound when tracking ends', () => {
     const tracking = lookAtPose({
-      bones: realized.body.bones,
+      bones,
       pose: restPose,
       target: [10, 1, 0],
       profile,
@@ -122,7 +125,7 @@ describe('look-at pose', () => {
     const gazeAngle = (state: readonly number[]): number => 2 * Math.acos(Math.min(1, Math.abs(state[3]!)));
     const before = gazeAngle(tracking.state);
     const returning = lookAtPose({
-      bones: realized.body.bones,
+      bones,
       pose: restPose,
       target: undefined,
       profile,
@@ -137,15 +140,9 @@ describe('look-at pose', () => {
     expect(before - after).toBeLessThanOrEqual(((profile.turnRateDegPerRealSecond * Math.PI) / 180) * 0.1 + 1e-6);
   });
 
-  it('every TEMPLATES entry has a LOOK_AT_PROFILES entry', () => {
-    for (const candidate of TEMPLATES) {
-      expect(LOOK_AT_PROFILES[candidate.name]).toBeDefined();
-    }
-  });
-
   it.each([0.1, 0.25])('bounds gaze turn speed independently of frame duration at dt %f', (gazeFrameDelta) => {
     const result = lookAtPose({
-      bones: realized.body.bones,
+      bones,
       pose: restPose,
       target: [10, 1, 0],
       profile,

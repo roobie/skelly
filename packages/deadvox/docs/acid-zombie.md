@@ -92,7 +92,7 @@ The acid zombie gets its own mobgen body, built from the ground up, not a recolo
 - glowing green eyes;
 - acid drooling from the mouth, with drips that fall to the ground.
 
-The body is mobgen's `acid` model; its bone rules and how Deadvox consumes them are in `packages/mobgen/docs/acid-zombie-integration.md`. See `src/core/schema/actors.ts`, `ActorSchema` and `BODY_PLAN`.
+The body is the built `acid` model: Deadvox poses it from its built body and clips, as for every actor. See `src/core/schema/actors.ts`, `ActorSchema`, `BODY_PLAN` and `ActorBodySchema`.
 
 The sac, eyes, drips and splash are presentation only, so no simulation outcome or save depends on them. Their tuning is the type's `acidBody` content, which validation requires exactly for the acid model; see `src/core/schema/actors.ts`, `AcidBodySchema`. The sac and eyes glow through their material's emission, and the wind-up brightens only the sac through the crowd data texture. The nearest acid zombies also light their surroundings through item-light slots that lights leave free; see `src/render/lightPool.ts`, `acidGlows`. Drips fall from the drawn mouth, and on death the sac's voxels vanish as a splash thrown from the glow anchor; see `src/render/acidEffects.ts`, `AcidEffects`, and `src/render/mobActors.ts`, `onBurst`.
 

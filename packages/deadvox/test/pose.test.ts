@@ -1,17 +1,8 @@
-import { generate, realize } from '@mobgen/core/generate.ts';
-import {
-  advanceClock,
-  createGaitCache,
-  footRestExtents,
-  INITIAL_CLOCK,
-  legGeometryFor,
-  walkPose,
-} from '@mobgen/mob/gait.ts';
-import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
-import { HUMANOID_TEMPLATES as TEMPLATES } from '@mobgen/mob/templates.ts';
 import { describe, expect, it } from 'vitest';
+import { decodeFrame, sampleClip } from '../src/core/actorClips.ts';
+import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { applyPoint, rotX, rotY, rotZ } from '../src/core/boneMath.ts';
-import type { Bone } from '../src/core/bones.ts';
+import { type Bone, bodySkeleton } from '../src/core/bones.ts';
 import {
   allocateBoneTransforms,
   blendPose,
@@ -20,6 +11,9 @@ import {
   indexBonesByParent,
   type Pose,
 } from '../src/core/pose.ts';
+import type { PoseClip } from '../src/core/schema/actors.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
 const bones: readonly Bone[] = [
   { id: 'a', parent: null, head: [0, 0, 0], tail: [0, 1, 0] },
@@ -91,31 +85,25 @@ describe('boneTransformsInto (the allocation-free posing path)', () => {
     }
   });
 
-  it('matches boneTransforms on a real 18-bone rig across a walk cycle', () => {
-    for (const template of TEMPLATES) {
-      const genome = generate(template, 5);
-      const { body, voxels } = realize(genome);
-      const extents = footRestExtents(body.bones, voxels);
-      const params = genome.params as HumanoidParams;
-      const legGeometryL = legGeometryFor(body.bones, extents, 'L');
-      const walkActor = { bones: body.bones, extents, params, seed: genome.seed, cache: createGaitCache() };
-      const parentIndex = indexBonesByParent(body.bones);
-      const scratch = allocateBoneTransforms(body.bones.length);
-
-      let clock = INITIAL_CLOCK;
-      for (const distance of [0, 0.3, 0.7, 1.4, 2.1]) {
-        clock = advanceClock(clock, distance, { params, geomL: legGeometryL, speed: 1.6, seed: genome.seed });
-        const pose = walkPose(walkActor, clock, 1.6);
-        boneTransformsInto(body.bones, pose, parentIndex, scratch);
-        const expected = asArray(body.bones, boneTransforms(body.bones, pose));
-        for (const [i, bone] of body.bones.entries()) {
-          const t = scratch[i]!;
-          const e = expected[i] as { r: readonly number[]; t: readonly number[] };
-          expect({ r: [...t.r], t: [...t.t] }, `${template.name} bone ${bone.id} at distance ${distance}`).toEqual({
-            r: [...e.r],
-            t: [...e.t],
-          });
-        }
+  it('matches boneTransforms on a built humanoid rig across its walk clip', () => {
+    const registry = baseRegistry();
+    const shambler = registry.actors.get('shambler')!;
+    const { body, clips } = actorFigure(stackActorFigureFiles(registry), shambler, shambler.figureSeeds![0]!);
+    const rig = bodySkeleton(body);
+    const walk = clips.standing!.walk as PoseClip;
+    const parentIndex = indexBonesByParent(rig);
+    const scratch = allocateBoneTransforms(rig.length);
+    for (const cursor of [0, 0.15, 0.4, 0.65, 0.9]) {
+      const pose = decodeFrame(sampleClip(walk, cursor));
+      boneTransformsInto(rig, pose, parentIndex, scratch);
+      const expected = asArray(rig, boneTransforms(rig, pose));
+      for (const [i, bone] of rig.entries()) {
+        const t = scratch[i]!;
+        const e = expected[i] as { r: readonly number[]; t: readonly number[] };
+        expect({ r: [...t.r], t: [...t.t] }, `bone ${bone.id} at cursor ${cursor}`).toEqual({
+          r: [...e.r],
+          t: [...e.t],
+        });
       }
     }
   });

@@ -165,11 +165,6 @@ function bundledModListPlugin() {
   };
 }
 
-// mobgen's pure core/mob modules (no three, no DOM — see src/render/mobActors.ts's own header comment)
-// live in the sibling project, reused here rather than duplicated. packages/mobgen/src/viewer (which imports three
-// and the DOM) must never be reachable through this alias; see test/mobgenBoundary.test.ts.
-const mobgenSrc = fileURLToPath(new URL('../mobgen/src/', import.meta.url));
-
 // Tests that build whole worlds, city plans or scenario walks run only under SKELLY_SWEEPS, in the manual
 // slow-test workflow; `AGENTS.md`, "Tests" says why. These files are slow throughout. A file that also holds fast
 // tests keeps them in the default run and gates its slow cases with test/sweeps.ts, `sweepGroup`.
@@ -211,20 +206,14 @@ export default defineConfig({
     ...UNSTAMPED_BUNDLE_DEFINES,
   },
   base: './', // served from /skelly/deadvox/ on GitHub Pages
-  resolve: {
-    alias: {
-      '@mobgen/': mobgenSrc,
-    },
-  },
   server: {
     fs: {
-      // The alias resolves outside this project's own root; Vite's dev server otherwise refuses to serve
-      // files from outside it.
+      // Mods and built assets live outside this project's own root; Vite's dev server otherwise refuses to
+      // serve files from outside it.
       allow: [
         fileURLToPath(new URL('.', import.meta.url)),
         fileURLToPath(new URL('../mods', import.meta.url)),
         fileURLToPath(new URL('../skelly-assets/built', import.meta.url)),
-        mobgenSrc,
       ],
     },
   },

@@ -22,10 +22,7 @@ const soundById = new Map(soundDefs.map((sound) => [sound.id, sound]));
 
 const FIGURES = stackActorFigureFiles(baseRegistry());
 
-/**
- * The model a pose was built from: its generated figure's template, else the built body's model when the posed
- * skeleton is that body's.
- */
+/** The model a pose was built from: the built body's model when the posed skeleton is that body's. */
 const posedModel = (type: { readonly id: string }, model: string, bodyScale?: number): string | undefined => {
   const figure = actorFigure(FIGURES, type, 1);
   const posed = posedActor({
@@ -44,9 +41,6 @@ const posedModel = (type: { readonly id: string }, model: string, bodyScale?: nu
     severed: [],
     blockSize: 1,
   });
-  if (posed.figure) {
-    return posed.figure.genome.template;
-  }
   const ids = (bones: readonly { readonly id: string }[]): string => bones.map(({ id }) => id).join();
   return ids(posed.bones) === ids(figure.body.bones) ? figure.body.model : undefined;
 };

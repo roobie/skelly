@@ -13,7 +13,6 @@ on:
       - '.gitmodules'
       - 'packages/deadvox/**'
       - 'packages/mods/**'
-      - 'packages/mobgen/**'
       - 'package.json'
       - 'package-lock.json'
       - 'biome.jsonc'
@@ -23,7 +22,6 @@ on:
       - '.github/workflows/pages.yml'
       - '!**/*.md'
       - '!packages/deadvox/test/**'
-      - '!packages/mobgen/test/**'
   workflow_dispatch:
 
 permissions:
@@ -74,20 +72,12 @@ jobs:
           npm run typecheck
           npm run validate
           PAGES_ANALYTICS=1 npx vite build
-      - name: Check and build mobgen
-        working-directory: packages/mobgen
-        run: |
-          npm run typecheck
-          npm test
-          PAGES_ANALYTICS=1 npx vite build
       - name: Assemble the site
         run: |
           mkdir -p _site
           cp -r site/. _site/
-          for P in packages/deadvox packages/mobgen; do
-            mkdir -p _site/${P#packages/}
-            cp -r $P/dist/. _site/${P#packages/}/
-          done
+          mkdir -p _site/deadvox
+          cp -r packages/deadvox/dist/. _site/deadvox/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

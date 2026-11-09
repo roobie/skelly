@@ -16,8 +16,6 @@ export interface RuntimeClosurePolicy {
   readonly forbidden: readonly string[];
   /** npm packages no runtime file, or local file it reaches, may import, with every subpath. */
   readonly forbiddenPackages: readonly string[];
-  /** Import-specifier prefixes that resolve to a directory, as the compiler's path mapping does. */
-  readonly aliases: Readonly<Record<string, string>>;
   /** The Vite project root, where a glob pattern or base with a leading slash starts. */
   readonly viteRoot: string;
   /** The compiler config for the start set; it may set only resolution the check models. */
@@ -42,8 +40,6 @@ export const STAGE_ONE_POLICY: RuntimeClosurePolicy = {
     'packages/presentation',
   ],
   forbiddenPackages: ['three', 'lit', 'lit-html'],
-  // Mirrors packages/deadvox/tsconfig.json, compilerOptions.paths, and packages/deadvox/vite.config.ts, resolve.alias.
-  aliases: { '@mobgen/': 'packages/mobgen/src/' },
   viteRoot: 'packages/deadvox',
   tsconfig: 'packages/deadvox/tsconfig.json',
 };
@@ -84,7 +80,6 @@ const COMPILER_OPTIONS = new Set([
   'moduleResolution',
   'lib',
   'types',
-  'paths',
   'strict',
   'noUncheckedIndexedAccess',
   'noImplicitOverride',
@@ -227,12 +222,8 @@ const stringList = (value: unknown, item: RegExp): string[] | undefined =>
  * Why a tsconfig sets values the check does not model, or the bare type packages it adds, which are
  * then classified like imports. Values that add files or dependencies are constrained one by one.
  */
-function tsconfigInputs(
-  text: string,
-  aliases: Readonly<Record<string, string>>,
-  tsconfigDir: string,
-): { readonly reason: string } | { readonly types: readonly string[] } {
-  const reason = unsupportedTsconfig(text, aliases, tsconfigDir);
+function tsconfigInputs(text: string): { readonly reason: string } | { readonly types: readonly string[] } {
+  const reason = unsupportedTsconfig(text);
   if (reason !== undefined) {
     return { reason };
   }
@@ -261,12 +252,8 @@ function tsconfigValue(text: string): unknown {
   return parsed.errors.length === 0 ? literalValue(expression) : undefined;
 }
 
-/** Why a tsconfig sets resolution the check does not model, if it does; only the policy alias paths pass. */
-function unsupportedTsconfig(
-  text: string,
-  aliases: Readonly<Record<string, string>>,
-  tsconfigDir: string,
-): string | undefined {
+/** Why a tsconfig sets resolution the check does not model, if it does. */
+function unsupportedTsconfig(text: string): string | undefined {
   const config = tsconfigValue(text);
   if (!(config && typeof config === 'object')) {
     return 'a tsconfig the check cannot read';
@@ -276,18 +263,11 @@ function unsupportedTsconfig(
     ...Object.keys(config).filter((key) => !TSCONFIG_KEYS.has(key)),
     ...Object.keys(options).filter((key) => !COMPILER_OPTIONS.has(key)),
   ];
-  // The policy aliases must be the only path mappings, each prefix mapped to its directory relative to the tsconfig.
-  const paths = JSON.stringify(options.paths ?? {});
-  const expected = JSON.stringify(
-    Object.fromEntries(
-      Object.entries(aliases).map(([prefix, dir]) => [`${prefix}*`, [`${posix.relative(tsconfigDir, dir)}/*`]]),
-    ),
-  );
   if (unknownKeys.length > 0) {
     return `tsconfig options the check does not model: ${unknownKeys.join(', ')}`;
   }
-  if (options.moduleResolution !== 'Bundler' || paths !== expected) {
-    return 'tsconfig resolution other than Bundler with the policy aliases';
+  if (options.moduleResolution !== 'Bundler') {
+    return 'tsconfig resolution other than Bundler';
   }
   return undefined;
 }
@@ -763,10 +743,6 @@ class ClosureWalk {
       // tsc reads a filesystem path and Vite a path from its root; follow both.
       return this.found([relative(this.root, specifier), posix.join(this.policy.viteRoot, specifier)]);
     }
-    const alias = Object.entries(this.policy.aliases).find(([prefix]) => specifier.startsWith(prefix));
-    if (alias) {
-      return this.found([`${alias[1]}${specifier.slice(alias[0].length)}`]);
-    }
     // A workspace is classified by where it lies, whatever route names it; only other names are npm packages.
     const name = packageName(specifier);
     const workspace = this.workspaces.find((candidate) => candidate.name === name);
@@ -815,10 +791,9 @@ class ClosureWalk {
   }
 
   private judgeTsconfig(): void {
-    const { tsconfig, aliases } = this.policy;
+    const { tsconfig } = this.policy;
     const text = isFile(join(this.root, tsconfig)) ? readFileSync(join(this.root, tsconfig), 'utf8') : undefined;
-    const inputs =
-      text === undefined ? { reason: 'a missing tsconfig' } : tsconfigInputs(text, aliases, posix.dirname(tsconfig));
+    const inputs = text === undefined ? { reason: 'a missing tsconfig' } : tsconfigInputs(text);
     if ('reason' in inputs) {
       this.violations.push({ importer: tsconfig, specifier: '', target: '', reason: inputs.reason });
       return;
@@ -869,17 +844,13 @@ class ClosureWalk {
 
   /** A glob pattern as a repository-relative pattern, by Vite's `toAbsoluteGlob` rules; undefined if Vite would reject it. */
   private globPattern(importer: string, pattern: string, base: string | undefined): string | undefined {
-    const { viteRoot, aliases } = this.policy;
+    const { viteRoot } = this.policy;
     const importerDir = posix.dirname(importer);
     const dir = base === undefined ? importerDir : posix.join(base.startsWith('/') ? viteRoot : importerDir, base);
     if (pattern.startsWith('/')) {
       return posix.join(viteRoot, pattern.slice(1));
     }
-    if (pattern.startsWith('./') || pattern.startsWith('../')) {
-      return posix.join(dir, pattern);
-    }
-    const alias = Object.entries(aliases).find(([prefix]) => pattern.startsWith(prefix));
-    return alias ? posix.normalize(`${alias[1]}${pattern.slice(alias[0].length)}`) : undefined;
+    return pattern.startsWith('./') || pattern.startsWith('../') ? posix.join(dir, pattern) : undefined;
   }
 
   private resolveGlob(importer: string, specifier: string, base: string | undefined): void {

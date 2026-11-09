@@ -1,5 +1,5 @@
 // Blood stains on zombie bodies, patched into the crowd material after its gore tint (mobActors.ts). How much
-// of a body is stained comes from the crowd texture (mobgen's crowd.ts, `packBloodiness`); which parts are
+// of a body is stained comes from the crowd texture (./crowd.ts, `packBloodiness`); which parts are
 // stained comes from noise over the bone-local position, so the stains stay put as the body moves.
 //
 // Noise, not cells: ragged edges and blotches of varied size read as blood soaked into the body, where
@@ -44,7 +44,7 @@ float bloodStain(float bloodiness, vec3 local, float bone) {
 }
 `;
 
-/** The stain over the body's colour, in the colour of the gore tint at a cut (mobgen's crowd.ts). */
+/** The stain over the body's colour, in the colour of the gore tint at a cut (./crowd.ts). */
 export const BLOOD_STAIN_COLOR_FRAGMENT = /* glsl */ `
 diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.32, 0.09, 0.06), bloodStain(vCrowdBloodiness, vCrowdLocal, vCrowdBone));
 `;

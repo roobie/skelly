@@ -1,48 +1,45 @@
-// biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through this package's Vite and TypeScript aliases.
-import { templateFigure } from '@mobgen/mob/humanoidFigure.ts';
-import { TEMPLATES } from '@mobgen/mob/templates.ts';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { bodyPlanModel, FIGURE_VARIANTS } from '../src/core/actorModels.ts';
-import { validateContent } from '../src/core/content.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { FIGURE_VARIANTS } from '../src/core/actorModels.ts';
+import { buildRegistry, validateContent } from '../src/core/content.ts';
+import { fixtureActorFigures } from './fixtures/actorFigures.ts';
 
-const registry = baseRegistry();
-// A seed every shipped humanoid template generates valid on the first try.
-const FIXTURE_SEED = 1;
+// Shipped actor rows as authored, so each witness carries the fields its body plan requires.
+const source = 'mods/skelly.deadvox.actors/enemies.json';
+const { actors } = JSON.parse(readFileSync(source, 'utf8')) as {
+  actors: {
+    readonly id: string;
+    readonly model: string;
+    readonly figureSeeds?: readonly number[];
+    readonly capability?: readonly string[];
+  }[];
+};
+
+/** One witness actor type per figure variant: the first shipped row of its body plan, selecting that figure. */
+const witnesses = Object.entries(FIGURE_VARIANTS).map(([figure, { bodyPlan }]) => {
+  const row = actors.find((actor) => actor.model === bodyPlan);
+  if (!row) {
+    throw new Error(`no shipped actor row has body plan "${bodyPlan}"`);
+  }
+  // Capabilities are dropped: four witnesses of one plan would otherwise compete for the row's claims.
+  const { capability: _capability, ...rest } = row;
+  return { ...rest, id: `witness_${figure.replaceAll('-', '_')}`, figure };
+});
 
 describe('actor models', () => {
-  it('lets content select every ready mobgen zombie template the renderer draws', () => {
-    const [row] = registry.actors.values();
-    // The acid and the fused mass are built, not generated, so they join by their figure variants' models.
-    const models = [
-      ...TEMPLATES.filter((template) => (template.status ?? 'ready') === 'ready').map(({ name }) => name),
-      FIGURE_VARIANTS.acid.model,
-      FIGURE_VARIANTS['fused-mass'].model,
-    ];
-    const refused = models.filter((name) =>
-      validateContent({
-        source: 'body-plan.json',
-        data: {
-          actors: [
-            {
-              ...row,
-              model: Object.values(FIGURE_VARIANTS).find((variant) => variant.model === name)?.bodyPlan,
-              figure: Object.entries(FIGURE_VARIANTS).find(([, variant]) => variant.model === name)?.[0],
-            },
-          ],
-        },
-      }).some(({ path }) => path.endsWith('.model')),
-    );
-    expect(refused).toEqual([]);
-  });
+  it('lets content select every figure variant the renderer draws', () => {
+    const parsed = witnesses.map((witness) => ({
+      figure: witness.figure,
+      issues: validateContent({ source, data: { actors: [witness] } }),
+    }));
+    expect(parsed).toEqual(witnesses.map(({ figure }) => ({ figure, issues: [] })));
 
-  it('realizes the simulation figure of every generated model content can select', () => {
-    for (const [model, { bodyPlan }] of Object.entries(FIGURE_VARIANTS)) {
-      if (bodyPlan === 'acid' || bodyPlan === 'fused-mass') {
-        continue;
-      }
-      const realize = () => templateFigure(bodyPlanModel(model), FIXTURE_SEED);
-      expect(realize, model).not.toThrow();
-    }
+    const { issues } = buildRegistry([
+      { source: 'witnesses.json', data: { actors: witnesses, actorFigures: fixtureActorFigures(...witnesses) } },
+    ]);
+    const selection = issues.filter(
+      ({ source: file, path }) => file === 'witnesses.json' && (path.endsWith('.figure') || path.endsWith('.model')),
+    );
+    expect(selection).toEqual([]);
   });
 });

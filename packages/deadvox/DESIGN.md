@@ -2626,7 +2626,7 @@ application rather than weapon-class special cases. See `src/core/schema/actors.
   rounded mass and a drip placed in it would start beside or above the body. See
   `src/core/actorSystem.ts`, `ActorSystemOptions.onWound`; `src/render/gore.ts`,
   `Gore` and `woundSeverity`; `src/render/bloodStain.ts`, `bloodStain`; and
-  `packages/mobgen/src/mob/crowd.ts`, `packBloodiness`.
+  `src/render/crowd.ts`, `packBloodiness`.
 - **Determinism.** Hit regions, blast falloff and any spread are seeded, so
   saves and replays stay exact. Region and material state is simulation state:
   it goes into the save snapshot and the source fingerprint.
@@ -3061,19 +3061,15 @@ hunched forms as distinct future types, not crawler variants.
 
 A type's anatomy is a content choice, independent of its identity. Speed, gait and
 size remain humanoid properties rather than separate body plans; figure variants
-preserve their distinct realizations without misclassifying anatomy. A figure seed
-must realize a valid body by itself. Falling through to the next valid seed would
-draw two seeds as one body and quietly shrink authored variety, so it is refused;
-a figure variant whose template rejects shared seeds authors its own. See
+preserve their distinct realizations without misclassifying anatomy. Each figure
+seed is one built body: content admits a drawn seed only with its own figure file,
+so two seeds never draw as one body and authored variety is never quietly shrunk. See
 `src/core/actorModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`, `figureVariantOf` and `bodyPlanModel`;
-`src/render/mobActors.ts`, `drawnSeeds`; and
-`packages/mobgen/src/mob/humanoidFigure.ts`, `templateFigure`.
+`src/render/mobActors.ts`, `drawnSeeds`; and `src/core/content.ts`, `actorFigureIssues`.
 
 Presentation must not change simulation outcomes. Test noise is different because
-it intentionally enters the simulation's sound path. The mobgen viewer has no
-perception state, so its gaze follows its camera. See `src/core/agent.ts`,
-`AgentController.updateAttention`; `packages/mobgen/src/mob/crawl.ts`, `crawlGaitPose`;
-and `packages/mobgen/src/core/generate.ts`, `resolveSupportBones`.
+it intentionally enters the simulation's sound path. See `src/core/agent.ts`,
+`AgentController.updateAttention`.
 
 When #370 is addressed, define hesitation and pursuit decisions on non-violent
 sounds. When #371 is addressed, define how nearby shamblers respond to a

@@ -2,7 +2,6 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isDeepStrictEqual } from 'node:util';
 import { type ConfigEnv, loadConfigFromFile, type UserConfig } from 'vite';
 import { describe, expect, it } from 'vitest';
 import { runtimeClosureViolations, STAGE_ONE_POLICY } from '../tools/runtimeClosure.ts';
@@ -14,12 +13,7 @@ type Tree = Record<string, string>;
 const cleanTree: Tree = {
   'package.json': JSON.stringify({
     type: 'module',
-    workspaces: [
-      'packages/deadvox',
-      'packages/mobgen',
-      'packages/skelly-assets/tools/packages/thing-core',
-      'packages/presentation',
-    ],
+    workspaces: ['packages/deadvox', 'packages/skelly-assets/tools/packages/thing-core', 'packages/presentation'],
   }),
   'packages/deadvox/package.json': JSON.stringify({
     name: '@skelly/deadvox',
@@ -27,16 +21,14 @@ const cleanTree: Tree = {
     dependencies: { '@skelly/presentation': '*' },
   }),
   'packages/deadvox/tsconfig.json':
-    '{\n  // The one supported alias.\n  "compilerOptions": {\n    "module": "ESNext",\n    "moduleResolution": "Bundler",\n    "types": ["node"],\n    "paths": { "@mobgen/*": ["../mobgen/src/*"] },\n  },\n  "include": ["src"],\n}\n',
+    '{\n  // Only resolution the check models.\n  "compilerOptions": {\n    "module": "ESNext",\n    "moduleResolution": "Bundler",\n    "types": ["node"],\n  },\n  "include": ["src"],\n}\n',
   'packages/deadvox/src/core/sim.ts':
-    "import { rule } from './rule.ts';\nimport { pose } from '@mobgen/pose.ts';\nimport { schema } from '@skelly/thing-core/schema';\nimport { join } from 'node:path';\nexport const tick = () => [rule, pose, schema, join];\n",
+    "import { rule } from './rule.ts';\nimport { schema } from '@skelly/thing-core/schema';\nimport { join } from 'node:path';\nexport const tick = () => [rule, schema, join];\n",
   'packages/deadvox/src/core/rule.ts': 'export const rule = 1;\n',
   'packages/deadvox/src/vehicles/solid.ts': "import { rule } from '../core/rule.ts';\nexport const solid = rule;\n",
   'packages/deadvox/src/game/session.ts': "import { tick } from '../core/sim.ts';\nexport const session = tick;\n",
   'packages/deadvox/src/render/view.ts':
     "import { session } from '../game/session.ts';\nexport const view = session;\n",
-  'packages/mobgen/package.json': JSON.stringify({ name: 'mobgen', type: 'module' }),
-  'packages/mobgen/src/pose.ts': 'export const pose = 1;\n',
   'packages/skelly-assets/tools/packages/thing-core/package.json': JSON.stringify({
     name: '@skelly/thing-core',
     type: 'module',
@@ -69,9 +61,6 @@ function violationsIn(changes: Tree, links: Tree = {}) {
 }
 
 const viteRoot = join(repoRoot, STAGE_ONE_POLICY.viteRoot);
-const policyAliases = Object.fromEntries(
-  Object.entries(STAGE_ONE_POLICY.aliases).map(([prefix, dir]) => [prefix, join(repoRoot, dir)]),
-);
 const resolutionHooks = new Set(['config', 'configEnvironment', 'resolveId']);
 
 /** Vite awaits and flattens the plugin option; so does the gate before it reads hooks. */
@@ -81,13 +70,13 @@ async function settledPlugins(option: unknown): Promise<unknown[]> {
 }
 
 /**
- * What in a loaded Vite config could resolve differently from the closure check: resolution options other
- * than the policy aliases, a root other than the policy root (it anchors `/` specifiers and globs), or a
- * plugin hook that edits config or resolves ids. See `packages/deadvox/docs/runtime-closure-limits.md`.
+ * What in a loaded Vite config could resolve differently from the closure check: any resolution option, a
+ * root other than the policy root (it anchors `/` specifiers and globs), or a plugin hook that edits config or
+ * resolves ids. See `packages/deadvox/docs/runtime-closure-limits.md`.
  */
 async function viteGateIssues(config: UserConfig): Promise<string[]> {
   const issues: string[] = [];
-  if (!isDeepStrictEqual(config.resolve, { alias: policyAliases })) {
+  if (config.resolve !== undefined) {
     issues.push('resolve');
   }
   // An absent root is the working directory, which the package's scripts set to the policy root.
@@ -131,6 +120,11 @@ function kitWorkspace(extra: Record<string, unknown>): Tree {
 }
 
 const importers = (violations: ReturnType<typeof violationsIn>) => violations.map((v) => v.importer);
+// thing-core is a library the runtime follows through its workspace.
+const thingCoreSchema = 'packages/skelly-assets/tools/packages/thing-core/src/schema.ts';
+const thingCoreStep = 'packages/skelly-assets/tools/packages/thing-core/src/step.ts';
+// From thing-core's src up to `packages/`; built, not literal, since the import-boundary scan reads literals.
+const UP_TO_PACKAGES = '../'.repeat(5);
 const catalog = 'packages/deadvox/src/core/catalog.ts';
 // Literal file names that Vite's matcher reaches through syntax Node's globSync reads differently.
 const oddlyNamedRender: Tree = {
@@ -144,8 +138,8 @@ describe('runtime closure, stage 1', () => {
     expect(runtimeClosureViolations(repoRoot, STAGE_ONE_POLICY)).toEqual([]);
   });
 
-  // The loaded config is checked, not the file's text: the file computes its alias target.
-  it('runs on a Vite config whose resolution adds only the policy aliases', async () => {
+  // The loaded config is checked, not the file's text, because a config file may compute its values.
+  it('runs on a Vite config that sets no resolution options', async () => {
     expect(await configFileGateIssues(join(viteRoot, 'vite.config.ts'))).toEqual([]);
   });
 
@@ -155,7 +149,7 @@ describe('runtime closure, stage 1', () => {
       const configFile = join(dir, 'vite.config.mjs');
       writeFileSync(
         configFile,
-        `export default ({ command }) => ({\n  root: command === 'serve' ? 'src/render' : '.',\n  resolve: { alias: ${JSON.stringify(policyAliases)} },\n});\n`,
+        "export default ({ command }) => ({\n  root: command === 'serve' ? 'src/render' : '.',\n});\n",
       );
       expect(await configFileGateIssues(configFile)).toEqual(['serve: root']);
     } finally {
@@ -163,12 +157,12 @@ describe('runtime closure, stage 1', () => {
     }
   });
 
-  it('fails a Vite config whose root is not the policy root, and one whose promised plugin resolves ids', async () => {
-    const policyConfig: UserConfig = { resolve: { alias: policyAliases } };
-    expect(await viteGateIssues({ ...policyConfig, root: '.' })).toEqual([]);
-    expect(await viteGateIssues({ ...policyConfig, root: 'src/render' })).toEqual(['root']);
+  it('fails a Vite config whose root is not the policy root, one that sets resolution, and one whose promised plugin resolves ids', async () => {
+    expect(await viteGateIssues({ root: '.' })).toEqual([]);
+    expect(await viteGateIssues({ root: 'src/render' })).toEqual(['root']);
+    expect(await viteGateIssues({ resolve: { alias: { '@kit/': 'kit/src/' } } })).toEqual(['resolve']);
     const redirect = { name: 'redirect', resolveId: () => null };
-    expect(await viteGateIssues({ ...policyConfig, plugins: [Promise.resolve([redirect])] })).toEqual(['resolveId']);
+    expect(await viteGateIssues({ plugins: [Promise.resolve([redirect])] })).toEqual(['resolveId']);
   });
 
   it('passes the clean fixture, so each witness fails for its own edge', () => {
@@ -185,11 +179,10 @@ describe('runtime closure, stage 1', () => {
 
   it('fails a forbidden file reached only through a followed library (W2)', () => {
     const violations = violationsIn({
-      'packages/mobgen/src/pose.ts': "import { step } from './step.ts';\nexport const pose = step;\n",
-      'packages/mobgen/src/step.ts':
-        "import { view } from '../../deadvox/src/render/view.ts';\nexport const step = view;\n",
+      [thingCoreSchema]: "import { step } from './step.ts';\nexport const schema = step;\n",
+      [thingCoreStep]: `import { view } from '${UP_TO_PACKAGES}deadvox/src/render/view.ts';\nexport const step = view;\n`,
     });
-    expect(importers(violations)).toEqual(['packages/mobgen/src/step.ts']);
+    expect(importers(violations)).toEqual([thingCoreStep]);
   });
 
   it('fails a forbidden file reached only through a local source outside the runtime roots', () => {
@@ -204,9 +197,9 @@ describe('runtime closure, stage 1', () => {
 
   it('fails a followed library that imports three (W5)', () => {
     const violations = violationsIn({
-      'packages/mobgen/src/pose.ts': "import { Vector3 } from 'three';\nexport const pose = Vector3;\n",
+      [thingCoreSchema]: "import { Vector3 } from 'three';\nexport const schema = Vector3;\n",
     });
-    expect(violations.map((v) => [v.importer, v.target])).toEqual([['packages/mobgen/src/pose.ts', 'three']]);
+    expect(violations.map((v) => [v.importer, v.target])).toEqual([[thingCoreSchema, 'three']]);
   });
 
   it('fails a bare import of a forbidden workspace even when the runtime lists it as a dependency (W6)', () => {
@@ -228,12 +221,13 @@ describe('runtime closure, stage 1', () => {
     ]);
   });
 
-  it('follows an alias glob into a followed library that imports three', () => {
+  it('fails a glob whose pattern is neither relative nor rooted', () => {
     const violations = violationsIn({
-      'packages/deadvox/src/core/catalog.ts': "export const rigs = import.meta.glob('@mobgen/rig/*.ts');\n",
-      'packages/mobgen/src/rig/arm.ts': "import { Vector3 } from 'three';\nexport const arm = Vector3;\n",
+      'packages/deadvox/src/core/catalog.ts': "export const rigs = import.meta.glob('@kit/rig/*.ts');\n",
     });
-    expect(violations.map((v) => [v.importer, v.target])).toEqual([['packages/mobgen/src/rig/arm.ts', 'three']]);
+    expect(violations.map((v) => [v.importer, v.reason])).toEqual([
+      ['packages/deadvox/src/core/catalog.ts', 'uses a glob that does not resolve'],
+    ]);
   });
 
   it('fails a glob whose options spread after a literal base, but passes a literal base that matches nothing', () => {
@@ -462,7 +456,6 @@ describe('runtime closure, stage 1', () => {
       compilerOptions: {
         module: 'ESNext',
         moduleResolution: 'Bundler',
-        paths: { '@mobgen/*': ['../mobgen/src/*'] },
         ...compilerOptions,
       },
       include,
@@ -470,6 +463,7 @@ describe('runtime closure, stage 1', () => {
 
   it.each([
     ['a resolution option it does not model', tsconfigWith({ baseUrl: '.' })],
+    ['a path mapping', tsconfigWith({ paths: { '@kit/*': ['../kit/src/*'] } })],
     ['a types path to a render declaration', tsconfigWith({ types: ['./src/render/view.d.ts'] })],
     ['a forbidden types package', tsconfigWith({ types: ['three'] })],
     ['a forbidden @types package', tsconfigWith({ types: ['@types/three'] })],

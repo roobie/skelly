@@ -1,7 +1,7 @@
 local figureSeeds = std.range(1, 8);
-// A seed must realize its body's template itself; `packages/mobgen/src/mob/humanoidFigure.ts`,
-// `templateFigure` refuses invalid seeds rather than substituting a later one. Crawler and acid
-// templates reject some shared seeds, so their content authors separate seed lists.
+// Each drawn seed needs its own built figure; `packages/deadvox/src/core/content.ts`, `actorFigureIssues`,
+// refuses a seed without one rather than substituting another. Crawler and acid figures are built only
+// for the seeds their producer accepts, so their content authors separate seed lists.
 local crawlerFigureSeeds = [1, 2, 3, 5, 6, 7, 11];
 local acidFigureSeeds = [1, 2, 3, 4, 6, 8];
 local severedItems = {

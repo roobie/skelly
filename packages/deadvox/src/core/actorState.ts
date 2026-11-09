@@ -142,9 +142,9 @@ export interface Actor {
   stepOffset?: number | undefined;
   /** Fixed-step hit reaction time; optional for backward-compatible saves. */
   hitFlinchTime?: number | undefined;
-  /** Bone ids severed so far, each one a bone whose disposition is `sever` (packages/mobgen/src/mob/dismember.ts,
-   * `severableParts`) — cumulative, never un-severed. A renderer derives what to hide via mobgen's
-   * severedBoneSet, not stored pre-expanded here (a cut part already implies everything below it). */
+  /** Bone ids severed so far, each one a bone whose disposition is `sever` (the built body's `severableParts`) —
+   * cumulative, never un-severed. A renderer derives what to hide via `severedBoneSet` (src/core/boneTree.ts), not
+   * stored pre-expanded here (a cut part already implies everything below it). */
   severed: string[];
   /** Voxel-grid cells of an amalgam's realized figure that hits have knocked out, ascending; empty for every
    * other type. Holes are flesh only: they never change regions, damage, severing or hit tests. */

@@ -57,15 +57,11 @@ export function bundleStampPlugin(packageRoot: string): Plugin {
         });
       }
       const stamp = JSON.parse(
-        execFileSync(
-          process.execPath,
-          [
-            '--import',
-            resolve(packageRoot, 'tools/register-mobgen-alias.mjs'),
-            resolve(packageRoot, 'tools/stampBundle.ts'),
-          ],
-          { input: JSON.stringify({ packs, proofHash }), encoding: 'utf8', cwd: packageRoot },
-        ),
+        execFileSync(process.execPath, [resolve(packageRoot, 'tools/stampBundle.ts')], {
+          input: JSON.stringify({ packs, proofHash }),
+          encoding: 'utf8',
+          cwd: packageRoot,
+        }),
       ) as Record<string, BundleStamp>;
       if (!config.define) {
         throw new Error('Bundle stamp defines must be configured before validation');

@@ -1,11 +1,9 @@
 import process from 'node:process';
-import { templateByName } from '@mobgen/core/template.ts';
-import { templateFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { decodeFrame, sampleClip, walkCursor } from '../src/core/actorClips.ts';
 import { actorFigure } from '../src/core/actorFigureFiles.ts';
-import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
+import { figureVariantOf } from '../src/core/actorModels.ts';
 import {
   actorCrawls,
   actorHitFlinchDuration,
@@ -71,8 +69,6 @@ const RUNNER = registry.actors.get('runner')!;
 const CRAWLER = registry.actors.get('crawler')!;
 const ACID = registry.actors.get('acid_zombie')!;
 const FIGURES = stackActorFigureFiles(registry);
-/** The generated figure the simulation poses and hits for `type`. */
-const simulationFigure = (type: ActorDef, seed: number) => templateFigure(bodyPlanModel(figureVariantOf(type)), seed);
 const speedRates = (wander: number, chase: number) => ({
   ...SHAMBLER.speed,
   wanderMetresPerSimSecond: simRate(wander),
@@ -1978,11 +1974,10 @@ describe('shambler scenarios', () => {
     expect(struck.every((hit) => hit === id)).toBe(true);
     expect(actor.regions.leftLeg).toBe(0);
     run(system, 1);
-    expect(templateByName(bodyPlanModel(figureVariantOf(type))).bodyPlan).toBe('humanoid');
-    expect(simulationFigure(type, actor.figureSeed).realized.body.bones.some((bone) => bone.id === 'shin.L')).toBe(
-      false,
-    );
-    expect(actorCrawls(actor)).toBe(false);
+    const { body } = actorFigure(FIGURES, type, actor.figureSeed);
+    expect(body.bodyPlan).toBe('humanoid');
+    expect(body.bones.some((bone) => bone.id === 'shin.L')).toBe(false);
+    expect(actorCrawls(actor, body)).toBe(false);
     expect(actorPoseInputFor(actor, id, POSE_SCENE).crawling).toBe(false);
     expect(actor.horizontalSpeed).toBeGreaterThan(type.speed.crawlMetresPerSimSecond);
     expect(actor.horizontalSpeed).toBeLessThanOrEqual(type.speed.chaseMetresPerSimSecond);
@@ -2075,14 +2070,6 @@ describe('shambler scenarios', () => {
     expect(() => restored.restoreState(snapshot, (id) => registry.actors.get(id))).toThrow('Invalid zombie state');
   });
 
-  it('realizes the simulation figure for every authored seed of every type', () => {
-    for (const type of registry.actors.values()) {
-      for (const seed of type.figureSeeds ?? []) {
-        expect(() => simulationFigure(type, seed)).not.toThrow();
-      }
-    }
-  });
-
   it.each([SHAMBLER, RUNNER])(
     '$id crawls after losing one leg, with matching hit regions and a derived pose after restore',
     (type) => {
@@ -2099,7 +2086,6 @@ describe('shambler scenarios', () => {
       const crawl = decodeFrame(sampleClip(crawlWalk, walkCursor(input.gaitPhase, crawlWalk.cycles!)));
       expect(posed.pose.rotations.pelvis).toEqual(crawl.rotations.pelvis);
       expect(actor.type.id).toBe(type.id);
-      expect(posed.figure).toBe(simulationFigure(actor.type, actor.figureSeed));
       const boxes = posedHumanoidRegionBoxes(input);
       expect(boxes.leftLeg).toEqual([]);
       expect(boxes.rightLeg.length).toBeGreaterThan(0);

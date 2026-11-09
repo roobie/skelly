@@ -83,23 +83,7 @@
         "playtests/**/*.js!",
         "test/**/*.{js,mjs,ts,tsx}",
         "tools/**/*.{js,mjs,ts,tsx}"
-      ],
-      "paths": {
-        "@mobgen/*": ["../mobgen/src/*"]
-      }
-    },
-    "packages/mobgen": {
-      "entry": ["index.html!", "stress.html!", "src/viewer/stress.ts!"],
-      // Deadvox owns its copies of these runtime modules; mobgen keeps its own whole until the
-      // pipeline drops them, so exports only Deadvox used are not pruned here.
-      "ignoreIssues": {
-        "src/core/body.ts": ["types"],
-        "src/mob/crowd.ts": ["exports"]
-      },
-      "paths": {
-        "@mobgen/*": ["src/*"]
-      },
-      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
+      ]
     }
   }
 }

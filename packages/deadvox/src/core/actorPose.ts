@@ -1,5 +1,3 @@
-import { templateByName } from '@mobgen/core/template.ts';
-import { templateFigure } from '@mobgen/mob/humanoidFigure.ts';
 import {
   applyJointDelta,
   applyMotion,
@@ -13,7 +11,7 @@ import {
   walkToIdle,
 } from './actorClips.ts';
 import { type ActorFigureFile, type ActorFigureFiles, actorFigure } from './actorFigureFiles.ts';
-import { bodyPlanModel, FIGURE_VARIANTS, figureVariantOf } from './actorModels.ts';
+import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import type { Actor } from './actorState.ts';
 import { applyPoint, IDENTITY_M, type Mat3, mulMM, mulMV, rotX, rotY, rotZ } from './boneMath.ts';
 import { type Bone, bodySkeleton } from './bones.ts';
@@ -21,6 +19,7 @@ import { severedBoneSet } from './boneTree.ts';
 import type { Vec3 } from './coords.ts';
 import { fusedMassSeveredBones } from './fusedMassFigure.ts';
 import { clampJointAngles, jointAngles, jointRotation } from './joints.ts';
+import { crawlsAfterLegLoss } from './legLoss.ts';
 import { boneTransforms, type Pose } from './pose.ts';
 import {
   type ActorBody,
@@ -78,15 +77,10 @@ export const acidSpitWindupProgress = (actor: Actor): number => {
   return spit && actor.spitWindup > 0 ? 1 - actor.spitWindup / spit.windupSimSeconds : 0;
 };
 
-export const actorCrawls = (actor: Actor): boolean => {
-  const variant = figureVariantOf(actor.type);
-  const model = bodyPlanModel(variant);
-  if (FIGURE_VARIANTS[variant].bodyPlan !== 'humanoid') {
-    return false;
-  }
-  const template = templateByName(model);
+/** Whether an actor moves on its crawl set; `body` is its built figure's body. */
+export const actorCrawls = (actor: Actor, body: Pick<ActorBody, 'bodyPlan' | 'legCut' | 'severableParts'>): boolean => {
   // Authored leg cuts already shape locomotion; they are not injuries requiring a speed cap.
-  if (template.legCut !== undefined) {
+  if (!crawlsAfterLegLoss(body)) {
     return false;
   }
   if (actor.regions.leftLeg! <= 0 || actor.regions.rightLeg! <= 0) {
@@ -95,8 +89,8 @@ export const actorCrawls = (actor: Actor): boolean => {
   if (actor.severed.length === 0) {
     return false;
   }
-  const { severableParts } = templateFigure(model, actor.figureSeed);
-  return [...severableParts.leftLeg, ...severableParts.rightLeg].some((part) => actor.severed.includes(part));
+  const legs = [...(body.severableParts?.leftLeg ?? []), ...(body.severableParts?.rightLeg ?? [])];
+  return legs.some((part) => actor.severed.includes(part));
 };
 
 /**
@@ -104,8 +98,8 @@ export const actorCrawls = (actor: Actor): boolean => {
  * stride (`packages/deadvox/DESIGN.md`, "Clocks and units"); a standing gait advances half a cycle per step length,
  * which footsteps also count.
  */
-export const gaitPhaseGain = (actor: Actor, { clips }: ActorFigureFile, travelledMetres: number): number => {
-  if (clips.standing !== undefined && !actorCrawls(actor)) {
+export const gaitPhaseGain = (actor: Actor, { body, clips }: ActorFigureFile, travelledMetres: number): number => {
+  if (clips.standing !== undefined && !actorCrawls(actor, body)) {
     return (travelledMetres / actor.type.stepLength) * Math.PI;
   }
   const walk = clips.crawling?.walk;
@@ -128,12 +122,13 @@ export const actorPoseInputFor = (
   root?: PoseRootOverride,
 ): ActorPoseInput => {
   const position = root?.position ?? actor.body.pos;
+  const figure = actorFigure(actorFigureFiles, actor.type, actor.figureSeed);
   return {
-    figure: actorFigure(actorFigureFiles, actor.type, actor.figureSeed),
+    figure,
     id,
     seed: actor.figureSeed,
     model: figureVariantOf(actor.type),
-    crawling: actorCrawls(actor),
+    crawling: actorCrawls(actor, figure.body),
     position: [position[0], position[1] + (actor.stepOffset ?? 0) / blockSize, position[2]],
     facing: root?.facing ?? actor.facing,
     headYaw: root?.headYaw ?? actor.headYaw,
@@ -157,8 +152,6 @@ export interface PosedActor {
   readonly pose: Pose;
   readonly transforms: ReturnType<typeof boneTransforms>;
   readonly bones: readonly Bone[];
-  /** The generated realization a humanoid still poses; an acid and a fused mass pose their built bodies alone. */
-  readonly figure?: ReturnType<typeof templateFigure>;
   readonly hidden: ReadonlySet<string>;
   readonly yaw: Mat3;
   readonly position: Vec3;
@@ -467,10 +460,8 @@ const posedFusedMass = (input: ActorPoseInput): PosedActor => {
 export const posedMouth = (input: ActorPoseInput): Vec3 => {
   const posed = posedActor(input);
   const highest = posed.bones.reduce((top, bone) => (bone.tail[1] > top.tail[1] ? bone : top));
-  const { figure } = posed;
-  const anchors = figure ? figure.realized.body.anchors : input.figure.body.anchors;
-  const anchor = anchors?.mouth ?? { bone: highest.id, position: highest.tail };
-  const scale = figure ? 1 : input.figure.body.scale;
+  const { anchors, scale } = input.figure.body;
+  const anchor = anchors.mouth ?? { bone: highest.id, position: highest.tail };
   const local = applyPoint(posed.transforms.get(anchor.bone)!, anchor.position);
   const world = mulMV(posed.yaw, [local[0] * scale, local[1] * scale, local[2] * scale]);
   return [
@@ -497,8 +488,7 @@ const posedAcid = (input: ActorPoseInput): PosedActor => {
 
 /**
  * The shared living-actor pose source. Rendering and hit-region FK consume the same simulation-driven pose,
- * composed from the built clips. A humanoid's `figure`, its bones and the transforms over them stay the generated
- * realization, which the simulation's hit regions read.
+ * composed from the built clips over the built body's skeleton.
  */
 export const posedActor = (input: ActorPoseInput): PosedActor => {
   const model = bodyPlanModel(input.model ?? 'humanoid');
@@ -508,14 +498,12 @@ export const posedActor = (input: ActorPoseInput): PosedActor => {
   if (model === 'acid') {
     return posedAcid(input);
   }
-  const figure = templateFigure(model, input.seed);
-  const { bones } = figure.realized.body;
+  const bones = bodySkeleton(input.figure.body);
   const pose = humanoidPose(input);
   return {
     pose,
     transforms: boneTransforms(bones, pose),
     bones,
-    figure,
     hidden: severedBoneSet(bones, input.severed),
     yaw: yawOf(input.facing),
     position: input.position,

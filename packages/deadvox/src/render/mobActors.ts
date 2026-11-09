@@ -4,13 +4,11 @@
 // (group/sync/…, see ActorRenderer below) so play.ts can hold either behind one variable.
 //
 // Each figure is drawn from the session's built files (`src/core/actorFigureFiles.ts`): its mesh, body and clips,
-// so the game draws exactly the figure the authoring tools exported. The draw strategy mirrors mobgen's own
-// stress-page 'crowd' mode (packages/mobgen/src/viewer/stressActors.ts's buildCrowdRender): one shared bone-matrix
+// so the game draws exactly the figure the authoring tools exported. The draw strategy: one shared bone-matrix
 // DataTexture for every zombie so shadow and colour passes consume the same pose, and one InstancedMesh per body
 // variant, each vertex fetching its own bone's matrix with a single texelFetch — see ./crowd.ts for the
-// packing/layout and the GLSL, patched into MeshLambertMaterial here via onBeforeCompile exactly as
-// stressActors.ts patches MeshStandardMaterial (checked against three r186's meshlambert.glsl.js: same
-// <begin_vertex>/<beginnormal_vertex> chunks, same relative order, so the same patch applies unchanged).
+// packing/layout and the GLSL, patched into MeshLambertMaterial here via onBeforeCompile at the
+// <begin_vertex>/<beginnormal_vertex> chunks (checked against three r186's meshlambert.glsl.js).
 //
 // Known simplification: each drawn figure variant owns a block of `capacity` bone-texture rows. The figures
 // are those the `actors` option's types author (`drawnSeeds`), and types that bake the same figure share one
@@ -254,7 +252,7 @@ interface Variant {
   readonly mesh: InstancedMesh;
   readonly crowdSlotAttr: InstancedBufferAttribute;
   /** Reused every frame for every zombie of this variant: each place-and-pack fully consumes it before
-   * returning, so nothing overlaps (see mobgen's stressActors.ts for the identical reasoning). */
+   * returning, so nothing overlaps. */
   readonly scratch: MutableTransform[];
   /** Local slot numbers (0..capacity-1) not currently assigned to a live zombie, corpse, *or debris* of
    * this variant. */
@@ -715,7 +713,7 @@ export class MobActorMeshes implements ActorRenderer {
       mesh.customDepthMaterial = cells?.depthMaterial ?? this.depthMaterial;
       castsAndReceives(mesh);
       mesh.count = 0;
-      mesh.frustumCulled = false; // see this module's header comment — same reasoning as mobgen's crowd mode
+      mesh.frustumCulled = false; // see this module's header comment
       const instanceArray = mesh.instanceMatrix.array as Float32Array;
       for (let k = 0; k < capacity; k++) {
         instanceArray[k * 16] = 1;
@@ -880,11 +878,11 @@ export class MobActorMeshes implements ActorRenderer {
     return this.states.has(id) || this.corpses.has(id);
   }
 
-  /** Test-only: `boneId`'s *rotation* submatrix (row-major, mobgen's own Mat3 convention — see
-   * mobgen/core/math.ts) as currently packed in the shared texture for `id` (a live zombie or a corpse) —
+  /** Test-only: `boneId`'s *rotation* submatrix (row-major, the Mat3 convention of
+   * src/core/boneMath.ts) as currently packed in the shared texture for `id` (a live zombie or a corpse) —
    * the world rotation, not just this bone's own local pose delta, but since a zombie facing along -Z has
    * yaw 0 (packCrowdBoneMatrix contributes no extra rotation at yaw 0 — see its own comment), comparing this
-   * against mobgen's IDENTITY_M is exactly "did any pose ever rotate this bone or one of its ancestors" —
+   * against IDENTITY_M is exactly "did any pose ever rotate this bone or one of its ancestors" —
    * used to assert the old bind/A-pose (every bone left at its raw rest orientation) never reappears.
    * Undefined for an unknown id/boneId, or for a bone this zombie/corpse has severed (reads as the zero
    * matrix, not a rotation). */
@@ -1054,7 +1052,7 @@ export class MobActorMeshes implements ActorRenderer {
       localSlot,
       globalRow,
       instanceIndex,
-      crawling: actorCrawls(actor),
+      crawling: actorCrawls(actor, variant.body),
       lastPose: undefined,
       lastPlacement: undefined,
       actor: undefined,
@@ -1519,7 +1517,7 @@ export class MobActorMeshes implements ActorRenderer {
       return this.severDowned(id, part, hit, actor);
     }
     const variant = this.variants[state.variantIndex]!;
-    if (actor && !state.drawnFall && !(actorCrawls(actor) && !state.crawling && state.lastPose)) {
+    if (actor && !state.drawnFall && !(actorCrawls(actor, variant.body) && !state.crawling && state.lastPose)) {
       const posed = this.posedFrame(state, actor, this.currentRenderPlacement(actor));
       state.lastPose = posed.pose;
       state.lastPlacement = posed.placement;
@@ -2015,7 +2013,7 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   private beginCrawlFall(state: ActorRenderState, variant: Variant, actor: Actor): void {
-    const crawling = actorCrawls(actor);
+    const crawling = actorCrawls(actor, variant.body);
     if (crawling && !state.crawling && state.lastPose && state.lastPlacement && !this.ragdolls?.failed) {
       this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared);
       const placement = state.lastPlacement;

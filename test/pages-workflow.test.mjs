@@ -15,7 +15,6 @@ const TIMEOUT_VALUE = /^\d+$/;
 const readWorkflow = (name) => parse(readFileSync(join(ROOT, '.github/workflows', name), 'utf8'));
 const pages = readWorkflow('pages.yml');
 const deadvox = readWorkflow('deadvox.yml');
-const mobgen = readWorkflow('mobgen.yml');
 
 const commandLinesIn = (steps) =>
   steps
@@ -42,10 +41,7 @@ const commandIsCovered = (expected, actual) => {
 };
 
 test('Pages project checks run in their PR workflows', () => {
-  const projects = [
-    { name: 'Deadvox', pageStep: 'Check and build deadvox', workflow: deadvox, job: ['fast', 'unit'] },
-    { name: 'Mobgen', pageStep: 'Check and build mobgen', workflow: mobgen, job: 'check' },
-  ];
+  const projects = [{ name: 'Deadvox', pageStep: 'Check and build deadvox', workflow: deadvox, job: ['fast', 'unit'] }];
 
   for (const { name, pageStep, workflow, job } of projects) {
     const step = pages.jobs.build.steps.find(({ name: stepName }) => stepName === pageStep);
@@ -70,17 +66,13 @@ test('Pages assembly puts project builds beside the Round 1 page', () => {
   const temp = mkdtempSync(join(tmpdir(), 'skelly-pages-assembly-'));
   try {
     cpSync(join(ROOT, 'site'), join(temp, 'site'), { recursive: true });
-    for (const project of ['packages/deadvox', 'packages/mobgen']) {
-      const dist = join(temp, project, 'dist');
-      mkdirSync(dist, { recursive: true });
-      writeFileSync(join(dist, 'index.html'), `<main>${project}</main>`);
-    }
+    const dist = join(temp, 'packages/deadvox/dist');
+    mkdirSync(dist, { recursive: true });
+    writeFileSync(join(dist, 'index.html'), '<main>packages/deadvox</main>');
 
     execFileSync('bash', ['-euo', 'pipefail', '-c', assembly.run], { cwd: temp });
 
-    for (const project of ['deadvox', 'mobgen']) {
-      assert.ok(existsSync(join(temp, '_site', project, 'index.html')), `${project} index is at its Pages path`);
-    }
+    assert.ok(existsSync(join(temp, '_site', 'deadvox', 'index.html')), 'deadvox index is at its Pages path');
     assert.ok(
       existsSync(join(temp, '_site', 'deadvox', 'playtest', 'round1', 'index.html')),
       'the Round 1 page stays beside the Deadvox game',

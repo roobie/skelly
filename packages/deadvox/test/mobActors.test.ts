@@ -2,10 +2,6 @@
 // here), so these check the maths and the state machine, not what anything looks like. See the module's
 // own report for what to look at in a real browser.
 
-import { generateValid, realize } from '@mobgen/core/generate.ts';
-import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
-import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
-import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import {
   type BufferGeometry,
   type DataTexture,
@@ -16,7 +12,7 @@ import {
 import { describe, expect, it, vi } from 'vitest';
 import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { figureVariantOf } from '../src/core/actorModels.ts';
-import { actorHitFlinchDuration, actorPoseInputFor, flinchSideForId } from '../src/core/actorPose.ts';
+import { actorHitFlinchDuration, actorPoseInputFor, flinchSideForId, posedActor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import type { Actor, AgentMode } from '../src/core/actorState.ts';
 import type { ActorSystemOptions } from '../src/core/actorSystem.ts';
@@ -28,13 +24,7 @@ import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { initialActorFootstepClock } from '../src/core/footsteps.ts';
 import { FUSED_MASS_FIGURE_SEED, fusedMassTypeOf } from '../src/core/fusedMassFigure.ts';
-import {
-  allocateBoneTransforms,
-  boneTransforms,
-  boneTransformsInto,
-  indexBonesByParent,
-  type Pose,
-} from '../src/core/pose.ts';
+import { boneTransforms, type Pose } from '../src/core/pose.ts';
 import { Rng } from '../src/core/random.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -443,37 +433,40 @@ describe('facing convention', () => {
   });
 });
 
-describe('feet at body.pos.y (mobgen pose convention)', () => {
+describe('feet at body.pos.y (built pose convention)', () => {
   it('a standing pose puts the lowest foot corner at local y = 0, so placing the rig at body.pos.y needs no extra offset', () => {
-    const humanoidTemplate = TEMPLATES.find((t) => t.name === 'humanoid')!;
-    const found = generateValid(humanoidTemplate, 1)!;
-    const { body, voxels } = realize(found.genome);
-    const extents = footRestExtents(body.bones, voxels);
-    const walkActor = {
-      bones: body.bones,
-      extents,
-      params: found.genome.params as HumanoidParams,
-      seed: found.genome.seed,
-    };
-    const pose = walkPose(walkActor, INITIAL_CLOCK, 0); // speed 0: the standing pose
-
-    const parentIndex = indexBonesByParent(body.bones);
-    const scratch = allocateBoneTransforms(body.bones.length);
-    boneTransformsInto(body.bones, pose, parentIndex, scratch);
-
+    const shambler = registry.actors.get('shambler')!;
+    const seed = shambler.figureSeeds![0]!;
+    const figure = actorFigure(stackActorFigureFiles(registry), shambler, seed);
+    const posed = posedActor({
+      figure,
+      seed,
+      model: figureVariantOf(shambler),
+      position: [0, 0, 0],
+      facing: [0, 0, -1],
+      headYaw: 0,
+      gaitPhase: 0,
+      speed: 0,
+      chasing: false,
+      attackWindup: 0,
+      attackWindupSeconds: 0,
+      severed: [],
+      blockSize: 1,
+    });
     let minY = Number.POSITIVE_INFINITY;
-    for (const [boneId, extent] of extents) {
-      const boneIndex = body.bones.findIndex((b) => b.id === boneId);
-      const t = scratch[boneIndex]!;
-      for (const c of corners(extent)) {
-        const y = t.r[3] * c[0] + t.r[4] * c[1] + t.r[5] * c[2] + t.t[1];
-        minY = Math.min(minY, y);
+    for (const [boneId, { min, max }] of Object.entries(figure.body.extents)) {
+      const t = posed.transforms.get(boneId)!;
+      for (const x of [min[0], max[0]]) {
+        for (const y of [min[1], max[1]]) {
+          for (const z of [min[2], max[2]]) {
+            minY = Math.min(minY, applyPoint(t, [x, y, z])[1]);
+          }
+        }
       }
     }
-    // Not toBeCloseTo(0, ...): groundOffset deliberately smooth-mins across tied corners (mobgen's
-    // GROUND_SMOOTHING = 0.006 m) rather than a hard min, so a flat sole's several tied-lowest corners
-    // undershoot true-zero by up to ~0.006 * ln(#tied corners) — a few mm to ~1.25 cm here, by design
-    // (see mob/gait.ts's own smoothMinAll comment), not a bug to chase to the millimetre.
+    // Not toBeCloseTo(0, ...): the ground fit smooth-mins across tied corners rather than taking a hard min, so a
+    // flat sole's several tied-lowest corners undershoot true zero by a few millimetres, by design
+    // (`src/core/actorClips.ts`, `stanceFit`).
     expect(Math.abs(minY)).toBeLessThan(0.02);
   });
 });

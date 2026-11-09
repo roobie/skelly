@@ -11,12 +11,11 @@ skelly is a hobby monorepo built around **deadvox**, a voxel survival game that 
 
 ![skelly](assets/skelly.png)
 
-**Play:** <https://roobie.github.io/skelly/> opens a launcher for the game and the mobgen viewer. The authoring tools moved to skelly-assets, so the launcher links that site rather than hosting them.
+**Play:** <https://roobie.github.io/skelly/> opens a launcher for the game. The authoring tools moved to skelly-assets, so the launcher links that site rather than hosting them.
 
 ## Projects
 
 - **[deadvox](packages/deadvox/PROJECT.md)**: the game. You scavenge a large voxel world full of zombies, with detailed items, bodies and crafting. It runs entirely in the browser, with no server.
-- **[mobgen](packages/mobgen/PROJECT.md)**: a procedural generator of voxel creatures, from humanoids to crawlers and dogs, with bodies that can be severed.
 - **[skelly-assets](https://github.com/roobie/skelly-assets)**: the shared models and the pipelines that build them, including the gun and thing authoring tools, checked out as the `packages/skelly-assets` submodule.
 - **[things](things/README.md)**: the plan for the thing authoring tools replacing gungen as the source of deadvox's models.
 
@@ -28,11 +27,10 @@ You need Node.js and npm. The projects are npm workspaces of the root package. F
 npm run setup
 ```
 
-Start a project's dev server:
+Start the game's dev server:
 
 ```sh
 npm run dev --prefix packages/deadvox
-npm run dev --prefix packages/mobgen
 ```
 
 Run the repository-wide checks with `npm run ci` and `npm run test:site`. Each project's `package.json` lists its own checks, and CI runs the workflows under `.github/workflows/`.

@@ -577,21 +577,16 @@ describe('zero-drift section cues', () => {
     assert.deepEqual(checks(sections(`${code('docs/anchors.md')}; "*example*"`)), ['section_form']);
     assert.deepEqual(sections(`${code('docs/anchors.md')}'s label is the player's cue.`, 'src/fixture.ts'), []);
     assert.ok(checks(sections(lineCue('foo.ts', '3'), 'src/fixture.ts')).includes('line_number'));
-    assert.deepEqual(
-      sections(`${code('src/missing.ts')} ${cue('docs/anchors.md', 'Gone')}`, 'packages/mobgen/reference/fixture.txt'),
-      [],
-    );
   });
 });
 
 describe('zero-drift policy rules', () => {
-  it('rejects first-party review and retrospective files but exempts third-party references', () => {
+  it('rejects first-party review and retrospective files', () => {
     const paths = ['docs/reviews/fixture.md', 'retro-slice-3.md'];
     assert.deepEqual(
       paths.flatMap((path) => checkPolicyRules({ path, text: '' })).map(({ path, check }) => ({ path, check })),
       paths.map((path) => ({ path, check: 'historical_doc' })),
     );
-    assert.deepEqual(checkPolicyRules({ path: 'packages/mobgen/reference/retro-fixture.md', text: '' }), []);
   });
 
   it('flags stamped source citations, not BR as an actor', () => {

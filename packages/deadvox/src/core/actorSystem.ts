@@ -674,6 +674,10 @@ export class ActorSystem {
     return fusedMass;
   }
 
+  private crawls(actor: Actor): boolean {
+    return actorCrawls(actor, this.figureFor(actor.type, actor.figureSeed).body);
+  }
+
   private gaitPhaseGain(actor: Actor, travelledMetres: number): number {
     return gaitPhaseGain(actor, this.figureFor(actor.type, actor.figureSeed), travelledMetres);
   }
@@ -1232,7 +1236,7 @@ export class ActorSystem {
       }
       this.agent.prepareDecisionRng();
       let { direction, speed } = this.agent.backgroundIntent(scratch);
-      if (actorCrawls(actor)) {
+      if (this.crawls(actor)) {
         speed = Math.min(speed, actor.type.speed.crawlMetresPerSimSecond);
       }
       if (actor.staggerSimSeconds > 0 || this.options.restrained?.(id) === true) {
@@ -1276,7 +1280,7 @@ export class ActorSystem {
       actor.hitFlinchTime =
         nextFlinchTime >
         actorHitFlinchDuration(
-          actorCrawls(actor) ? 'legless-humanoid' : figureVariantOf(actor.type),
+          this.crawls(actor) ? 'legless-humanoid' : figureVariantOf(actor.type),
           this.figureFor(actor.type, actor.figureSeed),
         )
           ? undefined
@@ -1290,12 +1294,12 @@ export class ActorSystem {
   private updateMovementSpeed(): void {
     const scratch = this.tickScratch;
     const { actor, type, dt } = scratch;
-    if (actorCrawls(actor)) {
+    if (this.crawls(actor)) {
       scratch.desiredSpeed = Math.min(scratch.desiredSpeed, type.speed.crawlMetresPerSimSecond);
       actor.horizontalSpeed = Math.min(actor.horizontalSpeed, type.speed.crawlMetresPerSimSecond);
     }
     if (
-      (!actorCrawls(actor) && actor.regions.leftLeg! <= 0 && actor.regions.rightLeg! <= 0) ||
+      (!this.crawls(actor) && actor.regions.leftLeg! <= 0 && actor.regions.rightLeg! <= 0) ||
       actor.staggerSimSeconds > 0 ||
       this.options.restrained?.(scratch.id) === true
     ) {
@@ -1321,7 +1325,7 @@ export class ActorSystem {
     actor.body.vel[2] = (direction[2] * actor.horizontalSpeed) / blockSize;
     scratch.jumpAttempted =
       actor.type.canJumpObstacles &&
-      !actorCrawls(actor) &&
+      !this.crawls(actor) &&
       actor.horizontalSpeed > 0.01 &&
       actor.body.onGround &&
       canJumpObstacle({
