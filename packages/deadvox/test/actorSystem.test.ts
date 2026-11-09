@@ -1858,8 +1858,7 @@ describe('shambler scenarios', () => {
       }
       expect(severed).toEqual([region]);
       // The cut follows the body's bone dispositions: the region's top severable part, or none.
-      const figure = simulationFigure(type, actor.figureSeed);
-      const parts = 'severableParts' in figure ? figure.severableParts[region] : [];
+      const parts = actorFigure(FIGURES, type, actor.figureSeed).body.severableParts?.[region] ?? [];
       expect(actor.severed).toEqual(parts.slice(0, 1));
       // A severed acid part drops what a shambler's would.
       expect(type.severedItems[region]).toEqual(SHAMBLER.severedItems[region]);

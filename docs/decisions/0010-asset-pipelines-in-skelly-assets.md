@@ -2,6 +2,7 @@
 read_if:
   - you move asset producers, authoring tools or their shared libraries between repositories
   - you consume shared models or rigs, choose pack homes or change clip representation
+  - you change how a baked death clip starts, plays or settles
   - you update the asset release pin or submodule, or admit its outputs into a product
   - you change shared model licensing, turned-piece defaults or copied-model provenance
 ---
@@ -84,6 +85,15 @@ not a second bake. Two representations of one source are two outputs that cannot
 be read alike, defeating the one-output rule. See
 `packages/skelly-assets/tools/actorBake.mjs`, `bakeActor`, and
 `packages/skelly-assets/tools/actorCompose.mjs`.
+
+## Canonical baked fall
+
+Deadvox plays baked clips only, because asset pipelines live in skelly-assets, so
+an actor's death fall is authored once there. The fall leaves the living pose by
+blending onto the baked death clip across the clip's first frame interval, then plays
+the clip and holds its last frame, so every corpse of one figure and direction
+settles in the same pose. Per-kill variation in the settled corpse is given up for
+that. See `packages/deadvox/src/render/corpsePose.ts`, `corpseFallPose`.
 
 ## Shared appearance and replacement
 

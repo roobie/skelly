@@ -1,5 +1,4 @@
 import { templateByName } from '@mobgen/core/template.ts';
-import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
 import { templateFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { flinchClipFor, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import {
@@ -15,10 +14,10 @@ import {
   walkToIdle,
 } from './actorClips.ts';
 import { type ActorFigureFile, type ActorFigureFiles, actorFigure } from './actorFigureFiles.ts';
-import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
+import { bodyPlanModel, FIGURE_VARIANTS, figureVariantOf } from './actorModels.ts';
 import type { Actor } from './actorState.ts';
 import { applyPoint, IDENTITY_M, type Mat3, mulMM, mulMV, rotX, rotY, rotZ } from './boneMath.ts';
-import type { Bone } from './bones.ts';
+import { type Bone, bodySkeleton } from './bones.ts';
 import { severedBoneSet } from './boneTree.ts';
 import type { Vec3 } from './coords.ts';
 import { type FusedMassFigure, fusedMassFigure, fusedMassSeveredBones } from './fusedMassFigure.ts';
@@ -83,9 +82,14 @@ export const acidSpitWindupProgress = (actor: Actor): number => {
 };
 
 export const actorCrawls = (actor: Actor): boolean => {
-  const template = templateByName(bodyPlanModel(figureVariantOf(actor.type)));
+  const variant = figureVariantOf(actor.type);
+  const model = bodyPlanModel(variant);
+  if (FIGURE_VARIANTS[variant].bodyPlan !== 'humanoid') {
+    return false;
+  }
+  const template = templateByName(model);
   // Authored leg cuts already shape locomotion; they are not injuries requiring a speed cap.
-  if (template.bodyPlan !== 'humanoid' || template.legCut !== undefined) {
+  if (template.legCut !== undefined) {
     return false;
   }
   if (actor.regions.leftLeg! <= 0 || actor.regions.rightLeg! <= 0) {
@@ -94,7 +98,7 @@ export const actorCrawls = (actor: Actor): boolean => {
   if (actor.severed.length === 0) {
     return false;
   }
-  const { severableParts } = templateFigure(bodyPlanModel(figureVariantOf(actor.type)), actor.figureSeed);
+  const { severableParts } = templateFigure(model, actor.figureSeed);
   return [...severableParts.leftLeg, ...severableParts.rightLeg].some((part) => actor.severed.includes(part));
 };
 
@@ -157,7 +161,8 @@ export interface PosedActor {
   readonly pose: Pose;
   readonly transforms: ReturnType<typeof boneTransforms>;
   readonly bones: readonly Bone[];
-  readonly figure: ReturnType<typeof templateFigure> | FusedMassFigure;
+  /** The generated realization a humanoid or fused mass still poses; an acid poses its built body alone. */
+  readonly figure?: ReturnType<typeof templateFigure> | FusedMassFigure;
   readonly hidden: ReadonlySet<string>;
   readonly yaw: Mat3;
   readonly position: Vec3;
@@ -455,8 +460,11 @@ const posedFusedMass = (input: ActorPoseInput): PosedActor => {
 export const posedMouth = (input: ActorPoseInput): Vec3 => {
   const posed = posedActor(input);
   const highest = posed.bones.reduce((top, bone) => (bone.tail[1] > top.tail[1] ? bone : top));
-  const anchor = posed.figure.realized.body.anchors?.mouth ?? { bone: highest.id, position: highest.tail };
-  const scale = 'scale' in posed.figure && typeof posed.figure.scale === 'number' ? posed.figure.scale : 1;
+  const { figure } = posed;
+  const anchors = figure ? figure.realized.body.anchors : input.figure.body.anchors;
+  const anchor = anchors?.mouth ?? { bone: highest.id, position: highest.tail };
+  const generatedScale = figure && 'scale' in figure && typeof figure.scale === 'number' ? figure.scale : 1;
+  const scale = figure ? generatedScale : input.figure.body.scale;
   const local = applyPoint(posed.transforms.get(anchor.bone)!, anchor.position);
   const world = mulMV(posed.yaw, [local[0] * scale, local[1] * scale, local[2] * scale]);
   return [
@@ -466,9 +474,24 @@ export const posedMouth = (input: ActorPoseInput): Vec3 => {
   ];
 };
 
+/** An acid posed over its built body's skeleton; nothing generated. */
+const posedAcid = (input: ActorPoseInput): PosedActor => {
+  const bones = bodySkeleton(input.figure.body);
+  const pose = acidPose(input, new Map(bones.map((bone) => [bone.id, bone])));
+  return {
+    pose,
+    transforms: boneTransforms(bones, pose),
+    bones,
+    hidden: severedBoneSet(bones, input.severed),
+    yaw: yawOf(input.facing),
+    position: input.position,
+    blockSize: input.blockSize,
+  };
+};
+
 /**
  * The shared living-actor pose source. Rendering and hit-region FK consume the same simulation-driven pose,
- * composed from the built clips; `figure`, its bones and the transforms over them stay the generated
+ * composed from the built clips. A humanoid's `figure`, its bones and the transforms over them stay the generated
  * realization, which the simulation's hit regions read.
  */
 export const posedActor = (input: ActorPoseInput): PosedActor => {
@@ -476,9 +499,12 @@ export const posedActor = (input: ActorPoseInput): PosedActor => {
   if (model === 'fused-mass') {
     return posedFusedMass(input);
   }
+  if (model === 'acid') {
+    return posedAcid(input);
+  }
   const figure = templateFigure(model, input.seed);
   const { bones } = figure.realized.body;
-  const pose = model === 'acid' ? acidPose(input, new Map(bones.map((bone) => [bone.id, bone]))) : humanoidPose(input);
+  const pose = humanoidPose(input);
   return {
     pose,
     transforms: boneTransforms(bones, pose),
@@ -493,12 +519,18 @@ export const posedActor = (input: ActorPoseInput): PosedActor => {
 
 export const HIT_FLINCH_DURATION = HIT_FLINCH.duration;
 
-export const actorHitFlinchDuration = (model: string): number => {
+/** How long a hit flinch lasts in Sim seconds; an acid's is its built hit clip's own span. */
+export const actorHitFlinchDuration = (model: string, figure: ActorFigureFile): number => {
   if (model === 'fused-mass') {
     return HIT_FLINCH_DURATION;
   }
   if (model === 'acid') {
-    return acidTemplate.animation.hitDuration;
+    const set = figure.clips.standing;
+    const duration = set && clipOf(set, 'hit', 'jointDelta').durationSimSeconds;
+    if (duration === undefined) {
+      throw new Error(`Actor figure ${figureKeyOf(figure)} has no timed hit clip`);
+    }
+    return duration;
   }
   const template = templateByName(bodyPlanModel(model));
   return template.legCut === undefined ? flinchClipFor(template).duration : HIT_FLINCH_DURATION;

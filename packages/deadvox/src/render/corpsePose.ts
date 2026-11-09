@@ -1,5 +1,5 @@
 import { decodeFrame, sampleClip } from '../core/actorClips.ts';
-import type { Pose } from '../core/pose.ts';
+import { blendPose, type Pose } from '../core/pose.ts';
 import type { ActorClips, DeathClip } from '../core/schema/actors.ts';
 
 /** The built fall away from `direction`, when the figure bakes a death pair; other corpses keep their last pose. */
@@ -11,6 +11,18 @@ export const deathClip = (clips: ActorClips, direction: 1 | -1): DeathClip | und
   return direction === 1 ? death.forward : death.backward;
 };
 
-/** The fall at `elapsedRealSeconds`; pure, so settling stays with the caller. */
-export const corpseFallPose = (clip: DeathClip, elapsedRealSeconds: number): Pose =>
-  decodeFrame(sampleClip(clip, elapsedRealSeconds));
+/** Real seconds between the death clip's first two frames: the span the fall takes to leave the living pose. */
+export const deathBlendSeconds = (clip: DeathClip): number =>
+  clip.frames.length > 1 ? clip.durationRealSeconds / (clip.frames.length - 1) : 0;
+
+/**
+ * The fall at `elapsedRealSeconds`, blended off the living `base` across the clip's first frame interval, then the
+ * clip alone, holding its settled end. The fall is authored once, so every corpse settles in the same pose
+ * (`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Canonical baked fall"). Pure, so settling stays
+ * with the caller.
+ */
+export const corpseFallPose = (clip: DeathClip, base: Pose, elapsedRealSeconds: number): Pose => {
+  const fall = decodeFrame(sampleClip(clip, elapsedRealSeconds));
+  const blend = deathBlendSeconds(clip);
+  return blend > 0 && elapsedRealSeconds < blend ? blendPose(base, fall, elapsedRealSeconds / blend) : fall;
+};

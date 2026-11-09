@@ -1268,7 +1268,11 @@ export class ActorSystem {
     if (actor.hitFlinchTime !== undefined) {
       const nextFlinchTime = actor.hitFlinchTime + dt;
       actor.hitFlinchTime =
-        nextFlinchTime > actorHitFlinchDuration(actorCrawls(actor) ? 'legless-humanoid' : figureVariantOf(actor.type))
+        nextFlinchTime >
+        actorHitFlinchDuration(
+          actorCrawls(actor) ? 'legless-humanoid' : figureVariantOf(actor.type),
+          this.figureOf(actor),
+        )
           ? undefined
           : nextFlinchTime;
     }

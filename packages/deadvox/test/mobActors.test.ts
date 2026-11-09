@@ -15,7 +15,7 @@ import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import type { Actor, AgentMode } from '../src/core/actorState.ts';
 import type { ActorSystemOptions } from '../src/core/actorSystem.ts';
 import { applyPoint, IDENTITY_M, mulMV, quatToMat3, transpose } from '../src/core/boneMath.ts';
-import type { Bone } from '../src/core/bones.ts';
+import type { BodyAnchor, Bone } from '../src/core/bones.ts';
 import { severedBoneSet } from '../src/core/boneTree.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
@@ -708,13 +708,28 @@ describe('MobActorMeshes', () => {
         dripped = Math.max(dripped, effects.dropletCount());
       }
       expect(dripped).toBeGreaterThan(0);
+      // Drips and the burst leave from the built body's anchors, carried by the bone matrices the renderer drew.
+      const { anchors } = actorFigure(FIGURES, acid, actor.figureSeed).body;
+      const drawnAt = (anchor: BodyAnchor): Vec3 => {
+        const m = renderer.boneMatrix(id, anchor.bone)!;
+        const [px, py, pz] = anchor.position;
+        return [0, 1, 2].map(
+          (row) => m[row * 4]! * px + m[row * 4 + 1]! * py + m[row * 4 + 2]! * pz + m[row * 4 + 3]!,
+        ) as Vec3;
+      };
+      const expectNear = (actual: Vec3 | undefined, expected: Vec3): void => {
+        expect(actual).toBeDefined();
+        expect(Math.hypot(...actual!.map((value, axis) => value - expected[axis]!))).toBeLessThan(1e-3);
+      };
+      const drawn = [...renderer.anchors()].find((entry) => entry.actor === actor)!;
+      expectNear(drawn.mouth, drawnAt(anchors!.mouth!));
+      expectNear(drawn.glow, drawnAt(anchors!.glow!));
+      const sac = drawnAt(anchors!.glow!);
 
       store.remove(id);
       renderer.actorDied(id, actor);
       expect(bursts).toHaveLength(1);
-      const [x, y, z] = bursts[0]!;
-      expect(Math.hypot(x - actor.body.pos[0] * 0.5, z - actor.body.pos[2] * 0.5)).toBeLessThan(1);
-      expect(y).toBeGreaterThan(actor.body.pos[1] * 0.5);
+      expectNear(bursts[0], sac);
       expect(effects.dropletCount()).toBeGreaterThanOrEqual(acid.acidBody!.deathSplash.droplets);
       renderer.sync(store, 1 / 30, 1);
       effects.syncDroplets(renderer.anchors(), 1 / 30);

@@ -22,9 +22,14 @@ const soundById = new Map(soundDefs.map((sound) => [sound.id, sound]));
 
 const FIGURES = stackActorFigureFiles(baseRegistry());
 
-const figureForModel = (type: { readonly id: string }, model: string, bodyScale?: number) =>
-  posedActor({
-    figure: actorFigure(FIGURES, type, 1),
+/**
+ * The model a pose was built from: its generated figure's template, else the built body's model when the posed
+ * skeleton is that body's.
+ */
+const posedModel = (type: { readonly id: string }, model: string, bodyScale?: number): string | undefined => {
+  const figure = actorFigure(FIGURES, type, 1);
+  const posed = posedActor({
+    figure,
     seed: 1,
     model,
     ...(bodyScale === undefined ? {} : { bodyScale }),
@@ -38,15 +43,19 @@ const figureForModel = (type: { readonly id: string }, model: string, bodyScale?
     attackWindupSeconds: 1,
     severed: [],
     blockSize: 1,
-  }).figure;
+  });
+  if (posed.figure) {
+    return posed.figure.genome.template;
+  }
+  const ids = (bones: readonly { readonly id: string }[]): string => bones.map(({ id }) => id).join();
+  return ids(posed.bones) === ids(figure.body.bones) ? figure.body.model : undefined;
+};
 
 describe('zombie type content', () => {
   it('poses every zombie with the model selected by its type data', () => {
     expect(actors.length).toBeGreaterThan(0);
     for (const actor of actors) {
-      expect(figureForModel(actor, figureVariantOf(actor), actor.bodyScale).genome.template).toBe(
-        bodyPlanModel(figureVariantOf(actor)),
-      );
+      expect(posedModel(actor, figureVariantOf(actor), actor.bodyScale)).toBe(bodyPlanModel(figureVariantOf(actor)));
     }
   });
 
