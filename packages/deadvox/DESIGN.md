@@ -42,13 +42,13 @@ read_if:
   - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
   - you're considering a coarser mesh or level of detail for distant zombie bodies
-  - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
+  - you're integrating the amalgam's built body, its collision envelope or member hit ownership (#308)
   - you change or rename fused-mass geometry used by the amalgam for terrain, player or shot contact
   - you're measuring or reducing amalgam collision cost against its per-tick budget
   - you're changing carving's visual tuning intention, tentacle reach or the moving body's collision pose
   - you're changing the holes hits carve in the amalgam or the flesh chunks that fly off
   - you're changing the crawler's established silhouette
-  - you're changing crawler gait, hit response, anatomy naming or generation validation
+  - you're changing crawler gait, hit response or anatomy naming
   - you're changing clock boundaries, temporal field names or time conversion arithmetic
   - you're changing the derived day phases that drive the sky, zombie sight, hordes or spawn words
   - you change shambler attention, movement, obstacle response or floor-transition behavior
@@ -62,7 +62,7 @@ read_if:
   - you change shared world gravity, player jump height, zombie hops or acid flight balance
   - you're changing bleeding tiers, blood loss, wound closure, treatment strength, or when bleeding refuses time compression
   - you're changing zombie attack moves or the damage kinds they deal
-  - you change anatomical body-plan selection, figure-variant properties or their generator boundary
+  - you change anatomical body-plan selection, figure-variant properties or figure-file admission
   - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
   - you change quickbar assignment feedback
   - you add or change a first-person handling animation (what it may read its timing from)
@@ -328,7 +328,7 @@ Keep the custom time lint boundary current when simulation dependencies or
 field names change. Gungen's internal estimates are outside that lint; exported
 action metadata follows Deadvox's clock-and-unit contract. Persisted temporal
 field renames require a save-schema change because pre-alpha saves are refused,
-not migrated. See the root gungen-to-deadvox export contract.
+not migrated. See `src/core/schema/models.ts`, `ActionSchema`.
 
 Actor poses compose the built clips as they are baked: skelly-assets authors
 poses, so a stance or gait is tuned in one place and Deadvox never regenerates
@@ -3616,15 +3616,10 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
   The targets are 96–128 m near detail and 512 m or more of far terrain; to be
   measured.
-- **Zombie bodies:** each mobgen model/seed variant owns a block of pose rows,
-  one per drawn actor. Missing per-actor rows leave the shared bone texture
-  unable to place that actor's mesh in the world. Each live actor with an
-  allocated row keeps its root placement current on every sync, including while
-  off-screen; its cached pose moves the bones with that root until full pose
-  packing resumes. Skipping both left stale bones in rows still drawn by the
-  instanced mesh, so re-entry could snap by the movement accumulated while
-  culled. A despawn or streamed unload can reuse a variant row, so the new actor
-  must build its own pose before drawing. See `src/render/mobActors.ts`,
+- **Zombie bodies:** an actor moving off-screen must not come back with stale
+  bones or snap by the distance it moved while culled, and an actor taking over
+  a reused slot after a despawn or streamed unload must not draw with the
+  previous actor's pose. See `src/render/mobActors.ts`,
   `MobActorMeshes.syncActor`, `test/runnerRenderContinuity.test.ts`,
   `runEngagement`, and `test/mobActors.test.ts`, `MobActorMeshes`.
 - **Far zombie bodies draw at full detail:** a coarser mesh for distant bodies

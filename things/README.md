@@ -1,7 +1,7 @@
 ---
 read_if:
   - you work in `things/`
-  - you wonder why gungen is being replaced, or where a modeling primitive belongs
+  - you wonder why the gun tool replaced gungen, or where a modeling primitive belongs
   - you decide which tool or package a new model-authoring feature goes in
   - you decide where mass, export or model-entry writing code goes
   - you decide whether an item's mass is authored or summed from its parts
@@ -10,14 +10,15 @@ read_if:
 
 # things
 
-Authoring tools for every model deadvox draws, built on one shared core.
+Authoring tools for the item and gun models deadvox draws, built on one shared core.
 
 ## Packages
 
 The suite's packages live in the asset submodule, `packages/skelly-assets/tools/packages/`.
 Skelly's root package takes as workspaces only thing-core, which Deadvox imports, and
 construct, which thing-core depends on; see `package.json`, `workspaces`. Skelly content
-reaches the other tools by path, so it carries no second install of them.
+reads the other tools' output from the pinned asset release, so it carries no install of
+them (`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision").
 
 - `packages/skelly-assets/tools/packages/thing-core/`: the shared modeling core, with no
   knowledge of any kind of thing.

@@ -248,7 +248,7 @@ export function workspaceDirectory(git, revision, name) {
 
 /**
  * Runtime exports a module's base copy has and its branch copy lacks, for a module in any workspace package's
- * src: main sources also import sibling packages (deadvox reaches mobgen through an alias), and the base may
+ * src: main sources also import sibling packages (deadvox imports thing-core from the skelly-assets submodule), and the base may
  * keep a package in another directory. Returns the lookup and a reader of a module's base copy.
  */
 export function removedModuleExports(git, base) {

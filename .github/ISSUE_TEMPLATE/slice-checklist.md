@@ -10,8 +10,6 @@ read_if:
 ## Start surveys
 
 - [ ] Deadvox: link the survey from #159, or record reuse of the previous exit survey and inspect the intervening delta
-- [ ] Gungen: link the survey from #159, or record reuse of the previous exit survey and inspect the intervening delta
-- [ ] Mobgen: link the survey from #159, or record reuse of the previous exit survey and inspect the intervening delta
 
 ## Milestones
 
@@ -20,8 +18,6 @@ read_if:
 ## Slice exit
 
 - [ ] Deadvox exit survey recorded in #159 or a linked issue
-- [ ] Gungen exit survey recorded in #159 or a linked issue
-- [ ] Mobgen exit survey recorded in #159 or a linked issue
 - [ ] Deep docs pass recorded in #159 or a linked issue
 
 ## Closure

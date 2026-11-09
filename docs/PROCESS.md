@@ -113,8 +113,7 @@ Whoever merges ticks by hand what the workflow cannot. Slice 3's checklist is #2
 
 - **Review references use page paths, never LAN addresses.** The maintainer reviews from
   another machine, so the review origin is supplied outside tracked work.
-- **gungen:** give a page path per design with a `camera=` view (side, rear, rear-¾), from a
-  stable review server pinned to the reviewed commit, not a contributor's live worktree.
+- **Tool-specific look rules** sit beside the pages they describe, so they change with them.
 - **deadvox:** every look runs from a fixture start that prepares the test: a debug-only start
   in a test-house debug mod whose site spawns the maintainer beside the target, with the gear
   the check needs already in hand. The look link selects it

@@ -18,7 +18,7 @@ content, pack ownership and admission stay in skelly. Export recipes are pipelin
 inputs and move with their exporters. This gives deadvox and arpg1 one shared asset
 database and pipeline for a vast library of models and rigs, rather than separate
 copies that drift. The asset move precedes further framework extraction so the
-runtime is not extracted around tool dependencies that are about to disappear; see
+runtime is not extracted around tool dependencies the move removes; see
 `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
 
 Use a git submodule, not a second tracked copy, so each product revision selects an
@@ -29,15 +29,16 @@ producer. The gitlink is the commit the pinned release tag points to, so the too
 skelly reads from the submodule and the built output it installs cannot drift apart. Setup
 installs only the packs one of skelly's mods bundles, because the mods are the one list of
 what skelly ships. See `tools/skelly-assets/release.json` and
-`tools/skelly-assets/setup.mjs`, `assertGitlinkMatchesRelease`. Copy pipeline sources from the refactor tree, recording the
-source commit per package in `packages/skelly-assets/tools/README.md`; git history stays in
-skelly rather than being rewritten into another repository. Shared thing-core has
+`tools/skelly-assets/setup.mjs`, `assertGitlinkMatchesRelease`. Pipeline sources are
+copies from skelly, with each package's source commit recorded in
+`packages/skelly-assets/tools/README.md`; git history stays in skelly rather than being
+rewritten into another repository. Shared thing-core has
 one workspace instance and one root lockfile so tools and consumers resolve the same
 contracts and materials.
 
-Vehicle authoring moves with the other pipelines. Its schema checks stay with the
+Vehicle authoring lives with the other pipelines. Its schema checks stay with the
 tool; skelly retains the blueprint admission contract test because admission belongs
-to the game, not the exporter. Mobgen becomes a pipeline, not a Deadvox runtime
+to the game, not the exporter. Mobgen is a pipeline, not a Deadvox runtime
 import: generated bodies, GLBs and clips cross the boundary as data, while per-tick
 composition, injury, ragdolls and rendering remain runtime mechanisms. The viewer's
 ragdoll stage is removed rather than carrying a game-runtime dependency into the
