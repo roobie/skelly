@@ -3035,7 +3035,7 @@ The amalgam must steer its size around obstacles without gaining a separate deci
 
 A carved cell vanishes from the drawn body, and a corpse must retain its visible wounds. The cost accepted: a hole shows no flesh walls, because the game draws the baked mesh and nothing re-meshes at runtime (`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision"). See `src/render/crowd.ts`, `packCellMask`, and `src/render/mobActors.ts`, `MobActorMeshes.actorCarved`.
 
-Every carve, and a hard hit to any enemy, throws flesh chunks with the blood, because the cell mask draws no flesh of its own and the chunks give the hit its visible flesh. The chunks are content models, so mods swap them; the gore path owns them, so nothing re-meshes at runtime. See `src/render/gore.ts`, `Gore.carved` and `Gore.wounded`, with their tuning in `src/core/schema/graphics.ts`, `GraphicsTuningSchema`.
+Every carve, and a hard hit to any enemy, throws flesh chunks with the blood, so the hit visibly knocks flesh loose. They leave the wound back toward the attacker: chunks meet only world blocks, so one thrown along the strike would fly into the body and land hidden under it. The chunks are content models, so mods swap them; the gore path owns them, so nothing re-meshes at runtime. See `src/render/gore.ts`, `Gore.carved` and `Gore.wounded`, with their tuning in `src/core/schema/graphics.ts`, `GraphicsTuningSchema`.
 
 The runner's threat comes from speed rather than stronger attacks; the crawler's
 low posture confines its bite to the legs. Keep their moves, hit regions, sounds and

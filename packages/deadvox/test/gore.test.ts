@@ -184,4 +184,32 @@ describe('Gore', () => {
     geometry.dispose();
     material.dispose();
   });
+
+  it('throws flesh chunks back out of the wound toward the attacker, not on into the body', () => {
+    const chunks = {
+      models: ['fixture_chunk'],
+      cap: 16,
+      perThrow: [4, 4] as [number, number],
+      hardHitDamage: 30,
+      speedMetresPerRealSecond: { min: 1, max: 2 },
+      spreadFraction: 0.6,
+      spinRadiansPerRealSecond: { min: 1, max: 1 },
+      scale: { min: 1, max: 1 },
+      lifetimeRealSeconds: 10,
+      fadeRealSeconds: 1,
+    };
+    const gore = new Gore(1, WORLD_GRAVITY, { ...GORE_TUNING_FIXTURE, chunks });
+    const strike: HitImpulse = { point: [0.5, 1.5, 0.5], direction: [1, 0, 0], impulse: 4 };
+    for (let carve = 0; carve < 4; carve++) {
+      gore.carved(strike, 1);
+    }
+    const thrown = (gore as unknown as { chunks: { active: boolean; velocity: Vector3 }[] }).chunks.filter(
+      (chunk) => chunk.active,
+    );
+    expect(thrown.length).toBeGreaterThan(0);
+    for (const chunk of thrown) {
+      expect(chunk.velocity.dot(new Vector3(...strike.direction))).toBeLessThan(0);
+    }
+    gore.dispose();
+  });
 });

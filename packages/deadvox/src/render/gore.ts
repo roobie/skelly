@@ -327,7 +327,7 @@ export class Gore {
   }
 
   /** The extra burst as flesh is carved out of a fused-mass body, on top of the wound's own spray: more blood for
-   * a bigger hole, and flesh chunks, since the carved mesh shows no flesh of its own. */
+   * a bigger hole, and the flesh chunks knocked out of it. */
   carved(hit: HitImpulse, cells: number): void {
     this.spray(hit, cells * CARVED_CELL_SPRAY_DAMAGE);
     this.throwChunks(hit);
@@ -418,7 +418,9 @@ export class Gore {
     }
   }
 
-  /** Starts a throw of chunks from the hit, each reusing the oldest slot in the pool. */
+  /** Starts a throw of chunks from the hit, each reusing the oldest slot in the pool. They leave the wound back
+   * toward the attacker: the hit point lies on the struck face and chunks meet only world blocks, so a chunk thrown
+   * along the strike would fly into the body and land hidden under it. */
   private throwChunks(hit: HitImpulse): void {
     const tuning = this.tuning.chunks;
     if (!tuning || this.chunks.length === 0) {
@@ -436,9 +438,9 @@ export class Gore {
       chunk.position.set(hit.point[0], hit.point[1], hit.point[2]).multiplyScalar(this.blockSize);
       chunk.velocity
         .set(
-          hit.direction[0] + this.rng.range(-1, 1) * spreadFraction,
-          hit.direction[1] + this.rng.range(0, 1) * spreadFraction,
-          hit.direction[2] + this.rng.range(-1, 1) * spreadFraction,
+          -hit.direction[0] + this.rng.range(-1, 1) * spreadFraction,
+          -hit.direction[1] + this.rng.range(0, 1) * spreadFraction,
+          -hit.direction[2] + this.rng.range(-1, 1) * spreadFraction,
         )
         .normalize()
         .multiplyScalar(this.rng.range(speed.min, speed.max));
