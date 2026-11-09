@@ -548,7 +548,7 @@ const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale: 
 const crowdMaterials = (
   texture: DataTexture,
   layout: CrowdTextureLayout,
-  cells?: { readonly texture: DataTexture; readonly slotBase: number },
+  cells?: { readonly texture: DataTexture; readonly slotBase: number; readonly rowsPerSlot: number },
 ): { material: MeshLambertMaterial; depthMaterial: MeshDepthMaterial } => {
   const declarations = cells
     ? `${CROWD_VERTEX_DECLARATIONS}\n${CROWD_CELL_VERTEX_DECLARATIONS}`
@@ -561,6 +561,7 @@ const crowdMaterials = (
     if (cells) {
       shader.uniforms.crowdCellTexture = { value: cells.texture };
       shader.uniforms.crowdCellSlotBase = { value: cells.slotBase };
+      shader.uniforms.crowdCellRowsPerSlot = { value: cells.rowsPerSlot };
     }
   };
   const material = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
@@ -1186,7 +1187,7 @@ export class MobActorMeshes implements ActorRenderer {
       layout,
       data,
       texture,
-      ...crowdMaterials(this.texture, this.layout, { texture, slotBase }),
+      ...crowdMaterials(this.texture, this.layout, { texture, slotBase, rowsPerSlot: layout.rowsPerSlot }),
       packed: new Array<number>(this.capacity).fill(0),
     };
   }
@@ -1208,8 +1209,8 @@ export class MobActorMeshes implements ActorRenderer {
     if (!cells || from === to) {
       return;
     }
-    const { width } = cells.layout;
-    cells.data.copyWithin(to * width, from * width, (from + 1) * width);
+    const span = cells.layout.rowsPerSlot * cells.layout.width;
+    cells.data.copyWithin(to * span, from * span, (from + 1) * span);
     cells.packed[to] = cells.packed[from]!;
     cells.texture.needsUpdate = true;
   }

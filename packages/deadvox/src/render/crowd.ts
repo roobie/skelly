@@ -102,28 +102,44 @@ export const isSeveredInMask = (
   return (((mask >>> 0) >>> bit) & 1) === 1;
 };
 
-/** A fused-mass variant's carved-cell mask: one single-channel row per slot, CROWD_MASK_BITS_PER_TEXEL cells per texel. */
+/** WebGL2's guaranteed `MAX_TEXTURE_SIZE`: a texture no wider or taller uploads on every conforming implementation. */
+export const CROWD_TEXTURE_MAX_SIZE = 2048;
+
+/**
+ * A fused-mass variant's carved-cell mask, single-channel, CROWD_MASK_BITS_PER_TEXEL cells per texel. Each slot owns
+ * `rowsPerSlot` consecutive rows, so its words wrap within the guaranteed texture width and stay one contiguous run.
+ */
 export interface CrowdCellMaskLayout {
   readonly cellCount: number;
   readonly width: number;
+  readonly rowsPerSlot: number;
   readonly height: number;
 }
 
-export const crowdCellMaskLayout = (cellCount: number, slotCount: number): CrowdCellMaskLayout => ({
-  cellCount,
-  width: Math.max(1, Math.ceil(cellCount / CROWD_MASK_BITS_PER_TEXEL)),
-  height: Math.max(1, slotCount),
-});
+export const crowdCellMaskLayout = (
+  cellCount: number,
+  slotCount: number,
+  maxSize = CROWD_TEXTURE_MAX_SIZE,
+): CrowdCellMaskLayout => {
+  const words = Math.max(1, Math.ceil(cellCount / CROWD_MASK_BITS_PER_TEXEL));
+  const width = Math.min(words, maxSize);
+  const rowsPerSlot = Math.ceil(words / width);
+  const height = Math.max(1, slotCount) * rowsPerSlot;
+  if (height > maxSize) {
+    throw new RangeError(`A ${cellCount}-cell mask for ${slotCount} slots needs ${height} rows, over ${maxSize}`);
+  }
+  return { cellCount, width, rowsPerSlot, height };
+};
 
-/** Packs every carved cell index into `slot`'s row, clearing the rest. An index outside the grid is a caller error. */
+/** Packs every carved cell index into `slot`'s rows, clearing the rest. An index outside the grid is a caller error. */
 export const packCellMask = (
   data: Float32Array,
   layout: CrowdCellMaskLayout,
   slot: number,
   cells: Iterable<number>,
 ): void => {
-  const first = slot * layout.width;
-  data.fill(0, first, first + layout.width);
+  const first = slot * layout.rowsPerSlot * layout.width;
+  data.fill(0, first, first + layout.rowsPerSlot * layout.width);
   for (const cell of cells) {
     if (!Number.isInteger(cell) || cell < 0 || cell >= layout.cellCount) {
       throw new RangeError(`Carved cell ${cell} is outside a ${layout.cellCount}-cell grid`);
@@ -133,12 +149,12 @@ export const packCellMask = (
   }
 };
 
-/** Whether the cell mask says `cell` is carved in `slot`'s row, by the same word/bit split as crowdCellCarved. */
+/** Whether the cell mask says `cell` is carved in `slot`'s rows, by the same word/bit split as crowdCellCarved. */
 export const isCellInMask = (data: Float32Array, layout: CrowdCellMaskLayout, slot: number, cell: number): boolean => {
   if (cell < 0 || cell >= layout.cellCount) {
     return false;
   }
-  const mask = data[slot * layout.width + Math.floor(cell / CROWD_MASK_BITS_PER_TEXEL)]!;
+  const mask = data[slot * layout.rowsPerSlot * layout.width + Math.floor(cell / CROWD_MASK_BITS_PER_TEXEL)]!;
   return (((mask >>> 0) >>> (cell % CROWD_MASK_BITS_PER_TEXEL)) & 1) === 1;
 };
 
@@ -295,18 +311,24 @@ vCrowdEmission = crowdEmission.x * mix( 1.0, crowdCharge( crowdSlot ), crowdEmis
 `;
 
 // Carving: a vertex of a carved cell (packCellMask) collapses to the origin, as a severed bone's do. The mask's
-// rows start at the variant's first slot; a slot outside them (the hidden row) is never carved.
+// slots start at the variant's first slot; a slot outside them (the hidden row) is never carved. A slot's words
+// run on across its `crowdCellRowsPerSlot` rows, as crowdCellMaskLayout lays them out.
 export const CROWD_CELL_VERTEX_DECLARATIONS = /* glsl */ `
 uniform highp sampler2D crowdCellTexture;
 uniform float crowdCellSlotBase;
+uniform float crowdCellRowsPerSlot;
 attribute float cellIndex;
 
 bool crowdCellCarved( float slot, float cell ) {
 
-	int row = int( slot ) - int( crowdCellSlotBase );
-	if ( row < 0 || row >= textureSize( crowdCellTexture, 0 ).y ) return false;
+	ivec2 size = textureSize( crowdCellTexture, 0 );
+	int rows = int( crowdCellRowsPerSlot );
+	int local = int( slot ) - int( crowdCellSlotBase );
+	if ( local < 0 || local * rows >= size.y ) return false;
 	int index = int( cell );
-	int mask = int( texelFetch( crowdCellTexture, ivec2( index / ${CROWD_MASK_BITS_PER_TEXEL}, row ), 0 ).x );
+	int word = index / ${CROWD_MASK_BITS_PER_TEXEL};
+	ivec2 texel = ivec2( word % size.x, local * rows + word / size.x );
+	int mask = int( texelFetch( crowdCellTexture, texel, 0 ).x );
 	return ( mask & ( 1 << ( index % ${CROWD_MASK_BITS_PER_TEXEL} ) ) ) != 0;
 
 }
