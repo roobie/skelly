@@ -45,8 +45,10 @@ interface Extent {
   readonly max: Vec3;
 }
 
-// Copied from mobgen with the same arithmetic: see `packages/mobgen/src/mob/gait.ts`, `groundOffset`;
-// `packages/mobgen/src/mob/attack.ts`, `blendArmBase`; and `packages/mobgen/src/core/math.ts`, `rotAxis`.
+// The producer's arithmetic, kept equal so a runtime refit matches the baked frames: see
+// `packages/skelly-assets/tools/packages/mobgen/src/mob/gait.ts`, `groundOffset`;
+// `packages/skelly-assets/tools/packages/mobgen/src/mob/attack.ts`, `blendArmBase`; and
+// `packages/skelly-assets/tools/packages/mobgen/src/core/math.ts`, `rotAxis`.
 
 const smoothMinAll = (values: readonly number[], smoothing: number): number => {
   const trueMin = Math.min(...values);

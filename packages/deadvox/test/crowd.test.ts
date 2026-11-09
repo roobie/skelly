@@ -1,10 +1,10 @@
 // Pure-math tests for src/render/crowd.ts, the crowd bone-matrix packing the zombie renderer
-// (src/render/mobActors.ts) uploads. Generated bodies from the `@mobgen/` alias are fixtures only.
+// (src/render/mobActors.ts) uploads, over the fixture actor body's skeleton.
 
-import { generateValid, realize } from '@mobgen/core/generate.ts';
-import { TEMPLATES } from '@mobgen/mob/templates.ts';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { applyPoint, compose, rotation, rotY, type Transform, translation, type Vec3 } from '../src/core/boneMath.ts';
+import { type BuiltBone, bodySkeleton } from '../src/core/bones.ts';
 import { allocateBoneTransforms, boneTransformsInto, indexBonesByParent, type Pose } from '../src/core/pose.ts';
 import {
   CROWD_MASK_BITS_PER_TEXEL,
@@ -18,10 +18,11 @@ import {
   packSeveredMask,
 } from '../src/render/crowd.ts';
 
-const humanoid = TEMPLATES.find((t) => t.name === 'humanoid')!;
-const found = generateValid(humanoid, 1)!;
-const { body } = realize(found.genome);
-const { bones } = body;
+const bones = bodySkeleton(
+  JSON.parse(readFileSync(new URL('./fixtures/actors/fixture.body.json', import.meta.url), 'utf8')) as {
+    readonly bones: readonly BuiltBone[];
+  },
+);
 
 const somePose = (): Pose => ({
   root: [0.05, -0.12, 0.3],
