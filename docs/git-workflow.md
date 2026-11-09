@@ -44,26 +44,30 @@ defects before they reach `main`.
 
 ## Shared asset pin bumps
 
-An asset pin bump moves the release pin to a published skelly-assets tag and the
-`packages/skelly-assets` gitlink to that tag's commit, in one commit with the content
-changes the new assets need. Setup refuses a gitlink that differs from the tag's commit,
-because the submodule's sources and the released bytes must come from one revision.
-See `tools/skelly-assets/setup.mjs`, `pinRelease` and `assertGitlinkMatchesRelease`.
+Skelly always uses the latest published skelly-assets release. One linear release
+line exposes consumer gaps at each pin bump instead of accumulating them. Keep the
+release pin and `packages/skelly-assets` gitlink together in one commit with the
+content changes the release needs: source and released bytes must come from the
+same revision. See `tools/skelly-assets/setup.mjs`, `pinRelease` and
+`assertGitlinkMatchesRelease`.
 
 Run Deadvox's `validate`, root `content:check` and Deadvox's `digest:simulation` at the
-base and the proposed head, and report both digest values. This checks that the
-selected assets and their pack declarations agree without changing simulation
-behaviour. Report a digest difference to the lead; the bump must not merge with that
-difference.
+base and proposed head, and report both digest values. Selected assets and pack
+declarations must agree without an unexplained simulation change; report any digest
+difference to the lead before merging.
 
-A release may carry files in a bundled pack before Deadvox declares them, and the
-external root's orphan check rejects every installed file no bundled pack claims, so
-the bump admits them in the same PR. See
+Declare released files without requiring the game to consume every model row:
+skelly-assets will always contain models that skelly is not actively using.
+Catalogue growth must not break content compilation. Admit only rows named by
+content consumers, before assigning presentation; retain missing named references
+as validation errors. See `tools/jsonnet/lib/used-models.libsonnet`, `references`,
+and `packages/deadvox/src/core/content.ts`, `referenceIssues`. Content imports its
+consumer documents rather than maintaining a second list of model IDs.
+
+Pack file declarations remain independent of model consumption so installed files
+are owned even when unused. See
 `docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Staged admission".
-
-A bump need not make Deadvox consume every pinned model: skelly-assets will always
-carry models skelly does not use. The root contracts check only that each model Deadvox
-does consume is a pinned row and matches it. See `test/model-export-sync.mjs`,
+Consumed rows must still match the pinned exports; see `test/model-export-sync.mjs`,
 `readCutOver` and `assertCutOver`.
 
 Asset-move PRs target `framework/refactor` and take it in by merging
