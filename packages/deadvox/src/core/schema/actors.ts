@@ -232,7 +232,7 @@ export const ActorSchema = strictObject({
   cause: Name,
   model: BODY_PLAN,
   figure: optional(picklist(Object.keys(FIGURE_VARIANTS) as ActorModel[])),
-  /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
+  /** Uniform scale for this model's realized body, in addition to its built body's dimensions. */
   bodyScale: optional(Positive),
   /**
    * A fused mass's collision box about its ground origin, in metres: content admission reads it because the browser
