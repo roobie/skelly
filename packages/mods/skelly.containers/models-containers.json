@@ -32,85 +32,25 @@
       }
     },
     {
-      "file": "assets/models/cutting_board.glb",
-      "id": "cutting_board",
-      "itemPresentation": {
-        "materials": ["wood"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "cutting_board": {
-          "centreOfMass": [-0.0026758753613877273, 0.0099999999999999985, 0],
-          "massKg": 0.45500000000000002,
-          "node": "cutting_board:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/iron_pot.glb",
-      "id": "iron_pot",
-      "itemPresentation": {
-        "materials": ["metal", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "iron_pot": {
-          "centreOfMass": [0, 0.042448979591836737, -7.202881152460985e-5],
-          "massKg": 2.4900000000000002,
-          "node": "iron_pot:compound"
-        }
-      }
-    },
-    {
-      "file": "assets/models/pan.glb",
-      "grip": {
-        "at": [0.19600000000000001, 0.040000000000000001, 0],
-        "turn": [0, 0, 0]
-      },
-      "hold": "upright",
-      "id": "pan",
-      "itemPresentation": {
-        "materials": ["metal", "mineral"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "pan": {
-          "centreOfMass": [0.011667900165341312, 0.017719077238012755, 0.00021777812770647968],
-          "massKg": 2.427,
-          "node": "pan:compound"
-        }
-      },
-      "roll": 90
-    },
-    {
       "file": "assets/models/jerry_can.glb",
       "grip": {
-        "at": [0, 0.47499999999999998, 0],
+        "at": [0.040000000000000001, 0.46000000000000002, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
       "id": "jerry_can",
       "itemPresentation": {
-        "materials": ["polymer", "metal"],
+        "materials": ["polymer", "metal", "metal"],
         "supply": {
           "kind": "none"
         },
         "wear": "core"
       },
       "parts": {
-        "package": {
-          "centreOfMass": [0, 0.21406402196050647, -9.9619233153280763e-5],
-          "massKg": 2.5,
-          "node": "package:carton"
+        "jerry_can": {
+          "centreOfMass": [-0.00027423897337937455, 0.21481420419758526, 9.4139543996277537e-5],
+          "massKg": 4,
+          "node": "jerry_can:compound"
         }
       },
       "roll": 0

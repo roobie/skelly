@@ -1,3 +1,5 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.deadvox.camp', [import '../models-camp.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.deadvox.camp'),
+  releasedFiles:: release.files,
+  sources: release.sources,
 }

@@ -25,6 +25,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.actors/footstep-sounds.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.actors/graphics-actors.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.actors/graphics-actors.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.actors/item-economy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.actors/item-economy.json"
     },
@@ -427,6 +431,10 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet",

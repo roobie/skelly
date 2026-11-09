@@ -1,5 +1,5 @@
 local manifest = import '../../../../tools/jsonnet/lib/pack-manifest.libsonnet';
-local assets = import '../assets/manifest.json';
+local assets = import '../assets/manifest.jsonnet';
 manifest(
   id='skelly.firearms',
   tier='theme',

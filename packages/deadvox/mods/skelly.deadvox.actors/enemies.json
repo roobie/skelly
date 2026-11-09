@@ -2418,6 +2418,7 @@
       "bodyScale": 4,
       "canJumpObstacles": false,
       "carving": {
+        "interiorColor": "#7a1c16",
         "maxRadiusMetres": 0.75,
         "radiusMetresPerDamage": 0.0023
       },

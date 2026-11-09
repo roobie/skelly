@@ -210,7 +210,6 @@
       "model": "road_flare",
       "name": "Road flare",
       "size": [1, 2],
-      "weight": 200,
       "workInProgress": false
     },
     {

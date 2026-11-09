@@ -1,5 +1,7 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.structures', [import '../models-structures.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.structures') + [
+  releasedFiles:: release.files,
+  sources: release.sources + [
     {
       title: 'Thwack Sounds',
       url: 'https://opengameart.org/content/thwack-sounds',

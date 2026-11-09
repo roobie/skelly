@@ -67,7 +67,7 @@ const loadGlb = async (glb) => await new GLTFLoader().parseAsync(Uint8Array.from
 
 describe('thing tool exports satisfy the Deadvox contract', () => {
   // biome-ignore lint/style/noDoneCallback: Node's TestContext prints the per-pack listing, not a done callback.
-  it('consumes every pinned thing row of each kind from the external root, with no pending pack', (t) => {
+  it('consumes only pinned thing rows, from the external root', (t) => {
     assertCutOver(CUT_OVER, t);
   });
   it('matches each consumed thing row to its pinned manifest row', async () => {

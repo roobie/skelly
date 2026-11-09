@@ -6,10 +6,10 @@
       "download": null,
       "files": [
         "assets/models/candle.glb",
-        "assets/models/everburning_torch.glb",
         "assets/models/lighter.glb",
         "assets/models/matches.glb",
         "assets/models/oil_lamp.glb",
+        "assets/models/road_flare.glb",
         "assets/models/torch.glb"
       ],
       "licence": "CC-BY-NC-SA-4.0",

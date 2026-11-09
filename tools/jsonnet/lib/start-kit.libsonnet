@@ -26,6 +26,11 @@ local common = {
 {
   day: day,
   common: common,
+  // Every debug, review and test fixture start builds on this; see `docs/PROCESS.md`, "Reviews by eye and by play".
+  fixture: common + {
+    debugOnly: true,
+    allSkills: 10,
+  },
   fromLayouts(layouts):: [common + {
     id: std.asciiLower(layout.id),
     site: layout.id,

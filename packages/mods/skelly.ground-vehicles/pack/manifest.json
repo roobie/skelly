@@ -23,6 +23,10 @@
     },
     {
       "kind": "json",
+      "path": "things/battery_tray.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/bottle_jack.model.json"
     },
     {
@@ -68,10 +72,6 @@
     {
       "kind": "json",
       "path": "things/gear_lever.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/hatchback_battery_tray.model.json"
     },
     {
       "kind": "json",
@@ -299,10 +299,6 @@
     },
     {
       "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
       "path": "things/mounting_plate.model.json"
     },
     {
@@ -332,6 +328,10 @@
     {
       "kind": "json",
       "path": "things/wheel_205_55r16.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/battery_tray.glb"
     },
     {
       "kind": "asset",
@@ -380,10 +380,6 @@
     {
       "kind": "asset",
       "path": "assets/models/gear_lever.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/hatchback_battery_tray.glb"
     },
     {
       "kind": "asset",

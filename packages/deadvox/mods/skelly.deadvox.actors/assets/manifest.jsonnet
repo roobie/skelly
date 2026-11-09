@@ -1,5 +1,7 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.deadvox.actors', [import '../models-actors.jsonnet', import '../figures-actors.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.deadvox.actors') + [
+  releasedFiles:: release.files,
+  sources: release.sources + [
     {
       title: '80 CC0 creature SFX',
       url: 'https://opengameart.org/content/80-cc0-creature-sfx',

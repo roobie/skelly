@@ -30,14 +30,6 @@
     },
     {
       "kind": "json",
-      "path": "things/everburning_torch.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
       "path": "things/lighter.model.json"
     },
     {
@@ -50,15 +42,15 @@
     },
     {
       "kind": "json",
+      "path": "things/road_flare.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/torch.model.json"
     },
     {
       "kind": "asset",
       "path": "assets/models/candle.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/everburning_torch.glb"
     },
     {
       "kind": "asset",
@@ -75,6 +67,10 @@
     {
       "kind": "asset",
       "path": "assets/models/oil_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/road_flare.glb"
     },
     {
       "kind": "asset",

@@ -1,5 +1,7 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.explosives', [import '../models-explosives.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.explosives') + [
+  releasedFiles:: release.files,
+  sources: release.sources + [
     {
       title: 'Huge Explosion',
       url: 'https://freesound.org/people/florianreichelt/sounds/459973/',

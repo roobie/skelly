@@ -26,10 +26,6 @@
       "path": "things/frag_grenade.model.json"
     },
     {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
       "kind": "asset",
       "path": "assets/audio/grenade-blast-01.ogg"
     },

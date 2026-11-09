@@ -42,10 +42,6 @@
       "path": "things/camp_hq_safe_key.model.json"
     },
     {
-      "kind": "json",
-      "path": "things/index.json"
-    },
-    {
       "kind": "asset",
       "path": "assets/models/camp_armoury_key.glb"
     },

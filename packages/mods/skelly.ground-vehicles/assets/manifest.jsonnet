@@ -1,3 +1,5 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.ground-vehicles', [import '../models-ground-vehicles.jsonnet', import '../vehicles.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.ground-vehicles'),
+  releasedFiles:: release.files,
+  sources: release.sources,
 }

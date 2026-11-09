@@ -6,4 +6,4 @@
     crystal_socket_wand: ['glass', 'metal', 'wood', 'wood'],
     rune_clay_tablet: ['mineral', 'mineral'],
   },
-).pack({ models: import 'packages/skelly-assets/built/skelly.arcana/things/index.json' })
+).pack({ models: (import 'tools/jsonnet/lib/used-models.libsonnet')(import 'packages/skelly-assets/built/skelly.arcana/things/index.json', []) })

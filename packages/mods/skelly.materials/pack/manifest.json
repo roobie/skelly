@@ -31,10 +31,6 @@
     },
     {
       "kind": "json",
-      "path": "things/index.json"
-    },
-    {
-      "kind": "json",
       "path": "things/nails.model.json"
     },
     {

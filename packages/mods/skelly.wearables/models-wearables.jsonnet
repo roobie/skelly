@@ -39,5 +39,5 @@
   models: [
     { id: 'stab_vest', file: 'assets/models/stab_vest.glb' },
     { id: 'riot_helmet_view', file: 'assets/models/riot_helmet_view.glb' },
-  ] + (import 'packages/skelly-assets/built/skelly.wearables/things/index.json'),
+  ] + ((import 'tools/jsonnet/lib/used-models.libsonnet')(import 'packages/skelly-assets/built/skelly.wearables/things/index.json', [import 'wearables-items.jsonnet'])),
 })

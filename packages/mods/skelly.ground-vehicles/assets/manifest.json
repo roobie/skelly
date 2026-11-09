@@ -5,6 +5,7 @@
       "changes": null,
       "download": null,
       "files": [
+        "assets/models/battery_tray.glb",
         "assets/models/bottle_jack.glb",
         "assets/models/box_van_floor.glb",
         "assets/models/box_van_front.glb",
@@ -17,7 +18,6 @@
         "assets/models/engine_hoist.glb",
         "assets/models/front_seat.glb",
         "assets/models/gear_lever.glb",
-        "assets/models/hatchback_battery_tray.glb",
         "assets/models/hatchback_bonnet.glb",
         "assets/models/hatchback_dashboard.glb",
         "assets/models/hatchback_engine.glb",

@@ -1,3 +1,5 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.arcana', [import '../models-arcana.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.arcana'),
+  releasedFiles:: release.files,
+  sources: release.sources,
 }

@@ -1,3 +1,5 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.deadvox.scenario.playtest', [import '../models-playtest.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.deadvox.scenario.playtest'),
+  releasedFiles:: release.files,
+  sources: release.sources,
 }

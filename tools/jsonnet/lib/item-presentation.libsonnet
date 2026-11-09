@@ -3,7 +3,7 @@
 local prefixes = {
   steel: 'metal', alu: 'metal', brass: 'metal', copper: 'metal', scrap: 'metal', paint: 'metal',
   cloth: 'cloth', cord: 'cloth', wood: 'wood', rubber: 'polymer', plastic: 'polymer', polymer: 'polymer',
-  glass: 'glass', paperboard: 'paper', body: 'organic', wax: 'wax', tape: 'polymer', stone: 'mineral', fuel: 'fuel',
+  glass: 'glass', paperboard: 'paper', 'paper-': 'paper', body: 'organic', wax: 'wax', tape: 'polymer', stone: 'mineral', fuel: 'fuel',
 };
 local classify(material) =
   local matches = [prefixes[p] for p in std.objectFields(prefixes) if material != null && std.startsWith(material, p)];

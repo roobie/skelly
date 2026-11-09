@@ -343,6 +343,8 @@ export const ActorSchema = strictObject({
     strictObject({
       radiusMetresPerDamage: pipe(NonNegative, maxValue(0.01, 'must be at most 0.01')),
       maxRadiusMetres: pipe(NonNegative, maxValue(1, 'must be at most 1')),
+      /** The flesh a hole's walls show (src/render/holeWalls.ts). */
+      interiorColor: Color,
     }),
   ),
   /** Per-hit chance of severing a random not-yet-severed arm part (src/core/actorSystem.ts's swing); a

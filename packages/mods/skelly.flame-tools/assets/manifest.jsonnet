@@ -1,3 +1,5 @@
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.flame-tools', [import '../models-flame-tools.jsonnet']);
 {
-  sources: (import 'tools/jsonnet/lib/built-pack.libsonnet').sources('skelly.flame-tools'),
+  releasedFiles:: release.files,
+  sources: release.sources,
 }

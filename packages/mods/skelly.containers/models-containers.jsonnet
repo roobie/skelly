@@ -8,5 +8,5 @@ local fill = import 'tools/jsonnet/lib/fuel-supply.libsonnet';
   },
   supplies={ lamp_oil_bottle: fill('fuel-fill') },
 ).pack({
-  models: [{ id: 'lamp_oil_bottle', file: 'assets/models/lamp_oil_bottle.glb' }] + import 'packages/skelly-assets/built/skelly.containers/things/index.json',
+  models: [{ id: 'lamp_oil_bottle', file: 'assets/models/lamp_oil_bottle.glb' }] + (import 'tools/jsonnet/lib/used-models.libsonnet')(import 'packages/skelly-assets/built/skelly.containers/things/index.json', [import 'containers-items.jsonnet']),
 })

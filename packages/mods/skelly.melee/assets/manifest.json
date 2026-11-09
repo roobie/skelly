@@ -7,14 +7,8 @@
       "files": [
         "assets/models/baseball_bat.glb",
         "assets/models/kabar.glb",
-        "assets/models/kite_shield.glb",
-        "assets/models/lame_saber.glb",
-        "assets/models/long_pole.glb",
         "assets/models/machete.glb",
-        "assets/models/pike_pole.glb",
-        "assets/models/steel_pipe.glb",
-        "assets/models/sun_shield.glb",
-        "assets/models/tower_shield.glb"
+        "assets/models/steel_pipe.glb"
       ],
       "licence": "CC-BY-NC-SA-4.0",
       "title": "skelly-assets built models",
