@@ -2,14 +2,15 @@ import { parse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import { claimed } from '../src/core/capabilities.ts';
-import { Character } from '../src/core/character.ts';
+import { Character, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { magazineSpec } from '../src/core/magazine.ts';
 import { type StartDef, StartSchema } from '../src/core/schema/starts.ts';
 import { startIssues } from '../src/core/startIssues.ts';
 import { applyStartState } from '../src/core/startState.ts';
-import { baseRegistryWith } from './baseRegistry.ts';
+import { readAvailablePacks } from '../tools/readBundledPacks.ts';
+import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { fixtureSources } from './economyFixtures.ts';
 import { makeAttemptLayout } from './fixtures/attemptPolicy.ts';
 
@@ -142,6 +143,26 @@ it('bounds authored skill levels and rejects side-named hands', () => {
   expect(() =>
     parse(StartSchema, { ...start, kit: [{ ...start.kit[2], destination: { kind: 'hand', role: 'left' } }] }),
   ).toThrow();
+});
+
+describe('debug and fixture starts', () => {
+  it('start the player with every content skill at its top level unless the start opts out', () => {
+    const registry = baseRegistry();
+    const fixtures = readAvailablePacks('.')
+      .flatMap(({ files }) => files.flatMap(({ data }) => (data as { starts?: StartDef[] }).starts ?? []))
+      .filter((start) => start.debugOnly && start.allSkills !== null);
+    expect(fixtures.length).toBeGreaterThan(0);
+    expect(registry.skills.size).toBeGreaterThan(0);
+    for (const start of fixtures) {
+      const character = new Character(registry, { handedness: 'right' });
+      const inventory = new Inventory(registry, undefined, undefined, character);
+      const body = new Body(claimed(registry.body, 'player')!);
+      applyStartState(inventory, { ...start, kit: [], wounds: [] }, { fresh: true, character, body });
+      for (const skill of registry.skills.keys()) {
+        expect([start.id, skill, character.skills[skill]]).toEqual([start.id, skill, SKILL_LEVEL_MAX]);
+      }
+    }
+  });
 });
 
 describe('new-game application', () => {

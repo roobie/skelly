@@ -1,11 +1,10 @@
 local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
 {
-  starts: [kit.common + {
+  starts: [kit.fixture + {
     id: 'amalgamlook',
     site: 'testHouseAmalgam',
-    debugOnly: true,
     startTimeGameTimeOfDay: kit.day.noonGameTimeOfDay,
-    kit: kit.common.kit + [
+    kit: kit.fixture.kit + [
       { id: 'shotgun', item: 'pump_shotgun', condition: 1, destination: { kind: 'hand', role: 'dominant' } },
       {
         id: 'buckshot', item: 'shell_12_gauge_00_buck', count: 8,

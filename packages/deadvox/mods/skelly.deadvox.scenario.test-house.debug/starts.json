@@ -1,6 +1,7 @@
 {
   "starts": [
     {
+      "allSkills": 10,
       "debugOnly": true,
       "defaultForSite": true,
       "density": null,

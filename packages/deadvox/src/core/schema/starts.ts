@@ -19,7 +19,7 @@ import {
   union,
 } from 'valibot';
 import { BODY_REGIONS } from '../body.ts';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../character.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../character.ts';
 import { FixedLootOverride, StartDescentSchema } from './layouts.ts';
 import { Count, Fraction, GameTimeOfDay, Id, Name } from './primitives.ts';
 import { CellPosition } from './templates.ts';
@@ -75,6 +75,9 @@ export const StartSchema = strictObject({
     }),
   ),
   wounds: array(strictObject({ region: picklist(BODY_REGIONS), bleeding: Id })),
+  /** Every content skill's starting level, under the start's own `skills`; null marks a debug start that tests
+   * skills and so keeps the ordinary levels (`docs/PROCESS.md`, "Reviews by eye and by play"). */
+  allSkills: optional(nullable(pipe(number(), integer(), minValue(SKILL_LEVEL_MIN), maxValue(SKILL_LEVEL_MAX)))),
   skills: record(Id, pipe(number(), integer(), minValue(SKILL_LEVEL_MIN), maxValue(SKILL_LEVEL_LEGENDARY))),
   recipes: array(Id),
 });

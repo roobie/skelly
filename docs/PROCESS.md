@@ -121,6 +121,11 @@ Whoever merges ticks by hand what the workflow cannot. Slice 3's checklist is #2
   (`/?debug=1&start=<fixture start>&mods=<debug mod>`). Reason: a look spends the tester's time
   on the check, not on setup. A start cannot hand over a loaded weapon until #1570, so a look
   that needs one pockets the ammunition. Anything that saves needs HTTPS (a secure context).
+- **deadvox debug, review and test starts give every skill its top level.** Each builds on
+  the start kit's fixture row, which sets every content skill there; see
+  `tools/jsonnet/lib/start-kit.libsonnet`, `fixture`, and `packages/deadvox/src/core/startState.ts`,
+  `startSkills`. Reason: low skill adds spread and failure, which hides what the look is
+  checking. A start that tests skills opts out in its own row with `allSkills: null`.
 - **Quote the maintainer's verdict verbatim.** A verdict on one item never counts for another.
 
 ## Slice decision rules

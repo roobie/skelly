@@ -63,6 +63,20 @@ export const applyStartKit = (inventory: Inventory, start: StartDef): void => {
   }
 };
 
+/** A start's skill levels: `allSkills` for every skill the content defines, then the start's own `skills`. */
+export const startSkills = (
+  skills: ReadonlyMap<string, unknown>,
+  start: Pick<StartDef, 'allSkills' | 'skills'>,
+): Record<string, number> => {
+  const { allSkills } = start;
+  return {
+    ...(allSkills === undefined || allSkills === null
+      ? {}
+      : Object.fromEntries([...skills.keys()].map((id) => [id, allSkills]))),
+    ...start.skills,
+  };
+};
+
 export const applyStartState = (
   inventory: Inventory,
   start: StartDef,
@@ -73,7 +87,7 @@ export const applyStartState = (
   }
   applyStartKit(inventory, start);
   try {
-    context.character.initializeProgression(start.skills, start.recipes);
+    context.character.initializeProgression(startSkills(inventory.registry.skills, start), start.recipes);
   } catch (error) {
     startFailure(inventory, start, 'progression', error);
   }
