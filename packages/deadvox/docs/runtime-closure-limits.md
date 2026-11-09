@@ -56,9 +56,11 @@ sees.
   registers, and data files that name presentation modules are not imports, so the check never sees
   them; it guards module edges only.
 - **Insides of npm packages:** a package that is neither a workspace nor named in
-  `RUNTIME_POLICY`, `forbiddenPackages` is a leaf, so what it imports is not walked, and its own
-  DOM use is the typecheck's to find, not the walk's. Local source files in the runtime set are
-  always followed, except under a directory `RUNTIME_POLICY`, `leaves` names.
+  `RUNTIME_POLICY`, `forbiddenPackages` is a leaf, so what it imports is not walked. Its DOM use is
+  not caught by either check: the no-DOM typecheck inherits `skipLibCheck`, so it reads neither the
+  package's JavaScript nor errors in its declarations, and a declaration typed with a DOM type such
+  as `HTMLElement` still compiles in runtime code that imports it. Local source files in the
+  runtime set are always followed, except under a directory `RUNTIME_POLICY`, `leaves` names.
 - **Negated glob patterns:** skipped, so the check matches more than Vite does; this over-reports
   and never hides an edge.
 

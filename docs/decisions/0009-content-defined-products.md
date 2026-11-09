@@ -256,7 +256,7 @@ reaches nothing outside that set, not even for types: no presentation, render or
 and no product configuration, mods or pages, whether by import or by glob. The runtime
 then moves out as its own package with nothing left behind to import, and the presentation
 side moves out whole. See `packages/deadvox/tools/runtimeClosure.ts`, `RUNTIME_POLICY`.
-The same set also compiles without DOM types, so a browser API used in the runtime fails
+The same set also compiles without DOM types, so a DOM-only name in runtime source fails
 the deadvox typecheck; see `packages/deadvox/tsconfig.runtime.json`. The checks guard
 honest edits, not deliberate bypasses; what they do not check is in
 `packages/deadvox/docs/runtime-closure-limits.md`, "Not checked".
