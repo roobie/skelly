@@ -58,11 +58,17 @@ export const deathViewModel = (registry: Registry, summary: DeathSummary): Death
   };
 };
 
+/** The death screen's one way on: a new world, or what the caller names, such as restarting practice. */
+export interface DeathAgain {
+  readonly act: () => void;
+  readonly label?: string;
+}
+
 const deathTemplate = (
   vm: DeathViewModel,
   text: DeathText,
   feedbackHref: string,
-  newWorld: () => void,
+  again: DeathAgain,
 ): TemplateResult => html`
   <div class="card">
     <h1>${text.heading}</h1>
@@ -70,15 +76,15 @@ const deathTemplate = (
     <p>${fillText(text.seed, { seed: countText(vm.worldSeed) })}</p>
     <p>${vm.summary}</p>
     <p><a href=${feedbackHref} target="_blank" rel="noopener">${text.feedback}</a></p>
-    <button type="button" @click=${newWorld}>${text.newWorld}</button>
+    <button type="button" @click=${again.act}>${again.label ?? text.newWorld}</button>
   </div>
 `;
 
-export const showDeath = (root: HTMLElement, registry: Registry, summary: DeathSummary, newWorld: () => void): void => {
+export const showDeath = (root: HTMLElement, registry: Registry, summary: DeathSummary, again: DeathAgain): void => {
   const feedbackHref = root.ownerDocument.querySelector<HTMLAnchorElement>('#playtest-feedback')?.href;
   if (!feedbackHref) {
     throw new Error('Missing #playtest-feedback link');
   }
-  render(deathTemplate(deathViewModel(registry, summary), deathText(registry), feedbackHref, newWorld), root);
+  render(deathTemplate(deathViewModel(registry, summary), deathText(registry), feedbackHref, again), root);
   root.hidden = false;
 };

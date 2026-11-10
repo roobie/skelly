@@ -78,7 +78,7 @@ describe('page links', () => {
     expect(readHash(next.hash)).toEqual({ hash: { debug: true, seed: 4 } });
   });
 
-  it('carries only the view radius and actor models into and out of practice', () => {
+  it('carries only the view radius and actor models into practice', () => {
     expect(readHash(tutorialHash({ debug: true, seed: 3, radius: 64, actors: 'boxes' }))).toEqual({
       hash: { radius: 64, actors: 'boxes' },
     });
@@ -88,12 +88,10 @@ describe('page links', () => {
     const page =
       'https://example.org/deadvox/?mods=fixture&start-mod=fixture.start&render=0#{debug:true,seed:3,radius:64,cam:[1,2,3,0,0,0]}';
     const { hash } = readPageUrl(new URL(page).search, new URL(page).hash);
-    const enterPractice = tutorialUrl(page, 'fixture.practice', true, tutorialHash(hash));
     const links = {
       newWorld: newWorldHref(page, hash, 4),
       replay: replayHref(page, hash),
-      enterPractice,
-      leavePractice: tutorialUrl(enterPractice, 'fixture.practice', false, tutorialHash(hash)),
+      enterPractice: tutorialUrl(page, 'fixture.practice', tutorialHash(hash)),
     };
     for (const [name, href] of Object.entries(links)) {
       const url = new URL(href);

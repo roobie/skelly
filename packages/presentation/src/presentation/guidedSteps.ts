@@ -64,7 +64,7 @@ export class GuidedSteps {
   }
 
   choose(id: string): void {
-    if (this.canChoose(id) && this.definition.choices.find((row) => row.id === id)?.action === 'choose') {
+    if (this.canChoose(id)) {
       this.achieved.add(id);
     }
   }

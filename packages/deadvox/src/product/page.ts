@@ -2,11 +2,10 @@
 
 import type { StartDef } from '@skelly/engine/content';
 import type { PlayPage } from '@skelly/presentation/play';
-import { tutorialUrl } from '@skelly/presentation/tutorialUrl';
 import { type HashState, writeHash } from '../hashState.ts';
 import { pageUrl } from '../pageUrl.ts';
 
-/** The hash keys the practice tutorial keeps from the page it leaves or enters. */
+/** The hash keys the practice link keeps from the page it is on. */
 export const tutorialHash = ({ radius, actors }: HashState): string =>
   writeHash({ ...(radius === undefined ? {} : { radius }), ...(actors === undefined ? {} : { actors }) });
 
@@ -49,13 +48,12 @@ export const replayHref = (href: string, { cam: _cam, freeze: _freeze, ...hash }
   return url.href;
 };
 
-/** The game page; `practiceMod` is the mod that leaving practice drops. */
-export const playPage = (practiceMod: string | undefined): PlayPage => {
+/** The game page. */
+export const playPage = (): PlayPage => {
   const { query, hash } = pageUrl();
   return {
     debugError: query.get('debug-error') === '1',
     // The hash is read again at each link, so it carries what the debug tools wrote back since startup.
-    leaveTutorial: () => location.assign(tutorialUrl(location.href, practiceMod, false, tutorialHash(pageUrl().hash))),
     newWorld: (seed) => location.assign(newWorldHref(location.href, pageUrl().hash, seed)),
     reloadForReplay: () => location.assign(replayHref(location.href, pageUrl().hash)),
     reviewMapHref: new URL('map.html', location.href).href,

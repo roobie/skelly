@@ -82,9 +82,8 @@ function(kit) {
     step('complete', never, menuTopic, [hint(join([[text(t.weaponsComplete)], menu]))]),
   ],
   choices: [
-    { id: 'weapons', at: ['finish'], label: t.weaponsPractice, once: true, action: 'choose' },
-    { id: 'finish', at: ['finish', 'complete'], label: t.finishPractice, once: false, action: 'exit' },
-    { id: 'light-choice', at: ['finish', 'complete'], label: kit.labels.start, once: true, action: 'choose' },
+    { id: 'weapons', at: ['finish'], label: t.weaponsPractice, once: true },
+    { id: 'light-choice', at: ['finish', 'complete'], label: kit.labels.start, once: true },
   ],
-  chrome: { inventory: t.inventory, closeInventory: t.closeInventory, wieldSelectedItem: t.wieldSelectedItem, unsaved: t.unsaved, controls: t.practiceControls, restart: t.restart, exit: t.exit },
+  chrome: { inventory: t.inventory, closeInventory: t.closeInventory, wieldSelectedItem: t.wieldSelectedItem, unsaved: t.unsaved, controls: t.practiceControls, restart: t.restart },
 }

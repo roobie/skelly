@@ -24,9 +24,9 @@
   sightsOff: 'Sights off', reloadAfterFiring: 'Reload after firing', sightedFire: 'Sighted fire', sights: 'Sights',
   unloadLiveRounds: 'Unload live rounds', unload: 'Unload — press, then hold', emptyHands: 'Empty hands',
   putDownSelected: 'Put down selected item', stowSelected: 'Stow selected item', enGarde: 'En garde', punch: 'Punch',
-  weaponsComplete: 'Weapons practice complete', weaponsPractice: 'Weapons practice', finishPractice: 'Finish practice',
+  weaponsComplete: 'Weapons practice complete', weaponsPractice: 'Weapons practice',
   rangeSupplies: 'Range — north-west dirt path · Range supplies — Backpack / boxed ammunition',
   loadingDetail: 'I need loose ammunition on me and a free hand to load the revolver. I can stop loading before it is full.',
   pumpingDetail: 'Pumping chambers a shell from the tube; unloading ejects live rounds. Ammunition is finite; Restart practice replaces the whole attempt.',
-  unsaved: 'Unsaved practice', practiceControls: 'Practice controls', restart: 'Restart practice', exit: 'Exit practice',
+  unsaved: 'Unsaved practice', practiceControls: 'Practice controls', restart: 'Restart practice',
 }

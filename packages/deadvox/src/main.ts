@@ -215,7 +215,7 @@ if (bench === 'report') {
   const debugModule = config.debug ? await import('./debug/index.ts') : undefined;
   const skyRoute = params.get('skyRoute') === '1' ? await debugModule?.loadSkyRoute() : undefined;
   const practiceMod = practiceModId(productModIntake, content.registry);
-  const page = playPage(practiceMod);
+  const page = playPage();
   const engineOptions = { render: !renderFree };
   if (pendingReplay) {
     try {
@@ -271,11 +271,14 @@ if (bench === 'report') {
     }
   } else {
     const practiceStart = document.getElementById('tutorial-start')!;
-    practiceStart.hidden = practiceMod === undefined;
-    practiceStart.addEventListener('click', (event) => {
-      event.stopPropagation();
-      location.assign(tutorialUrl(location.href, practiceMod, true, tutorialHash(hash)));
-    });
+    // A page that names its start does not offer practice; why: `docs/tutorial.md`, "Disposable practice".
+    practiceStart.hidden = practiceMod === undefined || params.has('start-mod');
+    if (!practiceStart.hidden) {
+      practiceStart.addEventListener('click', (event) => {
+        event.stopPropagation();
+        location.assign(tutorialUrl(location.href, practiceMod!, tutorialHash(hash)));
+      });
+    }
     const saveBackend = params.get('save-backend');
     const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
     const saveController = new SaveController(

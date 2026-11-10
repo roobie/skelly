@@ -530,21 +530,12 @@
       "guidance": {
         "choices": [
           {
-            "action": "choose",
             "at": ["finish"],
             "id": "weapons",
             "label": "Weapons practice",
             "once": true
           },
           {
-            "action": "exit",
-            "at": ["finish", "complete"],
-            "id": "finish",
-            "label": "Finish practice",
-            "once": false
-          },
-          {
-            "action": "choose",
             "at": ["finish", "complete"],
             "id": "light-choice",
             "label": "Light and power (optional)",
@@ -554,7 +545,6 @@
         "chrome": {
           "closeInventory": "Close inventory",
           "controls": "Practice controls",
-          "exit": "Exit practice",
           "inventory": "Inventory",
           "restart": "Restart practice",
           "unsaved": "Unsaved practice",

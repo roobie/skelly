@@ -88,9 +88,7 @@ const GuidanceFields = strictObject({
     ),
     minLength(1),
   ),
-  choices: array(
-    strictObject({ id: Key, at: array(Key), label: Name, once: vBoolean(), action: picklist(['choose', 'exit']) }),
-  ),
+  choices: array(strictObject({ id: Key, at: array(Key), label: Name, once: vBoolean() })),
   chrome: strictObject({
     inventory: Name,
     closeInventory: Name,
@@ -98,15 +96,13 @@ const GuidanceFields = strictObject({
     unsaved: Name,
     controls: Name,
     restart: Name,
-    exit: Name,
   }),
 });
 
 export type GuidanceDef = InferOutput<typeof GuidanceFields>;
 export type GuidanceGate = GuidanceDef['steps'][number]['complete'];
 
-const factIds = (guide: GuidanceDef) =>
-  [...guide.rules, ...guide.choices.filter(({ action }) => action === 'choose')].map(({ id }) => id);
+const factIds = (guide: GuidanceDef) => [...guide.rules, ...guide.choices].map(({ id }) => id);
 const unique = (ids: string[]) => new Set(ids).size === ids.length;
 const identitiesUnique = (guide: GuidanceDef) =>
   unique(factIds(guide)) &&

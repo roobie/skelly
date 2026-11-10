@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you change tutorial entry, objectives, practice content or save isolation
+  - you change how practice is entered or left, its objectives, practice content or save isolation
 ---
 
 # Disposable practice
@@ -57,12 +57,17 @@ every link that starts the tutorial gets the same isolation. See
 `packages/engine/src/game/startSelection.ts`, `isPracticeStart`, and
 `packages/presentation/src/presentation/play.ts`, `startPlay`.
 
-Completion, death and voluntary exit return to the start choice rather than silently
-creating a world or transferring equipment. Finishing the essentials must not force
-an exit while optional modules are still available. Returning by navigation gives
-one owner the disposal of the practice runtime. Retain storage selection so Continue
-finds the same normal save, without carrying practice's world or debug choices into
-it. See `packages/presentation/src/presentation/tutorialUrl.ts`, `tutorialUrl`.
+Practice is a page, not a mode inside a run. Its own link names the practice pack and
+never carries `start-mod`, and the player leaves it with the browser, by Back or by
+closing the tab. One link names one start, so start order needs no practice exception,
+and the browser already owns leaving a page. A page whose link carries `start-mod`
+names its own start, so it does not offer practice. See
+`packages/presentation/src/presentation/tutorialUrl.ts`, `tutorialUrl`.
+
+Death and completion stay on the practice page, whose one end control restarts
+practice; nothing creates a world or transfers equipment. Finishing the essentials
+must not end practice while optional modules are still available. See
+`packages/presentation/src/presentation/play.ts`, `restartPractice`.
 
 The launcher offers practice only as a play destination, so a benchmark cannot carry
 an unsaved teaching place. Its URL contract stays independent of simulation and

@@ -92,7 +92,6 @@ describe('practice objectives', () => {
     tutorial.choose('light-choice');
     observe();
     expect(tutorial.stage).toBe('revolver');
-    expect(new URL(tutorialUrl('https://example.org/deadvox/?mods=practice', 'practice', false)).search).toBe('');
   });
 
   it('completes the light module on a lit light, a finished battery swap and the light on again', () => {
@@ -222,26 +221,23 @@ describe('practice objectives', () => {
     expect(tutorial.stage).toBe('escape');
   });
 
-  it('enters practice after the page mods and returns to them', () => {
+  it('links practice after the page mods', () => {
     for (const mods of [null, 'scenario', 'scenario,beginner']) {
       const page = `https://example.org/deadvox/${mods === null ? '' : `?mods=${mods}`}`;
-      const entered = new URL(tutorialUrl(page, 'practice', true));
+      const entered = new URL(tutorialUrl(page, 'practice'));
       expect(entered.searchParams.get('mods')).toBe(mods === null ? 'practice' : `${mods},practice`);
-      expect(new URL(tutorialUrl(entered.href, 'practice', false)).searchParams.get('mods')).toBe(mods);
     }
   });
 
-  it('clears continuation and debug parameters on exit', () => {
-    const start = new URL(
+  it('links practice without the page start mod, storage, continuation or debug parameters', () => {
+    const entered = new URL(
       tutorialUrl(
-        'https://example.org/deadvox/?mods=practice&skyRoute=1&save-backend=indexeddb#{debug:true}',
+        'https://example.org/deadvox/?start-mod=fixture.start&skyRoute=1&save-backend=indexeddb&render=webgl#{debug:true}',
         'practice',
-        false,
       ),
     );
-    expect(start.pathname).toBe('/deadvox/');
-    expect(start.searchParams.get('save-backend')).toBe('indexeddb');
-    expect([...start.searchParams.keys()]).toEqual(['save-backend']);
-    expect(start.hash).toBe('');
+    expect(entered.pathname).toBe('/deadvox/');
+    expect([...entered.searchParams.keys()]).toEqual(['render', 'mods']);
+    expect(entered.hash).toBe('');
   });
 });

@@ -627,8 +627,6 @@ const createPlayRefusalPresenter = (
 export interface PlayPage {
   /** A debug run's harness asked for the deliberate error frame. */
   readonly debugError: boolean;
-  /** Leaves practice for the page it came from. */
-  readonly leaveTutorial: () => void;
   /** Loads a new world from `seed`, keeping the page's content and developer state. */
   readonly newWorld: (seed: number) => void;
   /** Reloads in debug so the stashed input replay starts. */
@@ -698,7 +696,13 @@ const assertPracticeIsolation = (options: StartPlayOptions, guided: boolean): vo
   }
 };
 
-const createPlayGuidance = (engine: Engine, keys: KeyLabels, leaveTutorial: () => void) => {
+/**
+ * Practice is its own page, which the player leaves with the browser, so its only end control loads the page again;
+ * why: `packages/deadvox/docs/tutorial.md`, "Disposable practice".
+ */
+const restartPractice = () => location.reload();
+
+const createPlayGuidance = (engine: Engine, keys: KeyLabels) => {
   const definition = engine.site?.guidance;
   if (!definition) {
     return {};
@@ -714,7 +718,7 @@ const createPlayGuidance = (engine: Engine, keys: KeyLabels, leaveTutorial: () =
     stageMarkArea(marks.beats, exitMark),
     definition,
   );
-  const drawGuidance = mountGuidance(guide, leaveTutorial, () => location.reload(), keys);
+  const drawGuidance = mountGuidance(guide, restartPractice, keys);
   return { guide, drawGuidance };
 };
 
@@ -773,7 +777,7 @@ const startPlayWith = (
   configureReplayStreaming(engine, options.replay);
   const { scale } = config;
   const s = scale.blockSize;
-  const { guide, drawGuidance } = createPlayGuidance(engine, inputBindings, options.page.leaveTutorial);
+  const { guide, drawGuidance } = createPlayGuidance(engine, inputBindings);
 
   const playerStart = playerStartFromWorld(engine, scale, config.debugStart, {
     restoring: options.restore !== undefined,
@@ -3137,7 +3141,9 @@ const startPlayWith = (
       $('death'),
       registry,
       summary,
-      guide ? options.page.leaveTutorial : () => options.page.newWorld(config.seed + 1),
+      guide
+        ? { act: restartPractice, label: guide.definition.chrome.restart }
+        : { act: () => options.page.newWorld(config.seed + 1) },
     );
   };
   if (options.saveController) {

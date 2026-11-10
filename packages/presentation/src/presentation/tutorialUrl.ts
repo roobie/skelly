@@ -1,32 +1,21 @@
 /**
- * The page entering or leaving practice. Practice is a scenario picked through `mods`, so entering adds the practice
- * mod after the page's own mods, whose start then begins the run, and leaving drops it. The page's `start-mod` stays,
- * unused in practice, so leaving returns to it. The product passes that mod's id and the hash text practice keeps.
+ * The practice page linked from `href`. Practice is a scenario picked through `mods`, so the link adds the practice
+ * mod after the page's own mods, whose start then begins the run. It drops the page's `start-mod`, which would
+ * otherwise win, and every other setting but the renderer and the hash text the product keeps. Why practice is its
+ * own page: `packages/deadvox/docs/tutorial.md`, "Disposable practice".
  */
-export const tutorialUrl = (
-  href: string,
-  practiceMod: string | undefined,
-  practice: boolean,
-  keptHash = '',
-): string => {
+export const tutorialUrl = (href: string, practiceMod: string, keptHash = ''): string => {
   const url = new URL(href);
   const presentation = new URLSearchParams();
-  for (const name of ['render', 'save-backend', 'start-mod']) {
-    const value = url.searchParams.get(name);
-    if (value !== null) {
-      presentation.set(name, value);
-    }
+  const render = url.searchParams.get('render');
+  if (render !== null) {
+    presentation.set('render', render);
   }
   const mods = (url.searchParams.get('mods') ?? '')
     .split(',')
     .map((id) => id.trim())
-    .filter((id) => id !== '' && id !== '1' && id !== practiceMod);
-  if (practice && practiceMod !== undefined) {
-    mods.push(practiceMod);
-  }
-  if (mods.length > 0) {
-    presentation.set('mods', mods.join(','));
-  }
+    .filter((id) => id !== '' && id !== '1');
+  presentation.set('mods', [...mods, practiceMod].join(','));
   url.search = presentation.toString();
   url.hash = keptHash;
   return url.href;

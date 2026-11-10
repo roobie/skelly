@@ -167,11 +167,8 @@ export const selectBundledMods = (
   const startFile = result.admitted.find(({ source }) => source === startSource);
   const startRows = ownStartRows(result, startMod, startFile);
   const inline = startMod?.form === 'inline' ? startFile : undefined;
-  // Practice keeps the page's start mod in its link without starting from it, so leaving practice returns there.
-  const practiceMod = practiceModId(intake, result.content.registry);
-  const practice = practiceMod !== undefined && ids.includes(practiceMod);
   return {
-    content: startRows?.length === 1 && !practice ? { ...result.content, startModStart: startRows[0] } : result.content,
+    content: startRows?.length === 1 ? { ...result.content, startModStart: startRows[0] } : result.content,
     admitted: result.admittedInOrder
       .filter((mod) => mod !== inline)
       .map((mod) => (isFolderPack(mod) ? optInPackIdentity(mod) : identity(mod))),

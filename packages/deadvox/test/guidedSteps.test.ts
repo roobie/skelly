@@ -42,7 +42,7 @@ const fixture = () => {
       step('swap', gate(['changed']), gate(['extra'])),
       step('done', { ...gate(), any: [] }),
     ],
-    choices: [{ id: 'extra', at: ['done'], once: true, action: 'choose', label: 'Extra' }],
+    choices: [{ id: 'extra', at: ['done'], once: true, label: 'Extra' }],
     chrome: {
       inventory: 'Inventory',
       closeInventory: 'Close',
@@ -50,7 +50,6 @@ const fixture = () => {
       unsaved: 'Unsaved',
       controls: 'Controls',
       restart: 'Restart',
-      exit: 'Exit',
     },
   };
   const guide = new GuidedSteps([0, 0, 0], 0, { x0: 10, x1: 11, z0: 10, z1: 11 }, definition);

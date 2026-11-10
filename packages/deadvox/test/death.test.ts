@@ -51,7 +51,7 @@ describe('death card', () => {
     document.body.append(feedback, root);
 
     try {
-      showDeath(root, registry, summary({ worldSeed }), () => undefined);
+      showDeath(root, registry, summary({ worldSeed }), { act: () => undefined });
       expect(root.textContent).toContain(String(worldSeed));
     } finally {
       feedback.remove();

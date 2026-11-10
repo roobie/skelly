@@ -73,7 +73,7 @@ const stageHint = (guide: GuidedSteps, state: GuidancePresentation, keys: KeyLab
   return selectedGuidanceHint(guide, state).map(part);
 };
 
-export const mountGuidance = (guide: GuidedSteps, exit: () => void, restart: () => void, keys: KeyLabels) => {
+export const mountGuidance = (guide: GuidedSteps, restart: () => void, keys: KeyLabels) => {
   const box = document.getElementById('tutorial-objective')!;
   box.hidden = false;
   const text = guide.definition.chrome;
@@ -99,12 +99,11 @@ export const mountGuidance = (guide: GuidedSteps, exit: () => void, restart: () 
           .map(
             (choice) => html`
             <button type="button" data-tutorial-choice=${choice.id}
-              @click=${() => (choice.action === 'exit' ? exit() : guide.choose(choice.id))}>${choice.label}</button>
+              @click=${() => guide.choose(choice.id)}>${choice.label}</button>
           `,
           )}
         <button type="button" @click=${openControls}>${text.controls}</button>
         <button type="button" @click=${restart}>${text.restart}</button>
-        <button type="button" @click=${exit}>${text.exit}</button>
       </div>
       ${guide.step.notes.map((note) => html`<p class="tutorial-action-note">${note}</p>`)}
     `,

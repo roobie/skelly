@@ -65,8 +65,8 @@ export const guidanceFixture = (light: string): GuidanceDef => {
       step('complete', never),
     ],
     choices: [
-      { id: 'weapons', at: ['finish'], action: 'choose', once: true, label: 'Fixture handling' },
-      { id: 'light-choice', at: ['finish', 'complete'], action: 'choose', once: true, label: 'Fixture light' },
+      { id: 'weapons', at: ['finish'], once: true, label: 'Fixture handling' },
+      { id: 'light-choice', at: ['finish', 'complete'], once: true, label: 'Fixture light' },
     ],
     chrome: {
       inventory: 'Inventory',
@@ -75,7 +75,6 @@ export const guidanceFixture = (light: string): GuidanceDef => {
       unsaved: 'Unsaved',
       controls: 'Controls',
       restart: 'Restart',
-      exit: 'Exit',
     },
   };
 };
