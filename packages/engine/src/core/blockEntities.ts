@@ -1032,7 +1032,7 @@ export class BlockEntities {
     return undefined;
   }
 
-  /** A piece that stops movement and a body's box overlaps, such as the door or crate a zombie presses against. */
+  /** A piece that stops movement and a body's box overlaps, such as the door or crate an actor presses against. */
   pieceTouching(body: Body): BlockEntity | undefined {
     const halfDepth = body.halfDepth ?? body.halfWidth;
     const [px, py, pz] = body.pos;
@@ -1120,7 +1120,7 @@ export class BlockEntities {
   }
 
   /**
-   * One blow against a standing piece, a zombie's bash or a player's strike alike; an open leaf is a gap, not a
+   * One blow against a standing piece, an actor's bash or a player's strike alike; an open leaf is a gap, not a
    * target. A blow below the piece's minimum strength leaves no mark, so waiting never lets a weak attacker through;
    * stronger blows add their strength until it reaches the durability. A broken leaf stands open and its lock and
    * bar are gone, so the breach is one-way, as forcing is. Any other piece is ruined, its damage set to its durability, and

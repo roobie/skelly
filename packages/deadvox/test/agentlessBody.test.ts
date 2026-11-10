@@ -81,10 +81,10 @@ it('an agentless content body ticks, takes a hit and saves without decision stat
   for (const state of [{ attackWindup: 1 }, { attackWait: 1 }, { chaseStance: true }]) {
     const invalid = structuredClone(decoded.snapshot);
     Object.assign(invalid.world.actors.actors.find((entry) => entry.id === id)!.actor, state);
-    expect.soft(() => runtime(invalid, content), JSON.stringify(state)).toThrow('Invalid zombie state');
+    expect.soft(() => runtime(invalid, content), JSON.stringify(state)).toThrow('Invalid actor state');
   }
 
   const corrupt = structuredClone(decoded.snapshot);
   corrupt.world.actors.actors.find((entry) => entry.id === id)!.actor.footstepClock.distanceUntilStep = 0;
-  expect(() => runtime(corrupt, content)).toThrow('Invalid zombie state');
+  expect(() => runtime(corrupt, content)).toThrow('Invalid actor state');
 });

@@ -519,7 +519,7 @@ export interface SessionOptions {
   terrainFloor?: (x: number, z: number) => number;
   /** Whether the world under (x, z), in blocks, is loaded enough to stand on. */
   ready: (x: number, z: number) => boolean;
-  /** Optional replayed terrain readiness used only to classify zombie tiers. */
+  /** Optional replayed terrain readiness used only to classify actor tiers. */
   actorReady?: ((x: number, z: number) => boolean) | undefined;
   controls: SessionControls;
   audio: SessionAudio;
@@ -562,13 +562,13 @@ export interface SessionOptions {
   actorEffects?: {
     /** A hit drew blood: where it struck, along which line, and how hard. */
     onWound?: (id: EntityId, actor: Actor, hit: HitImpulse, damage: number) => void;
-    /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
+    /** A part was cut off (the actor's `severed` already lists it). Fires before onDeath on a killing blow. */
     onSever?: (id: EntityId, actor: Actor, part: string, hit: HitImpulse) => void;
     /** A hit knocked flesh out of a fused-mass body (its `carved` already lists `cells`). */
     onCarve?: (id: EntityId, actor: Actor, cells: readonly number[], hit: HitImpulse) => void;
-    /** A zombie became incapacitated but remains in the store and may be revived later. */
+    /** An actor became incapacitated but remains in the store and may be revived later. */
     onIncapacitated?: (id: EntityId, actor: Actor) => void;
-    /** A zombie died: it is already out of the store, and its loot is already dropped. */
+    /** An actor died: it is already out of the store, and its loot is already dropped. */
     onDeath?: (id: EntityId, actor: Actor) => void;
     /** The actual result of the player's last swing, for debug-only presentation. */
     onMeleeResult?: (result: MeleeResult) => void;
@@ -586,7 +586,7 @@ export interface SessionOptions {
   /**
    * Continue from a save. Inventory and block-entity state are restored into the
    * game's shared `entities` object. Re-streamed columns are safe: entity anchors and
-   * the zombie-spawn ledger prevent resetting existing furniture or respawning actors.
+   * the actor-spawn ledger prevent resetting existing furniture or respawning actors.
    */
   restore?: Readonly<SaveSnapshot>;
 }
@@ -928,7 +928,7 @@ export const createSession = (options: SessionOptions) => {
     wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
   });
   const { entities } = inventory;
-  // Zombie ticks share vertical block geometry; revisions keep edits visible to every caller.
+  // Actor ticks share vertical block geometry; revisions keep edits visible to every caller.
   const sunExposureCache = new SunExposureCache(skyTop, scale.minCy * CHUNK, isLightBlocking);
   // Rebuilt from restored world state and never saved, so a reload answers the same at the same position.
   const skyFields = sessionSkyFields(options.skyFields, { world, entities, registry }, scale, skyTop);
@@ -1530,7 +1530,7 @@ export const createSession = (options: SessionOptions) => {
     blockSize: s,
   });
   /**
-   * One blow on a piece, a zombie's bash or the player's strike; every blow is heard, whatever it does, in the sound
+   * One blow on a piece, an actor's bash or the player's strike; every blow is heard, whatever it does, in the sound
    * its material names. A blow that ruins a piece destroys it, and whatever came down with it, with the work that
    * names them; where what it held has no room to fall, the piece stands until a blow finds room.
    */
@@ -1812,7 +1812,7 @@ export const createSession = (options: SessionOptions) => {
     }
     return location ? bodyCentre(body) : undefined;
   };
-  /** The explosive is used up; the blast and its fragments hurt zombies and the player alike (`packages/deadvox/DESIGN.md`, "Hand grenade"). */
+  /** The explosive is used up; the blast and its fragments hurt actors and the player alike (`packages/deadvox/DESIGN.md`, "Hand grenade"). */
   const detonate = (item: Item): void => {
     const spec = registry.items.get(item.type)?.explosive;
     const at = detonationPoint(item);
@@ -2937,7 +2937,7 @@ export const createSession = (options: SessionOptions) => {
     slideFurniture: slidePiece,
     placeFurniture: placePiece,
     removeFurniture: removePiece,
-    /** One blow on a piece, landed as a zombie's bash or the player's strike lands it. */
+    /** One blow on a piece, landed as an actor's bash or the player's strike lands it. */
     bashFurniture: bashPiece,
     turnFurniture: () => turnCarried(inventory),
     tipFurniture: () => tipCarried(inventory),

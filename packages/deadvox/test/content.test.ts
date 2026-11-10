@@ -486,7 +486,7 @@ describe('content', () => {
     ] as const) {
       expect(
         invalidActorRegionIssues('shambler', regionId, change).some(
-          ({ message }) => message === 'zombie region keys must match the model',
+          ({ message }) => message === 'actor region keys must match the model',
         ),
       ).toBe(true);
     }
@@ -504,7 +504,7 @@ describe('content', () => {
 
     expect(
       validateContent({ source: actorFile.source, data }).some(
-        ({ message }) => message === 'zombie move ids must be unique',
+        ({ message }) => message === 'actor move ids must be unique',
       ),
     ).toBe(true);
   });
@@ -617,7 +617,7 @@ describe('content', () => {
     ] as const) {
       expect(
         invalidActorRegionIssues('amalgam', regionId, change).some(
-          ({ message }) => message === 'zombie region keys must match the model',
+          ({ message }) => message === 'actor region keys must match the model',
         ),
       ).toBe(true);
     }
@@ -3134,7 +3134,7 @@ describe('templates', () => {
     });
     expect(check(t)).toEqual([
       'templates[0].palette["a"]: no block "unobtainium"',
-      'templates[0].palette["b"].spawn: no zombie type "ghost"',
+      'templates[0].palette["b"].spawn: no actor type "ghost"',
       'templates[0].palette["c"].furniture: no furniture "throne"',
       'templates[0].palette["c"].loot: no loot table "hoard"',
     ]);
