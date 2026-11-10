@@ -273,7 +273,6 @@ describe('command router', () => {
       }
       compression.stop();
       planRealFrame(compression, realSeconds(1 / 60));
-      expect(compression.c).toBeGreaterThan(1);
       return compression;
     };
     const reloadRouter = (compression: Compression, loadRefusal: string | undefined) => {
@@ -306,11 +305,12 @@ describe('command router', () => {
       );
       return { router, reload: controls.reload };
     };
-    const hold = RELOAD_GESTURE_MS.hold;
+    const { hold } = RELOAD_GESTURE_MS;
 
     it('keeps the ramp for a short single tap, which has no action', () => {
       const compression = rampingDown();
       const before = compression.c;
+      expect(before).toBeGreaterThan(1);
       const { router, reload } = reloadRouter(compression, undefined);
       reload.keyDown(0, router.reloadBinding());
       reload.keyUp(hold / 2);
@@ -321,6 +321,7 @@ describe('command router', () => {
     it('keeps the ramp when the owner refuses a held reload', () => {
       const compression = rampingDown();
       const before = compression.c;
+      expect(before).toBeGreaterThan(1);
       const { router, reload } = reloadRouter(compression, 'full');
       reload.keyDown(0, router.reloadBinding());
       reload.advance(hold * 2, router.reloadBinding());
@@ -329,6 +330,7 @@ describe('command router', () => {
 
     it('ends the ramp when a held reload is admitted', () => {
       const compression = rampingDown();
+      expect(compression.c).toBeGreaterThan(1);
       const { router, reload } = reloadRouter(compression, undefined);
       reload.keyDown(0, router.reloadBinding());
       reload.advance(hold * 2, router.reloadBinding());
