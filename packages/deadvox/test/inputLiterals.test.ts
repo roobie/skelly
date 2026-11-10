@@ -26,8 +26,10 @@ it('finds source files for the keyboard-literal guard', () => {
   expect(scanned.length).toBeGreaterThan(0);
 });
 
-it.each(scanned)('keeps keyboard literals out of %s', (path) => {
-  const issues = keyboardViolations(readFileSync(path, 'utf8')).map((issue) => `${relative(root, path)}: ${issue}`);
+it('keeps keyboard literals out of every source file outside the binding owners', () => {
+  const issues = scanned.flatMap((path) =>
+    keyboardViolations(readFileSync(path, 'utf8')).map((issue) => `${relative(root, path)}: ${issue}`),
+  );
   expect(issues).toEqual([]);
 });
 

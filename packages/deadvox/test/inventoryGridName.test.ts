@@ -11,7 +11,10 @@ it('counts a glyph outside the width table as the widest one', () => {
   );
 });
 
-// The fixture is a single word wider than one line of a cell but well inside the cell's lines.
-it('continues a word wider than a line on the next line', () => {
-  expect(visibleGridName('Abcdefghi', 1, 1)).toBe('Abcdefghi');
+it('continues one long word onto more lines when the cell has more lines', () => {
+  const word = 'm'.repeat(200);
+  const oneLineHigh = visibleGridName(word, 2, 1);
+  const twoLinesHigh = visibleGridName(word, 2, 2);
+  expect(word.startsWith(twoLinesHigh)).toBe(true);
+  expect(twoLinesHigh.length).toBeGreaterThan(oneLineHigh.length);
 });

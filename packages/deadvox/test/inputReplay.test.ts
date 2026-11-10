@@ -48,6 +48,7 @@ import { createSimulationStepper, type InputRecording } from '../src/game/simula
 import { inputReplayStatus } from '../src/presentation/play.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { levelSite } from './fixtures/levelSite.ts';
 import { rifleAmmunition } from './rifleFixture.ts';
 import {
   addFixtureColumn,
@@ -61,7 +62,6 @@ import {
   formatVersion,
   formatWorldOptions,
   removeFixtureColumn,
-  scale,
 } from './snapshotTestSupport.ts';
 
 const INCOMPATIBLE_SAVE = /incompatible|version|identity/i;
@@ -201,43 +201,6 @@ const generatedColumnsReady = (generated: ReadonlySet<string>, x: number, z: num
     }
   }
   return true;
-};
-
-type FixtureWorld = ReturnType<typeof createRuntime>['world'];
-
-const groundTop = (world: FixtureWorld, x: number, z: number): number | undefined => {
-  for (let y = (scale.maxCy + 1) * CHUNK - 1; y >= scale.minCy * CHUNK; y--) {
-    if (world.getBlock(x, y, z) !== 0) {
-      return y;
-    }
-  }
-  return undefined;
-};
-
-/** The shared ground top across a rectangle of cells, or undefined when it is not level. */
-const levelTop = (world: FixtureWorld, [x0, x1]: [number, number], [z0, z1]: [number, number]) => {
-  const tops = new Set<number | undefined>();
-  for (let z = z0; z <= z1; z++) {
-    for (let x = x0; x <= x1; x++) {
-      tops.add(groundTop(world, x, z));
-    }
-  }
-  return tops.size === 1 ? [...tops][0] : undefined;
-};
-
-/** A cell inside the column with level ground for `spread` cells either side along x and `depth` cells along z. */
-const levelSite = (world: FixtureWorld, [cx, cz]: [number, number], spread: number, depth: number) => {
-  const margin = spread + 3;
-  for (let z = cz * CHUNK + margin; z < (cz + 1) * CHUNK - margin; z++) {
-    for (let x = cx * CHUNK + margin; x < (cx + 1) * CHUNK - margin; x++) {
-      const north = z - Math.floor(depth / 2);
-      const top = levelTop(world, [x - spread, x + spread], [north, north + depth - 1]);
-      if (top !== undefined) {
-        return { x, z, north, ground: top + 1 };
-      }
-    }
-  }
-  throw new Error(`Column ${cx},${cz} has no level ground for the fixture`);
 };
 
 const recordActiveSession = (
@@ -761,16 +724,22 @@ describe('input replay', () => {
     expect.soft(status).not.toBe(idleStatus);
   });
 
-  it('rejects recordings from before drag-free throw strength', async () => {
+  it('rejects a replay of another schema version', async () => {
     const start = capture(createRuntime());
     const recorder = new InputReplayRecorder(start);
     recorder.recordTick(replaySample);
     const current = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
-    const differentSchema = JSON.parse(new TextDecoder().decode(current)) as Record<string, unknown>;
-    differentSchema.schemaVersion = 20;
+    const parsed = JSON.parse(new TextDecoder().decode(current)) as Record<string, unknown>;
+    expect(parsed.schemaVersion).toBe(INPUT_REPLAY_SCHEMA_VERSION);
+    await expect(decodeInputReplay(canonicalJsonBytes(parsed), { contentLookup })).resolves.toBeDefined();
 
-    await expect(decodeInputReplay(canonicalJsonBytes(differentSchema), { contentLookup })).rejects.toThrow(
-      'Unsupported replay format',
+    await Promise.all(
+      [INPUT_REPLAY_SCHEMA_VERSION - 1, INPUT_REPLAY_SCHEMA_VERSION + 1].map((schemaVersion) =>
+        expect(
+          decodeInputReplay(canonicalJsonBytes({ ...parsed, schemaVersion }), { contentLookup }),
+          `schema ${schemaVersion}`,
+        ).rejects.toThrow(),
+      ),
     );
   });
 
@@ -1781,8 +1750,16 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
-  it('replays scaled unpacking and furniture search with their completed practice awards', async () => {
-    const initial = createRuntime();
+  it('replays scaled unpacking and a furniture search in real reach with their completed practice awards', async () => {
+    const [actorCx, actorCz] = fixtureZombieColumn;
+    const column: [number, number] = [actorCx + 10, actorCz + 10];
+    const probe = createRuntime(undefined, false, [column]);
+    const cupboardDef = probe.inventory.registry.furniture.get('kitchen_cupboard')!;
+    const [width, , depth] = cupboardDef.size;
+    // The player stands still beside the cupboard on level ground, so the real reach decides the search.
+    const site = levelSite(probe.world, column, width + 1, depth);
+    const { ground, north } = site;
+    const initial = createRuntime(undefined, false, [column], { spawn: [site.x + 0.5, ground, site.z + 0.5] });
     initial.session.character.skills.inventory_management = 5;
     const backpack = initial.inventory.hands.right;
     if (!(backpack && initial.inventory.move(backpack, { kind: 'worn' }).ok)) {
@@ -1793,9 +1770,9 @@ describe('input replay', () => {
       throw new Error('Could not hold the replay unpack fixture box');
     }
     const cupboard = initial.inventory.furnish({
-      type: 'kitchen_cupboard',
-      pos: [0, 0, 0],
-      size: [2, 2, 1],
+      type: cupboardDef.id,
+      pos: [site.x + 2, ground, north],
+      size: cupboardDef.size,
       facing: 'n',
     });
     if (!cupboard) {
@@ -1809,7 +1786,6 @@ describe('input replay', () => {
       payload: { kind: 'inventory.search' as const, entityUid: cupboard.uid },
     };
     const useDominant = (runtime: ReturnType<typeof createRuntime>) => {
-      runtime.inventory.canReachEntity = () => true;
       const held = runtime.inventory.hands.right;
       if (!held) {
         throw new Error('Replay unpack fixture lost its held box');
@@ -1823,6 +1799,8 @@ describe('input replay', () => {
     const source = recordActiveSession(start, recorder, {
       commands: [command],
       recordedTicks: 220,
+      forward: 0,
+      initialColumns: [column],
       useDominantAtTick: 12,
       useDominant,
     });
@@ -1835,6 +1813,7 @@ describe('input replay', () => {
     const decoded = await decodeInputReplay(bytes, { contentLookup });
     const replay = playSession(start, decoded.inputs, {
       endSimTimestamp: decoded.endSimTimestamp,
+      initialColumns: [column],
       useDominant,
     });
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));

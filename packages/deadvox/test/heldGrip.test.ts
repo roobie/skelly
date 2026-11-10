@@ -81,10 +81,11 @@ const ejectFrom = (side: HandSide): FirearmShotEffect[] => {
 };
 
 describe('actual-slot held placement', () => {
-  it('projects each exported sight line to screen centre within one pixel in ADS', () => {
+  it('projects every exported sight line to screen centre within one pixel in ADS, barrel below it', () => {
     const firearms = skilledFirearmsTuning(registry);
-    for (const modelId of ['rifle_assault', 'rifle_ak', 'shotgun_pump']) {
-      const model = registry.models.get(modelId)!;
+    const sighted = [...registry.models.values()].filter((model) => model.gun?.sight);
+    expect(sighted.length).toBeGreaterThan(0);
+    for (const model of sighted) {
       expect(model.gun?.sight?.eyeReliefMetres).toBeGreaterThan(0);
       const pose = heldFirearmTransform({
         holds: registry.figures.get('player')!.holds,
@@ -98,21 +99,25 @@ describe('actual-slot held placement', () => {
         loweredPitchRadians: firearms.loweredPitchRadians,
       });
       expect(pose.sightEyeOffset).toBeDefined();
+      // The view's eye lies on the sight line; without a separate view relief it is the sight eye itself.
+      const eye = pose.rootOffset.map((offset, axis) => offset + pose.sightEyeOffset![axis]!);
+      const along = dot(eye as Vec3, pose.sightDirection!);
       for (let axis = 0; axis < 3; axis++) {
-        expect(pose.rootOffset[axis]! + pose.sightEyeOffset![axis]!).toBeCloseTo(0);
+        expect(eye[axis]! - along * pose.sightDirection![axis]!, `${model.id} eye off the sight line`).toBeCloseTo(0);
+        if (model.hands?.adsViewEyeReliefMetres === undefined) {
+          expect(eye[axis], `${model.id} sight eye at the view`).toBeCloseTo(0);
+        }
       }
       for (let axis = 0; axis < 3; axis++) {
-        expect(pose.sightUp![axis]).toBeCloseTo([0, 1, 0][axis]!, 10);
+        expect(pose.sightUp![axis], `${model.id} sight up`).toBeCloseTo([0, 1, 0][axis]!, 10);
       }
       const [horizontalErrorPixels, verticalErrorPixels, depth] = projectionErrorPixels(pose.sightDirection!);
-      expect(depth).toBeGreaterThan(0);
-      expect(horizontalErrorPixels).toBeLessThanOrEqual(1);
-      expect(verticalErrorPixels).toBeLessThanOrEqual(1);
-      if (modelId === 'shotgun_pump') {
-        const barrelCenter = pose.rootOffset.map((offset, axis) => offset + pose.muzzleOffset[axis]!);
-        expect(barrelCenter[2]).toBeLessThan(0);
-        expect(projectedVerticalPixels(barrelCenter)).toBeLessThan(0);
-      }
+      expect(depth, model.id).toBeGreaterThan(0);
+      expect(horizontalErrorPixels, model.id).toBeLessThanOrEqual(1);
+      expect(verticalErrorPixels, model.id).toBeLessThanOrEqual(1);
+      const barrelCenter = pose.rootOffset.map((offset, axis) => offset + pose.muzzleOffset[axis]!);
+      expect(barrelCenter[2], `${model.id} muzzle ahead`).toBeLessThan(0);
+      expect(projectedVerticalPixels(barrelCenter), `${model.id} muzzle below centre`).toBeLessThan(0);
     }
   });
 

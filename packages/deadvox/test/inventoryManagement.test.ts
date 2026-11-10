@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { searchTime } from '../src/core/blockEntities.ts';
 import { Character, practiceForNextLevel, SKILL_LEVEL_MAX, skillSaturation } from '../src/core/character.ts';
 import type { ItemDef, Registry } from '../src/core/content.ts';
+import type { Vec3 } from '../src/core/coords.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -12,7 +13,8 @@ import { simSeconds } from '../src/core/time.ts';
 import { MagazineHandling } from '../src/game/magazineHandling.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
-import { advance, createRuntime } from './snapshotTestSupport.ts';
+import { levelSite } from './fixtures/levelSite.ts';
+import { advance, createRuntime, fixtureZombieColumn, scale } from './snapshotTestSupport.ts';
 
 const registry = baseRegistry();
 const BOX_UNPACK_SECONDS = registry.items.get('shotshell_box')!.unpack!.simSeconds;
@@ -215,22 +217,29 @@ describe('Inventory Management skill', () => {
     expect(durations[2]).toBeLessThan(durations[1]!);
   });
 
-  it('scales furniture searches and trains only after a successful search', () => {
+  it('scales furniture searches and trains only after a successful search in real reach', () => {
     const durations: number[] = [];
-    const searchBase = searchTime(registry.furniture.get('kitchen_cupboard')!, reachTuning(registry));
+    const cupboardDef = registry.furniture.get('kitchen_cupboard')!;
+    const searchBase = searchTime(cupboardDef, reachTuning(registry));
+    const [width, , depth] = cupboardDef.size;
+    const [actorCx, actorCz] = fixtureZombieColumn;
+    const column: [number, number] = [actorCx + 10, actorCz + 10];
+    const site = levelSite(createRuntime(undefined, false, [column]).world, column, width + 1, depth);
+    const near: Vec3 = [site.x + 2, site.ground, site.north];
+    const farBlocks = Math.ceil(reachTuning(registry).reachMetres / scale.blockSize) * 4;
     for (const level of [0, 5, 10]) {
-      const runtime = createRuntime();
+      const runtime = createRuntime(undefined, false, [column], { spawn: [site.x + 0.5, site.ground, site.z + 0.5] });
       runtime.session.character.skills.inventory_management = level;
       const cupboard = runtime.inventory.furnish({
-        type: 'kitchen_cupboard',
-        pos: [0, 0, 0],
-        size: [2, 2, 1],
+        type: cupboardDef.id,
+        pos: [near[0] + farBlocks, near[1], near[2]],
+        size: cupboardDef.size,
         facing: 'n',
       });
       if (!cupboard) {
         throw new Error('Could not create the furniture-search fixture');
       }
-      runtime.inventory.canReachEntity = () => false;
+      expect(runtime.inventory.canReachEntity(cupboard)).toBe(false);
       const initial = runtime.session.character.snapshotState();
       expect(runtime.session.search(cupboard)).toBeUndefined();
       const duration = runtime.handling.jobs[0]?.duration;
@@ -247,7 +256,8 @@ describe('Inventory Management skill', () => {
       expect(cupboard.searched).toBe(false);
       expect(runtime.session.character.snapshotState()).toEqual(initial);
 
-      runtime.inventory.canReachEntity = () => true;
+      runtime.inventory.entities.slide(cupboard, near);
+      expect(runtime.inventory.canReachEntity(cupboard)).toBe(true);
       expect(runtime.session.search(cupboard)).toBeUndefined();
       advance(runtime, Math.ceil((duration + 0.1) * 60));
       expect(cupboard.searched).toBe(true);

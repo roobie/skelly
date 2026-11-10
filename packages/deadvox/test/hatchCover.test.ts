@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BlockEntity } from '../src/core/blockEntities.ts';
+import { worldOpaque, worldSolid } from '../src/core/collision.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { type FurnitureMover, movableRefusal, placement } from '../src/core/furnitureMove.ts';
@@ -8,6 +9,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { cellsOf, footprint, pieceSize } from '../src/core/templates.ts';
+import { World } from '../src/core/world.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
@@ -118,8 +120,13 @@ describe('a cover over a hatch', () => {
       throw new Error(result.refusal);
     }
     inventory.entities.place(cover, result.pos);
+    const solid = worldSolid(new World(), registry, inventory.entities);
+    const opaque = worldOpaque(new World(), registry, inventory.entities);
     for (const cell of cellsOf(cover.size)) {
-      expect(inventory.entities.isSolid(...cellOf(cover.pos, cell))).toBe(false);
+      const at = cellOf(cover.pos, cell);
+      expect(inventory.entities.at(...at)).toBe(cover);
+      expect(solid(...at)).toBe(false);
+      expect(opaque(...at)).toBe(false);
     }
   });
 

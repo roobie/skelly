@@ -699,6 +699,24 @@ describe('inventory screen Lit rendering', () => {
         field.dispatchEvent(new KeyboardEvent('keyup', { code, key, bubbles: true }));
         return event;
       };
+      // A KeyQ code types "q"; named keys carry their code as their key.
+      const keyOf = (code: string) => (code.startsWith('Key') ? code.slice('Key'.length).toLowerCase() : code);
+      /** Presses an action's first bound chord outside the field. */
+      const pressBound = (action: string) => {
+        const { code } = inputBindings.chords(action)[0]!;
+        const event = new KeyboardEvent('keydown', { code, key: keyOf(code), bubbles: true, cancelable: true });
+        globalThis.dispatchEvent(event);
+        globalThis.dispatchEvent(new KeyboardEvent('keyup', { code, key: keyOf(code), bubbles: true }));
+        return event;
+      };
+      // The item-list actions' bound keys that type a character into the field.
+      const typedCodes = ['inventory.previous', 'inventory.next', 'inventory.hands'].flatMap((action) =>
+        inputBindings
+          .chords(action)
+          .filter(({ code, modifier }) => !modifier && keyOf(code).length === 1)
+          .map(({ code }) => code),
+      );
+      expect(typedCodes.length).toBeGreaterThan(0);
       expect(press('ArrowDown').defaultPrevented).toBe(true);
       expect(screen.selected).toBe(beans);
       expect(press('ArrowDown').defaultPrevented).toBe(true);
@@ -718,8 +736,7 @@ describe('inventory screen Lit rendering', () => {
       expect(press('Enter', 'Enter').defaultPrevented).toBe(true);
       expect(lastPayload()).toBe(beforeEnter);
       expect(document.activeElement).not.toBe(field);
-      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', key: 'Enter', bubbles: true }));
-      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'Enter', key: 'Enter', bubbles: true }));
+      pressBound('inventory.best-pocket');
       expect(lastPayload()).toMatchObject({ kind: 'inventory.move', itemUid: beans.uid });
       field.focus();
       expect(press('ArrowDown').defaultPrevented).toBe(true);
@@ -729,12 +746,8 @@ describe('inventory screen Lit rendering', () => {
       field.dispatchEvent(new Event('input', { bubbles: true }));
       expect(screen.selected).toBe(beans);
       const payloadBeforeTypingKey = lastPayload();
-      for (const [code, key] of [
-        ['KeyQ', 'q'],
-        ['KeyE', 'e'],
-        ['KeyW', 'w'],
-      ] as const) {
-        expect(press(code, key).defaultPrevented).toBe(false);
+      for (const code of typedCodes) {
+        expect(press(code, keyOf(code)).defaultPrevented, code).toBe(false);
         expect(lastPayload()).toBe(payloadBeforeTypingKey);
       }
       expect(press('Escape', 'Escape').defaultPrevented).toBe(true);
@@ -745,28 +758,14 @@ describe('inventory screen Lit rendering', () => {
       field.dispatchEvent(new Event('input', { bubbles: true }));
       expect(press('Escape', 'Escape').defaultPrevented).toBe(true);
 
-      const selectPrevious = new KeyboardEvent('keydown', {
-        code: 'KeyQ',
-        key: 'q',
-        bubbles: true,
-        cancelable: true,
-      });
-      globalThis.dispatchEvent(selectPrevious);
-      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyQ', key: 'q', bubbles: true }));
-      expect(selectPrevious.defaultPrevented).toBe(true);
+      expect(pressBound('inventory.previous').defaultPrevented).toBe(true);
       expect(screen.selected).not.toBe(beans);
-      const selectNext = new KeyboardEvent('keydown', { code: 'KeyE', key: 'e', bubbles: true, cancelable: true });
-      globalThis.dispatchEvent(selectNext);
-      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', key: 'e', bubbles: true }));
-      expect(selectNext.defaultPrevented).toBe(true);
+      expect(pressBound('inventory.next').defaultPrevented).toBe(true);
       expect(screen.selected).toBe(beans);
       field.value = query;
       field.dispatchEvent(new Event('input', { bubbles: true }));
 
-      const action = new KeyboardEvent('keydown', { code: 'KeyW', key: 'w', bubbles: true, cancelable: true });
-      globalThis.dispatchEvent(action);
-      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', key: 'w', bubbles: true }));
-      expect(action.defaultPrevented).toBe(true);
+      expect(pressBound('inventory.hands').defaultPrevented).toBe(true);
       expect(lastPayload()).toMatchObject({ kind: 'inventory.to-hands', itemUid: beans.uid });
 
       const dimmed = [...root.querySelectorAll<HTMLElement>('.inv-item-unmatched')][0]!;
@@ -775,10 +774,7 @@ describe('inventory screen Lit rendering', () => {
       globalThis.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1 }));
       expect(screen.selected?.uid).toBe(dimmedUid);
 
-      const dimmedAction = new KeyboardEvent('keydown', { code: 'KeyW', key: 'w', bubbles: true, cancelable: true });
-      globalThis.dispatchEvent(dimmedAction);
-      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', key: 'w', bubbles: true }));
-      expect(dimmedAction.defaultPrevented).toBe(true);
+      expect(pressBound('inventory.hands').defaultPrevented).toBe(true);
       expect(lastPayload()).toMatchObject({ kind: 'inventory.to-hands', itemUid: dimmedUid });
       screen.onAction('inventory.clear-find');
       expect(field.value).toBe('');
@@ -1530,19 +1526,44 @@ describe('inventory screen Lit rendering', () => {
     }
   });
   it('shows the derived occupied hand without a second item UID and routes work options by UID', () => {
-    const { root, screen, inv, hooks, setWorkHandler } = setup();
+    const material = { workInProgress: false, category: 'material', weight: 1, size: [1, 1] };
+    const content = baseRegistryWith([
+      {
+        source: 'fixture-work',
+        data: {
+          recipeCategories: [{ id: 'fixture_work_category', label: 'Fixture work', order: 99 }],
+          items: [
+            { ...material, id: 'fixture_work_input', name: 'Work input' },
+            { ...material, id: 'fixture_work_result', name: 'Work result' },
+          ],
+          recipes: [
+            {
+              id: 'fixture_work',
+              category: 'fixture_work_category',
+              tags: [],
+              searchTerms: [],
+              result: { item: 'fixture_work_result', count: 1 },
+              timeGameMinutes: 1,
+              skills: {},
+              qualities: {},
+              components: [[{ item: 'fixture_work_input', count: 1 }]],
+            },
+          ],
+        },
+      },
+    ]);
+    const { root, screen, inv, hooks, setWorkHandler } = setup(content);
     expect(inv.move(inv.hands.right!, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
-    for (const [type, count] of [
-      ['stick', 1],
-      ['rag', 2],
-      ['wax', 1],
-      ['kitchen_knife', 1],
-    ] as const) {
-      inv.add(inv.create(type, count), { kind: 'pile', pos: [0, 0, 0] });
+    const recipe = content.recipes.get('fixture_work')!;
+    for (const [component] of recipe.components) {
+      if (!(component && 'item' in component)) {
+        throw new Error('Fixture recipe takes item components only');
+      }
+      inv.add(inv.create(component.item, component.count), { kind: 'pile', pos: [0, 0, 0] });
     }
-    const character = new Character(registry);
-    character.initializeProgression({}, ['torch']);
-    const result = planCraft(registry.recipes.get('torch')!, hooks.reach(), character);
+    const character = new Character(content);
+    character.initializeProgression({}, [recipe.id]);
+    const result = planCraft(recipe, hooks.reach(), character);
     if (!('plan' in result)) {
       throw new Error(result.missing.reason);
     }

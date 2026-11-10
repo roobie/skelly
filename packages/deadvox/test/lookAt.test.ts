@@ -140,7 +140,7 @@ describe('look-at pose', () => {
     expect(before - after).toBeLessThanOrEqual(((profile.turnRateDegPerRealSecond * Math.PI) / 180) * 0.1 + 1e-6);
   });
 
-  it.each([0.1, 0.25])('bounds gaze turn speed independently of frame duration at dt %f', (gazeFrameDelta) => {
+  it.each([0.1, 0.25])('turns the gaze at its full rate times the frame duration at dt %f', (gazeFrameDelta) => {
     const result = lookAtPose({
       bones,
       pose: restPose,
@@ -152,8 +152,6 @@ describe('look-at pose', () => {
     });
     const dotWithRest = Math.abs(result.state[3]);
     const turnedRadians = 2 * Math.acos(Math.min(1, dotWithRest));
-    expect(turnedRadians).toBeLessThanOrEqual(
-      ((profile.turnRateDegPerRealSecond * Math.PI) / 180) * gazeFrameDelta + 1e-6,
-    );
+    expect(turnedRadians).toBeCloseTo(((profile.turnRateDegPerRealSecond * Math.PI) / 180) * gazeFrameDelta, 5);
   });
 });

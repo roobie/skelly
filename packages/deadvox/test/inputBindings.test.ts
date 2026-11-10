@@ -79,6 +79,24 @@ const event = (code: string, extra: Partial<KeyboardEvent & Chord> = {}) => ({
   timeStamp: 0,
   ...extra,
 });
+/** The DOM modifier flags of a chord, for a native event. */
+const keyInit = (chord: Chord) => ({
+  code: chord.code,
+  shiftKey: chord.modifier === 'shift',
+  altKey: chord.modifier === 'alt',
+  ctrlKey: chord.modifier === 'ctrl',
+  metaKey: chord.modifier === 'meta',
+});
+const POINTER_CODE = /^Mouse(\d+)$/;
+/** The mouse button a pointer chord names. */
+const pointerButton = (chord: Chord): number => {
+  const button = POINTER_CODE.exec(chord.code)?.[1];
+  if (button === undefined) {
+    throw new Error(`${chord.code} is not a pointer chord`);
+  }
+  return Number(button);
+};
+const NO_MODIFIERS = { shiftKey: false, altKey: false, ctrlKey: false, metaKey: false };
 const storage = () => {
   const values = new Map<string, string>();
   return {
@@ -99,7 +117,12 @@ describe('keyboard registry', () => {
   ] as const)(
     'consumes native button activation from a held key after transfer into $to',
     ({ from, to, action, next }) => {
-      const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+      const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
+      const chord = bindings.chords(action)[0]!;
+      // The key held across the transfer must also be the new owner's, whatever the defaults are.
+      expect(bindings.rebind(next, [chord])).toBeUndefined();
+      const key = keyInit(chord);
+      const keyboard = new KeyboardInput(bindings);
       let context: InputContext = from;
       keyboard.context = () => ({ context, debug: false });
       const commands: InputCommand[] = [];
@@ -114,13 +137,13 @@ describe('keyboard registry', () => {
       document.body.append(button);
       button.focus();
       try {
-        button.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', bubbles: true, cancelable: true }));
-        const repeated = new KeyboardEvent('keydown', { code: 'Enter', repeat: true, bubbles: true, cancelable: true });
+        button.dispatchEvent(new KeyboardEvent('keydown', { ...key, bubbles: true, cancelable: true }));
+        const repeated = new KeyboardEvent('keydown', { ...key, repeat: true, bubbles: true, cancelable: true });
         button.dispatchEvent(repeated);
         expect(repeated.defaultPrevented).toBe(true);
         expect(commands.filter(({ phase }) => phase === 'down').map((command) => command.action)).toEqual([action]);
-        button.dispatchEvent(new KeyboardEvent('keyup', { code: 'Enter', bubbles: true }));
-        button.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', bubbles: true, cancelable: true }));
+        button.dispatchEvent(new KeyboardEvent('keyup', { ...key, bubbles: true }));
+        button.dispatchEvent(new KeyboardEvent('keydown', { ...key, bubbles: true, cancelable: true }));
         expect(commands.at(-1)?.action).toBe(next);
       } finally {
         remove();
@@ -221,10 +244,12 @@ describe('keyboard registry', () => {
     keyboard.context = () => ({ context: 'play', debug: true });
     const trace = new KeyTrace();
     keyboard.trace = trace.record;
-    expect(keyboard.press(new KeyboardEvent('keydown', { code: 'KeyA', key: 'A', shiftKey: true }))).toBe(false);
+    const left = keyboard.registry.chords('movement.left')[0]!;
+    expect(left.modifier).toBeUndefined();
+    expect(keyboard.press(new KeyboardEvent('keydown', { code: left.code, shiftKey: true }))).toBe(false);
     expect(JSON.parse(trace.export()).entries.at(-1)).toMatchObject({
       kind: 'down',
-      code: 'KeyA',
+      code: left.code,
       context: 'play',
       shiftKey: true,
       accepted: false,
@@ -291,13 +316,14 @@ describe('keyboard registry', () => {
     keyboard.context = () => ({ context, debug: false });
     const commands: InputCommand[] = [];
     keyboard.command = (command) => commands.push(command);
+    const forward = keyboard.registry.chords('movement.forward')[0]!;
 
-    expect(keyboard.press(event('KeyW'))).toBe(true);
+    expect(keyboard.press(event(forward.code, forward))).toBe(true);
     expect(keyboard.held('movement.forward')).toBe(true);
     context = 'play';
     keyboard.sync();
     expect(keyboard.held('movement.forward')).toBe(true);
-    keyboard.release(event('KeyW'));
+    keyboard.release(event(forward.code, forward));
     expect(commands.map(({ action, phase }) => [action, phase])).toEqual([
       ['movement.forward', 'down'],
       ['movement.forward', 'up'],
@@ -357,11 +383,10 @@ describe('keyboard registry', () => {
     const commands: InputCommand[] = [];
     keyboard.command = (command) => commands.push(command);
 
+    const shipped = pointerButton(bindings.chords('aim.ads-toggle')[0]!);
     expect(bindings.rebind('aim.ads-toggle', [{ code: 'Mouse4' }])).toBeUndefined();
     expect(bindings.label('aim.ads-toggle')).toBe('Mouse 5');
-    expect(
-      keyboard.pressPointer(1, { shiftKey: false, altKey: false, ctrlKey: false, metaKey: false, timeStamp: 1 }),
-    ).toBe(false);
+    expect(keyboard.pressPointer(shipped, { ...NO_MODIFIERS, timeStamp: 1 })).toBe(false);
     expect(
       keyboard.pressPointer(4, { shiftKey: false, altKey: false, ctrlKey: false, metaKey: false, timeStamp: 2 }),
     ).toBe(true);
@@ -378,11 +403,10 @@ describe('keyboard registry', () => {
     keyboard.context = () => ({ context: 'play', debug: false });
     const commands: InputCommand[] = [];
     keyboard.command = (command) => commands.push(command);
-    expect(
-      keyboard.pressPointer(2, { shiftKey: false, altKey: false, ctrlKey: false, metaKey: false, timeStamp: 1 }),
-    ).toBe(true);
+    const ready = pointerButton(keyboard.registry.chords('stance.ready')[0]!);
+    expect(keyboard.pressPointer(ready, { ...NO_MODIFIERS, timeStamp: 1 })).toBe(true);
     expect(keyboard.held('stance.ready')).toBe(true);
-    keyboard.releasePointer(2, 2);
+    keyboard.releasePointer(ready, 2);
     expect(commands.map(({ action, phase }) => [action, phase])).toEqual([
       ['stance.ready', 'down'],
       ['stance.ready', 'up'],
@@ -413,13 +437,11 @@ describe('keyboard registry', () => {
       }
     };
 
-    expect(
-      keyboard.pressPointer(2, { shiftKey: false, altKey: false, ctrlKey: false, metaKey: false, timeStamp: 1 }),
-    ).toBe(true);
-    expect(
-      keyboard.pressPointer(1, { shiftKey: false, altKey: false, ctrlKey: false, metaKey: false, timeStamp: 2 }),
-    ).toBe(true);
-    keyboard.releasePointer(1, 3);
+    const readyButton = pointerButton(bindings.chords('stance.ready')[0]!);
+    const adsButton = pointerButton(bindings.chords('aim.ads-toggle')[0]!);
+    expect(keyboard.pressPointer(readyButton, { ...NO_MODIFIERS, timeStamp: 1 })).toBe(true);
+    expect(keyboard.pressPointer(adsButton, { ...NO_MODIFIERS, timeStamp: 2 })).toBe(true);
+    keyboard.releasePointer(adsButton, 3);
     expect([ready, ads]).toEqual([true, true]);
     expect(keyboard.press(event(gate.code, gate))).toBe(true);
     expect([ready, ads, keyboard.held('stance.ready')]).toEqual([true, true, true]);
@@ -472,7 +494,7 @@ describe('keyboard registry', () => {
       new BindingRegistry(INPUT_BINDINGS, storage()).chords('movement.forward'),
     );
   });
-  it('routes G/V/B/H to the inventory tabs in play and inventory contexts', () => {
+  it('routes the inventory tab chords in play and inventory contexts', () => {
     const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
     let context: InputContext = 'play';
     keyboard.context = () => ({ context, debug: false });
@@ -554,23 +576,31 @@ describe('keyboard registry', () => {
     keyboard.context = () => ({ context, debug: true });
     expect(keyboard.registry.binding('noclip.ascend')?.gate).toBeUndefined();
     expect(keyboard.registry.binding('noclip.descend')?.gate).toBeUndefined();
-    expect(keyboard.press(event('Space'))).toBe(true);
-    expect(keyboard.press(event('KeyW'))).toBe(true);
-    expect(keyboard.press(event('KeyC'))).toBe(true);
+    const [ascend, forward, descend, jump] = [
+      'noclip.ascend',
+      'movement.forward',
+      'noclip.descend',
+      'movement.jump',
+    ].map((action) => keyboard.registry.chords(action)[0]!) as [Chord, Chord, Chord, Chord];
+    expect(keyboard.press(event(ascend.code, ascend))).toBe(true);
+    expect(keyboard.press(event(forward.code, forward))).toBe(true);
+    expect(keyboard.press(event(descend.code, descend))).toBe(true);
     expect(keyboard.held('noclip.ascend')).toBe(true);
     expect(keyboard.held('movement.forward')).toBe(true);
     expect(keyboard.held('noclip.descend')).toBe(true);
-    keyboard.release(event('Space'));
-    keyboard.release(event('KeyW'));
-    keyboard.release(event('KeyC'));
+    keyboard.release(event(ascend.code, ascend));
+    keyboard.release(event(forward.code, forward));
+    keyboard.release(event(descend.code, descend));
 
     context = 'play';
     keyboard.sync();
-    expect(keyboard.press(event('Space'))).toBe(true);
+    expect(keyboard.press(event(jump.code, jump))).toBe(true);
     expect(keyboard.held('movement.jump')).toBe(true);
     expect(keyboard.held('noclip.ascend')).toBe(false);
-    keyboard.release(event('Space'));
-    keyboard.press(event('KeyC'));
+    keyboard.release(event(jump.code, jump));
+    keyboard.press(event(ascend.code, ascend));
+    keyboard.press(event(descend.code, descend));
+    expect(keyboard.held('noclip.ascend')).toBe(false);
     expect(keyboard.held('noclip.descend')).toBe(false);
   });
   it('admits Alt held keys and alternate bindings without admitting Alt chords or hiding held-gate conflicts', () => {
@@ -583,10 +613,12 @@ describe('keyboard registry', () => {
     keyboard.context = () => ({ context: 'play', debug: false });
     expect(keyboard.press(event('AltRight', { altKey: true }))).toBe(true);
     expect(keyboard.held('view.free-look')).toBe(true);
-    expect(keyboard.press(event('KeyW', { altKey: true }))).toBe(true);
+    const forward = bindings.chords('movement.forward')[0]!;
+    expect(forward.modifier).toBeUndefined();
+    expect(keyboard.press(event(forward.code, { altKey: true }))).toBe(true);
     expect(keyboard.held('movement.forward')).toBe(true);
     keyboard.release(event('AltRight'));
-    keyboard.release(event('KeyW'));
+    keyboard.release(event(forward.code));
     expect(bindings.rebind('movement.sprint', [{ code: 'AltRight' }])).toBeDefined();
     expect(bindings.rebind('view.free-look', [{ code: 'KeyJ' }, { code: 'AltRight' }])).toBeUndefined();
     expect(keyboard.press(event('KeyJ'))).toBe(true);
@@ -721,10 +753,16 @@ describe('keyboard registry', () => {
   it.each(['mousemove', 'keydown', 'focus'] as const)('reconciles lost Alt and movement on %s', (type) => {
     const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
     keyboard.context = () => ({ context: 'play', debug: false });
+    const forward = keyInit(keyboard.registry.chords('movement.forward')[0]!);
+    const freeLook = keyboard.registry.chords('view.free-look')[0]!.code;
+    // Another key the player can press: the first shipped key bound to neither action.
+    const other = INPUT_BINDINGS.flatMap(({ defaults }) => defaults).find(
+      ({ code, modifier }) => !modifier && code !== forward.code && code !== freeLook && !code.startsWith('Mouse'),
+    )!.code;
     const remove = keyboard.install();
     try {
-      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
-      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: 'AltLeft', altKey: false }));
+      globalThis.dispatchEvent(new KeyboardEvent('keydown', forward));
+      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: freeLook, altKey: false }));
       expect(keyboard.held('movement.forward')).toBe(true);
       expect(keyboard.held('view.free-look')).toBe(true);
       globalThis.dispatchEvent(new MouseEvent('mousemove', { altKey: true }));
@@ -732,15 +770,15 @@ describe('keyboard registry', () => {
       expect(keyboard.held('view.free-look')).toBe(true);
       // The releases and blur never reach this owner; recovery must use independent browser evidence.
       const evidence = {
-        keydown: new KeyboardEvent('keydown', { code: 'KeyZ', altKey: false }),
+        keydown: new KeyboardEvent('keydown', { code: other, altKey: false }),
         focus: new Event('focus'),
         mousemove: new MouseEvent('mousemove', { altKey: false }),
       }[type];
       globalThis.dispatchEvent(evidence);
       expect(keyboard.held('view.free-look')).toBe(false);
       expect(keyboard.held('movement.forward')).toBe(false);
-      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
-      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: 'AltLeft', altKey: true }));
+      globalThis.dispatchEvent(new KeyboardEvent('keydown', forward));
+      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: freeLook, altKey: true }));
       expect(keyboard.held('movement.forward')).toBe(true);
       expect(keyboard.held('view.free-look')).toBe(true);
     } finally {
@@ -760,9 +798,11 @@ describe('keyboard registry', () => {
       hidden: { configurable: true, get: () => hidden },
       pointerLockElement: { configurable: true, get: () => (locked ? document.body : null) },
     });
+    const forward = keyboard.registry.chords('movement.forward')[0]!;
+    const freeLook = keyboard.registry.chords('view.free-look')[0]!;
     try {
-      keyboard.press(event('KeyW'));
-      keyboard.press(event('AltLeft', { altKey: true }));
+      keyboard.press(event(forward.code, forward));
+      keyboard.press(event(freeLook.code, { altKey: true }));
       keyboard.reconcileFocus();
       expect(keyboard.held('movement.forward')).toBe(true);
       expect(keyboard.held('view.free-look')).toBe(true);
@@ -775,7 +815,7 @@ describe('keyboard registry', () => {
       focused = true;
       hidden = false;
       locked = true;
-      keyboard.press(event('KeyW'));
+      keyboard.press(event(forward.code, forward));
       expect(keyboard.held('movement.forward')).toBe(true);
     } finally {
       for (const [index, name] of properties.entries()) {
@@ -795,6 +835,7 @@ describe('keyboard registry', () => {
     const remove = keyboard.install();
     let locked: Element | null = document.body;
     Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
+    const freeLook = keyboard.registry.chords('view.free-look')[0]!.code;
     const prevented = (target: EventTarget, code: string, modifiers: KeyboardEventInit) => {
       const key = new KeyboardEvent('keydown', { code, bubbles: true, cancelable: true, ...modifiers });
       target.dispatchEvent(key);
@@ -806,20 +847,20 @@ describe('keyboard registry', () => {
       expect(prevented(globalThis, 'KeyS', { metaKey: true })).toBe(true);
       expect(prevented(globalThis, 'ArrowLeft', { altKey: true })).toBe(true);
       expect(prevented(globalThis, 'ControlLeft', { ctrlKey: true })).toBe(false);
-      expect(prevented(globalThis, 'AltLeft', { altKey: true })).toBe(true);
+      expect(prevented(globalThis, freeLook, { altKey: true })).toBe(true);
       expect(keyboard.held('view.free-look')).toBe(true);
-      const altUp = new KeyboardEvent('keyup', { code: 'AltLeft', bubbles: true, cancelable: true });
+      const altUp = new KeyboardEvent('keyup', { code: freeLook, bubbles: true, cancelable: true });
       globalThis.dispatchEvent(altUp);
       expect(altUp.defaultPrevented).toBe(true);
       expect(keyboard.held('view.free-look')).toBe(false);
-      prevented(globalThis, 'AltLeft', { altKey: true });
+      prevented(globalThis, freeLook, { altKey: true });
       locked = null;
       document.dispatchEvent(new Event('pointerlockchange'));
       expect(keyboard.held('view.free-look')).toBe(false);
       locked = document.body;
-      expect(prevented(globalThis, 'AltLeft', { altKey: true })).toBe(true);
+      expect(prevented(globalThis, freeLook, { altKey: true })).toBe(true);
       expect(keyboard.held('view.free-look')).toBe(true);
-      keyboard.release(event('AltLeft'));
+      keyboard.release(event(freeLook));
 
       const input = document.createElement('input');
       document.body.append(input);
