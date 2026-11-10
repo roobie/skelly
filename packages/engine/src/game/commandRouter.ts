@@ -1107,29 +1107,23 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       presentation.refusal(reason, ports.sim().time);
     }
   };
+  const releaseHandlers = new Map<string, (action: string, at: number) => void>([
+    [
+      'stance.ready',
+      () => {
+        controls.rightMouseHeld = false;
+        controls.aimingDownSights = false;
+      },
+    ],
+    ['firearm.reload', (_action, at) => controls.reload.keyUp(at)],
+    ['world.interact', (action, at) => liveGestures.interact.keyUp(action, at)],
+    ['hand.use-off', (_action, at) => liveGestures.offHandUse.keyUp(at)],
+    ['player.crouch-toggle', (action, at) => liveGestures.crouchProne.keyUp(action, at)],
+    ['player.throw', (action, at) => liveGestures.throwStance.keyUp(action, at)],
+    ['light.worn-toggle', (action, at) => liveGestures.wornLight.keyUp(action, at)],
+  ]);
   const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
-    if (action === 'stance.ready') {
-      controls.rightMouseHeld = false;
-      controls.aimingDownSights = false;
-    }
-    if (action === 'firearm.reload') {
-      controls.reload.keyUp(at);
-    }
-    if (action === 'world.interact') {
-      liveGestures.interact.keyUp(action, at);
-    }
-    if (action === 'hand.use-off') {
-      liveGestures.offHandUse.keyUp(at);
-    }
-    if (action === 'player.crouch-toggle') {
-      liveGestures.crouchProne.keyUp(action, at);
-    }
-    if (action === 'player.throw') {
-      liveGestures.throwStance.keyUp(action, at);
-    }
-    if (action === 'light.worn-toggle') {
-      liveGestures.wornLight.keyUp(action, at);
-    }
+    releaseHandlers.get(action)?.(action, at);
     if (slot !== undefined) {
       liveGestures.quickbar.keyUp(slot, at);
     }
@@ -1256,7 +1250,6 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
           } else {
             handUse.perform(hand);
           }
-          return undefined;
         });
       },
       pickup: (uid, mode, feetPosition) => {

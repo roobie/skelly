@@ -388,9 +388,7 @@ export const applyReplayActionPayload = (
     case 'inventory.wield-or-pocket':
       return applyInventoryItemAction(payload, owners);
     case 'hand.action':
-      return owners.handAction
-        ? owners.handAction(payload.itemUid, payload.actionId)
-        : 'Hand action is unavailable';
+      return owners.handAction?.(payload.itemUid, payload.actionId);
     case 'inventory.inspect':
       owners.inspect?.(payload.itemUid);
       return undefined;

@@ -1553,8 +1553,8 @@ See `packages/skelly-assets/models/cans.libsonnet`,
 Sharpening is held-item work rather than a craft-list repair: the prepared
 blade-and-stone pair makes carried equipment matter, and the wheel rewards a
 trip to furniture. Like can opening, a blade's competing action remains a player
-choice so sharpening does not cause a surprise swing. Aimed wheel activation
-uses the held blade. Repair recipes retain the shared content-owned restoration,
+choice so sharpening does not cause a surprise swing. Choosing it in the held
+action menu uses the held blade. Repair recipes retain the shared content-owned restoration,
 skill and work-rate contract; their activation selector keeps held work out of
 the craft list. See `packages/engine/src/game/sharpening.ts`, `Sharpening`,
 `packages/engine/src/game/itemActions.ts`, `ItemActionSelection`, `packages/engine/src/core/schema/recipes.ts`,
@@ -2778,8 +2778,8 @@ rechecks the route that admitted it when it completes. See `packages/engine/src/
 `batterySlotOption` and `batteryOption`, and `packages/presentation/src/ui/inventoryScreen.ts`,
 `batterySlotTemplate`.
 
-A held light's battery can be taken out on its own, as an action chosen on the wheel
-and then activated, because a swap needs a spare: without one a player could not move
+A held light's battery can be taken out on its own, as an action chosen in the held
+action menu, because a swap needs a spare: without one a player could not move
 a cell to a charger, another light or a pocket. It follows magazine removal: the light
 must be in hand, the battery keeps its charge and goes to the first pocket with room,
 else the ground, and with nowhere to put it, it stays fitted. A dead primary cell is
@@ -3749,7 +3749,7 @@ and render caches are not durable knowledge. See `packages/engine/src/core/schem
 
 ## World repair selection
 
-Holding world interaction opens the action list on every movable piece, intact or damaged; lifting requires choosing it from that list. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `packages/presentation/src/presentation/play.ts`, `furniturePayload`.
+Holding world interaction opens the action menu on every movable piece, intact or damaged; lifting requires pointing at it and releasing. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `packages/presentation/src/presentation/play.ts`, `furniturePayload`.
 
 World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 

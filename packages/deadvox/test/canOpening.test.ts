@@ -161,7 +161,6 @@ describe('held can opening', () => {
     const choose = () =>
       f.survival.withItemAction(f.tool, opening!.id, () => {
         chosenUse = selected();
-        return undefined;
       });
     expect(choose()).toBeUndefined();
     expect(chosenUse).toBe('open-can');

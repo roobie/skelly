@@ -549,9 +549,11 @@ describe('taking the battery out of a held light', () => {
   // The player chooses taking the battery out for one use of the light.
   const unload = (t: ReturnType<typeof setup>, light: Item) => {
     const unloadAction = t.survival.availableItemActions(light).find((action) => action.battery === 'unload');
-    expect(unloadAction).toBeDefined();
+    if (!unloadAction) {
+      throw new Error('a loaded held light offers taking the battery out');
+    }
     let selected: ItemAction['battery'];
-    const refusal = t.survival.withItemAction(light, unloadAction!.id, () => {
+    const refusal = t.survival.withItemAction(light, unloadAction.id, () => {
       selected = t.survival.selectedItemAction(light)?.battery;
       return t.survival.use(light);
     });

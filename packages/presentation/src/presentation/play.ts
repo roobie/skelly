@@ -43,6 +43,7 @@ import {
   type Inventory,
   type Item,
   type ItemAction,
+  offHandUse,
   type Pile,
   pileScatterPlacements,
   wornNightVision,
@@ -83,6 +84,9 @@ import {
   firearmsCombatTuning,
   formatClock,
   furnitureActionsFor,
+  HeldActionPress,
+  type HeldActionTrigger,
+  heldMenuActions,
   type InteractionTarget,
   interactionAffordance,
   type LongJob,
@@ -129,6 +133,8 @@ import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView, type ViewProbes } from '../render/playView.ts';
 import type { RagdollConfig } from '../render/ragdoll.ts';
+import { mountActionChildList } from '../ui/actionChildList.ts';
+import { mountActionRadial } from '../ui/actionRadial.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { chargerPanel } from '../ui/chargerPanel.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
@@ -821,8 +827,32 @@ const startPlayWith = (
   let openedVehicleId: number | undefined;
   const actionMenu = new ActionMenu();
   const furnitureActions = (entity: BlockEntity): ItemAction[] => furnitureActionsFor(inventory, entity, s);
+  const actionMenuTuning = claimed(registry.ui, 'interface')!.actionMenu;
   const furnitureMenuEntries = (entity: BlockEntity): RadialAction[] =>
-    radialEntries(furnitureActions(entity), claimed(registry.ui, 'interface')!.actionMenu.directions.furniture);
+    radialEntries(furnitureActions(entity), actionMenuTuning.directions.furniture);
+  const heldMenuEntries = (item: Item): RadialAction[] =>
+    radialEntries(
+      heldMenuActions(survival.availableItemActions(item), screenText.actionMenu.treat),
+      actionMenuTuning.directions.held,
+    );
+  const openTarget = (source: 'furniture' | 'held'): number | undefined => {
+    const { opened } = actionMenu;
+    return opened?.source === source ? opened.uid : undefined;
+  };
+  const openHeldItem = (): Item | undefined => {
+    const uid = openTarget('held');
+    return uid === undefined ? undefined : inventory.itemByUid(uid);
+  };
+  /** The open menu's entries, or nothing once its target has gone. */
+  const openMenuEntries = (): RadialAction[] | undefined => {
+    const item = openHeldItem();
+    if (item) {
+      return heldMenuEntries(item);
+    }
+    const uid = openTarget('furniture');
+    const entity = uid === undefined ? undefined : entities.byUid(uid);
+    return entity && furnitureMenuEntries(entity);
+  };
   let audio: GameAudio;
   const playSessionSound = (sound: Readonly<SoundEmission>): void =>
     audio.play(sound, sound.position.map((v) => v * s) as Vec3);
@@ -933,13 +963,24 @@ const startPlayWith = (
       },
       interact: {
         keyDown: (action, at) => {
+          actionMenu.sync('furniture', undefined);
           interactionPressTarget = interactionTargetAt();
           interactInput.keyDown(action, at);
         },
         keyUp: (action, at) => {
+          // The press that held the furniture menu open confirms what it points at on release.
+          const confirming = openTarget('furniture') !== undefined;
           interactInput.keyUp(action, at);
+          if (confirming) {
+            interactionPressTarget = interactionTargetAt();
+            completeWorldInteraction('pocket');
+          }
           interactionPressTarget = undefined;
         },
+      },
+      offHandUse: {
+        keyDown: (at) => pressHeldUse('off', at),
+        keyUp: (at) => heldActionPress.release('off', at),
       },
       quickbar: {
         keyDown: (slot, at) => quickbarInput.keyDown(slot, at),
@@ -1230,9 +1271,23 @@ const startPlayWith = (
       physicalSolid: session.physicalSolid,
     },
   );
-  input.setMouseLookOverride((movementX, movementY) =>
-    thirdPersonOrbit.rotate(movementX, movementY, isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled)),
-  );
+  input.setMouseLookOverride((movementX, movementY) => {
+    // Look holds while a menu is open, so choosing cannot lose its target.
+    const entries = actionMenu.childOpen ? undefined : openMenuEntries();
+    if (entries) {
+      actionMenu.point(entries, { x: movementX, y: movementY }, actionMenuTuning);
+      return true;
+    }
+    return thirdPersonOrbit.rotate(
+      movementX,
+      movementY,
+      isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled),
+    );
+  });
+  input.setHeldUseOverride({
+    press: (at) => pressHeldUse('dominant', at),
+    release: (at) => heldActionPress.release('dominant', at),
+  });
   const { weather, caseEffects, itemThrows, impactEffects, flashlight, actorMeshes } = view;
   const damageEvents = sim.events.reader();
 
@@ -1266,7 +1321,42 @@ const startPlayWith = (
     });
   drawHudOptions();
   const prompt = $('prompt');
-  const itemActionList = $('item-action-list');
+  const actionRadialRoot = $('action-radial');
+  const drawActionRadial = mountActionRadial(actionRadialRoot);
+  const drawActionChildList = mountActionChildList($('action-child-list'), (id) => {
+    const item = openHeldItem();
+    const children = item && actionMenu.childList(heldMenuEntries(item));
+    const chosen = children && actionMenu.chooseChild(id, children);
+    if (item && chosen) {
+      dispatchHeldAction(item, chosen.id);
+    }
+  });
+  let childListShown = false;
+  /**
+   * Draws the open menu's ring, which follows the interaction hints' visibility, or its child list, which owns input
+   * like any other menu and so always shows. Opening or closing the list hands the pointer over.
+   */
+  const drawActionMenu = (ringVisible: boolean): void => {
+    const entries = openMenuEntries() ?? [];
+    const item = openHeldItem();
+    const children = actionMenu.childList(entries);
+    const ring = ringVisible && !actionMenu.childOpen ? entries : [];
+    drawActionRadial(ring, actionMenu.choice(entries)?.id, actionMenu.pull, actionMenuTuning);
+    drawActionChildList(item ? inventory.name(item) : '', children, screenText.actionMenu.back);
+    if (actionMenu.childOpen !== childListShown) {
+      childListShown = actionMenu.childOpen;
+      syncMenuState();
+    }
+  };
+  /** Closes the held menu once its item leaves the hands or its child list has nothing left to offer. */
+  const syncHeldActionMenu = (paused: boolean): void => {
+    const item = openHeldItem();
+    const inHand = item && survival.handOf(item) !== undefined ? item : undefined;
+    actionMenu.sync('held', inHand?.uid, paused);
+    if (actionMenu.childOpen && !(inHand && actionMenu.childList(heldMenuEntries(inHand)))) {
+      actionMenu.close();
+    }
+  };
   const quickbarBox = $('quickbar');
   const handlingBox = $('handling');
   const restBox = $('rest');
@@ -1669,11 +1759,21 @@ const startPlayWith = (
   let resumeRequested = false;
   const titleMenuOptions = () =>
     started || !options.saveController ? {} : { titleNewWorldLabel: options.saveController.titleNewWorldLabel };
+  const closeMenusFor = ({ paused, closeOtherMenus }: { paused: boolean; closeOtherMenus: boolean }): void => {
+    if (paused || closeOtherMenus) {
+      actionMenu.close();
+    }
+    if (closeOtherMenus) {
+      reading.close();
+      closeInventoryScreen();
+      debugTools?.closeMenus();
+    }
+  };
   const syncMenuState = (pointerLockChanged = false) => {
     const state = computeMenuState({
       started,
       mainMenuOpen,
-      inventoryOpen: screen.isOpen,
+      inventoryOpen: screen.isOpen || actionMenu.childOpen,
       readingOpen: reading.isOpen,
       debugMenuOpen: debugTools?.menuOpen ?? false,
       reviewMapOpen,
@@ -1686,17 +1786,10 @@ const startPlayWith = (
       titleActive: Boolean(options.saveController && !options.saveController.isEntered),
     });
     ({ started, mainMenuOpen } = state);
-    if (state.paused) {
-      actionMenu.sync('furniture', undefined, true);
-    }
     if (pointerLockChanged || state.closeOtherMenus) {
       resumeRequested = false;
     }
-    if (state.closeOtherMenus) {
-      reading.close();
-      closeInventoryScreen();
-      debugTools?.closeMenus();
-    }
+    closeMenusFor(state);
     input.menuPointer = state.menuPointer || !worldLoading.ready;
     keyboardInput.sync();
     overlay.hidden = state.overlayHidden;
@@ -1819,6 +1912,45 @@ const startPlayWith = (
     tap: () => completeWorldInteraction('pocket'),
     hold: () => completeWorldInteraction('wield'),
   });
+  const dispatchHeldAction = (item: Item, actionId: string): void => {
+    const reason = router.dispatchScreenCommand({ kind: 'hand.action', itemUid: item.uid, actionId });
+    if (reason) {
+      showRefusal(reason, sim.time);
+    }
+  };
+  const heldActionPress = new HeldActionPress({
+    menu: actionMenu,
+    item: (hand) => inventory.hands[hand],
+    actions: (item) => survival.availableItemActions(item),
+    menuActions: (item) => heldMenuEntries(item),
+    holdRealMs: RELOAD_GESTURE_MS.hold,
+    tap: (_hand, trigger) => {
+      if (trigger === 'dominant') {
+        input.controls.pressDominantUse();
+        input.controls.releaseDominantUse();
+      } else if (trigger === 'off') {
+        input.controls.useOff();
+      } else {
+        router.useForwardButton();
+      }
+    },
+    act: dispatchHeldAction,
+  });
+  /** Hands a use press to the held item's action press, unless something else owns the hands or the input. */
+  const pressHeldUse = (trigger: HeldActionTrigger, at: number): boolean => {
+    if (
+      replayPlayer ||
+      router.throwingStance() ||
+      compression.locksInput ||
+      sim.body.actionRefusal ||
+      debugTools?.buildOn ||
+      (trigger === 'forward' && !offHandUse(registry, inventory))
+    ) {
+      return false;
+    }
+    const hand = trigger === 'dominant' ? dominantSide(inventory.character) : offSide(inventory.character);
+    return heldActionPress.press(hand, trigger, at);
+  };
   const wornLightInput = new PressHoldInput<string>({
     holdRealMs: () => wornLightToggleHoldRealSeconds * 1000,
     tap: () => undefined,
@@ -1841,6 +1973,7 @@ const startPlayWith = (
     crouchProneInput.cancel();
     throwStanceInput.cancel();
     interactInput.cancel();
+    heldActionPress.cancel();
     wornLightInput.cancel();
     interactionPressTarget = undefined;
     cancelBackquoteGesture(backquoteGesture);
@@ -1850,7 +1983,7 @@ const startPlayWith = (
     if (reading.isOpen) {
       return 'reading';
     }
-    if (screen.isOpen) {
+    if (screen.isOpen || actionMenu.childOpen) {
       return 'inventory';
     }
     if (compression.interruption !== undefined) {
@@ -1894,9 +2027,13 @@ const startPlayWith = (
     throwStanceInput.cancel();
     crouchProneInput.cancel();
     quickbarInput.cancel();
+    heldActionPress.cancel();
   };
   keyboardInput.escape = () => {
-    if (sim.dead) {
+    if (actionMenu.opened) {
+      heldActionPress.cancel();
+      actionMenu.close();
+    } else if (sim.dead) {
       if (reviewMapOpen) {
         toggleReviewMap(false);
       }
@@ -1932,6 +2069,7 @@ const startPlayWith = (
     router.cancelItemThrow();
     quickbarInput.cancel();
     interactInput.cancel();
+    heldActionPress.cancel();
     wornLightInput.cancel();
     interactionPressTarget = undefined;
     cancelBackquoteGesture(backquoteGesture);
@@ -1940,18 +2078,11 @@ const startPlayWith = (
   ({ dispatchReplayAction } = router);
   keyboardInput.install();
   keyboardInput.sync();
-  const cycleFurnitureAction = (deltaY: number): boolean => {
-    const target = interactionTargetAt();
-    return (
-      target?.kind === 'furniture' &&
-      actionMenu.isOpen('furniture', target.entity.uid) &&
-      actionMenu.step(furnitureMenuEntries(target.entity), Math.sign(deltaY))
-    );
+  const stepActionMenu = (direction: number): boolean => {
+    const entries = openMenuEntries();
+    return entries !== undefined && actionMenu.step(entries, Math.sign(direction));
   };
-  const cycleWieldedAction = (deltaY: number): boolean => {
-    const item = inventory.hands[dominantSide(inventory.character)];
-    return item !== undefined && survival.cycleItemAction(item, Math.sign(deltaY));
-  };
+  keyboardInput.choiceStep = stepActionMenu;
   globalThis.addEventListener(
     'wheel',
     (e) => {
@@ -1959,12 +2090,10 @@ const startPlayWith = (
         $('overlay').querySelector<HTMLElement>('.card')!.scrollTop += e.deltaY;
         e.preventDefault();
       } else if (input.locked && !input.menuPointer && !spectator.enabled) {
-        if (cycleFurnitureAction(e.deltaY) || opticZoom.wheel(zoomFirearm(), isAimedDownSights(), e.deltaY)) {
+        if (stepActionMenu(e.deltaY) || opticZoom.wheel(zoomFirearm(), isAimedDownSights(), e.deltaY)) {
           e.preventDefault();
-        } else if (debugTools?.buildOn || !cycleWieldedAction(e.deltaY)) {
-          debugTools?.wheel(e.deltaY);
         } else {
-          e.preventDefault();
+          debugTools?.wheel(e.deltaY);
         }
       }
     },
@@ -2241,10 +2370,21 @@ const startPlayWith = (
     if (router.refusePrimaryUseWhileHandling()) {
       return;
     }
-    router.useForwardButton();
+    if (!pressHeldUse('forward', e.timeStamp)) {
+      router.useForwardButton();
+    }
   };
   document.addEventListener('pointerdown', onForwardPress, true);
   document.addEventListener('mousedown', onForwardPress, true);
+  document.addEventListener(
+    'mouseup',
+    (e) => {
+      if (isForwardButton(e)) {
+        heldActionPress.release('forward', e.timeStamp);
+      }
+    },
+    true,
+  );
   inputTarget.addEventListener('mousedown', (e) => {
     if (!input.locked || input.menuPointer || spectator.enabled || !debugTools?.buildOn || !compression.admitKey()) {
       return;
@@ -2407,24 +2547,13 @@ const startPlayWith = (
     target: InteractionTarget | undefined,
     carry: ReturnType<typeof carryPreview>,
   ) => {
-    actionMenu.sync('furniture', target?.kind === 'furniture' && !carry ? target.entity.uid : undefined, sim.paused);
+    // The furniture menu lasts only as long as the press that opened it.
+    const choosingFurniture =
+      target?.kind === 'furniture' && !carry && (replayPlayer !== undefined || keyboardInput.held('world.interact'));
+    actionMenu.sync('furniture', choosingFurniture ? target.entity.uid : undefined, sim.paused);
+    syncHeldActionMenu(sim.paused);
     const interactionHint = interactionHintFor(target, carry);
-    const furnitureList =
-      target?.kind === 'furniture' && actionMenu.isOpen('furniture', target.entity.uid)
-        ? [
-            `${nameOf(target.entity)}:`,
-            ...furnitureActions(target.entity).map(
-              (action) =>
-                `${action.id === actionMenu.choice(furnitureActions(target.entity))?.id ? '›' : ' '} ${action.label}`,
-            ),
-          ].join('\n')
-        : undefined;
-    const actions =
-      visible.interaction && input.locked && !debugTools?.buildOn
-        ? (furnitureList ?? survival.wieldedItemActionHint())
-        : undefined;
-    itemActionList.textContent = actions ?? '';
-    itemActionList.hidden = !actions;
+    drawActionMenu(visible.interaction && input.locked && !debugTools?.buildOn);
     return playPromptText(
       {
         now,
@@ -2766,6 +2895,7 @@ const startPlayWith = (
       input.controls.reload.cancel();
       quickbarInput.cancel();
       interactInput.cancel();
+      heldActionPress.cancel();
       interactionPressTarget = undefined;
     } else {
       input.controls.reload.advance(now, router.reloadBinding());
@@ -2776,9 +2906,11 @@ const startPlayWith = (
       interactInput.cancel();
       wornLightInput.cancel();
       interactionPressTarget = undefined;
+      heldActionPress.cancel();
     } else {
       quickbarInput.update(now);
       interactInput.update(now);
+      heldActionPress.update(now);
       wornLightInput.update(now);
     }
     crouchProneInput.update(now, actionRefusal);
@@ -3109,7 +3241,8 @@ const startPlayWith = (
       inventoryPanel.hidden = true;
       syncMenuState();
       prompt.hidden = true;
-      itemActionList.hidden = true;
+      actionMenu.close();
+      drawActionMenu(false);
       if (!options.restore || options.restore.character.scenarioRun?.completedAtGameTimestamp === null) {
         options.saveController?.finishWin();
       }
@@ -3139,7 +3272,8 @@ const startPlayWith = (
     inventoryPanel.hidden = true;
     syncMenuState();
     prompt.hidden = true;
-    itemActionList.hidden = true;
+    actionMenu.close();
+    drawActionMenu(false);
     const summary = {
       cause,
       worldSeed: sim.seed,
