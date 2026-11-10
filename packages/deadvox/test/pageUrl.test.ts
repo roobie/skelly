@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { type HashState, readHash, writeHash } from '../src/hashState.ts';
 import { readPageUrl } from '../src/pageUrl.ts';
 import { newWorldHref, tutorialHash } from '../src/product/page.ts';
+import { configFromUrl } from './fixtures/startupContent.ts';
 
 describe('page hash', () => {
   it('reads back what it writes, through the address bar encoding', () => {
@@ -32,6 +33,12 @@ describe('page query', () => {
   it('names a query parameter the game entry does not take', () => {
     expect(readPageUrl('?mods=fixture&fixtureUnknown=1', '').refused).toBe('fixtureUnknown');
     expect(readPageUrl('?mods=fixture', '').refused).toBeUndefined();
+  });
+
+  it('hands the hash seed to the game configuration', () => {
+    const { query, hash } = readPageUrl('', `#${writeHash({ seed: 4321 })}`);
+    expect(configFromUrl(query, hash).seed).toBe(4321);
+    expect(configFromUrl(query, {}).seed).not.toBe(4321);
   });
 });
 

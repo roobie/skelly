@@ -13,6 +13,7 @@ import {
   savingEnabledFromUrl,
 } from '@skelly/engine/session';
 import { parseTimeOfDay } from '@skelly/engine/sim';
+import { fillText } from '@skelly/engine/text';
 import type { StreamerStats } from '@skelly/engine/world';
 import {
   createEngine,
@@ -51,7 +52,7 @@ import { ragdollConfig, ragdollSweepViewer } from './product/ragdoll.ts';
 
 document.getElementById('build-revision')!.textContent = `Build: ${getBuildRevision()}`;
 
-const { query: params, hash } = pageUrl();
+const { query: params, hash, refused } = pageUrl();
 // A link or an edit that changes only the hash does not load the page again, and the game reads its hash once at
 // startup, so it reloads. The debug write-back replaces the address, which fires no `hashchange`.
 addEventListener('hashchange', () => location.reload());
@@ -88,6 +89,12 @@ const showStartupFailure = (message: string) => {
 if (bundled.issues.length > 0) {
   showStartupFailure(bundled.issues.map((issue) => `${issue.source} ${issue.path}: ${issue.message}`).join('\n'));
   // Refused mods must not start a game with other content; stop the module here.
+  await new Promise<never>(() => undefined);
+}
+if (refused !== undefined) {
+  const { linkRefused } = claimed(bundled.content.registry.ui, 'interface')!.screenText.startup;
+  showStartupFailure(fillText(linkRefused, { name: refused }));
+  // A link the game cannot read must not start a game that ignores part of it; stop the module here.
   await new Promise<never>(() => undefined);
 }
 // The mods screen is drawn before any mod is chosen, so it reads the bundled packs' text.

@@ -1,5 +1,5 @@
-// Contract: the game and sounds pages paint styled before their modules load, and an insecure LAN-style context
-// must play without touching unavailable save APIs.
+// Contract: the game and sounds pages paint styled before their modules load, an unknown link setting stops
+// startup, and an insecure LAN-style context must play without touching unavailable save APIs.
 // biome-ignore-all lint/correctness/noNodejsModules: standalone Playwright browser contract
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node browser contract
 // biome-ignore-all lint/style/noProcessEnv: test runner selects the browser executable
@@ -52,6 +52,19 @@ try {
   };
   await styledBeforeModule({ path: '/', module: '**/src/main.ts', styled: '#startup-screen' });
   await styledBeforeModule({ path: '/sounds.html', module: '**/src/soundsPage.ts', styled: '#sound-sheet' });
+  // A link setting the game does not read stops startup with an error naming it, instead of starting a game
+  // that ignores it.
+  const refusedPage = await browser.newPage();
+  await refusedPage.goto(
+    browserStageUrl('insecure-saves', `http://127.0.0.1:${address.port}/?fixtureUnknown=1#{seed:73}`),
+    { timeout: STAGE_TIMEOUT_MS },
+  );
+  await refusedPage.waitForFunction(
+    () => (document.querySelector('#errors')?.textContent ?? '').includes('fixtureUnknown'),
+    undefined,
+    { timeout: STAGE_TIMEOUT_MS },
+  );
+  await refusedPage.close();
   const context = await browser.newContext();
   await context.addInitScript(() => {
     Object.defineProperty(globalThis, 'isSecureContext', { configurable: true, value: false });
@@ -61,7 +74,7 @@ try {
   const page = await context.newPage();
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
-  await page.goto(browserStageUrl('insecure-saves', `http://127.0.0.1:${address.port}/?seed=73`), {
+  await page.goto(browserStageUrl('insecure-saves', `http://127.0.0.1:${address.port}/#{seed:73}`), {
     timeout: STAGE_TIMEOUT_MS,
   });
   await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
@@ -85,7 +98,7 @@ try {
   );
   assert.deepEqual(pageErrors, []);
   process.stdout.write(
-    'Chromium: pages styled while their modules are pending; insecure-context New world remains playable; Continue disabled, explicit no-save message shown, no page errors\n',
+    'Chromium: pages styled while their modules are pending; an unknown link setting stops startup; insecure-context New world remains playable; Continue disabled, explicit no-save message shown, no page errors\n',
   );
 } finally {
   await browser?.close();
