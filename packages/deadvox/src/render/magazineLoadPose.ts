@@ -1,6 +1,6 @@
 import { type HandSide, type Inventory, type Job, SIDES } from '@skelly/engine/inventory';
 import type { Vec3 } from '@skelly/engine/world';
-import { MAGAZINE_LOAD_ACTION, MAGAZINE_STRIP_ACTION } from '../game/magazineHandling.ts';
+import { MAGAZINE_LOAD_ACTION, MAGAZINE_STRIP_ACTION } from '../game/entries/inventory.ts';
 
 /** Presentation estimates; each round's job owns time, and BR's look owns this path. */
 export const MAGAZINE_LOAD_POSE = {

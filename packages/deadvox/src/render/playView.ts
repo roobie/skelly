@@ -32,8 +32,8 @@ import {
   type SolidAt,
   type Vec3,
 } from '@skelly/engine/world';
-import type { FromMesher } from '../game/mesherProtocol.ts';
-import { playerTuning } from '../game/player.ts';
+import type { FromMesher } from '../game/entries/mesh.ts';
+import { playerTuning } from '../game/entries/sim.ts';
 import type { PackAssetFiles } from '../presentation/bundledAssets.ts';
 import { cameraRotation, DamageFeedback } from '../presentation/damageFeedback.ts';
 import type { Engine } from '../presentation/engine.ts';

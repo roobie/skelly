@@ -1,6 +1,6 @@
 import type { PartData, ShapeData } from '@skelly/engine/vehicles';
 import { BufferAttribute, BufferGeometry, Sphere, Vector3 } from 'three';
-import type { FromMesher, ToMesher } from '../game/mesherProtocol.ts';
+import type { FromMesher, ToMesher } from '../game/entries/mesh.ts';
 import { buildShape } from './vehicleShape.ts';
 
 /** A shape's uncoloured geometry beside the quad materials that colour it. */

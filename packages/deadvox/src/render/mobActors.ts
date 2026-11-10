@@ -122,7 +122,7 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
-import { ACTIVE_ACTOR_RATE } from '../game/simulationRates.ts';
+import { ACTIVE_ACTOR_RATE } from '../game/entries/sim.ts';
 import { figureVariants } from './actorFigureVariants.ts';
 import { BLOOD_STAIN_COLOR_FRAGMENT, BLOOD_STAIN_FRAGMENT_DECLARATIONS } from './bloodStain.ts';
 import { corpseFallPose, deathClip } from './corpsePose.ts';
