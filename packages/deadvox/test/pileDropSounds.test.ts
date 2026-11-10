@@ -3,7 +3,7 @@ import { vehicleCells } from '@skelly/engine/internal/core/vehicleProjection.ts'
 import { Inventory } from '@skelly/engine/inventory';
 import { World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { handlingMoveCompleteCue } from '../src/game/audioPresentation.ts';
+import { handlingMoveCompleteCue } from '../src/game/entries/sound.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 
 import { buildFixtureRegistry } from './economyFixtures.ts';

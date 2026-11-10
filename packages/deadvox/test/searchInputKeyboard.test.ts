@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { expect, it } from 'vitest';
-import { BindingRegistry } from '../src/game/bindingRegistry.ts';
+import { BindingRegistry } from '../src/game/entries/input.ts';
 import { KeyboardInput } from '../src/presentation/inputBindings.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 

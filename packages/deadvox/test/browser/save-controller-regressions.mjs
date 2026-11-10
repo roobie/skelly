@@ -960,7 +960,7 @@ try {
       metrics: await handBack('#playtest-metrics-export'),
       replay: await handBack('#playtest-replay-export'),
     };
-    const pageModules = { tools: '/src/presentation/playtestTools.ts', replays: '/src/game/inputReplay.ts' };
+    const pageModules = { tools: '/src/presentation/playtestTools.ts', replays: '/src/game/entries/input.ts' };
     const kinds = await page.evaluate(
       async ({ metrics, replay, modules }) => {
         const bytes = (base64) => Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));

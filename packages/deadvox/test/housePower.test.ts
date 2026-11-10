@@ -3,14 +3,13 @@ import { Inventory } from '@skelly/engine/inventory';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { Chunk, makeScale, SitePower, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { makeConfig } from '../src/game/config.ts';
+import { createSession, IDLE, makeConfig } from '../src/game/entries/session.ts';
+import { createWorldSetup } from '../src/game/entries/world.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
   type ReplayCommandOwners,
 } from '../src/game/replayCommands.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
-import { createWorldSetup } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';

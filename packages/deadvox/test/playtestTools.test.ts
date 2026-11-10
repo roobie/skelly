@@ -1,7 +1,7 @@
 import { DEBUG_ONLY_CONTEXTS, INPUT_CONTEXTS } from '@skelly/engine/internal/core/inputActions.ts';
 import { describe, expect, it } from 'vitest';
 import { measureSnapshots, snapshotTimerQuantumForUserAgent } from '../src/debug/snapshotMeasurement.ts';
-import { BindingRegistry } from '../src/game/bindingRegistry.ts';
+import { BindingRegistry } from '../src/game/entries/input.ts';
 import { controlsCardRows, filterControlsCardRows } from '../src/presentation/controls.ts';
 import {
   loadMetrics,

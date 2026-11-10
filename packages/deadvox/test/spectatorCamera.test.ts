@@ -1,7 +1,7 @@
 import { playerAdsPose, playerLookPose } from '@skelly/engine/pose';
 import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { createSession, IDLE, type SessionControls } from '../src/game/session.ts';
+import { createSession, IDLE, type SessionControls } from '../src/game/entries/session.ts';
 import { DebugGunPose } from '../src/presentation/debugGunPose.ts';
 import { SpectatorCamera } from '../src/presentation/spectatorCamera.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

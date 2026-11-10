@@ -5,10 +5,10 @@ import { CraftCommands, claimed, HandlingQueue, Inventory } from '@skelly/engine
 import { decodeSave } from '@skelly/engine/save';
 import { bindReach, Character, practiceForNextLevel } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
+import type { ReplayActionPayload } from '../src/game/entries/input.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
-  type ReplayActionPayload,
   type ReplayCommandOwners,
 } from '../src/game/replayCommands.ts';
 import { contentLookup } from '../src/ui/saveController.ts';

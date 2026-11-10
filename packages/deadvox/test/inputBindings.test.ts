@@ -3,14 +3,14 @@
 import type { Binding, Chord, InputContext } from '@skelly/engine/input';
 import { describe, expect, it } from 'vitest';
 import { KeyTrace } from '../src/debug/keyTrace.ts';
+import { bindingConflict } from '../src/game/bindingRegistry.ts';
 import {
   BindingRegistry,
-  bindingConflict,
   chordIssue,
   controlRowIssue,
   defaultKeySetIssues,
   REFUSED_MODIFIERS,
-} from '../src/game/bindingRegistry.ts';
+} from '../src/game/entries/input.ts';
 import { capturedChord, type InputCommand, KeyboardInput } from '../src/presentation/inputBindings.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 

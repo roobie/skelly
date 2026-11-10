@@ -13,41 +13,42 @@ import {
 } from '@skelly/engine/sim';
 import { CHUNK, toChunk, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import {
   clearPendingInputReplay,
-  DEFAULT_REPLAY_START_STATE,
+  createReplayPlayStateBinding,
   decodeInputReplay,
   encodeInputReplay,
   INPUT_REPLAY_MAX_BYTES,
-  INPUT_REPLAY_SCHEMA_VERSION,
+  InputReplayDriver,
+  InputReplayPlayer,
   InputReplayRecorder,
   joinInputReplayWindows,
   pendingInputReplay,
   type ReplayAction,
-  type ReplayColumnUpdate,
+  type ReplayActionPayload,
   type ReplayControlSample,
   type ReplayGeneratedColumn,
   type ReplayInputData,
   type ReplayStartState,
+  stashInputReplay,
+  withReplayExportGuard,
+} from '../src/game/entries/input.ts';
+import { createSimulationStepper, type InputRecording, PHYSICS_RATE } from '../src/game/entries/session.ts';
+import { advanceLiveFrame } from '../src/game/frameDriver.ts';
+import {
+  DEFAULT_REPLAY_START_STATE,
+  INPUT_REPLAY_SCHEMA_VERSION,
+  type ReplayColumnUpdate,
   replayStateFingerprint,
   restoreReplayStartState,
   rolloverInputReplayRecorder,
   sampleFromReplayFrame,
-  stashInputReplay,
-  withReplayExportGuard,
 } from '../src/game/inputReplay.ts';
-import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from '../src/game/inputReplayActions.ts';
-import { InputReplayDriver, nextReplayInputSample } from '../src/game/inputReplayDriver.ts';
-import { applyReplayLook, InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
+import { routeDominantUse, toggleWalking } from '../src/game/inputReplayActions.ts';
+import { nextReplayInputSample } from '../src/game/inputReplayDriver.ts';
+import { applyReplayLook } from '../src/game/inputReplayPlayer.ts';
 import { type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
-import {
-  applyReplayActionPayload,
-  isReplayActionPayload,
-  type ReplayActionPayload,
-} from '../src/game/replayCommands.ts';
-import { PHYSICS_RATE } from '../src/game/session.ts';
-import { createSimulationStepper, type InputRecording } from '../src/game/simulationStepper.ts';
+import { applyReplayActionPayload, isReplayActionPayload } from '../src/game/replayCommands.ts';
 import { inputReplayStatus } from '../src/presentation/play.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

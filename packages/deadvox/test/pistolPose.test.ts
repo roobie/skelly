@@ -17,7 +17,7 @@ import { makeScale } from '@skelly/engine/world';
 import { type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
-import { firearmBoreRay } from '../src/game/firearmAim.ts';
+import { firearmBoreRay } from '../src/game/entries/sim.ts';
 import { LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
 import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
 import {

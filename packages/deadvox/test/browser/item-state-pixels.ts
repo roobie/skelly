@@ -3,7 +3,7 @@ import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import { ItemFactory } from '@skelly/engine/inventory';
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-import { BindingRegistry } from '../../src/game/bindingRegistry.ts';
+import { BindingRegistry } from '../../src/game/entries/input.ts';
 import { INPUT_BINDINGS } from '../../src/product/controls.ts';
 import { ItemPictures } from '../../src/render/itemPictures.ts';
 import { ModelLibrary } from '../../src/render/models.ts';

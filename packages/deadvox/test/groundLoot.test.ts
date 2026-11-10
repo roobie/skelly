@@ -12,7 +12,7 @@ import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import type { SaveSnapshot } from '@skelly/engine/save';
 import { makeScale, type Placement, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { createSession, IDLE } from '../src/game/entries/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';

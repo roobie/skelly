@@ -4,7 +4,7 @@ import { BlockEntities, CHUNK, type Chunk, generateColumn, makeScale, World } fr
 import { Scene } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
-import type { MesherPort, MesherSource } from '../src/game/mesherProtocol.ts';
+import type { MesherPort, MesherSource } from '../src/game/entries/mesh.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { Skylight } from '../src/render/skylight.ts';
 import { baseTerrainShape } from './baseRegistry.ts';

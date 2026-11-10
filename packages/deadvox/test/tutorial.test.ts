@@ -7,7 +7,7 @@ import { guidanceFixture } from './fixtures/guidance.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { Survival } from '../src/game/survival.ts';
+import { Survival } from '../src/game/entries/sim.ts';
 import {
   GuidedSteps as Tutorial,
   type GuidanceObservation as TutorialObservation,

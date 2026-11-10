@@ -17,19 +17,17 @@ import { coreLabel, countText, decimalText, fillText } from '@skelly/engine/text
 import { Window } from 'happy-dom';
 import { Group } from 'three';
 import { afterAll, describe, expect, it, vi } from 'vitest';
-import { BindingRegistry } from '../src/game/bindingRegistry.ts';
+import { BindingRegistry, type ReplayActionPayload } from '../src/game/entries/input.ts';
+import { Quickbar } from '../src/game/entries/inventory.ts';
+import { PlayerTickActions, Survival } from '../src/game/entries/sim.ts';
 import { attachmentWorkSkill, FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { routeModalCommand } from '../src/game/modalCommand.ts';
-import { PlayerTickActions } from '../src/game/playerTickActions.ts';
-import { Quickbar } from '../src/game/quickbar.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
-  type ReplayActionPayload,
   type ReplayCommandOwners,
 } from '../src/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '../src/game/screenCommandDispatcher.ts';
-import { Survival } from '../src/game/survival.ts';
 import { KeyboardInput } from '../src/presentation/inputBindings.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { ItemPictures } from '../src/render/itemPictures.ts';

@@ -8,7 +8,7 @@ import { actionsByGroup, DEBUG_GROUPS, paramName } from '../src/debug/groups.ts'
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { LOOK_PARAMS } from '../src/debug/lookUrl.ts';
-import { BindingRegistry } from '../src/game/bindingRegistry.ts';
+import { BindingRegistry } from '../src/game/entries/input.ts';
 import { DebugGunPose } from '../src/presentation/debugGunPose.ts';
 import type { DebugHooks } from '../src/presentation/debugInterface.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';

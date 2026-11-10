@@ -3,7 +3,7 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { PressHoldInput } from '../src/game/pressHoldInput.ts';
+import { PressHoldInput } from '../src/game/entries/input.ts';
 import { QuickbarInput } from '../src/presentation/quickbarInput.ts';
 
 const fixture = () => {

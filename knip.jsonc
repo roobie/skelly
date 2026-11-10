@@ -35,7 +35,7 @@
         "/src/game/firearmHandling.ts",
         "/src/ui/inventoryScreen.ts",
         "/test/fixtures/capabilityIds.ts",
-        "/src/game/session.ts",
+        "/src/game/entries/session.ts",
         "/src/game/doorAction.ts",
         "/test/fixtures/descentLid.ts",
         "/test/fixtures/scenarioStart.ts",

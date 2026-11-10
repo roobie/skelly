@@ -24,7 +24,7 @@ import { startupContent } from './baseRegistry.ts';
 const BUNDLED_CONTENT = startupContent();
 
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { createSession, IDLE } from '../src/game/entries/session.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
 const yawOutward: Record<Facing, number> = { n: 0, e: -Math.PI / 2, s: Math.PI, w: Math.PI / 2 };

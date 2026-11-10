@@ -1,6 +1,7 @@
 import { CHUNK, makeScale, World } from '@skelly/engine/world';
 import { afterEach, expect, it } from 'vitest';
-import type { MesherHandlers, MesherPort, ToMesher } from '../src/game/mesherProtocol.ts';
+import type { MesherPort, ToMesher } from '../src/game/entries/mesh.ts';
+import type { MesherHandlers } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 

@@ -12,7 +12,7 @@ import {
 } from '@skelly/engine/pose';
 import { Matrix4, Quaternion, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { firearmBoreRay } from '../src/game/firearmAim.ts';
+import { firearmBoreRay } from '../src/game/entries/sim.ts';
 import { LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import { fittedPartFrame } from '../src/render/models.ts';

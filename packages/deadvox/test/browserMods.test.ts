@@ -1,8 +1,8 @@
 import { isDeepStrictEqual } from 'node:util';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { type BrowserMod, evaluateMods } from '../src/game/browserMods.ts';
-import { configFromUrl } from '../src/game/config.ts';
-import { createWorldSetup } from '../src/game/worldSetup.ts';
+import { type BrowserMod, evaluateMods } from '../src/game/entries/packs.ts';
+import { configFromUrl } from '../src/game/entries/session.ts';
+import { createWorldSetup } from '../src/game/entries/world.ts';
 import { productContent } from '../src/product/content.ts';
 import { productModIntake } from '../src/product/mods.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';

@@ -1,19 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { SaveStorageError } from '../src/game/saveStorageErrors.ts';
 import {
   commitSavePayload,
   inspectSaveSlots,
-  type SaveCommitDriver,
+  SAVE_RECORD_HEADER_BYTES,
+  SAVE_RECORD_MAX_BYTES,
   type SaveCommitRequest,
   SaveCorruptionError,
   type SaveSlotPair,
-} from '../src/game/saveStorageProtocol.ts';
-import {
-  openSaveSlot,
-  SAVE_RECORD_HEADER_BYTES,
-  SAVE_RECORD_MAX_BYTES,
+  SaveStorageError,
   sealSaveSlot,
-} from '../src/game/saveStorageRecord.ts';
+} from '../src/game/entries/save.ts';
+import type { SaveCommitDriver } from '../src/game/saveStorageProtocol.ts';
+import { openSaveSlot } from '../src/game/saveStorageRecord.ts';
 
 const NAMESPACE = 'a'.repeat(64);
 const CHECKSUM_PATTERN = /^[0-9a-f]{64}$/;

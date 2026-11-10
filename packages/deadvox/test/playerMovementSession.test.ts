@@ -34,7 +34,7 @@ import { type Actor, type EntityId, practiceForNextLevel, reachTuning } from '@s
 import { BLOCK_SIZE, footprint, makeScale, type Placement, type SolidAt, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { createSession, IDLE } from '../src/game/entries/session.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';

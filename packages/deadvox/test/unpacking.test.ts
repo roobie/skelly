@@ -3,7 +3,7 @@ import { reach } from '@skelly/engine/internal/core/reach.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { HandlingQueue, Inventory, options } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import { selectPrimaryAction } from '../src/game/primaryAction.ts';
+import { selectPrimaryAction } from '../src/game/entries/sim.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

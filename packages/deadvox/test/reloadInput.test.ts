@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput } from '../src/game/reloadInput.ts';
+import { RELOAD_GESTURE_MS } from '../src/game/entries/input.ts';
+import { type ReloadBinding, ReloadInput } from '../src/game/reloadInput.ts';
 
 const shortTap = Math.min(RELOAD_GESTURE_MS.hold, RELOAD_GESTURE_MS.doublePress) / 3;
 const afterWindows = Math.max(RELOAD_GESTURE_MS.hold, RELOAD_GESTURE_MS.doublePress) * 4;

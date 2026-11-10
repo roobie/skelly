@@ -21,15 +21,9 @@ import type { Vec3 } from '@skelly/engine/world';
 import { InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { firearmBoreRay } from '../src/game/firearmAim.ts';
-import {
-  FirearmMechanics,
-  type FirearmShotEffect,
-  type FirearmShotInput,
-  type FirearmTrajectory,
-  firearmHandlingFor,
-  spentCaseItemId,
-} from '../src/game/firearmHandling.ts';
+import { type FirearmShotEffect, firearmHandlingFor, spentCaseItemId } from '../src/game/entries/inventory.ts';
+import { firearmBoreRay } from '../src/game/entries/sim.ts';
+import { FirearmMechanics, type FirearmShotInput, type FirearmTrajectory } from '../src/game/firearmHandling.ts';
 import { FirearmTrigger } from '../src/game/firearmTrigger.ts';
 import { CaseEffects } from '../src/render/caseEffects.ts';
 import { actionPartPaths, cloneHeldModel, sampleActionStroke } from '../src/render/firearmModel.ts';

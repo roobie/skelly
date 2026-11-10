@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, vi } from 'vitest';
-import type { StartupContent } from '../src/game/bundledContent.ts';
+import type { StartupContent } from '../src/game/entries/packs.ts';
 import { productContent } from '../src/product/content.ts';
 
 const build = productContent.buildBundledContent;

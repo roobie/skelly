@@ -13,14 +13,10 @@ import {
 import { reachTuning } from '@skelly/engine/sim';
 import { makeScale, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import {
-  type FirearmShotEffect,
-  type FirearmShotInput,
-  firearmHandlingFor,
-  spentCaseItemId,
-} from '../src/game/firearmHandling.ts';
+import { type FirearmShotEffect, firearmHandlingFor, spentCaseItemId } from '../src/game/entries/inventory.ts';
+import { createSession, IDLE } from '../src/game/entries/session.ts';
+import type { FirearmShotInput } from '../src/game/firearmHandling.ts';
 import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

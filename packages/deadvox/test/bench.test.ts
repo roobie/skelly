@@ -25,7 +25,7 @@ import {
 import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
 import { frameStats } from '../src/bench/stats.ts';
-import { actorRendererFromUrl } from '../src/game/config.ts';
+import { actorRendererFromUrl } from '../src/game/entries/session.ts';
 
 describe('bench stats', () => {
   it('takes nearest-rank percentiles', () => {

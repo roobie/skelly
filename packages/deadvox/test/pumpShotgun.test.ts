@@ -19,15 +19,12 @@ import { dominantSide } from '@skelly/engine/sim';
 import type { SoundId } from '@skelly/engine/sound';
 import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { firearmBoreRay } from '../src/game/firearmAim.ts';
-import {
-  FirearmMechanics,
-  type FirearmShotEffect,
-  type FirearmTrajectory,
-  firearmHandlingFor,
-} from '../src/game/firearmHandling.ts';
-import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { RELOAD_GESTURE_MS } from '../src/game/entries/input.ts';
+import { type FirearmShotEffect, firearmHandlingFor } from '../src/game/entries/inventory.ts';
+import { createSession, IDLE } from '../src/game/entries/session.ts';
+import { firearmBoreRay } from '../src/game/entries/sim.ts';
+import { FirearmMechanics, type FirearmTrajectory } from '../src/game/firearmHandling.ts';
+import { type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';

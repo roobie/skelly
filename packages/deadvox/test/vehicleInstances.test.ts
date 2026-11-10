@@ -5,8 +5,9 @@ import type { Inventory } from '@skelly/engine/inventory';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { terrainShapeOf, toChunk } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { layoutVehiclePlacements, registerLayoutVehicles } from '../src/game/layoutVehicles.ts';
-import { IDLE } from '../src/game/session.ts';
+import { IDLE } from '../src/game/entries/session.ts';
+import { registerLayoutVehicles } from '../src/game/entries/world.ts';
+import { layoutVehiclePlacements } from '../src/game/layoutVehicles.ts';
 import {
   advance,
   capture,

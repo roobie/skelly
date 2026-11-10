@@ -14,7 +14,7 @@ import {
   worldSolid,
 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { createSession, IDLE } from '../src/game/entries/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

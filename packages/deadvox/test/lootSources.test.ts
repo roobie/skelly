@@ -12,8 +12,8 @@ import { compileTemplate, placedPieces } from '@skelly/engine/internal/core/temp
 import { PILE_GRID } from '@skelly/engine/inventory';
 import { CHUNK, makeScale, type Placement, toChunk, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { handlingMoveCompleteCue } from '../src/game/audioPresentation.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { createSession, IDLE } from '../src/game/entries/session.ts';
+import { handlingMoveCompleteCue } from '../src/game/entries/sound.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureEconomy } from './economyFixtures.ts';

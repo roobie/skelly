@@ -22,9 +22,9 @@ import {
   commitSavePayload,
   type RawSaveSlots,
   SaveCorruptionError,
+  type SaveLoadResult,
   type SaveSlotPair,
-} from '../src/game/saveStorageProtocol.ts';
-import type { SaveLoadResult } from '../src/game/storageContract.ts';
+} from '../src/game/entries/save.ts';
 import { shouldConfirmPageLeave } from '../src/ui/leaveConfirmation.ts';
 import { contentLookup, SaveController } from '../src/ui/saveController.ts';
 import { showWin } from '../src/ui/win.ts';

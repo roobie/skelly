@@ -38,7 +38,7 @@ import {
   PerspectiveCamera,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { ACTIVE_ACTOR_RATE } from '../src/game/simulationRates.ts';
+import { ACTIVE_ACTOR_RATE } from '../src/game/entries/sim.ts';
 import { AcidEffects } from '../src/render/acidEffects.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';

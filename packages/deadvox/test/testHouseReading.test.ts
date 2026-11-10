@@ -6,7 +6,7 @@ import { Inventory, toggleLight } from '@skelly/engine/inventory';
 import { SkyFields } from '@skelly/engine/sky';
 import { BlockEntities, CHUNK, toChunk, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { playerTuning } from '../src/game/player.ts';
+import { playerTuning } from '../src/game/entries/sim.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { testHouseSite } from './testHouseSite.ts';
 

@@ -21,7 +21,7 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { spentCaseItemId } from '../src/game/firearmHandling.ts';
+import { spentCaseItemId } from '../src/game/entries/inventory.ts';
 import { createCompass } from '../src/render/compass.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { presentHeldDisplay } from '../src/render/heldDisplay.ts';

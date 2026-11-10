@@ -6,7 +6,7 @@ import { makeScale, placedPoint, toChunk } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import debugMod from '../mods/skelly.deadvox.scenario.test-house.debug/layouts.json' with { type: 'json' };
 import debugManifest from '../mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json' with { type: 'json' };
-import { bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';
+import { bundledModIdsFromUrl, selectBundledMods } from '../src/game/entries/packs.ts';
 import { bundledPackInputs } from '../src/product/content.ts';
 import { productModIntake } from '../src/product/mods.ts';
 import { readAvailablePacks, readBundledPacks } from '../tools/readBundledPacks.ts';

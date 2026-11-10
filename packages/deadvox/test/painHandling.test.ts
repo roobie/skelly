@@ -2,7 +2,7 @@ import { applyStartKit } from '@skelly/engine/internal/core/startState.ts';
 import { dominantSide, offSide } from '@skelly/engine/sim';
 import { makeScale, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { createSession, IDLE } from '../src/game/entries/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { pumpStart } from './fixtures/debugStarts.ts';
 import { withFixtureBody } from './simulationFixture.ts';

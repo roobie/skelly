@@ -504,7 +504,7 @@ try {
   });
   const tuning = await page.evaluate(async () => {
     const { inventory } = globalThis.fullAutoRuntime;
-    const moduleUrl = '/src/game/firearmHandling.ts';
+    const moduleUrl = '/src/game/entries/inventory.ts';
     const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
     const rifle = inventory.hands.right;
     const data = firearmHandlingFor(rifle, inventory.registry);

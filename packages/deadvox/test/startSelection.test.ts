@@ -1,8 +1,7 @@
 import type { StartDef } from '@skelly/engine/internal/core/schema/starts.ts';
 import { gameTimeOfDay } from '@skelly/engine/internal/core/time.ts';
 import { expect, it } from 'vitest';
-import { configFromUrl, makeConfig } from '../src/game/config.ts';
-import { requireStart, startForSite } from '../src/game/startSelection.ts';
+import { configFromUrl, makeConfig, requireStart, startForSite } from '../src/game/entries/session.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { content } from './fixtures/startupContent.ts';
 

@@ -10,7 +10,7 @@ import {
 } from '../src/bench/post.ts';
 import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
-import { makeConfig } from '../src/game/config.ts';
+import { makeConfig } from '../src/game/entries/session.ts';
 import type { RenderedEngine } from '../src/presentation/engine.ts';
 import { heightFogUniforms, setHeightFogTuning } from '../src/render/heightFog.ts';
 import { baseRegistry, startupContent } from './baseRegistry.ts';

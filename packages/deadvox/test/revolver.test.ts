@@ -6,9 +6,10 @@ import { NEUTRAL_AIM } from '@skelly/engine/pose';
 import { decodeSave, encodeSave, type SaveVersionComponents } from '@skelly/engine/save';
 import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { FirearmMechanics, spentCaseItemId } from '../src/game/firearmHandling.ts';
+import { spentCaseItemId } from '../src/game/entries/inventory.ts';
+import { createSession, IDLE } from '../src/game/entries/session.ts';
+import { FirearmMechanics } from '../src/game/firearmHandling.ts';
 import { RevolverHandling } from '../src/game/revolverHandling.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { content } from './fixtures/startupContent.ts';
 

@@ -3,8 +3,7 @@ import { HandlingQueue, type HandSide, Inventory } from '@skelly/engine/inventor
 import { bindReach } from '@skelly/engine/sim';
 import { describe, expect, it, vi } from 'vitest';
 import { openingTargetForHand } from '../src/game/canOpening.ts';
-import { selectPrimaryAction } from '../src/game/primaryAction.ts';
-import { Survival } from '../src/game/survival.ts';
+import { Survival, selectPrimaryAction } from '../src/game/entries/sim.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { GuidedSteps as Tutorial } from '../src/presentation/guidedSteps.ts';
 import { baseRegistry } from './baseRegistry.ts';

@@ -22,10 +22,11 @@ import {
 import { Scene } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { BuildMode } from '../src/debug/build.ts';
-import { BindingRegistry } from '../src/game/bindingRegistry.ts';
-import type { MesherHandlers, MesherPort, ToMesher } from '../src/game/mesherProtocol.ts';
-import { playerTuning } from '../src/game/player.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { BindingRegistry } from '../src/game/entries/input.ts';
+import type { MesherPort, ToMesher } from '../src/game/entries/mesh.ts';
+import { createSession, IDLE } from '../src/game/entries/session.ts';
+import { playerTuning } from '../src/game/entries/sim.ts';
+import type { MesherHandlers } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import type { Engine } from '../src/presentation/engine.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';

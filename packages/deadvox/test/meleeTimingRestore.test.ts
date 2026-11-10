@@ -5,8 +5,8 @@ import { decodeSave, encodeSave, type SaveContentKind } from '@skelly/engine/sav
 import { dominantSide, offSide } from '@skelly/engine/sim';
 import { makeScale, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
+import { createSession, IDLE } from '../src/game/entries/session.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

@@ -5,14 +5,15 @@ import { CraftCommands, HandlingQueue, Inventory } from '@skelly/engine/inventor
 import { decodeSave } from '@skelly/engine/save';
 import { bindReach, Character, realSeconds } from '@skelly/engine/sim';
 import { expect, it } from 'vitest';
-import { BindingRegistry } from '../src/game/bindingRegistry.ts';
-import { planRealFrame } from '../src/game/frameDriver.ts';
-import { decodeInputReplay, encodeInputReplay, InputReplayRecorder } from '../src/game/inputReplay.ts';
 import {
-  applyReplayActionPayload,
-  isReplayActionPayload,
+  BindingRegistry,
+  decodeInputReplay,
+  encodeInputReplay,
+  InputReplayRecorder,
   type ReplayActionPayload,
-} from '../src/game/replayCommands.ts';
+} from '../src/game/entries/input.ts';
+import { planRealFrame } from '../src/game/frameDriver.ts';
+import { applyReplayActionPayload, isReplayActionPayload } from '../src/game/replayCommands.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { runningCraftPresentation, workName } from '../src/ui/craftReadout.ts';
 import { handlingViewModel, timedActionHandlingPresentation } from '../src/ui/hud.ts';

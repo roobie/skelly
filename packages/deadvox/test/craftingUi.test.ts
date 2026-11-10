@@ -3,7 +3,7 @@ import { bindReach, Character } from '@skelly/engine/sim';
 import { fillText } from '@skelly/engine/text';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
-import { BindingRegistry } from '../src/game/bindingRegistry.ts';
+import { BindingRegistry } from '../src/game/entries/input.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { craftingText, craftRows, runningCraftPresentation } from '../src/ui/craftReadout.ts';
 import { baseRegistry, baseRegistryWith, baseScreenText } from './baseRegistry.ts';

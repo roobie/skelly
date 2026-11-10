@@ -4,7 +4,7 @@ import { dropTarget, type Item, type Target } from '@skelly/engine/inventory';
 import { dominantSide } from '@skelly/engine/sim';
 import { CHUNK, type Vec3, worldSolid } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { IDLE } from '../src/game/session.ts';
+import { IDLE } from '../src/game/entries/session.ts';
 import type { MoveIntent } from './playerFixture.ts';
 import { advance, createRuntime, fixtureZombieColumn, type Runtime, registry, scale } from './snapshotTestSupport.ts';
 

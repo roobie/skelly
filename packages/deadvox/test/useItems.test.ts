@@ -7,7 +7,8 @@ import { HandlingQueue, Inventory, type Item, toggleLight, typeWeightGrams } fro
 import { bindReach } from '@skelly/engine/sim';
 import { coreLabel } from '@skelly/engine/text';
 import { describe, expect, it, vi } from 'vitest';
-import { Survival, type SurvivalHooks } from '../src/game/survival.ts';
+import { Survival } from '../src/game/entries/sim.ts';
+import type { SurvivalHooks } from '../src/game/survival.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

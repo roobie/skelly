@@ -11,7 +11,7 @@ import {
   worldSolid,
 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { createSession, IDLE } from '../src/game/entries/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';
 import { sweepGroup } from './sweeps.ts';

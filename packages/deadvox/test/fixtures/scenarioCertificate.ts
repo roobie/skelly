@@ -8,7 +8,8 @@ import { compileTemplate, placedPieces } from '@skelly/engine/internal/core/temp
 import { doorPlan } from '@skelly/engine/inventory';
 import { BlockEntities, CitySite, type Scale, toChunk, type Vec3, worldSolid } from '@skelly/engine/world';
 import { DOOR_ACTION } from '../../src/game/doorAction.ts';
-import { createSession, IDLE, type SessionOptions } from '../../src/game/session.ts';
+import { createSession, IDLE } from '../../src/game/entries/session.ts';
+import type { SessionOptions } from '../../src/game/session.ts';
 import { stackActorFigureFiles } from '../baseContentFiles.ts';
 import { buildFixtureRegistry } from '../economyFixtures.ts';
 import { descentLid, queueDescentLidOpening } from './descentLid.ts';

@@ -1,7 +1,11 @@
 import { WEATHERING_STRENGTH_MAX } from '@skelly/engine/internal/core/weather.ts';
 import { chunksFor } from '@skelly/engine/world';
 import { expect, it, vi } from 'vitest';
-import { applyWeatheringConfig, makeConfig as makeContentConfig, savingEnabledFromUrl } from '../src/game/config.ts';
+import {
+  applyWeatheringConfig,
+  makeConfig as makeContentConfig,
+  savingEnabledFromUrl,
+} from '../src/game/entries/session.ts';
 import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
 import { content as BUNDLED_CONTENT, configFromUrl, makeConfig } from './fixtures/startupContent.ts';
 

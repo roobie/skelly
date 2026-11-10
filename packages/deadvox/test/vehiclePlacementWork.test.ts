@@ -8,11 +8,8 @@ import { decodeSave } from '@skelly/engine/save';
 import { copyVehicleWorkPlacement, type VehicleWorkPlacement, type VehicleWorkTarget } from '@skelly/engine/vehicles';
 import { CHUNK } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import {
-  applyReplayActionPayload,
-  isReplayActionPayload,
-  type ReplayActionPayload,
-} from '../src/game/replayCommands.ts';
+import type { ReplayActionPayload } from '../src/game/entries/input.ts';
+import { applyReplayActionPayload, isReplayActionPayload } from '../src/game/replayCommands.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import {
