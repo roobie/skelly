@@ -105,10 +105,16 @@ class Cursor {
     this.at += 1;
     return true;
   }
-  /** A quoted string, or the bare text up to the next separator. */
+  /**
+   * A quoted string, or the bare text up to the next separator. A double-quoted string is a JSON string, escapes
+   * and all, as `scalarText` writes it; a single-quoted one, typed by hand, ends at the next single quote.
+   */
   scalar(): Scalar | undefined {
     const quote = this.peek();
-    if (quote === '"' || quote === "'") {
+    if (quote === '"') {
+      return this.jsonString();
+    }
+    if (quote === "'") {
       const end = this.text.indexOf(quote, this.at + 1);
       if (end < 0) {
         return undefined;
@@ -123,6 +129,23 @@ class Cursor {
     }
     const text = this.text.slice(start, this.at).trim();
     return text === '' ? undefined : { text, quoted: false };
+  }
+  private jsonString(): Scalar | undefined {
+    let end = this.at + 1;
+    while (end < this.text.length && this.text[end] !== '"') {
+      end += this.text[end] === '\\' ? 2 : 1;
+    }
+    if (end >= this.text.length) {
+      return undefined;
+    }
+    let text: unknown;
+    try {
+      text = JSON.parse(this.text.slice(this.at, end + 1));
+    } catch {
+      return undefined;
+    }
+    this.at = end + 1;
+    return typeof text === 'string' ? { text, quoted: true } : undefined;
   }
 }
 
@@ -170,7 +193,10 @@ const readValue = (cursor: Cursor, kind: HashKind): unknown => {
 
 const HASH_MARK = /^#/;
 
-/** Reads a hash (with or without its `#`, percent-encoded or not); an unknown key or a wrong value refuses it. */
+/**
+ * Reads a hash, with or without its `#`, undoing its percent-encoding first; an unknown key, a wrong value or a lone
+ * `%` refuses it.
+ */
 export const readHash = (fragment: string): HashRead => {
   const raw = fragment.replace(HASH_MARK, '');
   let text: string;
@@ -214,7 +240,13 @@ const readEntries = (cursor: Cursor): HashRead => {
 const scalarText = (value: number | boolean | string): string =>
   typeof value !== 'string' || BARE.test(value) ? String(value) : JSON.stringify(value);
 
-/** The hash text for `hash`, keys in their fixed order; empty when no key is set. */
+const PERCENT = /%/g;
+
+/**
+ * The hash text for `hash`, keys in their fixed order; empty when no key is set. Strings that are not bare words are
+ * JSON strings. A `%` is written `%25`, so the address bar's percent-encoding is the only encoding `readHash` undoes
+ * and a value such as `%41` comes back as written.
+ */
 export const writeHash = (hash: HashState): string => {
   const entries = (Object.keys(HASH_KEYS) as (keyof HashKeys)[]).flatMap((key) => {
     const value = hash[key];
@@ -223,5 +255,5 @@ export const writeHash = (hash: HashState): string => {
     }
     return [`${key}:${Array.isArray(value) ? `[${value.map(scalarText).join(',')}]` : scalarText(value as string)}`];
   });
-  return entries.length === 0 ? '' : `{${entries.join(',')}}`;
+  return entries.length === 0 ? '' : `{${entries.join(',')}}`.replace(PERCENT, '%25');
 };

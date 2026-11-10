@@ -16,10 +16,16 @@ describe('page hash', () => {
     expect(writeHash({ seed: 1, debug: true })).toBe(writeHash({ debug: true, seed: 1 }));
   });
 
-  it('quotes a string that is not a bare word', () => {
-    const hash: HashState = { focus: 'a b,c' };
-    expect(readHash(writeHash(hash))).toEqual({ hash });
-  });
+  it.each(['a b,c', 'a"b', 'a\\b', 'a\nb', '100%', '%41'])(
+    'reads back the string %j through a real address bar',
+    (focus) => {
+      const hash: HashState = { focus };
+      const url = new URL('https://example.test/');
+      url.hash = writeHash(hash);
+      expect(readHash(url.hash)).toEqual({ hash });
+      expect(readHash(writeHash(hash))).toEqual({ hash });
+    },
+  );
 
   it('refuses an unknown key, a wrong value type and a repeated key by name', () => {
     expect(readHash('#{fixtureUnknown:1}')).toEqual({ refused: 'fixtureUnknown' });

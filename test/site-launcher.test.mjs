@@ -375,6 +375,19 @@ describe('site launchers track the games’ URL parameters', () => {
     }
   });
 
+  it('writes a hash string as the game writes it, so it reads back through the address bar', () => {
+    const hashText = new Function(
+      `${['BARE_HASH_TEXT', 'hashScalar', 'hashText'].map(extractDeclaration).join('\n')}\nreturn hashText;`,
+    )();
+    for (const focus of ['a b,c', 'a"b', 'a\\b', 'a\nb', '100%', '%41']) {
+      const written = hashText({ focus });
+      assert.equal(written, writeHash({ focus }), `the launcher writes ${JSON.stringify(focus)} as the game does`);
+      const url = new URL('https://example.test/');
+      url.hash = written;
+      assert.deepEqual(readHash(url.hash), { hash: { focus } }, `${JSON.stringify(focus)} reads back`);
+    }
+  });
+
   it('offers weathering overrides only in debug play and matches the game strength ceiling', () => {
     for (const [id, parameter] of [
       ['deadvox-weathering-field', 'weathering'],

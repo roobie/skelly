@@ -295,7 +295,7 @@ const hashText = (hash) => {
   const entries = Object.entries(hash).map(
     ([key, value]) => `${key}:${Array.isArray(value) ? `[${value.map(hashScalar).join(',')}]` : hashScalar(value)}`,
   );
-  return entries.length === 0 ? '' : `{${entries.join(',')}}`;
+  return entries.length === 0 ? '' : `{${entries.join(',')}}`.replaceAll('%', '%25');
 };
 const setHashNumber = (hash, key, text) => {
   if (text.trim() !== '') {
