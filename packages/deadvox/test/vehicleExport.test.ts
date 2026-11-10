@@ -70,6 +70,17 @@ describe('vehicle export contract', () => {
     expect([...parts[0]!].some((part) => parts[1]!.has(part))).toBe(true);
   });
 
+  it('loads a mod-authored finish with a sheen with no code edit', () => {
+    const finish = {
+      id: 'fixture-coated',
+      colour: [0.2, 0.3, 0.4],
+      finish: { metallic: 0.1, roughness: 0.7, sheen: { colour: [0.9, 0.8, 0.7], roughness: 0.3 } },
+    };
+    const { issues, registry } = withMod({ vehicleFinishes: [finish] });
+    expect(issues).toEqual([]);
+    expect(registry.vehicleFinishes.get(finish.id)).toEqual(finish);
+  });
+
   it('loads a mod-authored part and blueprint with no code edit', () => {
     const { issues, registry } = withMod({
       ...modPart('fixture_cell', ['electricity']),

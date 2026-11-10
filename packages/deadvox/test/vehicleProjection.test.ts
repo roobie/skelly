@@ -1,8 +1,10 @@
 import { placeFitting } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
 import { projectVehicleParts } from '@skelly/engine/vehicles';
 import { applyItemStateLook } from '@skelly/presentation/internal/render/itemStateLook.ts';
+import { applyModelMaterials } from '@skelly/presentation/internal/render/modelMaterials.ts';
 import { VehicleMeshes } from '@skelly/presentation/internal/render/vehicles.ts';
-import { BoxGeometry, Color, Group, Mesh, MeshStandardMaterial } from 'three';
+import { MATERIALS, type MaterialDef } from '@skelly/thing-core/materials';
+import { BoxGeometry, Color, Group, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, SRGBColorSpace } from 'three';
 import { describe, expect, it } from 'vitest';
 import { createRuntime, registry, scale } from './snapshotTestSupport.ts';
 
@@ -86,8 +88,8 @@ describe('production vehicle projection', () => {
   describe('part finish', () => {
     const finishes = [...registry.vehicleFinishes.values()];
     const first = finishes[0]!;
-    const second = finishes.find(({ baseColor }) => baseColor.some((value, axis) => value !== first.baseColor[axis]))!;
-    const colourOf = ({ baseColor }: typeof first) => new Color().setRGB(...baseColor);
+    const second = finishes.find(({ colour }) => colour.some((value, axis) => value !== first.colour[axis]))!;
+    const colourOf = ({ colour }: typeof first) => new Color().setRGB(...colour, SRGBColorSpace);
     const library = () => {
       const paint = new MeshStandardMaterial({ color: '#123456' });
       paint.userData = { paintable: true, itemMaterialIndex: 0 };
@@ -130,8 +132,8 @@ describe('production vehicle projection', () => {
         const [secondBody, secondGlass] = meshes(two, 'bonnet');
 
         expect(firstBody!.material.color.getHex()).toBe(colourOf(first).getHex());
-        expect(firstBody!.material.metalness).toBe(first.metallic);
-        expect(firstBody!.material.roughness).toBe(first.roughness);
+        expect(firstBody!.material.metalness).toBe(first.finish.metallic);
+        expect(firstBody!.material.roughness).toBe(first.finish.roughness);
         expect(secondBody!.material.color.getHex()).toBe(colourOf(second).getHex());
         expect(firstGlass!.material).toBe(glass);
         expect(secondGlass!.material).toBe(glass);
@@ -141,6 +143,61 @@ describe('production vehicle projection', () => {
         registry.vehicleBlueprints.delete('fixture_first_paint');
         registry.vehicleBlueprints.delete('fixture_second_paint');
       }
+    });
+
+    describe('matches the authored-material path', () => {
+      const surface = (material: MeshStandardMaterial) => ({
+        type: material.type,
+        color: material.color.getHex(),
+        metalness: material.metalness,
+        roughness: material.roughness,
+        opacity: material.opacity,
+        transparent: material.transparent,
+        depthWrite: material.depthWrite,
+        sheen:
+          material instanceof MeshPhysicalMaterial
+            ? [material.sheen, material.sheenColor.getHex(), material.sheenRoughness]
+            : undefined,
+      });
+      const authored = (id: string, materials: Readonly<Record<string, MaterialDef>>) => {
+        const loaded = new MeshStandardMaterial();
+        loaded.userData = { materialId: id, colourMultiplier: [1, 1, 1], paintable: true };
+        const mesh = new Mesh(new BoxGeometry(), loaded);
+        applyModelMaterials(mesh, materials);
+        return mesh.material as MeshStandardMaterial;
+      };
+      const painted = (start: MeshStandardMaterial, { id: _id, ...finish }: typeof first) => {
+        const mesh = new Mesh(new BoxGeometry(), start);
+        const model = [...registry.models.keys()][0]!;
+        applyItemStateLook(mesh, { model, state: { finish }, slots: [], hidden: [], key: '' }, registry);
+        return mesh.material as MeshStandardMaterial;
+      };
+      const plainEntry: typeof first = {
+        id: 'fixture-plain',
+        colour: [0.6, 0.5, 0.4],
+        finish: { metallic: 0.2, roughness: 0.6 },
+      };
+      const sheenEntry: typeof first = {
+        id: 'fixture-sheen',
+        colour: [0.2, 0.3, 0.4],
+        finish: { metallic: 0.1, roughness: 0.7, opacity: 0.5, sheen: { colour: [0.9, 0.8, 0.7], roughness: 0.3 } },
+      };
+      const table: Record<string, MaterialDef> = { [plainEntry.id]: plainEntry, [sheenEntry.id]: sheenEntry };
+
+      it('for every shipped finish, as its model material', () => {
+        for (const finish of finishes) {
+          const start = new MeshStandardMaterial();
+          start.userData = { paintable: true };
+          expect(surface(painted(start, finish)), finish.id).toEqual(surface(authored(finish.id, MATERIALS)));
+        }
+      });
+
+      it.each([
+        ['a plain surface takes a sheen', plainEntry, sheenEntry],
+        ['a sheened surface loses it to a plain finish', sheenEntry, plainEntry],
+      ])('when %s', (_, from, to) => {
+        expect(surface(painted(authored(from.id, table), to))).toEqual(surface(authored(to.id, table)));
+      });
     });
 
     it('draws wear over the paint on a loose part', () => {

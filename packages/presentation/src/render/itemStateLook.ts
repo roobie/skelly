@@ -2,6 +2,7 @@ import type { ModelDef, Registry } from '@skelly/engine/content';
 import { Color, type Material, Mesh, MeshStandardMaterial, type Object3D } from 'three';
 import { glowingCopy } from './itemEmissive.ts';
 import type { ItemLook, ItemStateLook } from './itemLook.ts';
+import { paintedCopy } from './modelMaterials.ts';
 
 const owned = new WeakSet<Material>();
 export const fittedStateGroup = (slot: string): string => `item-slot:${slot}`;
@@ -32,14 +33,12 @@ const copyMaterial = (material: Material, model: ModelDef, state: ItemStateLook,
   if (!(tint || glow || finish)) {
     return material;
   }
-  const copy = glow ? glowingCopy(material, glow.color, glow.intensity) : material.clone();
-  if (finish) {
-    copy.color.setRGB(...finish.baseColor);
-    copy.opacity = finish.opacity;
-    copy.transparent = finish.opacity < 1;
-    copy.depthWrite = finish.opacity === 1;
-    copy.metalness = finish.metallic;
-    copy.roughness = finish.roughness;
+  const painted = finish ? paintedCopy(material, finish) : material;
+  let copy: MeshStandardMaterial;
+  if (glow) {
+    copy = glowingCopy(painted, glow.color, glow.intensity);
+  } else {
+    copy = finish ? painted : material.clone();
   }
   // Wear draws over the paint.
   if (tint) {

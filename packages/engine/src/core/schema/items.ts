@@ -1,3 +1,4 @@
+import { MaterialSchema } from '@skelly/thing-core/materials';
 import { ModelPointSchema } from '@skelly/thing-core/schema';
 import {
   array,
@@ -878,14 +879,8 @@ export const ItemSchema = strictObject({
 /** Library material names carry hyphens, unlike content ids. */
 const FinishId = pipe(string(), nonEmpty('must not be empty'));
 
-/** One paint in the finish library: the glTF material a painted surface in it carries, colour in linear RGB. */
-export const VehicleFinishSchema = strictObject({
-  id: FinishId,
-  baseColor: tuple([Fraction, Fraction, Fraction]),
-  opacity: Fraction,
-  metallic: Fraction,
-  roughness: Fraction,
-});
+/** One paint in the finish library: a whole model material, so a mod's entry can use all a model's material can. */
+export const VehicleFinishSchema = strictObject({ id: FinishId, ...MaterialSchema.entries });
 
 const VehicleFittingSchema = strictObject({
   id: Id,
