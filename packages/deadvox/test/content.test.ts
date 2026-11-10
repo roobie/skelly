@@ -11,8 +11,7 @@ import { BindingRegistry } from '@skelly/engine/input';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
 import { resolveSpawnTime } from '@skelly/engine/internal/core/clock.ts';
 import { validateContent } from '@skelly/engine/internal/core/content.ts';
-import { corpseLootPoint, lootTypeIssue } from '@skelly/engine/internal/core/loot.ts';
-import { militaryLootItems } from '@skelly/engine/internal/core/magazine.ts';
+import { corpseLootPoint, lootTypeIssue, militaryLootItems } from '@skelly/engine/internal/core/loot.ts';
 import { blockPatterns, blockWeatherability } from '@skelly/engine/internal/core/meshInput.ts';
 import { checkReachability } from '@skelly/engine/internal/core/reachability.ts';
 import {

@@ -145,6 +145,10 @@ local campWallRunCrouchHole = campWallRun + {
         { "item": "cartridge_5_d_56x45", "weight": 2, "count": [50, 150] },
         { "item": "cartridge_7_d_62x39", "weight": 2, "count": [50, 150] },
         { "nothing": true, "weight": 28 }
+      ],
+      "cartridgeOdds": [
+        { "item": "cartridge_5_d_56x45", "weight": 1 },
+        { "item": "cartridge_7_d_62x39", "weight": 1 }
       ]
     }
   ],
