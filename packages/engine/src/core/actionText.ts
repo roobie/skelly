@@ -49,7 +49,7 @@ export const ActionTextSchema = strictObject({
     foodPoisoning: Line,
     grenade: Line,
     bearTrap: Line,
-    /** A zombie that is gone by the time its hit lands, so its type's own cause can't be read. */
+    /** An actor that is gone by the time its hit lands, so its type's own cause can't be read. */
     actor: Line,
   }),
   /** Refusals and notices of the play loop: resting, dropping, throwing, quickbar and fuses. */

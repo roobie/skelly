@@ -32,7 +32,7 @@ export const SenseSchema = strictObject({
   vocalNoiseLifetimeSimSeconds: PositiveSimSeconds,
   /**
    * The shambler voice-pitch law (`packages/deadvox/DESIGN.md`, "Audio"), as multiples of the old law's pitch √(reference height ÷ body
-   * height) at the smallest pooled body. One law covers the whole figure pool, so it lives here, not on a zombie type.
+   * height) at the smallest pooled body. One law covers the whole figure pool, so it lives here, not on an actor type.
    */
   actorVoice: strictObject({
     oldLawReferenceHeightMetres: Positive,
@@ -57,7 +57,7 @@ export const SenseSchema = strictObject({
     throwArmSpeedMetresPerRealSecond: Positive,
     throwArmEnergyJoules: Positive,
     /**
-     * A light set down: the height a zombie's sight line aims at, and the drawn point light's lift when its model
+     * A light set down: the height an actor's sight line aims at, and the drawn point light's lift when its model
      * has no flame to shine from, high enough that the near-field falloff reaches nearby surfaces.
      */
     groundLight: strictObject({ senseHeightMetres: Positive, renderLiftMetres: Positive }),

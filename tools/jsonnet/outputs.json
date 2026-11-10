@@ -305,6 +305,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.start/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.hunting-cabins/hunting-cabins.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.hunting-cabins/hunting-cabins.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.hunting-cabins/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.hunting-cabins/pack/manifest.json"
     },
@@ -335,6 +339,10 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.lone-house/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.lone-house/layouts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.lone-house/pack/manifest.jsonnet",
@@ -375,6 +383,10 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/ladders.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/ladders.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/layouts-playtest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/layouts-playtest.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/models-playtest.jsonnet",

@@ -4,6 +4,7 @@ export { BundleAdmission, type BundleStamp, bundleSourceHash } from './core/bund
 export {
   admitPacks,
   admitWithFolderPacks,
+  comparePackKeys,
   type PackInput,
   type PackManifest,
   PackManifestSchema,

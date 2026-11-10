@@ -2081,7 +2081,7 @@ describe('shambler scenarios', () => {
       actors: [{ ...entry!, actor: { ...entry!.actor, figureSeed: Math.max(...SHAMBLER.figureSeeds!) + 1 } }],
     };
     const restored = new ActorSystem(senses(() => player([100, 2, 0])));
-    expect(() => restored.restoreState(snapshot, (id) => registry.actors.get(id))).toThrow('Invalid zombie state');
+    expect(() => restored.restoreState(snapshot, (id) => registry.actors.get(id))).toThrow('Invalid actor state');
   });
 
   it.each([SHAMBLER, RUNNER])(

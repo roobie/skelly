@@ -903,22 +903,32 @@ try {
   await pressAction(page, 'inventory.hands');
   await waitForHands(ids.box);
   await pressAction(page, 'ui.inventory-toggle');
+  // Live frames keep simulating between the CDP round trips, so a short unpack can finish before
+  // Stop arrives; stepping frames by hand keeps simulated time still until Stop is pressed.
+  await page.evaluate(() => globalThis.pumpManualFrames.enable());
   await page.mouse.click(640, 450);
-  await page.waitForFunction(() =>
-    globalThis.pumpHandlingTest.session.queue.jobs.some((job) => job.jobType === 'item.unpack'),
+  const queuedUnpack = await page.evaluate(() =>
+    globalThis.pumpManualFrames.until(() =>
+      globalThis.pumpHandlingTest.session.queue.jobs.some((job) => job.jobType === 'item.unpack'),
+    ),
   );
+  assert.equal(queuedUnpack.reached, true, 'the click must queue an unpack job');
   await pressAction(page, 'handling.stop');
   const cancelled = await observe();
   assert.equal(cancelled.box, true);
   assert.equal(cancelled.loose, ids.carried);
   assert.equal(cancelled.jobs, 0);
   await page.mouse.click(640, 450);
-  await page.waitForFunction((uid) => {
+  const requeuedUnpack = await page.evaluate((uid) => {
     const s = globalThis.pumpHandlingTest.session;
-    return !s.inventory.itemByUid(uid) || s.queue.jobs.some((job) => job.jobType === 'item.unpack');
+    return globalThis.pumpManualFrames.until(
+      () => !s.inventory.itemByUid(uid) || s.queue.jobs.some((job) => job.jobType === 'item.unpack'),
+    );
   }, ids.box);
+  assert.equal(requeuedUnpack.reached, true, 'the second click must queue the unpack again');
   await waitForWork('itemGone', ids.box);
   const unpacked = await observe();
+  await page.evaluate(() => globalThis.pumpManualFrames.disable());
   assert.equal(unpacked.loose, ids.carried + ids.payload);
   assert.equal(unpacked.hand, null);
   await pressAction(page, 'firearm.reload');

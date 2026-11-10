@@ -1,6 +1,6 @@
-// Where entities (zombies, later animals and vehicles) live. Slice 1 keeps plain
+// Where entities (actors, later animals and vehicles) live. Slice 1 keeps plain
 // objects in a Map. Systems only use this interface, so the storage can move to
-// typed arrays in a worker when there are hundreds of zombies without changing them
+// typed arrays in a worker when there are hundreds of actors without changing them
 // (`packages/deadvox/DESIGN.md`, "Simulation architecture"; `packages/deadvox/CHALLENGES.md`, "Many zombies in a browser").
 
 export type EntityId = number;
