@@ -41,6 +41,7 @@ import { showReport } from './bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import { bundledCredits } from './bundledCredits.ts';
+import { pageUrl } from './pageUrl.ts';
 import { productAssets as assets } from './product/assets.ts';
 import { inputBindings, keyboardInput } from './product/input.ts';
 import { productModIntake } from './product/mods.ts';
@@ -48,7 +49,7 @@ import { ragdollConfig, ragdollSweepViewer } from './product/ragdoll.ts';
 
 document.getElementById('build-revision')!.textContent = `Build: ${getBuildRevision()}`;
 
-const params = new URLSearchParams(location.search);
+const params = pageUrl().query;
 const view = document.getElementById('view')!;
 const startupScreen = document.getElementById('startup-screen')!;
 installErrorReportHandler();

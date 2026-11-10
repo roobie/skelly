@@ -3,7 +3,7 @@
 // presentation never read the URL; the entry passes them what this reads.
 
 import { GRAPHICS_KNOBS } from '@skelly/engine/look';
-import { type HashState, readHash, writeHash } from './hashState.ts';
+import { type HashState, readHash } from './hashState.ts';
 
 /** The mod list and the switches that choose a harness. */
 const HARNESS_QUERY = ['mods', 'bench', 'render', 'skyRoute', 'save-backend', 'save-test', 'debug-error'];
@@ -48,21 +48,4 @@ let page: PageUrl | undefined;
 export const pageUrl = (): PageUrl => {
   page ??= readPageUrl(location.search, location.hash);
   return page;
-};
-
-/** The page's URL with `hash` as its hash and everything else kept. */
-export const hrefWithHash = (href: string, hash: HashState): string => {
-  const url = new URL(href);
-  url.hash = writeHash(hash);
-  return url.href;
-};
-
-/** Sets hash keys in place, without a history entry; an undefined value removes its key, and other keys stay. */
-export const replaceHash = (changes: HashState): void => {
-  const current = pageUrl();
-  page = { ...current, hash: { ...current.hash, ...changes } };
-  const next = hrefWithHash(location.href, page.hash);
-  if (next !== location.href) {
-    history.replaceState(history.state, '', next);
-  }
 };
