@@ -28,7 +28,14 @@ type PracticeWarningStore = () => Pick<Storage, 'getItem' | 'setItem' | 'removeI
 
 export const stagePracticeLink = (link: ReturnType<typeof tutorialUrl>, stash: PracticeWarningStore): string => {
   if (link.droppedPacks.length > 0) {
-    stash().setItem(PRACTICE_WARNINGS_KEY, JSON.stringify(link));
+    try {
+      stash().setItem(PRACTICE_WARNINGS_KEY, JSON.stringify(link));
+    } catch {
+      for (const id of link.droppedPacks) {
+        // biome-ignore lint/suspicious/noConsole: blocked storage must not prevent practice navigation or silence its warning.
+        console.warn(`Practice link removed start pack "${id}"`);
+      }
+    }
   }
   return link.href;
 };

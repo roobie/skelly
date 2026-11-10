@@ -1,7 +1,7 @@
 ---
 read_if:
   - you add, move or remove a Deadvox game-entry URL parameter or hash key
-  - you change how practice links replace other start packs or carry dropped-pack warnings across navigation
+  - you change how practice links replace other start packs or handle dropped-pack warnings when storage is blocked
   - you author a demo mod or change how a URL selects mods
   - you name a run's start in a link or test with `start-mod`, or add a committed scenario pack
   - you change scenario-owned starts, product defaults or the starting kit
@@ -64,7 +64,7 @@ The start mod selects its own row; otherwise the admitted stack supplies the def
 
 Committed scenarios, the tutorial among them, are real mods a link picks through `?mods=`, so a playtest link, the practice link and a test name a world the same way a player's mod does. Each scenario has one opt-in `.play` pack that names the scenario's start as its default start and depends on the scenario's content; see `packages/deadvox/mods/skelly.deadvox.scenario.playtest.play/pack/manifest.jsonnet`. The content stays in the product's default stack, which other pages and tools read, so picking the pack changes only where the run starts. One `.play` pack per scenario is the most straightforward approach, with the least surprise. As a consequence, picking a start and loading content stay in separate packs, so a scenario whose content is itself opt-in needs no `.play` pack. A loader rule that picks an already-loaded pack's start instead stays open.
 
-Practice is its own page, not a mode inside a run; see `docs/tutorial.md`, "Disposable practice". Its link replaces other listed start packs while keeping non-start packs because admission refuses competing default setters instead of choosing by load order. The destination logs each dropped pack so the developer or mod author can see why it left the URL: navigation normally clears the departing page's console. The handoff is tab-local and consumed once, so shared links and reloads do not repeat a previous launch's warning. See `packages/presentation/src/presentation/tutorialUrl.ts`, `tutorialUrl`, `stagePracticeLink` and `logPracticeWarnings`; and `src/main.ts`, `practiceStart`.
+Practice is its own page, not a mode inside a run; see `docs/tutorial.md`, "Disposable practice". Its link replaces other listed start packs while keeping non-start packs because admission refuses competing default setters instead of choosing by load order. Warnings belong on the destination so navigation does not clear the developer's or mod author's explanation of a dropped pack. If storage blocks the handoff, a departing-page warning is best effort: player navigation outranks preserving the warning. The handoff is tab-local and consumed once, so shared links and reloads do not repeat a previous launch's warning. See `packages/presentation/src/presentation/tutorialUrl.ts`, `tutorialUrl`, `stagePracticeLink` and `logPracticeWarnings`; and `src/main.ts`, `practiceStart`.
 
 A page that names `start-mod` does not offer practice. Practice uses `mods` because `start-mod` requires exactly one start row owned by the selected pack. Practice discovery and save isolation follow content rather than a hard-coded scenario identity; see `packages/engine/src/game/bundledMods.ts`, `practiceModId`, and `packages/engine/src/game/startSelection.ts`, `isPracticeStart`.
 

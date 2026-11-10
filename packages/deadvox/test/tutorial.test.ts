@@ -239,6 +239,29 @@ describe('practice objectives', () => {
     }
   });
 
+  it('keeps the practice href and warns on departure when staging storage throws', () => {
+    const link = tutorialUrl('https://example.org/deadvox/?mods=scenario', 'practice', [
+      { id: 'scenario', defaultStart: 'fixture_start' },
+    ]);
+    const stash = () => ({
+      getItem: () => null,
+      setItem: () => {
+        throw new DOMException('Storage unavailable', 'SecurityError');
+      },
+      removeItem: () => undefined,
+    });
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      expect(stagePracticeLink(link, stash)).toBe(link.href);
+      expect(warning).toHaveBeenCalledTimes(link.droppedPacks.length);
+      for (const id of link.droppedPacks) {
+        expect(warning.mock.calls.flat().some((value) => String(value).includes(id))).toBe(true);
+      }
+    } finally {
+      warning.mockRestore();
+    }
+  });
+
   it('discards a warning handoff loaded at a different destination', () => {
     const data = new Map<string, string>();
     const stash = () => ({
