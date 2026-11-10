@@ -19,7 +19,9 @@ import {
   type FigureBox,
   type FigureStancePose,
   figureStancePose,
+  type LeanFrame,
   type MeleePoseFrame,
+  type PlayerAdsPose,
   type PlayerLookPose,
   type PlayerStance,
   playerHeldSeatFrame,
@@ -192,8 +194,8 @@ export interface PlayerFigurePose {
   headYaw?: number;
   headPitch?: number;
   stancePose?: FigureStancePose;
-  ads?: import('../engine/pose.ts').PlayerAdsPose | undefined;
-  lean?: import('../engine/pose.ts').LeanFrame | undefined;
+  ads?: PlayerAdsPose | undefined;
+  lean?: LeanFrame | undefined;
 }
 
 type StancePose = FigureDef['stancePoses']['prone'];

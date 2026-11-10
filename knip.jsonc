@@ -61,6 +61,8 @@
         "src/siteMapPage.ts!",
         "src/debug/vehicleSpike.ts!",
         "src/soundsPage.ts!",
+        // Tiled loads the map extension, which takes the authored terrain evaluator from its runtime entry.
+        "maps/extensions/*.mjs",
         // A type-level witness compiled by typecheck, never imported.
         "src/worker/mesherPort.witness.ts",
         "tools/police-item-models.mjs",

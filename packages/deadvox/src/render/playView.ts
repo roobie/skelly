@@ -7,6 +7,7 @@ import {
   adsCameraEye,
   figureStancePose,
   guardAdsCamera,
+  type LeanFrame,
   type MeleePoseFrame,
   type PlayerAdsPose,
   type PlayerStance,
@@ -86,7 +87,7 @@ export interface PlayCameraFrame {
   /** How far the view has carried the aim from hip to sights; the camera slides with it. */
   readonly adsAim?: number;
   readonly stance: PlayerStance;
-  readonly lean?: import('../engine/pose.ts').LeanFrame | undefined;
+  readonly lean?: LeanFrame | undefined;
   readonly eye: Vec3;
   readonly spectator?: { readonly position: Vec3; readonly yaw: number; readonly pitch: number };
   readonly thirdPerson?: boolean;
