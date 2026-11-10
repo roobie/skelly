@@ -7,8 +7,8 @@ import type { Rng } from './random.ts';
 import type { SolidAt } from './raycast.ts';
 import type { ActorDef } from './schema.ts';
 
-// Phases share this scratch to avoid per-zombie allocation; it lives apart from body primitives so their
-// imports do not carry decision contracts. Write each per-zombie field before its first read.
+// Phases share this scratch to avoid per-actor allocation; it lives apart from body primitives so their
+// imports do not carry decision contracts. Write each per-actor field before its first read.
 // `packages/deadvox/test/actorSystem.test.ts`, `vocalNoiseDoesNotLeakBetweenActorPasses`, guards the cross-pass case.
 
 export interface ActorTickScratch {

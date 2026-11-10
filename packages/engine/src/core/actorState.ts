@@ -16,14 +16,14 @@ export const actorBodyDimensions = measureActorBody;
 
 export const requiredFigureSeeds = (type: ActorDef): readonly number[] => {
   if (type.figureSeeds === undefined) {
-    throw new Error(`Zombie type ${type.id} is missing its authored figureSeeds`);
+    throw new Error(`Actor type ${type.id} is missing its authored figureSeeds`);
   }
   return type.figureSeeds;
 };
 
 export const requiredGrabBand = (type: ActorDef): number => {
   if (type.attack?.grabBandMetres === undefined) {
-    throw new Error(`Zombie type ${type.id} is missing its authored attack.grabBandMetres`);
+    throw new Error(`Actor type ${type.id} is missing its authored attack.grabBandMetres`);
   }
   return type.attack.grabBandMetres;
 };
@@ -126,7 +126,7 @@ export interface Actor {
   spitWindup: number;
   /** Seconds that the last heavy enough hit still holds it from moving and starting an attack; 0 = none. */
   staggerSimSeconds: number;
-  /** Seconds until the next spit may start; counts down whatever the zombie is doing. */
+  /** Seconds until the next spit may start; counts down whatever the actor is doing. */
   spitWait: number;
   /** Seeded stream for the spit's aim, apart from behaviorRng so a spit never shifts movement draws. */
   spitRng: Rng;
@@ -146,7 +146,7 @@ export interface Actor {
    * cumulative, never un-severed. A renderer derives what to hide via `severedBoneSet` (src/core/boneTree.ts), not
    * stored pre-expanded here (a cut part already implies everything below it). */
   severed: string[];
-  /** Voxel-grid cells of an amalgam's realized figure that hits have knocked out, ascending; empty for every
+  /** Voxel-grid cells of a fused mass's realized figure that hits have knocked out, ascending; empty for every
    * other type. Holes are flesh only: they never change regions, damage, severing or hit tests. */
   carved: number[];
 }
