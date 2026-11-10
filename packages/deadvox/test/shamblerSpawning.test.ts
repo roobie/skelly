@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { bodyIsClear, placeShamblerRing, SHAMBLER_PROBE_BODY_METRES } from '../src/bench/shamblerPlacement.ts';
 import { spawnActorType, spawnShamblers } from '../src/debug/shamblerSpawning.ts';
-import { actorFigure } from '../src/engine/content.ts';
-import { FUSED_MASS_FIGURE_SEED } from '../src/engine/pose.ts';
-import { actorAttackReachForDef, actorAttackReachMetres, actorBodyDimensions } from '../src/engine/sim.ts';
-import { type Body, bodyOverlapsBlock, makeScale } from '../src/engine/world.ts';
+import { actorFigure } from '../../engine/src/content.ts';
+import { FUSED_MASS_FIGURE_SEED } from '../../engine/src/pose.ts';
+import { actorAttackReachForDef, actorAttackReachMetres, actorBodyDimensions } from '../../engine/src/sim.ts';
+import { type Body, bodyOverlapsBlock, makeScale } from '../../engine/src/world.ts';
 import type { Engine } from '../src/presentation/engine.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

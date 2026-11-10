@@ -1,7 +1,7 @@
 import process from 'node:process';
-import { actorFigureKeyParts } from '../src/core/schema/actors.ts';
-import { type ActorFigureFiles, actorFigureKey, type Registry } from '../src/engine/content.ts';
-import { admitPacks } from '../src/engine/packs.ts';
+import { actorFigureKeyParts } from '../../engine/src/core/schema/actors.ts';
+import { type ActorFigureFiles, actorFigureKey, type Registry } from '../../engine/src/content.ts';
+import { admitPacks } from '../../engine/src/packs.ts';
 import {
   readBundledPacks,
   readStackActorFigureFiles,

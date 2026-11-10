@@ -10,7 +10,7 @@ import {
   type ShapeData,
   VOXEL,
   voxelKey,
-} from '../engine/vehicles.ts';
+} from '../../../engine/src/vehicles.ts';
 import { addSkyOpeningAnchors } from './skyAnchor.ts';
 
 const partOf = (

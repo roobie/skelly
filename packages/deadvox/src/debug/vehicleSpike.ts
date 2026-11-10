@@ -28,10 +28,10 @@ import {
   type PlacedFitting,
   requireDayCycle,
   type VehicleFittingDef,
-} from '../engine/content.ts';
-import { claimed } from '../engine/inventory.ts';
-import { graphicsTuningOf } from '../engine/look.ts';
-import { skyAt } from '../engine/sky.ts';
+} from '../../../engine/src/content.ts';
+import { claimed } from '../../../engine/src/inventory.ts';
+import { graphicsTuningOf } from '../../../engine/src/look.ts';
+import { skyAt } from '../../../engine/src/sky.ts';
 import {
   APC,
   addFitting,
@@ -74,8 +74,8 @@ import {
   wearKey,
   wearPalette,
   wheel,
-} from '../engine/vehicles.ts';
-import { BLOCK_SIZE, type Vec3 } from '../engine/world.ts';
+} from '../../../engine/src/vehicles.ts';
+import { BLOCK_SIZE, type Vec3 } from '../../../engine/src/world.ts';
 import { productAssets } from '../product/assets.ts';
 import { buildBundledContent } from '../product/content.ts';
 import { ModelLibrary } from '../render/models.ts';

@@ -1,8 +1,8 @@
-import { actionText, fillText } from '../core/actionText.ts';
-import type { InputContext } from '../core/inputActions.ts';
-import type { Inventory } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
-import { countText } from '../core/numberText.ts';
+import { actionText, fillText } from '../../../engine/src/core/actionText.ts';
+import type { InputContext } from '../../../engine/src/core/inputActions.ts';
+import type { Inventory } from '../../../engine/src/core/inventory.ts';
+import type { Item } from '../../../engine/src/core/items.ts';
+import { countText } from '../../../engine/src/core/numberText.ts';
 import type { InputReplayRecorder } from './inputReplay.ts';
 import type { PlayerTickActions } from './playerTickActions.ts';
 import type { ReplayActionPayload } from './replayCommands.ts';

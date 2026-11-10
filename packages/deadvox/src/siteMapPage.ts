@@ -1,5 +1,5 @@
-import { blockColors } from './engine/content.ts';
-import { buildingBounds } from './engine/terrain.mjs';
+import { blockColors } from '../../engine/src/content.ts';
+import { buildingBounds } from '../../engine/src/terrain.mjs';
 import {
   BLOCK_SIZE,
   CHUNK,
@@ -12,7 +12,7 @@ import {
   toLocal,
   WORLD_BOTTOM_M,
   worldGroundAt,
-} from './engine/world.ts';
+} from '../../engine/src/world.ts';
 import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { startForSite } from './game/startSelection.ts';
 import { siteForReviewMap } from './game/worldSetup.ts';

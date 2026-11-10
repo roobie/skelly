@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { simSeconds } from '../src/core/time.ts';
-import { HandlingQueue, Inventory, type Item, type Target } from '../src/engine/inventory.ts';
-import type { MeleePoseFrame } from '../src/engine/pose.ts';
-import type { Vec3 } from '../src/engine/world.ts';
+import { simSeconds } from '../../engine/src/core/time.ts';
+import { HandlingQueue, Inventory, type Item, type Target } from '../../engine/src/inventory.ts';
+import type { MeleePoseFrame } from '../../engine/src/pose.ts';
+import type { Vec3 } from '../../engine/src/world.ts';
 import { grabPose, worldGrabProgress } from '../src/render/grabPose.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';

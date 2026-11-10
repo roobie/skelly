@@ -1,6 +1,6 @@
 import { html, render } from 'lit-html';
-import type { ScreenText } from '../engine/content.ts';
-import { fillText } from '../engine/text.ts';
+import type { ScreenText } from '../../../engine/src/content.ts';
+import { fillText } from '../../../engine/src/text.ts';
 import type { WorldLoading } from '../presentation/worldLoading.ts';
 import { isOwnError } from './ownError.ts';
 

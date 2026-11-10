@@ -1,5 +1,5 @@
 import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshLambertMaterial, type Object3D, Vector3 } from 'three';
-import { PILE_DISPLAY_KIND, type Registry } from '../engine/content.ts';
+import { PILE_DISPLAY_KIND, type Registry } from '../../../engine/src/content.ts';
 import {
   cellCount,
   defOf,
@@ -10,8 +10,8 @@ import {
   type ItemFlight,
   itemFlightPoint,
   PILE_GRID,
-} from '../engine/inventory.ts';
-import type { Vec3 } from '../engine/world.ts';
+} from '../../../engine/src/inventory.ts';
+import type { Vec3 } from '../../../engine/src/world.ts';
 import { placeholderCaseMesh } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
 import { itemLook } from './itemLook.ts';

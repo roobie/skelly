@@ -1,14 +1,14 @@
-import { actionText } from '../core/actionText.ts';
-import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
-import type { CraftPreference, CraftSources } from '../core/crafting.ts';
-import type { HandlingQueue } from '../core/handling.ts';
-import type { Inventory, TargetState } from '../core/inventory.ts';
+import { actionText } from '../../../engine/src/core/actionText.ts';
+import type { RecoveryChoices, WorkOperation } from '../../../engine/src/core/craftCommands.ts';
+import type { CraftPreference, CraftSources } from '../../../engine/src/core/crafting.ts';
+import type { HandlingQueue } from '../../../engine/src/core/handling.ts';
+import type { Inventory, TargetState } from '../../../engine/src/core/inventory.ts';
 import {
   copyVehicleWorkPlacement,
   type VehicleWorkPlacement,
   type VehicleWorkTarget,
   validVehicleWorkPlacement,
-} from '../core/vehicleInstances.ts';
+} from '../../../engine/src/core/vehicleInstances.ts';
 import { type DownedBodyWay, isDownedBodyWay } from './downedBody.ts';
 import { QUICKBAR_SLOTS, type Quickbar } from './quickbar.ts';
 

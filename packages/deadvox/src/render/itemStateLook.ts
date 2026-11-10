@@ -1,5 +1,5 @@
 import { Color, type Material, Mesh, MeshStandardMaterial, type Object3D } from 'three';
-import type { ModelDef, Registry } from '../engine/content.ts';
+import type { ModelDef, Registry } from '../../../engine/src/content.ts';
 import { glowingCopy } from './itemEmissive.ts';
 import type { ItemLook, ItemStateLook } from './itemLook.ts';
 

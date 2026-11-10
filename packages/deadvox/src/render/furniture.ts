@@ -12,8 +12,8 @@ import {
   Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import type { FurnitureDef } from '../engine/content.ts';
-import type { ColumnReveal } from '../engine/mesh.ts';
+import type { FurnitureDef } from '../../../engine/src/content.ts';
+import type { ColumnReveal } from '../../../engine/src/mesh.ts';
 import {
   type BlockEntities,
   type BlockEntity,
@@ -25,7 +25,7 @@ import {
   poseKey,
   rotationOf,
   type Vec3,
-} from '../engine/world.ts';
+} from '../../../engine/src/world.ts';
 import { doorDetail } from './doorDetail.ts';
 import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';

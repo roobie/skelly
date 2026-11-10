@@ -1,11 +1,11 @@
-import type { ActorAim, ActorSystem, MeleeWeapon } from '../core/actorSystem.ts';
-import { type AimFrame, aimBasis, NEUTRAL_AIM } from '../core/aim.ts';
-import type { ModelDef } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { type CrosshairTarget, crosshairAimPoint } from '../core/crosshairTarget.ts';
-import { type HeldFirearmTransformInput, type HeldSeatFrame, heldFirearmTransform } from '../core/heldPose.ts';
-import type { HandSide } from '../core/inventory.ts';
-import type { HeldPosesDef } from '../core/schema.ts';
+import type { ActorAim, ActorSystem, MeleeWeapon } from '../../../engine/src/core/actorSystem.ts';
+import { type AimFrame, aimBasis, NEUTRAL_AIM } from '../../../engine/src/core/aim.ts';
+import type { ModelDef } from '../../../engine/src/core/content.ts';
+import type { Vec3 } from '../../../engine/src/core/coords.ts';
+import { type CrosshairTarget, crosshairAimPoint } from '../../../engine/src/core/crosshairTarget.ts';
+import { type HeldFirearmTransformInput, type HeldSeatFrame, heldFirearmTransform } from '../../../engine/src/core/heldPose.ts';
+import type { HandSide } from '../../../engine/src/core/inventory.ts';
+import type { HeldPosesDef } from '../../../engine/src/core/schema.ts';
 
 export interface FirearmBoreRayInput {
   readonly holds: HeldPosesDef;

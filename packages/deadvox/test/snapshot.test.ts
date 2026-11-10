@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
-import { disassemblyOutputs, disassemblyWorkTime } from '../src/core/disassembly.ts';
-import type { ContentFile } from '../src/core/schema.ts';
-import type { Site } from '../src/core/site.ts';
-import { gameMinutes, simSeconds } from '../src/core/time.ts';
-import { buildRegistry } from '../src/engine/content.ts';
-import { HandlingQueue, Inventory } from '../src/engine/inventory.ts';
-import { decodeSave } from '../src/engine/save.ts';
-import { Character, practiceForNextLevel, type RealSeconds, realSeconds } from '../src/engine/sim.ts';
-import { CHUNK } from '../src/engine/world.ts';
+import { SKILL_LEVEL_LEGENDARY } from '../../engine/src/core/character.ts';
+import { disassemblyOutputs, disassemblyWorkTime } from '../../engine/src/core/disassembly.ts';
+import type { ContentFile } from '../../engine/src/core/schema.ts';
+import type { Site } from '../../engine/src/core/site.ts';
+import { gameMinutes, simSeconds } from '../../engine/src/core/time.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
+import { HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
+import { decodeSave } from '../../engine/src/save.ts';
+import { Character, practiceForNextLevel, type RealSeconds, realSeconds } from '../../engine/src/sim.ts';
+import { CHUNK } from '../../engine/src/world.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
@@ -233,7 +233,7 @@ describe('snapshot state components', () => {
 
   it('round-trips body wounds with their bleeding tiers, a partially recovered region and a stopped treatment action', async () => {
     const runtime = createRuntime();
-    const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
+    const feet = runtime.player.body.pos.map(Math.floor) as import('../../engine/src/core/coords.ts').Vec3;
     for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
       if (item) {
         expect(runtime.inventory.move(item, { kind: 'pile', pos: feet }).ok).toBe(true);
@@ -423,9 +423,9 @@ describe('snapshot state components', () => {
 
   it('saves stopped reading with the book in a pile and resumes only after it is held', async () => {
     const runtime = createRuntime();
-    const initialFeet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
+    const initialFeet = runtime.player.body.pos.map(Math.floor) as import('../../engine/src/core/coords.ts').Vec3;
     runtime.world.setBlock(initialFeet[0], initialFeet[1] - 1, initialFeet[2], blockId('grass'));
-    const otherPile: import('../src/core/coords.ts').Vec3 = [initialFeet[0] + 1, initialFeet[1], initialFeet[2]];
+    const otherPile: import('../../engine/src/core/coords.ts').Vec3 = [initialFeet[0] + 1, initialFeet[1], initialFeet[2]];
     for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
       if (item) {
         expect(runtime.inventory.move(item, { kind: 'pile', pos: otherPile }).ok).toBe(true);
@@ -437,7 +437,7 @@ describe('snapshot state components', () => {
     runtime.sim.scheduler.advance(2 / runtime.sim.clock.ratio + 2);
     runtime.sim.actions.stop();
     const elapsed = runtime.sim.actions.job?.jobType === 'reading' ? runtime.sim.actions.job.elapsed : 0;
-    const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
+    const feet = runtime.player.body.pos.map(Math.floor) as import('../../engine/src/core/coords.ts').Vec3;
     expect(runtime.inventory.move(book, { kind: 'pile', pos: feet }).ok).toBe(true);
     runtime.sim.scheduler.advance(1);
 
@@ -459,8 +459,8 @@ describe('snapshot state components', () => {
 
   it('omits a stale stopped reading from the save without ending the live job before its next tick', async () => {
     const runtime = createRuntime();
-    const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
-    const otherPile: import('../src/core/coords.ts').Vec3 = [feet[0] + 1, feet[1], feet[2]];
+    const feet = runtime.player.body.pos.map(Math.floor) as import('../../engine/src/core/coords.ts').Vec3;
+    const otherPile: import('../../engine/src/core/coords.ts').Vec3 = [feet[0] + 1, feet[1], feet[2]];
     for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
       if (item) {
         expect(runtime.inventory.move(item, { kind: 'pile', pos: otherPile }).ok).toBe(true);
@@ -487,7 +487,7 @@ describe('snapshot state components', () => {
     const runtime = createRuntime();
     const { inventory, quickbar, survival, handling, player } = runtime;
     const beans = inventory.create('beans');
-    const feet = player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
+    const feet = player.body.pos.map(Math.floor) as import('../../engine/src/core/coords.ts').Vec3;
     expect(inventory.move(inventory.hands.left!, { kind: 'pile', pos: feet }).ok).toBe(true);
     expect(inventory.add(beans, { kind: 'hand', side: 'left' })).toBe(true);
     quickbar.assign(0, beans);
@@ -505,7 +505,7 @@ describe('snapshot state components', () => {
     const bag = inventory.hands.right!;
     const { item } = bag.pockets![0]![0]!;
     const source = inventory.targetState(inventory.targetForLocation(inventory.locate(item)!));
-    const feet = player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
+    const feet = player.body.pos.map(Math.floor) as import('../../engine/src/core/coords.ts').Vec3;
     expect(inventory.move(inventory.hands.left!, { kind: 'pile', pos: feet }).ok).toBe(true);
     expect(inventory.move(item, { kind: 'hand', side: 'left' }).ok).toBe(true);
 
@@ -515,7 +515,7 @@ describe('snapshot state components', () => {
     const actions = new QuickbarActions({
       inventory: restored.inventory,
       queue: restored.handling,
-      feet: () => restored.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3,
+      feet: () => restored.player.body.pos.map(Math.floor) as import('../../engine/src/core/coords.ts').Vec3,
       survival: restored.survival,
       notice: () => undefined,
     });
@@ -629,9 +629,9 @@ describe('craft job codec and ownership', () => {
     async (stopped) => {
       const runtime = createRuntime();
       // Use the same session/save factory as the game; clear hands through Inventory.
-      const pos: import('../src/core/coords.ts').Vec3 = runtime.player.body.pos.map(
+      const pos: import('../../engine/src/core/coords.ts').Vec3 = runtime.player.body.pos.map(
         Math.floor,
-      ) as import('../src/core/coords.ts').Vec3;
+      ) as import('../../engine/src/core/coords.ts').Vec3;
       for (const item of Object.values(runtime.inventory.hands)) {
         expect(runtime.inventory.move(item!, { kind: 'pile', pos }).ok).toBe(true);
       }
@@ -720,9 +720,9 @@ describe('craft job codec and ownership', () => {
 
   it('encodes and restores an in-progress repair target and amount', async () => {
     const runtime = createRuntime();
-    const pos: import('../src/core/coords.ts').Vec3 = runtime.player.body.pos.map(
+    const pos: import('../../engine/src/core/coords.ts').Vec3 = runtime.player.body.pos.map(
       Math.floor,
-    ) as import('../src/core/coords.ts').Vec3;
+    ) as import('../../engine/src/core/coords.ts').Vec3;
     for (const item of Object.values(runtime.inventory.hands)) {
       expect(runtime.inventory.move(item!, { kind: 'pile', pos }).ok).toBe(true);
     }

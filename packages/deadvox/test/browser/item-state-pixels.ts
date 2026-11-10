@@ -1,8 +1,8 @@
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-import { snapshotItem } from '../../src/core/items.ts';
-import { buildRegistry } from '../../src/engine/content.ts';
-import { ItemFactory } from '../../src/engine/inventory.ts';
+import { snapshotItem } from '../../../engine/src/core/items.ts';
+import { buildRegistry } from '../../../engine/src/content.ts';
+import { ItemFactory } from '../../../engine/src/inventory.ts';
 import { BindingRegistry } from '../../src/game/bindingRegistry.ts';
 import { INPUT_BINDINGS } from '../../src/product/controls.ts';
 import { ItemPictures } from '../../src/render/itemPictures.ts';

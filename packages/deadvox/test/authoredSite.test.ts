@@ -1,8 +1,8 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared rejection assertions called only by tests.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { authoredLayoutIssues, inPolygon } from '../src/core/authoredLayout.ts';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
+import { authoredLayoutIssues, inPolygon } from '../../engine/src/core/authoredLayout.ts';
+import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
 import {
   LOT_APRON_M,
   LOT_BLEND_M,
@@ -10,18 +10,18 @@ import {
   polylineDistance,
   profileHeight,
   rectDistance,
-} from '../src/core/authoredTerrain.mjs';
-import { couldFit } from '../src/core/items.ts';
-import { lootTypeIssue } from '../src/core/loot.ts';
-import { militaryLootItems } from '../src/core/magazine.ts';
-import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
-import { rectsOverlap } from '../src/core/site.ts';
-import { actorBodyDimensions } from '../src/core/spawnClearance.ts';
-import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
-import { compileTemplate, placedBlockAt, placedSpawns } from '../src/core/templates.ts';
-import type { Registry } from '../src/engine/content.ts';
-import { claimedId, ItemFactory } from '../src/engine/inventory.ts';
-import { buildingBounds, defaultFoundation, lotOf, standingHeight } from '../src/engine/terrain.mjs';
+} from '../../engine/src/core/authoredTerrain.mjs';
+import { couldFit } from '../../engine/src/core/items.ts';
+import { lootTypeIssue } from '../../engine/src/core/loot.ts';
+import { militaryLootItems } from '../../engine/src/core/magazine.ts';
+import type { SiteLayoutDef, TemplateDef } from '../../engine/src/core/schema.ts';
+import { rectsOverlap } from '../../engine/src/core/site.ts';
+import { actorBodyDimensions } from '../../engine/src/core/spawnClearance.ts';
+import { templateSpawnClearanceIssues } from '../../engine/src/core/templateSpatial.ts';
+import { compileTemplate, placedBlockAt, placedSpawns } from '../../engine/src/core/templates.ts';
+import type { Registry } from '../../engine/src/content.ts';
+import { claimedId, ItemFactory } from '../../engine/src/inventory.ts';
+import { buildingBounds, defaultFoundation, lotOf, standingHeight } from '../../engine/src/terrain.mjs';
 import {
   CHUNK,
   compassBearing,
@@ -34,7 +34,7 @@ import {
   toChunk,
   type Vec3,
   World,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { fixtureActorFigures } from './fixtures/actorFigures.ts';

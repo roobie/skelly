@@ -1,7 +1,7 @@
 import { Box3, Color, Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { FurnitureDef } from '../src/engine/content.ts';
-import { BlockEntities, type Facing } from '../src/engine/world.ts';
+import type { FurnitureDef } from '../../engine/src/content.ts';
+import { BlockEntities, type Facing } from '../../engine/src/world.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 

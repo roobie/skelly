@@ -1,4 +1,4 @@
-import type { GraphicsOptions } from '../engine/look.ts';
+import type { GraphicsOptions } from '../../../engine/src/look.ts';
 
 type Policy = GraphicsOptions['renderScale'];
 

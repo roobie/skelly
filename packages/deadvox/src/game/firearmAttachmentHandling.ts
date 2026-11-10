@@ -1,16 +1,16 @@
-import { type ActionText, actionText, fillText } from '../core/actionText.ts';
-import { claimed, claimedId } from '../core/capabilities.ts';
-import { SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from '../core/character.ts';
-import type { Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { attachmentIdFor, firearmSlotIds, LIGHT_MOUNT_SLOT, SLING_SLOT } from '../core/firearmFitting.ts';
-import type { HandlingQueue, Job } from '../core/handling.ts';
-import { handlingWeights, type Inventory, type Location, type Target } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
-import { slotsReason } from '../core/magazine.ts';
-import { opticViewSettings } from '../core/opticView.ts';
-import { stowTarget } from '../core/options.ts';
-import { firearmsCombatTuning } from '../core/skillTraining.ts';
+import { type ActionText, actionText, fillText } from '../../../engine/src/core/actionText.ts';
+import { claimed, claimedId } from '../../../engine/src/core/capabilities.ts';
+import { SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from '../../../engine/src/core/character.ts';
+import type { Registry } from '../../../engine/src/core/content.ts';
+import type { Vec3 } from '../../../engine/src/core/coords.ts';
+import { attachmentIdFor, firearmSlotIds, LIGHT_MOUNT_SLOT, SLING_SLOT } from '../../../engine/src/core/firearmFitting.ts';
+import type { HandlingQueue, Job } from '../../../engine/src/core/handling.ts';
+import { handlingWeights, type Inventory, type Location, type Target } from '../../../engine/src/core/inventory.ts';
+import { defOf, type Item } from '../../../engine/src/core/items.ts';
+import { slotsReason } from '../../../engine/src/core/magazine.ts';
+import { opticViewSettings } from '../../../engine/src/core/opticView.ts';
+import { stowTarget } from '../../../engine/src/core/options.ts';
+import { firearmsCombatTuning } from '../../../engine/src/core/skillTraining.ts';
 
 const ATTACHMENT_ACTION = 'firearm.attachment';
 

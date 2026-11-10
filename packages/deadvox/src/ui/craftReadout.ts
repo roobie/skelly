@@ -1,4 +1,4 @@
-import type { RecipeDef, Registry, ScreenText } from '../engine/content.ts';
+import type { RecipeDef, Registry, ScreenText } from '../../../engine/src/content.ts';
 import {
   type CraftCommands,
   type CraftPreference,
@@ -9,10 +9,10 @@ import {
   indexCraftReach,
   planCraft,
   requirementStatus,
-} from '../engine/inventory.ts';
-import type { CraftCharacter, LongJob, ReachSnapshot } from '../engine/sim.ts';
-import { decimalText, fillText, volumeText } from '../engine/text.ts';
-import type { BlockEntity } from '../engine/world.ts';
+} from '../../../engine/src/inventory.ts';
+import type { CraftCharacter, LongJob, ReachSnapshot } from '../../../engine/src/sim.ts';
+import { decimalText, fillText, volumeText } from '../../../engine/src/text.ts';
+import type { BlockEntity } from '../../../engine/src/world.ts';
 import type { TimedActionPresentation } from './hud.ts';
 
 export const craftingText = (registry: Registry): ScreenText['crafting'] =>

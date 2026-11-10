@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import { type LootSpawnPoint, rollLoot } from '../src/core/loot.ts';
-import { buildRegistry } from '../src/engine/content.ts';
-import { Rng } from '../src/engine/math.ts';
+import { type LootSpawnPoint, rollLoot } from '../../engine/src/core/loot.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
+import { Rng } from '../../engine/src/math.ts';
 
 describe('product item scarcity', () => {
   it('derives an empty not-loot row from the unavailable-view mark, for an item no scarcity list names', () => {

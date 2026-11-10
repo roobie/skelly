@@ -1,9 +1,9 @@
 import { Matrix4, Quaternion, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { adsLimits } from '../src/core/adsView.ts';
-import { heldButtOffset } from '../src/core/heldPose.ts';
-import { leanFrame } from '../src/core/lean.ts';
-import { Inventory } from '../src/engine/inventory.ts';
+import { adsLimits } from '../../engine/src/core/adsView.ts';
+import { heldButtOffset } from '../../engine/src/core/heldPose.ts';
+import { leanFrame } from '../../engine/src/core/lean.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
 import {
   adsCameraEye,
   aimDirection,
@@ -11,7 +11,7 @@ import {
   NEUTRAL_AIM,
   playerLookPose,
   sightedFirearmModel,
-} from '../src/engine/pose.ts';
+} from '../../engine/src/pose.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import { LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
 import { itemLook } from '../src/render/itemLook.ts';

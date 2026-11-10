@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import { deserialize, serialize } from 'node:v8';
 import type { TestProject } from 'vitest/node';
-import { buildRegistry } from '../src/engine/content.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
 import { baseContentSources, startupContentSources } from './baseContentFiles.ts';
 
 /** A value the v8 round trip changes (a dropped class, function or undefined field) must not reach the tests. */

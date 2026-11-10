@@ -1,10 +1,10 @@
 // What a listener hears of a sound that starts playing: occlusion, distance and the heard record.
 // No browser API; voice caps are in `voiceCaps.ts`.
-import type { Vec3 } from '../core/coords.ts';
-import type { SolidAt } from '../core/raycast.ts';
-import type { SenseDef, SoundDef } from '../core/schema.ts';
-import type { SoundId } from '../core/soundEvents.ts';
-import { soundOcclusion } from '../core/soundOcclusion.ts';
+import type { Vec3 } from '../../../engine/src/core/coords.ts';
+import type { SolidAt } from '../../../engine/src/core/raycast.ts';
+import type { SenseDef, SoundDef } from '../../../engine/src/core/schema.ts';
+import type { SoundId } from '../../../engine/src/core/soundEvents.ts';
+import { soundOcclusion } from '../../../engine/src/core/soundOcclusion.ts';
 
 const RECENT_SOUNDS = 8;
 

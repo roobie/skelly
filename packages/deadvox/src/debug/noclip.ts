@@ -1,5 +1,5 @@
-import type { PlayerDef } from '../engine/content.ts';
-import type { Body, Scale } from '../engine/world.ts';
+import type { PlayerDef } from '../../../engine/src/content.ts';
+import type { Body, Scale } from '../../../engine/src/world.ts';
 import type { MoveIntent } from '../game/player.ts';
 
 export interface NoclipStep {

@@ -1,8 +1,8 @@
-import { toHands } from '../../src/core/options.ts';
-import { SAVE_SCHEMA_VERSION } from '../../src/core/saveFormat.ts';
-import type { Registry } from '../../src/engine/content.ts';
-import { batteryEnergy } from '../../src/engine/inventory.ts';
-import { decodeSave, encodeSave } from '../../src/engine/save.ts';
+import { toHands } from '../../../engine/src/core/options.ts';
+import { SAVE_SCHEMA_VERSION } from '../../../engine/src/core/saveFormat.ts';
+import type { Registry } from '../../../engine/src/content.ts';
+import { batteryEnergy } from '../../../engine/src/inventory.ts';
+import { decodeSave, encodeSave } from '../../../engine/src/save.ts';
 import { BindingRegistry } from '../../src/game/bindingRegistry.ts';
 import type { ReplayActionPayload } from '../../src/game/replayCommands.ts';
 import { fetchActorFigureFiles } from '../../src/presentation/play.ts';

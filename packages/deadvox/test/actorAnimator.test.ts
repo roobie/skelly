@@ -17,9 +17,9 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { expect, it, vi } from 'vitest';
-import { adsLimits } from '../src/core/adsView.ts';
-import { applyStartKit } from '../src/core/startState.ts';
-import { HandlingQueue, Inventory } from '../src/engine/inventory.ts';
+import { adsLimits } from '../../engine/src/core/adsView.ts';
+import { applyStartKit } from '../../engine/src/core/startState.ts';
+import { HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
 import {
   adsCameraEye,
   figureStancePose,
@@ -31,8 +31,8 @@ import {
   playerEyePosition,
   playerLookPose,
   readyMeleePose,
-} from '../src/engine/pose.ts';
-import { makeScale } from '../src/engine/world.ts';
+} from '../../engine/src/pose.ts';
+import { makeScale } from '../../engine/src/world.ts';
 import { LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
 import { ARM_NODE, solveArmRig } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';

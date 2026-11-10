@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { actorHitFlinchDuration, advanceStanceWeight, targetStanceWeight } from '../src/core/actorPose.ts';
-import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import { type ActorBody, actorFigure } from '../src/engine/content.ts';
+import { actorHitFlinchDuration, advanceStanceWeight, targetStanceWeight } from '../../engine/src/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '../../engine/src/core/actorRegions.ts';
+import { type ActorBody, actorFigure } from '../../engine/src/content.ts';
 import {
   actorPoseInputFor,
   clampJointAngles,
@@ -9,9 +9,9 @@ import {
   IDENTITY_M,
   jointAngles,
   posedActor,
-} from '../src/engine/pose.ts';
-import type { Actor } from '../src/engine/sim.ts';
-import { makeScale, type Vec3 } from '../src/engine/world.ts';
+} from '../../engine/src/pose.ts';
+import type { Actor } from '../../engine/src/sim.ts';
+import { makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

@@ -1,6 +1,6 @@
 import { safeParse } from 'valibot';
 import { describe, expect, it, vi } from 'vitest';
-import { AttemptPolicySchema } from '../src/core/schema/attemptPolicy.ts';
+import { AttemptPolicySchema } from '../../engine/src/core/schema/attemptPolicy.ts';
 import { createAttemptRecording } from '../src/presentation/playtestObserver.ts';
 import { type HandBackFile, metricsStorageKey, SessionMetrics } from '../src/presentation/playtestTools.ts';
 import { makeAttemptPolicy } from './fixtures/attemptPolicy.ts';

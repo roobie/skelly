@@ -4,9 +4,9 @@ import playerFamilies from '../../mods/skelly.sound-families/sound-families.json
 import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
 import baseUiSounds from '../../mods/skelly.ui/ui-sounds.json' with { type: 'json' };
 import baseSounds from '../mods/skelly.deadvox.actors/actors-sounds.json' with { type: 'json' };
-import type { ItemEconomy, LootContext, LootSpawnPoint } from '../src/core/loot.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { buildRegistry, type ContentSource } from '../src/engine/content.ts';
+import type { ItemEconomy, LootContext, LootSpawnPoint } from '../../engine/src/core/loot.ts';
+import { simSeconds } from '../../engine/src/core/time.ts';
+import { buildRegistry, type ContentSource } from '../../engine/src/content.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 
 import { fixtureDamageContent } from './fixtures/damageKinds.ts';

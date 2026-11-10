@@ -1,4 +1,4 @@
-import { type RealTimestamp, realTimestamp } from '../engine/sim.ts';
+import { type RealTimestamp, realTimestamp } from '../../../engine/src/sim.ts';
 
 /** Monotonic Real timestamp in milliseconds; only the outer frame/presentation adapter reads it. */
 export const realNow = (): RealTimestamp => realTimestamp(performance.now());

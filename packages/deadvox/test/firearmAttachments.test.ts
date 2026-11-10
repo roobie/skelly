@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '../src/core/firearmAttachments.ts';
-import { slotsReason } from '../src/core/magazine.ts';
-import type { Registry } from '../src/engine/content.ts';
-import { defOf, HandlingQueue, Inventory, weightOf } from '../src/engine/inventory.ts';
+import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '../../engine/src/core/firearmAttachments.ts';
+import { slotsReason } from '../../engine/src/core/magazine.ts';
+import type { Registry } from '../../engine/src/content.ts';
+import { defOf, HandlingQueue, Inventory, weightOf } from '../../engine/src/inventory.ts';
 import { FirearmMechanics } from '../src/game/firearmHandling.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';

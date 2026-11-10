@@ -1,5 +1,5 @@
-import type { Registry } from '../engine/content.ts';
-import { claimed } from '../engine/inventory.ts';
+import type { Registry } from '../../../engine/src/content.ts';
+import { claimed } from '../../../engine/src/inventory.ts';
 import { bundledAssetUrl, type PackAssetFiles } from '../presentation/bundledAssets.ts';
 
 /** Installs the stack's UI tuning and cursor once, before game startup. */

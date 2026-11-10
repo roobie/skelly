@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { ModelDef } from '../src/engine/content.ts';
-import { makeScale } from '../src/engine/world.ts';
+import type { ModelDef } from '../../engine/src/content.ts';
+import { makeScale } from '../../engine/src/world.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import { Input, nextMenuCursor, requestInputLock } from '../src/presentation/input.ts';

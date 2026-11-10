@@ -18,14 +18,14 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { SECONDS_PER_DAY } from '../src/core/clock.ts';
-import { SHADOW_DISTANCES } from '../src/core/mood.ts';
+import { SECONDS_PER_DAY } from '../../engine/src/core/clock.ts';
+import { SHADOW_DISTANCES } from '../../engine/src/core/mood.ts';
 import { shadowReadoutText } from '../src/debug/index.ts';
-import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance } from '../src/engine/look.ts';
-import type { MeshData } from '../src/engine/mesh.ts';
-import { dayPhaseAt } from '../src/engine/sim.ts';
-import { skyAt as skyAtCycle, sunShadowStrength } from '../src/engine/sky.ts';
-import { CHUNK } from '../src/engine/world.ts';
+import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance } from '../../engine/src/look.ts';
+import type { MeshData } from '../../engine/src/mesh.ts';
+import { dayPhaseAt } from '../../engine/src/sim.ts';
+import { skyAt as skyAtCycle, sunShadowStrength } from '../../engine/src/sky.ts';
+import { CHUNK } from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();

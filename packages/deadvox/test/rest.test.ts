@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { SECONDS_PER_HOUR, simSecondsPerHour, simToGameHours } from '../src/core/clock.ts';
-import { type RecoveryState, stepNeeds } from '../src/core/needs.ts';
-import { simSeconds } from '../src/core/time.ts';
-import type { BodyTuningDef } from '../src/engine/content.ts';
-import { actionText } from '../src/engine/input.ts';
-import { Body, hourOfDay, type Needs, realSeconds } from '../src/engine/sim.ts';
-import { BlockEntities, makeScale, World } from '../src/engine/world.ts';
+import { SECONDS_PER_HOUR, simSecondsPerHour, simToGameHours } from '../../engine/src/core/clock.ts';
+import { type RecoveryState, stepNeeds } from '../../engine/src/core/needs.ts';
+import { simSeconds } from '../../engine/src/core/time.ts';
+import type { BodyTuningDef } from '../../engine/src/content.ts';
+import { actionText } from '../../engine/src/input.ts';
+import { Body, hourOfDay, type Needs, realSeconds } from '../../engine/src/sim.ts';
+import { BlockEntities, makeScale, World } from '../../engine/src/world.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
 import { createSession, HANDLING_RATE, IDLE } from '../src/game/session.ts';

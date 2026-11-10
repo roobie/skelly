@@ -1,8 +1,8 @@
-import type { FurnitureDef, ScreenText } from '../engine/content.ts';
-import { batteryCapacityMicrojoules, batteryEnergy, claimed } from '../engine/inventory.ts';
-import type { ReachSnapshot } from '../engine/sim.ts';
-import { decimalText, fillText } from '../engine/text.ts';
-import type { BlockEntity, SitePower } from '../engine/world.ts';
+import type { FurnitureDef, ScreenText } from '../../../engine/src/content.ts';
+import { batteryCapacityMicrojoules, batteryEnergy, claimed } from '../../../engine/src/inventory.ts';
+import type { ReachSnapshot } from '../../../engine/src/sim.ts';
+import { decimalText, fillText } from '../../../engine/src/text.ts';
+import type { BlockEntity, SitePower } from '../../../engine/src/world.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 
 export interface ChargerPanel {

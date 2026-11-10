@@ -1,19 +1,19 @@
 import process from 'node:process';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
-import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import type { MeleeWeapon } from '../src/core/actorSystem.ts';
-import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import { coreMessage } from '../src/core/coreText.ts';
-import type { InventoryState } from '../src/core/inventory.ts';
-import { restoreItem } from '../src/core/items.ts';
-import { savedItemTree } from '../src/core/itemTree.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { PILE_GRID, SLING_SLOT } from '../src/engine/inventory.ts';
-import { actorPoseInputFor } from '../src/engine/pose.ts';
-import { decodeSave, encodeSave, type SaveSnapshot } from '../src/engine/save.ts';
-import { CHUNK, chunksFor, toChunk } from '../src/engine/world.ts';
+import { posedHumanoidRegionBoxes } from '../../engine/src/core/actorRegions.ts';
+import type { MeleeWeapon } from '../../engine/src/core/actorSystem.ts';
+import { NEGATIVE_ZERO_TAG } from '../../engine/src/core/canonicalJson.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../../engine/src/core/character.ts';
+import { coreMessage } from '../../engine/src/core/coreText.ts';
+import type { InventoryState } from '../../engine/src/core/inventory.ts';
+import { restoreItem } from '../../engine/src/core/items.ts';
+import { savedItemTree } from '../../engine/src/core/itemTree.ts';
+import { simSeconds } from '../../engine/src/core/time.ts';
+import { PILE_GRID, SLING_SLOT } from '../../engine/src/inventory.ts';
+import { actorPoseInputFor } from '../../engine/src/pose.ts';
+import { decodeSave, encodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
+import { CHUNK, chunksFor, toChunk } from '../../engine/src/world.ts';
 import { meleeWeaponFromContent, startPlayerMelee } from '../src/game/melee.ts';
 import { contentLookup as registryContentLookup } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
@@ -134,7 +134,7 @@ const setBudgetClock = (runtime: ReturnType<typeof createRuntime>): void => {
 };
 
 const lightCandleWithOffHandMatches = (runtime: ReturnType<typeof createRuntime>) => {
-  const pos: import('../src/core/coords.ts').Vec3 = [...runtime.session.body.pos];
+  const pos: import('../../engine/src/core/coords.ts').Vec3 = [...runtime.session.body.pos];
   const backpack = runtime.inventory.hands.right!;
   if (!runtime.inventory.move(backpack, { kind: 'pile', pos }).ok) {
     throw new Error('Could not clear the right hand for the light fixture');
@@ -484,18 +484,18 @@ describe('canonical save format', () => {
       actorPoseInputFor(actor, id, { blockSize: scale.blockSize, actorFigureFiles: stackActorFigureFiles(registry) }),
     );
     const { center } = posed.head.find((box) => box.bone === 'head')!;
-    const origin: import('../src/core/coords.ts').Vec3 = [
+    const origin: import('../../engine/src/core/coords.ts').Vec3 = [
       source.player.body.pos[0],
       source.player.body.pos[1] + PLAYER.eye / scale.blockSize,
       source.player.body.pos[2],
     ];
-    const delta: import('../src/core/coords.ts').Vec3 = [
+    const delta: import('../../engine/src/core/coords.ts').Vec3 = [
       center[0] - origin[0],
       center[1] - origin[1],
       center[2] - origin[2],
     ];
     const length = Math.hypot(...delta);
-    const direction = delta.map((value) => value / length) as import('../src/core/coords.ts').Vec3;
+    const direction = delta.map((value) => value / length) as import('../../engine/src/core/coords.ts').Vec3;
     const contentWeapon = [...registry.items.values()].find((item) => item.weapon?.melee)?.weapon?.melee;
     expect(contentWeapon).toBeDefined();
     const weapon: MeleeWeapon = meleeWeaponFromContent(contentWeapon!);

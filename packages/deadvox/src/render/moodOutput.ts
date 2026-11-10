@@ -1,6 +1,6 @@
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import type { NightVision } from '../engine/content.ts';
-import { DRUG_BLUR, DRUG_DARKEN } from '../engine/look.ts';
+import type { NightVision } from '../../../engine/src/content.ts';
+import { DRUG_BLUR, DRUG_DARKEN } from '../../../engine/src/look.ts';
 import { NIGHT_VISION_HALOS } from './lightPool.ts';
 import type { NightVisionFlare } from './nightVisionFlare.ts';
 

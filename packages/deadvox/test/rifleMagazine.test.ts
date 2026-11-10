@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { InventoryState } from '../src/core/inventory.ts';
-import { HandlingQueue, Inventory, type Item } from '../src/engine/inventory.ts';
-import type { Vec3 } from '../src/engine/world.ts';
+import type { InventoryState } from '../../engine/src/core/inventory.ts';
+import { HandlingQueue, Inventory, type Item } from '../../engine/src/inventory.ts';
+import type { Vec3 } from '../../engine/src/world.ts';
 import { FirearmMechanics, type FirearmShotInput } from '../src/game/firearmHandling.ts';
 import { MagazineHandling } from '../src/game/magazineHandling.ts';
 import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput } from '../src/game/reloadInput.ts';

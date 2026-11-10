@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { generateChunk, terrainHeight, terrainHeightMetres } from '../src/core/worldgen.ts';
-import { CHUNK, generateColumn, makeScale } from '../src/engine/world.ts';
+import { generateChunk, terrainHeight, terrainHeightMetres } from '../../engine/src/core/worldgen.ts';
+import { CHUNK, generateColumn, makeScale } from '../../engine/src/world.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 
 const blocks = { air: 0, grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 };

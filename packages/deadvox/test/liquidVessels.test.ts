@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { craftComponentEligible, isEmpty, stackRoom } from '../src/core/items.ts';
-import type { LiquidContents } from '../src/core/schema.ts';
-import { Inventory, type Item, ItemFactory, weightOf } from '../src/engine/inventory.ts';
+import { craftComponentEligible, isEmpty, stackRoom } from '../../engine/src/core/items.ts';
+import type { LiquidContents } from '../../engine/src/core/schema.ts';
+import { Inventory, type Item, ItemFactory, weightOf } from '../../engine/src/inventory.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 

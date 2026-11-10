@@ -1,10 +1,10 @@
 import { expect, it } from 'vitest';
-import { settleCell } from '../src/core/itemThrow.ts';
-import { type BrickOut, brickHas } from '../src/core/solidBricks.ts';
-import { spawnOverlappingSolidBlock } from '../src/core/spawnClearance.ts';
-import { VehicleOccupancy } from '../src/core/vehicleProjection.ts';
-import { Inventory } from '../src/engine/inventory.ts';
-import { projectVehicleParts } from '../src/engine/vehicles.ts';
+import { settleCell } from '../../engine/src/core/itemThrow.ts';
+import { type BrickOut, brickHas } from '../../engine/src/core/solidBricks.ts';
+import { spawnOverlappingSolidBlock } from '../../engine/src/core/spawnClearance.ts';
+import { VehicleOccupancy } from '../../engine/src/core/vehicleProjection.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
+import { projectVehicleParts } from '../../engine/src/vehicles.ts';
 import {
   BlockEntities,
   bodyOverlapsTerrain,
@@ -13,7 +13,7 @@ import {
   World,
   worldBricks,
   worldSolid,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

@@ -1,5 +1,5 @@
-import { type ActorPlayerHit, pickActorHitRegion } from '../core/actorSystem.ts';
-import type { Simulation } from '../core/sim.ts';
+import { type ActorPlayerHit, pickActorHitRegion } from '../../../engine/src/core/actorSystem.ts';
+import type { Simulation } from '../../../engine/src/core/sim.ts';
 
 export const applyActorPlayerHit = (sim: Simulation, hit: ActorPlayerHit): void => {
   const region = pickActorHitRegion(hit.hitRegions, hit.regionRoll);

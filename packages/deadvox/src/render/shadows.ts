@@ -45,7 +45,7 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
-import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, type ShadowState } from '../engine/look.ts';
+import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, type ShadowState } from '../../../engine/src/look.ts';
 import type { ChunkMeshes } from './chunks.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 

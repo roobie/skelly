@@ -1,5 +1,5 @@
-import type { Inventory } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
+import type { Inventory } from '../../../engine/src/core/inventory.ts';
+import type { Item } from '../../../engine/src/core/items.ts';
 
 export const QUICKBAR_SLOTS = 5;
 

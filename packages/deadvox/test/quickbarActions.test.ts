@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { coreMessage } from '../src/core/coreText.ts';
-import type { ItemDef } from '../src/engine/content.ts';
-import { bestPocket, HandlingQueue, Inventory } from '../src/engine/inventory.ts';
-import { bindReach, Character, dominantSide, offSide } from '../src/engine/sim.ts';
+import { coreMessage } from '../../engine/src/core/coreText.ts';
+import type { ItemDef } from '../../engine/src/content.ts';
+import { bestPocket, HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
+import { bindReach, Character, dominantSide, offSide } from '../../engine/src/sim.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { Survival } from '../src/game/survival.ts';
 import { baseContentSources } from './baseContentFiles.ts';

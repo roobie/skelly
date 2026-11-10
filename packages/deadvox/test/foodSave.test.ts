@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { foodMillisecondsAt, spoilage } from '../src/core/food.ts';
-import { restoreItem, snapshotItem } from '../src/core/items.ts';
-import { savedItemTree } from '../src/core/itemTree.ts';
-import { decodeSave, type SaveSnapshot } from '../src/engine/save.ts';
+import { foodMillisecondsAt, spoilage } from '../../engine/src/core/food.ts';
+import { restoreItem, snapshotItem } from '../../engine/src/core/items.ts';
+import { savedItemTree } from '../../engine/src/core/itemTree.ts';
+import { decodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';
 import { registry as base, capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';

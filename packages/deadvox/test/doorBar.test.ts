@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
-import { gameMinutes } from '../src/core/time.ts';
-import { doorPlan, HandlingQueue, Inventory } from '../src/engine/inventory.ts';
-import { decodeSave } from '../src/engine/save.ts';
-import type { BlockEntity, Vec3 } from '../src/engine/world.ts';
+import { gameMinutes } from '../../engine/src/core/time.ts';
+import { doorPlan, HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
+import { decodeSave } from '../../engine/src/save.ts';
+import type { BlockEntity, Vec3 } from '../../engine/src/world.ts';
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistryWith } from './baseRegistry.ts';

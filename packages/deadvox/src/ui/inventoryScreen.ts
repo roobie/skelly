@@ -6,7 +6,7 @@
 
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
-import type { ItemDef, Registry, ScreenText, WearSlot } from '../engine/content.ts';
+import type { ItemDef, Registry, ScreenText, WearSlot } from '../../../engine/src/content.ts';
 import {
   batterySlotRefusal,
   bestPocket,
@@ -41,7 +41,7 @@ import {
   type WorkOption,
   weightOf,
   wornSlotOf,
-} from '../engine/inventory.ts';
+} from '../../../engine/src/inventory.ts';
 import {
   BODY_REGIONS,
   type Body,
@@ -51,7 +51,7 @@ import {
   practiceForNextLevel,
   type ReachSnapshot,
   reachTuning,
-} from '../engine/sim.ts';
+} from '../../../engine/src/sim.ts';
 import {
   coreLabel,
   countText,
@@ -61,8 +61,8 @@ import {
   percentText,
   statText,
   volumeText,
-} from '../engine/text.ts';
-import { type BlockEntity, searchTime, type Vec3 } from '../engine/world.ts';
+} from '../../../engine/src/text.ts';
+import { type BlockEntity, searchTime, type Vec3 } from '../../../engine/src/world.ts';
 import type { BindingRegistry } from '../game/bindingRegistry.ts';
 import { PressHoldInput } from '../game/pressHoldInput.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';

@@ -1,9 +1,9 @@
-import { actionText } from '../core/actionText.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { HandlingQueue, Job } from '../core/handling.ts';
-import type { Inventory } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
-import type { ReachSnapshot } from '../core/reach.ts';
+import { actionText } from '../../../engine/src/core/actionText.ts';
+import type { Vec3 } from '../../../engine/src/core/coords.ts';
+import type { HandlingQueue, Job } from '../../../engine/src/core/handling.ts';
+import type { Inventory } from '../../../engine/src/core/inventory.ts';
+import { defOf, type Item } from '../../../engine/src/core/items.ts';
+import type { ReachSnapshot } from '../../../engine/src/core/reach.ts';
 
 const SET_ACTION = 'trap.set';
 const DISARM_ACTION = 'trap.disarm';

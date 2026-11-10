@@ -1,8 +1,8 @@
 // A held screen faces the eye with the palm on the item's back, so the hand can never sit
 // between the eye and the screen (`DESIGN.md`, "Held screens").
 import { Box3, Matrix4, Mesh, Object3D, Quaternion, Vector3 } from 'three';
-import type { ModelDef } from '../engine/content.ts';
-import type { Vec3 } from '../engine/world.ts';
+import type { ModelDef } from '../../../engine/src/content.ts';
+import type { Vec3 } from '../../../engine/src/world.ts';
 import { heldModelFrame } from './models.ts';
 
 const VIEW_UP = new Vector3(0, 1, 0);

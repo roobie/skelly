@@ -2,7 +2,7 @@
 // and the first-person arms make. Tests spread it into their library fakes so the view arms rig the real arm model.
 import { Group, type Object3D } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { FIGURE_LIMBS, type Registry } from '../src/engine/content.ts';
+import { FIGURE_LIMBS, type Registry } from '../../engine/src/content.ts';
 import type { ItemLook } from '../src/render/itemLook.ts';
 import { indexModelMaterials, type ModelLibrary } from '../src/render/models.ts';
 import { modFileBytes } from './modFile.ts';

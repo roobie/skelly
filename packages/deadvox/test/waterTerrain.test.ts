@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { authoredLayoutIssues, inPolygon } from '../src/core/authoredLayout.ts';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { profileHeight } from '../src/core/authoredTerrain.mjs';
-import type { SiteLayoutDef } from '../src/core/schema.ts';
-import { generateChunk, terrainHeight } from '../src/core/worldgen.ts';
-import { CHUNK, generateColumn, makeScale, sitePalette, terrainShapeOf, World } from '../src/engine/world.ts';
+import { authoredLayoutIssues, inPolygon } from '../../engine/src/core/authoredLayout.ts';
+import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
+import { profileHeight } from '../../engine/src/core/authoredTerrain.mjs';
+import type { SiteLayoutDef } from '../../engine/src/core/schema.ts';
+import { generateChunk, terrainHeight } from '../../engine/src/core/worldgen.ts';
+import { CHUNK, generateColumn, makeScale, sitePalette, terrainShapeOf, World } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const scale = makeScale(0.5);

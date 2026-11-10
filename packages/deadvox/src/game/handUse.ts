@@ -1,20 +1,20 @@
 // Primary hand use at the player tick: the held item's action, a melee swing, or the station or door in the crosshair.
 
-import { actionText, fillText } from '../core/actionText.ts';
-import type { MeleeWeapon } from '../core/actorSystem.ts';
-import type { BlockEntity } from '../core/blockEntities.ts';
-import { claimed } from '../core/capabilities.ts';
-import { dominantSide, offSide } from '../core/character.ts';
-import type { Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
-import type { HandSide, Inventory } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
-import type { MeleeProfile } from '../core/meleePose.ts';
-import { doorPlan } from '../core/options.ts';
-import type { SolidAt } from '../core/raycast.ts';
-import { reachTuning } from '../core/reach.ts';
-import type { Simulation } from '../core/sim.ts';
+import { actionText, fillText } from '../../../engine/src/core/actionText.ts';
+import type { MeleeWeapon } from '../../../engine/src/core/actorSystem.ts';
+import type { BlockEntity } from '../../../engine/src/core/blockEntities.ts';
+import { claimed } from '../../../engine/src/core/capabilities.ts';
+import { dominantSide, offSide } from '../../../engine/src/core/character.ts';
+import type { Registry } from '../../../engine/src/core/content.ts';
+import type { Vec3 } from '../../../engine/src/core/coords.ts';
+import { type InteractionTarget, pickInteractionTarget } from '../../../engine/src/core/interactionPick.ts';
+import type { HandSide, Inventory } from '../../../engine/src/core/inventory.ts';
+import type { Item } from '../../../engine/src/core/items.ts';
+import type { MeleeProfile } from '../../../engine/src/core/meleePose.ts';
+import { doorPlan } from '../../../engine/src/core/options.ts';
+import type { SolidAt } from '../../../engine/src/core/raycast.ts';
+import { reachTuning } from '../../../engine/src/core/reach.ts';
+import type { Simulation } from '../../../engine/src/core/sim.ts';
 import { openingTargetForHand } from './canOpening.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import { freeLookAllowsUse } from './freeLook.ts';

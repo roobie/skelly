@@ -2,10 +2,10 @@
 
 import { html, render, type TemplateResult } from 'lit-html';
 import { type Camera, Vector3 } from 'three';
-import type { ScreenText } from '../engine/content.ts';
-import { formatClock, type Needs, type PainReading } from '../engine/sim.ts';
-import { countText, decimalText, fillText, hundredthsText, statText } from '../engine/text.ts';
-import type { Vec3 } from '../engine/world.ts';
+import type { ScreenText } from '../../../engine/src/content.ts';
+import { formatClock, type Needs, type PainReading } from '../../../engine/src/sim.ts';
+import { countText, decimalText, fillText, hundredthsText, statText } from '../../../engine/src/text.ts';
+import type { Vec3 } from '../../../engine/src/world.ts';
 import { type HandlingPresentationSource, renderHandling } from './hud.ts';
 import type { HudOptionsState } from './hudOptions.ts';
 import { fillHint, type HintText, hintLines, type KeyLabels, keyCap } from './keyCap.ts';

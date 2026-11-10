@@ -1,9 +1,9 @@
-import type { ClockSettings } from '../src/core/clock.ts';
-import type { CompressionCaps } from '../src/core/schema.ts';
-import type { SimOptions } from '../src/core/sim.ts';
-import { gameHours, gameMinutes, gamePerHour, simRate, simSeconds } from '../src/core/time.ts';
-import type { BodyTuningDef, Registry } from '../src/engine/content.ts';
-import { Simulation as CoreSimulation, realSeconds } from '../src/engine/sim.ts';
+import type { ClockSettings } from '../../engine/src/core/clock.ts';
+import type { CompressionCaps } from '../../engine/src/core/schema.ts';
+import type { SimOptions } from '../../engine/src/core/sim.ts';
+import { gameHours, gameMinutes, gamePerHour, simRate, simSeconds } from '../../engine/src/core/time.ts';
+import type { BodyTuningDef, Registry } from '../../engine/src/content.ts';
+import { Simulation as CoreSimulation, realSeconds } from '../../engine/src/sim.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 

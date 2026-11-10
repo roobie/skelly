@@ -1,12 +1,12 @@
 // Item-driven hand-action dispatch (issue #27, BR ruling). Keep capability selection
 // pure so hand bindings, unsupported items, and empty-hand fists are testable without the game loop.
 
-import { dominantSide, offSide } from '../core/character.ts';
-import type { HandSide, Inventory } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
-import { magazineSpec } from '../core/magazine.ts';
-import { isReadableItem } from '../core/options.ts';
-import type { ItemDef } from '../core/schema.ts';
+import { dominantSide, offSide } from '../../../engine/src/core/character.ts';
+import type { HandSide, Inventory } from '../../../engine/src/core/inventory.ts';
+import { defOf, type Item } from '../../../engine/src/core/items.ts';
+import { magazineSpec } from '../../../engine/src/core/magazine.ts';
+import { isReadableItem } from '../../../engine/src/core/options.ts';
+import type { ItemDef } from '../../../engine/src/core/schema.ts';
 import { openingTargetForHand } from './canOpening.ts';
 import { type MeleeReadinessInput, shouldEnterMeleeReady } from './melee.ts';
 

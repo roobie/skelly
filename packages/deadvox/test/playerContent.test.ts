@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { validate } from '../src/cli/validate.ts';
-import { buildRegistry } from '../src/engine/content.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
 import { PLAYER } from './playerFixture.ts';
 
 const numericPaths = (value: object, prefix: string[] = []): string[][] =>

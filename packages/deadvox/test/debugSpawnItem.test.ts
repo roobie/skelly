@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
-import { pileDropSound } from '../src/core/dropSounds.ts';
-import { settleCell } from '../src/core/itemThrow.ts';
+import { pileDropSound } from '../../engine/src/core/dropSounds.ts';
+import { settleCell } from '../../engine/src/core/itemThrow.ts';
 import { spawnDebugItem } from '../src/debug/spawnItem.ts';
-import { Inventory } from '../src/engine/inventory.ts';
-import { World } from '../src/engine/world.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
+import { World } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const fixture = (floor: boolean) => {

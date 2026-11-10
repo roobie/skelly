@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { CONTACT_SKIN } from '../src/core/physics.ts';
-import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
-import { templateSpatialIssues } from '../src/core/templateSpatial.ts';
-import { compileTemplate, type Turn } from '../src/core/templates.ts';
+import { authoredLayoutIssues } from '../../engine/src/core/authoredLayout.ts';
+import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
+import { CONTACT_SKIN } from '../../engine/src/core/physics.ts';
+import type { SiteLayoutDef, TemplateDef } from '../../engine/src/core/schema.ts';
+import { templateSpatialIssues } from '../../engine/src/core/templateSpatial.ts';
+import { compileTemplate, type Turn } from '../../engine/src/core/templates.ts';
 import {
   CHUNK,
   generateColumn,
@@ -14,7 +14,7 @@ import {
   terrainShapeOf,
   type Vec3,
   World,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { createPlayerBody, physicsFor } from './playerFixture.ts';
 

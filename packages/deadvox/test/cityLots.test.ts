@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { cityLotIssues, cityLotRouteIssues, lotRect, placeCityLots } from '../src/core/cityLots.ts';
-import { buildCityPlan, cityGridOf } from '../src/core/cityPlan.ts';
-import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
-import type { ScenarioDef } from '../src/core/schema.ts';
-import { rectsOverlap } from '../src/core/site.ts';
-import { compileTemplate } from '../src/core/templates.ts';
-import { buildRegistry } from '../src/engine/content.ts';
-import { CitySite, footprint, makeScale } from '../src/engine/world.ts';
+import { cityLotIssues, cityLotRouteIssues, lotRect, placeCityLots } from '../../engine/src/core/cityLots.ts';
+import { buildCityPlan, cityGridOf } from '../../engine/src/core/cityPlan.ts';
+import { ScenarioRouteSpace } from '../../engine/src/core/scenarioRoute.ts';
+import type { ScenarioDef } from '../../engine/src/core/schema.ts';
+import { rectsOverlap } from '../../engine/src/core/site.ts';
+import { compileTemplate } from '../../engine/src/core/templates.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
+import { CitySite, footprint, makeScale } from '../../engine/src/world.ts';
 import { fixturePool, fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
 const QUOTA_CANNOT_FIT = /quota cannot fit/;

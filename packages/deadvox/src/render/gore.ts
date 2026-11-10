@@ -16,11 +16,11 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
-import type { GraphicsTuningDef } from '../engine/content.ts';
-import { Rng } from '../engine/math.ts';
-import { type FusedMassFigure, missingFlesh } from '../engine/pose.ts';
-import { type Actor, BODY_REGIONS, type BodyRegion, type EntityStore, type HitImpulse } from '../engine/sim.ts';
-import type { Vec3 } from '../engine/world.ts';
+import type { GraphicsTuningDef } from '../../../engine/src/content.ts';
+import { Rng } from '../../../engine/src/math.ts';
+import { type FusedMassFigure, missingFlesh } from '../../../engine/src/pose.ts';
+import { type Actor, BODY_REGIONS, type BodyRegion, type EntityStore, type HitImpulse } from '../../../engine/src/sim.ts';
+import type { Vec3 } from '../../../engine/src/world.ts';
 import type { ModelLibrary } from './models.ts';
 import { PLAYER_REGION_BOXES, type PlayerFigurePlacement, setPlayerFigurePosition } from './playerFigure.ts';
 

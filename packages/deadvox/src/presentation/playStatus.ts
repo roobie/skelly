@@ -1,4 +1,4 @@
-import { BODY_REGIONS, type BodyRegion, bodyRegionLabel } from '../engine/sim.ts';
+import { BODY_REGIONS, type BodyRegion, bodyRegionLabel } from '../../../engine/src/sim.ts';
 
 export interface BleedingStatusRow {
   readonly region: string;

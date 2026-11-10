@@ -1,10 +1,10 @@
 import { Box3, BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { pickInteractionTarget } from '../src/core/interactionPick.ts';
-import { PILE_DISPLAY_KIND } from '../src/engine/content.ts';
-import { Inventory, PILE_GRID } from '../src/engine/inventory.ts';
-import { interactionAffordance } from '../src/engine/sim.ts';
-import { type SolidAt, type Vec3, World, worldOpaque, worldSolid } from '../src/engine/world.ts';
+import { pickInteractionTarget } from '../../engine/src/core/interactionPick.ts';
+import { PILE_DISPLAY_KIND } from '../../engine/src/content.ts';
+import { Inventory, PILE_GRID } from '../../engine/src/inventory.ts';
+import { interactionAffordance } from '../../engine/src/sim.ts';
+import { type SolidAt, type Vec3, World, worldOpaque, worldSolid } from '../../engine/src/world.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { markInteractionTarget } from '../src/render/interactionMarker.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
@@ -151,7 +151,7 @@ describe('F interaction target selection', () => {
       furniture,
       piles,
       blockSize: 0.5,
-      definition: (entity: import('../src/core/blockEntities.ts').BlockEntity) => inventory.entities.defOf(entity),
+      definition: (entity: import('../../engine/src/core/blockEntities.ts').BlockEntity) => inventory.entities.defOf(entity),
       body: () => undefined,
     };
     piles.sync(inventory);

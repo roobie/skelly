@@ -1,14 +1,14 @@
 import { createHash } from 'node:crypto';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
-import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
-import { restoreItem, snapshotItem } from '../src/core/items.ts';
-import { paperMapAt } from '../src/core/paperMap.ts';
-import { WORLD_REGION_METRES } from '../src/core/worldRegion.ts';
-import type { ItemDef } from '../src/engine/content.ts';
-import { Inventory, ItemFactory } from '../src/engine/inventory.ts';
-import { decodeSave } from '../src/engine/save.ts';
-import { paperMapBounds } from '../src/engine/world.ts';
+import { canonicalJsonBytes } from '../../engine/src/core/canonicalJson.ts';
+import { restoreItem, snapshotItem } from '../../engine/src/core/items.ts';
+import { paperMapAt } from '../../engine/src/core/paperMap.ts';
+import { WORLD_REGION_METRES } from '../../engine/src/core/worldRegion.ts';
+import type { ItemDef } from '../../engine/src/content.ts';
+import { Inventory, ItemFactory } from '../../engine/src/inventory.ts';
+import { decodeSave } from '../../engine/src/save.ts';
+import { paperMapBounds } from '../../engine/src/world.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import {
   capture,

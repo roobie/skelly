@@ -6,7 +6,7 @@ import {
   makeScale,
   raycast,
   stepBody,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { StepOffset } from '../src/render/stepOffset.ts';
 import { createPlayerBody, movementPace, PLAYER, physicsFor, steer } from './playerFixture.ts';
 

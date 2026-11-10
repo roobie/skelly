@@ -5,19 +5,19 @@ import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import rawBaseDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
 import { controlIssues } from '../src/cli/controlIssues.ts';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import { resolveSpawnTime } from '../src/core/clock.ts';
-import { validateContent } from '../src/core/content.ts';
-import { corpseLootPoint, lootTypeIssue } from '../src/core/loot.ts';
-import { militaryLootItems } from '../src/core/magazine.ts';
-import { blockPatterns, blockWeatherability } from '../src/core/meshInput.ts';
-import { checkReachability } from '../src/core/reachability.ts';
-import { type ContentFile, ContentFileSchema, DayCycleSchema, type TemplateDef } from '../src/core/schema.ts';
-import { ordinarySpawnWeights } from '../src/core/settlementSpawns.ts';
-import { furnitureOf, lootPointsOf } from '../src/core/site.ts';
-import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
-import { compileTemplate } from '../src/core/templates.ts';
-import { gameMinutes, simSeconds } from '../src/core/time.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../../engine/src/core/character.ts';
+import { resolveSpawnTime } from '../../engine/src/core/clock.ts';
+import { validateContent } from '../../engine/src/core/content.ts';
+import { corpseLootPoint, lootTypeIssue } from '../../engine/src/core/loot.ts';
+import { militaryLootItems } from '../../engine/src/core/magazine.ts';
+import { blockPatterns, blockWeatherability } from '../../engine/src/core/meshInput.ts';
+import { checkReachability } from '../../engine/src/core/reachability.ts';
+import { type ContentFile, ContentFileSchema, DayCycleSchema, type TemplateDef } from '../../engine/src/core/schema.ts';
+import { ordinarySpawnWeights } from '../../engine/src/core/settlementSpawns.ts';
+import { furnitureOf, lootPointsOf } from '../../engine/src/core/site.ts';
+import { templateSpawnClearanceIssues } from '../../engine/src/core/templateSpatial.ts';
+import { compileTemplate } from '../../engine/src/core/templates.ts';
+import { gameMinutes, simSeconds } from '../../engine/src/core/time.ts';
 import {
   BLOCK_PATTERNS,
   blockColors,
@@ -25,11 +25,11 @@ import {
   CONTENT_SECTION_KEYS,
   ModelSchema,
   requiredContentIssues,
-} from '../src/engine/content.ts';
-import { Inventory } from '../src/engine/inventory.ts';
-import { parseTimeOfDay } from '../src/engine/sim.ts';
-import { WEATHERING_RANGES } from '../src/engine/sky.ts';
-import { isBodyDoor, type Placement, sitePalette } from '../src/engine/world.ts';
+} from '../../engine/src/content.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
+import { parseTimeOfDay } from '../../engine/src/sim.ts';
+import { WEATHERING_RANGES } from '../../engine/src/sky.ts';
+import { isBodyDoor, type Placement, sitePalette } from '../../engine/src/world.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';

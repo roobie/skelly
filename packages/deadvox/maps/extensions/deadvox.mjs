@@ -1,5 +1,5 @@
 // Tiled 1.11 / Qt 5 ES module (ES6, not object spread). No Node/npm runtime dependency.
-import { buildingBounds, defaultFoundation, hasSegment, lotOf, standingHeight } from '../../src/engine/terrain.mjs';
+import { buildingBounds, defaultFoundation, hasSegment, lotOf, standingHeight } from '../../../engine/src/terrain.mjs';
 
 const root = FileInfo.path(tiled.projectFilePath);
 const ID_PATTERN = /^[a-z0-9_]+$/;

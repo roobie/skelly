@@ -1,22 +1,22 @@
 import { deepStrictEqual } from 'node:assert/strict';
 import { describe, expect, it, vi } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import { perimeterRouteIssues } from '../src/core/cityLots.ts';
-import { buildCityPlan, type CityPlan, cityGridOf } from '../src/core/cityPlan.ts';
-import { climbCertificate } from '../src/core/climbCertificate.ts';
+import { perimeterRouteIssues } from '../../engine/src/core/cityLots.ts';
+import { buildCityPlan, type CityPlan, cityGridOf } from '../../engine/src/core/cityPlan.ts';
+import { climbCertificate } from '../../engine/src/core/climbCertificate.ts';
 import {
   type CertificatePhase,
   scenarioCertificate,
   scenarioCityCertificate,
   scenarioLotResourceCertificate,
   scenarioStartCertificate,
-} from '../src/core/scenarioCertificate.ts';
-import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
-import { undergroundPortIssues } from '../src/core/scenarioPortal.ts';
-import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
-import { compileAssembly, compileTemplate, placedBlockAt, placedPieces } from '../src/core/templates.ts';
-import { generateChunk } from '../src/core/worldgen.ts';
-import { buildRegistry } from '../src/engine/content.ts';
+} from '../../engine/src/core/scenarioCertificate.ts';
+import { ScenarioCitySite } from '../../engine/src/core/scenarioCity.ts';
+import { undergroundPortIssues } from '../../engine/src/core/scenarioPortal.ts';
+import { ScenarioRouteSpace } from '../../engine/src/core/scenarioRoute.ts';
+import { compileAssembly, compileTemplate, placedBlockAt, placedPieces } from '../../engine/src/core/templates.ts';
+import { generateChunk } from '../../engine/src/core/worldgen.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
 import {
   CHUNK,
   type Chunk,
@@ -29,7 +29,7 @@ import {
   terrainShapeOf,
   toChunk,
   type Vec3,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';

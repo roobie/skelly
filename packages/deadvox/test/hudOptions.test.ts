@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { InteractionTarget } from '../src/engine/sim.ts';
+import type { InteractionTarget } from '../../engine/src/sim.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { markInteractionTarget } from '../src/render/interactionMarker.ts';
 import { PileMeshes } from '../src/render/piles.ts';

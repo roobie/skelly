@@ -74,10 +74,10 @@ import {
   actorFigure,
   actorFigureKey,
   type LookAtProfile,
-} from '../engine/content.ts';
-import type { LookDefaults } from '../engine/look.ts';
-import type { Quaternion } from '../engine/math.ts';
-import type { ColumnReveal } from '../engine/mesh.ts';
+} from '../../../engine/src/content.ts';
+import type { LookDefaults } from '../../../engine/src/look.ts';
+import type { Quaternion } from '../../../engine/src/math.ts';
+import type { ColumnReveal } from '../../../engine/src/mesh.ts';
 import {
   type ActorPoseScene,
   acidSpitWindupProgress,
@@ -112,7 +112,7 @@ import {
   type Transform,
   transpose,
   voxelBounds,
-} from '../engine/pose.ts';
+} from '../../../engine/src/pose.ts';
 import {
   type Actor,
   actorAttackReachMetres,
@@ -120,8 +120,8 @@ import {
   type EntityId,
   type EntityStore,
   type HitImpulse,
-} from '../engine/sim.ts';
-import type { Vec3 } from '../engine/world.ts';
+} from '../../../engine/src/sim.ts';
+import type { Vec3 } from '../../../engine/src/world.ts';
 import { ACTIVE_ACTOR_RATE } from '../game/simulationRates.ts';
 import { figureVariants } from './actorFigureVariants.ts';
 import { BLOOD_STAIN_COLOR_FRAGMENT, BLOOD_STAIN_FRAGMENT_DECLARATIONS } from './bloodStain.ts';

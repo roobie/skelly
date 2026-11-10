@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { expect, it } from 'vitest';
-import { buildRegistry } from '../src/engine/content.ts';
-import { admitPacks } from '../src/engine/packs.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
+import { admitPacks } from '../../engine/src/packs.ts';
 import { bundledAssetUrl } from '../src/presentation/bundledAssets.ts';
 import { productAssets } from '../src/product/assets.ts';
 import { packFileOrigin, readBundledPacks } from '../tools/readBundledPacks.ts';

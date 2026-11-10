@@ -1,0 +1,69 @@
+name: engine
+
+on:
+  push:
+    branches: [main, framework/refactor]
+    paths:
+      - 'packages/skelly-assets'
+      - '.gitmodules'
+      - 'packages/engine/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tools/jsonnet/**'
+      - 'testPool.ts'
+      - 'testTemp.ts'
+      - '!**/*.md'
+      - '.github/workflows/engine.yml'
+  pull_request:
+    paths:
+      - 'packages/skelly-assets'
+      - '.gitmodules'
+      - 'packages/engine/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tools/jsonnet/**'
+      - 'testPool.ts'
+      - 'testTemp.ts'
+      - '!**/*.md'
+      - '.github/workflows/engine.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/engine
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Cache go-jsonnet
+        uses: actions/cache@v4
+        with:
+          path: tools/jsonnet/bin
+          key: jsonnet-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/jsonnet/runtime.json') }}
+      - name: Cache submodule go-jsonnet
+        uses: actions/cache@v4
+        with:
+          path: packages/skelly-assets/tools/jsonnet/bin
+          key: jsonnet-assets-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/skelly-assets/tools/jsonnet/runtime.json') }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
+        timeout-minutes: 3
+      - name: Install pinned go-jsonnet
+        run: npm --prefix ../.. run jsonnet:setup
+      - run: timeout 300 npm run typecheck
+      - run: timeout 300 npm test

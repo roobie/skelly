@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { craftActionHooks } from '../src/core/craftWork.ts';
-import { disassemblyLiquidOutputs, planDisassembly } from '../src/core/disassembly.ts';
-import { restoreItem, snapshotItem } from '../src/core/items.ts';
-import { CraftCommands, claimed, HandlingQueue, Inventory } from '../src/engine/inventory.ts';
-import { decodeSave } from '../src/engine/save.ts';
-import { bindReach, Character, practiceForNextLevel } from '../src/engine/sim.ts';
+import { craftActionHooks } from '../../engine/src/core/craftWork.ts';
+import { disassemblyLiquidOutputs, planDisassembly } from '../../engine/src/core/disassembly.ts';
+import { restoreItem, snapshotItem } from '../../engine/src/core/items.ts';
+import { CraftCommands, claimed, HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
+import { decodeSave } from '../../engine/src/save.ts';
+import { bindReach, Character, practiceForNextLevel } from '../../engine/src/sim.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,

@@ -1,11 +1,11 @@
 import { expect, it, vi } from 'vitest';
-import { guardLean, type LeanBox, leanFrame } from '../src/core/lean.ts';
-import { playerLeanBoxes } from '../src/core/leanCollision.ts';
+import { guardLean, type LeanBox, leanFrame } from '../../engine/src/core/lean.ts';
+import { playerLeanBoxes } from '../../engine/src/core/leanCollision.ts';
 // biome-ignore lint/performance/noNamespaceImport: Observe expensive geometry preparation across the module boundary.
-import * as geometry from '../src/core/leanGeometry.ts';
-import { axisRotation, multiplyRotation } from '../src/core/spatial.ts';
-import { type HandSide, Inventory } from '../src/engine/inventory.ts';
-import { add, rotateVector, sub } from '../src/engine/math.ts';
+import * as geometry from '../../engine/src/core/leanGeometry.ts';
+import { axisRotation, multiplyRotation } from '../../engine/src/core/spatial.ts';
+import { type HandSide, Inventory } from '../../engine/src/inventory.ts';
+import { add, rotateVector, sub } from '../../engine/src/math.ts';
 import {
   heldFirearmTransform,
   NEUTRAL_AIM,
@@ -14,8 +14,8 @@ import {
   playerHeldSeatFrame,
   playerLookPose,
   sightedFirearmModel,
-} from '../src/engine/pose.ts';
-import type { Vec3 } from '../src/engine/world.ts';
+} from '../../engine/src/pose.ts';
+import type { Vec3 } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 

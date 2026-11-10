@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { simSeconds } from '../src/core/time.ts';
-import type { ItemDef } from '../src/engine/content.ts';
-import { Inventory, type Item, weightOf } from '../src/engine/inventory.ts';
+import { simSeconds } from '../../engine/src/core/time.ts';
+import type { ItemDef } from '../../engine/src/content.ts';
+import { Inventory, type Item, weightOf } from '../../engine/src/inventory.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 

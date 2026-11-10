@@ -1,4 +1,4 @@
-import { toChunk } from '../core/coords.ts';
+import { toChunk } from '../../../engine/src/core/coords.ts';
 import type {
   ReplayAction,
   ReplayColumnChange,

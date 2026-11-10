@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { restoreItem, snapshotItem } from '../src/core/items.ts';
-import { savedItemTree } from '../src/core/itemTree.ts';
-import { simSeconds } from '../src/core/time.ts';
-import type { ItemDef } from '../src/engine/content.ts';
-import type { ItemState } from '../src/engine/inventory.ts';
-import { decodeSave, type SaveSnapshot } from '../src/engine/save.ts';
+import { restoreItem, snapshotItem } from '../../engine/src/core/items.ts';
+import { savedItemTree } from '../../engine/src/core/itemTree.ts';
+import { simSeconds } from '../../engine/src/core/time.ts';
+import type { ItemDef } from '../../engine/src/content.ts';
+import type { ItemState } from '../../engine/src/inventory.ts';
+import { decodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { registry as base, capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 

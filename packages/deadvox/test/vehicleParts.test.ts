@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { sizeFits } from '../src/core/items.ts';
+import { sizeFits } from '../../engine/src/core/items.ts';
 import {
   APC,
   addFitting,
@@ -26,11 +26,11 @@ import {
   voxelKey,
   wearGrid,
   wearKey,
-} from '../src/engine/vehicles.ts';
-import { pairAcross } from '../src/vehicles/authoring.ts';
-import { catalogueOf, type PartType, supportProblems } from '../src/vehicles/model.ts';
-import { rasterize } from '../src/vehicles/voxels.ts';
-import { WEAR_MATERIALS } from '../src/vehicles/wear.ts';
+} from '../../engine/src/vehicles.ts';
+import { pairAcross } from '../../engine/src/vehicles/authoring.ts';
+import { catalogueOf, type PartType, supportProblems } from '../../engine/src/vehicles/model.ts';
+import { rasterize } from '../../engine/src/vehicles/voxels.ts';
+import { WEAR_MATERIALS } from '../../engine/src/vehicles/wear.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { PLAYER } from './playerFixture.ts';
 

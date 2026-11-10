@@ -1,7 +1,7 @@
-import { bundledModCatalogue } from '../core/bundledModCatalogue.ts';
-import type { ContentIssue } from '../core/content.ts';
-import { selectFolderClosure } from '../core/packAdmission.ts';
-import type { SaveVersionComponents } from '../core/saveFormat.ts';
+import { bundledModCatalogue } from '../../../engine/src/core/bundledModCatalogue.ts';
+import type { ContentIssue } from '../../../engine/src/core/content.ts';
+import { selectFolderClosure } from '../../../engine/src/core/packAdmission.ts';
+import type { SaveVersionComponents } from '../../../engine/src/core/saveFormat.ts';
 import { type BrowserMod, evaluateMods, type ModIntake } from './browserMods.ts';
 import { optInPackIdentity, type StartupContent } from './bundledContent.ts';
 

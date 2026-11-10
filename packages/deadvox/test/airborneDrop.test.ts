@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { planDisassembly } from '../src/core/disassembly.ts';
-import { playerPockets, quickMove, toHands } from '../src/core/options.ts';
-import { dropTarget, type Item, type Target } from '../src/engine/inventory.ts';
-import { dominantSide } from '../src/engine/sim.ts';
-import { CHUNK, type Vec3, worldSolid } from '../src/engine/world.ts';
+import { planDisassembly } from '../../engine/src/core/disassembly.ts';
+import { playerPockets, quickMove, toHands } from '../../engine/src/core/options.ts';
+import { dropTarget, type Item, type Target } from '../../engine/src/inventory.ts';
+import { dominantSide } from '../../engine/src/sim.ts';
+import { CHUNK, type Vec3, worldSolid } from '../../engine/src/world.ts';
 import { IDLE } from '../src/game/session.ts';
 import type { MoveIntent } from './playerFixture.ts';
 import { advance, createRuntime, fixtureZombieColumn, type Runtime, registry, scale } from './snapshotTestSupport.ts';

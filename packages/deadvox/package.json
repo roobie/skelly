@@ -50,6 +50,7 @@
   },
   "dependencies": {
     "@dimforge/rapier3d-deterministic-compat": "^0.20.0",
+    "@skelly/engine": "*",
     "@skelly/thing-core": "*",
     "jfxr": "0.13.0",
     "lit-html": "^3.3.3",

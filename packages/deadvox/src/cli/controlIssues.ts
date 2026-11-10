@@ -1,6 +1,6 @@
 // Default keys name input actions, which live in game code. The simulation graph under
 // src/core must not import them, so these checks run beside the validate CLI instead.
-import type { ContentIssue, Registry } from '../engine/content.ts';
+import type { ContentIssue, Registry } from '../../../engine/src/content.ts';
 import { type BindingMap, controlRowIssue, defaultKeySetIssues } from '../game/bindingRegistry.ts';
 
 /** `baseSources` are the sources of the base pack; the game reads default keys from nowhere else. */

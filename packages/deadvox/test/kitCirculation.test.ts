@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import type { ContentFile } from '../src/core/schema.ts';
-import { templateStandingRoute } from '../src/core/templateSpatial.ts';
-import { compileAssembly, compileMapPiece, kitSlotChoices } from '../src/core/templates.ts';
+import type { ContentFile } from '../../engine/src/core/schema.ts';
+import { templateStandingRoute } from '../../engine/src/core/templateSpatial.ts';
+import { compileAssembly, compileMapPiece, kitSlotChoices } from '../../engine/src/core/templates.ts';
 import { overlayContent, startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();

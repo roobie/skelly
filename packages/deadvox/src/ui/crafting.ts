@@ -1,8 +1,8 @@
 // Lit view of completed projections. Commands and preferences arrive as explicit callbacks.
 import { html, nothing, render } from 'lit-html';
 import { repeat } from 'lit-html/directives/repeat.js';
-import type { ScreenText } from '../engine/content.ts';
-import { countText, fillText, volumeText } from '../engine/text.ts';
+import type { ScreenText } from '../../../engine/src/content.ts';
+import { countText, fillText, volumeText } from '../../../engine/src/text.ts';
 import { comboBox } from './comboBox.ts';
 import type { CraftRow } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';

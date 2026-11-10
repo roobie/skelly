@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PADDED, paddedIndex } from '../src/core/meshInput.ts';
+import { PADDED, paddedIndex } from '../../engine/src/core/meshInput.ts';
 import {
   BOX_VOLUME,
   boxSum,
@@ -13,10 +13,10 @@ import {
   occlusionLevel,
   WIDE,
   wideIndex,
-} from '../src/core/occlusion.ts';
-import { hash3 } from '../src/engine/math.ts';
-import { buildMesh, type MeshData } from '../src/engine/mesh.ts';
-import { CHUNK } from '../src/engine/world.ts';
+} from '../../engine/src/core/occlusion.ts';
+import { hash3 } from '../../engine/src/math.ts';
+import { buildMesh, type MeshData } from '../../engine/src/mesh.ts';
+import { CHUNK } from '../../engine/src/world.ts';
 import { unitFaces } from './meshFaces.ts';
 
 const R = OCCLUSION_RADIUS;

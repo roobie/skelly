@@ -10,7 +10,7 @@ import {
   WebGLRenderTarget,
 } from 'three';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { type OpticLensFrame, opticFieldOfView, opticRendersWorld } from '../engine/pose.ts';
+import { type OpticLensFrame, opticFieldOfView, opticRendersWorld } from '../../../engine/src/pose.ts';
 import { OpticHousingMask } from './opticHousingMask.ts';
 import { OPTIC_BODY_LAYER } from './shadowFlags.ts';
 

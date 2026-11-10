@@ -1,9 +1,9 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import type { SkySnapshot } from '../src/core/skySnapshot.ts';
+import type { SkySnapshot } from '../../engine/src/core/skySnapshot.ts';
 import { attachSkyRoute } from '../src/debug/skyRoute.ts';
 import { SKY_ROUTE, type SkyRouteFrame } from '../src/debug/skyRouteMetrics.ts';
-import { realTimestamp } from '../src/engine/sim.ts';
-import type { SkyResult } from '../src/engine/sky.ts';
+import { realTimestamp } from '../../engine/src/sim.ts';
+import type { SkyResult } from '../../engine/src/sky.ts';
 import { observeRealFrame } from '../src/game/frameDriver.ts';
 import type { Engine } from '../src/presentation/engine.ts';
 import type { Skylight } from '../src/render/skylight.ts';

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { pickFurniture } from '../src/core/furniturePick.ts';
-import { pieceSize } from '../src/core/templates.ts';
-import type { HandSide, Item } from '../src/engine/inventory.ts';
-import type { SaveSnapshot } from '../src/engine/save.ts';
-import { dominantSide, offSide } from '../src/engine/sim.ts';
-import { projectVehicleParts } from '../src/engine/vehicles.ts';
-import { BlockEntities, makeScale, type SolidAt, type Vec3, World } from '../src/engine/world.ts';
+import { pickFurniture } from '../../engine/src/core/furniturePick.ts';
+import { pieceSize } from '../../engine/src/core/templates.ts';
+import type { HandSide, Item } from '../../engine/src/inventory.ts';
+import type { SaveSnapshot } from '../../engine/src/save.ts';
+import { dominantSide, offSide } from '../../engine/src/sim.ts';
+import { projectVehicleParts } from '../../engine/src/vehicles.ts';
+import { BlockEntities, makeScale, type SolidAt, type Vec3, World } from '../../engine/src/world.ts';
 import { applyToHeldItem, PlayerTickActions } from '../src/game/playerTickActions.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

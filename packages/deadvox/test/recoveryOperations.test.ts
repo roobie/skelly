@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { type RecoveryTarget, selectRecoveryOperation } from '../src/core/disassembly.ts';
-import { Inventory } from '../src/engine/inventory.ts';
-import { bindReach } from '../src/engine/sim.ts';
+import { type RecoveryTarget, selectRecoveryOperation } from '../../engine/src/core/disassembly.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
+import { bindReach } from '../../engine/src/sim.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';

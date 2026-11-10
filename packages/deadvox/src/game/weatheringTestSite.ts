@@ -1,10 +1,10 @@
-import { blockId, type Registry } from '../core/content.ts';
-import type { Site } from '../core/site.ts';
-import { terrainShapeOf } from '../core/sitePalette.ts';
-import type { MetreBox } from '../core/structure.ts';
-import { type BlockBox, rasterize, stampChunk } from '../core/structure.ts';
-import type { Surface } from '../core/worldgen.ts';
-import { terrainHeightMetres } from '../core/worldgen.ts';
+import { blockId, type Registry } from '../../../engine/src/core/content.ts';
+import type { Site } from '../../../engine/src/core/site.ts';
+import { terrainShapeOf } from '../../../engine/src/core/sitePalette.ts';
+import type { MetreBox } from '../../../engine/src/core/structure.ts';
+import { type BlockBox, rasterize, stampChunk } from '../../../engine/src/core/structure.ts';
+import type { Surface } from '../../../engine/src/core/worldgen.ts';
+import { terrainHeightMetres } from '../../../engine/src/core/worldgen.ts';
 import type { GameConfig } from './config.ts';
 
 /** Concrete, brick and wood comparison bands share a world-x split and one viewing pad. */

@@ -10,15 +10,15 @@ import {
   PerspectiveCamera,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { actorHitFlinchDuration, flinchSideForId } from '../src/core/actorPose.ts';
-import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import type { AgentMode } from '../src/core/actorState.ts';
-import type { ActorSystemOptions } from '../src/core/actorSystem.ts';
-import { validateContent } from '../src/core/content.ts';
-import { MapEntityStore } from '../src/core/entities.ts';
-import { initialActorFootstepClock } from '../src/core/footsteps.ts';
-import { type ActorBody, actorFigure, buildRegistry } from '../src/engine/content.ts';
-import { Rng } from '../src/engine/math.ts';
+import { actorHitFlinchDuration, flinchSideForId } from '../../engine/src/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '../../engine/src/core/actorRegions.ts';
+import type { AgentMode } from '../../engine/src/core/actorState.ts';
+import type { ActorSystemOptions } from '../../engine/src/core/actorSystem.ts';
+import { validateContent } from '../../engine/src/core/content.ts';
+import { MapEntityStore } from '../../engine/src/core/entities.ts';
+import { initialActorFootstepClock } from '../../engine/src/core/footsteps.ts';
+import { type ActorBody, actorFigure, buildRegistry } from '../../engine/src/content.ts';
+import { Rng } from '../../engine/src/math.ts';
 import {
   actorPoseInputFor,
   applyPoint,
@@ -35,9 +35,9 @@ import {
   quatToMat3,
   severedBoneSet,
   transpose,
-} from '../src/engine/pose.ts';
-import { type Actor, reachTuning } from '../src/engine/sim.ts';
-import { CHUNK, makeScale, type Vec3 } from '../src/engine/world.ts';
+} from '../../engine/src/pose.ts';
+import { type Actor, reachTuning } from '../../engine/src/sim.ts';
+import { CHUNK, makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { ACTIVE_ACTOR_RATE } from '../src/game/simulationRates.ts';
 import { AcidEffects } from '../src/render/acidEffects.ts';
 import { ActorMeshes } from '../src/render/actors.ts';

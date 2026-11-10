@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import type { SiteLayoutDef } from '../src/core/schema.ts';
+import type { SiteLayoutDef } from '../../engine/src/core/schema.ts';
 import { siteFromUrl } from '../src/game/config.ts';
 import { makeAttemptLayout } from './fixtures/attemptPolicy.ts';
 

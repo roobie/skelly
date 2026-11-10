@@ -1,17 +1,17 @@
 import { Scene } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { CanonicalTerrain, installColumn } from '../src/core/canonicalTerrain.ts';
-import { paddedIndex } from '../src/core/meshInput.ts';
-import { type ColumnSource, type FurnitureSpawn, SupplyFootprints } from '../src/core/site.ts';
-import type { BlockBox } from '../src/core/structure.ts';
-import { strikeTerrain } from '../src/core/terrainStrike.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { affectedChunks } from '../src/core/world.ts';
+import { CanonicalTerrain, installColumn } from '../../engine/src/core/canonicalTerrain.ts';
+import { paddedIndex } from '../../engine/src/core/meshInput.ts';
+import { type ColumnSource, type FurnitureSpawn, SupplyFootprints } from '../../engine/src/core/site.ts';
+import type { BlockBox } from '../../engine/src/core/structure.ts';
+import { strikeTerrain } from '../../engine/src/core/terrainStrike.ts';
+import { simSeconds } from '../../engine/src/core/time.ts';
+import { affectedChunks } from '../../engine/src/core/world.ts';
 import { BuildMode } from '../src/debug/build.ts';
-import { PILE_GRID } from '../src/engine/inventory.ts';
-import { buildMesh } from '../src/engine/mesh.ts';
-import { decodeSave, type SaveSnapshot } from '../src/engine/save.ts';
-import type { BlockBlow } from '../src/engine/sim.ts';
+import { PILE_GRID } from '../../engine/src/inventory.ts';
+import { buildMesh } from '../../engine/src/mesh.ts';
+import { decodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
+import type { BlockBlow } from '../../engine/src/sim.ts';
 import {
   CHUNK,
   generateColumn,
@@ -21,7 +21,7 @@ import {
   type Vec3,
   World,
   worldSolid,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import type { MesherHandlers, MesherPort, ToMesher } from '../src/game/mesherProtocol.ts';
 import { playerTuning } from '../src/game/player.ts';

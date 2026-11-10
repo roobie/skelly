@@ -1,4 +1,4 @@
-import type { SenseDef } from '../core/schema.ts';
+import type { SenseDef } from '../../../engine/src/core/schema.ts';
 
 export type ActorVoiceTuning = SenseDef['actorVoice'];
 

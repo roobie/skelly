@@ -1,7 +1,7 @@
-import type { Registry } from '../engine/content.ts';
-import { bodyPlanModel, figureVariantOf } from '../engine/pose.ts';
-import type { ActorSystem, EntityId } from '../engine/sim.ts';
-import type { Vec3 } from '../engine/world.ts';
+import type { Registry } from '../../../engine/src/content.ts';
+import { bodyPlanModel, figureVariantOf } from '../../../engine/src/pose.ts';
+import type { ActorSystem, EntityId } from '../../../engine/src/sim.ts';
+import type { Vec3 } from '../../../engine/src/world.ts';
 import type { ActorRenderer } from '../render/mobActors.ts';
 import { ragdollContent } from '../render/ragdoll.ts';
 

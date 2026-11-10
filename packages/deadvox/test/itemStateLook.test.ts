@@ -1,8 +1,8 @@
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial, type Object3D } from 'three';
 import { expect, it, vi } from 'vitest';
-import { itemPresentationIssues } from '../src/core/itemPresentation.ts';
-import { snapshotItem } from '../src/core/items.ts';
-import { buildRegistry, modelPresentationAssetIssues } from '../src/engine/content.ts';
+import { itemPresentationIssues } from '../../engine/src/core/itemPresentation.ts';
+import { snapshotItem } from '../../engine/src/core/items.ts';
+import { buildRegistry, modelPresentationAssetIssues } from '../../engine/src/content.ts';
 import {
   chargeShare,
   Inventory,
@@ -10,7 +10,7 @@ import {
   LIGHT_MOUNT_SLOT,
   supplyShare,
   toggleLight,
-} from '../src/engine/inventory.ts';
+} from '../../engine/src/inventory.ts';
 import { type ItemLook, itemLook } from '../src/render/itemLook.ts';
 import { ItemPictures } from '../src/render/itemPictures.ts';
 import { applyItemStateLook, disposeItemStateMaterials, fittedStateGroup } from '../src/render/itemStateLook.ts';

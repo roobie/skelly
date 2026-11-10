@@ -1,21 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import type { MeleeWeapon } from '../src/core/actorSystem.ts';
-import type { MeleeClassDef } from '../src/core/content.ts';
-import { type MeleeProfile, meleeContactTime } from '../src/core/meleePose.ts';
-import { stepStamina } from '../src/core/needs.ts';
-import { type MeleeActionState, PlayerCombat } from '../src/core/playerCombat.ts';
-import type { ActorDef } from '../src/engine/content.ts';
-import { Inventory, toggleLight } from '../src/engine/inventory.ts';
+import { posedHumanoidRegionBoxes } from '../../engine/src/core/actorRegions.ts';
+import type { MeleeWeapon } from '../../engine/src/core/actorSystem.ts';
+import type { MeleeClassDef } from '../../engine/src/core/content.ts';
+import { type MeleeProfile, meleeContactTime } from '../../engine/src/core/meleePose.ts';
+import { stepStamina } from '../../engine/src/core/needs.ts';
+import { type MeleeActionState, PlayerCombat } from '../../engine/src/core/playerCombat.ts';
+import type { ActorDef } from '../../engine/src/content.ts';
+import { Inventory, toggleLight } from '../../engine/src/inventory.ts';
 import {
   actorPoseInputFor,
   firearmAimOffHand,
   meleePoseAndContact,
   readyFirearmPose,
   readyMeleePose,
-} from '../src/engine/pose.ts';
-import { type Actor, Body } from '../src/engine/sim.ts';
-import { makeScale, type SolidAt, type Vec3 } from '../src/engine/world.ts';
+} from '../../engine/src/pose.ts';
+import { type Actor, Body } from '../../engine/src/sim.ts';
+import { makeScale, type SolidAt, type Vec3 } from '../../engine/src/world.ts';
 import {
   resolveMeleeWeapon,
   resolvePlayerMeleeWeapon,

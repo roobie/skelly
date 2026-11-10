@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { generateChunk } from '../src/core/worldgen.ts';
+import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
+import { generateChunk } from '../../engine/src/core/worldgen.ts';
 import {
   BlockEntities,
   raycast,
@@ -10,7 +10,7 @@ import {
   World,
   worldOpaque,
   worldSolid,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';

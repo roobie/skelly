@@ -6,10 +6,10 @@ import {
   servingDef,
   settleFoodExposure,
   spoilage,
-} from '../src/core/food.ts';
-import { restoreItem, snapshotItem, stackRoom } from '../src/core/items.ts';
-import { HandlingQueue, Inventory, ItemFactory } from '../src/engine/inventory.ts';
-import { assertFoodExposure } from '../src/engine/sim.ts';
+} from '../../engine/src/core/food.ts';
+import { restoreItem, snapshotItem, stackRoom } from '../../engine/src/core/items.ts';
+import { HandlingQueue, Inventory, ItemFactory } from '../../engine/src/inventory.ts';
+import { assertFoodExposure } from '../../engine/src/sim.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';

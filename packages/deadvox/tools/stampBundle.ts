@@ -2,14 +2,14 @@
 import { realpathSync } from 'node:fs';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { buildRegistry, type ContentSource, requiredContentIssues } from '../src/engine/content.ts';
+import { buildRegistry, type ContentSource, requiredContentIssues } from '../../engine/src/content.ts';
 import {
   admitPacks,
   type BundleStamp,
   bundleSourceHash,
   type PackInput,
   packContentHash,
-} from '../src/engine/packs.ts';
+} from '../../engine/src/packs.ts';
 
 export async function stampBundle(sources: readonly ContentSource[], proofHash: string): Promise<BundleStamp> {
   const { registry, issues } = buildRegistry(sources);

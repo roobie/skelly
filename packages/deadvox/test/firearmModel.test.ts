@@ -3,10 +3,10 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { parse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import firearmContent from '../../mods/skelly.firearms/models-firearms.json' with { type: 'json' };
-import { heldEjectionPose } from '../src/core/heldPose.ts';
-import { simPerMinute, simSeconds } from '../src/core/time.ts';
-import { type ModelDef, ModelSchema } from '../src/engine/content.ts';
-import { heldGripOffset } from '../src/engine/pose.ts';
+import { heldEjectionPose } from '../../engine/src/core/heldPose.ts';
+import { simPerMinute, simSeconds } from '../../engine/src/core/time.ts';
+import { type ModelDef, ModelSchema } from '../../engine/src/content.ts';
+import { heldGripOffset } from '../../engine/src/pose.ts';
 import {
   actionPartPaths,
   cloneHeldModel,

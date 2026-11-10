@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { kitSlice } from '../src/debug/kitOverlay.ts';
-import type { Placement, VoxelProvenance } from '../src/engine/world.ts';
+import type { Placement, VoxelProvenance } from '../../engine/src/world.ts';
 
 it('projects every slice cell without inventing ownership or replacing compiler provenance', () => {
   const record: VoxelProvenance = {

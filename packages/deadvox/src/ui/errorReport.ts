@@ -1,5 +1,5 @@
 import { html, render } from 'lit-html';
-import { getBuildRevision } from '../engine/packs.ts';
+import { getBuildRevision } from '../../../engine/src/packs.ts';
 import type { HandBackFile } from '../presentation/playtestTools.ts';
 import { listenForFactDetailPlacement } from './factDetailPlacement.ts';
 import { isOwnError } from './ownError.ts';

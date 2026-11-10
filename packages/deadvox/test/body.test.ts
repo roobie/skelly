@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
-import { stepNeeds } from '../src/core/needs.ts';
-import type { TreatmentDef } from '../src/core/schema.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { Rng } from '../src/engine/math.ts';
-import { BODY_REGIONS, Body, type BodyRegion, type Needs } from '../src/engine/sim.ts';
+import { SECONDS_PER_HOUR } from '../../engine/src/core/clock.ts';
+import { stepNeeds } from '../../engine/src/core/needs.ts';
+import type { TreatmentDef } from '../../engine/src/core/schema.ts';
+import { simSeconds } from '../../engine/src/core/time.ts';
+import { Rng } from '../../engine/src/math.ts';
+import { BODY_REGIONS, Body, type BodyRegion, type Needs } from '../../engine/src/sim.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier } from './simulationFixture.ts';
 
 const recoveryNeeds = (calories = 80): Needs => ({

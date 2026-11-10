@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { parse } from 'valibot';
-import { type ActorFigureFiles, type Registry, readActorFigureFiles } from '../src/engine/content.ts';
+import { type ActorFigureFiles, type Registry, readActorFigureFiles } from '../../engine/src/content.ts';
 import {
   admitPacks,
   logicalKey,
@@ -13,8 +13,8 @@ import {
   PackManifestSchema,
   packContentHash,
   resolvePhysical,
-} from '../src/engine/packs.ts';
-import { canonicalJson } from '../src/engine/save.ts';
+} from '../../engine/src/packs.ts';
+import { canonicalJson } from '../../engine/src/save.ts';
 import { EXTERNAL_ASSET_ROOT } from '../src/product/externalRoot.ts';
 
 /** Pack roots are relative to the product modules that glob them; see `src/product/packs.ts`, `bundledPacks`. */

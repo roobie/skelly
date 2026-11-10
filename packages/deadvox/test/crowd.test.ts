@@ -3,7 +3,7 @@
 
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { compose, rotation, translation } from '../src/core/boneMath.ts';
+import { compose, rotation, translation } from '../../engine/src/core/boneMath.ts';
 import {
   allocateBoneTransforms,
   applyPoint,
@@ -15,7 +15,7 @@ import {
   rotY,
   type Transform,
   type Vec3,
-} from '../src/engine/pose.ts';
+} from '../../engine/src/pose.ts';
 import {
   CROWD_MASK_BITS_PER_TEXEL,
   type CrowdCellMaskLayout,

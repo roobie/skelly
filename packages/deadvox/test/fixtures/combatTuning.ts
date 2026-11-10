@@ -1,6 +1,6 @@
-import type { Registry } from '../../src/engine/content.ts';
-import { claimed } from '../../src/engine/inventory.ts';
-import { firearmsCombatTuning } from '../../src/engine/sim.ts';
+import type { Registry } from '../../../engine/src/content.ts';
+import { claimed } from '../../../engine/src/inventory.ts';
+import { firearmsCombatTuning } from '../../../engine/src/sim.ts';
 
 export const skilledFirearmsTuning = (registry: Registry) => {
   const skill = claimed(registry.skills, 'firearmsCombat');

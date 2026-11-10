@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { coreMessage } from '../src/core/coreText.ts';
-import { reach } from '../src/core/reach.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { HandlingQueue, Inventory, options } from '../src/engine/inventory.ts';
+import { coreMessage } from '../../engine/src/core/coreText.ts';
+import { reach } from '../../engine/src/core/reach.ts';
+import { simSeconds } from '../../engine/src/core/time.ts';
+import { HandlingQueue, Inventory, options } from '../../engine/src/inventory.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';

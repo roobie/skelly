@@ -9,7 +9,7 @@ import {
   initialFootstepClock,
   isHardLanding,
   stepDistanceMetres,
-} from '../src/core/footsteps.ts';
+} from '../../engine/src/core/footsteps.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 

@@ -4,15 +4,15 @@
 // worn-light control (`toggleWornLights`).
 // The needs themselves are in the simulation (core/needs.ts).
 
-import { type ActionText, actionText, fillText } from '../core/actionText.ts';
-import { canonicalJson } from '../core/canonicalJson.ts';
-import { dominantSide } from '../core/character.ts';
-import { coreLabel, coreMessage } from '../core/coreText.ts';
-import { freshnessWord, isRotten, servingDef } from '../core/food.ts';
-import type { HandlingQueue, JobParams, JobValue } from '../core/handling.ts';
-import type { HandSide, Inventory, Target, TargetState } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
-import { isInHeldItemSlotTree } from '../core/itemTree.ts';
+import { type ActionText, actionText, fillText } from '../../../engine/src/core/actionText.ts';
+import { canonicalJson } from '../../../engine/src/core/canonicalJson.ts';
+import { dominantSide } from '../../../engine/src/core/character.ts';
+import { coreLabel, coreMessage } from '../../../engine/src/core/coreText.ts';
+import { freshnessWord, isRotten, servingDef } from '../../../engine/src/core/food.ts';
+import type { HandlingQueue, JobParams, JobValue } from '../../../engine/src/core/handling.ts';
+import type { HandSide, Inventory, Target, TargetState } from '../../../engine/src/core/inventory.ts';
+import { defOf, type Item } from '../../../engine/src/core/items.ts';
+import { isInHeldItemSlotTree } from '../../../engine/src/core/itemTree.ts';
 import {
   chargeOf,
   chargeShare,
@@ -22,9 +22,9 @@ import {
   swapBattery,
   toggleLight,
   unloadBattery,
-} from '../core/lights.ts';
-import { consume } from '../core/needs.ts';
-import { countText } from '../core/numberText.ts';
+} from '../../../engine/src/core/lights.ts';
+import { consume } from '../../../engine/src/core/needs.ts';
+import { countText } from '../../../engine/src/core/numberText.ts';
 import {
   batteryHandRefusal,
   batterySlotOption,
@@ -33,12 +33,12 @@ import {
   pourRefusal,
   stowTarget,
   useOption,
-} from '../core/options.ts';
-import type { ReachSnapshot } from '../core/reach.ts';
-import type { Readable, ReadRequest } from '../core/readable.ts';
-import type { Simulation } from '../core/sim.ts';
-import { gameSeconds, simSeconds, simToGameSeconds } from '../core/time.ts';
-import { swapCanister } from '../core/torch.ts';
+} from '../../../engine/src/core/options.ts';
+import type { ReachSnapshot } from '../../../engine/src/core/reach.ts';
+import type { Readable, ReadRequest } from '../../../engine/src/core/readable.ts';
+import type { Simulation } from '../../../engine/src/core/sim.ts';
+import { gameSeconds, simSeconds, simToGameSeconds } from '../../../engine/src/core/time.ts';
+import { swapCanister } from '../../../engine/src/core/torch.ts';
 import { queueTrapAction } from './bearTrapActions.ts';
 import { type ItemAction, ItemActionSelection, itemActionsFor } from './itemActions.ts';
 

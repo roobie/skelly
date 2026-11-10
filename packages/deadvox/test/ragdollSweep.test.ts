@@ -1,8 +1,8 @@
 import { Group } from 'three';
 import { expect, it, vi } from 'vitest';
 import { stageRagdollSweep } from '../src/debug/ragdollSweep.ts';
-import { bodyPlanModel, figureVariantOf } from '../src/engine/pose.ts';
-import { makeScale } from '../src/engine/world.ts';
+import { bodyPlanModel, figureVariantOf } from '../../engine/src/pose.ts';
+import { makeScale } from '../../engine/src/world.ts';
 import { ragdollContent } from '../src/render/ragdoll.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

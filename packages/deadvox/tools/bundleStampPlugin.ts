@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import type { Plugin } from 'vite';
-import { admitPacks, type BundleStamp, packContentHash } from '../src/engine/packs.ts';
+import { admitPacks, type BundleStamp, packContentHash } from '../../engine/src/packs.ts';
 import { bundledPackDefines, PACK_ROOT_BASE, readAvailablePacks } from './readBundledPacks.ts';
 import { fingerprintSimulationSources } from './simulationFingerprint.ts';
 

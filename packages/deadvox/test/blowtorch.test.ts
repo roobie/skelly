@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
-import { coreMessage } from '../src/core/coreText.ts';
-import { chargeOf } from '../src/core/lights.ts';
-import { swapCanister } from '../src/core/torch.ts';
-import { freshDropTarget, Inventory, type Target } from '../src/engine/inventory.ts';
+import { coreMessage } from '../../engine/src/core/coreText.ts';
+import { chargeOf } from '../../engine/src/core/lights.ts';
+import { swapCanister } from '../../engine/src/core/torch.ts';
+import { freshDropTarget, Inventory, type Target } from '../../engine/src/inventory.ts';
 import { createRuntime, registry } from './snapshotTestSupport.ts';
 
 const doorDef = registry.furniture.get('steel_armoury_door')!;

@@ -20,9 +20,9 @@ import {
   requiredContentIssues,
   soundFileIssues,
   validateManifest,
-} from '../engine/content.ts';
-import { bundledModCatalogueIssues } from '../engine/modCatalogue.ts';
-import { admitPacks, type PackInput, packStartIssues } from '../engine/packs.ts';
+} from '../../../engine/src/content.ts';
+import { bundledModCatalogueIssues } from '../../../engine/src/modCatalogue.ts';
+import { admitPacks, type PackInput, packStartIssues } from '../../../engine/src/packs.ts';
 import { EXTERNAL_ASSET_ROOT } from '../product/externalRoot.ts';
 import { controlIssues } from './controlIssues.ts';
 

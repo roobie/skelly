@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { VocalNoise } from '../src/core/actorSense.ts';
-import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
-import type { PlayerSense } from '../src/engine/sim.ts';
-import { makeScale, type SolidAt, type Vec3 } from '../src/engine/world.ts';
+import type { VocalNoise } from '../../engine/src/core/actorSense.ts';
+import { canonicalJsonBytes } from '../../engine/src/core/canonicalJson.ts';
+import type { PlayerSense } from '../../engine/src/sim.ts';
+import { makeScale, type SolidAt, type Vec3 } from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

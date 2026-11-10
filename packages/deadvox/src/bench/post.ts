@@ -1,4 +1,4 @@
-import { requireDayCycle } from '../engine/content.ts';
+import { requireDayCycle } from '../../../engine/src/content.ts';
 import {
   AUTO_TONE,
   DEFAULT_SHADOWS,
@@ -7,8 +7,8 @@ import {
   lookOf,
   type MoodState,
   moodOf,
-} from '../engine/look.ts';
-import { skyAt, skyInWeather, sunShadowStrength } from '../engine/sky.ts';
+} from '../../../engine/src/look.ts';
+import { skyAt, skyInWeather, sunShadowStrength } from '../../../engine/src/sky.ts';
 import type { GameConfig } from '../game/config.ts';
 import type { RenderedEngine } from '../presentation/engine.ts';
 import { setHeightFogTuning } from '../render/heightFog.ts';

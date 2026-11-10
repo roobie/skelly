@@ -2,7 +2,8 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "lib": ["ES2023"],
+    "customConditions": [],
     "types": ["node"]
   },
-  "include": ["src/core", "src/vehicles", "src/game", "src/engine"]
+  "include": ["src/game"]
 }

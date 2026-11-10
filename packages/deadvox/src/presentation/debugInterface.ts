@@ -1,4 +1,4 @@
-import type { Inventory } from '../engine/inventory.ts';
+import type { Inventory } from '../../../engine/src/inventory.ts';
 import type {
   ActorAim,
   ActorSystem,
@@ -6,9 +6,9 @@ import type {
   FirearmsSkillZeroHandling,
   MeleeResult,
   Simulation,
-} from '../engine/sim.ts';
-import type { Weather } from '../engine/sky.ts';
-import type { Body, Vec3 } from '../engine/world.ts';
+} from '../../../engine/src/sim.ts';
+import type { Weather } from '../../../engine/src/sky.ts';
+import type { Body, Vec3 } from '../../../engine/src/world.ts';
 import type { RealFrameObserver } from '../game/frameDriver.ts';
 import type { HeardSound } from '../game/hearing.ts';
 import type { Session } from '../game/session.ts';

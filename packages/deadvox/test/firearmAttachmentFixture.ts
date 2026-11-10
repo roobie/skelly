@@ -1,4 +1,4 @@
-import type { ModelDef, Registry } from '../src/engine/content.ts';
+import type { ModelDef, Registry } from '../../engine/src/content.ts';
 
 export type FixtureAttachment = NonNullable<NonNullable<ModelDef['gun']>['attachment']>;
 export type FixtureFittedAttachment = NonNullable<NonNullable<ModelDef['gun']>['attachments']>[number];

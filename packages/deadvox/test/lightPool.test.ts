@@ -6,11 +6,11 @@ import {
   inventoryLightSources,
   lightSenseSourceFor,
   SunExposureCache,
-} from '../src/core/lights.ts';
-import { slotsReason } from '../src/core/magazine.ts';
-import { gameSeconds } from '../src/core/time.ts';
-import { Inventory, toggleLight } from '../src/engine/inventory.ts';
-import { makeScale, type SolidAt } from '../src/engine/world.ts';
+} from '../../engine/src/core/lights.ts';
+import { slotsReason } from '../../engine/src/core/magazine.ts';
+import { gameSeconds } from '../../engine/src/core/time.ts';
+import { Inventory, toggleLight } from '../../engine/src/inventory.ts';
+import { makeScale, type SolidAt } from '../../engine/src/world.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { LightPool } from '../src/render/lightPool.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

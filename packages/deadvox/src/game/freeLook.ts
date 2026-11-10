@@ -1,4 +1,4 @@
-import type { PlayerDef } from '../core/schema.ts';
+import type { PlayerDef } from '../../../engine/src/core/schema.ts';
 
 export type FreeLookTuning = PlayerDef['aim']['freeLook'];
 

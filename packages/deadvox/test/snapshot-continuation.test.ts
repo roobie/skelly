@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { resolveSpawnTime } from '../src/core/clock.ts';
-import { restorePlayerAudioState } from '../src/core/saveState.ts';
-import type { Site } from '../src/core/site.ts';
-import { SoundPicker } from '../src/core/soundPicker.ts';
-import { terrainHeight } from '../src/core/worldgen.ts';
-import { Inventory } from '../src/engine/inventory.ts';
-import { decodeSave } from '../src/engine/save.ts';
-import { BACKGROUND_ACTOR_SLICE_COUNT, parseTimeOfDay, realSeconds } from '../src/engine/sim.ts';
-import { terrainShapeOf, toChunk } from '../src/engine/world.ts';
+import { resolveSpawnTime } from '../../engine/src/core/clock.ts';
+import { restorePlayerAudioState } from '../../engine/src/core/saveState.ts';
+import type { Site } from '../../engine/src/core/site.ts';
+import { SoundPicker } from '../../engine/src/core/soundPicker.ts';
+import { terrainHeight } from '../../engine/src/core/worldgen.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
+import { decodeSave } from '../../engine/src/save.ts';
+import { BACKGROUND_ACTOR_SLICE_COUNT, parseTimeOfDay, realSeconds } from '../../engine/src/sim.ts';
+import { terrainShapeOf, toChunk } from '../../engine/src/world.ts';
 import { planRealFrame } from '../src/game/frameDriver.ts';
 import { IDLE } from '../src/game/session.ts';
 import {
@@ -467,71 +467,71 @@ describe('fixture save/load continuation', () => {
     advance(withoutDelta, 1);
     expect(inspect(withoutDelta)).not.toEqual(inspect(baseline));
 
-    const noAllocator = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noAllocator = structuredClone(saved) as import('../../engine/src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noAllocator.character.inventory, 'nextItemUid');
     expect(() => Inventory.restoreState(registry, noAllocator.character.inventory)).toThrow('Invalid next item id');
 
-    const noCursor = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noCursor = structuredClone(saved) as import('../../engine/src/core/saveState.ts').SaveSnapshot;
     noCursor.character.simulation.scheduler.systems = noCursor.character.simulation.scheduler.systems.filter(
       (cursor) => cursor.id !== 'player',
     );
     expect(() => runtimeFrom(noCursor)).toThrow('Scheduler system set does not match snapshot');
 
     expect(saved.world.actors.actors.length).toBeGreaterThan(0);
-    const noRngWord = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noRngWord = structuredClone(saved) as import('../../engine/src/core/saveState.ts').SaveSnapshot;
     const [a, b, c] = noRngWord.world.actors.actors[0]!.actor.agent!.behaviorRng;
     noRngWord.world.actors.actors[0]!.actor.agent!.behaviorRng = [a, b, c] as never;
     expect(() => runtimeFrom(noRngWord)).toThrow('Invalid zombie state');
 
-    const noActorSoundRng = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noActorSoundRng = structuredClone(saved) as import('../../engine/src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noActorSoundRng.world.actors.actors[0]!.actor.agent!, 'soundRng');
     expect(() => runtimeFrom(noActorSoundRng)).toThrow('Invalid zombie state');
 
-    const noIdleSoundTimer = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noIdleSoundTimer = structuredClone(saved) as import('../../engine/src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noIdleSoundTimer.world.actors.actors[0]!.actor.agent!, 'idleSoundTimer');
     expect(() => runtimeFrom(noIdleSoundTimer)).toThrow('Invalid zombie state');
 
-    const noLastNoiseId = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noLastNoiseId = structuredClone(saved) as import('../../engine/src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noLastNoiseId.world.actors.actors[0]!.actor.agent!, 'lastVocalNoiseId');
     expect(() => runtimeFrom(noLastNoiseId)).toThrow('Invalid zombie state');
 
-    const noVocalNoiseId = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noVocalNoiseId = structuredClone(saved) as import('../../engine/src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noVocalNoiseId.character.playerAudio, 'vocalNoiseId');
     expect(() => restorePlayerAudioState(noVocalNoiseId.character.playerAudio)).toThrow('Invalid player audio state');
 
-    const noVocalNoise = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noVocalNoise = structuredClone(saved) as import('../../engine/src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noVocalNoise.character.playerAudio, 'vocalNoise');
     expect(() => restorePlayerAudioState(noVocalNoise.character.playerAudio)).toThrow('Invalid active vocal noise');
 
     for (const field of ['id', 'pos', 'radiusMetres', 'expiresAt'] as const) {
-      const noNoiseField = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+      const noNoiseField = structuredClone(saved) as import('../../engine/src/core/saveState.ts').SaveSnapshot;
       Reflect.deleteProperty(noNoiseField.character.playerAudio.vocalNoise!, field);
       expect(() => restorePlayerAudioState(noNoiseField.character.playerAudio)).toThrow('Invalid active vocal noise');
     }
 
-    const noPickerState = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noPickerState = structuredClone(saved) as import('../../engine/src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noPickerState.character.playerAudio, 'soundPicker');
     expect(() => restorePlayerAudioState(noPickerState.character.playerAudio)).toThrow('Invalid player audio state');
 
-    const noPickerEvent = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noPickerEvent = structuredClone(saved) as import('../../engine/src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noPickerEvent.character.playerAudio.soundPicker.events[0]!, 'event');
     expect(() =>
       new SoundPicker(seed, registry.sounds).restoreState(noPickerEvent.character.playerAudio.soundPicker),
     ).toThrow('Invalid sound picker state');
 
-    const noPickerRng = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noPickerRng = structuredClone(saved) as import('../../engine/src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noPickerRng.character.playerAudio.soundPicker.events[0]!, 'rng');
     expect(() =>
       new SoundPicker(seed, registry.sounds).restoreState(noPickerRng.character.playerAudio.soundPicker),
     ).toThrow('Invalid sound picker state');
 
-    const noPickerVariant = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noPickerVariant = structuredClone(saved) as import('../../engine/src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noPickerVariant.character.playerAudio.soundPicker.events[0]!, 'lastVariant');
     expect(() =>
       new SoundPicker(seed, registry.sounds).restoreState(noPickerVariant.character.playerAudio.soundPicker),
     ).toThrow('Invalid sound picker state');
 
-    const noPickerTime = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noPickerTime = structuredClone(saved) as import('../../engine/src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noPickerTime.character.playerAudio.soundPicker.events[0]!, 'lastPlayedAt');
     expect(() =>
       new SoundPicker(seed, registry.sounds).restoreState(noPickerTime.character.playerAudio.soundPicker),

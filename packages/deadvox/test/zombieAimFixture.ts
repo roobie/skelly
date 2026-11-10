@@ -1,7 +1,7 @@
-import type { CrosshairTarget } from '../src/core/crosshairTarget.ts';
-import type { Registry } from '../src/engine/content.ts';
-import { crosshairTarget } from '../src/engine/sim.ts';
-import { BlockEntities, makeScale, type Vec3 } from '../src/engine/world.ts';
+import type { CrosshairTarget } from '../../engine/src/core/crosshairTarget.ts';
+import type { Registry } from '../../engine/src/content.ts';
+import { crosshairTarget } from '../../engine/src/sim.ts';
+import { BlockEntities, makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';

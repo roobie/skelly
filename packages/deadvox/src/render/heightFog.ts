@@ -4,7 +4,7 @@
 // post-processing. The parameters are one shared set of uniforms, driven by `Mood`.
 
 import { Color, type IUniform, type Material, Vector3, type WebGLProgramParametersWithUniforms } from 'three';
-import type { LookDefaultsDef } from '../engine/content.ts';
+import type { LookDefaultsDef } from '../../../engine/src/content.ts';
 import { type HotCategory, patchHotCheck } from './hotCheck.ts';
 
 export type HeightFogTuning = LookDefaultsDef['heightFog'];

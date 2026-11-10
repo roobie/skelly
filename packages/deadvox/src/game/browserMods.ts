@@ -1,6 +1,6 @@
 import { safeParse } from 'valibot';
-import { type ContentIssue, validateContent } from '../core/content.ts';
-import { admitWithFolderPacks, type PackInput, PackManifestSchema } from '../core/packAdmission.ts';
+import { type ContentIssue, validateContent } from '../../../engine/src/core/content.ts';
+import { admitWithFolderPacks, type PackInput, PackManifestSchema } from '../../../engine/src/core/packAdmission.ts';
 import type { BundledContent, StartupContent } from './bundledContent.ts';
 import type { BundledMod } from './bundledMods.ts';
 

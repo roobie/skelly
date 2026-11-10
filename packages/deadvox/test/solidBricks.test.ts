@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import { type BrickOut, brickHas, type SolidBricks } from '../src/core/solidBricks.ts';
-import { BlockEntities, type SolidAt, World, worldBricks, worldSolid } from '../src/engine/world.ts';
+import { type BrickOut, brickHas, type SolidBricks } from '../../engine/src/core/solidBricks.ts';
+import { BlockEntities, type SolidAt, World, worldBricks, worldSolid } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

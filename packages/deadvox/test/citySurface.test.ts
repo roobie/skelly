@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildCityPlan, cityGridOf } from '../src/core/cityPlan.ts';
-import { buildRegistry } from '../src/engine/content.ts';
-import { CHUNK, CitySite, makeScale } from '../src/engine/world.ts';
+import { buildCityPlan, cityGridOf } from '../../engine/src/core/cityPlan.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
+import { CHUNK, CitySite, makeScale } from '../../engine/src/world.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
 const profile = fixtureScenario();

@@ -1,10 +1,10 @@
 import { type LineBasicMaterial, Scene } from 'three';
 import { describe, expect, it } from 'vitest';
-import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import { posedHumanoidRegionBoxes } from '../../engine/src/core/actorRegions.ts';
 import { DebugAimOverlay } from '../src/debug/aimOverlay.ts';
-import { actorPoseInputFor } from '../src/engine/pose.ts';
-import type { Actor } from '../src/engine/sim.ts';
-import { makeScale, type Vec3 } from '../src/engine/world.ts';
+import { actorPoseInputFor } from '../../engine/src/pose.ts';
+import type { Actor } from '../../engine/src/sim.ts';
+import { makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

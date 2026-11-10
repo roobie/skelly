@@ -8,11 +8,11 @@ import {
   militaryOnlyEconomy,
   rollLoot,
   withLootDepth,
-} from '../src/core/loot.ts';
-import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
-import { lootSourcesOf } from '../src/core/site.ts';
-import { compileAssembly, placedGroundLoot, placedPieces } from '../src/core/templates.ts';
-import { BLOCK_SIZE, makeScale } from '../src/engine/world.ts';
+} from '../../engine/src/core/loot.ts';
+import { ScenarioCitySite } from '../../engine/src/core/scenarioCity.ts';
+import { lootSourcesOf } from '../../engine/src/core/site.ts';
+import { compileAssembly, placedGroundLoot, placedPieces } from '../../engine/src/core/templates.ts';
+import { BLOCK_SIZE, makeScale } from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 import { sweepGroup } from './sweeps.ts';

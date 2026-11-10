@@ -1,9 +1,9 @@
 // Rest controls/rate selection only. Core LongActions owns saved state and stepping.
-import type { ActionText } from '../core/actionText.ts';
-import { nextSimTimeAt, SECONDS_PER_HOUR } from '../core/clock.ts';
-import type { RestAction, RestKind } from '../core/longAction.ts';
-import type { Simulation } from '../core/sim.ts';
-import { simSeconds } from '../core/time.ts';
+import type { ActionText } from '../../../engine/src/core/actionText.ts';
+import { nextSimTimeAt, SECONDS_PER_HOUR } from '../../../engine/src/core/clock.ts';
+import type { RestAction, RestKind } from '../../../engine/src/core/longAction.ts';
+import type { Simulation } from '../../../engine/src/core/sim.ts';
+import { simSeconds } from '../../../engine/src/core/time.ts';
 
 interface RestFurniture {
   quality: number;

@@ -1,7 +1,7 @@
-import { AuthoredSite } from '../../src/core/authoredSite.ts';
-import { type BlockBox, stampChunk } from '../../src/core/structure.ts';
-import type { Registry } from '../../src/engine/content.ts';
-import { CHUNK, type Chunk, type Scale } from '../../src/engine/world.ts';
+import { AuthoredSite } from '../../../engine/src/core/authoredSite.ts';
+import { type BlockBox, stampChunk } from '../../../engine/src/core/structure.ts';
+import type { Registry } from '../../../engine/src/content.ts';
+import { CHUNK, type Chunk, type Scale } from '../../../engine/src/world.ts';
 
 /** A small authored world with independent furniture, zombie and foliage columns. */
 export class SnapshotSite extends AuthoredSite {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
-import { placedGroundLoot, placedSpawns } from '../src/core/templates.ts';
-import { BLOCK_SIZE, makeScale } from '../src/engine/world.ts';
+import { ScenarioCitySite } from '../../engine/src/core/scenarioCity.ts';
+import { placedGroundLoot, placedSpawns } from '../../engine/src/core/templates.ts';
+import { BLOCK_SIZE, makeScale } from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { checkReachability } from '../src/core/reachability.ts';
-import type { StartDef } from '../src/core/schema/starts.ts';
-import type { SiteLayoutDef } from '../src/core/schema.ts';
-import { gameMinutes, simSeconds } from '../src/core/time.ts';
-import { checkStartReachability, type RecipeDef } from '../src/engine/content.ts';
+import { checkReachability } from '../../engine/src/core/reachability.ts';
+import type { StartDef } from '../../engine/src/core/schema/starts.ts';
+import type { SiteLayoutDef } from '../../engine/src/core/schema.ts';
+import { gameMinutes, simSeconds } from '../../engine/src/core/time.ts';
+import { checkStartReachability, type RecipeDef } from '../../engine/src/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureEconomy, fixtureLootContext } from './economyFixtures.ts';
 

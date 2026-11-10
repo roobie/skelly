@@ -15,12 +15,12 @@ import {
   placedTypeIssue,
   selectLootType,
   type WeightedCandidate,
-} from '../src/core/loot.ts';
-import { lootSourcesOf } from '../src/core/site.ts';
-import { compileTemplate, stackTemplate } from '../src/core/templates.ts';
-import { buildRegistry, type Registry } from '../src/engine/content.ts';
-import { Rng } from '../src/engine/math.ts';
-import { placementOf } from '../src/engine/world.ts';
+} from '../../engine/src/core/loot.ts';
+import { lootSourcesOf } from '../../engine/src/core/site.ts';
+import { compileTemplate, stackTemplate } from '../../engine/src/core/templates.ts';
+import { buildRegistry, type Registry } from '../../engine/src/content.ts';
+import { Rng } from '../../engine/src/math.ts';
+import { placementOf } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 

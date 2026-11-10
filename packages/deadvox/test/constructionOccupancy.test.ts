@@ -1,15 +1,15 @@
 import { expect, it } from 'vitest';
-import type { BlockEntitiesState } from '../src/core/blockEntities.ts';
-import { terrainSolid } from '../src/core/collision.ts';
-import { type FurnitureMover, removeFurniture } from '../src/core/furnitureMove.ts';
-import { pickFurnitureAndObstruction } from '../src/core/furniturePick.ts';
-import { stepBodyHorizontal } from '../src/core/physics.ts';
-import type { ReachPlayer } from '../src/core/reach.ts';
-import { captureSky, furnitureBounds, growSky, SKY_SHELL } from '../src/core/skySnapshot.ts';
-import { type BrickOut, brickHas, type SolidBricks } from '../src/core/solidBricks.ts';
-import { cellsOf } from '../src/core/templates.ts';
-import { Inventory } from '../src/engine/inventory.ts';
-import { bindReach } from '../src/engine/sim.ts';
+import type { BlockEntitiesState } from '../../engine/src/core/blockEntities.ts';
+import { terrainSolid } from '../../engine/src/core/collision.ts';
+import { type FurnitureMover, removeFurniture } from '../../engine/src/core/furnitureMove.ts';
+import { pickFurnitureAndObstruction } from '../../engine/src/core/furniturePick.ts';
+import { stepBodyHorizontal } from '../../engine/src/core/physics.ts';
+import type { ReachPlayer } from '../../engine/src/core/reach.ts';
+import { captureSky, furnitureBounds, growSky, SKY_SHELL } from '../../engine/src/core/skySnapshot.ts';
+import { type BrickOut, brickHas, type SolidBricks } from '../../engine/src/core/solidBricks.ts';
+import { cellsOf } from '../../engine/src/core/templates.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
+import { bindReach } from '../../engine/src/sim.ts';
 import {
   type BlockEntities,
   type BlockEntity,
@@ -21,7 +21,7 @@ import {
   worldBricks,
   worldOpaque,
   worldSolid,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';

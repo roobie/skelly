@@ -1,4 +1,4 @@
-import { CHUNK, type Chunk } from '../engine/world.ts';
+import { CHUNK, type Chunk } from '../../../engine/src/world.ts';
 
 export type SiteMapView = 'topographic' | 'satellite';
 export type ContourSegments = Float32Array;

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { PowerNetwork, type PowerState, type PowerTransition, type PowerWork } from '../src/core/power.ts';
-import type { PowerDeviceDef } from '../src/core/powerContent.ts';
-import { simTimestamp } from '../src/core/time.ts';
-import { dayPhaseAt } from '../src/engine/sim.ts';
+import { PowerNetwork, type PowerState, type PowerTransition, type PowerWork } from '../../engine/src/core/power.ts';
+import type { PowerDeviceDef } from '../../engine/src/core/powerContent.ts';
+import { simTimestamp } from '../../engine/src/core/time.ts';
+import { dayPhaseAt } from '../../engine/src/sim.ts';
 import { deviceState, powerCycle } from './powerFixture.ts';
 
 const definitions: PowerDeviceDef[] = [

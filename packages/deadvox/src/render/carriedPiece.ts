@@ -1,6 +1,6 @@
 import { Box3, Group, type Mesh, type Object3D, type Quaternion, Vector3 } from 'three';
-import type { FurnitureDef, InventoryTuningDef } from '../engine/content.ts';
-import type { BlockEntities, BlockEntity, Vec3 } from '../engine/world.ts';
+import type { FurnitureDef, InventoryTuningDef } from '../../../engine/src/content.ts';
+import type { BlockEntities, BlockEntity, Vec3 } from '../../../engine/src/world.ts';
 
 export type CarriedViewTuning = InventoryTuningDef['furnitureMove']['carriedView'];
 

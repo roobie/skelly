@@ -2,19 +2,19 @@
 // Child-index paths carry the association into independent held clones without name lookup.
 import { Matrix4, type Object3D, Quaternion, Vector3 } from 'three';
 import type { GLTFParser } from 'three/addons/loaders/GLTFLoader.js';
-import type { GunModelDef, ModelDef } from '../engine/content.ts';
+import type { GunModelDef, ModelDef } from '../../../engine/src/content.ts';
 import {
   actionCycleSeconds,
   type CylinderState,
   type FirearmAction,
   type FirearmMode,
   type HandSide,
-} from '../engine/inventory.ts';
-import { heldAnchorOffset } from '../engine/pose.ts';
+} from '../../../engine/src/inventory.ts';
+import { heldAnchorOffset } from '../../../engine/src/pose.ts';
 import type { FirearmCycleFrame } from '../game/firearmHandling.ts';
 import type { RevolverFrame } from '../game/revolverHandling.ts';
 
-export type { FirearmAction, FirearmMode } from '../engine/inventory.ts';
+export type { FirearmAction, FirearmMode } from '../../../engine/src/inventory.ts';
 
 export interface ActionPartPath {
   readonly id: string;

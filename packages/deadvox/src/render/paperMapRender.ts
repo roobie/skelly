@@ -4,7 +4,7 @@ import {
   paperMapBounds,
   type Terrain,
   worldGroundAt,
-} from '../engine/world.ts';
+} from '../../../engine/src/world.ts';
 import { type ContourSegments, hillshade as calculateHillshade, marchingSquares } from './siteMap.ts';
 
 export interface PaperMapRenderConfig {

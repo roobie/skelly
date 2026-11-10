@@ -1,9 +1,9 @@
 import { PerspectiveCamera } from 'three';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { PlayerMovement } from '../src/core/actorSense.ts';
-import { MapEntityStore } from '../src/core/entities.ts';
-import type { Actor, PlayerSense } from '../src/engine/sim.ts';
-import { makeScale, stepBody, type Vec3 } from '../src/engine/world.ts';
+import type { PlayerMovement } from '../../engine/src/core/actorSense.ts';
+import { MapEntityStore } from '../../engine/src/core/entities.ts';
+import type { Actor, PlayerSense } from '../../engine/src/sim.ts';
+import { makeScale, stepBody, type Vec3 } from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

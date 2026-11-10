@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { burstBones, regionSeverableParts } from '../src/core/boneTree.ts';
-import { actorFigure } from '../src/engine/content.ts';
-import { type Bone, bodySkeleton, severedBoneSet } from '../src/engine/pose.ts';
-import type { BodyRegion } from '../src/engine/sim.ts';
+import { burstBones, regionSeverableParts } from '../../engine/src/core/boneTree.ts';
+import { actorFigure } from '../../engine/src/content.ts';
+import { type Bone, bodySkeleton, severedBoneSet } from '../../engine/src/pose.ts';
+import type { BodyRegion } from '../../engine/src/sim.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

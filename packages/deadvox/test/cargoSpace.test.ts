@@ -8,18 +8,18 @@ import {
   fitIssue,
   placementRegion,
   snapBox,
-} from '../src/core/cargoSpace.ts';
-import { restoreItem, snapshotItem } from '../src/core/items.ts';
-import { legalAddonPlacements, placeFitting } from '../src/core/vehicleBlueprint.ts';
-import type { VehicleInstance } from '../src/core/vehicleInstances.ts';
+} from '../../engine/src/core/cargoSpace.ts';
+import { restoreItem, snapshotItem } from '../../engine/src/core/items.ts';
+import { legalAddonPlacements, placeFitting } from '../../engine/src/core/vehicleBlueprint.ts';
+import type { VehicleInstance } from '../../engine/src/core/vehicleInstances.ts';
 import {
   buildRegistry,
   type ContentSource,
   loadVehicleBlueprint,
   type PlacedFitting,
   type VehicleFittingDef,
-} from '../src/engine/content.ts';
-import { ItemFactory, type ItemState } from '../src/engine/inventory.ts';
+} from '../../engine/src/content.ts';
+import { ItemFactory, type ItemState } from '../../engine/src/inventory.ts';
 import { baseSources } from '../src/product/content.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 

@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
-import { SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
-import { pocketGroundItem, stowTarget, toHands } from '../src/core/options.ts';
-import type { ActorSpawn, Site } from '../src/core/site.ts';
-import { gameTimeOfDay } from '../src/core/time.ts';
-import { type Item, SLING_SLOT } from '../src/engine/inventory.ts';
-import { encodeSave, type SaveSnapshot } from '../src/engine/save.ts';
+import { canonicalJsonBytes } from '../../engine/src/core/canonicalJson.ts';
+import { SKILL_LEVEL_LEGENDARY } from '../../engine/src/core/character.ts';
+import { pocketGroundItem, stowTarget, toHands } from '../../engine/src/core/options.ts';
+import type { ActorSpawn, Site } from '../../engine/src/core/site.ts';
+import { gameTimeOfDay } from '../../engine/src/core/time.ts';
+import { type Item, SLING_SLOT } from '../../engine/src/inventory.ts';
+import { encodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
 import {
   BACKGROUND_ACTOR_SLICE_COUNT,
   dominantSide,
   practiceForNextLevel,
   realSeconds as realDuration,
-} from '../src/engine/sim.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/engine/world.ts';
+} from '../../engine/src/sim.ts';
+import { CHUNK, toChunk, type Vec3 } from '../../engine/src/world.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import {
   clearPendingInputReplay,

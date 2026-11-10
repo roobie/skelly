@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { parse } from 'valibot';
 import { describe, expect, it } from 'vitest';
-import { applyJointDelta, applyMotion, idleBlendWeight, stanceMotion, walkToIdle } from '../src/core/actorClips.ts';
-import type { HumanoidIdle, JointDeltaClip, PoseClip } from '../src/core/schema/actors.ts';
-import { ActorBodySchema, ActorClipsSchema, JointDeltaClipSchema, PoseClipSchema } from '../src/engine/content.ts';
+import { applyJointDelta, applyMotion, idleBlendWeight, stanceMotion, walkToIdle } from '../../engine/src/core/actorClips.ts';
+import type { HumanoidIdle, JointDeltaClip, PoseClip } from '../../engine/src/core/schema/actors.ts';
+import { ActorBodySchema, ActorClipsSchema, JointDeltaClipSchema, PoseClipSchema } from '../../engine/src/content.ts';
 import {
   type Bone,
   blendPose,
@@ -17,7 +17,7 @@ import {
   sampleClip,
   slerpQuat,
   walkCursor,
-} from '../src/engine/pose.ts';
+} from '../../engine/src/pose.ts';
 
 const readFixture = (name: string): unknown =>
   JSON.parse(readFileSync(new URL(`./fixtures/actors/${name}`, import.meta.url), 'utf8'));

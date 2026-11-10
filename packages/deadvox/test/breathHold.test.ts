@@ -6,11 +6,11 @@ import {
   type BreathCue,
   type BreathHoldState,
   INITIAL_BREATH_HOLD,
-} from '../src/core/aim.ts';
-import type { PlayerStance } from '../src/engine/pose.ts';
-import type { SaveSnapshot } from '../src/engine/save.ts';
-import type { SoundEmission } from '../src/engine/sound.ts';
-import { makeScale, type Vec3, World } from '../src/engine/world.ts';
+} from '../../engine/src/core/aim.ts';
+import type { PlayerStance } from '../../engine/src/pose.ts';
+import type { SaveSnapshot } from '../../engine/src/save.ts';
+import type { SoundEmission } from '../../engine/src/sound.ts';
+import { makeScale, type Vec3, World } from '../../engine/src/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

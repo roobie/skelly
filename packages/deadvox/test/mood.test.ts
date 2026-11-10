@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BLOOM_CLIP_BY_TONE, MIN_BLOOM_CLIP } from '../src/core/mood.ts';
+import { BLOOM_CLIP_BY_TONE, MIN_BLOOM_CLIP } from '../../engine/src/core/mood.ts';
 import {
   AUTO_TONE,
   bloomClipFor,
@@ -12,7 +12,7 @@ import {
   gradeParams,
   TORCH_STEP,
   targetColorScale,
-} from '../src/engine/look.ts';
+} from '../../engine/src/look.ts';
 import { TONE_MODES } from '../src/render/look.ts';
 import { displayed, inputForDisplay } from './toneCurves.ts';
 

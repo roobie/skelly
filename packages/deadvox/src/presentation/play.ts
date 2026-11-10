@@ -2,7 +2,7 @@
 // The simulation core runs the clock, the player's physics, needs and the handling
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
-import { type ActorFigureFiles, type BodyTuningDef, loadActorFigureFiles } from '../engine/content.ts';
+import { type ActorFigureFiles, type BodyTuningDef, loadActorFigureFiles } from '../../../engine/src/content.ts';
 import {
   type ActionText,
   actionText,
@@ -11,7 +11,7 @@ import {
   type inventoryTabForAction,
   isForwardButton,
   PressDedupe,
-} from '../engine/input.ts';
+} from '../../../engine/src/input.ts';
 import {
   chargeShare,
   claimed,
@@ -26,8 +26,8 @@ import {
   type Pile,
   pileScatterPlacements,
   wornNightVision,
-} from '../engine/inventory.ts';
-import { getBuildRevision } from '../engine/packs.ts';
+} from '../../../engine/src/inventory.ts';
+import { getBuildRevision } from '../../../engine/src/packs.ts';
 import {
   aimDirection,
   heldFirearmTransform,
@@ -37,8 +37,8 @@ import {
   playerHeldSeatFrame,
   playerLookPose,
   sightedFirearmModel,
-} from '../engine/pose.ts';
-import type { SaveSnapshot } from '../engine/save.ts';
+} from '../../../engine/src/pose.ts';
+import type { SaveSnapshot } from '../../../engine/src/save.ts';
 import {
   type Actor,
   applyStartState,
@@ -63,10 +63,10 @@ import {
   realSeconds as realDuration,
   realTimestamp,
   stageMarkArea,
-} from '../engine/sim.ts';
-import { type SoundEmission, soundVariantKey } from '../engine/sound.ts';
-import { fillText as fillScreenText } from '../engine/text.ts';
-import { type BlockEntity, CitySite, raycast, type Vec3 } from '../engine/world.ts';
+} from '../../../engine/src/sim.ts';
+import { type SoundEmission, soundVariantKey } from '../../../engine/src/sound.ts';
+import { fillText as fillScreenText } from '../../../engine/src/text.ts';
+import { type BlockEntity, CitySite, raycast, type Vec3 } from '../../../engine/src/world.ts';
 import { createRefusalPresenter, handlingMoveCompleteCue, handlingMoveStartCue } from '../game/audioPresentation.ts';
 import { columnArrival } from '../game/columnArrival.ts';
 import { createCommandRouter } from '../game/commandRouter.ts';

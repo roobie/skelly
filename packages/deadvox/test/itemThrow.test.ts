@@ -5,12 +5,12 @@ import {
   hasMetThrowMinimumHold,
   steppedItemFlight,
   throwDistanceForItem,
-} from '../src/core/itemThrow.ts';
-import { pileItemPosition } from '../src/core/pileLayout.ts';
-import type { Registry } from '../src/engine/content.ts';
-import { type Inventory, type Item, itemFlightPoint } from '../src/engine/inventory.ts';
-import { worldGravity } from '../src/engine/sim.ts';
-import type { SolidAt } from '../src/engine/world.ts';
+} from '../../engine/src/core/itemThrow.ts';
+import { pileItemPosition } from '../../engine/src/core/pileLayout.ts';
+import type { Registry } from '../../engine/src/content.ts';
+import { type Inventory, type Item, itemFlightPoint } from '../../engine/src/inventory.ts';
+import { worldGravity } from '../../engine/src/sim.ts';
+import type { SolidAt } from '../../engine/src/world.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { presentationFlight } from './itemFlightFixture.ts';

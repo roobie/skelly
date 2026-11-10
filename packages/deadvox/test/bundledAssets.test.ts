@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import type { PackManifest } from '../src/engine/packs.ts';
+import type { PackManifest } from '../../engine/src/packs.ts';
 import { bundledAssetFiles, bundledAssetUrl } from '../src/presentation/bundledAssets.ts';
 
 it('isolates identical asset paths by owning pack across roots for models and audio', () => {

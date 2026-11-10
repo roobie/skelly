@@ -1,11 +1,11 @@
 import { BoxGeometry, InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { posedFusedMassRegionBoxes } from '../src/core/actorRegions.ts';
-import { MapEntityStore } from '../src/core/entities.ts';
-import { projectileShot } from '../src/core/pellets.ts';
-import { actorPoseInputFor, fusedMassTypeOf, missingFlesh } from '../src/engine/pose.ts';
-import { type Actor, BODY_REGIONS, type BodyRegion, type HitImpulse } from '../src/engine/sim.ts';
-import { BLOCK_SIZE, makeScale, type Vec3 } from '../src/engine/world.ts';
+import { posedFusedMassRegionBoxes } from '../../engine/src/core/actorRegions.ts';
+import { MapEntityStore } from '../../engine/src/core/entities.ts';
+import { projectileShot } from '../../engine/src/core/pellets.ts';
+import { actorPoseInputFor, fusedMassTypeOf, missingFlesh } from '../../engine/src/pose.ts';
+import { type Actor, BODY_REGIONS, type BodyRegion, type HitImpulse } from '../../engine/src/sim.ts';
+import { BLOCK_SIZE, makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { Gore, type GoreBodies } from '../src/render/gore.ts';
 import { PLAYER_REGION_BOXES } from '../src/render/playerFigure.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

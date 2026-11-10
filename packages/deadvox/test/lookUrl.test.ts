@@ -1,6 +1,6 @@
 import { ACESFilmicToneMapping, CustomToneMapping, NoToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
-import { BLOOM_CLIP_BY_TONE, MAX_EXPOSURE, MIN_BLOOM_CLIP, MIN_EXPOSURE, SHADOW_DISTANCES } from '../src/core/mood.ts';
+import { BLOOM_CLIP_BY_TONE, MAX_EXPOSURE, MIN_BLOOM_CLIP, MIN_EXPOSURE, SHADOW_DISTANCES } from '../../engine/src/core/mood.ts';
 import { LookControls } from '../src/debug/look.ts';
 import {
   defaultLookUrlState,
@@ -22,7 +22,7 @@ import {
   lookOf,
   moodOf,
   TORCH_STEP,
-} from '../src/engine/look.ts';
+} from '../../engine/src/look.ts';
 import { setAutoToneWeight } from '../src/render/autoTone.ts';
 import { hotCheckUniform } from '../src/render/hotCheck.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';

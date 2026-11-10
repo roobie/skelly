@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { type IlluminationScene, readingLightRefusal } from '../src/core/illumination.ts';
-import { authoredSkyBoxes } from '../src/core/skyField.ts';
-import { growSky, SKY_SHELL, skyDependencyBounds } from '../src/core/skySnapshot.ts';
-import { requireDayCycle } from '../src/engine/content.ts';
-import { Inventory, toggleLight } from '../src/engine/inventory.ts';
-import { SkyFields } from '../src/engine/sky.ts';
-import { BlockEntities, CHUNK, toChunk, type Vec3 } from '../src/engine/world.ts';
+import { type IlluminationScene, readingLightRefusal } from '../../engine/src/core/illumination.ts';
+import { authoredSkyBoxes } from '../../engine/src/core/skyField.ts';
+import { growSky, SKY_SHELL, skyDependencyBounds } from '../../engine/src/core/skySnapshot.ts';
+import { requireDayCycle } from '../../engine/src/content.ts';
+import { Inventory, toggleLight } from '../../engine/src/inventory.ts';
+import { SkyFields } from '../../engine/src/sky.ts';
+import { BlockEntities, CHUNK, toChunk, type Vec3 } from '../../engine/src/world.ts';
 import { playerTuning } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { testHouseSite } from './testHouseSite.ts';

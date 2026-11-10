@@ -1,10 +1,10 @@
-import { type ActionText, actionText, fillText } from '../core/actionText.ts';
-import type { CylinderState } from '../core/firearmState.ts';
-import type { HandlingQueue, JobParams } from '../core/handling.ts';
-import type { Inventory } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
-import { countText } from '../core/numberText.ts';
-import type { SoundEventId } from '../core/soundEvents.ts';
+import { type ActionText, actionText, fillText } from '../../../engine/src/core/actionText.ts';
+import type { CylinderState } from '../../../engine/src/core/firearmState.ts';
+import type { HandlingQueue, JobParams } from '../../../engine/src/core/handling.ts';
+import type { Inventory } from '../../../engine/src/core/inventory.ts';
+import { defOf, type Item } from '../../../engine/src/core/items.ts';
+import { countText } from '../../../engine/src/core/numberText.ts';
+import type { SoundEventId } from '../../../engine/src/core/soundEvents.ts';
 
 const REVOLVER_STEPS = ['open', 'eject', 'pick', 'load', 'close', 'cock', 'pull'] as const;
 export type RevolverStep = (typeof REVOLVER_STEPS)[number];

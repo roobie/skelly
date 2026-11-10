@@ -11,14 +11,14 @@ import {
   slideFurniture,
   tipCarried,
   turnCarried,
-} from '../src/core/furnitureMove.ts';
-import { simSeconds } from '../src/core/time.ts';
-import type { FurnitureDef, Registry } from '../src/engine/content.ts';
-import { Inventory } from '../src/engine/inventory.ts';
-import { decodeSave, type SaveSnapshot } from '../src/engine/save.ts';
-import { reachTuning } from '../src/engine/sim.ts';
-import { BLUEPRINTS } from '../src/engine/vehicles.ts';
-import { makeScale, type Vec3, World } from '../src/engine/world.ts';
+} from '../../engine/src/core/furnitureMove.ts';
+import { simSeconds } from '../../engine/src/core/time.ts';
+import type { FurnitureDef, Registry } from '../../engine/src/content.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
+import { decodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
+import { reachTuning } from '../../engine/src/sim.ts';
+import { BLUEPRINTS } from '../../engine/src/vehicles.ts';
+import { makeScale, type Vec3, World } from '../../engine/src/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';

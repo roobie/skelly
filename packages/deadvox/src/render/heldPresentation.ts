@@ -9,8 +9,8 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
-import type { ArmRigDef, FigureDef, ModelDef, Registry } from '../engine/content.ts';
-import { defOf, type HandSide, type Item } from '../engine/inventory.ts';
+import type { ArmRigDef, FigureDef, ModelDef, Registry } from '../../../engine/src/content.ts';
+import { defOf, type HandSide, type Item } from '../../../engine/src/inventory.ts';
 import {
   type AimFrame,
   type HandPose,
@@ -22,8 +22,8 @@ import {
   heldHoldFrame,
   heldProneSupportAt,
   interpolateHandPose,
-} from '../engine/pose.ts';
-import type { Vec3 } from '../engine/world.ts';
+} from '../../../engine/src/pose.ts';
+import type { Vec3 } from '../../../engine/src/world.ts';
 import { type ArmRig, type ArmSolution, buildArmRig, solveArmRig } from './armRig.ts';
 import { presentHeldDisplay } from './heldDisplay.ts';
 import { itemLook } from './itemLook.ts';

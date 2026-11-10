@@ -26,8 +26,8 @@ import {
   sampleSky,
   skyIndex,
   skyRoofAt,
-} from '../engine/sky.ts';
-import { CHUNK, type Vec3 } from '../engine/world.ts';
+} from '../../../engine/src/sky.ts';
+import { CHUNK, type Vec3 } from '../../../engine/src/world.ts';
 import { FADE_SHARPNESS, HALF_BRIGHTNESS } from './flashlight.ts';
 import { ITEM_POINT_LIGHTS } from './lightPool.ts';
 import { SKY_ANCHOR_ATTRIBUTE } from './skyAnchor.ts';

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import type { Vec3 } from '../src/engine/world.ts';
+import type { Vec3 } from '../../engine/src/world.ts';
 import { debugTargetRay } from '../src/presentation/debugTargetRay.ts';
 
 it('keeps debug targets on the view ray while a wielded firearm is lowered', () => {

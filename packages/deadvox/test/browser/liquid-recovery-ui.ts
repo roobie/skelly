@@ -1,9 +1,9 @@
-import type { ClockSettings } from '../../src/core/clock.ts';
-import { craftActionHooks } from '../../src/core/craftWork.ts';
-import { restoreItem, snapshotItem } from '../../src/core/items.ts';
-import type { Registry } from '../../src/engine/content.ts';
-import { CraftCommands, HandlingQueue, Inventory } from '../../src/engine/inventory.ts';
-import { bindReach, Character, Simulation } from '../../src/engine/sim.ts';
+import type { ClockSettings } from '../../../engine/src/core/clock.ts';
+import { craftActionHooks } from '../../../engine/src/core/craftWork.ts';
+import { restoreItem, snapshotItem } from '../../../engine/src/core/items.ts';
+import type { Registry } from '../../../engine/src/content.ts';
+import { CraftCommands, HandlingQueue, Inventory } from '../../../engine/src/inventory.ts';
+import { bindReach, Character, Simulation } from '../../../engine/src/sim.ts';
 import { BindingRegistry } from '../../src/game/bindingRegistry.ts';
 import { INPUT_BINDINGS } from '../../src/product/controls.ts';
 import { InventoryScreen } from '../../src/ui/inventoryScreen.ts';

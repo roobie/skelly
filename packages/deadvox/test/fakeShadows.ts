@@ -1,4 +1,4 @@
-import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, type ShadowState } from '../src/engine/look.ts';
+import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, type ShadowState } from '../../engine/src/look.ts';
 
 /** The state half of `Shadows`, which needs a WebGL renderer for the rest. */
 export class FakeShadows {

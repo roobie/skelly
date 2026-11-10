@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { perceivePlayer } from '../src/core/agentPerception.ts';
-import { admitWithFolderPacks, selectFolderClosure } from '../src/core/packAdmission.ts';
-import type { PackInput } from '../src/engine/packs.ts';
-import { currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/engine/save.ts';
+import { perceivePlayer } from '../../engine/src/core/agentPerception.ts';
+import { admitWithFolderPacks, selectFolderClosure } from '../../engine/src/core/packAdmission.ts';
+import type { PackInput } from '../../engine/src/packs.ts';
+import { currentSaveVersionIdentity, decodeSave, encodeSave } from '../../engine/src/save.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';
 import { buildBundledContent } from '../src/product/content.ts';
 import { productModIntake } from '../src/product/mods.ts';

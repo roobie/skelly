@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import type { GuidanceDef, GuidanceGate } from '../src/engine/content.ts';
-import { Inventory } from '../src/engine/inventory.ts';
+import type { GuidanceDef, GuidanceGate } from '../../engine/src/content.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
 import { type GuidanceObservation, GuidedSteps } from '../src/presentation/guidedSteps.ts';
 import { selectedGuidanceHint } from '../src/ui/guidedSteps.ts';
 import { baseRegistry } from './baseRegistry.ts';

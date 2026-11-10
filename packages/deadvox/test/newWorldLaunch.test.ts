@@ -3,16 +3,16 @@ import { webcrypto } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ScenarioRun } from '../src/core/scenarioRun.ts';
-import { buildRegistry } from '../src/engine/content.ts';
+import { ScenarioRun } from '../../engine/src/core/scenarioRun.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
 import {
   type ActiveBrowserMod,
   currentSaveVersionIdentity,
   decodeSave,
   encodeSave,
   type SaveSnapshot,
-} from '../src/engine/save.ts';
-import { Character, realTimestamp } from '../src/engine/sim.ts';
+} from '../../engine/src/save.ts';
+import { Character, realTimestamp } from '../../engine/src/sim.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 

@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
-import type { MeleeWeapon } from '../src/core/actorSystem.ts';
-import { SoundPicker } from '../src/core/soundPicker.ts';
-import type { SoundEmission, SoundId } from '../src/engine/sound.ts';
-import { makeScale, World } from '../src/engine/world.ts';
+import type { MeleeWeapon } from '../../engine/src/core/actorSystem.ts';
+import { SoundPicker } from '../../engine/src/core/soundPicker.ts';
+import type { SoundEmission, SoundId } from '../../engine/src/sound.ts';
+import { makeScale, World } from '../../engine/src/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

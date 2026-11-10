@@ -1,7 +1,7 @@
 import type { Mesh } from 'three';
 import { expect, it } from 'vitest';
-import { BLUEPRINTS } from '../src/engine/vehicles.ts';
-import { BlockEntities, type BlockEntity } from '../src/engine/world.ts';
+import { BLUEPRINTS } from '../../engine/src/vehicles.ts';
+import { BlockEntities, type BlockEntity } from '../../engine/src/world.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { buildShape } from '../src/render/vehicleShape.ts';
 import { type ShapePort, VehicleShapes } from '../src/render/vehicleShapes.ts';

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { coreMessage } from '../src/core/coreText.ts';
-import { savedItemTree } from '../src/core/itemTree.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { legalAddonPlacements } from '../src/core/vehicleBlueprint.ts';
-import type { Registry } from '../src/engine/content.ts';
-import type { Item } from '../src/engine/inventory.ts';
-import { decodeSave } from '../src/engine/save.ts';
-import { copyVehicleWorkPlacement, type VehicleWorkPlacement, type VehicleWorkTarget } from '../src/engine/vehicles.ts';
-import { CHUNK } from '../src/engine/world.ts';
+import { coreMessage } from '../../engine/src/core/coreText.ts';
+import { savedItemTree } from '../../engine/src/core/itemTree.ts';
+import { simSeconds } from '../../engine/src/core/time.ts';
+import { legalAddonPlacements } from '../../engine/src/core/vehicleBlueprint.ts';
+import type { Registry } from '../../engine/src/content.ts';
+import type { Item } from '../../engine/src/inventory.ts';
+import { decodeSave } from '../../engine/src/save.ts';
+import { copyVehicleWorkPlacement, type VehicleWorkPlacement, type VehicleWorkTarget } from '../../engine/src/vehicles.ts';
+import { CHUNK } from '../../engine/src/world.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,

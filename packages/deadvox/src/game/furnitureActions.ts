@@ -1,7 +1,7 @@
-import type { BlockEntity } from '../core/blockEntities.ts';
-import { claimed } from '../core/capabilities.ts';
-import { movableRefusal, slidableFurniture } from '../core/furnitureMove.ts';
-import type { Inventory } from '../core/inventory.ts';
+import type { BlockEntity } from '../../../engine/src/core/blockEntities.ts';
+import { claimed } from '../../../engine/src/core/capabilities.ts';
+import { movableRefusal, slidableFurniture } from '../../../engine/src/core/furnitureMove.ts';
+import type { Inventory } from '../../../engine/src/core/inventory.ts';
 import { type ItemAction, ItemActionSelection } from './itemActions.ts';
 
 export const furnitureActionsFor = (inventory: Inventory, entity: BlockEntity, blockSize: number): ItemAction[] => {

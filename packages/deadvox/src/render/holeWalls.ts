@@ -1,5 +1,5 @@
 import { BufferAttribute, BufferGeometry, type Color } from 'three';
-import { type FusedMassGrid, worldPosition } from '../engine/pose.ts';
+import { type FusedMassGrid, worldPosition } from '../../../engine/src/pose.ts';
 
 // The baked GLB has no surface inside the body, so a carved cell alone would show the world through the hole.
 // Walls rebuilt from the rest grid on each carve give the pit flesh on every side without remeshing the body.

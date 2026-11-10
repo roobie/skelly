@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { restoreItem, snapshotItem } from '../src/core/items.ts';
-import { chargeOf, drainLight } from '../src/core/lights.ts';
-import { gameSeconds } from '../src/core/time.ts';
-import { fitsFuelledTool } from '../src/core/torch.ts';
-import { chargeShare, Inventory, toggleLight } from '../src/engine/inventory.ts';
-import { decodeSave } from '../src/engine/save.ts';
+import { restoreItem, snapshotItem } from '../../engine/src/core/items.ts';
+import { chargeOf, drainLight } from '../../engine/src/core/lights.ts';
+import { gameSeconds } from '../../engine/src/core/time.ts';
+import { fitsFuelledTool } from '../../engine/src/core/torch.ts';
+import { chargeShare, Inventory, toggleLight } from '../../engine/src/inventory.ts';
+import { decodeSave } from '../../engine/src/save.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';

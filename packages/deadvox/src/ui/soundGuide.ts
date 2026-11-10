@@ -1,6 +1,6 @@
 import { html } from 'lit-html';
-import { type AssetSource, contentFilePack, type PackedManifest, type SoundDef } from '../engine/content.ts';
-import { type SoundId, soundVariantKey } from '../engine/sound.ts';
+import { type AssetSource, contentFilePack, type PackedManifest, type SoundDef } from '../../../engine/src/content.ts';
+import { type SoundId, soundVariantKey } from '../../../engine/src/sound.ts';
 import { type HeartbeatTuning, heartbeatForStamina } from '../game/audioPresentation.ts';
 
 interface SoundVariantGuide {

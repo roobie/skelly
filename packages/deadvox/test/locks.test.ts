@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { type CoreMessageKey, coreMessage } from '../src/core/coreText.ts';
-import { placedPieces } from '../src/core/templates.ts';
-import { doorOptions, doorPlan, HandlingQueue, Inventory } from '../src/engine/inventory.ts';
-import { coreLabel } from '../src/engine/text.ts';
-import { makeScale, toChunk, type Vec3 } from '../src/engine/world.ts';
+import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
+import { type CoreMessageKey, coreMessage } from '../../engine/src/core/coreText.ts';
+import { placedPieces } from '../../engine/src/core/templates.ts';
+import { doorOptions, doorPlan, HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
+import { coreLabel } from '../../engine/src/text.ts';
+import { makeScale, toChunk, type Vec3 } from '../../engine/src/world.ts';
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';

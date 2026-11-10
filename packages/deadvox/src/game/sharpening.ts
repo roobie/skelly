@@ -1,14 +1,14 @@
-import type { BlockEntity } from '../core/blockEntities.ts';
-import type { Character } from '../core/character.ts';
-import type { RecipeDef } from '../core/content.ts';
-import { craftWorkDuration } from '../core/crafting.ts';
-import type { HandlingQueue, JobParams } from '../core/handling.ts';
-import type { HandSide, Inventory } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
-import type { ReachSnapshot } from '../core/reach.ts';
-import { recipeSkillLevel, recipeSkillRequirements } from '../core/recipeSkills.ts';
-import { craftingActivityTier } from '../core/skillTraining.ts';
-import { gameSecondsToMinutes } from '../core/time.ts';
+import type { BlockEntity } from '../../../engine/src/core/blockEntities.ts';
+import type { Character } from '../../../engine/src/core/character.ts';
+import type { RecipeDef } from '../../../engine/src/core/content.ts';
+import { craftWorkDuration } from '../../../engine/src/core/crafting.ts';
+import type { HandlingQueue, JobParams } from '../../../engine/src/core/handling.ts';
+import type { HandSide, Inventory } from '../../../engine/src/core/inventory.ts';
+import { defOf, type Item } from '../../../engine/src/core/items.ts';
+import type { ReachSnapshot } from '../../../engine/src/core/reach.ts';
+import { recipeSkillLevel, recipeSkillRequirements } from '../../../engine/src/core/recipeSkills.ts';
+import { craftingActivityTier } from '../../../engine/src/core/skillTraining.ts';
+import { gameSecondsToMinutes } from '../../../engine/src/core/time.ts';
 
 export const sharpeningMethods = (inventory: Inventory, blade: Item): RecipeDef[] =>
   [...inventory.registry.recipes.values()].filter(

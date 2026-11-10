@@ -4,7 +4,7 @@
 // Anti-aliasing: `fw` is the pixel footprint in metres, taken by the caller in uniform control
 // flow. Features fade at range so fine details do not shimmer.
 
-import { BLOCK_PATTERNS, type Registry } from '../engine/content.ts';
+import { BLOCK_PATTERNS, type Registry } from '../../../engine/src/content.ts';
 import { SURFACE_NOISE_PERIOD } from './surfaceNoise.ts';
 
 const DEFINES = BLOCK_PATTERNS.map((name, i) => `#define PAT_${name.toUpperCase()} ${i}.0`).join('\n');

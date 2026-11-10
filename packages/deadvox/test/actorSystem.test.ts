@@ -1,22 +1,22 @@
 import process from 'node:process';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { actorHitFlinchDuration, gaitPhaseGain } from '../src/core/actorPose.ts';
-import { posedHumanoidRegionBoxes, posedRegionHit, posedRegionHitDistance } from '../src/core/actorRegions.ts';
-import { ActorSpawner } from '../src/core/actorSpawns.ts';
-import { lethalRegion, pickActorHitRegion, pickActorMove } from '../src/core/actorSystem.ts';
-import { hearPlayer, hearVocalNoise, perceivePlayer } from '../src/core/agentPerception.ts';
-import { resolveSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
-import { HUMANOID_REGION_NAMES } from '../src/core/humanoidRegionNames.ts';
-import { lightSenseSourceFor } from '../src/core/lights.ts';
-import type { PoseClip } from '../src/core/schema/actors.ts';
-import type { DoorLockDef } from '../src/core/schema.ts';
-import type { ActorSpawn, Site } from '../src/core/site.ts';
-import { sunDirection } from '../src/core/sky.ts';
-import { gameTimeOfDay, simRate, simSeconds } from '../src/core/time.ts';
-import { type ActorDef, actorFigure, requireDayCycle } from '../src/engine/content.ts';
-import { Inventory, toggleLight } from '../src/engine/inventory.ts';
-import { Rng } from '../src/engine/math.ts';
+import { actorHitFlinchDuration, gaitPhaseGain } from '../../engine/src/core/actorPose.ts';
+import { posedHumanoidRegionBoxes, posedRegionHit, posedRegionHitDistance } from '../../engine/src/core/actorRegions.ts';
+import { ActorSpawner } from '../../engine/src/core/actorSpawns.ts';
+import { lethalRegion, pickActorHitRegion, pickActorMove } from '../../engine/src/core/actorSystem.ts';
+import { hearPlayer, hearVocalNoise, perceivePlayer } from '../../engine/src/core/agentPerception.ts';
+import { resolveSpawnTime, SECONDS_PER_DAY } from '../../engine/src/core/clock.ts';
+import { HUMANOID_REGION_NAMES } from '../../engine/src/core/humanoidRegionNames.ts';
+import { lightSenseSourceFor } from '../../engine/src/core/lights.ts';
+import type { PoseClip } from '../../engine/src/core/schema/actors.ts';
+import type { DoorLockDef } from '../../engine/src/core/schema.ts';
+import type { ActorSpawn, Site } from '../../engine/src/core/site.ts';
+import { sunDirection } from '../../engine/src/core/sky.ts';
+import { gameTimeOfDay, simRate, simSeconds } from '../../engine/src/core/time.ts';
+import { type ActorDef, actorFigure, requireDayCycle } from '../../engine/src/content.ts';
+import { Inventory, toggleLight } from '../../engine/src/inventory.ts';
+import { Rng } from '../../engine/src/math.ts';
 import {
   actorCrawls,
   actorPoseInputFor,
@@ -30,7 +30,7 @@ import {
   quatToMat3,
   sampleClip,
   walkCursor,
-} from '../src/engine/pose.ts';
+} from '../../engine/src/pose.ts';
 import {
   type Actor,
   type BodyRegion,
@@ -38,7 +38,7 @@ import {
   type HitImpulse,
   type PlayerSense,
   Simulation,
-} from '../src/engine/sim.ts';
+} from '../../engine/src/sim.ts';
 import {
   BlockEntities,
   type Body,
@@ -48,7 +48,7 @@ import {
   type SolidAt,
   stepBody,
   type Vec3,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
 import { type RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';
@@ -160,7 +160,7 @@ const spawnSite = (spawn: ActorSpawn): Site => ({
   furnitureIn: () => [],
   actorsIn: () => [spawn],
 });
-const nearestRegionDistance = (actor: import('../src/core/actorState.ts').Actor, origin: Vec3, direction: Vec3) => {
+const nearestRegionDistance = (actor: import('../../engine/src/core/actorState.ts').Actor, origin: Vec3, direction: Vec3) => {
   let nearest = Number.POSITIVE_INFINITY;
   const posed = posedHumanoidRegionBoxes(actorPoseInputFor(actor, 1, POSE_SCENE));
   for (const region of HUMANOID_REGION_NAMES) {
@@ -431,7 +431,7 @@ describe('actor attack moves', () => {
 
 describe('melee hit sounds', () => {
   const emittedFor = (
-    weapon: import('../src/core/actorSystem.ts').MeleeWeapon,
+    weapon: import('../../engine/src/core/actorSystem.ts').MeleeWeapon,
     isFist = false,
   ): { hit: boolean; events: string[] } => {
     const emitted: string[] = [];

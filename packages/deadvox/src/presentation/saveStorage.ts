@@ -1,4 +1,4 @@
-import type { SaveSnapshot } from '../engine/save.ts';
+import type { SaveSnapshot } from '../../../engine/src/save.ts';
 import { SaveStorageError, type SaveStorageErrorKind } from '../game/saveStorageErrors.ts';
 import {
   commitSavePayload,

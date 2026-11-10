@@ -1,6 +1,6 @@
-import type { Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { Inventory } from '../core/inventory.ts';
+import type { Registry } from '../../../engine/src/core/content.ts';
+import type { Vec3 } from '../../../engine/src/core/coords.ts';
+import type { Inventory } from '../../../engine/src/core/inventory.ts';
 
 export const layoutVehiclePlacements = (registry: Registry, site: string, blockSize: number) =>
   (registry.layouts.get(site)?.vehicles ?? []).map(({ position, ...vehicle }) => ({

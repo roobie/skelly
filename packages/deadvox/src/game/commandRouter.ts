@@ -2,26 +2,26 @@
 // modal UI takes a press, the input sample and session controls and trigger at the player tick, replayed actions,
 // screen commands, furniture use and the item throw, with the firearm and melee readiness gate those read.
 
-import { actionText, fillText } from '../core/actionText.ts';
-import type { BlockEntity } from '../core/blockEntities.ts';
-import { claimed } from '../core/capabilities.ts';
-import { dominantSide, offSide } from '../core/character.ts';
-import type { Registry } from '../core/content.ts';
-import { CHUNK, type Vec3 } from '../core/coords.ts';
-import { coreMessage } from '../core/coreText.ts';
-import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
-import { throwStanceWorldOffset } from '../core/heldPose.ts';
-import { type InputContext, inventoryTabForAction } from '../core/inputActions.ts';
-import type { HandSide, Inventory } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
-import { flightForItem, hasMetThrowMinimumHold, type ItemFlight, throwDistanceForItem } from '../core/itemThrow.ts';
-import { offHandUse } from '../core/lights.ts';
-import type { RestKind } from '../core/longAction.ts';
-import { countText } from '../core/numberText.ts';
-import { doorOptions, doorPlan, dropTarget, pocketGroundItem, toHands, wieldOrPocket } from '../core/options.ts';
-import { pryPlan } from '../core/prying.ts';
-import type { Simulation } from '../core/sim.ts';
-import { fillText as fillScreenText } from '../core/textTemplate.ts';
+import { actionText, fillText } from '../../../engine/src/core/actionText.ts';
+import type { BlockEntity } from '../../../engine/src/core/blockEntities.ts';
+import { claimed } from '../../../engine/src/core/capabilities.ts';
+import { dominantSide, offSide } from '../../../engine/src/core/character.ts';
+import type { Registry } from '../../../engine/src/core/content.ts';
+import { CHUNK, type Vec3 } from '../../../engine/src/core/coords.ts';
+import { coreMessage } from '../../../engine/src/core/coreText.ts';
+import type { RecoveryChoices, WorkOperation } from '../../../engine/src/core/craftCommands.ts';
+import { throwStanceWorldOffset } from '../../../engine/src/core/heldPose.ts';
+import { type InputContext, inventoryTabForAction } from '../../../engine/src/core/inputActions.ts';
+import type { HandSide, Inventory } from '../../../engine/src/core/inventory.ts';
+import type { Item } from '../../../engine/src/core/items.ts';
+import { flightForItem, hasMetThrowMinimumHold, type ItemFlight, throwDistanceForItem } from '../../../engine/src/core/itemThrow.ts';
+import { offHandUse } from '../../../engine/src/core/lights.ts';
+import type { RestKind } from '../../../engine/src/core/longAction.ts';
+import { countText } from '../../../engine/src/core/numberText.ts';
+import { doorOptions, doorPlan, dropTarget, pocketGroundItem, toHands, wieldOrPocket } from '../../../engine/src/core/options.ts';
+import { pryPlan } from '../../../engine/src/core/prying.ts';
+import type { Simulation } from '../../../engine/src/core/sim.ts';
+import { fillText as fillScreenText } from '../../../engine/src/core/textTemplate.ts';
 import { continueActionResumesJob } from './continueAction.ts';
 import { dispatchReplayStanceAction, type StanceReplayAction } from './crouchProneInput.ts';
 import { DOOR_ACTION } from './doorAction.ts';

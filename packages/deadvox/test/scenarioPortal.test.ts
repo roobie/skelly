@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { buildCityPlan, cityGridOf, servicePlacement } from '../src/core/cityPlan.ts';
-import { compileTemplate, placedPieces, type stampPlacement } from '../src/core/templates.ts';
-import { buildRegistry } from '../src/engine/content.ts';
-import { doorPlan } from '../src/engine/inventory.ts';
+import { buildCityPlan, cityGridOf, servicePlacement } from '../../engine/src/core/cityPlan.ts';
+import { compileTemplate, placedPieces, type stampPlacement } from '../../engine/src/core/templates.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
+import { doorPlan } from '../../engine/src/inventory.ts';
 import {
   BlockEntities,
   CHUNK,
@@ -17,7 +17,7 @@ import {
   type Vec3,
   World,
   worldSolid,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 

@@ -1,7 +1,7 @@
 import { placeShamblerRing } from '../bench/shamblerPlacement.ts';
-import { FUSED_MASS_FIGURE_SEED } from '../engine/pose.ts';
-import { type ActorSystem, actorAttackReachForDef, actorBodyDimensions } from '../engine/sim.ts';
-import { type Body, raycast, type Vec3 } from '../engine/world.ts';
+import { FUSED_MASS_FIGURE_SEED } from '../../../engine/src/pose.ts';
+import { type ActorSystem, actorAttackReachForDef, actorBodyDimensions } from '../../../engine/src/sim.ts';
+import { type Body, raycast, type Vec3 } from '../../../engine/src/world.ts';
 import type { Engine } from '../presentation/engine.ts';
 
 /** Places as many requested zombies as fit, clear of the player, each other, and solid world. */

@@ -23,8 +23,8 @@ import {
 import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
 import { frameStats } from '../src/bench/stats.ts';
-import { gameHours } from '../src/core/time.ts';
-import { percentile } from '../src/engine/math.ts';
+import { gameHours } from '../../engine/src/core/time.ts';
+import { percentile } from '../../engine/src/math.ts';
 import { actorRendererFromUrl } from '../src/game/config.ts';
 
 describe('bench stats', () => {

@@ -1,11 +1,11 @@
 import { expect, it } from 'vitest';
-import { type ActorModel, FIGURE_VARIANTS } from '../src/core/actorModels.ts';
-import { validateContent } from '../src/core/content.ts';
-import { footstepSoundId } from '../src/core/footsteps.ts';
-import { settlementActorSpawns, settlementHordeSpawn } from '../src/core/settlementSpawns.ts';
-import { buildRegistry } from '../src/engine/content.ts';
-import { claimed } from '../src/engine/inventory.ts';
-import { figureVariantOf } from '../src/engine/pose.ts';
+import { type ActorModel, FIGURE_VARIANTS } from '../../engine/src/core/actorModels.ts';
+import { validateContent } from '../../engine/src/core/content.ts';
+import { footstepSoundId } from '../../engine/src/core/footsteps.ts';
+import { settlementActorSpawns, settlementHordeSpawn } from '../../engine/src/core/settlementSpawns.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
+import { claimed } from '../../engine/src/inventory.ts';
+import { figureVariantOf } from '../../engine/src/pose.ts';
 import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';

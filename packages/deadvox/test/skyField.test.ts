@@ -1,12 +1,12 @@
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
-import type { Site } from '../src/core/site.ts';
-import { authoredSkyBoxes } from '../src/core/skyField.ts';
-import type { SkyBounds } from '../src/core/skylight.ts';
-import { captureSky, growSky, SKY_SHELL, skyDependencyBounds } from '../src/core/skySnapshot.ts';
-import { buildSkyResult, SkyFields } from '../src/engine/sky.ts';
+import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
+import { ScenarioCitySite } from '../../engine/src/core/scenarioCity.ts';
+import type { Site } from '../../engine/src/core/site.ts';
+import { authoredSkyBoxes } from '../../engine/src/core/skyField.ts';
+import type { SkyBounds } from '../../engine/src/core/skylight.ts';
+import { captureSky, growSky, SKY_SHELL, skyDependencyBounds } from '../../engine/src/core/skySnapshot.ts';
+import { buildSkyResult, SkyFields } from '../../engine/src/sky.ts';
 import {
   BlockEntities,
   CHUNK,
@@ -16,7 +16,7 @@ import {
   toChunk,
   type Vec3,
   World,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
 import { blockId, capture, createRuntime, fixtureZombieColumn, registry, scale, seed } from './snapshotTestSupport.ts';

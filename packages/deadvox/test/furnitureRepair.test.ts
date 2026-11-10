@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { Inventory } from '../src/engine/inventory.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
 import { buildFixtureRegistry, FIXTURE_MATERIAL, fixtureMaterials } from './economyFixtures.ts';
 
 const BREACH = { minimumStrength: 10, durability: 100 };

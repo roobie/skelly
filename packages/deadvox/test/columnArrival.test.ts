@@ -1,8 +1,8 @@
 import { expect, it, vi } from 'vitest';
-import type { EntitySpec } from '../src/core/blockEntities.ts';
-import { SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
-import { decodeSave, encodeSave, type SaveSnapshot } from '../src/engine/save.ts';
-import { CHUNK, Chunk, toChunk } from '../src/engine/world.ts';
+import type { EntitySpec } from '../../engine/src/core/blockEntities.ts';
+import { SAVE_SCHEMA_VERSION } from '../../engine/src/core/saveFormat.ts';
+import { decodeSave, encodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
+import { CHUNK, Chunk, toChunk } from '../../engine/src/world.ts';
 import { columnArrival } from '../src/game/columnArrival.ts';
 import { configFromUrl } from '../src/game/config.ts';
 import { createSession, IDLE } from '../src/game/session.ts';

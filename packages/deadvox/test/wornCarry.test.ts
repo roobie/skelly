@@ -2,9 +2,9 @@
 // figure: each item shows while worn, taking one off leaves the rest, and the whole kit clears the body and itself.
 import { Box3, Mesh, type Object3D, Ray, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { ItemDef, WearSlot } from '../src/engine/content.ts';
-import { Inventory, type Item, SLING_SLOT, wornSlotOf } from '../src/engine/inventory.ts';
-import { makeScale } from '../src/engine/world.ts';
+import type { ItemDef, WearSlot } from '../../engine/src/content.ts';
+import { Inventory, type Item, SLING_SLOT, wornSlotOf } from '../../engine/src/inventory.ts';
+import { makeScale } from '../../engine/src/world.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { type PlayerFigurePose, PlayerMeshes } from '../src/render/playerFigure.ts';

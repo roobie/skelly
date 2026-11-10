@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { StressCity } from '../src/core/city.ts';
-import { compileTemplate, stackTemplate } from '../src/core/templates.ts';
-import { buildRegistry } from '../src/engine/content.ts';
-import { makeScale, sitePalette } from '../src/engine/world.ts';
+import { StressCity } from '../../engine/src/core/city.ts';
+import { compileTemplate, stackTemplate } from '../../engine/src/core/templates.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
+import { makeScale, sitePalette } from '../../engine/src/world.ts';
 import { fixtureScenarioSources } from './fixtures/scenario.ts';
 import { content as BUNDLED_CONTENT, siteFromUrl } from './fixtures/startupContent.ts';
 

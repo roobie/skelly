@@ -1,11 +1,11 @@
-import { actionText, fillText } from '../core/actionText.ts';
-import type { Actor } from '../core/actorState.ts';
-import type { ActorSystem } from '../core/actorSystem.ts';
-import type { EntityId } from '../core/entities.ts';
-import type { HandlingQueue } from '../core/handling.ts';
-import type { Inventory } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
-import { bodyInReach, type ReachPlayer } from '../core/reach.ts';
+import { actionText, fillText } from '../../../engine/src/core/actionText.ts';
+import type { Actor } from '../../../engine/src/core/actorState.ts';
+import type { ActorSystem } from '../../../engine/src/core/actorSystem.ts';
+import type { EntityId } from '../../../engine/src/core/entities.ts';
+import type { HandlingQueue } from '../../../engine/src/core/handling.ts';
+import type { Inventory } from '../../../engine/src/core/inventory.ts';
+import { defOf, type Item } from '../../../engine/src/core/items.ts';
+import { bodyInReach, type ReachPlayer } from '../../../engine/src/core/reach.ts';
 
 const DOWNED_BODY_ACTION = 'actor.downed';
 const DOWNED_BODY_WAYS = ['finish-off', 'dismember'] as const;

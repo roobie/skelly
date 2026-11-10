@@ -11,7 +11,7 @@ import saves from '../../../mods/skelly.saves/saves.json' with { type: 'json' };
 import ui from '../../../mods/skelly.ui/ui.json' with { type: 'json' };
 import weathering from '../../../mods/skelly.weathering/weathering.json' with { type: 'json' };
 import sites from '../../mods/skelly.deadvox.site-generation/site-generation.json' with { type: 'json' };
-import { claimedId } from '../../src/engine/inventory.ts';
+import { claimedId } from '../../../engine/src/inventory.ts';
 
 const id = (rows: { id: string; capability?: string }[], capability: string): string =>
   claimedId(new Map(rows.map((row) => [row.id, row])), capability);

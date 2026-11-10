@@ -1,5 +1,5 @@
 import { type BoxGeometry, type BufferGeometry, Color } from 'three';
-import type { FurnitureDef } from '../engine/content.ts';
+import type { FurnitureDef } from '../../../engine/src/content.ts';
 import { type Box, colouredBox, mergedDetail } from './furnitureDetail.ts';
 
 type DoorDetail = NonNullable<NonNullable<FurnitureDef['door']>['detail']>;

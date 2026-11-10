@@ -10,7 +10,7 @@ import {
   type ToneMapping,
   type WebGLRenderer,
 } from 'three';
-import { AUTO_TONE, clampExposure, type LookState } from '../engine/look.ts';
+import { AUTO_TONE, clampExposure, type LookState } from '../../../engine/src/look.ts';
 import type { ChunkMeshes } from './chunks.ts';
 
 /** `key` is the `?tone=` URL value (see debug/lookUrl.ts) and `LookState.tone`. */

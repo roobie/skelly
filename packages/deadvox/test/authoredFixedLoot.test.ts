@@ -2,26 +2,26 @@
 import { readFileSync } from 'node:fs';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
-import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { lootPointStream, rollLoot } from '../src/core/loot.ts';
-import { magazineSpec } from '../src/core/magazine.ts';
-import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
-import { planFlight, STAIR_BODY_HALF_WIDTH } from '../src/core/stairFlight.ts';
-import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
+import { authoredLayoutIssues } from '../../engine/src/core/authoredLayout.ts';
+import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
+import { lootPointStream, rollLoot } from '../../engine/src/core/loot.ts';
+import { magazineSpec } from '../../engine/src/core/magazine.ts';
+import type { SiteLayoutDef, TemplateDef } from '../../engine/src/core/schema.ts';
+import { planFlight, STAIR_BODY_HALF_WIDTH } from '../../engine/src/core/stairFlight.ts';
+import { templateReachableStandingPositions, templateSpatialIssues } from '../../engine/src/core/templateSpatial.ts';
 import {
   type CompiledTemplate,
   compileTemplate,
   placedBlockAt,
   placedPieces,
   placedSpawns,
-} from '../src/core/templates.ts';
-import { buildRegistry } from '../src/engine/content.ts';
-import { doorOptions, Inventory } from '../src/engine/inventory.ts';
-import { Rng } from '../src/engine/math.ts';
-import type { buildingBounds } from '../src/engine/terrain.mjs';
-import { BLUEPRINTS, CATALOGUE, GLASS, keyVoxel, PartLibrary, VOXEL, wheel } from '../src/engine/vehicles.ts';
-import { type BlockEntity, footprint, makeScale, placedPoint, toChunk } from '../src/engine/world.ts';
+} from '../../engine/src/core/templates.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
+import { doorOptions, Inventory } from '../../engine/src/inventory.ts';
+import { Rng } from '../../engine/src/math.ts';
+import type { buildingBounds } from '../../engine/src/terrain.mjs';
+import { BLUEPRINTS, CATALOGUE, GLASS, keyVoxel, PartLibrary, VOXEL, wheel } from '../../engine/src/vehicles.ts';
+import { type BlockEntity, footprint, makeScale, placedPoint, toChunk } from '../../engine/src/world.ts';
 import { vehicleInstanceOf, vehicleModel, workshopLift } from '../src/render/workshopVehicle.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';

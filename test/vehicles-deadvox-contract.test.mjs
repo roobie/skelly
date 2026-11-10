@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { buildRegistry, loadVehicleBlueprint, vehicleContentIssues } from '../packages/deadvox/src/engine/content.ts';
+import { buildRegistry, loadVehicleBlueprint, vehicleContentIssues } from '../packages/engine/src/content.ts';
 import {
   packFileBytes,
   readAvailablePacks,

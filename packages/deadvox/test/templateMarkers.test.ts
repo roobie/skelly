@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import type { TemplateDef } from '../src/core/content.ts';
-import { compileTemplate, findPieces } from '../src/core/templates.ts';
+import type { TemplateDef } from '../../engine/src/core/content.ts';
+import { compileTemplate, findPieces } from '../../engine/src/core/templates.ts';
 import {
   buildFixtureRegistry as buildRegistry,
   FIXTURE_MATERIAL,

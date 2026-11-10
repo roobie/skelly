@@ -1,9 +1,9 @@
 import { InstancedMesh, Matrix4, Mesh, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { pileBundleHeight } from '../src/core/pileLayout.ts';
-import { PILE_DISPLAY_KIND } from '../src/engine/content.ts';
-import { Inventory, itemFlightPoint } from '../src/engine/inventory.ts';
-import { reachTuning } from '../src/engine/sim.ts';
+import { pileBundleHeight } from '../../engine/src/core/pileLayout.ts';
+import { PILE_DISPLAY_KIND } from '../../engine/src/content.ts';
+import { Inventory, itemFlightPoint } from '../../engine/src/inventory.ts';
+import { reachTuning } from '../../engine/src/sim.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { baseRegistry } from './baseRegistry.ts';

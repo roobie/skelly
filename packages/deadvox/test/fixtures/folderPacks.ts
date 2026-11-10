@@ -1,4 +1,4 @@
-import type { PackInput } from '../../src/engine/packs.ts';
+import type { PackInput } from '../../../engine/src/packs.ts';
 
 export const fixturePack = (id: string, dependencies: string[], optIn: boolean): PackInput => ({
   source: `mods/${id}`,

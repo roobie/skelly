@@ -3,9 +3,9 @@
 // speed while streaming. Each phase records frame times; moving phases also record
 // holes (nearby columns not meshed yet). The next run starts from a fresh page.
 
-import { type ActorFigureFiles, type Registry, requireDayCycle } from '../engine/content.ts';
-import { claimed } from '../engine/inventory.ts';
-import { graphicsTuningOf, lookDefaultsOf } from '../engine/look.ts';
+import { type ActorFigureFiles, type Registry, requireDayCycle } from '../../../engine/src/content.ts';
+import { claimed } from '../../../engine/src/inventory.ts';
+import { graphicsTuningOf, lookDefaultsOf } from '../../../engine/src/look.ts';
 import {
   ActorSystem,
   BACKGROUND_ACTOR_RATE,
@@ -19,9 +19,9 @@ import {
   type StorageStats,
   storageStats,
   worldGravity,
-} from '../engine/sim.ts';
-import { skyAt } from '../engine/sky.ts';
-import { type Body, siteGenerationOf, type Vec3 } from '../engine/world.ts';
+} from '../../../engine/src/sim.ts';
+import { skyAt } from '../../../engine/src/sky.ts';
+import { type Body, siteGenerationOf, type Vec3 } from '../../../engine/src/world.ts';
 import type { StartupContent } from '../game/bundledContent.ts';
 import { type GameConfig, makeConfig, type SiteName, siteFromUrl } from '../game/config.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';

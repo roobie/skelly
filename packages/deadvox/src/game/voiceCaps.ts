@@ -1,6 +1,6 @@
 // Which playing voices a new sound retires once its cap is reached. Times are playback clock seconds,
 // read by the caller; playback stops and fades the chosen voices.
-import type { SoundId } from '../core/soundEvents.ts';
+import type { SoundId } from '../../../engine/src/core/soundEvents.ts';
 
 /** What playback does to the voices the cap chose. */
 export interface VoiceActions<V> {

@@ -1,7 +1,7 @@
-import { AuthoredSite } from '../src/core/authoredSite.ts';
-import type { FurnitureSpawn, Site } from '../src/core/site.ts';
-import type { Registry } from '../src/engine/content.ts';
-import type { Rect } from '../src/engine/sim.ts';
+import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
+import type { FurnitureSpawn, Site } from '../../engine/src/core/site.ts';
+import type { Registry } from '../../engine/src/content.ts';
+import type { Rect } from '../../engine/src/sim.ts';
 import {
   CHUNK,
   generateColumn,
@@ -10,7 +10,7 @@ import {
   terrainShapeOf,
   type Vec3,
   World,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 
 /**
  * The authored test house at the template scale, with its blocks generated on demand. A caller may pass the site

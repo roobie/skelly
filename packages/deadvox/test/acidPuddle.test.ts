@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { feetInAcidPuddle } from '../src/core/acidPuddle.ts';
-import { type Body, makeScale } from '../src/engine/world.ts';
+import { feetInAcidPuddle } from '../../engine/src/core/acidPuddle.ts';
+import { type Body, makeScale } from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 
 describe('acid puddle supporting surface', () => {

@@ -1,4 +1,4 @@
-import { type Body, bodyOverlapsTerrain, type SolidAt, type Vec3 } from '../engine/world.ts';
+import { type Body, bodyOverlapsTerrain, type SolidAt, type Vec3 } from '../../../engine/src/world.ts';
 import { IDLE, type SessionControls } from '../game/session.ts';
 
 /** Actions that keep working while the camera is detached; every other command belongs to the avatar. */

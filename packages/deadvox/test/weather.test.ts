@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { WeatherTuning } from '../src/core/weather.ts';
-import { clampFogginess, skyAt as skyAtCycle, skyInWeather as skyInWeatherTuned } from '../src/engine/sky.ts';
+import type { WeatherTuning } from '../../engine/src/core/weather.ts';
+import { clampFogginess, skyAt as skyAtCycle, skyInWeather as skyInWeatherTuned } from '../../engine/src/sky.ts';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 
 const skyAt = (hour: number) => skyAtCycle(hour, BASE_DAY_CYCLE);

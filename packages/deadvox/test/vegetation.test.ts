@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import { perceivePlayer } from '../src/core/agentPerception.ts';
-import { foliageRustle, initialRustleClock } from '../src/core/foliageRustle.ts';
-import { footstepEventForBlock } from '../src/core/footsteps.ts';
-import { PlayerCombat } from '../src/core/playerCombat.ts';
-import { rectsOverlap } from '../src/core/site.ts';
-import { soundOcclusion } from '../src/core/soundOcclusion.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { forestDensityAt, leafLitterAt, placeTree, stampTrees, TreeIndex } from '../src/core/vegetation.ts';
-import { actorPoseInputFor } from '../src/engine/pose.ts';
+import { posedHumanoidRegionBoxes } from '../../engine/src/core/actorRegions.ts';
+import { perceivePlayer } from '../../engine/src/core/agentPerception.ts';
+import { foliageRustle, initialRustleClock } from '../../engine/src/core/foliageRustle.ts';
+import { footstepEventForBlock } from '../../engine/src/core/footsteps.ts';
+import { PlayerCombat } from '../../engine/src/core/playerCombat.ts';
+import { rectsOverlap } from '../../engine/src/core/site.ts';
+import { soundOcclusion } from '../../engine/src/core/soundOcclusion.ts';
+import { simSeconds } from '../../engine/src/core/time.ts';
+import { forestDensityAt, leafLitterAt, placeTree, stampTrees, TreeIndex } from '../../engine/src/core/vegetation.ts';
+import { actorPoseInputFor } from '../../engine/src/pose.ts';
 import {
   BlockEntities,
   Chunk,
@@ -20,7 +20,7 @@ import {
   World,
   worldOpaque,
   worldSolid,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

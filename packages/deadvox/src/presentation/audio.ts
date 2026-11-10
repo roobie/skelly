@@ -1,13 +1,13 @@
-import type { Registry, SenseDef, SoundDef, SoundRecipe } from '../engine/content.ts';
-import { claimed } from '../engine/inventory.ts';
+import type { Registry, SenseDef, SoundDef, SoundRecipe } from '../../../engine/src/content.ts';
+import { claimed } from '../../../engine/src/inventory.ts';
 import {
   renderSoundRecipe,
   type SoundEmission,
   type SoundId,
   soundRecipeFor,
   soundVariantKey,
-} from '../engine/sound.ts';
-import type { SolidAt, Vec3 } from '../engine/world.ts';
+} from '../../../engine/src/sound.ts';
+import type { SolidAt, Vec3 } from '../../../engine/src/world.ts';
 import {
   type HeartbeatTarget,
   type HeartbeatTuning,

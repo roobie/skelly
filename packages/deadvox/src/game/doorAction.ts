@@ -1,12 +1,12 @@
-import { actionText } from '../core/actionText.ts';
-import type { BlockEntity, DoorOperation } from '../core/blockEntities.ts';
-import { dominantSide } from '../core/character.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { HandlingQueue, JobParams } from '../core/handling.ts';
-import type { Inventory } from '../core/inventory.ts';
-import { doorPlan, heldDoorBar, heldKeyLocks } from '../core/options.ts';
-import type { Body } from '../core/physics.ts';
-import type { SoundEventId } from '../core/soundEvents.ts';
+import { actionText } from '../../../engine/src/core/actionText.ts';
+import type { BlockEntity, DoorOperation } from '../../../engine/src/core/blockEntities.ts';
+import { dominantSide } from '../../../engine/src/core/character.ts';
+import type { Vec3 } from '../../../engine/src/core/coords.ts';
+import type { HandlingQueue, JobParams } from '../../../engine/src/core/handling.ts';
+import type { Inventory } from '../../../engine/src/core/inventory.ts';
+import { doorPlan, heldDoorBar, heldKeyLocks } from '../../../engine/src/core/options.ts';
+import type { Body } from '../../../engine/src/core/physics.ts';
+import type { SoundEventId } from '../../../engine/src/core/soundEvents.ts';
 
 export const DOOR_ACTION = 'furniture.door';
 

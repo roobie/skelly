@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { EventRuleDef } from '../src/core/schema.ts';
-import { gameHours } from '../src/core/time.ts';
-import { buildRegistry, requireDayCycle } from '../src/engine/content.ts';
-import { decodeSave, encodeSave, type SaveSnapshot } from '../src/engine/save.ts';
-import { dayPhaseAt } from '../src/engine/sim.ts';
-import { BlockEntities, Chunk, makeScale, type Vec3, World, worldSolid } from '../src/engine/world.ts';
+import type { EventRuleDef } from '../../engine/src/core/schema.ts';
+import { gameHours } from '../../engine/src/core/time.ts';
+import { buildRegistry, requireDayCycle } from '../../engine/src/content.ts';
+import { decodeSave, encodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
+import { dayPhaseAt } from '../../engine/src/sim.ts';
+import { BlockEntities, Chunk, makeScale, type Vec3, World, worldSolid } from '../../engine/src/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { ACTIVE_ACTOR_RATE } from '../src/game/simulationRates.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

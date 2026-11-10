@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { disassemblyOutputs, planDisassembly } from '../src/core/disassembly.ts';
-import type { MeleeClassDef } from '../src/core/schema.ts';
-import { gameMinutes } from '../src/core/time.ts';
-import { buildRegistry, type ItemDef } from '../src/engine/content.ts';
-import { Inventory } from '../src/engine/inventory.ts';
-import { bindReach, Character } from '../src/engine/sim.ts';
+import { disassemblyOutputs, planDisassembly } from '../../engine/src/core/disassembly.ts';
+import type { MeleeClassDef } from '../../engine/src/core/schema.ts';
+import { gameMinutes } from '../../engine/src/core/time.ts';
+import { buildRegistry, type ItemDef } from '../../engine/src/content.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
+import { bindReach, Character } from '../../engine/src/sim.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';

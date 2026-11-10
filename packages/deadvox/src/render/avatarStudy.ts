@@ -3,8 +3,8 @@
 // the model ids to show, comma-separated.
 
 import { Group, type Object3D } from 'three';
-import { FIGURE_BOXES } from '../engine/pose.ts';
-import type { Vec3 } from '../engine/world.ts';
+import { FIGURE_BOXES } from '../../../engine/src/pose.ts';
+import type { Vec3 } from '../../../engine/src/world.ts';
 import type { ModelLibrary } from './models.ts';
 import { type PlayerFigurePlacement, setPlayerFigurePosition } from './playerFigure.ts';
 import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';

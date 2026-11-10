@@ -1,11 +1,11 @@
 import { expect, it } from 'vitest';
-import { CanonicalTerrain, installColumn } from '../src/core/canonicalTerrain.ts';
-import { coreMessage } from '../src/core/coreText.ts';
-import { dropSpots } from '../src/core/inventory.ts';
-import type { ColumnSource } from '../src/core/site.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { HandlingQueue, type Item, PILE_GRID } from '../src/engine/inventory.ts';
-import { CHUNK, generateColumn, makeScale, type Terrain, type Vec3, World } from '../src/engine/world.ts';
+import { CanonicalTerrain, installColumn } from '../../engine/src/core/canonicalTerrain.ts';
+import { coreMessage } from '../../engine/src/core/coreText.ts';
+import { dropSpots } from '../../engine/src/core/inventory.ts';
+import type { ColumnSource } from '../../engine/src/core/site.ts';
+import { simSeconds } from '../../engine/src/core/time.ts';
+import { HandlingQueue, type Item, PILE_GRID } from '../../engine/src/inventory.ts';
+import { CHUNK, generateColumn, makeScale, type Terrain, type Vec3, World } from '../../engine/src/world.ts';
 import { handlingMoveCompleteCue } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

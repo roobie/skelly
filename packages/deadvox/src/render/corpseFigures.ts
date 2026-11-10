@@ -3,9 +3,9 @@
 // picking and saves.
 
 import { Group, Matrix4, Vector3 } from 'three';
-import type { FurnitureDef, Registry } from '../engine/content.ts';
-import type { ColumnReveal } from '../engine/mesh.ts';
-import { type BlockEntities, type BlockEntity, type Body, rotationOf } from '../engine/world.ts';
+import type { FurnitureDef, Registry } from '../../../engine/src/content.ts';
+import type { ColumnReveal } from '../../../engine/src/mesh.ts';
+import { type BlockEntities, type BlockEntity, type Body, rotationOf } from '../../../engine/src/world.ts';
 import { type ModelLibrary, visibleBounds } from './models.ts';
 import { FIGURE_PIVOT, PlayerMeshes } from './playerFigure.ts';
 

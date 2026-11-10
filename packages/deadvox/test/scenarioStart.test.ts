@@ -1,14 +1,14 @@
 import { parse } from 'valibot';
 import { expect, it } from 'vitest';
-import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '../src/core/cityPlan.ts';
-import { scenarioCertificate, scenarioStartCertificate } from '../src/core/scenarioCertificate.ts';
-import { type StartDescent, scenarioStartIssues } from '../src/core/scenarioStart.ts';
-import type { StartDef } from '../src/core/schema/starts.ts';
-import { ContentFileSchema } from '../src/core/schema.ts';
-import { startIssues } from '../src/core/startIssues.ts';
-import { type BlockBox, stampChunk } from '../src/core/structure.ts';
-import { templateReachableStandingPositions } from '../src/core/templateSpatial.ts';
-import { type Chunk, CitySite, makeScale, type Vec3 } from '../src/engine/world.ts';
+import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '../../engine/src/core/cityPlan.ts';
+import { scenarioCertificate, scenarioStartCertificate } from '../../engine/src/core/scenarioCertificate.ts';
+import { type StartDescent, scenarioStartIssues } from '../../engine/src/core/scenarioStart.ts';
+import type { StartDef } from '../../engine/src/core/schema/starts.ts';
+import { ContentFileSchema } from '../../engine/src/core/schema.ts';
+import { startIssues } from '../../engine/src/core/startIssues.ts';
+import { type BlockBox, stampChunk } from '../../engine/src/core/structure.ts';
+import { templateReachableStandingPositions } from '../../engine/src/core/templateSpatial.ts';
+import { type Chunk, CitySite, makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 

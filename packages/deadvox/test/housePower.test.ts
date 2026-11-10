@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { PlacedPowerDevice } from '../src/core/sitePower.ts';
-import { Inventory } from '../src/engine/inventory.ts';
-import { decodeSave, type SaveSnapshot } from '../src/engine/save.ts';
-import { Chunk, makeScale, SitePower, type Vec3, World } from '../src/engine/world.ts';
+import type { PlacedPowerDevice } from '../../engine/src/core/sitePower.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
+import { decodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
+import { Chunk, makeScale, SitePower, type Vec3, World } from '../../engine/src/world.ts';
 import { makeConfig } from '../src/game/config.ts';
 import {
   applyReplayActionPayload,

@@ -1,5 +1,5 @@
-import type { ActorClips, DeathClip } from '../engine/content.ts';
-import { blendPose, decodeFrame, type Pose, sampleClip } from '../engine/pose.ts';
+import type { ActorClips, DeathClip } from '../../../engine/src/content.ts';
+import { blendPose, decodeFrame, type Pose, sampleClip } from '../../../engine/src/pose.ts';
 
 /** The built fall away from `direction`, when the figure bakes a death pair; other corpses keep their last pose. */
 export const deathClip = (clips: ActorClips, direction: 1 | -1): DeathClip | undefined => {

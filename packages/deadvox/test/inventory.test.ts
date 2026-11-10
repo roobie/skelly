@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { coreMessage, coreRefusal } from '../src/core/coreText.ts';
-import { handlingWeights } from '../src/core/inventory.ts';
-import { fitsAt } from '../src/core/items.ts';
-import { conditionWord, HandlingQueue, Inventory, PILE_GRID, SLING_SLOT, weightOf } from '../src/engine/inventory.ts';
+import { coreMessage, coreRefusal } from '../../engine/src/core/coreText.ts';
+import { handlingWeights } from '../../engine/src/core/inventory.ts';
+import { fitsAt } from '../../engine/src/core/items.ts';
+import { conditionWord, HandlingQueue, Inventory, PILE_GRID, SLING_SLOT, weightOf } from '../../engine/src/inventory.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

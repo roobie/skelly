@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
-import { coreMessage } from '../src/core/coreText.ts';
-import { craftActionHooks } from '../src/core/craftWork.ts';
-import { disassemblyOutputs } from '../src/core/disassembly.ts';
+import { SKILL_LEVEL_LEGENDARY } from '../../engine/src/core/character.ts';
+import { coreMessage } from '../../engine/src/core/coreText.ts';
+import { craftActionHooks } from '../../engine/src/core/craftWork.ts';
+import { disassemblyOutputs } from '../../engine/src/core/disassembly.ts';
 import {
   CraftCommands,
   HandlingQueue,
@@ -10,8 +10,8 @@ import {
   Inventory,
   options,
   SLING_SLOT,
-} from '../src/engine/inventory.ts';
-import { bindReach, Character, dominantSide, offSide, practiceForNextLevel } from '../src/engine/sim.ts';
+} from '../../engine/src/inventory.ts';
+import { bindReach, Character, dominantSide, offSide, practiceForNextLevel } from '../../engine/src/sim.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

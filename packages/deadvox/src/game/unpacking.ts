@@ -1,10 +1,10 @@
-import { actionText, fillText } from '../core/actionText.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { HandlingQueue } from '../core/handling.ts';
-import type { Inventory, Target } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
-import { putDownRefusal } from '../core/itemThrow.ts';
-import { freshDropTarget, playerPockets } from '../core/options.ts';
+import { actionText, fillText } from '../../../engine/src/core/actionText.ts';
+import type { Vec3 } from '../../../engine/src/core/coords.ts';
+import type { HandlingQueue } from '../../../engine/src/core/handling.ts';
+import type { Inventory, Target } from '../../../engine/src/core/inventory.ts';
+import { defOf, type Item } from '../../../engine/src/core/items.ts';
+import { putDownRefusal } from '../../../engine/src/core/itemThrow.ts';
+import { freshDropTarget, playerPockets } from '../../../engine/src/core/options.ts';
 import { unpackingTool } from './canOpening.ts';
 
 export const UNPACK_ACTION = 'item.unpack';

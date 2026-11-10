@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { init, parse } from 'es-module-lexer';
 import { transformWithOxc } from 'vite';
-import { canonicalJson } from '../src/engine/save.ts';
+import { canonicalJson } from '../../engine/src/save.ts';
 
 export interface SimulationModuleGraphHost {
   resolve: (specifier: string, importer?: string) => Promise<string | undefined>;
@@ -43,17 +43,17 @@ export async function fingerprintAfterHotChange(
 export const FEASIBILITY_ENTRIES = ['src/feasibility/runner.ts', 'src/feasibility/driving.ts'] as const;
 
 export const SIMULATION_ENTRIES = [
-  'src/core/sim.ts',
+  'engine/core/sim.ts',
   // Independently constructed appliance owners also determine saved simulation results.
-  'src/core/batteryChargers.ts',
-  'src/core/worldgen.ts',
-  'src/core/saveState.ts',
-  'src/core/saveFormat.ts',
+  'engine/core/batteryChargers.ts',
+  'engine/core/worldgen.ts',
+  'engine/core/saveState.ts',
+  'engine/core/saveFormat.ts',
   // Fingerprint new-game initialization independently of startup caller wiring.
-  'src/core/startState.ts',
-  'src/core/vehicleWork.ts',
-  'src/core/storage.ts',
-  'src/core/soundPicker.ts',
+  'engine/core/startState.ts',
+  'engine/core/vehicleWork.ts',
+  'engine/core/storage.ts',
+  'engine/core/soundPicker.ts',
   'src/game/player.ts',
   'src/game/rest.ts',
   'src/game/survival.ts',
@@ -78,35 +78,35 @@ export const SIMULATION_EXCLUSIONS = [
   'src/render',
   'src/debug',
   // Pointer-event quirks of the Mouse 5 side button (input handling); what the button does is in core/lights.ts.
-  'src/core/sideButton.ts',
+  'engine/core/sideButton.ts',
   // Credits and asset-manifest validation at startup change neither simulation nor save state.
-  'src/core/assets.ts',
-  'src/core/sky.ts',
-  'src/core/mood.ts',
+  'engine/core/assets.ts',
+  'engine/core/sky.ts',
+  'engine/core/mood.ts',
   // The default look is rendered presentation read by the view and debug panel; it changes neither simulation nor saves.
-  'src/core/lookDefaults.ts',
+  'engine/core/lookDefaults.ts',
   // Render budgets select presentation work, not simulation or saved state.
-  'src/core/graphicsTuning.ts',
+  'engine/core/graphicsTuning.ts',
   // Camera field of view and optic lens projection affect rendered presentation, not simulation or saves.
-  'src/core/opticView.ts',
+  'engine/core/opticView.ts',
   // Render-only until weather affects the simulation; then remove this entry and save its state (ADR 0002).
-  'src/core/weather.ts',
-  'src/core/mesher.ts',
-  'src/core/wireMesh.ts',
-  'src/core/fencePosts.ts',
+  'engine/core/weather.ts',
+  'engine/core/mesher.ts',
+  'engine/core/wireMesh.ts',
+  'engine/core/fencePosts.ts',
   // What the mesher reads from the world (block arrays copied out of chunks) and its helpers: presentation only.
-  'src/core/meshInput.ts',
-  'src/core/occlusion.ts',
+  'engine/core/meshInput.ts',
+  'engine/core/occlusion.ts',
   // Which columns are drawn yet: presentation only.
-  'src/core/columnReveal.ts',
+  'engine/core/columnReveal.ts',
   // Diffuse sky visibility only; does not change movement, sight, hearing or saved world state.
-  'src/core/skylight.ts',
-  'src/core/skySnapshot.ts',
-  'src/core/skyTransport.ts',
-  'src/core/shell.ts',
-  'src/core/pileLayout.ts',
+  'engine/core/skylight.ts',
+  'engine/core/skySnapshot.ts',
+  'engine/core/skyTransport.ts',
+  'engine/core/shell.ts',
+  'engine/core/pileLayout.ts',
   // Its public-cartography types describe printable features, not simulation or saved state.
-  'src/core/publicCartography.ts',
+  'engine/core/publicCartography.ts',
   'src/game/audioPresentation.ts',
   'src/game/actorAudio.ts',
   // Debug ragdoll staging and its tuning are presentation; corpse physics must not invalidate saves.
@@ -256,9 +256,21 @@ function sourcePath(id: string): string | undefined {
   return resolve(clean);
 }
 
+// The runtime package's source, named `engine/` in the fingerprint manifest and in entries and exclusions.
+const ENGINE_PREFIX = 'engine/';
+const engineSourceRoot = (projectRoot: string): string => resolve(projectRoot, '../engine/src');
+
+/** The file an entry or exclusion names: `engine/` paths are in the runtime package, others in this project. */
+function labelledPath(projectRoot: string, label: string): string {
+  return label.startsWith(ENGINE_PREFIX)
+    ? resolve(engineSourceRoot(projectRoot), label.slice(ENGINE_PREFIX.length))
+    : resolve(projectRoot, label);
+}
+
 function sourceRelativePath(projectRoot: string, sourceRoot: string, file: string): string | undefined {
   const roots = [
     { root: sourceRoot, prefix: 'src/' },
+    { root: engineSourceRoot(projectRoot), prefix: ENGINE_PREFIX },
     { root: resolve(projectRoot, 'mods'), prefix: 'mods/' },
     { root: resolve(projectRoot, '../mods'), prefix: 'shared-mods/' },
     { root: resolve(projectRoot, '../skelly-assets/tools/packages/thing-core/src'), prefix: 'thing-core/' },
@@ -334,7 +346,7 @@ async function resolveTrackableModule(
   const relativePath = sourceRelativePath(context.projectRoot, context.sourceRoot, file);
   if (!relativePath) {
     throw new Error(
-      `Runtime dependency ${specifier} resolves outside src/, the submodule's thing-core/src/, and node_modules: ${resolvedId}`,
+      `Runtime dependency ${specifier} resolves outside src/, the engine's src/, the submodule's thing-core/src/, and node_modules: ${resolvedId}`,
     );
   }
   if (recordExcludedImport(relativePath, importer, context.excludedImportContext)) {
@@ -404,7 +416,7 @@ export async function collectSimulationSourceGraph(
   };
 
   const sortedEntries = [...entries].sort();
-  await Promise.all(sortedEntries.map((entry) => visit(resolve(projectRoot, entry))));
+  await Promise.all(sortedEntries.map((entry) => visit(labelledPath(projectRoot, entry))));
   const sortedExcludedImports = [...excludedImports.values()].sort((left, right) =>
     comparePaths(`${left.importer} -> ${left.excluded}`, `${right.importer} -> ${right.excluded}`),
   );

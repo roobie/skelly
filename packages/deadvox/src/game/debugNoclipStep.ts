@@ -1,5 +1,5 @@
-import type { Body } from '../core/physics.ts';
-import type { Scale } from '../core/scale.ts';
+import type { Body } from '../../../engine/src/core/physics.ts';
+import type { Scale } from '../../../engine/src/core/scale.ts';
 import type { MoveIntent } from './player.ts';
 
 export interface DebugNoclipStep {

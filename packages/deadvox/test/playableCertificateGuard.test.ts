@@ -3,8 +3,8 @@ import {
   scenarioCertificate,
   scenarioLotResourceCertificate,
   scenarioStartCertificate,
-} from '../src/core/scenarioCertificate.ts';
-import type { CitySite } from '../src/engine/world.ts';
+} from '../../engine/src/core/scenarioCertificate.ts';
+import type { CitySite } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 // The full city cases live in the slow certificate file; this stub keeps the fail-closed guard in the default run.

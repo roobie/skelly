@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { heldEjectionPose } from '../src/core/heldPose.ts';
-import { blockId } from '../src/engine/content.ts';
-import { defOf, HandlingQueue, Inventory } from '../src/engine/inventory.ts';
-import { NEUTRAL_AIM } from '../src/engine/pose.ts';
+import { heldEjectionPose } from '../../engine/src/core/heldPose.ts';
+import { blockId } from '../../engine/src/content.ts';
+import { defOf, HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
+import { NEUTRAL_AIM } from '../../engine/src/pose.ts';
 import {
   BlockEntities,
   type Body,
@@ -13,13 +13,13 @@ import {
   type Vec3,
   World,
   worldSolid,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { firearmsCombatTuning } from '../src/engine/sim.ts';
+import { firearmsCombatTuning } from '../../engine/src/sim.ts';
 import {
   FirearmMechanics,
   type FirearmShotEffect,

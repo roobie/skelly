@@ -1,7 +1,7 @@
 import { BoxGeometry, type BufferGeometry, Color, Float32BufferAttribute } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import type { FurnitureDef } from '../engine/content.ts';
-import type { Vec3 } from '../engine/world.ts';
+import type { FurnitureDef } from '../../../engine/src/content.ts';
+import type { Vec3 } from '../../../engine/src/world.ts';
 
 export function colouredBox(parts: BoxGeometry[], position: Vec3, size: Vec3, color: Color): void {
   const geometry = new BoxGeometry(...size).translate(...position);

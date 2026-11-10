@@ -1,5 +1,5 @@
-import type { SiteLayoutDef } from '../../src/core/schema.ts';
-import type { AttemptPolicyDef } from '../../src/engine/content.ts';
+import type { SiteLayoutDef } from '../../../engine/src/core/schema.ts';
+import type { AttemptPolicyDef } from '../../../engine/src/content.ts';
 import { fixtureLootContext } from '../economyFixtures.ts';
 
 export const makeAttemptPolicy = (overrides: Partial<AttemptPolicyDef> = {}): AttemptPolicyDef => ({

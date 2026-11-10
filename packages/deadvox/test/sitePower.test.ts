@@ -1,10 +1,10 @@
 import { PerspectiveCamera, Scene } from 'three';
 import { describe, expect, it } from 'vitest';
-import { type PlacedPowerDevice, placedPowerDevices } from '../src/core/sitePower.ts';
-import { compileAssembly } from '../src/core/templates.ts';
-import { Inventory } from '../src/engine/inventory.ts';
-import { decodeSave } from '../src/engine/save.ts';
-import { SitePower } from '../src/engine/world.ts';
+import { type PlacedPowerDevice, placedPowerDevices } from '../../engine/src/core/sitePower.ts';
+import { compileAssembly } from '../../engine/src/core/templates.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
+import { decodeSave } from '../../engine/src/save.ts';
+import { SitePower } from '../../engine/src/world.ts';
 import { LightPool } from '../src/render/lightPool.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';

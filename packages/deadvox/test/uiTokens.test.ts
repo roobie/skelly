@@ -2,10 +2,10 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
-import { validateContent } from '../src/core/content.ts';
-import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '../src/core/coreText.ts';
-import { buildRegistry, requiredContentIssues } from '../src/engine/content.ts';
-import type { PackManifest } from '../src/engine/packs.ts';
+import { validateContent } from '../../engine/src/core/content.ts';
+import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '../../engine/src/core/coreText.ts';
+import { buildRegistry, requiredContentIssues } from '../../engine/src/content.ts';
+import type { PackManifest } from '../../engine/src/packs.ts';
 import { bundledAssetFiles } from '../src/presentation/bundledAssets.ts';
 import { applyUiTokens } from '../src/ui/uiTokens.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

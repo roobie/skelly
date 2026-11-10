@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { assertFirearmState, snapshotFirearm } from '../src/core/firearmState.ts';
-import { SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
-import type { Registry } from '../src/engine/content.ts';
-import { defOf, HandlingQueue, Inventory } from '../src/engine/inventory.ts';
-import { NEUTRAL_AIM } from '../src/engine/pose.ts';
-import { decodeSave, encodeSave, type SaveVersionComponents } from '../src/engine/save.ts';
-import { makeScale, type Vec3, World } from '../src/engine/world.ts';
+import { assertFirearmState, snapshotFirearm } from '../../engine/src/core/firearmState.ts';
+import { SAVE_SCHEMA_VERSION } from '../../engine/src/core/saveFormat.ts';
+import type { Registry } from '../../engine/src/content.ts';
+import { defOf, HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
+import { NEUTRAL_AIM } from '../../engine/src/pose.ts';
+import { decodeSave, encodeSave, type SaveVersionComponents } from '../../engine/src/save.ts';
+import { makeScale, type Vec3, World } from '../../engine/src/world.ts';
 import { FirearmMechanics, spentCaseItemId } from '../src/game/firearmHandling.ts';
 import { RevolverHandling } from '../src/game/revolverHandling.ts';
 import { createSession, IDLE } from '../src/game/session.ts';

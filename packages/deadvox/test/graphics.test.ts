@@ -1,8 +1,8 @@
 import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { validateContent } from '../src/core/content.ts';
-import { GRAPHICS_KNOBS, writeGraphicsParams } from '../src/core/graphics.ts';
-import { buildRegistry, requiredContentIssues } from '../src/engine/content.ts';
+import { validateContent } from '../../engine/src/core/content.ts';
+import { GRAPHICS_KNOBS, writeGraphicsParams } from '../../engine/src/core/graphics.ts';
+import { buildRegistry, requiredContentIssues } from '../../engine/src/content.ts';
 import {
   drugVignetteShown,
   GRAPHICS_KEYS,
@@ -11,7 +11,7 @@ import {
   resolveGraphics,
   setGraphicsSetting,
   validGraphicsSettings,
-} from '../src/engine/look.ts';
+} from '../../engine/src/look.ts';
 import { GraphicsControls } from '../src/presentation/graphicsControls.ts';
 import { readGraphicsSettings, writeGraphicsSettings } from '../src/presentation/graphicsSettings.ts';
 import { Gore } from '../src/render/gore.ts';

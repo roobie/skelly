@@ -5,12 +5,12 @@ import {
   perimeterGaps,
   scenarioPlanIssues,
   servicePlacement,
-} from '../src/core/cityPlan.ts';
-import { ScenarioCitySite, scenarioCityPopulation } from '../src/core/scenarioCity.ts';
-import type { ScenarioDef } from '../src/core/schema.ts';
-import { cellsOf, compileAssembly, compileTemplate, kitSlotChoices, placedSpawns } from '../src/core/templates.ts';
-import { generateChunk } from '../src/core/worldgen.ts';
-import { buildRegistry } from '../src/engine/content.ts';
+} from '../../engine/src/core/cityPlan.ts';
+import { ScenarioCitySite, scenarioCityPopulation } from '../../engine/src/core/scenarioCity.ts';
+import type { ScenarioDef } from '../../engine/src/core/schema.ts';
+import { cellsOf, compileAssembly, compileTemplate, kitSlotChoices, placedSpawns } from '../../engine/src/core/templates.ts';
+import { generateChunk } from '../../engine/src/core/worldgen.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
 import {
   CHUNK,
   Chunk,
@@ -22,7 +22,7 @@ import {
   terrainShapeOf,
   toChunk,
   type Vec3,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureLootContext } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

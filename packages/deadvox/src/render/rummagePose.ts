@@ -1,5 +1,5 @@
-import { type HandSide, type Inventory, type Job, SIDES } from '../engine/inventory.ts';
-import type { Vec3 } from '../engine/world.ts';
+import { type HandSide, type Inventory, type Job, SIDES } from '../../../engine/src/inventory.ts';
+import type { Vec3 } from '../../../engine/src/world.ts';
 
 /** Presentation estimate; BR's look, not handling mechanics, owns these values. */
 export const RUMMAGE_POSE = {

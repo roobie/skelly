@@ -1,12 +1,12 @@
-import { claimed } from '../core/capabilities.ts';
-import type { Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { type DropReceiverContext, pileDropSound } from '../core/dropSounds.ts';
-import type { MoveStart } from '../core/handling.ts';
-import type { Location } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
-import type { BodyTuningDef } from '../core/schema.ts';
-import type { SoundId } from '../core/soundEvents.ts';
+import { claimed } from '../../../engine/src/core/capabilities.ts';
+import type { Registry } from '../../../engine/src/core/content.ts';
+import type { Vec3 } from '../../../engine/src/core/coords.ts';
+import { type DropReceiverContext, pileDropSound } from '../../../engine/src/core/dropSounds.ts';
+import type { MoveStart } from '../../../engine/src/core/handling.ts';
+import type { Location } from '../../../engine/src/core/inventory.ts';
+import { defOf, type Item } from '../../../engine/src/core/items.ts';
+import type { BodyTuningDef } from '../../../engine/src/core/schema.ts';
+import type { SoundId } from '../../../engine/src/core/soundEvents.ts';
 
 export interface HandlingSoundCue {
   readonly event: SoundId;

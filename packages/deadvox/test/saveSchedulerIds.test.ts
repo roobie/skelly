@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { KNOWN_SCHEDULER_IDS } from '../src/engine/save.ts';
+import { KNOWN_SCHEDULER_IDS } from '../../engine/src/save.ts';
 import { createRuntime, registry } from './snapshotTestSupport.ts';
 
 it('lists every registered scheduler system as one the decoder accepts, and nothing else', () => {

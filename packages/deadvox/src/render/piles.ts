@@ -25,8 +25,8 @@ import {
   type PileScatterPlacement,
   type Placed,
   SPENT_CASE_SCATTER_CAP,
-} from '../engine/inventory.ts';
-import type { ColumnReveal } from '../engine/mesh.ts';
+} from '../../../engine/src/inventory.ts';
+import type { ColumnReveal } from '../../../engine/src/mesh.ts';
 import { CASE_PLACEHOLDER_GEOMETRY, CASE_PLACEHOLDER_MATERIAL } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
 import { itemLook } from './itemLook.ts';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { dot, normalize } from '../src/core/boneMath.ts';
-import { actorFigure } from '../src/engine/content.ts';
+import { dot, normalize } from '../../engine/src/core/boneMath.ts';
+import { actorFigure } from '../../engine/src/content.ts';
 import {
   applyPoint,
   bodySkeleton,
@@ -11,7 +11,7 @@ import {
   type Pose,
   type Transform,
   transpose,
-} from '../src/engine/pose.ts';
+} from '../../engine/src/pose.ts';
 import { LOOK_AT_REST, lookAtPose } from '../src/render/lookAt.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

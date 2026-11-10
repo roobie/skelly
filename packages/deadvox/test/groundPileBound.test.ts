@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { LootContext } from '../src/core/loot.ts';
-import { groundPileIssue } from '../src/core/pileBound.ts';
-import { groundLootSupplyIssues } from '../src/core/placementLoot.ts';
-import type { CompiledTemplate } from '../src/core/templates.ts';
-import type { ItemDef, Registry } from '../src/engine/content.ts';
-import { Inventory, PILE_GRID } from '../src/engine/inventory.ts';
+import type { LootContext } from '../../engine/src/core/loot.ts';
+import { groundPileIssue } from '../../engine/src/core/pileBound.ts';
+import { groundLootSupplyIssues } from '../../engine/src/core/placementLoot.ts';
+import type { CompiledTemplate } from '../../engine/src/core/templates.ts';
+import type { ItemDef, Registry } from '../../engine/src/content.ts';
+import { Inventory, PILE_GRID } from '../../engine/src/inventory.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 type LootDef = typeof base.loot extends Map<string, infer T> ? T : never;

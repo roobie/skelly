@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { TerrainShape } from '../src/core/worldgen.ts';
-import { makeScale, paperMapBounds } from '../src/engine/world.ts';
+import type { TerrainShape } from '../../engine/src/core/worldgen.ts';
+import { makeScale, paperMapBounds } from '../../engine/src/world.ts';
 import {
   type PaperMapCacheKey,
   PaperMapRenderCache,

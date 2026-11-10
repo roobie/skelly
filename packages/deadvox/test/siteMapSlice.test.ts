@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHUNK, Chunk } from '../src/engine/world.ts';
+import { CHUNK, Chunk } from '../../engine/src/world.ts';
 import { topSolidAtOrBelow } from '../src/render/siteMap.ts';
 
 const SOLID = 1;

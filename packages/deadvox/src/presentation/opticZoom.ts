@@ -1,6 +1,6 @@
-import type { Registry } from '../engine/content.ts';
-import type { Item } from '../engine/inventory.ts';
-import { mountedOptic, type OpticZoomFrame, opticViewSettings } from '../engine/pose.ts';
+import type { Registry } from '../../../engine/src/content.ts';
+import type { Item } from '../../../engine/src/inventory.ts';
+import { mountedOptic, type OpticZoomFrame, opticViewSettings } from '../../../engine/src/pose.ts';
 
 interface ActiveZoom {
   frame: OpticZoomFrame;

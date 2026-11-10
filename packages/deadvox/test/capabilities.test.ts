@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { validateContent } from '../src/core/content.ts';
-import { resolveWeatheringUrl } from '../src/core/weatheringUrl.ts';
-import { buildRegistry, type Registry, requiredContentIssues } from '../src/engine/content.ts';
-import { claimed, claimedId } from '../src/engine/inventory.ts';
-import { worldGravity } from '../src/engine/sim.ts';
-import { siteGenerationOf } from '../src/engine/world.ts';
+import { validateContent } from '../../engine/src/core/content.ts';
+import { resolveWeatheringUrl } from '../../engine/src/core/weatheringUrl.ts';
+import { buildRegistry, type Registry, requiredContentIssues } from '../../engine/src/content.ts';
+import { claimed, claimedId } from '../../engine/src/inventory.ts';
+import { worldGravity } from '../../engine/src/sim.ts';
+import { siteGenerationOf } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const compression = (id: string) => ({

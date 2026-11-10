@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { type HandPose, meleePoseAndContact, readyMeleePose } from '../src/engine/pose.ts';
+import { type HandPose, meleePoseAndContact, readyMeleePose } from '../../engine/src/pose.ts';
 import { renderMeleePose } from '../src/render/meleePose.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

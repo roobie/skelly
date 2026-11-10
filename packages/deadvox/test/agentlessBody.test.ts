@@ -1,11 +1,11 @@
 import { parse, safeParse } from 'valibot';
 import { expect, it } from 'vitest';
-import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import { ContentFileSchema } from '../src/core/schema.ts';
-import type { Registry } from '../src/engine/content.ts';
-import { actorPoseInputFor } from '../src/engine/pose.ts';
-import { decodeSave } from '../src/engine/save.ts';
-import { siteGenerationOf } from '../src/engine/world.ts';
+import { posedHumanoidRegionBoxes } from '../../engine/src/core/actorRegions.ts';
+import { ContentFileSchema } from '../../engine/src/core/schema.ts';
+import type { Registry } from '../../engine/src/content.ts';
+import { actorPoseInputFor } from '../../engine/src/pose.ts';
+import { decodeSave } from '../../engine/src/save.ts';
+import { siteGenerationOf } from '../../engine/src/world.ts';
 import { contentLookup as registryContentLookup } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';

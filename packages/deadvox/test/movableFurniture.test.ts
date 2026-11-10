@@ -17,13 +17,13 @@ import {
   placement,
   tipCarried,
   turnCarried,
-} from '../src/core/furnitureMove.ts';
-import { LadderHold } from '../src/core/ladders.ts';
-import { type Pose, rotatedSize, turnPose } from '../src/core/orientation.ts';
-import { Inventory } from '../src/engine/inventory.ts';
-import { decodeSave } from '../src/engine/save.ts';
-import { reachTuning } from '../src/engine/sim.ts';
-import { type BlockEntity, CHUNK, rotationOf, toChunk, type Vec3 } from '../src/engine/world.ts';
+} from '../../engine/src/core/furnitureMove.ts';
+import { LadderHold } from '../../engine/src/core/ladders.ts';
+import { type Pose, rotatedSize, turnPose } from '../../engine/src/core/orientation.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
+import { decodeSave } from '../../engine/src/save.ts';
+import { reachTuning } from '../../engine/src/sim.ts';
+import { type BlockEntity, CHUNK, rotationOf, toChunk, type Vec3 } from '../../engine/src/world.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { HeldItems } from '../src/render/hands.ts';

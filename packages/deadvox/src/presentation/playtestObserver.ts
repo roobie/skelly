@@ -1,7 +1,7 @@
-import type { AttemptPolicyDef } from '../engine/content.ts';
-import type { CompletedMove, HandlingQueue, Inventory, Location, MoveJob, TickResult } from '../engine/inventory.ts';
-import { formatClock, type PlaytestMarks, stageMarksAt } from '../engine/sim.ts';
-import type { BlockEntity } from '../engine/world.ts';
+import type { AttemptPolicyDef } from '../../../engine/src/content.ts';
+import type { CompletedMove, HandlingQueue, Inventory, Location, MoveJob, TickResult } from '../../../engine/src/inventory.ts';
+import { formatClock, type PlaytestMarks, stageMarksAt } from '../../../engine/src/sim.ts';
+import type { BlockEntity } from '../../../engine/src/world.ts';
 import type { Session } from '../game/session.ts';
 import {
   type HandBackFile,

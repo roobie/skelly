@@ -1,16 +1,16 @@
 // Item-owned chamber/cycle facts. Existing simulation/handling schedulers advance them;
 // presentation only observes ejection and the current cycle. No timers or second job queue.
 
-import { type ActionText, actionText, fillText } from '../core/actionText.ts';
-import type { AimBasis, AimFrame } from '../core/aim.ts';
-import { claimed } from '../core/capabilities.ts';
-import { dominantSide } from '../core/character.ts';
-import type { ModelDef, Registry } from '../core/content.ts';
-import { CHUNK, type Vec3 } from '../core/coords.ts';
-import { actionCycleSeconds, actionOpenSeconds, actionPhaseSeconds, ejectSeconds } from '../core/firearmAction.ts';
-import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '../core/firearmAttachments.ts';
-import { isLongGun } from '../core/firearmFitting.ts';
-import type { FirearmCycleState, FirearmState, PendingCase } from '../core/firearmState.ts';
+import { type ActionText, actionText, fillText } from '../../../engine/src/core/actionText.ts';
+import type { AimBasis, AimFrame } from '../../../engine/src/core/aim.ts';
+import { claimed } from '../../../engine/src/core/capabilities.ts';
+import { dominantSide } from '../../../engine/src/core/character.ts';
+import type { ModelDef, Registry } from '../../../engine/src/core/content.ts';
+import { CHUNK, type Vec3 } from '../../../engine/src/core/coords.ts';
+import { actionCycleSeconds, actionOpenSeconds, actionPhaseSeconds, ejectSeconds } from '../../../engine/src/core/firearmAction.ts';
+import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '../../../engine/src/core/firearmAttachments.ts';
+import { isLongGun } from '../../../engine/src/core/firearmFitting.ts';
+import type { FirearmCycleState, FirearmState, PendingCase } from '../../../engine/src/core/firearmState.ts';
 import {
   adsAcquisitionDuration,
   type FirearmStanceEffects,
@@ -20,28 +20,28 @@ import {
   firearmStanceEffects,
   firearmsSkillEffects,
   skillZeroHandlingForFirearm,
-} from '../core/firearmsSkill.ts';
-import type { HandlingQueue, Job } from '../core/handling.ts';
+} from '../../../engine/src/core/firearmsSkill.ts';
+import type { HandlingQueue, Job } from '../../../engine/src/core/handling.ts';
 import {
   type HeldFirearmTransformInput,
   type HeldSeatFrame,
   heldEjectionPose,
   heldGripOffset,
   modelToView,
-} from '../core/heldPose.ts';
-import { dropSpots, type Inventory } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
-import { settleOnWorld } from '../core/itemThrow.ts';
-import { magazineFits, magazineSpec, magazineWellCalibre } from '../core/magazine.ts';
-import { countText } from '../core/numberText.ts';
-import { type dropTarget, playerPockets, stowTarget } from '../core/options.ts';
-import { coneDirection, type PelletShot, pelletShotFromBasis, projectileShot } from '../core/pellets.ts';
-import { Rng } from '../core/random.ts';
-import { raycast, type SolidAt } from '../core/raycast.ts';
-import { revolverChamberPoint } from '../core/revolverPose.ts';
-import { makeScale } from '../core/scale.ts';
-import { firearmsCombatTuning } from '../core/skillTraining.ts';
-import type { SoundId } from '../core/soundEvents.ts';
+} from '../../../engine/src/core/heldPose.ts';
+import { dropSpots, type Inventory } from '../../../engine/src/core/inventory.ts';
+import { defOf, type Item } from '../../../engine/src/core/items.ts';
+import { settleOnWorld } from '../../../engine/src/core/itemThrow.ts';
+import { magazineFits, magazineSpec, magazineWellCalibre } from '../../../engine/src/core/magazine.ts';
+import { countText } from '../../../engine/src/core/numberText.ts';
+import { type dropTarget, playerPockets, stowTarget } from '../../../engine/src/core/options.ts';
+import { coneDirection, type PelletShot, pelletShotFromBasis, projectileShot } from '../../../engine/src/core/pellets.ts';
+import { Rng } from '../../../engine/src/core/random.ts';
+import { raycast, type SolidAt } from '../../../engine/src/core/raycast.ts';
+import { revolverChamberPoint } from '../../../engine/src/core/revolverPose.ts';
+import { makeScale } from '../../../engine/src/core/scale.ts';
+import { firearmsCombatTuning } from '../../../engine/src/core/skillTraining.ts';
+import type { SoundId } from '../../../engine/src/core/soundEvents.ts';
 import { firearmBoreRay } from './firearmAim.ts';
 import { MAGAZINE_LOAD_ACTION } from './magazineHandling.ts';
 import { type RevolverFrame, RevolverHandling } from './revolverHandling.ts';

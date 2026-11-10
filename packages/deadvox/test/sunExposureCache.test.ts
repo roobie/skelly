@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
-import { SunExposureCache } from '../src/core/lights.ts';
-import { terrainHeight } from '../src/core/worldgen.ts';
-import { parseTimeOfDay, realSeconds } from '../src/engine/sim.ts';
-import { CHUNK, terrainShapeOf } from '../src/engine/world.ts';
+import { SunExposureCache } from '../../engine/src/core/lights.ts';
+import { terrainHeight } from '../../engine/src/core/worldgen.ts';
+import { parseTimeOfDay, realSeconds } from '../../engine/src/sim.ts';
+import { CHUNK, terrainShapeOf } from '../../engine/src/world.ts';
 import { planRealFrame } from '../src/game/frameDriver.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { sunExposedAt } from './fixtures/sunOracle.ts';

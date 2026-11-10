@@ -1,9 +1,9 @@
 import { PerspectiveCamera, Scene, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { NightVision } from '../src/engine/content.ts';
-import { Inventory, toggleLight } from '../src/engine/inventory.ts';
-import { realSeconds } from '../src/engine/sim.ts';
-import type { SolidAt } from '../src/engine/world.ts';
+import type { NightVision } from '../../engine/src/content.ts';
+import { Inventory, toggleLight } from '../../engine/src/inventory.ts';
+import { realSeconds } from '../../engine/src/sim.ts';
+import type { SolidAt } from '../../engine/src/world.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { LightPool } from '../src/render/lightPool.ts';
 import { type FlareSource, flareSources, nightVisionFlare } from '../src/render/nightVisionFlare.ts';

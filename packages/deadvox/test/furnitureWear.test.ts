@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import { type FurnitureSpawn, fillFurnitureLoot } from '../src/core/site.ts';
-import { BlockEntities } from '../src/engine/world.ts';
+import { type FurnitureSpawn, fillFurnitureLoot } from '../../engine/src/core/site.ts';
+import { BlockEntities } from '../../engine/src/world.ts';
 import { buildFixtureRegistry as buildRegistry, fixtureBreach } from './economyFixtures.ts';
 
 const WORN = 'fixture_worn';

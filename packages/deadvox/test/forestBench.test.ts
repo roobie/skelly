@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { type BenchRecord, DEFAULT_PLAN, loadRecord, saveRecord } from '../src/bench/plan.ts';
 import { markdownReport } from '../src/bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, benchSiteLabel, forestWorkload, nextUrl } from '../src/bench/run.ts';
-import { siteGenerationOf } from '../src/engine/world.ts';
+import { siteGenerationOf } from '../../engine/src/world.ts';
 import { configFromUrl, content, siteFromUrl } from './fixtures/startupContent.ts';
 
 it('parses forest density strictly, including zero/one, without silently switching the requested site', () => {

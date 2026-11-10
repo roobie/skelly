@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import type { StartDef } from '../src/core/schema/starts.ts';
-import { gameTimeOfDay } from '../src/core/time.ts';
+import type { StartDef } from '../../engine/src/core/schema/starts.ts';
+import { gameTimeOfDay } from '../../engine/src/core/time.ts';
 import { configFromUrl, makeConfig } from '../src/game/config.ts';
 import { requireStart, startForSite } from '../src/game/startSelection.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';

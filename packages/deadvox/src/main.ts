@@ -7,9 +7,9 @@ import { showReport } from './bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import { bundledCredits } from './bundledCredits.ts';
-import { claimed } from './engine/inventory.ts';
-import { getBuildRevision } from './engine/packs.ts';
-import { parseTimeOfDay } from './engine/sim.ts';
+import { claimed } from '../../engine/src/inventory.ts';
+import { getBuildRevision } from '../../engine/src/packs.ts';
+import { parseTimeOfDay } from '../../engine/src/sim.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from './game/bundledMods.ts';
 import {
   applyWeatheringConfig,

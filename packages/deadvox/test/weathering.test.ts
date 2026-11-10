@@ -1,9 +1,9 @@
 import type { WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
 import { describe, expect, it } from 'vitest';
-import { blockWeatherability, PADDED, paddedIndex } from '../src/core/meshInput.ts';
-import { OCCLUSION_RADIUS, WIDE } from '../src/core/occlusion.ts';
-import { blockColors } from '../src/engine/content.ts';
-import { buildMesh } from '../src/engine/mesh.ts';
+import { blockWeatherability, PADDED, paddedIndex } from '../../engine/src/core/meshInput.ts';
+import { OCCLUSION_RADIUS, WIDE } from '../../engine/src/core/occlusion.ts';
+import { blockColors } from '../../engine/src/content.ts';
+import { buildMesh } from '../../engine/src/mesh.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { startupContent } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';

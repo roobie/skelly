@@ -4,11 +4,12 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import basicSsl from '@vitejs/plugin-basic-ssl';
+import { defaultClientConditions, defaultServerConditions } from 'vite';
 import { configDefaults, defineConfig } from 'vitest/config';
 import { pagesAnalyticsPlugin } from '../../pagesAnalyticsPlugin.ts';
 import { TEST_POOL } from '../../testPool.ts';
-import { launcherModCatalogue } from './src/engine/modCatalogue.ts';
-import { buildRevisionFromGit } from './src/engine/packs.ts';
+import { launcherModCatalogue } from '../engine/src/modCatalogue.ts';
+import { buildRevisionFromGit } from '../engine/src/packs.ts';
 import { bundleStampPlugin, UNSTAMPED_BUNDLE_DEFINES } from './tools/bundleStampPlugin.ts';
 import { declaredAssetGlobsPlugin } from './tools/declaredAssetGlobsPlugin.ts';
 import { bundledPackDefines, readAvailablePacks } from './tools/readBundledPacks.ts';
@@ -47,7 +48,7 @@ try {
 }
 
 // Base-pack identity is snapshotted at config load. Simulation source identity is refreshed on source HMR.
-const saveFormatPath = resolve(packageRoot, 'src/core/saveFormat.ts');
+const saveFormatPath = resolve(packageRoot, '../engine/src/core/saveFormat.ts');
 const buildRevisionDefine = '__SKELLY_BUILD_REVISION__';
 const moduleQueryPattern = /[?#].*$/;
 const simulationHashPlaceholder = '__SKELLY_SIMULATION_HASH__';
@@ -189,7 +190,15 @@ const testFiles = runSweeps
   ? { include: [...new Set([...SLOW_TEST_FILES, ...sweepCaseFiles()])], testTimeout: 0 }
   : { include: ['test/**/*.test.ts'], exclude: [...configDefaults.exclude, ...SLOW_TEST_FILES] };
 
+// Tests that use shipped content reach runtime internals through the engine's test-only subpath, which resolves
+// only under this condition. Vitest sets VITEST before it loads this config; the dev server, browser stages and
+// the product build never enable it. See `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
+// biome-ignore lint/style/noProcessEnv: Vitest's documented runner marker.
+const engineTestConditions = process.env.VITEST === 'true' ? ['skelly-engine-test'] : [];
+
 export default defineConfig({
+  resolve: { conditions: [...defaultClientConditions, ...engineTestConditions] },
+  ssr: { resolve: { conditions: [...defaultServerConditions, ...engineTestConditions] } },
   plugins: [
     // biome-ignore lint/style/noProcessEnv: publication tooling opts into the analytics described by its consent page.
     pagesAnalyticsPlugin(process.env.PAGES_ANALYTICS === '1'),
@@ -208,10 +217,11 @@ export default defineConfig({
   base: './', // served from /skelly/deadvox/ on GitHub Pages
   server: {
     fs: {
-      // Mods and built assets live outside this project's own root; Vite's dev server otherwise refuses to
-      // serve files from outside it.
+      // The runtime package, mods and built assets live outside this project's own root; Vite's dev server
+      // otherwise refuses to serve files from outside it.
       allow: [
         fileURLToPath(new URL('.', import.meta.url)),
+        fileURLToPath(new URL('../engine', import.meta.url)),
         fileURLToPath(new URL('../mods', import.meta.url)),
         fileURLToPath(new URL('../skelly-assets/built', import.meta.url)),
       ],

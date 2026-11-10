@@ -4,21 +4,21 @@
 // and AO at chunk borders (including the wide occlusion, which reaches half a chunk) are correct
 // and never need a second pass.
 
-import { installColumn } from '../core/canonicalTerrain.ts';
-import type { Chunk } from '../core/chunk.ts';
-import { revealedColumns } from '../core/columnReveal.ts';
-import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
-import type { FencePostDefs } from '../core/fencePosts.ts';
-import type { MeshData } from '../core/mesher.ts';
-import { extractPadded, extractWide } from '../core/meshInput.ts';
-import type { Scale } from '../core/scale.ts';
-import type { SkySnapshot } from '../core/skySnapshot.ts';
-import type { SkyResult } from '../core/skyTransport.ts';
-import type { BlockBox } from '../core/structure.ts';
-import type { WireMeshes } from '../core/wireMesh.ts';
-import type { World } from '../core/world.ts';
-import { isEnclosed } from '../core/world.ts';
-import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../core/worldgen.ts';
+import { installColumn } from '../../../engine/src/core/canonicalTerrain.ts';
+import type { Chunk } from '../../../engine/src/core/chunk.ts';
+import { revealedColumns } from '../../../engine/src/core/columnReveal.ts';
+import { CHUNK, chunkKey, toChunk, type Vec3 } from '../../../engine/src/core/coords.ts';
+import type { FencePostDefs } from '../../../engine/src/core/fencePosts.ts';
+import type { MeshData } from '../../../engine/src/core/mesher.ts';
+import { extractPadded, extractWide } from '../../../engine/src/core/meshInput.ts';
+import type { Scale } from '../../../engine/src/core/scale.ts';
+import type { SkySnapshot } from '../../../engine/src/core/skySnapshot.ts';
+import type { SkyResult } from '../../../engine/src/core/skyTransport.ts';
+import type { BlockBox } from '../../../engine/src/core/structure.ts';
+import type { WireMeshes } from '../../../engine/src/core/wireMesh.ts';
+import type { World } from '../../../engine/src/core/world.ts';
+import { isEnclosed } from '../../../engine/src/core/world.ts';
+import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../../../engine/src/core/worldgen.ts';
 import type { FromMesher, MesherPort, MesherSource, ToMesher } from './mesherProtocol.ts';
 
 const COLUMNS_PER_FRAME = 2;

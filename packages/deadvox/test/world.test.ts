@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { BEDROCK, extractPadded, extractWide, PADDED, paddedIndex } from '../src/core/meshInput.ts';
-import { OCCLUSION_RADIUS, WIDE } from '../src/core/occlusion.ts';
-import { affectedChunks, isEnclosed, MESH_REACH } from '../src/core/world.ts';
-import { hash3 } from '../src/engine/math.ts';
-import { buildMesh } from '../src/engine/mesh.ts';
-import { CHUNK, Chunk, toChunk, toLocal, type Vec3, World } from '../src/engine/world.ts';
+import { BEDROCK, extractPadded, extractWide, PADDED, paddedIndex } from '../../engine/src/core/meshInput.ts';
+import { OCCLUSION_RADIUS, WIDE } from '../../engine/src/core/occlusion.ts';
+import { affectedChunks, isEnclosed, MESH_REACH } from '../../engine/src/core/world.ts';
+import { hash3 } from '../../engine/src/math.ts';
+import { buildMesh } from '../../engine/src/mesh.ts';
+import { CHUNK, Chunk, toChunk, toLocal, type Vec3, World } from '../../engine/src/world.ts';
 import { unitFaces } from './meshFaces.ts';
 
 /** Chunks whose shell (the chunk plus OCCLUSION_RADIUS on every side) holds the cell, by brute force. */

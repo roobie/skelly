@@ -1,8 +1,8 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
-import { type ActorDef, requireDayCycle, type WeatheringDef } from '../engine/content.ts';
-import { lookDefaultsOf, type ShadowState } from '../engine/look.ts';
-import { getBuildRevision } from '../engine/packs.ts';
+import { type ActorDef, requireDayCycle, type WeatheringDef } from '../../../engine/src/content.ts';
+import { lookDefaultsOf, type ShadowState } from '../../../engine/src/look.ts';
+import { getBuildRevision } from '../../../engine/src/packs.ts';
 import {
   type ActorAim,
   crosshairTarget,
@@ -13,9 +13,9 @@ import {
   firearmsCombatTuning,
   formatClock,
   type MeleeResult,
-} from '../engine/sim.ts';
-import { WEATHERING_RANGES, type WeatheringUrlState } from '../engine/sky.ts';
-import { raycast, type Vec3 } from '../engine/world.ts';
+} from '../../../engine/src/sim.ts';
+import { WEATHERING_RANGES, type WeatheringUrlState } from '../../../engine/src/sky.ts';
+import { raycast, type Vec3 } from '../../../engine/src/world.ts';
 import type { DebugNoclipStep } from '../game/debugNoclipStep.ts';
 import { firearmBoreTarget } from '../game/firearmAim.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';

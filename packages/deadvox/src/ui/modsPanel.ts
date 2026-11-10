@@ -1,6 +1,6 @@
 import { html, render } from 'lit-html';
-import type { ScreenText } from '../engine/content.ts';
-import { countText, fillText } from '../engine/text.ts';
+import type { ScreenText } from '../../../engine/src/content.ts';
+import { countText, fillText } from '../../../engine/src/text.ts';
 import { type BrowserMod, evaluateMods, type ModEvaluation, type ModIntake } from '../game/browserMods.ts';
 import type { ModStore } from '../game/storageContract.ts';
 import { isInvalidModSelection, ModStorage } from '../presentation/modStorage.ts';

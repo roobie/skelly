@@ -14,9 +14,9 @@ import {
   Sphere,
   Vector3,
 } from 'three';
-import type { Registry, WeatheringDef } from '../engine/content.ts';
-import type { ColumnReveal, MeshData } from '../engine/mesh.ts';
-import { toChunk, type Vec3 } from '../engine/world.ts';
+import type { Registry, WeatheringDef } from '../../../engine/src/content.ts';
+import type { ColumnReveal, MeshData } from '../../../engine/src/mesh.ts';
+import { toChunk, type Vec3 } from '../../../engine/src/world.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { createSurfaceNoise } from './surfaceNoise.ts';
 import { camoShaderConfig, SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';

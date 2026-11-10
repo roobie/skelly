@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import { scenarioPlanIssues } from '../src/core/cityPlan.ts';
-import type { ContentFile } from '../src/core/schema.ts';
-import { compileAssembly, kitSlotChoices } from '../src/core/templates.ts';
-import { buildRegistry } from '../src/engine/content.ts';
+import { scenarioPlanIssues } from '../../engine/src/core/cityPlan.ts';
+import type { ContentFile } from '../../engine/src/core/schema.ts';
+import { compileAssembly, kitSlotChoices } from '../../engine/src/core/templates.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
 import { overlayContent, startupContent } from './baseRegistry.ts';
 import { fixtureScenario } from './fixtures/scenario.ts';
 

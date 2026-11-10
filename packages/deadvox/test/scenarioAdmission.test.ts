@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/engine/content.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
 import { fixtureScenario, fixtureScenarioSources, fixtureService } from './fixtures/scenario.ts';
 
 describe('scenario admission', () => {

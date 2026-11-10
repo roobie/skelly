@@ -1,9 +1,9 @@
-import { actionText } from '../core/actionText.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { HandlingQueue } from '../core/handling.ts';
-import type { Inventory } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
-import { quickbarPutAway, quickbarTake } from '../core/options.ts';
+import { actionText } from '../../../engine/src/core/actionText.ts';
+import type { Vec3 } from '../../../engine/src/core/coords.ts';
+import type { HandlingQueue } from '../../../engine/src/core/handling.ts';
+import type { Inventory } from '../../../engine/src/core/inventory.ts';
+import type { Item } from '../../../engine/src/core/items.ts';
+import { quickbarPutAway, quickbarTake } from '../../../engine/src/core/options.ts';
 import type { Survival } from './survival.ts';
 
 interface Dependencies {

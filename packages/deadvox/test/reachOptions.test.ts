@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { workInProgressItem } from '../src/core/inventory.ts';
-import { pocketGroundItem, quickbarTake, quickMove, toHands, wieldOrPocket } from '../src/core/options.ts';
-import type { ReachPlayer } from '../src/core/reach.ts';
-import type { FurnitureDef } from '../src/engine/content.ts';
-import { HandlingQueue, Inventory, options, SLING_SLOT } from '../src/engine/inventory.ts';
-import { type Actor, bindReach, Character, dominantSide, offSide, type ReachSnapshot } from '../src/engine/sim.ts';
-import type { Vec3 } from '../src/engine/world.ts';
+import { workInProgressItem } from '../../engine/src/core/inventory.ts';
+import { pocketGroundItem, quickbarTake, quickMove, toHands, wieldOrPocket } from '../../engine/src/core/options.ts';
+import type { ReachPlayer } from '../../engine/src/core/reach.ts';
+import type { FurnitureDef } from '../../engine/src/content.ts';
+import { HandlingQueue, Inventory, options, SLING_SLOT } from '../../engine/src/inventory.ts';
+import { type Actor, bindReach, Character, dominantSide, offSide, type ReachSnapshot } from '../../engine/src/sim.ts';
+import type { Vec3 } from '../../engine/src/world.ts';
 import { downedBodyPlan } from '../src/game/downedBody.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

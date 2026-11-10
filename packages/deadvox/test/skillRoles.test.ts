@@ -1,10 +1,10 @@
 import { expect, it } from 'vitest';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import { craftActionHooks } from '../src/core/craftWork.ts';
-import { planDisassembly } from '../src/core/disassembly.ts';
-import type { ContentFile } from '../src/core/schema.ts';
-import { firearmSteadinessSkill } from '../src/core/skillTraining.ts';
-import { buildRegistry, type Registry, requiredContentIssues } from '../src/engine/content.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../../engine/src/core/character.ts';
+import { craftActionHooks } from '../../engine/src/core/craftWork.ts';
+import { planDisassembly } from '../../engine/src/core/disassembly.ts';
+import type { ContentFile } from '../../engine/src/core/schema.ts';
+import { firearmSteadinessSkill } from '../../engine/src/core/skillTraining.ts';
+import { buildRegistry, type Registry, requiredContentIssues } from '../../engine/src/content.ts';
 import {
   CraftCommands,
   claimed,
@@ -12,8 +12,8 @@ import {
   Inventory,
   planCraft,
   requirementStatus,
-} from '../src/engine/inventory.ts';
-import { bindReach, Character, practiceForNextLevel, pryPlan } from '../src/engine/sim.ts';
+} from '../../engine/src/inventory.ts';
+import { bindReach, Character, practiceForNextLevel, pryPlan } from '../../engine/src/sim.ts';
 import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

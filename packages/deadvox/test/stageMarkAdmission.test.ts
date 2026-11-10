@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { buildRegistry } from '../src/engine/content.ts';
-import { stageMarkArea } from '../src/engine/sim.ts';
-import { makeScale } from '../src/engine/world.ts';
+import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
+import { stageMarkArea } from '../../engine/src/sim.ts';
+import { makeScale } from '../../engine/src/world.ts';
 import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

@@ -1,4 +1,4 @@
-import type { MoodState } from '../src/engine/look.ts';
+import type { MoodState } from '../../engine/src/look.ts';
 
 /** The state half of `Mood`, which needs a WebGL renderer for the rest. */
 export class FakeMood {

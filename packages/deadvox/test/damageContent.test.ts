@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
-import { damageToActor } from '../src/core/actorSystem.ts';
-import { bashBlock } from '../src/core/blockDamage.ts';
-import { buildRegistry } from '../src/engine/content.ts';
-import { claimed } from '../src/engine/inventory.ts';
-import { BODY_REGIONS, Body, type BodyRegion } from '../src/engine/sim.ts';
+import { damageToActor } from '../../engine/src/core/actorSystem.ts';
+import { bashBlock } from '../../engine/src/core/blockDamage.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
+import { claimed } from '../../engine/src/inventory.ts';
+import { BODY_REGIONS, Body, type BodyRegion } from '../../engine/src/sim.ts';
 import { meleeProfileForWeapon } from '../src/game/melee.ts';
 import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';

@@ -9,7 +9,7 @@ import {
   mergeManifests,
   modelFileIssues,
   validateManifest,
-} from '../src/engine/content.ts';
+} from '../../engine/src/content.ts';
 
 const source = (fields: Record<string, unknown> = {}) => ({
   title: 'Torch',

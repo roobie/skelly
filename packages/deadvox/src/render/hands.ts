@@ -16,8 +16,8 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
-import type { FigureDef } from '../engine/content.ts';
-import { claimed, defOf, type HandSide, type Inventory, type Item, isInHeldItemSlotTree } from '../engine/inventory.ts';
+import type { FigureDef } from '../../../engine/src/content.ts';
+import { claimed, defOf, type HandSide, type Inventory, type Item, isInHeldItemSlotTree } from '../../../engine/src/inventory.ts';
 import {
   heldAdsStandoffMetres,
   heldTorsoForwardDegrees,
@@ -26,7 +26,7 @@ import {
   presentedOptic,
   projectLensAperture,
   projectOpticReticle,
-} from '../engine/pose.ts';
+} from '../../../engine/src/pose.ts';
 import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { coreMessage } from '../src/core/coreText.ts';
-import { craftActionHooks } from '../src/core/craftWork.ts';
-import { restoreItem, sameRecoveryState, snapshotItem, stackRoom } from '../src/core/items.ts';
-import { planLiquidDraw } from '../src/core/liquids.ts';
-import type { RecipeDef } from '../src/engine/content.ts';
+import { coreMessage } from '../../engine/src/core/coreText.ts';
+import { craftActionHooks } from '../../engine/src/core/craftWork.ts';
+import { restoreItem, sameRecoveryState, snapshotItem, stackRoom } from '../../engine/src/core/items.ts';
+import { planLiquidDraw } from '../../engine/src/core/liquids.ts';
+import type { RecipeDef } from '../../engine/src/content.ts';
 import {
   CraftCommands,
   type CraftSources,
@@ -11,8 +11,8 @@ import {
   Inventory,
   ItemFactory,
   planCraft,
-} from '../src/engine/inventory.ts';
-import { bindReach, Character } from '../src/engine/sim.ts';
+} from '../../engine/src/inventory.ts';
+import { bindReach, Character } from '../../engine/src/sim.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,

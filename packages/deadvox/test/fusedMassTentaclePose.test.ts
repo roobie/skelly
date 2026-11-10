@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { fusedMassStrikeOrigin } from '../src/core/fusedMassFigure.ts';
-import { actorFigure } from '../src/engine/content.ts';
+import { fusedMassStrikeOrigin } from '../../engine/src/core/fusedMassFigure.ts';
+import { actorFigure } from '../../engine/src/content.ts';
 import {
   boneTransforms,
   FUSED_MASS_FIGURE_SEED,
@@ -14,8 +14,8 @@ import {
   severedBoneSet,
   transpose,
   worldPosition,
-} from '../src/engine/pose.ts';
-import type { Vec3 } from '../src/engine/world.ts';
+} from '../../engine/src/pose.ts';
+import type { Vec3 } from '../../engine/src/world.ts';
 import { fusedMassCoreInteriorAnchor, fusedMassTentaclePose } from '../src/render/fusedMassTentaclePose.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
-import { WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
-import { chunksFor } from '../src/engine/world.ts';
+import { WEATHERING_STRENGTH_MAX } from '../../engine/src/core/weather.ts';
+import { chunksFor } from '../../engine/src/world.ts';
 import { applyWeatheringConfig, makeConfig as makeContentConfig, savingEnabledFromUrl } from '../src/game/config.ts';
 import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
 import { content as BUNDLED_CONTENT, configFromUrl, makeConfig } from './fixtures/startupContent.ts';

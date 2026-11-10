@@ -1,9 +1,9 @@
 import { expect, it, vi } from 'vitest';
-import { CONTACT_SKIN } from '../src/core/physics.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { requireDayCycle } from '../src/engine/content.ts';
-import { actorBodyDimensions, dayPhaseAt } from '../src/engine/sim.ts';
-import { makeScale, type SolidAt } from '../src/engine/world.ts';
+import { CONTACT_SKIN } from '../../engine/src/core/physics.ts';
+import { simSeconds } from '../../engine/src/core/time.ts';
+import { requireDayCycle } from '../../engine/src/content.ts';
+import { actorBodyDimensions, dayPhaseAt } from '../../engine/src/sim.ts';
+import { makeScale, type SolidAt } from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { physicsFor } from './playerFixture.ts';

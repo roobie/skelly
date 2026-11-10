@@ -1,7 +1,7 @@
 import { Box3, BoxGeometry, Group, Mesh, type Object3D, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { FurnitureDef } from '../src/engine/content.ts';
-import { BLOCK_SIZE, BlockEntities, type BlockEntity, type Facing, isBodyDoor, panelFor } from '../src/engine/world.ts';
+import type { FurnitureDef } from '../../engine/src/content.ts';
+import { BLOCK_SIZE, BlockEntities, type BlockEntity, type Facing, isBodyDoor, panelFor } from '../../engine/src/world.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

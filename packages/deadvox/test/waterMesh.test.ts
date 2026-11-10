@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PADDED, paddedIndex } from '../src/core/meshInput.ts';
-import { OCCLUSION_RADIUS, WIDE, wideIndex } from '../src/core/occlusion.ts';
-import { buildMesh, type MeshData } from '../src/engine/mesh.ts';
-import { CHUNK, makeScale, World } from '../src/engine/world.ts';
+import { PADDED, paddedIndex } from '../../engine/src/core/meshInput.ts';
+import { OCCLUSION_RADIUS, WIDE, wideIndex } from '../../engine/src/core/occlusion.ts';
+import { buildMesh, type MeshData } from '../../engine/src/mesh.ts';
+import { CHUNK, makeScale, World } from '../../engine/src/world.ts';
 import type { MesherPort, ToMesher } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { baseTerrainShape } from './baseRegistry.ts';

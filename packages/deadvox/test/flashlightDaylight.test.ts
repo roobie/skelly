@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { SECONDS_PER_DAY } from '../src/core/clock.ts';
-import type { ItemDef } from '../src/engine/content.ts';
-import { dayPhaseAt } from '../src/engine/sim.ts';
-import { skyAt } from '../src/engine/sky.ts';
+import { SECONDS_PER_DAY } from '../../engine/src/core/clock.ts';
+import type { ItemDef } from '../../engine/src/content.ts';
+import { dayPhaseAt } from '../../engine/src/sim.ts';
+import { skyAt } from '../../engine/src/sky.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';

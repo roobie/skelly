@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import { decodeSave } from '../src/engine/save.ts';
-import { BlockEntities } from '../src/engine/world.ts';
+import { decodeSave } from '../../engine/src/save.ts';
+import { BlockEntities } from '../../engine/src/world.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseContentSources } from './baseContentFiles.ts';

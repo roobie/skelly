@@ -12,8 +12,8 @@ import {
   type ModelDef,
   type Registry,
   type WearSlot,
-} from '../engine/content.ts';
-import { defOf, type HandSide, type Inventory, type Item } from '../engine/inventory.ts';
+} from '../../../engine/src/content.ts';
+import { defOf, type HandSide, type Inventory, type Item } from '../../../engine/src/inventory.ts';
 import {
   FIGURE_BOXES,
   type FigureBox,
@@ -30,9 +30,9 @@ import {
   playerPosePoint,
   presentedOptic,
   readyMeleePose,
-} from '../engine/pose.ts';
-import { type BodyRegion, dominantSide } from '../engine/sim.ts';
-import type { Body, Vec3 } from '../engine/world.ts';
+} from '../../../engine/src/pose.ts';
+import { type BodyRegion, dominantSide } from '../../../engine/src/sim.ts';
+import type { Body, Vec3 } from '../../../engine/src/world.ts';
 import { ActorAnimator, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { LENS, type ModelLibrary } from './models.ts';

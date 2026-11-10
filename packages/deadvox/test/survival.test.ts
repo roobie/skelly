@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { simSecondsPerHour } from '../src/core/clock.ts';
-import { coreMessage } from '../src/core/coreText.ts';
-import { freshnessWord, isRotten, spoilage } from '../src/core/food.ts';
-import { chargeOf, drainLight, swapBattery } from '../src/core/lights.ts';
-import { canSprint, consume, stepNeeds, stepStamina } from '../src/core/needs.ts';
-import { gameHours, gameSeconds } from '../src/core/time.ts';
-import { buildRegistry, type ContentSource } from '../src/engine/content.ts';
+import { simSecondsPerHour } from '../../engine/src/core/clock.ts';
+import { coreMessage } from '../../engine/src/core/coreText.ts';
+import { freshnessWord, isRotten, spoilage } from '../../engine/src/core/food.ts';
+import { chargeOf, drainLight, swapBattery } from '../../engine/src/core/lights.ts';
+import { canSprint, consume, stepNeeds, stepStamina } from '../../engine/src/core/needs.ts';
+import { gameHours, gameSeconds } from '../../engine/src/core/time.ts';
+import { buildRegistry, type ContentSource } from '../../engine/src/content.ts';
 import {
   freshDropTarget,
   Inventory,
@@ -14,8 +14,8 @@ import {
   ItemFactory,
   type Target,
   toggleLight,
-} from '../src/engine/inventory.ts';
-import { Body, type Needs } from '../src/engine/sim.ts';
+} from '../../engine/src/inventory.ts';
+import { Body, type Needs } from '../../engine/src/sim.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';

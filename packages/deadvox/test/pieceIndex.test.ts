@@ -1,8 +1,8 @@
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
-import type { BlockEntitiesState } from '../src/core/blockEntities.ts';
-import type { BrickOut } from '../src/core/solidBricks.ts';
-import type { FurnitureDef } from '../src/engine/content.ts';
+import type { BlockEntitiesState } from '../../engine/src/core/blockEntities.ts';
+import type { BrickOut } from '../../engine/src/core/solidBricks.ts';
+import type { FurnitureDef } from '../../engine/src/content.ts';
 import {
   BlockEntities,
   type BlockEntity,
@@ -12,7 +12,7 @@ import {
   type Vec3,
   World,
   worldBricks,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

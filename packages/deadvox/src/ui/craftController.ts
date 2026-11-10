@@ -1,7 +1,7 @@
 // UI preferences/control adapter; completed readouts and Lit views live on the F7 side.
 
-import type { AlternativeRef, CraftPreference, CraftSources } from '../engine/inventory.ts';
-import type { BlockEntity } from '../engine/world.ts';
+import type { AlternativeRef, CraftPreference, CraftSources } from '../../../engine/src/inventory.ts';
+import type { BlockEntity } from '../../../engine/src/world.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import type { Session } from '../game/session.ts';
 import { renderCrafting } from './crafting.ts';

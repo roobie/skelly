@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { SECONDS_PER_DAY } from '../src/core/clock.ts';
-import type { DayCycle, DayPhase } from '../src/core/dayPhase.ts';
-import type { DayCycleDef } from '../src/core/schema.ts';
-import { sunDirection as sunDirectionAtCycle } from '../src/core/sky.ts';
-import { dayPhaseAt } from '../src/engine/sim.ts';
-import { skyAt as skyAtCycle } from '../src/engine/sky.ts';
+import { SECONDS_PER_DAY } from '../../engine/src/core/clock.ts';
+import type { DayCycle, DayPhase } from '../../engine/src/core/dayPhase.ts';
+import type { DayCycleDef } from '../../engine/src/core/schema.ts';
+import { sunDirection as sunDirectionAtCycle } from '../../engine/src/core/sky.ts';
+import { dayPhaseAt } from '../../engine/src/sim.ts';
+import { skyAt as skyAtCycle } from '../../engine/src/sky.ts';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 
 const skyAt = (hour: number, cycle: DayCycleDef = BASE_DAY_CYCLE) => skyAtCycle(hour, cycle);

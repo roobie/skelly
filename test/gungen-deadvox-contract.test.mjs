@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
-import { buildRegistry, ModelSchema } from '../packages/deadvox/src/engine/content.ts';
-import { magazineFits, typeWeightGrams } from '../packages/deadvox/src/engine/inventory.ts';
+import { buildRegistry, ModelSchema } from '../packages/engine/src/content.ts';
+import { magazineFits, typeWeightGrams } from '../packages/engine/src/inventory.ts';
 import { ammoMatchesCalibre, spentCaseItemId } from '../packages/deadvox/src/game/firearmHandling.ts';
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
 import { readStackContentSources } from '../packages/deadvox/tools/readBundledPacks.ts';

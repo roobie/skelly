@@ -6,7 +6,7 @@ import {
   loadVehicleBlueprint,
   type PlacedFitting,
   type Registry,
-} from '../src/engine/content.ts';
+} from '../../engine/src/content.ts';
 import { baseSources } from '../src/product/content.ts';
 import battery from './fixtures/vehicle-part.model.json' with { type: 'json' };
 import { PLAYER } from './playerFixture.ts';

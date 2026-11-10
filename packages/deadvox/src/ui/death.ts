@@ -1,7 +1,7 @@
 import { html, render, type TemplateResult } from 'lit-html';
-import type { Registry, ScreenText } from '../engine/content.ts';
-import { claimed, defOf } from '../engine/inventory.ts';
-import { countText, fillText } from '../engine/text.ts';
+import type { Registry, ScreenText } from '../../../engine/src/content.ts';
+import { claimed, defOf } from '../../../engine/src/inventory.ts';
+import { countText, fillText } from '../../../engine/src/text.ts';
 
 export interface DeathSummary {
   cause: string;

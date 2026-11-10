@@ -2,8 +2,8 @@
 // over its model's `flame` anchor whether the light is held or set down.
 
 import { ConeGeometry, Mesh, MeshBasicMaterial, type Object3D, Quaternion, Vector3 } from 'three';
-import type { Registry } from '../engine/content.ts';
-import { defOf, type Item } from '../engine/inventory.ts';
+import type { Registry } from '../../../engine/src/content.ts';
+import { defOf, type Item } from '../../../engine/src/inventory.ts';
 
 export class ModelFlames {
   private readonly geometry = new ConeGeometry(1, 1, 6);

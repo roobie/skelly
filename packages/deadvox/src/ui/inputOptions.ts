@@ -1,7 +1,7 @@
 import { html, render } from 'lit-html';
-import type { ScreenText } from '../engine/content.ts';
-import { bindingIsDebugOnly, contextsForRun } from '../engine/input.ts';
-import { fillText } from '../engine/text.ts';
+import type { ScreenText } from '../../../engine/src/content.ts';
+import { bindingIsDebugOnly, contextsForRun } from '../../../engine/src/input.ts';
+import { fillText } from '../../../engine/src/text.ts';
 import { NATIVE_EDITING, NATIVE_INPUTS } from '../game/bindingRegistry.ts';
 import type { KeyboardInput } from '../presentation/inputBindings.ts';
 import { factDetail } from './factDetail.ts';

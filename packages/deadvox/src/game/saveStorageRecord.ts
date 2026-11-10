@@ -1,4 +1,4 @@
-import { SHA256_HEX } from '../core/canonicalJson.ts';
+import { SHA256_HEX } from '../../../engine/src/core/canonicalJson.ts';
 
 const MAGIC = new TextEncoder().encode('DVXSLOT1');
 const IDENTITY_BYTES = 64;

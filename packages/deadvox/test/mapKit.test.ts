@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import { compileMapSite } from '../src/core/mapKit.ts';
-import type { ContentFile } from '../src/core/schema.ts';
-import { compileAssembly } from '../src/core/templates.ts';
-import { buildRegistry } from '../src/engine/content.ts';
+import { compileMapSite } from '../../engine/src/core/mapKit.ts';
+import type { ContentFile } from '../../engine/src/core/schema.ts';
+import { compileAssembly } from '../../engine/src/core/templates.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 
 const FIXTURE = JSON.parse(

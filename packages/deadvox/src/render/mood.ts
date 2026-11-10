@@ -38,7 +38,7 @@ import type { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import type { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import type { GraphicsTuningDef, NightVision } from '../engine/content.ts';
+import type { GraphicsTuningDef, NightVision } from '../../../engine/src/content.ts';
 import {
   assertGraphicsValue,
   BLOOM_RADIUS,
@@ -53,9 +53,9 @@ import {
   type MoodState,
   targetColorScale,
   VIGNETTE,
-} from '../engine/look.ts';
-import type { OpticLensFrame } from '../engine/pose.ts';
-import type { Sky } from '../engine/sky.ts';
+} from '../../../engine/src/look.ts';
+import type { OpticLensFrame } from '../../../engine/src/pose.ts';
+import type { Sky } from '../../../engine/src/sky.ts';
 import { AdaptiveScale } from './adaptiveScale.ts';
 import { autoToneUniforms, installAutoToneMapping, setAutoToneWeight } from './autoTone.ts';
 import { DrawPass } from './drawPass.ts';

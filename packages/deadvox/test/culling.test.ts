@@ -11,9 +11,9 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { MeshData } from '../src/engine/mesh.ts';
-import { skyAt } from '../src/engine/sky.ts';
-import { CHUNK } from '../src/engine/world.ts';
+import type { MeshData } from '../../engine/src/mesh.ts';
+import { skyAt } from '../../engine/src/sky.ts';
+import { CHUNK } from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();

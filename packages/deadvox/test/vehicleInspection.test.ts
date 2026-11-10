@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import { Inventory, type Item } from '../src/engine/inventory.ts';
-import { copyVehicleWorkPlacement } from '../src/engine/vehicles.ts';
+import { Inventory, type Item } from '../../engine/src/inventory.ts';
+import { copyVehicleWorkPlacement } from '../../engine/src/vehicles.ts';
 import { vehicleInspectionViewModel } from '../src/ui/vehicleInspection.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

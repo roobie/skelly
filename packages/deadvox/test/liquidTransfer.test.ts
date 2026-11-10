@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { planLiquidReceive, planLiquidTransfer } from '../src/core/liquids.ts';
-import type { LiquidContents } from '../src/core/schema.ts';
-import { assertSavedLiquidContents, Inventory, type Item, type ItemState } from '../src/engine/inventory.ts';
+import { planLiquidReceive, planLiquidTransfer } from '../../engine/src/core/liquids.ts';
+import type { LiquidContents } from '../../engine/src/core/schema.ts';
+import { assertSavedLiquidContents, Inventory, type Item, type ItemState } from '../../engine/src/inventory.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 

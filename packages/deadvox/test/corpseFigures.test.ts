@@ -1,11 +1,11 @@
 import { Box3, Color, Mesh, type MeshStandardMaterial, type Object3D, Quaternion, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { validateContent } from '../src/core/content.ts';
-import { rotatedSize } from '../src/core/orientation.ts';
-import { type ContentSource, FIGURE_LIMBS, type FurnitureDef } from '../src/engine/content.ts';
-import { Inventory } from '../src/engine/inventory.ts';
-import { reachTuning } from '../src/engine/sim.ts';
-import { type BlockEntity, type Facing, makeScale, rotationOf } from '../src/engine/world.ts';
+import { validateContent } from '../../engine/src/core/content.ts';
+import { rotatedSize } from '../../engine/src/core/orientation.ts';
+import { type ContentSource, FIGURE_LIMBS, type FurnitureDef } from '../../engine/src/content.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
+import { reachTuning } from '../../engine/src/sim.ts';
+import { type BlockEntity, type Facing, makeScale, rotationOf } from '../../engine/src/world.ts';
 import { baseSources } from '../src/product/content.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { CorpseFigures } from '../src/render/corpseFigures.ts';

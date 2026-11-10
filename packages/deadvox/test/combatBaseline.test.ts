@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
-import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
-import { handlingWeights } from '../src/core/inventory.ts';
-import { meleeCombatTuning } from '../src/core/skillTraining.ts';
-import { claimed } from '../src/engine/inventory.ts';
-import { firearmsCombatTuning } from '../src/engine/sim.ts';
+import { firearmsSkillEffects } from '../../engine/src/core/firearmsSkill.ts';
+import { handlingWeights } from '../../engine/src/core/inventory.ts';
+import { meleeCombatTuning } from '../../engine/src/core/skillTraining.ts';
+import { claimed } from '../../engine/src/inventory.ts';
+import { firearmsCombatTuning } from '../../engine/src/sim.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { withoutCombatSkills } from './fixtures/withoutCombatSkills.ts';
 import { advance, createRuntime } from './snapshotTestSupport.ts';

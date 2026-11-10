@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import { type CompiledTemplate, cellsOf, compileAssembly, compileTemplate } from '../src/core/templates.ts';
-import type { Vec3 } from '../src/engine/world.ts';
+import { type CompiledTemplate, cellsOf, compileAssembly, compileTemplate } from '../../engine/src/core/templates.ts';
+import type { Vec3 } from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const { registry } = startupContent();

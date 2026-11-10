@@ -1,14 +1,14 @@
 // Each round is one handling job, so releasing the input loses no ammunition.
 // See `SLICE-3.md`, "Firearms for real".
-import { type ActionText, actionText, fillText } from '../core/actionText.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { HandlingQueue } from '../core/handling.ts';
-import type { Inventory } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
-import { magazineSpec } from '../core/magazine.ts';
-import { countText } from '../core/numberText.ts';
-import { stowTarget } from '../core/options.ts';
-import type { SoundEventId } from '../core/soundEvents.ts';
+import { type ActionText, actionText, fillText } from '../../../engine/src/core/actionText.ts';
+import type { Vec3 } from '../../../engine/src/core/coords.ts';
+import type { HandlingQueue } from '../../../engine/src/core/handling.ts';
+import type { Inventory } from '../../../engine/src/core/inventory.ts';
+import { defOf, type Item } from '../../../engine/src/core/items.ts';
+import { magazineSpec } from '../../../engine/src/core/magazine.ts';
+import { countText } from '../../../engine/src/core/numberText.ts';
+import { stowTarget } from '../../../engine/src/core/options.ts';
+import type { SoundEventId } from '../../../engine/src/core/soundEvents.ts';
 
 export const MAGAZINE_LOAD_ACTION = 'magazine.load';
 export const MAGAZINE_STRIP_ACTION = 'magazine.strip';

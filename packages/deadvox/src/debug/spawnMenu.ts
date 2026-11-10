@@ -3,7 +3,7 @@
 // without hunting through the world's furniture.
 
 import { html, render, type TemplateResult } from 'lit-html';
-import type { Registry } from '../engine/content.ts';
+import type { Registry } from '../../../engine/src/content.ts';
 import type { BindingRegistry } from '../game/bindingRegistry.ts';
 
 const WHITESPACE = /\s+/;

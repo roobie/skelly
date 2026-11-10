@@ -3,10 +3,10 @@ import {
   posedActorBoneVoxelCenters,
   posedHumanoidRegionBoxes,
   posedRegionHitDistance,
-} from '../src/core/actorRegions.ts';
-import { PLAYER_ARM_REACH_M } from '../src/core/actorState.ts';
-import { actorPoseInputFor, type HumanoidHitRegion } from '../src/engine/pose.ts';
-import { makeScale, type Vec3 } from '../src/engine/world.ts';
+} from '../../engine/src/core/actorRegions.ts';
+import { PLAYER_ARM_REACH_M } from '../../engine/src/core/actorState.ts';
+import { actorPoseInputFor, type HumanoidHitRegion } from '../../engine/src/pose.ts';
+import { makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

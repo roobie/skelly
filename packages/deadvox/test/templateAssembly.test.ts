@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import type { MapPieceDef } from '../src/core/schema.ts';
+import type { MapPieceDef } from '../../engine/src/core/schema.ts';
 import {
   type AssemblyContext,
   compileAssembly,
@@ -8,8 +8,8 @@ import {
   stampPlacement,
   type TemplateAssembly,
   type TemplateSlot,
-} from '../src/core/templates.ts';
-import { Chunk } from '../src/engine/world.ts';
+} from '../../engine/src/core/templates.ts';
+import { Chunk } from '../../engine/src/world.ts';
 import {
   buildFixtureRegistry as buildRegistry,
   FIXTURE_MATERIAL,

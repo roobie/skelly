@@ -1,4 +1,4 @@
-import type { MetricsLimits } from '../engine/content.ts';
+import type { MetricsLimits } from '../../../engine/src/content.ts';
 
 export interface ContainerLootMetric {
   readonly container: string;

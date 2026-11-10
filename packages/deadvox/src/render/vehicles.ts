@@ -1,6 +1,6 @@
 import { Group, type Object3D } from 'three';
-import type { Registry } from '../engine/content.ts';
-import { projectVehicleParts, type VehicleInstances, type VehiclePartProjection } from '../engine/vehicles.ts';
+import type { Registry } from '../../../engine/src/content.ts';
+import { projectVehicleParts, type VehicleInstances, type VehiclePartProjection } from '../../../engine/src/vehicles.ts';
 import type { ModelLibrary } from './models.ts';
 
 interface RenderedVehicle {

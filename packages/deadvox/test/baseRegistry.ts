@@ -3,11 +3,11 @@ import { deserialize } from 'node:v8';
 import { safeParse } from 'valibot';
 import { inject } from 'vitest';
 import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
-import { schemaIssues } from '../src/core/content.ts';
-import { ContentFileSchema } from '../src/core/schema.ts';
-import type { TerrainShape } from '../src/core/worldgen.ts';
-import { CONTENT_SECTION_KEYS, type ContentSource, type Registry, type ScreenText } from '../src/engine/content.ts';
-import { terrainShapeOf } from '../src/engine/world.ts';
+import { schemaIssues } from '../../engine/src/core/content.ts';
+import { ContentFileSchema } from '../../engine/src/core/schema.ts';
+import type { TerrainShape } from '../../engine/src/core/worldgen.ts';
+import { CONTENT_SECTION_KEYS, type ContentSource, type Registry, type ScreenText } from '../../engine/src/content.ts';
+import { terrainShapeOf } from '../../engine/src/world.ts';
 import type { StartupContent } from '../src/game/bundledContent.ts';
 
 declare module 'vitest' {

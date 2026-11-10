@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { playerAdsPose, playerLookPose } from '../src/engine/pose.ts';
-import { makeScale, type Vec3, World } from '../src/engine/world.ts';
+import { playerAdsPose, playerLookPose } from '../../engine/src/pose.ts';
+import { makeScale, type Vec3, World } from '../../engine/src/world.ts';
 import { createSession, IDLE, type SessionControls } from '../src/game/session.ts';
 import { DebugGunPose } from '../src/presentation/debugGunPose.ts';
 import { SpectatorCamera } from '../src/presentation/spectatorCamera.ts';

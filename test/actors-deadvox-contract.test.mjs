@@ -14,7 +14,7 @@ import {
   clipBoneIssues,
   JointDeltaClipSchema,
   PoseClipSchema,
-} from '../packages/deadvox/src/engine/content.ts';
+} from '../packages/engine/src/content.ts';
 import {
   applyOverlay,
   applyPoint,
@@ -26,7 +26,7 @@ import {
   slerpQuat,
   standingFit,
   walkCursor,
-} from '../packages/deadvox/src/engine/pose.ts';
+} from '../packages/engine/src/pose.ts';
 import {
   packFileBytes,
   packFileOrigin,

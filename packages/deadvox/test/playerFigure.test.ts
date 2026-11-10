@@ -20,12 +20,12 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { leanFrame } from '../src/core/lean.ts';
-import { meleeContactTime } from '../src/core/meleePose.ts';
-import { insideLensAperture } from '../src/core/opticView.ts';
-import { playerLookLean } from '../src/core/playerLookPose.ts';
-import { FIGURE_LIMB_JOINTS, FIGURE_LIMBS, type FigureLimb } from '../src/engine/content.ts';
-import { Inventory, toggleLight } from '../src/engine/inventory.ts';
+import { leanFrame } from '../../engine/src/core/lean.ts';
+import { meleeContactTime } from '../../engine/src/core/meleePose.ts';
+import { insideLensAperture } from '../../engine/src/core/opticView.ts';
+import { playerLookLean } from '../../engine/src/core/playerLookPose.ts';
+import { FIGURE_LIMB_JOINTS, FIGURE_LIMBS, type FigureLimb } from '../../engine/src/content.ts';
+import { Inventory, toggleLight } from '../../engine/src/inventory.ts';
 import {
   meleePoseAndContact,
   NEUTRAL_AIM,
@@ -34,8 +34,8 @@ import {
   playerAdsPose,
   playerEyePosition,
   readyMeleePose,
-} from '../src/engine/pose.ts';
-import { makeScale, type Vec3 } from '../src/engine/world.ts';
+} from '../../engine/src/pose.ts';
+import { makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { renderMeleePose } from '../src/render/meleePose.ts';

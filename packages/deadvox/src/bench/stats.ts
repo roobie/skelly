@@ -1,6 +1,6 @@
 // Summaries of timing samples. Pure, so the benchmark's arithmetic is tested.
 
-import { percentile } from '../engine/math.ts';
+import { percentile } from '../../../engine/src/math.ts';
 
 export const mean = (samples: readonly number[]): number =>
   samples.length === 0 ? Number.NaN : samples.reduce((a, b) => a + b, 0) / samples.length;

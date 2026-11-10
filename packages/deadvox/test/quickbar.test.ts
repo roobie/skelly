@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { chargeOf } from '../src/core/lights.ts';
-import { HandlingQueue, Inventory } from '../src/engine/inventory.ts';
-import { bindReach } from '../src/engine/sim.ts';
+import { chargeOf } from '../../engine/src/core/lights.ts';
+import { HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
+import { bindReach } from '../../engine/src/sim.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
 import { applyReplayActionPayload, type ReplayCommandOwners } from '../src/game/replayCommands.ts';
 import { Survival } from '../src/game/survival.ts';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { MoveStart } from '../src/core/handling.ts';
-import { HandlingQueue, Inventory } from '../src/engine/inventory.ts';
+import type { MoveStart } from '../../engine/src/core/handling.ts';
+import { HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
 import { handlingMoveCompleteCue, handlingMoveStartCue } from '../src/game/audioPresentation.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

@@ -4,10 +4,10 @@ import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { readStackActorFigureFiles, readStackContentSources } from '../../tools/readBundledPacks.ts';
-import { actorFigure, buildRegistry, requireDayCycle } from '../engine/content.ts';
-import { claimed } from '../engine/inventory.ts';
-import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope, fusedMassTypeOf } from '../engine/pose.ts';
-import { BlockEntities, makeScale, siteGenerationOf, World, worldBricks, worldSolid } from '../engine/world.ts';
+import { actorFigure, buildRegistry, requireDayCycle } from '../../../engine/src/content.ts';
+import { claimed } from '../../../engine/src/inventory.ts';
+import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope, fusedMassTypeOf } from '../../../engine/src/pose.ts';
+import { BlockEntities, makeScale, siteGenerationOf, World, worldBricks, worldSolid } from '../../../engine/src/world.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
 
 const args = process.argv.slice(2);
@@ -34,7 +34,7 @@ if (args.length > 0) {
   });
 }
 // The simulation entry loads the shape, so it is imported only once the hook can substitute it.
-const { ActorSystem, dayPhaseAt } = await import('../engine/sim.ts');
+const { ActorSystem, dayPhaseAt } = await import('../../../engine/src/sim.ts');
 if (args.length > 0 && !substituted) {
   throw new Error('The baseline shape was not loaded');
 }

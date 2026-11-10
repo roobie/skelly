@@ -7,7 +7,7 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
-import type { Vec3 } from '../../src/engine/world.ts';
+import type { Vec3 } from '../../../engine/src/world.ts';
 import { skyFixture } from '../fixtures/sky.ts';
 
 /** A closed roof opening must shelter beam receivers even though the unfurnished field sees daylight. */

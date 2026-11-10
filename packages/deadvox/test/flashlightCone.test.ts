@@ -15,10 +15,10 @@ import type { WebGLExtensions } from 'three/src/renderers/webgl/WebGLExtensions.
 import { WebGLLights } from 'three/src/renderers/webgl/WebGLLights.js';
 import { safeParse } from 'valibot';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { validateContent } from '../src/core/content.ts';
-import { BeamSpillSchema, type ContentFile } from '../src/core/schema.ts';
-import { type BeamSpill, buildRegistry } from '../src/engine/content.ts';
-import { Inventory, type Item, toggleLight } from '../src/engine/inventory.ts';
+import { validateContent } from '../../engine/src/core/content.ts';
+import { BeamSpillSchema, type ContentFile } from '../../engine/src/core/schema.ts';
+import { type BeamSpill, buildRegistry } from '../../engine/src/content.ts';
+import { Inventory, type Item, toggleLight } from '../../engine/src/inventory.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { CALIBRATED_NEAR_FIELD_M } from './flashlightFixture.ts';
 

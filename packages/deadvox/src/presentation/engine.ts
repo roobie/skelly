@@ -5,10 +5,10 @@
 // the stress-test city instead (`?site=city`).
 
 import { DirectionalLight, Fog, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
-import { requireDayCycle } from '../engine/content.ts';
-import { claimed } from '../engine/inventory.ts';
-import { skyAt } from '../engine/sky.ts';
-import { CHUNK } from '../engine/world.ts';
+import { requireDayCycle } from '../../../engine/src/content.ts';
+import { claimed } from '../../../engine/src/inventory.ts';
+import { skyAt } from '../../../engine/src/sky.ts';
+import { CHUNK } from '../../../engine/src/world.ts';
 import type { GameConfig } from '../game/config.ts';
 import type { StreamerStats } from '../game/streamer.ts';
 import { createWorldSetup, type WorldSetup } from '../game/worldSetup.ts';

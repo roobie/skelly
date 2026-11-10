@@ -1,6 +1,6 @@
 import { CustomToneMapping, ShaderChunk } from 'three';
 import { describe, expect, it } from 'vitest';
-import { AUTO_TONE } from '../src/engine/look.ts';
+import { AUTO_TONE } from '../../engine/src/look.ts';
 import {
   autoToneUniforms,
   installAutoToneMapping,

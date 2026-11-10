@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { validateContent } from '../src/core/content.ts';
-import { type FurnitureMover, movableRefusal, placement } from '../src/core/furnitureMove.ts';
-import { pickFurniture } from '../src/core/furniturePick.ts';
-import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
-import { cellsOf, pieceSize } from '../src/core/templates.ts';
-import { buildRegistry } from '../src/engine/content.ts';
-import { Inventory } from '../src/engine/inventory.ts';
+import { validateContent } from '../../engine/src/core/content.ts';
+import { type FurnitureMover, movableRefusal, placement } from '../../engine/src/core/furnitureMove.ts';
+import { pickFurniture } from '../../engine/src/core/furniturePick.ts';
+import { ScenarioCitySite } from '../../engine/src/core/scenarioCity.ts';
+import { cellsOf, pieceSize } from '../../engine/src/core/templates.ts';
+import { buildRegistry } from '../../engine/src/content.ts';
+import { Inventory } from '../../engine/src/inventory.ts';
 import {
   type BlockEntity,
   footprint,
@@ -15,7 +15,7 @@ import {
   World,
   worldOpaque,
   worldSolid,
-} from '../src/engine/world.ts';
+} from '../../engine/src/world.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
