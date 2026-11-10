@@ -35,16 +35,9 @@ const benchPage = (address: string) => {
   }
   return page;
 };
-const registry = { layouts: new Map(), scenarios: new Map() };
 afterEach(() => vi.unstubAllGlobals());
-const worldRun = (address: string) => {
-  const { query, hash } = benchPage(address);
-  return benchRunFromUrl(query, hash, registry);
-};
-const shamblerRun = (address: string) => {
-  const { query, hash } = benchPage(address);
-  return shamblerRunFromUrl(query, hash);
-};
+const worldRun = (address: string) => benchRunFromUrl(benchPage(address).hash);
+const shamblerRun = (address: string) => shamblerRunFromUrl(benchPage(address).hash);
 
 describe('bench stats', () => {
   it('takes nearest-rank percentiles', () => {
@@ -63,7 +56,7 @@ describe('bench stats', () => {
 });
 
 describe('bench plan', () => {
-  it('defaults and validates shambler benchmark counts, seed, and time', () => {
+  it('defaults and validates shambler benchmark counts and seed', () => {
     const defaults = shamblerRun('?bench=shamblers')!;
     expect(defaults).toMatchObject({
       counts: [...DEFAULT_SHAMBLER_COUNTS],
@@ -72,7 +65,7 @@ describe('bench plan', () => {
       post: false,
     });
     expect(Number.isInteger(defaults.seed)).toBe(true);
-    expect(shamblerRun(`?bench=shamblers&time=${defaults.time}#{seed:${defaults.seed}}`)).toEqual(defaults);
+    expect(shamblerRun(`?bench=shamblers#{seed:${defaults.seed}}`)).toEqual(defaults);
     // The count cap: every count up to the largest accepted one parses, and one more is refused.
     let low = Math.max(...DEFAULT_SHAMBLER_COUNTS);
     let high = Number.MAX_SAFE_INTEGER;
@@ -90,11 +83,10 @@ describe('bench plan', () => {
     expect(parseShamblerCounts([1, max])).toEqual([1, max]);
     expect(parseShamblerCounts([max + 1])).toBeUndefined();
     expect(shamblerRun(`?bench=shamblers#{shamblers:[${max + 1}]}`)).toBeUndefined();
-    expect(shamblerRun('?bench=shamblers&time=21:15#{seed:77,actors:detailed,shamblers:[10,25],i:1}')).toEqual({
+    expect(shamblerRun('?bench=shamblers#{seed:77,actors:detailed,shamblers:[10,25],i:1}')).toEqual({
       counts: [10, 25],
       index: 1,
       seed: 77,
-      time: '21:15',
       actors: 'detailed',
       post: false,
     });
@@ -108,22 +100,17 @@ describe('bench plan', () => {
     }
     expect(shamblerRun('?bench=shamblers#{shamblers:[10],i:1}')).toBeUndefined();
     expect(shamblerRun('?bench=shamblers#{seed:2147483648}')).toBeUndefined();
-    expect(shamblerRun('?bench=shamblers&time=25:99')).toBeUndefined();
   });
 
-  it('keeps a valid time and carries the detailed population through each full phase run', () => {
-    const run = worldRun('?bench=1&time=23:30#{actors:detailed,shamblers:[7]}');
-    expect(run).toMatchObject({ time: '23:30', shamblers: 7 });
-    expect(worldRun('?bench=1&time=25:00').time).toBeUndefined();
-    const lightsOnly = worldRun('?bench=1');
-    expect(lightsOnly.time).toBeUndefined();
-    expect(lightsOnly.shamblers).toBe(0);
+  it('carries the detailed population through each full phase run', () => {
+    expect(worldRun('?bench=1#{actors:detailed,shamblers:[7]}').shamblers).toBe(7);
+    expect(worldRun('?bench=1').shamblers).toBe(0);
     expect(worldRun('?bench=1#{shamblers:[7,8]}').shamblers).toBeUndefined();
   });
 
   it('reloads the next run with its query and hash, bar the run index, and shows the report after the last', () => {
     const start = new URL(
-      '?bench=1&time=23:30#{seed:7,post:true,plan:[1,64,0.25,64],shamblers:[7]}',
+      '?bench=1&start-mod=fixture.bench.start#{seed:7,post:true,plan:[1,64,0.25,64],shamblers:[7]}',
       'https://example.test/deadvox/',
     );
     const written: string[] = [];
@@ -140,15 +127,15 @@ describe('bench plan', () => {
       replaceState: (_state: unknown, _title: string, url: string) => written.push(url),
     });
     const first = benchPage(start.href);
-    const run = benchRunFromUrl(first.query, first.hash, registry);
-    expect(run).toMatchObject({ site: 'forest', seed: 7, post: true, shamblers: 7, time: '23:30' });
+    const run = benchRunFromUrl(first.hash);
+    expect(run).toMatchObject({ seed: 7, post: true, shamblers: 7 });
     loadNextRun(run.index, run.plan.length);
     expect(navigation).toEqual(['reload']);
     expect(written).toHaveLength(1);
     const next = benchPage(written[0]!);
     expect([...next.query]).toEqual([...first.query]);
     expect(next.hash).toEqual({ ...first.hash, i: 1 });
-    expect(benchRunFromUrl(next.query, next.hash, registry)).toEqual({ ...run, index: 1 });
+    expect(benchRunFromUrl(next.hash)).toEqual({ ...run, index: 1 });
     navigation.length = 0;
     loadNextRun(1, run.plan.length);
     expect(navigation).toEqual(['replace ?bench=report']);

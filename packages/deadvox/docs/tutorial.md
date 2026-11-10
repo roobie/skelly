@@ -67,7 +67,7 @@ it. See `packages/presentation/src/presentation/tutorialUrl.ts`, `tutorialUrl`.
 The launcher offers practice only as a play destination, so a benchmark cannot carry
 an unsaved teaching place. Its URL contract stays independent of simulation and
 workspace packages because launcher checks run without a game installation. See
-`site/launcher.js`, `setPlayOnlySite`.
+`site/launcher.js`, `siteOffered`.
 
 Five minutes is a nominal teaching target, not a timer or test assertion. Slower
 reading is allowed. Teachability, threat intensity and readability require a newcomer

@@ -11,8 +11,6 @@ import { baseRegistry, startupContent } from './baseRegistry.ts';
 import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 
-const params = (query: string) => new URLSearchParams(query);
-
 const registry = baseRegistry();
 
 describe('benchmark weathering', () => {
@@ -27,15 +25,14 @@ describe('benchmark weathering', () => {
 
 describe('benchmark post-processing option', () => {
   it('is off unless the hash turns post on, so the default benchmark renders as it always did', () => {
-    const world = { layouts: new Map(), scenarios: new Map() };
-    expect(benchRunFromUrl(params('bench=1'), {}, world).post).toBe(false);
-    expect(benchRunFromUrl(params('bench=1'), { post: false }, world).post).toBe(false);
-    expect(benchRunFromUrl(params('bench=1'), { post: true }, world).post).toBe(true);
+    expect(benchRunFromUrl({}).post).toBe(false);
+    expect(benchRunFromUrl({ post: false }).post).toBe(false);
+    expect(benchRunFromUrl({ post: true }).post).toBe(true);
   });
 
   it('is read by both benchmark modes', () => {
-    expect(shamblerRunFromUrl(params('bench=shamblers'), {})?.post).toBe(false);
-    expect(shamblerRunFromUrl(params('bench=shamblers'), { post: true })?.post).toBe(true);
+    expect(shamblerRunFromUrl({})?.post).toBe(false);
+    expect(shamblerRunFromUrl({ post: true })?.post).toBe(true);
   });
 
   it.each([false, true])('initializes authored fog independently of prior play with post=%s', (post) => {

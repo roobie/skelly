@@ -27,14 +27,14 @@ const page = (state) => html`  <main>
               The seed is the starting value the random number generator uses to generate a sequence of seemingly random numbers. This means that a new seed will cause a completely 'new' world to be generated.
             </div>
             <label id="deadvox-time-field" ?hidden=${!visible('deadvox-time-field', state)}>Start time
-              <input name="time" data-url-param="time" type="time" value="19:30" data-default-time="19:30" required  data-state-key="time" .value=${state.deadvox.time} .disabled=${!enabled('time', state)}/>
+              <input name="time" data-url-param="start-mod" type="time" value="19:30" data-default-time="19:30" required  data-state-key="time" .value=${state.deadvox.time} .disabled=${!enabled('time', state)}/>
             </label>
             <label id="deadvox-radius-field" ?hidden=${!visible('deadvox-radius-field', state)}>View distance (m)
               <input name="radius" data-url-param="radius" type="number" min="32" max="256" step="1" value="96" required  data-state-key="radius" .value=${state.deadvox.radius} .disabled=${!enabled('radius', state)}/>
             </label>
             <label id="deadvox-site-field" ?hidden=${!visible('deadvox-site-field', state)}>Site
-              <select name="site" data-url-param="site" id="deadvox-site" data-state-key="site" .value=${state.deadvox.site} .disabled=${!enabled('site', state)}>
-                <option id="deadvox-default-site" value="">${state.deadvox.bench === '1' ? 'Test house (benchmark default)' : 'Gauntlet (default)'}</option>
+              <select name="site" data-url-param="start-mod" id="deadvox-site" data-state-key="site" .value=${state.deadvox.site} .disabled=${!enabled('site', state)}>
+                <option id="deadvox-default-site" value="">Gauntlet (default)</option>
                 <option value="city">Stress-test city</option>
                 <option value="forest">Forest (tree first look)</option>
                 ${siteOffered(state.deadvox, 'gauntlet') ? html`<option value="gauntlet">Gauntlet</option>` : ''}
@@ -101,7 +101,7 @@ const page = (state) => html`  <main>
               <label class="check">
                 <input name="quick" data-url-param="quick" type="checkbox"  data-state-key="quick" .checked=${state.deadvox.quick} .disabled=${!enabled('quick', state)}/> Quick check (short, not a result)
               </label>
-              <p class="muted">Plan block sizes: 0.25, 0.5 or 1 m; radius: 16–512 m per entry. Time defaults to noon.</p>
+              <p class="muted">Plan block sizes: 0.25, 0.5 or 1 m; radius: 16–512 m per entry. Time defaults to the site's start time.</p>
             </div>
           </div>
 
@@ -191,7 +191,8 @@ const root = document.body.firstElementChild;
 const renderPage = () => render(page(model), root);
 const visibility = {
   'deadvox-seed-field': (d) => d.bench !== 'report',
-  'deadvox-time-field': (d) => d.bench !== 'report',
+  // The tutorial scenario keeps its own start time.
+  'deadvox-time-field': (d) => d.bench !== 'report' && d.site !== 'tutorial',
   'deadvox-radius-field': (d) => d.bench === '',
   'deadvox-site-field': (d) => d.bench !== 'report' && d.bench !== 'shamblers',
   'deadvox-actors-field': (d) => d.bench === '',
@@ -230,18 +231,6 @@ const deadvoxControlVisibility = {
   shamblerIndex: 'deadvox-shambler-bench',
 };
 const enabled = (key, s) => (deadvoxControlVisibility[key] ? visible(deadvoxControlVisibility[key], s) : true);
-const defaultTime = (d) => {
-  if (d.bench === '' && d.site === 'weatheringTest') {
-    return '12:00';
-  }
-  if (d.bench === 'shamblers') {
-    return '23:30';
-  }
-  if (d.bench === '1') {
-    return '12:00';
-  }
-  return '10:00';
-};
 // Which site choices a mode offers: the gauntlet scenario, the practice tutorial and the debug sites are play-only.
 const siteOffered = (d, site) => {
   if (site === 'gauntlet' || site === 'tutorial') {
@@ -251,6 +240,107 @@ const siteOffered = (d, site) => {
     return d.bench === '' && d.debug;
   }
   return true;
+};
+// The site of the product default start, which a link without a start runs.
+const DEFAULT_SITE = 'gauntlet';
+const TUTORIAL_MOD = 'skelly.deadvox.scenario.tutorial.play';
+const GAUNTLET_MOD = 'skelly.deadvox.scenario.gauntlet.play';
+// The launcher owns the start rows its links carry. Each site's row is its committed default start, which all
+// share this kit.
+const START_KIT = {
+  kit: [
+    { id: 'jeans', item: 'jeans', count: 1, condition: 0.7, destination: { kind: 'worn' } },
+    { id: 'sneakers', item: 'sneakers', count: 1, condition: 0.8, destination: { kind: 'worn' } },
+    { id: 'hoodie', item: 'hoodie', count: 1, condition: 0.8, destination: { kind: 'worn' } },
+    { id: 'beans', item: 'canned_beans', destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 } },
+    { id: 'matches', item: 'matches', destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 } },
+    { id: 'bandages', item: 'bandage', count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 } },
+  ],
+  wounds: [],
+  skills: {},
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+};
+const SITE_STARTS = {
+  gauntlet: {
+    startTimeGameTimeOfDay: '10:00',
+    placement: {
+      template: 'gauntlet_start',
+      cell: [0, 0],
+      spawn: [22, 41, 4],
+      minimumOpenDescents: 2,
+      descents: [
+        { kind: 'ladder', ladder: [39, 1, 10], lower: [41, 1, 11], upper: [36, 41, 11] },
+        { kind: 'stairs', hatch: [10, 40, 5], lower: [14, 1, 1], upper: [18, 41, 6] },
+        { kind: 'drop', edge: [5, 41, 8], landing: [5, 3, 8], lower: [5, 1, 14], upper: [6, 41, 8] },
+      ],
+      fixedLoot: [{ at: [35, 17, 6], items: [{ item: 'revolver_357', condition: 0.7, key: true }] }],
+    },
+  },
+  city: { startTimeGameTimeOfDay: '10:00' },
+  forest: { startTimeGameTimeOfDay: '10:00' },
+  testHouse: { startTimeGameTimeOfDay: '10:00' },
+  weatheringTest: { startTimeGameTimeOfDay: '12:00', debugOnly: true, allSkills: 10 },
+};
+// The game's `start-mod`: a mod whose one start row begins the run at `site` and `time`.
+const launcherStartMod = (site, time) => ({
+  id: 'site.launcher.start',
+  version: '1',
+  tier: 'scenario',
+  product: false,
+  dependencies: [],
+  overrides: [],
+  starts: [
+    {
+      id: `launcher_${site.toLowerCase()}`,
+      site,
+      seed: 1,
+      storeys: 1,
+      density: null,
+      ...START_KIT,
+      ...SITE_STARTS[site],
+      startTimeGameTimeOfDay: time,
+    },
+  ],
+});
+// The shambler benchmark always runs in the forest.
+const startSite = (d) => {
+  if (d.bench === 'shamblers') {
+    return 'forest';
+  }
+  return d.site !== '' && siteOffered(d, d.site) ? d.site : DEFAULT_SITE;
+};
+const defaultTime = (d) =>
+  d.bench === 'shamblers' ? '23:30' : (SITE_STARTS[startSite(d)] ?? SITE_STARTS[DEFAULT_SITE]).startTimeGameTimeOfDay;
+// A committed scenario at its own time goes through `mods`; any other site or time is a launcher start row.
+const setStart = (p, d) => {
+  const site = startSite(d);
+  const mods = [...d.mods];
+  if (site === 'tutorial') {
+    mods.push(TUTORIAL_MOD);
+  } else if (site === DEFAULT_SITE && d.time === SITE_STARTS[site].startTimeGameTimeOfDay) {
+    if (d.site === DEFAULT_SITE) {
+      mods.push(GAUNTLET_MOD);
+    }
+  } else {
+    p.set('start-mod', JSON.stringify(launcherStartMod(site, d.time)));
+  }
+  if (d.bench === '') {
+    setDefault(p, 'mods', mods.join(','), '');
+  }
 };
 const parsePlan = (v) => {
   const rows = v.split(',').map((x) => x.split(':'));
@@ -292,7 +382,7 @@ const setHashNumber = (hash, key, text) => {
 };
 const atNumbers = (text) =>
   text.trim() === '' ? [] : text.split(',').map((part) => (part.trim() === '' ? Number.NaN : Number(part)));
-const addDebugParams = (params, hash, d) => {
+const addDebugParams = (hash, d) => {
   const at = atNumbers(d.at);
   if (at.length > 0) {
     hash.at = at;
@@ -304,11 +394,8 @@ const addDebugParams = (params, hash, d) => {
   setHashNumber(hash, 'weatheringVariation', d.weatheringVariation);
   setHashNumber(hash, 'weatheringSplit', d.weatheringSplit);
   setHashNumber(hash, 'wobbleFlat', d.wobbleFlat);
-  if (siteOffered(d, d.site) && (d.site === 'testHouse' || d.site === 'weatheringTest')) {
-    params.set('site', d.site);
-  }
 };
-const playHash = (params, d) => {
+const playHash = (d) => {
   const hash = d.debug ? { debug: true } : {};
   if (d.seed !== '1') {
     hash.seed = Number(d.seed);
@@ -320,17 +407,9 @@ const playHash = (params, d) => {
     hash.actors = d.actors;
   }
   if (d.debug) {
-    addDebugParams(params, hash, d);
+    addDebugParams(hash, d);
   }
   return hash;
-};
-// Sites the game offers only in play compose into the URL only then, never with a benchmark.
-const setPlayOnlySite = (params, d) => {
-  for (const site of ['gauntlet', 'tutorial']) {
-    if (siteOffered(d, site) && d.site === site) {
-      params.set('site', site);
-    }
-  }
 };
 // A bench run's settings, in the hash like the game's developer state.
 const benchHash = (d) => {
@@ -367,21 +446,8 @@ const makeDeadvox = (d) => {
   if (m === 'report') {
     return u;
   }
-  if (m !== '') {
-    u.hash = hashText(benchHash(d));
-  }
-  setDefault(p, 'time', d.time, defaultTime(d));
-  if (m === '') {
-    setDefault(p, 'mods', d.mods.join(','), '');
-    u.hash = hashText(playHash(p, d));
-  }
-  if ((m === '' || m === '1') && d.site === 'city') {
-    p.set('site', 'city');
-  }
-  if (d.site === 'forest') {
-    p.set('site', 'forest');
-  }
-  setPlayOnlySite(p, d);
+  setStart(p, d);
+  u.hash = hashText(m === '' ? playHash(d) : benchHash(d));
   return u;
 };
 const inRange = (value, min, max, integer = true) => {
@@ -498,7 +564,7 @@ const presets = {
   gauntlet: {
     bench: '',
     seed: '1',
-    time: '19:30',
+    time: '10:00',
     radius: '96',
     site: 'gauntlet',
     debug: false,

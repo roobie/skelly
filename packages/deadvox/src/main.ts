@@ -19,7 +19,6 @@ import {
   makeConfig,
   savingEnabledFromUrl,
 } from '@skelly/engine/session';
-import { parseTimeOfDay } from '@skelly/engine/sim';
 import { countText, fillText } from '@skelly/engine/text';
 import type { StreamerStats } from '@skelly/engine/world';
 import {
@@ -44,9 +43,8 @@ import {
   SaveController,
 } from '@skelly/presentation/ui';
 import { loadRecord } from './bench/plan.ts';
-import { applyBenchWeathering } from './bench/post.ts';
 import { showReport } from './bench/report.ts';
-import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
+import { benchGameConfig, benchRunFromUrl, benchStartConfig, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import { bundledCredits } from './bundledCredits.ts';
 import { writeHash } from './hashState.ts';
@@ -380,20 +378,17 @@ if (bench === 'report') {
     }
   }
 } else if (bench === 'shamblers') {
-  const run = shamblerRunFromUrl(params, hash);
+  const run = shamblerRunFromUrl(hash);
   if (run) {
-    const config = makeConfig(run.seed, DEFAULT_RADIUS_M, content);
-    config.site = 'forest';
-    config.start = parseTimeOfDay(run.time)!;
-    applyBenchWeathering(config);
+    const config = benchStartConfig(content, run.seed, DEFAULT_RADIUS_M);
     const engine = createEngine(config, view, undefined, { graphicsSource: 'mod' });
     startShamblerBench(engine, run, await fetchActorFigureFiles(engine.registry, assets.figures));
   } else {
     document.getElementById('hud')!.textContent =
-      'Invalid shambler benchmark parameters. Use the hash shamblers as unique positive integers up to 500, the hash seed as a signed 32-bit integer, and the query time as HH:MM (default 23:30).';
+      'Invalid shambler benchmark parameters. Use the hash shamblers as unique positive integers up to 500 and the hash seed as a signed 32-bit integer.';
   }
 } else {
-  const run = benchRunFromUrl(params, hash, content.registry);
+  const run = benchRunFromUrl(hash);
   const stats: StreamerStats = { genMs: [], meshMs: [], triangles: [] };
   const config = benchGameConfig(run, content);
   const engine = createEngine(config, view, stats, { graphicsSource: 'mod' });

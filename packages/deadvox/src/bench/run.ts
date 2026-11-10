@@ -7,7 +7,7 @@ import { type ActorFigureFiles, type Registry, requireDayCycle } from '@skelly/e
 import { claimed } from '@skelly/engine/inventory';
 import { graphicsTuningOf, lookDefaultsOf } from '@skelly/engine/look';
 import type { StartupContent } from '@skelly/engine/packs';
-import { type GameConfig, makeConfig, type SiteName, siteFromUrl } from '@skelly/engine/session';
+import { type GameConfig, makeConfig, requireStart, runStartId } from '@skelly/engine/session';
 import {
   ACTIVE_ACTOR_RATE,
   ActorSystem,
@@ -16,7 +16,6 @@ import {
   BACKGROUND_ACTOR_SLICE_RATE,
   dayPhaseAt,
   hourOfDay,
-  parseTimeOfDay,
   physicsFor,
   playerTuning,
   reachTuning,
@@ -57,10 +56,6 @@ export interface BenchRun {
   index: number;
   quick: boolean;
   seed: number;
-  /** The stress-test city or another site instead of the test house (`&site=city`). */
-  site: SiteName;
-  /** Time of day as "HH:MM" (`&time=`); noon when absent. Night brings the fog, and the far plane, closer. */
-  time?: string;
   /** Select the independent full-post workload (hash `post`, bench/post.ts). */
   post: boolean;
   /** Detailed shambler population to keep active through every phase; undefined rejects a malformed URL. */
@@ -81,15 +76,10 @@ type Phase = 'load' | 'settle' | 'look' | 'render' | 'jog' | 'sprint';
 const parseBenchShamblers = (values: readonly number[]): number[] | undefined =>
   values.length === 1 && values[0] === 0 ? [0] : parseShamblerCounts(values);
 
-/** The world bench's run: its world setup from the query, its run settings and seed from the hash. */
-export const benchRunFromUrl = (
-  query: URLSearchParams,
-  hash: HashState,
-  registry: Pick<Registry, 'layouts' | 'scenarios'>,
-): BenchRun => {
+/** The world bench's run settings and seed, from the hash; its world is the run's start (`benchStartConfig`). */
+export const benchRunFromUrl = (hash: HashState): BenchRun => {
   const plan = parsePlan(hash.plan ?? []) ?? [...DEFAULT_PLAN];
   const index = hash.i ?? 0;
-  const time = query.get('time') ?? '';
   const shamblerValues = parseBenchShamblers(hash.shamblers ?? [0]);
   return {
     plan,
@@ -98,24 +88,41 @@ export const benchRunFromUrl = (
     seed: (hash.seed ?? 1) | 0,
     post: hash.post === true,
     shamblers: shamblerValues?.length === 1 ? shamblerValues[0]! : undefined,
-    ...siteFromUrl(
-      query,
-      plan.some(({ blockSize }) => blockSize !== 0.5) ? 'forest' : 'testHouse',
-      registry,
-      hash.debug === true,
-    ),
-    ...(parseTimeOfDay(time) === undefined ? {} : { time }),
   };
+};
+
+/**
+ * A bench config at the run's start, as a played run picks it (the `start-mod` row, else a `mods` scenario's default,
+ * else the product default): its site, storeys, density and time of day. The bench sets the seed and view.
+ */
+export const benchStartConfig = (
+  content: StartupContent,
+  seed: number,
+  radiusM: number,
+  blockSize?: number,
+): GameConfig => {
+  const start = requireStart(content, runStartId(content));
+  const config = makeConfig(seed, radiusM, content, blockSize);
+  config.startId = start.id;
+  config.site = start.site;
+  config.storeys = start.storeys ?? 1;
+  config.density = start.density ?? null;
+  config.start = start.startTimeGameTimeOfDay ?? requireDayCycle(content.registry).defaultStartGameTimeOfDay;
+  applyBenchWeathering(config);
+  return config;
 };
 
 const currentConfig = (run: BenchRun): BenchConfig => run.plan[run.index]!;
 
 export const benchGameConfig = (run: BenchRun, content: StartupContent): GameConfig => {
   const { blockSize, radiusM } = currentConfig(run);
-  const config = makeConfig(run.seed, radiusM, content, blockSize);
-  config.site = run.site;
-  applyBenchWeathering(config);
-  return config;
+  return benchStartConfig(content, run.seed, radiusM, blockSize);
+};
+
+/** A calendar time's time of day as "HH:MM". */
+export const timeOfDayText = (calendar: number): string => {
+  const minutes = Math.round(hourOfDay(calendar) * 60) % (24 * 60);
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 };
 
 export const environment = (engine: RenderedEngine): Environment => {
@@ -211,12 +218,10 @@ export const startBench = (
   const shamblerCount = run.shamblers;
   document.body.classList.add('bench');
   document.getElementById('overlay')!.hidden = true;
-  const startTime = parseTimeOfDay(run.time ?? '12:00')!;
+  const startTime = config.start;
   const hour = hourOfDay(startTime);
   const dayCycle = requireDayCycle(engine.registry);
-  if (run.time !== undefined) {
-    applySky(engine.sky, skyAt(hour, dayCycle));
-  }
+  applySky(engine.sky, skyAt(hour, dayCycle));
   const lightFixture = createBenchLightFixture(engine, startTime);
   window.addEventListener('pagehide', lightFixture.dispose, { once: true });
   const daylightScale = flashlightDaylightScale(skyAt(hour, dayCycle));
@@ -242,7 +247,7 @@ export const startBench = (
           quick: run.quick,
           site: benchSiteLabel(config),
           ...(config.site === 'forest' ? { forest: forestWorkload(engine.registry, config.seed, config.density) } : {}),
-          time: run.time ?? '12:00',
+          time: timeOfDayText(startTime),
           ...(run.post ? { post: true } : {}),
           lightWorkload: {
             active: lightFixture.activeCount(),

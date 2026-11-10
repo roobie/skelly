@@ -1,4 +1,4 @@
-// The shambler mode of the shared ?bench= harness. It loads the forest, runs the
+// The shambler mode of the shared ?bench= harness. It loads the run's start world, runs the
 // real fixed-step ActorSystem and player physics, and records frame/tick/render costs.
 
 import { type ActorFigureFiles, requireDayCycle } from '@skelly/engine/content';
@@ -13,7 +13,6 @@ import {
   BACKGROUND_ACTOR_SLICE_RATE,
   dayPhaseAt,
   hourOfDay,
-  parseTimeOfDay,
   physicsFor,
   playerTuning,
   reachTuning,
@@ -38,7 +37,7 @@ import {
 } from './plan.ts';
 import { benchDraw } from './post.ts';
 import { syncClock } from './renderClock.ts';
-import { environment, loadNextRun } from './run.ts';
+import { benchSiteLabel, environment, loadNextRun, timeOfDayText } from './run.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { frameStats, sampleStats } from './stats.ts';
@@ -50,32 +49,26 @@ export interface ShamblerBenchRun {
   counts: number[];
   index: number;
   seed: number;
-  time: string;
   actors: ActorRenderMode;
   /** Draw through the mood pass with the default look (hash `post`, bench/post.ts). */
   post: boolean;
 }
 
-/** The shambler bench's run: its time of day from the query, its counts, run index and seed from the hash. */
-export const shamblerRunFromUrl = (query: URLSearchParams, hash: HashState): ShamblerBenchRun | undefined => {
+/**
+ * The shambler bench's run: its counts, run index and seed from the hash. Its world and time of day are the run's
+ * start (`run.ts`, `benchStartConfig`).
+ */
+export const shamblerRunFromUrl = (hash: HashState): ShamblerBenchRun | undefined => {
   const counts = parseShamblerCounts(hash.shamblers ?? DEFAULT_SHAMBLER_COUNTS);
   const index = hash.i ?? 0;
   const seed = parseShamblerSeed(String(hash.seed ?? 1));
-  const time = query.get('time') ?? '23:30';
-  if (
-    !(counts && Number.isInteger(index)) ||
-    index < 0 ||
-    index >= counts.length ||
-    seed === undefined ||
-    parseTimeOfDay(time) === undefined
-  ) {
+  if (!(counts && Number.isInteger(index)) || index < 0 || index >= counts.length || seed === undefined) {
     return undefined;
   }
   return {
     counts,
     index,
     seed,
-    time,
     actors: actorRendererFromUrl(hash.actors),
     post: hash.post === true,
   };
@@ -93,7 +86,8 @@ export const startShamblerBench = (
   const hud = document.getElementById('hud')!;
   document.body.classList.add('bench');
   document.getElementById('overlay')!.hidden = true;
-  const startTime = parseTimeOfDay(run.time)!;
+  const startTime = config.start;
+  const time = timeOfDayText(startTime);
   const dayCycle = requireDayCycle(engine.registry);
   applySky(engine.sky, skyAt(hourOfDay(startTime), dayCycle));
   let sceneDraws = 0;
@@ -117,8 +111,8 @@ export const startShamblerBench = (
       ? {
           startedAt: new Date().toISOString(),
           quick: false,
-          site: 'forest',
-          time: run.time,
+          site: benchSiteLabel(config),
+          time,
           ...(run.post ? { post: true } : {}),
           env: environment(engine),
           runs: [],
@@ -166,7 +160,7 @@ export const startShamblerBench = (
         body: playerBody,
         facing: playerFacing(camera.rotation.y),
         movement: 'still',
-        // A visible flashlight lets the entire 8–20 m ring remain aware at 23:30.
+        // A visible flashlight lets the entire 8–20 m ring remain aware at night.
         lit: true,
         lightSeenFrom: 40,
         eyeHeightMetres: Player.eye,
@@ -283,7 +277,7 @@ export const startShamblerBench = (
       return true;
     }
     if (now - loadStarted > 120_000) {
-      hud.textContent = `Forest did not finish loading (${holesAtSpawn} holes remain); benchmark stopped.`;
+      hud.textContent = `The world did not finish loading (${holesAtSpawn} holes remain); benchmark stopped.`;
       completed = true;
       return false;
     }
@@ -364,9 +358,9 @@ export const startShamblerBench = (
 
   const showHud = (elapsed: number): void => {
     hud.textContent = [
-      `Shambler benchmark ${run.index + 1}/${run.counts.length}: N=${count} (${activeCount} active, ${backgroundCount} background), seed=${run.seed}, ${run.time}, actors=${run.actors}`,
+      `Shambler benchmark ${run.index + 1}/${run.counts.length}: N=${count} (${activeCount} active, ${backgroundCount} background), seed=${run.seed}, ${benchSiteLabel(config)}, ${time}, actors=${run.actors}`,
       phase === 'load'
-        ? `loading forest (${streamer.unmeshedColumns(engine.spawn.pos[0] / s, engine.spawn.pos[2] / s, config.radiusChunks)} holes)`
+        ? `loading world (${streamer.unmeshedColumns(engine.spawn.pos[0] / s, engine.spawn.pos[2] / s, config.radiusChunks)} holes)`
         : `${phase} ${Math.min(elapsed, phase === 'warmup' ? duration.warmup : duration.measure).toFixed(1)} s`,
       `zombies ${actors?.store.size ?? 0}, player god mode on, ${interrupted ? 'tab hidden: unreliable' : 'keep tab visible'}`,
       `chunks ${engine.meshes.count} meshed, ${streamer.pending} pending`,

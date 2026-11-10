@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readHash, writeHash } from '../packages/deadvox/src/hashState.ts';
+import { readPageUrl } from '../packages/deadvox/src/pageUrl.ts';
 import {
   gitEnvironment,
   playHref,
@@ -88,9 +89,30 @@ const scenarioSite = (id) => {
     .find((start) => start.id === defaultStart);
   return optIn === true ? row?.site : undefined;
 };
+// The site and time of the one start row a link's inline start mod supplies, or undefined when it has none. It
+// throws, failing the calling test, unless the mod has exactly one row and that row is no second default for its site.
+const linkStart = (url) => {
+  const text = url.searchParams.get('start-mod');
+  if (text === null) {
+    return;
+  }
+  const { starts } = JSON.parse(text);
+  if (starts.length !== 1 || 'defaultForSite' in starts[0]) {
+    throw new Error(`a launcher start mod needs exactly one non-default start row: ${text}`);
+  }
+  return { site: starts[0].site, time: starts[0].startTimeGameTimeOfDay };
+};
+// The site of the scenario a link picks through `mods`: its last id, whose default start the game runs.
+const modsScenarioSite = (url) => {
+  const id = url.searchParams.get('mods')?.split(',').at(-1);
+  return id && existsSync(join(ROOT, DEADVOX_MODS, id, 'pack/manifest.json')) ? scenarioSite(id) : undefined;
+};
+const gauntletScenarioIds = () =>
+  JSON.parse(read('packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/scenarios.json')).scenarios.map(
+    (scenario) => scenario.id,
+  );
 
 const intentionallyUnofferedDeadvoxParams = {
-  start: 'An admitted start-row selector; a player start picker is separate UI work.',
   ragdollSweep: 'A seeded debug-only corpse sample, not a launcher gameplay option.',
   decals: 'A presentation comparison switch for authored-decal review, not a launcher gameplay option.',
   skyRoute:
@@ -125,7 +147,13 @@ const hashKeys = () => {
   return new Set([...table.matchAll(HASH_KEY_PATTERN)].map((match) => match[1]));
 };
 
-/** The parameters the readers take from the query, and the hash keys they read, each sorted. */
+/** The game page reads this query parameter rather than refusing the link. */
+const gameReadsQuery = (name) => readPageUrl(`?${new URLSearchParams({ [name]: '1' })}`, '').refused !== name;
+
+/**
+ * The parameters the readers take from a query the game page reads, and the hash keys they read, each sorted. A
+ * shared reader may also serve another page's query.
+ */
 const paramsReadBy = (sources) => {
   const query = new Set();
   const hash = new Set();
@@ -151,11 +179,15 @@ const paramsReadBy = (sources) => {
     }
   }
   const keys = hashKeys();
-  return { query: [...query].sort(), hash: [...hash].filter((key) => keys.has(key)).sort() };
+  return {
+    query: [...query].filter(gameReadsQuery).sort(),
+    hash: [...hash].filter((key) => keys.has(key)).sort(),
+  };
 };
 
 const DEADVOX_READERS = [
   'packages/deadvox/src/main.ts',
+  'packages/engine/src/game/bundledMods.ts',
   'packages/engine/src/game/config.ts',
   'packages/engine/src/game/ragdollConfig.ts',
   'packages/engine/src/core/weatheringUrl.ts',
@@ -216,7 +248,16 @@ const makeDeadvoxForTest = () => {
     'visible',
     'deadvoxControlVisibility',
     'enabled',
+    'siteOffered',
+    'DEFAULT_SITE',
+    'TUTORIAL_MOD',
+    'GAUNTLET_MOD',
+    'START_KIT',
+    'SITE_STARTS',
+    'launcherStartMod',
+    'startSite',
     'defaultTime',
+    'setStart',
     'setDefault',
     'BARE_HASH_TEXT',
     'hashScalar',
@@ -225,8 +266,6 @@ const makeDeadvoxForTest = () => {
     'atNumbers',
     'playHash',
     'benchHash',
-    'siteOffered',
-    'setPlayOnlySite',
     'addDebugParams',
     'makeDeadvox',
   ]
@@ -320,13 +359,12 @@ describe('site launchers track the games’ URL parameters', () => {
     const makeDeadvox = makeDeadvoxForTest();
     const defaults = launcherModelForTest().deadvox;
     const reads = paramsReadBy(DEADVOX_READERS);
+    const start = { site: 'testHouse', time: '08:00' };
     const debugFields = {
       debug: true,
-      site: 'testHouse',
       seed: '7',
       radius: '64',
       actors: 'boxes',
-      time: '08:00',
       mods: ['fixture.mod'],
       at: '1.5,-2,90',
       focus: 'fixture prop',
@@ -335,7 +373,7 @@ describe('site launchers track the games’ URL parameters', () => {
       weatheringVariation: '0.25',
       weatheringSplit: '-3',
     };
-    const debugPlay = { ...defaults, ...debugFields };
+    const debugPlay = { ...defaults, ...debugFields, ...start };
     const worldBench = { ...defaults, bench: '1', seed: '7', plan: '1:64,0.5:96', worldIndex: '1', quick: true };
     const shamblerBench = { ...defaults, bench: 'shamblers', seed: '7', n: '10,25', shamblerIndex: '1' };
     const homes = { query: new Set(), hash: new Set() };
@@ -347,6 +385,7 @@ describe('site launchers track the games’ URL parameters', () => {
       shamblerBench,
     ]) {
       const url = makeDeadvox(play);
+      assert.equal(readPageUrl(url.search, url.hash).refused, undefined, `the game reads every parameter of ${url}`);
       const parsed = readHash(url.hash);
       assert.ok('hash' in parsed, `the game reads the composed hash ${url.hash}`);
       assert.equal(
@@ -363,11 +402,6 @@ describe('site launchers track the games’ URL parameters', () => {
     }
     assert.ok(homes.hash.size > 0, 'the composed links carry hash state');
     assert.deepEqual(
-      [...homes.query].filter((key) => !reads.query.includes(key)),
-      [],
-      'query keys are read from the query',
-    );
-    assert.deepEqual(
       [...homes.hash].filter((key) => !reads.hash.includes(key)),
       [],
       'hash keys are read from the hash',
@@ -375,6 +409,7 @@ describe('site launchers track the games’ URL parameters', () => {
     for (const field of Object.keys(debugFields)) {
       assert.ok(homes.query.has(field) || homes.hash.has(field), `the debug play link carries ${field}`);
     }
+    assert.deepEqual(linkStart(makeDeadvox(debugPlay)), start, 'the debug play link starts at its site and time');
   });
 
   it('carries every bench run setting it is given in the link hash', () => {
@@ -458,20 +493,44 @@ describe('site launchers track the games’ URL parameters', () => {
     assert.equal(model.deadvox.site, 'city', 'a bench that offers the city keeps it');
   });
 
-  it('composes the gauntlet site for play and never in a benchmark', () => {
+  it('starts each link at the chosen site and time through one launcher start row', () => {
     const makeDeadvox = makeDeadvoxForTest();
     const defaults = launcherModelForTest().deadvox;
-    const gauntlet = { ...defaults, ...launcherPresetsForTest().gauntlet };
-    const scenarioIds = JSON.parse(
-      read('packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/scenarios.json'),
-    ).scenarios.map((scenario) => scenario.id);
-    const play = makeDeadvox(gauntlet);
-    const site = play.searchParams.get('site');
-    assert.ok(scenarioIds.includes(site), `the gauntlet preset composes a scenario site (${site})`);
-    for (const bench of ['1', 'shamblers', 'report']) {
-      const url = makeDeadvox({ ...gauntlet, bench });
-      assert.equal(url.searchParams.has('site'), false, `bench ${bench} does not carry a gauntlet site`);
+    const choices = [
+      { bench: '', site: '', time: '01:00' },
+      { bench: '', site: 'city', time: '19:30' },
+      { bench: '', site: 'forest', time: '08:00' },
+      { bench: '', site: 'gauntlet', time: '19:30' },
+      { bench: '', site: 'testHouse', time: '05:30', debug: true },
+      { bench: '', site: 'weatheringTest', time: '12:00', debug: true },
+      { bench: '1', site: '', time: '12:00' },
+      { bench: '1', site: 'city', time: '23:30' },
+      { bench: '1', site: 'forest', time: '06:15' },
+      { bench: 'shamblers', site: '', time: '21:15' },
+    ];
+    for (const choice of choices) {
+      const url = makeDeadvox({ ...defaults, ...choice });
+      assert.equal(readPageUrl(url.search, url.hash).refused, undefined, `the game reads every parameter of ${url}`);
+      const start = linkStart(url);
+      assert.ok(start, `${url} carries a start mod`);
+      assert.equal(start.time, choice.time, `${url} starts at the chosen time`);
+      if (choice.site !== '') {
+        assert.equal(start.site, choice.site, `${url} starts at the chosen site`);
+      }
     }
+    const shambler = linkStart(makeDeadvox({ ...defaults, bench: 'shamblers', site: 'city', time: '21:15' }));
+    assert.equal(shambler.site, 'forest', 'the shambler benchmark runs in the forest whatever site was chosen');
+  });
+
+  it('plays the gauntlet scenario at its own time through mods, and the default site through no start at all', () => {
+    const makeDeadvox = makeDeadvoxForTest();
+    const defaults = launcherModelForTest().deadvox;
+    const preset = launcherPresetsForTest().gauntlet;
+    const gauntlet = makeDeadvox({ ...defaults, ...preset });
+    assert.equal(linkStart(gauntlet), undefined, 'the gauntlet preset carries no start mod');
+    assert.ok(gauntletScenarioIds().includes(modsScenarioSite(gauntlet)), 'the gauntlet preset picks a gauntlet site');
+    const plain = makeDeadvox({ ...defaults, time: preset.time });
+    assert.equal(plain.search, '', 'the default site at its own time leaves the start to the game');
   });
 
   it('links exactly the ticked bundled mods and omits mods when none is ticked', () => {
@@ -557,15 +616,16 @@ describe('site launchers track the games’ URL parameters', () => {
     const offered = siteOfferedForTest();
     const defaults = launcherModelForTest().deadvox;
     const practice = practiceSites();
-    assert.ok(
-      practice.includes(makeDeadvox({ ...defaults, site: 'tutorial' }).searchParams.get('site')),
-      'play composes a URL the game plays as practice',
-    );
+    const tutorial = makeDeadvox({ ...defaults, site: 'tutorial' });
+    assert.equal(readPageUrl(tutorial.search, tutorial.hash).refused, undefined, 'the game reads the tutorial link');
+    assert.equal(linkStart(tutorial), undefined, 'the tutorial keeps its own start');
+    assert.ok(practice.includes(modsScenarioSite(tutorial)), 'play composes a URL the game plays as practice');
     assert.equal(offered(defaults, 'tutorial'), true, 'play offers the practice tutorial');
     for (const bench of ['1', 'shamblers', 'report']) {
       assert.equal(offered({ ...defaults, bench }, 'tutorial'), false, `bench ${bench} hides the practice tutorial`);
+      const url = makeDeadvox({ ...defaults, site: 'tutorial', bench });
       assert.equal(
-        practice.includes(makeDeadvox({ ...defaults, site: 'tutorial', bench }).searchParams.get('site')),
+        practice.includes(linkStart(url)?.site ?? modsScenarioSite(url)),
         false,
         `bench ${bench} does not compose a practice URL`,
       );

@@ -142,7 +142,7 @@ export interface BenchRecord {
       sprintMetresPerSecond: number;
     };
   };
-  /** Time of day (`&time=HH:MM`). */
+  /** Time of day as "HH:MM", from the run's start. */
   time: string;
   post?: boolean;
   /** Made-light and detailed-shambler population that shared the full-phase scene. */

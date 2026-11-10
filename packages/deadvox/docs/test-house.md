@@ -231,6 +231,6 @@ See `mods/skelly.deadvox.scenario.test-house/templates-test-house.jsonnet`, `tes
 ## Benchmark scale
 
 Authored sites use the template block scale; do not retain a code-built house as a
-fallback for other scales. Mixed-scale benchmark plans use a scale-independent default
-scene instead. Explicitly selecting the house requires the authored scale. See
-`src/bench/run.ts`, `benchRunFromUrl`, and `packages/engine/src/core/authoredSite.ts`, `AuthoredSite`.
+fallback for other scales. A mixed-scale benchmark plan names a generated site such as the
+forest in its start mod, since an authored site requires the authored scale. See
+`src/bench/run.ts`, `benchStartConfig`, and `packages/engine/src/core/authoredSite.ts`, `AuthoredSite`.

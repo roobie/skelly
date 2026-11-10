@@ -1,30 +1,69 @@
+import type { StartDef } from '@skelly/engine/internal/core/schema/starts.ts';
+import { gameTimeOfDay } from '@skelly/engine/internal/core/time.ts';
+import type { StartupContent } from '@skelly/engine/packs';
+import { requireStart } from '@skelly/engine/session';
 import { siteGenerationOf } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { type BenchRecord, DEFAULT_PLAN, loadRecord, saveRecord } from '../src/bench/plan.ts';
 import { markdownReport } from '../src/bench/report.ts';
-import { benchGameConfig, benchRunFromUrl, benchSiteLabel, forestWorkload, nextRunHash } from '../src/bench/run.ts';
+import {
+  benchGameConfig,
+  benchRunFromUrl,
+  benchSiteLabel,
+  benchStartConfig,
+  forestWorkload,
+  nextRunHash,
+  timeOfDayText,
+} from '../src/bench/run.ts';
 import { configFromUrl, content } from './fixtures/startupContent.ts';
 
+const FOREST_START: StartDef = {
+  id: 'fixture_bench_forest_start',
+  site: 'forest',
+  seed: 31,
+  storeys: 2,
+  density: 0.25,
+  startTimeGameTimeOfDay: gameTimeOfDay(23.5 * 3600),
+  kit: [],
+  wounds: [],
+  skills: {},
+  recipes: [],
+};
+
+/** Content as a `start-mod` link that supplies `start` admits it. */
+const startedAt = (start: StartDef): StartupContent => ({
+  ...content,
+  startModStart: start.id,
+  registry: { ...content.registry, starts: new Map([...content.registry.starts, [start.id, start]]) },
+});
+
 describe('forest benchmark workload identity', () => {
-  it('keeps forest site, seed, time and post on the second run', () => {
-    const query = new URLSearchParams('site=forest&time=23:30');
-    const hash = { seed: 7, post: true, plan: [0.5, 64, 0.5, 96] };
-    const run = benchRunFromUrl(query, hash, { layouts: new Map(), scenarios: new Map() });
-    const next = nextRunHash(hash, run.index, run.plan.length)!;
-    expect(benchRunFromUrl(query, next, { layouts: new Map(), scenarios: new Map() })).toMatchObject({
-      site: 'forest',
-      index: 1,
-      time: '23:30',
-      post: true,
-      seed: 7,
-    });
-    expect(configFromUrl(query, next)).toMatchObject({ site: 'forest', seed: 7 });
+  it('builds every run of a plan at the start mod row, with the seed and post from the hash', () => {
+    const started = startedAt(FOREST_START);
+    const hash = { seed: 7, post: true, plan: [0.5, 64, 1, 96] };
+    const run = benchRunFromUrl(hash);
+    const next = benchRunFromUrl(nextRunHash(hash, run.index, run.plan.length)!);
+    expect(next).toMatchObject({ index: 1, post: true, seed: 7 });
+    for (const each of [run, next]) {
+      expect(benchGameConfig(each, started)).toMatchObject({
+        startId: FOREST_START.id,
+        site: FOREST_START.site,
+        storeys: FOREST_START.storeys,
+        density: FOREST_START.density,
+        start: FOREST_START.startTimeGameTimeOfDay,
+        seed: 7,
+      });
+    }
+    expect(benchGameConfig(next, started).scale.blockSize).toBe(1);
+    expect(timeOfDayText(benchGameConfig(run, started).start)).toBe('23:30');
   });
 
-  it('builds the forest config for the first run of a forest plan that names no site', () => {
-    const run = benchRunFromUrl(new URLSearchParams(), { plan: [1, 64, 1, 96] }, content.registry);
-    expect(run.site).toBe('forest');
-    expect(benchGameConfig(run, content).site).toBe(run.site);
+  it('builds a link without a start mod at the product default start, as the game does', () => {
+    const product = requireStart(content, content.defaultStart);
+    const config = benchStartConfig(content, 1, 64);
+    const played = configFromUrl(new URLSearchParams(), { seed: 1 });
+    expect(config).toMatchObject({ startId: product.id, site: played.site, start: played.start });
+    expect(config).toMatchObject({ storeys: played.storeys, density: played.density });
   });
 
   it('refuses a stored record of an unknown shape instead of resuming it', () => {
@@ -45,20 +84,13 @@ describe('forest benchmark workload identity', () => {
   });
 
   it('retains the seeded forest workload, with camera routes inside its extent at every plan radius, in both result export formats', () => {
-    const run = benchRunFromUrl(
-      new URLSearchParams('site=forest'),
-      { post: true },
-      {
-        layouts: new Map(),
-        scenarios: new Map(),
-      },
-    );
-    const config = benchGameConfig(run, content);
+    const run = benchRunFromUrl({ post: true });
+    const config = benchGameConfig(run, startedAt({ ...FOREST_START, density: null }));
     const record: BenchRecord = {
       startedAt: 'first-look',
       quick: false,
       site: benchSiteLabel(config),
-      time: run.time ?? '12:00',
+      time: timeOfDayText(config.start),
       forest: forestWorkload(content.registry, 1, config.density),
       runs: [],
     };
