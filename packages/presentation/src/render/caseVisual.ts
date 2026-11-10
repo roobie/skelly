@@ -11,7 +11,7 @@ export const CASE_PLACEHOLDER_MATERIAL = new MeshStandardMaterial({
   roughness: 0.38,
 });
 
-/** Return a clone of the calibre's real Gungen case GLB when loaded. */
+/** Return a clone of the calibre's real case GLB from the gun authoring tool when loaded. */
 export const resolveCaseModel = (
   models: ModelLibrary | undefined,
   modelId: string | undefined,

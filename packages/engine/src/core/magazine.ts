@@ -1,4 +1,5 @@
-// A detachable box magazine (`packages/deadvox/SLICE-3.md`, "Firearms for real"): an item whose model carries gungen's fitted round column.
+// A detachable box magazine (`packages/deadvox/SLICE-3.md`, "Firearms for real"): an item whose model carries the gun
+// authoring tool's fitted round column.
 // Its cartridges are item state in feed order: index 0 is the top round, the next one fed or stripped.
 import { batteryFits } from './battery.ts';
 import type { ItemDef, ModelDef, Registry } from './content.ts';
@@ -88,7 +89,7 @@ const fittedAttachmentFor = (
     return `Uncertified attachment in slot "${slotId}"`;
   }
   if (!(isDefault || isExportedSingleFit(model, slotId, attachmentId))) {
-    return `Gungen does not certify ${attachmentId} for slot "${slotId}"`;
+    return `The gun authoring tool does not certify ${attachmentId} for slot "${slotId}"`;
   }
   const rail = railFootprint(registry, model, slotId, child as Item);
   // Authored defaults are certified as a complete assembly; their anchor slots are not the occupied rail extent.
@@ -113,7 +114,7 @@ const fittedPairReason = (
     [other.slotId, other.attachmentId],
   );
   if (!(bothDefaults || pairCertified)) {
-    return `Gungen does not certify the combined attachment fit at slots "${current.slotId}" and "${other.slotId}"`;
+    return `The gun authoring tool does not certify the combined attachment fit at slots "${current.slotId}" and "${other.slotId}"`;
   }
   return undefined;
 };

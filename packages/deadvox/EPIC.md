@@ -37,7 +37,7 @@ described in [DESIGN.md](DESIGN.md), and the risks in [CHALLENGES.md](CHALLENGES
   repair, skills and books.
 - The body model: wounds, bleeding, infection and fractures. Needs: hunger,
   thirst, fatigue, stamina, temperature.
-- Melee and firearms (from gungen), noise, and zombie senses (sight, hearing,
+- Melee and firearms (from the gun authoring tool), noise, and zombie senses (sight, hearing,
   smell).
 - Positional sound for every noise event, muffled by walls, plus zombie sounds
   and ambience driven by the simulation. See [Audio](DESIGN.md#audio).

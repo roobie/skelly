@@ -10,7 +10,7 @@ read_if:
 
 A firearm preview uses the spawn menu or a mod-owned start row. Start initialization applies only to a fresh world; a restored game keeps its saved hands, so preview setup cannot overwrite player-owned inventory. See `packages/engine/src/core/startState.ts`, `applyStartState`, and `docs/url-mods.md`, "Start state in mods".
 
-Racking, changing and removing a magazine are ordinary handling actions. Their durations and cycle geometry come from the Gungen export; handling blocks firing, reduces movement and prevents sprinting. Automatic action motion is presentation on a mechanical cycle, not a cancellable manual queue job. See `packages/engine/src/game/firearmHandling.ts`, `FirearmMechanics`.
+Racking, changing and removing a magazine are ordinary handling actions. Their durations and cycle geometry come from the gun authoring tool's export; handling blocks firing, reduces movement and prevents sprinting. Automatic action motion is presentation on a mechanical cycle, not a cancellable manual queue job. See `packages/engine/src/game/firearmHandling.ts`, `FirearmMechanics`.
 
 Held-clone bindings use exact exported node names from `parser.json.nodes` and `parser.associations`, not sanitized `Object3D.name` values; child paths bind each clone through its parent transform. Ground models and prepared prototypes do not animate. The AR carrier follows firing and hand strokes; its separate handle follows hand strokes only. The AK handle travels with its carrier. See `packages/presentation/src/render/firearmModel.ts`, `magazineMotion`, and `packages/presentation/src/render/handlingTurn.ts`, `handlingRotation`; the fitted-magazine look contract is in `DESIGN.md`, "Piles and item models".
 

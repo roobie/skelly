@@ -1,4 +1,4 @@
-// Gungen's part catalogue owns which gun parts are items; this pack adds only what a player sees of each.
+// The gun authoring tool's part catalogue owns which gun parts are items; this pack adds only what a player sees of each.
 // A part's model carries its authored mass, so its item takes no weight.
 local catalogue = import 'packages/skelly-assets/tools/packages/gun-authoring-tool/src/gun/catalogue.jsonnet';
 local looks = {

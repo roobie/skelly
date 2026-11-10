@@ -3,11 +3,11 @@ import { join, normalize, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // The projects are independent on purpose (root README): deadvox copies, it never imports from
-// gungen, mobgen or site.
+// the gun, thing or vehicle authoring tool, mobgen or site.
 const ROOTS = ['src', 'test', 'tools'];
 const SKIPPED_DIRECTORIES = new Set(['node_modules', 'dist']);
 const SOURCE_FILE = /\.(?:[cm]?[jt]sx?)$/;
-const SIBLING = /(^|[\\/])(gungen|mobgen|site)([\\/]|$)/;
+const SIBLING = /(^|[\\/])(gun-authoring-tool|thing-authoring-tool|vehicle-authoring-tool|mobgen|site)([\\/]|$)/;
 // Shared root tooling any package may import, as repository paths: the Jsonnet compiler's entry, and
 // the Lit check's whole install, which lives at the root so every package's UI can use it.
 const SHARED_ROOT_TOOLS = ['tools/jsonnet/index.mjs', 'tools/lit-check/'];
@@ -72,7 +72,7 @@ describe('deadvox stays independent of its sibling projects', () => {
   });
 
   it('recognises escaping specifiers', () => {
-    expect(escapesProject('src/a.ts', '../../gungen/x.ts')).toBe(true);
+    expect(escapesProject('src/a.ts', 'gun-authoring-tool/src/x.ts')).toBe(true);
     expect(escapesProject('src/a.ts', '../../README.md')).toBe(true);
     expect(escapesProject('src/game/a.ts', '../../../mobgen/x')).toBe(true);
     expect(escapesProject('src/a.ts', 'site/x')).toBe(true);

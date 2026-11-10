@@ -103,7 +103,7 @@
     },
     {
       "category": "weapon",
-      "description": "Curated 12-gauge hunting-cabin pump from gungen, with a hand-racked action and four-shell tube. No loot table has it; it is available only in debug mode. Runtime pumping/loading is not implemented yet.",
+      "description": "Curated 12-gauge hunting-cabin pump from the gun authoring tool, with a hand-racked action and four-shell tube. No loot table has it; it is available only in debug mode. Runtime pumping/loading is not implemented yet.",
       "figureModels": [
         {
           "at": [-0.25, 0.26000000000000001, -0.19],

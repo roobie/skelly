@@ -162,7 +162,7 @@ describe('actual-slot held placement', () => {
 
   it('cups the support palm under the bore with the bore running across it from the heel to the thumb-index gap', () => {
     const model = JSON.parse(compileJsonnetFile(HOLD_FIXTURE)) as ModelDef;
-    // A gungen export runs its bore along the model's +x through the origin.
+    // A gun authoring tool export runs its bore along the model's +x through the origin.
     const bore = modelToView(model, [1, 0, 0]);
     const boreFromGrip = modelToView(model, model.grip!.at.map((value) => -value) as Vec3);
     for (const side of ['right', 'left'] as const) {

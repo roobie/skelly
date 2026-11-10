@@ -1,11 +1,11 @@
 ---
 read_if:
   - you work in `things/`
-  - you wonder why the gun tool replaced gungen, or where a modeling primitive belongs
+  - you wonder where a modeling primitive belongs
   - you decide which tool or package a new model-authoring feature goes in
   - you decide where mass, export or model-entry writing code goes
   - you decide whether an item's mass is authored or summed from its parts
-  - you decide whether a gun is a real-gun look-alike, an invented gun or a gungen archetype
+  - you decide whether a gun is a real-gun look-alike, an invented gun or an inherited archetype
 ---
 
 # things
@@ -42,8 +42,8 @@ binary or a fallback box. Shared mechanisms let the tools use one model contract
 gun rules stay out of tools that do not need them. Separate authoring tools keep that
 domain ownership explicit.
 
-Retiring residual gungen names must not lose a consumer export or a pending feature's
-reason. `things/WORK.md`, "Phases" tracks retirement and close-out.
+Retiring the gun tool's residual old names must not lose a consumer export or a pending
+feature's reason. `things/WORK.md`, "Phases" tracks retirement and close-out.
 
 ## Rules
 

@@ -1,7 +1,7 @@
 ---
 read_if:
   - "you scope or review the gun-tool retirement gate of issue #509"
-  - you transfer gungen issue ownership after the package move
+  - you transfer issue ownership to the gun tool after the package move
 ---
 
 # Gun tool and retirement
@@ -17,8 +17,8 @@ asset submodule's
 `packages/skelly-assets/tools/packages/gun-authoring-tool`,
 with no skelly copy, forwarding package or second recipe authority
 (`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision"). The retained
-names in skelly are the root consumption contract, exporter metadata and the consumer
-output directory. Phase 6 also retires the dead old-name support in the submodule's
+old names are the exporter metadata and the consumer output directory, both written by the
+asset release, so skelly's readers keep them until a pin bump renames them. Phase 6 also retires the dead old-name support in the submodule's
 `packages/skelly-assets/tools/packages/construct/test/constructImportBoundary.test.ts`,
 `rootsUnder`, `importTarget` and its canary fixtures; `tools/zero-drift-check.mjs`,
 `SUBPROJECTS`; the zero-drift and Deadvox import-boundary fixtures; and the gun tool's
@@ -45,7 +45,7 @@ Gameplay disassembly remains deferred to #1040. Shared camera and parameter mech
 gun selection and presentation remain caller policy.
 
 CARRY_ALL on #509 transfers ownership without implementing or closing the backlog.
-The open gungen issues #333, #362, #414, #447 and #649 belong to the gun tool under their own numbers.
+The open issues #333, #362, #414, #447 and #649 belong to the gun tool under their own numbers.
 Deferred geometry reasons travel with the gun tool's
 `packages/skelly-assets/tools/packages/gun-authoring-tool/src/gun/parts.ts`,
 `magazineGeometryFor`, and
@@ -54,8 +54,7 @@ Construct motion remains construct work and separately carded work stays separat
 
 ## Invariants
 
-Keep `test/gungen-deadvox-contract.test.mjs` under its retained name until retirement
-renames it atomically with its CI invocation. Its population is the pinned gun rows the
+`test/guns-deadvox-contract.test.mjs` is the gun tool's consumption contract. Its population is the pinned gun rows the
 bundled packs consume from the external root, read through the pack reader, not a copied
 inventory. The comparison with each pinned manifest row (path, part nodes, credits),
 registry validation and GLTF loading remain alongside the specialised motion checks;
@@ -74,10 +73,10 @@ ownership decision rather than duplication or promotion into the neutral core.
 **Depends on:** the complete phase 5 reproduction exit.
 
 Retire residual names only after the replacement proves the entire consumption boundary.
-Do not delete useful tests or pending feature reasons merely because they mention gungen.
+Do not delete useful tests or pending feature reasons merely because they use an old name.
 
-**Exit:** rename the retained contract and update root CI atomically. Audit active
-scripts, workflows, Jsonnet imports, credits, docs and package metadata for old ownership.
+**Exit:** the asset release renames the retained old names and a pin bump moves skelly's
+readers with them. Audit active scripts, workflows, Jsonnet imports, credits, docs and package metadata for old ownership.
 Run root CI and site checks plus the recipe load/validation contract; the thing-tool
 contract stays green. Resolve touched plan cues, delete this task file, and leave phase
 7's lasting-decision transfer and prefix question explicitly open in `things/WORK.md`,

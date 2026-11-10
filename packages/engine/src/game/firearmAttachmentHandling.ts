@@ -137,7 +137,10 @@ export class FirearmAttachmentHandling {
     );
   }
 
-  /** The light mount's kind match is `slotsReason`'s; gungen's certificate covers only the exported slots. */
+  /**
+   * The light mount's kind match is `slotsReason`'s; the gun authoring tool's certificate covers only the exported
+   * slots.
+   */
   private kindReason(slotId: string, attachment: Item, withSkill: boolean): string | undefined {
     if (slotId === SLING_SLOT) {
       return this.slingReason(attachment);

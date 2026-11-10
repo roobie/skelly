@@ -17,7 +17,8 @@ import {
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
 const { safeParse } = deadvoxRequire('valibot');
-// The gun tool's cut-over: per kind, the pinned rows its bundled packs consume from the external root.
+// The gun tool's cut-over: per kind, the pinned rows its bundled packs consume from the external root. `gungen` is
+// the directory the pinned asset release writes gun model entries to.
 const CUT_OVER = readCutOver('gungen');
 const EXPORTED = CUT_OVER.rows.map((use) => ({ ...use, ...pinnedFiles(use) }));
 const PART_ITEM_PATH = /^models\[0\]\.parts\.[^.]+\.item$/;
@@ -88,7 +89,7 @@ const COMPOSED_GUNS = [...EXPORT_IDS]
   .map((id) => BASE_CONSUMPTION.registry.models.get(id))
   .filter((model) => model?.gun && Object.values(model.parts ?? {}).some(({ item }) => item !== undefined));
 
-describe('gungen exports satisfy deadvox model validation', () => {
+describe('gun tool exports satisfy the Deadvox contract', () => {
   // biome-ignore lint/style/noDoneCallback: Node's TestContext prints the per-pack listing, not a done callback.
   it('consumes only pinned gun rows, from the external root', (t) => {
     assertCutOver(CUT_OVER, t);

@@ -423,7 +423,7 @@ export const GunModelSchema = pipe(
     /** Replaceable model parts and the gun-side mount frames for later fitting. */
     attachments: optional(array(FittedAttachmentSchema)),
     attachmentSlots: optional(array(AttachmentSlotSchema)),
-    /** Complete per-slot allowlist certified by gungen; absence denies dynamic fitting. */
+    /** Complete per-slot allowlist certified by the gun authoring tool; absence denies dynamic fitting. */
     compatibility: optional(
       record(pipe(string(), nonEmpty('must not be empty')), array(pipe(string(), nonEmpty('must not be empty')))),
     ),

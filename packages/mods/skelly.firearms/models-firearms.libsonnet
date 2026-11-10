@@ -62,7 +62,7 @@ local slung(model) = [{
     },
     {
       "category": "weapon",
-      "description": "Curated 12-gauge hunting-cabin pump from gungen, with a hand-racked action and four-shell tube. No loot table has it; it is available only in debug mode. Runtime pumping/loading is not implemented yet.",
+      "description": "Curated 12-gauge hunting-cabin pump from the gun authoring tool, with a hand-racked action and four-shell tube. No loot table has it; it is available only in debug mode. Runtime pumping/loading is not implemented yet.",
       "id": "debug_shotgun_pump",
       "model": "shotgun_pump",
       "figureModels": slung(import 'packages/skelly-assets/built/skelly.firearms/gungen/shotgun_pump.model.json'),

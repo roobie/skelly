@@ -976,7 +976,7 @@ describe('base pack guns', () => {
     const bytes = modFileBytes(def.file);
     const gltf = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
     if (gltf.parser.json.asset.generator === 'skelly gungen glb export') {
-      expect(def.gun?.sight, `${def.id} Gungen exports need sight metadata`).toBeDefined();
+      expect(def.gun?.sight, `${def.id}: gun authoring tool exports need sight metadata`).toBeDefined();
     }
     const { held } = prepareModel(def, gltf.scene);
     held.updateMatrixWorld(true);

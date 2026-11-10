@@ -123,7 +123,7 @@ export const itemLook = (registry: Registry, item: Item): ItemLook | undefined =
   };
 };
 
-/** Where a fitted attachment draws: a gungen mount slot, or the gun's own light-mount site. */
+/** Where a fitted attachment draws: an exported mount slot, or the gun's own light-mount site. */
 const attachmentSlot = (registry: Registry, item: Item, slotId: string, child: Item): ItemLookSlot | undefined => {
   const attachmentModel = defOf(registry, child.type).model;
   if (!attachmentModel) {

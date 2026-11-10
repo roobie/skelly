@@ -36,7 +36,7 @@ export const ENTRY_POLICY: EntryPolicy = {
     'packages/deadvox/maps/extensions',
     'packages/deadvox/vite.config.ts',
     'test/actors-deadvox-contract.test.mjs',
-    'test/gungen-deadvox-contract.test.mjs',
+    'test/guns-deadvox-contract.test.mjs',
     'test/things-deadvox-contract.test.mjs',
     'test/vehicles-deadvox-contract.test.mjs',
     'test/site-launcher.test.mjs',
