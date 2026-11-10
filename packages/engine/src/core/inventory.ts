@@ -673,6 +673,7 @@ export class Inventory {
     craftedLiquids,
     liquidContents,
     cartridges,
+    fittedCartridges,
   }: Rolled): Item {
     const item = this.factory.create(this.registry, type, count, {
       condition,
@@ -689,6 +690,9 @@ export class Inventory {
     }
     for (const [slot, child] of Object.entries(fitted ?? {})) {
       this.fitSlot(item, slot, this.create(child));
+    }
+    for (const [slot, rounds] of Object.entries(fittedCartridges ?? {})) {
+      item.slots![slot]!.cartridges = [...rounds];
     }
     if (charge !== undefined) {
       for (const battery of [item, ...Object.values(item.slots ?? {})]) {

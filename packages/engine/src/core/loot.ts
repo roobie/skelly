@@ -245,6 +245,8 @@ export interface Rolled {
   liquidContents?: FixedLootItemDef['liquidContents'];
   /** A magazine's contents in feed order; absent is empty. */
   cartridges?: readonly string[];
+  /** The contents of each fitted magazine, by slot id. */
+  fittedCartridges?: Readonly<Record<string, readonly string[]>>;
 }
 
 const pick = <T extends { weight: number }>(entries: readonly T[], rng: Rng): T => {
@@ -335,10 +337,13 @@ interface Selection {
   readonly rolled: Rolled;
   /** The dropping table's cartridge odds. */
   readonly odds: CartridgeOdds;
+  /** What an authored fixed row names for its magazine, and so does not draw. */
+  readonly authored?: FixedLootItemDef;
 }
 
 const fixedItems = (registry: Registry, items: readonly FixedLootItemDef[], context: RollContext): Selection[] =>
-  items.flatMap(({ item, count = 1, condition = 1, fitted, charge, craftedLiquids, liquidContents }) => {
+  items.flatMap((row) => {
+    const { item, count = 1, condition = 1, fitted, charge, craftedLiquids, liquidContents } = row;
     const type = selectLootType(
       registry,
       context.point,
@@ -363,6 +368,7 @@ const fixedItems = (registry: Registry, items: readonly FixedLootItemDef[], cont
         ...(liquidContents === undefined ? {} : { liquidContents: { ...liquidContents } }),
       },
       odds: undefined,
+      authored: row,
     }));
   });
 
@@ -435,18 +441,36 @@ const pickCartridge = (registry: Registry, odds: CartridgeOdds, calibre: string,
 const drawLoad = (spread: readonly [number, number], capacity: number, rng: Rng): number =>
   rng.int(Math.round(spread[0] * capacity), Math.round(spread[1] * capacity));
 
-/** Fills a selected magazine from its table's odds; no odds, no fitting type or no policy leave it empty. */
-const loaded = (registry: Registry, { rolled, odds }: Selection, rng: Rng): Rolled => {
-  const spec = magazineSpec(registry, rolled.type);
+/**
+ * A magazine's contents: an authored type and load stand as given; an unset type comes from the odds, and an unset
+ * load from the policy spread. With no type or no load to draw, it stays empty.
+ */
+const magazineContents = (
+  registry: Registry,
+  type: string,
+  { odds, authored }: Pick<Selection, 'odds' | 'authored'>,
+  rng: Rng,
+): string[] | undefined => {
+  const spec = magazineSpec(registry, type);
+  if (spec === undefined) {
+    return undefined;
+  }
+  const cartridge = authored?.cartridge ?? pickCartridge(registry, odds, spec.calibre, rng);
   const spread = claimed(registry.lootPolicy, 'magazines')?.magazineLoad;
-  if (spec === undefined || spread === undefined) {
-    return rolled;
+  const load = authored?.load ?? (spread === undefined ? 0 : drawLoad(spread, spec.capacity, rng));
+  return cartridge === undefined ? undefined : Array.from({ length: load }, () => cartridge);
+};
+
+/** Fills a selected magazine, or the magazine fitted in a selected firearm. */
+const loaded = (registry: Registry, selection: Selection, rng: Rng): Rolled => {
+  const { rolled } = selection;
+  const own = magazineContents(registry, rolled.type, selection, rng);
+  if (own !== undefined) {
+    return { ...rolled, cartridges: own };
   }
-  const cartridge = pickCartridge(registry, odds, spec.calibre, rng);
-  if (cartridge === undefined) {
-    return rolled;
-  }
-  return { ...rolled, cartridges: Array.from({ length: drawLoad(spread, spec.capacity, rng) }, () => cartridge) };
+  const fittedType = rolled.fitted?.magazine;
+  const fitted = fittedType === undefined ? undefined : magazineContents(registry, fittedType, selection, rng);
+  return fitted === undefined ? rolled : { ...rolled, fittedCartridges: { magazine: fitted } };
 };
 
 const drawnLoads = (registry: Registry, selections: readonly Selection[], rng: Rng): Rolled[] =>

@@ -56,6 +56,10 @@ export const FixedLootItem = strictObject({
   fitted: optional(record(Id, Id)),
   /** Battery charge at spawn as a share of full, for the item if it is a battery and for its fitted batteries. */
   charge: optional(Fraction),
+  /** The cartridge type filling the row's magazine, or its fitted magazine; unset takes no type. */
+  cartridge: optional(Id),
+  /** How many cartridges that magazine holds; unset rolls from the product's loot policy. */
+  load: optional(Count),
   craftedLiquids: optional(pipe(array(LiquidAmountSchema), nonEmpty())),
   liquidContents: optional(LiquidContentsSchema),
 });

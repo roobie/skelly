@@ -4,7 +4,7 @@ import { buildRegistry } from '@skelly/engine/content';
 import { authoredLayoutIssues } from '@skelly/engine/internal/core/authoredLayout.ts';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import { lootPointStream, rollLoot } from '@skelly/engine/internal/core/loot.ts';
-import { magazineSpec } from '@skelly/engine/internal/core/magazine.ts';
+import { magazineContentsReason, magazineSpec } from '@skelly/engine/internal/core/magazine.ts';
 import type { SiteLayoutDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
 import { planFlight, STAIR_BODY_HALF_WIDTH } from '@skelly/engine/internal/core/stairFlight.ts';
 import {
@@ -87,6 +87,13 @@ const maximumLootRoll = (table: LootTable, entryIndexes: readonly number[]) => {
     }
     if (entry.item !== undefined && entry.condition !== undefined) {
       values.push(0.999_999_999);
+    }
+  }
+  // Each rolled magazine then draws its load, after every item is chosen.
+  for (const index of entryIndexes) {
+    const entry = table.entries[index]!;
+    if (entry.item !== undefined && magazineSpec(result.registry, entry.item) !== undefined) {
+      values.push(...Array.from({ length: entry.count?.[1] ?? 1 }, () => 0.999_999_999));
     }
   }
   const rng = new Rng([0, 0, 0, 0]);
@@ -388,7 +395,9 @@ describe('authored fixed loot', () => {
     }
     const magazines = placedItems.filter(({ type }) => magazineSpec(result.registry, type) !== undefined);
     expect(magazines.length).toBeGreaterThan(0);
-    expect(magazines.every((magazine) => (magazine.cartridges ?? []).length === 0)).toBe(true);
+    for (const { type, cartridges } of magazines) {
+      expect(magazineContentsReason(result.registry, type, cartridges), type).toBeUndefined();
+    }
     expect(contents(forward)).toEqual(contents(reverse));
   });
 
@@ -592,6 +601,73 @@ describe('authored fixed loot', () => {
       issuePath,
       expect.any(String),
     ]);
+  });
+
+  describe('fixed magazine contents', () => {
+    const military = { usage: ['Military' as const], tier: 'Tier2' as const };
+    const magazine = 'magazine_stanag_30';
+    const gun = 'rifle_assault';
+    const { calibre, capacity } = magazineSpec(result.registry, magazine)!;
+    const cartridges = [...result.registry.items.values()].filter((def) => def.ammo?.calibre === calibre);
+    const withSpread = (spread: [number, number]) => ({
+      ...result.registry,
+      lootPolicy: new Map([['p', { id: 'p', capability: 'magazines' as const, magazineLoad: spread }]]),
+    });
+    const spawned = (registry: typeof result.registry, item: FixedOverride['items'][number]) => {
+      const [rolled] = rollLoot(
+        registry,
+        fixtureLootPoint({ kind: 'fixed', items: [item] }, military),
+        Rng.stream(1, 'x'),
+      );
+      return new Inventory(registry).createRolled(rolled!);
+    };
+
+    it('spawns a magazine holding exactly the cartridges its row names', () => {
+      expect(cartridges.length).toBeGreaterThan(0);
+      const [named] = cartridges;
+      const load = capacity - 1;
+      const item = spawned(result.registry, { item: magazine, cartridge: named!.id, load });
+      expect(item.cartridges).toEqual(Array.from({ length: load }, () => named!.id));
+    });
+
+    it('fills a magazine fitted in a fixed firearm from its named type and load', () => {
+      const [named] = cartridges;
+      const fitted = { magazine };
+      const exact = spawned(result.registry, { item: gun, fitted, cartridge: named!.id, load: 2 });
+      expect(exact.slots?.magazine?.cartridges).toEqual([named!.id, named!.id]);
+      const full = spawned(withSpread([1, 1]), { item: gun, fitted, cartridge: named!.id });
+      expect(full.slots?.magazine?.cartridges).toHaveLength(capacity);
+    });
+
+    it('rolls an unset load from the product spread when the row names its type', () => {
+      const [named] = cartridges;
+      expect(spawned(withSpread([1, 1]), { item: magazine, cartridge: named!.id }).cartridges).toHaveLength(capacity);
+    });
+
+    it('refuses a named load past capacity or a cartridge of another calibre', () => {
+      const buildingIndex = layout.buildings.findIndex((candidate) => candidate.fixedLoot?.length);
+      const building = layout.buildings[buildingIndex]!;
+      const [first, ...rest] = building.fixedLoot!;
+      const issuesFor = (item: FixedOverride['items'][number]) =>
+        authoredLayoutIssues(
+          {
+            ...layout,
+            buildings: layout.buildings.with(buildingIndex, {
+              ...building,
+              fixedLoot: [{ ...first!, items: [...first!.items, item] }, ...rest],
+            }),
+          },
+          result.registry,
+        );
+      const other = [...result.registry.items.values()].find(
+        (def) => def.ammo !== undefined && def.ammo.calibre !== calibre,
+      )!;
+      const contentsIssues = (item: FixedOverride['items'][number]) =>
+        issuesFor(item).filter(([, message]) => !message.includes('loot context'));
+      expect(contentsIssues({ item: magazine, cartridge: cartridges[0]!.id, load: capacity })).toEqual([]);
+      expect(contentsIssues({ item: magazine, load: capacity + 1 })).not.toEqual([]);
+      expect(contentsIssues({ item: magazine, cartridge: other.id, load: 1 })).not.toEqual([]);
+    });
   });
 
   it('puts a readable HQ clue and matching safe key in accessible world containers', () => {
