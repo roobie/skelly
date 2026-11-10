@@ -5,12 +5,12 @@ import { Box3, Group, type Mesh, type Object3D, type Quaternion, Vector3 } from 
 export type CarriedViewTuning = InventoryTuningDef['furnitureMove']['carriedView'];
 
 /**
- * The held piece reads the carry owner so its presentation cannot outlive the hold (`DESIGN.md`, "Moving furniture").
+ * The held piece reads the carry owner so its presentation cannot outlive the hold (`packages/deadvox/DESIGN.md`, "Moving furniture").
  */
 export class CarriedPiece {
   /**
    * Lives in a group that follows the camera, so its position is in view metres; it undoes the camera's turn so the
-   * piece keeps the world heading it will be set down at (`DESIGN.md`, "Moving furniture").
+   * piece keeps the world heading it will be set down at (`packages/deadvox/DESIGN.md`, "Moving furniture").
    */
   readonly group = new Group();
   readonly floorGroup = new Group();

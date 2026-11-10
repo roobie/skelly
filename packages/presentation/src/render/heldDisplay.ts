@@ -1,5 +1,5 @@
 // A held screen faces the eye with the palm on the item's back, so the hand can never sit
-// between the eye and the screen (`DESIGN.md`, "Held screens").
+// between the eye and the screen (`packages/deadvox/DESIGN.md`, "Held screens").
 
 import type { ModelDef } from '@skelly/engine/content';
 import type { Vec3 } from '@skelly/engine/world';

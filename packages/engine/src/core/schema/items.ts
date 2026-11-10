@@ -404,7 +404,8 @@ export const BeamSpillSchema = strictObject({
 
 export type BeamSpill = InferOutput<typeof BeamSpillSchema>;
 
-/** How bright light in view flares through the goggles (`packages/deadvox/src/render/nightVisionFlare.ts`, `nightVisionFlare`). */
+/** How bright light in view flares through the goggles (`packages/presentation/src/render/nightVisionFlare.ts`,
+ * `nightVisionFlare`). */
 const NightVisionFlareSchema = strictObject({
   /** How hard the summed sources wash the view out; 0 turns the flare off. */
   strength: NonNegative,

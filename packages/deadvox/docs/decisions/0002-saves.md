@@ -34,7 +34,7 @@ A saved scheduler system id that no registered system has is a reference that do
 
 Write snapshots through crash-safe A/B records. Disk work is asynchronous; a failed write leaves the previous valid record available. A back/forward-cache transition does not require another save: a frozen page can hold the origin lock, so the last committed generation remains the recovery point. These safeguards reduce corruption risk but are not backups.
 
-A save that cannot be used, whether its records are corrupt, it is incompatible or its restore was refused, must neither strand the player nor be lost silently. Starting fresh is the player's explicit choice, and the old save is kept as evidence the player can send to the developer for bug hunting, because an unusable save is the best record of the bug that made it. Repair and migration stay out of scope (#1023). See `src/ui/saveController.ts`, `startFresh`, and `packages/engine/src/game/saveStorageProtocol.ts`, `commitSavePayload`.
+A save that cannot be used, whether its records are corrupt, it is incompatible or its restore was refused, must neither strand the player nor be lost silently. Starting fresh is the player's explicit choice, and the old save is kept as evidence the player can send to the developer for bug hunting, because an unusable save is the best record of the bug that made it. Repair and migration stay out of scope (#1023). See `packages/presentation/src/ui/saveController.ts`, `startFresh`, and `packages/engine/src/game/saveStorageProtocol.ts`, `commitSavePayload`.
 
 After death, do not offer a death-bearing world for Continue. Mark death before the asynchronous final write so an unfinished write cannot revive the survivor; clear that marker only after another world's snapshot completes. Whether a new character may enter the same world after death remains an open decision for BR.
 
@@ -44,7 +44,7 @@ failure leaves the prior record available and ordinary save recovery visible.
 Continue of an acknowledged completion shows the terminal card, not a playable
 pre-win survivor. Unlike death, an unsaved win does not invalidate the older
 checkpoint: losing an unacknowledged completion is not resurrection. See
-`src/ui/saveController.ts`, `finishWin` and `winCheckpointStatus`.
+`packages/presentation/src/ui/saveController.ts`, `finishWin` and `winCheckpointStatus`.
 
 Autosave checkpoints count simulated play time, not wall-clock time or game hours. Pausing therefore does not advance the interval, and changing the clock ratio does not change its cadence. Saves before sleep, on `visibilitychange` and on `pagehide` cover the time between periodic checkpoints.
 

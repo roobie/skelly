@@ -101,7 +101,7 @@ An upload's first consumer is not necessarily its owner: a shadow draw can first
 pose texture, charging the upload to the shadow stack even though later colour draws need it too.
 Identify the texture and compare its bytes between uploads before calling repeated uploads waste.
 The shared actor texture's producer and dirtying boundary are in
-`packages/deadvox/src/render/mobActors.ts`, `MobActorMeshes.sync`; its material binding is in
+`packages/presentation/src/render/mobActors.ts`, `MobActorMeshes.sync`; its material binding is in
 `MobActorMeshes` in the same file. Keep byte comparisons and upload hooks in separate diagnostic
 captures because copying texture data perturbs the callback being measured. A changing texture
 can still contain unchanged regions, but reducing its transfer needs separate evidence and must

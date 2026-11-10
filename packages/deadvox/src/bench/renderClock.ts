@@ -2,7 +2,8 @@ import { ACTIVE_ACTOR_RATE, BACKGROUND_ACTOR_RATE } from '@skelly/engine/sim';
 
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 
-/** Arguments for `ActorRenderer.sync` on the simulation clock, as `packages/deadvox/src/render/playView.ts` supplies them.
+/** Arguments for `ActorRenderer.sync` on the simulation clock, as `packages/presentation/src/render/playView.ts`
+ * supplies them.
  * Background actors blend from their own `renderPrevious.time`, so `simulationTime` must be the same clock
  * `tickBackground` stamps them with; a wall-clock alpha since the last slice would pin them near zero. */
 export const syncClock = (

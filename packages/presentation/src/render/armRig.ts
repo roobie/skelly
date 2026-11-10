@@ -1,4 +1,4 @@
-// The first-person arm is the figure's authored arm model bent at its joints (`DESIGN.md`, "Models"): each
+// The first-person arm is the figure's authored arm model bent at its joints (`packages/deadvox/DESIGN.md`, "Models"): each
 // segment is a part of that model turned about the anchor the figure row's rig names, so both views draw one arm.
 
 import { ARM_SEGMENTS, type ArmRigDef, type ArmSegment, type HandPoseDef, type ModelDef } from '@skelly/engine/content';

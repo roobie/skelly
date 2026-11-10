@@ -27,10 +27,10 @@ There is no fixed play duration or number of sittings. Continue resumes a living
 
 ## Errors and feedback
 
-When the blocking error panel appears, stop playing. Copy the complete displayed error and download the local report; nothing is sent automatically. The report may include build, world, browser and recent playtest data. Review it before posting publicly. Use the feedback form, and attach the report if the error is too long to prefill. See `src/ui/errorReport.ts`, `errorReportText`, and `src/presentation/play.ts`, `stopPlayAfterError`.
+When the blocking error panel appears, stop playing. Copy the complete displayed error and download the local report; nothing is sent automatically. The report may include build, world, browser and recent playtest data. Review it before posting publicly. Use the feedback form, and attach the report if the error is too long to prefill. See `packages/presentation/src/ui/errorReport.ts`, `errorReportText`, and `packages/presentation/src/presentation/play.ts`, `stopPlayAfterError`.
 
 The menu can export playtest metrics and a recent replay during play or after death. Sending either is the tester's choice. Review files before posting or emailing them.
 
 ## Findings
 
-Use feedback and any shared metrics to assess the playtest questions in EPIC. Record findings in the living design and challenge documents before planning Slice 4a. The authored beats and key items are observation-only; they must not affect simulation. See `packages/engine/src/core/authoredSite.ts`, `AuthoredSite.playtestMarks`, and `src/presentation/playtestObserver.ts`, `PlaytestObserver`.
+Use feedback and any shared metrics to assess the playtest questions in EPIC. Record findings in the living design and challenge documents before planning Slice 4a. The authored beats and key items are observation-only; they must not affect simulation. See `packages/engine/src/core/authoredSite.ts`, `AuthoredSite.playtestMarks`, and `packages/presentation/src/presentation/playtestObserver.ts`, `PlaytestObserver`.

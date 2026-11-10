@@ -1,4 +1,4 @@
-// The inventory screen (`DESIGN.md`, "Inventory screen"): what you hold and wear, with
+// The inventory screen (`packages/deadvox/DESIGN.md`, "Inventory screen"): what you hold and wear, with
 // each pocket drawn as its grid, and the piles and furniture within reach. Items move
 // by drag and drop with a destination preview, or by keys. Every move
 // goes through the handling queue, so it takes real seconds while the world keeps
@@ -300,7 +300,7 @@ interface DetailsViewModel {
 const batterySlotTemplate = (slot: BatterySlotViewModel, text: InventoryText): TemplateResult =>
   html`<div class="inv-line inv-service-target" data-target=${batterySlotTarget(slot.lightUid)} data-occupied=${slot.fitted}>${fillText(text.battery, { battery: slot.name })}</div>`;
 
-/** Only a tier content marks `warn` gets the warning style (`DESIGN.md`, "Bleeding"). */
+/** Only a tier content marks `warn` gets the warning style (`packages/deadvox/DESIGN.md`, "Bleeding"). */
 const bleedingTemplate = (bleeding: BodyRegionViewModel['bleeding']) => {
   if (!bleeding) {
     return nothing;

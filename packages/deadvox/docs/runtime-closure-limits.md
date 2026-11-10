@@ -10,7 +10,8 @@ tags: [deadvox, refactor, testing, tooling]
 # Runtime closure check: limits
 
 The runtime set is the engine package's source; see `tools/runtimeClosure.ts`,
-`ENGINE_POLICY`. The closure check (`tools/runtimeClosure.ts`, `runtimeClosureViolations`,
+`ENGINE_POLICY`. The same walk keeps the presentation package off deadvox and off the engine's
+test-only subpath, with the same limits; see `tools/runtimeClosure.ts`, `PRESENTATION_POLICY`. The closure check (`tools/runtimeClosure.ts`, `runtimeClosureViolations`,
 and the gate on the deadvox Vite config that bundles that source, in
 `test/runtimeClosure.test.ts`, `viteGateIssues`), the no-DOM typecheck
 (`packages/engine/tsconfig.json`) and the browser-name lint ban

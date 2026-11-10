@@ -1,4 +1,4 @@
-// Dead humans (`DESIGN.md`, "Dead humans"): each corpse piece drawn as its figure lying in the figure's corpse pose,
+// Dead humans (`packages/deadvox/DESIGN.md`, "Dead humans"): each corpse piece drawn as its figure lying in the figure's corpse pose,
 // dressed in the outfit its furniture row names. Only the drawing lives here; the piece stays furniture for loot,
 // picking and saves.
 

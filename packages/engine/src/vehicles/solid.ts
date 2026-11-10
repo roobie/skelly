@@ -77,7 +77,8 @@ export const solidBlocks = (
     const span = columns.get(column);
     columns.set(column, span ? [Math.min(span[0], y), Math.max(span[1], y)] : [y, y]);
   }
-  // The model's forward +x is the piece's front, local −z, and its +z the piece's right, as `packages/deadvox/src/render/workshopVehicle.ts` draws it.
+  // The model's forward +x is the piece's front, local −z, and its +z the piece's right, as
+  // `packages/presentation/src/render/workshopVehicle.ts` draws it.
   const filled = new Map<string, number>();
   for (const [column, [low, high]] of columns) {
     const [x, , z] = keyVoxel(column);

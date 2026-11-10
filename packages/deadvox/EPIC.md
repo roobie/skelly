@@ -321,7 +321,7 @@ Q and E remain reserved for later actions and have no world bindings.
 Fists are acceptable as they are; cross, hook and uppercut variants are possible
 polish. Per-weapon motion may override a damage-type profile. A surface-hit result
 could provide a wall-hit thud or recoil instead of counting as a miss.
-`src/render/playerFigure.ts` could follow first-person swings; third-person views
+`packages/presentation/src/render/playerFigure.ts` could follow first-person swings; third-person views
 do not animate.
 
 ## Cut list

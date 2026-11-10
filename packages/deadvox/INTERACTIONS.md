@@ -20,7 +20,7 @@ Liquid service requires an explicit destination: silently choosing another vesse
 
 A refused pour must distinguish a burning endpoint, a full receiver and an unheld source: a blanket incompatibility message hides the actionable state and falsely suggests the vessels cannot exchange fuel. See `packages/engine/src/core/options.ts`, `pourRefusal`.
 
-The reservoir card is a transfer target, not an item slot. Keeping the receiver card fixed prevents source selection from changing the destination mid-gesture. Naming the other hand's vessel makes the destination explicit without a picker or nearby-stock search; emptying needs no separate ownership mechanism. The source's authored pour rate governs its flow because the source is the vessel being tipped. Measured contents stay on the opened card to avoid permanent HUD clutter. See `src/ui/inventoryScreen.ts`, `detailsTemplate` and `InventoryScreen.hoverServiceTarget`, and `packages/engine/src/core/options.ts`, `pourRefusal` and `otherHandPour`.
+The reservoir card is a transfer target, not an item slot. Keeping the receiver card fixed prevents source selection from changing the destination mid-gesture. Naming the other hand's vessel makes the destination explicit without a picker or nearby-stock search; emptying needs no separate ownership mechanism. The source's authored pour rate governs its flow because the source is the vessel being tipped. Measured contents stay on the opened card to avoid permanent HUD clutter. See `packages/presentation/src/ui/inventoryScreen.ts`, `detailsTemplate` and `InventoryScreen.hoverServiceTarget`, and `packages/engine/src/core/options.ts`, `pourRefusal` and `otherHandPour`.
 
 An ownership change is where food can change environment, so it is also where food settles. A leaving subtree first takes its old environment's aging, so a new place changes only later aging and no command can rewrite the past. A refused or cancelled move leaves ownership as it was; aging that is already due is not undone. Relocated, fallen and destroyed furniture settles its pockets before they move. Plans stay pure: merge admission compares projected exposure without settling. See `packages/engine/src/core/inventory.ts`, `Inventory.settleFood` and `Inventory.currentFood`, and `packages/engine/src/core/furnitureMove.ts`, `beforeRelocating`.
 
@@ -93,7 +93,7 @@ without settling it, because settling would make saving change the run. See
 Loading and collecting use ordinary handling so the same reach and ownership
 checks apply at admission and completion. Starting and stopping do not occupy
 hands; an opened inventory surface keeps machine diagnosis local without a
-permanent HUD. See `src/ui/chargerPanel.ts`, `chargerPanel`, and
+permanent HUD. See `packages/presentation/src/ui/chargerPanel.ts`, `chargerPanel`, and
 `packages/engine/src/game/session.ts`, `chargerControl`.
 
 Relocation and destruction settle before ownership changes, including pieces

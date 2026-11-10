@@ -1106,7 +1106,7 @@ const startPlayWith = (
   /**
    * The view's share of the aim from hip to sights: it rides the sim's acquisition progress while the
    * sights are wanted and settles back over the content blend once they are not. Presentation state
-   * only; it reads the simulation and never writes it (`DESIGN.md`, "Combat and noise").
+   * only; it reads the simulation and never writes it (`packages/deadvox/DESIGN.md`, "Combat and noise").
    */
   const adsViewBlend = claimed(registry.figures, 'player')!.aimPose.ads.viewBlend;
   let adsAimShown = 0;

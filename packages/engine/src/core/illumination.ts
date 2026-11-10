@@ -26,8 +26,8 @@ export interface IlluminationScene {
 }
 
 /**
- * The renderer's point-light falloff (three.js `getDistanceAttenuation` as patched by `packages/deadvox/src/render/lightFalloff.ts`,
- * `installNearFieldFalloff`), so both sides measure alike.
+ * The renderer's point-light falloff (three.js `getDistanceAttenuation` as patched by
+ * `packages/presentation/src/render/lightFalloff.ts`, `installNearFieldFalloff`), so both sides measure alike.
  */
 const distanceAttenuation = (
   distanceMetres: number,

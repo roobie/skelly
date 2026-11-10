@@ -95,7 +95,7 @@ const inCamera = new Vector3();
 const toSource = new Vector3();
 
 /**
- * The flare through night-vision goggles from bright lights in view (`DESIGN.md`, "Light"). It rises at once to
+ * The flare through night-vision goggles from bright lights in view (`packages/deadvox/DESIGN.md`, "Light"). It rises at once to
  * a new peak and falls back from `last` with the view's recovery time over `dt` real seconds.
  */
 export const nightVisionFlare = ({

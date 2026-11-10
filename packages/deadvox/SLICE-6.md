@@ -174,7 +174,7 @@ blocking. Gas sealing is a separate question.
 Fitted parts and their poses own both appearance and obstruction. Keep parked
 world collision and picking derived, not hand-authored per wreck. The shared pose and
 part boxes are projected by `packages/engine/src/core/vehicleProjection.ts`, `projectVehicleParts`,
-and presentation groups each instance through `src/render/vehicles.ts`,
+and presentation groups each instance through `packages/presentation/src/render/vehicles.ts`,
 `VehicleMeshes`. The filled-column approximation is not an enterable-cabin or
 transparent-window model. Extend the consumers without treating that approximation as
 the cabin's authoritative empty space.
@@ -198,7 +198,7 @@ Driving and parked collision use the project-owned Rapier f64 build; ragdolls
 migrate to that same build rather than retaining npm Rapier. The build and upgrade
 rule is in `docs/decisions/0009-rapier-f64-build.md`, "Decision". Presentation-only
 corpse contact is not evidence that car suspension, tunnelling or deterministic
-replay is solved; see `src/render/ragdoll.ts`, `RagdollWorld`.
+replay is solved; see `packages/presentation/src/render/ragdoll.ts`, `RagdollWorld`.
 
 Leaving a moving car permits unattended coasting, collision and bystander damage.
 Budget and prove its deterministic coarse transition after regional departure;

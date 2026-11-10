@@ -1,4 +1,4 @@
-// The inventory's item viewer (`DESIGN.md`, "Inventory screen"): one item instance's own model, turned by dragging
+// The inventory's item viewer (`packages/deadvox/DESIGN.md`, "Inventory screen"): one item instance's own model, turned by dragging
 // and zoomed by the wheel. It only reads the item and draws it, so opening and closing it changes no game state.
 
 import type { GraphicsTuningDef } from '@skelly/engine/content';

@@ -153,7 +153,7 @@ export const playNeedsText = (
       injuries: countText(pain.injuries),
       relief: countText(pain.relief),
     }),
-    // Only a tier content marks `warn` gets the warning sign (`DESIGN.md`, "Bleeding").
+    // Only a tier content marks `warn` gets the warning sign (`packages/deadvox/DESIGN.md`, "Bleeding").
     ...bleeding.map(({ region, label, warn }) =>
       fillText(warn ? text.bleedingWarning : text.bleeding, { tier: label, region }),
     ),

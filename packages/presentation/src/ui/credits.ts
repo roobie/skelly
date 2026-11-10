@@ -40,7 +40,7 @@ export interface CreditsViewModel {
 }
 
 export const creditsViewModel = (manifest: Manifest): CreditsViewModel => {
-  // Keyed by all an entry shows but its links, so entries that differ only there are one (`DESIGN.md`, "Assets and credits").
+  // Keyed by all an entry shows but its links, so entries that differ only there are one (`packages/deadvox/DESIGN.md`, "Assets and credits").
   const merged = new Map<string, CreditsEntryViewModel>();
   for (const entry of manifest.sources.map(entryViewModel)) {
     const { links, ...shown } = entry;

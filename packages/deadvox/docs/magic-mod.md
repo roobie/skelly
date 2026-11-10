@@ -354,7 +354,7 @@ without removing it, as a dispel or a serum does.
 
 Each held trait is saved with its source and when it was gained, so a removal knows what
 it undoes and a save shows how the character came to be. Known traits show on the skills
-tab (`src/ui/inventoryTabs.ts`); a mutation surfaces through the body first, so it is
+tab (`packages/presentation/src/ui/inventoryTabs.ts`); a mutation surfaces through the body first, so it is
 noticed before it is named.
 
 ### 5. Mod infrastructure
@@ -447,7 +447,7 @@ Parts to reuse:
 - **Block changes for earthshaping:** `packages/engine/src/core/world.ts`, `World.setBlock`.
 - **Hold and release for channelled casts:** `packages/engine/src/core/playerCombat.ts`, `holdCharge`
   and `releaseCharge`.
-- **Cast progress:** `src/ui/hud.ts`, `renderHandling`.
+- **Cast progress:** `packages/presentation/src/ui/hud.ts`, `renderHandling`.
 
 Closed lists to open:
 
@@ -492,8 +492,8 @@ comes last.
 
 ### 9. UI and world presentation
 
-- **Spell list:** the inventory tabs are a closed list; see `src/ui/inventoryTabs.ts`.
-- **Mana readout:** `src/ui/playHud.ts`, `playNeedsText`. `INTERFACE.md`,
+- **Spell list:** the inventory tabs are a closed list; see `packages/presentation/src/ui/inventoryTabs.ts`.
+- **Mana readout:** `packages/presentation/src/ui/playHud.ts`, `playNeedsText`. `INTERFACE.md`,
   "Diegesis and development", favours bodily cues, so how mana feels on the body is
   settled before a bar is added.
 - **Transient light:** light spells and glowing projectiles need a world light source that

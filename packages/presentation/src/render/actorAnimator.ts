@@ -170,7 +170,7 @@ export class ActorAnimator {
   private readonly firearmParts = new Map<number, { action?: FirearmAction; parts: readonly HeldActionPart[] }>();
   private readonly cylinderRounds = new Map<number, { key: string; group: Group }>();
   private readonly pumpModels = new Map<number, ModelDef>();
-  /** Each held gun's slots, with what is really fitted there (`DESIGN.md`, "Piles and item models"). */
+  /** Each held gun's slots, with what is really fitted there (`packages/deadvox/DESIGN.md`, "Piles and item models"). */
   private readonly fittedSlots = new Map<number, ComposedHeld['slots']>();
   private readonly incomingMagazines = new Map<number, { object: Object3D; model: string }>();
   private readonly loadingShells = new Map<number, Object3D>();
@@ -644,7 +644,7 @@ export class ActorAnimator {
 
   /**
    * Raises a held magazine while rounds go in or out of it, and has the other hand press each round from its job's
-   * progress, so the press never shows a round the simulation hasn't moved (`DESIGN.md`, "Hands: what you see is what's there").
+   * progress, so the press never shows a round the simulation hasn't moved (`packages/deadvox/DESIGN.md`, "Hands: what you see is what's there").
    */
   private magazineLoading(handling: HeldHandlingFrame) {
     const running = readMagazineLoadFrame(

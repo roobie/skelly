@@ -46,7 +46,7 @@ pipeline. Fused-mass carving hides cells of the loaded GLB, and deadvox builds f
 walls for each hole at runtime from the rest grid the actor already holds. The loaded
 GLB alone cannot show a hole's inside, so a hole would show the world through it;
 walls built from the grid show flesh on every side of the pit with no full remesh and
-no mobgen runtime import. See `packages/deadvox/src/render/holeWalls.ts`,
+no mobgen runtime import. See `packages/presentation/src/render/holeWalls.ts`,
 `holeWallGeometry`.
 
 ## Shared production and content homes
@@ -100,7 +100,7 @@ an actor's death fall is authored once there. The fall leaves the living pose by
 blending onto the baked death clip across the clip's first frame interval, then plays
 the clip and holds its last frame, so every corpse of one figure and direction
 settles in the same pose. Per-kill variation in the settled corpse is given up for
-that. See `packages/deadvox/src/render/corpsePose.ts`, `corpseFallPose`.
+that. See `packages/presentation/src/render/corpsePose.ts`, `corpseFallPose`.
 
 ## Shared appearance and replacement
 
@@ -153,7 +153,7 @@ figures, because they carry content only and cannot declare files.
 Figure files load per session start. Before a session is created, the game fetches
 and decodes the body and clips of every figure row the selected stack's registry
 holds, and the decoded map travels with the registry into the session; see
-`packages/deadvox/src/presentation/play.ts`, `startPlay`, and
+`packages/presentation/src/presentation/play.ts`, `startPlay`, and
 `packages/engine/src/core/actorFigureFiles.ts`. Node reads the same files
 synchronously through the pack reader. Fetching what the stack uses keeps load time
 scaling with the stack, not with the whole model catalogue, which will grow to

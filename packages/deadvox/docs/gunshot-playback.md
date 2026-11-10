@@ -12,7 +12,7 @@ Every accepted shot selects its seeded variant and starts when the shared load r
 
 The player's firearm cue is listener-relative, so movement cannot leave it behind at the firing position. It retains the gunshot's world-volume category; other actors remain world-positional by default. Exact preview playback is listener-relative too. Footsteps and melee remain world-positioned; this gunshot-only policy does not change them.
 
-Playback modules are presentation and stay outside save identity. `packages/engine/src/core/soundPicker.ts` remains simulation state because its seeded choice, cooldown and hearing admission affect the world. See `src/presentation/audio.ts`, `GameAudio`, and `packages/engine/src/game/audioPresentation.ts`, `firearmShotSound`.
+Playback modules are presentation and stay outside save identity. `packages/engine/src/core/soundPicker.ts` remains simulation state because its seeded choice, cooldown and hearing admission affect the world. See `packages/presentation/src/presentation/audio.ts`, `GameAudio`, and `packages/engine/src/game/audioPresentation.ts`, `firearmShotSound`.
 
 ## Automatic fire
 

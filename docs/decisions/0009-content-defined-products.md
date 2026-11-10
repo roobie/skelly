@@ -144,9 +144,9 @@ Scenario rows own guided steps, stage marks and attempt recording because a diff
 run must not require runtime identity branches. Guidance observes completed actions
 and selects presentation; it cannot issue gameplay commands or bypass action owners.
 Handling history belongs to an observed item instance so separate items cannot be
-combined into one completed lesson. See `packages/deadvox/src/presentation/guidedSteps.ts`,
-`GuidedSteps`; `packages/deadvox/src/presentation/handlingLessons.ts`, `HandlingLessons`;
-and `packages/deadvox/src/ui/guidedSteps.ts`, `mountGuidance`.
+combined into one completed lesson. See `packages/presentation/src/presentation/guidedSteps.ts`,
+`GuidedSteps`; `packages/presentation/src/presentation/handlingLessons.ts`, `HandlingLessons`;
+and `packages/presentation/src/ui/guidedSteps.ts`, `mountGuidance`.
 Input references share the action catalogue rather than the browser resolver so
 admission cannot pull DOM timing into simulation. See
 `packages/engine/src/core/inputActions.ts`, `INPUT_ACTIONS`.
@@ -154,7 +154,7 @@ admission cannot pull DOM timing into simulation. See
 Attempt recording is scenario content carried by scenario or layout rows. Without
 an authored row there is nothing to record against, so no code default stands in.
 See `packages/engine/src/core/schema/attemptPolicy.ts`, `AttemptPolicySchema`, and
-`packages/deadvox/src/presentation/playtestObserver.ts`, `createAttemptRecording`.
+`packages/presentation/src/presentation/playtestObserver.ts`, `createAttemptRecording`.
 
 Snapshot measurement is a debugging aid, not scenario attempt policy: its result
 never reaches the attempt file, so scenarios must not tune it. See
@@ -255,32 +255,41 @@ matches the runtime and presentation packages the refactor adds.
 Runtime code (the `packages/engine` package and the workspace libraries it depends on)
 reaches nothing outside that set, not even for types: no file of deadvox, so no
 presentation, render or UI code and no product configuration, mods or pages, whether by
-import or by glob. It imports only the npm packages its manifest names in `dependencies`.
-The presentation side then moves out whole. See `packages/deadvox/tools/runtimeClosure.ts`,
-`ENGINE_POLICY`. Runtime source also compiles without DOM types, so a DOM-only name in it
+import or by glob. It imports only the npm packages its manifest names in `dependencies`. See
+`packages/deadvox/tools/runtimeClosure.ts`, `ENGINE_POLICY`. Runtime source also compiles without DOM types, so a DOM-only name in it
 fails the typecheck; see `packages/engine/tsconfig.json`. That config keeps Node's types,
 which declare `navigator`, `MessageEvent`, `localStorage` and `sessionStorage`, so the
 typecheck alone lets those through; a lint ban on runtime source fails them. See `biome.jsonc`,
 `noRestrictedGlobals`. The checks guard honest edits, not deliberate bypasses; what they
 do not check is in `packages/deadvox/docs/runtime-closure-limits.md`, "Not checked".
 
-The runtime package exports curated entry points only, so its surface is chosen rather
-than every file it holds: one entry per domain, each carrying only what code outside the
-package uses. Product code (deadvox source, its tools, its Vite config, the Tiled extension and the root deadvox contract tests) imports the runtime only
-as `@skelly/engine/<entry>`; see `packages/engine/package.json`, `exports`. A consumer
-that runs without an npm install names an entry's file instead of the package: Tiled's
-script runtime has no package resolution, and the site-launcher CI job runs
+Presentation (rendering, UI, play, input, audio and the mesher and save workers) is its own
+package too, `packages/presentation`, `@skelly/presentation`. It reaches no file of deadvox,
+imports only the npm packages its manifest names, and reaches the engine only through the
+engine's curated entries, never its test-only subpath, so another product can reuse it on the
+engine's chosen surface. See `packages/deadvox/tools/runtimeClosure.ts`, `PRESENTATION_POLICY`.
+
+The runtime and presentation packages export curated entry points only, so each surface is
+chosen rather than every file a package holds: one entry per domain, each carrying only what
+code outside the package uses. Product code (deadvox source, its tools, its Vite config, the
+Tiled extension and the root deadvox contract tests) imports them only as
+`@skelly/engine/<entry>` and `@skelly/presentation/<entry>`; see
+`packages/engine/package.json`, `exports`, and `packages/presentation/package.json`, `exports`.
+A consumer that runs without an npm install names an entry's file instead of the package:
+Tiled's script runtime has no package resolution, and the site-launcher CI job runs
 `test/site-launcher.test.mjs` uninstalled. Such a consumer gets an entry that loads no npm
 dependency, because a re-export loads its whole module even when the consumer takes one
-name, so the mod catalogue has its own entry; see `packages/engine/src/modCatalogue.ts`.
+name, so the mod catalogue and the tutorial URL have their own entries; see
+`packages/engine/src/modCatalogue.ts` and `packages/presentation/src/tutorialUrl.ts`.
 
-Tests that use shipped content stay in deadvox, yet need runtime internals no entry
-carries. They import those through the package's one test-only subpath,
-`@skelly/engine/internal/*`, which resolves only under the `skelly-engine-test` export
-condition. Tests also take a name from an entry when the entry carries it. A separate
+A test that uses only fixtures lives in the package it tests. Tests that use shipped
+content or deadvox code stay in deadvox, yet need internals no entry carries. They import
+those through each package's one test-only subpath, `internal/*`, which resolves only under
+the `skelly-test` export condition; one condition serves both packages, so whatever enables it
+opens both. Tests also take a name from an entry when the entry carries it. A separate
 test-only surface keeps product code on the curated entries without growing the entries
-to serve tests. Two places enable the condition: the deadvox Vitest config, and the dev
-servers browser stages create. Browser stages are test runs too, so their fixtures and
+to serve tests. Three places enable the condition: the deadvox and presentation Vitest
+configs, and the dev servers browser stages create. Browser stages are test runs too, so their fixtures and
 page code share the unit tests' test-only surface; all of them create their server in one
 place, see `packages/deadvox/test/browser/stageServer.mjs`, `createStageServer`. A stage's
 own Node process loads a fixture that reaches the subpath through that server, never by a
@@ -288,7 +297,8 @@ plain import, so the stage server is the one owner that enables the condition fo
 stage code; see `packages/deadvox/test/browser/pump-handling.mjs`. The
 product dev server and the product build never enable it, so they cannot resolve the
 subpath; see `packages/deadvox/test/stageServer.test.ts`. The entry-only check fails a
-product file that imports a non-entry subpath or reaches the package's files by path; see
+product file that imports a non-entry subpath of either package or reaches either package's
+files by path; see
 `packages/deadvox/tools/runtimeEntries.ts`, `entryViolations`.
 It reads import syntax with a literal target; a module path a browser stage or the dev
 server loads from a string is not checked.
@@ -301,17 +311,9 @@ See `packages/deadvox/src/product/content.ts`, `productContent`, and
 product wiring, the page's keyboard and the corpse physics tuning included: it builds the
 keyboard from the product's default keys and passes it to the UI, debug and presentation
 modules that read keys, and it passes its ragdoll config to play, which hands it to the
-corpse renderer, so presentation can move out of deadvox without a product import. See
+corpse renderer, so presentation needs no product import. See
 `packages/deadvox/src/product/input.ts`, `keyboardInput`, and
 `packages/deadvox/src/product/ragdoll.ts`, `ragdollConfig`.
-
-Presentation (deadvox's `src/render`, `src/ui`, `src/presentation` and `src/worker`) gets
-the same curated surface before it becomes its own package (#1532): entries in
-`packages/deadvox/src/presentation/entries`, one per domain and named after the package
-export each becomes, each carrying only what product code outside presentation uses.
-Product code imports presentation only through them; the entry-only check fails any other
-route, see `packages/deadvox/tools/runtimeEntries.ts`, `ENTRY_POLICY`. Tests take a name
-from an entry when it carries one and otherwise import the module.
 
 The framework refactor's own PR and the asset-pipeline move PRs are allowed under the
 #1532 freeze. The asset move targets `framework/refactor` and precedes framework

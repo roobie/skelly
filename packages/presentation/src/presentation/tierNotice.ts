@@ -1,7 +1,7 @@
 /**
- * Speaks a tier's notice (`INTERFACE.md`, "Class 3: the character's voice") whenever a tiered body state
+ * Speaks a tier's notice (`packages/deadvox/INTERFACE.md`, "Class 3: the character's voice") whenever a tiered body state
  * worsens to a tier that has a notice; content leaves the notice off a tier that passes without mention
- * (`DESIGN.md`, "Bleeding"; `DESIGN.md`, "Pain").
+ * (`packages/deadvox/DESIGN.md`, "Bleeding"; `packages/deadvox/DESIGN.md`, "Pain").
  */
 export class TierNotice {
   private tier: number | undefined;

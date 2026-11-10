@@ -225,7 +225,7 @@ a styled cursor can be any size; the sheet stacks the arrow frame above the hand
 stack without the row fails validation. A winning row whose image cannot be loaded falls
 back to the nearest earlier row that can: an unloadable mod cursor should not stop the game,
 so the player keeps a working cursor and the log names the mod. See
-`packages/engine/src/core/schema/cursors.ts`, `CursorSchema`, and `src/ui/uiTokens.ts`, `applyUiTokens`.
+`packages/engine/src/core/schema/cursors.ts`, `CursorSchema`, and `packages/presentation/src/ui/uiTokens.ts`, `applyUiTokens`.
 
 **Sounds.** A sound follows the entry selecting it: shared body/block sounds belong
 with their shared content, reusable weapon sounds with their theme, and zombie-specific
@@ -300,7 +300,7 @@ stack has no modifiers and does not imply a playable product.
 **Zero skills preserve Body.** The skill list stays empty beside the body/injury
 panel, because hiding the Skills tab would hide health information. The panel
 sorts skills by name, not load order, so the order stays stable as skills move
-between mods. See `src/ui/inventoryScreen.ts`, `InventoryScreen`.
+between mods. See `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen`.
 
 ## Capabilities, not ids
 

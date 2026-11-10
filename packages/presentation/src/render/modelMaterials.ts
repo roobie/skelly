@@ -89,8 +89,8 @@ export const applyModelMaterials = (scene: Object3D, table: Readonly<Record<stri
  * takes, so the scene's warm-up compiles them before any model has loaded. A model material varies the
  * program only by see-through, double-sidedness, a colour texture and a sheen (colour, finish and texels
  * are uniforms), and a lit item's glow adds its own. `instanced` adds the instanced copies ground piles
- * draw with. Content outside these variants compiles on first draw, which `test/modelMaterials.test.ts`
- * checks the pack against.
+ * draw with. Content outside these variants compiles on first draw, which
+ * `packages/deadvox/test/modelMaterials.test.ts` checks the pack against.
  */
 export const modelMaterialWarmUp = (instanced: boolean): Group => {
   const texture = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);

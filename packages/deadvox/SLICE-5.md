@@ -314,7 +314,7 @@ at rate changes so refrigeration or a blackout cannot rewrite earlier time.
 - **Lit-base crowd readability:** compare the same room with open, covered and
   breached windows at night and in daylight. Observe both rendered exposure and
   zombie attention; neither can stand in for the other. See `packages/engine/src/core/lights.ts`,
-  `lightSenseSourceFor`, and `src/render/skylight.ts`, `Skylight`. Existing consumable
+  `lightSenseSourceFor`, and `packages/presentation/src/render/skylight.ts`, `Skylight`. Existing consumable
   light depletion (`packages/engine/src/core/lights.ts`, `drainBurnLight`) and torch gas spending
   (`packages/engine/src/core/torch.ts`, `spendFuel`) are not a world fire or smoke model.
 

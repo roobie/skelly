@@ -17,7 +17,7 @@ interface Prop {
   resting: boolean;
 }
 
-/** A fused throwable's lever flying off as its fuse lights, then lying where it fell (`DESIGN.md`, "Hand grenade"). */
+/** A fused throwable's lever flying off as its fuse lights, then lying where it fell (`packages/deadvox/DESIGN.md`, "Hand grenade"). */
 export class LeverProps {
   readonly group = new Group();
   private readonly props: readonly Prop[];

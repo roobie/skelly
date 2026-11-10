@@ -67,7 +67,7 @@ export const packSeveredMask = (
 
 /** Packs how bloodied `slot`'s body is, 0 (clean) to 1, into its mask texel's green channel.
  * CROWD_BEGIN_VERTEX hands it on as `vCrowdBloodiness`, with the bone-local position and bone, for a host to
- * shade stains from (deadvox's render/bloodStain.ts). A reused row keeps the last value written, so every
+ * shade stains from (render/bloodStain.ts). A reused row keeps the last value written, so every
  * packer writes it. */
 export const packBloodiness = (
   data: Float32Array,
@@ -186,7 +186,7 @@ export interface CrowdTexel {
  * those each allocate a fresh Mat3/Vec3/Transform, and this runs for every bone of every actor of every
  * frame (the same allocation-avoidance reason as boneTransformsInto itself). Verified equal
  * to compose(translation([x,0,z]), rotation(rotY(deg))) composed onto boneWorld by hand in this
- * module's own derivation and cross-checked in `test/crowd.test.ts` against
+ * module's own derivation and cross-checked in `packages/deadvox/test/crowd.test.ts` against
  * boneTransformsInto + core/boneMath.ts's compose, applied to real points.
  */
 export const packCrowdBoneMatrix = (

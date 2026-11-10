@@ -157,9 +157,9 @@ place the authorities gave up on.
 
 ## Performance and scale
 
-Terrain goes on screen a whole column at a time and never beyond a column that isn't drawn yet, so no missing chunk shows what solid blocks hide. This lets play begin once a smaller ready ring is drawn while the remaining view fills in safely, without exposing sealed or buried rooms during loading or movement. Furniture, piles and actors share the terrain's reveal membership so their silhouettes and shadows cannot expose a hidden room before its walls arrive. Edits keep already drawn columns visible so replacement work does not create a gap. See `src/render/furniture.ts`, `FurnitureMeshes`, `src/render/piles.ts`, `PileMeshes`, `src/render/mobActors.ts`, `MobActorMeshes`, `src/render/actors.ts`, `ActorMeshes`, `src/render/chunks.ts`, `ChunkMeshes`, `packages/engine/src/core/columnReveal.ts`, `revealedColumns`, `packages/engine/src/game/streamer.ts`, `Streamer`, `src/presentation/worldLoading.ts`, `WorldLoading`, and `packages/mods/skelly.graphics/graphics.jsonnet`, `readyRadiusM`.
+Terrain goes on screen a whole column at a time and never beyond a column that isn't drawn yet, so no missing chunk shows what solid blocks hide. This lets play begin once a smaller ready ring is drawn while the remaining view fills in safely, without exposing sealed or buried rooms during loading or movement. Furniture, piles and actors share the terrain's reveal membership so their silhouettes and shadows cannot expose a hidden room before its walls arrive. Edits keep already drawn columns visible so replacement work does not create a gap. See `packages/presentation/src/render/furniture.ts`, `FurnitureMeshes`, `packages/presentation/src/render/piles.ts`, `PileMeshes`, `packages/presentation/src/render/mobActors.ts`, `MobActorMeshes`, `packages/presentation/src/render/actors.ts`, `ActorMeshes`, `packages/presentation/src/render/chunks.ts`, `ChunkMeshes`, `packages/engine/src/core/columnReveal.ts`, `revealedColumns`, `packages/engine/src/game/streamer.ts`, `Streamer`, `packages/presentation/src/presentation/worldLoading.ts`, `WorldLoading`, and `packages/mods/skelly.graphics/graphics.jsonnet`, `readyRadiusM`.
 
-Terrain range should not extend farther diagonally than along an axis. Retention prevents repeated streaming work when the player crosses a column border. See `packages/engine/src/game/streamer.ts`, `Streamer`, and `packages/mods/skelly.graphics/graphics.jsonnet`, `streamHysteresisM`. Fog goes by horizontal distance, not view depth, so turning in place does not change what is drawn. See `src/render/distanceFog.ts`, `withDistanceFog`.
+Terrain range should not extend farther diagonally than along an axis. Retention prevents repeated streaming work when the player crosses a column border. See `packages/engine/src/game/streamer.ts`, `Streamer`, and `packages/mods/skelly.graphics/graphics.jsonnet`, `streamHysteresisM`. Fog goes by horizontal distance, not view depth, so turning in place does not change what is drawn. See `packages/presentation/src/render/distanceFog.ts`, `withDistanceFog`.
 
 Performance acceptance targets 60 fps on a portable reference-laptop class:
 Intel HD 530-class integrated graphics at a device pixel ratio of 1.5. The
@@ -180,8 +180,8 @@ post effects or reduce the readability of separate UI layers. Content must at le
 switch adaptation off and tune it, so a mod can choose a fixed scale or a
 different trade (`PILLARS.md`, "Content forward compatibility"). Explicit player
 choices retain ownership rather than being overwritten by adaptation. See
-`packages/mods/skelly.graphics/graphics.jsonnet`, `src/render/adaptiveScale.ts`, `AdaptiveScale`,
-`src/render/mood.ts`, `Mood.setRenderScale`, and `src/render/screenScale.ts`, `ScreenScale`.
+`packages/mods/skelly.graphics/graphics.jsonnet`, `packages/presentation/src/render/adaptiveScale.ts`, `AdaptiveScale`,
+`packages/presentation/src/render/mood.ts`, `Mood.setRenderScale`, and `packages/presentation/src/render/screenScale.ts`, `ScreenScale`.
 Look changes made for performance
 follow `packages/deadvox/GRAPHICS.md`, "Look decisions".
 
@@ -230,7 +230,7 @@ The drawn pose must fit its collision height, so a head never pokes through a
 ceiling the body fits under. Visual blending hides the change of shape, but must
 not delay the eye used by sight and collision. See
 `packages/mods/skelly.body/figures-player.jsonnet`, `stancePoses`, and
-`src/render/playerFigure.ts`, `PlayerMeshes`.
+`packages/presentation/src/render/playerFigure.ts`, `PlayerMeshes`.
 
 The crouch must read as a crouch to anyone watching the avatar, not as sitting:
 knees bent, feet flat on the ground under the body, torso leaning forward and
@@ -451,7 +451,7 @@ another directly, which keeps consequences observable and boundaries testable.
 
 ## Saves
 
-Leaving or reloading a live save-backed game asks the browser to confirm when its latest completed storage write or successful saved-world load is older than the content-defined real-time window; nothing can be lost right after a load. For saves, the window counts from the completed storage write, not from the saved snapshot. It uses real time because the page, not the game, is what the player closes, so it keeps counting while paused or while the Sim clock is sped up. Title screens, dead games, halted play and games without save storage do not prompt. Save timing and triggers are owned by `docs/decisions/0002-saves.md`. See `src/presentation/play.ts`, `startPlay`; `src/ui/saveController.ts`, `SaveController`; and `src/ui/leaveConfirmation.ts`, `shouldConfirmPageLeave`.
+Leaving or reloading a live save-backed game asks the browser to confirm when its latest completed storage write or successful saved-world load is older than the content-defined real-time window; nothing can be lost right after a load. For saves, the window counts from the completed storage write, not from the saved snapshot. It uses real time because the page, not the game, is what the player closes, so it keeps counting while paused or while the Sim clock is sped up. Title screens, dead games, halted play and games without save storage do not prompt. Save timing and triggers are owned by `docs/decisions/0002-saves.md`. See `packages/presentation/src/presentation/play.ts`, `startPlay`; `packages/presentation/src/ui/saveController.ts`, `SaveController`; and `packages/presentation/src/ui/leaveConfirmation.ts`, `shouldConfirmPageLeave`.
 
 ## World
 
@@ -533,7 +533,7 @@ wears without touching each piece. The hint's word comes from the condition band
 items read, and it shows no number, following `INTERFACE.md`, "Text". A view redraws a
 piece only when its damage crosses into a different step, not on every blow. See
 `packages/engine/src/core/schema/furniture.ts`, `FurnitureMaterialSchema`, `packages/engine/src/core/blockEntities.ts`,
-`BlockEntities.wearOf`, `src/render/furniture.ts`, `FurnitureMeshes.damageLook`, and
+`BlockEntities.wearOf`, `packages/presentation/src/render/furniture.ts`, `FurnitureMeshes.damageLook`, and
 `packages/engine/src/core/items.ts`, `damageWord`.
 
 Repair preserves a surviving piece rather than replacing it, so mending does not
@@ -551,7 +551,7 @@ non-lootable underwear base so dead police and soldiers remain readable. The tin
 not lootable clothing and never applies to the player. Delete the tint path and its
 content palettes when #1366 merges, rather than keeping a second clothing appearance
 beside owned equipment. See `packages/mods/skelly.body/figures-player.jsonnet`, `outfits`,
-`src/render/playerFigure.ts`, `dress`, and `src/render/corpseFigures.ts`, `CorpseFigures`.
+`packages/presentation/src/render/playerFigure.ts`, `dress`, and `packages/presentation/src/render/corpseFigures.ts`, `CorpseFigures`.
 
 The body stays furniture so its gameplay identity does not depend on its drawing.
 See `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema` and `FigureSchema`.
@@ -626,7 +626,7 @@ because rearranging a room should not require destroying its contents. See `pack
   An open list is a single confirmation, not a persistent interaction mode:
   returning from a pause or another target must not unexpectedly act instead of
   offering choices. See `packages/engine/src/core/furnitureMove.ts`, `slidableFurniture`,
-  `src/presentation/play.ts`, `furnitureActions`, and `packages/engine/src/game/furnitureActions.ts`,
+  `packages/presentation/src/presentation/play.ts`, `furnitureActions`, and `packages/engine/src/game/furnitureActions.ts`,
   `FurnitureActionSelection`.
 - **Held pieces turn and tip.** A dragged piece is a held piece with its floor
   height fixed, so it turns and tips like any held piece; only setting down
@@ -722,7 +722,7 @@ because rearranging a room should not require destroying its contents. See `pack
   stays visibly on its floor plane rather than floating with the player's view.
   Presentation reads the hold owner so it cannot outlive the hold. See
   `packages/engine/src/core/furnitureMove.ts`, `advanceFloorLockedPlacement`; and
-  `src/render/carriedPiece.ts`, `CarriedPiece`.
+  `packages/presentation/src/render/carriedPiece.ts`, `CarriedPiece`.
 - **Turning and tipping.** Lifted pieces can be reoriented because a piece
   that could fit through a doorway laid over should not become a dead end.
   World-relative axes make a press predictable wherever the player stands.
@@ -1170,7 +1170,7 @@ acknowledged storage. A failed write leaves the earlier checkpoint intact and
 keeps ordinary save recovery visible, rather than claiming the win is durable.
 A restored completion remains terminal and cannot count another success. See
 `packages/engine/src/game/session.ts`, `activateGoal`; `packages/engine/src/core/scenarioRun.ts`, `ScenarioRun`;
-`packages/engine/src/core/saveFormat.ts`, `validateWire`; and `src/ui/saveController.ts`, `finishWin`.
+`packages/engine/src/core/saveFormat.ts`, `validateWire`; and `packages/presentation/src/ui/saveController.ts`, `finishWin`.
 
 Attempt observation belongs in the snapshot so Continue neither pools another
 survivor's counters nor counts the restored pose as travel. Export identifies
@@ -1205,7 +1205,7 @@ expose the same sky eligibility contract across authored layouts and
 scenario composition. Benchmark city plans do not opt into scenario
 sky work, preserving their stress policy. Demo stock stays outside ordinary
 reachability, while admitted scenario templates and fixed items are world sources.
-See `packages/engine/src/core/site.ts`, `Site`; `src/presentation/engine.ts`, `createEngine`;
+See `packages/engine/src/core/site.ts`, `Site`; `packages/presentation/src/presentation/engine.ts`, `createEngine`;
 `packages/engine/src/core/citySite.ts`, `authoredPlacements`; and `packages/engine/src/core/reachability.ts`,
 `worldSources`.
 
@@ -1391,7 +1391,7 @@ state is unique, so its condition, contents, and fitted parts remain the same
 item in a hand, pocket, container, or pile. Item types declare components that
 own behavior; the game must not branch on item IDs, including when drawing an
 item. See `packages/engine/src/core/schema/items.ts`, `ItemSchema`, and
-`src/render/itemLook.ts`, `itemLook`.
+`packages/presentation/src/render/itemLook.ts`, `itemLook`.
 
 Inventory space is a grid of rotatable item footprints and pockets. One cell is
 a real length, named once in content (the `inventory` tuning's `cellMetres`),
@@ -1457,7 +1457,7 @@ action owner. The longer-term direction is more specific handling animations.
 Handling animation follows the simulated job's elapsed time and duration, so
 compression, cancellation, and interruption cannot show work the simulation
 did not perform. See `rummageFrame` in
-`src/render/rummagePose.ts` and the handling-pose readers in `src/render`.
+`packages/presentation/src/render/rummagePose.ts` and the handling-pose readers in `src/render`.
 
 The character's immutable dominant-hand identity determines which hand quick
 actions and presentation use; saves preserve it. Roles follow the character,
@@ -1472,19 +1472,19 @@ held light needs both its world illumination and a self-lit held presentation.
 A flame hidden inside the palm cannot communicate ignition, even when its world
 source is working. Clear glass does not hide a flame because it still shows ignition.
 The lamp's authored grip must leave the flame visible; see
-`packages/skelly-assets/models/lights.libsonnet`, `oil_lamp`, and `src/render/modelFlame.ts`, `ModelFlames`.
+`packages/skelly-assets/models/lights.libsonnet`, `oil_lamp`, and `packages/presentation/src/render/modelFlame.ts`, `ModelFlames`.
 
 Holding right mouse with empty hands must read as a boxer guard, ready to
 punch; an empty offhand must follow a melee weapon into en-garde. Empty hands
 must not hide that readiness merely because there is no held item to draw.
 See `packages/engine/src/core/meleePose.ts`, `readyMeleePose`, and
-`src/render/actorAnimator.ts`, `ActorAnimator.update`.
+`packages/presentation/src/render/actorAnimator.ts`, `ActorAnimator.update`.
 A firearm on aim is not a melee guard: a free off hand supports the gun, an
 off-hand item in use stays raised and forward, and any other off-hand item rests.
 The off-hand state makes it clear whether the player is aiming with a free hand
 or still using what it holds. The rule is shared by first person, third person and
 the mannequin so other players and the third-person camera see the same hands. See
-`src/render/actorAnimator.ts`, `ActorAnimator.update`, and
+`packages/presentation/src/render/actorAnimator.ts`, `ActorAnimator.update`, and
 `packages/mods/skelly.body/figures-player.jsonnet`, `holds`.
 
 **Held screens.** An item with a screen is held at a raised spot with the screen
@@ -1498,7 +1498,7 @@ and GPS units reuse the rule unchanged, a watch is the same rule with the wrist 
 the back, and handedness stays mirroring of placement only. The hand's grip point
 is the face of its palm, so the item's back sits on the palm and no part of the
 arm reaches past the palm into the item or its screen. Validation rejects a
-held-display item whose model has no screen. See `src/render/heldDisplay.ts`,
+held-display item whose model has no screen. See `packages/presentation/src/render/heldDisplay.ts`,
 `presentHeldDisplay`, and
 `packages/skelly-assets/tools/packages/thing-core/src/schema.ts`, `NeutralModelSchema`.
 
@@ -1548,7 +1548,7 @@ uses the held blade. Repair recipes retain the shared content-owned restoration,
 skill and work-rate contract; their activation selector keeps held work out of
 the craft list. See `packages/engine/src/game/sharpening.ts`, `Sharpening`,
 `packages/engine/src/game/itemActions.ts`, `ItemActionSelection`, `packages/engine/src/core/schema/recipes.ts`,
-`RecipeSchema`, and `src/ui/craftReadout.ts`, `craftRows`.
+`RecipeSchema`, and `packages/presentation/src/ui/craftReadout.ts`, `craftRows`.
 
 Craft-list repairs, crafting and disassembly gather reachable supplies because
 retrieving materials is part of the work, not free access to distant storage.
@@ -1600,7 +1600,7 @@ source because dropping it does not cover its lens. Its drawn ground pose owns
 the beam rather than the player's aim. Without a first-person slung-gun model,
 the shoulder and a downward beam approximate that absent geometry. See
 `packages/engine/src/game/survival.ts`, `Survival.tickLight`; `packages/engine/src/core/lights.ts`, `inventoryLightEntries`;
-`src/render/piles.ts`, `PileMeshes.beamPoseOf`; and `src/render/flashlight.ts`, `Flashlight.update`.
+`packages/presentation/src/render/piles.ts`, `PileMeshes.beamPoseOf`; and `packages/presentation/src/render/flashlight.ts`, `Flashlight.update`.
 
 ### Handling time
 
@@ -1617,7 +1617,7 @@ silent default would hide a mod that left one out. See `packages/engine/src/core
 
 ### Inventory screen
 
-Timed actions, crafting and play included, share one circular progress indicator at screen centre, so progress reads the same everywhere and stays visible over dark scenes and across HUD scales. Simulation-owned progress and the existing stop or resume controls stay authoritative. The ring shows no centre percentage: the arc already shows progress, and a number in the centre of the screen is noise. See `src/ui/activityProgress.ts`, `activityProgress`, and `src/ui/hud.ts`, `renderHandling`.
+Timed actions, crafting and play included, share one circular progress indicator at screen centre, so progress reads the same everywhere and stays visible over dark scenes and across HUD scales. Simulation-owned progress and the existing stop or resume controls stay authoritative. The ring shows no centre percentage: the arc already shows progress, and a number in the centre of the screen is noise. See `packages/presentation/src/ui/activityProgress.ts`, `activityProgress`, and `packages/presentation/src/ui/hud.ts`, `renderHandling`.
 
 The inventory is a keyboard-first HTML overlay with **you** and **around**
 panes. Hands and worn storage appear beside reachable piles and furniture.
@@ -1659,8 +1659,8 @@ the item viewer: that instance's own model, with its fitted magazine and
 attachments. A grid card hides the detail that tells items apart, and inspecting
 must not cost a move, so the viewer is view-only. It is modal because a covered
 control must not activate. It fills the inventory panel because a larger panel
-shows more detail. See `src/ui/itemViewer.ts`, `ItemViewer`, and
-`src/render/itemPictures.ts`, `ItemPictures`.
+shows more detail. See `packages/presentation/src/ui/itemViewer.ts`, `ItemViewer`, and
+`packages/presentation/src/render/itemPictures.ts`, `ItemPictures`.
 
 ### Piles and item models
 
@@ -1668,7 +1668,7 @@ Ground presentation preserves an item's identity rather than making distinct
 objects read as the same bundle. Portable papers use flat paper models, not
 standing furniture, so their appearance agrees with ordinary pickup and carrying.
 Spent cases read as loose debris, not stacked material. See
-`src/render/piles.ts`, `PileMeshes`, `packages/engine/src/core/schema.ts`, `PILE_DISPLAY_KIND`,
+`packages/presentation/src/render/piles.ts`, `PileMeshes`, `packages/engine/src/core/schema.ts`, `PILE_DISPLAY_KIND`,
 and `docs/readables.md`.
 
 Pile meshes and presentation endpoints use the same current display projection.
@@ -1690,8 +1690,8 @@ duplicate the can that owns it. See
 
 Use one instance look and one state applier across world models, stills and the
 viewer, including each fitted part's own state. Otherwise inspection can claim
-an appearance the owned item does not have. See `src/render/itemLook.ts`,
-`itemLook`, and `src/render/itemStateLook.ts`, `applyItemStateLook`.
+an appearance the owned item does not have. See `packages/presentation/src/render/itemLook.ts`,
+`itemLook`, and `packages/presentation/src/render/itemStateLook.ts`, `applyItemStateLook`.
 
 Battery level stays text-only because hidden charge has no visible indicator.
 Fuel fill is visible only through authored clear geometry, never through an
@@ -1711,13 +1711,13 @@ export checks agree; hand-authored assets retain a separate preparation owner.
 See `packages/skelly-assets/models/handhelds.libsonnet`, `carrier`,
 `tools/item-fuel-models.mjs`, `recipes`, `tools/item-model-metadata.mjs`, `metadata`,
 `packages/engine/src/core/itemPresentation.ts`, `modelPresentationAssetIssues`, and
-`src/render/itemStateLook.ts`, `disposeItemStateMaterials`.
+`packages/presentation/src/render/itemStateLook.ts`, `disposeItemStateMaterials`.
 
 Model loading is bounded by content so an asset-heavy pack does not exhaust the
 browser's request capacity. A view that needs an unloaded model moves it ahead
 of background preload, so an equipped, visible or spawned item does not wait
 behind unrelated declarations. See `packages/mods/skelly.graphics/graphics.jsonnet`,
-`graphics`; `src/render/models.ts`, `ModelLibrary`; and `PILLARS.md`, "Content forward compatibility".
+`graphics`; `packages/presentation/src/render/models.ts`, `ModelLibrary`; and `PILLARS.md`, "Content forward compatibility".
 
 ### Assets and credits
 
@@ -1764,7 +1764,7 @@ behind unrelated declarations. See `packages/mods/skelly.graphics/graphics.jsonn
   makes a sound play is the required description on its content entry, so a
   pack's sounds reach the sheet without a code edit. The sheet keeps no approval
   status: a verdict is history, which belongs in the commit that changes the
-  sound. See `src/ui/soundGuide.ts`, `buildSoundGuide`.
+  sound. See `packages/presentation/src/ui/soundGuide.ts`, `buildSoundGuide`.
 
 ## Crafting
 
@@ -1804,7 +1804,7 @@ These choices apply equally to salvage and disassembly because changing the
 recovery operation must not hide a consequential liquid transfer. See
 `packages/engine/src/core/inventory.ts`, `Inventory.planLiquidReceipts` and `Inventory.releaseWork`;
 `packages/engine/src/core/craftCommands.ts`, `CraftCommands.recovery` and `CraftCommands.act`; and
-`src/ui/inventoryScreen.ts`, `detailsViewModel` and `render`.
+`packages/presentation/src/ui/inventoryScreen.ts`, `detailsViewModel` and `render`.
 
 Gainful cycles are forbidden because endless material breaks scarcity. A gainful
 cycle is a finite combination of crafting, disassembly, salvage or unpack
@@ -1847,9 +1847,9 @@ must not change the actor's placement, lean or handling. The owning camera masks
 the head and eyes-slot equipment because surfaces enclosing the eye would block
 its view; external cameras and normal shadows retain them. Body shoulders remain
 attached rather than moving to suit the observing camera. See
-`src/render/playerFigure.ts`, `PlayerMeshes` and `setPlayerFigurePosition`;
-`src/render/actorAnimator.ts`, `ActorAnimator`; and
-`src/render/shadowFlags.ts`, `PLAYER_SELF_MASK_LAYER`.
+`packages/presentation/src/render/playerFigure.ts`, `PlayerMeshes` and `setPlayerFigurePosition`;
+`packages/presentation/src/render/actorAnimator.ts`, `ActorAnimator`; and
+`packages/presentation/src/render/shadowFlags.ts`, `PLAYER_SELF_MASK_LAYER`.
 
 Held lateral lean peeks round cover while keeping the feet back. Standing and
 crouching permit it; lying prone does not. Cover limits the eye and physical gun
@@ -1872,7 +1872,7 @@ eye is the posed head's eye. Interaction rays and held-item simulation retain
 that origin so an observing camera cannot change the actor's reach or hold.
 The live drawing uses the gameplay stance without a separate visual blend that
 could detach the eye. See `packages/engine/src/core/playerLookPose.ts`, `playerLookPose` and
-`playerEyePosition`; and `src/render/playerFigure.ts`, `PlayerMeshes`.
+`playerEyePosition`; and `packages/presentation/src/render/playerFigure.ts`, `PlayerMeshes`.
 
 The shared actor must be indicative of physical truth for multiplayer, without
 requiring perfect world-perspective ADS or remodelling existing weapons to fit
@@ -1904,8 +1904,8 @@ actor or gun. The firearm retains
 normal world depth, and external views and shadows retain the whole body. This
 exception is for an enclosing camera, not for hiding world obstructions. Content
 owns the masked body roles and clearance; see `packages/mods/skelly.body/figures-player.jsonnet`,
-`aimPose`; `src/render/playerFigure.ts`, `applySelfMask`; and
-`src/render/ownBodyClip.ts`, `OwnBodyClip`.
+`aimPose`; `packages/presentation/src/render/playerFigure.ts`, `applySelfMask`; and
+`packages/presentation/src/render/ownBodyClip.ts`, `OwnBodyClip`.
 
 Hand-fit corrections belong at the authored contact rather than in view-specific
 placement or gun-ID overrides, so hip aim, ADS and external observation cannot
@@ -1918,7 +1918,7 @@ alignment. The shortened offset remains inside its displacement bound. Strict
 no-extra-view would require a body-eye depth mask, because a clear segment does
 not prevent corner parallax. That mask is deferred from #1373: small bounded
 parallax is accepted unless it becomes a multiplayer peeking problem. See
-`packages/engine/src/core/adsView.ts`, `guardAdsCamera`; and `src/render/playView.ts`,
+`packages/engine/src/core/adsView.ts`, `guardAdsCamera`; and `packages/presentation/src/render/playView.ts`,
 `updateCamera`.
 
 Prone ADS has its own posture, chest raised and propped on the elbows. A flat
@@ -1962,18 +1962,18 @@ Authored head-slot interiors use a matching world-frame exclusion to avoid
 doubled colour. The visor/scope effect boundary does not authorize a
 camera-specific physical substitute; its optical source shares the actor's
 stock seat so the effect cannot imply a different sight line. See
-`src/render/hands.ts`, `HeldItems`.
+`packages/presentation/src/render/hands.ts`, `HeldItems`.
 
 Hands and held objects use normal world depth, not a depth-clear redraw or a
 camera-specific pose. Visible wall intersections are accepted until
 [#1376](https://github.com/roobie/skelly/issues/1376) settles a common obstruction
 pose and action policy; hiding them per view would violate the shared actor.
-See `src/render/playView.ts`, `render`.
+See `packages/presentation/src/render/playView.ts`, `render`.
 
 Held presentation must sample the same frame's camera and body feedback before
 posing. Moving the camera afterward leaves hands, wielded items and their light
 and optic anchors a frame behind the view used to draw them. See
-`src/presentation/play.ts`, `updateFrame` and `updateVisualFeedback`.
+`packages/presentation/src/presentation/play.ts`, `updateFrame` and `updateVisualFeedback`.
 
 Shoulders are body attachments, not movable reach handles. When an authored grip
 cannot be reached at authored limb lengths, preserving shoulder and hand contact
@@ -1987,7 +1987,7 @@ hints stay in the body's upright frame so looking down does not swing a folded a
 sideways across the chest. Downward holds need their own forward bend and shoulder
 contact because the torso can otherwise hide the forearm. Hands and held objects must follow aim at the
 extremes; restrict aim only as far as a plausible arm pose requires. See
-`src/render/armRig.ts`, `solveArmRig`; and `src/render/heldPresentation.ts`,
+`packages/presentation/src/render/armRig.ts`, `solveArmRig`; and `packages/presentation/src/render/heldPresentation.ts`,
 `HeldPresentation.solve`.
 
 Free-held hip seats belong to the posed torso rather than the independently
@@ -2006,8 +2006,8 @@ mannequin is an inert drawing of the same world body, not another simulated acto
 Its holds come from the item registry rather than a curated list, so a new item
 using an existing hold needs no debug-tool edit. Its controls belong in their own
 debug-panel group so inspecting a mannequin does not compete with unrelated
-tools. See `src/render/avatarMannequin.ts`, `createAvatarMannequin` and
-`avatarPoses`; `src/render/heldPresentation.ts`, `heldItemPoses`; and
+tools. See `packages/presentation/src/render/avatarMannequin.ts`, `createAvatarMannequin` and
+`avatarPoses`; `packages/presentation/src/render/heldPresentation.ts`, `heldItemPoses`; and
 `src/debug/groups.ts`, `DEBUG_GROUPS`.
 
 Needs are calories, hydration, fatigue, stamina, and body temperature; rates use
@@ -2038,7 +2038,7 @@ world; the prior character's item piles remain. The death card identifies the
 world the player actually played, including a continued save. Its loot tally
 counts distinct item units taken from containers, not inventory actions, so
 returning and retaking an item is not another find. See `die` in
-`src/presentation/play.ts`, `showDeath` in `src/ui/death.ts`, and `Inventory.countLooted`
+`packages/presentation/src/presentation/play.ts`, `showDeath` in `packages/presentation/src/ui/death.ts`, and `Inventory.countLooted`
 in `packages/engine/src/core/inventory.ts`.
 
 ### Moving in the air
@@ -2138,7 +2138,7 @@ human must serve different equipment owners without manufacturing inventory in
 the renderer. Attachment does not decide whether a garment needs rigid segments
 or skin deformation; that choice needs a visual comparison before multiplying
 clothing assets. See `packages/engine/src/core/schema/items.ts`, `ItemSchema` and `FigureSchema`;
-`src/render/playerFigure.ts`, `WornPresentation` and `PlayerMeshes`.
+`packages/presentation/src/render/playerFigure.ts`, `WornPresentation` and `PlayerMeshes`.
 
 Carry and armour follow the torso's under-layer so changes to the body or clothing
 do not bury the gear or leave it floating. Layered gear must keep clear of the torso
@@ -2147,7 +2147,7 @@ already pass through the body. A worn item keeps its fitted parts, including the
 own worn presentation, so equipping it does not change its identity or lose its sling.
 Carry stays visible in first person for the same reason as the body. See
 `packages/skelly-assets/models/worn-carry.libsonnet`, `fit`;
-`src/render/wornModels.ts`, `wornEntries`; and `test/wornCarry.test.ts`.
+`packages/presentation/src/render/wornModels.ts`, `wornEntries`; and `test/wornCarry.test.ts`.
 
 Head gear can sit in front of the eyes, so the player should see what they look
 through. Worn visors and NVG are physical worn geometry, so they share world
@@ -2155,7 +2155,7 @@ depth and clipping and read the same in every view. The camera-effect visor
 remains until the framework refactor (#1532); the earlier world-geometry attempt
 lives at PR #1369's old head `5836ac87b` and can supply ideas but is too old to
 reuse. Optical strength belongs to content rather than a HUD setting because it
-describes the worn item. See `src/render/hands.ts`, `HeldItems`, and
+describes the worn item. See `packages/presentation/src/render/hands.ts`, `HeldItems`, and
 [Character](#character).
 
 **Worn coverage.** Vests take their own outer slot over the torso so a vest and
@@ -2163,7 +2163,7 @@ a jacket can be worn together, and the outer layer is the one a blow meets.
 Vests and carry shells have a fit per under-layer, selected by the torso garment,
 so they stay snug over a bare torso and over a jacket rather than burying the outer
 shell or floating away from the body. Clothing coverage hides only the base body,
-not gear layered above it. See `src/render/wornModels.ts`, `WornModels`, and
+not gear layered above it. See `packages/presentation/src/render/wornModels.ts`, `WornModels`, and
 `packages/skelly-assets/models/worn-carry.libsonnet`, `carry`.
 One vest at a time makes the player pick pouches or protection. Whole-region
 coverage keeps layering simple rather than asking the player to judge uncovered
@@ -2174,7 +2174,7 @@ before trousers and a grip reaches gloves before a sleeve. See `packages/engine/
 **Eyes slot.** Goggles take their own slot beside the head, so night-vision goggles
 stack with a helmet or a headlamp instead of making the player choose between seeing
 in the dark and head protection or a lamp. Both show on the figure's head. See
-`packages/engine/src/core/schema/items.ts`, `WearableSchema`, and `src/render/playerFigure.ts`, `PlayerMeshes`.
+`packages/engine/src/core/schema/items.ts`, `WearableSchema`, and `packages/presentation/src/render/playerFigure.ts`, `PlayerMeshes`.
 
 A worn item stops a share of a hit before flesh damage and bleeding are resolved,
 set per damage kind because real armour is built against particular threats.
@@ -2267,7 +2267,7 @@ because the body is part of what the drugged player sees, and keeping the hands 
 would make every screen effect choose whether to cover them. The HUD stays sharp
 because it is drawn on top of the game view. Whether a stacked dose can be dangerous
 and whether dependence is ever modelled are later rulings. See `packages/engine/src/core/schema/items.ts`, `AnalgesicSchema`; `packages/engine/src/core/pain.ts`,
-`drugVignette`; and `src/render/moodOutput.ts`, `moodDrugSample`.
+`drugVignette`; and `packages/presentation/src/render/moodOutput.ts`, `moodDrugSample`.
 
 The optional stats readout shows felt pain and its acute, injury and relief
 components so BR can tune the scale in play. This debug-style number belongs
@@ -2311,7 +2311,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   outcome by ear. A block also needs a visible cue, not only feel and sound, so
   the player can see the hit was deflected. Content owns every block number. See
   `packages/engine/src/core/meleeCombat.ts`, `meleeBlock` and `blockJolt`;
-  `src/render/playView.ts`, `createPlayView`; `packages/engine/src/game/session.ts`,
+  `packages/presentation/src/render/playView.ts`, `createPlayView`; `packages/engine/src/game/session.ts`,
   `blockedDamage`; and `packages/mods/skelly.melee/melee-items.jsonnet`, `melee_combat`.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
   capacity, handling and noise. Ammunition and magazines are items; a magazine holds its
@@ -2325,8 +2325,8 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   or a cycle. The HUD crosshair and the debug X yield to a presented
   first-person optic reticle, because the diegetic mark already shows aim and a
   duplicate can hide a small dot. See `packages/engine/src/game/firearmAim.ts`,
-  `firearmBoreRay`; `src/presentation/play.ts`, `heldFirearmBore`; and
-  `src/ui/playHud.ts`, `projectCrosshairScreenPosition` and
+  `firearmBoreRay`; `packages/presentation/src/presentation/play.ts`, `heldFirearmBore`; and
+  `packages/presentation/src/ui/playHud.ts`, `projectCrosshairScreenPosition` and
   `playCrosshairFrame`. The hip pose reuses the hand placement but not the melee
   wrist rotation. Free look lets the player walk or run one way while watching another:
   the head and camera may turn, but the hip pose and shot keep the body's direction.
@@ -2342,7 +2342,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   free look is held so a glance cannot redirect a throw, strike or interaction.
   Content owns the neck range and return speed; transient head offsets do not belong
   in a character save. See `packages/engine/src/game/playerControls.ts`, `PlayerControls`, `packages/engine/src/game/freeLook.ts`, `FreeLook`,
-  `freeLookAllowsUse` and `freeLookAllowsCommand`, and `src/render/playView.ts`, `createPlayView`. The debug X is
+  `freeLookAllowsUse` and `freeLookAllowsCommand`, and `packages/presentation/src/render/playView.ts`, `createPlayView`. The debug X is
   separate from the optional crosshair. In ADS, recoil, sway, and handling
   move the firearm pose and bore while the view direction stays fixed; only the intentional
   over-limit pitch shift moves the view. See `heldFirearmTransform` in
@@ -2381,10 +2381,10 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   `firearmStanceEffects`, `adsAcquisitionDuration` and `steadinessTuning`;
   `packages/engine/src/game/firearmHandling.ts`, `advanceAdsAcquisition`, `isAdsAcquired`,
   `adsAcquisitionProgress` and `stanceEffectsFor`; `packages/engine/src/game/session.ts`,
-  `advancePlayerReadiness`; `src/presentation/play.ts`, `advanceAdsAim`;
+  `advancePlayerReadiness`; `packages/presentation/src/presentation/play.ts`, `advanceAdsAim`;
   `packages/engine/src/core/playerLookPose.ts`, `blendLookPoses`;
   `packages/engine/src/core/heldPose.ts`, `blendHeldFirearmTransforms`; and
-  `src/render/playView.ts`, `adsCameraTarget`.
+  `packages/presentation/src/render/playView.ts`, `adsCameraTarget`.
 
   Different guns need different novice endpoints, and automatic follow-ups must
   remain harder to control. Complete per-gun overrides avoid mixing fields from
@@ -2420,7 +2420,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   `packages/engine/src/core/character.ts`, `Character.awardPractice` and `Character.restoreState`,
   `packages/engine/src/game/player.ts`, `snapshotPlayer`, and `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility".
   Opened skill details explain the independent effects because feel alone cannot
-  identify their cause; see `src/ui/inventoryScreen.ts`, `SkillViewModel`.
+  identify their cause; see `packages/presentation/src/ui/inventoryScreen.ts`, `SkillViewModel`.
 - **Shot impacts.** Each round that meets world geometry leaves a surface
   mark. Marks and dust are presentation, not simulation damage or save state.
   When a wall lies between eye and muzzle, tracing from the eye lets the near
@@ -2434,14 +2434,14 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   agree on one range and a mod changes it once
   (`PILLARS.md`, "Content forward compatibility"). See `packages/engine/src/game/session.ts`,
   `ResolvedFirearmTrajectory`, `packages/engine/src/core/shotTrace.ts`, `traceShot`, and
-  `src/render/impactEffects.ts`, `ImpactEffects.fire`; the range comes from
+  `packages/presentation/src/render/impactEffects.ts`, `ImpactEffects.fire`; the range comes from
   `packages/engine/src/core/skillTraining.ts`, `firearmsCombatTuning`, and
   `packages/mods/skelly.firearms/ranged-tuning.jsonnet`, `shotTraceRangeBlocks`.
 - **Magazines:** A detachable magazine is an item whose exported model carries gungen's fitted round column. Its calibre and capacity come from that model, as the pump's tube capacity does, so the geometry that fits the rounds also sets how many go in. Its cartridges are item state in feed order, top round first, and save with the magazine; loading pushes onto the top and stripping takes from it, as with a real spring-fed box. Each round loaded or stripped is one handling job, so releasing R loses nothing and the inputs replay deterministically. Hold R loads; stripping is the held magazine's item action, not an R gesture, because R's gestures load, rack and remove (`CONTROLS.md`, "Reload, rack, remove"). Loading and stripping a round both use the firearms skill's reload factor. See `packages/engine/src/core/magazine.ts`, `magazineSpec`, and `packages/engine/src/game/magazineHandling.ts`, `MagazineHandling`.
-- **Rifles:** A magazine is a child item of its firearm, so removing it preserves its identity and state; nested accessories and batteries use the same ownership. Cartridge data owns calibre-specific damage. A magazine change is one handling motion, so holding R does not repeat it and releasing R does not cancel it. Deadvox hand-authors `chargingHandleDegrees` because Gungen exports no value for it. See `CONTROLS.md`, "Reload, rack, remove" and `docs/firearm-cycle-playback.md` for the player actions and their presentation; `packages/engine/src/core/saveFormat.ts`, `wirePayloadSchema`; `packages/engine/src/core/pellets.ts`, `projectileShot`; `packages/engine/src/core/actorSystem.ts`, `ActorSystem.firePellets`; `packages/engine/src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`; `packages/engine/src/game/firearmHandling.ts`, `FirearmMechanics`; and `src/render/handlingTurn.ts`, `handlingRotation`.
-- **Modular weapons:** Fitted accessories remain complete child items so removal and saving preserve identity, condition and nested contents. Default and fitted models use the same slot-frame contract; connector axes keep distinct attachment shapes aligned without per-kind guesses. Dynamic fitting trusts gungen's certificates instead of duplicating its geometry solver, while rail footprints remain separate because a slot anchor does not describe the full occupied span. The sling mount and the light mount, which gungen does not export, are the mounts deadvox owns (see [Shoulder and sling](#shoulder-and-sling) and [Light mount on a long gun](#light-mount-on-a-long-gun)). These boundaries keep rendering, saves and compatibility consistent. Firearm details must remain responsive as the inventory fills while the world continues; see `packages/engine/src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.candidates`; `src/ui/inventoryScreen.ts`, `viewModel`; `packages/engine/src/core/items.ts`, `ItemFactory.create`, `snapshotItem` and `restoreItem`; `packages/engine/src/core/itemTree.ts`, `walkItemTree`; `src/render/itemLook.ts`, `itemLook`; and `src/render/models.ts`, `hideSlotNodes` and `ModelLibrary.attachParts`.
+- **Rifles:** A magazine is a child item of its firearm, so removing it preserves its identity and state; nested accessories and batteries use the same ownership. Cartridge data owns calibre-specific damage. A magazine change is one handling motion, so holding R does not repeat it and releasing R does not cancel it. Deadvox hand-authors `chargingHandleDegrees` because Gungen exports no value for it. See `CONTROLS.md`, "Reload, rack, remove" and `docs/firearm-cycle-playback.md` for the player actions and their presentation; `packages/engine/src/core/saveFormat.ts`, `wirePayloadSchema`; `packages/engine/src/core/pellets.ts`, `projectileShot`; `packages/engine/src/core/actorSystem.ts`, `ActorSystem.firePellets`; `packages/engine/src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`; `packages/engine/src/game/firearmHandling.ts`, `FirearmMechanics`; and `packages/presentation/src/render/handlingTurn.ts`, `handlingRotation`.
+- **Modular weapons:** Fitted accessories remain complete child items so removal and saving preserve identity, condition and nested contents. Default and fitted models use the same slot-frame contract; connector axes keep distinct attachment shapes aligned without per-kind guesses. Dynamic fitting trusts gungen's certificates instead of duplicating its geometry solver, while rail footprints remain separate because a slot anchor does not describe the full occupied span. The sling mount and the light mount, which gungen does not export, are the mounts deadvox owns (see [Shoulder and sling](#shoulder-and-sling) and [Light mount on a long gun](#light-mount-on-a-long-gun)). These boundaries keep rendering, saves and compatibility consistent. Firearm details must remain responsive as the inventory fills while the world continues; see `packages/engine/src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.candidates`; `packages/presentation/src/ui/inventoryScreen.ts`, `viewModel`; `packages/engine/src/core/items.ts`, `ItemFactory.create`, `snapshotItem` and `restoreItem`; `packages/engine/src/core/itemTree.ts`, `walkItemTree`; `packages/presentation/src/render/itemLook.ts`, `itemLook`; and `packages/presentation/src/render/models.ts`, `hideSlotNodes` and `ModelLibrary.attachParts`.
 
-  A fitted optic owns the aiming sight line because its mount can obstruct the irons. Visible placement and aiming must share the connector transform so the view and shot remain aligned; see `packages/engine/src/core/firearmSight.ts`, `sightedFirearmModel`. Magnification changes the local sight picture, not the weapon or its ballistics, so zoom selection stays outside saved item and replay state. Content-controlled per-weapon memory lasts for the play session; a fresh session starts at the authored power rather than making a camera preference authoritative simulation state. While an optic is aimed, look sensitivity divides by its applied power so the magnified picture keeps a constant on-screen angular speed; this applies to the surrounding view too because the player has one view direction. See `src/presentation/opticZoom.ts`, `OpticZoom.appliedPower`; `src/presentation/input.ts`, `Input.setLookSensitivity`; `packages/engine/src/core/opticView.ts`, `mountedOptic`, `opticViewSettings` and `projectLensAperture`; and `src/render/opticLens.ts`, `OpticLensRenderer`. The digital thermal optic's explicit unavailable-view content mark keeps it out of loot admission, fitting and ADS until a thermal view exists; the mark makes the omission visible and restores its ordinary loot admission when that view lands. Exposing an optic without its defining view would mislead the player. See `packages/engine/src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`; `tools/jsonnet/lib/economy.libsonnet`, `viewUnavailable`; and `packages/mods/skelly.firearms/items-attachments.libsonnet`, `items`.
+  A fitted optic owns the aiming sight line because its mount can obstruct the irons. Visible placement and aiming must share the connector transform so the view and shot remain aligned; see `packages/engine/src/core/firearmSight.ts`, `sightedFirearmModel`. Magnification changes the local sight picture, not the weapon or its ballistics, so zoom selection stays outside saved item and replay state. Content-controlled per-weapon memory lasts for the play session; a fresh session starts at the authored power rather than making a camera preference authoritative simulation state. While an optic is aimed, look sensitivity divides by its applied power so the magnified picture keeps a constant on-screen angular speed; this applies to the surrounding view too because the player has one view direction. See `packages/presentation/src/presentation/opticZoom.ts`, `OpticZoom.appliedPower`; `packages/presentation/src/presentation/input.ts`, `Input.setLookSensitivity`; `packages/engine/src/core/opticView.ts`, `mountedOptic`, `opticViewSettings` and `projectLensAperture`; and `packages/presentation/src/render/opticLens.ts`, `OpticLensRenderer`. The digital thermal optic's explicit unavailable-view content mark keeps it out of loot admission, fitting and ADS until a thermal view exists; the mark makes the omission visible and restores its ordinary loot admission when that view lands. Exposing an optic without its defining view would mislead the player. See `packages/engine/src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`; `tools/jsonnet/lib/economy.libsonnet`, `viewUnavailable`; and `packages/mods/skelly.firearms/items-attachments.libsonnet`, `items`.
 
   An attachment is an atom, so its mass is the mass authored for its item, and a fitted gun weighs the sum of its own parts and its fitted items; see `things/README.md`, "Rules". Every atom's item `weight` is authoritative even when atoms share a visual model. Assemblies author no competing item total: their model carries authored body-part masses, with replaceable geometry owned by the fitted child item instead. See `packages/engine/src/core/items.ts`, `typeWeightGrams`, and `packages/engine/src/core/modelMass.ts`, `modelBodyMassKg`. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear, and foregrips affect aim, stance and wear. Effects are tagged with their model's attachment kind, each kind authors every effect it has, wear included as zero for none, and a suppressor model always exports its noise factor: a missing value is a content error rather than a silent neutral default, so an unfinished attachment cannot ship as one that does nothing. Fitting either suppressor requires Firearms Combat 4; removing one has no skill gate. See `packages/engine/src/core/schema/items.ts`, `FirearmAttachmentEffectsSchema` and `AttachmentSchema`; `packages/engine/src/core/content.ts`, `checkItemAttachmentEffects`; and `packages/engine/src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`. A powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `packages/engine/src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `packages/engine/src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `packages/engine/src/core/items.ts`, `weightOf`; and `packages/engine/src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
 
@@ -2494,7 +2494,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   cartridge exists, the nearest real one stands in. Loudness, pitch and tonal balance
   belong to content so listening adjustments need no weapon-specific code. Bass
   shaping must retain the recorded attack rather than muffling the whole report;
-  see `src/presentation/audio.ts`, `GameAudio.startSource`, and `packages/engine/src/core/schema/models.ts`,
+  see `packages/presentation/src/presentation/audio.ts`, `GameAudio.startSource`, and `packages/engine/src/core/schema/models.ts`,
   `SoundSchema`. Keep the original recordings untouched so provenance remains
   intact. A synth stays only where it already reads as its gun; a suppressed shot
   keeps its synth until a recording of one exists.
@@ -2590,8 +2590,8 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   shared by the enemy kinds, for one consistent lurid look. They live in content, and
   not in the weapon's impulse, because that impulse also staggers and breaches doors,
   which are gameplay (`mods/skelly.deadvox.actors/enemies.jsonnet`, `severedGore`;
-  `packages/engine/src/core/actorSystem.ts`, `ActorSystem.sever`; `src/render/gore.ts`, `Gore.severed`).
-  See `src/render/mobActors.ts`, `MobActorMeshes.actorSevered`, for the shared launch.
+  `packages/engine/src/core/actorSystem.ts`, `ActorSystem.sever`; `packages/presentation/src/render/gore.ts`, `Gore.severed`).
+  See `packages/presentation/src/render/mobActors.ts`, `MobActorMeshes.actorSevered`, for the shared launch.
   Where a droplet lands it leaves a splat. Splats fade and are not
   saved, so a reload starts clean. A flesh chunk lands on a splat of its own,
   small enough that the chunk stands out from it, and that splat ends with the
@@ -2624,9 +2624,9 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   starts: a standing amalgam drips from the underside of its own live flesh, not
   from anywhere in its bounding box, because that box is mostly air around a
   rounded mass and a drip placed in it would start beside or above the body. See
-  `packages/engine/src/core/actorSystem.ts`, `ActorSystemOptions.onWound`; `src/render/gore.ts`,
-  `Gore` and `woundSeverity`; `src/render/bloodStain.ts`, `bloodStain`; and
-  `src/render/crowd.ts`, `packBloodiness`.
+  `packages/engine/src/core/actorSystem.ts`, `ActorSystemOptions.onWound`; `packages/presentation/src/render/gore.ts`,
+  `Gore` and `woundSeverity`; `packages/presentation/src/render/bloodStain.ts`, `bloodStain`; and
+  `packages/presentation/src/render/crowd.ts`, `packBloodiness`.
 - **Determinism.** Hit regions, blast falloff and any spread are seeded, so
   saves and replays stay exact. Region and material state is simulation state:
   it goes into the save snapshot and the source fingerprint.
@@ -2644,15 +2644,15 @@ a nearby sunlit face must not suppress illumination elsewhere in a dark interior
 Keep source output independent of aim and judge daylight washout at the receiving
 surface, using the same diffuse sky estimate that lights that surface. This keeps
 bright outdoor surfaces washed out without making dark targets inherit the user's
-outdoor lighting. See `src/render/playView.ts`, `prepareLighting`, and
-`src/render/skylight.ts`, `Skylight`.
+outdoor lighting. See `packages/presentation/src/render/playView.ts`, `prepareLighting`, and
+`packages/presentation/src/render/skylight.ts`, `Skylight`.
 
 Small omnidirectional item lights must not inherit their holder's daylight washout:
 a bright doorway can otherwise extinguish their contribution throughout a dim room.
 Keep their authored world output rather than compensating with brighter fuel-light
 content, which would also change nighttime illumination. The separate held layer may
-still adapt to the viewer's sky. See `src/render/lightPool.ts`, `LightPool.update`,
-and `src/render/playView.ts`, `updateHeld`.
+still adapt to the viewer's sky. See `packages/presentation/src/render/lightPool.ts`, `LightPool.update`,
+and `packages/presentation/src/render/playView.ts`, `updateHeld`.
 
 Dark interiors make carried light useful without an authored indoor flag.
 For authored worlds, live opaque blocks and blocking furniture determine
@@ -2670,8 +2670,8 @@ windows crosses the blocked envelope. The choice is made once per vehicle look w
 geometry is built, on the main thread, so that build must stay cheap: it reads only the
 window voxels, shares one outlook per block of window, and compares distances without
 allocating, because a stall on first sight of each look would cost frame rate on weak
-GPUs (#680). A cabin with no window stays dark. See `packages/engine/src/core/skyTransport.ts`, `buildSkyResult`, `src/render/skylight.ts`, `Skylight`,
-and `src/render/skyAnchor.ts`, `addSkyAnchors` and `addSkyOpeningAnchors`.
+GPUs (#680). A cabin with no window stays dark. See `packages/engine/src/core/skyTransport.ts`, `buildSkyResult`, `packages/presentation/src/render/skylight.ts`, `Skylight`,
+and `packages/presentation/src/render/skyAnchor.ts`, `addSkyAnchors` and `addSkyOpeningAnchors`.
 
 Gameplay and the renderer read one sky field cache. Sky light scheduled by camera
 residency or wall-clock budgets would read differently on two machines, after a reload
@@ -2690,7 +2690,7 @@ renderer's falloff and its content tuning, so light levels for the rules are nev
 apart from the light the player sees. A carried beam counts for its holder, because the
 player aims it at what they read; a beam set down points somewhere the rules don't model,
 so it counts for nothing. A lit candle held alone is enough to read by at night. See
-`packages/engine/src/core/illumination.ts`, `illuminationAt`, and `src/render/lightFalloff.ts`,
+`packages/engine/src/core/illumination.ts`, `illuminationAt`, and `packages/presentation/src/render/lightFalloff.ts`,
 `installNearFieldFalloff`.
 
 Wrong light is worse than a hitch, and the hitch is not acceptable either. Sky
@@ -2705,7 +2705,7 @@ shrinking the visible radius or making visible chunks wait for lighting. The
 extra residency trades memory for time to build the next field before it enters
 view; it must not expand mesh or reveal admission. See
 `packages/mods/skelly.graphics/graphics.jsonnet`, `skyPreloadRings`,
-`src/render/skylight.ts`, `prepare`, `packages/engine/src/game/streamer.ts`, `dispatchSky`
+`packages/presentation/src/render/skylight.ts`, `prepare`, `packages/engine/src/game/streamer.ts`, `dispatchSky`
 and `onBeforeReveal`, and `packages/engine/src/core/skyField.ts`, `finishColumn`.
 
 The dimmed presentation cap remains until #1261 proves the full reveal guarantee
@@ -2716,7 +2716,7 @@ Keep an accepted result through edit revalidation and GPU eviction so a door edi
 cannot flash a dark room and re-entry cannot repeat transport. The retained result
 may briefly delay a visible edit; that latency is preferable to a false transient
 room. See `packages/mods/skelly.graphics/graphics.jsonnet`, `unbuiltSkyCap`,
-`packages/engine/src/core/skyField.ts`, `SkyFields`, and `src/render/skylight.ts`, `Skylight`.
+`packages/engine/src/core/skyField.ts`, `SkyFields`, and `packages/presentation/src/render/skylight.ts`, `Skylight`.
 
 Worker execution protects rendering from dense transport work, but copying, submission,
 publication and texture uploads still consume the main frame, so background execution
@@ -2730,14 +2730,14 @@ and distance. Source colour, intensity, range, beam, and burn rules belong to
 content. The flashlight needs a broad, soft-edged beam; a narrow cone showed too
 little of a room and path to play by. Time-of-day lighting belongs in sky and
 fog, not baked into chunks. See `packages/engine/src/core/lights.ts`, `lightSenseSourceFor`;
-`src/render/lightPool.ts`, `LightPool.update`; and `packages/engine/src/core/dayPhase.ts`,
+`packages/presentation/src/render/lightPool.ts`, `LightPool.update`; and `packages/engine/src/core/dayPhase.ts`,
 `dayPhaseAt`.
 
 A burning torch or candle set down keeps burning and spending its fuel, standing
 upright with its flame and light where the flame is: standing one up is how a player
 sets it down to light a room. Whether a model rests upright is content, so any such
-light stands the same way. See `src/render/models.ts`, `prepareModel`, and
-`src/render/modelFlame.ts`, `ModelFlames.onModel`.
+light stands the same way. See `packages/presentation/src/render/models.ts`, `prepareModel`, and
+`packages/presentation/src/render/modelFlame.ts`, `ModelFlames.onModel`.
 
 An oil lamp gives lamp oil a use, and a lit lamp set down at night makes the base a
 beacon: the player trades light for being seen, either lighting the room and being
@@ -2765,7 +2765,7 @@ a bag never overrides the one in hand. The card slot serves a light with no free
 such as one fitted to a gun, whose card shows the same slot. A hand load needs both in
 hands and a slot drop needs both in reach, a fitted light through its gun; the swap
 rechecks the route that admitted it when it completes. See `packages/engine/src/core/options.ts`,
-`batterySlotOption` and `batteryOption`, and `src/ui/inventoryScreen.ts`,
+`batterySlotOption` and `batteryOption`, and `packages/presentation/src/ui/inventoryScreen.ts`,
 `batterySlotTemplate`.
 
 A held light's battery can be taken out on its own, as an action chosen on the wheel
@@ -2807,8 +2807,8 @@ the picture, so the simulation never depends on it. A torch carried in hand flar
 because the goggles and a light in hand are a trade; a light that stays lit when put
 down, set down ahead, is how to use both. The goggles' own lamp never flares, being
 what they see by, and beams don't flare directly, because they point away from the eye.
-See `packages/engine/src/core/lights.ts`, `wornNightVision`, `src/render/moodOutput.ts`,
-`createMoodOutputPass`, and `src/render/nightVisionFlare.ts`, `nightVisionFlare`.
+See `packages/engine/src/core/lights.ts`, `wornNightVision`, `packages/presentation/src/render/moodOutput.ts`,
+`createMoodOutputPass`, and `packages/presentation/src/render/nightVisionFlare.ts`, `nightVisionFlare`.
 
 ## Dropped items land
 
@@ -2869,7 +2869,7 @@ Inventory remains the sole owner during flight so saves and fuses do not need a
 second ownership model. The arc ends at the pile's visible pose to avoid a landing
 jump. A throw adds no hit damage or landing lure; explosive effects belong to the
 grenade. See `packages/engine/src/game/throwCharge.ts`, `ThrowCharge.place`;
-`src/render/itemThrows.ts`, `ItemThrows.update`; and `src/render/piles.ts`,
+`packages/presentation/src/render/itemThrows.ts`, `ItemThrows.update`; and `packages/presentation/src/render/piles.ts`,
 `PileMeshes.sync`.
 
 A throw should go where the player aimed without unpredictable added lift.
@@ -2893,14 +2893,14 @@ A grenade thrown into the horde is meant to be the playtest's climax: the one mo
 
 - **Pulling the pin is an action.** The held grenade's primary action pulls the pin, or puts it back, and says which; the item's details show the pin, or a burning fuse. Arming takes a deliberate act, so a grenade is never live by accident. See `packages/engine/src/core/explosive.ts`, `Fuses.togglePin`, and `packages/engine/src/game/handUse.ts`, `togglePin`.
 - **The fuse lights when the hand lets go.** An unpinned grenade lights the moment it is anywhere but a hand: thrown, dropped, or put away, because nothing holds the lever once the grip opens. A pinned grenade that is thrown remains a dud, and re-pinning before release makes it safe. There is no cooking, and a lit fuse cannot be stopped. Pin and fuse are saved on the item, including while its presentation arc is playing. The fuse counts down in simulation time inside the zombies system's step rather than in a system of its own, because the scheduler's set of systems is part of the save. See `packages/engine/src/core/explosive.ts`, `Fuses.advance`, and `packages/engine/src/game/session.ts`, `detonate`.
-- **The lever flying off is the only sign of a lit fuse.** When the fuse lights, the grenade is drawn without its lever and a short-lived copy of the lever springs away, because the lever flying off is how a real live grenade shows itself. There is no smoke, spark or glow: a real fragmentation fuse burns inside the body, and a visible one would look wrong and would also set the look of every fused throwable. Any fused throwable whose model names a lever part takes the same path, and its launch and lifetime are content. See `packages/engine/src/core/schema/models.ts`, `LeverModelSchema`; `packages/mods/skelly.explosives/models-explosives.jsonnet`, `lever`; and `src/render/leverProps.ts`, `LeverProps`.
-- **The pin shows on the model until it is pulled; the lever stays on until release.** A pulled pin leaves the model and comes back when it is put back in, because our rules let the player re-pin a held grenade, so the model has to show which state it is in. The lever stays on after the pin is out, because on a real grenade the hand keeps the lever down; the lever flies and the fuse starts when the grip opens. See `packages/engine/src/core/schema/models.ts`, `PinModelSchema`, and `src/render/itemLook.ts`, `itemLook`.
+- **The lever flying off is the only sign of a lit fuse.** When the fuse lights, the grenade is drawn without its lever and a short-lived copy of the lever springs away, because the lever flying off is how a real live grenade shows itself. There is no smoke, spark or glow: a real fragmentation fuse burns inside the body, and a visible one would look wrong and would also set the look of every fused throwable. Any fused throwable whose model names a lever part takes the same path, and its launch and lifetime are content. See `packages/engine/src/core/schema/models.ts`, `LeverModelSchema`; `packages/mods/skelly.explosives/models-explosives.jsonnet`, `lever`; and `packages/presentation/src/render/leverProps.ts`, `LeverProps`.
+- **The pin shows on the model until it is pulled; the lever stays on until release.** A pulled pin leaves the model and comes back when it is put back in, because our rules let the player re-pin a held grenade, so the model has to show which state it is in. The lever stays on after the pin is out, because on a real grenade the hand keeps the lever down; the lever flies and the fuse starts when the grip opens. See `packages/engine/src/core/schema/models.ts`, `PinModelSchema`, and `packages/presentation/src/render/itemLook.ts`, `itemLook`.
 - **It goes off where it is:** at its simulation position, whether the grenade is in a pile or with whoever picked it up. A render-only throw arc never moves its fuse or detonation point. See `detonationPoint` and `detonate` in `packages/engine/src/game/session.ts`.
 - **The blast kills most of the way to its radius.** It reaches every body whose centre it sees, falling to nothing at its radius; a wall between stops it. It kills a shambler over most of its radius and severs limbs nearly to its edge, and it strikes the limbs before the region that kills, so a close blast tears limbs off before it drops the body: the giblets are the point. Which region kills is one rule shared with individual hits, so a blast and a hit never disagree on it. Its own push falls off with its damage and throws the severed parts outward. A full-strength level throw clears the blast, while fragments extend beyond it as a separate hazard; a short throw can still put the thrower in the blast. See `packages/engine/src/core/explosive.ts`, `blastShare`, and `packages/engine/src/core/actorSystem.ts`, `lethalRegion` and `ActorSystem.detonate`.
 - **Fragments are seeded shots.** They are rays through the same hit test as shotgun pellets, so walls and bodies stop them and fewer reach a farther body. One fragment severs a shambler's limb, and they reach past the blast, so a crowd around the landing point comes apart. A full-strength throw carries the player beyond fragment reach; shorter throws can still expose the player to fragments. Each ray is traced against every body in range, so the count sets the cost of the moment; the schema caps it. See `packages/engine/src/core/explosive.ts`, `fragmentDirections`; `ActorSystem.firePellets`; and `packages/engine/src/core/schema/items.ts`, `ExplosiveSchema`.
 - **The player takes the same falloff, line of sight and fragments** in a simpler model: one blast hit to the torso, and fragments traced against a body box, which zombie bodies do not shield. A short throw hurts the thrower. See `packages/engine/src/core/explosive.ts`, `fragmentHitsOnBody`.
 - **The blast is the player's noise, heard from where it went off.** It carries further than any other sound, so it draws zombies from far around to the blast rather than to the thrower.
-- **The blast sounds like an explosion; the flash is a placeholder.** The sound is a recorded explosion, because a pitched-down gunshot read as a gun rather than the climax the grenade is for. See `packages/mods/skelly.explosives/explosives-sounds.jsonnet`, `grenade_blast`, and `src/render/blastFlashes.ts`, `BlastFlashes`.
+- **The blast sounds like an explosion; the flash is a placeholder.** The sound is a recorded explosion, because a pitched-down gunshot read as a gun rather than the climax the grenade is for. See `packages/mods/skelly.explosives/explosives-sounds.jsonnet`, `grenade_blast`, and `packages/presentation/src/render/blastFlashes.ts`, `BlastFlashes`.
 
 Grenade previews use the spawn menu or a mod-owned start row; a restored inventory remains save-owned. See `docs/url-mods.md`, "Start state in mods".
 
@@ -3014,7 +3014,7 @@ Debug spawn placement must leave room to observe an approach without embedding t
 
 A surviving amalgam attacks with a tentacle that strikes in a straight line from its core to the player's chest, at any height, within its usual reach; anything solid across the line blocks it. A creature with a long tentacle should be able to reach a player standing above it, on a roof for example, and not only one level with it. The reach stays the same, so height costs distance rather than adding range. Humanoid zombies keep their grab: horizontal reach within a band matching a standing player.
 
-The rendered tentacle and simulation strike must share an origin and the same reach cap so the visible attack explains contact. A fixed interior point keeps a change in the player's bearing from moving the root between the core's lobes; presentation must not add simulation state. See `packages/engine/src/core/actorMotion.ts`, `withinAttackReach`; `packages/engine/src/core/fusedMassFigure.ts`, `fusedMassStrikeOrigin`; `src/render/fusedMassTentaclePose.ts`, `fusedMassTentaclePose`; and `src/render/mobActors.ts`, `MobActorMeshes.updateTentacle`.
+The rendered tentacle and simulation strike must share an origin and the same reach cap so the visible attack explains contact. A fixed interior point keeps a change in the player's bearing from moving the root between the core's lobes; presentation must not add simulation state. See `packages/engine/src/core/actorMotion.ts`, `withinAttackReach`; `packages/engine/src/core/fusedMassFigure.ts`, `fusedMassStrikeOrigin`; `packages/presentation/src/render/fusedMassTentaclePose.ts`, `fusedMassTentaclePose`; and `packages/presentation/src/render/mobActors.ts`, `MobActorMeshes.updateTentacle`.
 
 Carving reuses the hit test's struck voxel so visible wounds cannot disagree with contact. One shot should read as one chunk, not let successive pellets tunnel through the body. On a body this size, a full close shotgun blast should read as a chunk several voxels across; that visual intention guides carving's authored values. The tentacle's root must retain flesh so the attack cannot appear to start in a hole. See `mods/skelly.deadvox.actors/enemies.jsonnet`, `carving`; `packages/engine/src/core/schema/actors.ts`, `ActorSchema`; `packages/engine/src/core/fusedMassCarving.ts`, `carveAround` and `protectedCoreCell`; and `packages/engine/src/core/actorSystem.ts`, `ActorSystem.carve`.
 
@@ -3043,9 +3043,9 @@ height-extents table: its upkeep costs more than the collision it avoids. See
 
 The amalgam must steer its size around obstacles without gaining a separate decision system. Body-shape contact matters where a centre-line ray would miss a corner; a usable slide direction should keep it threatening rather than back it out of a doorway. Seeded ambiguity preserves deterministic behaviour. See `packages/engine/src/core/schema/actors.ts`, `ActorSchema`; `mods/skelly.deadvox.actors/enemies.jsonnet`, `amalgam`; `packages/engine/src/core/actorMotion.ts`, `steer`; and `packages/engine/src/core/actorSystem.ts`, `ActorSystem.wallAhead` and `ActorSystem.openSide`.
 
-A carved cell vanishes from the drawn body, and a corpse and a severed piece must retain their visible wounds. Each hole shows flesh walls built at runtime from the rest grid, so it never shows the world through it; the reason is in `docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision". See `src/render/crowd.ts`, `packCellMask`; `src/render/holeWalls.ts`, `holeWallGeometry`; and `src/render/mobActors.ts`, `MobActorMeshes.actorCarved`.
+A carved cell vanishes from the drawn body, and a corpse and a severed piece must retain their visible wounds. Each hole shows flesh walls built at runtime from the rest grid, so it never shows the world through it; the reason is in `docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision". See `packages/presentation/src/render/crowd.ts`, `packCellMask`; `packages/presentation/src/render/holeWalls.ts`, `holeWallGeometry`; and `packages/presentation/src/render/mobActors.ts`, `MobActorMeshes.actorCarved`.
 
-Every carve, and a hard hit to any enemy, throws flesh chunks with the blood, so the hit visibly knocks flesh loose. They leave the wound back toward the attacker: chunks meet only world blocks, so one thrown along the strike would fly into the body and land hidden under it. The chunks are content models, so mods swap them; the gore path owns them, so nothing re-meshes at runtime. See `src/render/gore.ts`, `Gore.carved` and `Gore.wounded`, with their tuning in `packages/engine/src/core/schema/graphics.ts`, `GraphicsTuningSchema`.
+Every carve, and a hard hit to any enemy, throws flesh chunks with the blood, so the hit visibly knocks flesh loose. They leave the wound back toward the attacker: chunks meet only world blocks, so one thrown along the strike would fly into the body and land hidden under it. The chunks are content models, so mods swap them; the gore path owns them, so nothing re-meshes at runtime. See `packages/presentation/src/render/gore.ts`, `Gore.carved` and `Gore.wounded`, with their tuning in `packages/engine/src/core/schema/graphics.ts`, `GraphicsTuningSchema`.
 
 The runner's threat comes from speed rather than stronger attacks; the crawler's
 low posture confines its bite to the legs. Keep their moves, hit regions, sounds and
@@ -3065,7 +3065,7 @@ preserve their distinct realizations without misclassifying anatomy. Each figure
 seed is one built body: content admits a drawn seed only with its own figure file,
 so two seeds never draw as one body and authored variety is never quietly shrunk. See
 `packages/engine/src/core/actorModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`, `figureVariantOf` and `bodyPlanModel`;
-`src/render/mobActors.ts`, `drawnSeeds`; and `packages/engine/src/core/content.ts`, `actorFigureIssues`.
+`packages/presentation/src/render/mobActors.ts`, `drawnSeeds`; and `packages/engine/src/core/content.ts`, `actorFigureIssues`.
 
 Presentation must not change simulation outcomes. Test noise is different because
 it intentionally enters the simulation's sound path. See `packages/engine/src/core/agent.ts`,
@@ -3184,7 +3184,7 @@ the body rather than making first person another art obligation. Missing model,
 anchor or rig data must fail validation instead of silently drawing a partial
 body. Hit regions keep a box layout because the body simulation, not the drawn
 shape, decides where a hit lands. Gore placement must not change with the observer. See `packages/engine/src/core/schema/figures.ts`, `FigureSchema`,
-`src/render/armRig.ts`, `buildArmRig`, and `src/render/playerFigure.ts`,
+`packages/presentation/src/render/armRig.ts`, `buildArmRig`, and `packages/presentation/src/render/playerFigure.ts`,
 `playerFigureLayout` and `PLAYER_REGION_BOXES`.
 
 A long gun stays shouldered at every ready level: lowering pivots about the
@@ -3243,7 +3243,7 @@ cannot be authored, blended or added to without a code change per animation.
   `packages/engine/src/core/battery.ts`, `batteryEnergy`, and `packages/engine/src/core/lights.ts`, `swapBattery`.
   Unattended work must not reserve the player's hands or depend on an open panel;
   local controls project the world owner instead of driving it. See
-  `src/ui/chargerPanel.ts`, `chargerPanel`, and `packages/engine/src/core/sitePower.ts`, `SitePower`.
+  `packages/presentation/src/ui/chargerPanel.ts`, `chargerPanel`, and `packages/engine/src/core/sitePower.ts`, `SitePower`.
 - **Fire** is a world system: burn rate per material, spread to neighbouring
   flammable blocks, smoke and light. Hot zombies and molotovs use the same
   system.
@@ -3302,7 +3302,7 @@ an interaction closure; see `packages/engine/src/core/longAction.ts`, `LongActio
 Admission must reject a supporting part before spending work time on its removal.
 
 Inspection needs the core's own refusal because geometry cannot show service
-requirements; see `src/ui/vehicleInspection.ts`, `vehicleInspectionViewModel`.
+requirements; see `packages/presentation/src/ui/vehicleInspection.ts`, `vehicleInspectionViewModel`.
 Reach uses occupied part boxes rather than the vehicle origin so a touchable part
 stays reachable, and a clear line prevents working through walls without letting the
 vehicle hide its own parts; see `packages/engine/src/core/reach.ts`, `vehicleInReach`, and
@@ -3440,12 +3440,12 @@ writing; how a mod changes one field instead is decided in
 assets follow `docs/decisions/0008-mod-authoring-tool.md`, "Build plan"; start-flow
 selection follows that ADR's rule in
 `docs/decisions/0008-mod-authoring-tool.md`, "Testing, sharing and start flow".
-See `src/ui/modsPanel.ts`, `chooseMods`.
+See `packages/presentation/src/ui/modsPanel.ts`, `chooseMods`.
 
 Remote intake shares local admission so a host cannot bypass the content contract.
 Browser-owned fetching keeps credentials and cross-origin permission with their
 owners, without a proxy that widens access. Streaming bounds memory before parsing;
-see `src/ui/modsPanel.ts`, `readPaste`.
+see `packages/presentation/src/ui/modsPanel.ts`, `readPaste`.
 
 Browser mods require an explicit mod identity independent of their URL or upload
 name. Repeated selection of that identity is an error, not a second admission;
@@ -3557,36 +3557,36 @@ so scale does not force a later redesign:
 
 The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS.md).
 
-- **The look:** per-block colour and procedural surface patterns, with weathering layered through `src/render/chunks.ts`, `chunkMaterial`, plus ambient occlusion and fog. The palette is muted and grey; the saturated colours are the ones that mean something: warning signs, blood, fire and the glow of hot zombies.
+- **The look:** per-block colour and procedural surface patterns, with weathering layered through `packages/presentation/src/render/chunks.ts`, `chunkMaterial`, plus ambient occlusion and fog. The palette is muted and grey; the saturated colours are the ones that mean something: warning signs, blood, fire and the glow of hot zombies.
 - **The default look:** tone mapping off, low exposure, the mood pass off and no weathering, because it looks better by eye and costs less. It is content (`packages/engine/src/core/schema/look.ts`, `LookDefaultsSchema`) and stays tunable by URL parameter and debug panel.
-- **Carry and visor:** carried furniture, worn visors and NVG are physical worn geometry. Worn gear is part of the world, so it shares world depth and clipping and reads the same in every view. The camera-effect visor remains until the framework refactor (#1532). See `src/render/hands.ts`, `HeldItems.render`.
+- **Carry and visor:** carried furniture, worn visors and NVG are physical worn geometry. Worn gear is part of the world, so it shares world depth and clipping and reads the same in every view. The camera-effect visor remains until the framework refactor (#1532). See `packages/presentation/src/render/hands.ts`, `HeldItems.render`.
 - **The near plane must admit short-relief optics:** the world camera draws physical optic housing too. Cutting
   through it can leave disconnected slivers above an otherwise complete composited disc. Both camera owners use
   authored near-plane policy supplied by the engine, rather than protecting only the optical adapter. See `packages/engine/src/core/schema/graphics.ts`,
-  `GraphicsTuningSchema`; `src/presentation/engine.ts`, `createEngine`; and `src/render/hands.ts`, `HeldItems`.
-- **Optic presentation tuning is content:** the player view and lens-edge controls remain content-owned so look nudges do not require a code round. See `packages/mods/skelly.graphics/graphics.jsonnet`, `graphics`; `packages/engine/src/core/schema/graphics.ts`, `GraphicsTuningSchema`; and `src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
-- **Optic eye relief is authored per optic so imperfect alignment reads at 1x:** the dot marks the shot direction and drifts against the housing by the eye's lateral offset over the relief, so a long relief hides the sway that skill is meant to fade. See `packages/skelly-assets/tools/packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`; and `src/render/hands.ts`, `HeldItems.poseOptic`.
+  `GraphicsTuningSchema`; `packages/presentation/src/presentation/engine.ts`, `createEngine`; and `packages/presentation/src/render/hands.ts`, `HeldItems`.
+- **Optic presentation tuning is content:** the player view and lens-edge controls remain content-owned so look nudges do not require a code round. See `packages/mods/skelly.graphics/graphics.jsonnet`, `graphics`; `packages/engine/src/core/schema/graphics.ts`, `GraphicsTuningSchema`; and `packages/presentation/src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
+- **Optic eye relief is authored per optic so imperfect alignment reads at 1x:** the dot marks the shot direction and drifts against the housing by the eye's lateral offset over the relief, so a long relief hides the sway that skill is meant to fade. See `packages/skelly-assets/tools/packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`; and `packages/presentation/src/render/hands.ts`, `HeldItems.poseOptic`.
 - **The optic window has no drawn border:** the optic's own housing already frames the view, and a second frame
   hides more of the scene. At unity a replacement image keeps nearby gun features, as a real 1× sight does, but
   never the optic itself, which would fill its own window. The golden holographic look instead keeps its physical
   window, so its glass and thin near frame remain part of the sight picture. Image selection is authored rather than
   selected by item identity in the renderer. See `packages/engine/src/core/opticView.ts`, `opticRendersWorld`;
-  `packages/engine/src/core/schema/items.ts`, `ItemSchema`; and `src/render/shadowFlags.ts`, `OPTIC_BODY_LAYER`.
+  `packages/engine/src/core/schema/items.ts`, `ItemSchema`; and `packages/presentation/src/render/shadowFlags.ts`, `OPTIC_BODY_LAYER`.
 - **Zoom shows the environment only:** the magnified image is the world seen through the lens, so the zoom camera
   sets the world layer alone instead of copying the main camera's mask, and the player's figure, held and worn items
   and own-head layers never enter it. three.js layers do not inherit, so a node added under the figure takes its
   parent's layers at add time; without that a late child would land on the world layer and be magnified. See
-  `src/render/opticLens.ts`, `OpticLensRenderer.prepare`; `src/render/shadowFlags.ts`, `inheritLayersOnAdd`.
+  `packages/presentation/src/render/opticLens.ts`, `OpticLensRenderer.prepare`; `packages/presentation/src/render/shadowFlags.ts`, `inheritLayersOnAdd`.
 - **Scope discs replace the inner tube:** the golden magnifying-optic look is a full world-image disc, not the
   small opening at the far end of a physical tube. A variable scope keeps that disc at unity; changing power
   must not bring the tube back. Classify the instrument by its authored range, not its selected power or item
   identity. Outside the disc, physical housing remains visible. See `packages/engine/src/core/opticView.ts`, `opticViewSettings`,
-  and `src/render/opticLens.ts`, `OpticLensRenderer.prepare`.
+  and `packages/presentation/src/render/opticLens.ts`, `OpticLensRenderer.prepare`.
 - **Fixed unity discs preserve their frames:** the golden mini-reflex and tube-dot look keeps opaque housing in
   front of the image, otherwise the nominal aperture erases the frame. Applying that silhouette to a magnifying
-  scope would instead restore its unwanted inner tube. See `src/render/opticHousingMask.ts`, `OpticHousingMask`.
+  scope would instead restore its unwanted inner tube. See `packages/presentation/src/render/opticHousingMask.ts`, `OpticHousingMask`.
 - **The ADS hood is hidden only in own view:** at eye relief it obstructs the player's eye, while other viewers and
-  the sun should still see it. See `src/render/playerFigure.ts`, `PlayerMeshes`.
+  the sun should still see it. See `packages/presentation/src/render/playerFigure.ts`, `PlayerMeshes`.
 - **The reticle marks aim, not the glass centre:** finite glass and housing move relative to the angular mark.
   Perfect eye-to-optic alignment at every skill is unrealistic. Long-gun steadiness belongs to Sniping: an expert standing
   still is nearly aligned, while walking adds misalignment through gait sway. The eye uses the unswayed optic seat
@@ -3605,12 +3605,12 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **Voxel light**: light spread through the block grid, so that inside buildings
   it's pitch black at night and dim by day, lit only by what comes in through
   doors and windows. Only diffuse sky light goes through the grid
-  (`src/render/skylight.ts`, `Skylight`). The sun and the carried beam are lit
+  (`packages/presentation/src/render/skylight.ts`, `Skylight`). The sun and the carried beam are lit
   on their own, and carried or dropped sources are the pool's shadowless point
-  lights (`src/render/lightPool.ts`, `LightPool`; see "Light"). The actor's
+  lights (`packages/presentation/src/render/lightPool.ts`, `LightPool`; see "Light"). The actor's
   hands receive world lighting rather than a camera-specific lighting copy, so
-  they must not glow in enclosed dark spaces; see `src/render/skylight.ts`,
-  `Skylight`, and `src/render/playerFigure.ts`, `PlayerMeshes`. Light from torches, lamps and hot
+  they must not glow in enclosed dark spaces; see `packages/presentation/src/render/skylight.ts`,
+  `Skylight`, and `packages/presentation/src/render/playerFigure.ts`, `PlayerMeshes`. Light from torches, lamps and hot
   zombies through the grid is planned for Slice 4a, with
   the interior light "Light" describes.
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
@@ -3619,7 +3619,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **Zombie bodies:** an actor moving off-screen must not come back with stale
   bones or snap by the distance it moved while culled, and an actor taking over
   a reused slot after a despawn or streamed unload must not draw with the
-  previous actor's pose. See `src/render/mobActors.ts`,
+  previous actor's pose. See `packages/presentation/src/render/mobActors.ts`,
   `MobActorMeshes.syncActor`, `test/runnerRenderContinuity.test.ts`,
   `runEngagement`, and `test/mobActors.test.ts`, `MobActorMeshes`.
 - **Far zombie bodies draw at full detail:** a coarser mesh for distant bodies
@@ -3632,16 +3632,16 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **Sun shadows:** Favor a stable edge near the player over sharp shadows far
   beyond them. The remaining jaggedness is accepted; do not pursue further
   refinement without a new decision. See `sunShadowTexelSize` and
-  `Shadows.update` in `src/render/shadows.ts`.
+  `Shadows.update` in `packages/presentation/src/render/shadows.ts`.
 - **Sealed rooms stay dark at every hour (#562):** darkness must not end where
   detailed sun shadows stop. Beyond the near shadow box, a surface with no diffuse
   sky light or an unknown sky field gets no direct sun, because this keeps distant
   sealed rooms dark at no measurable frame cost. Near shadows remain authoritative.
   The accepted cost is that far roofed floors lit sideways through a door or window
   read dark until they enter the near box; a little diffuse sky can still leave a
-  far room sunlit. See `src/render/skylight.ts`, `Skylight.patch`. Light through
+  far room sunlit. See `packages/presentation/src/render/skylight.ts`, `Skylight.patch`. Light through
   furniture-only barriers remains accepted. Near shadows must hold at every hour;
-  see `src/render/shadows.ts`, its header, and `packages/engine/src/core/sky.ts`, `sunShadowStrength`.
+  see `packages/presentation/src/render/shadows.ts`, its header, and `packages/engine/src/core/sky.ts`, `sunShadowStrength`.
 - **Furniture is not its own roof (#998):** furniture blocks light in whole
   cells, coarser than its shape, so a wall or seat beside a parked vehicle samples
   sky from inside the vehicle's cell. That cell must not count as the receiver's
@@ -3652,7 +3652,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - The owning camera uses world depth for the actor, so nearby surfaces can hide
   hands and items rather than being painted over. The accepted contact limitation
   and its replacement belong in [Character](#character); see
-  `src/render/playView.ts`, `render`.
+  `packages/presentation/src/render/playView.ts`, `render`.
 
 ## Audio
 
@@ -3688,7 +3688,7 @@ decoration.
   belongs to the body it reports on, so it is body tuning, and its two
   recordings are sound events so validation checks their files. See
   `packages/engine/src/game/audioPresentation.ts`, `heartbeatForStamina`, and
-  `src/presentation/audio.ts`, `GameAudio.updateHeartbeat`.
+  `packages/presentation/src/presentation/audio.ts`, `GameAudio.updateHeartbeat`.
 - **Audio tuning is content** (`PILLARS.md`, "Content forward compatibility"):
   the voice law, the heartbeat and the audio options' starting volumes are
   required content fields with no code fallback, so retuning them never needs a
@@ -3723,7 +3723,7 @@ layer shows actors, possessions, secrets or mutable damage. See
 contours at the cut, and shared contour levels keep neighbouring sheets aligned.
 A bounded session cache deduplicates renders by world identity, region and render
 configuration; it is disposable presentation work, not saved knowledge. See
-`src/render/paperMapRender.ts`, `samplePaperMapTerrain` and `PaperMapRenderCache`.
+`packages/presentation/src/render/paperMapRender.ts`, `samplePaperMapTerrain` and `PaperMapRenderCache`.
 The discovery policy is optional local supply without guaranteed coverage;
 duplicate copies are ordinary possessions, not globally unique collectibles.
 A map needs light like any paper, with no map-only exception; see `docs/readables.md`,
@@ -3739,9 +3739,9 @@ and render caches are not durable knowledge. See `packages/engine/src/core/schem
 
 ## World repair selection
 
-Holding world interaction opens the action list on every movable piece, intact or damaged; lifting requires choosing it from that list. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `src/presentation/play.ts`, `furniturePayload`.
+Holding world interaction opens the action list on every movable piece, intact or damaged; lifting requires choosing it from that list. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `packages/presentation/src/presentation/play.ts`, `furniturePayload`.
 
-World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `src/presentation/play.ts`, `confirmFurnitureAction`; `src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
+World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 
 The repair entry stays debug-gated while #1469 settles input selection. The turnable 3D target view also waits for #1469. Keyboard arrow aiming is not a second target-selection path: the held-list choice already names the piece.
 
@@ -3761,13 +3761,13 @@ The repair entry stays debug-gated while #1469 settles input selection. The turn
   renders are review tools, not UI.
 - **Aim for full diegesis.** New players need the HUD to understand a voxel
   world; experienced players can turn off individual elements as diegetic
-  affordances grow. See `src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`. Utilities
+  affordances grow. See `packages/presentation/src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`. Utilities
   such as the compass and the wristwatch are items the player finds and holds
   (#183).
 - **Core mods set the UI's spacing and size.** Content-owned density and HUD
   scale let players adapt the interface without making page zoom authoritative.
   Text-reserving space must remain legible as density changes. See
-  `packages/mods/skelly.ui/ui.jsonnet`, `ui`; `src/ui/uiTokens.ts`,
+  `packages/mods/skelly.ui/ui.jsonnet`, `ui`; `packages/presentation/src/ui/uiTokens.ts`,
   `applyUiTokens`; and `packages/engine/src/core/content.ts`, `requiredContentIssues`.
 - **Action text is content.** What the character says when an action is
   refused, the handling labels, interaction hints, held-item details and the
@@ -3786,7 +3786,7 @@ The repair entry stays debug-gated while #1469 settles input selection. The turn
   setting still counts. Scaling through the root size, not CSS `zoom`, keeps
   client coordinates true: pointer events, `elementFromPoint` and element rects
   agree at any scale. Code that turns a rem length into pointer maths reads the
-  rendered root size (`src/ui/inventoryScreen.ts`, `cellPx`).
+  rendered root size (`packages/presentation/src/ui/inventoryScreen.ts`, `cellPx`).
 - **What stays in px:** borders, outlines, hairlines and stripes (grid lines, the
   crosshair's bars, the splitter's line, a blocked drop's hatching), so they stay
   crisp at any scale; the gutter around a grid item, so the grid line beside it

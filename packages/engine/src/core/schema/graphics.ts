@@ -38,7 +38,7 @@ export const GraphicsTuningSchema = strictObject({
   /**
    * The camera's far plane as a multiple of where the fog ends. Fog goes by horizontal distance; a
    * larger scale lets more of what is far above or below the camera stay unfogged, and culls less
-   * (`packages/deadvox/src/render/distanceFog.ts`).
+   * (`packages/presentation/src/render/distanceFog.ts`).
    */
   fogFarPlaneScale: pipe(number(), finite(), minValue(1)),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
@@ -75,8 +75,8 @@ export const GraphicsTuningSchema = strictObject({
     dropletSpawnsPerFrame: Count,
     dripSourceCap: Count,
     /**
-     * Flesh chunks thrown with the blood on every carve and on hard hits (`packages/deadvox/src/render/gore.ts`, `Gore.carved` and
-     * `Gore.wounded`): which models, how many a throw starts, the pool they recycle oldest first, how they fly,
+     * Flesh chunks thrown with the blood on every carve and on hard hits
+     * (`packages/presentation/src/render/gore.ts`, `Gore.carved` and `Gore.wounded`): which models, how many a throw starts, the pool they recycle oldest first, how they fly,
      * spin and fade. A row without it throws none.
      */
     chunks: optional(

@@ -21,11 +21,13 @@ file it holds. Files inside the package import each other by relative path, not 
 loads every module it re-exports, so going through one would load modules the importer does not use. See
 `packages/deadvox/tools/runtimeClosure.ts`, `ownName`.
 
-The `./internal/*` subpath is the test-only surface: it resolves only under the `skelly-engine-test` export
-condition, which the deadvox Vitest config and the dev servers of its browser stages enable, and which the
-product dev server and build never do. Deadvox tests that use shipped
-content need runtime internals no entry carries; this surface serves them without growing the entries. See
-`packages/deadvox/tools/runtimeEntries.ts`, `entryViolations`, for the check that keeps product code off it.
+The `./internal/*` subpath is the test-only surface: it resolves only under the `skelly-test` export
+condition, which the deadvox and presentation Vitest configs and the dev servers of deadvox's browser stages
+enable, and which the product dev server and build never do. Tests outside the package need runtime internals
+no entry carries; this surface serves them without growing the entries. See
+`packages/deadvox/tools/runtimeEntries.ts`, `entryViolations`, for the check that keeps product code off it,
+and `packages/deadvox/tools/runtimeClosure.ts`, `PRESENTATION_POLICY`, for the one that keeps presentation
+off it.
 
 ## Tests
 

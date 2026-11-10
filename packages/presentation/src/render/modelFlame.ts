@@ -1,4 +1,4 @@
-// A burning light's flame (`DESIGN.md`, "Light"): a small cone in the light's colour, standing upright
+// A burning light's flame (`packages/deadvox/DESIGN.md`, "Light"): a small cone in the light's colour, standing upright
 // over its model's `flame` anchor whether the light is held or set down.
 
 import type { Registry } from '@skelly/engine/content';

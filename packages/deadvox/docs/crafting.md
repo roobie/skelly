@@ -34,9 +34,9 @@ Browsing is inspection, not admission: filtering must not spend stock, grant kno
 change a running job. Unknown recipes remain hidden, including their exclusive branches
 and tags, because navigation must not disclose knowledge the character lacks. Selection
 clears rather than silently choosing another recipe when a query hides it. See
-`src/ui/recipeBrowser.ts`, `recipeBrowser`.
+`packages/presentation/src/ui/recipeBrowser.ts`, `recipeBrowser`.
 
-A furniture repair preserves an existing world identity, so it names the piece rather than the recipe's item result. It belongs only in the target-pinned Repair vertical, not in ordinary Crafting: a recipe list cannot choose a world identity for the player. Both admission preview and Start must receive that same pinned UID; a generic item plan cannot establish whether a world piece is repairable. See `src/ui/craftReadout.ts`, `craftRows`; `src/ui/craftController.ts`, `mountCraftPanel`; and `DESIGN.md`, "World repair selection".
+A furniture repair preserves an existing world identity, so it names the piece rather than the recipe's item result. It belongs only in the target-pinned Repair vertical, not in ordinary Crafting: a recipe list cannot choose a world identity for the player. Both admission preview and Start must receive that same pinned UID; a generic item plan cannot establish whether a world piece is repairable. See `packages/presentation/src/ui/craftReadout.ts`, `craftRows`; `packages/presentation/src/ui/craftController.ts`, `mountCraftPanel`; and `DESIGN.md`, "World repair selection".
 
 ## Work and progression
 
@@ -54,7 +54,7 @@ Reading a recipe book progresses only while its page is open. Closing the page p
 
 Long actions are saved data, not closures. Each retains its own stop/cancel/wake behavior. An emitted interruption drops compression; proximity alone does not refuse or interrupt work, leaving the player to judge safety. Rest/sleep and crafting share the core action owner, but their progress belongs to their respective saved state.
 
-Scheduler batching must not make ongoing repair appear stuck. The arc may account for simulation time accrued since the owner's last tick, but must not advance, spend or complete work or use an independent animation timer. See `src/ui/craftReadout.ts`, `runningCraftPresentation`; `src/ui/hud.ts`, `handlingViewModel`; and `packages/engine/src/core/longAction.ts`, `LongActions.advance`.
+Scheduler batching must not make ongoing repair appear stuck. The arc may account for simulation time accrued since the owner's last tick, but must not advance, spend or complete work or use an independent animation timer. See `packages/presentation/src/ui/craftReadout.ts`, `runningCraftPresentation`; `packages/presentation/src/ui/hud.ts`, `handlingViewModel`; and `packages/engine/src/core/longAction.ts`, `LongActions.advance`.
 
 ## Appliances and stations
 
@@ -64,7 +64,7 @@ Cooking uses a lit station for recipes that require heat. Losing it stops the pl
 
 ## Reachability and tests
 
-A screen selection is not proof that its frame-owned panel has rendered. Presentation checks must wait for the target's visible panel rather than racing a synchronous visibility read against presentation; see `src/ui/craftController.ts`, `mountCraftPanel`.
+A screen selection is not proof that its frame-owned panel has rendered. Presentation checks must wait for the target's visible panel rather than racing a synchronous visibility read against presentation; see `packages/presentation/src/ui/craftController.ts`, `mountCraftPanel`.
 
 Debug garage stock is authored evaluation content, not a recipe-coverage oracle. A new
 tool or changed recipe requires a hand edit; unlisted supplies remain absent rather than

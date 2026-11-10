@@ -13,7 +13,7 @@ export interface LoadingFrameDraw {
   readonly world: () => void;
 }
 
-/** Skips world draws behind the opaque loading mask; see `TROUBLESHOOTING.md`, "Startup and save discovery". */
+/** Skips world draws behind the opaque loading mask; see `packages/deadvox/TROUBLESHOOTING.md`, "Startup and save discovery". */
 export const finishLoadingFrame = (
   loading: Pick<WorldLoading, 'ready'>,
   check: () => void,
